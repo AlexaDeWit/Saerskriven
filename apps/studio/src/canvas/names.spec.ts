@@ -1,4 +1,8 @@
-import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
+import {
+  layoutDiagram,
+  type CanvasLayout,
+  type ThreatBadge,
+} from '@saerskriven/canvas';
 import {
   canvasModel,
   probeFlow,
@@ -16,6 +20,17 @@ const withoutNodes = (from: CanvasLayout): CanvasLayout => ({
   ...from,
   nodes: [],
 });
+
+const withBadge = (id: string, badge: ThreatBadge) =>
+  accessibleNames({
+    ...layout,
+    nodes: layout.nodes.map((node) =>
+      node.id === id ? { ...node, badge } : node,
+    ),
+    edges: layout.edges.map((edge) =>
+      edge.id === id ? { ...edge, badge } : edge,
+    ),
+  });
 
 describe('accessibleNames', () => {
   it('names an element by what it is called and what kind it is', () => {
@@ -35,6 +50,33 @@ describe('accessibleNames', () => {
   it('counts threats in the plural, so a badge of one is not read as many', () => {
     expect(names.get(requestFlow)).toContain('2 open threats');
     expect(names.get(readerElement)).toContain('1 open threat,');
+  });
+
+  it('says a threat on a counted badge is flagged', () => {
+    expect(
+      withBadge(readerElement, {
+        kind: 'counted',
+        count: 1,
+        severity: 'medium',
+        secondary: 0,
+        flagged: true,
+      }).get(readerElement),
+    ).toBe(
+      'Reader, actor, 1 open threat, highest severity medium, a threat flagged',
+    );
+  });
+
+  it('says a flag-only badge is flagged and counts no open threat', () => {
+    const spoken = withBadge(studioElement, { kind: 'flag-only' }).get(
+      studioElement,
+    );
+    expect(spoken).toBe('Studio, process, a threat flagged');
+  });
+
+  it('says a flagged flow is flagged', () => {
+    expect(withBadge(probeFlow, { kind: 'flag-only' }).get(probeFlow)).toBe(
+      'Reads a file, flow, from Studio to a free point, a threat flagged',
+    );
   });
 
   it('names a flow by the elements its ends attach to', () => {

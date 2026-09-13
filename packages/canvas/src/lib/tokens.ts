@@ -200,11 +200,14 @@ export const arrowhead = {
  * How far a threat badge reaches from its own centre, in user units. The ring
  * in {@link strokeWidths} is centred on the circle, so half of it eats into
  * the disc the count is lettered on, and each radius carries the room the
- * count needs inside what the ring leaves.
+ * count needs inside what the ring leaves. `flag` is the half-width and
+ * half-height of the flag mark's triangle, whose base runs across its box's
+ * foot.
  */
 export const badgeRadius = {
   primary: 13,
   secondary: 9,
+  flag: 11,
 } as const;
 
 /**

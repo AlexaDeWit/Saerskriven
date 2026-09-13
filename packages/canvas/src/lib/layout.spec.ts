@@ -200,9 +200,11 @@ describe('layoutDiagram', () => {
 
   it('carries the badge of each element the threats name', () => {
     expect(nodeNamed('el-client').badge).toEqual({
+      kind: 'counted',
       count: 1,
       severity: 'critical',
       secondary: 0,
+      flagged: false,
     });
     expect(nodeNamed('el-note').badge).toBeUndefined();
   });
@@ -438,7 +440,13 @@ describe('reanchoredFlow', () => {
   const right = nodeBoxAt(400, 0);
   const badged = {
     ...settled,
-    badge: { count: 1, severity: 'high', secondary: 0 },
+    badge: {
+      kind: 'counted',
+      count: 1,
+      severity: 'high',
+      secondary: 0,
+      flagged: false,
+    },
     label: {
       ...settled.label,
       badge: { x: settled.label.name.at.x, y: 30 },

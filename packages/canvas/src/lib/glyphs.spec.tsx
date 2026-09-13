@@ -213,7 +213,7 @@ describe('FlowGlyph', () => {
       renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-request')} />),
     ).toContain(canvasClassNames.badge);
     expect(
-      renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-probe')} />),
+      renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-write')} />),
     ).not.toContain(canvasClassNames.badge);
   });
 });
@@ -246,7 +246,13 @@ const orientations = [
   ['diagonal, rising', { x: -200, y: 200 }, { x: 200, y: -200 }],
 ] as const;
 
-const wordyBadge: ThreatBadge = { count: 4, severity: 'high', secondary: 2 };
+const wordyBadge: ThreatBadge = {
+  kind: 'counted',
+  count: 4,
+  severity: 'high',
+  secondary: 2,
+  flagged: true,
+};
 
 const probeName = 'a name long enough to wrap over several lines of its own';
 

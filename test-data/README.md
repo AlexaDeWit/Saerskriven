@@ -126,7 +126,10 @@ Markdown list to the cases covered by Écluse.
 A hand-written model with every element kind, both boundary shapes, an
 out-of-scope element, and flows with waypoints, free ends, and an endpoint
 naming another flow. Its open threats exercise paired badges and a neutral
-badge. Canvas and render tests parse it and keep separate drawing snapshots.
+badge. A flow's open threat resting on an invalidated assumption draws the
+flag mark under a count, and a boundary curve named only by a `mitigated`
+threat with a proposed mitigation draws the flag-only mark. Canvas and render
+tests parse it and keep separate drawing snapshots.
 
 ## `render/ecluse.snapshot.typ`
 

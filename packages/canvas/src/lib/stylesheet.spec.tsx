@@ -2,10 +2,12 @@ import { severitySchema } from '@saerskriven/model';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphModel } from './canvas.fixtures.js';
 import { layoutDiagram } from './layout.js';
+import { defaultRenderTheme, type RenderTheme } from './render-theme.js';
 import { DiagramGlyphs } from './scene.js';
 import {
   canvasClassNames,
   canvasStylesheet,
+  renderCanvasStylesheet,
   severityToneClass,
   themedCanvasStylesheet,
   wrappedTextStyles,
@@ -83,6 +85,45 @@ describe('themedCanvasStylesheet', () => {
   it('leaves the resolved sheet the values it has, the standalone SVG carrying no root to read a property from', () => {
     expect(canvasStylesheet).not.toContain('var(');
   });
+});
+
+const toneRule = (sheet: string, className: string): string | undefined =>
+  sheet.split('\n').find((line) => line.startsWith(`.${className} { fill:`));
+
+const toned = (theme: RenderTheme): [string, string][] => [
+  ...severitySchema.options.map((severity): [string, string] => [
+    severityToneClass[severity],
+    theme.severity[severity],
+  ]),
+  [canvasClassNames.toneFlag, theme.colours.text],
+];
+
+describe('renderCanvasStylesheet', () => {
+  const outlined: RenderTheme = {
+    ...defaultRenderTheme,
+    colours: { ...defaultRenderTheme.colours, text: '#123456' },
+    badges: { ...defaultRenderTheme.badges, style: 'outline', borderWidth: 1 },
+  };
+
+  it.each([
+    ['filled', defaultRenderTheme],
+    ['outlined', outlined],
+  ] as const)(
+    'writes the %s badge rule for every severity tone and the flag tone, the flag in the text colour',
+    (_style, theme) => {
+      const sheet = renderCanvasStylesheet(theme);
+      const fill = (tone: string) =>
+        theme.badges.style === 'outline' ? theme.colours.background : tone;
+      expect(
+        toned(theme).map(([className]) => toneRule(sheet, className)),
+      ).toEqual(
+        toned(theme).map(
+          ([className, tone]) =>
+            `.${className} { fill: ${fill(tone)}; stroke: ${tone}; stroke-width: ${String(theme.badges.borderWidth)}; }`,
+        ),
+      );
+    },
+  );
 });
 
 describe('canvasClassNames', () => {

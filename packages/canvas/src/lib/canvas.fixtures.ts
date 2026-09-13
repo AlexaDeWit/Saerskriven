@@ -16,7 +16,9 @@ const modelFile = (name: string): unknown =>
  * kinds, a trust boundary in both shapes, an out-of-scope element, a flow
  * with a waypoint, a flow with a free end, a flow the layout refuses, and
  * open threats spread so that one element carries the stacked pair of
- * badges and another carries the neutral badge alone. It lives under
+ * badges and another carries the neutral badge alone, a flow whose open
+ * threat is flagged, and a boundary curve named only by a flagged
+ * `mitigated` threat, which carries the flag-only badge. It lives under
  * test-data because `packages/render` draws it too, and the layer matrix
  * allows no package dependency between the two readers.
  */

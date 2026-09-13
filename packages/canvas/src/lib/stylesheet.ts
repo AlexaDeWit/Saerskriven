@@ -9,6 +9,7 @@ import {
   lightPalette,
   paletteProperty,
   strokeWidths,
+  type Colour,
   type Palette,
 } from './tokens.js';
 
@@ -32,11 +33,13 @@ export const canvasClassNames = {
   badgeSecondary: 'pn-badge-secondary',
   badgeCount: 'pn-badge-count',
   badgeMark: 'pn-badge-mark',
+  badgeFlag: 'pn-badge-flag',
   toneCritical: 'pn-tone-critical',
   toneHigh: 'pn-tone-high',
   toneMedium: 'pn-tone-medium',
   toneLow: 'pn-tone-low',
   toneNeutral: 'pn-tone-neutral',
+  toneFlag: 'pn-tone-flag',
 } as const;
 
 /** One class name the primitives emit. */
@@ -173,6 +176,9 @@ const sheetFrom = (
   text-anchor: middle;
   dominant-baseline: central;
 }
+.${name.badgeFlag} {
+  stroke-linejoin: round;
+}
 .${name.toneCritical} {
   fill: ${colour('toneCritical')};
 }
@@ -187,6 +193,9 @@ const sheetFrom = (
 }
 .${name.toneNeutral} {
   fill: ${colour('toneNeutral')};
+}
+.${name.toneFlag} {
+  fill: ${colour('textPrimary')};
 }
 `;
 
@@ -215,13 +224,19 @@ export function renderCanvasStylesheet(
     toneLow: theme.severity.low,
     toneNeutral: theme.severity.undecided,
   };
-  const badges = severitySchema.options.map((severity) => {
-    const className = severityToneClass[severity];
-    const tone = theme.severity[severity];
-    const outlined = theme.badges.style === 'outline';
-    return `.${className} { fill: ${outlined ? theme.colours.background : tone}; stroke: ${tone}; stroke-width: ${String(theme.badges.borderWidth)}; }
-.${className} ~ .${name.badgeCount}, .${className} ~ .${name.badgeMark} { fill: ${badgeTextColour(theme, tone)}; }`;
-  });
+  const tones: readonly (readonly [string, Colour])[] = [
+    ...severitySchema.options.map(
+      (severity) =>
+        [severityToneClass[severity], theme.severity[severity]] as const,
+    ),
+    [name.toneFlag, theme.colours.text],
+  ];
+  const outlined = theme.badges.style === 'outline';
+  const badges = tones.map(
+    ([className, tone]) =>
+      `.${className} { fill: ${outlined ? theme.colours.background : tone}; stroke: ${tone}; stroke-width: ${String(theme.badges.borderWidth)}; }
+.${className} ~ .${name.badgeCount}, .${className} ~ .${name.badgeMark} { fill: ${badgeTextColour(theme, tone)}; }`,
+  );
   return [
     sheetFrom((role) => palette[role], JSON.stringify(theme.fonts.body)),
     ...badges,

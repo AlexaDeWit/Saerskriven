@@ -388,15 +388,17 @@ In Select mode, middle-button dragging pans without changing the selection.
 
 Every element is a tab stop, with an accessible name built out of model data:
 what the element is called, what kind of element it is, and what its badge
-says. The glyphs are hidden from assistive technology, so a badge would
-otherwise be visual alone. A flow also names the elements its ends attach to,
-from one to the other, or between the two where it runs both ways.
+says, including that a threat on it is flagged. The glyphs are hidden from
+assistive technology, so a badge would otherwise be visual alone. A flow also
+names the elements its ends attach to, from one to the other, or between the
+two where it runs both ways.
 
 Focus and selection are drawn apart and stack: focus is the app's own ring
 (`--pn-focus-ring`) on the element the browser focused, selection the frame
 and the weights above. Both are an outline or a border rather than a shadow,
 so forced-colours mode keeps them. Severity is legible without colour on the
-canvas itself: a badge carries its count over a letter for the severity.
+canvas itself: a badge carries its count over a letter for the severity,
+and a flag is a triangle marked with an exclamation mark.
 
 Moving by keyboard starts on React Flow's path: tab to an element and press
 Enter to select it. A second Enter edits its text. An arrow moves one selection

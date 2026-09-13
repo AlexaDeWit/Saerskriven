@@ -19,7 +19,10 @@ The same theme controls diagram colours, the PNG background, and register badges
 PDF applies it to both the register and every embedded drawing.
 Defaults come from the canvas light palette. Every badge keeps a readable label.
 Diagram badges retain their threat count and severity letter.
-Status, record status, and flag colours apply to register labels. Diagram badges summarize open threats by severity.
+Status, record status, and flag colours apply to register labels.
+Diagram badges summarize open threats by severity, and add a triangle marked `!` where a threat on that element carries a flag, in any status.
+An element whose flagged threats are none of them open shows that triangle alone, with no count.
+The triangle takes the `colours.text` colour and the `badges` appearance settings, not the `flag` colours.
 
 ## Partial overrides
 
@@ -57,7 +60,7 @@ Filled badges use their semantic colour as the background. Outlined badges use
 that colour as the border and leave the background visible. `text: auto` uses
 light lettering on filled badges and the semantic colour on outlined badges.
 A text colour overrides that choice. `borderWidth` uses SVG units, CSS pixels,
-or Typst points. Diagram badges keep their existing circular geometry.
+or Typst points. Diagram badges keep their geometry: circles for the counts and a triangle for the flag mark.
 Default badge lettering meets a 4.5:1 contrast ratio. Custom colours are the
 consumer's choice and can reduce contrast.
 

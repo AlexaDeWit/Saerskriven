@@ -78,7 +78,7 @@ describe.each(palettes)('$name', ({ palette }) => {
   it('letters a badge and the primary action at that same ratio', () => {
     expect(
       below(palette, [
-        ...pairsOf(['badgeGround'], tones, textFloor),
+        ...pairsOf(['badgeGround'], [...tones, 'textPrimary'], textFloor),
         ...pairsOf(['actionText'], ['actionPrimary', 'actionHover'], textFloor),
       ]),
     ).toEqual([]);
