@@ -285,16 +285,36 @@ export const beforeCanvas = (page: Page): Locator => toolButton(page, 'Hand');
 export const threatPanel = (page: Page): Locator =>
   page.getByRole('region', { name: 'Threats' });
 
-/** Chooses an option in one of the panel's listboxes, by pointer. */
+/** One of the panel's fields, by its exact accessible name. */
+export const panelField = (
+  page: Page,
+  role: 'textbox' | 'combobox',
+  name: string,
+): Locator => threatPanel(page).getByRole(role, { name, exact: true });
+
+/** One of the panel's buttons, by its exact accessible name. */
+export const panelControl = (page: Page, name: string): Locator =>
+  threatPanel(page).getByRole('button', { name, exact: true });
+
+/** Expands the panel's threat whose summary matches `title`. */
+export const expandThreat = async (
+  page: Page,
+  title: RegExp,
+): Promise<void> => {
+  const disclosure = threatPanel(page).getByRole('button', { name: title });
+  await disclosure.click();
+  await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+};
+
+/** Chooses an option in one of the panel's listboxes, by pointer, and waits for the listbox to close. */
 export const chooseInPanel = async (
   page: Page,
   field: string,
   option: string,
 ): Promise<void> => {
-  await threatPanel(page)
-    .getByRole('combobox', { name: field, exact: true })
-    .click();
+  await panelField(page, 'combobox', field).click();
   await page.getByRole('option', { name: option, exact: true }).click();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
 };
 
 /** Reads a node position from its transform without including the selection-dependent stacking style. */

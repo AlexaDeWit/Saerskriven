@@ -117,7 +117,12 @@ export function badgeLabel(badge: RegisterBadge): string {
   if (badge.kind === 'assumption') {
     return assumptionLabels[badge.value];
   }
-  return flagLabels[badge.value];
+  return flagLabel(badge.value);
+}
+
+/** The display label of a flag a threat raises, shared by every surface that names one. */
+export function flagLabel(flag: ThreatFlag): string {
+  return flagLabels[flag];
 }
 
 /** The heading of a register section that belongs to no single threat. */

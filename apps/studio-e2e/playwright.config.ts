@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
 const pagesExport = /pages-export\.spec\.ts$/u;
-const phoneSmoke = /(?:chrome-card|notices|records)\.spec\.ts$/u;
+const phoneSmoke = /(?:chrome-card|notices|records|summary)\.spec\.ts$/u;
 const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 
@@ -65,9 +65,10 @@ export default defineConfig({
     // which is what holds the ruling that the layout is the same at every
     // width and that a dismissed refusal leaves the chrome clear. The records
     // spec runs here too, because a threat's record rows must be usable at
-    // phone width. The preset carries the viewport, the touch flags and the
-    // device pixel ratio together, so a change of preset changes all three at
-    // once. The set is small on purpose: the rest of the suite is about
+    // phone width, and so does the summary spec, because a collapsed threat
+    // with its counts and both flag marks must fit the panel there. The
+    // preset carries the viewport, the touch flags and the device pixel ratio
+    // together, so a change of preset changes all three at once. The set is small on purpose: the rest of the suite is about
     // behaviour that does not turn on the viewport.
     {
       name: 'phone',
