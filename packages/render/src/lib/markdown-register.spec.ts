@@ -206,7 +206,7 @@ function assumptionOf(
   return assumptionSchema.parse({
     prose: '',
     status: 'unconfirmed',
-    elements: [],
+    appliesToModel: false,
     ...fields,
   });
 }

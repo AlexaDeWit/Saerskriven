@@ -143,10 +143,11 @@ are the gate on the recovery above, which those models cannot exercise: every
 one of them is written in English.
 
 `readSaerskrivenYaml` and `writeSaerskrivenYaml` are the Saerskriven YAML format,
-version 1, paired as `saerskrivenYamlCodec`. It is the native format: it holds
-the whole model, so a write leaves nothing out and reports no divergence. A
-read maps nothing away but assumption element links, which the model no
-longer holds: `withoutAssumptionElementLinks` empties them and
+version 1, paired as `saerskrivenYamlCodec`. It is the native format. A write
+leaves out only an assumption's model link, which version 1 has no key for,
+and reports each assumption that applies to the model as `narrowed`. A read
+sets no model link, and maps nothing away but assumption element links, which
+the model no longer holds: `withoutAssumptionElementLinks` empties them and
 `droppedAssumptionElementLinks` reports each assumption that held any as
 `narrowed`. [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md)
 describes the file itself.

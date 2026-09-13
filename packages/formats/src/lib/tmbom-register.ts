@@ -113,6 +113,7 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
         prose: context.text([assumption.description]),
         status: assumption.validity === 'confirmed' ? 'valid' : 'invalidated',
         threats: [],
+        appliesToModel: false,
       });
     }
   }

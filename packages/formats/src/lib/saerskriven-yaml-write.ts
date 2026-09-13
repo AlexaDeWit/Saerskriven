@@ -31,7 +31,7 @@ import {
 import { stringify } from 'yaml';
 import { canonicalOrder } from './canonical-order.js';
 import type { WriteResult } from './codec.js';
-import { noDivergence } from './divergence.js';
+import type { Divergence } from './divergence.js';
 import {
   assumptionStatusesToWire,
   mitigationStatusesToWire,
@@ -42,7 +42,11 @@ import {
 
 const stringifyOptions = { lineWidth: 0 };
 
-/** Writes canonical native YAML without wrapping prose. The source cannot override the model. */
+/**
+ * Writes canonical native YAML without wrapping prose. The source cannot
+ * override the model. Each assumption that applies to the model is reported
+ * `narrowed`, since version 1 has no key for that link.
+ */
 export function writeSaerskrivenYaml(
   model: Model,
   _source?: SaerskrivenYamlDocument,
@@ -55,8 +59,18 @@ export function writeSaerskrivenYaml(
       ),
       stringifyOptions,
     ),
-    divergences: noDivergence,
+    divergences: narrowedModelLinks(model),
   };
+}
+
+function narrowedModelLinks(model: Model): Divergence[] {
+  return model.assumptions
+    .filter(({ appliesToModel }) => appliesToModel)
+    .map(({ id }): Divergence => ({
+      subject: { kind: 'assumption', id },
+      detail: 'its model link, which version 1 does not hold',
+      reason: 'narrowed',
+    }));
 }
 
 /** Projects model fields explicitly and orders threats by number. Other lists retain their order. */

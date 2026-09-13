@@ -1244,7 +1244,8 @@
         "th-undeclared",
         "th-references",
         "th-version"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "as-planned-surfaces",
@@ -1257,13 +1258,15 @@
         "th-agent-write",
         "th-agent-loss",
         "th-prompt"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "as-hand-written",
       "prose": "This model is kept true by hand. CI proves that it parses, that it stays in the writer's canonical form, and that every projection of it still matches its golden. Nothing proves that its content still describes the tool, so it is read again whenever a milestone closes.",
       "status": "valid",
-      "threats": []
+      "threats": [],
+      "appliesToModel": false
     }
   ]
 }

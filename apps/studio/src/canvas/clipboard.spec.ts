@@ -175,6 +175,7 @@ it('reports excluded links in related records and source-only format fields', as
         prose: 'Shared',
         status: 'valid',
         threats: [originalThreat.id, 'external-threat'],
+        appliesToModel: true,
       },
     ],
   });
@@ -196,7 +197,7 @@ it('reports excluded links in related records and source-only format fields', as
   expect(copy.threats[0].elements).toEqual([actor]);
   expect(copy.mitigations[0].threats).toEqual([originalThreat.id]);
   expect(copy.assumptions[0].threats).toEqual([originalThreat.id]);
-  expect(currentAnnouncement().message).toContain('3 external links excluded');
+  expect(currentAnnouncement().message).toContain('4 external links excluded');
   expect(currentAnnouncement().message).toContain('Source-format fields');
   expect(modelStore.getState().present).toBe(model);
 });
@@ -252,6 +253,7 @@ it('refuses a selection copied before assumptions dropped their element links', 
         prose: 'Linked to an element',
         status: 'valid',
         threats: [placeholderModel.threats[0].id],
+        appliesToModel: false,
       },
     ],
   });

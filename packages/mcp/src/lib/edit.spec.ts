@@ -1,4 +1,6 @@
 import { readAnyFormat, readLimits } from '@saerskriven/formats';
+import { OperationFailure } from '@saerskriven/model';
+import { assumptionId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,6 +12,7 @@ import {
   type EditInput,
 } from './edit.fixtures.js';
 import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
+import { describeOperationFailure } from './operation-failure.js';
 import { revisionOf } from './revision.js';
 import { openWorkspace } from './workspace.js';
 
@@ -171,6 +174,51 @@ describe('what an applied edit writes', () => {
       { subject: { kind: 'threat', id: ecluseThreat }, reason: 'narrowed' },
     ]);
     expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
+  });
+});
+
+const addedBackups = (threats: readonly string[]): EditInput => ({
+  op: 'add_assumption',
+  assumption: {
+    id: 'assumption-backups',
+    prose: 'Backups are encrypted with the same key policy.',
+    status: 'unconfirmed',
+    threats: [...threats],
+  },
+});
+
+describe('what add_assumption writes', () => {
+  it('refuses an assumption that links no threat and writes nothing', () => {
+    const attempted = attempt();
+    const before = attempted.bytes(modelFile);
+    const refused = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [addedBackups([])],
+    );
+    expect(attempted.bytes(modelFile)).toEqual(before);
+    expect(Either.isLeft(refused) ? refused.left[1] : undefined).toEqual(
+      describeOperationFailure(
+        OperationFailure.AssumptionWithoutReference({
+          assumptionId: assumptionId('assumption-backups'),
+        }),
+      ),
+    );
+  });
+
+  it('adds an assumption with no model link', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [addedBackups(['threat-tamper-order'])],
+    );
+    expect(Either.getOrUndefined(applied)?.divergences).toEqual([]);
+    expect(
+      Either.getOrUndefined(
+        readAnyFormat(attempted.bytes(modelFile).toString('utf8')),
+      )?.model.assumptions.find(({ id }) => id === 'assumption-backups'),
+    ).toMatchObject({ appliesToModel: false });
   });
 });
 

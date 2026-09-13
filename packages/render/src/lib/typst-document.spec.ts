@@ -79,8 +79,8 @@ const recordsModel = (
     assumptionSchema.parse({
       id: `assumption-${String(index)}`,
       status: 'valid',
-      elements: [],
       threats: ['threat-1'],
+      appliesToModel: false,
       ...fields,
     }),
   ),

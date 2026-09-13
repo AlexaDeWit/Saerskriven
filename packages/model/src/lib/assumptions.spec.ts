@@ -7,6 +7,7 @@ const osvTrusted = {
     'a hostile oracle defeats the defence outright.',
   status: 'valid',
   threats: ['c87367bd-fc3f-4792-94b6-8db459011823'],
+  appliesToModel: false,
 };
 
 describe('assumptionStatusSchema', () => {

@@ -4,11 +4,12 @@ import type { AssumptionId, ThreatId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import {
-  culledAfter,
+  assumptionRegister,
+  editedRecord,
   linkedThreats,
   relinkedRecord,
+  replacedRecord,
   withRecordStatus,
-  type RecordRegister,
 } from './records.js';
 import { unknownThreatIn } from './references.js';
 
@@ -17,16 +18,15 @@ type UnknownAssumptionFailure = Extract<
   { _tag: 'UnknownAssumption' }
 >;
 
-const assumptions: RecordRegister<'assumptions', UnknownAssumptionFailure> = {
-  key: 'assumptions',
-  unknown: (assumptionId) =>
-    OperationFailure.UnknownAssumption({ assumptionId }),
-};
-
 /** The failures {@link addAssumption} can produce. */
 export type AddAssumptionFailure = Extract<
   OperationFailure,
-  { _tag: 'DuplicateAssumptionId' | 'RecordWithoutThreat' | 'UnknownThreat' }
+  {
+    _tag:
+      | 'DuplicateAssumptionId'
+      | 'AssumptionWithoutReference'
+      | 'UnknownThreat';
+  }
 >;
 
 /** The failures {@link replaceAssumption} can produce. */
@@ -47,9 +47,13 @@ export type AssumptionLinkFailure = Extract<
 /** The failure {@link setAssumptionStatus} can produce. */
 export type SetAssumptionStatusFailure = UnknownAssumptionFailure;
 
+/** The failure {@link linkAssumptionToModel} and {@link unlinkAssumptionFromModel} can produce. */
+export type AssumptionModelLinkFailure = UnknownAssumptionFailure;
+
 /**
  * Appends `assumption` to the register. Refuses a taken id, an assumption
- * linked to no threat, and a link to a threat the model does not hold.
+ * that neither links a threat nor applies to the model, and a link to a
+ * threat the model does not hold.
  */
 export function addAssumption(
   model: Model,
@@ -60,10 +64,10 @@ export function addAssumption(
       OperationFailure.DuplicateAssumptionId({ assumptionId: assumption.id }),
     );
   }
-  if (assumption.threats.length === 0) {
+  if (!assumptionRegister.referenced(assumption)) {
     return Either.left(
-      OperationFailure.RecordWithoutThreat({
-        record: { kind: 'assumption', id: assumption.id },
+      OperationFailure.AssumptionWithoutReference({
+        assumptionId: assumption.id,
       }),
     );
   }
@@ -81,30 +85,14 @@ export function addAssumption(
 
 /**
  * Swaps the assumption carrying `assumption.id` for `assumption` in place.
- * A replacement that takes the assumption from one or more threat links to
- * none removes it instead. One that already had no threat link stays.
+ * A replacement that leaves the assumption no threat link and no model link
+ * removes it instead, unless it already had neither.
  */
 export function replaceAssumption(
   model: Model,
   assumption: Assumption,
 ): Either.Either<Model, ReplaceAssumptionFailure> {
-  if (!model.assumptions.some((candidate) => candidate.id === assumption.id)) {
-    return Either.left(
-      OperationFailure.UnknownAssumption({ assumptionId: assumption.id }),
-    );
-  }
-  const unlinkable = unknownThreatIn(model.threats, assumption.threats);
-  if (unlinkable) {
-    return Either.left(
-      OperationFailure.UnknownThreat({ threatId: unlinkable }),
-    );
-  }
-  return Either.right({
-    ...model,
-    assumptions: culledAfter(model.assumptions, (candidate) =>
-      candidate.id === assumption.id ? assumption : candidate,
-    ),
-  });
+  return replacedRecord(model, assumptionRegister, assumption);
 }
 
 /**
@@ -135,23 +123,31 @@ export function linkAssumption(
   assumptionId: AssumptionId,
   threatId: ThreatId,
 ): Either.Either<Model, AssumptionLinkFailure> {
-  return relinkedRecord(model, assumptions, assumptionId, threatId, (threats) =>
-    linkedThreats(threats, threatId),
+  return relinkedRecord(
+    model,
+    assumptionRegister,
+    assumptionId,
+    threatId,
+    (threats) => linkedThreats(threats, threatId),
   );
 }
 
 /**
  * Unlinks the assumption from the threat, removing the assumption where
- * that was its last threat link. A link the assumption does not hold
- * returns the model it was given.
+ * that was its last threat link and it does not apply to the model. A link
+ * the assumption does not hold returns the model it was given.
  */
 export function unlinkAssumption(
   model: Model,
   assumptionId: AssumptionId,
   threatId: ThreatId,
 ): Either.Either<Model, AssumptionLinkFailure> {
-  return relinkedRecord(model, assumptions, assumptionId, threatId, (threats) =>
-    threats.filter((id) => id !== threatId),
+  return relinkedRecord(
+    model,
+    assumptionRegister,
+    assumptionId,
+    threatId,
+    (threats) => threats.filter((id) => id !== threatId),
   );
 }
 
@@ -164,5 +160,42 @@ export function setAssumptionStatus(
   assumptionId: AssumptionId,
   status: AssumptionStatus,
 ): Either.Either<Model, SetAssumptionStatusFailure> {
-  return withRecordStatus(model, assumptions, assumptionId, status);
+  return withRecordStatus(model, assumptionRegister, assumptionId, status);
+}
+
+/**
+ * Applies the assumption to the model. An assumption that already applies
+ * returns the model it was given.
+ */
+export function linkAssumptionToModel(
+  model: Model,
+  assumptionId: AssumptionId,
+): Either.Either<Model, AssumptionModelLinkFailure> {
+  return withModelLink(model, assumptionId, true);
+}
+
+/**
+ * Takes the model link away from the assumption, removing the assumption
+ * where it links no threat. An assumption that does not apply returns the
+ * model it was given.
+ */
+export function unlinkAssumptionFromModel(
+  model: Model,
+  assumptionId: AssumptionId,
+): Either.Either<Model, AssumptionModelLinkFailure> {
+  return withModelLink(model, assumptionId, false);
+}
+
+function withModelLink(
+  model: Model,
+  assumptionId: AssumptionId,
+  appliesToModel: boolean,
+): Either.Either<Model, AssumptionModelLinkFailure> {
+  return editedRecord(model, assumptionRegister, assumptionId, (held) =>
+    Either.right(
+      held.appliesToModel === appliesToModel
+        ? held
+        : { ...held, appliesToModel },
+    ),
+  );
 }
