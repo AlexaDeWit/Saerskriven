@@ -112,7 +112,7 @@ and reported through `undeclaredDivergences`, the walk every wire codec
 shares, so a schema that has fallen behind the format announces itself.
 
 Element security facts and declared boundary relationships map into typed model
-properties and native YAML v1. The mappings preserve explicit negatives, empty
+properties and native YAML, which writes version 2 and reads version 1 too. The mappings preserve explicit negatives, empty
 values, and absence. Threat Dragon writes include these facts without needing the
 original JSON. With a source document, mapped facts follow the model while styling
 and other unmapped fields retain the source values. A removed optional model fact
@@ -350,8 +350,8 @@ format tried, in the order tried, and carries no codec's issues: a codec that
 did not claim was refusing a format the text was never in, and its complaints
 describe a document nobody wrote. A file from a release neither codec models
 lands there, a `formatVersion` other than 1 and 2 and a Threat Dragon version
-outside major 2 among them, so a later release of either format needs a codec
-of its own rather than a looser reader, and until there is one the person
+outside major 2 among them, so a later release of either format needs a reader
+of its own rather than a looser one, and until there is one the person
 holding the file is told what was tried.
 
 The result is a union with one member per codec, discriminated by `format`, so

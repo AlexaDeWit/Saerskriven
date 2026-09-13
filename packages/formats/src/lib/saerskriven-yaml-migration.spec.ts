@@ -4,37 +4,27 @@ import {
   type SaerskrivenYamlV2Document,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
+import type { canonicalOrder } from './canonical-order.js';
 import {
   currentSaerskrivenYaml,
   migratedFromVersion1,
   saerskrivenYamlVersionsSchema,
 } from './saerskriven-yaml-migration.js';
 
-type SchemaDef = {
-  readonly type: string;
-  readonly shape?: Readonly<Record<string, Schema>>;
-  readonly element?: Schema;
-  readonly options?: readonly Schema[];
-  readonly innerType?: Schema;
-};
-
-type Schema = { readonly def: SchemaDef };
+type Schema = Parameters<typeof canonicalOrder>[0];
 
 function declaredKeys(schema: Schema, prefix = ''): string[] {
-  const { shape, element, options, innerType } = schema.def;
+  const { shape, element, options } = schema.def;
   if (shape !== undefined) {
-    return Object.entries(shape).flatMap(([key, field]) => {
-      const path = `${prefix}${key}${field.def.type === 'optional' ? '?' : ''}`;
-      return [path, ...declaredKeys(field, `${prefix}${key}.`)];
-    });
+    return Object.entries(shape).flatMap(([key, field]) => [
+      `${prefix}${key}${field.def.type === 'optional' ? '?' : ''}`,
+      ...declaredKeys(field, `${prefix}${key}.`),
+    ]);
   }
   if (element !== undefined) {
     return declaredKeys(element, prefix);
   }
-  if (options !== undefined) {
-    return options.flatMap((option) => declaredKeys(option, prefix));
-  }
-  return innerType === undefined ? [] : declaredKeys(innerType, prefix);
+  return (options ?? []).flatMap((option) => declaredKeys(option, prefix));
 }
 
 const threat = (id: string, number: number, status: string, text: string) => ({

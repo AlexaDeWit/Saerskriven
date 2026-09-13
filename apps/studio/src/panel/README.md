@@ -169,7 +169,7 @@ use the shared failure notice.
 
 Deleting an element removes its entries from recorded lists. Copies retain
 only relationships between copied elements, and pasting remaps those IDs.
-Saving and recovery preserve these facts through the native v1 codec.
+Saving and recovery preserve these facts through the native YAML codec, which writes version 2.
 
 ## The commit rule
 

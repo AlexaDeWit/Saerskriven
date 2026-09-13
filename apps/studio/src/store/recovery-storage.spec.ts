@@ -310,6 +310,7 @@ describe('local recovery storage', () => {
     ]);
     const file = snapshot?.file;
     expect(file?._tag).toBe('Opened');
+    expect(file?._tag === 'Opened' ? file.name : undefined).toBe('model.yaml');
     const source = file?._tag === 'Opened' ? file.source : undefined;
     expect(source?.format).toBe('saerskriven-yaml');
     expect(source?.document).toEqual(
@@ -343,8 +344,15 @@ describe('local recovery storage', () => {
     expect(storage.load()).toEqual(
       Either.right(restorableSnapshot(present, true, file, diagram)),
     );
+    const restored = Either.getOrThrow(storage.load());
+    expect(restored?.dirty).toBe(true);
+    expect(restored?.activeDiagram).toBe(diagram);
+    expect(restored?.file).toMatchObject({
+      _tag: 'Opened',
+      name: 'model.yaml',
+    });
     expect(
-      Either.getOrThrow(storage.load())?.present.assumptions.find(
+      restored?.present.assumptions.find(
         ({ id }) => id === 'assumption-signed-in',
       ),
     ).toMatchObject({
