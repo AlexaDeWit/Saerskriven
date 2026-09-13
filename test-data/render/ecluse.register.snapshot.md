@@ -40,7 +40,7 @@
 - **Category**: Information disclosure (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -48,11 +48,13 @@ Under the canonical passthrough strategy the proxy transiently holds every calle
 
 **Mitigation**
 
-Écluse carries a token in a redacted type, the Secret newtype, whose Show renders a fixed placeholder, so a token never reaches a log field. Retention is request-scoped, and the code unwraps a token only at the point of use, to attach the bearer to an outbound request. Neither the data-plane nor the WAI span instrumentation records an Authorization header, so a credential never reaches a span. The WAI layer does record benign request headers, such as User-Agent. A regression test holds the split. Residual: a garbage-collected runtime cannot guarantee prompt erasure from the heap. The first-class compensating control is therefore hardening Écluse's own runtime and supply chain, through the attested, reproducible image that the image vulnerability-scan gate keeps clean.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Écluse carries a token in a redacted type, the Secret newtype, whose Show renders a fixed placeholder, so a token never reaches a log field. Retention is request-scoped, and the code unwraps a token only at the point of use, to attach the bearer to an outbound request. Neither the data-plane nor the WAI span instrumentation records an Authorization header, so a credential never reaches a span. The WAI layer does record benign request headers, such as User-Agent. A regression test holds the split. Residual: a garbage-collected runtime cannot guarantee prompt erasure from the heap. The first-class compensating control is therefore hardening Écluse's own runtime and supply chain, through the attested, reproducible image that the image vulnerability-scan gate keeps clean.
 
 **Assumptions**
 
@@ -66,7 +68,7 @@ None recorded.
 - **Category**: Denial of service (STRIDE)
 - **Severity**: Medium
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -74,11 +76,13 @@ None recorded.
 
 **Mitigation**
 
-Fail-closed caps bound the input: body size, version count, and nesting depth (ECLUSE\_LIMITS\_\_MAX\_RESPONSE\_BYTES, ECLUSE\_LIMITS\_\_MAX\_VERSION\_COUNT, ECLUSE\_LIMITS\_\_MAX\_NESTING\_DEPTH). The bounded read stops mid-stream. The serve path is O(n log n) in version count, a Map-based merge with no super-linear blow-up. The single-flight cache coalesces concurrent misses for the same package onto one computation, and a per-request timeout caps any single request. Écluse still projects the whole document before the version cap rejects it. Failing fast at the cap is an accepted residual for v0.1.0. The advisory-backed rules compound that cost. They evaluate each version on its own, with no memoisation, and take one or two advisory lookups per version, so a near-cap document multiplies those lookups. Batching them per package is required to remove the amplification. Resident-bytes and serve-concurrency admission bounds further cap the aggregate resident cost. The residual is resource amplification, not algorithmic complexity. A near-cap document still costs real CPU and heap, and distinct-key floods bypass single-flight, worst under a hostile or compromised upstream registry. Volumetric and concurrency rate-limiting is therefore an operator-edge responsibility, as access control is.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Fail-closed caps bound the input: body size, version count, and nesting depth (ECLUSE\_LIMITS\_\_MAX\_RESPONSE\_BYTES, ECLUSE\_LIMITS\_\_MAX\_VERSION\_COUNT, ECLUSE\_LIMITS\_\_MAX\_NESTING\_DEPTH). The bounded read stops mid-stream. The serve path is O(n log n) in version count, a Map-based merge with no super-linear blow-up. The single-flight cache coalesces concurrent misses for the same package onto one computation, and a per-request timeout caps any single request. Écluse still projects the whole document before the version cap rejects it. Failing fast at the cap is an accepted residual for v0.1.0. The advisory-backed rules compound that cost. They evaluate each version on its own, with no memoisation, and take one or two advisory lookups per version, so a near-cap document multiplies those lookups. Batching them per package is required to remove the amplification. Resident-bytes and serve-concurrency admission bounds further cap the aggregate resident cost. The residual is resource amplification, not algorithmic complexity. A near-cap document still costs real CPU and heap, and distinct-key floods bypass single-flight, worst under a hostile or compromised upstream registry. Volumetric and concurrency rate-limiting is therefore an operator-edge responsibility, as access control is.
 
 **Assumptions**
 
@@ -92,7 +96,7 @@ None recorded.
 - **Category**: Spoofing (STRIDE)
 - **Severity**: Medium
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -100,11 +104,13 @@ The edge token, server.authToken (ECLUSE\_SERVER\_\_AUTH\_TOKEN), is off by defa
 
 **Mitigation**
 
-Compensating control: under passthrough the request carries only the caller's own forwarded token, and the read path never substitutes a standing credential. No forwarded token means no private read. A breach of the edge exposes only the public-gated view plus the untrusted-egress and denial-of-service surface, never private packages. The publish path is the one exception. A configured static publication-target credential (mounts.<eco>.publicationTargetToken) serves as the fallback for a tokenless publish, so 'no token, no publish' holds only for pure passthrough. The internal-credential publish mode is therefore fail-closed by construction. A configured publication-target token requires a verifiable inbound edge, server.authToken or stronger, so the composition root refuses internal-credential-plus-open-edge at boot. That state is unrepresentable, on the same principle the trusted-edge read identity follows. Restrict both north-south and east-west access, as the Golden Path documents. Any edge mode that substitutes Écluse's own identity, read or write, must require a verifiable edge. Use mTLS or a shared secret, never a bare spoofable header.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Compensating control: under passthrough the request carries only the caller's own forwarded token, and the read path never substitutes a standing credential. No forwarded token means no private read. A breach of the edge exposes only the public-gated view plus the untrusted-egress and denial-of-service surface, never private packages. The publish path is the one exception. A configured static publication-target credential (mounts.<eco>.publicationTargetToken) serves as the fallback for a tokenless publish, so 'no token, no publish' holds only for pure passthrough. The internal-credential publish mode is therefore fail-closed by construction. A configured publication-target token requires a verifiable inbound edge, server.authToken or stronger, so the composition root refuses internal-credential-plus-open-edge at boot. That state is unrepresentable, on the same principle the trusted-edge read identity follows. Restrict both north-south and east-west access, as the Golden Path documents. Any edge mode that substitutes Écluse's own identity, read or write, must require a verifiable edge. Use mTLS or a shared secret, never a bare spoofable header.
 
 **Assumptions**
 
@@ -118,7 +124,7 @@ None recorded.
 - **Category**: Information disclosure (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -126,11 +132,13 @@ The upstream registry is attacker-influenceable and must never receive a caller'
 
 **Mitigation**
 
-Écluse strips the caller credential before every public fetch and queries the registry anonymously. A credential-bearing request never follows a redirect: attachCredential is the single credential-attach point, and it finalises every request it builds through finaliseRequest, which sets redirectCount=0. That matters because the http-client in use does not drop Authorization on a cross-host redirect.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Écluse strips the caller credential before every public fetch and queries the registry anonymously. A credential-bearing request never follows a redirect: attachCredential is the single credential-attach point, and it finalises every request it builds through finaliseRequest, which sets redirectCount=0. That matters because the http-client in use does not drop Authorization on a cross-host redirect.
 
 **Assumptions**
 
@@ -144,7 +152,7 @@ None recorded.
 - **Category**: Elevation of privilege (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -152,11 +160,13 @@ None recorded.
 
 **Mitigation**
 
-Écluse canonicalises the identifier and encodes on build. It also enforces an outbound host and port allow-list, the load-bearing control, where it builds the request URL. Registry egress is https-only by construction. Every outbound registry URL goes through a typed boundary, mkRegistryUrl, which rejects any non-https scheme, and a non-https configured endpoint fails closed at boot. TLS certificate validation authenticates the dialled host. A name steered to an internal or rebound address cannot present a CA-trusted certificate for the requested host. Certificate validation therefore closes the resolve-to-internal and DNS-rebinding SSRF class, rather than a resolved-IP recheck. No data-plane request follows an upstream redirect, because finaliseRequest pins redirectCount=0 on every request attachCredential builds. No redirect hop can escape the build-time allow-list or downgrade the scheme. A disallow-by-default same-authority policy applies to dist.tarball, matched on host and port. Écluse upgrades a legacy http dist.tarball to https on the same host, and drops and records one on a foreign host. The trusted private origin meets the same https requirement. A cheap pure literal internal-range block remains as defence in depth on the dist.tarball host gate. An operator can extend that fixed range set with ECLUSE\_EGRESS\_\_ADDITIONAL\_BLOCKED\_RANGES for internal space the module cannot know in advance. That setting is widen-only and fails closed at boot on a malformed entry.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Écluse canonicalises the identifier and encodes on build. It also enforces an outbound host and port allow-list, the load-bearing control, where it builds the request URL. Registry egress is https-only by construction. Every outbound registry URL goes through a typed boundary, mkRegistryUrl, which rejects any non-https scheme, and a non-https configured endpoint fails closed at boot. TLS certificate validation authenticates the dialled host. A name steered to an internal or rebound address cannot present a CA-trusted certificate for the requested host. Certificate validation therefore closes the resolve-to-internal and DNS-rebinding SSRF class, rather than a resolved-IP recheck. No data-plane request follows an upstream redirect, because finaliseRequest pins redirectCount=0 on every request attachCredential builds. No redirect hop can escape the build-time allow-list or downgrade the scheme. A disallow-by-default same-authority policy applies to dist.tarball, matched on host and port. Écluse upgrades a legacy http dist.tarball to https on the same host, and drops and records one on a foreign host. The trusted private origin meets the same https requirement. A cheap pure literal internal-range block remains as defence in depth on the dist.tarball host gate. An operator can extend that fixed range set with ECLUSE\_EGRESS\_\_ADDITIONAL\_BLOCKED\_RANGES for internal space the module cannot know in advance. That setting is widen-only and fails closed at boot on a malformed entry.
 
 **Assumptions**
 
@@ -170,7 +180,7 @@ None recorded.
 - **Category**: Tampering (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -178,11 +188,13 @@ None recorded.
 
 **Mitigation**
 
-The publicationAllow allow-list, for npm a list of scopes, refuses any name outside the operator's scopes before any upstream write. That is the anti-shadowing guard. The scope match is exact on the parsed namespace, so a prefix such as @acme-evil does not satisfy an @acme allow-list. Soundness requires the authorised identity to be the written identity. Écluse validates the publish document's own declared name and \_id, and the per-version names, equal to the scope-guarded URL-path name before the relay. It then builds the write URL from that same canonical name. The guarded name, the written name, and the merge collision key are therefore one identity by construction. Residual: shadowing within an allow-listed scope, and allow-precedence choices, stay the operator's risk. Give the publisher's target credential least privilege.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  The publicationAllow allow-list, for npm a list of scopes, refuses any name outside the operator's scopes before any upstream write. That is the anti-shadowing guard. The scope match is exact on the parsed namespace, so a prefix such as @acme-evil does not satisfy an @acme allow-list. Soundness requires the authorised identity to be the written identity. Écluse validates the publish document's own declared name and \_id, and the per-version names, equal to the scope-guarded URL-path name before the relay. It then builds the write URL from that same canonical name. The guarded name, the written name, and the merge collision key are therefore one identity by construction. Residual: shadowing within an allow-listed scope, and allow-precedence choices, stay the operator's risk. Give the publisher's target credential least privilege.
 
 **Assumptions**
 
@@ -196,7 +208,7 @@ None recorded.
 - **Category**: Elevation of privilege (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -204,11 +216,13 @@ The mirror worker holds Écluse's only standing self-minted credential. It carri
 
 **Mitigation**
 
-Containment of this standing privilege rests on least-privilege IAM on the container or task role: write to Registry B only. A CodeArtifact token bears the role's own permissions, so this is an IAM policy rather than a token-level scope. Minting from the container role beats static credentials, and the TTL is minimal, capped by CodeArtifact at 12h. The publish runs with redirectCount=0, because attachCredential attaches the mint token and finalises the request through finaliseRequest. The mirror queue sits inside the same trust boundary and is isolated and managed at the infrastructure level. A job is unauthenticated data that directs the worker to fetch and publish, so queue-send access is equivalent to trusted-write access. Scope the queue's IAM so only the serve role enqueues (SendMessage) and only the worker receives and acks. Écluse relies on access control for message authenticity, deliberately, rather than on signatures. That is the standard pattern for an internal single-producer, single-consumer queue. The worker's own attack surface is small. It hashes the fetched bytes and forwards them unchanged, with no decompression and no tarball parsing. A malicious artifact is therefore a poor code-execution vector. The dist.integrity check is anti-tamper-in-transit and anti-downgrade. It fails closed when the strongest present digest is in an uncomputable algorithm, and never downgrades to a forgeable weaker one. It proves the bytes match the upstream's asserted digest, so it catches back-fill corruption but not a hostile upstream or a worker compromise. Admission-gate soundness therefore bounds the poisoning of future reads, together with the role's blast radius and queue access control, not the integrity check. The trusted store is only as clean as what the gate admits, and only the gate may enqueue. A serve-only mount, with no mirrorTarget declared, removes this surface entirely. It holds and mints no write credential, and with zero mirrored mounts the process builds no mirror queue and starts no worker.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Containment of this standing privilege rests on least-privilege IAM on the container or task role: write to Registry B only. A CodeArtifact token bears the role's own permissions, so this is an IAM policy rather than a token-level scope. Minting from the container role beats static credentials, and the TTL is minimal, capped by CodeArtifact at 12h. The publish runs with redirectCount=0, because attachCredential attaches the mint token and finalises the request through finaliseRequest. The mirror queue sits inside the same trust boundary and is isolated and managed at the infrastructure level. A job is unauthenticated data that directs the worker to fetch and publish, so queue-send access is equivalent to trusted-write access. Scope the queue's IAM so only the serve role enqueues (SendMessage) and only the worker receives and acks. Écluse relies on access control for message authenticity, deliberately, rather than on signatures. That is the standard pattern for an internal single-producer, single-consumer queue. The worker's own attack surface is small. It hashes the fetched bytes and forwards them unchanged, with no decompression and no tarball parsing. A malicious artifact is therefore a poor code-execution vector. The dist.integrity check is anti-tamper-in-transit and anti-downgrade. It fails closed when the strongest present digest is in an uncomputable algorithm, and never downgrades to a forgeable weaker one. It proves the bytes match the upstream's asserted digest, so it catches back-fill corruption but not a hostile upstream or a worker compromise. Admission-gate soundness therefore bounds the poisoning of future reads, together with the role's blast radius and queue access control, not the integrity check. The trusted store is only as clean as what the gate admits, and only the gate may enqueue. A serve-only mount, with no mirrorTarget declared, removes this surface entirely. It holds and mints no write credential, and with zero mirrored mounts the process builds no mirror queue and starts no worker.
 
 **Assumptions**
 
@@ -222,7 +236,7 @@ None recorded.
 - **Category**: Elevation of privilege (STRIDE)
 - **Severity**: Medium
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -230,11 +244,13 @@ Container-role token minting must reach the instance-metadata endpoint (169.254.
 
 **Mitigation**
 
-Écluse follows an internal-resolving location only on the trusted private origin, never on a client-influenced or upstream-influenced target. Nothing can therefore steer the data plane at metadata. Minting uses amazonka's own client, off the guarded data-plane manager. Operator defence in depth: require IMDSv2 and set the hop limit to 1. Do not block metadata outright.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Écluse follows an internal-resolving location only on the trusted private origin, never on a client-influenced or upstream-influenced target. Nothing can therefore steer the data plane at metadata. Minting uses amazonka's own client, off the guarded data-plane manager. Operator defence in depth: require IMDSv2 and set the hop limit to 1. Do not block metadata outright.
 
 **Assumptions**
 
@@ -249,7 +265,7 @@ None recorded.
 - **Category**: Information disclosure (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -257,11 +273,13 @@ A cache key carries no credential dimension. If the cache held a private-origin 
 
 **Mitigation**
 
-Écluse never enters the private origin into the shared cache. Module encapsulation is the guarantee: the cache-entering client builder is unexported, and the private-origin path hard-codes an uncached fetch. The cache holds only the anonymous public-gated origin. Écluse re-consults the private origin on every request, with the caller's own forwarded token. The cache-recovering designs that would share a private entry, delegated-cache and memoised, are rejected by design. No shared private cache exists to leak.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Écluse never enters the private origin into the shared cache. Module encapsulation is the guarantee: the cache-entering client builder is unexported, and the private-origin path hard-codes an uncached fetch. The cache holds only the anonymous public-gated origin. Écluse re-consults the private origin on every request, with the caller's own forwarded token. The cache-recovering designs that would share a private entry, delegated-cache and memoised, are rejected by design. No shared private cache exists to leak.
 
 **Assumptions**
 
@@ -276,7 +294,7 @@ None recorded.
 - **Category**: Repudiation (STRIDE)
 - **Severity**: Medium
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -284,11 +302,13 @@ None recorded.
 
 **Mitigation**
 
-Deploy the recommended three-registry topology, the Golden Path: a first-party store, a public-derived mirror store, and a pull-through aggregator read endpoint. The endpoint unions the other two at the registry level. Each of the three is independently governable. The single-registry collapse stays supported but discouraged. It trades auditability and defence in depth, not the perimeter. An operator who deliberately chooses a collapsed topology accepts that local residual risk against their own threat tolerance.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Deploy the recommended three-registry topology, the Golden Path: a first-party store, a public-derived mirror store, and a pull-through aggregator read endpoint. The endpoint unions the other two at the registry level. Each of the three is independently governable. The single-registry collapse stays supported but discouraged. It trades auditability and defence in depth, not the perimeter. An operator who deliberately chooses a collapsed topology accepts that local residual risk against their own threat tolerance.
 
 **Assumptions**
 
@@ -303,7 +323,7 @@ None recorded.
 - **Category**: Tampering (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -311,11 +331,13 @@ The merge flags an integrity divergence when the private and public copies of a 
 
 **Mitigation**
 
-Écluse admits a public version only if it carries a digest that meets the integrity floor: a uniform SHA-256 default, hard-floored. Divergence compares each digest's asserted algorithm, not a bucketed tag. The merge detects a real same-version contradiction on a shared algorithm, and the serve path consumes it. Écluse logs it at WARNING, naming the package, the contradicting versions, and their digests, and meters it as ecluse.registry.merge.divergence. A substitution therefore surfaces, and the merge never silently reconciles it. The trusted copy always wins the served bytes. The operator's ECLUSE\_INTEGRITY\_\_DIVERGENCE\_POLICY then decides whether Écluse also withholds the contested version from the listing (fail-closed) or serves it with the alarm (warn, the default). Residual: warn detects without withholding, so an operator who wants prevention rather than detection must set fail-closed. The trusted-floor path is deliberately operator-loosenable, trading strictness for availability, and that is the remaining way a weak digest is accepted. A serve-only mount with no private upstream, the pure public gate, has a single origin, so cross-upstream divergence detection is structurally absent. That is an accepted residual of that sub-shape. A serve-only mount that reads a private upstream keeps the detection unchanged.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Écluse admits a public version only if it carries a digest that meets the integrity floor: a uniform SHA-256 default, hard-floored. Divergence compares each digest's asserted algorithm, not a bucketed tag. The merge detects a real same-version contradiction on a shared algorithm, and the serve path consumes it. Écluse logs it at WARNING, naming the package, the contradicting versions, and their digests, and meters it as ecluse.registry.merge.divergence. A substitution therefore surfaces, and the merge never silently reconciles it. The trusted copy always wins the served bytes. The operator's ECLUSE\_INTEGRITY\_\_DIVERGENCE\_POLICY then decides whether Écluse also withholds the contested version from the listing (fail-closed) or serves it with the alarm (warn, the default). Residual: warn detects without withholding, so an operator who wants prevention rather than detection must set fail-closed. The trusted-floor path is deliberately operator-loosenable, trading strictness for availability, and that is the remaining way a weak digest is accepted. A serve-only mount with no private upstream, the pure public gate, has a single origin, so cross-upstream divergence detection is structurally absent. That is an accepted residual of that sub-shape. A serve-only mount that reads a private upstream keeps the detection unchanged.
 
 **Assumptions**
 
@@ -337,11 +359,13 @@ None recorded.
 
 **Mitigation**
 
-Risk treatment: accepted by trust assumption. The primary registries stamp these fields server-side. The publish time is not part of the publish document, so a publisher cannot forge it. Écluse reads the registry's metadata, so it necessarily extends a floor of trust to the registry operator's honesty. A hostile operator is an adversary this model cannot counter, the same class as 'what if npm itself is malicious'. What is untrusted here are the tarball contents and the author-supplied fields, and the rules engine and the integrity floor do gate those. The freshness quarantine's age signal depends on the upstream's timestamp honesty, so a registry that asserted a forged time could in theory defeat it. Écluse could re-anchor age to its own first observation of a version and remove that dependence. It deliberately does not. The central public registries, npmjs and PyPI among them, are foundational to modern software infrastructure. Trusting their server-stamped timestamps is the only practical recourse. A dependable first-observation anchor would need durable, replica-shared state, at odds with Écluse's network-broker design. It would also narrow only a surface that already sits outside the practical treatment boundary. Écluse records this as accepted residual risk rather than mitigated.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Risk treatment: accepted by trust assumption. The primary registries stamp these fields server-side. The publish time is not part of the publish document, so a publisher cannot forge it. Écluse reads the registry's metadata, so it necessarily extends a floor of trust to the registry operator's honesty. A hostile operator is an adversary this model cannot counter, the same class as 'what if npm itself is malicious'. What is untrusted here are the tarball contents and the author-supplied fields, and the rules engine and the integrity floor do gate those. The freshness quarantine's age signal depends on the upstream's timestamp honesty, so a registry that asserted a forged time could in theory defeat it. Écluse could re-anchor age to its own first observation of a version and remove that dependence. It deliberately does not. The central public registries, npmjs and PyPI among them, are foundational to modern software infrastructure. Trusting their server-stamped timestamps is the only practical recourse. A dependable first-observation anchor would need durable, replica-shared state, at odds with Écluse's network-broker design. It would also narrow only a surface that already sits outside the practical treatment boundary. Écluse records this as accepted residual risk rather than mitigated.
 
 **Assumptions**
 
@@ -364,11 +388,13 @@ None recorded.
 
 **Mitigation**
 
-The freshness quarantine (`AllowIfOlderThan`) is the primary defence. It delays serving a new version until advisories have time to surface, so the rules deny most malicious versions at admission, before any mirroring. This threat is the residual for a version found bad after it cleared the quarantine and was mirrored. Detection is delegated: operator scanning of Registry B, upstream advisories, and security-holding signals decide what to revoke. Enforcement is layered across the version's lifecycle. The hard deny-by-identity rule (DenyByIdentity) halts re-admission on the serve path and re-mirroring at the worker's ingest re-check. That is the immediate, surgical stop, and it also breaks the re-mirror treadmill. An automated reaper, the Écluse Dredger, must continually prune already-mirrored versions that match an advisory or age condition, so recovery follows a public alert without an operator step. It is required to run as a separate service that shares the core rules engine and exposes only its liveness and readiness probes. The operator can also purge a version from Registry B directly. The rules never run on trusted content, so a purge is what removes the already-mirrored copy. Order the two as deny then purge, so demand does not re-mirror during the purge. A purge alone is a treadmill while the version is still live upstream. The typical pattern is the inverse. An upstream yank or security hold removes or changes the bytes first. Re-mirroring then cannot reproduce them, and a purge clears the stale copy. Irreducible residual: a malicious version with no public advisory cannot be reaped, because there is nothing to detect on. That is the bound the freshness quarantine exists to provide. A serve-only mount has no trusted store of mirrored versions at all. Every serve re-gates under current policy, so a rules change or a fresh advisory takes effect immediately. This threat's surface exists only where a mirrorTarget is declared.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  The freshness quarantine (`AllowIfOlderThan`) is the primary defence. It delays serving a new version until advisories have time to surface, so the rules deny most malicious versions at admission, before any mirroring. This threat is the residual for a version found bad after it cleared the quarantine and was mirrored. Detection is delegated: operator scanning of Registry B, upstream advisories, and security-holding signals decide what to revoke. Enforcement is layered across the version's lifecycle. The hard deny-by-identity rule (DenyByIdentity) halts re-admission on the serve path and re-mirroring at the worker's ingest re-check. That is the immediate, surgical stop, and it also breaks the re-mirror treadmill. An automated reaper, the Écluse Dredger, must continually prune already-mirrored versions that match an advisory or age condition, so recovery follows a public alert without an operator step. It is required to run as a separate service that shares the core rules engine and exposes only its liveness and readiness probes. The operator can also purge a version from Registry B directly. The rules never run on trusted content, so a purge is what removes the already-mirrored copy. Order the two as deny then purge, so demand does not re-mirror during the purge. A purge alone is a treadmill while the version is still live upstream. The typical pattern is the inverse. An upstream yank or security hold removes or changes the bytes first. Re-mirroring then cannot reproduce them, and a purge clears the stale copy. Irreducible residual: a malicious version with no public advisory cannot be reaped, because there is nothing to detect on. That is the bound the freshness quarantine exists to provide. A serve-only mount has no trusted store of mirrored versions at all. Every serve re-gates under current policy, so a rules change or a fresh advisory takes effect immediately. This threat's surface exists only where a mirrorTarget is declared.
 
 **Assumptions**
 
@@ -382,7 +408,7 @@ None recorded.
 - **Category**: Elevation of privilege (STRIDE)
 - **Severity**: Low
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -390,11 +416,13 @@ The mirror worker fetches the approved artifact from an upstream-declared dist.t
 
 **Mitigation**
 
-The fetch runs on the same validating-TLS data-plane manager as the serve path. That manager gives https-only egress, certificate validation that authenticates the host, and the universal no-redirect invariant. The dist.tarball is https-only, and the outbound allow-list admitted the location host at serve time, before the job was enqueued. Decisively, this is a blind sink. The worker verifies the bytes against dist.integrity and publishes them. It never returns them to a caller. An internal or metadata response can present neither a CA-trusted certificate for the host nor a match for the asserted digest. The job therefore fails closed and is dropped rather than exfiltrating. Its impact sits well below the serve-path fetch. A serve-only mount enqueues no back-fill jobs, so this surface does not exist there.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  The fetch runs on the same validating-TLS data-plane manager as the serve path. That manager gives https-only egress, certificate validation that authenticates the host, and the universal no-redirect invariant. The dist.tarball is https-only, and the outbound allow-list admitted the location host at serve time, before the job was enqueued. Decisively, this is a blind sink. The worker verifies the bytes against dist.integrity and publishes them. It never returns them to a caller. An internal or metadata response can present neither a CA-trusted certificate for the host nor a match for the asserted digest. The job therefore fails closed and is dropped rather than exfiltrating. Its impact sits well below the serve-path fetch. A serve-only mount enqueues no back-fill jobs, so this surface does not exist there.
 
 **Assumptions**
 
@@ -409,7 +437,7 @@ None recorded.
 - **Category**: Tampering (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -417,11 +445,13 @@ The recommended topology unions the trusted stores, first-party A and the saniti
 
 **Mitigation**
 
-The control is an operator-architecture invariant, documented in the registry model and the Golden Path. The aggregating private upstream composes trusted stores only, first-party plus Écluse's sanitised mirror, and never carries a direct public upstream. Public content enters only through Écluse's gate. Écluse cannot detect a violation: the private upstream is trusted by construction, and its upstream wiring sits outside the proxy. The control is therefore operator discipline and this documented invariant, not a structural check.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  The control is an operator-architecture invariant, documented in the registry model and the Golden Path. The aggregating private upstream composes trusted stores only, first-party plus Écluse's sanitised mirror, and never carries a direct public upstream. Public content enters only through Écluse's gate. Écluse cannot detect a violation: the private upstream is trusted by construction, and its upstream wiring sits outside the proxy. The control is therefore operator discipline and this documented invariant, not a structural check.
 
 **Assumptions**
 
@@ -443,11 +473,13 @@ An attacker who controls the DNS for an allowlisted host can repoint it at inter
 
 **Mitigation**
 
-Risk treatment: accepted residual. No data crosses the boundary: the connection fails at the TLS handshake, before any request body goes out. The surface covers only allowlisted hosts whose DNS the attacker already controls, and the signal is coarse, connect and handshake timing alone. The host allowlist bounds which names can be aimed inward at all. It does not remove the residual timing signal.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Risk treatment: accepted residual. No data crosses the boundary: the connection fails at the TLS handshake, before any request body goes out. The surface covers only allowlisted hosts whose DNS the attacker already controls, and the signal is coarse, connect and handshake timing alone. The host allowlist bounds which names can be aimed inward at all. It does not remove the residual timing signal.
 
 **Assumptions**
 
@@ -462,7 +494,7 @@ None recorded.
 - **Category**: Elevation of privilege (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -470,11 +502,13 @@ An attacker who compromises Pilot could use its standing container credentials.
 
 **Mitigation**
 
-Least-privilege IAM limits the role to s3:PutObject on the one bucket prefix. Pilot runs in its own container, separate from the proxy.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Least-privilege IAM limits the role to s3:PutObject on the one bucket prefix. Pilot runs in its own container, separate from the proxy.
 
 **Assumptions**
 
@@ -488,7 +522,7 @@ None recorded.
 - **Category**: Tampering (STRIDE)
 - **Severity**: High
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -496,11 +530,13 @@ An attacker who can write to the S3 bucket could supply a tampered osv.db and by
 
 **Mitigation**
 
-The S3 bucket is private, and the proxy's IAM role holds GetObject only. An atomic shadow-swap prevents a partial read. The proxy binds the SQLite connection to read-only mode and disables trusted schema (PRAGMA trusted\_schema = OFF;) as it opens the connection. An attacker-controlled trigger or view therefore never runs. Acceptance then verifies the artifact before the proxy serves it: the schema epoch stamp, a PRAGMA quick\_check integrity walk, the required tables, and the ecosystem. The quick\_check walk also verifies stored values against each STRICT table's declared column types. The required tables must be real STRICT tables carrying the required columns. Acceptance refuses a failing artifact as a rejection value, remembers its ETag, and keeps the last-good database serving.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  The S3 bucket is private, and the proxy's IAM role holds GetObject only. An atomic shadow-swap prevents a partial read. The proxy binds the SQLite connection to read-only mode and disables trusted schema (PRAGMA trusted\_schema = OFF;) as it opens the connection. An attacker-controlled trigger or view therefore never runs. Acceptance then verifies the artifact before the proxy serves it: the schema epoch stamp, a PRAGMA quick\_check integrity walk, the required tables, and the ecosystem. The quick\_check walk also verifies stored values against each STRICT table's declared column types. The required tables must be real STRICT tables carrying the required columns. Acceptance refuses a failing artifact as a rejection value, remembers its ETag, and keeps the last-good database serving.
 
 **Assumptions**
 
@@ -515,7 +551,7 @@ None recorded.
 - **Category**: Denial of service (STRIDE)
 - **Severity**: Medium
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -523,11 +559,13 @@ OSV.dev, or a compromised upstream, could serve an oversized, deeply nested, or 
 
 **Mitigation**
 
-Pilot streams the archive and bounds each advisory as it unzips. It drains an entry past the per-advisory byte cap (8 MiB) to its boundary and drops it before it reaches the decoder. It also drops an entry whose JSON does not decode. Pilot logs and tallies both, so a few poisoned records never halt ingestion. Pilot logs an advisory that fans out into an anomalous number of ranges, and still ingests it. Deep nesting is bounded implicitly. The per-entry byte cap holds decode cost to a constant multiple of the input. Pilot also runs under the boot-resolved process heap ceiling (ECLUSE\_RUNTIME\_\_MAX\_HEAP\_BYTES, else cgroup memory.max). A small but deep payload therefore fails as a bounded, clean process exit rather than exhausting the machine. A systemic drop rate aborts the compile without publishing, so the proxy keeps its last-good osv.db instead of adopting a hole-ridden one. That guard reads the run's own drop tally. It fires only once at least 16 entries dropped and those drops are at least a tenth of the run, which marks a mostly unusable feed, the shape of a compromised or truncated export. Residual: an isolated depth bomb is a bounded Pilot crash rather than a per-record soft drop. A well-formed but empty or near-empty export drops nothing, so the guard passes it, and the run's row count is never read back on accept. Volumetric abuse of the fetch itself stays an operator-edge concern.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Pilot streams the archive and bounds each advisory as it unzips. It drains an entry past the per-advisory byte cap (8 MiB) to its boundary and drops it before it reaches the decoder. It also drops an entry whose JSON does not decode. Pilot logs and tallies both, so a few poisoned records never halt ingestion. Pilot logs an advisory that fans out into an anomalous number of ranges, and still ingests it. Deep nesting is bounded implicitly. The per-entry byte cap holds decode cost to a constant multiple of the input. Pilot also runs under the boot-resolved process heap ceiling (ECLUSE\_RUNTIME\_\_MAX\_HEAP\_BYTES, else cgroup memory.max). A small but deep payload therefore fails as a bounded, clean process exit rather than exhausting the machine. A systemic drop rate aborts the compile without publishing, so the proxy keeps its last-good osv.db instead of adopting a hole-ridden one. That guard reads the run's own drop tally. It fires only once at least 16 entries dropped and those drops are at least a tenth of the run, which marks a mostly unusable feed, the shape of a compromised or truncated export. Residual: an isolated depth bomb is a bounded Pilot crash rather than a per-record soft drop. A well-formed but empty or near-empty export drops nothing, so the guard passes it, and the run's row count is never read back on accept. Volumetric abuse of the fetch itself stays an operator-edge concern.
 
 **Assumptions**
 
@@ -549,11 +587,13 @@ A bug in Dredger, or a malicious rule configuration, could fire thousands of del
 
 **Mitigation**
 
-Not yet built. Dredger's deletion logic must be explicitly batched and rate-limited.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Not yet built. Dredger's deletion logic must be explicitly batched and rate-limited.
 
 **Assumptions**
 
@@ -567,7 +607,7 @@ None recorded.
 - **Category**: Information disclosure (STRIDE)
 - **Severity**: Medium
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -575,11 +615,13 @@ A minted CodeArtifact write token is a live bearer credential scoped to a domain
 
 **Mitigation**
 
-Écluse derives the mirror-write credential from the mirror-target URL rather than from separate configuration, so the two cannot diverge. A CodeArtifact endpoint mints a token scoped to the domain parsed from that same host. Écluse writes to any other host with an operator-supplied static token. No configuration expresses a CodeArtifact identity independent of the target, so a minted token can never reach an endpoint it was not scoped for. The divergence class is unrepresentable. Config load rejects both a non-CodeArtifact target with no static token and a CodeArtifact target that also carries a static token. Least-privilege IAM also scopes the container role write-only to the intended mirror store, as defence in depth. A serve-only mount declares no mirror target and holds no mirror-write credential, so this surface does not exist there.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Écluse derives the mirror-write credential from the mirror-target URL rather than from separate configuration, so the two cannot diverge. A CodeArtifact endpoint mints a token scoped to the domain parsed from that same host. Écluse writes to any other host with an operator-supplied static token. No configuration expresses a CodeArtifact identity independent of the target, so a minted token can never reach an endpoint it was not scoped for. The divergence class is unrepresentable. Config load rejects both a non-CodeArtifact target with no static token and a CodeArtifact target that also carries a static token. Least-privilege IAM also scopes the container role write-only to the intended mirror store, as defence in depth. A serve-only mount declares no mirror target and holds no mirror-write credential, so this surface does not exist there.
 
 **Assumptions**
 
@@ -593,7 +635,7 @@ None recorded.
 - **Category**: Spoofing (STRIDE)
 - **Severity**: Medium
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -601,11 +643,13 @@ A requested or published package name can impersonate another package to a human
 
 **Mitigation**
 
-Every package-name component parses against an explicit ASCII allowlist before routing, caching, queueing, or publish admission. For npm the allowlist is the validator's own hard boundary: letters, digits, and - \_ . ! \~ \* ' ( ), with @ and / as scope structure and no leading period, hyphen, or underscore. A codepoint outside the set, non-ASCII or control, cannot enter by construction, on the serve path or the publish path.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Every package-name component parses against an explicit ASCII allowlist before routing, caching, queueing, or publish admission. For npm the allowlist is the validator's own hard boundary: letters, digits, and - \_ . ! \~ \* ' ( ), with @ and / as scope structure and no leading period, hyphen, or underscore. A codepoint outside the set, non-ASCII or control, cannot enter by construction, on the serve path or the publish path.
 
 **Assumptions**
 
@@ -627,11 +671,13 @@ A name built only from permitted ASCII characters can read as another name to a 
 
 **Mitigation**
 
-The ASCII allowlist bounds the space to visible permitted characters, which keeps every name renderable and comparable. Detection or refusal of look-alike names within the permitted set is not implemented.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  The ASCII allowlist bounds the space to visible permitted characters, which keeps every name renderable and comparable. Detection or refusal of look-alike names within the permitted set is not implemented.
 
 **Assumptions**
 
@@ -653,11 +699,13 @@ A misconfiguration in Dredger, or poisoned OSV data, could delete legitimate, ne
 
 **Mitigation**
 
-Dredger must delete only from the mirror. On the next request the proxy can re-mirror the version if it passes admission, so a delete then behaves as a cache eviction. A serve-only mount enqueues no back-fill jobs, so this surface does not exist there.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Dredger must delete only from the mirror. On the next request the proxy can re-mirror the version if it passes admission, so a delete then behaves as a cache eviction. A serve-only mount enqueues no back-fill jobs, so this surface does not exist there.
 
 **Assumptions**
 
@@ -679,11 +727,13 @@ Dredger holds a standing high privilege over Registry B: delete-only. An attacke
 
 **Mitigation**
 
-Dredger exposes only the liveness and readiness probes. Least-privilege IAM scopes it delete-only on Registry B. It prefers container-role minting over static secrets.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Dredger exposes only the liveness and readiness probes. Least-privilege IAM scopes it delete-only on Registry B. It prefers container-role minting over static secrets.
 
 **Assumptions**
 
@@ -698,7 +748,7 @@ None recorded.
 - **Category**: Denial of service (STRIDE)
 - **Severity**: Medium
 - **Status**: Mitigated
-- **Flags**: Mitigated without implemented work
+- **Flags**: None
 
 **Description**
 
@@ -706,11 +756,13 @@ A maliciously crafted or unexpectedly massive OSV payload from upstream could ca
 
 **Mitigation**
 
-Pilot runs apart from the proxy. If Pilot runs out of memory or fails, it only delays updates. The proxy keeps serving traffic from the last-known-good osv.db snapshot.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Implemented
+
+  Pilot runs apart from the proxy. If Pilot runs out of memory or fails, it only delays updates. The proxy keeps serving traffic from the last-known-good osv.db snapshot.
 
 **Assumptions**
 
@@ -732,11 +784,13 @@ An operator can collapse the mirror target and the publication target onto a sin
 
 **Mitigation**
 
-Dredger must refuse to boot when mounts.<eco>.mirrorTarget and mounts.<eco>.publicationTarget resolve to the same registry. The proxy's own boot warns on that pair and then proceeds. Collapsing the registries deliberately surrenders Dredger's automated pruning.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Dredger must refuse to boot when mounts.<eco>.mirrorTarget and mounts.<eco>.publicationTarget resolve to the same registry. The proxy's own boot warns on that pair and then proceeds. Collapsing the registries deliberately surrenders Dredger's automated pruning.
 
 **Assumptions**
 
@@ -759,11 +813,13 @@ An attacker who gains control of osv.dev can push malicious vulnerability record
 
 **Mitigation**
 
-Risk treatment: accepted by trust assumption. A compromised security oracle is a foundational supply-chain compromise. Pilot relies on OSV as a source of vulnerability truth. A hostile oracle defeats the defence outright. Transport, parsing, validation, and last-good-database controls mitigate tampering in transit, malformed payloads, and update outages. They cannot make a hostile source of truth trustworthy.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Risk treatment: accepted by trust assumption. A compromised security oracle is a foundational supply-chain compromise. Pilot relies on OSV as a source of vulnerability truth. A hostile oracle defeats the defence outright. Transport, parsing, validation, and last-good-database controls mitigate tampering in transit, malformed payloads, and update outages. They cannot make a hostile source of truth trustworthy.
 
 **Assumptions**
 
@@ -785,11 +841,13 @@ Dredger issues permanent hard deletions against the mirror registry. Misconfigur
 
 **Mitigation**
 
-Dredger must verify explicit operator consent before it runs any destructive action. It is required to query the target CodeArtifact repository for a specific resource tag, for example `Dredger: PermanentDeletionAllowed`, and to fail closed without that tag. It must also refuse to boot when mounts.<eco>.mirrorTarget and mounts.<eco>.publicationTarget resolve to the same registry.
+None recorded.
 
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Dredger must verify explicit operator consent before it runs any destructive action. It is required to query the target CodeArtifact repository for a specific resource tag, for example `Dredger: PermanentDeletionAllowed`, and to fail closed without that tag. It must also refuse to boot when mounts.<eco>.mirrorTarget and mounts.<eco>.publicationTarget resolve to the same registry.
 
 **Assumptions**
 

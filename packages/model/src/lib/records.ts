@@ -105,6 +105,14 @@ export function culledAfter<Linked extends ThreatLinked>(
   });
 }
 
+/** The records of one kind linked to `threatId`, in register order. */
+export function recordsLinkedTo<Linked extends ThreatLinked>(
+  records: readonly Linked[],
+  threatId: ThreatId,
+): Linked[] {
+  return records.filter((record) => record.threats.includes(threatId));
+}
+
 /** `threats` with `threatId` appended, unless it already names it. */
 export function linkedThreats(
   threats: readonly ThreatId[],

@@ -238,8 +238,8 @@ numbers it holds, since a zero there is a number Threat Dragon would reissue.
 number is not itself a divergence, since the file gains a fact rather than
 losing one.
 
-What the format cannot hold is named rather than dropped in silence: a
-mitigation or an assumption, which Threat Dragon keeps no record of; a threat
+What the format cannot hold is named rather than dropped in silence: an
+assumption, which Threat Dragon keeps no record of; a threat
 attached to a trust boundary or a note, which it nests threats under neither;
 a note's name, which it holds one text for; an out-of-scope marking on a
 boundary or a note; and a diagram's name, which the format replaces with a
@@ -253,6 +253,25 @@ was split before this write ran, so a merge onto it reports nothing. Where a
 merge meets a document an edit has moved out from under, the diagram, cell,
 or threat that went is reported as `discarded-by-edit` with what it was
 carrying.
+
+Threat Dragon holds one mitigation text per threat, and the model holds
+mitigations as records. The read makes one record of a non-empty text, linked
+to that threat alone, with an empty title, the text as its prose, and the
+status `implemented` where the threat is `mitigated` and `proposed` otherwise.
+A status is inferred only across a one-to-one correspondence like this one. The
+record's id is `<threat id>-mitigation`, counted on with `-2`, `-3` past any
+id the model already holds, as `mitigationsFromText` in `mitigation-text.ts`
+states. The write flattens the mitigations linked to a threat, in register
+order, into its one text: a record's title on a line above its prose, a blank
+line between records, and the threat's own `mitigation` prose first while that
+field exists. A text merging more than one part reads back as one record, so
+it is reported once per threat as `narrowed`. A record written into several
+threats' texts is `split`, and one written into none is `unrepresentable`. The
+format has no place for a record's status, and the write adds no text or key
+for one, so a mitigation whose status differs from what a read of a threat it
+is written into infers is reported as `unrepresentable` once for each such
+threat. An unedited read written back keeps every text to the byte and reports
+none of these.
 
 Three oracles gate the write, all of them over the vendored corpus rather
 than over invented input. Every file is written straight back onto its own

@@ -1,4 +1,4 @@
-import type { ThreatId } from '@saerskriven/model';
+import { recordsLinkedTo, type ThreatId } from '@saerskriven/model';
 import { useEffect, useId, useRef, useState, type FocusEvent } from 'react';
 import { announce } from '../canvas/announcements.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
@@ -12,7 +12,6 @@ import {
   recordFieldIn,
   recordFieldName,
   recordLabel,
-  recordsOn,
   textOf,
   type RecordField,
   type RecordFieldName,
@@ -83,7 +82,7 @@ export function RecordGroup<Held extends ThreatRecord>({
   onRefused,
 }: RecordGroupProps<Held>) {
   const all = useModelStore((state) => kind.held(state.present));
-  const records = recordsOn(all, threatId);
+  const records = recordsLinkedTo(all, threatId);
   const linkable = linkableRecords(all, threatId);
   const group = useRef<HTMLFieldSetElement>(null);
   const [draft, setDraft] = useState<Held | undefined>(() => {

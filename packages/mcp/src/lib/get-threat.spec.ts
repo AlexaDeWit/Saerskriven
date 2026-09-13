@@ -31,9 +31,9 @@ describe('what saer_get_threat reads', () => {
   it('carries the mitigations and assumptions the model links to it', () => {
     const read = answerOf(getThreat(ecluse, { ref: '1' }));
     expect({
-      mitigations: read.mitigations,
+      mitigations: read.mitigations.map(({ threats }) => threats),
       assumptions: read.assumptions,
-    }).toEqual({ mitigations: [], assumptions: [] });
+    }).toEqual({ mitigations: [[read.threat.id]], assumptions: [] });
   });
 
   it('refuses a ref naming no threat, with the count the model holds', () => {

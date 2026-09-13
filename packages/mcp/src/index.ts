@@ -166,6 +166,7 @@ export {
 } from './lib/stride-pass.js';
 export {
   renderCategory,
+  renderMitigation,
   renderThreat,
   threatDetail,
   threatDetailSchema,

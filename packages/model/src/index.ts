@@ -29,6 +29,7 @@ export * from './lib/assumption-operations.js';
 export {
   droppedRecords,
   recordReferenceSchema,
+  recordsLinkedTo,
   type RecordReference,
 } from './lib/records.js';
 export * from './lib/threat-flags.js';

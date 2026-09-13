@@ -9,6 +9,7 @@ import {
   diagramSchema,
   elementSchema,
   flowEndpointSchema,
+  mitigationSchema,
   modelMetadataSchema,
   parseModel,
   threatSchema,
@@ -28,6 +29,7 @@ import { Either } from 'effect';
 import type { z } from 'zod';
 import { ReadFailure, type ReadResult } from './codec.js';
 import type { Divergence } from './divergence.js';
+import { mitigationsFromText } from './mitigation-text.js';
 import { parseWithinLimits } from './read-limits.js';
 import {
   cellsOf,
@@ -53,6 +55,7 @@ type DiagramInput = z.input<typeof diagramSchema>;
 type ElementInput = z.input<typeof elementSchema>;
 type EndpointInput = z.input<typeof flowEndpointSchema>;
 type ThreatInput = z.input<typeof threatSchema>;
+type MitigationInput = z.input<typeof mitigationSchema>;
 
 type ThreatEntry = {
   readonly threat: ThreatDragonThreat;
@@ -104,13 +107,14 @@ function mapDocument(
 function toMapping(document: ThreatDragonDocument) {
   const { entries, lastIssued } = toThreatEntries(document);
   const threats = entries.map(toThreat);
+  const diagrams = document.detail.diagrams.map(toDiagram);
   return {
     input: {
       metadata: toMetadata(document),
-      diagrams: document.detail.diagrams.map(toDiagram),
+      diagrams,
       threats: threats.map((threat) => threat.record),
       lastIssuedThreatNumber: lastIssued,
-      mitigations: [],
+      mitigations: toMitigations(threats, diagrams),
       assumptions: [],
     },
     notes: new Map(
@@ -119,6 +123,26 @@ function toMapping(document: ThreatDragonDocument) {
         .map((threat) => [threat.record.id, threat.notes]),
     ),
   };
+}
+
+function toMitigations(
+  threats: readonly { record: ThreatInput; text: string }[],
+  diagrams: readonly DiagramInput[],
+): MitigationInput[] {
+  return mitigationsFromText(
+    threats.map(({ record, text }) => ({
+      id: record.id,
+      status: record.status,
+      text,
+    })),
+    [
+      ...diagrams.flatMap((diagram) => [
+        diagram.id,
+        ...diagram.elements.map((element) => element.id),
+      ]),
+      ...threats.map(({ record }) => record.id),
+    ],
+  );
 }
 
 function narrowings(
@@ -296,6 +320,7 @@ function groupThreats(
 
 function toThreat(entry: ThreatEntry): {
   record: ThreatInput;
+  text: string;
   notes: string[];
 } {
   const { threat } = entry;
@@ -311,9 +336,10 @@ function toThreat(entry: ThreatEntry): {
       severity: severity.value,
       status: status.value,
       description: threat.description,
-      mitigation: threat.mitigation,
+      mitigation: '',
       elements: [...entry.elements],
     },
+    text: threat.mitigation,
     notes: [
       ...(status.exact
         ? []

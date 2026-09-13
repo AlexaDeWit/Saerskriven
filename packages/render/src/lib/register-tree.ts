@@ -1,6 +1,7 @@
 import type { RegisterBadge } from '@saerskriven/canvas';
 import type { RegisterOptions } from './register-options.js';
 import {
+  recordsLinkedTo,
   threatFlags,
   type Assumption,
   type Element,
@@ -185,16 +186,16 @@ function threatSection(threat: Threat, context: SectionContext): RootContent[] {
     ...labelled(
       'Mitigations',
       recordList(
-        linked(context.model.mitigations, threat).map((mitigation) =>
-          mitigationItem(mitigation, context),
+        recordsLinkedTo(context.model.mitigations, threat.id).map(
+          (mitigation) => mitigationItem(mitigation, context),
         ),
       ),
     ),
     ...labelled(
       'Assumptions',
       recordList(
-        linked(context.model.assumptions, threat).map((assumption) =>
-          assumptionItem(assumption, context),
+        recordsLinkedTo(context.model.assumptions, threat.id).map(
+          (assumption) => assumptionItem(assumption, context),
         ),
       ),
     ),
@@ -270,13 +271,6 @@ function labelled(label: string, content: RootContent[]): RootContent[] {
     },
     ...content,
   ];
-}
-
-function linked<Linked extends Mitigation | Assumption>(
-  records: readonly Linked[],
-  threat: Threat,
-): Linked[] {
-  return records.filter((record) => record.threats.includes(threat.id));
 }
 
 function recordList(items: readonly ListItem[]): RootContent[] {

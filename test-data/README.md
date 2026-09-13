@@ -63,7 +63,8 @@ supply-chain policy proxy for package registries. Vendored with the author's con
 `packages/model` transcribes it as `ecluseFixture` in
 `src/lib/ecluse.fixtures.ts`. `packages/formats` compares its Threat Dragon
 read against that transcription through `ecluse.model.json`. Both preserve
-the source cell and threat IDs.
+the source cell and threat IDs, and both hold each threat's mitigation text as
+the one mitigation record the Threat Dragon read makes of it.
 
 The file's `threatTop` is 28, but it contains threats numbered 101 and 102.
 The import uses `lastIssuedThreatNumber = max(threatTop, highest threat number in the file)`.

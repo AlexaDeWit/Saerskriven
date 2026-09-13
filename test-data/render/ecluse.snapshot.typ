@@ -164,7 +164,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 1: Forwarded caller credentials aggregated in proxy memory"]
 
-#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -172,11 +172,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Écluse carries a token in a redacted type, the Secret newtype, whose Show renders a fixed placeholder, so a token never reaches a log field. Retention is request-scoped, and the code unwraps a token only at the point of use, to attach the bearer to an outbound request. Neither the data-plane nor the WAI span instrumentation records an Authorization header, so a credential never reaches a span. The WAI layer does record benign request headers, such as User-Agent. A regression test holds the split. Residual: a garbage-collected runtime cannot guarantee prompt erasure from the heap. The first-class compensating control is therefore hardening Écluse's own runtime and supply chain, through the attested, reproducible image that the image vulnerability-scan gate keeps clean."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Écluse carries a token in a redacted type, the Secret newtype, whose Show renders a fixed placeholder, so a token never reaches a log field. Retention is request-scoped, and the code unwraps a token only at the point of use, to attach the bearer to an outbound request. Neither the data-plane nor the WAI span instrumentation records an Authorization header, so a credential never reaches a span. The WAI layer does record benign request headers, such as User-Agent. A regression test holds the split. Residual: a garbage-collected runtime cannot guarantee prompt erasure from the heap. The first-class compensating control is therefore hardening Écluse's own runtime and supply chain, through the attested, reproducible image that the image vulnerability-scan gate keeps clean."])
 
 #strong[#"Assumptions"]
 
@@ -184,7 +186,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 2: Chokepoint exhaustion via pathological upstream payload"]
 
-#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -192,11 +194,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Fail-closed caps bound the input: body size, version count, and nesting depth (ECLUSE_LIMITS__MAX_RESPONSE_BYTES, ECLUSE_LIMITS__MAX_VERSION_COUNT, ECLUSE_LIMITS__MAX_NESTING_DEPTH). The bounded read stops mid-stream. The serve path is O(n log n) in version count, a Map-based merge with no super-linear blow-up. The single-flight cache coalesces concurrent misses for the same package onto one computation, and a per-request timeout caps any single request. Écluse still projects the whole document before the version cap rejects it. Failing fast at the cap is an accepted residual for v0.1.0. The advisory-backed rules compound that cost. They evaluate each version on its own, with no memoisation, and take one or two advisory lookups per version, so a near-cap document multiplies those lookups. Batching them per package is required to remove the amplification. Resident-bytes and serve-concurrency admission bounds further cap the aggregate resident cost. The residual is resource amplification, not algorithmic complexity. A near-cap document still costs real CPU and heap, and distinct-key floods bypass single-flight, worst under a hostile or compromised upstream registry. Volumetric and concurrency rate-limiting is therefore an operator-edge responsibility, as access control is."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Fail-closed caps bound the input: body size, version count, and nesting depth (ECLUSE_LIMITS__MAX_RESPONSE_BYTES, ECLUSE_LIMITS__MAX_VERSION_COUNT, ECLUSE_LIMITS__MAX_NESTING_DEPTH). The bounded read stops mid-stream. The serve path is O(n log n) in version count, a Map-based merge with no super-linear blow-up. The single-flight cache coalesces concurrent misses for the same package onto one computation, and a per-request timeout caps any single request. Écluse still projects the whole document before the version cap rejects it. Failing fast at the cap is an accepted residual for v0.1.0. The advisory-backed rules compound that cost. They evaluate each version on its own, with no memoisation, and take one or two advisory lookups per version, so a near-cap document multiplies those lookups. Batching them per package is required to remove the amplification. Resident-bytes and serve-concurrency admission bounds further cap the aggregate resident cost. The residual is resource amplification, not algorithmic complexity. A near-cap document still costs real CPU and heap, and distinct-key floods bypass single-flight, worst under a hostile or compromised upstream registry. Volumetric and concurrency rate-limiting is therefore an operator-edge responsibility, as access control is."])
 
 #strong[#"Assumptions"]
 
@@ -204,7 +208,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 3: Off-by-default edge auth assumes a sound network boundary"]
 
-#list([#strong[#"Elements"]#": "#"npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": "#"Spoofing (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": "#"Spoofing (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -212,11 +216,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Compensating control: under passthrough the request carries only the caller's own forwarded token, and the read path never substitutes a standing credential. No forwarded token means no private read. A breach of the edge exposes only the public-gated view plus the untrusted-egress and denial-of-service surface, never private packages. The publish path is the one exception. A configured static publication-target credential (mounts."#"<eco>"#".publicationTargetToken) serves as the fallback for a tokenless publish, so 'no token, no publish' holds only for pure passthrough. The internal-credential publish mode is therefore fail-closed by construction. A configured publication-target token requires a verifiable inbound edge, server.authToken or stronger, so the composition root refuses internal-credential-plus-open-edge at boot. That state is unrepresentable, on the same principle the trusted-edge read identity follows. Restrict both north-south and east-west access, as the Golden Path documents. Any edge mode that substitutes Écluse's own identity, read or write, must require a verifiable edge. Use mTLS or a shared secret, never a bare spoofable header."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Compensating control: under passthrough the request carries only the caller's own forwarded token, and the read path never substitutes a standing credential. No forwarded token means no private read. A breach of the edge exposes only the public-gated view plus the untrusted-egress and denial-of-service surface, never private packages. The publish path is the one exception. A configured static publication-target credential (mounts."#"<eco>"#".publicationTargetToken) serves as the fallback for a tokenless publish, so 'no token, no publish' holds only for pure passthrough. The internal-credential publish mode is therefore fail-closed by construction. A configured publication-target token requires a verifiable inbound edge, server.authToken or stronger, so the composition root refuses internal-credential-plus-open-edge at boot. That state is unrepresentable, on the same principle the trusted-edge read identity follows. Restrict both north-south and east-west access, as the Golden Path documents. Any edge mode that substitutes Écluse's own identity, read or write, must require a verifiable edge. Use mTLS or a shared secret, never a bare spoofable header."])
 
 #strong[#"Assumptions"]
 
@@ -224,7 +230,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 4: Caller credential leak to the public upstream"]
 
-#list([#strong[#"Elements"]#": "#"anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -232,11 +238,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Écluse strips the caller credential before every public fetch and queries the registry anonymously. A credential-bearing request never follows a redirect: attachCredential is the single credential-attach point, and it finalises every request it builds through finaliseRequest, which sets redirectCount=0. That matters because the http-client in use does not drop Authorization on a cross-host redirect."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Écluse strips the caller credential before every public fetch and queries the registry anonymously. A credential-bearing request never follows a redirect: attachCredential is the single credential-attach point, and it finalises every request it builds through finaliseRequest, which sets redirectCount=0. That matters because the http-client in use does not drop Authorization on a cross-host redirect."])
 
 #strong[#"Assumptions"]
 
@@ -244,7 +252,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 5: SSRF via crafted identifier or upstream-declared dist.tarball"]
 
-#list([#strong[#"Elements"]#": "#"anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"anonymous packument / tarball fetch (caller token stripped)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -252,11 +260,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Écluse canonicalises the identifier and encodes on build. It also enforces an outbound host and port allow-list, the load-bearing control, where it builds the request URL. Registry egress is https-only by construction. Every outbound registry URL goes through a typed boundary, mkRegistryUrl, which rejects any non-https scheme, and a non-https configured endpoint fails closed at boot. TLS certificate validation authenticates the dialled host. A name steered to an internal or rebound address cannot present a CA-trusted certificate for the requested host. Certificate validation therefore closes the resolve-to-internal and DNS-rebinding SSRF class, rather than a resolved-IP recheck. No data-plane request follows an upstream redirect, because finaliseRequest pins redirectCount=0 on every request attachCredential builds. No redirect hop can escape the build-time allow-list or downgrade the scheme. A disallow-by-default same-authority policy applies to dist.tarball, matched on host and port. Écluse upgrades a legacy http dist.tarball to https on the same host, and drops and records one on a foreign host. The trusted private origin meets the same https requirement. A cheap pure literal internal-range block remains as defence in depth on the dist.tarball host gate. An operator can extend that fixed range set with ECLUSE_EGRESS__ADDITIONAL_BLOCKED_RANGES for internal space the module cannot know in advance. That setting is widen-only and fails closed at boot on a malformed entry."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Écluse canonicalises the identifier and encodes on build. It also enforces an outbound host and port allow-list, the load-bearing control, where it builds the request URL. Registry egress is https-only by construction. Every outbound registry URL goes through a typed boundary, mkRegistryUrl, which rejects any non-https scheme, and a non-https configured endpoint fails closed at boot. TLS certificate validation authenticates the dialled host. A name steered to an internal or rebound address cannot present a CA-trusted certificate for the requested host. Certificate validation therefore closes the resolve-to-internal and DNS-rebinding SSRF class, rather than a resolved-IP recheck. No data-plane request follows an upstream redirect, because finaliseRequest pins redirectCount=0 on every request attachCredential builds. No redirect hop can escape the build-time allow-list or downgrade the scheme. A disallow-by-default same-authority policy applies to dist.tarball, matched on host and port. Écluse upgrades a legacy http dist.tarball to https on the same host, and drops and records one on a foreign host. The trusted private origin meets the same https requirement. A cheap pure literal internal-range block remains as defence in depth on the dist.tarball host gate. An operator can extend that fixed range set with ECLUSE_EGRESS__ADDITIONAL_BLOCKED_RANGES for internal space the module cannot know in advance. That setting is widen-only and fails closed at boot on a malformed entry."])
 
 #strong[#"Assumptions"]
 
@@ -264,7 +274,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 6: Package shadowing via first-party publish"]
 
-#list([#strong[#"Elements"]#": "#"relay npm publish (publisher token forwarded)"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"relay npm publish (publisher token forwarded)"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -272,11 +282,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"The publicationAllow allow-list, for npm a list of scopes, refuses any name outside the operator's scopes before any upstream write. That is the anti-shadowing guard. The scope match is exact on the parsed namespace, so a prefix such as @acme-evil does not satisfy an @acme allow-list. Soundness requires the authorised identity to be the written identity. Écluse validates the publish document's own declared name and _id, and the per-version names, equal to the scope-guarded URL-path name before the relay. It then builds the write URL from that same canonical name. The guarded name, the written name, and the merge collision key are therefore one identity by construction. Residual: shadowing within an allow-listed scope, and allow-precedence choices, stay the operator's risk. Give the publisher's target credential least privilege."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"The publicationAllow allow-list, for npm a list of scopes, refuses any name outside the operator's scopes before any upstream write. That is the anti-shadowing guard. The scope match is exact on the parsed namespace, so a prefix such as @acme-evil does not satisfy an @acme allow-list. Soundness requires the authorised identity to be the written identity. Écluse validates the publish document's own declared name and _id, and the per-version names, equal to the scope-guarded URL-path name before the relay. It then builds the write URL from that same canonical name. The guarded name, the written name, and the merge collision key are therefore one identity by construction. Residual: shadowing within an allow-listed scope, and allow-precedence choices, stay the operator's risk. Give the publisher's target credential least privilege."])
 
 #strong[#"Assumptions"]
 
@@ -284,7 +296,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 7: Mirror-write credential is a standing privilege over the trusted store"]
 
-#list([#strong[#"Elements"]#": "#"publish mirrored artifact (minted write token)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"publish mirrored artifact (minted write token)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -292,11 +304,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Containment of this standing privilege rests on least-privilege IAM on the container or task role: write to Registry B only. A CodeArtifact token bears the role's own permissions, so this is an IAM policy rather than a token-level scope. Minting from the container role beats static credentials, and the TTL is minimal, capped by CodeArtifact at 12h. The publish runs with redirectCount=0, because attachCredential attaches the mint token and finalises the request through finaliseRequest. The mirror queue sits inside the same trust boundary and is isolated and managed at the infrastructure level. A job is unauthenticated data that directs the worker to fetch and publish, so queue-send access is equivalent to trusted-write access. Scope the queue's IAM so only the serve role enqueues (SendMessage) and only the worker receives and acks. Écluse relies on access control for message authenticity, deliberately, rather than on signatures. That is the standard pattern for an internal single-producer, single-consumer queue. The worker's own attack surface is small. It hashes the fetched bytes and forwards them unchanged, with no decompression and no tarball parsing. A malicious artifact is therefore a poor code-execution vector. The dist.integrity check is anti-tamper-in-transit and anti-downgrade. It fails closed when the strongest present digest is in an uncomputable algorithm, and never downgrades to a forgeable weaker one. It proves the bytes match the upstream's asserted digest, so it catches back-fill corruption but not a hostile upstream or a worker compromise. Admission-gate soundness therefore bounds the poisoning of future reads, together with the role's blast radius and queue access control, not the integrity check. The trusted store is only as clean as what the gate admits, and only the gate may enqueue. A serve-only mount, with no mirrorTarget declared, removes this surface entirely. It holds and mints no write credential, and with zero mirrored mounts the process builds no mirror queue and starts no worker."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Containment of this standing privilege rests on least-privilege IAM on the container or task role: write to Registry B only. A CodeArtifact token bears the role's own permissions, so this is an IAM policy rather than a token-level scope. Minting from the container role beats static credentials, and the TTL is minimal, capped by CodeArtifact at 12h. The publish runs with redirectCount=0, because attachCredential attaches the mint token and finalises the request through finaliseRequest. The mirror queue sits inside the same trust boundary and is isolated and managed at the infrastructure level. A job is unauthenticated data that directs the worker to fetch and publish, so queue-send access is equivalent to trusted-write access. Scope the queue's IAM so only the serve role enqueues (SendMessage) and only the worker receives and acks. Écluse relies on access control for message authenticity, deliberately, rather than on signatures. That is the standard pattern for an internal single-producer, single-consumer queue. The worker's own attack surface is small. It hashes the fetched bytes and forwards them unchanged, with no decompression and no tarball parsing. A malicious artifact is therefore a poor code-execution vector. The dist.integrity check is anti-tamper-in-transit and anti-downgrade. It fails closed when the strongest present digest is in an uncomputable algorithm, and never downgrades to a forgeable weaker one. It proves the bytes match the upstream's asserted digest, so it catches back-fill corruption but not a hostile upstream or a worker compromise. Admission-gate soundness therefore bounds the poisoning of future reads, together with the role's blast radius and queue access control, not the integrity check. The trusted store is only as clean as what the gate admits, and only the gate may enqueue. A serve-only mount, with no mirrorTarget declared, removes this surface entirely. It holds and mints no write credential, and with zero mirrored mounts the process builds no mirror queue and starts no worker."])
 
 #strong[#"Assumptions"]
 
@@ -304,7 +318,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 8: SSRF to the instance-metadata credential endpoint"]
 
-#list([#strong[#"Elements"]#": "#"mint via container role (IMDSv2 / STS)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"mint via container role (IMDSv2 / STS)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -312,11 +326,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Écluse follows an internal-resolving location only on the trusted private origin, never on a client-influenced or upstream-influenced target. Nothing can therefore steer the data plane at metadata. Minting uses amazonka's own client, off the guarded data-plane manager. Operator defence in depth: require IMDSv2 and set the hop limit to 1. Do not block metadata outright."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Écluse follows an internal-resolving location only on the trusted private origin, never on a client-influenced or upstream-influenced target. Nothing can therefore steer the data plane at metadata. Minting uses amazonka's own client, off the guarded data-plane manager. Operator defence in depth: require IMDSv2 and set the hop limit to 1. Do not block metadata outright."])
 
 #strong[#"Assumptions"]
 
@@ -324,7 +340,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 9: Cross-client disclosure of a private package via shared cache (#115)"]
 
-#list([#strong[#"Elements"]#": "#"Metadata cache (public-gated only)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Metadata cache (public-gated only)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -332,11 +348,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Écluse never enters the private origin into the shared cache. Module encapsulation is the guarantee: the cache-entering client builder is unexported, and the private-origin path hard-codes an uncached fetch. The cache holds only the anonymous public-gated origin. Écluse re-consults the private origin on every request, with the caller's own forwarded token. The cache-recovering designs that would share a private entry, delegated-cache and memoised, are rejected by design. No shared private cache exists to leak."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Écluse never enters the private origin into the shared cache. Module encapsulation is the guarantee: the cache-entering client builder is unexported, and the private-origin path hard-codes an uncached fetch. The cache holds only the anonymous public-gated origin. Écluse re-consults the private origin on every request, with the caller's own forwarded token. The cache-recovering designs that would share a private entry, delegated-cache and memoised, are rejected by design. No shared private cache exists to leak."])
 
 #strong[#"Assumptions"]
 
@@ -344,7 +362,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 10: Registry collapse erases provenance and per-store policy"]
 
-#list([#strong[#"Elements"]#": "#"Registry B: mirror store (public-derived)"], [#strong[#"Category"]#": "#"Repudiation (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Registry B: mirror store (public-derived)"], [#strong[#"Category"]#": "#"Repudiation (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -352,11 +370,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Deploy the recommended three-registry topology, the Golden Path: a first-party store, a public-derived mirror store, and a pull-through aggregator read endpoint. The endpoint unions the other two at the registry level. Each of the three is independently governable. The single-registry collapse stays supported but discouraged. It trades auditability and defence in depth, not the perimeter. An operator who deliberately chooses a collapsed topology accepts that local residual risk against their own threat tolerance."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Deploy the recommended three-registry topology, the Golden Path: a first-party store, a public-derived mirror store, and a pull-through aggregator read endpoint. The endpoint unions the other two at the registry level. Each of the three is independently governable. The single-registry collapse stays supported but discouraged. It trades auditability and defence in depth, not the perimeter. An operator who deliberately chooses a collapsed topology accepts that local residual risk against their own threat tolerance."])
 
 #strong[#"Assumptions"]
 
@@ -364,7 +384,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 11: Undetected artifact substitution across upstreams"]
 
-#list([#strong[#"Elements"]#": "#"Registry C: pull-through read endpoint"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Registry C: pull-through read endpoint"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -372,11 +392,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Écluse admits a public version only if it carries a digest that meets the integrity floor: a uniform SHA-256 default, hard-floored. Divergence compares each digest's asserted algorithm, not a bucketed tag. The merge detects a real same-version contradiction on a shared algorithm, and the serve path consumes it. Écluse logs it at WARNING, naming the package, the contradicting versions, and their digests, and meters it as ecluse.registry.merge.divergence. A substitution therefore surfaces, and the merge never silently reconciles it. The trusted copy always wins the served bytes. The operator's ECLUSE_INTEGRITY__DIVERGENCE_POLICY then decides whether Écluse also withholds the contested version from the listing (fail-closed) or serves it with the alarm (warn, the default). Residual: warn detects without withholding, so an operator who wants prevention rather than detection must set fail-closed. The trusted-floor path is deliberately operator-loosenable, trading strictness for availability, and that is the remaining way a weak digest is accepted. A serve-only mount with no private upstream, the pure public gate, has a single origin, so cross-upstream divergence detection is structurally absent. That is an accepted residual of that sub-shape. A serve-only mount that reads a private upstream keeps the detection unchanged."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Écluse admits a public version only if it carries a digest that meets the integrity floor: a uniform SHA-256 default, hard-floored. Divergence compares each digest's asserted algorithm, not a bucketed tag. The merge detects a real same-version contradiction on a shared algorithm, and the serve path consumes it. Écluse logs it at WARNING, naming the package, the contradicting versions, and their digests, and meters it as ecluse.registry.merge.divergence. A substitution therefore surfaces, and the merge never silently reconciles it. The trusted copy always wins the served bytes. The operator's ECLUSE_INTEGRITY__DIVERGENCE_POLICY then decides whether Écluse also withholds the contested version from the listing (fail-closed) or serves it with the alarm (warn, the default). Residual: warn detects without withholding, so an operator who wants prevention rather than detection must set fail-closed. The trusted-floor path is deliberately operator-loosenable, trading strictness for availability, and that is the remaining way a weak digest is accepted. A serve-only mount with no private upstream, the pure public gate, has a single origin, so cross-upstream divergence detection is structurally absent. That is an accepted residual of that sub-shape. A serve-only mount that reads a private upstream keeps the detection unchanged."])
 
 #strong[#"Assumptions"]
 
@@ -392,11 +414,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Risk treatment: accepted by trust assumption. The primary registries stamp these fields server-side. The publish time is not part of the publish document, so a publisher cannot forge it. Écluse reads the registry's metadata, so it necessarily extends a floor of trust to the registry operator's honesty. A hostile operator is an adversary this model cannot counter, the same class as 'what if npm itself is malicious'. What is untrusted here are the tarball contents and the author-supplied fields, and the rules engine and the integrity floor do gate those. The freshness quarantine's age signal depends on the upstream's timestamp honesty, so a registry that asserted a forged time could in theory defeat it. Écluse could re-anchor age to its own first observation of a version and remove that dependence. It deliberately does not. The central public registries, npmjs and PyPI among them, are foundational to modern software infrastructure. Trusting their server-stamped timestamps is the only practical recourse. A dependable first-observation anchor would need durable, replica-shared state, at odds with Écluse's network-broker design. It would also narrow only a surface that already sits outside the practical treatment boundary. Écluse records this as accepted residual risk rather than mitigated."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"Risk treatment: accepted by trust assumption. The primary registries stamp these fields server-side. The publish time is not part of the publish document, so a publisher cannot forge it. Écluse reads the registry's metadata, so it necessarily extends a floor of trust to the registry operator's honesty. A hostile operator is an adversary this model cannot counter, the same class as 'what if npm itself is malicious'. What is untrusted here are the tarball contents and the author-supplied fields, and the rules engine and the integrity floor do gate those. The freshness quarantine's age signal depends on the upstream's timestamp honesty, so a registry that asserted a forged time could in theory defeat it. Écluse could re-anchor age to its own first observation of a version and remove that dependence. It deliberately does not. The central public registries, npmjs and PyPI among them, are foundational to modern software infrastructure. Trusting their server-stamped timestamps is the only practical recourse. A dependable first-observation anchor would need durable, replica-shared state, at odds with Écluse's network-broker design. It would also narrow only a surface that already sits outside the practical treatment boundary. Écluse records this as accepted residual risk rather than mitigated."])
 
 #strong[#"Assumptions"]
 
@@ -412,11 +436,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"The freshness quarantine ("#raw("AllowIfOlderThan")#") is the primary defence. It delays serving a new version until advisories have time to surface, so the rules deny most malicious versions at admission, before any mirroring. This threat is the residual for a version found bad after it cleared the quarantine and was mirrored. Detection is delegated: operator scanning of Registry B, upstream advisories, and security-holding signals decide what to revoke. Enforcement is layered across the version's lifecycle. The hard deny-by-identity rule (DenyByIdentity) halts re-admission on the serve path and re-mirroring at the worker's ingest re-check. That is the immediate, surgical stop, and it also breaks the re-mirror treadmill. An automated reaper, the Écluse Dredger, must continually prune already-mirrored versions that match an advisory or age condition, so recovery follows a public alert without an operator step. It is required to run as a separate service that shares the core rules engine and exposes only its liveness and readiness probes. The operator can also purge a version from Registry B directly. The rules never run on trusted content, so a purge is what removes the already-mirrored copy. Order the two as deny then purge, so demand does not re-mirror during the purge. A purge alone is a treadmill while the version is still live upstream. The typical pattern is the inverse. An upstream yank or security hold removes or changes the bytes first. Re-mirroring then cannot reproduce them, and a purge clears the stale copy. Irreducible residual: a malicious version with no public advisory cannot be reaped, because there is nothing to detect on. That is the bound the freshness quarantine exists to provide. A serve-only mount has no trusted store of mirrored versions at all. Every serve re-gates under current policy, so a rules change or a fresh advisory takes effect immediately. This threat's surface exists only where a mirrorTarget is declared."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"The freshness quarantine ("#raw("AllowIfOlderThan")#") is the primary defence. It delays serving a new version until advisories have time to surface, so the rules deny most malicious versions at admission, before any mirroring. This threat is the residual for a version found bad after it cleared the quarantine and was mirrored. Detection is delegated: operator scanning of Registry B, upstream advisories, and security-holding signals decide what to revoke. Enforcement is layered across the version's lifecycle. The hard deny-by-identity rule (DenyByIdentity) halts re-admission on the serve path and re-mirroring at the worker's ingest re-check. That is the immediate, surgical stop, and it also breaks the re-mirror treadmill. An automated reaper, the Écluse Dredger, must continually prune already-mirrored versions that match an advisory or age condition, so recovery follows a public alert without an operator step. It is required to run as a separate service that shares the core rules engine and exposes only its liveness and readiness probes. The operator can also purge a version from Registry B directly. The rules never run on trusted content, so a purge is what removes the already-mirrored copy. Order the two as deny then purge, so demand does not re-mirror during the purge. A purge alone is a treadmill while the version is still live upstream. The typical pattern is the inverse. An upstream yank or security hold removes or changes the bytes first. Re-mirroring then cannot reproduce them, and a purge clears the stale copy. Irreducible residual: a malicious version with no public advisory cannot be reaped, because there is nothing to detect on. That is the bound the freshness quarantine exists to provide. A serve-only mount has no trusted store of mirrored versions at all. Every serve re-gates under current policy, so a rules change or a fresh advisory takes effect immediately. This threat's surface exists only where a mirrorTarget is declared."])
 
 #strong[#"Assumptions"]
 
@@ -424,7 +450,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 14: SSRF via the worker back-fill fetch (a blind sink)"]
 
-#list([#strong[#"Elements"]#": "#"back-fill artifact fetch (untrusted)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Low", rgb("#4B6B50"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"back-fill artifact fetch (untrusted)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Low", rgb("#4B6B50"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -432,11 +458,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"The fetch runs on the same validating-TLS data-plane manager as the serve path. That manager gives https-only egress, certificate validation that authenticates the host, and the universal no-redirect invariant. The dist.tarball is https-only, and the outbound allow-list admitted the location host at serve time, before the job was enqueued. Decisively, this is a blind sink. The worker verifies the bytes against dist.integrity and publishes them. It never returns them to a caller. An internal or metadata response can present neither a CA-trusted certificate for the host nor a match for the asserted digest. The job therefore fails closed and is dropped rather than exfiltrating. Its impact sits well below the serve-path fetch. A serve-only mount enqueues no back-fill jobs, so this surface does not exist there."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"The fetch runs on the same validating-TLS data-plane manager as the serve path. That manager gives https-only egress, certificate validation that authenticates the host, and the universal no-redirect invariant. The dist.tarball is https-only, and the outbound allow-list admitted the location host at serve time, before the job was enqueued. Decisively, this is a blind sink. The worker verifies the bytes against dist.integrity and publishes them. It never returns them to a caller. An internal or metadata response can present neither a CA-trusted certificate for the host nor a match for the asserted digest. The job therefore fails closed and is dropped rather than exfiltrating. Its impact sits well below the serve-path fetch. A serve-only mount enqueues no back-fill jobs, so this surface does not exist there."])
 
 #strong[#"Assumptions"]
 
@@ -444,7 +472,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 15: Private-upstream aggregation admits the public registry, bypassing the gate"]
 
-#list([#strong[#"Elements"]#": "#"Registry C: pull-through read endpoint"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Registry C: pull-through read endpoint"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -452,11 +480,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"The control is an operator-architecture invariant, documented in the registry model and the Golden Path. The aggregating private upstream composes trusted stores only, first-party plus Écluse's sanitised mirror, and never carries a direct public upstream. Public content enters only through Écluse's gate. Écluse cannot detect a violation: the private upstream is trusted by construction, and its upstream wiring sits outside the proxy. The control is therefore operator discipline and this documented invariant, not a structural check."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"The control is an operator-architecture invariant, documented in the registry model and the Golden Path. The aggregating private upstream composes trusted stores only, first-party plus Écluse's sanitised mirror, and never carries a direct public upstream. Public content enters only through Écluse's gate. Écluse cannot detect a violation: the private upstream is trusted by construction, and its upstream wiring sits outside the proxy. The control is therefore operator discipline and this documented invariant, not a structural check."])
 
 #strong[#"Assumptions"]
 
@@ -472,11 +502,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Risk treatment: accepted residual. No data crosses the boundary: the connection fails at the TLS handshake, before any request body goes out. The surface covers only allowlisted hosts whose DNS the attacker already controls, and the signal is coarse, connect and handshake timing alone. The host allowlist bounds which names can be aimed inward at all. It does not remove the residual timing signal."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"Risk treatment: accepted residual. No data crosses the boundary: the connection fails at the TLS handshake, before any request body goes out. The surface covers only allowlisted hosts whose DNS the attacker already controls, and the signal is coarse, connect and handshake timing alone. The host allowlist bounds which names can be aimed inward at all. It does not remove the residual timing signal."])
 
 #strong[#"Assumptions"]
 
@@ -484,7 +516,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 17: Pilot container-role privilege escalation"]
 
-#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Elevation of privilege (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -492,11 +524,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Least-privilege IAM limits the role to s3:PutObject on the one bucket prefix. Pilot runs in its own container, separate from the proxy."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Least-privilege IAM limits the role to s3:PutObject on the one bucket prefix. Pilot runs in its own container, separate from the proxy."])
 
 #strong[#"Assumptions"]
 
@@ -504,7 +538,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 18: Proxy compromised via tampered OSV database"]
 
-#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Écluse proxy"], [#strong[#"Category"]#": "#"Tampering (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -512,11 +546,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"The S3 bucket is private, and the proxy's IAM role holds GetObject only. An atomic shadow-swap prevents a partial read. The proxy binds the SQLite connection to read-only mode and disables trusted schema (PRAGMA trusted_schema = OFF;) as it opens the connection. An attacker-controlled trigger or view therefore never runs. Acceptance then verifies the artifact before the proxy serves it: the schema epoch stamp, a PRAGMA quick_check integrity walk, the required tables, and the ecosystem. The quick_check walk also verifies stored values against each STRICT table's declared column types. The required tables must be real STRICT tables carrying the required columns. Acceptance refuses a failing artifact as a rejection value, remembers its ETag, and keeps the last-good database serving."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"The S3 bucket is private, and the proxy's IAM role holds GetObject only. An atomic shadow-swap prevents a partial read. The proxy binds the SQLite connection to read-only mode and disables trusted schema (PRAGMA trusted_schema = OFF;) as it opens the connection. An attacker-controlled trigger or view therefore never runs. Acceptance then verifies the artifact before the proxy serves it: the schema epoch stamp, a PRAGMA quick_check integrity walk, the required tables, and the ecosystem. The quick_check walk also verifies stored values against each STRICT table's declared column types. The required tables must be real STRICT tables carrying the required columns. Acceptance refuses a failing artifact as a rejection value, remembers its ETag, and keeps the last-good database serving."])
 
 #strong[#"Assumptions"]
 
@@ -524,7 +560,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 20: Pathological OSV Payload (DoS)"]
 
-#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -532,11 +568,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Pilot streams the archive and bounds each advisory as it unzips. It drains an entry past the per-advisory byte cap (8 MiB) to its boundary and drops it before it reaches the decoder. It also drops an entry whose JSON does not decode. Pilot logs and tallies both, so a few poisoned records never halt ingestion. Pilot logs an advisory that fans out into an anomalous number of ranges, and still ingests it. Deep nesting is bounded implicitly. The per-entry byte cap holds decode cost to a constant multiple of the input. Pilot also runs under the boot-resolved process heap ceiling (ECLUSE_RUNTIME__MAX_HEAP_BYTES, else cgroup memory.max). A small but deep payload therefore fails as a bounded, clean process exit rather than exhausting the machine. A systemic drop rate aborts the compile without publishing, so the proxy keeps its last-good osv.db instead of adopting a hole-ridden one. That guard reads the run's own drop tally. It fires only once at least 16 entries dropped and those drops are at least a tenth of the run, which marks a mostly unusable feed, the shape of a compromised or truncated export. Residual: an isolated depth bomb is a bounded Pilot crash rather than a per-record soft drop. A well-formed but empty or near-empty export drops nothing, so the guard passes it, and the run's row count is never read back on accept. Volumetric abuse of the fetch itself stays an operator-edge concern."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Pilot streams the archive and bounds each advisory as it unzips. It drains an entry past the per-advisory byte cap (8 MiB) to its boundary and drops it before it reaches the decoder. It also drops an entry whose JSON does not decode. Pilot logs and tallies both, so a few poisoned records never halt ingestion. Pilot logs an advisory that fans out into an anomalous number of ranges, and still ingests it. Deep nesting is bounded implicitly. The per-entry byte cap holds decode cost to a constant multiple of the input. Pilot also runs under the boot-resolved process heap ceiling (ECLUSE_RUNTIME__MAX_HEAP_BYTES, else cgroup memory.max). A small but deep payload therefore fails as a bounded, clean process exit rather than exhausting the machine. A systemic drop rate aborts the compile without publishing, so the proxy keeps its last-good osv.db instead of adopting a hole-ridden one. That guard reads the run's own drop tally. It fires only once at least 16 entries dropped and those drops are at least a tenth of the run, which marks a mostly unusable feed, the shape of a compromised or truncated export. Residual: an isolated depth bomb is a bounded Pilot crash rather than a per-record soft drop. A well-formed but empty or near-empty export drops nothing, so the guard passes it, and the run's row count is never read back on accept. Volumetric abuse of the fetch itself stays an operator-edge concern."])
 
 #strong[#"Assumptions"]
 
@@ -552,11 +590,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Not yet built. Dredger's deletion logic must be explicitly batched and rate-limited."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"Not yet built. Dredger's deletion logic must be explicitly batched and rate-limited."])
 
 #strong[#"Assumptions"]
 
@@ -564,7 +604,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 22: Mirror-write credential can be sent to a misconfigured registry target"]
 
-#list([#strong[#"Elements"]#": "#"publish mirrored artifact (minted write token)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"publish mirrored artifact (minted write token)"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -572,11 +612,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Écluse derives the mirror-write credential from the mirror-target URL rather than from separate configuration, so the two cannot diverge. A CodeArtifact endpoint mints a token scoped to the domain parsed from that same host. Écluse writes to any other host with an operator-supplied static token. No configuration expresses a CodeArtifact identity independent of the target, so a minted token can never reach an endpoint it was not scoped for. The divergence class is unrepresentable. Config load rejects both a non-CodeArtifact target with no static token and a CodeArtifact target that also carries a static token. Least-privilege IAM also scopes the container role write-only to the intended mirror store, as defence in depth. A serve-only mount declares no mirror target and holds no mirror-write credential, so this surface does not exist there."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Écluse derives the mirror-write credential from the mirror-target URL rather than from separate configuration, so the two cannot diverge. A CodeArtifact endpoint mints a token scoped to the domain parsed from that same host. Écluse writes to any other host with an operator-supplied static token. No configuration expresses a CodeArtifact identity independent of the target, so a minted token can never reach an endpoint it was not scoped for. The divergence class is unrepresentable. Config load rejects both a non-CodeArtifact target with no static token and a CodeArtifact target that also carries a static token. Least-privilege IAM also scopes the container role write-only to the intended mirror store, as defence in depth. A serve-only mount declares no mirror target and holds no mirror-write credential, so this surface does not exist there."])
 
 #strong[#"Assumptions"]
 
@@ -584,7 +626,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 23: Package-name spoofing via invisible characters"]
 
-#list([#strong[#"Elements"]#": "#"npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": "#"Spoofing (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"npm read / publish (passthrough CodeArtifact token)"], [#strong[#"Category"]#": "#"Spoofing (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -592,11 +634,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Every package-name component parses against an explicit ASCII allowlist before routing, caching, queueing, or publish admission. For npm the allowlist is the validator's own hard boundary: letters, digits, and - _ . ! ~ * ' ( ), with @ and / as scope structure and no leading period, hyphen, or underscore. A codepoint outside the set, non-ASCII or control, cannot enter by construction, on the serve path or the publish path."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Every package-name component parses against an explicit ASCII allowlist before routing, caching, queueing, or publish admission. For npm the allowlist is the validator's own hard boundary: letters, digits, and - _ . ! ~ * ' ( ), with @ and / as scope structure and no leading period, hyphen, or underscore. A codepoint outside the set, non-ASCII or control, cannot enter by construction, on the serve path or the publish path."])
 
 #strong[#"Assumptions"]
 
@@ -612,11 +656,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"The ASCII allowlist bounds the space to visible permitted characters, which keeps every name renderable and comparable. Detection or refusal of look-alike names within the permitted set is not implemented."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"The ASCII allowlist bounds the space to visible permitted characters, which keeps every name renderable and comparable. Detection or refusal of look-alike names within the permitted set is not implemented."])
 
 #strong[#"Assumptions"]
 
@@ -632,11 +678,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Dredger must delete only from the mirror. On the next request the proxy can re-mirror the version if it passes admission, so a delete then behaves as a cache eviction. A serve-only mount enqueues no back-fill jobs, so this surface does not exist there."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"Dredger must delete only from the mirror. On the next request the proxy can re-mirror the version if it passes admission, so a delete then behaves as a cache eviction. A serve-only mount enqueues no back-fill jobs, so this surface does not exist there."])
 
 #strong[#"Assumptions"]
 
@@ -652,11 +700,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Dredger exposes only the liveness and readiness probes. Least-privilege IAM scopes it delete-only on Registry B. It prefers container-role minting over static secrets."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"Dredger exposes only the liveness and readiness probes. Least-privilege IAM scopes it delete-only on Registry B. It prefers container-role minting over static secrets."])
 
 #strong[#"Assumptions"]
 
@@ -664,7 +714,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 27: Poisoned OSV payload exploits parser"]
 
-#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#saer-badge("Mitigated without implemented work", rgb("#A85E1D"))])
+#list([#strong[#"Elements"]#": "#"Écluse Pilot (Ingestion Pipeline)"], [#strong[#"Category"]#": "#"Denial of service (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("Medium", rgb("#46788A"))], [#strong[#"Status"]#": "#saer-badge("Mitigated", rgb("#4B6B50"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 
@@ -672,11 +722,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Pilot runs apart from the proxy. If Pilot runs out of memory or fails, it only delays updates. The proxy keeps serving traffic from the last-known-good osv.db snapshot."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Implemented", rgb("#46788A"))
+
+#"Pilot runs apart from the proxy. If Pilot runs out of memory or fails, it only delays updates. The proxy keeps serving traffic from the last-known-good osv.db snapshot."])
 
 #strong[#"Assumptions"]
 
@@ -692,11 +744,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Dredger must refuse to boot when mounts."#"<eco>"#".mirrorTarget and mounts."#"<eco>"#".publicationTarget resolve to the same registry. The proxy's own boot warns on that pair and then proceeds. Collapsing the registries deliberately surrenders Dredger's automated pruning."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"Dredger must refuse to boot when mounts."#"<eco>"#".mirrorTarget and mounts."#"<eco>"#".publicationTarget resolve to the same registry. The proxy's own boot warns on that pair and then proceeds. Collapsing the registries deliberately surrenders Dredger's automated pruning."])
 
 #strong[#"Assumptions"]
 
@@ -712,11 +766,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Risk treatment: accepted by trust assumption. A compromised security oracle is a foundational supply-chain compromise. Pilot relies on OSV as a source of vulnerability truth. A hostile oracle defeats the defence outright. Transport, parsing, validation, and last-good-database controls mitigate tampering in transit, malformed payloads, and update outages. They cannot make a hostile source of truth trustworthy."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"Risk treatment: accepted by trust assumption. A compromised security oracle is a foundational supply-chain compromise. Pilot relies on OSV as a source of vulnerability truth. A hostile oracle defeats the defence outright. Transport, parsing, validation, and last-good-database controls mitigate tampering in transit, malformed payloads, and update outages. They cannot make a hostile source of truth trustworthy."])
 
 #strong[#"Assumptions"]
 
@@ -732,11 +788,13 @@ align(center + horizon)[
 
 #strong[#"Mitigation"]
 
-#"Dredger must verify explicit operator consent before it runs any destructive action. It is required to query the target CodeArtifact repository for a specific resource tag, for example "#raw("Dredger: PermanentDeletionAllowed")#", and to fail closed without that tag. It must also refuse to boot when mounts."#"<eco>"#".mirrorTarget and mounts."#"<eco>"#".publicationTarget resolve to the same registry."
+#"None recorded."
 
 #strong[#"Mitigations"]
 
-#"None recorded."
+#list([#saer-badge("Proposed", rgb("#756E63"))
+
+#"Dredger must verify explicit operator consent before it runs any destructive action. It is required to query the target CodeArtifact repository for a specific resource tag, for example "#raw("Dredger: PermanentDeletionAllowed")#", and to fail closed without that tag. It must also refuse to boot when mounts."#"<eco>"#".mirrorTarget and mounts."#"<eco>"#".publicationTarget resolve to the same registry."])
 
 #strong[#"Assumptions"]
 

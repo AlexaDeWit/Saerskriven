@@ -19,6 +19,7 @@ import {
 import { mitigationStatusSchema } from './mitigations.js';
 import { parseModel, type Model, type ParseIssue } from './parse.js';
 import { elementsAcross } from './references.js';
+import { threatFlags } from './threat-flags.js';
 import { severitySchema, threatStatusSchema } from './threats.js';
 import { vocabularyComplementFixture } from './vocabulary.fixtures.js';
 
@@ -160,6 +161,18 @@ describe('ecluseFixture', () => {
       spoofing: 4,
       repudiation: 1,
     });
+  });
+
+  it('holds the mitigation text of each threat as one record linked to it alone', () => {
+    expect(ecluse.mitigations.map((mitigation) => mitigation.threats)).toEqual(
+      ecluse.threats.map((threat) => [threat.id]),
+    );
+  });
+
+  it('raises no flag on any threat', () => {
+    expect(
+      ecluse.threats.flatMap((threat) => threatFlags(ecluse, threat)),
+    ).toEqual([]);
   });
 
   it('attaches its 29 threats across 13 of the 38 elements', () => {

@@ -2,10 +2,9 @@ import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
 import {
   assumptionSchema,
   mitigationSchema,
+  recordsLinkedTo,
   threatCountByElement,
   threatSchema,
-  type Assumption,
-  type Mitigation,
   type Model,
   type Threat,
 } from '@saerskriven/model';
@@ -25,7 +24,7 @@ import {
   reportedReading,
   type ModelReading,
 } from './reading.js';
-import { renderCategory } from './threat-rows.js';
+import { renderCategory, renderMitigation } from './threat-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
 /** What `saer_get_threat` takes. */
@@ -90,9 +89,8 @@ export function renderThreatRecord(result: GetThreatResult): readonly string[] {
     'elements:',
     ...result.elements.flatMap(renderElement),
     'mitigations:',
-    ...result.mitigations.map(
-      (mitigation) =>
-        `  ${mitigation.id} (${mitigation.status}): ${escapedForTerminal(mitigation.title)}`,
+    ...result.mitigations.flatMap((mitigation) =>
+      renderMitigation(mitigation).map((line) => `  ${line}`),
     ),
     'assumptions:',
     ...result.assumptions.map(
@@ -129,19 +127,7 @@ function recorded(reading: ModelReading, threat: Threat): GetThreatResult {
       .map((placed) =>
         elementDetail(placed, counts.get(placed.element.id) ?? 0),
       ),
-    mitigations: model.mitigations.filter((mitigation) =>
-      addresses(mitigation, threat),
-    ),
-    assumptions: model.assumptions.filter((assumption) =>
-      underpins(assumption, threat),
-    ),
+    mitigations: recordsLinkedTo(model.mitigations, threat.id),
+    assumptions: recordsLinkedTo(model.assumptions, threat.id),
   };
-}
-
-function addresses(mitigation: Mitigation, threat: Threat): boolean {
-  return mitigation.threats.some((linked) => linked === threat.id);
-}
-
-function underpins(assumption: Assumption, threat: Threat): boolean {
-  return assumption.threats.some((linked) => linked === threat.id);
 }

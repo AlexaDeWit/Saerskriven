@@ -87,7 +87,7 @@ export function writeThreatDragon(
       ...numbering.divergences,
       ...merged.flatMap((entry) => [...entry.stamp, ...entry.divergences]),
       ...plan.divergences,
-      ...unrecorded(model),
+      ...unrecordedAssumptions(model),
       ...discarded(model, source),
     ],
   };
@@ -138,19 +138,12 @@ function overriddenMark(
       ];
 }
 
-function unrecorded(model: Model): readonly Divergence[] {
-  return [
-    ...model.mitigations.map((mitigation): Divergence => ({
-      subject: { kind: 'mitigation', id: mitigation.id },
-      detail: `the mitigation "${mitigation.title}", which the format keeps no record of`,
-      reason: 'unrepresentable',
-    })),
-    ...model.assumptions.map((assumption): Divergence => ({
-      subject: { kind: 'assumption', id: assumption.id },
-      detail: 'the assumption, which the format keeps no record of',
-      reason: 'unrepresentable',
-    })),
-  ];
+function unrecordedAssumptions(model: Model): readonly Divergence[] {
+  return model.assumptions.map((assumption): Divergence => ({
+    subject: { kind: 'assumption', id: assumption.id },
+    detail: 'the assumption, which the format keeps no record of',
+    reason: 'unrepresentable',
+  }));
 }
 
 function discarded(
