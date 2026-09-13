@@ -2,11 +2,11 @@
 
 Saerskriven's own file format, version 1. Everything the internal model holds has
 a place in the file and everything the file holds has a place in the model,
-apart from the assumption element links [Reading](#reading) describes, so
-reading a file and writing it back changes nothing else and neither direction
-reports a divergence for anything else. The other format Saerskriven reads,
-Threat Dragon v2 JSON, is somebody else's shape and does not have that
-property.
+apart from the assumption element links and the assumption model link
+[Reading](#reading) describes, so reading a file and writing it back changes
+nothing else and neither direction reports a divergence for anything else.
+The other format Saerskriven reads, Threat Dragon v2 JSON, is somebody else's
+shape and does not have that property.
 
 The format is declared by `@saerskriven/wire-saerskriven-yaml`, a package of one
 zod schema that imports nothing but zod. That is the format's definition, and
@@ -20,15 +20,15 @@ the model.
 YAML, UTF-8, one document, a mapping at the root with seven keys in this
 order:
 
-| Key                      | What it holds                                                |
-| ------------------------ | ------------------------------------------------------------ |
-| `formatVersion`          | `1`, exactly                                                 |
-| `metadata`               | Title, owner, description, contributors                      |
-| `assumptions`            | What the analysis rests on, linked to threats by id          |
-| `diagrams`               | The diagrams, each owning its elements and their geometry    |
-| `mitigations`            | Mitigating work, addressing threats by id                    |
-| `threats`                | The threats, each attached to elements by id                 |
-| `lastIssuedThreatNumber` | The highest threat number ever issued, counting removed ones |
+| Key                      | What it holds                                                      |
+| ------------------------ | ------------------------------------------------------------------ |
+| `formatVersion`          | `1`, exactly                                                       |
+| `metadata`               | Title, owner, description, contributors                            |
+| `assumptions`            | What the analysis rests on, linked to threats by id, no model link |
+| `diagrams`               | The diagrams, each owning its elements and their geometry          |
+| `mitigations`            | Mitigating work, addressing threats by id                          |
+| `threats`                | The threats, each attached to elements by id                       |
+| `lastIssuedThreatNumber` | The highest threat number ever issued, counting removed ones       |
 
 Every key the first release declared is required and every list may be
 empty. Nothing is defaulted: a model saves before it is drawn, and it does so
@@ -115,6 +115,14 @@ place in the model. The read drops every id in it and reports each assumption
 whose list held any as a `narrowed` divergence naming that assumption. A
 write states `elements: []` on every assumption, so a file this release
 writes is still a version 1 file an older release reads.
+
+An assumption in the model may apply to the model as a whole as well as to
+threats, and version 1 has no key for that model link. The read never sets
+it: every assumption reads without a model link, and one whose `threats` list
+is empty reads as it is, with no reference and no divergence. A write of an
+assumption that applies to the model writes its threat links, `threats: []`
+where it has none, and reports the model link it could not write as a
+`narrowed` divergence naming that assumption.
 
 What a read does refuse, it refuses with a path: into the file where the
 schema is what said no, and into the model where a rule no schema states did,

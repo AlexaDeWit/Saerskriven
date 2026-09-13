@@ -6,7 +6,11 @@ import { parseModel, type Model } from './parse.js';
 import { translatedElement } from './operations.js';
 import type { Point } from './geometry.js';
 
-/** Copies a selection and its flow endpoints, with related records restricted to the copied graph. */
+/**
+ * Copies a selection and its flow endpoints, with related records restricted
+ * to the copied graph. A copied assumption leaves its model link behind,
+ * since that link belongs to the source model.
+ */
 export function selectionFragment(
   model: Model,
   diagramId: DiagramId,
@@ -71,6 +75,7 @@ export function selectionFragment(
       .map((item) => ({
         ...item,
         threats: item.threats.filter((id) => threatIds.has(id)),
+        appliesToModel: false,
       })),
   });
 }

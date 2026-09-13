@@ -53,8 +53,8 @@ const sample = {
       id: 'assumption-example',
       prose: '',
       status: 'invalidated',
-      elements: [],
       threats: ['accepted-example'],
+      appliesToModel: false,
     }),
   ],
 };

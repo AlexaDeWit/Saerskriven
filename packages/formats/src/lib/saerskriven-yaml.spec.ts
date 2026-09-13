@@ -45,6 +45,16 @@ function inNumberOrder(model: Model): Model {
   return { ...model, threats };
 }
 
+function withoutModelLinks(model: Model): Model {
+  return {
+    ...model,
+    assumptions: model.assumptions.map((assumption) => ({
+      ...assumption,
+      appliesToModel: false,
+    })),
+  };
+}
+
 function readOrThrow(text: string) {
   return Either.getOrThrow(saerskrivenYamlCodec.read(text));
 }
@@ -242,15 +252,40 @@ describe.each(emittedModels)(
 describe(
   'any model at all',
   () => {
-    it('survives a write and a read as itself, threats in number order', () => {
+    it('with no assumption applying to the model, survives a write and a read as itself, threats in number order', () => {
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
-          const model = Either.getOrThrow(parseModel(input));
+          const model = withoutModelLinks(Either.getOrThrow(parseModel(input)));
           const written = saerskrivenYamlCodec.write(model);
           expect(written.divergences).toEqual([]);
           const reading = readOrThrow(written.output);
           expect(reading.divergences).toEqual([]);
           expect(reading.model).toEqual(inNumberOrder(model));
+        }),
+      );
+    });
+
+    it('reports narrowed exactly for the assumptions that apply to the model, and reads them back without the link', () => {
+      fc.assert(
+        fc.property(modelInputArbitrary, (input) => {
+          const model = Either.getOrThrow(parseModel(input));
+          const written = saerskrivenYamlCodec.write(model);
+          expect(
+            written.divergences.map(({ subject, reason }) => ({
+              subject,
+              reason,
+            })),
+          ).toEqual(
+            model.assumptions
+              .filter(({ appliesToModel }) => appliesToModel)
+              .map(({ id }) => ({
+                subject: { kind: 'assumption', id },
+                reason: 'narrowed',
+              })),
+          );
+          expect(readOrThrow(written.output).model).toEqual(
+            inNumberOrder(withoutModelLinks(model)),
+          );
         }),
       );
     });

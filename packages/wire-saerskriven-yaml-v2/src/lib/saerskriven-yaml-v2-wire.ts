@@ -230,6 +230,7 @@ const assumptionSchema = z.object({
   prose: z.string(),
   status: assumptionStatusSchema,
   threats: z.array(idSchema),
+  appliesToModel: z.boolean(),
 });
 
 const diagramSchema = z.object({

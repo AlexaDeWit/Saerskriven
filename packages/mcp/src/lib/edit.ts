@@ -50,7 +50,7 @@ export const editResultSchema = writeReportSchema.extend({
   culled: z
     .array(recordReferenceSchema)
     .describe(
-      'The mitigations and assumptions the file held before the batch that the batch culled by taking away their last threat link.',
+      'The mitigations and assumptions the file held before the batch that the batch culled by taking away their last reference: a threat link, or for an assumption its model link.',
     ),
 });
 
@@ -65,7 +65,7 @@ export const editDescription = [
   `Each edit is an object carrying \`op\` and that op's own fields. The ops are ${editOps.join(', ')}.`,
   '`add_element` accepts the optional security facts and declared relationships of its element kind. `set_element_properties` takes the element id and a `properties` object with `kind` and the fields to change. Omitted fields stay unchanged. Its optional `unset` list names fields to clear back to not recorded. False, empty text and empty lists are recorded values. A field cannot be set and unset in the same edit.',
   'Pass `revision` as the handle the last read of this file returned. A file that changed before this call is refused rather than overwritten, and the answer to that refusal is to read the file again and reconsider the edit against what the file now holds. The file is hashed again immediately before it is replaced, so a change that landed while this call was working is refused there instead of overwritten. That check is not a lock: a save landing between it and the replacement is still overwritten with neither side told, so read the file in the same turn you edit it, and expect to lose an edit where somebody is working in the same file from another tool.',
-  'A mitigation or an assumption is added linked to at least one threat. An edit that takes a record from one or more threat links to none (removing the threat that was its last link, unlinking it, or a replace that leaves it no link) removes the record in the same edit. The result names under `culled`, once each, every record the file held before the batch that an edit of the batch culled, even where a later edit adds it back. A record removed by `remove_mitigation` or `remove_assumption` is not named there, and neither is one the batch itself added.',
+  "A mitigation or an assumption is added linked to at least one threat. A record's references are its threat links, and an assumption that applies to the model also has its model link, which a replace keeps. An edit that takes a record from one or more references to none (removing the threat that was its last reference, unlinking it, or a replace that leaves it no threat link) removes the record in the same edit. The result names under `culled`, once each, every record the file held before the batch that an edit of the batch culled, even where a later edit adds it back. A record removed by `remove_mitigation` or `remove_assumption` is not named there, and neither is one the batch itself added.",
   'A threat carries no number: the model issues one when a threat is added and holds it when the threat is replaced, so numbers name one threat for the life of a model and there is no edit that renumbers.',
   'Use this on a model that exists. Start a new one with saer_create and convert a foreign file with saer_import. What the file format cannot hold comes back in the divergences of the result rather than as a refusal, so read them after a write to a Threat Dragon file.',
 ].join(' ');

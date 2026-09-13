@@ -2,7 +2,11 @@ import { Either } from 'effect';
 import type { ElementId, ThreatId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
-import { culledAfter } from './records.js';
+import {
+  assumptionRegister,
+  culledAfter,
+  mitigationRegister,
+} from './records.js';
 import { elementIdsAcross, unknownElementIn } from './references.js';
 import type { Threat } from './threats.js';
 
@@ -70,9 +74,10 @@ export function addThreat(
 
 /**
  * Returns a new model without the threat named by `threatId`. Every
- * mitigation and assumption loses its link to it, and a record whose only
- * threat link it was goes with it. The removed threat's number stays spent,
- * so the gap it leaves is permanent. Fails when the threat is unknown.
+ * mitigation and assumption loses its link to it, and a record whose last
+ * reference it was goes with it: an assumption that applies to the model
+ * stays. The removed threat's number stays spent, so the gap it leaves is
+ * permanent. Fails when the threat is unknown.
  */
 export function removeThreat(
   model: Model,
@@ -90,8 +95,16 @@ export function removeThreat(
   return Either.right({
     ...model,
     threats: model.threats.filter((threat) => threat.id !== threatId),
-    mitigations: culledAfter(model.mitigations, unlinked),
-    assumptions: culledAfter(model.assumptions, unlinked),
+    mitigations: culledAfter(
+      model.mitigations,
+      mitigationRegister.referenced,
+      unlinked,
+    ),
+    assumptions: culledAfter(
+      model.assumptions,
+      assumptionRegister.referenced,
+      unlinked,
+    ),
   });
 }
 

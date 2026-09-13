@@ -40,6 +40,7 @@ export type OperationFailure = Data.TaggedEnum<{
   DuplicateMitigationId: { readonly mitigationId: MitigationId };
   DuplicateAssumptionId: { readonly assumptionId: AssumptionId };
   RecordWithoutThreat: { readonly record: RecordReference };
+  AssumptionWithoutReference: { readonly assumptionId: AssumptionId };
   ReusedThreatNumber: { readonly number: number };
   ChangedThreatNumber: {
     readonly threatId: ThreatId;

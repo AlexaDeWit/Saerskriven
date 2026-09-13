@@ -428,18 +428,21 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       prose: 'The archive vendor is thought to wipe returned tapes.',
       status: 'unconfirmed',
       threats: ['threat-vocab-linking'],
+      appliesToModel: false,
     },
     {
       id: 'assumption-vocab-valid',
       prose: 'The records department encrypts every tape it holds.',
       status: 'valid',
       threats: ['threat-vocab-confidentiality'],
+      appliesToModel: false,
     },
     {
       id: 'assumption-vocab-invalidated',
       prose: 'The ingestion pipeline was believed to be reviewed.',
       status: 'invalidated',
       threats: ['threat-vocab-cybersecurity'],
+      appliesToModel: false,
     },
   ],
 };

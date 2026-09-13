@@ -68,6 +68,7 @@ const assumption = {
   prose: 'Écluse trusts the OSV database as the oracle of vulnerability truth.',
   status: 'valid',
   threats: ['c87367bd-fc3f-4792-94b6-8db459011823'],
+  appliesToModel: false,
 };
 
 const emptyRecords = {

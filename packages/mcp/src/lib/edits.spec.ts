@@ -1,12 +1,15 @@
-import { OperationFailure } from '@saerskriven/model';
+import { linkAssumptionToModel, OperationFailure } from '@saerskriven/model';
 import {
   assumptionId,
   diagramId,
   elementId,
   mitigationId,
+  parsedFixture,
   threatId,
+  validModelFixture,
 } from '@saerskriven/model/fixtures';
-import { editOps, renderRefusedEdit } from './edits.js';
+import { Either } from 'effect';
+import { applyEdits, editOps, renderRefusedEdit } from './edits.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {
   readonly [Tag in Union['_tag']]: Extract<Union, { readonly _tag: Tag }>;
@@ -74,7 +77,10 @@ const failures: ByTag<OperationFailure> = {
     assumptionId: assumptionId('assumption-managed-db'),
   }),
   RecordWithoutThreat: OperationFailure.RecordWithoutThreat({
-    record: { kind: 'assumption', id: assumptionId('assumption-managed-db') },
+    record: { kind: 'mitigation', id: mitigationId('mitigation-tls') },
+  }),
+  AssumptionWithoutReference: OperationFailure.AssumptionWithoutReference({
+    assumptionId: assumptionId('assumption-managed-db'),
   }),
   ReusedThreatNumber: OperationFailure.ReusedThreatNumber({ number: 4 }),
   ChangedThreatNumber: OperationFailure.ChangedThreatNumber({
@@ -138,6 +144,41 @@ describe('what a refused edit reads as', () => {
         OperationFailure.UnknownElement({ elementId: elementId('one\ntwo') }),
       ),
     ).toContain('"one\\u000atwo"');
+  });
+});
+
+describe('replace_assumption', () => {
+  it('keeps the model link of an assumption that links no threat', () => {
+    const managedDb = assumptionId('assumption-managed-db');
+    const modelWide = Either.getOrThrow(
+      linkAssumptionToModel(
+        parsedFixture({
+          ...validModelFixture,
+          assumptions: validModelFixture.assumptions.map((assumption) => ({
+            ...assumption,
+            threats: [],
+          })),
+        }),
+        managedDb,
+      ),
+    );
+    const applied = Either.getOrThrow(
+      applyEdits(modelWide, [
+        {
+          op: 'replace_assumption',
+          assumption: {
+            id: managedDb,
+            prose: 'Reworded.',
+            status: 'valid',
+            threats: [],
+          },
+        },
+      ]),
+    );
+    expect(applied.model.assumptions).toEqual([
+      { ...modelWide.assumptions[0], prose: 'Reworded.' },
+    ]);
+    expect(applied.culled).toEqual([]);
   });
 });
 

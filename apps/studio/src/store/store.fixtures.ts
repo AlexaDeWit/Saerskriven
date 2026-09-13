@@ -221,6 +221,7 @@ export const recordedModel: Model = parsedFixture({
       prose: 'Every editor is signed in.',
       status: 'unconfirmed',
       threats: [firstThreat],
+      appliesToModel: false,
     },
   ],
 });

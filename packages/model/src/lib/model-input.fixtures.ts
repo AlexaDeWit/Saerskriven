@@ -322,6 +322,7 @@ function assumptionArbitrary(
     prose: textArbitrary,
     status: fc.constantFrom(...assumptionStatusSchema.options),
     threats: fc.subarray([...threatIds]),
+    appliesToModel: fc.boolean(),
   });
 }
 

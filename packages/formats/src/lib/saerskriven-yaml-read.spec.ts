@@ -120,6 +120,11 @@ const elementLinkedAssumption = (elements: readonly string[]) =>
     ].join('\n'),
   );
 
+const threatlessAssumption = elementLinkedAssumption([]).replace(
+  '    threats:\n      - threat-1',
+  '    threats: []',
+);
+
 const withExtras = `${oneThreatDocument.replace(
   '    number: 1',
   '    number: 1\n    likelihood: high',
@@ -233,6 +238,7 @@ describe('a version 1 assumption that links elements', () => {
         prose: 'The ledger is append only.',
         status: 'valid',
         threats: ['threat-1'],
+        appliesToModel: false,
       },
     ]);
   });
@@ -268,6 +274,22 @@ describe('a version 1 assumption that links elements', () => {
     expect(
       Either.getOrUndefined(readSaerskrivenYamlDocument(document))?.assumptions,
     ).toEqual(readingOf(elementLinkedAssumption([]))?.model.assumptions);
+  });
+});
+
+describe('a version 1 assumption that links no threat', () => {
+  it('reads as a record with no threat link and no model link, reporting nothing', () => {
+    const reading = readingOf(threatlessAssumption);
+    expect(reading?.model.assumptions).toEqual([
+      expect.objectContaining({ threats: [], appliesToModel: false }),
+    ]);
+    expect(reading?.divergences).toEqual([]);
+  });
+
+  it('maps the same from the document alone', () => {
+    expect(modelOfDocumentIn(threatlessAssumption)).toEqual(
+      readingOf(threatlessAssumption)?.model,
+    );
   });
 });
 

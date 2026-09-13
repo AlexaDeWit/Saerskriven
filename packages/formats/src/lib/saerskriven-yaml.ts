@@ -8,10 +8,10 @@ import { writeSaerskrivenYaml } from './saerskriven-yaml-write.js';
  * `@saerskriven/wire-saerskriven-yaml`, the read that maps a file onto the
  * internal model, and the write that projects the model back.
  *
- * Both of the contract's write paths are the same path here. The format
- * holds the whole model, so a write that merges onto a source document and
- * a write that projects the model produce the same file, and neither has
- * anything to report.
+ * Both of the contract's write paths are the same path here: a write that
+ * merges onto a source document and a write that projects the model produce
+ * the same file. The one thing the format does not hold is an assumption's
+ * model link, which the write reports `narrowed`.
  */
 export const saerskrivenYamlCodec: Codec<typeof saerskrivenYamlWireSchema> = {
   wire: saerskrivenYamlWireSchema,

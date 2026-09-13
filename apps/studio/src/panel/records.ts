@@ -104,6 +104,7 @@ export const assumptionKind: RecordKind<Assumption> = {
     prose: '',
     status: 'unconfirmed',
     threats: [threatId],
+    appliesToModel: false,
   }),
   restored: (threatId, id, status) => {
     const parsed = assumptionIdSchema.safeParse(id);

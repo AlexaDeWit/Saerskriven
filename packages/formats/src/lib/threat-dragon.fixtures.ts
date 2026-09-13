@@ -603,6 +603,7 @@ export const richerThanFormatFixture: ModelInput = {
       prose: 'The vault is audited every year.',
       status: 'valid',
       threats: ['threat-split'],
+      appliesToModel: false,
     },
   ],
 };

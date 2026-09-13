@@ -118,6 +118,9 @@ const operationFailures: ByTag<OperationFailure> = {
   RecordWithoutThreat: OperationFailure.RecordWithoutThreat({
     record: { kind: 'mitigation', id: mitigationId('mitigation-alone') },
   }),
+  AssumptionWithoutReference: OperationFailure.AssumptionWithoutReference({
+    assumptionId: assumptionId('assumption-alone'),
+  }),
   ReusedThreatNumber: OperationFailure.ReusedThreatNumber({ number: 1 }),
   ChangedThreatNumber: OperationFailure.ChangedThreatNumber({
     threatId: threatId('threat-moved'),

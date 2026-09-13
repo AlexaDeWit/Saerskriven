@@ -64,8 +64,9 @@ export function readSaerskrivenYaml(
 }
 
 /**
- * Maps a validated wire document. Absent security facts remain unknown, and
- * assumption element links are dropped without a report.
+ * Maps a validated wire document. Absent security facts remain unknown,
+ * assumption element links are dropped without a report, and no assumption
+ * applies to the model, since version 1 has no key for that link.
  */
 export function readSaerskrivenYamlDocument(
   document: SaerskrivenYamlDocument,
@@ -225,5 +226,6 @@ function toAssumption(assumption: SaerskrivenYamlAssumption): AssumptionInput {
     prose: assumption.prose,
     status: assumptionStatusesToModel[assumption.status],
     threats: assumption.threats,
+    appliesToModel: false,
   };
 }

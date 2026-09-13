@@ -39,6 +39,20 @@ it('copies an assumption only through a copied threat that links it', () => {
   expect(threatened.assumptions).toEqual(model.assumptions);
 });
 
+it('copies an assumption without the model link its source holds', () => {
+  const modelWide = parsedFixture({
+    ...validModelFixture,
+    assumptions: validModelFixture.assumptions.map((assumption) => ({
+      ...assumption,
+      appliesToModel: true,
+    })),
+  });
+  const fragment = Either.getOrThrow(
+    selectionFragment(modelWide, diagram, [elementId('element-api')]),
+  );
+  expect(fragment.assumptions).toEqual(model.assumptions);
+});
+
 it('includes the endpoint of a selected flow and keeps its free endpoint', () => {
   const flow = model.diagrams[0].elements.find(
     (element) => element.kind === 'flow',

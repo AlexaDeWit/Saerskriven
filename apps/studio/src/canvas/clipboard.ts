@@ -84,6 +84,7 @@ function externalLinkCount(
     records: readonly {
       readonly id: string;
       readonly threats: readonly string[];
+      readonly appliesToModel?: boolean;
     }[],
     copies: readonly { readonly id: string }[],
   ): number => {
@@ -92,7 +93,9 @@ function externalLinkCount(
       .filter((record) => copied.has(record.id))
       .reduce(
         (count, record) =>
-          count + record.threats.filter((id) => !copiedThreats.has(id)).length,
+          count +
+          record.threats.filter((id) => !copiedThreats.has(id)).length +
+          (record.appliesToModel === true ? 1 : 0),
         0,
       );
   };

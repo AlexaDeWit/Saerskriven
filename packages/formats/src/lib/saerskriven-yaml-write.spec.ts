@@ -112,7 +112,7 @@ describe('the Écluse model as a Saerskriven YAML file', () => {
     await expect(written.output).toMatchFileSnapshot(goldenPath);
   });
 
-  it('reports no divergence, because the format holds the whole model', () => {
+  it('reports no divergence, since no assumption applies to the model', () => {
     expect(written.divergences).toEqual([]);
   });
 
@@ -190,6 +190,35 @@ describe('a Saerskriven YAML write of assumptions', () => {
   it('parses under the version 1 wire schema', () => {
     expect(
       saerskrivenYamlWireSchema.safeParse(parseDocument(output)).success,
+    ).toBe(true);
+  });
+});
+
+describe('a Saerskriven YAML write of an assumption that applies to the model', () => {
+  const [assumption] = validModelFixture.assumptions;
+  const writtenWith = (threats: readonly string[]) =>
+    writeSaerskrivenYaml(
+      parsedFixture({
+        ...validModelFixture,
+        assumptions: [
+          { ...assumption, threats: [...threats], appliesToModel: true },
+        ],
+      }),
+    );
+
+  it.each([
+    ['with its threat links', assumption.threats],
+    ['with no threat link', []],
+  ])('reports its model link narrowed once, %s', (_, threats) => {
+    const result = writtenWith(threats);
+    expect(result.divergences).toEqual([
+      expect.objectContaining({
+        subject: { kind: 'assumption', id: assumption.id },
+        reason: 'narrowed',
+      }),
+    ]);
+    expect(
+      saerskrivenYamlWireSchema.safeParse(parseDocument(result.output)).success,
     ).toBe(true);
   });
 });

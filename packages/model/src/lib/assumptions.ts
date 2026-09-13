@@ -18,15 +18,17 @@ export const assumptionStatusSchema = z.enum([
 export type AssumptionStatus = z.infer<typeof assumptionStatusSchema>;
 
 /**
- * One assumption the analysis rests on, linked by id to the threats it
- * underpins. `prose` is markdown. Whether the ids resolve is checked by
- * parseModel, not here.
+ * One assumption the analysis rests on. It applies to the model, to the
+ * threats it links by id, or to both. `appliesToModel` is a stored
+ * reference, never inferred from an empty `threats` list. `prose` is
+ * markdown. Whether the ids resolve is checked by parseModel, not here.
  */
 export const assumptionSchema = z.object({
   id: assumptionIdSchema,
   prose: acceptedTextSchema,
   status: assumptionStatusSchema,
   threats: z.array(threatIdSchema),
+  appliesToModel: z.boolean(),
 });
 
 /** Assumption record. */

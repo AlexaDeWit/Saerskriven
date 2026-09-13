@@ -73,6 +73,8 @@ const diagramEditSchema = z.object({
 
 const threatFieldsSchema = threatSchema.omit({ number: true });
 
+const assumptionEditSchema = assumptionSchema.omit({ appliesToModel: true });
+
 /** Record edits replace records. Property edits patch only the supplied fields. */
 export const modelEditSchema = z.discriminatedUnion('op', [
   z.object({
@@ -162,10 +164,13 @@ export const modelEditSchema = z.discriminatedUnion('op', [
     op: z.literal('remove_mitigation'),
     mitigation: mitigationIdSchema,
   }),
-  z.object({ op: z.literal('add_assumption'), assumption: assumptionSchema }),
+  z.object({
+    op: z.literal('add_assumption'),
+    assumption: assumptionEditSchema,
+  }),
   z.object({
     op: z.literal('replace_assumption'),
-    assumption: assumptionSchema,
+    assumption: assumptionEditSchema,
   }),
   z.object({
     op: z.literal('remove_assumption'),
@@ -332,9 +337,17 @@ function applyEdit(
     case 'remove_mitigation':
       return removeMitigation(model, edit.mitigation);
     case 'add_assumption':
-      return addAssumption(model, edit.assumption);
+      return addAssumption(model, {
+        ...edit.assumption,
+        appliesToModel: false,
+      });
     case 'replace_assumption':
-      return replaceAssumption(model, edit.assumption);
+      return replaceAssumption(model, {
+        ...edit.assumption,
+        appliesToModel:
+          model.assumptions.find(({ id }) => id === edit.assumption.id)
+            ?.appliesToModel ?? false,
+      });
     case 'remove_assumption':
       return removeAssumption(model, edit.assumption);
     case 'add_diagram':

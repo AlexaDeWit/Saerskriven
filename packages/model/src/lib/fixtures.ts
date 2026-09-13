@@ -150,6 +150,7 @@ export const validModelFixture: z.input<typeof modelSchema> = {
       prose: 'The order database encrypts its disks.',
       status: 'valid',
       threats: ['threat-tamper-order'],
+      appliesToModel: false,
     },
   ],
 };
@@ -317,6 +318,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       prose: 'The card vault is audited under PCI DSS every year.',
       status: 'valid',
       threats: ['threat-spoof-shopper'],
+      appliesToModel: false,
     },
   ],
 };

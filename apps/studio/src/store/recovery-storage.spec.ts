@@ -228,6 +228,7 @@ describe('local recovery storage', () => {
         prose: 'Every reader signs in.',
         status: 'valid',
         threats: ['threat-spoofed-reader'],
+        appliesToModel: false,
       },
     ]);
   });

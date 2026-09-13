@@ -149,6 +149,18 @@ describe('removeThreat', () => {
     expect(again.mitigations).toEqual([]);
   });
 
+  it('keeps an assumption that applies to the model when its only threat goes', () => {
+    const modelWide = parsedFixture({
+      ...threatRegisterFixture,
+      assumptions: [
+        { ...threatRegisterFixture.assumptions[0], appliesToModel: true },
+      ],
+    });
+    expect(modelOf(removeThreat(modelWide, spoofShopper)).assumptions).toEqual([
+      { ...modelWide.assumptions[0], threats: [] },
+    ]);
+  });
+
   it('keeps a record that had no threat link before the removal', () => {
     const unlinked = parsedFixture({
       ...threatRegisterFixture,

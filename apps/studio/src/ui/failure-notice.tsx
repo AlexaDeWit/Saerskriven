@@ -156,6 +156,8 @@ function describeOperation(failure: OperationFailure): string {
       `The model already holds an assumption ${assumptionId}.`,
     RecordWithoutThreat: ({ record }) =>
       `The ${record.kind} ${record.id} links no threat, and a ${record.kind} is added on a threat.`,
+    AssumptionWithoutReference: ({ assumptionId }) =>
+      `The assumption ${assumptionId} links no threat and does not apply to the model.`,
     ReusedThreatNumber: ({ number }) =>
       `Threat number ${String(number)} was issued already.`,
     ChangedThreatNumber: ({ threatId, number }) =>

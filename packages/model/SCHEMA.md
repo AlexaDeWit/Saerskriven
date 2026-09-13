@@ -186,3 +186,4 @@ every test run, so it cannot fall behind them. Regenerate it with
   - `prose`: text
   - `status`: one of `unconfirmed`, `valid`, `invalidated`
   - `threats`: list of ThreatId (text, at least 2 characters)
+  - `appliesToModel`: boolean

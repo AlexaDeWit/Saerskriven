@@ -58,6 +58,7 @@ const document: SaerskrivenYamlV2Document = {
       prose: 'Callers sit behind the gateway.',
       status: 'unconfirmed',
       threats: ['threat-1'],
+      appliesToModel: false,
     },
   ],
 };
@@ -80,6 +81,13 @@ describe('the Saerskriven YAML version 2 wire schema', () => {
   it('refuses a version 1 file, at that path', () => {
     expect(issuePathsOf({ ...document, formatVersion: 1 })).toEqual([
       ['formatVersion'],
+    ]);
+  });
+
+  it('refuses an assumption that omits its model link, at that path', () => {
+    const { appliesToModel: _omitted, ...unstated } = document.assumptions[0];
+    expect(issuePathsOf({ ...document, assumptions: [unstated] })).toEqual([
+      ['assumptions', 0, 'appliesToModel'],
     ]);
   });
 

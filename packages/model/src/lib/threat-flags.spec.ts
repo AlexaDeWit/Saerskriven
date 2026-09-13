@@ -36,8 +36,8 @@ const flagsOf = (
       id: `assumption-${String(index)}`,
       prose: '',
       status: assumptionStatus,
-      elements: [],
       threats: [threat.id],
+      appliesToModel: false,
     })),
   });
   return threatFlags(model, model.threats[0]);
@@ -103,6 +103,38 @@ describe('threatFlags on each boundary', () => {
       expect(flagsOf(status, mitigations, assumptions)).toEqual(flags);
     });
   }
+});
+
+const flaggedByModelWideAssumption = (threats: readonly string[]): string[] => {
+  const model = parsedFixture({
+    ...threatRegisterFixture,
+    assumptions: [
+      {
+        id: 'assumption-model-wide',
+        prose: '',
+        status: 'invalidated',
+        threats: [...threats],
+        appliesToModel: true,
+      },
+    ],
+  });
+  return model.threats
+    .filter((threat) =>
+      threatFlags(model, threat).includes('rests-on-invalidated-assumption'),
+    )
+    .map(({ id }) => id);
+};
+
+describe('threatFlags and an assumption that applies to the model', () => {
+  const [linked] = threatRegisterFixture.threats;
+
+  it('flags no threat when the invalidated assumption links none', () => {
+    expect(flaggedByModelWideAssumption([])).toEqual([]);
+  });
+
+  it('flags only the threat the invalidated assumption also links', () => {
+    expect(flaggedByModelWideAssumption([linked.id])).toEqual([linked.id]);
+  });
 });
 
 describe('threatFlags over generated models', () => {
