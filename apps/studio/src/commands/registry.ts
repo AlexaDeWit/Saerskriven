@@ -501,6 +501,17 @@ const table = {
       renameSelected();
     }),
   },
+  'model-properties': {
+    id: 'model-properties',
+    label: 'Model properties',
+    group: 'Edit',
+    shortcuts: [],
+    when: 'From the menu. Clears the canvas selection',
+    inTextFields: false,
+    dispatch: runs(() => {
+      dispatch(Action.ShowModelProperties());
+    }),
+  },
   'focus-threats': {
     id: 'focus-threats',
     label: 'Focus threats',

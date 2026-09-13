@@ -3,16 +3,17 @@
 The threats of whatever is selected, edited where they are read. The canvas
 selects, the panel follows, and an edit leaves as a store action, so the
 badges on the diagram and the panel are two views of one model with nothing
-synchronizing them.
+synchronizing them. The same location shows the model's own properties on
+request ([The model's properties](#the-models-properties)).
 
 ## Where it is
 
 The panel is an overlay on the canvas rather than a column beside it: it
 floats over the right edge of the canvas container, mounted from
 `../canvas/diagram-canvas.tsx`, and it is on the page only while something is
-selected. With nothing selected there is no panel and the diagram has the
-whole canvas, which is why the panel is the only place a threat is added
-from. It is held clear of the zoom cluster in the corner below it rather than
+selected or the model's properties are shown. With nothing selected there is
+no panel and the diagram has the whole canvas, which is why the panel is the
+only place a threat is added from. It is held clear of the zoom cluster in the corner below it rather than
 drawn over it, and the diagram is not resized when it opens: what the panel
 covers is dealt with by panning, not by taking the room off the canvas ([the
 canvas](../canvas/README.md)). The normal pane is 460 pixels wide. Widen pane
@@ -28,14 +29,17 @@ measurement. Resizing an open pane does not move the diagram. The default
 comes from `panelCover` in the canvas tokens, projected as `--pn-panel-cover`.
 
 `threat-overlay.tsx` is the mount: it reads the selection, decides whether
-there is a panel at all, holds the drafts and answers for the keyboard.
-`threat-panel.tsx` is the panel itself, bound to one subject.
+there is a panel at all and which, holds the drafts and answers for the
+keyboard. `panel-frame.tsx` is the pane both panels draw: the width control,
+the heading, the close control and Escape. `threat-panel.tsx` is the panel
+for a selection, bound to one subject, and `model-properties.tsx` the panel
+for the model.
 
 ## What it binds to
 
 `threats.ts` holds the selectors and pure functions for the panel.
-`panelSubject` returns one element, the count of several selected elements, or
-nothing. `attachedThreats` returns threats only for a single selection. A flow
+`panelSubject` returns one element, the count of several selected elements,
+the model while its properties are shown, or nothing. `attachedThreats` returns threats only for a single selection. A flow
 is an element here because it carries threats.
 
 For several selected elements, the panel states the count and offers no field.
@@ -102,9 +106,10 @@ content to 24 lines. They retain the browser's manual vertical resize control.
 ## Mitigations and assumptions
 
 An expanded threat carries a Mitigations group and an Assumptions group,
-after its description and before its delete control. They live
-here and nowhere else: a record only has meaning on a threat, so the studio
-gives records no panel, list or tab of their own. `threat-records.tsx` draws
+after its description and before its delete control. A record has meaning on
+a threat, and an assumption also on the model, so the studio gives records no
+panel, list or tab of their own: the assumptions that apply to the model are
+edited in [the model's properties](#the-models-properties). `threat-records.tsx` draws
 one group, `records.ts` holds what differs between the two kinds and the pure
 functions the groups read.
 
@@ -129,11 +134,13 @@ functions the groups read.
   long first line is drawn cut to two lines, and the option's accessible name
   is the whole line.
 - Each row edits the record's text in place, changes its status in place and
-  unlinks it. A record on other threats says how many, and the unlink
-  control is described by that count. Unlinking a record from its last
-  threat removes it, which is the model operation's rule rather than the
-  studio's, and one undo brings it back linked. The announcement names the
-  record by its title or first line. A row that goes while it holds focus,
+  unlinks it. A record on other threats says how many, an assumption that
+  also applies to the model says so, and the unlink control is described by
+  both. Unlinking a record from its last reference removes it, which is the
+  model operation's rule rather than the studio's, and one undo brings it
+  back linked. An assumption that applies to the model is not removed by
+  unlinking its last threat. The announcement names the record by its title
+  or first line, and says whether it was unlinked or removed. A row that goes while it holds focus,
   by an unlink or an undo, leaves focus in its group.
 
 Every edit is one store action carrying one model operation, so each is one
@@ -151,6 +158,37 @@ Control names carry the kind and the row's position: "Mitigation 2 title",
 "Mitigation 2 description", "Mitigation 2 status", "Unlink mitigation 2",
 "Assumption 1", "Add assumption", "Existing mitigation", "Link existing
 mitigation". Positions renumber when a row above is unlinked.
+
+## The model's properties
+
+The Model properties command in the root menu shows the model's properties
+in the panel location. It replaces the selection panel if that is open and
+clears the canvas selection, since both are one `ShowModelProperties` in the
+store. Selecting anything on the canvas brings the selection panel back, and
+an empty selection leaves the model's properties where they are. Close model
+properties and Escape close the panel, as they close the threat panel, and
+hand focus to the canvas. Whether the properties are shown belongs to the
+tab, like the selection, so an edit another tab makes changes what they show
+but not whether they are shown.
+
+The panel holds the model's Title and Description and an Assumptions group.
+Each text field commits one `SetModelMetadata` naming that field alone, so
+each commit is one undo step, and a commit that changes nothing dispatches
+nothing. Refused text is held as threat text is ([the commit
+rule](#the-commit-rule)), in the overlay, so a draft survives the panel
+closing and is dropped when the file changes.
+
+The Assumptions group is the threat editor's group bound to the model rather
+than to a threat: `records.ts` holds a `RecordTarget` per target, which says
+which records the group shows, attaches a new record, links, unlinks, and
+says where else a record is referenced. Add opens an empty row, whose first
+commit is one `AddAssumption` that applies to the model, links no threat and
+starts `unconfirmed`. Link existing offers the assumptions that do not apply
+to the model and applies the chosen one with `LinkAssumptionToModel`, which
+keeps its threat links. Unlink is `UnlinkAssumptionFromModel`, which removes
+an assumption that links no threat. A row whose assumption links threats says
+how many, and describes its unlink control by it. Status changes in place,
+and no record edit moves a threat's status.
 
 ## Element security properties
 
@@ -245,9 +283,13 @@ is in it.
 
 ## What is not attempted here
 
-- Records have no surface outside the threat editor, by design. A record is
-  reached through a threat, and removing one means unlinking it from every
-  threat it is on. The model's explicit remove operations have no control.
+- Records have no surface outside the threat editor and the model's
+  properties, by design. A record is reached through a threat, or an
+  assumption through the model, and removing one means unlinking it from
+  every reference it has. The model's explicit remove operations have no
+  control.
+- The model's owner and contributors are not edited in the studio. Its title
+  and description are, in the model's properties.
 - Link existing lists every unlinked record of its kind, with no search or
   filter over them. Two records whose first lines agree past the cut look
   alike in the list, and differ only in their accessible names.

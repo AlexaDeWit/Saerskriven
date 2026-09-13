@@ -19,7 +19,7 @@ catalog's `@playwright/test` version matches the flake's driver.
 The projects run in order:
 
 - `chromium` runs the main browser specs.
-- `phone` re-runs the chrome-card, link-existing, notices, records and summary specs on a `Pixel 7`
+- `phone` re-runs the chrome-card, link-existing, model properties, notices, records and summary specs on a `Pixel 7`
   preset, the viewport the shell chrome and the threat panel have least room
   in. `chromium` runs the same specs at desktop width.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
@@ -64,6 +64,7 @@ map to the browser specs below. Paths are relative to `src/`.
 | Mitigation and assumption records inside a threat, across tabs and at phone width  | `records.spec.ts`                                        |
 | Picking a record to link by pointer and keyboard, with long record text            | `link-existing.spec.ts`                                  |
 | Record counts and flag marks on the collapsed threat summary                       | `summary.spec.ts`                                        |
+| The model's title, description and model assumptions, across tabs and on a phone   | `model-properties.spec.ts`                               |
 | Undo and redo across canvas and panel edits                                        | `commands.spec.ts`, `redo.spec.ts`, `round-trip.spec.ts` |
 | Menu navigation, dirty state, open/close guards, and loss reports                  | `menu.spec.ts`                                           |
 | Shortcuts and their reference                                                      | `commands.spec.ts`                                       |

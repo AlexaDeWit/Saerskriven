@@ -43,6 +43,11 @@ Focus threats is a page command on T. It uses the panel's focus channel to
 open the selected element's panel when needed and focus "Add a threat". Text
 fields and open overlays keep T for their own input.
 
+Model properties has no chord and runs from the Edit group of the root menu.
+It dispatches `ShowModelProperties`, which clears the canvas selection and
+shows the model's properties in the panel location ([the
+panel](../panel/README.md#the-models-properties)).
+
 ## Chords, and how a platform writes them
 
 `shortcuts.ts` holds the chord. A chord is a set of modifiers and one key

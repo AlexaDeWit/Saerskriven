@@ -17,6 +17,9 @@ const softHyphen = '­';
 
 const panel = () => screen.queryByRole('region', { name: 'Threats' });
 
+const modelProperties = () =>
+  screen.queryByRole('region', { name: 'Model properties' });
+
 const addControl = (): HTMLElement =>
   screen.getByRole('button', { name: 'Add a threat' });
 
@@ -193,6 +196,53 @@ describe('ThreatOverlay', () => {
       'Pasted prose',
     );
   });
+  it('shows the model properties in place of the selection panel, clearing the selection, and opens them with nothing selected', () => {
+    render(<ThreatOverlay />);
+    act(() => {
+      dispatch(Action.ShowModelProperties());
+    });
+    expect(modelProperties()).not.toBeNull();
+    act(() => {
+      dispatch(Action.HideModelProperties());
+    });
+    select();
+
+    act(() => {
+      dispatch(Action.ShowModelProperties());
+    });
+
+    expect(panel()).toBeNull();
+    expect(modelProperties()).not.toBeNull();
+    expect(modelStore.getState().selection).toEqual([]);
+  });
+
+  it('gives way to the selection panel when an element is selected', () => {
+    render(<ThreatOverlay />);
+    act(() => {
+      dispatch(Action.ShowModelProperties());
+    });
+
+    select();
+
+    expect(modelProperties()).toBeNull();
+    expect(panel()).not.toBeNull();
+  });
+
+  it('closes the model properties on Escape, which Focus threats does not open again', async () => {
+    const user = userEvent.setup();
+    render(<ThreatOverlay />);
+    act(() => {
+      dispatch(Action.ShowModelProperties());
+    });
+    expect(focusThreatPanel()).toBe(false);
+
+    await user.click(screen.getByRole('textbox', { name: 'Title' }));
+    await user.keyboard('{Escape}');
+
+    expect(modelProperties()).toBeNull();
+    expect(modelStore.getState().modelProperties).toBe(false);
+  });
+
   it('skips field rendering for canvas-only parent updates and still follows model edits', async () => {
     const user = userEvent.setup();
     const shown = render(<ThreatOverlay />);

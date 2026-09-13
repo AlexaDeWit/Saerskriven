@@ -18,7 +18,7 @@ const recordParts = ['title', 'prose'] as const;
 /** The text a record carries: a mitigation has a title and prose, an assumption prose alone. */
 export type RecordPart = (typeof recordParts)[number];
 
-/** A mitigation or an assumption, as the threat editor edits either. */
+/** A mitigation or an assumption, as a record group edits either. */
 export type ThreatRecord = Mitigation | Assumption;
 
 /** Names one text field of one record, so a refused draft typed there can be put back. */
@@ -28,9 +28,10 @@ export type RecordFieldName =
 type RecordNoun = 'mitigation' | 'assumption';
 
 /**
- * What the threat editor needs to know about one kind of record: where the
+ * What a record group needs to know about one kind of record: where the
  * model holds it, the text it carries, its statuses and the one it starts
- * in, and the store action for each edit.
+ * in, and the store action for each edit. A fresh or restored record links
+ * nothing until a {@link RecordTarget} attaches it.
  */
 export type RecordKind<Held extends ThreatRecord> = {
   readonly noun: RecordNoun;
@@ -39,9 +40,8 @@ export type RecordKind<Held extends ThreatRecord> = {
   readonly parts: readonly RecordPart[];
   readonly statuses: readonly Held['status'][];
   readonly held: (model: Model) => readonly Held[];
-  readonly fresh: (threatId: ThreatId) => Held;
+  readonly fresh: () => Held;
   readonly restored: (
-    threatId: ThreatId,
     id: string,
     status: string | undefined,
   ) => Held | undefined;
@@ -61,16 +61,16 @@ export const mitigationKind: RecordKind<Mitigation> = {
   parts: ['title', 'prose'],
   statuses: mitigationStatusSchema.options,
   held: (model) => model.mitigations,
-  fresh: (threatId) => ({
+  fresh: () => ({
     id: generateMitigationId(),
     title: '',
     prose: '',
     status: 'proposed',
-    threats: [threatId],
+    threats: [],
   }),
-  restored: (threatId, id, status) => {
+  restored: (id, status) => {
     const parsed = mitigationIdSchema.safeParse(id);
-    const fresh = mitigationKind.fresh(threatId);
+    const fresh = mitigationKind.fresh();
     return parsed.success
       ? {
           ...fresh,
@@ -99,16 +99,16 @@ export const assumptionKind: RecordKind<Assumption> = {
   parts: ['prose'],
   statuses: assumptionStatusSchema.options,
   held: (model) => model.assumptions,
-  fresh: (threatId) => ({
+  fresh: () => ({
     id: generateAssumptionId(),
     prose: '',
     status: 'unconfirmed',
-    threats: [threatId],
+    threats: [],
     appliesToModel: false,
   }),
-  restored: (threatId, id, status) => {
+  restored: (id, status) => {
     const parsed = assumptionIdSchema.safeParse(id);
-    const fresh = assumptionKind.fresh(threatId);
+    const fresh = assumptionKind.fresh();
     return parsed.success
       ? {
           ...fresh,
@@ -127,6 +127,55 @@ export const assumptionKind: RecordKind<Assumption> = {
     Action.UnlinkAssumption({ assumptionId: id, threatId }),
   setStatus: ({ id }, status) =>
     Action.SetAssumptionStatus({ assumptionId: id, status }),
+};
+
+/**
+ * What one record group's records are linked to: a threat, or for
+ * assumptions the model. It says which records the group holds, links a new
+ * record to itself, gives the store action that links or unlinks one, and
+ * says where else a record is referenced, which describes the unlink control.
+ */
+export type RecordTarget<Held extends ThreatRecord> = {
+  readonly holds: (record: Held) => boolean;
+  readonly attach: (record: Held) => Held;
+  readonly link: (record: Held) => Action;
+  readonly unlink: (record: Held) => Action;
+  readonly elsewhere: (record: Held) => string | undefined;
+};
+
+/** The records of one kind on one threat. */
+export function threatTarget<Held extends ThreatRecord>(
+  kind: RecordKind<Held>,
+  threatId: ThreatId,
+): RecordTarget<Held> {
+  return {
+    holds: (record) => record.threats.includes(threatId),
+    attach: (record) => ({ ...record, threats: [threatId] }),
+    link: (record) => kind.link(record, threatId),
+    unlink: (record) => kind.unlink(record, threatId),
+    elsewhere: (record) => {
+      const others = otherThreats(record, threatId);
+      return joined([
+        others > 0 && `Also on ${String(others)} other ${threatNoun(others)}.`,
+        'appliesToModel' in record &&
+          record.appliesToModel &&
+          'Also applies to the model.',
+      ]);
+    },
+  };
+}
+
+/** The assumptions that apply to the model. */
+export const modelTarget: RecordTarget<Assumption> = {
+  holds: (assumption) => assumption.appliesToModel,
+  attach: (assumption) => ({ ...assumption, appliesToModel: true }),
+  link: ({ id }) => Action.LinkAssumptionToModel({ assumptionId: id }),
+  unlink: ({ id }) => Action.UnlinkAssumptionFromModel({ assumptionId: id }),
+  elsewhere: ({ threats }) =>
+    joined([
+      threats.length > 0 &&
+        `Also on ${String(threats.length)} ${threatNoun(threats.length)}.`,
+    ]),
 };
 
 /** The text of one part of a record. */
@@ -149,16 +198,14 @@ export function recordLabel(record: ThreatRecord): string {
 }
 
 /**
- * The records of one kind that "Link existing" offers the threat: every one
+ * The records of one kind that "Link existing" offers a target: every one
  * not already linked to it, each under a label a person can tell apart.
  */
 export function linkableRecords<Held extends ThreatRecord>(
   records: readonly Held[],
-  threatId: ThreatId,
+  target: Pick<RecordTarget<Held>, 'holds'>,
 ): readonly { readonly record: Held; readonly label: string }[] {
-  const offered = records.filter(
-    (record) => !record.threats.includes(threatId),
-  );
+  const offered = records.filter((record) => !target.holds(record));
   const labels = distinctLabels(
     offered.map((record) => ({
       id: record.id,
@@ -233,6 +280,15 @@ export function isRecordField(
   noun: RecordNoun,
 ): field is RecordFieldName {
   return recordFieldIn(field, noun) !== undefined;
+}
+
+function threatNoun(count: number): string {
+  return count === 1 ? 'threat' : 'threats';
+}
+
+function joined(sentences: readonly (string | false)[]): string | undefined {
+  const said = sentences.filter((sentence) => sentence !== false);
+  return said.length === 0 ? undefined : said.join(' ');
 }
 
 function firstLine(record: ThreatRecord): string | undefined {

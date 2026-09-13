@@ -1,4 +1,3 @@
-import { recordsLinkedTo, type ThreatId } from '@saerskriven/model';
 import { useEffect, useId, useRef, useState, type FocusEvent } from 'react';
 import { announce } from '../canvas/announcements.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
@@ -8,7 +7,6 @@ import {
   editedRecord,
   isRecordField,
   linkableRecords,
-  otherThreats,
   recordFieldIn,
   recordFieldName,
   recordLabel,
@@ -17,16 +15,17 @@ import {
   type RecordFieldName,
   type RecordKind,
   type RecordPart,
+  type RecordTarget,
   type ThreatRecord,
 } from './records.js';
-import type { RefusedField, RefusedText } from './threat-editor.js';
+import type { RefusedField, RefusedText } from './refusals.js';
 import styles from './threat-panel.module.css';
 
 type HeldText = Pick<RefusedField, 'field' | 'text' | 'status'>;
 
 type RecordGroupProps<Held extends ThreatRecord> = {
   readonly kind: RecordKind<Held>;
-  readonly threatId: ThreatId;
+  readonly target: RecordTarget<Held>;
   readonly held: HeldText | undefined;
   readonly refusals: ReadonlyMap<string, RefusedText>;
   readonly onChange: () => void;
@@ -69,29 +68,32 @@ function focusTarget(
 }
 
 /**
- * A threat's records of one kind. Add opens an empty row that becomes a
- * record on its first commit and leaves nothing behind when it is left
- * empty. Every other row edits, relinks or re-statuses a record in place.
+ * The records of one kind linked to one target, a threat or the model. Add
+ * opens an empty row that becomes a record on its first commit and leaves
+ * nothing behind when it is left empty. Every other row edits, relinks or
+ * re-statuses a record in place.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,
-  threatId,
+  target,
   held,
   refusals,
   onChange,
   onRefused,
 }: RecordGroupProps<Held>) {
   const all = useModelStore((state) => kind.held(state.present));
-  const records = recordsLinkedTo(all, threatId);
-  const linkable = linkableRecords(all, threatId);
+  const records = all.filter(target.holds);
+  const linkable = linkableRecords(all, target);
   const group = useRef<HTMLFieldSetElement>(null);
   const [draft, setDraft] = useState<Held | undefined>(() => {
     const heldField = recordFieldIn(held?.field, kind.noun);
-    return heldField === undefined ||
+    const restored =
+      heldField === undefined ||
       !heldField.pending ||
       all.some(({ id }) => id === heldField.recordId)
-      ? undefined
-      : kind.restored(threatId, heldField.recordId, held?.status);
+        ? undefined
+        : kind.restored(heldField.recordId, held?.status);
+    return restored === undefined ? undefined : target.attach(restored);
   });
   const focus = useRef<FocusRequest | undefined>(undefined);
   const focusedRow = useRef<string | undefined>(undefined);
@@ -168,7 +170,7 @@ export function RecordGroup<Held extends ThreatRecord>({
   };
 
   const unlink = (record: Held, index: number): void => {
-    dispatch(kind.unlink(record, threatId));
+    dispatch(target.unlink(record));
     const kept = kind
       .held(modelStore.getState().present)
       .some(({ id }) => id === record.id);
@@ -232,8 +234,8 @@ export function RecordGroup<Held extends ThreatRecord>({
                 unlink(record, index);
               }
             }}
+            elsewhere={target.elsewhere(record)}
             record={record}
-            threatId={threatId}
           />
         ))}
         <button
@@ -247,7 +249,7 @@ export function RecordGroup<Held extends ThreatRecord>({
               })?.focus();
               return;
             }
-            const opened = kind.fresh(threatId);
+            const opened = target.attach(kind.fresh());
             focus.current = { kind: 'text', recordId: opened.id };
             setDraft(opened);
           }}
@@ -269,7 +271,7 @@ export function RecordGroup<Held extends ThreatRecord>({
             <button
               className={styles.recordAction}
               onClick={() => {
-                dispatch(kind.link(offered.record, threatId));
+                dispatch(target.link(offered.record));
                 focus.current = { kind: 'text', recordId: offered.record.id };
                 setChosen(undefined);
               }}
@@ -287,7 +289,7 @@ export function RecordGroup<Held extends ThreatRecord>({
 type RecordRowProps<Held extends ThreatRecord> = {
   readonly kind: RecordKind<Held>;
   readonly record: Held;
-  readonly threatId: ThreatId;
+  readonly elsewhere: string | undefined;
   readonly name: string;
   readonly draft: boolean;
   readonly held: HeldText | undefined;
@@ -305,7 +307,7 @@ type RecordRowProps<Held extends ThreatRecord> = {
 function RecordRow<Held extends ThreatRecord>({
   kind,
   record,
-  threatId,
+  elsewhere,
   name,
   draft,
   held,
@@ -317,7 +319,6 @@ function RecordRow<Held extends ThreatRecord>({
   onRemove,
 }: RecordRowProps<Held>) {
   const sharedId = useId();
-  const others = otherThreats(record, threatId);
   const heldField = recordFieldIn(held?.field, kind.noun);
   const heldIn = (part: RecordPart): string | undefined =>
     heldField?.recordId === record.id && heldField.part === part
@@ -364,7 +365,7 @@ function RecordRow<Held extends ThreatRecord>({
           value={record.status}
         />
         <button
-          aria-describedby={others > 0 ? sharedId : undefined}
+          aria-describedby={elsewhere === undefined ? undefined : sharedId}
           className={styles.recordAction}
           data-unlink-record={draft ? undefined : true}
           onClick={onRemove}
@@ -380,9 +381,9 @@ function RecordRow<Held extends ThreatRecord>({
           {draft ? 'Discard' : 'Unlink'} {name.toLowerCase()}
         </button>
       </div>
-      {others > 0 && (
+      {elsewhere !== undefined && (
         <p className={styles.shared} id={sharedId}>
-          Also on {others} other {others === 1 ? 'threat' : 'threats'}.
+          {elsewhere}
         </p>
       )}
     </div>

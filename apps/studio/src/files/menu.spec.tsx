@@ -442,6 +442,21 @@ describe('what the studio says about the file', () => {
     });
   });
 
+  it('shows the model properties from the menu, clearing the selection', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+
+    await choose(user, 'Model properties');
+
+    expect(modelStore.getState()).toMatchObject({
+      selection: [],
+      modelProperties: true,
+    });
+  });
+
   it('names the file, its format, and whether it holds everything on screen', async () => {
     const user = userEvent.setup();
     mounted(specBridge());

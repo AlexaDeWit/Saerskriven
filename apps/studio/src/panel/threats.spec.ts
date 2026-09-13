@@ -52,6 +52,12 @@ describe('panelSubject', () => {
     ).toBeUndefined();
   });
 
+  it('is the model while its properties are shown', () => {
+    expect(panelSubject({ ...selecting([]), modelProperties: true })).toEqual({
+      kind: 'model',
+    });
+  });
+
   it('counts a selection with several elements', () => {
     expect(panelSubject(selecting([actorElement, processElement]))).toEqual({
       kind: 'several',

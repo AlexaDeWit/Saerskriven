@@ -1,49 +1,16 @@
 import type { Element, Threat } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { CategoryField } from '../ui/category-field.js';
 import { SeverityField } from '../ui/severity-field.js';
 import { StatusField } from '../ui/status-field.js';
-import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
+import { ProseField, TextField } from '../ui/text-field.js';
 import styles from './threat-panel.module.css';
-import {
-  assumptionKind,
-  mitigationKind,
-  type RecordFieldName,
-} from './records.js';
+import { assumptionKind, mitigationKind, threatTarget } from './records.js';
+import { draftIn, useRefusals, type RefusedField } from './refusals.js';
 import { RecordGroup } from './threat-records.js';
 import { ThreatSummary } from './threat-summary.js';
 import { elementLabel } from './threats.js';
-
-const textFields = ['Title', 'Description'] as const;
-
-/** Which text field of a threat, or of one of its records, a draft was typed in. */
-export type TextFieldName = (typeof textFields)[number] | RecordFieldName;
-
-/** A refused draft, and the status picked in the empty record row it was typed in, if it was typed in one. */
-export type RefusedText = RefusedDraft & { readonly status?: string };
-
-/** A refused draft with the field it was typed in, which is what puts it back. */
-export type RefusedField = RefusedText & { readonly field: TextFieldName };
-
-type Refusals = ReadonlyMap<TextFieldName, RefusedText>;
-
-function firstRefusal(refusals: Refusals): RefusedField | undefined {
-  const field =
-    textFields.find((name) => refusals.has(name)) ??
-    refusals.keys().next().value;
-  const draft = field === undefined ? undefined : refusals.get(field);
-  return field === undefined || draft === undefined
-    ? undefined
-    : { field, ...draft };
-}
-
-function draftIn(
-  held: RefusedField | undefined,
-  field: TextFieldName,
-): string | undefined {
-  return held?.field === field ? held.text : undefined;
-}
 
 /** Focus after adding or deleting a threat. */
 export type EditorFocus = 'title' | 'disclosure';
@@ -76,7 +43,7 @@ export function ThreatEditor({
   const titleField = useRef<HTMLInputElement>(null);
   const disclosure = useRef<HTMLButtonElement>(null);
   const spreadId = useId();
-  const [refusals, setRefusals] = useState<Refusals>(new Map());
+  const { refusals, note, refused } = useRefusals(onRefusal);
   const spread = threat.elements.length;
 
   useEffect(() => {
@@ -90,33 +57,6 @@ export function ThreatEditor({
       onFocused();
     }
   }, [focus, onFocused]);
-
-  const noteRefusals = (
-    changes: readonly (readonly [TextFieldName, RefusedText | undefined])[],
-  ): void => {
-    const noted = new Map(refusals);
-    for (const [field, draft] of changes) {
-      if (draft === undefined) {
-        noted.delete(field);
-      } else {
-        noted.set(field, draft);
-      }
-    }
-    if (
-      changes.some(
-        ([field, draft]) => draft !== undefined || refusals.has(field),
-      )
-    ) {
-      setRefusals(noted);
-    }
-    onRefusal(firstRefusal(noted));
-  };
-
-  const refused =
-    (field: TextFieldName) =>
-    (draft: RefusedDraft | undefined): void => {
-      noteRefusals([[field, draft]]);
-    };
 
   return (
     <Accordion.Item className={styles.item} value={threat.id}>
@@ -174,17 +114,17 @@ export function ThreatEditor({
           held={held}
           kind={mitigationKind}
           onChange={onChange}
-          onRefused={noteRefusals}
+          onRefused={note}
           refusals={refusals}
-          threatId={threat.id}
+          target={threatTarget(mitigationKind, threat.id)}
         />
         <RecordGroup
           held={held}
           kind={assumptionKind}
           onChange={onChange}
-          onRefused={noteRefusals}
+          onRefused={note}
           refusals={refusals}
-          threatId={threat.id}
+          target={threatTarget(assumptionKind, threat.id)}
         />
         {spread > 1 && (
           <div className={styles.spread}>

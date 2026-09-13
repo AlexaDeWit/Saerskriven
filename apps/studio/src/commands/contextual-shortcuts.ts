@@ -219,6 +219,13 @@ const table = {
     shortcuts: escapeKey,
     when: 'Focus is inside the threat panel and no listbox is open',
   },
+  'close-model-properties': {
+    id: 'close-model-properties',
+    label: 'Close model properties',
+    group: 'Panels',
+    shortcuts: escapeKey,
+    when: 'Focus is inside the model properties panel and no listbox is open',
+  },
   'close-shortcut-reference': {
     id: 'close-shortcut-reference',
     label: 'Close the shortcut reference',

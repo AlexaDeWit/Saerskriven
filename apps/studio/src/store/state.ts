@@ -67,7 +67,8 @@ export type InlineEditor = {
  * `activeDiagram` names the diagram on screen, and nothing until one has
  * been chosen, the first the model holds being on screen meanwhile: it stays
  * out of the undo stacks with the rest of the view state, so an undo moves
- * the model and never the view.
+ * the model and never the view. `modelProperties` is whether the panel shows
+ * the model's own properties, which a canvas selection takes back.
  */
 export type State = {
   readonly present: Model;
@@ -76,6 +77,7 @@ export type State = {
   readonly saved: Model;
   readonly activeDiagram: DiagramId | undefined;
   readonly selection: readonly ElementId[];
+  readonly modelProperties: boolean;
   readonly inlineEditor: InlineEditor | undefined;
   readonly file: FileLifecycle;
   readonly lastFailure: StudioFailure | undefined;
@@ -167,6 +169,7 @@ export function initialState(model: Model): State {
     saved: model,
     activeDiagram: undefined,
     selection: [],
+    modelProperties: false,
     inlineEditor: undefined,
     file: FileLifecycle.NoFile(),
     lastFailure: undefined,

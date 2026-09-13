@@ -1,12 +1,12 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
-  centreOf,
   chooseInPanel,
   closeMenu,
   expandThreat,
   menuItem,
   nodeNamed,
+  onScreen,
   openEcluse,
   openMenu,
   panelControl,
@@ -25,17 +25,6 @@ const purge = /Dredger inappropriately purges/u;
 const forwarded = /Forwarded caller credentials/u;
 
 const chokepoint = /Chokepoint exhaustion/u;
-
-const onScreen = async (target: Locator): Promise<void> => {
-  await target.scrollIntoViewIfNeeded();
-  await expect(target).toBeInViewport();
-  const at = await centreOf(target);
-  const reached = await target.evaluate(
-    (node, point) => node.contains(document.elementFromPoint(point.x, point.y)),
-    at,
-  );
-  expect(reached, 'a record control is covered').toBe(true);
-};
 
 const offeredToLink = async (page: Page, label: string): Promise<boolean> => {
   const existing = panelField(page, 'combobox', 'Existing mitigation');

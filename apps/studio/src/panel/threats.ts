@@ -22,19 +22,24 @@ const kindWords = {
   'trust-boundary': 'trust boundary',
 } as const satisfies Record<Element['kind'], string>;
 
-/** What an open panel shows for one or several selected elements. */
+/** What an open panel shows: one or several selected elements, or the model's own properties. */
 export type PanelSubject =
   | { readonly kind: 'element'; readonly element: Element }
-  | { readonly kind: 'several'; readonly count: number };
+  | { readonly kind: 'several'; readonly count: number }
+  | { readonly kind: 'model' };
 
 /**
- * What the panel is bound to, and nothing at all while nothing is selected,
- * which is where no panel is drawn. A flow is an element like any other here:
- * it carries threats, so it opens the panel as a box does. The canvas has a
- * selector of its own over the same field, which returns the id it draws the
- * selection from rather than the record this one reads.
+ * What the panel is bound to, and nothing at all while nothing is selected
+ * and the model's properties are not shown, which is where no panel is drawn.
+ * A flow is an element like any other here: it carries threats, so it opens
+ * the panel as a box does. The canvas has a selector of its own over the same
+ * field, which returns the id it draws the selection from rather than the
+ * record this one reads.
  */
 export function panelSubject(state: State): PanelSubject | undefined {
+  if (state.modelProperties) {
+    return { kind: 'model' };
+  }
   const selected = state.selection;
   if (selected.length > 1) {
     return { kind: 'several', count: selected.length };

@@ -317,6 +317,18 @@ export const chooseInPanel = async (
   await expect(page.getByRole('listbox')).toHaveCount(0);
 };
 
+/** Scrolls a control into view and fails where it is off screen or something else covers its centre. */
+export const onScreen = async (target: Locator): Promise<void> => {
+  await target.scrollIntoViewIfNeeded();
+  await expect(target).toBeInViewport();
+  const at = await centreOf(target);
+  const reached = await target.evaluate(
+    (node, point) => node.contains(document.elementFromPoint(point.x, point.y)),
+    at,
+  );
+  expect(reached, 'the control is covered').toBe(true);
+};
+
 /** Reads a node position from its transform without including the selection-dependent stacking style. */
 export const placeOf = async (node: Locator): Promise<string> => {
   const style = (await node.getAttribute('style')) ?? '';

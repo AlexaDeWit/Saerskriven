@@ -54,12 +54,15 @@ const noteModel = {
   })),
 };
 const noteStart = initialState(noteModel);
+const softHyphen = '\u00AD';
 
 type StudioActionTag =
   | 'Undo'
   | 'Redo'
   | 'SelectDiagram'
   | 'Select'
+  | 'ShowModelProperties'
+  | 'HideModelProperties'
   | 'InlineEditing'
   | 'Imported'
   | 'ImportFailed'
@@ -197,6 +200,15 @@ const applied: ActionsByTag<ModelActionTag> = {
     assumptionId: firstAssumption,
     status: 'invalidated',
   }),
+  LinkAssumptionToModel: Action.LinkAssumptionToModel({
+    assumptionId: firstAssumption,
+  }),
+  UnlinkAssumptionFromModel: Action.UnlinkAssumptionFromModel({
+    assumptionId: firstAssumption,
+  }),
+  SetModelMetadata: Action.SetModelMetadata({
+    change: { title: 'Retitled model' },
+  }),
 };
 
 const refused: ActionsByTag<ModelActionTag> = {
@@ -312,6 +324,15 @@ const refused: ActionsByTag<ModelActionTag> = {
     assumptionId: firstAssumption,
     status: 'valid',
   }),
+  LinkAssumptionToModel: Action.LinkAssumptionToModel({
+    assumptionId: assumptionId('assumption-missing'),
+  }),
+  UnlinkAssumptionFromModel: Action.UnlinkAssumptionFromModel({
+    assumptionId: assumptionId('assumption-missing'),
+  }),
+  SetModelMetadata: Action.SetModelMetadata({
+    change: { description: `Pasted${softHyphen}prose` },
+  }),
 };
 
 const recordActions = new Set<Action['_tag']>([
@@ -325,7 +346,12 @@ const recordActions = new Set<Action['_tag']>([
   'LinkAssumption',
   'UnlinkAssumption',
   'SetAssumptionStatus',
+  'LinkAssumptionToModel',
 ]);
+
+const modelScopedStart = initialState(
+  reduce(recordedStart, applied.LinkAssumptionToModel).present,
+);
 
 const withHistory: State = {
   ...start,
@@ -339,6 +365,8 @@ const studioActions: ActionsByTag<StudioActionTag> = {
   Redo: Action.Redo(),
   SelectDiagram: Action.SelectDiagram({ diagramId: mainDiagram }),
   Select: Action.Select({ elementIds: [actorElement] }),
+  ShowModelProperties: Action.ShowModelProperties(),
+  HideModelProperties: Action.HideModelProperties(),
   InlineEditing: Action.InlineEditing({
     editor: { kind: 'name', elementId: actorElement },
   }),
@@ -405,6 +433,9 @@ function stateFor(action: Action): State {
     Action.$is('SetFlowDirection')(action)
   ) {
     return initialState(placeholderModel);
+  }
+  if (Action.$is('UnlinkAssumptionFromModel')(action)) {
+    return modelScopedStart;
   }
   if (recordActions.has(action._tag)) {
     return recordedStart;
@@ -531,6 +562,102 @@ describe('a record', () => {
       ),
     ).toBe(recordedStart);
     expect(reduce(recordedStart, refused.LinkAssumption)).toBe(recordedStart);
+  });
+});
+
+describe('an assumption that applies to the model', () => {
+  const [modelScoped] = modelScopedStart.present.assumptions;
+  const unlinkFromThreat = Action.UnlinkAssumption({
+    assumptionId: firstAssumption,
+    threatId: firstThreat,
+  });
+
+  it('keeps its threat links when it is applied to the model', () => {
+    expect(modelScoped).toEqual({ ...heldAssumption, appliesToModel: true });
+  });
+
+  it('stays in the model when its only threat link goes, and goes with its model link after that, one undo bringing it back', () => {
+    const threatless = reduce(modelScopedStart, unlinkFromThreat);
+    expect(threatless.present.assumptions).toEqual([
+      { ...modelScoped, threats: [] },
+    ]);
+    const removed = reduce(threatless, applied.UnlinkAssumptionFromModel);
+    expect(removed.present.assumptions).toEqual([]);
+    expect(reduce(removed, Action.Undo()).present).toBe(threatless.present);
+  });
+
+  it('stays on its threat when its model link goes', () => {
+    expect(
+      reduce(modelScopedStart, applied.UnlinkAssumptionFromModel).present
+        .assumptions,
+    ).toEqual([heldAssumption]);
+  });
+});
+
+describe('the model metadata', () => {
+  it('commits the title and the description as one undo step each', () => {
+    const retitled = reduce(start, applied.SetModelMetadata);
+    const described = reduce(
+      retitled,
+      Action.SetModelMetadata({ change: { description: 'Shared models.' } }),
+    );
+    expect(described.present.metadata).toMatchObject({
+      title: 'Retitled model',
+      description: 'Shared models.',
+    });
+    expect(described.past).toHaveLength(2);
+    expect(reduce(described, Action.Undo()).present.metadata).toBe(
+      retitled.present.metadata,
+    );
+  });
+
+  it('keeps history alone for a value the model already holds', () => {
+    expect(
+      reduce(
+        start,
+        Action.SetModelMetadata({
+          change: { title: start.present.metadata.title },
+        }),
+      ),
+    ).toBe(start);
+  });
+});
+
+describe('the model properties', () => {
+  const selected = reduce(start, Action.Select({ elementIds: [actorElement] }));
+  const shown = reduce(selected, Action.ShowModelProperties());
+
+  it('show in place of the selection, clearing it, with no history and no unsaved work', () => {
+    expect(shown.modelProperties).toBe(true);
+    expect(shown.selection).toEqual([]);
+    expect(shown.present).toBe(start.present);
+    expect(shown.past).toEqual([]);
+  });
+
+  it('give way to a selection, and stay through a cleared one', () => {
+    expect(
+      reduce(shown, Action.Select({ elementIds: [actorElement] }))
+        .modelProperties,
+    ).toBe(false);
+    expect(reduce(shown, Action.Select({ elementIds: [] }))).toBe(shown);
+  });
+
+  it('hide on request, and are the same state where they are not shown', () => {
+    expect(reduce(shown, Action.HideModelProperties()).modelProperties).toBe(
+      false,
+    );
+    expect(reduce(start, Action.HideModelProperties())).toBe(start);
+    expect(reduce(shown, Action.ShowModelProperties())).toBe(shown);
+  });
+
+  it('stay through an edit another tab made, and close on a new model', () => {
+    const elsewhere = reduce(start, applied.SetModelMetadata);
+    expect(
+      reduce(shown, Action.Followed({ state: result(elsewhere) }))
+        .modelProperties,
+    ).toBe(true);
+    expect(reduce(shown, studioActions.Opened).modelProperties).toBe(false);
+    expect(reduce(shown, Action.Closed()).modelProperties).toBe(false);
   });
 });
 
