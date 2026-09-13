@@ -137,14 +137,6 @@ export function textOf(record: ThreatRecord, part: RecordPart): string {
     : record.prose;
 }
 
-/** The records of one kind linked to the threat, in register order. */
-export function recordsOn<Held extends ThreatRecord>(
-  records: readonly Held[],
-  threatId: ThreatId,
-): readonly Held[] {
-  return records.filter((record) => record.threats.includes(threatId));
-}
-
 /** How many threats other than this one the record is linked to. */
 export function otherThreats(record: ThreatRecord, threatId: ThreatId): number {
   return record.threats.filter((id) => id !== threatId).length;

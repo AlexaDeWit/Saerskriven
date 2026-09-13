@@ -118,7 +118,7 @@ describe('projecting a model the format is smaller than', () => {
       'threat "threat-zone": the attachment to the trust-boundary "element-zone", which the format nests a threat under an actor, a process, a store, or a flow alone (no place in the format)',
       'threat "threat-zone": the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under (no place in the format)',
       'threat "threat-unattached": the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under (no place in the format)',
-      'mitigation "mitigation-sign-entries": the mitigation "Sign every entry", which the format keeps no record of (no place in the format)',
+      'threat "threat-split": the mitigation title written into its one mitigation text, which reads back as one record with no title (reduced to fit the format)',
       'assumption "assumption-vault-audited": the assumption, which the format keeps no record of (no place in the format)',
     ]);
   });
@@ -211,7 +211,7 @@ describe('merging a model onto the document it is written over', () => {
       'threat "threat-zone": the attachment to the trust-boundary "element-zone", which the format nests a threat under an actor, a process, a store, or a flow alone (no place in the format)',
       'threat "threat-zone": the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under (no place in the format)',
       'threat "threat-unattached": the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under (no place in the format)',
-      'mitigation "mitigation-sign-entries": the mitigation "Sign every entry", which the format keeps no record of (no place in the format)',
+      'threat "threat-split": the mitigation title written into its one mitigation text, which reads back as one record with no title (reduced to fit the format)',
       'assumption "assumption-vault-audited": the assumption, which the format keeps no record of (no place in the format)',
       'diagram "7": the diagram "An older sketch" the source document held (removed by an edit)',
       'threat "threat-gone": the threat "A threat an edit has since removed" the source document nested under a cell the model kept (removed by an edit)',

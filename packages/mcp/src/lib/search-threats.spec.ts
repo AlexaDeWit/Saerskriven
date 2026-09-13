@@ -5,8 +5,10 @@ import {
   ecluseWorkspace,
   everyRecordTree,
 } from './read-tools.fixtures.js';
+import { dataNotInstructions } from './preface.js';
 import { renderThreatSearch, searchThreats } from './search-threats.js';
 import { searchLimits } from './search.js';
+import { toolResult } from './tool-result.js';
 
 const ecluse = ecluseWorkspace();
 
@@ -72,6 +74,44 @@ describe('what saer_search_threats finds', () => {
       search({ severity: 'high', response_format: 'concise' }),
     );
     expect(rendered.join('\n')).toContain('category STRIDE/');
+  });
+});
+
+describe('a Threat Dragon threat found by the text of its mitigation', () => {
+  const outcome = searchThreats(ecluse, {
+    query: 'secret newtype',
+    response_format: 'detailed',
+  });
+  const found = answerOf(outcome);
+  const [row] = found.threats;
+
+  it('is the one threat whose text says it', () => {
+    expect(found.threats.map((threat) => threat.number)).toEqual([1]);
+  });
+
+  it('carries that text as the mitigation record the read made of it', () => {
+    expect(
+      row?.mitigations?.map(({ id, status, threats, prose }) => ({
+        id,
+        status,
+        threats,
+        mentions: prose.includes('Secret newtype'),
+      })),
+    ).toEqual([
+      {
+        id: `${row?.id ?? ''}-mitigation`,
+        status: 'implemented',
+        threats: [row?.id],
+        mentions: true,
+      },
+    ]);
+  });
+
+  it('opens its text result with the line saying it is data', () => {
+    const [content] = toolResult(outcome, renderThreatSearch).content;
+    expect(
+      content?.type === 'text' ? content.text.split('\n')[0] : undefined,
+    ).toBe(dataNotInstructions);
   });
 });
 

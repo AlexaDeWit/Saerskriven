@@ -125,6 +125,7 @@ describe('placing the threats of a model under the cells that host them', () => 
       'threat "threat-zone": the attachment to the trust-boundary "element-zone", which the format nests a threat under an actor, a process, a store, or a flow alone (no place in the format)',
       'threat "threat-zone": the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under (no place in the format)',
       'threat "threat-unattached": the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under (no place in the format)',
+      'threat "threat-split": the mitigation title written into its one mitigation text, which reads back as one record with no title (reduced to fit the format)',
     ]);
   });
 

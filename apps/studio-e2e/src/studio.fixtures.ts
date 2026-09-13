@@ -291,7 +291,9 @@ export const chooseInPanel = async (
   field: string,
   option: string,
 ): Promise<void> => {
-  await threatPanel(page).getByRole('combobox', { name: field }).click();
+  await threatPanel(page)
+    .getByRole('combobox', { name: field, exact: true })
+    .click();
   await page.getByRole('option', { name: option, exact: true }).click();
 };
 

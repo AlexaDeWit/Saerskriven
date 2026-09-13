@@ -1,3 +1,4 @@
+import { recordsLinkedTo } from '@saerskriven/model';
 import { mitigationId } from '@saerskriven/model/fixtures';
 import {
   firstThreat,
@@ -13,7 +14,6 @@ import {
   recordFieldIn,
   recordFieldName,
   recordLabel,
-  recordsOn,
 } from './records.js';
 
 const [mitigation] = recordedModel.mitigations;
@@ -31,7 +31,7 @@ describe('record kinds', () => {
   });
 });
 
-describe('recordsOn and linkableRecords', () => {
+describe('recordsLinkedTo and linkableRecords', () => {
   const shared = {
     ...mitigation,
     id: mitigationId('mitigation-shared'),
@@ -41,7 +41,7 @@ describe('recordsOn and linkableRecords', () => {
   const records = [mitigation, shared];
 
   it('split one register into what the threat holds and what it could link', () => {
-    expect(recordsOn(records, secondThreat)).toEqual([shared]);
+    expect(recordsLinkedTo(records, secondThreat)).toEqual([shared]);
     expect(
       linkableRecords(records, secondThreat).map(({ record }) => record),
     ).toEqual([mitigation]);

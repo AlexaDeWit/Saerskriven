@@ -8,6 +8,7 @@ import {
   ecluseModel,
   ecluseText,
   minimalFixture,
+  mitigationTextFixture,
   unmodelledFixture,
 } from './threat-dragon.fixtures.js';
 
@@ -255,6 +256,48 @@ describe('reading what the Écluse file has no example of', () => {
       mitigations: [],
       assumptions: [],
     });
+  });
+});
+
+describe('reading the mitigation text of a threat', () => {
+  const text = JSON.stringify(mitigationTextFixture);
+  const read = readOrThrow(text);
+
+  it('makes one record of each text, linked to its threat, its status inferred from the threat', () => {
+    expect(read.model.mitigations).toEqual([
+      {
+        id: 'threat-mitigated-mitigation',
+        title: '',
+        prose: 'Rotate the key.\n\nRevoke it on leave.\r\n  ',
+        status: 'implemented',
+        threats: ['threat-mitigated'],
+      },
+      {
+        id: 'threat-open-mitigation',
+        title: '',
+        prose: 'Rate limit the endpoint.',
+        status: 'proposed',
+        threats: ['threat-open'],
+      },
+    ]);
+  });
+
+  it('leaves the prose field of every threat empty', () => {
+    expect(read.model.threats.map((threat) => threat.mitigation)).toEqual([
+      '',
+      '',
+      '',
+    ]);
+  });
+
+  it('gives the records the same ids on every read', () => {
+    expect(readOrThrow(text).model.mitigations.map(({ id }) => id)).toEqual(
+      read.model.mitigations.map(({ id }) => id),
+    );
+  });
+
+  it('diverges in nothing', () => {
+    expect(read.divergences).toEqual([]);
   });
 });
 

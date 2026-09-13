@@ -703,7 +703,7 @@ for (const era of eras) {
             diagrams: 1,
             elements: 38,
             threats: 29,
-            mitigations: 0,
+            mitigations: 29,
             assumptions: 0,
           },
           divergences: [],

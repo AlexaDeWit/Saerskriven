@@ -592,7 +592,7 @@ Nothing is built. Issue #48 requires every mutation to go through `parseModel` a
 
 **Description**
 
-An agent saving a model with mitigations and assumptions into Threat Dragon's format loses both, since that format keeps no record of either. An agent that is not told cannot tell the person who asked.
+An agent saving a model into Threat Dragon's format loses its assumptions, which that format keeps no record of, and flattens its mitigations into one text per threat, which loses their titles, their statuses and which threats share them. An agent that is not told cannot tell the person who asked.
 
 **Mitigation**
 

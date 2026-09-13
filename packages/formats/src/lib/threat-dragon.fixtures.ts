@@ -50,6 +50,16 @@ export const ecluseText: string = readFileSync(
   'utf8',
 );
 
+/**
+ * The current Écluse model as Threat Dragon wrote it, vendored at
+ * `test-data/ecluse-security.json`. It is not in {@link corpusTexts}, since
+ * the rendering fixtures read the older file.
+ */
+export const ecluseSecurityText: string = readFileSync(
+  join(import.meta.dirname, '../../../../test-data/ecluse-security.json'),
+  'utf8',
+);
+
 const vendored = join(
   import.meta.dirname,
   '../../../../test-data/threat-dragon',
@@ -214,6 +224,72 @@ export const complementFixture: ThreatDragonDocument = {
         ],
       },
       { id: 5, title: 'Nothing drawn yet', diagramType: 'STRIDE' },
+    ],
+  },
+};
+
+const textThreat = (
+  id: string,
+  number: number,
+  status: string,
+  mitigation: string,
+): ThreatDragonThreat => ({
+  id,
+  number,
+  title: '',
+  modelType: 'STRIDE',
+  type: 'Tampering',
+  status,
+  severity: 'Low',
+  description: '',
+  mitigation,
+});
+
+/**
+ * The mitigation text a Threat Dragon threat holds in each shape a read and
+ * a write must keep to the byte: a mitigated threat whose text carries a
+ * blank line, a carriage return and trailing spaces, an open threat with one
+ * line, and an open threat with no text. Written by the release this codec
+ * writes, so a merge onto it stamps nothing.
+ */
+export const mitigationTextFixture: ThreatDragonDocument = {
+  version: '2.6.2',
+  summary: { title: 'Mitigation text' },
+  detail: {
+    threatTop: 3,
+    diagrams: [
+      {
+        id: 0,
+        title: '',
+        diagramType: 'STRIDE',
+        version: '2.6.2',
+        cells: [
+          {
+            id: 'process-1',
+            shape: 'process',
+            position: { x: 0, y: 0 },
+            size: { width: 100, height: 60 },
+            data: {
+              type: 'tm.Process',
+              threats: [
+                textThreat(
+                  'threat-mitigated',
+                  1,
+                  'Mitigated',
+                  'Rotate the key.\n\nRevoke it on leave.\r\n  ',
+                ),
+                textThreat(
+                  'threat-open',
+                  2,
+                  'Open',
+                  'Rate limit the endpoint.',
+                ),
+                textThreat('threat-empty', 3, 'Open', ''),
+              ],
+            },
+          },
+        ],
+      },
     ],
   },
 };

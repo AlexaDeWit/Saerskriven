@@ -6,6 +6,10 @@ import type {
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
+  mitigationDivergences,
+  mitigationText,
+} from './threat-dragon-mitigations.js';
+import {
   allCells,
   hostsThreats,
   indexById,
@@ -65,7 +69,9 @@ export type ThreatPlan = {
  * file exactly as it was. Its status, severity and category stay as the
  * source spelled them wherever that spelling still reads back as the model's
  * value, because Threat Dragon writes a category in its author's own
- * language and reads two spellings of the undecided severity.
+ * language and reads two spellings of the undecided severity. Its mitigation
+ * text is built from the mitigations linked to it, on the terms of
+ * {@link mitigationText}.
  *
  * The {@link HighWaterMark} the plan carries is floored on what the file
  * declared, since a mark the file already carries is its own claim, and on
@@ -94,7 +100,7 @@ export function planThreats(
   const byCell = new Map<string, ThreatDragonThreat[]>();
   const divergences: Divergence[] = [];
   const issued: number[] = [];
-  const written: number[] = [];
+  const written: Threat[] = [];
   for (const threat of model.threats) {
     const placed: string[] = [];
     for (const id of threat.elements) {
@@ -114,7 +120,7 @@ export function planThreats(
     ) {
       divergences.push(split(threat.id, placed.length));
     }
-    written.push(threat.number);
+    written.push(threat);
     if (!carried.has(threat.number)) {
       issued.push(threat.number);
     }
@@ -122,10 +128,11 @@ export function planThreats(
     if (!equivalent(toThreatCategory(category).value, threat.category)) {
       divergences.push(unnamedCategory(threat));
     }
+    const text = mitigationText(threat, model);
     for (const id of placed) {
       const list = byCell.get(id) ?? [];
       list.push(
-        projectThreat(threat, nested.get(id)?.get(threat.id), category),
+        projectThreat(threat, nested.get(id)?.get(threat.id), category, text),
       );
       byCell.set(id, list);
     }
@@ -134,8 +141,13 @@ export function planThreats(
     byCell: new Map(
       [...byCell].map(([id, list]) => [id, inSourceOrder(list, hosts.get(id))]),
     ),
-    threatTop: highWaterMark(model, source, written, issued),
-    divergences,
+    threatTop: highWaterMark(
+      model,
+      source,
+      written.map((threat) => threat.number),
+      issued,
+    ),
+    divergences: [...divergences, ...mitigationDivergences(model, written)],
   };
 }
 
@@ -203,6 +215,7 @@ function projectThreat(
   threat: Threat,
   held: ThreatDragonThreat | undefined,
   category: ThreatDragonCategoryFields,
+  mitigation: string,
 ): ThreatDragonThreat {
   const named =
     held !== undefined &&
@@ -222,7 +235,7 @@ function projectThreat(
         ? held.severity
         : fromSeverity(threat.severity),
     description: threat.description,
-    mitigation: threat.mitigation,
+    mitigation,
   };
 }
 

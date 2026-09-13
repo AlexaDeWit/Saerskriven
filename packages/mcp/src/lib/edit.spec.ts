@@ -163,13 +163,12 @@ describe('what an applied edit writes', () => {
     );
     const reread = readAnyFormat(attempted.bytes(dragonFile).toString('utf8'));
     expect(Either.getOrUndefined(applied)?.format).toEqual('threat-dragon');
-    expect(Either.getOrUndefined(applied)?.divergences).toEqual([
-      {
-        subject: { kind: 'mitigation', id: 'mitigation-audit-log' },
-        detail:
-          'the mitigation "Audit log", which the format keeps no record of',
-        reason: 'unrepresentable',
-      },
+    expect(
+      Either.getOrUndefined(applied)?.divergences.map(
+        ({ subject, reason }) => ({ subject, reason }),
+      ),
+    ).toEqual([
+      { subject: { kind: 'threat', id: ecluseThreat }, reason: 'narrowed' },
     ]);
     expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
   });

@@ -256,7 +256,8 @@ reference it. The second takes `status`, `severity`, `element` and `query` and
 carries the threat number and id, its title, status, severity, category and
 attached elements. Both take `response_format`: `concise` is those fields, and
 `detailed` adds the complete model record, including an element's geometry,
-flow direction, security facts and declared relationships, or a threat's prose.
+flow direction, security facts and declared relationships, or a threat's prose
+and the mitigations linked to it.
 Use `element` for an exact element-id lookup. Element queries also search ids,
 protocol, privilege level and declared relationship ids. A listing is cut at fifty concise
 matches or twenty detailed ones, and a cut result says what it matched and
@@ -324,7 +325,8 @@ is still replaced with neither side told. There is no exclusive hold across a
 browser and a process that keeps no session, so read the file in the same turn
 you edit it. What the format cannot hold comes back in the result's
 divergences rather than as a refusal, which is how a write to a Threat Dragon
-file reports a mitigation that format keeps no record of.
+file reports an assumption that format keeps no record of, or a mitigation
+status its one mitigation text per threat cannot carry.
 
 `saer_create` writes a new model in the native YAML format, and `saer_import`
 converts an OTM or TM-BOM file into one. Both refuse a path that is already

@@ -3,11 +3,12 @@ import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import type { Divergence } from './divergence.js';
-import { allThreats } from './threat-dragon-document.js';
+import { allThreats, indexById } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import {
   corpusTexts,
+  ecluseSecurityText,
   threatDragonJsonSchema,
 } from './threat-dragon.fixtures.js';
 
@@ -33,7 +34,7 @@ const diverged = readings.flatMap((reading) =>
     : [],
 );
 
-const roundTrips = corpusTexts.map((file) => {
+const roundTrip = (file: { name: string; text: string }) => {
   const read = Either.getOrThrowWith(
     readThreatDragon(file.text),
     () => new Error(`The corpus file ${file.name} no longer reads.`),
@@ -53,7 +54,24 @@ const roundTrips = corpusTexts.map((file) => {
     ).source,
     reread,
   };
-});
+};
+
+const roundTrips = corpusTexts.map(roundTrip);
+
+const mitigationTrips = [
+  ...roundTrips,
+  roundTrip({ name: 'ecluse-security.json', text: ecluseSecurityText }),
+];
+
+const textsOf = (document: ThreatDragonDocument) =>
+  allThreats(document).map((threat) => threat.mitigation);
+
+const firstTexts = (document: ThreatDragonDocument) =>
+  [...indexById(allThreats(document)).values()].flatMap((threat) =>
+    threat.mitigation === ''
+      ? []
+      : [{ threats: [threat.id], prose: threat.mitigation }],
+  );
 
 const scalarsOf = (
   value: unknown,
@@ -199,4 +217,44 @@ describe('the Écluse model, the one file this codec preserves whole', () => {
   it('reports no divergence at all', () => {
     expect(ecluse.written.divergences).toEqual([]);
   });
+});
+
+describe('the mitigation text of every vendored file and the current Écluse file', () => {
+  it.each(mitigationTrips)(
+    'reads each text of $name as one record of its threat alone',
+    ({ source, model }) => {
+      expect(
+        model.mitigations.map(({ threats, prose }) => ({ threats, prose })),
+      ).toEqual(firstTexts(source));
+    },
+  );
+
+  it('reads the 116 records the texts of those files make', () => {
+    expect(
+      mitigationTrips.reduce(
+        (total, { model }) => total + model.mitigations.length,
+        0,
+      ),
+    ).toBe(116);
+  });
+
+  it.each(mitigationTrips)(
+    'writes every text of $name back to the byte',
+    ({ source, document }) => {
+      expect(textsOf(document)).toEqual(textsOf(source));
+    },
+  );
+
+  it.each(mitigationTrips)(
+    'reports nothing of a mitigation written back onto $name',
+    ({ written }) => {
+      expect(
+        written.divergences.filter(
+          ({ subject, reason }) =>
+            subject.kind === 'mitigation' ||
+            (subject.kind === 'threat' && reason === 'narrowed'),
+        ),
+      ).toEqual([]);
+    },
+  );
 });

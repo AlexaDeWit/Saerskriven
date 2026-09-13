@@ -2,10 +2,14 @@ import { escapedForTerminal } from '@saerskriven/formats';
 import {
   acceptedTextSchema,
   elementIdSchema,
+  mitigationSchema,
+  recordsLinkedTo,
   severitySchema,
   threatCategorySchema,
   threatIdSchema,
   threatStatusSchema,
+  type Mitigation,
+  type Model,
   type Threat,
   type ThreatCategory,
 } from '@saerskriven/model';
@@ -27,12 +31,14 @@ export const threatRowSchema = z.object({
 });
 
 /**
- * A threat row with the prose of the record, which is what a caller reads to
- * judge the threat rather than to find it.
+ * A threat row with the prose of the record and the mitigations linked to
+ * it, which is what a caller reads to judge the threat rather than to find
+ * it.
  */
 export const threatDetailSchema = threatRowSchema.extend({
   description: acceptedTextSchema.optional(),
   mitigation: acceptedTextSchema.optional(),
+  mitigations: z.array(mitigationSchema).optional(),
 });
 
 /** One threat as a search carries it. */
@@ -51,12 +57,13 @@ export function threatRow(threat: Threat): ThreatDetail {
   };
 }
 
-/** One threat with the prose the record carries. */
-export function threatDetail(threat: Threat): ThreatDetail {
+/** One threat with the prose the record carries and the mitigations `model` links to it. */
+export function threatDetail(threat: Threat, model: Model): ThreatDetail {
   return {
     ...threatRow(threat),
     description: threat.description,
     mitigation: threat.mitigation,
+    mitigations: recordsLinkedTo(model.mitigations, threat.id),
   };
 }
 
@@ -83,6 +90,19 @@ export function renderThreat(row: ThreatDetail): readonly string[] {
   ];
 }
 
+/**
+ * One mitigation as the lines a text result carries: its id, status and
+ * title, then its prose indented beneath where it has any.
+ */
+export function renderMitigation(mitigation: Mitigation): readonly string[] {
+  return [
+    `${mitigation.id} (${mitigation.status}): ${escapedForTerminal(mitigation.title)}`,
+    ...(mitigation.prose === ''
+      ? []
+      : [`  ${escapedForTerminal(mitigation.prose)}`]),
+  ];
+}
+
 function detailLines(row: ThreatDetail): readonly string[] {
   return [
     `status ${row.status}, severity ${row.severity}, category ${renderCategory(row.category)}`,
@@ -93,5 +113,9 @@ function detailLines(row: ThreatDetail): readonly string[] {
     ...(row.mitigation === undefined || row.mitigation.length === 0
       ? []
       : [`mitigation: ${escapedForTerminal(row.mitigation)}`]),
+    ...(row.mitigations ?? []).flatMap((mitigation) => {
+      const [heading = '', ...prose] = renderMitigation(mitigation);
+      return [`mitigation ${heading}`, ...prose];
+    }),
   ];
 }

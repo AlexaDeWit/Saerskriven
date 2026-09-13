@@ -24,8 +24,6 @@ import {
 } from '@saerskriven/model/fixtures';
 import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import {
   writeSaerskrivenYaml,
@@ -34,6 +32,7 @@ import {
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import { allCells, threatsOf } from './threat-dragon-document.js';
+import { ecluseSecurityText } from './threat-dragon.fixtures.js';
 import { isRecord } from './records.js';
 import { readFailureIssues } from './codec.js';
 
@@ -210,11 +209,7 @@ describe('security facts across Threat Dragon and native YAML', () => {
 
 describe('the current Écluse migration', () => {
   it('preserves source facts, declared relationships, threat links, numbers and issuance bookkeeping', () => {
-    const text = readFileSync(
-      join(import.meta.dirname, '../../../../test-data/ecluse-security.json'),
-      'utf8',
-    );
-    const before = Either.getOrThrow(readThreatDragon(text));
+    const before = Either.getOrThrow(readThreatDragon(ecluseSecurityText));
     expect(before.divergences).toEqual([]);
     const expected = allCells(before.source).map((cell) => ({
       id: cell.id,
