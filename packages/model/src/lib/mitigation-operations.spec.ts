@@ -113,6 +113,10 @@ describe('replaceMitigation', () => {
     expect(mitigationIds(next)).toEqual(mitigationIds(base));
   });
 
+  it('returns the model it was given for the record it already holds', () => {
+    expect(modelOf(replaceMitigation(base, base.mitigations[0]))).toBe(base);
+  });
+
   it('fails on an id the register does not hold', () => {
     expect(errorOf(replaceMitigation(base, rateLimit))).toEqual(
       OperationFailure.UnknownMitigation({

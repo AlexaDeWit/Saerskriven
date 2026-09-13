@@ -131,6 +131,10 @@ describe('replaceAssumption', () => {
     expect(assumptionIds(next)).toEqual(assumptionIds(base));
   });
 
+  it('returns the model it was given for the record it already holds', () => {
+    expect(modelOf(replaceAssumption(base, base.assumptions[0]))).toBe(base);
+  });
+
   it('fails on an id the register does not hold', () => {
     expect(errorOf(replaceAssumption(base, tlsEverywhere))).toEqual(
       OperationFailure.UnknownAssumption({

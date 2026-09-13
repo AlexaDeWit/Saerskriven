@@ -152,9 +152,9 @@ export function withRecordStatus<Key extends RecordKey, Unknown>(
 }
 
 /**
- * `records` with `edit` applied to each one, less every record the edit
- * takes from `referenced` to not. A record that had no reference before
- * the edit stays.
+ * `records` with `edit` applied to each one, culling a record the edit
+ * leaves with no reference when it had one before. A record that had no
+ * reference before the edit stays.
  */
 export function culledAfter<Linked>(
   records: readonly Linked[],

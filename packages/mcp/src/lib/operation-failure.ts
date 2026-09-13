@@ -39,7 +39,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
     RecordWithoutThreat: ({ record }) =>
       `The ${record.kind} ${quotedForTerminal(record.id)} links no threat, and a ${record.kind} is added on a threat.`,
     AssumptionWithoutReference: ({ assumptionId }) =>
-      `The assumption ${quotedForTerminal(assumptionId)} links no threat, and an assumption is added on a threat.`,
+      `The assumption ${quotedForTerminal(assumptionId)} links no threat and does not apply to the model.`,
     ReusedThreatNumber: ({ number }) =>
       `Threat number ${String(number)} was issued already, and a number is issued once.`,
     ChangedThreatNumber: ({ threatId, number }) =>
