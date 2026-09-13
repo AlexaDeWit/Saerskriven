@@ -22,7 +22,7 @@ export function mapTmbom(document: TmbomDocument) {
   ]);
   const scope = context.fields(document.scope, ['title', 'description']);
   const elements = tmbomGraph(document, context);
-  const { threats, mitigations, assumptions, unconfirmed } = tmbomRegister(
+  const { threats, mitigations, assumptions, descriptionLines } = tmbomRegister(
     document,
     context,
   );
@@ -37,9 +37,7 @@ export function mapTmbom(document: TmbomDocument) {
         description: context.text([
           scope.description,
           document.description ?? '',
-          ...unconfirmed.map((prose) =>
-            context.text(['Unconfirmed assumption: ', prose], ''),
-          ),
+          ...descriptionLines,
         ]),
       },
       diagrams: [{ id: 'tmbom-diagram', title: scope.title, elements }],

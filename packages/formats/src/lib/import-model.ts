@@ -35,6 +35,22 @@ export function importElement(
   };
 }
 
+/**
+ * A mitigation that would link no threat, as one line of the model
+ * description with one report line, since no import creates a mitigation
+ * without a threat.
+ */
+export function unlinkedMitigationLine(
+  context: ImportContext,
+  subject: string,
+  parts: readonly string[],
+): string {
+  context.report(
+    `${subject} names no threat and becomes a line of the model description.`,
+  );
+  return context.text(parts, '');
+}
+
 /** Tracks mapped fields so every remaining wire field appears in the import report. */
 export function importContext() {
   const budget = importBudget();

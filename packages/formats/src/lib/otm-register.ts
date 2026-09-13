@@ -1,5 +1,6 @@
 import type { OtmDocument } from '@saerskriven/wire-otm';
 import {
+  unlinkedMitigationLine,
   type ImportContext,
   type ImportMitigation,
   type ImportThreat,
@@ -8,7 +9,11 @@ type Component = NonNullable<OtmDocument['components']>[number];
 type Occurrence = NonNullable<Component['threats']>[number];
 type Definition = NonNullable<OtmDocument['threats']>[number];
 
-/** Preserves independently treated occurrences as separate native threat records. */
+/**
+ * Preserves independently treated occurrences as separate native threat
+ * records. A mitigation definition no occurrence names becomes a model
+ * description line.
+ */
 export function otmRegister(document: OtmDocument, context: ImportContext) {
   const { fields, report } = context;
   const definitions = context.index(
@@ -140,21 +145,25 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     if (!referencedThreats.has(definition.id))
       addThreat(definition, undefined, 'unattached', []);
   }
-  for (const definition of mitigationDefinitions.values()) {
-    if (referencedMitigations.has(definition.id)) continue;
-    fields(definition, ['id', 'name', 'description']);
-    mitigations.push({
-      id: context.id('otm-mitigation', definition.id),
-      title: context.text([definition.name]),
-      prose: context.text([definition.description ?? '']),
-      status: 'proposed',
-      threats: [],
-    });
-    report(
-      `Unattached mitigation ${JSON.stringify(definition.id)} has no occurrence status and imports as proposed.`,
-    );
-  }
-  return { threats, mitigations };
+  const descriptionLines = [...mitigationDefinitions.values()].flatMap(
+    (definition) => {
+      if (referencedMitigations.has(definition.id)) return [];
+      fields(definition, ['id', 'name', 'description']);
+      const description = definition.description ?? '';
+      return [
+        unlinkedMitigationLine(
+          context,
+          `Mitigation ${JSON.stringify(definition.id)}`,
+          [
+            'Mitigation: ',
+            definition.name,
+            ...(description === '' ? [] : ['. ', description]),
+          ],
+        ),
+      ];
+    },
+  );
+  return { threats, mitigations, descriptionLines };
 }
 
 function otmThreatStatus(

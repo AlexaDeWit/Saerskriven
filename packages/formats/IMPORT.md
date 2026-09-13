@@ -42,11 +42,15 @@ identity.
 
 Each threat occurrence becomes a separate threat with its own status and
 mitigations. This preserves different treatments on different components.
-Definitions without occurrences become unattached records. Known threat
-statuses map to the corresponding core treatment. Unknown statuses remain
-in the description and import as open. Mitigations marked implemented or
-verified retain that status. Other mitigation states import as proposed,
-with the source state kept in prose and differences reported.
+Threat definitions without occurrences become threats on no element. Known
+threat statuses map to the corresponding core treatment. Unknown statuses
+remain in the description and import as open. Each mitigation an occurrence
+names becomes a record linked to that occurrence's threat. Mitigations marked
+implemented or verified retain that status. Other mitigation states import as
+proposed, with the source state kept in prose and differences reported. A
+mitigation definition no occurrence names would link no threat, so it becomes
+a line of the model description holding its name and description, with a
+report line.
 
 Threat severity remains undecided. OTM numeric risk values and category
 lists have no exact core equivalent and appear in the omission report.
@@ -75,10 +79,15 @@ reported as losses.
 Threats preserve their declared component attachments and event descriptions.
 They import as open, with undecided severity and an unspecified category.
 Separate risk records and threat personas are reported as omissions.
-Active controls become implemented mitigations. Suggested controls become
-proposed mitigations. Other pending states remain in prose and import as
-proposed. Retired and declined controls are reported as omissions.
+Controls become mitigations linked to the threats they name. Active controls
+become implemented mitigations. Suggested controls become proposed
+mitigations. Other pending states remain in prose and import as proposed.
+A control naming no threat would link no threat, so it becomes a line of the
+model description holding its title, its description and its mapped status,
+with a report line. Retired and declined controls are reported as omissions
+whether or not they name a threat.
 
-Confirmed and rejected assumptions map to the valid and invalidated states.
-Unconfirmed assumptions remain prose in the model description. Topic links are
-reported as omissions.
+TM-BOM assumptions name no threat, so every assumption imports as an
+assumption that applies to the model, with its description as prose.
+Confirmed, rejected and unconfirmed assumptions map to the valid,
+invalidated and unconfirmed states. Topic links are reported as omissions.
