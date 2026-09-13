@@ -445,9 +445,10 @@ function openModel(model: Model) {
 
 function announcedCounts(): { linked: number; cloned: number } {
   const { message } = currentAnnouncement();
-  const count = (label: string) =>
-    Number(new RegExp(`${label}: (\\d+)`, 'u').exec(message)?.[1]);
-  return { linked: count('linked'), cloned: count('cloned') };
+  return {
+    linked: Number(/linked: (\d+)/u.exec(message)?.[1]),
+    cloned: Number(/cloned: (\d+)/u.exec(message)?.[1]),
+  };
 }
 
 it('duplicates a threat linked to the records its original links', () => {
