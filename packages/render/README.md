@@ -81,8 +81,9 @@ that list drops the only notice of it.
 ## The threat register
 
 The document opens on the model's title, then an overview table of every
-threat (number, title, elements, category, severity, status), then a section
-listing the assumptions that apply to the model, then one section per threat
+threat (number, title, elements, category, severity, status), then, where the
+model holds any, a section listing the assumptions that apply to the model,
+then one section per threat
 carrying the same fields and the threat's flags as a list, the threat's
 prose, and the mitigation and assumption records linked to it.
 Threats come out in number order whatever order the model holds them in, and
@@ -96,7 +97,7 @@ observe.
 
 ## What the register promises
 
-- **Stable anchors.** Each detail heading follows an empty named anchor such
+- **Stable anchors.** Each threat heading follows an empty named anchor such
   as `<a name="threat-7"></a>`. The overview number links to that target as
   `[7](#threat-7)`. A threat number is permanent, so title edits and changes
   to other threats preserve the target. Zola preserves the named anchor and
