@@ -32,7 +32,7 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
-import { badgeLabel, categoryLabel } from './register-labels.js';
+import { badgeLabel, categoryLabel, sectionLabel } from './register-labels.js';
 
 const prose = unified().use(remarkParse).use(remarkGfm);
 
@@ -95,7 +95,10 @@ type SectionContext = {
   readonly depth: Heading['depth'];
 };
 
-/** Builds the shared register tree in threat-number order. */
+/**
+ * Builds the shared register tree: the overview, the assumptions that apply
+ * to the model, then the threats in number order.
+ */
 export function registerDocument(
   model: Model,
   options: RegisterOptions = {},
@@ -114,12 +117,11 @@ export function registerDocument(
       ...(options.title === false
         ? []
         : [heading(first, registerTitle(model))]),
-      ...(threats.length === 0
-        ? [paragraph(noThreats)]
-        : [
-            overviewTable(threats, context.elements),
-            ...threats.flatMap((threat) => threatSection(threat, context)),
-          ]),
+      threats.length === 0
+        ? paragraph(noThreats)
+        : overviewTable(threats, context.elements),
+      ...modelAssumptionSection(context),
+      ...threats.flatMap((threat) => threatSection(threat, context)),
     ],
   };
 }
@@ -171,6 +173,20 @@ function tableRow(cells: readonly (PhrasingContent | string)[]): TableRow {
       children: [typeof cell === 'string' ? text(cell) : cell],
     })),
   };
+}
+
+function modelAssumptionSection(context: SectionContext): RootContent[] {
+  const assumptions = context.model.assumptions.filter(
+    (assumption) => assumption.appliesToModel,
+  );
+  return assumptions.length === 0
+    ? []
+    : [
+        heading(context.depth, sectionLabel('model-assumptions')),
+        ...recordList(
+          assumptions.map((assumption) => assumptionItem(assumption, context)),
+        ),
+      ];
 }
 
 function threatSection(threat: Threat, context: SectionContext): RootContent[] {

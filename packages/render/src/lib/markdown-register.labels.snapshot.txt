@@ -49,3 +49,4 @@ assumption invalidated: Invalidated
 mitigation proposed: Proposed
 mitigation implemented: Implemented
 mitigation verified: Verified
+section model-assumptions: Assumptions that apply to the model

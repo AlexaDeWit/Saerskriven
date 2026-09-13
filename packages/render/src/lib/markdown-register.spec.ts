@@ -201,7 +201,10 @@ function mitigationOf(
 }
 
 function assumptionOf(
-  fields: RecordFields & { readonly status?: Assumption['status'] },
+  fields: RecordFields & {
+    readonly status?: Assumption['status'];
+    readonly appliesToModel?: boolean;
+  },
 ): Assumption {
   return assumptionSchema.parse({
     prose: '',
@@ -257,6 +260,23 @@ const everyRecordLabel = withRecords(
     assumptionOf({ id: `assumption-${status}`, threats: ['threat-1'], status }),
   ),
 );
+
+function isThreatAnchor(node: RootContent): boolean {
+  const anchor = node.type === 'paragraph' ? node.children[0] : node;
+  return anchor?.type === 'html' && anchor.value.startsWith('<a name="threat-');
+}
+
+function modelSectionIn(tree: Root): RootContent[] {
+  const firstThreat = tree.children.findIndex(isThreatAnchor);
+  return tree.children.slice(
+    2,
+    firstThreat === -1 ? tree.children.length : firstThreat,
+  );
+}
+
+function sectionItems(section: readonly RootContent[]): readonly ListItem[] {
+  return section[1]?.type === 'list' ? section[1].children : [];
+}
 
 function badgeTextsIn(
   nodes: readonly RootContent[],
@@ -340,7 +360,7 @@ function sectionsOf(document: string): string[] {
 function threatSectionsIn(tree: Root): RootContent[][] {
   return tree.children.reduce<RootContent[][]>(
     (sections, node) =>
-      node.type === 'heading' && node.depth === 2
+      isThreatAnchor(node)
         ? [...sections, []]
         : sections.length === 0
           ? sections
@@ -551,7 +571,7 @@ describe('a threat section', () => {
     expect(rendered).toContain('**Assumptions**\n\nNone recorded.');
   });
 
-  it('labels every severity, status, category, record status and flag the model declares', async () => {
+  it('labels every severity, status, category, record status, flag and section the model declares', async () => {
     const rendered = renderRegister(
       modelOf(
         labelledMembers.map((entry, index) =>
@@ -576,9 +596,25 @@ describe('a threat section', () => {
         assumptionStatusSchema.options.length +
         threatFlagSchema.options.length,
     );
-    await expect(`${listing}\n${recordLines.join('\n')}\n`).toMatchFileSnapshot(
-      labelsPath,
+    const [sectionHeading] = modelSectionIn(
+      registerDocument(
+        withRecords(
+          [],
+          [],
+          [
+            assumptionOf({
+              id: 'assumption-a',
+              threats: [],
+              appliesToModel: true,
+            }),
+          ],
+        ),
+      ),
     );
+    const sectionLine = `section model-assumptions: ${textOf([sectionHeading])}`;
+    await expect(
+      `${listing}\n${recordLines.join('\n')}\n${sectionLine}\n`,
+    ).toMatchFileSnapshot(labelsPath);
   });
 });
 
@@ -730,6 +766,147 @@ describe("a threat's records", () => {
         node.type === 'heading' ? node.depth : 0,
       ),
     ).toEqual([3, 4]);
+    expect(rendered).toContain('<b>bold</b>');
+  });
+});
+
+describe('the assumptions that apply to the model', () => {
+  const model = withRecords(
+    [threatOf({ number: 1 }), threatOf({ number: 2 })],
+    [],
+    [
+      assumptionOf({
+        id: 'assumption-a',
+        threats: [],
+        appliesToModel: true,
+        status: 'invalidated',
+        prose: 'model only',
+      }),
+      assumptionOf({
+        id: 'assumption-b',
+        threats: ['threat-1'],
+        status: 'valid',
+        prose: 'threat only',
+      }),
+      assumptionOf({
+        id: 'assumption-c',
+        threats: ['threat-1'],
+        appliesToModel: true,
+        prose: 'model and threat',
+      }),
+    ],
+  );
+
+  it('sit in one section between the overview and the first threat, with their status badges in model order', () => {
+    const tree = registerDocument(model);
+    expect(tree.children[1]?.type).toBe('table');
+    const section = modelSectionIn(tree);
+    expect(section.map((node) => node.type)).toEqual(['heading', 'list']);
+    expect(section[0]).toMatchObject({ type: 'heading', depth: 2 });
+    expect(
+      sectionItems(section).map((item) => badgesIn(item.children)),
+    ).toEqual([
+      [{ kind: 'assumption', value: 'invalidated' }],
+      [{ kind: 'assumption', value: 'unconfirmed' }],
+    ]);
+    const written = modelSectionIn(reader.parse(renderRegister(model)));
+    expect(written.map((node) => node.type)).toEqual(['heading', 'list']);
+    expect(
+      sectionItems(written).map((item) => textOf(item.children.slice(1))),
+    ).toEqual(['model only', 'model and threat']);
+  });
+
+  it('also list under a threat they link, and leave out an assumption that does not apply to the model', () => {
+    const tree = registerDocument(model);
+    expect(
+      sectionItems(modelSectionIn(tree)).map((item) =>
+        textOf(item.children.slice(1)),
+      ),
+    ).toEqual(['model only', 'model and threat']);
+    expect(
+      threatSectionsIn(tree).map((section) =>
+        recordItems(section, 'Assumptions').map((item) =>
+          textOf(item.children.slice(1)),
+        ),
+      ),
+    ).toEqual([['threat only', 'model and threat'], []]);
+  });
+
+  it('carry no flag, and raise none on a threat', () => {
+    const tree = registerDocument(model);
+    expect(
+      badgesIn(modelSectionIn(tree)).filter((badge) => badge.kind === 'flag'),
+    ).toEqual([]);
+    expect(
+      badgesIn(tree.children).filter((badge) => badge.kind === 'flag'),
+    ).toEqual([]);
+  });
+
+  it('have no section where no assumption applies to the model', () => {
+    const unscoped = withRecords(
+      [threatOf({ number: 1 })],
+      [],
+      [assumptionOf({ id: 'assumption-a', threats: ['threat-1'] })],
+    );
+    expect(modelSectionIn(registerDocument(unscoped))).toEqual([]);
+    expect(modelSectionIn(registerDocument(ecluseModel))).toEqual([]);
+    expect(modelSectionIn(reader.parse(renderRegister(ecluseModel)))).toEqual(
+      [],
+    );
+  });
+
+  it('follow the no-threats paragraph in a model holding no threats', () => {
+    const threatless = withRecords(
+      [],
+      [],
+      [
+        assumptionOf({
+          id: 'assumption-a',
+          threats: [],
+          appliesToModel: true,
+          status: 'valid',
+        }),
+      ],
+    );
+    for (const tree of [
+      registerDocument(threatless),
+      reader.parse(renderRegister(threatless)),
+    ]) {
+      expect(tree.children.map((node) => node.type)).toEqual([
+        'heading',
+        'paragraph',
+        'heading',
+        'list',
+      ]);
+    }
+    expect(badgesIn(modelSectionIn(registerDocument(threatless)))).toEqual([
+      { kind: 'assumption', value: 'valid' },
+    ]);
+  });
+
+  it('parse their prose as markdown, demoting its headings and keeping its lists and HTML', () => {
+    const rendered = renderRegister(
+      withRecords(
+        [threatOf({ number: 1 })],
+        [],
+        [
+          assumptionOf({
+            id: 'assumption-a',
+            threats: [],
+            appliesToModel: true,
+            prose: '# Premise\n\n* one\n* two\n\n<b>bold</b>',
+          }),
+        ],
+      ),
+    );
+    const [item] = sectionItems(modelSectionIn(reader.parse(rendered)));
+    expect(item.children.map((node) => node.type)).toEqual([
+      'paragraph',
+      'heading',
+      'list',
+      'paragraph',
+    ]);
+    expect(item.children[1]).toMatchObject({ type: 'heading', depth: 3 });
     expect(rendered).toContain('<b>bold</b>');
   });
 });

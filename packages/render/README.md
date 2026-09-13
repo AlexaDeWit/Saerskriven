@@ -81,9 +81,10 @@ that list drops the only notice of it.
 ## The threat register
 
 The document opens on the model's title, then an overview table of every
-threat (number, title, elements, category, severity, status), then one
-section per threat carrying the same fields and the threat's flags as a list,
-the threat's prose, and the mitigation and assumption records linked to it.
+threat (number, title, elements, category, severity, status), then a section
+listing the assumptions that apply to the model, then one section per threat
+carrying the same fields and the threat's flags as a list, the threat's
+prose, and the mitigation and assumption records linked to it.
 Threats come out in number order whatever order the model holds them in, and
 the same model always renders the same bytes.
 
@@ -110,10 +111,18 @@ observe.
   and then its assumptions, each in the order the model holds them, and each
   item leads with the record's status. A mitigation's title follows the
   status, and a mitigation with an empty title has no title there. A record
-  linked to several threats is listed in each of their sections, and a record
-  linked to none appears nowhere: the register has no section of records of
-  its own. The threat's flags, as `threatFlags` in `@saerskriven/model`
-  derives them, are a field of the section, `None` where there are none.
+  linked to several threats is listed in each of their sections. The threat's
+  flags, as `threatFlags` in `@saerskriven/model` derives them, are a field
+  of the section, `None` where there are none.
+- **Assumptions that apply to the model have one section.** It sits after the
+  overview table, or after the no-threats line where the model holds no
+  threats, and before the first threat section, at the threat sections'
+  heading depth. It lists every assumption whose `appliesToModel` is true, in
+  the order the model holds them, each item written as a threat's assumption
+  items are. An assumption that also links threats is listed there and under
+  each of those threats. A model holding no such assumption has no such
+  section, and the section carries no flag, since flags come from threat
+  links alone. Any other record linked to no threat appears nowhere.
 - **Prose is markdown.** A threat's description and mitigation, and a
   record's prose, are parsed and spliced into the section as nodes, so a list
   or a table an author wrote stays one. A heading inside prose is demoted
@@ -132,9 +141,10 @@ observe.
 - **Nothing goes missing.** An enum crosses to its display label through a
   table the compiler checks for totality, so a severity, status, record
   status, flag, or methodology added to `@saerskriven/model` stops this
-  package compiling rather than rendering blank, and
-  `markdown-register.labels.snapshot.txt` beside the spec pins the label text
-  of every member the model declares, rendered rather than restated. A threat
+  package compiling rather than rendering blank, as does a register section
+  added without a heading. `markdown-register.labels.snapshot.txt` beside the
+  spec pins the label text of every member the model declares and of the
+  section heading, rendered rather than restated. A threat
   attached to no element or carrying no flag reads `None`, prose a threat
   does not carry and a kind of record it has none of read `None recorded.`,
   and a model holding no threats says so in place of an empty table.

@@ -44,6 +44,13 @@ const flagLabels = {
   'rests-on-invalidated-assumption': 'Rests on an invalidated assumption',
 } satisfies Record<ThreatFlag, string>;
 
+/** A section of the register that belongs to no single threat. */
+export type RegisterSection = 'model-assumptions';
+
+const sectionLabels = {
+  'model-assumptions': 'Assumptions that apply to the model',
+} satisfies Record<RegisterSection, string>;
+
 type EnumeratedCategory = Exclude<ThreatCategory, CustomCategory>;
 
 type CategoryLabels = {
@@ -111,6 +118,11 @@ export function badgeLabel(badge: RegisterBadge): string {
     return assumptionLabels[badge.value];
   }
   return flagLabels[badge.value];
+}
+
+/** The heading of a register section that belongs to no single threat. */
+export function sectionLabel(section: RegisterSection): string {
+  return sectionLabels[section];
 }
 
 /** A category's display label followed by its methodology in parentheses. */

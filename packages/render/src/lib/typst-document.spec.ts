@@ -3,6 +3,7 @@ import {
   mitigationSchema,
   parseModel,
   threatSchema,
+  type Assumption,
   type Model,
   type Threat,
 } from '@saerskriven/model';
@@ -10,6 +11,7 @@ import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderRegister } from './markdown-register.js';
+import { badgeLabel } from './register-labels.js';
 import { deepestProse } from './register-tree.js';
 import { renderTypst } from './typst-document.js';
 
@@ -63,7 +65,12 @@ const recordsModel = (
     readonly prose: string;
     readonly threats?: readonly string[];
   }[],
-  assumptions: readonly { readonly prose: string }[] = [],
+  assumptions: readonly {
+    readonly prose: string;
+    readonly status?: Assumption['status'];
+    readonly threats?: readonly string[];
+    readonly appliesToModel?: boolean;
+  }[] = [],
 ): Model => ({
   ...modelOf([threatOf({ number: 1 }), threatOf({ number: 2 })]),
   mitigations: mitigations.map((fields, index) =>
@@ -85,6 +92,20 @@ const recordsModel = (
     }),
   ),
 });
+
+const modelScoped = { threats: [], appliesToModel: true } as const;
+
+const modelSectionOf = (source: string): string => {
+  const [, section = '', next = ''] = source.split('#heading(level: 2)[');
+  return next.startsWith('#"Threat 1: ') ? section : '';
+};
+
+const callsOutsideLiterals = (source: string): Set<string> =>
+  new Set(
+    [...withoutLiterals(source).matchAll(/#(""|[a-z-]+|.)/gu)].map(
+      (found) => found[1],
+    ),
+  );
 
 const between = (source: string, from: string, to: string): string =>
   source.slice(source.indexOf(from), source.indexOf(to, source.indexOf(from)));
@@ -316,6 +337,104 @@ describe("a threat's records", () => {
     );
     expect(quotesIn(admitted)).toBe(deepestProse - 4);
     expect(quotesIn(refused)).toBe(0);
+  });
+});
+
+describe('the assumptions that apply to the model', () => {
+  it('sit in one section after the overview table and before the first threat, with their badges in model order', () => {
+    const source = sourceOf(
+      recordsModel(
+        [],
+        [
+          { ...modelScoped, prose: 'alpha', status: 'invalidated' },
+          { prose: 'threat only' },
+          {
+            ...modelScoped,
+            prose: 'beta',
+            threats: ['threat-1'],
+            status: 'unconfirmed',
+          },
+        ],
+      ),
+    );
+    const section = modelSectionOf(source);
+    expect(source.indexOf('#table(')).toBeLessThan(source.indexOf(section));
+    expect(section.split('#saer-badge(').length - 1).toBe(2);
+    const invalidated = section.indexOf(
+      `#saer-badge("${badgeLabel({ kind: 'assumption', value: 'invalidated' })}"`,
+    );
+    const unconfirmed = section.indexOf(
+      `#saer-badge("${badgeLabel({ kind: 'assumption', value: 'unconfirmed' })}"`,
+    );
+    expect(invalidated).toBeGreaterThan(-1);
+    expect(invalidated).toBeLessThan(section.indexOf('#"alpha"'));
+    expect(section.indexOf('#"alpha"')).toBeLessThan(unconfirmed);
+    expect(unconfirmed).toBeLessThan(section.indexOf('#"beta"'));
+    expect(section).not.toContain('threat only');
+  });
+
+  it('write no section where no assumption applies to the model', () => {
+    const source = sourceOf(recordsModel([], [{ prose: 'threat only' }]));
+    expect(source.split('#heading(level: 2)[').length - 1).toBe(2);
+  });
+
+  it('write their prose under the promises threat prose keeps', () => {
+    const source = modelSectionOf(
+      sourceOf(
+        recordsModel(
+          [],
+          [
+            {
+              ...modelScoped,
+              prose: '# Premise\n\n- one\n- two\n\n<b onclick="x()">bold</b>',
+            },
+          ],
+        ),
+      ),
+    );
+    expect(source).toContain('#heading(level: 3)[#"Premise"]');
+    expect(source).toContain('#list([#"one"], [#"two"])');
+    expect(source).toContain('#"<b onclick=\\"x()\\">"');
+    expect(withoutLiterals(source)).not.toContain('<b');
+  });
+
+  it("write a hostile assumption's prose with no # but the package's own", () => {
+    const hostile = sourceOf(
+      recordsModel(
+        [],
+        [
+          {
+            ...modelScoped,
+            prose:
+              '# Heading #eval("1+1")\n\n- #read("/etc/passwd")\n\n<script>alert(5)</script> a" + read("/etc/passwd") + "b #include "/etc/passwd" \\',
+          },
+        ],
+      ),
+    );
+    const benign = sourceOf(
+      recordsModel(
+        [],
+        [{ ...modelScoped, prose: '# Heading\n\n- item\n\nplain text' }],
+      ),
+    );
+    expect(modelSectionOf(hostile)).toContain('#read(\\"/etc/passwd\\")');
+    expect(callsOutsideLiterals(hostile)).toEqual(callsOutsideLiterals(benign));
+  });
+
+  it('write prose past the depth bound, counted from the register root, as the bytes the author wrote', () => {
+    const admitted = modelSectionOf(
+      sourceOf(
+        recordsModel([], [{ ...modelScoped, prose: nested(deepestProse - 4) }]),
+      ),
+    );
+    const refused = modelSectionOf(
+      sourceOf(
+        recordsModel([], [{ ...modelScoped, prose: nested(deepestProse - 3) }]),
+      ),
+    );
+    expect(quotesIn(admitted)).toBe(deepestProse - 4);
+    expect(quotesIn(refused)).toBe(0);
+    expect(refused).toContain('bottom');
   });
 });
 
