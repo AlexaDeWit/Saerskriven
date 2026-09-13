@@ -388,9 +388,10 @@ In Select mode, middle-button dragging pans without changing the selection.
 
 Every element is a tab stop, with an accessible name built out of model data:
 what the element is called, what kind of element it is, and what its badge
-says, including that a threat on it is flagged. The glyphs are hidden from assistive technology, so a badge would
-otherwise be visual alone. A flow also names the elements its ends attach to,
-from one to the other, or between the two where it runs both ways.
+says, including that a threat on it is flagged. The glyphs are hidden from
+assistive technology, so a badge would otherwise be visual alone. A flow also
+names the elements its ends attach to, from one to the other, or between the
+two where it runs both ways.
 
 Focus and selection are drawn apart and stack: focus is the app's own ring
 (`--pn-focus-ring`) on the element the browser focused, selection the frame
