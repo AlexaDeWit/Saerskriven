@@ -34,6 +34,19 @@
   outline-offset: var(--pn-focus-ring-offset);
 }
 
+/* A value or option label stops at two lines, so a long label (a record's
+   first paragraph) cannot grow the trigger past the room Radix measures for
+   the listbox and leave it none. The clamp is visual: the accessible name is
+   still the whole label. */
+.text {
+  display: -webkit-box;
+  min-inline-size: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-align: start;
+}
+
 .icon {
   color: var(--pn-colour-text-muted);
 }

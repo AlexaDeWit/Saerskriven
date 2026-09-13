@@ -310,7 +310,7 @@ export const expandThreat = async (
 export const chooseInPanel = async (
   page: Page,
   field: string,
-  option: string,
+  option: string | RegExp,
 ): Promise<void> => {
   await panelField(page, 'combobox', field).click();
   await page.getByRole('option', { name: option, exact: true }).click();

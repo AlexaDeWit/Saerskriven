@@ -8,14 +8,17 @@ import {
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
+  expandThreat,
   handleOn,
   menuButton,
   menuItem,
   nodeNamed,
+  openEcluse,
   openMenu,
   openModel,
   openPlaceholder,
   openText,
+  panelField,
   placeByClick,
   saerskrivenModel,
   selectNode,
@@ -230,6 +233,22 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
 
   await audit(page, 'showing the menu asking before it opens a file');
+});
+
+test('the open Link existing listbox carries no violation with long record labels', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, /^Écluse proxy, process/u);
+  await expandThreat(page, /Forwarded caller credentials/u);
+  await panelField(page, 'combobox', 'Existing mitigation').click();
+  await expect(page.getByRole('listbox')).toBeVisible();
+
+  await audit(
+    page,
+    'showing the open Link existing listbox',
+    '[role="listbox"]',
+  );
 });
 
 test('the studio carries no violation with the diagram switcher open, or its title field', async ({
