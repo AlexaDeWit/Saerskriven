@@ -118,7 +118,7 @@ escaping, and prose handling.
 ## `render/saerskriven.register.snapshot.md`
 
 The register from `saerskriven.model.json`. It adds a custom methodology, a
-CIA category, two unattached threats, and mitigation prose containing a
+CIA category, two unattached threats, and a mitigation record whose prose holds a
 Markdown list to the cases covered by Écluse.
 
 ## `every-glyph.model.json`

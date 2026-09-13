@@ -85,7 +85,6 @@ export function renderThreatRecord(result: GetThreatResult): readonly string[] {
     `severity: ${threat.severity}`,
     `category: ${renderCategory(threat.category)}`,
     `description: ${escapedForTerminal(threat.description)}`,
-    `mitigation: ${escapedForTerminal(threat.mitigation)}`,
     'elements:',
     ...result.elements.flatMap(renderElement),
     'mitigations:',

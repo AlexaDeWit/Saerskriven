@@ -2,6 +2,7 @@ import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import { parse } from 'yaml';
 import { readFailureIssues } from './codec.js';
+import { writeSaerskrivenYaml } from './saerskriven-yaml-write.js';
 import {
   readSaerskrivenYaml,
   readSaerskrivenYamlDocument,
@@ -124,6 +125,25 @@ const threatlessAssumption = elementLinkedAssumption([]).replace(
   '    threats:\n      - threat-1',
   '    threats: []',
 );
+
+const withMitigationText = (status: string) =>
+  oneThreatDocument
+    .replace('    status: open', `    status: ${status}`)
+    .replace('    mitigation: ""', '    mitigation: Sign every request.');
+
+const withMitigationRecord = (id: string) =>
+  withMitigationText('open').replace(
+    'mitigations: []',
+    [
+      'mitigations:',
+      `  - id: ${id}`,
+      '    title: Mutual TLS',
+      '    prose: ""',
+      '    status: verified',
+      '    threats:',
+      '      - threat-1',
+    ].join('\n'),
+  );
 
 const withExtras = `${oneThreatDocument.replace(
   '    number: 1',
@@ -290,6 +310,86 @@ describe('a version 1 assumption that links no threat', () => {
     expect(modelOfDocumentIn(threatlessAssumption)).toEqual(
       readingOf(threatlessAssumption)?.model,
     );
+  });
+});
+
+describe('a version 1 threat that carries mitigation text', () => {
+  it.each([
+    ['mitigated', 'implemented'],
+    ['open', 'proposed'],
+    ['accepted-risk', 'proposed'],
+  ])(
+    'reads on a %s threat as one %s record linked to it, holding the text, reporting nothing',
+    (threatStatus, recordStatus) => {
+      const reading = readingOf(withMitigationText(threatStatus));
+      expect(reading?.model.mitigations).toEqual([
+        {
+          id: 'threat-1-mitigation',
+          title: '',
+          prose: 'Sign every request.',
+          status: recordStatus,
+          threats: ['threat-1'],
+        },
+      ]);
+      expect(reading?.divergences).toEqual([]);
+    },
+  );
+
+  it('reads as no record when the text is empty', () => {
+    expect(readingOf(oneThreatDocument)?.model.mitigations).toEqual([]);
+  });
+
+  it('reads to the same record ids every time', () => {
+    const idsOf = (text: string) =>
+      readingOf(text)?.model.mitigations.map(({ id }) => id);
+    const text = withMitigationRecord('threat-1-mitigation');
+    expect(idsOf(text)).toEqual(idsOf(text));
+  });
+
+  it('keeps a record the file holds under the id the text would take, beside a distinct one', () => {
+    expect(
+      readingOf(withMitigationRecord('threat-1-mitigation'))?.model.mitigations,
+    ).toEqual([
+      expect.objectContaining({
+        id: 'threat-1-mitigation',
+        title: 'Mutual TLS',
+        status: 'verified',
+      }),
+      expect.objectContaining({
+        id: 'threat-1-mitigation-2',
+        prose: 'Sign every request.',
+        status: 'proposed',
+      }),
+    ]);
+  });
+
+  it('hands back a source document holding the record and no text', () => {
+    const source = readingOf(withMitigationText('mitigated'))?.source;
+    expect(source?.threats.map(({ mitigation }) => mitigation)).toEqual(['']);
+    expect(source?.mitigations.map(({ id }) => id)).toEqual([
+      'threat-1-mitigation',
+    ]);
+  });
+
+  it('maps the same from the document alone', () => {
+    const text = withMitigationRecord('threat-1-mitigation');
+    expect(
+      Either.getOrUndefined(
+        readSaerskrivenYamlDocument(
+          saerskrivenYamlWireSchema.parse(parse(text)),
+        ),
+      ),
+    ).toEqual(readingOf(text)?.model);
+  });
+
+  it('writes back onto its source reporting nothing, and reads back as the same model', () => {
+    const reading = readingOf(withMitigationText('mitigated'));
+    const written =
+      reading && writeSaerskrivenYaml(reading.model, reading.source);
+    expect(written?.divergences).toEqual([]);
+    const again = written && readingOf(written.output);
+    expect(again?.model).toEqual(reading?.model);
+    expect(again?.divergences).toEqual([]);
   });
 });
 

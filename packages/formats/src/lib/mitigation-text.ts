@@ -10,6 +10,7 @@ type MitigationInput = z.input<typeof mitigationSchema>;
 /** One threat of a format that holds one mitigation text per threat. */
 export type ThreatWithText = {
   readonly id: string;
+  readonly number: number;
   readonly status: ThreatStatus;
   readonly text: string;
 };
@@ -27,8 +28,10 @@ export function inferredMitigationStatus(
 
 /**
  * One mitigation record for each threat with a non-empty text, in threat
- * order: an empty title, the text as its prose, the status
- * {@link inferredMitigationStatus} gives, and a link to that threat alone.
+ * number order whatever order `threats` holds, so every format that holds one
+ * text per threat makes the same records in the same order: an empty title,
+ * the text as its prose, the status {@link inferredMitigationStatus} gives,
+ * and a link to that threat alone.
  *
  * A record's id is `<threat id>-mitigation`, or that with the first of `-2`,
  * `-3` and on that is free, where `taken` holds every id the model already
@@ -43,7 +46,9 @@ export function mitigationsFromText(
   taken: Iterable<string>,
 ): MitigationInput[] {
   const held = new Set(taken);
-  return threats.flatMap((threat) => {
+  const numbered = [...threats];
+  numbered.sort((left, right) => left.number - right.number);
+  return numbered.flatMap((threat) => {
     if (threat.text === '') {
       return [];
     }

@@ -45,7 +45,8 @@ const stringifyOptions = { lineWidth: 0 };
 /**
  * Writes canonical native YAML without wrapping prose. The source cannot
  * override the model. Each assumption that applies to the model is reported
- * `narrowed`, since version 1 has no key for that link.
+ * `narrowed`, since version 1 has no key for that link. Every threat's
+ * `mitigation` text is written empty, since its mitigations are records.
  */
 export function writeSaerskrivenYaml(
   model: Model,
@@ -186,7 +187,7 @@ function toWireThreat(threat: Threat): SaerskrivenYamlThreat {
     severity: severitiesToWire[threat.severity],
     status: threatStatusesToWire[threat.status],
     description: threat.description,
-    mitigation: threat.mitigation,
+    mitigation: '',
     elements: threat.elements,
   };
 }

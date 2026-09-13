@@ -64,7 +64,6 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
       },
       severity: 'undecided',
       status,
-      mitigation: '',
       elements: [...attached],
     });
     report(

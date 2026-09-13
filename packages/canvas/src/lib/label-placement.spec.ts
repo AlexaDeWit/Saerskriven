@@ -242,7 +242,6 @@ const openThreatOn = (element: string, number = 1) => ({
   severity: 'high',
   status: 'open',
   description: '',
-  mitigation: '',
   elements: [element],
 });
 

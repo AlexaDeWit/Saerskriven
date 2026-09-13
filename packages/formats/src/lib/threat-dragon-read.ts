@@ -132,6 +132,7 @@ function toMitigations(
   return mitigationsFromText(
     threats.map(({ record, text }) => ({
       id: record.id,
+      number: record.number,
       status: record.status,
       text,
     })),
@@ -336,7 +337,6 @@ function toThreat(entry: ThreatEntry): {
       severity: severity.value,
       status: status.value,
       description: threat.description,
-      mitigation: '',
       elements: [...entry.elements],
     },
     text: threat.mitigation,

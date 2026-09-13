@@ -42,15 +42,15 @@
 
 A file large enough to fill memory is handed to Saerskriven, and the parse itself is what costs, so a check after parsing arrives too late.
 
-**Mitigation**
-
-The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 8 MiB and about sixty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
-
 **Mitigations**
 
 - Verified **Bounded reads**
 
   `readLimits` in `@saerskriven/formats` is one exported value carrying four numbers: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads.
+
+- Implemented
+
+  The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 8 MiB and about sixty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
 
 **Assumptions**
 
@@ -72,15 +72,15 @@ The size is measured in UTF-8 bytes before a parser sees the text, against `read
 
 6 KB of JSON nests 3,000 deep, parses without complaint, and then overflows the stack of anything that walks it. This is not hypothetical here. It is the reproducer found during issue #26, inside a recursive schema that has since been withdrawn.
 
-**Mitigation**
-
-The nesting of the parsed value is measured by a walk carrying its own stack, which stops one level past `readLimits.maxNestingDepth` of 64. The walk goes level by level and expands a node only when it reaches that node deeper than it has before, so a value reachable along many paths costs its own size rather than the number of paths through it. `test-data/adversarial/deep-nesting.json` and `deep-block.yaml` gate it, one per kind of nesting.
-
 **Mitigations**
 
 - Verified **Bounded reads**
 
   `readLimits` in `@saerskriven/formats` is one exported value carrying four numbers: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads.
+
+- Implemented
+
+  The nesting of the parsed value is measured by a walk carrying its own stack, which stops one level past `readLimits.maxNestingDepth` of 64. The walk goes level by level and expands a node only when it reaches that node deeper than it has before, so a value reachable along many paths costs its own size rather than the number of paths through it. `test-data/adversarial/deep-nesting.json` and `deep-block.yaml` gate it, one per kind of nesting.
 
 **Assumptions**
 
@@ -102,15 +102,15 @@ The nesting of the parsed value is measured by a walk carrying its own stack, wh
 
 The billion laughs attack in the form YAML gives it. A seed scalar and a handful of anchors, each a sequence of aliases to the one before, cost almost nothing to write and everything to resolve.
 
-**Mitigation**
-
-Aliases are counted on the composed document before any of them is resolved, against `readLimits.maxAliasCount` of 50, because resolving is where the cost is and a cycle expands without end. The count is this package's own rather than the parser's: `toJS` is handed `maxAliasCount: -1` and the expansion is measured here, since the parser's own accounting resolves an alias by scanning the whole document once per anchor and so costs more than the thing it bounds. A fourth bound, `maxAliasExpansion` of 100,000, holds how much of a document its aliases may reach, because the count alone bounds the cost only where anchors are alike, and a one-node anchor is as cheap to alias as a two-million-node one. Four fixtures gate the four shapes: `alias-expansion.yaml`, `wide-cycle.yaml`, `nested-anchors.yaml` and `shared-anchor.yaml`. The first is refused here and admitted by the parser's own default, which is what makes it proof that the bound is this project's.
-
 **Mitigations**
 
 - Verified **Bounded reads**
 
   `readLimits` in `@saerskriven/formats` is one exported value carrying four numbers: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads.
+
+- Implemented
+
+  Aliases are counted on the composed document before any of them is resolved, against `readLimits.maxAliasCount` of 50, because resolving is where the cost is and a cycle expands without end. The count is this package's own rather than the parser's: `toJS` is handed `maxAliasCount: -1` and the expansion is measured here, since the parser's own accounting resolves an alias by scanning the whole document once per anchor and so costs more than the thing it bounds. A fourth bound, `maxAliasExpansion` of 100,000, holds how much of a document its aliases may reach, because the count alone bounds the cost only where anchors are alike, and a one-node anchor is as cheap to alias as a two-million-node one. Four fixtures gate the four shapes: `alias-expansion.yaml`, `wide-cycle.yaml`, `nested-anchors.yaml` and `shared-anchor.yaml`. The first is refused here and admitted by the parser's own default, which is what makes it proof that the bound is this project's.
 
 **Assumptions**
 
@@ -132,15 +132,15 @@ Aliases are counted on the composed document before any of them is resolved, aga
 
 An anchor on a mapping and an alias to it underneath is a cycle in three lines and 48 bytes. Nothing in the file bounds its depth, and a cycle closed through two aliases doubles the work of a walk that counts paths at every level.
 
-**Mitigation**
-
-The depth walk climbs a cycle to the bound and refuses it there rather than following it. Because it holds every node it has already expanded, a branching cycle costs its width rather than a multiple of that width per level. `cyclic-anchor.yaml`, `branching-cycle.yaml` at fifteen bytes, and `wide-cycle.yaml` gate the three shapes.
-
 **Mitigations**
 
 - Verified **Bounded reads**
 
   `readLimits` in `@saerskriven/formats` is one exported value carrying four numbers: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads.
+
+- Implemented
+
+  The depth walk climbs a cycle to the bound and refuses it there rather than following it. Because it holds every node it has already expanded, a branching cycle costs its width rather than a multiple of that width per level. `cyclic-anchor.yaml`, `branching-cycle.yaml` at fifteen bytes, and `wide-cycle.yaml` gate the three shapes.
 
 **Assumptions**
 
@@ -162,15 +162,15 @@ The depth walk climbs a cycle to the bound and refuses it there rather than foll
 
 A hostile file that makes a library throw takes down whatever called the read. In a CLI that is an exit code nobody can act on, and in the studio or the MCP server it is the process.
 
-**Mitigation**
-
-Throwing is not an error channel in this project's TypeScript. Every read returns `Either` with a `ReadFailure` on the error channel, and the adversarial corpus is asserted to read to a failure through both reads and to throw out of neither.
-
 **Mitigations**
 
 - Verified **A read fails as a value**
 
   `CODING.md` makes throwing not an error channel in this project. A read returns Effect's `Either` with a package-owned `ReadFailure` on the error channel, one variant per place a read stops, and `read-limits.spec.ts` asserts of every adversarial fixture that both reads come back with a failure and that neither throws.
+
+- Implemented
+
+  Throwing is not an error channel in this project's TypeScript. Every read returns `Either` with a `ReadFailure` on the error channel, and the adversarial corpus is asserted to read to a failure through both reads and to throw out of neither.
 
 **Assumptions**
 
@@ -192,15 +192,15 @@ Throwing is not an error channel in this project's TypeScript. Every read return
 
 A file written by a later release of a format, or by another tool, carries a key this release has no home for. Dropping it quietly loses an author's work, and refusing the file over it makes every format extension a breaking change.
 
-**Mitigation**
-
-A wire schema is a `z.object`, so it strips what it does not declare rather than refusing the payload, and the read reports every stripped key as an `undeclared` divergence naming its path. A schema that has fallen behind its format therefore announces itself rather than quietly shortening files.
-
 **Mitigations**
 
 - Verified **Nothing is dropped without a word**
 
   A wire schema is a `z.object`, so it drops a key it does not declare rather than refusing the whole file, and `undeclaredDivergences` reports every key it dropped with the path it sat at. The same list carries `unrepresentable`, `narrowed`, `split`, `overridden` and `discarded-by-edit`, so every place a file and the model fail to correspond is named rather than passed over in silence.
+
+- Implemented
+
+  A wire schema is a `z.object`, so it strips what it does not declare rather than refusing the payload, and the read reports every stripped key as an `undeclared` divergence naming its path. A schema that has fallen behind its format therefore announces itself rather than quietly shortening files.
 
 **Assumptions**
 
@@ -222,15 +222,15 @@ A wire schema is a `z.object`, so it strips what it does not declare rather than
 
 A threat naming an element no diagram holds, a duplicate id, a threat numbered above the mark the file keeps, or a flow anchored to an element in another diagram. Each one reaches a renderer or an editor as a model that cannot be drawn or counted.
 
-**Mitigation**
-
-`parseModel` is the only way a model value comes into existence, and it enforces more than the shapes: ids unique where they must be, threat numbers unique and never above `lastIssuedThreatNumber`, flow endpoints anchored inside their own diagram and never to the flow itself, and every element and threat reference resolving. A refusal comes back with a path into the model, and `detect.spec.ts` pins the dangling case.
-
 **Mitigations**
 
 - Verified **A model exists only through the parse**
 
   `parseModel` is the only way a model value comes into existence, and it enforces what no schema states: element, diagram, threat, mitigation and assumption ids unique where they must be, threat numbers unique and never above `lastIssuedThreatNumber`, flow endpoints anchored inside their own diagram and never to the flow itself, and every element and threat reference resolving. A refusal comes back as a failure carrying a path into the model rather than as an exception, and `detect.spec.ts` pins the dangling case end to end.
+
+- Implemented
+
+  `parseModel` is the only way a model value comes into existence, and it enforces more than the shapes: ids unique where they must be, threat numbers unique and never above `lastIssuedThreatNumber`, flow endpoints anchored inside their own diagram and never to the flow itself, and every element and threat reference resolving. A refusal comes back with a path into the model, and `detect.spec.ts` pins the dangling case.
 
 **Assumptions**
 
@@ -252,15 +252,15 @@ A threat naming an element no diagram holds, a duplicate id, a threat numbered a
 
 A file stamped with a later format version is read by a reader that understands only some of it, and the parts it did not understand are lost on the next save.
 
-**Mitigation**
-
-`formatVersion` is a zod literal, so a Saerskriven file stamped anything but 1 fails at that path rather than reaching the mapping, and a Threat Dragon file outside major 2 is refused whole. Where no codec claims a text the failure names every format tried, in the order tried, so the person holding the file is told what was attempted rather than handed a partial read.
-
 **Mitigations**
 
 - Verified **Detection is the reads themselves**
 
   No format is guessed from a file name or sniffed from a prefix. Each registered codec is offered the text and reads it, and a codec claims on three outcomes only: the read succeeded, the mapping failed, or its wire schema refused the document below the root keys that name the format, which `detect.ts` lists beside each codec. It declines on the format's own syntax refusing the text, and on a schema complaint at or above a naming key, a text that is no mapping at all being no format's file. Once a codec claims, its answer stands.
+
+- Implemented
+
+  `formatVersion` is a zod literal, so a Saerskriven file stamped anything but 1 fails at that path rather than reaching the mapping, and a Threat Dragon file outside major 2 is refused whole. Where no codec claims a text the failure names every format tried, in the order tried, so the person holding the file is told what was attempted rather than handed a partial read.
 
 **Assumptions**
 
@@ -282,15 +282,15 @@ A file stamped with a later format version is read by a reader that understands 
 
 Threat Dragon's format holds styling, ports, and per-type flags the internal model has no place for. A save that serialized the model alone would drop all of it, and a model file in git would then show an edit nobody made.
 
-**Mitigation**
-
-A format is adopted completely or not at all. The wire schema declares everything the format carries, the parts Saerskriven does not model included, and a write merges onto the document the read returned, so what it does not map is left as the file had it. Where the model does hold something less exactly than the file stated it, the write reports that rather than overwriting. Three oracles gate this over the vendored corpus, among them a comparison of raw parsed input against raw parsed output in which no scalar may move unclaimed.
-
 **Mitigations**
 
 - Verified **Nothing is dropped without a word**
 
   A wire schema is a `z.object`, so it drops a key it does not declare rather than refusing the whole file, and `undeclaredDivergences` reports every key it dropped with the path it sat at. The same list carries `unrepresentable`, `narrowed`, `split`, `overridden` and `discarded-by-edit`, so every place a file and the model fail to correspond is named rather than passed over in silence.
+
+- Implemented
+
+  A format is adopted completely or not at all. The wire schema declares everything the format carries, the parts Saerskriven does not model included, and a write merges onto the document the read returned, so what it does not map is left as the file had it. Where the model does hold something less exactly than the file stated it, the write reports that rather than overwriting. Three oracles gate this over the vendored corpus, among them a comparison of raw parsed input against raw parsed output in which no scalar may move unclaimed.
 
 **Assumptions**
 
@@ -310,15 +310,15 @@ None recorded.
 
 A threat title carrying a line that reads like another threat's heading takes that threat's anchor, so a link meant for one threat lands on another. A heading inside a description breaks out of its section and reparents everything under it.
 
-**Mitigation**
-
-The tree is built out of mdast nodes and serialized by remark, never concatenated, so a pipe, a backtick or a leading hash in a title lands in the table and in the heading as that text. Line breaks are collapsed in a heading, since an ATX heading holds one line, and a heading inside prose is demoted below the section heading. The register spec pins the forging case directly.
-
 **Mitigations**
 
 - Verified **The register is built as nodes**
 
   `renderRegister` builds mdast nodes and hands them to remark, and concatenates no markdown anywhere. A heading inside a threat's prose is demoted below the section heading, a title's line breaks are collapsed so that no title can forge another threat's heading, and prose nested past 32 levels is written out as the author's own bytes in one paragraph rather than recursed over.
+
+- Implemented
+
+  The tree is built out of mdast nodes and serialized by remark, never concatenated, so a pipe, a backtick or a leading hash in a title lands in the table and in the heading as that text. Line breaks are collapsed in a heading, since an ATX heading holds one line, and a heading inside prose is demoted below the section heading. The register spec pins the forging case directly.
 
 **Assumptions**
 
@@ -338,13 +338,11 @@ None recorded.
 
 A threat description carrying a script tag or an event handler renders as markup wherever the register is published, so the author of a model file reaches the readers of a site that publishes it.
 
-**Mitigation**
-
-Risk treatment: transferred to whatever consumes the register. Raw HTML passes through as written, because what to do about it depends on where the markdown is published and by what. The register's promises name this rather than implying a sanitizer that is not there. A site generator publishing a register from a file it did not write sanitizes it.
-
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Risk treatment: transferred to whatever consumes the register. Raw HTML passes through as written, because what to do about it depends on where the markdown is published and by what. The register's promises name this rather than implying a sanitizer that is not there. A site generator publishing a register from a file it did not write sanitizes it.
 
 **Assumptions**
 
@@ -364,15 +362,15 @@ None recorded.
 
 A description that opens four thousand block quotes recurses the markdown serializer once per level, and a render that throws is a render nobody gets.
 
-**Mitigation**
-
-Prose nested deeper than 32 levels is rendered as one paragraph of the author's own bytes. The text still reaches the reader, the structure does not, and the package reports no failure and does not throw.
-
 **Mitigations**
 
 - Verified **The register is built as nodes**
 
   `renderRegister` builds mdast nodes and hands them to remark, and concatenates no markdown anywhere. A heading inside a threat's prose is demoted below the section heading, a title's line breaks are collapsed so that no title can forge another threat's heading, and prose nested past 32 levels is written out as the author's own bytes in one paragraph rather than recursed over.
+
+- Implemented
+
+  Prose nested deeper than 32 levels is rendered as one paragraph of the author's own bytes. The text still reaches the reader, the structure does not, and the package reports no failure and does not throw.
 
 **Assumptions**
 
@@ -392,15 +390,15 @@ None recorded.
 
 A name, a text element, or a threat title written into an SVG that a browser then opens is markup in a document with its own script rules.
 
-**Mitigation**
-
-Issue #31 landed, so the standalone document exists and is gated. The glyphs are React elements rendered to static markup, so their text is escaped by the renderer, and every number reaching an attribute goes through `svgNumber`, which is locale-free and free of exponents. `renderSvg` puts every run of free text through `xmlSafeText`, the diagram title included, which replaces each character XML 1.0 forbids rather than dropping it, since a document holding one is refused whole by every XML parser. A spec opens each committed document as XML and holds it to one `svg` root in the SVG namespace, no `script`, `image`, `use` or `foreignObject`, no `href` reaching outside the document, no `url(` and no `@import`. The severity stays high: that is what the mechanism holds off.
-
 **Mitigations**
 
 - Verified **The SVG document reaches outside itself for nothing**
 
   A standalone document is composed by `renderSvg` rather than assembled from strings, so its text is escaped by the renderer and every character XML 1.0 forbids is replaced by `xmlSafeText` instead of refusing the whole document. A spec parses each committed document and holds it to one `svg` root in the SVG namespace, with no script, no reference reaching outside itself, and no two elements sharing an id.
+
+- Implemented
+
+  Issue #31 landed, so the standalone document exists and is gated. The glyphs are React elements rendered to static markup, so their text is escaped by the renderer, and every number reaching an attribute goes through `svgNumber`, which is locale-free and free of exponents. `renderSvg` puts every run of free text through `xmlSafeText`, the diagram title included, which replaces each character XML 1.0 forbids rather than dropping it, since a document holding one is refused whole by every XML parser. A spec opens each committed document as XML and holds it to one `svg` root in the SVG namespace, no `script`, `image`, `use` or `foreignObject`, no `href` reaching outside the document, no `url(` and no `@import`. The severity stays high: that is what the mechanism holds off.
 
 **Assumptions**
 
@@ -420,13 +418,11 @@ None recorded.
 
 A PDF of the diagram and the register has to turn foreign prose into glyphs, and it does so inside the process that ran the command. The owner ruled the pipeline on 2026-09-03, on issue #34: Typst through its WebAssembly build, embedded in the CLI binary with a default font set, and no browser anywhere in the render path. So the surface is a compiler and a font shaper reading text the file's author wrote, rather than a scripting engine.
 
-**Mitigation**
-
-Nothing is built. Issue #34 carries the work and requires the landing pull request to record the pipeline and how it reaches end users. The severity is medium rather than undecided because the ruling removed the browser, and with it the scripting context that would have made it worse; what is left is foreign text reaching a compiler inside the caller's own process.
-
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Nothing is built. Issue #34 carries the work and requires the landing pull request to record the pipeline and how it reaches end users. The severity is medium rather than undecided because the ruling removed the browser, and with it the scripting context that would have made it worse; what is left is foreign text reaching a compiler inside the caller's own process.
 
 **Assumptions**
 
@@ -446,15 +442,15 @@ None recorded.
 
 A reader who counts badges on the diagram and rows in the register and gets two answers trusts neither. Two definitions of an open threat, one in the canvas and one in the register, is how that happens.
 
-**Mitigation**
-
-Badges count open threats on the model's own definition of open, and the register and the coverage queries read that same definition, so one model gives one count on every surface.
-
 **Mitigations**
 
 - Implemented **One definition of an open threat**
 
   A canvas badge counts open threats on the model's own definition of open, which is the definition the register and the coverage queries read, so a diagram and a register rendered from one model cannot disagree about what an element carries.
+
+- Implemented
+
+  Badges count open threats on the model's own definition of open, and the register and the coverage queries read that same definition, so one model gives one count on every surface.
 
 **Assumptions**
 
@@ -474,15 +470,15 @@ None recorded.
 
 An Electron renderer with node integration on, or with a preload that hands it a filesystem module, turns any code running in the page into code running on the machine. That page holds foreign markdown and foreign element names.
 
-**Mitigation**
-
-Nothing is built. Issue #42 asks for context isolation on, node integration off, the sandbox, and a content security policy, with Electron's own security checklist asserted by a test, and for a boundary rule that keeps the shell importing nothing from packages/. Issue #43 keeps file access behind one adapter rather than in the renderer.
-
 **Mitigations**
 
 - Proposed **The IPC surface is schema-first**
 
   Issue #43 asks of the file bridge what the codecs already do of a file: bounded channel definitions, zod-validated messages, no direct filesystem access from the renderer, and one adapter interface with a web implementation and a desktop one. Nothing of it is written.
+
+- Proposed
+
+  Nothing is built. Issue #42 asks for context isolation on, node integration off, the sandbox, and a content security policy, with Electron's own security checklist asserted by a test, and for a boundary rule that keeps the shell importing nothing from packages/. Issue #43 keeps file access behind one adapter rather than in the renderer.
 
 **Assumptions**
 
@@ -504,15 +500,15 @@ Nothing is built. Issue #42 asks for context isolation on, node integration off,
 
 An open channel that forwards whatever the renderer sends makes the main process an executor for the page. A path, a file mode, or a channel name chosen by the sender is enough.
 
-**Mitigation**
-
-Nothing is built. Issue #43 treats the IPC surface as a wire like any other, with bounded channel definitions, zod-validated messages, and a closed surface. The renderer is untrusted there by design rather than by exception.
-
 **Mitigations**
 
 - Proposed **The IPC surface is schema-first**
 
   Issue #43 asks of the file bridge what the codecs already do of a file: bounded channel definitions, zod-validated messages, no direct filesystem access from the renderer, and one adapter interface with a web implementation and a desktop one. Nothing of it is written.
+
+- Proposed
+
+  Nothing is built. Issue #43 treats the IPC surface as a wire like any other, with bounded channel definitions, zod-validated messages, and a closed surface. The renderer is untrusted there by design rather than by exception.
 
 **Assumptions**
 
@@ -534,15 +530,15 @@ Nothing is built. Issue #43 treats the IPC surface as a wire like any other, wit
 
 A save that takes its destination from the model, or from a message, rather than from a dialog overwrites a file the person never named.
 
-**Mitigation**
-
-Nothing is built. The milestone requires open and save to go through native dialogs on real local files, and the shell to hold window, menu and file plumbing alone. What a save may be handed, and what it must be asked, is settled when issue #43 lands.
-
 **Mitigations**
 
 - Proposed **The IPC surface is schema-first**
 
   Issue #43 asks of the file bridge what the codecs already do of a file: bounded channel definitions, zod-validated messages, no direct filesystem access from the renderer, and one adapter interface with a web implementation and a desktop one. Nothing of it is written.
+
+- Proposed
+
+  Nothing is built. The milestone requires open and save to go through native dialogs on real local files, and the shell to hold window, menu and file plumbing alone. What a save may be handed, and what it must be asked, is settled when issue #43 lands.
 
 **Assumptions**
 
@@ -564,15 +560,15 @@ Nothing is built. The milestone requires open and save to go through native dial
 
 An agent calling an edit tool with an operation that does not hold leaves a file that no longer parses, and the model it replaced is gone. The workflow that started this project was an agent hand-editing JSON, which is this failure without the tool.
 
-**Mitigation**
-
-Nothing is built. Issue #48 requires every mutation to go through `parseModel` and the model operations, and requires proof in tests that an invalid operation cannot modify the file. The mechanism it rests on, a parse that is the only way a model comes into existence, is on main already.
-
 **Mitigations**
 
 - Proposed **An agent edit goes through the core**
 
   Issue #48 asks that every mutation an edit tool makes goes through `parseModel` and the model operations, that an invalid operation return a typed error and leave the file untouched, and that a lossy write carry its loss report into the tool result. Nothing of it is written.
+
+- Proposed
+
+  Nothing is built. Issue #48 requires every mutation to go through `parseModel` and the model operations, and requires proof in tests that an invalid operation cannot modify the file. The mechanism it rests on, a parse that is the only way a model comes into existence, is on main already.
 
 **Assumptions**
 
@@ -594,10 +590,6 @@ Nothing is built. Issue #48 requires every mutation to go through `parseModel` a
 
 An agent saving a model into Threat Dragon's format loses its assumptions, which that format keeps no record of, and flattens its mitigations into one text per threat, which loses their titles, their statuses and which threats share them. An agent that is not told cannot tell the person who asked.
 
-**Mitigation**
-
-Nothing is built. The divergence list that names every such loss is on main, and `renderDivergences` already turns it into lines for a person. Issue #48 requires that report to reach the tool result on a lossy write, which is what remains.
-
 **Mitigations**
 
 - Verified **Nothing is dropped without a word**
@@ -607,6 +599,10 @@ Nothing is built. The divergence list that names every such loss is on main, and
 - Proposed **An agent edit goes through the core**
 
   Issue #48 asks that every mutation an edit tool makes goes through `parseModel` and the model operations, that an invalid operation return a typed error and leave the file untouched, and that a lossy write carry its loss report into the tool result. Nothing of it is written.
+
+- Proposed
+
+  Nothing is built. The divergence list that names every such loss is on main, and `renderDivergences` already turns it into lines for a person. Issue #48 requires that report to reach the tool result on a lossy write, which is what remains.
 
 **Assumptions**
 
@@ -628,13 +624,11 @@ Nothing is built. The divergence list that names every such loss is on main, and
 
 A threat description is free text that an agent reads as part of its context. A model file is passed between people and pulled from repositories, so its prose is an input channel into an agent that can also write files.
 
-**Mitigation**
-
-Every text result the server returns opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path issue #48 puts every write through the model operations. The severity stays undecided until the tool surface is whole.
-
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Every text result the server returns opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path issue #48 puts every write through the model operations. The severity stays undecided until the tool surface is whole.
 
 **Assumptions**
 
@@ -656,19 +650,19 @@ None recorded.
 
 A threat modelling tool that ships executables is worth attacking through its build rather than through its parser. A moved action tag, a dependency resolved at install time, or an unpinned toolchain is enough. This threat names the build rather than any element on the diagrams above, and it names substitution alone: an upstream release that is hostile when it is published is threat 25.
 
-**Mitigation**
-
-Three mechanisms, all of them on main.
-
-- The flake is the toolchain authority, and CI runs every step through `nix develop .#ci` rather than through whatever the runner ships.
-- `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, and external versions live only in the `pnpm-workspace.yaml` catalog.
-- Every GitHub Action is pinned to a full commit SHA with the version in a trailing comment. zizmor's hash-pin policy fails an unpinned one, and Renovate bumps them.
-
 **Mitigations**
 
 - Implemented **The toolchain is pinned**
 
   The flake is the toolchain authority and CI runs every step through `nix develop .#ci`. `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, external versions live only in the `pnpm-workspace.yaml` catalog, and every GitHub Action is pinned to a full commit SHA with zizmor's hash-pin policy failing an unpinned one.
+
+- Implemented
+
+  Three mechanisms, all of them on main.
+
+  - The flake is the toolchain authority, and CI runs every step through `nix develop .#ci` rather than through whatever the runner ships.
+  - `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, and external versions live only in the `pnpm-workspace.yaml` catalog.
+  - Every GitHub Action is pinned to a full commit SHA with the version in a trailing comment. zizmor's hash-pin policy fails an unpinned one, and Renovate bumps them.
 
 **Assumptions**
 
@@ -688,13 +682,11 @@ None recorded.
 
 Threat prose is markdown, and markdown carries raw HTML. The register hands the decision about that to whatever publishes it, because a register is markdown somebody else renders. The PDF path is Saerskriven composing a document itself, so there is nobody to hand it to.
 
-**Mitigation**
-
-Nothing is built. Issue #34 carries a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. This one is owned rather than transferred, because here Saerskriven is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the ruled pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine.
-
 **Mitigations**
 
-None recorded.
+- Proposed
+
+  Nothing is built. Issue #34 carries a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. This one is owned rather than transferred, because here Saerskriven is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the ruled pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine.
 
 **Assumptions**
 
@@ -714,15 +706,15 @@ None recorded.
 
 Two codecs are offered every text, and exactly one should own it. Claim on the wrong signal and a broken Saerskriven file is reported as a refused Threat Dragon document, or a broken file of a known format falls through to nobody and its holder is told that no format was recognized. Either way the paths into the file point at a document nobody wrote.
 
-**Mitigation**
-
-The claim rule is the discriminator lists in `detect.ts`, and `detect.spec.ts` pins both halves of it. Seven texts that no codec may claim, three of them stamping a version inside major 2 and one of those carrying a detail but no summary. A document broken one level below a naming key, which is claimed and then refused with a path into the file. A Saerskriven model saved as JSON, which opens as a Saerskriven model because no file name is consulted. And the smallest file of each release the codecs do model, against a Threat Dragon major above 2 and a `formatVersion` other than 1, which are claimed by nobody.
-
 **Mitigations**
 
 - Verified **Detection is the reads themselves**
 
   No format is guessed from a file name or sniffed from a prefix. Each registered codec is offered the text and reads it, and a codec claims on three outcomes only: the read succeeded, the mapping failed, or its wire schema refused the document below the root keys that name the format, which `detect.ts` lists beside each codec. It declines on the format's own syntax refusing the text, and on a schema complaint at or above a naming key, a text that is no mapping at all being no format's file. Once a codec claims, its answer stands.
+
+- Implemented
+
+  The claim rule is the discriminator lists in `detect.ts`, and `detect.spec.ts` pins both halves of it. Seven texts that no codec may claim, three of them stamping a version inside major 2 and one of those carrying a detail but no summary. A document broken one level below a naming key, which is claimed and then refused with a path into the file. A Saerskriven model saved as JSON, which opens as a Saerskriven model because no file name is consulted. And the smallest file of each release the codecs do model, against a Threat Dragon major above 2 and a `formatVersion` other than 1, which are claimed by nobody.
 
 **Assumptions**
 
@@ -742,15 +734,15 @@ None recorded.
 
 A pin makes a dependency unable to change under the build. It does not make the dependency trustworthy at the moment it was pinned. An attacker who reaches a package or an action at its source publishes a release, Renovate proposes the bump like any other, and the pin then holds the compromised version steady.
 
-**Mitigation**
-
-Partly held. `pnpm-workspace.yaml` sets `minimumReleaseAge` to 10,080 minutes and `renovate.json5` sets the same seven days with `internalChecksFilter: 'strict'`, so a freshly published version neither resolves nor is proposed until it has aged, and the quarantine lifts only for an OSV vulnerability fix, where waiting is the greater risk. Provenance is checked on top of that. `scripts/check-provenance.mjs` verifies each catalog package's npm attestation against the sigstore trust root and reads out of the verified statement the source repository the release was built from. The baseline is git rather than a record kept in step with the catalog by hand: the same catalog read out of the base commit's lockfile and audited now, so the check fails where a package attested there is not attested here, where its attestation now names a different repository, and where a signature or an attestation does not verify at all. What cannot be derived is declared on the commit that makes it, a `Provenance-Move: name old-repository new-repository` trailer read out of the commits between the base and the head, so the acceptance arrives for review beside the bump it explains and no file is kept in step with the catalog. The version it verifies is the one each workspace project resolves its `catalog:` reference to, read out of the lockfile's `importers:` block, so a catalog entry naming a version nothing installs stops the check rather than having an attestation read for it. That witness sits in the lockfile a pull request edits, though, so it holds the careless case, a hand-edited or tool-mangled version, and not a hostile one, where the claim and the thing that vouches for it are two lines of the one file. Both sides put the same question to the registry about the artifact each lockfile pins, so only a version that moved can be reported lost or moved and a package that keeps its version and loses its attestation is invisible to the comparison. It runs in the CI gate on a pull request that changes `pnpm-lock.yaml` or `pnpm-workspace.yaml`, which is where a Renovate bump appears, and on every push to main; `docs/release.md` names it as a step before the tag, run whatever that commit's diff touched. What that proves is narrow, and the rest is residual. It reaches the 56 packages the catalog names and nothing else, so the far larger set those pull in transitively is verified by nothing here, and a compromised transitive package is no narrower in blast radius than a direct one. Of the 56, two thirds publish an attestation and the rest publish none, and for those the quarantine is the only control there is; the check prints that list on every run. The repository is compared with the base commit's rather than audited: the verification itself carries no identity policy and would take an attestation from anywhere, so what the comparison buys is that a move has to be accepted by hand, in a trailer on the commit that makes it, instead of passing in silence, and it says nothing about whether the repository named is honest. An attacker who reaches a package at its source therefore publishes from the repository the base commit already names, with valid provenance, and passes. And the seven-day window is unchanged: a release nobody catches inside it still arrives. Actions are pinned to a commit SHA under zizmor's hash-pin policy and nothing checks an attestation of theirs. The npm half of the script exists because `pnpm audit signatures` verifies registry signatures and not attestations: the day pnpm verifies attestations, the probe tree goes and this becomes one pnpm command beside the baseline comparison. Nothing covers the parser either: both lockfiles are read with the catalog's `yaml`, which publishes no attestation and sits in the residual, and its module code runs in the job that audits it. The severity stays high because none of this narrows the blast radius of what does get through, which runs in the build and ships in a binary.
-
 **Mitigations**
 
 - Implemented **A release is quarantined for seven days**
 
   `pnpm-workspace.yaml` sets `minimumReleaseAge` to 10,080 minutes and `renovate.json5` sets the same seven days beside `internalChecksFilter: 'strict'`, so a version neither resolves nor reaches a pull request until it has aged, and a poisoned release is likely pulled first. The one exception is a fix for a known vulnerability, where `vulnerabilityAlerts` lifts the delay because waiting is then the greater risk. It bounds the window rather than closing it, which is why the threat it addresses stays open.
+
+- Proposed
+
+  Partly held. `pnpm-workspace.yaml` sets `minimumReleaseAge` to 10,080 minutes and `renovate.json5` sets the same seven days with `internalChecksFilter: 'strict'`, so a freshly published version neither resolves nor is proposed until it has aged, and the quarantine lifts only for an OSV vulnerability fix, where waiting is the greater risk. Provenance is checked on top of that. `scripts/check-provenance.mjs` verifies each catalog package's npm attestation against the sigstore trust root and reads out of the verified statement the source repository the release was built from. The baseline is git rather than a record kept in step with the catalog by hand: the same catalog read out of the base commit's lockfile and audited now, so the check fails where a package attested there is not attested here, where its attestation now names a different repository, and where a signature or an attestation does not verify at all. What cannot be derived is declared on the commit that makes it, a `Provenance-Move: name old-repository new-repository` trailer read out of the commits between the base and the head, so the acceptance arrives for review beside the bump it explains and no file is kept in step with the catalog. The version it verifies is the one each workspace project resolves its `catalog:` reference to, read out of the lockfile's `importers:` block, so a catalog entry naming a version nothing installs stops the check rather than having an attestation read for it. That witness sits in the lockfile a pull request edits, though, so it holds the careless case, a hand-edited or tool-mangled version, and not a hostile one, where the claim and the thing that vouches for it are two lines of the one file. Both sides put the same question to the registry about the artifact each lockfile pins, so only a version that moved can be reported lost or moved and a package that keeps its version and loses its attestation is invisible to the comparison. It runs in the CI gate on a pull request that changes `pnpm-lock.yaml` or `pnpm-workspace.yaml`, which is where a Renovate bump appears, and on every push to main; `docs/release.md` names it as a step before the tag, run whatever that commit's diff touched. What that proves is narrow, and the rest is residual. It reaches the 56 packages the catalog names and nothing else, so the far larger set those pull in transitively is verified by nothing here, and a compromised transitive package is no narrower in blast radius than a direct one. Of the 56, two thirds publish an attestation and the rest publish none, and for those the quarantine is the only control there is; the check prints that list on every run. The repository is compared with the base commit's rather than audited: the verification itself carries no identity policy and would take an attestation from anywhere, so what the comparison buys is that a move has to be accepted by hand, in a trailer on the commit that makes it, instead of passing in silence, and it says nothing about whether the repository named is honest. An attacker who reaches a package at its source therefore publishes from the repository the base commit already names, with valid provenance, and passes. And the seven-day window is unchanged: a release nobody catches inside it still arrives. Actions are pinned to a commit SHA under zizmor's hash-pin policy and nothing checks an attestation of theirs. The npm half of the script exists because `pnpm audit signatures` verifies registry signatures and not attestations: the day pnpm verifies attestations, the probe tree goes and this becomes one pnpm command beside the baseline comparison. Nothing covers the parser either: both lockfiles are read with the catalog's `yaml`, which publishes no attestation and sits in the residual, and its module code runs in the job that audits it. The severity stays high because none of this narrows the blast radius of what does get through, which runs in the build and ships in a binary.
 
 **Assumptions**
 

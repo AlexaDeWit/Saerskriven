@@ -133,7 +133,7 @@ its threat and boundary references, and then removes the emptied diagram.
 A mitigation has meaning on the threats it links, and one mitigation can link
 many threats. An assumption has meaning on the threats it links, on the model
 as a whole, or on both. The threat links live on the record, and a threat
-carries no link back. An assumption's model link is its stored
+carries no link back and no mitigation text of its own. An assumption's model link is its stored
 `appliesToModel` flag, never inferred from an empty `threats` list.
 `addMitigation` refuses a mitigation linked to no threat with
 `RecordWithoutThreat`, and `addAssumption` refuses an assumption that links no

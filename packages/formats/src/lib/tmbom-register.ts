@@ -52,7 +52,6 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
           methodologyName: 'TM-BOM',
           category: 'Unspecified',
         },
-        mitigation: '',
         elements: (threat.components_affected ?? []).map((id) =>
           tmbomNodeId('process', id, context),
         ),

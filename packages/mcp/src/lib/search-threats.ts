@@ -69,8 +69,8 @@ export type SearchThreatsResult = z.infer<typeof searchThreatsResultSchema>;
 export const searchThreatsDescription = [
   'Find the threats recorded in one Saerskriven threat model. Each match carries the threat number and id, its title, where it stands, how bad it is, its category, and the ids of the elements it attaches to. The order is the register order the model holds them in.',
   'Use this to find the threats of one element, of one severity, or of one status, and to get the number of a threat you mean to read in full. Use saer_get_threat for one whole record with its mitigations and assumptions, and saer_coverage for what the model has not analyzed at all.',
-  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `status`, `severity` and `element` each keep only the threats matching them. `query` is text looked for, without case, in the title, the description, the mitigation prose, and the title and prose of each mitigation linked to the threat.',
-  '`response_format` is `concise` by default. `detailed` adds the description, the mitigation prose and the linked mitigations of each threat, which is the bulk of a register, so filter before asking for it.',
+  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `status`, `severity` and `element` each keep only the threats matching them. `query` is text looked for, without case, in the title, the description, and the title and prose of each mitigation linked to the threat.',
+  '`response_format` is `concise` by default. `detailed` adds the description and the linked mitigations of each threat, which is the bulk of a register, so filter before asking for it.',
   'This tool never writes. A threat number names one threat for the life of a model, so a number read here stays the handle for that threat.',
 ].join(' ');
 
@@ -137,7 +137,6 @@ function keeps(
     matchesQuery(args.query, [
       threat.title,
       threat.description,
-      threat.mitigation,
       ...recordsLinkedTo(model.mitigations, threat.id).flatMap(
         ({ title, prose }) => [title, prose],
       ),

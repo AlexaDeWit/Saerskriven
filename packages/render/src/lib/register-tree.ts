@@ -198,7 +198,6 @@ function threatSection(threat: Threat, context: SectionContext): RootContent[] {
     ),
     fieldList(threat, context),
     ...labelled('Description', proseContent(threat.description, context)),
-    ...labelled('Mitigation', proseContent(threat.mitigation, context)),
     ...labelled(
       'Mitigations',
       recordList(

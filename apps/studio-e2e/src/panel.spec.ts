@@ -297,21 +297,39 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   await page.keyboard.press('Tab');
   const description = threatPanel(page).getByRole('textbox', {
     name: 'Description',
+    exact: true,
   });
   await expect(description).toBeFocused();
   await page.keyboard.type('The queue accepts a job nobody enqueued.');
 
-  await page.keyboard.press('Tab');
-  const mitigation = threatPanel(page).getByRole('textbox', {
-    name: 'Mitigation',
+  const mitigations = threatPanel(page).getByRole('group', {
+    name: 'Mitigations',
   });
-  await expect(mitigation).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(
+    mitigations.getByRole('button', { name: 'Add mitigation', exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  const recordTitle = mitigations.getByRole('textbox', {
+    name: 'Mitigation 1 title',
+    exact: true,
+  });
+  await expect(recordTitle).toBeFocused();
   await page.keyboard.type('Sign every job.');
+  await page.keyboard.press('Tab');
+  await expect(
+    mitigations.getByRole('textbox', {
+      name: 'Mitigation 1 description',
+      exact: true,
+    }),
+  ).toBeFocused();
   await expect(description).toHaveValue(
     'The queue accepts a job nobody enqueued.',
   );
 
   for (const [group, role, control] of [
+    ['Mitigations', 'combobox', 'Mitigation 1 status'],
+    ['Mitigations', 'button', 'Unlink mitigation 1'],
     ['Mitigations', 'button', 'Add mitigation'],
     ['Mitigations', 'combobox', 'Existing mitigation'],
     ['Mitigations', 'button', 'Link existing mitigation'],
@@ -337,7 +355,7 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   );
 
   await runFromMenu(page, 'Undo');
-  await expect(mitigation).toHaveValue('');
+  await expect(recordTitle).toHaveCount(0);
   await expect(description).toHaveValue(
     'The queue accepts a job nobody enqueued.',
   );
@@ -465,14 +483,19 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
   await selectNode(page, /^Actor, actor/u);
   const panel = threatPanel(page);
   await panel.getByRole('button', { name: 'Add a threat' }).click();
-  const description = panel.getByRole('textbox', { name: 'Description' });
-  const mitigation = panel.getByRole('textbox', { name: 'Mitigation' });
+  const description = panel.getByRole('textbox', {
+    name: 'Description',
+    exact: true,
+  });
+  const recordProse = panel.getByRole('textbox', {
+    name: 'Mitigation 1 description',
+    exact: true,
+  });
   const initial = await boxOf(description);
   const lineHeight = await description.evaluate((node) =>
     Number.parseFloat(getComputedStyle(node).lineHeight),
   );
   expect(initial.height).toBeGreaterThanOrEqual(lineHeight * 8);
-  expect((await boxOf(mitigation)).height).toBe(initial.height);
   const prose = Array.from(
     { length: 80 },
     (_, index) => `Line ${String(index)} of a long threat description.`,
@@ -483,22 +506,34 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
   expect(grown.height).toBeLessThanOrEqual(lineHeight * 25);
   await panel.getByRole('button', { name: 'Widen pane' }).click();
   await expect(description).toHaveValue(prose);
+  await panel
+    .getByRole('button', { name: 'Add mitigation', exact: true })
+    .click();
+  const recordInitial = await boxOf(recordProse);
+  expect(recordInitial.height).toBeGreaterThanOrEqual(lineHeight * 3);
+  expect(recordInitial.height).toBeLessThan(initial.height);
+  await recordProse.fill(prose.split('\n').slice(0, 6).join('\n'));
+  const recordGrown = await boxOf(recordProse);
+  expect(recordGrown.height).toBeGreaterThan(recordInitial.height);
+  expect(recordGrown.height).toBeLessThanOrEqual(lineHeight * 25);
   const heading = await boxOf(panel.getByRole('heading', { level: 2 }));
-  await mitigation.scrollIntoViewIfNeeded();
+  await recordProse.scrollIntoViewIfNeeded();
   expect((await boxOf(panel.getByRole('heading', { level: 2 }))).top).toBe(
     heading.top,
   );
   await expect(
     panel.getByRole('button', { name: 'Close threats' }),
   ).toBeVisible();
-  await mitigation.scrollIntoViewIfNeeded();
-  const manual = await boxOf(mitigation);
+  await recordProse.scrollIntoViewIfNeeded();
+  const manual = await boxOf(recordProse);
   await page.mouse.move(manual.right - 5, manual.bottom - 5);
   await page.mouse.down();
   await page.mouse.move(manual.right - 5, manual.bottom + 40, { steps: 5 });
   await page.mouse.up();
-  await expect(mitigation).toHaveCSS('resize', 'vertical');
-  expect((await boxOf(mitigation)).height).toBeGreaterThan(manual.height);
+  await expect(recordProse).toHaveCSS('resize', 'vertical');
+  expect((await boxOf(recordProse)).height).toBeGreaterThan(manual.height);
+  await runFromMenu(page, 'Undo');
+  await expect(recordProse).toHaveCount(0);
   await runFromMenu(page, 'Undo');
   await expect(description).toHaveValue('');
   await runFromMenu(page, 'Redo');

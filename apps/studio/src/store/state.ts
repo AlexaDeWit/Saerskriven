@@ -144,7 +144,6 @@ const placeholderDocument = {
       severity: 'medium',
       status: 'open',
       description: '',
-      mitigation: '',
       elements: ['placeholder-actor'],
     },
   ],

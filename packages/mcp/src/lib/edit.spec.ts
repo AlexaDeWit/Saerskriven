@@ -281,7 +281,6 @@ describe('the records a batch culls and adds back', () => {
       severity: 'low',
       status: 'open',
       description: '',
-      mitigation: '',
       elements: [],
     },
   };

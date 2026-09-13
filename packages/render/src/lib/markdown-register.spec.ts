@@ -78,7 +78,6 @@ type ThreatFields = {
   readonly severity?: Severity;
   readonly status?: ThreatStatus;
   readonly description?: string;
-  readonly mitigation?: string;
   readonly elements?: readonly string[];
 };
 
@@ -90,7 +89,6 @@ function threatOf(fields: ThreatFields): Threat {
     severity: 'medium',
     status: 'open',
     description: '',
-    mitigation: '',
     elements: [],
     ...fields,
   });
@@ -563,10 +561,10 @@ describe('a threat section', () => {
     expect(rendered).toContain('- **Elements**: el-gone');
   });
 
-  it('says None recorded where the threat carries neither prose nor records', () => {
+  it('says None recorded where the threat carries neither prose nor records, and holds no mitigation prose section', () => {
     const rendered = renderRegister(modelOf([threatOf({ number: 1 })]));
     expect(rendered).toContain('**Description**\n\nNone recorded.');
-    expect(rendered).toContain('**Mitigation**\n\nNone recorded.');
+    expect(rendered).not.toContain('**Mitigation**');
     expect(rendered).toContain('**Mitigations**\n\nNone recorded.');
     expect(rendered).toContain('**Assumptions**\n\nNone recorded.');
   });
@@ -956,8 +954,8 @@ describe('threat prose', () => {
       modelOf([
         threatOf({
           number: 1,
-          description: 'A list:\n\n* one\n* two',
-          mitigation: 'A [link](https://example.invalid).',
+          description:
+            'A list:\n\n* one\n* two\n\nA [link](https://example.invalid).',
         }),
       ]),
     );
@@ -970,8 +968,7 @@ describe('threat prose', () => {
       modelOf([
         threatOf({
           number: 1,
-          description: '# Attack path\n\nText.',
-          mitigation: '###### Deep\n\nText.',
+          description: '# Attack path\n\nText.\n\n###### Deep\n\nText.',
         }),
       ]),
     );

@@ -60,7 +60,6 @@ const backwardsEcluse: Model = {
   lastIssuedThreatNumber: ecluseModel.lastIssuedThreatNumber,
   threats: ecluseModel.threats.map((threat) => ({
     elements: threat.elements,
-    mitigation: threat.mitigation,
     description: threat.description,
     status: threat.status,
     severity: threat.severity,
@@ -191,6 +190,21 @@ describe('a Saerskriven YAML write of assumptions', () => {
     expect(
       saerskrivenYamlWireSchema.safeParse(parseDocument(output)).success,
     ).toBe(true);
+  });
+});
+
+describe('a Saerskriven YAML write of mitigations', () => {
+  it('states empty mitigation text on every threat and holds the records, under the version 1 wire schema', () => {
+    const document = saerskrivenYamlWireSchema.parse(
+      parseDocument(written.output),
+    );
+    expect(ecluseModel.mitigations.length).toBeGreaterThan(0);
+    expect(document.threats.map(({ mitigation }) => mitigation)).toEqual(
+      document.threats.map(() => ''),
+    );
+    expect(document.mitigations.map(({ id }) => id)).toEqual(
+      ecluseModel.mitigations.map(({ id }) => id),
+    );
   });
 });
 

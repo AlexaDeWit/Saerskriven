@@ -124,8 +124,8 @@ observe.
   each of those threats. A model holding no such assumption has no such
   section, and the section carries no flag, since flags come from threat
   links alone. Any other record linked to no threat appears nowhere.
-- **Prose is markdown.** A threat's description and mitigation, and a
-  record's prose, are parsed and spliced into the section as nodes, so a list
+- **Prose is markdown.** A threat's description and a record's prose are
+  parsed and spliced into the section as nodes, so a list
   or a table an author wrote stays one. A heading inside prose is demoted
   below the section heading, so it cannot break the register's structure. Raw
   HTML passes through as written: what to do about it belongs to whatever

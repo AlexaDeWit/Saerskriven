@@ -416,7 +416,6 @@ describe('a merge onto a document an edit has moved out from under', () => {
         severity: 'high',
         status: 'open',
         description: '',
-        mitigation: '',
         elements: ['element-one'],
       },
       {
@@ -427,7 +426,6 @@ describe('a merge onto a document an edit has moved out from under', () => {
         severity: 'low',
         status: 'open',
         description: '',
-        mitigation: '',
         elements: ['element-one'],
       },
     ],
@@ -545,7 +543,6 @@ describe('a threat an edit detached from one of the cells holding it', () => {
         severity: 'high',
         status: 'open',
         description: '',
-        mitigation: '',
         elements: ['cell-a'],
       },
     ],

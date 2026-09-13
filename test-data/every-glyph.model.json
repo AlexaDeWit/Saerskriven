@@ -140,7 +140,6 @@
       "severity": "critical",
       "status": "open",
       "description": "",
-      "mitigation": "",
       "elements": ["el-client"]
     },
     {
@@ -151,7 +150,6 @@
       "severity": "high",
       "status": "mitigated",
       "description": "",
-      "mitigation": "Frame-ancestors is set.",
       "elements": ["el-client"]
     },
     {
@@ -165,7 +163,6 @@
       "severity": "high",
       "status": "open",
       "description": "",
-      "mitigation": "",
       "elements": ["el-api"]
     },
     {
@@ -176,7 +173,6 @@
       "severity": "undecided",
       "status": "open",
       "description": "",
-      "mitigation": "",
       "elements": ["el-api"]
     },
     {
@@ -190,7 +186,6 @@
       "severity": "medium",
       "status": "open",
       "description": "",
-      "mitigation": "",
       "elements": ["el-db"]
     },
     {
@@ -201,7 +196,6 @@
       "severity": "low",
       "status": "open",
       "description": "",
-      "mitigation": "",
       "elements": ["el-request"]
     },
     {
@@ -212,11 +206,18 @@
       "severity": "undecided",
       "status": "open",
       "description": "",
-      "mitigation": "",
       "elements": ["el-zone"]
     }
   ],
   "lastIssuedThreatNumber": 7,
-  "mitigations": [],
+  "mitigations": [
+    {
+      "id": "th-mitigated-mitigation",
+      "title": "",
+      "prose": "Frame-ancestors is set.",
+      "status": "implemented",
+      "threats": ["th-mitigated"]
+    }
+  ],
   "assumptions": []
 }

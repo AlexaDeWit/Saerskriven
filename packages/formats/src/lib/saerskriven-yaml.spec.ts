@@ -1,6 +1,5 @@
 import {
   parseModel,
-  recordsLinkedTo,
   type Flow,
   type FlowEndpoint,
   type Model,
@@ -74,19 +73,6 @@ function withoutPinnedSides(model: Model): Model {
           : element,
       ),
     })),
-  };
-}
-
-function withMitigationsFolded(model: Model): Model {
-  return {
-    ...model,
-    threats: model.threats.map((threat) => ({
-      ...threat,
-      mitigation: recordsLinkedTo(model.mitigations, threat.id)
-        .map((mitigation) => mitigation.prose)
-        .join(''),
-    })),
-    mitigations: [],
   };
 }
 
@@ -180,9 +166,7 @@ describe('the document shape v0.2.1 wrote', () => {
   it('reads as the model it describes, with nothing diverging', () => {
     const reading = readOrThrow(frozenV021);
     expect(reading.divergences).toEqual([]);
-    const legacy = withMitigationsFolded(
-      withoutPinnedSides(inNumberOrder(ecluseModel)),
-    );
+    const legacy = withoutPinnedSides(inNumberOrder(ecluseModel));
     const diagrams = legacy.diagrams.map((diagram) => ({
       ...diagram,
       elements: diagram.elements.map((element) =>

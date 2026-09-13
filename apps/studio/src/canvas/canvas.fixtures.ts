@@ -111,7 +111,6 @@ const document = {
       severity: 'medium',
       status: 'open',
       description: '',
-      mitigation: '',
       elements: [readerElement],
     },
     {
@@ -122,7 +121,6 @@ const document = {
       severity: 'undecided',
       status: 'open',
       description: '',
-      mitigation: '',
       elements: [requestFlow],
     },
     {
@@ -133,7 +131,6 @@ const document = {
       severity: 'undecided',
       status: 'open',
       description: '',
-      mitigation: '',
       elements: [requestFlow],
     },
   ],

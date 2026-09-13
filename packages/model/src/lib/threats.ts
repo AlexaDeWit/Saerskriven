@@ -45,12 +45,12 @@ export const severitySchema = z.enum([
 export type Severity = z.infer<typeof severitySchema>;
 
 /**
- * One threat, a first-class record of the model rather than a child of one
- * diagram cell (Threat Dragon nests threats per cell; this record attaches
- * to any number of elements by id instead). `description` and `mitigation`
- * are markdown prose. Threat numbers must be unique across the model and
- * element ids must resolve; parseModel enforces both, so this schema alone
- * accepts duplicates and dangling ids.
+ * One threat, a record of the model in its own right rather than a child of
+ * one diagram cell: Threat Dragon nests threats per cell, and this record
+ * attaches to any number of elements by id instead. `description` is markdown
+ * prose, and a threat's mitigations are records that link it. Threat numbers
+ * must be unique across the model and element ids must resolve. parseModel
+ * enforces both, so this schema alone accepts duplicates and dangling ids.
  */
 export const threatSchema = z.object({
   id: threatIdSchema,
@@ -60,7 +60,6 @@ export const threatSchema = z.object({
   severity: severitySchema,
   status: threatStatusSchema,
   description: acceptedTextSchema,
-  mitigation: acceptedTextSchema,
   elements: z.array(elementIdSchema),
 });
 

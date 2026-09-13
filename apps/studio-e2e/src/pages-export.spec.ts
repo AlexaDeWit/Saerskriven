@@ -23,7 +23,7 @@ test('the Pages build loads its hashed PDF assets below the site base', async ({
   const output = await exportedFile(page, 'Model as PDF');
 
   expect(output.name).toBe('ecluse.pdf');
-  expect(pdfPageCount(output.bytes)).toBe(18);
+  expect(pdfPageCount(output.bytes)).toBe(17);
   expect(digestOf(output.bytes)).toBe(expectedPdfDigest);
 });
 

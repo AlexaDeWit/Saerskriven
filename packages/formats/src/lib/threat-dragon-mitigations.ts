@@ -8,9 +8,8 @@ import type { Divergence } from './divergence.js';
 import { inferredMitigationStatus } from './mitigation-text.js';
 
 /**
- * The one mitigation text Threat Dragon holds for `threat`: its own
- * `mitigation` prose, then each mitigation linked to it in register order,
- * separated by a blank line. A mitigation writes its title as a line above
+ * The one mitigation text Threat Dragon holds for `threat`: each mitigation
+ * linked to it in register order, separated by a blank line. A mitigation writes its title as a line above
  * its prose, and an empty title or an empty prose is left out.
  */
 export function mitigationText(threat: Threat, model: Model): string {
@@ -19,7 +18,7 @@ export function mitigationText(threat: Threat, model: Model): string {
 
 /**
  * What writing the mitigation text of every threat in `written` costs. A
- * threat whose text merges more than one part, or carries a mitigation title,
+ * threat whose text merges more than one record, or carries a mitigation title,
  * reads back as one record with no title (`narrowed`, once per threat). A
  * mitigation with neither title nor prose writes nothing, and one whose
  * status differs from what a read of that threat infers loses it (each
@@ -48,10 +47,9 @@ export function mitigationDivergences(
 }
 
 function textParts(threat: Threat, model: Model): string[] {
-  return [
-    threat.mitigation,
-    ...recordsLinkedTo(model.mitigations, threat.id).map(recordText),
-  ].filter((part) => part !== '');
+  return recordsLinkedTo(model.mitigations, threat.id)
+    .map(recordText)
+    .filter((part) => part !== '');
 }
 
 function writesNothing({ title, prose }: Mitigation): boolean {
@@ -75,7 +73,7 @@ function narrowedText(threat: Threat, model: Model): Divergence[] {
           subject: { kind: 'threat', id: threat.id },
           detail:
             parts > 1
-              ? `the ${String(parts)} parts merged into its one mitigation text, which reads back as one record with no title`
+              ? `the ${String(parts)} records merged into its one mitigation text, which reads back as one record with no title`
               : 'the mitigation title written into its one mitigation text, which reads back as one record with no title',
           reason: 'narrowed',
         },

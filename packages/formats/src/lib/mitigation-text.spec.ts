@@ -10,8 +10,9 @@ import {
   type ThreatWithText,
 } from './mitigation-text.js';
 
-const open = (id: string, text = 'Text.'): ThreatWithText => ({
+const open = (id: string, text = 'Text.', number = 1): ThreatWithText => ({
   id,
+  number,
   status: 'open',
   text,
 });
@@ -37,6 +38,12 @@ describe('the records a threat text makes', () => {
       'threat-1-mitigation',
       'threat-2-mitigation',
     ]);
+  });
+
+  it('makes its records in threat number order, whatever order the threats come in', () => {
+    expect(
+      idsOf([open('threat-9', 'Text.', 9), open('threat-2', 'Text.', 2)]),
+    ).toEqual(['threat-2-mitigation', 'threat-9-mitigation']);
   });
 
   it('counts past a name the model already holds, and past each one it chose', () => {
@@ -68,6 +75,7 @@ describe('the records a threat text makes', () => {
         fc.array(
           fc.record({
             id: threatId,
+            number: fc.nat(),
             status: statuses,
             text: fc.string({ minLength: 1 }),
           }),

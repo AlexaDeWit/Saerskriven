@@ -68,7 +68,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'undecided',
       status: 'not-applicable',
       description: 'The archive predates the records it would have to link.',
-      mitigation: '',
       elements: ['element-tape-archive'],
     },
     {
@@ -79,7 +78,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'low',
       status: 'open',
       description: 'A retrieval log records the requesting workstation.',
-      mitigation: '',
       elements: ['element-tape-archive'],
     },
     {
@@ -90,7 +88,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'low',
       status: 'mitigated',
       description: 'Each retrieval is signed with the reader private key.',
-      mitigation: 'Receipts are signed by the archive, not by the reader.',
       elements: [],
     },
     {
@@ -101,7 +98,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'medium',
       status: 'open',
       description: 'A hit and a miss take measurably different times.',
-      mitigation: '',
       elements: ['element-tape-archive'],
     },
     {
@@ -113,7 +109,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       status: 'mitigated',
       description:
         'A restore returns whole records rather than the fields asked for.',
-      mitigation: 'The restore path projects the requested fields.',
       elements: ['element-tape-archive'],
     },
     {
@@ -124,7 +119,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'medium',
       status: 'accepted-risk',
       description: 'No notice describes the retrieval log to the people in it.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -135,7 +129,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'open',
       description: 'Tapes are kept past the retention window without review.',
-      mitigation: '',
       elements: ['element-tape-archive'],
     },
     {
@@ -146,7 +139,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'mitigated',
       description: 'A courier carries readable tapes between sites.',
-      mitigation: 'Tapes are written encrypted, with the key held on site.',
       elements: ['element-tape-archive'],
     },
     {
@@ -158,7 +150,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       status: 'open',
       description:
         'Nothing compares a restore against the source it came from.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -169,7 +160,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'medium',
       status: 'open',
       description: 'A restore takes the ledger offline for its duration.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -181,7 +171,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       status: 'mitigated',
       description:
         'The index travels with the tape and is readable on its own.',
-      mitigation: 'The index is encrypted under the same key as the tape.',
       elements: ['element-tape-archive'],
     },
     {
@@ -192,7 +181,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'open',
       description: 'The checksum is stored on the tape it checks.',
-      mitigation: '',
       elements: ['element-tape-archive'],
     },
     {
@@ -203,7 +191,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'accepted-risk',
       description: 'No second reader exists for the tape format in use.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -214,7 +201,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'open',
       description: 'A fire at the records office destroys all copies at once.',
-      mitigation: '',
       elements: ['element-tape-archive'],
     },
     {
@@ -225,7 +211,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'critical',
       status: 'mitigated',
       description: 'Write protection is a policy rather than a mechanism.',
-      mitigation: 'Tapes are written once, on media that cannot be rewritten.',
       elements: ['element-tape-archive'],
     },
     {
@@ -236,7 +221,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'low',
       status: 'mitigated',
       description: 'Session state persists past the session.',
-      mitigation: 'State is dropped when the session closes.',
       elements: ['element-shoreline'],
     },
     {
@@ -250,7 +234,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'open',
       description: 'The retention job deletes on a schedule with no approval.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -264,7 +247,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'medium',
       status: 'accepted-risk',
       description: 'Some record types are kept far longer than others.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -275,7 +257,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'accepted-risk',
       description: 'The ingestion pipeline has no review step.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -289,7 +270,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'medium',
       status: 'open',
       description: 'Nothing names who answers for a record once it is filed.',
-      mitigation: '',
       elements: ['element-tape-archive'],
     },
     {
@@ -303,7 +283,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'medium',
       status: 'open',
       description: 'No route exists for a subject access request.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -317,7 +296,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'mitigated',
       description: 'Whole records are archived rather than the fields needed.',
-      mitigation: 'Personal fields are stripped before a record is filed.',
       elements: ['element-tape-archive'],
     },
     {
@@ -331,7 +309,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'low',
       status: 'mitigated',
       description: 'Retired tapes leave the site with no certificate returned.',
-      mitigation: 'The disposal contractor returns a destruction certificate.',
       elements: [],
     },
     {
@@ -345,7 +322,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'medium',
       status: 'not-applicable',
       description: 'The schedule is internal to the records department.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -360,7 +336,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'critical',
       status: 'open',
       description: 'No attack tree covers a restore from tape.',
-      mitigation: '',
       elements: [],
     },
     {
@@ -371,7 +346,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'medium',
       status: 'transferred',
       description: 'Tapes travel by road between the two sites.',
-      mitigation: 'The carriage contract holds the courier liable for loss.',
       elements: ['element-tape-archive'],
     },
     {
@@ -382,7 +356,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'avoided',
       description: 'A self-service restore would read across reader records.',
-      mitigation: 'Self-service restore was dropped from the archive.',
       elements: ['element-tape-archive'],
     },
     {
@@ -393,8 +366,6 @@ export const vocabularyComplementFixture: z.input<typeof modelSchema> = {
       severity: 'critical',
       status: 'eliminated',
       description: 'The restore script once carried a database password.',
-      mitigation:
-        'The script authenticates by workload identity, with no password to hold.',
       elements: [],
     },
   ],

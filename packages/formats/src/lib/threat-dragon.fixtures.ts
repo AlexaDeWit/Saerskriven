@@ -425,14 +425,15 @@ export type ModelInput = {
 
 /**
  * A model holding what Threat Dragon has no place for, so that a write of
- * it reports every reason a write can report. Threats attached to two
- * elements at once, to a trust boundary, and to nothing at all; a PLOT4ai
+ * it reports every reason a write can report: threats attached to two
+ * elements at once, to a trust boundary, and to nothing at all, a PLOT4ai
  * category from the eight the model enumerates rather than the eight Threat
- * Dragon ships; a note carrying a name beside its text; an out-of-scope
- * trust boundary; a diagram named rather than numbered; and the mitigation
- * and assumption records the format keeps none of. Every extent is 10 or
- * more and every coordinate is whole, which is what Threat Dragon's own
- * JSON Schema demands of a diagram it will open.
+ * Dragon ships, a note carrying a name beside its text, an out-of-scope
+ * trust boundary, a diagram named rather than numbered, a titled mitigation
+ * record, which the format's one text per threat narrows, and an assumption
+ * record the format keeps none of. Every extent is 10 or more and every
+ * coordinate is whole, which is what Threat Dragon's own JSON Schema demands
+ * of a diagram it will open.
  */
 export const richerThanFormatFixture: ModelInput = {
   metadata: {
@@ -546,7 +547,6 @@ export const richerThanFormatFixture: ModelInput = {
       severity: 'high',
       status: 'open',
       description: 'Nothing signs an entry on its way to storage.',
-      mitigation: '',
       elements: ['element-ledger', 'element-vault'],
     },
     {
@@ -557,7 +557,6 @@ export const richerThanFormatFixture: ModelInput = {
       severity: 'medium',
       status: 'mitigated',
       description: 'The terminal runs unattended.',
-      mitigation: 'Lock the session after a minute.',
       elements: ['element-clerk'],
     },
     {
@@ -568,7 +567,6 @@ export const richerThanFormatFixture: ModelInput = {
       severity: 'low',
       status: 'accepted-risk',
       description: 'Nobody retires the zone.',
-      mitigation: '',
       elements: ['element-zone'],
     },
     {
@@ -583,7 +581,6 @@ export const richerThanFormatFixture: ModelInput = {
       severity: 'undecided',
       status: 'open',
       description: 'The diagrams are not reviewed with a release.',
-      mitigation: '',
       elements: [],
     },
   ],
@@ -595,6 +592,13 @@ export const richerThanFormatFixture: ModelInput = {
       prose: 'The service signs an entry before the vault accepts it.',
       status: 'proposed',
       threats: ['threat-split'],
+    },
+    {
+      id: 'threat-privacy-mitigation',
+      title: '',
+      prose: 'Lock the session after a minute.',
+      status: 'implemented',
+      threats: ['threat-privacy'],
     },
   ],
   assumptions: [

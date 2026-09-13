@@ -15,7 +15,7 @@ import {
 import { RecordGroup } from './threat-records.js';
 import { elementLabel } from './threats.js';
 
-const textFields = ['Title', 'Description', 'Mitigation'] as const;
+const textFields = ['Title', 'Description'] as const;
 
 /** Which text field of a threat, or of one of its records, a draft was typed in. */
 export type TextFieldName = (typeof textFields)[number] | RecordFieldName;
@@ -190,16 +190,6 @@ export function ThreatEditor({
           }}
           onRefused={refused('Description')}
           value={threat.description}
-        />
-        <ProseField
-          held={draftIn(held, 'Mitigation')}
-          label="Mitigation"
-          onChange={onChange}
-          onCommit={(mitigation) => {
-            onCommit({ mitigation });
-          }}
-          onRefused={refused('Mitigation')}
-          value={threat.mitigation}
         />
         <RecordGroup
           held={held}

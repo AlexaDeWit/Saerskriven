@@ -163,9 +163,11 @@ describe('ecluseFixture', () => {
     });
   });
 
-  it('holds the mitigation text of each threat as one record linked to it alone', () => {
+  it('holds the mitigation text of each threat as one record linked to it alone, in threat number order', () => {
+    const numbered = [...ecluse.threats];
+    numbered.sort((left, right) => left.number - right.number);
     expect(ecluse.mitigations.map((mitigation) => mitigation.threats)).toEqual(
-      ecluse.threats.map((threat) => [threat.id]),
+      numbered.map((threat) => [threat.id]),
     );
   });
 
