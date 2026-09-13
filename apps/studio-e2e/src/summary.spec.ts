@@ -35,16 +35,20 @@ const countOn = (summary: Locator, kind: string): Locator =>
 const markOn = (summary: Locator, flag: string): Locator =>
   summary.locator(`[data-flag="${flag}"]`);
 
-const escaped = (text: string): string =>
-  text.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+const partsInOrder = (name: string, parts: readonly string[]): boolean =>
+  parts.every((part, index) => {
+    const at = name.indexOf(part);
+    return at >= 0 && (index === 0 || at > name.indexOf(parts[index - 1]));
+  });
 
 const namesItsParts = async (summary: Locator): Promise<void> => {
-  const parts = await summary
-    .locator('[data-count], [data-flag]')
-    .allTextContents();
-  await expect(summary).toHaveAccessibleName(
-    new RegExp(parts.map((part) => escaped(part.trim())).join('.*'), 'u'),
-  );
+  const parts = (
+    await summary.locator('[data-count], [data-flag]').allTextContents()
+  ).map((part) => part.trim());
+  expect(parts.length).toBeGreaterThan(0);
+  await expect
+    .poll(async () => partsInOrder(await summary.ariaSnapshot(), parts))
+    .toBe(true);
 };
 
 const addRecord = async (
