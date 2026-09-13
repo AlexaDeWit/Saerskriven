@@ -5,9 +5,9 @@ import {
   type Threat,
   type ThreatFlag,
 } from '@saerskriven/model';
+import { flagLabel } from '@saerskriven/render';
 import { useShallow } from 'zustand/react/shallow';
 import { useModelStore } from '../store/store.js';
-import { flagLabels } from '../ui/flag-labels.js';
 import styles from './threat-panel.module.css';
 
 const flagGlyphs = {
@@ -62,7 +62,7 @@ export function ThreatSummary({ threat }: { readonly threat: Threat }) {
               >
                 <path className={styles.flagGlyph} d={flagGlyphs[flag]} />
               </svg>
-              {flagLabels[flag]}
+              {flagLabel(flag)}
             </span>
           ))}
         </span>

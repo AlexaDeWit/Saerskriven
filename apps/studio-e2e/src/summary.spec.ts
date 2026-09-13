@@ -32,6 +32,11 @@ const collapse = async (page: Page, title: RegExp): Promise<Locator> => {
 const countOn = (summary: Locator, kind: string): Locator =>
   summary.locator(`[data-count="${kind}"]`);
 
+const countOf = async (summary: Locator, kind: string): Promise<number> => {
+  const text = (await countOn(summary, kind).textContent()) ?? '';
+  return Number(/\d+$/u.exec(text.trim())?.[0] ?? Number.NaN);
+};
+
 const markOn = (summary: Locator, flag: string): Locator =>
   summary.locator(`[data-flag="${flag}"]`);
 
@@ -78,21 +83,21 @@ test('collapsed counts follow records linked and unlinked from the expanded view
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
 
   const summary = await collapse(page, forwarded);
-  await expect(countOn(summary, 'mitigations')).toContainText('2');
-  await expect(countOn(summary, 'assumptions')).toContainText('1');
+  await expect.poll(() => countOf(summary, 'mitigations')).toBe(2);
+  await expect.poll(() => countOf(summary, 'assumptions')).toBe(1);
   await namesItsParts(summary);
 
   await expandThreat(page, forwarded);
   await panelControl(page, 'Link existing mitigation').click();
   await expect(panelField(page, 'textbox', 'Mitigation 3 title')).toBeVisible();
   await collapse(page, forwarded);
-  await expect(countOn(summary, 'mitigations')).toContainText('3');
+  await expect.poll(() => countOf(summary, 'mitigations')).toBe(3);
 
   await expandThreat(page, forwarded);
   await panelControl(page, 'Unlink mitigation 3').click();
   await collapse(page, forwarded);
-  await expect(countOn(summary, 'mitigations')).toContainText('2');
-  await expect(countOn(summary, 'assumptions')).toContainText('1');
+  await expect.poll(() => countOf(summary, 'mitigations')).toBe(2);
+  await expect.poll(() => countOf(summary, 'assumptions')).toBe(1);
 });
 
 test('a mitigated threat with only proposed work is marked until the work is implemented', async ({

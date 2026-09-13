@@ -82,8 +82,8 @@ mark per flag the threat raises (`threatFlags` in the model). An assumption
 that applies to the model counts and flags only on the threats it links. The
 counts and marks follow every edit, from this tab or another, while the
 threat stays collapsed. `threat-summary.tsx` draws it, and the flag wording
-lives in `../ui/flag-labels.ts`. The severity marker uses the canvas tone
-class. Each flag mark has a glyph shape of its own, an outline and its label
+comes from `flagLabel` in `@saerskriven/render`, as the register's does. The
+severity marker uses the canvas tone class. Each flag mark has a glyph shape of its own, an outline and its label
 as text, all drawn in the text colour, so severity and every mark remain
 readable and distinct in forced colours. The whole summary, counts and marks
 included, is the accordion control's accessible name, in the order it is

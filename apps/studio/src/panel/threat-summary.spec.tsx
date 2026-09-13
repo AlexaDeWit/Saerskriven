@@ -33,8 +33,11 @@ const trigger = (): HTMLElement => screen.getByRole('button');
 const named = (part: string): HTMLElement | null =>
   screen.queryByRole('button', { name: (name) => name.includes(part) });
 
-const countOf = (kind: 'mitigations' | 'assumptions'): string =>
+const countText = (kind: 'mitigations' | 'assumptions'): string =>
   trigger().querySelector(`[data-count="${kind}"]`)?.textContent ?? '';
+
+const countOf = (kind: 'mitigations' | 'assumptions'): number =>
+  Number(/\d+$/u.exec(countText(kind).trim())?.[0] ?? Number.NaN);
 
 const raised = (): string[] =>
   [...trigger().querySelectorAll<HTMLElement>('[data-flag]')].map(
@@ -69,8 +72,8 @@ describe('ThreatSummary', () => {
       }),
     );
 
-    expect(countOf('mitigations')).toContain('2');
-    expect(countOf('assumptions')).toContain('1');
+    expect(countOf('mitigations')).toBe(2);
+    expect(countOf('assumptions')).toBe(1);
 
     run(
       Action.UnlinkAssumption({
@@ -79,9 +82,9 @@ describe('ThreatSummary', () => {
       }),
     );
 
-    expect(countOf('assumptions')).toContain('0');
-    expect(named(countOf('mitigations'))).not.toBeNull();
-    expect(named(countOf('assumptions'))).not.toBeNull();
+    expect(countOf('assumptions')).toBe(0);
+    expect(named(countText('mitigations'))).not.toBeNull();
+    expect(named(countText('assumptions'))).not.toBeNull();
   });
 
   it('counts an assumption that applies to the model only on the threats it links', () => {
@@ -98,7 +101,7 @@ describe('ThreatSummary', () => {
       }),
     );
 
-    expect(countOf('assumptions')).toContain('0');
+    expect(countOf('assumptions')).toBe(0);
     expect(raised()).toEqual([]);
 
     run(
@@ -108,7 +111,7 @@ describe('ThreatSummary', () => {
       }),
     );
 
-    expect(countOf('assumptions')).toContain('1');
+    expect(countOf('assumptions')).toBe(1);
     expect(raised()).toEqual(['rests-on-invalidated-assumption']);
   });
 
