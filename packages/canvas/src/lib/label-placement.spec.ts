@@ -245,14 +245,26 @@ const openThreatOn = (element: string, number = 1) => ({
   elements: [element],
 });
 
-const diagramOf = (elements: unknown[], threats: unknown[] = []): Model =>
+const invalidatedAssumptionOn = (threats: string[]) => ({
+  id: 'as-stale',
+  prose: 'No longer holds.',
+  status: 'invalidated',
+  threats,
+  appliesToModel: false,
+});
+
+const diagramOf = (
+  elements: unknown[],
+  threats: unknown[] = [],
+  assumptions: unknown[] = [],
+): Model =>
   parsedFixture({
     metadata: { title: 't', owner: '', description: '', contributors: [] },
     diagrams: [{ id: 'd', title: 'Diagram', elements }],
     threats,
     lastIssuedThreatNumber: threats.length,
     mitigations: [],
-    assumptions: [],
+    assumptions,
   });
 
 const ecluseLayout = layoutOf(ecluseModel);
@@ -716,6 +728,36 @@ describe('two badged flows between one pair of elements', () => {
     expect(boxesOverlap(grownBy(one.box, flowLabelClearance), other.box)).toBe(
       false,
     );
+  });
+});
+
+describe('a flow whose badge carries a flag mark', () => {
+  const carrying = (assumptions: unknown[]) =>
+    layoutOf(
+      diagramOf(
+        [
+          boxAt('el-left', 0, 0),
+          boxAt('el-right', 460, 0),
+          boxAt('el-floor', 130, 75, 'actor', { width: 320, height: 80 }),
+          flowFrom('el-carry', 'el-left', 'el-right', 'ship the parcel'),
+        ],
+        [openThreatOn('el-carry')],
+        assumptions,
+      ),
+    );
+  const flagged = carrying([invalidatedAssumptionOn(['th-el-carry'])]);
+  const plain = carrying([]);
+  const [flaggedBadge] = flowBadges(flagged);
+  const [plainBadge] = flowBadges(plain);
+
+  it('hangs a deeper badge than the same flow unflagged', () => {
+    expect(flaggedBadge.box.maxY - flaggedBadge.box.minY).toBeGreaterThan(
+      plainBadge.box.maxY - plainBadge.box.minY,
+    );
+  });
+
+  it('keeps its name clear of the larger badge, and the badge off every line and element', () => {
+    expect(collisionsIn(flagged)).toEqual([]);
   });
 });
 

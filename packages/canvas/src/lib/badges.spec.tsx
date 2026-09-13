@@ -1,9 +1,11 @@
-import { severitySchema } from '@saerskriven/model';
+import { severitySchema, type Severity } from '@saerskriven/model';
 import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
+  badgeBox,
   badgeExtent,
   badgesByElement,
+  flagMark,
   severityMark,
   severityRank,
   ThreatBadgeGlyph,
@@ -32,7 +34,40 @@ const threat = (
   elements,
 });
 
-const modelWith = (threats: unknown[]) =>
+const counted = (
+  count: number,
+  severity: Severity,
+  secondary: number,
+  flagged = false,
+): ThreatBadge => ({ kind: 'counted', count, severity, secondary, flagged });
+
+const flagOnly: ThreatBadge = { kind: 'flag-only' };
+
+const mitigation = (status: string, threats: string[]) => ({
+  id: `mi-${status}`,
+  title: '',
+  prose: 'Work.',
+  status,
+  threats,
+});
+
+const assumption = (status: string, threats: string[]) => ({
+  id: `as-${status}`,
+  prose: 'Held.',
+  status,
+  threats,
+  appliesToModel: false,
+});
+
+type Records = {
+  readonly mitigations?: unknown[];
+  readonly assumptions?: unknown[];
+};
+
+const modelWith = (
+  threats: unknown[],
+  { mitigations = [], assumptions = [] }: Records = {},
+) =>
   parsedFixture({
     metadata: { title: 't', owner: '', description: '', contributors: [] },
     diagrams: [
@@ -55,18 +90,18 @@ const modelWith = (threats: unknown[]) =>
     ],
     threats,
     lastIssuedThreatNumber: threats.length,
-    mitigations: [],
-    assumptions: [],
+    mitigations,
+    assumptions,
   });
 
-const badgeOfOne = (threats: unknown[]): ThreatBadge | undefined =>
-  badgesByElement(modelWith(threats)).get(elementId('el-one'));
+const badgeOfOne = (
+  threats: unknown[],
+  records?: Records,
+): ThreatBadge | undefined =>
+  badgesByElement(modelWith(threats, records)).get(elementId('el-one'));
 
 const stacked = renderToStaticMarkup(
-  <ThreatBadgeGlyph
-    badge={{ count: 12, severity: 'high', secondary: 12 }}
-    at={{ x: 0, y: 0 }}
-  />,
+  <ThreatBadgeGlyph badge={counted(12, 'high', 12)} at={{ x: 0, y: 0 }} />,
 );
 
 const countOffsets = [
@@ -126,7 +161,7 @@ describe('badgesByElement', () => {
         threat(2, 'critical', 'open', ['el-one']),
         threat(3, 'medium', 'open', ['el-one']),
       ]),
-    ).toEqual({ count: 3, severity: 'critical', secondary: 0 });
+    ).toEqual(counted(3, 'critical', 0));
   });
 
   it('counts the undecided threats in a second badge beside the assessed', () => {
@@ -136,7 +171,7 @@ describe('badgesByElement', () => {
         threat(2, 'undecided', 'open', ['el-one']),
         threat(3, 'undecided', 'open', ['el-one']),
       ]),
-    ).toEqual({ count: 3, severity: 'high', secondary: 2 });
+    ).toEqual(counted(3, 'high', 2));
   });
 
   it('shows the neutral badge alone where every open threat is undecided', () => {
@@ -145,58 +180,145 @@ describe('badgesByElement', () => {
         threat(1, 'undecided', 'open', ['el-one']),
         threat(2, 'undecided', 'open', ['el-one']),
       ]),
-    ).toEqual({ count: 2, severity: 'undecided', secondary: 0 });
+    ).toEqual(counted(2, 'undecided', 0));
   });
 
   it('counts a threat in any status but open not at all', () => {
     expect(
       badgeOfOne([
-        threat(1, 'critical', 'mitigated', ['el-one']),
+        threat(1, 'critical', 'transferred', ['el-one']),
         threat(2, 'high', 'accepted-risk', ['el-one']),
         threat(3, 'medium', 'open', ['el-one']),
       ]),
-    ).toEqual({ count: 1, severity: 'medium', secondary: 0 });
+    ).toEqual(counted(1, 'medium', 0));
   });
 
   it('gives an element with no open threat no badge at all', () => {
     expect(
-      badgeOfOne([threat(1, 'critical', 'mitigated', ['el-one'])]),
+      badgeOfOne([threat(1, 'critical', 'accepted-risk', ['el-one'])]),
     ).toBeUndefined();
   });
 
   it('counts a threat that names one element twice once', () => {
     expect(
       badgeOfOne([threat(1, 'low', 'open', ['el-one', 'el-one'])]),
-    ).toEqual({ count: 1, severity: 'low', secondary: 0 });
+    ).toEqual(counted(1, 'low', 0));
   });
 
   it('badges a flow as it badges any other element', () => {
-    expect(badges.get(elementId('el-request'))).toEqual({
-      count: 1,
-      severity: 'low',
-      secondary: 0,
-    });
+    expect(badges.get(elementId('el-request'))).toEqual(counted(1, 'low', 0));
+  });
+});
+
+describe('the flag on a badge', () => {
+  it('flags the counted badge of an element an open flagged threat names', () => {
+    expect(
+      badgeOfOne([threat(1, 'high', 'open', ['el-one'])], {
+        assumptions: [assumption('invalidated', ['th-1'])],
+      }),
+    ).toEqual(counted(1, 'high', 0, true));
+  });
+
+  it('leaves the same element unflagged where no threat on it is flagged', () => {
+    expect(badgeOfOne([threat(1, 'high', 'open', ['el-one'])])).toEqual(
+      counted(1, 'high', 0),
+    );
+  });
+
+  it('flags the count of open threats for a flagged threat in another status', () => {
+    expect(
+      badgeOfOne([
+        threat(1, 'high', 'open', ['el-one']),
+        threat(2, 'low', 'mitigated', ['el-one']),
+      ]),
+    ).toEqual(counted(1, 'high', 0, true));
+  });
+
+  it('gives a mitigated threat with no implemented work a flag-only badge', () => {
+    const mitigated = [threat(1, 'high', 'mitigated', ['el-one'])];
+    expect(
+      badgeOfOne(mitigated, {
+        mitigations: [mitigation('proposed', ['th-1'])],
+      }),
+    ).toEqual(flagOnly);
+    expect(
+      badgeOfOne(mitigated, {
+        mitigations: [
+          mitigation('proposed', ['th-1']),
+          mitigation('implemented', ['th-1']),
+        ],
+      }),
+    ).toBeUndefined();
+  });
+
+  it.each(['valid', 'unconfirmed'])(
+    'raises no flag for a threat resting only on a %s assumption',
+    (status) => {
+      expect(
+        badgeOfOne(
+          [
+            threat(1, 'high', 'open', ['el-one']),
+            threat(2, 'low', 'accepted-risk', ['el-one']),
+          ],
+          { assumptions: [assumption(status, ['th-1', 'th-2'])] },
+        ),
+      ).toEqual(counted(1, 'high', 0));
+    },
+  );
+
+  it('raises no flag from an invalidated assumption that links no threat on the element', () => {
+    expect(
+      badgeOfOne([threat(1, 'high', 'open', ['el-one'])], {
+        assumptions: [
+          { ...assumption('invalidated', []), appliesToModel: true },
+        ],
+      }),
+    ).toEqual(counted(1, 'high', 0));
+  });
+
+  it('flags a flow as it flags any other element', () => {
+    expect(badges.get(elementId('el-probe'))).toEqual(
+      counted(1, 'medium', 0, true),
+    );
+    expect(badges.get(elementId('el-edge-zone'))).toEqual(flagOnly);
   });
 });
 
 describe('badgeExtent', () => {
   it('reaches its own radius down where there is no second badge', () => {
-    const extent = badgeExtent({ count: 1, severity: 'low', secondary: 0 });
+    const extent = badgeExtent(counted(1, 'low', 0));
     expect(extent.depth).toBe(extent.radius);
   });
 
   it('reaches past the second badge where one is drawn', () => {
-    expect(
-      badgeExtent({ count: 3, severity: 'low', secondary: 1 }).depth,
-    ).toBeGreaterThan(
-      badgeExtent({ count: 1, severity: 'low', secondary: 0 }).depth,
+    expect(badgeExtent(counted(3, 'low', 1)).depth).toBeGreaterThan(
+      badgeExtent(counted(1, 'low', 0)).depth,
     );
   });
 
+  it('reaches past the flag mark stacked under the counts', () => {
+    expect(badgeExtent(counted(3, 'low', 1, true)).depth).toBeGreaterThan(
+      badgeExtent(counted(3, 'low', 1)).depth,
+    );
+    expect(badgeExtent(counted(1, 'low', 0, true)).depth).toBeGreaterThan(
+      badgeExtent(counted(1, 'low', 0)).depth,
+    );
+  });
+
+  it('reaches no further than the flag mark for a flag-only badge', () => {
+    expect(badgeExtent(flagOnly)).toEqual({
+      radius: badgeRadius.flag,
+      depth: badgeRadius.flag,
+    });
+  });
+
   it('reaches the same either side, whatever is stacked below', () => {
-    expect(
-      badgeExtent({ count: 3, severity: 'low', secondary: 1 }).radius,
-    ).toBe(badgeExtent({ count: 1, severity: 'low', secondary: 0 }).radius);
+    expect(badgeExtent(counted(3, 'low', 1)).radius).toBe(
+      badgeExtent(counted(1, 'low', 0)).radius,
+    );
+    expect(badgeExtent(counted(3, 'low', 1, true)).radius).toBe(
+      badgeExtent(counted(1, 'low', 0)).radius,
+    );
   });
 });
 
@@ -226,10 +348,7 @@ describe('the ring a badge cuts itself out with', () => {
 describe('ThreatBadgeGlyph', () => {
   it('draws the count in the tone of the badge severity', () => {
     const markup = renderToStaticMarkup(
-      <ThreatBadgeGlyph
-        badge={{ count: 4, severity: 'high', secondary: 0 }}
-        at={{ x: 160, y: 0 }}
-      />,
+      <ThreatBadgeGlyph badge={counted(4, 'high', 0)} at={{ x: 160, y: 0 }} />,
     );
     expect(markup).toContain('transform="translate(160, 0)"');
     expect(markup).toContain(`class="${severityToneClass.high}"`);
@@ -239,10 +358,7 @@ describe('ThreatBadgeGlyph', () => {
 
   it('marks the severity in text, so the tone is not the only thing saying it', () => {
     const markup = renderToStaticMarkup(
-      <ThreatBadgeGlyph
-        badge={{ count: 4, severity: 'high', secondary: 0 }}
-        at={{ x: 0, y: 0 }}
-      />,
+      <ThreatBadgeGlyph badge={counted(4, 'high', 0)} at={{ x: 0, y: 0 }} />,
     );
     expect(markup).toContain(canvasClassNames.badgeMark);
     expect(markup).toContain(`>${severityMark.high}</text>`);
@@ -251,12 +367,62 @@ describe('ThreatBadgeGlyph', () => {
   it('stacks the undecided count under the primary badge', () => {
     const markup = renderToStaticMarkup(
       <ThreatBadgeGlyph
-        badge={{ count: 5, severity: 'critical', secondary: 2 }}
+        badge={counted(5, 'critical', 2)}
         at={{ x: 0, y: 0 }}
       />,
     );
     expect(markup).toContain(canvasClassNames.badgeSecondary);
     expect(markup).toContain(`class="${severityToneClass.undecided}"`);
     expect(markup).toContain('>2</text>');
+  });
+
+  it('marks a flag with a triangle and a glyph no severity mark uses', () => {
+    const markup = renderToStaticMarkup(
+      <ThreatBadgeGlyph
+        badge={counted(4, 'high', 2, true)}
+        at={{ x: 0, y: 0 }}
+      />,
+    );
+    expect(markup).toContain(`class="${canvasClassNames.badgeFlag}"`);
+    expect(markup).toContain(`class="${canvasClassNames.toneFlag}"`);
+    expect(markup).toContain(`>${flagMark}</text>`);
+    expect(markup).toContain('>4</text>');
+    expect(Object.values(severityMark)).not.toContain(flagMark);
+  });
+
+  it('draws the flag mark beneath the counts, inside the box the badge reports', () => {
+    const badge = counted(4, 'high', 2, true);
+    const markup = renderToStaticMarkup(
+      <ThreatBadgeGlyph badge={badge} at={{ x: 0, y: 0 }} />,
+    );
+    const centre = Number(
+      new RegExp(
+        `class="${canvasClassNames.badgeFlag}" transform="translate\\(0, ([\\d.]+)\\)"`,
+        'u',
+      ).exec(markup)?.[1],
+    );
+    expect(centre - badgeRadius.flag).toBeGreaterThan(
+      badgeExtent(counted(4, 'high', 2)).depth,
+    );
+    expect(centre + badgeRadius.flag).toBe(
+      badgeBox({ x: 0, y: 0 }, badge).maxY,
+    );
+  });
+
+  it('draws a flag-only badge as the flag mark with no count or severity', () => {
+    const markup = renderToStaticMarkup(
+      <ThreatBadgeGlyph badge={flagOnly} at={{ x: 0, y: 0 }} />,
+    );
+    expect(markup).toContain(canvasClassNames.badgeFlag);
+    expect(markup).not.toContain(canvasClassNames.badgePrimary);
+    expect(markup).not.toContain(canvasClassNames.badgeCount);
+  });
+
+  it('leaves the flag mark off an unflagged badge', () => {
+    expect(
+      renderToStaticMarkup(
+        <ThreatBadgeGlyph badge={counted(4, 'high', 2)} at={{ x: 0, y: 0 }} />,
+      ),
+    ).not.toContain(canvasClassNames.badgeFlag);
   });
 });

@@ -207,9 +207,32 @@
       "status": "open",
       "description": "",
       "elements": ["el-zone"]
+    },
+    {
+      "id": "th-flagged-open",
+      "number": 8,
+      "title": "Probe trusts a retired schema",
+      "category": { "methodology": "STRIDE", "category": "tampering" },
+      "severity": "medium",
+      "status": "open",
+      "description": "",
+      "elements": ["el-probe"]
+    },
+    {
+      "id": "th-flagged-mitigated",
+      "number": 9,
+      "title": "Edge zone admits scanners",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "denial-of-service"
+      },
+      "severity": "low",
+      "status": "mitigated",
+      "description": "",
+      "elements": ["el-edge-zone"]
     }
   ],
-  "lastIssuedThreatNumber": 7,
+  "lastIssuedThreatNumber": 9,
   "mitigations": [
     {
       "id": "th-mitigated-mitigation",
@@ -217,7 +240,22 @@
       "prose": "Frame-ancestors is set.",
       "status": "implemented",
       "threats": ["th-mitigated"]
+    },
+    {
+      "id": "th-flagged-mitigated-mitigation",
+      "title": "",
+      "prose": "Rate-limit the edge.",
+      "status": "proposed",
+      "threats": ["th-flagged-mitigated"]
     }
   ],
-  "assumptions": []
+  "assumptions": [
+    {
+      "id": "as-schema-current",
+      "prose": "The probe validates against the current schema.",
+      "status": "invalidated",
+      "threats": ["th-flagged-open"],
+      "appliesToModel": false
+    }
+  ]
 }

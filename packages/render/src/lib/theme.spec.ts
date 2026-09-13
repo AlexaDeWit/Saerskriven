@@ -1,5 +1,6 @@
 import {
   badgeTextColour,
+  canvasClassNames,
   contrastRatio,
   defaultRenderTheme,
   registerBadgeKinds,
@@ -180,6 +181,9 @@ describe('consumer themes', () => {
     expect(svg).toContain('font-family: "Liberation Mono"');
     expect(svg).toContain(
       `fill: ${theme.colours.background}; stroke: ${theme.severity.high}; stroke-width: 1`,
+    );
+    expect(svg).toContain(
+      `.${canvasClassNames.toneFlag} { fill: ${theme.colours.background}; stroke: ${theme.colours.text}; stroke-width: 1`,
     );
     expect(svg).toContain('fill: #123456');
     expect(typst).toContain(

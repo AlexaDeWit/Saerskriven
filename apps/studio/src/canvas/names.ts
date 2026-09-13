@@ -18,6 +18,8 @@ const kindWords = {
 
 const freeEndWords = 'a free point';
 
+const flaggedWords = 'a threat flagged';
+
 /**
  * What every element the layout drew is called to assistive technology,
  * keyed by the id React Flow knows it by. The glyphs are hidden from a
@@ -89,11 +91,15 @@ function badgeWords(badge: ThreatBadge | undefined): string[] {
   if (badge === undefined) {
     return [];
   }
+  if (badge.kind === 'flag-only') {
+    return [flaggedWords];
+  }
   return [
     badge.count === 1 ? '1 open threat' : `${badge.count} open threats`,
     badge.severity === 'undecided'
       ? 'severity not assessed'
       : `highest severity ${badge.severity}`,
+    ...(badge.flagged ? [flaggedWords] : []),
   ];
 }
 

@@ -20,6 +20,9 @@ PDF applies it to both the register and every embedded drawing.
 Defaults come from the canvas light palette. Every badge keeps a readable label.
 Diagram badges retain their threat count and severity letter.
 Status, record status, and flag colours apply to register labels. Diagram badges summarize open threats by severity.
+A diagram badge adds a triangle marked `!` where a threat on that element carries a flag, in any status.
+An element whose flagged threats are none of them open shows that triangle alone, with no count.
+The triangle takes the `colours.text` colour and the `badges` appearance settings, not the `flag` colours.
 
 ## Partial overrides
 
