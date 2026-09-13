@@ -149,6 +149,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     (definition) => {
       if (referencedMitigations.has(definition.id)) return [];
       fields(definition, ['id', 'name', 'description']);
+      const description = definition.description ?? '';
       return [
         unlinkedMitigationLine(
           context,
@@ -156,9 +157,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
           [
             'Mitigation: ',
             definition.name,
-            ...((definition.description ?? '') === ''
-              ? []
-              : ['. ', definition.description ?? '']),
+            ...(description === '' ? [] : ['. ', description]),
           ],
         ),
       ];

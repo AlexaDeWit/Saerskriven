@@ -128,6 +128,12 @@ it('imports active and pending controls naming a threat as linked records, witho
     ['Pending work', 'proposed', 1],
   ]);
   expect(read.model.mitigations[1].prose).toContain('under_review');
+  expect(
+    ['active-control', 'pending-control'].map(
+      (name) =>
+        read.divergences.filter((entry) => entry.detail.includes(name)).length,
+    ),
+  ).toEqual([0, 1]);
 });
 
 it.each([

@@ -14,19 +14,17 @@ import { tmbomNodeId } from './tmbom-graph.js';
  * model, so no record lacks a reference.
  */
 export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
+  const sourceThreats = document.threats ?? [];
+  const controls = document.controls ?? [];
   const threatIndex = context.index(
-    document.threats ?? [],
+    sourceThreats,
     (threat) => threat.symbolic_name,
     'threats',
   );
-  context.index(
-    document.controls ?? [],
-    (control) => control.symbolic_name,
-    'controls',
-  );
-  const threats = tmbomThreats(document, context);
+  context.index(controls, (control) => control.symbolic_name, 'controls');
+  const threats = tmbomThreats(document, sourceThreats, context);
   const { mitigations, descriptionLines } = tmbomControls(
-    document,
+    controls,
     context,
     threatIndex,
   );
@@ -40,12 +38,13 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
 
 function tmbomThreats(
   document: TmbomDocument,
+  sourceThreats: NonNullable<TmbomDocument['threats']>,
   context: ImportContext,
 ): ImportThreat[] {
   const componentIndex = new Set(
     document.components.map((component) => component.symbolic_name),
   );
-  return (document.threats ?? []).map((threat, index) => {
+  return sourceThreats.map((threat, index) => {
     context.fields(threat, [
       'symbolic_name',
       'title',
@@ -82,13 +81,13 @@ function tmbomThreats(
 }
 
 function tmbomControls(
-  document: TmbomDocument,
+  controls: NonNullable<TmbomDocument['controls']>,
   context: ImportContext,
   threatIndex: ReadonlyMap<string, unknown>,
 ) {
   const mitigations: ImportMitigation[] = [];
   const descriptionLines: string[] = [];
-  for (const control of document.controls ?? []) {
+  for (const control of controls) {
     if (control.status === 'retired' || control.status === 'wont_do') continue;
     context.fields(control, [
       'symbolic_name',

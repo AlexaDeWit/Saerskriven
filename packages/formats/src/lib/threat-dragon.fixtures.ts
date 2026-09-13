@@ -12,6 +12,7 @@ import type {
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { vendoredTexts } from './corpus.fixtures.js';
 
 const linkability: ThreatDragonThreat = {
   id: 'threat-linkability',
@@ -77,21 +78,14 @@ export const corpusTimeout = 30_000;
 /**
  * Every Threat Dragon threat model the repository vendors, named by its
  * path under `test-data`. The twelve models Threat Dragon ships in its own
- * repository, described in `test-data/README.md`, plus the Écluse model,
- * read from the directories rather than from a list, so a model added
- * beside them is gated without anything else changing. The vendored locale
- * tables live under the same root and are not threat models, so they are
- * not read here.
+ * repository, described in `test-data/README.md`, plus the Écluse model.
+ * The vendored locale tables live under the same root and are not threat
+ * models, so they are not read here.
  */
 export const corpusTexts: readonly { name: string; text: string }[] = [
   { name: 'ecluse.json', text: ecluseText },
-  ...['demo', 'models'].flatMap((folder) =>
-    readdirSync(join(vendored, folder))
-      .filter((name) => name.endsWith('.json'))
-      .map((name) => ({
-        name: `threat-dragon/${folder}/${name}`,
-        text: readFileSync(join(vendored, folder, name), 'utf8'),
-      })),
+  ...vendoredTexts(['threat-dragon/demo', 'threat-dragon/models'], (name) =>
+    name.endsWith('.json'),
   ),
 ];
 

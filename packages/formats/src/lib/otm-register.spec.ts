@@ -30,3 +30,33 @@ it('turns a mitigation definition no occurrence names into one description line 
     ),
   ).toHaveLength(1);
 });
+
+it.each([
+  ['no', undefined],
+  ['an empty', ''],
+] as const)(
+  'writes only the name of an unattached mitigation definition with %s description',
+  (_, description) => {
+    const document = otmFixture();
+    document.mitigations = [
+      ...(document.mitigations?.slice(0, 1) ?? []),
+      {
+        id: 'unattached-mitigation',
+        name: 'Unattached work',
+        riskReduction: 0,
+        ...(description === undefined ? {} : { description }),
+      },
+    ];
+    const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+    expect(
+      read.model.mitigations.some(({ title }) => title === 'Unattached work'),
+    ).toBe(false);
+    const line = read.model.metadata.description.split('\n\n').at(-1);
+    expect(line?.endsWith('Unattached work')).toBe(true);
+    expect(
+      read.divergences.filter((entry) =>
+        entry.detail.includes('unattached-mitigation'),
+      ),
+    ).toHaveLength(1);
+  },
+);

@@ -454,11 +454,17 @@ it('retains OTM threat definitions that have no occurrences', () => {
 });
 
 it('builds no mitigation linked to no threat and no assumption with no reference from any vendored document', () => {
-  const models = importCorpus.flatMap((file) =>
-    Either.match(importModel(file.text), {
-      onLeft: () => [],
-      onRight: ({ model }) => [{ name: file.name, model }],
-    }),
+  const readings = importCorpus.map((file) => ({
+    name: file.name,
+    result: importModel(file.text),
+  }));
+  expect(
+    readings
+      .filter(({ result }) => Either.isLeft(result))
+      .map(({ name }) => name),
+  ).toEqual(['tmbom/vault-invalid-zones.json']);
+  const models = readings.flatMap(({ name, result }) =>
+    Either.isRight(result) ? [{ name, model: result.right.model }] : [],
   );
   expect(new Set(models.map(({ name }) => name.split('/')[0]))).toEqual(
     new Set(['otm', 'tmbom']),
