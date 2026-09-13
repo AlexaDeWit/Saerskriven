@@ -132,13 +132,29 @@ describe('flattening the records of a threat into its one text', () => {
     ]);
   });
 
-  it('reports a record with no title and no text, which writes nothing', () => {
+  it('reports a record with no title and no text once for each threat, and nothing else of it', () => {
     const written = writtenOnto(
-      withRecords([record('mitigation-empty', ['threat-open'], { prose: '' })]),
+      withRecords([
+        record('mitigation-empty', ['threat-open', 'threat-mitigated'], {
+          prose: '',
+        }),
+      ]),
     );
-    expect(written.texts['threat-open']).toBe('');
-    expect(about(written.divergences, 'unrepresentable')).toEqual([
-      'mitigation mitigation-empty',
+    expect([
+      written.texts['threat-open'],
+      written.texts['threat-mitigated'],
+    ]).toEqual(['', '']);
+    expect(
+      written.divergences.map(({ subject, reason }) => ({ subject, reason })),
+    ).toEqual([
+      {
+        subject: { kind: 'mitigation', id: 'mitigation-empty' },
+        reason: 'unrepresentable',
+      },
+      {
+        subject: { kind: 'mitigation', id: 'mitigation-empty' },
+        reason: 'unrepresentable',
+      },
     ]);
   });
 

@@ -23,8 +23,9 @@ export function mitigationText(threat: Threat, model: Model): string {
  * reads back as one record with no title (`narrowed`, once per threat). A
  * mitigation with neither title nor prose writes nothing, and one whose
  * status differs from what a read of that threat infers loses it (each
- * `unrepresentable`, once per threat). A mitigation written into several
- * threats' texts is `split`, and one written into none is `unrepresentable`.
+ * `unrepresentable`, once per threat), and a mitigation that writes nothing
+ * reports nothing else. A mitigation written into several threats' texts is
+ * `split`, and one written into none is `unrepresentable`.
  */
 export function mitigationDivergences(
   model: Model,
@@ -51,6 +52,10 @@ function textParts(threat: Threat, model: Model): string[] {
     threat.mitigation,
     ...recordsLinkedTo(model.mitigations, threat.id).map(recordText),
   ].filter((part) => part !== '');
+}
+
+function writesNothing({ title, prose }: Mitigation): boolean {
+  return title === '' && prose === '';
 }
 
 function recordText({ title, prose }: Mitigation): string {
@@ -80,7 +85,7 @@ function narrowedText(threat: Threat, model: Model): Divergence[] {
 
 function emptyRecords(threat: Threat, model: Model): Divergence[] {
   return recordsLinkedTo(model.mitigations, threat.id)
-    .filter(({ title, prose }) => title === '' && prose === '')
+    .filter(writesNothing)
     .map((mitigation): Divergence => ({
       subject: { kind: 'mitigation', id: mitigation.id },
       detail: `the mitigation with no title and no text, which writes nothing into the text of the threat "${threat.id}"`,
@@ -91,7 +96,10 @@ function emptyRecords(threat: Threat, model: Model): Divergence[] {
 function lostStatuses(threat: Threat, model: Model): Divergence[] {
   const inferred = inferredMitigationStatus(threat.status);
   return recordsLinkedTo(model.mitigations, threat.id)
-    .filter((mitigation) => mitigation.status !== inferred)
+    .filter(
+      (mitigation) =>
+        mitigation.status !== inferred && !writesNothing(mitigation),
+    )
     .map((mitigation): Divergence => ({
       subject: { kind: 'mitigation', id: mitigation.id },
       detail: `the status "${mitigation.status}" in the text of the threat "${threat.id}", which reads back as "${inferred}"`,
@@ -100,14 +108,14 @@ function lostStatuses(threat: Threat, model: Model): Divergence[] {
 }
 
 function spread(mitigation: Mitigation, threats: number): Divergence[] {
-  if (threats === 1) {
+  if (threats === 1 || (threats > 1 && writesNothing(mitigation))) {
     return [];
   }
   return [
     threats === 0
       ? {
           subject: { kind: 'mitigation', id: mitigation.id },
-          detail: `the mitigation "${mitigation.title}", which is linked to no threat the format holds`,
+          detail: `the mitigation "${mitigation.title === '' ? mitigation.id : mitigation.title}", which is linked to no threat the format holds`,
           reason: 'unrepresentable',
         }
       : {

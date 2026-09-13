@@ -61,6 +61,7 @@ const offeredToLink = async (page: Page, label: string): Promise<boolean> => {
     return false;
   }
   await existing.click();
+  await expect(page.getByRole('listbox')).toBeVisible();
   const found = await page
     .getByRole('option', { name: label, exact: true })
     .count();

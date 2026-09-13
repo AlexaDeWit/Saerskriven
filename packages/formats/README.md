@@ -267,7 +267,7 @@ line between records, and the threat's own `mitigation` prose first while that
 field exists. A text merging more than one part, or carrying a record's
 title, reads back as one record with no title, so it is reported once per
 threat as `narrowed`. A record with neither title nor prose writes nothing and
-is `unrepresentable`. A record written into several threats' texts is
+is `unrepresentable` once per threat it would be written into. A record written into several threats' texts is
 `split`, and one written into none is `unrepresentable`. The
 format has no place for a record's status, and the write adds no text or key
 for one, so a mitigation whose status differs from what a read of a threat it
