@@ -9,8 +9,9 @@ import { inferredMitigationStatus } from './mitigation-text.js';
 
 /**
  * The one mitigation text Threat Dragon holds for `threat`: each mitigation
- * linked to it in register order, separated by a blank line. A mitigation writes its title as a line above
- * its prose, and an empty title or an empty prose is left out.
+ * linked to it in register order, separated by a blank line. A mitigation
+ * writes its title as a line above its prose, and an empty title or an empty
+ * prose is left out.
  */
 export function mitigationText(threat: Threat, model: Model): string {
   return textParts(threat, model).join('\n\n');

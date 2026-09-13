@@ -154,8 +154,9 @@ model no longer holds: `withoutAssumptionElementLinks` empties them and
 through `withMitigationTextAsRecords`, on the terms of the Threat Dragon read
 below, with every id the file holds taken, and reports nothing, since nothing
 is lost. Both steps are functions over the version 1 document, and the
-document a read hands back has been through them. [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md)
-describes the file itself.
+document a read hands back has been through them.
+[`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the
+file itself.
 
 The format is declared by [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md),
 which imports zod and nothing else. A file is a contract with people who

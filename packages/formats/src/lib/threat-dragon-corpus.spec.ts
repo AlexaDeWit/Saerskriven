@@ -1,4 +1,4 @@
-import { diagramIdSchema, type Model } from '@saerskriven/model';
+import { diagramIdSchema, inNumberOrder, type Model } from '@saerskriven/model';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
@@ -68,9 +68,7 @@ const textsOf = (document: ThreatDragonDocument) =>
 
 const firstTexts = (document: ThreatDragonDocument, model: Model) => {
   const held = indexById(allThreats(document));
-  const threats = [...model.threats];
-  threats.sort((left, right) => left.number - right.number);
-  return threats.flatMap(({ id }) => {
+  return inNumberOrder(model.threats).flatMap(({ id }) => {
     const text = held.get(id)?.mitigation ?? '';
     return text === '' ? [] : [{ threats: [id], prose: text }];
   });

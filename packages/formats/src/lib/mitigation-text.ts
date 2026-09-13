@@ -1,7 +1,8 @@
-import type {
-  mitigationSchema,
-  MitigationStatus,
-  ThreatStatus,
+import {
+  inNumberOrder,
+  type mitigationSchema,
+  type MitigationStatus,
+  type ThreatStatus,
 } from '@saerskriven/model';
 import type { z } from 'zod';
 
@@ -46,9 +47,7 @@ export function mitigationsFromText(
   taken: Iterable<string>,
 ): MitigationInput[] {
   const held = new Set(taken);
-  const numbered = [...threats];
-  numbered.sort((left, right) => left.number - right.number);
-  return numbered.flatMap((threat) => {
+  return inNumberOrder(threats).flatMap((threat) => {
     if (threat.text === '') {
       return [];
     }
@@ -64,6 +63,34 @@ export function mitigationsFromText(
       },
     ];
   });
+}
+
+type Identified = { readonly id: string };
+
+/**
+ * The records of a model, or of a document mapped to one, whose ids a
+ * mitigation id must not repeat.
+ */
+export type IdHolder = {
+  readonly diagrams: readonly (Identified & {
+    readonly elements: readonly Identified[];
+  })[];
+  readonly threats: readonly Identified[];
+  readonly mitigations: readonly Identified[];
+  readonly assumptions: readonly Identified[];
+};
+
+/** Every id `holder` holds, for the `taken` of {@link mitigationsFromText}. */
+export function idsHeld(holder: IdHolder): string[] {
+  return [
+    ...holder.diagrams.flatMap((diagram) => [
+      diagram.id,
+      ...diagram.elements.map((element) => element.id),
+    ]),
+    ...holder.threats.map((threat) => threat.id),
+    ...holder.mitigations.map((mitigation) => mitigation.id),
+    ...holder.assumptions.map((assumption) => assumption.id),
+  ];
 }
 
 function freeId(base: string, held: ReadonlySet<string>): string {

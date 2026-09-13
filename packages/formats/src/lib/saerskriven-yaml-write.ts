@@ -5,16 +5,17 @@ import {
   flowProperties,
   boundaryProperties,
 } from './security-properties.js';
-import type {
-  Assumption,
-  BoundaryShape,
-  Diagram,
-  Element,
-  FlowEndpoint,
-  Mitigation,
-  Model,
-  ModelMetadata,
-  Threat,
+import {
+  inNumberOrder,
+  type Assumption,
+  type BoundaryShape,
+  type Diagram,
+  type Element,
+  type FlowEndpoint,
+  type Mitigation,
+  type Model,
+  type ModelMetadata,
+  type Threat,
 } from '@saerskriven/model';
 import {
   saerskrivenYamlWireSchema,
@@ -78,15 +79,13 @@ function narrowedModelLinks(model: Model): Divergence[] {
 export function writeSaerskrivenYamlDocument(
   model: Model,
 ): SaerskrivenYamlDocument {
-  const threats = [...model.threats];
-  threats.sort((left, right) => left.number - right.number);
   return {
     formatVersion: 1,
     metadata: toWireMetadata(model.metadata),
     assumptions: model.assumptions.map(toWireAssumption),
     diagrams: model.diagrams.map(toWireDiagram),
     mitigations: model.mitigations.map(toWireMitigation),
-    threats: threats.map(toWireThreat),
+    threats: inNumberOrder(model.threats).map(toWireThreat),
     lastIssuedThreatNumber: model.lastIssuedThreatNumber,
   };
 }

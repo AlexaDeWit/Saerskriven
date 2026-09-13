@@ -125,9 +125,9 @@ observe.
   section, and the section carries no flag, since flags come from threat
   links alone. Any other record linked to no threat appears nowhere.
 - **Prose is markdown.** A threat's description and a record's prose are
-  parsed and spliced into the section as nodes, so a list
-  or a table an author wrote stays one. A heading inside prose is demoted
-  below the section heading, so it cannot break the register's structure. Raw
+  parsed and spliced into the section as nodes, so a list or a table an
+  author wrote stays one. A heading inside prose is demoted below the section
+  heading, so it cannot break the register's structure. Raw
   HTML passes through as written: what to do about it belongs to whatever
   consumes the register. Prose nested deeper than `deepestProse`, counted
   from the register's root, is rendered as one paragraph of the author's own

@@ -1,5 +1,5 @@
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
-import { mitigationsFromText } from './mitigation-text.js';
+import { idsHeld, mitigationsFromText } from './mitigation-text.js';
 import {
   mitigationStatusesToWire,
   threatStatusesToModel,
@@ -36,16 +36,4 @@ export function withMitigationTextAsRecords(
       })),
     ],
   };
-}
-
-function idsHeld(document: SaerskrivenYamlDocument): string[] {
-  return [
-    ...document.diagrams.flatMap((diagram) => [
-      diagram.id,
-      ...diagram.elements.map((element) => element.id),
-    ]),
-    ...document.threats.map((threat) => threat.id),
-    ...document.mitigations.map((mitigation) => mitigation.id),
-    ...document.assumptions.map((assumption) => assumption.id),
-  ];
 }

@@ -65,3 +65,15 @@ export const threatSchema = z.object({
 
 /** Threat record. */
 export type Threat = z.infer<typeof threatSchema>;
+
+/**
+ * A copy of `threats` ordered by threat number. A number is unique across a
+ * model and never reissued, so the order is total.
+ */
+export function inNumberOrder<Numbered extends { readonly number: number }>(
+  threats: readonly Numbered[],
+): Numbered[] {
+  const ordered = [...threats];
+  ordered.sort((left, right) => left.number - right.number);
+  return ordered;
+}

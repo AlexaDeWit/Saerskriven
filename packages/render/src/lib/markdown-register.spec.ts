@@ -3,6 +3,7 @@ import {
   assumptionStatusSchema,
   customCategorySchema,
   diagramSchema,
+  inNumberOrder,
   mitigationSchema,
   mitigationStatusSchema,
   parseModel,
@@ -1034,10 +1035,8 @@ describe('a register render', () => {
       threatOf({ number: 1 }),
       threatOf({ number: 2 }),
     ];
-    const sorted = [...threats];
-    sorted.sort((left, right) => left.number - right.number);
     expect(renderRegister(modelOf(threats))).toBe(
-      renderRegister(modelOf(sorted)),
+      renderRegister(modelOf(inNumberOrder(threats))),
     );
   });
 
