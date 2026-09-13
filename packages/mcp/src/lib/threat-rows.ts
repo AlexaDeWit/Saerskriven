@@ -1,4 +1,4 @@
-import { escapedForTerminal } from '@saerskriven/formats';
+import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
 import {
   acceptedTextSchema,
   assumptionSchema,
@@ -92,7 +92,7 @@ export function renderCategory(category: ThreatCategory): string {
  */
 export function renderThreat(row: ThreatDetail): readonly string[] {
   return [
-    `  ${String(row.number)} (${row.id}): ${escapedForTerminal(row.title)}`,
+    `  ${String(row.number)} (${quotedForTerminal(row.id)}): ${escapedForTerminal(row.title)}`,
     ...detailLines(row).map((line) => `    ${line}`),
   ];
 }
@@ -103,7 +103,7 @@ export function renderThreat(row: ThreatDetail): readonly string[] {
  */
 export function renderMitigation(mitigation: Mitigation): readonly string[] {
   return [
-    `${mitigation.id} (${mitigation.status}): ${escapedForTerminal(mitigation.title)}`,
+    `${quotedForTerminal(mitigation.id)} (${mitigation.status}): ${escapedForTerminal(mitigation.title)}`,
     ...(mitigation.prose === ''
       ? []
       : [`  ${escapedForTerminal(mitigation.prose)}`]),
@@ -123,7 +123,7 @@ export function renderAssumption(
     readOn === 'threat' && assumption.appliesToModel
       ? ', also applies to the model'
       : '';
-  return `${assumption.id} (${assumption.status}${scope}): ${escapedForTerminal(assumption.prose)}`;
+  return `${quotedForTerminal(assumption.id)} (${assumption.status}${scope}): ${escapedForTerminal(assumption.prose)}`;
 }
 
 /** What a flag on a threat read means, for the descriptions of the tools that read one. */
@@ -138,7 +138,7 @@ export function renderFlags(flags: readonly ThreatFlag[]): string {
 function detailLines(row: ThreatDetail): readonly string[] {
   return [
     `status ${row.status}, severity ${row.severity}, category ${renderCategory(row.category)}`,
-    `elements: ${row.elements.length === 0 ? 'none' : row.elements.join(', ')}`,
+    `elements: ${row.elements.length === 0 ? 'none' : row.elements.map(quotedForTerminal).join(', ')}`,
     renderFlags(row.flags),
     ...(row.description === undefined || row.description.length === 0
       ? []

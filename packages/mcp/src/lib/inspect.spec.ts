@@ -68,8 +68,8 @@ describe('the assumptions an inspection lists', () => {
     const heading = lines.indexOf('assumptions that apply to the model:');
     expect(lines.indexOf('owner: Alexandra de Wit')).toBeLessThan(heading);
     expect(lines.slice(heading + 1, heading + 3)).toEqual([
-      expect.stringMatching(/^ {2}assumption-reviewed \(valid\): /u),
-      expect.stringMatching(/^ {2}assumption-hand-written \(valid\): /u),
+      expect.stringMatching(/^ {2}"assumption-reviewed" \(valid\): /u),
+      expect.stringMatching(/^ {2}"assumption-hand-written" \(valid\): /u),
     ]);
   });
 });

@@ -192,9 +192,11 @@ describe('a detailed row of a threat carrying both record kinds', () => {
     expect(rendered).toEqual(
       expect.arrayContaining([
         '    flags: none',
-        expect.stringMatching(/^ {4}mitigation mitigation-tls \(proposed\): /u),
         expect.stringMatching(
-          /^ {4}assumption assumption-managed-db \(valid\): /u,
+          /^ {4}mitigation "mitigation-tls" \(proposed\): /u,
+        ),
+        expect.stringMatching(
+          /^ {4}assumption "assumption-managed-db" \(valid\): /u,
         ),
       ]),
     );

@@ -1,5 +1,5 @@
 import { readAnyFormat, readLimits } from '@saerskriven/formats';
-import { OperationFailure } from '@saerskriven/model';
+import { OperationFailure, type AssumptionStatus } from '@saerskriven/model';
 import { assumptionId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
@@ -183,7 +183,7 @@ describe('what an applied edit writes', () => {
 const addedBackups = (
   fields: Partial<{
     threats: string[];
-    status: 'unconfirmed' | 'valid' | 'invalidated';
+    status: AssumptionStatus;
     appliesToModel: boolean;
   }>,
 ): EditInput => ({

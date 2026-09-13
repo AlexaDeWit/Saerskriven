@@ -61,8 +61,8 @@ describe('a threat the model links work to', () => {
 
   it('names both of them in the text of the result', () => {
     const rendered = renderThreatRecord(read).join('\n');
-    expect(rendered).toContain('mitigation-tls (proposed):');
-    expect(rendered).toContain('assumption-managed-db (valid):');
+    expect(rendered).toContain('"mitigation-tls" (proposed):');
+    expect(rendered).toContain('"assumption-managed-db" (valid):');
   });
 });
 
