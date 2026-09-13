@@ -156,6 +156,34 @@ export function everyRecordTree(): ModelWorkspace {
 }
 
 /**
+ * A disposable root whose default model holds an assumption of each scope
+ * after the editable fixture's own, which links a threat alone: one that
+ * applies to the model and links the threat, and one that applies to the
+ * model and links nothing.
+ */
+export function assumptionScopesTree(): ModelWorkspace {
+  const [held] = editableModel.assumptions;
+  return treeHolding(
+    saerskrivenYamlCodec.write(
+      parsed({
+        ...editableModel,
+        assumptions: [
+          ...editableModel.assumptions,
+          { ...held, id: 'assumption-reviewed', appliesToModel: true },
+          {
+            ...held,
+            id: 'assumption-hand-written',
+            prose: 'This model is kept true by hand.',
+            threats: [],
+            appliesToModel: true,
+          },
+        ],
+      }),
+    ).output,
+  );
+}
+
+/**
  * A disposable root holding a model of more threats than a concise listing
  * carries. Every committed fixture holds fewer records than the limit, so
  * nothing else reaches the line a cut listing ends with.

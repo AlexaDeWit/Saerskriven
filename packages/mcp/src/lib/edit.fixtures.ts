@@ -107,6 +107,19 @@ export function editableTree(): EditableTree {
   };
 }
 
+const secondThreat: EditInput = {
+  op: 'add_threat',
+  threat: {
+    id: 'threat-replayed-order',
+    title: 'Replayed order',
+    category: { methodology: 'STRIDE', category: 'spoofing' },
+    severity: 'medium',
+    status: 'open',
+    description: 'A captured order is submitted a second time.',
+    elements: ['element-api'],
+  },
+};
+
 /**
  * One batch per `op` the edit schema declares, each against {@link
  * editableModel} and each changing the model, so a spec can call every
@@ -259,23 +272,7 @@ export const editVariants: readonly {
       },
     ],
   },
-  {
-    op: 'add_threat',
-    edits: [
-      {
-        op: 'add_threat',
-        threat: {
-          id: 'threat-replayed-order',
-          title: 'Replayed order',
-          category: { methodology: 'STRIDE', category: 'spoofing' },
-          severity: 'medium',
-          status: 'open',
-          description: 'A captured order is submitted a second time.',
-          elements: ['element-api'],
-        },
-      },
-    ],
-  },
+  { op: 'add_threat', edits: [secondThreat] },
   {
     op: 'replace_threat',
     edits: [
@@ -382,6 +379,37 @@ export const editVariants: readonly {
     edits: [{ op: 'remove_mitigation', mitigation: 'mitigation-tls' }],
   },
   {
+    op: 'link_mitigation',
+    edits: [
+      secondThreat,
+      {
+        op: 'link_mitigation',
+        mitigation: 'mitigation-tls',
+        threat: 'threat-replayed-order',
+      },
+    ],
+  },
+  {
+    op: 'unlink_mitigation',
+    edits: [
+      {
+        op: 'unlink_mitigation',
+        mitigation: 'mitigation-tls',
+        threat: 'threat-tamper-order',
+      },
+    ],
+  },
+  {
+    op: 'set_mitigation_status',
+    edits: [
+      {
+        op: 'set_mitigation_status',
+        mitigation: 'mitigation-tls',
+        status: 'implemented',
+      },
+    ],
+  },
+  {
     op: 'add_assumption',
     edits: [
       {
@@ -389,7 +417,6 @@ export const editVariants: readonly {
         assumption: {
           id: 'assumption-backups',
           prose: 'Backups are encrypted with the same key policy.',
-          status: 'unconfirmed',
           threats: ['threat-tamper-order'],
         },
       },
@@ -405,6 +432,7 @@ export const editVariants: readonly {
           prose: 'The order database encrypts its disks.',
           status: 'invalidated',
           threats: ['threat-tamper-order'],
+          appliesToModel: true,
         },
       },
     ],
@@ -412,6 +440,58 @@ export const editVariants: readonly {
   {
     op: 'remove_assumption',
     edits: [{ op: 'remove_assumption', assumption: 'assumption-managed-db' }],
+  },
+  {
+    op: 'link_assumption',
+    edits: [
+      secondThreat,
+      {
+        op: 'link_assumption',
+        assumption: 'assumption-managed-db',
+        threat: 'threat-replayed-order',
+      },
+    ],
+  },
+  {
+    op: 'unlink_assumption',
+    edits: [
+      {
+        op: 'unlink_assumption',
+        assumption: 'assumption-managed-db',
+        threat: 'threat-tamper-order',
+      },
+    ],
+  },
+  {
+    op: 'link_assumption_to_model',
+    edits: [
+      { op: 'link_assumption_to_model', assumption: 'assumption-managed-db' },
+    ],
+  },
+  {
+    op: 'unlink_assumption_from_model',
+    edits: [
+      { op: 'link_assumption_to_model', assumption: 'assumption-managed-db' },
+      {
+        op: 'unlink_assumption',
+        assumption: 'assumption-managed-db',
+        threat: 'threat-tamper-order',
+      },
+      {
+        op: 'unlink_assumption_from_model',
+        assumption: 'assumption-managed-db',
+      },
+    ],
+  },
+  {
+    op: 'set_assumption_status',
+    edits: [
+      {
+        op: 'set_assumption_status',
+        assumption: 'assumption-managed-db',
+        status: 'invalidated',
+      },
+    ],
   },
   {
     op: 'add_diagram',

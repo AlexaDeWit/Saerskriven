@@ -28,6 +28,7 @@ export {
   editOps,
   modelEditSchema,
   renderRefusedEdit,
+  type AppliedBatch,
   type ModelEdit,
   type RefusedEdit,
 } from './lib/edits.js';

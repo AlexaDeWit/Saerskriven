@@ -38,11 +38,11 @@ export type CreateResult = z.infer<typeof writeReportSchema>;
 
 /** What `saer_create` tells a client it is for. */
 export const createDescription = [
-  'Write a new Saerskriven threat model file: the native YAML format, the title and owner this call gives it, and no diagram, threat, mitigation or assumption yet.',
+  'Write a new Saerskriven threat model file: the native YAML format at version 2, the title and owner this call gives it, and no diagram, threat, mitigation or assumption yet.',
   'Pass `file` as the path to write, relative to the server root. A path already holding a file is refused rather than replaced: to change a model that exists, read it and call saer_edit.',
   'The result carries the `revision` of the file it wrote, which is the handle the first saer_edit on it has to quote back, so a create and an edit run in one turn without a read between them.',
   `A model past ${String(readLimits.maxTextBytes / 1_048_576)} MiB, the size this server reads, is refused and not written, since the server could not open it again.`,
-  'Fill the model in with saer_edit: add a diagram first, then the elements, then the threats that attach to them. Its set_model_metadata op sets the title, owner, description and contributors.',
+  'Fill the model in with saer_edit: add a diagram first, then the elements, then the threats that attach to them. Mitigations and assumptions are added to threats with the record ops, and an assumption about the model as a whole is added applying to the model. Its set_model_metadata op sets the title, owner, description and contributors.',
 ].join(' ');
 
 /**

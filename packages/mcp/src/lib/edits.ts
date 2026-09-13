@@ -8,14 +8,19 @@ import {
   addThreat,
   assumptionIdSchema,
   assumptionSchema,
+  assumptionStatusSchema,
   attachThreat,
   detachThreat,
   diagramIdSchema,
   droppedRecords,
   editNote,
   elementIdSchema,
+  linkAssumption,
+  linkAssumptionToModel,
+  linkMitigation,
   mitigationIdSchema,
   mitigationSchema,
+  mitigationStatusSchema,
   modelMetadataChangeSchema,
   moveElement,
   nextThreatNumber,
@@ -32,8 +37,10 @@ import {
   replaceMitigation,
   replaceThreat,
   resizeElement,
+  setAssumptionStatus,
   setFlowDirection,
   setFlowWaypoints,
+  setMitigationStatus,
   setModelMetadata,
   setElementProperties,
   severitySchema,
@@ -43,6 +50,9 @@ import {
   threatIdSchema,
   threatSchema,
   threatStatusSchema,
+  unlinkAssumption,
+  unlinkAssumptionFromModel,
+  unlinkMitigation,
   waypointsSchema,
   type Model,
   type RecordReference,
@@ -73,9 +83,36 @@ const diagramEditSchema = z.object({
 
 const threatFieldsSchema = threatSchema.omit({ number: true });
 
-const assumptionEditSchema = assumptionSchema.omit({ appliesToModel: true });
+const mitigationEditSchema = z.object({
+  mitigation: mitigationIdSchema.describe('The id of the mitigation to edit.'),
+});
 
-/** Record edits replace records. Property edits patch only the supplied fields. */
+const assumptionEditSchema = z.object({
+  assumption: assumptionIdSchema.describe('The id of the assumption to edit.'),
+});
+
+const linkedThreatSchema = z.object({
+  threat: threatIdSchema.describe(
+    'The threat the link is made to or taken from.',
+  ),
+});
+
+const addedAssumptionSchema = assumptionSchema.extend({
+  status: assumptionStatusSchema
+    .default('unconfirmed')
+    .describe('Left out, the assumption starts `unconfirmed`.'),
+  appliesToModel: z
+    .boolean()
+    .default(false)
+    .describe(
+      'Whether the assumption applies to the model as a whole. Left out, it does not.',
+    ),
+});
+
+/**
+ * `add_*` and `replace_*` edits take whole records. Every other edit changes
+ * only what it names.
+ */
 export const modelEditSchema = z.discriminatedUnion('op', [
   z.object({
     op: z.literal('add_element'),
@@ -164,17 +201,41 @@ export const modelEditSchema = z.discriminatedUnion('op', [
     op: z.literal('remove_mitigation'),
     mitigation: mitigationIdSchema,
   }),
+  mitigationEditSchema
+    .extend(linkedThreatSchema.shape)
+    .extend({ op: z.literal('link_mitigation') }),
+  mitigationEditSchema
+    .extend(linkedThreatSchema.shape)
+    .extend({ op: z.literal('unlink_mitigation') }),
+  mitigationEditSchema.extend({
+    op: z.literal('set_mitigation_status'),
+    status: mitigationStatusSchema,
+  }),
   z.object({
     op: z.literal('add_assumption'),
-    assumption: assumptionEditSchema,
+    assumption: addedAssumptionSchema,
   }),
   z.object({
     op: z.literal('replace_assumption'),
-    assumption: assumptionEditSchema,
+    assumption: assumptionSchema,
   }),
   z.object({
     op: z.literal('remove_assumption'),
     assumption: assumptionIdSchema,
+  }),
+  assumptionEditSchema
+    .extend(linkedThreatSchema.shape)
+    .extend({ op: z.literal('link_assumption') }),
+  assumptionEditSchema
+    .extend(linkedThreatSchema.shape)
+    .extend({ op: z.literal('unlink_assumption') }),
+  assumptionEditSchema.extend({ op: z.literal('link_assumption_to_model') }),
+  assumptionEditSchema.extend({
+    op: z.literal('unlink_assumption_from_model'),
+  }),
+  assumptionEditSchema.extend({
+    op: z.literal('set_assumption_status'),
+    status: assumptionStatusSchema,
   }),
   diagramEditSchema.extend({
     op: z.literal('add_diagram'),
@@ -336,20 +397,28 @@ function applyEdit(
       return replaceMitigation(model, edit.mitigation);
     case 'remove_mitigation':
       return removeMitigation(model, edit.mitigation);
+    case 'link_mitigation':
+      return linkMitigation(model, edit.mitigation, edit.threat);
+    case 'unlink_mitigation':
+      return unlinkMitigation(model, edit.mitigation, edit.threat);
+    case 'set_mitigation_status':
+      return setMitigationStatus(model, edit.mitigation, edit.status);
     case 'add_assumption':
-      return addAssumption(model, {
-        ...edit.assumption,
-        appliesToModel: false,
-      });
+      return addAssumption(model, edit.assumption);
     case 'replace_assumption':
-      return replaceAssumption(model, {
-        ...edit.assumption,
-        appliesToModel:
-          model.assumptions.find(({ id }) => id === edit.assumption.id)
-            ?.appliesToModel ?? false,
-      });
+      return replaceAssumption(model, edit.assumption);
     case 'remove_assumption':
       return removeAssumption(model, edit.assumption);
+    case 'link_assumption':
+      return linkAssumption(model, edit.assumption, edit.threat);
+    case 'unlink_assumption':
+      return unlinkAssumption(model, edit.assumption, edit.threat);
+    case 'link_assumption_to_model':
+      return linkAssumptionToModel(model, edit.assumption);
+    case 'unlink_assumption_from_model':
+      return unlinkAssumptionFromModel(model, edit.assumption);
+    case 'set_assumption_status':
+      return setAssumptionStatus(model, edit.assumption, edit.status);
     case 'add_diagram':
       return addDiagram(model, {
         id: edit.diagram,
