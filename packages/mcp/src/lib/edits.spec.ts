@@ -9,7 +9,12 @@ import {
   validModelFixture,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { applyEdits, editOps, renderRefusedEdit } from './edits.js';
+import {
+  applyEdits,
+  editOps,
+  modelEditSchema,
+  renderRefusedEdit,
+} from './edits.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {
   readonly [Tag in Union['_tag']]: Extract<Union, { readonly _tag: Tag }>;
@@ -148,21 +153,21 @@ describe('what a refused edit reads as', () => {
 });
 
 describe('replace_assumption', () => {
-  it('keeps the model link of an assumption that links no threat', () => {
-    const managedDb = assumptionId('assumption-managed-db');
-    const modelWide = Either.getOrThrow(
-      linkAssumptionToModel(
-        parsedFixture({
-          ...validModelFixture,
-          assumptions: validModelFixture.assumptions.map((assumption) => ({
-            ...assumption,
-            threats: [],
-          })),
-        }),
-        managedDb,
-      ),
-    );
-    const applied = Either.getOrThrow(
+  const managedDb = assumptionId('assumption-managed-db');
+  const modelWide = Either.getOrThrow(
+    linkAssumptionToModel(
+      parsedFixture({
+        ...validModelFixture,
+        assumptions: validModelFixture.assumptions.map((assumption) => ({
+          ...assumption,
+          threats: [],
+        })),
+      }),
+      managedDb,
+    ),
+  );
+  const replacing = (appliesToModel: boolean) =>
+    Either.getOrThrow(
       applyEdits(modelWide, [
         {
           op: 'replace_assumption',
@@ -171,14 +176,67 @@ describe('replace_assumption', () => {
             prose: 'Reworded.',
             status: 'valid',
             threats: [],
+            appliesToModel,
           },
         },
       ]),
     );
+
+  it('keeps the model link a replacement states', () => {
+    const applied = replacing(true);
     expect(applied.model.assumptions).toEqual([
       { ...modelWide.assumptions[0], prose: 'Reworded.' },
     ]);
     expect(applied.culled).toEqual([]);
+  });
+
+  it('culls an assumption whose replacement takes away its model link and links no threat', () => {
+    const applied = replacing(false);
+    expect(applied.model.assumptions).toEqual([]);
+    expect(applied.culled).toEqual([{ kind: 'assumption', id: managedDb }]);
+  });
+
+  it('is refused where it leaves the model link unstated', () => {
+    expect(
+      modelEditSchema.safeParse({
+        op: 'replace_assumption',
+        assumption: {
+          id: managedDb,
+          prose: 'Reworded.',
+          status: 'valid',
+          threats: [],
+        },
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('the records a batch culls more than once', () => {
+  it('names a record once though two edits of the batch culled it', () => {
+    const tls = mitigationId('mitigation-tls');
+    const tamper = threatId('threat-tamper-order');
+    const unlinking = {
+      op: 'unlink_mitigation',
+      mitigation: tls,
+      threat: tamper,
+    } as const;
+    const applied = Either.getOrThrow(
+      applyEdits(parsedFixture(validModelFixture), [
+        unlinking,
+        {
+          op: 'add_mitigation',
+          mitigation: {
+            id: tls,
+            title: 'TLS again',
+            prose: '',
+            status: 'proposed',
+            threats: [tamper],
+          },
+        },
+        unlinking,
+      ]),
+    );
+    expect(applied.culled).toEqual([{ kind: 'mitigation', id: tls }]);
   });
 });
 

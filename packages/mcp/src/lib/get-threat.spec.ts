@@ -1,6 +1,7 @@
 import { getThreat, renderThreatRecord } from './get-threat.js';
 import {
   answerOf,
+  assumptionScopesTree,
   ecluseWorkspace,
   everyRecordTree,
   refusalOf,
@@ -60,7 +61,31 @@ describe('a threat the model links work to', () => {
 
   it('names both of them in the text of the result', () => {
     const rendered = renderThreatRecord(read).join('\n');
-    expect(rendered).toContain('mitigation-tls (proposed):');
-    expect(rendered).toContain('assumption-managed-db (valid):');
+    expect(rendered).toContain('"mitigation-tls" (proposed):');
+    expect(rendered).toContain('"assumption-managed-db" (valid):');
+  });
+});
+
+describe('a threat whose assumption also applies to the model', () => {
+  const read = answerOf(
+    getThreat(assumptionScopesTree(), { ref: 'threat-tamper-order' }),
+  );
+
+  it('carries its flags and the assumptions linked to it, and no assumption that links it not', () => {
+    expect({
+      flags: read.flags,
+      assumptions: read.assumptions.map(({ id }) => id),
+    }).toEqual({
+      flags: [],
+      assumptions: ['assumption-managed-db', 'assumption-reviewed'],
+    });
+  });
+
+  it('says in its text which of them also applies to the model', () => {
+    const rendered = renderThreatRecord(read);
+    expect(rendered).toContain('flags: none');
+    expect(
+      rendered.filter((line) => line.includes('also applies to the model')),
+    ).toEqual([expect.stringContaining('assumption-reviewed')]);
   });
 });

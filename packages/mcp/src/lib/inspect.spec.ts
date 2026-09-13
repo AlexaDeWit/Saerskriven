@@ -1,5 +1,6 @@
 import { Either } from 'effect';
 import { inspect, renderInspection } from './inspect.js';
+import { assumptionScopesTree } from './read-tools.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import { openWorkspace } from './workspace.js';
 
@@ -21,6 +22,7 @@ describe('what an inspection reads as', () => {
       expect.stringMatching(/^revision: sha256:[0-9a-f]{64}$/u),
       'title: Small',
       'owner: Owner',
+      'assumptions that apply to the model:',
       'totals: diagrams 0, elements 0, threats 1, mitigations 0, assumptions 0',
       'diagrams:',
       'divergences:',
@@ -44,5 +46,30 @@ describe('what an inspection reads as', () => {
         (inspection) => inspection.result.kind,
       ),
     ).toEqual(Either.right('inspected'));
+  });
+});
+
+describe('the assumptions an inspection lists', () => {
+  const scoped = Either.getOrThrow(inspect(assumptionScopesTree(), {}));
+
+  it('lists every assumption that applies to the model, and none that does not', () => {
+    expect(
+      scoped.result.kind === 'inspected'
+        ? scoped.result.assumptions.map(({ id, threats }) => ({ id, threats }))
+        : [],
+    ).toEqual([
+      { id: 'assumption-reviewed', threats: ['threat-tamper-order'] },
+      { id: 'assumption-hand-written', threats: [] },
+    ]);
+  });
+
+  it('names them in its text after the metadata', () => {
+    const lines = renderInspection(scoped);
+    const heading = lines.indexOf('assumptions that apply to the model:');
+    expect(lines.indexOf('owner: Alexandra de Wit')).toBeLessThan(heading);
+    expect(lines.slice(heading + 1, heading + 3)).toEqual([
+      expect.stringMatching(/^ {2}"assumption-reviewed" \(valid\): /u),
+      expect.stringMatching(/^ {2}"assumption-hand-written" \(valid\): /u),
+    ]);
   });
 });

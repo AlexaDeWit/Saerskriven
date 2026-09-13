@@ -236,12 +236,13 @@ three that write one. Every one of them takes `file` as a path relative to the
 root, or reads the `--file` default where a call names none, and every result
 carries `revision`.
 
-`saer_inspect` reports the format a file was read as,
-its metadata, one line per diagram with its element and threat counts, the
-totals, every place the file and the model do not correspond exactly, and
-`revision`, a SHA-256 over the file's bytes that a later write will have to
-quote back. Called with neither a `file` argument nor a `--file` default, it
-lists the model files under the root instead.
+`saer_inspect` reports the format a file was read as, its metadata, the
+assumptions that apply to the model (including one that also links threats),
+one line per diagram with its element and threat counts, the totals, every
+place the file and the model do not correspond exactly, and `revision`, a
+SHA-256 over the file's bytes that a later write will have to quote back.
+Called with neither a `file` argument nor a `--file` default, it lists the
+model files under the root instead.
 
 `saer_validate` answers whether a file reads at all, and reports every place
 the file and the model do not correspond exactly. A file no format claims comes
@@ -250,27 +251,34 @@ claims and refuses comes back naming the path inside the document of every
 issue the schema raised, down to the field.
 
 `saer_search_elements` and `saer_search_threats` find the records of a model.
-The first takes `element`, `diagram`, `kind` and `query` and carries the element id, its
-diagram, its kind, its name, whether it is in scope, and how many threats
-reference it. The second takes `status`, `severity`, `element` and `query` and
-carries the threat number and id, its title, status, severity, category and
-attached elements. Both take `response_format`: `concise` is those fields, and
-`detailed` adds the complete model record, including an element's geometry,
-flow direction, security facts and declared relationships, or a threat's prose
-and the mitigations linked to it.
+The first takes `element`, `diagram`, `kind` and `query` and carries the
+element id, its diagram, its kind, its name, whether it is in scope, and how
+many threats reference it. The second takes `status`, `severity`, `element`
+and `query` and carries the threat number and id, its title, status, severity,
+category, attached elements and flags. Both take `response_format`: `concise`
+is those fields, and `detailed` adds the complete model record, including an
+element's geometry, flow direction, security facts and declared relationships,
+or a threat's prose and the mitigation and assumption records linked to it.
 Use `element` for an exact element-id lookup. Element queries also search ids,
-protocol, privilege level and declared relationship ids. A listing is cut at fifty concise
-matches or twenty detailed ones, and a cut result says what it matched and
-names the arguments that narrow it, so the first twenty of two hundred is never
-read as the whole answer.
+protocol, privilege level and declared relationship ids. A listing is cut at
+fifty concise matches or twenty detailed ones, and a cut result says what it
+matched and names the arguments that narrow it, so the first twenty of two
+hundred is never read as the whole answer.
 
-`saer_get_threat` reads one threat by number or id, with the elements it
-attaches to, the mitigations addressing it and the assumptions its analysis
-rests on. `saer_coverage` reports the elements no threat references, the open
-threats grouped by severity, and the count of threats recorded against every
-element, all three from the model package's own coverage queries.
-`saer_register` carries the whole markdown register, which is the document
-`render --format md` writes.
+`saer_get_threat` reads one threat by number or id, with its flags, the
+elements it attaches to, the mitigation records addressing it and the
+assumption records its analysis rests on, each assumption saying whether it
+also applies to the model. A flag is derived on every read and never changes a
+threat status: `mitigated-without-implemented-work` is a `mitigated` threat
+with no linked mitigation `implemented` or `verified`, and
+`rests-on-invalidated-assumption` is a threat with a linked `invalidated`
+assumption. An assumption's model link raises no flag.
+
+`saer_coverage` reports the elements no threat references, the open threats
+grouped by severity, and the count of threats recorded against every element,
+all three from the model package's own coverage queries. `saer_register`
+carries the whole markdown register, which is the document `render --format md`
+writes.
 
 `saer_render_diagram` draws one diagram as a PNG image block, 1568 pixels on
 its longer edge unless `width` asks for fewer, with the text of the result
@@ -298,24 +306,49 @@ kind, or both setting and clearing one field, is refused.
 ```
 
 Place that operation in the `edits` array of a `saer_edit` call with the file's
-current revision. The same tools and property semantics apply over stdio and HTTP.
+current revision. The same tools and property semantics apply over stdio and
+HTTP.
+
+A mitigation is added on at least one threat, and an assumption on at least
+one threat or applying to the model. `link_mitigation`, `unlink_mitigation`,
+`link_assumption` and `unlink_assumption` take the record id and a threat id,
+`link_assumption_to_model` and `unlink_assumption_from_model` take the
+assumption id, and `set_mitigation_status` and `set_assumption_status` change
+the status alone. `add_assumption` starts an assumption `unconfirmed` and not
+applying to the model where those fields are left out, and
+`replace_assumption` takes the whole record, `appliesToModel` included.
+
+```json
+[
+  {
+    "op": "link_mitigation",
+    "mitigation": "mitigation-tls",
+    "threat": "threat-2"
+  },
+  { "op": "link_assumption_to_model", "assumption": "assumption-hosting" },
+  {
+    "op": "set_mitigation_status",
+    "mitigation": "mitigation-tls",
+    "status": "implemented"
+  }
+]
+```
 
 `saer_edit` applies a batch of edits to one model and saves the file in the
-format it is already in. The batch is all or nothing: the edits go onto one
-parsed model in the order given, and the first one the model refuses stops the
-batch, so nothing is written and the result names the index that was refused
-and what the model said. An edit that takes a mitigation or an assumption from
-one or more references to none removes the record with it, and the result
-names each record the batch culled under `culled`. A record's references are
-its threat links, and an assumption that applies to the model also has its
-model link. Every call quotes the
-`revision` a read returned, and a file that changed before the call is refused
-rather than overwritten. The file is replaced through a temporary file beside
-it and a rename onto it, so a reader of the path sees the file it had or the
-file the edit wrote. A process
-killed between the two, or a removal the system refuses, leaves a
-`.<name>.<uuid>.saer` copy in the directory that no listing shows and nothing
-reports, and deleting it is safe.
+format it is already in, writing a Saerskriven YAML file as version 2. The
+batch is all or nothing: the edits go onto one parsed model in the order
+given, and the first one the model refuses stops the batch, so nothing is
+written and the result names the index that was refused and what the model
+said. A mitigation's references are its threat links, and an assumption's are
+its threat links and its model link. An edit that takes a record's last
+reference away removes the record with it, and the result names each record
+the batch culled under `culled`. Every call quotes the `revision` a read
+returned, and a file that changed before the call is refused rather than
+overwritten. The file is replaced through a temporary file beside it and a
+rename onto it, so a reader of the path sees the file it had or the file the
+edit wrote. A process killed between the two, or a removal the system refuses,
+leaves a `.<name>.<uuid>.saer` copy in the directory that no listing shows and
+nothing reports, and deleting it is safe.
 
 The handle is checked twice rather than held as a lock: against the bytes the
 call itself read, which catches an agent editing a model it has moved past,
@@ -330,9 +363,9 @@ divergences rather than as a refusal, which is how a write to a Threat Dragon
 file reports an assumption that format keeps no record of, or a mitigation
 status its one mitigation text per threat cannot carry.
 
-`saer_create` writes a new model in the native YAML format, and `saer_import`
-converts an OTM or TM-BOM file into one. Both refuse a path that is already
-taken, so neither replaces a file.
+`saer_create` writes a new model in the native YAML format at version 2, and
+`saer_import` converts an OTM or TM-BOM file into one. Both refuse a path that
+is already taken, so neither replaces a file.
 
 A file this server writes is one it can read again. A read refuses a file past
 8 MiB in UTF-8, and `saer_edit`, `saer_create` and `saer_import` all refuse a

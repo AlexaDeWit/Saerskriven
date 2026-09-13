@@ -10,6 +10,7 @@ import {
   searchThreatsResultSchema,
   validateResultSchema,
   WriteFailure,
+  writeReportSchema,
 } from '@saerskriven/mcp';
 import {
   blobsOf,
@@ -144,6 +145,86 @@ const calls = async (session: McpSession) => {
   };
 };
 
+const recordThreat = (id: string) => ({
+  op: 'add_threat',
+  threat: {
+    id,
+    title: `Threat ${id}`,
+    category: { methodology: 'STRIDE', category: 'spoofing' },
+    severity: 'high',
+    status: 'mitigated',
+    description: '',
+    elements: [],
+  },
+});
+
+const recordSession = async (opener: SessionOpener, runner: Runner) => {
+  const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-records-'));
+  const file = 'records.yaml';
+  const session = await opener.open(runner, ['mcp', '--root', root]);
+  try {
+    const call = (name: string, args: Record<string, unknown>) =>
+      session.client.callTool({ name, arguments: { file, ...args } });
+    const edit = async (
+      revision: string,
+      edits: readonly Record<string, unknown>[],
+    ) => editOf(await call('saer_edit', { revision, edits }));
+    const created = structuredOf(
+      await call('saer_create', { title: 'Records over MCP' }),
+      writeReportSchema,
+    );
+    const added = await edit(created.revision, [
+      recordThreat('first'),
+      recordThreat('second'),
+      {
+        op: 'add_mitigation',
+        mitigation: {
+          id: 'tls',
+          title: 'TLS',
+          prose: '',
+          status: 'proposed',
+          threats: ['first'],
+        },
+      },
+      {
+        op: 'add_assumption',
+        assumption: { id: 'hosting', prose: 'Hosted.', threats: ['first'] },
+      },
+    ]);
+    const linked = await edit(added.revision, [
+      { op: 'link_mitigation', mitigation: 'tls', threat: 'second' },
+      { op: 'link_assumption_to_model', assumption: 'hosting' },
+      { op: 'unlink_assumption', assumption: 'hosting', threat: 'first' },
+      { op: 'set_mitigation_status', mitigation: 'tls', status: 'implemented' },
+    ]);
+    const second = structuredOf(
+      await call('saer_get_threat', { ref: 'second' }),
+      getThreatResultSchema,
+    );
+    const inspected = readingOf(await call('saer_inspect', {}));
+    const unlinked = await edit(linked.revision, [
+      { op: 'unlink_mitigation', mitigation: 'tls', threat: 'first' },
+      { op: 'unlink_mitigation', mitigation: 'tls', threat: 'second' },
+    ]);
+    const flagged = structuredOf(
+      await call('saer_search_threats', {}),
+      searchThreatsResultSchema,
+    );
+    return {
+      second,
+      inspected,
+      unlinked,
+      flagged,
+      onDisk: Either.getOrThrow(
+        readAnyFormat(readFileSync(join(root, file), 'utf8')),
+      ).model,
+    };
+  } finally {
+    await session.end();
+    rmSync(root, { recursive: true, force: true });
+  }
+};
+
 for (const runner of runners) {
   const register = runner.absence === undefined ? describe : describe.skip;
   for (const opener of sessionOpeners) {
@@ -227,6 +308,52 @@ for (const runner of runners) {
             });
           });
         }
+
+        it('links, unlinks, applies an assumption to the model and sets a status on a native model', async () => {
+          const run = await recordSession(opener, runner);
+
+          expect({
+            mitigations: run.second.mitigations,
+            flags: run.second.flags,
+          }).toEqual({
+            mitigations: [
+              {
+                id: 'tls',
+                title: 'TLS',
+                prose: '',
+                status: 'implemented',
+                threats: ['first', 'second'],
+              },
+            ],
+            flags: [],
+          });
+          expect(run.inspected.assumptions).toEqual([
+            {
+              id: 'hosting',
+              prose: 'Hosted.',
+              status: 'unconfirmed',
+              threats: [],
+              appliesToModel: true,
+            },
+          ]);
+          expect(run.unlinked.culled).toEqual([
+            { kind: 'mitigation', id: 'tls' },
+          ]);
+          expect(
+            run.flagged.threats.map(({ id, status, flags }) => [
+              id,
+              status,
+              flags,
+            ]),
+          ).toEqual([
+            ['first', 'mitigated', ['mitigated-without-implemented-work']],
+            ['second', 'mitigated', ['mitigated-without-implemented-work']],
+          ]);
+          expect({
+            mitigations: run.onDisk.mitigations,
+            assumptions: run.onDisk.assumptions.map(({ id }) => id),
+          }).toEqual({ mitigations: [], assumptions: ['hosting'] });
+        });
       },
       spawnTimeout,
     );

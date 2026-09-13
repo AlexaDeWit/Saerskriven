@@ -52,9 +52,14 @@ describe('what saer_search_threats finds', () => {
     expect(threat?.mitigations).toBeDefined();
   });
 
-  it('leaves the prose out of a concise row', () => {
+  it('leaves the prose and the records out of a concise row, and carries its flags', () => {
     const [threat] = search({ response_format: 'concise' }).threats;
-    expect(threat?.description).toBeUndefined();
+    expect(threat?.flags).toEqual([]);
+    expect(
+      Object.keys(threat ?? {}).filter((key) =>
+        ['description', 'mitigations', 'assumptions'].includes(key),
+      ),
+    ).toEqual([]);
   });
 
   it('cuts a detailed listing at its limit and says the count it matched', () => {
@@ -160,6 +165,41 @@ lastIssuedThreatNumber: 1
 
   it('carries no mitigation prose on the threat itself', () => {
     expect(row).not.toHaveProperty('mitigation');
+  });
+});
+
+describe('a detailed row of a threat carrying both record kinds', () => {
+  const found = answerOf(
+    searchThreats(everyRecordTree(), {
+      query: 'tampering',
+      response_format: 'detailed',
+    }),
+  );
+  const [row] = found.threats;
+
+  it('carries the mitigation and assumption records linked to it', () => {
+    expect({
+      mitigations: row?.mitigations?.map(({ id }) => id),
+      assumptions: row?.assumptions?.map(({ id }) => id),
+    }).toEqual({
+      mitigations: ['mitigation-tls'],
+      assumptions: ['assumption-managed-db'],
+    });
+  });
+
+  it('names its flags and both records in its text', () => {
+    const rendered = renderThreatSearch(found);
+    expect(rendered).toEqual(
+      expect.arrayContaining([
+        '    flags: none',
+        expect.stringMatching(
+          /^ {4}mitigation "mitigation-tls" \(proposed\): /u,
+        ),
+        expect.stringMatching(
+          /^ {4}assumption "assumption-managed-db" \(valid\): /u,
+        ),
+      ]),
+    );
   });
 });
 

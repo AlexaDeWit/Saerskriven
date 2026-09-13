@@ -139,7 +139,7 @@ function passData(
     'threats recorded against it:',
     ...reading.model.threats
       .filter((threat) => threat.elements.includes(chosen.element.id))
-      .flatMap((threat) => renderThreat(threatRow(threat))),
+      .flatMap((threat) => renderThreat(threatRow(threat, reading.model))),
   ];
 }
 

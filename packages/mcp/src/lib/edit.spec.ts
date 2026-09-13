@@ -1,5 +1,5 @@
 import { readAnyFormat, readLimits } from '@saerskriven/formats';
-import { OperationFailure } from '@saerskriven/model';
+import { OperationFailure, type AssumptionStatus } from '@saerskriven/model';
 import { assumptionId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
@@ -12,8 +12,10 @@ import {
   type EditInput,
 } from './edit.fixtures.js';
 import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
+import { getThreat } from './get-threat.js';
 import { describeOperationFailure } from './operation-failure.js';
 import { revisionOf } from './revision.js';
+import { searchThreats } from './search-threats.js';
 import { openWorkspace } from './workspace.js';
 
 const staleRevision = `sha256:${'0'.repeat(64)}`;
@@ -45,6 +47,7 @@ const attempt = () => {
   const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
   const bytes = (file: string): Buffer => readFileSync(join(tree.root, file));
   return {
+    workspace,
     bytes,
     edit: (file: string, revision: string, edits: readonly EditInput[]) =>
       editModel(
@@ -177,24 +180,40 @@ describe('what an applied edit writes', () => {
   });
 });
 
-const addedBackups = (threats: readonly string[]): EditInput => ({
+const addedBackups = (
+  fields: Partial<{
+    threats: string[];
+    status: AssumptionStatus;
+    appliesToModel: boolean;
+  }>,
+): EditInput => ({
   op: 'add_assumption',
   assumption: {
     id: 'assumption-backups',
     prose: 'Backups are encrypted with the same key policy.',
-    status: 'unconfirmed',
-    threats: [...threats],
+    threats: [],
+    ...fields,
   },
 });
 
+const heldModel = (attempted: ReturnType<typeof attempt>) =>
+  Either.getOrUndefined(
+    readAnyFormat(attempted.bytes(modelFile).toString('utf8')),
+  )?.model;
+
+const backupsIn = (attempted: ReturnType<typeof attempt>) =>
+  heldModel(attempted)?.assumptions.find(
+    ({ id }) => id === 'assumption-backups',
+  );
+
 describe('what add_assumption writes', () => {
-  it('refuses an assumption that links no threat and writes nothing', () => {
+  it('refuses an assumption that links no threat and does not apply to the model, and writes nothing', () => {
     const attempted = attempt();
     const before = attempted.bytes(modelFile);
     const refused = attempted.edit(
       modelFile,
       revisionIn(attempted, modelFile),
-      [addedBackups([])],
+      [addedBackups({})],
     );
     expect(attempted.bytes(modelFile)).toEqual(before);
     expect(Either.isLeft(refused) ? refused.left[1] : undefined).toEqual(
@@ -206,19 +225,210 @@ describe('what add_assumption writes', () => {
     );
   });
 
-  it('adds an assumption with no model link', () => {
+  it('adds an unconfirmed assumption with no model link where neither is given', () => {
     const attempted = attempt();
     const applied = attempted.edit(
       modelFile,
       revisionIn(attempted, modelFile),
-      [addedBackups(['threat-tamper-order'])],
+      [addedBackups({ threats: ['threat-tamper-order'] })],
     );
     expect(Either.getOrUndefined(applied)?.divergences).toEqual([]);
-    expect(
-      Either.getOrUndefined(
-        readAnyFormat(attempted.bytes(modelFile).toString('utf8')),
-      )?.model.assumptions.find(({ id }) => id === 'assumption-backups'),
-    ).toMatchObject({ appliesToModel: false });
+    expect(backupsIn(attempted)).toMatchObject({
+      status: 'unconfirmed',
+      appliesToModel: false,
+    });
+  });
+
+  it('adds the status a call gives', () => {
+    const attempted = attempt();
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+      addedBackups({ threats: ['threat-tamper-order'], status: 'valid' }),
+    ]);
+    expect(backupsIn(attempted)?.status).toEqual('valid');
+  });
+
+  it('adds an assumption that applies to the model and links no threat', () => {
+    const attempted = attempt();
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+      addedBackups({ appliesToModel: true }),
+    ]);
+    expect(backupsIn(attempted)).toMatchObject({
+      threats: [],
+      appliesToModel: true,
+    });
+  });
+});
+
+const replay: EditInput = {
+  op: 'add_threat',
+  threat: {
+    id: 'threat-replay',
+    title: 'Order replay',
+    category: { methodology: 'STRIDE', category: 'repudiation' },
+    severity: 'low',
+    status: 'open',
+    description: '',
+    elements: [],
+  },
+};
+
+describe('a mitigation shared between threats and unlinked from both', () => {
+  const attempted = attempt();
+  const linked = attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+    replay,
+    {
+      op: 'link_mitigation',
+      mitigation: 'mitigation-tls',
+      threat: 'threat-replay',
+    },
+  ]);
+  const readOn = (ref: string) =>
+    Either.getOrUndefined(
+      getThreat(attempted.workspace, { file: modelFile, ref }),
+    )?.mitigations.map(({ id }) => id);
+  const onEither = [readOn('threat-tamper-order'), readOn('threat-replay')];
+  const unlinked = attempted.edit(
+    modelFile,
+    revisionIn(attempted, modelFile),
+    ['threat-tamper-order', 'threat-replay'].map((threat): EditInput => ({
+      op: 'unlink_mitigation',
+      mitigation: 'mitigation-tls',
+      threat,
+    })),
+  );
+
+  it('is read on either threat once linked to the second', () => {
+    expect(Either.isRight(linked)).toBe(true);
+    expect(onEither).toEqual([['mitigation-tls'], ['mitigation-tls']]);
+  });
+
+  it('leaves the file and is named culled once unlinked from its last threat', () => {
+    expect(Either.getOrUndefined(unlinked)?.culled).toEqual([
+      { kind: 'mitigation', id: 'mitigation-tls' },
+    ]);
+    expect(heldModel(attempted)?.mitigations).toEqual([]);
+  });
+});
+
+describe('an assumption applied to the model and unlinked', () => {
+  const attempted = attempt();
+  const managedDb = () =>
+    heldModel(attempted)?.assumptions.find(
+      ({ id }) => id === 'assumption-managed-db',
+    );
+  const applied = attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+    { op: 'link_assumption_to_model', assumption: 'assumption-managed-db' },
+    {
+      op: 'unlink_assumption',
+      assumption: 'assumption-managed-db',
+      threat: 'threat-tamper-order',
+    },
+  ]);
+  const kept = managedDb();
+  const taken = attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+    { op: 'unlink_assumption_from_model', assumption: 'assumption-managed-db' },
+  ]);
+
+  it('stays in the file and is named nowhere once its last threat link goes', () => {
+    expect(Either.getOrUndefined(applied)?.culled).toEqual([]);
+    expect(kept).toMatchObject({ threats: [], appliesToModel: true });
+  });
+
+  it('leaves the file and is named culled once its model link goes too', () => {
+    expect(Either.getOrUndefined(taken)?.culled).toEqual([
+      { kind: 'assumption', id: 'assumption-managed-db' },
+    ]);
+    expect(managedDb()).toBeUndefined();
+  });
+});
+
+describe('a link op naming what the model does not hold', () => {
+  const refusals: readonly EditInput[] = [
+    {
+      op: 'link_mitigation',
+      mitigation: 'mitigation-absent',
+      threat: 'threat-tamper-order',
+    },
+    {
+      op: 'link_assumption',
+      assumption: 'assumption-managed-db',
+      threat: 'threat-absent',
+    },
+  ];
+
+  for (const refused of refusals) {
+    it(`refuses ${refused.op} and writes nothing`, () => {
+      const attempted = attempt();
+      const before = attempted.bytes(modelFile);
+      const outcome = attempted.edit(
+        modelFile,
+        revisionIn(attempted, modelFile),
+        [renaming, refused],
+      );
+      expect(Either.isLeft(outcome) ? outcome.left[0] : undefined).toContain(
+        'index 1 was refused',
+      );
+      expect(attempted.bytes(modelFile)).toEqual(before);
+    });
+  }
+});
+
+const flagsOf = (attempted: ReturnType<typeof attempt>) =>
+  Either.getOrUndefined(
+    searchThreats(attempted.workspace, {
+      file: modelFile,
+      response_format: 'concise',
+    }),
+  )?.threats.map(({ id, status, flags }) => ({ id, status, flags }));
+
+describe('what a status edit does to the flags a search reads', () => {
+  it('clears the mitigated-without-implemented-work flag once the only mitigation is implemented', () => {
+    const attempted = attempt();
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+      {
+        op: 'set_threat_status',
+        threat: 'threat-tamper-order',
+        status: 'mitigated',
+      },
+    ]);
+    const flagged = flagsOf(attempted);
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+      {
+        op: 'set_mitigation_status',
+        mitigation: 'mitigation-tls',
+        status: 'implemented',
+      },
+    ]);
+    expect([flagged, flagsOf(attempted)]).toEqual([
+      [
+        {
+          id: 'threat-tamper-order',
+          status: 'mitigated',
+          flags: ['mitigated-without-implemented-work'],
+        },
+      ],
+      [{ id: 'threat-tamper-order', status: 'mitigated', flags: [] }],
+    ]);
+  });
+
+  it('raises no flag for an invalidated assumption that applies to the model and links no threat', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [
+        addedBackups({ appliesToModel: true }),
+        {
+          op: 'set_assumption_status',
+          assumption: 'assumption-backups',
+          status: 'invalidated',
+        },
+      ],
+    );
+    expect(Either.isRight(applied)).toBe(true);
+    expect(flagsOf(attempted)).toEqual([
+      { id: 'threat-tamper-order', status: 'open', flags: [] },
+    ]);
   });
 });
 
@@ -272,19 +482,6 @@ const tlsOn = (threat: string): EditInput => ({
 });
 
 describe('the records a batch culls and adds back', () => {
-  const replay: EditInput = {
-    op: 'add_threat',
-    threat: {
-      id: 'threat-replay',
-      title: 'Order replay',
-      category: { methodology: 'STRIDE', category: 'repudiation' },
-      severity: 'low',
-      status: 'open',
-      description: '',
-      elements: [],
-    },
-  };
-
   const culledBy = (edits: readonly EditInput[]) => {
     const attempted = attempt();
     return Either.getOrUndefined(
