@@ -1,0 +1,237 @@
+{
+  "version": 2,
+  "document": {
+    "formatVersion": 1,
+    "metadata": {
+      "title": "Recovery before version 2",
+      "owner": "",
+      "description": "",
+      "contributors": []
+    },
+    "assumptions": [
+      {
+        "id": "assumption-signed-in",
+        "prose": "Every reader signs in.",
+        "status": "valid",
+        "elements": [
+          "actor-reader",
+          "process-studio"
+        ],
+        "threats": [
+          "threat-spoofed-reader"
+        ]
+      },
+      {
+        "id": "assumption-hand-kept",
+        "prose": "This model is kept true by hand.",
+        "status": "valid",
+        "elements": [],
+        "threats": []
+      }
+    ],
+    "diagrams": [
+      {
+        "id": "diagram-main",
+        "title": "Main",
+        "elements": [
+          {
+            "kind": "actor",
+            "id": "actor-reader",
+            "name": "Reader",
+            "description": "",
+            "outOfScope": false,
+            "reasonOutOfScope": "",
+            "position": {
+              "x": 0,
+              "y": 0
+            },
+            "size": {
+              "width": 120,
+              "height": 60
+            }
+          },
+          {
+            "kind": "process",
+            "id": "process-studio",
+            "name": "Studio",
+            "description": "",
+            "outOfScope": false,
+            "reasonOutOfScope": "",
+            "position": {
+              "x": 200,
+              "y": 0
+            },
+            "size": {
+              "width": 120,
+              "height": 60
+            }
+          }
+        ]
+      },
+      {
+        "id": "diagram-second",
+        "title": "Second",
+        "elements": []
+      }
+    ],
+    "mitigations": [],
+    "threats": [
+      {
+        "id": "threat-spoofed-reader",
+        "number": 1,
+        "title": "Spoofed reader",
+        "category": {
+          "methodology": "STRIDE",
+          "category": "spoofing"
+        },
+        "severity": "high",
+        "status": "mitigated",
+        "description": "",
+        "mitigation": "Readers sign in.",
+        "elements": [
+          "actor-reader"
+        ]
+      },
+      {
+        "id": "threat-tampered-studio",
+        "number": 2,
+        "title": "Tampered studio",
+        "category": {
+          "methodology": "STRIDE",
+          "category": "tampering"
+        },
+        "severity": "medium",
+        "status": "open",
+        "description": "",
+        "mitigation": "Sign the bundle.",
+        "elements": [
+          "process-studio"
+        ]
+      }
+    ],
+    "lastIssuedThreatNumber": 2
+  },
+  "writtenBy": {
+    "studioVersion": "0.4.0"
+  },
+  "dirty": true,
+  "file": {
+    "_tag": "Opened",
+    "name": "model.yaml",
+    "source": {
+      "format": "saerskriven-yaml",
+      "document": {
+        "formatVersion": 1,
+        "metadata": {
+          "title": "Recovery before version 2",
+          "owner": "",
+          "description": "",
+          "contributors": []
+        },
+        "assumptions": [
+          {
+            "id": "assumption-signed-in",
+            "prose": "Every reader signs in.",
+            "status": "valid",
+            "elements": [
+              "actor-reader",
+              "process-studio"
+            ],
+            "threats": [
+              "threat-spoofed-reader"
+            ]
+          },
+          {
+            "id": "assumption-hand-kept",
+            "prose": "This model is kept true by hand.",
+            "status": "valid",
+            "elements": [],
+            "threats": []
+          }
+        ],
+        "diagrams": [
+          {
+            "id": "diagram-main",
+            "title": "Main",
+            "elements": [
+              {
+                "kind": "actor",
+                "id": "actor-reader",
+                "name": "Reader",
+                "description": "",
+                "outOfScope": false,
+                "reasonOutOfScope": "",
+                "position": {
+                  "x": 0,
+                  "y": 0
+                },
+                "size": {
+                  "width": 120,
+                  "height": 60
+                }
+              },
+              {
+                "kind": "process",
+                "id": "process-studio",
+                "name": "Studio",
+                "description": "",
+                "outOfScope": false,
+                "reasonOutOfScope": "",
+                "position": {
+                  "x": 200,
+                  "y": 0
+                },
+                "size": {
+                  "width": 120,
+                  "height": 60
+                }
+              }
+            ]
+          },
+          {
+            "id": "diagram-second",
+            "title": "Second",
+            "elements": []
+          }
+        ],
+        "mitigations": [],
+        "threats": [
+          {
+            "id": "threat-spoofed-reader",
+            "number": 1,
+            "title": "Spoofed reader",
+            "category": {
+              "methodology": "STRIDE",
+              "category": "spoofing"
+            },
+            "severity": "high",
+            "status": "mitigated",
+            "description": "",
+            "mitigation": "Readers sign in.",
+            "elements": [
+              "actor-reader"
+            ]
+          },
+          {
+            "id": "threat-tampered-studio",
+            "number": 2,
+            "title": "Tampered studio",
+            "category": {
+              "methodology": "STRIDE",
+              "category": "tampering"
+            },
+            "severity": "medium",
+            "status": "open",
+            "description": "",
+            "mitigation": "Sign the bundle.",
+            "elements": [
+              "process-studio"
+            ]
+          }
+        ],
+        "lastIssuedThreatNumber": 2
+      }
+    }
+  },
+  "activeDiagram": "diagram-second"
+}

@@ -36,6 +36,7 @@
     "studioTestFixtures": [
       "{workspaceRoot}/test-data/otm/**/*",
       "{workspaceRoot}/test-data/ecluse.json",
+      "{workspaceRoot}/test-data/studio/recovery-v0.4.0.json",
       "{workspaceRoot}/test-data/threat-dragon/schema/threat-dragon-v2.schema.json",
       "{workspaceRoot}/threat-modelling/saerskriven.yaml"
     ],

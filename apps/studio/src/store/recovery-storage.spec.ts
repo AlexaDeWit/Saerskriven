@@ -1,4 +1,8 @@
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { diagramId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { studioVersion } from '../version.js';
 import { FileLifecycle, type RetainedSource } from './state.js';
 import {
@@ -41,6 +45,14 @@ function failureFor(raw: string) {
   const loaded = localRecoveryStorage(() => memory.backend).load();
   return Either.isLeft(loaded) ? loaded.left : undefined;
 }
+
+const snapshotBeforeVersion2 = readFileSync(
+  join(
+    import.meta.dirname,
+    '../../../../test-data/studio/recovery-v0.4.0.json',
+  ),
+  'utf8',
+);
 
 const version1Snapshot = JSON.stringify({
   version: 1,
@@ -261,6 +273,92 @@ describe('local recovery storage', () => {
         threats: ['threat-spoofed-reader'],
       },
     ]);
+  });
+
+  it('restores a snapshot whose document and retained source are version 1, migrated, with its dirty flag, file and diagram', () => {
+    const memory = memoryStorage();
+    memory.values.set(recoveryStorageKey, snapshotBeforeVersion2);
+    const snapshot = Either.getOrThrow(
+      localRecoveryStorage(() => memory.backend).load(),
+    );
+
+    expect(snapshot?.dirty).toBe(true);
+    expect(snapshot?.activeDiagram).toBe('diagram-second');
+    expect(snapshot?.present.mitigations).toEqual([
+      expect.objectContaining({
+        status: 'implemented',
+        threats: ['threat-spoofed-reader'],
+      }),
+      expect.objectContaining({
+        status: 'proposed',
+        threats: ['threat-tampered-studio'],
+      }),
+    ]);
+    expect(
+      snapshot?.present.assumptions.map(({ id, threats, appliesToModel }) => ({
+        id,
+        threats,
+        appliesToModel,
+      })),
+    ).toEqual([
+      {
+        id: 'assumption-signed-in',
+        threats: ['threat-spoofed-reader'],
+        appliesToModel: false,
+      },
+      { id: 'assumption-hand-kept', threats: [], appliesToModel: true },
+    ]);
+    const file = snapshot?.file;
+    expect(file?._tag).toBe('Opened');
+    expect(file?._tag === 'Opened' ? file.name : undefined).toBe('model.yaml');
+    const source = file?._tag === 'Opened' ? file.source : undefined;
+    expect(source?.format).toBe('saerskriven-yaml');
+    expect(source?.document).toEqual(
+      saerskrivenYamlCodec.wire.parse(source?.document),
+    );
+    expect(source?.document).toMatchObject({ formatVersion: 2 });
+  });
+
+  it('restores a version 2 snapshot, keeping the model link of an assumption that links threats', () => {
+    const memory = memoryStorage();
+    memory.values.set(recoveryStorageKey, snapshotBeforeVersion2);
+    const storage = localRecoveryStorage(() => memory.backend);
+    const earlier = Either.getOrThrow(storage.load());
+    const present = {
+      ...(earlier?.present ?? sampleModel),
+      assumptions: (earlier?.present ?? sampleModel).assumptions.map(
+        (assumption) => ({ ...assumption, appliesToModel: true }),
+      ),
+    };
+    const source = Either.getOrThrow(
+      saerskrivenYamlCodec.read(saerskrivenYamlCodec.write(present).output),
+    ).source;
+    const file = FileLifecycle.Opened({
+      name: 'model.yaml',
+      source: { format: 'saerskriven-yaml', document: source },
+    });
+    const diagram = diagramId('diagram-second');
+
+    storage.replace(recoverySnapshot(present, true, file, diagram));
+
+    expect(storage.load()).toEqual(
+      Either.right(restorableSnapshot(present, true, file, diagram)),
+    );
+    const restored = Either.getOrThrow(storage.load());
+    expect(restored?.dirty).toBe(true);
+    expect(restored?.activeDiagram).toBe(diagram);
+    expect(restored?.file).toMatchObject({
+      _tag: 'Opened',
+      name: 'model.yaml',
+    });
+    expect(
+      restored?.present.assumptions.find(
+        ({ id }) => id === 'assumption-signed-in',
+      ),
+    ).toMatchObject({
+      threats: ['threat-spoofed-reader'],
+      appliesToModel: true,
+    });
   });
 
   it('rejects a version 1 snapshot, saying an earlier release wrote it', () => {

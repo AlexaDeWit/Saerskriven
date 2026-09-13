@@ -126,6 +126,11 @@ const threatlessAssumption = elementLinkedAssumption([]).replace(
   '    threats: []',
 );
 
+const threatlessAssumptionInVersion2 = threatlessAssumption
+  .replace('formatVersion: 1', 'formatVersion: 2')
+  .replace('    mitigation: ""\n', '')
+  .replace('    elements: []\n    threats: []', '    threats: []');
+
 const withMitigationText = (status: string) =>
   oneThreatDocument
     .replace('    status: open', `    status: ${status}`)
@@ -181,13 +186,19 @@ describe('a Saerskriven YAML read', () => {
     expect(issuePathsOf(without)).toEqual([['formatVersion']]);
   });
 
-  it('refuses a file stamped with another release at that path', () => {
+  it('refuses a file stamped with a release it does not know at that path', () => {
     const later = minimalDocument.replace(
       'formatVersion: 1',
-      'formatVersion: 2',
+      'formatVersion: 3',
     );
     expect(failureOf(later)?._tag).toBe('InvalidWireDocument');
     expect(issuePathsOf(later)).toEqual([['formatVersion']]);
+  });
+
+  it('refuses a version 2 file broken below formatVersion with a path into it', () => {
+    expect(issuePathsOf(threatlessAssumptionInVersion2)).toEqual([
+      ['assumptions', 0, 'appliesToModel'],
+    ]);
   });
 
   it('refuses text that is not YAML without throwing out of the read', () => {
@@ -275,12 +286,20 @@ describe('a version 1 assumption that links elements', () => {
     ]);
   });
 
-  it('hands back a source document that holds no element links', () => {
-    expect(
-      readingOf(
-        elementLinkedAssumption(['element-1', 'element-2']),
-      )?.source.assumptions.map(({ elements }) => elements),
-    ).toEqual([[]]);
+  it('hands back a version 2 source document, which holds no element links', () => {
+    const source = readingOf(
+      elementLinkedAssumption(['element-1', 'element-2']),
+    )?.source;
+    expect(source?.formatVersion).toBe(2);
+    expect(source?.assumptions).toEqual([
+      {
+        id: 'assumption-1',
+        prose: 'The ledger is append only.',
+        status: 'valid',
+        threats: ['threat-1'],
+        appliesToModel: false,
+      },
+    ]);
   });
 
   it('reports nothing when its element list is empty', () => {
@@ -298,10 +317,10 @@ describe('a version 1 assumption that links elements', () => {
 });
 
 describe('a version 1 assumption that links no threat', () => {
-  it('reads as a record with no threat link and no model link, reporting nothing', () => {
+  it('reads as an assumption that applies to the model, reporting nothing', () => {
     const reading = readingOf(threatlessAssumption);
     expect(reading?.model.assumptions).toEqual([
-      expect.objectContaining({ threats: [], appliesToModel: false }),
+      expect.objectContaining({ threats: [], appliesToModel: true }),
     ]);
     expect(reading?.divergences).toEqual([]);
   });
@@ -365,7 +384,9 @@ describe('a version 1 threat that carries mitigation text', () => {
 
   it('hands back a source document holding the record and no text', () => {
     const source = readingOf(withMitigationText('mitigated'))?.source;
-    expect(source?.threats.map(({ mitigation }) => mitigation)).toEqual(['']);
+    expect(
+      source?.threats.map((threat) => Object.hasOwn(threat, 'mitigation')),
+    ).toEqual([false]);
     expect(source?.mitigations.map(({ id }) => id)).toEqual([
       'threat-1-mitigation',
     ]);

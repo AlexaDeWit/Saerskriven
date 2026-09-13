@@ -11,17 +11,17 @@ import type {
   ThreatStatus,
 } from '@saerskriven/model';
 import type {
-  SaerskrivenYamlAssumptionStatus,
-  SaerskrivenYamlCategory,
-  SaerskrivenYamlCiaCategory,
-  SaerskrivenYamlCiaDieCategory,
-  SaerskrivenYamlLinddunCategory,
-  SaerskrivenYamlMitigationStatus,
-  SaerskrivenYamlPlot4aiCategory,
-  SaerskrivenYamlSeverity,
-  SaerskrivenYamlStrideCategory,
-  SaerskrivenYamlThreatStatus,
-} from '@saerskriven/wire-saerskriven-yaml';
+  SaerskrivenYamlV2AssumptionStatus,
+  SaerskrivenYamlV2Category,
+  SaerskrivenYamlV2CiaCategory,
+  SaerskrivenYamlV2CiaDieCategory,
+  SaerskrivenYamlV2LinddunCategory,
+  SaerskrivenYamlV2MitigationStatus,
+  SaerskrivenYamlV2Plot4aiCategory,
+  SaerskrivenYamlV2Severity,
+  SaerskrivenYamlV2StrideCategory,
+  SaerskrivenYamlV2ThreatStatus,
+} from '@saerskriven/wire-saerskriven-yaml-v2';
 
 /**
  * The file's severities as the model holds them.
@@ -45,7 +45,7 @@ export const severitiesToModel = {
   high: 'high',
   critical: 'critical',
   undecided: 'undecided',
-} as const satisfies Record<SaerskrivenYamlSeverity, Severity>;
+} as const satisfies Record<SaerskrivenYamlV2Severity, Severity>;
 
 /** The model's severities as the file states them. */
 export const severitiesToWire = {
@@ -54,7 +54,7 @@ export const severitiesToWire = {
   high: 'high',
   critical: 'critical',
   undecided: 'undecided',
-} as const satisfies Record<Severity, SaerskrivenYamlSeverity>;
+} as const satisfies Record<Severity, SaerskrivenYamlV2Severity>;
 
 /** The file's threat statuses as the model holds them. */
 export const threatStatusesToModel = {
@@ -65,7 +65,7 @@ export const threatStatusesToModel = {
   'accepted-risk': 'accepted-risk',
   eliminated: 'eliminated',
   'not-applicable': 'not-applicable',
-} as const satisfies Record<SaerskrivenYamlThreatStatus, ThreatStatus>;
+} as const satisfies Record<SaerskrivenYamlV2ThreatStatus, ThreatStatus>;
 
 /** The model's threat statuses as the file states them. */
 export const threatStatusesToWire = {
@@ -76,35 +76,47 @@ export const threatStatusesToWire = {
   'accepted-risk': 'accepted-risk',
   eliminated: 'eliminated',
   'not-applicable': 'not-applicable',
-} as const satisfies Record<ThreatStatus, SaerskrivenYamlThreatStatus>;
+} as const satisfies Record<ThreatStatus, SaerskrivenYamlV2ThreatStatus>;
 
 /** The file's mitigation statuses as the model holds them. */
 export const mitigationStatusesToModel = {
   proposed: 'proposed',
   implemented: 'implemented',
   verified: 'verified',
-} as const satisfies Record<SaerskrivenYamlMitigationStatus, MitigationStatus>;
+} as const satisfies Record<
+  SaerskrivenYamlV2MitigationStatus,
+  MitigationStatus
+>;
 
 /** The model's mitigation statuses as the file states them. */
 export const mitigationStatusesToWire = {
   proposed: 'proposed',
   implemented: 'implemented',
   verified: 'verified',
-} as const satisfies Record<MitigationStatus, SaerskrivenYamlMitigationStatus>;
+} as const satisfies Record<
+  MitigationStatus,
+  SaerskrivenYamlV2MitigationStatus
+>;
 
 /** The file's assumption statuses as the model holds them. */
 export const assumptionStatusesToModel = {
   unconfirmed: 'unconfirmed',
   valid: 'valid',
   invalidated: 'invalidated',
-} as const satisfies Record<SaerskrivenYamlAssumptionStatus, AssumptionStatus>;
+} as const satisfies Record<
+  SaerskrivenYamlV2AssumptionStatus,
+  AssumptionStatus
+>;
 
 /** The model's assumption statuses as the file states them. */
 export const assumptionStatusesToWire = {
   unconfirmed: 'unconfirmed',
   valid: 'valid',
   invalidated: 'invalidated',
-} as const satisfies Record<AssumptionStatus, SaerskrivenYamlAssumptionStatus>;
+} as const satisfies Record<
+  AssumptionStatus,
+  SaerskrivenYamlV2AssumptionStatus
+>;
 
 /** The file's STRIDE categories as the model holds them. */
 export const strideCategoriesToModel = {
@@ -115,7 +127,7 @@ export const strideCategoriesToModel = {
   'denial-of-service': 'denial-of-service',
   'elevation-of-privilege': 'elevation-of-privilege',
 } as const satisfies Record<
-  SaerskrivenYamlStrideCategory['category'],
+  SaerskrivenYamlV2StrideCategory['category'],
   StrideCategory['category']
 >;
 
@@ -129,7 +141,7 @@ export const strideCategoriesToWire = {
   'elevation-of-privilege': 'elevation-of-privilege',
 } as const satisfies Record<
   StrideCategory['category'],
-  SaerskrivenYamlStrideCategory['category']
+  SaerskrivenYamlV2StrideCategory['category']
 >;
 
 /** The file's LINDDUN categories as the model holds them. */
@@ -142,7 +154,7 @@ export const linddunCategoriesToModel = {
   unawareness: 'unawareness',
   'non-compliance': 'non-compliance',
 } as const satisfies Record<
-  SaerskrivenYamlLinddunCategory['category'],
+  SaerskrivenYamlV2LinddunCategory['category'],
   LinddunCategory['category']
 >;
 
@@ -157,7 +169,7 @@ export const linddunCategoriesToWire = {
   'non-compliance': 'non-compliance',
 } as const satisfies Record<
   LinddunCategory['category'],
-  SaerskrivenYamlLinddunCategory['category']
+  SaerskrivenYamlV2LinddunCategory['category']
 >;
 
 /** The file's CIA categories as the model holds them. */
@@ -166,7 +178,7 @@ export const ciaCategoriesToModel = {
   integrity: 'integrity',
   availability: 'availability',
 } as const satisfies Record<
-  SaerskrivenYamlCiaCategory['category'],
+  SaerskrivenYamlV2CiaCategory['category'],
   CiaCategory['category']
 >;
 
@@ -177,7 +189,7 @@ export const ciaCategoriesToWire = {
   availability: 'availability',
 } as const satisfies Record<
   CiaCategory['category'],
-  SaerskrivenYamlCiaCategory['category']
+  SaerskrivenYamlV2CiaCategory['category']
 >;
 
 /** The file's CIA-DIE categories as the model holds them. */
@@ -189,7 +201,7 @@ export const ciaDieCategoriesToModel = {
   immutable: 'immutable',
   ephemeral: 'ephemeral',
 } as const satisfies Record<
-  SaerskrivenYamlCiaDieCategory['category'],
+  SaerskrivenYamlV2CiaDieCategory['category'],
   CiaDieCategory['category']
 >;
 
@@ -203,7 +215,7 @@ export const ciaDieCategoriesToWire = {
   ephemeral: 'ephemeral',
 } as const satisfies Record<
   CiaDieCategory['category'],
-  SaerskrivenYamlCiaDieCategory['category']
+  SaerskrivenYamlV2CiaDieCategory['category']
 >;
 
 /** The file's PLOT4ai categories as the model holds them. */
@@ -217,7 +229,7 @@ export const plot4aiCategoriesToModel = {
   'safety-and-environmental-impact': 'safety-and-environmental-impact',
   'transparency-and-accessibility': 'transparency-and-accessibility',
 } as const satisfies Record<
-  SaerskrivenYamlPlot4aiCategory['category'],
+  SaerskrivenYamlV2Plot4aiCategory['category'],
   Plot4aiCategory['category']
 >;
 
@@ -233,7 +245,7 @@ export const plot4aiCategoriesToWire = {
   'transparency-and-accessibility': 'transparency-and-accessibility',
 } as const satisfies Record<
   Plot4aiCategory['category'],
-  SaerskrivenYamlPlot4aiCategory['category']
+  SaerskrivenYamlV2Plot4aiCategory['category']
 >;
 
 /**
@@ -243,7 +255,7 @@ export const plot4aiCategoriesToWire = {
  * model's are the same escape hatch.
  */
 export function toModelCategory(
-  category: SaerskrivenYamlCategory,
+  category: SaerskrivenYamlV2Category,
 ): ThreatCategory {
   if (category.methodology === 'STRIDE') {
     return {
@@ -291,7 +303,7 @@ export function toModelCategory(
  */
 export function toWireCategory(
   category: ThreatCategory,
-): SaerskrivenYamlCategory {
+): SaerskrivenYamlV2Category {
   if (category.methodology === 'STRIDE') {
     return {
       methodology: 'STRIDE',

@@ -38,9 +38,14 @@ threats: []
 lastIssuedThreatNumber: 0
 `;
 
-const laterFormatVersion = nativeMinimal.replace(
+const nativeMinimalVersion2 = nativeMinimal.replace(
   'formatVersion: 1',
   'formatVersion: 2',
+);
+
+const laterFormatVersion = nativeMinimal.replace(
+  'formatVersion: 1',
+  'formatVersion: 3',
 );
 
 const danglingReference = `formatVersion: 1
@@ -220,6 +225,29 @@ describe('a text past a read limit', () => {
 });
 
 describe('a file a codec claimed and then refused', () => {
+  it.each([
+    {
+      name: 'version 1',
+      text: danglingReference.replace('    mitigation: ""\n', ''),
+      path: 'threats.0.mitigation',
+    },
+    {
+      name: 'version 2',
+      text: danglingReference
+        .replace('formatVersion: 1', 'formatVersion: 2')
+        .replace('    mitigation: ""\n', '')
+        .replace('    number: 1', '    number: first'),
+      path: 'threats.0.number',
+    },
+  ])(
+    'refuses a Saerskriven $name file broken below formatVersion with a path into the file',
+    ({ text, path }) => {
+      const failure = outcome(text);
+      expect(failure).toMatchObject({ _tag: 'InvalidWireDocument' });
+      expect(issuePaths(failure)).toContain(path);
+    },
+  );
+
   it('reports a dangling reference as the Saerskriven mapping refusing it', () => {
     const failure = outcome(danglingReference);
     expect(failure).toMatchObject({ _tag: 'InvalidModel' });
@@ -237,6 +265,7 @@ describe('a file from a release neither codec models', () => {
   it('opens the smallest file of each release they do model', () => {
     expect(opened(threatDragonMinimal).format).toBe('threat-dragon');
     expect(opened(nativeMinimal).format).toBe('saerskriven-yaml');
+    expect(opened(nativeMinimalVersion2).format).toBe('saerskriven-yaml');
   });
 
   it('claims no Threat Dragon file from a major above 2', () => {
@@ -245,7 +274,7 @@ describe('a file from a release neither codec models', () => {
     );
   });
 
-  it('claims no Saerskriven file stamped other than 1', () => {
+  it('claims no Saerskriven file stamped other than 1 or 2', () => {
     expect(outcome(laterFormatVersion)).toEqual(
       DetectionFailure.NoFormatClaimed({ tried: formatNameSchema.options }),
     );
@@ -255,7 +284,7 @@ describe('a file from a release neither codec models', () => {
 describe('the codec the result carries', () => {
   it.each([
     { name: 'the Écluse file', text: ecluseText, stamp: '2.6.2' },
-    { name: 'the native file', text: nativeText, stamp: 1 },
+    { name: 'the native file', text: nativeText, stamp: 2 },
   ])('writes $name back as the format that answered', ({ text, stamp }) => {
     const answer = opened(text);
     const written = rewritten(answer);

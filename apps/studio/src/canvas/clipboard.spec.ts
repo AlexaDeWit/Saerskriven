@@ -243,29 +243,84 @@ it.each([
   expect(clipboard.writeText).not.toHaveBeenCalled();
 });
 
+const version1Selection = `${marker}formatVersion: 1
+metadata:
+  title: Selection
+  owner: ""
+  description: ""
+  contributors: []
+assumptions:
+  - id: assumption-copied
+    prose: Callers sign in.
+    status: valid
+    elements: []
+    threats:
+      - threat-copied
+diagrams:
+  - id: diagram-copied
+    title: Copied
+    elements:
+      - kind: actor
+        id: actor-copied
+        name: Caller
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 0
+          y: 0
+        size:
+          width: 120
+          height: 60
+mitigations: []
+threats:
+  - id: threat-copied
+    number: 1
+    title: Spoofed caller
+    category:
+      methodology: STRIDE
+      category: spoofing
+    severity: high
+    status: mitigated
+    description: ""
+    mitigation: Callers sign in.
+    elements:
+      - actor-copied
+lastIssuedThreatNumber: 1
+`;
+
+it('pastes a version 1 selection copied before version 2, its mitigation text as a record', async () => {
+  const clipboard = recordingClipboard();
+  clipboard.readText.mockResolvedValueOnce(version1Selection);
+  await pasteSelected();
+  const after = modelStore.getState().present;
+  expect(after.diagrams[0].elements).toHaveLength(
+    placeholderModel.diagrams[0].elements.length + 1,
+  );
+  const pasted = after.threats.at(-1);
+  expect(after.mitigations.at(-1)).toMatchObject({
+    prose: 'Callers sign in.',
+    status: 'implemented',
+    threats: [pasted?.id],
+  });
+  expect(after.assumptions.at(-1)).toMatchObject({
+    threats: [pasted?.id],
+    appliesToModel: false,
+  });
+});
+
 it('refuses a selection copied before assumptions dropped their element links', async () => {
   const clipboard = recordingClipboard();
-  const withAssumption = parsedFixture({
-    ...placeholderModel,
-    assumptions: [
-      {
-        id: 'assumption-linked',
-        prose: 'Linked to an element',
-        status: 'valid',
-        threats: [placeholderModel.threats[0].id],
-        appliesToModel: false,
-      },
-    ],
-  });
-  const written = marker + saerskrivenYamlCodec.write(withAssumption).output;
-  expect(written).toContain('    elements: []');
   clipboard.readText.mockResolvedValueOnce(marker + 'invalid: [');
   await pasteSelected();
   const invalidSelection = currentAnnouncement().message;
   expect(invalidSelection).not.toBe('');
   resetAnnouncements();
   clipboard.readText.mockResolvedValueOnce(
-    written.replace('    elements: []', `    elements: [${actor}]`),
+    version1Selection.replace(
+      '    elements: []',
+      '    elements:\n      - actor-copied',
+    ),
   );
   const before = modelStore.getState();
   await pasteSelected();

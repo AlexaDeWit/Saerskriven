@@ -112,7 +112,7 @@ and reported through `undeclaredDivergences`, the walk every wire codec
 shares, so a schema that has fallen behind the format announces itself.
 
 Element security facts and declared boundary relationships map into typed model
-properties and native YAML v1. The mappings preserve explicit negatives, empty
+properties and native YAML, which writes version 2 and reads version 1 too. The mappings preserve explicit negatives, empty
 values, and absence. Threat Dragon writes include these facts without needing the
 original JSON. With a source document, mapped facts follow the model while styling
 and other unmapped fields retain the source values. A removed optional model fact
@@ -143,23 +143,29 @@ are the gate on the recovery above, which those models cannot exercise: every
 one of them is written in English.
 
 `readSaerskrivenYaml` and `writeSaerskrivenYaml` are the Saerskriven YAML format,
-version 1, paired as `saerskrivenYamlCodec`. It is the native format. A write
-leaves out only an assumption's model link, which version 1 has no key for,
-and reports each assumption that applies to the model as `narrowed`. It
-states `mitigation: ""` on every threat, since a mitigation is a record. A
-read sets no model link, and maps away assumption element links, which the
-model no longer holds: `withoutAssumptionElementLinks` empties them and
-`droppedAssumptionElementLinks` reports each assumption that held any as
-`narrowed`. A read also turns each threat's `mitigation` text into a record
-through `withMitigationTextAsRecords`, on the terms of the Threat Dragon read
-below, with every id the file holds taken, and reports nothing, since nothing
-is lost. Both steps are functions over the version 1 document, and the
-document a read hands back has been through them.
+paired as `saerskrivenYamlCodec`. It is the native format. A write emits
+version 2, which holds the whole model, and reports nothing. A read takes
+every released version: `saerskrivenYamlVersionsSchema` tells them apart by
+`formatVersion`, refusing any other stamp, or none, at that path, and
+`currentSaerskrivenYaml` brings a version 1 document to version 2 through
+`migratedFromVersion1`. The migration is three steps over the version 1
+document. `withoutAssumptionElementLinks` empties the element links the model
+no longer holds, and `droppedAssumptionElementLinks` reports each assumption
+that held any as `narrowed`. `withMitigationTextAsRecords` turns each threat's
+`mitigation` text into a record on the terms of the Threat Dragon read below,
+with every id the file holds taken. `assumptionsWithModelLinks` applies an
+assumption that links no threat to the model. The last two report nothing,
+since nothing is lost. The document a read
+hands back is in version 2, and `readSaerskrivenYamlDocument` maps a document
+of either version without its text, which is how the studio restores a
+recovery snapshot.
 [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the
 file itself.
 
-The format is declared by [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md),
-which imports zod and nothing else. A file is a contract with people who
+Each version is declared by a wire package that imports zod and nothing else:
+[`@saerskriven/wire-saerskriven-yaml-v2`](../wire-saerskriven-yaml-v2/README.md)
+for version 2 and [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md)
+for version 1. A file is a contract with people who
 already have one and the model is ours to change, so the two are separate
 declarations that happen to say the same thing today, and this package is the
 only one that knows both. The mapping is written out record by record in both
@@ -169,12 +175,12 @@ side it reads: a member added to either vocabulary is a compile error in the
 mapping. Ids cross as the plain strings a file holds and are branded by
 `parseModel`, the same way the Threat Dragon read hands them over.
 
-`formatVersion` is a zod literal, so a file stamped with anything else fails
-at that path rather than reaching the mapping, which is what will let the
-detection layer tell a Saerskriven file from a JSON one without the extension.
-Within version 1 a key the schema does not declare is dropped and reported
-through `undeclaredDivergences`, the same walk the Threat Dragon read uses,
-so a file from a later release still reads.
+`formatVersion` is a zod literal in each version, so a file stamped with a
+version this release does not know fails at that path rather than reaching the
+mapping, which is what lets the detection layer tell a Saerskriven file from a
+JSON one without the extension. A key the schema of the file's version does
+not declare is dropped and reported through `undeclaredDivergences`, the same
+walk the Threat Dragon read uses, so a file from a later release still reads.
 
 Two writes of one model are byte-identical, which is what makes a model file
 in git worth diffing. `canonicalOrder` puts each object's keys in the order
@@ -202,6 +208,9 @@ both committed files above and `apps/studio` the Saerskriven one, so all four of
 those suites run after this one:
 [`test-data/README.md`](../../test-data/README.md) names
 the pairs and [`CODING.md`](../../CODING.md) the rule that orders them.
+Two version 1 files are frozen beside them and never regenerated:
+`ecluse-v0.2.1.yaml` from before a flow's `bidirectional` and an endpoint's
+`side`, and `saerskriven-v0.3.0.yaml`, the gate on the v1 to v2 migration.
 Models generated over the model's own shape gate the rest: each survives a
 write and a read as itself, with its threats in number order.
 
@@ -269,7 +278,7 @@ A status is inferred only across a one-to-one correspondence like this one. The
 record's id is `<threat id>-mitigation`, counted on with `-2`, `-3` past any
 id the model already holds, as `mitigationsFromText` in `mitigation-text.ts`
 states. The records follow threat number order, so this read and the
-Saerskriven YAML version 1 read make the same records in the same order of
+Saerskriven YAML v1 to v2 migration make the same records in the same order of
 one model. The write flattens the mitigations linked to a threat, in register
 order, into its one text: a record's title on a line above its prose, a blank
 line between records. A text merging more than one record, or carrying a record's
@@ -340,9 +349,9 @@ Where no codec claims, the failure is `NoFormatClaimed`, which names every
 format tried, in the order tried, and carries no codec's issues: a codec that
 did not claim was refusing a format the text was never in, and its complaints
 describe a document nobody wrote. A file from a release neither codec models
-lands there, a `formatVersion` other than 1 and a Threat Dragon version
-outside major 2 among them, so a later release of either format needs a codec
-of its own rather than a looser reader, and until there is one the person
+lands there, a `formatVersion` other than 1 and 2 and a Threat Dragon version
+outside major 2 among them, so a later release of either format needs a reader
+of its own rather than a looser one, and until there is one the person
 holding the file is told what was tried.
 
 The result is a union with one member per codec, discriminated by `format`, so

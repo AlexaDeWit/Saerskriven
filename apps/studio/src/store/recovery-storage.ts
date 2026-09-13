@@ -1,8 +1,9 @@
 import {
   ReadFailure,
+  currentSaerskrivenYaml,
   parseWithinLimits,
   readSaerskrivenYamlDocument,
-  saerskrivenYamlCodec,
+  saerskrivenYamlVersionsSchema,
   threatDragonCodec,
   withinTextLimit,
   writeSaerskrivenYamlDocument,
@@ -29,7 +30,7 @@ const recoveryVersion = 2;
 /** The browser key that holds the current working session. */
 export const recoveryStorageKey = 'saerskriven:studio:recovery';
 
-const documentSchema = saerskrivenYamlCodec.wire.transform(
+const documentSchema = saerskrivenYamlVersionsSchema.transform(
   (document, context): Model => {
     const model = readSaerskrivenYamlDocument(document);
     if (Either.isLeft(model)) {
@@ -48,7 +49,9 @@ const retainedSourceSchema = z
     }),
     z.object({
       format: z.literal('saerskriven-yaml'),
-      document: saerskrivenYamlCodec.wire.optional(),
+      document: saerskrivenYamlVersionsSchema
+        .transform((document) => currentSaerskrivenYaml(document).document)
+        .optional(),
     }),
   ])
   .transform((source): RetainedSource =>
@@ -76,8 +79,10 @@ const fileLifecycleSchema = z
  * The versioned value stored for recovery. The model is held as a
  * Saerskriven YAML document rather than as itself, so a session written by
  * one release opens in the next wherever a file written by that release
- * would: the format's own compatibility contract carries it, and an
- * additive change to the model costs the snapshot nothing.
+ * would: the format's own compatibility contract carries it, a document of
+ * an earlier format version restores through the format's migration, and an
+ * additive change to the model costs the snapshot nothing. A retained
+ * Saerskriven YAML source is migrated the same way.
  *
  * The stored shape and the parsed shape differ, and this is where they
  * meet. `document` goes in as the wire document and comes out as the model

@@ -1,4 +1,4 @@
-formatVersion: 1
+formatVersion: 2
 metadata:
   title: Écluse
   owner: Alexandra de Wit
@@ -860,7 +860,6 @@ threats:
     severity: high
     status: mitigated
     description: Under the canonical passthrough strategy the proxy transiently holds every caller's own CodeArtifact bearer token in process memory while it relays reads and publishes. One proxy compromise therefore harvests the credentials of all callers in transit, not one. A heap or memory dump, a log-field leak, and a malicious dependency in Écluse's own supply chain all reach that result. Passthrough spreads credential exposure across every user. A service identity would instead concentrate it in one short-lived token.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000020
   - id: 0ec10e5e-0000-4000-8000-000000000102
@@ -872,7 +871,6 @@ threats:
     severity: medium
     status: mitigated
     description: Écluse is a mandatory chokepoint, so degrading its availability is itself a supply-chain attack. Builds fail, or operators are tempted to bypass the gate. A hostile or compromised upstream registry, or a pathological public package, could return an oversized, version-flooded, or deeply nested packument. Parsing it and evaluating the rules per version could then exhaust CPU or memory.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000020
   - id: 0ec10e5e-0000-4000-8000-000000000103
@@ -884,7 +882,6 @@ threats:
     severity: medium
     status: mitigated
     description: "The edge token, server.authToken (ECLUSE_SERVER__AUTH_TOKEN), is off by default. Écluse delegates 'who may reach the proxy' to the operator's access edge: a gateway, a mesh, or a network policy. If that boundary fails, an unauthenticated caller can drive the proxy. The east-west case is the notable one: a compromised neighbour reaches the pod directly and bypasses an ingress-only IP allow-list."
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000040
   - id: 0ec10e5e-0000-4000-8000-000000000104
@@ -896,7 +893,6 @@ threats:
     severity: high
     status: mitigated
     description: The upstream registry is attacker-influenceable and must never receive a caller's credential. A failure to strip the caller token on the public fetch would disclose a live CodeArtifact token to public npm. So would following a cross-host 3xx with the bearer still attached, to an attacker-chosen redirect target, over the unguarded private manager.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000043
   - id: 0ec10e5e-0000-4000-8000-000000000105
@@ -908,7 +904,6 @@ threats:
     severity: high
     status: mitigated
     description: Écluse builds outbound URLs from client-supplied package identifiers and upstream-declared artifact locations. A traversal, encoded-slash, or absolute-URL name could steer a fetch to an unintended target such as cloud metadata or the private network. So could a dist.tarball that points at an internal or attacker-chosen host.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000043
   - id: 0ec10e5e-0000-4000-8000-000000000106
@@ -920,7 +915,6 @@ threats:
     severity: high
     status: mitigated
     description: Écluse relays a publish to the private store with the publisher's own token. The packument merge serves private versions as trusted, winning collisions over public ones. A compromised-CI or insider publisher could clear the publish-scope check, or slip past it. They could then publish a name that the merge serves as a trusted version over the public package. That is a dependency-confusion path through Écluse's own trust model.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000044
   - id: 0ec10e5e-0000-4000-8000-000000000107
@@ -932,7 +926,6 @@ threats:
     severity: high
     status: mitigated
     description: The mirror worker holds Écluse's only standing self-minted credential. It carries write access to the mirror store (Registry B), which feeds the trusted read path. A worker compromise, or any bypass of the admission gate, could write attacker-chosen bytes into the trusted store and poison future reads.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-00000000004a
   - id: 0ec10e5e-0000-4000-8000-000000000108
@@ -944,7 +937,6 @@ threats:
     severity: medium
     status: mitigated
     description: Container-role token minting must reach the instance-metadata endpoint (169.254.169.254) and STS. An SSRF that reached metadata could mint the worker's CodeArtifact credential.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000049
   - id: 0ec10e5e-0000-4000-8000-000000000109
@@ -956,7 +948,6 @@ threats:
     severity: high
     status: mitigated
     description: A cache key carries no credential dimension. If the cache held a private-origin document, one caller could warm an entry and a second, differently authorised caller could receive it. That second caller receives the document without the upstream ever authorising their own request.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000030
   - id: 0ec10e5e-0000-4000-8000-00000000010a
@@ -968,7 +959,6 @@ threats:
     severity: medium
     status: mitigated
     description: Écluse supports collapsing its internal registry roles onto as few as one store. The recommended topology keeps the first-party store (A) and the public-derived mirror store (B) separate. It then unions them into the pull-through read endpoint (C) at the registry level. Collapsing them onto a single shared store is the degenerate floor. An undeclared mounts.<eco>.mirrorTarget makes the mount serve-only, with no mirror store at all. The fold is a mirrorTarget set equal to the private upstream, which the boot warns about and then accepts. Collapse loses the physical separation between first-party and public-derived inventory. Distinct storage-level rule sets and scanning per provenance become impossible. Collapse also muddies post-disclosure incident scoping, 'which mirrored public packages did we hold?', which weakens the arithmetic-not-forensics response.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000034
   - id: 0ec10e5e-0000-4000-8000-00000000010b
@@ -980,7 +970,6 @@ threats:
     severity: high
     status: mitigated
     description: The merge flags an integrity divergence when the private and public copies of a version contradict on a shared digest algorithm. A weak-only or absent digest could let a substituted artifact pass undetected and reach the client as the trusted copy. So could a flaw in the divergence key.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000032
   - id: 0ec10e5e-0000-4000-8000-00000000010c
@@ -992,7 +981,6 @@ threats:
     severity: high
     status: accepted-risk
     description: Écluse's freshness quarantine and integrity reasoning consume fields the upstream registry asserts, notably the per-version publish time and server-side integrity. A registry that asserted forged values could admit content the age and integrity gates would otherwise hold back. A backdated time defeats the age quarantine, and a manufactured digest defeats the integrity check.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000011
   - id: 0ec10e5e-0000-4000-8000-00000000010d
@@ -1004,7 +992,6 @@ threats:
     severity: medium
     status: open
     description: "Écluse mirrors approved public versions into Registry B and, by design, resists upstream yanks so a benign yank does not break installs. The cost is that a version later found malicious persists in B and is served as trusted. The merge serves the private origin unfiltered by the rules. Nothing removes it automatically: neither an upstream yank nor a rules change reaches an already-mirrored artifact."
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000034
   - id: 0ec10e5e-0000-4000-8000-00000000010e
@@ -1016,7 +1003,6 @@ threats:
     severity: low
     status: mitigated
     description: "The mirror worker fetches the approved artifact from an upstream-declared dist.tarball location to replicate it. Like the serve-path public fetch, this is untrusted egress to an attacker-influenceable target. In principle it carries the same SSRF surface: a dist.tarball steered at an internal or cloud-metadata address."
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000047
   - id: 0ec10e5e-0000-4000-8000-00000000010f
@@ -1028,7 +1014,6 @@ threats:
     severity: high
     status: mitigated
     description: "The recommended topology unions the trusted stores, first-party A and the sanitised mirror B, into the pull-through read endpoint C at the registry level. CodeArtifact upstream relationships are one such mechanism. If that aggregation also holds a direct connection to the upstream registry, raw public packages reach clients through C as a trusted source. They skip Écluse's gate entirely: the rules, the integrity floor, and the freshness quarantine. The same upstream-merger mechanism that makes the ideal topology work makes this the natural misconfiguration. A CodeArtifact repository's default npm-store upstream to npmjs is exactly this shape."
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000032
   - id: 0ec10e5e-0000-4000-8000-000000000110
@@ -1040,7 +1025,6 @@ threats:
     severity: low
     status: accepted-risk
     description: An attacker who controls the DNS for an allowlisted host can repoint it at internal addresses. https-only egress with certificate validation makes the TLS handshake fail, because an internal address cannot present a CA-trusted certificate for the requested host. Écluse therefore sends no request and leaks no data. The success or failure and the timing of the TCP connect and the TLS handshake are still a coarse internal-reachability or port-scan oracle.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000043
   - id: b1a6332d-8def-4df9-922e-53718c920155
@@ -1052,7 +1036,6 @@ threats:
     severity: high
     status: mitigated
     description: An attacker who compromises Pilot could use its standing container credentials.
-    mitigation: ""
     elements:
       - f1646094-9885-422a-b7e7-7888c72905ef
   - id: 32d813d8-6bee-4fa3-acb2-d62efe5aff18
@@ -1064,7 +1047,6 @@ threats:
     severity: high
     status: mitigated
     description: An attacker who can write to the S3 bucket could supply a tampered osv.db and bypass the vulnerability gates. Worse, they could exploit memory-corruption bugs in the underlying C SQLite engine when the proxy runs a query. A Magellan-style exploit or a malicious trigger is the vector.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000020
   - id: 3735906e-a06a-4e0f-ba45-894ba5400ce8
@@ -1076,7 +1058,6 @@ threats:
     severity: medium
     status: mitigated
     description: OSV.dev, or a compromised upstream, could serve an oversized, deeply nested, or malformed JSON file. Parsing it could exhaust CPU or memory and crash Pilot.
-    mitigation: ""
     elements:
       - f1646094-9885-422a-b7e7-7888c72905ef
   - id: 0c922ee5-3ac6-4a85-89de-91feecf0f9f7
@@ -1088,7 +1069,6 @@ threats:
     severity: medium
     status: open
     description: A bug in Dredger, or a malicious rule configuration, could fire thousands of deletion requests at once. That exhausts the registry API limits and denies service to the private mirror.
-    mitigation: ""
     elements:
       - f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff
   - id: 0ec10e5e-0000-4000-8000-000000000111
@@ -1100,7 +1080,6 @@ threats:
     severity: medium
     status: mitigated
     description: A minted CodeArtifact write token is a live bearer credential scoped to a domain. If an operator could choose the write credential and the mirror-target endpoint independently, the two could diverge. They could point the mirror target at one registry while the token was minted for another. That would disclose the bearer to an endpoint that could log or replay it.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-00000000004a
   - id: 0ec10e5e-0000-4000-8000-000000000123
@@ -1112,7 +1091,6 @@ threats:
     severity: medium
     status: mitigated
     description: A requested or published package name can impersonate another package to a human reader. Unicode format characters (zero-width and bidirectional controls) render invisibly or reorder glyphs, so two distinct names look identical in a lockfile, a log line, or a review diff. A name can arrive from an upstream fetch as well as from a first-party publish, so the boundary applies to both directions.
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000040
   - id: 0ec10e5e-0000-4000-8000-000000000124
@@ -1124,7 +1102,6 @@ threats:
     severity: medium
     status: open
     description: "A name built only from permitted ASCII characters can read as another name to a human: a capital I in place of a lowercase l, rn in place of m, a swapped or doubled letter, a hyphen moved or dropped. The upstream npm namespace already contains such look-alike names, and a first-party publish can introduce one. A reader of a lockfile, a log line, or a review diff resolves the wrong package."
-    mitigation: ""
     elements:
       - 0ec10e5e-0000-4000-8000-000000000040
   - id: 43f60aec-7a7c-4450-8992-ae2b42d20b0f
@@ -1136,7 +1113,6 @@ threats:
     severity: medium
     status: open
     description: A misconfiguration in Dredger, or poisoned OSV data, could delete legitimate, needed packages from Registry B. That causes cache misses or upstream fetch failures.
-    mitigation: ""
     elements:
       - f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff
   - id: c12bddfe-96d4-47c6-92e0-a961abadb5b2
@@ -1148,7 +1124,6 @@ threats:
     severity: high
     status: open
     description: "Dredger holds a standing high privilege over Registry B: delete-only. An attacker who compromised Dredger could wipe the whole registry."
-    mitigation: ""
     elements:
       - f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff
   - id: 4b73d786-865e-43fc-b1bd-0e0bc75cae03
@@ -1160,7 +1135,6 @@ threats:
     severity: medium
     status: mitigated
     description: A maliciously crafted or unexpectedly massive OSV payload from upstream could cause Pilot to exhaust memory or crash during JSON parsing.
-    mitigation: ""
     elements:
       - f1646094-9885-422a-b7e7-7888c72905ef
   - id: e23cddfe-96d4-47c6-92e0-a961abadb5b3
@@ -1172,7 +1146,6 @@ threats:
     severity: high
     status: open
     description: An operator can collapse the mirror target and the publication target onto a single registry. Dredger could then purge first-party packages, taking them for stale or vulnerable public ones.
-    mitigation: ""
     elements:
       - f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff
   - id: c87367bd-fc3f-4792-94b6-8db459011823
@@ -1184,7 +1157,6 @@ threats:
     severity: high
     status: accepted-risk
     description: An attacker who gains control of osv.dev can push malicious vulnerability records. Those records trigger false positives, or fast-lane a malicious remediation package. The attack is strongest when the attacker also publishes a malicious package. Écluse explicitly trusts the OSV database as the oracle of truth.
-    mitigation: ""
     elements:
       - f1646094-9885-422a-b7e7-7888c72905ef
   - id: 0b32b3e5-74f1-421c-8c9b-92a24fd2a00b
@@ -1196,7 +1168,6 @@ threats:
     severity: critical
     status: open
     description: Dredger issues permanent hard deletions against the mirror registry. Misconfigured, or pointed at the wrong registry, it destroys data permanently.
-    mitigation: ""
     elements:
       - f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff
 lastIssuedThreatNumber: 102

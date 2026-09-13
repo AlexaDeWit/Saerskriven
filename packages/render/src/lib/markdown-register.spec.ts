@@ -376,12 +376,18 @@ describe.each(registers)('the $name register', ({ model, golden }) => {
     await expect(renderRegister(model)).toMatchFileSnapshot(golden);
   });
 
-  it('carries one section per threat, in number order', () => {
+  it('carries one section per threat, in number order, after the section for the assumptions that apply to the model', () => {
     const numbers = model.threats.map((threat) => threat.number);
     numbers.sort((left, right) => left - right);
+    const modelSections = model.assumptions.some(
+      ({ appliesToModel }) => appliesToModel,
+    )
+      ? 1
+      : 0;
     expect(
       headingsOf(renderRegister(model))
         .filter((entry) => entry.depth === 2)
+        .slice(modelSections)
         .map((entry) => entry.text),
     ).toEqual(
       numbers.map((number) => {

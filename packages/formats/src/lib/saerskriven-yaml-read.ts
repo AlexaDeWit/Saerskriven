@@ -18,24 +18,20 @@ import {
   toParseIssues,
   type Model,
 } from '@saerskriven/model';
-import {
-  saerskrivenYamlWireSchema,
-  type SaerskrivenYamlAssumption,
-  type SaerskrivenYamlBoundaryShape,
-  type SaerskrivenYamlDiagram,
-  type SaerskrivenYamlDocument,
-  type SaerskrivenYamlElement,
-  type SaerskrivenYamlEndpoint,
-  type SaerskrivenYamlMetadata,
-  type SaerskrivenYamlMitigation,
-  type SaerskrivenYamlThreat,
-} from '@saerskriven/wire-saerskriven-yaml';
+import type {
+  saerskrivenYamlV2WireSchema,
+  SaerskrivenYamlV2Assumption,
+  SaerskrivenYamlV2BoundaryShape,
+  SaerskrivenYamlV2Diagram,
+  SaerskrivenYamlV2Document,
+  SaerskrivenYamlV2Element,
+  SaerskrivenYamlV2Endpoint,
+  SaerskrivenYamlV2Metadata,
+  SaerskrivenYamlV2Mitigation,
+  SaerskrivenYamlV2Threat,
+} from '@saerskriven/wire-saerskriven-yaml-v2';
 import { Either } from 'effect';
 import type { z } from 'zod';
-import {
-  droppedAssumptionElementLinks,
-  withoutAssumptionElementLinks,
-} from './assumption-element-links.js';
 import { ReadFailure, type ReadResult } from './codec.js';
 import {
   assumptionStatusesToModel,
@@ -45,7 +41,11 @@ import {
   toModelCategory,
 } from './saerskriven-yaml-vocabulary.js';
 import { parseYaml } from './parse-yaml.js';
-import { withMitigationTextAsRecords } from './threat-mitigation-text.js';
+import {
+  currentSaerskrivenYaml,
+  saerskrivenYamlVersionsSchema,
+  type SaerskrivenYamlVersionedDocument,
+} from './saerskriven-yaml-migration.js';
 import { undeclaredDivergences } from './undeclared.js';
 
 type MetadataInput = z.input<typeof modelMetadataSchema>;
@@ -57,28 +57,29 @@ type ThreatInput = z.input<typeof threatSchema>;
 type MitigationInput = z.input<typeof mitigationSchema>;
 type AssumptionInput = z.input<typeof assumptionSchema>;
 
-/** Reads native YAML and retains its wire document for subsequent saves. */
+/**
+ * Reads native YAML of any released version, dispatching on `formatVersion`,
+ * and retains the document in the current version for subsequent saves.
+ */
 export function readSaerskrivenYaml(
   text: string,
-): Either.Either<ReadResult<typeof saerskrivenYamlWireSchema>, ReadFailure> {
+): Either.Either<ReadResult<typeof saerskrivenYamlV2WireSchema>, ReadFailure> {
   return Either.flatMap(parseYaml(text), mapDocument);
 }
 
 /**
- * Maps a validated wire document. Absent security facts remain unknown,
- * assumption element links are dropped without a report, no assumption
- * applies to the model, since version 1 has no key for that link, and each
- * threat's mitigation text is read as a record on the terms of
- * {@link withMitigationTextAsRecords}.
+ * Maps a validated document of any released version, a version 1 document
+ * through the v1 to v2 migration, to the model alone: what the migration
+ * reports is the text read's to return. Absent security facts remain unknown.
  */
 export function readSaerskrivenYamlDocument(
-  document: SaerskrivenYamlDocument,
+  document: SaerskrivenYamlVersionedDocument,
 ): Either.Either<Model, ReadFailure> {
-  return modelOf(withMitigationTextAsRecords(document));
+  return modelOf(currentSaerskrivenYaml(document).document);
 }
 
 function modelOf(
-  document: SaerskrivenYamlDocument,
+  document: SaerskrivenYamlV2Document,
 ): Either.Either<Model, ReadFailure> {
   return Either.mapLeft(parseModel(toModelInput(document)), (failure) =>
     ReadFailure.InvalidModel({ issues: failure.issues }),
@@ -87,8 +88,8 @@ function modelOf(
 
 function mapDocument(
   given: unknown,
-): Either.Either<ReadResult<typeof saerskrivenYamlWireSchema>, ReadFailure> {
-  const wire = saerskrivenYamlWireSchema.safeParse(given);
+): Either.Either<ReadResult<typeof saerskrivenYamlV2WireSchema>, ReadFailure> {
+  const wire = saerskrivenYamlVersionsSchema.safeParse(given);
   if (!wire.success) {
     return Either.left(
       ReadFailure.InvalidWireDocument({
@@ -96,20 +97,18 @@ function mapDocument(
       }),
     );
   }
-  const source = withMitigationTextAsRecords(
-    withoutAssumptionElementLinks(wire.data),
-  );
-  return Either.map(modelOf(source), (model) => ({
+  const current = currentSaerskrivenYaml(wire.data);
+  return Either.map(modelOf(current.document), (model) => ({
     model,
-    source,
+    source: current.document,
     divergences: [
       ...undeclaredDivergences(given, wire.data),
-      ...droppedAssumptionElementLinks(wire.data),
+      ...current.divergences,
     ],
   }));
 }
 
-function toModelInput(document: SaerskrivenYamlDocument) {
+function toModelInput(document: SaerskrivenYamlV2Document) {
   return {
     metadata: toMetadata(document.metadata),
     diagrams: document.diagrams.map(toDiagram),
@@ -120,7 +119,7 @@ function toModelInput(document: SaerskrivenYamlDocument) {
   };
 }
 
-function toMetadata(metadata: SaerskrivenYamlMetadata): MetadataInput {
+function toMetadata(metadata: SaerskrivenYamlV2Metadata): MetadataInput {
   return {
     title: metadata.title,
     owner: metadata.owner,
@@ -129,7 +128,7 @@ function toMetadata(metadata: SaerskrivenYamlMetadata): MetadataInput {
   };
 }
 
-function toDiagram(diagram: SaerskrivenYamlDiagram): DiagramInput {
+function toDiagram(diagram: SaerskrivenYamlV2Diagram): DiagramInput {
   return {
     id: diagram.id,
     title: diagram.title,
@@ -137,7 +136,7 @@ function toDiagram(diagram: SaerskrivenYamlDiagram): DiagramInput {
   };
 }
 
-function toElement(element: SaerskrivenYamlElement): ElementInput {
+function toElement(element: SaerskrivenYamlV2Element): ElementInput {
   if (element.kind === 'flow') {
     return {
       kind: 'flow',
@@ -180,7 +179,7 @@ function toElement(element: SaerskrivenYamlElement): ElementInput {
   return { kind: 'store', ...node, ...storeProperties(element) };
 }
 
-function toCommon(element: SaerskrivenYamlElement) {
+function toCommon(element: SaerskrivenYamlV2Element) {
   return {
     id: element.id,
     name: element.name,
@@ -190,7 +189,7 @@ function toCommon(element: SaerskrivenYamlElement) {
   };
 }
 
-function toEndpoint(endpoint: SaerskrivenYamlEndpoint): EndpointInput {
+function toEndpoint(endpoint: SaerskrivenYamlV2Endpoint): EndpointInput {
   if (endpoint.kind === 'free') {
     return { kind: 'free', position: endpoint.position };
   }
@@ -200,14 +199,14 @@ function toEndpoint(endpoint: SaerskrivenYamlEndpoint): EndpointInput {
 }
 
 function toBoundaryShape(
-  shape: SaerskrivenYamlBoundaryShape,
+  shape: SaerskrivenYamlV2BoundaryShape,
 ): BoundaryShapeInput {
   return shape.kind === 'box'
     ? { kind: 'box', position: shape.position, size: shape.size }
     : { kind: 'curve', waypoints: shape.waypoints };
 }
 
-function toThreat(threat: SaerskrivenYamlThreat): ThreatInput {
+function toThreat(threat: SaerskrivenYamlV2Threat): ThreatInput {
   return {
     id: threat.id,
     number: threat.number,
@@ -220,7 +219,9 @@ function toThreat(threat: SaerskrivenYamlThreat): ThreatInput {
   };
 }
 
-function toMitigation(mitigation: SaerskrivenYamlMitigation): MitigationInput {
+function toMitigation(
+  mitigation: SaerskrivenYamlV2Mitigation,
+): MitigationInput {
   return {
     id: mitigation.id,
     title: mitigation.title,
@@ -230,12 +231,14 @@ function toMitigation(mitigation: SaerskrivenYamlMitigation): MitigationInput {
   };
 }
 
-function toAssumption(assumption: SaerskrivenYamlAssumption): AssumptionInput {
+function toAssumption(
+  assumption: SaerskrivenYamlV2Assumption,
+): AssumptionInput {
   return {
     id: assumption.id,
     prose: assumption.prose,
     status: assumptionStatusesToModel[assumption.status],
     threats: assumption.threats,
-    appliesToModel: false,
+    appliesToModel: assumption.appliesToModel,
   };
 }

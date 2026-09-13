@@ -37,6 +37,17 @@ export const frozenV021Path: string = join(
   'test-data/saerskriven/ecluse-v0.2.1.yaml',
 );
 
+/**
+ * Saerskriven's own model in the document shape v0.3.0 wrote, committed as
+ * data and never regenerated: version 1 with each threat's mitigation text,
+ * assumption element links and an assumption that links no threat, so the v1
+ * to v2 migration has a released file to answer to.
+ */
+export const frozenV030Path: string = join(
+  repositoryRoot,
+  'test-data/saerskriven/saerskriven-v0.3.0.yaml',
+);
+
 const saerskrivenModelPath = join(
   repositoryRoot,
   'threat-modelling/saerskriven.yaml',
@@ -71,8 +82,8 @@ export type EmittedModel = {
  * codec: what a read of the committed bytes writes back is those bytes
  * again. The suites that gate a native file read this list rather than a
  * path, so a third file joins all of them by being added here. The frozen
- * fixture at {@link frozenV021Path} is not one of them, because a write of
- * its model states the keys its shape predates.
+ * fixtures at {@link frozenV021Path} and {@link frozenV030Path} are not among
+ * them, because a write of their models is a later shape.
  *
  * `modelJsonPath` is where a file's internal model is written out for
  * `packages/render` and `packages/canvas`, which gate on a model and cannot

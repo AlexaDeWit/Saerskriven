@@ -6,11 +6,13 @@ import type {
   Size,
 } from '@saerskriven/model';
 import {
-  saerskrivenYamlWireSchema,
-  type SaerskrivenYamlDocument,
-} from '@saerskriven/wire-saerskriven-yaml';
+  saerskrivenYamlV2WireSchema,
+  type SaerskrivenYamlV2Document,
+} from '@saerskriven/wire-saerskriven-yaml-v2';
 import { parsedFixture, validModelFixture } from '@saerskriven/model/fixtures';
+import { Either } from 'effect';
 import { parse } from 'yaml';
+import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { ecluseModel, goldenPath } from './saerskriven-yaml.fixtures.js';
 import {
   writeSaerskrivenYaml,
@@ -75,8 +77,8 @@ const backwardsEcluse: Model = {
   metadata: ecluseModel.metadata,
 };
 
-const otherDocument: SaerskrivenYamlDocument = {
-  formatVersion: 1,
+const otherDocument: SaerskrivenYamlV2Document = {
+  formatVersion: 2,
   metadata: {
     title: 'Another file entirely',
     owner: '',
@@ -111,13 +113,13 @@ describe('the Écluse model as a Saerskriven YAML file', () => {
     await expect(written.output).toMatchFileSnapshot(goldenPath);
   });
 
-  it('reports no divergence, since no assumption applies to the model', () => {
+  it('reports no divergence', () => {
     expect(written.divergences).toEqual([]);
   });
 
   it('writes the root keys in the order the wire schema declares them', () => {
     expect(keysOf(parseDocument(written.output))).toEqual(
-      Object.keys(saerskrivenYamlWireSchema.shape),
+      Object.keys(saerskrivenYamlV2WireSchema.shape),
     );
   });
 
@@ -178,30 +180,37 @@ describe('a Saerskriven YAML write', () => {
 describe('a Saerskriven YAML write of assumptions', () => {
   const output = writeSaerskrivenYaml(parsedFixture(validModelFixture)).output;
 
-  it('states no element link on any assumption', () => {
+  it('states a model link and no element list on every assumption', () => {
     const assumptions = listOf(at(parseDocument(output), 'assumptions'));
     expect(assumptions.length).toBeGreaterThan(0);
-    expect(assumptions.map((assumption) => at(assumption, 'elements'))).toEqual(
-      assumptions.map(() => []),
+    expect(assumptions.map(keysOf)).toEqual(
+      assumptions.map(() => [
+        'id',
+        'prose',
+        'status',
+        'threats',
+        'appliesToModel',
+      ]),
     );
   });
 
-  it('parses under the version 1 wire schema', () => {
+  it('parses under the version 2 wire schema', () => {
     expect(
-      saerskrivenYamlWireSchema.safeParse(parseDocument(output)).success,
+      saerskrivenYamlV2WireSchema.safeParse(parseDocument(output)).success,
     ).toBe(true);
   });
 });
 
 describe('a Saerskriven YAML write of mitigations', () => {
-  it('states empty mitigation text on every threat and holds the records, under the version 1 wire schema', () => {
-    const document = saerskrivenYamlWireSchema.parse(
+  it('states no mitigation text on any threat and holds the records', () => {
+    const threats = listOf(at(parseDocument(written.output), 'threats'));
+    const document = saerskrivenYamlV2WireSchema.parse(
       parseDocument(written.output),
     );
     expect(ecluseModel.mitigations.length).toBeGreaterThan(0);
-    expect(document.threats.map(({ mitigation }) => mitigation)).toEqual(
-      document.threats.map(() => ''),
-    );
+    expect(
+      threats.filter((threat) => keysOf(threat).includes('mitigation')),
+    ).toEqual([]);
     expect(document.mitigations.map(({ id }) => id)).toEqual(
       ecluseModel.mitigations.map(({ id }) => id),
     );
@@ -210,30 +219,23 @@ describe('a Saerskriven YAML write of mitigations', () => {
 
 describe('a Saerskriven YAML write of an assumption that applies to the model', () => {
   const [assumption] = validModelFixture.assumptions;
-  const writtenWith = (threats: readonly string[]) =>
-    writeSaerskrivenYaml(
-      parsedFixture({
-        ...validModelFixture,
-        assumptions: [
-          { ...assumption, threats: [...threats], appliesToModel: true },
-        ],
-      }),
-    );
+  const model = (threats: readonly string[]) =>
+    parsedFixture({
+      ...validModelFixture,
+      assumptions: [
+        { ...assumption, threats: [...threats], appliesToModel: true },
+      ],
+    });
 
   it.each([
     ['with its threat links', assumption.threats],
     ['with no threat link', []],
-  ])('reports its model link narrowed once, %s', (_, threats) => {
-    const result = writtenWith(threats);
-    expect(result.divergences).toEqual([
-      expect.objectContaining({
-        subject: { kind: 'assumption', id: assumption.id },
-        reason: 'narrowed',
-      }),
-    ]);
+  ])('reports nothing and reads back with its model link, %s', (_, threats) => {
+    const result = writeSaerskrivenYaml(model(threats));
+    expect(result.divergences).toEqual([]);
     expect(
-      saerskrivenYamlWireSchema.safeParse(parseDocument(result.output)).success,
-    ).toBe(true);
+      Either.getOrThrow(readSaerskrivenYaml(result.output)).model.assumptions,
+    ).toEqual(model(threats).assumptions);
   });
 });
 
