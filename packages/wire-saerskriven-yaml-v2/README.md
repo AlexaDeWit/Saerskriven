@@ -11,9 +11,9 @@ which goes on declaring version 1 unchanged. A file stamped with any other
 `formatVersion` fails at that path, and a key the schema does not declare is
 dropped rather than refused.
 
-Nothing reads this package yet. The migration from version 1 to version 2
-belongs in `@saerskriven/formats`, the only layer the matrix lets know two
-wire packages, and so does the dispatch on `formatVersion`.
+Version 2 is the version `@saerskriven/formats` writes. Its read dispatches on
+`formatVersion` and migrates a version 1 file to version 2 first, since it is
+the only layer the matrix lets know two wire packages.
 [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the file
 itself.
 

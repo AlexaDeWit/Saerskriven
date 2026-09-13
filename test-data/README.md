@@ -95,6 +95,27 @@ regenerated from the current writer, because what it holds the format to is
 that a file an earlier release wrote still reads. The formats suite reads it
 and checks that the mapping supplies a one-way flow and an unpinned side.
 
+## `saerskriven/saerskriven-v0.3.0.yaml`
+
+[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) as the
+v0.3.0 tag holds it, in version 1 of the format: each threat's mitigation as
+text, assumption element links, and an assumption that links no threat. It is
+committed data under the same terms as `ecluse-v0.2.1.yaml`, never regenerated.
+The formats suite reads it through the v1 to v2 migration and checks the
+records made of the text, the dropped element links, the model link, and a
+write and read back of the result.
+
+## `studio/recovery-v0.4.0.json`
+
+A studio recovery snapshot in the version 2 envelope, holding a model file
+Saerskriven v0.4.0 wrote as both its stored document and its retained source:
+Saerskriven YAML version 1 with each threat's mitigation as text, an
+assumption with element links, and an assumption that links no threat. The
+document is what the v0.4.0 writer produced, through its `saer_edit`, and the
+envelope is the shape v0.4.0's `recoverySnapshot` stores. It is committed data,
+never regenerated. The studio recovery spec restores it through the v1 to v2
+migration.
+
 ## `ecluse.model.json`
 
 The internal model serialized from `ecluseFixture` by `packages/model`.

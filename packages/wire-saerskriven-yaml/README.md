@@ -37,9 +37,10 @@ at its path in a release whose schema does not declare it.
 A change version 1 cannot absorb is a new `formatVersion`, and a version gets
 a package of its own. Version 2 is
 [`@saerskriven/wire-saerskriven-yaml-v2`](../wire-saerskriven-yaml-v2/README.md),
-beside this one, which goes on declaring version 1 unchanged. The migration
-step from one version to the next belongs in `@saerskriven/formats`, the only
-layer the matrix lets know two wire packages.
+beside this one, which goes on declaring version 1 unchanged. Saerskriven
+reads version 1 for good and writes version 2: the dispatch on `formatVersion`
+and the v1 to v2 migration are in `@saerskriven/formats`, the only layer the
+matrix lets know two wire packages.
 
 [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the file
 itself. The codec is `readSaerskrivenYaml` and `writeSaerskrivenYaml` in

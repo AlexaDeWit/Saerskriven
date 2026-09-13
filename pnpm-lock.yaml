@@ -419,6 +419,9 @@ importers:
       '@saerskriven/wire-saerskriven-yaml':
         specifier: workspace:*
         version: link:../wire-saerskriven-yaml
+      '@saerskriven/wire-saerskriven-yaml-v2':
+        specifier: workspace:*
+        version: link:../wire-saerskriven-yaml-v2
       '@saerskriven/wire-threat-dragon':
         specifier: workspace:*
         version: link:../wire-threat-dragon

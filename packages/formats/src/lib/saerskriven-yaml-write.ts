@@ -18,21 +18,20 @@ import {
   type Threat,
 } from '@saerskriven/model';
 import {
-  saerskrivenYamlWireSchema,
-  type SaerskrivenYamlAssumption,
-  type SaerskrivenYamlBoundaryShape,
-  type SaerskrivenYamlDiagram,
-  type SaerskrivenYamlDocument,
-  type SaerskrivenYamlElement,
-  type SaerskrivenYamlEndpoint,
-  type SaerskrivenYamlMetadata,
-  type SaerskrivenYamlMitigation,
-  type SaerskrivenYamlThreat,
-} from '@saerskriven/wire-saerskriven-yaml';
+  saerskrivenYamlV2WireSchema,
+  type SaerskrivenYamlV2Assumption,
+  type SaerskrivenYamlV2BoundaryShape,
+  type SaerskrivenYamlV2Diagram,
+  type SaerskrivenYamlV2Document,
+  type SaerskrivenYamlV2Element,
+  type SaerskrivenYamlV2Endpoint,
+  type SaerskrivenYamlV2Metadata,
+  type SaerskrivenYamlV2Mitigation,
+  type SaerskrivenYamlV2Threat,
+} from '@saerskriven/wire-saerskriven-yaml-v2';
 import { stringify } from 'yaml';
 import { canonicalOrder } from './canonical-order.js';
 import type { WriteResult } from './codec.js';
-import type { Divergence } from './divergence.js';
 import {
   assumptionStatusesToWire,
   mitigationStatusesToWire,
@@ -44,43 +43,32 @@ import {
 const stringifyOptions = { lineWidth: 0 };
 
 /**
- * Writes canonical native YAML without wrapping prose. The source cannot
- * override the model. Each assumption that applies to the model is reported
- * `narrowed`, since version 1 has no key for that link. Every threat's
- * `mitigation` text is written empty, since its mitigations are records.
+ * Writes canonical native YAML in the current version, without wrapping
+ * prose. The source cannot override the model, and nothing is reported,
+ * since the format holds the whole model.
  */
 export function writeSaerskrivenYaml(
   model: Model,
-  _source?: SaerskrivenYamlDocument,
+  _source?: SaerskrivenYamlV2Document,
 ): WriteResult {
   return {
     output: stringify(
       canonicalOrder(
-        saerskrivenYamlWireSchema,
+        saerskrivenYamlV2WireSchema,
         writeSaerskrivenYamlDocument(model),
       ),
       stringifyOptions,
     ),
-    divergences: narrowedModelLinks(model),
+    divergences: [],
   };
-}
-
-function narrowedModelLinks(model: Model): Divergence[] {
-  return model.assumptions
-    .filter(({ appliesToModel }) => appliesToModel)
-    .map(({ id }): Divergence => ({
-      subject: { kind: 'assumption', id },
-      detail: 'its model link, which version 1 does not hold',
-      reason: 'narrowed',
-    }));
 }
 
 /** Projects model fields explicitly and orders threats by number. Other lists retain their order. */
 export function writeSaerskrivenYamlDocument(
   model: Model,
-): SaerskrivenYamlDocument {
+): SaerskrivenYamlV2Document {
   return {
-    formatVersion: 1,
+    formatVersion: 2,
     metadata: toWireMetadata(model.metadata),
     assumptions: model.assumptions.map(toWireAssumption),
     diagrams: model.diagrams.map(toWireDiagram),
@@ -90,7 +78,7 @@ export function writeSaerskrivenYamlDocument(
   };
 }
 
-function toWireMetadata(metadata: ModelMetadata): SaerskrivenYamlMetadata {
+function toWireMetadata(metadata: ModelMetadata): SaerskrivenYamlV2Metadata {
   return {
     title: metadata.title,
     owner: metadata.owner,
@@ -99,7 +87,7 @@ function toWireMetadata(metadata: ModelMetadata): SaerskrivenYamlMetadata {
   };
 }
 
-function toWireDiagram(diagram: Diagram): SaerskrivenYamlDiagram {
+function toWireDiagram(diagram: Diagram): SaerskrivenYamlV2Diagram {
   return {
     id: diagram.id,
     title: diagram.title,
@@ -107,7 +95,7 @@ function toWireDiagram(diagram: Diagram): SaerskrivenYamlDiagram {
   };
 }
 
-function toWireElement(element: Element): SaerskrivenYamlElement {
+function toWireElement(element: Element): SaerskrivenYamlV2Element {
   if (element.kind === 'flow') {
     return {
       kind: 'flow',
@@ -160,7 +148,7 @@ function toWireCommon(element: Element) {
   };
 }
 
-function toWireEndpoint(endpoint: FlowEndpoint): SaerskrivenYamlEndpoint {
+function toWireEndpoint(endpoint: FlowEndpoint): SaerskrivenYamlV2Endpoint {
   if (endpoint.kind === 'free') {
     return { kind: 'free', position: endpoint.position };
   }
@@ -171,13 +159,13 @@ function toWireEndpoint(endpoint: FlowEndpoint): SaerskrivenYamlEndpoint {
 
 function toWireBoundaryShape(
   shape: BoundaryShape,
-): SaerskrivenYamlBoundaryShape {
+): SaerskrivenYamlV2BoundaryShape {
   return shape.kind === 'box'
     ? { kind: 'box', position: shape.position, size: shape.size }
     : { kind: 'curve', waypoints: shape.waypoints };
 }
 
-function toWireThreat(threat: Threat): SaerskrivenYamlThreat {
+function toWireThreat(threat: Threat): SaerskrivenYamlV2Threat {
   return {
     id: threat.id,
     number: threat.number,
@@ -186,12 +174,11 @@ function toWireThreat(threat: Threat): SaerskrivenYamlThreat {
     severity: severitiesToWire[threat.severity],
     status: threatStatusesToWire[threat.status],
     description: threat.description,
-    mitigation: '',
     elements: threat.elements,
   };
 }
 
-function toWireMitigation(mitigation: Mitigation): SaerskrivenYamlMitigation {
+function toWireMitigation(mitigation: Mitigation): SaerskrivenYamlV2Mitigation {
   return {
     id: mitigation.id,
     title: mitigation.title,
@@ -201,12 +188,12 @@ function toWireMitigation(mitigation: Mitigation): SaerskrivenYamlMitigation {
   };
 }
 
-function toWireAssumption(assumption: Assumption): SaerskrivenYamlAssumption {
+function toWireAssumption(assumption: Assumption): SaerskrivenYamlV2Assumption {
   return {
     id: assumption.id,
     prose: assumption.prose,
     status: assumptionStatusesToWire[assumption.status],
-    elements: [],
     threats: assumption.threats,
+    appliesToModel: assumption.appliesToModel,
   };
 }

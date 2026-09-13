@@ -1,0 +1,95 @@
+import {
+  saerskrivenYamlWireSchema,
+  type SaerskrivenYamlDocument,
+  type SaerskrivenYamlThreat,
+} from '@saerskriven/wire-saerskriven-yaml';
+import {
+  saerskrivenYamlV2WireSchema,
+  type SaerskrivenYamlV2Document,
+  type SaerskrivenYamlV2Threat,
+} from '@saerskriven/wire-saerskriven-yaml-v2';
+import { z } from 'zod';
+import {
+  droppedAssumptionElementLinks,
+  withoutAssumptionElementLinks,
+} from './assumption-element-links.js';
+import { assumptionsWithModelLinks } from './assumption-model-links.js';
+import type { Divergence } from './divergence.js';
+import { withMitigationTextAsRecords } from './threat-mitigation-text.js';
+
+/**
+ * Every released version of Saerskriven YAML, told apart by `formatVersion`.
+ * A document stamped with no version this release knows, or with none, is
+ * refused at `formatVersion`, and one broken below it is refused at a path
+ * into its own version's schema.
+ */
+export const saerskrivenYamlVersionsSchema = z.discriminatedUnion(
+  'formatVersion',
+  [saerskrivenYamlWireSchema, saerskrivenYamlV2WireSchema],
+);
+
+/** A Saerskriven YAML document of any released version. */
+export type SaerskrivenYamlVersionedDocument = z.infer<
+  typeof saerskrivenYamlVersionsSchema
+>;
+
+/** A document in the current version, and what bringing it there cost. */
+export type CurrentSaerskrivenYaml = {
+  readonly document: SaerskrivenYamlV2Document;
+  readonly divergences: readonly Divergence[];
+};
+
+/**
+ * A document of any released version in the current one. A version 2
+ * document comes back as it is, reporting nothing. A version 1 document goes
+ * through {@link migratedFromVersion1}.
+ */
+export function currentSaerskrivenYaml(
+  document: SaerskrivenYamlVersionedDocument,
+): CurrentSaerskrivenYaml {
+  return document.formatVersion === 2
+    ? { document, divergences: [] }
+    : migratedFromVersion1(document);
+}
+
+/**
+ * The v1 to v2 migration, three steps over the version 1 document: element
+ * links dropped with a report per assumption that held any, each threat's
+ * mitigation text made a record under the one-to-one status rule, and each
+ * assumption given the model link {@link assumptionsWithModelLinks} reads.
+ * Statuses carry over one to one.
+ */
+export function migratedFromVersion1(
+  document: SaerskrivenYamlDocument,
+): CurrentSaerskrivenYaml {
+  const stepped = withMitigationTextAsRecords(
+    withoutAssumptionElementLinks(document),
+  );
+  return {
+    document: {
+      formatVersion: 2,
+      metadata: stepped.metadata,
+      assumptions: assumptionsWithModelLinks(stepped),
+      diagrams: stepped.diagrams,
+      mitigations: stepped.mitigations,
+      threats: stepped.threats.map(withoutMitigationText),
+      lastIssuedThreatNumber: stepped.lastIssuedThreatNumber,
+    },
+    divergences: droppedAssumptionElementLinks(document),
+  };
+}
+
+function withoutMitigationText(
+  threat: SaerskrivenYamlThreat,
+): SaerskrivenYamlV2Threat {
+  return {
+    id: threat.id,
+    number: threat.number,
+    title: threat.title,
+    category: threat.category,
+    severity: threat.severity,
+    status: threat.status,
+    description: threat.description,
+    elements: threat.elements,
+  };
+}

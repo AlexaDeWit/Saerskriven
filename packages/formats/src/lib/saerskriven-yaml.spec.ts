@@ -1,29 +1,37 @@
 import {
   inNumberOrder,
   parseModel,
+  threatFlags,
   type Flow,
   type FlowEndpoint,
   type Model,
 } from '@saerskriven/model';
 import { modelInputArbitrary } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
+import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { Either } from 'effect';
 import * as fc from 'fast-check';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parse } from 'yaml';
+import { inferredMitigationStatus } from './mitigation-text.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
   ecluseModel,
   emittedModels,
   frozenV021Path,
+  frozenV030Path,
   goldenPath,
   nativeFixtures,
   propertyTimeout,
 } from './saerskriven-yaml.fixtures.js';
+import { threatStatusesToModel } from './saerskriven-yaml-vocabulary.js';
 
 const golden = readFileSync(goldenPath, 'utf8');
 
 const frozenV021 = readFileSync(frozenV021Path, 'utf8');
+
+const frozenV030 = readFileSync(frozenV030Path, 'utf8');
 
 const description = readFileSync(
   join(import.meta.dirname, '../../../../docs/saerskriven-yaml.md'),
@@ -43,14 +51,35 @@ function withThreatsInNumberOrder(model: Model): Model {
   return { ...model, threats: inNumberOrder(model.threats) };
 }
 
-function withoutModelLinks(model: Model): Model {
-  return {
-    ...model,
-    assumptions: model.assumptions.map((assumption) => ({
-      ...assumption,
-      appliesToModel: false,
-    })),
-  };
+function statusesOf(
+  records: readonly {
+    readonly id: string;
+    readonly status: string;
+    readonly threats: readonly string[];
+  }[],
+) {
+  return records.map(({ id, status, threats }) => ({ id, status, threats }));
+}
+
+function version1Of(text: string) {
+  return saerskrivenYamlWireSchema.parse(parse(text));
+}
+
+function textRecordsOf(text: string) {
+  return inNumberOrder(version1Of(text).threats)
+    .filter(({ mitigation }) => mitigation !== '')
+    .map(({ id, status, mitigation }) => ({
+      prose: mitigation,
+      status: inferredMitigationStatus(threatStatusesToModel[status]),
+      threats: [id],
+    }));
+}
+
+function textRecordsIn(model: Model, text: string) {
+  const held = new Set(version1Of(text).mitigations.map(({ id }) => id));
+  return model.mitigations
+    .filter(({ id }) => !held.has(id))
+    .map(({ prose, status, threats }) => ({ prose, status, threats }));
 }
 
 function readOrThrow(text: string) {
@@ -91,7 +120,7 @@ function flowsOf(model: Model): readonly Flow[] {
 
 describe('the Saerskriven YAML codec', () => {
   it('pairs the read and the write with the schema they share', () => {
-    expect(saerskrivenYamlCodec.wire).toBe(saerskrivenYamlWireSchema);
+    expect(saerskrivenYamlCodec.wire).toBe(saerskrivenYamlV2WireSchema);
   });
 
   it('reads the committed fixture as the model it was written from', () => {
@@ -109,13 +138,13 @@ describe('the Saerskriven YAML codec', () => {
   });
 
   it('hands back the document it read, for a write to merge onto', () => {
-    expect(readOrThrow(golden).source.formatVersion).toBe(1);
+    expect(readOrThrow(golden).source.formatVersion).toBe(2);
   });
 });
 
-describe('a version 1 file with an unconfirmed assumption', () => {
+describe('a file with an unconfirmed assumption', () => {
   const unconfirmedDocument = [
-    'formatVersion: 1',
+    'formatVersion: 2',
     'metadata:',
     '  title: Unconfirmed',
     '  owner: ""',
@@ -125,9 +154,9 @@ describe('a version 1 file with an unconfirmed assumption', () => {
     '  - id: assumption-1',
     '    prose: The provider signs every webhook.',
     '    status: unconfirmed',
-    '    elements: []',
     '    threats:',
     '      - threat-1',
+    '    appliesToModel: false',
     'diagrams: []',
     'mitigations: []',
     'threats:',
@@ -140,7 +169,6 @@ describe('a version 1 file with an unconfirmed assumption', () => {
     '    severity: high',
     '    status: open',
     '    description: ""',
-    '    mitigation: ""',
     '    elements: []',
     'lastIssuedThreatNumber: 1',
     '',
@@ -154,7 +182,7 @@ describe('a version 1 file with an unconfirmed assumption', () => {
     ]);
   });
 
-  it('writes back as version 1, to the byte', () => {
+  it('writes back as version 2, to the byte', () => {
     expect(
       saerskrivenYamlCodec.write(readOrThrow(unconfirmedDocument).model).output,
     ).toBe(unconfirmedDocument);
@@ -196,6 +224,25 @@ describe('the document shape v0.2.1 wrote', () => {
     expect(reading.model).toEqual({ ...legacy, diagrams });
   });
 
+  it('holds one record for each non-empty mitigation text, under the one-to-one status rule', () => {
+    const records = textRecordsOf(frozenV021);
+    expect(records.length).toBeGreaterThan(0);
+    expect(textRecordsIn(readOrThrow(frozenV021).model, frozenV021)).toEqual(
+      records,
+    );
+  });
+
+  it('raises no mitigated without implemented work flag on a mitigated threat', () => {
+    const { model } = readOrThrow(frozenV021);
+    const mitigated = model.threats.filter(
+      ({ status }) => status === 'mitigated',
+    );
+    expect(mitigated.length).toBeGreaterThan(0);
+    expect(mitigated.flatMap((threat) => threatFlags(model, threat))).toEqual(
+      [],
+    );
+  });
+
   it('takes every flow as one-way and every attached end as unpinned', () => {
     const flows = flowsOf(readOrThrow(frozenV021).model);
     expect(flows).toHaveLength(20);
@@ -208,6 +255,81 @@ describe('the document shape v0.2.1 wrote', () => {
             endpoint.kind === 'attached' && endpoint.side !== undefined,
         ),
     ).toEqual([]);
+  });
+});
+
+describe('the document shape v0.3.0 wrote', () => {
+  const reading = readOrThrow(frozenV030);
+  const file = version1Of(frozenV030);
+
+  it('holds one record for each non-empty mitigation text beside the records the file holds, under the one-to-one status rule', () => {
+    expect(
+      statusesOf(reading.model.mitigations.slice(0, file.mitigations.length)),
+    ).toEqual(statusesOf(file.mitigations));
+    expect(textRecordsIn(reading.model, frozenV030)).toEqual(
+      textRecordsOf(frozenV030),
+    );
+  });
+
+  it('reports the element links it drops, once for each assumption that held any', () => {
+    const linked = file.assumptions
+      .filter(({ elements }) => elements.length > 0)
+      .map(({ id }) => id);
+    expect(linked).toEqual(['as-hostile-input', 'as-planned-surfaces']);
+    expect(
+      reading.divergences.map(({ subject, reason }) => ({ subject, reason })),
+    ).toEqual(
+      linked.map((id) => ({
+        subject: { kind: 'assumption', id },
+        reason: 'narrowed',
+      })),
+    );
+  });
+
+  it('applies to the model only the assumption that links no threat, keeping every status', () => {
+    expect(
+      reading.model.assumptions.map(
+        ({ id, status, threats, appliesToModel }) => ({
+          id,
+          status,
+          threats,
+          appliesToModel,
+        }),
+      ),
+    ).toEqual([
+      {
+        id: 'as-hostile-input',
+        status: file.assumptions[0].status,
+        threats: file.assumptions[0].threats,
+        appliesToModel: false,
+      },
+      {
+        id: 'as-planned-surfaces',
+        status: file.assumptions[1].status,
+        threats: file.assumptions[1].threats,
+        appliesToModel: false,
+      },
+      {
+        id: 'as-hand-written',
+        status: file.assumptions[2].status,
+        threats: [],
+        appliesToModel: true,
+      },
+    ]);
+  });
+
+  it('keeps every threat status', () => {
+    expect(
+      reading.model.threats.map(({ id, status }) => ({ id, status })),
+    ).toEqual(file.threats.map(({ id, status }) => ({ id, status })));
+  });
+
+  it('writes a file that reads back as the same model, threats in number order, with nothing diverging', () => {
+    const written = saerskrivenYamlCodec.write(reading.model, reading.source);
+    expect(written.divergences).toEqual([]);
+    const again = readOrThrow(written.output);
+    expect(again.divergences).toEqual([]);
+    expect(again.model).toEqual(withThreatsInNumberOrder(reading.model));
   });
 });
 
@@ -235,10 +357,10 @@ describe.each(emittedModels)(
 describe(
   'any model at all',
   () => {
-    it('with no assumption applying to the model, survives a write and a read as itself, threats in number order', () => {
+    it('survives a write and a read as itself, threats in number order, with nothing diverging', () => {
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
-          const model = withoutModelLinks(Either.getOrThrow(parseModel(input)));
+          const model = Either.getOrThrow(parseModel(input));
           const written = saerskrivenYamlCodec.write(model);
           expect(written.divergences).toEqual([]);
           const reading = readOrThrow(written.output);
@@ -248,27 +370,16 @@ describe(
       );
     });
 
-    it('reports narrowed exactly for the assumptions that apply to the model, and reads them back without the link', () => {
+    it('writes version 2, with no threat text or assumption element links and a model link on every assumption', () => {
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
-          const model = Either.getOrThrow(parseModel(input));
-          const written = saerskrivenYamlCodec.write(model);
-          expect(
-            written.divergences.map(({ subject, reason }) => ({
-              subject,
-              reason,
-            })),
-          ).toEqual(
-            model.assumptions
-              .filter(({ appliesToModel }) => appliesToModel)
-              .map(({ id }) => ({
-                subject: { kind: 'assumption', id },
-                reason: 'narrowed',
-              })),
+          const output: unknown = parse(
+            saerskrivenYamlCodec.write(Either.getOrThrow(parseModel(input)))
+              .output,
           );
-          expect(readOrThrow(written.output).model).toEqual(
-            withThreatsInNumberOrder(withoutModelLinks(model)),
-          );
+          const document = saerskrivenYamlV2WireSchema.parse(output);
+          expect(document.formatVersion).toBe(2);
+          expect(output).toEqual(document);
         }),
       );
     });

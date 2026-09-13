@@ -1,37 +1,38 @@
 # The Saerskriven YAML format
 
-Saerskriven's own file format, version 1. Everything the internal model holds has
-a place in the file and everything the file holds has a place in the model,
-apart from the assumption element links and the assumption model link
-[Reading](#reading) describes, so reading a file and writing it back changes
-nothing else and neither direction reports a divergence for anything else.
-The other format Saerskriven reads, Threat Dragon v2 JSON, is somebody else's
-shape and does not have that property.
+Saerskriven's own file format, version 2. Everything the internal model holds has
+a place in the file and everything the file holds has a place in the model, so
+reading a version 2 file and writing it back changes nothing and neither
+direction reports a divergence. A version 1 file still reads, through the
+migration [Reading](#reading) describes. The other format Saerskriven reads,
+Threat Dragon v2 JSON, is somebody else's shape and does not have that
+property.
 
-The format is declared by `@saerskriven/wire-saerskriven-yaml`, a package of one
-zod schema that imports nothing but zod. That is the format's definition, and
-this page describes it rather than restating it. The codec is
-`readSaerskrivenYaml` and `writeSaerskrivenYaml` in `@saerskriven/formats`, paired as
-`saerskrivenYamlCodec`, and it is the only place that knows both the file and
-the model.
+Each version is declared by a package of one zod schema that imports nothing
+but zod: `@saerskriven/wire-saerskriven-yaml-v2` for version 2 and
+`@saerskriven/wire-saerskriven-yaml` for version 1. Those are the format's
+definition, and this page describes them rather than restating them. The codec
+is `readSaerskrivenYaml` and `writeSaerskrivenYaml` in `@saerskriven/formats`,
+paired as `saerskrivenYamlCodec`, and it is the only place that knows both the
+file and the model.
 
 ## The file
 
 YAML, UTF-8, one document, a mapping at the root with seven keys in this
 order:
 
-| Key                      | What it holds                                                      |
-| ------------------------ | ------------------------------------------------------------------ |
-| `formatVersion`          | `1`, exactly                                                       |
-| `metadata`               | Title, owner, description, contributors                            |
-| `assumptions`            | What the analysis rests on, linked to threats by id, no model link |
-| `diagrams`               | The diagrams, each owning its elements and their geometry          |
-| `mitigations`            | Mitigating work, addressing threats by id                          |
-| `threats`                | The threats, each attached to elements by id                       |
-| `lastIssuedThreatNumber` | The highest threat number ever issued, counting removed ones       |
+| Key                      | What it holds                                                             |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `formatVersion`          | `2`, exactly                                                              |
+| `metadata`               | Title, owner, description, contributors                                   |
+| `assumptions`            | What the analysis rests on, linked to threats by id, and `appliesToModel` |
+| `diagrams`               | The diagrams, each owning its elements and their geometry                 |
+| `mitigations`            | Mitigating work, addressing threats by id                                 |
+| `threats`                | The threats, each attached to elements by id                              |
+| `lastIssuedThreatNumber` | The highest threat number ever issued, counting removed ones              |
 
-Every key the first release declared is required and every list may be
-empty. Nothing is defaulted: a model saves before it is drawn, and it does so
+Every key the first release of a version declared is required and every list
+may be empty. Nothing is defaulted: a model saves before it is drawn, and it does so
 with empty strings and empty lists rather than with absent keys. Keys added by later releases are optional on read. These include a flow's `bidirectional`, absent
 where the read takes the flow as one way, and an attached endpoint's `side`,
 one of `top`, `right`, `bottom` and `left`, which pins the end to that side
@@ -82,59 +83,59 @@ version arrives as a wire package of its own beside the one before it, so
 a file of that version keeps the reading it has. The migration from one
 version to the next lives in `@saerskriven/formats`, which the layer matrix
 makes the only place allowed to know two wire packages. A write emits the
-version this release is current on.
+version this release is current on, which is 2, and a release from before
+version 2 refuses that file at `formatVersion`.
 
 Every released version reads, for good. A read dispatches on the version the
-file states and chains the migrations from there to the current one, so a
-file Saerskriven has ever written opens in every later release of it.
-Version 2 is declared by `@saerskriven/wire-saerskriven-yaml-v2`, but nothing
-reads it yet, so there is no dispatch and no migration to read: this says what
-the first bump has to build.
+file states: a version 2 file goes straight to the mapping, and a version 1
+file goes through the v1 to v2 migration first, so a file Saerskriven has ever
+written opens in every later release of it.
 
 The internal model cannot change this. The wire schema declares its own ids,
 its own vocabularies, and its own record shapes, and the layer matrix forbids
 it from reusing the model's, so a model changed for the sake of the editor
-leaves version 1 alone. What the two have in common today they have by
+leaves the format alone. What the two have in common today they have by
 coincidence, and the mapping between them is written out in
 `@saerskriven/formats`, member by member, so a change on either side stops
 compiling there rather than silently reaching a file. A change to what
-version 1 carries is a change to the wire schema, deliberately.
+a version carries is a change to its wire schema, deliberately.
 
 ## Reading
 
 A key this release does not declare is not a refusal. The read drops it and
 reports it as an `undeclared` divergence naming its path, so a file written
-by a later release of version 1 still reads here, minus what this release has
-no home for. Older releases can open extended v1 files but lose these new
-fields when saving. Use a release that understands the fields for lossless edits.
+by a later release of version 2 still reads here, minus what this release has
+no home for. Older releases can open extended files of their version but lose
+these new fields when saving. Use a release that understands the fields for lossless edits.
 A value this release does not declare in an enumerated vocabulary is a
 refusal, at the path of that value, as the additive rule above sets out.
 
-An assumption links threats and nothing else, so its `elements` list has no
-place in the model. The read drops every id in it and reports each assumption
-whose list held any as a `narrowed` divergence naming that assumption. A
-write states `elements: []` on every assumption, so a file this release
-writes is still a version 1 file an older release reads.
+Version 2 removed two keys and added one, and the v1 to v2 migration reads a
+version 1 file in three steps over its document:
 
-An assumption in the model may apply to the model as a whole as well as to
-threats, and version 1 has no key for that model link. The read never sets
-it: every assumption reads without a model link, and one whose `threats` list
-is empty reads as it is, with no reference and no divergence. A write of an
-assumption that applies to the model writes its threat links, `threats: []`
-where it has none, and reports the model link it could not write as a
-`narrowed` divergence naming that assumption.
+- An assumption links threats and nothing else, so its `elements` list has no
+  version 2 key. The migration drops every id in it and reports each
+  assumption whose list held any as a `narrowed` divergence naming that
+  assumption.
+- A mitigation is a record, so a threat's `mitigation` text has no version 2
+  key. The migration makes one mitigation record of a non-empty text, linked
+  to that threat alone, with an empty title, the text as its prose, and the
+  status `implemented` where the threat is `mitigated` and `proposed`
+  otherwise. Its id is `<threat id>-mitigation`, counted on with `-2`, `-3`
+  past any id the file already holds, and the records follow the file's own
+  mitigations in threat number order, which is the rule the Threat Dragon read
+  follows too. An empty text makes no record, and nothing is reported, since
+  nothing is lost.
+- An assumption may apply to the model as a whole as well as to threats, which
+  version 2 states as `appliesToModel`. A version 1 assumption whose `threats`
+  list is empty applies to the model, and one that links threats keeps them
+  and does not. Nothing is reported, since nothing is lost. This is the only
+  place an empty threat list is read as a model link.
 
-A mitigation is a record, so a threat's `mitigation` text has no place in the
-model. The read makes one mitigation record of a non-empty text, linked to
-that threat alone, with an empty title, the text as its prose, and the status
-`implemented` where the threat is `mitigated` and `proposed` otherwise. Its id
-is `<threat id>-mitigation`, counted on with `-2`, `-3` past any id the file
-already holds, and the records follow the file's own mitigations in threat
-number order, which is the rule the Threat Dragon read follows too. An empty
-text makes no record, and the read reports nothing, since nothing is lost. A
-write states `mitigation: ""` on every threat, so a file this release writes
-is still a version 1 file an older release reads, with its mitigations held
-as records.
+Every status carries over as the file states it. The document a read hands
+back for a later write is the migrated version 2 document, so a version 1
+file written back unedited reports nothing more than its read did, and is
+written as version 2.
 
 What a read does refuse, it refuses with a path: into the file where the
 schema is what said no, and into the model where a rule no schema states did,
@@ -210,7 +211,7 @@ alone for that reason.
 
 <!-- prettier-ignore -->
 ```yaml
-formatVersion: 1
+formatVersion: 2
 metadata:
   title: Order service
   owner: Alexandra de Wit
@@ -245,7 +246,6 @@ threats:
     severity: high
     status: open
     description: An unauthenticated caller reaches the gateway.
-    mitigation: ""
     elements:
       - element-1
 lastIssuedThreatNumber: 1

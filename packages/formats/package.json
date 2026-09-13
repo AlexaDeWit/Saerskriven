@@ -16,6 +16,7 @@
   "dependencies": {
     "@saerskriven/model": "workspace:*",
     "@saerskriven/wire-saerskriven-yaml": "workspace:*",
+    "@saerskriven/wire-saerskriven-yaml-v2": "workspace:*",
     "@saerskriven/wire-threat-dragon": "workspace:*",
     "effect": "catalog:",
     "yaml": "catalog:",

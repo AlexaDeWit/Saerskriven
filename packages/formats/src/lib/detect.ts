@@ -1,4 +1,4 @@
-import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
+import type { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Data, Either } from 'effect';
 import { z } from 'zod';
@@ -41,7 +41,7 @@ type Answer<
  */
 export type DetectedRead =
   | Answer<'threat-dragon', typeof threatDragonWireSchema>
-  | Answer<'saerskriven-yaml', typeof saerskrivenYamlWireSchema>;
+  | Answer<'saerskriven-yaml', typeof saerskrivenYamlV2WireSchema>;
 
 /**
  * Why detection produced no reading: no registered codec claimed the text.
@@ -129,9 +129,11 @@ const registry: readonly Attempt[] = [
  *
  * Where no codec claims, the failure is {@link DetectionFailure} naming
  * every format tried, in order, and carrying no codec's issues. A file
- * neither codec models lands there, a `formatVersion` other than 1 and a
- * Threat Dragon version outside major 2 among them, so a later release of
- * either format needs a codec of its own rather than a looser reader.
+ * neither codec models lands there, a missing `formatVersion` or one other
+ * than 1 and 2, and a Threat Dragon version outside major 2, among them. A
+ * Saerskriven YAML file of either version is claimed, and one broken below
+ * `formatVersion` is refused with a path. A later release of either format
+ * needs a reader of its own rather than a looser one.
  */
 export function readAnyFormat(
   text: string,

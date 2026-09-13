@@ -80,12 +80,12 @@ function elementFacts(model: Model) {
   );
 }
 
-describe('optional security facts in native v1', () => {
+describe('optional security facts in native YAML', () => {
   it('retains explicit facts on every supported kind, including false, empty text and empty lists', () => {
     const cycle = nativeCycle(secured);
     expect(cycle).toStrictEqual(secured);
     expect(cycle.diagrams[0].elements.map(facts)).toEqual(properties);
-    expect(writeSaerskrivenYamlDocument(cycle).formatVersion).toBe(1);
+    expect(writeSaerskrivenYamlDocument(cycle).formatVersion).toBe(2);
   });
 
   it('reads legacy fields as absent and does not turn them into explicit negatives', () => {

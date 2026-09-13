@@ -107,18 +107,19 @@ diagram as an optional field, so a snapshot written before that field existed
 still loads. The file lifecycle includes the name, format, and retained wire
 document. A restored active diagram the model no longer holds is dropped.
 
-The model travels as a version 1 document of
-[the native format](../../../../docs/saerskriven-yaml.md), so the snapshot
-inherits that format's compatibility contract: a session survives every
-upgrade a file in that format survives. A field added to the model costs the
-snapshot nothing, because the format declares the new key as optional within
-version 1 and the read maps a document written without it onto the model the
-current release requires. A breaking format change will ship as a new wire
-package with a step in `formats`, and the snapshot will follow that step
-rather than carry one of its own. No such step exists yet, so until one does,
-a document of a version this release does not know is rejected like any
-malformed snapshot. The studio version in `writtenBy` is information for a
-refusal, never a guard on what loads.
+The model travels as a document of
+[the native format](../../../../docs/saerskriven-yaml.md) in the version this
+release writes, so the snapshot inherits that format's compatibility contract:
+a session survives every upgrade a file in that format survives. A field added
+to the model costs the snapshot nothing, because the format declares the new
+key as optional within its version and the read maps a document written
+without it onto the model the current release requires. A breaking format
+change ships as a new version with a migration in `formats`, and the snapshot
+follows that migration rather than carry one of its own: a stored document of
+version 1, and the retained source of a version 1 file, restore through the v1
+to v2 migration. A document of a version this release does not know is
+rejected like any malformed snapshot. The studio version in `writtenBy` is
+information for a refusal, never a guard on what loads.
 
 Going through the format costs the order of the threat register: the format
 writes threats in number order, so a restore puts them in number order, as an

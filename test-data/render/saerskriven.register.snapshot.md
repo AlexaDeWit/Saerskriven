@@ -28,6 +28,12 @@
 | [24](#threat-24) | A text is claimed by the wrong codec, or declined by its own       | Codec read                                   | Tampering (STRIDE)                  | Medium    | Mitigated   |
 | [25](#threat-25) | A compromised upstream release is pinned as it stands              | None                                         | Tampering (STRIDE)                  | High      | Open        |
 
+## Assumptions that apply to the model
+
+- Valid
+
+  This model is kept true by hand. CI proves that it parses, that it stays in the writer's canonical form, and that every projection of it still matches its golden. Nothing proves that its content still describes the tool, so it is read again whenever a milestone closes.
+
 <a name="threat-1"></a>
 
 ## Threat 1: An oversized file exhausts the reader
@@ -260,7 +266,7 @@ A file stamped with a later format version is read by a reader that understands 
 
 - Implemented
 
-  `formatVersion` is a zod literal, so a Saerskriven file stamped anything but 1 fails at that path rather than reaching the mapping, and a Threat Dragon file outside major 2 is refused whole. Where no codec claims a text the failure names every format tried, in the order tried, so the person holding the file is told what was attempted rather than handed a partial read.
+  A Saerskriven read dispatches on `formatVersion` over one zod literal per released version, so a file stamped with no version this release knows, or with none, fails at that path rather than reaching the mapping, and a Threat Dragon file outside major 2 is refused whole. Where no codec claims a text the failure names every format tried, in the order tried, so the person holding the file is told what was attempted rather than handed a partial read.
 
 **Assumptions**
 
@@ -714,7 +720,7 @@ Two codecs are offered every text, and exactly one should own it. Claim on the w
 
 - Implemented
 
-  The claim rule is the discriminator lists in `detect.ts`, and `detect.spec.ts` pins both halves of it. Seven texts that no codec may claim, three of them stamping a version inside major 2 and one of those carrying a detail but no summary. A document broken one level below a naming key, which is claimed and then refused with a path into the file. A Saerskriven model saved as JSON, which opens as a Saerskriven model because no file name is consulted. And the smallest file of each release the codecs do model, against a Threat Dragon major above 2 and a `formatVersion` other than 1, which are claimed by nobody.
+  The claim rule is the discriminator lists in `detect.ts`, and `detect.spec.ts` pins both halves of it. Seven texts that no codec may claim, three of them stamping a version inside major 2 and one of those carrying a detail but no summary. A document broken one level below a naming key, which is claimed and then refused with a path into the file. A Saerskriven model saved as JSON, which opens as a Saerskriven model because no file name is consulted. And the smallest file of each release the codecs do model, against a Threat Dragon major above 2 and a `formatVersion` other than 1 and 2, which are claimed by nobody.
 
 **Assumptions**
 

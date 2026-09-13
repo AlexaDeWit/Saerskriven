@@ -23,6 +23,9 @@
       "path": "../wire-saerskriven-yaml/tsconfig.lib.json"
     },
     {
+      "path": "../wire-saerskriven-yaml-v2/tsconfig.lib.json"
+    },
+    {
       "path": "../model/tsconfig.lib.json"
     }
   ],
