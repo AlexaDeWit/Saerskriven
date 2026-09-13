@@ -159,13 +159,27 @@
   font-size: var(--pn-font-size);
 }
 
-.severity {
+.severity,
+.flag {
   display: inline-flex;
   align-items: center;
   gap: var(--pn-space-1);
   padding-inline: var(--pn-space-1);
   border: 1px solid var(--pn-colour-border);
   border-radius: var(--pn-radius);
+}
+
+.flag {
+  border-color: currentcolor;
+  font-weight: 600;
+}
+
+.flagGlyph {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .tone {

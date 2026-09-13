@@ -76,10 +76,19 @@ else that tells the two apart.
 
 ## Reading and writing
 
-Each summary shows the number, wrapping title, labelled severity, and separate
-status. The severity marker uses the canvas tone class. Its text remains
-readable in forced colours. The summary remains the accordion control, and
-hidden content has no layout box or keyboard controls.
+Each summary shows the number, wrapping title, labelled severity, separate
+status, how many mitigations and assumptions are linked to the threat, and a
+mark per flag the threat raises (`threatFlags` in the model). An assumption
+that applies to the model counts and flags only on the threats it links. The
+counts and marks follow every edit, from this tab or another, while the
+threat stays collapsed. `threat-summary.tsx` draws it, and the flag wording
+lives in `../ui/flag-labels.ts`. The severity marker uses the canvas tone
+class. Each flag mark has a glyph shape of its own, an outline and its label
+as text, all drawn in the text colour, so severity and every mark remain
+readable and distinct in forced colours. The whole summary, counts and marks
+included, is the accordion control's accessible name, in the order it is
+drawn. It holds no control of its own, and hidden content has no layout box
+or keyboard controls.
 
 The pane starts below the chrome card, offset by the height the card measures
 into `--pn-chrome-block-size` rather than by a constant, and ends above the
@@ -237,7 +246,6 @@ is in it.
 - Records have no surface outside the threat editor, by design. A record is
   reached through a threat, and removing one means unlinking it from every
   threat it is on. The model's explicit remove operations have no control.
-- The collapsed threat summary shows no record counts or flags.
 - Link existing lists every unlinked record of its kind, with no search or
   filter over them.
 - Markdown is edited as its source. A preview beside the prose is deferred

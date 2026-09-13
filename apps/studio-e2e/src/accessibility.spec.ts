@@ -3,6 +3,7 @@ import { expect, type Page, test } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import { savedFromMenu } from './commands.fixtures.js';
 import {
+  chooseInPanel,
   closeMenu,
   diagramChoice,
   diagramSwitcher,
@@ -72,8 +73,9 @@ test('the studio carries no violation under the system dark preference', async (
 
 // The panel is bound to the selection and holds no editable control without
 // one, so the audit of its fields needs an element selected and a threat
-// expanded. It is the studio's densest form: every composed control at once,
-// inside the panel's own landmark.
+// expanded. The threat is marked mitigated with no mitigation, so its summary
+// carries a flag mark. It is the studio's densest form: every composed control
+// at once, inside the panel's own landmark.
 test('the studio carries no violation with the threat panel open on a selected element', async ({
   page,
 }) => {
@@ -81,10 +83,13 @@ test('the studio carries no violation with the threat panel open on a selected e
   await expect(page.getByTestId('canvas-container')).toBeVisible();
 
   await page.getByRole('group', { name: /^Actor, actor/u }).click();
-  await page.getByRole('button', { name: /sends records/u }).click();
+  const summary = page.getByRole('button', { name: /sends records/u });
+  await summary.click();
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeVisible();
+  await chooseInPanel(page, 'Status', 'mitigated');
+  await expect(summary.locator('[data-flag]')).toHaveCount(1);
 
-  await audit(page, 'showing the threat panel');
+  await audit(page, 'showing the threat panel with a flagged threat');
 
   // The open listbox is audited on its own because Radix hides the rest of
   // the page from assistive technology while it is open, which axe's

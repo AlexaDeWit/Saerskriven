@@ -1,4 +1,3 @@
-import { severityToneClass } from '@saerskriven/canvas';
 import type { Element, Threat } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -13,6 +12,7 @@ import {
   type RecordFieldName,
 } from './records.js';
 import { RecordGroup } from './threat-records.js';
+import { ThreatSummary } from './threat-summary.js';
 import { elementLabel } from './threats.js';
 
 const textFields = ['Title', 'Description'] as const;
@@ -122,28 +122,7 @@ export function ThreatEditor({
     <Accordion.Item className={styles.item} value={threat.id}>
       <Accordion.Header className={styles.header}>
         <Accordion.Trigger className={styles.disclosure} ref={disclosure}>
-          <span className={styles.number}>{threat.number}</span>
-          <span className={styles.summary}>
-            <span>{threat.title}</span>
-            <span className={styles.metadata}>
-              <span className={styles.severity}>
-                <svg
-                  aria-hidden="true"
-                  className={styles.tone}
-                  viewBox="0 0 12 12"
-                >
-                  <circle
-                    className={severityToneClass[threat.severity]}
-                    cx="6"
-                    cy="6"
-                    r="5"
-                  />
-                </svg>
-                Severity: {threat.severity}
-              </span>
-              <span>Status: {threat.status}</span>
-            </span>
-          </span>
+          <ThreatSummary threat={threat} />
           <span aria-hidden="true" className={styles.chevron}>
             ▾
           </span>

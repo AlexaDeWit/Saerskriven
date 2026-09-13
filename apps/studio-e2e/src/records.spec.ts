@@ -2,11 +2,15 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
   centreOf,
+  chooseInPanel,
   closeMenu,
+  expandThreat,
   menuItem,
   nodeNamed,
   openEcluse,
   openMenu,
+  panelControl,
+  panelField,
   runFromMenu,
   selectNode,
   threatPanel,
@@ -22,28 +26,6 @@ const forwarded = /Forwarded caller credentials/u;
 
 const chokepoint = /Chokepoint exhaustion/u;
 
-const expandThreat = async (page: Page, title: RegExp): Promise<void> => {
-  const disclosure = threatPanel(page).getByRole('button', { name: title });
-  await disclosure.click();
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
-};
-
-const field = (page: Page, role: 'textbox' | 'combobox', name: string) =>
-  threatPanel(page).getByRole(role, { name, exact: true });
-
-const control = (page: Page, name: string): Locator =>
-  threatPanel(page).getByRole('button', { name, exact: true });
-
-const choose = async (
-  page: Page,
-  name: string,
-  option: string,
-): Promise<void> => {
-  await field(page, 'combobox', name).click();
-  await page.getByRole('option', { name: option, exact: true }).click();
-  await expect(page.getByRole('listbox')).toHaveCount(0);
-};
-
 const onScreen = async (target: Locator): Promise<void> => {
   await target.scrollIntoViewIfNeeded();
   await expect(target).toBeInViewport();
@@ -56,7 +38,7 @@ const onScreen = async (target: Locator): Promise<void> => {
 };
 
 const offeredToLink = async (page: Page, label: string): Promise<boolean> => {
-  const existing = field(page, 'combobox', 'Existing mitigation');
+  const existing = panelField(page, 'combobox', 'Existing mitigation');
   if ((await existing.count()) === 0) {
     return false;
   }
@@ -83,29 +65,29 @@ test('a mitigation added from the empty row is one undo step, and its status cha
   await openEcluse(page);
   await selectNode(page, dredger);
   await expandThreat(page, purge);
-  const threatStatus = field(page, 'combobox', 'Status');
+  const threatStatus = panelField(page, 'combobox', 'Status');
   const before = await threatStatus.textContent();
 
-  const add = control(page, 'Add mitigation');
+  const add = panelControl(page, 'Add mitigation');
   await onScreen(add);
   await add.click();
 
-  const title = field(page, 'textbox', 'Mitigation 2 title');
+  const title = panelField(page, 'textbox', 'Mitigation 2 title');
   await expect(title).toBeFocused();
   await onScreen(title);
   await page.keyboard.type('Keep a restorable copy of every purge');
   await page.keyboard.press('Tab');
   await expect(
-    field(page, 'textbox', 'Mitigation 2 description'),
+    panelField(page, 'textbox', 'Mitigation 2 description'),
   ).toBeFocused();
 
-  const status = field(page, 'combobox', 'Mitigation 2 status');
+  const status = panelField(page, 'combobox', 'Mitigation 2 status');
   await onScreen(status);
   await expect(status).toContainText(/proposed/iu);
-  await onScreen(control(page, 'Unlink mitigation 2'));
+  await onScreen(panelControl(page, 'Unlink mitigation 2'));
 
   for (const chosen of ['implemented', 'verified']) {
-    await choose(page, 'Mitigation 2 status', chosen);
+    await chooseInPanel(page, 'Mitigation 2 status', chosen);
     await expect(status).toContainText(chosen);
     await expect(threatStatus).toHaveText(before ?? '');
   }
@@ -126,17 +108,17 @@ test('Tab out of a new record reaches its status, and undoing the record keeps f
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
 
-  await control(page, 'Add assumption').click();
+  await panelControl(page, 'Add assumption').click();
   await page.keyboard.type('Callers rotate their tokens.');
   await page.keyboard.press('Tab');
 
-  const status = field(page, 'combobox', 'Assumption 1 status');
+  const status = panelField(page, 'combobox', 'Assumption 1 status');
   await expect(status).toBeFocused();
 
   await page.keyboard.press(registeredChords.undo[0]);
 
   await expect(status).toHaveCount(0);
-  await expect(control(page, 'Add assumption')).toBeFocused();
+  await expect(panelControl(page, 'Add assumption')).toBeFocused();
 });
 
 test('a click on Add right after typing in a new row keeps the record and opens the next row', async ({
@@ -146,15 +128,15 @@ test('a click on Add right after typing in a new row keeps the record and opens 
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
 
-  const add = control(page, 'Add mitigation');
+  const add = panelControl(page, 'Add mitigation');
   await add.click();
   await page.keyboard.type('Strip caller tokens at the edge');
   await add.click();
 
-  await expect(field(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
+  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
     'Strip caller tokens at the edge',
   );
-  await expect(field(page, 'textbox', 'Mitigation 3 title')).toBeFocused();
+  await expect(panelField(page, 'textbox', 'Mitigation 3 title')).toBeFocused();
 });
 
 test('Shift+Tab from Existing reaches Add after a new row became a record', async ({
@@ -163,21 +145,21 @@ test('Shift+Tab from Existing reaches Add after a new row became a record', asyn
   await openEcluse(page);
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
-  await control(page, 'Add mitigation').click();
+  await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Bound every upstream response');
   await page.keyboard.press('Tab');
 
   await expandThreat(page, chokepoint);
-  await control(page, 'Add mitigation').click();
+  await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Shed load at the chokepoint');
-  const existing = field(page, 'combobox', 'Existing mitigation');
+  const existing = panelField(page, 'combobox', 'Existing mitigation');
   await existing.focus();
-  await expect(field(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
+  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
     'Shed load at the chokepoint',
   );
   await page.keyboard.press('Shift+Tab');
 
-  await expect(control(page, 'Add mitigation')).toBeFocused();
+  await expect(panelControl(page, 'Add mitigation')).toBeFocused();
 });
 
 test('Discard on a new row with typed text leaves no record and nothing to undo', async ({
@@ -188,13 +170,15 @@ test('Discard on a new row with typed text leaves no record and nothing to undo'
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
 
-  const add = control(page, 'Add mitigation');
+  const add = panelControl(page, 'Add mitigation');
   await add.click();
   await page.keyboard.type('Strip caller tokens at the edge');
-  const discard = control(page, 'Discard mitigation 2');
+  const discard = panelControl(page, 'Discard mitigation 2');
   await (isMobile ? discard.tap() : discard.click());
 
-  await expect(field(page, 'textbox', 'Mitigation 2 title')).toHaveCount(0);
+  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveCount(
+    0,
+  );
   await expect(add).toBeFocused();
   expect(await undoOffered(page)).toBe(false);
 });
@@ -206,14 +190,16 @@ test('leaving the empty row leaves no record and nothing to undo', async ({
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
 
-  const add = control(page, 'Add assumption');
+  const add = panelControl(page, 'Add assumption');
   await add.click();
-  const prose = field(page, 'textbox', 'Assumption 1');
+  const prose = panelField(page, 'textbox', 'Assumption 1');
   await expect(prose).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(field(page, 'combobox', 'Assumption 1 status')).toBeFocused();
+  await expect(
+    panelField(page, 'combobox', 'Assumption 1 status'),
+  ).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(control(page, 'Discard assumption 1')).toBeFocused();
+  await expect(panelControl(page, 'Discard assumption 1')).toBeFocused();
   await page.keyboard.press('Tab');
 
   await expect(add).toBeFocused();
@@ -229,39 +215,39 @@ test('a linked record says how many other threats hold it, and unlinking culls i
   await expandThreat(page, forwarded);
 
   const bound = 'Bound every upstream response';
-  await control(page, 'Add mitigation').click();
+  await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type(bound);
   await page.keyboard.press('Tab');
   await expect(
-    field(page, 'textbox', 'Mitigation 2 description'),
+    panelField(page, 'textbox', 'Mitigation 2 description'),
   ).toBeFocused();
   expect(await offeredToLink(page, bound)).toBe(false);
 
   await expandThreat(page, chokepoint);
   expect(await offeredToLink(page, bound)).toBe(true);
-  await choose(page, 'Existing mitigation', bound);
-  await control(page, 'Link existing mitigation').click();
+  await chooseInPanel(page, 'Existing mitigation', bound);
+  await panelControl(page, 'Link existing mitigation').click();
 
-  const linked = field(page, 'textbox', 'Mitigation 2 title');
+  const linked = panelField(page, 'textbox', 'Mitigation 2 title');
   await expect(linked).toHaveValue(bound);
   await expect(linked).toBeFocused();
   expect(await offeredToLink(page, bound)).toBe(false);
   await expect(
-    control(page, 'Unlink mitigation 2'),
+    panelControl(page, 'Unlink mitigation 2'),
   ).toHaveAccessibleDescription(/1/u);
 
-  await control(page, 'Unlink mitigation 2').click();
+  await panelControl(page, 'Unlink mitigation 2').click();
   await expect(linked).toHaveCount(0);
   expect(await offeredToLink(page, bound)).toBe(true);
 
   await expandThreat(page, forwarded);
-  const kept = field(page, 'textbox', 'Mitigation 2 title');
+  const kept = panelField(page, 'textbox', 'Mitigation 2 title');
   await expect(kept).toHaveValue(bound);
   await expect(
-    control(page, 'Unlink mitigation 2'),
+    panelControl(page, 'Unlink mitigation 2'),
   ).not.toHaveAccessibleDescription(/1/u);
 
-  await control(page, 'Unlink mitigation 2').click();
+  await panelControl(page, 'Unlink mitigation 2').click();
   await expect(kept).toHaveCount(0);
   expect(await offeredToLink(page, bound)).toBe(false);
 
@@ -280,10 +266,12 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
 
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
-  await control(page, 'Add mitigation').click();
+  await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Strip caller tokens at the edge');
   await page.keyboard.press('Tab');
-  await expect(field(page, 'combobox', 'Mitigation 2 status')).toBeVisible();
+  await expect(
+    panelField(page, 'combobox', 'Mitigation 2 status'),
+  ).toBeVisible();
 
   await expect.poll(() => undoOffered(other)).toBe(true);
   await expect(worker).toHaveClass(/selected/u);
@@ -293,13 +281,13 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
 
   await selectNode(other, proxy);
   await expandThreat(other, forwarded);
-  await expect(field(other, 'textbox', 'Mitigation 2 title')).toHaveValue(
+  await expect(panelField(other, 'textbox', 'Mitigation 2 title')).toHaveValue(
     'Strip caller tokens at the edge',
   );
-  await choose(other, 'Mitigation 2 status', 'verified');
+  await chooseInPanel(other, 'Mitigation 2 status', 'verified');
 
-  await expect(field(page, 'combobox', 'Mitigation 2 status')).toContainText(
-    /verified/iu,
-  );
+  await expect(
+    panelField(page, 'combobox', 'Mitigation 2 status'),
+  ).toContainText(/verified/iu);
   await expect(nodeNamed(page, proxy)).toHaveClass(/selected/u);
 });
