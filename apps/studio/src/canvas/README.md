@@ -95,9 +95,14 @@ leaves the existing clipboard and document alone. Cut waits for the write
 and removes only the original selection. A changed document or selection
 during that wait cancels removal. The ordinary removal rules keep original
 threat records and detach other flows. Paste and Duplicate give every copied
-record a new ID, and insertion issues new threat numbers. Each insertion is
-one undo step. Repeated Paste offsets the copies by another grid interval.
-Duplicate leaves the clipboard alone. Source-format fields outside the model
+element and threat a new ID, and insertion issues new threat numbers. A copied
+mitigation or assumption identical to a record the document holds, as the
+[model fragment operations](../../../../packages/model/README.md) define it,
+gains the pasted threats as links. Every other copied record is cloned under
+a new ID, linked to the pasted threats only. A pasted assumption never carries
+a model link from its source. The announcement counts linked and cloned
+records. Each insertion is one undo step. Repeated Paste offsets the copies by
+another grid interval. Duplicate leaves the clipboard alone. Source-format fields outside the model
 are not copied, which the announcement reports for Threat Dragon files.
 
 ### Geometry, arrangement, and endpoints

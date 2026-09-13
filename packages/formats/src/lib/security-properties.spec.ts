@@ -416,7 +416,7 @@ describe('declared relationship validation and edits', () => {
       ),
     );
     const remapped = Either.getOrThrow(
-      remapFragment(full, 'copy', { x: 20, y: 30 }),
+      remapFragment(full, 'copy', { x: 20, y: 30 }, secured),
     );
     expect(remapped.diagrams[0].elements[3]).toMatchObject({
       trustBoundaryIds: ['copy:element-perimeter'],

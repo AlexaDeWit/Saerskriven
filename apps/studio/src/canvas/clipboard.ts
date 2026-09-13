@@ -1,6 +1,7 @@
 import { gridSpacing } from '@saerskriven/canvas';
 import { saerskrivenYamlCodec, withinTextLimit } from '@saerskriven/formats';
 import {
+  fragmentRecordCounts,
   generateElementId,
   remapFragment,
   selectionFragment,
@@ -235,14 +236,20 @@ function insertCopy(
     announce('There is no diagram to paste into.');
     return false;
   }
-  const remapped = remapFragment(fragment, generateElementId(), {
-    x: distance,
-    y: distance,
-  });
+  const remapped = remapFragment(
+    fragment,
+    generateElementId(),
+    { x: distance, y: distance },
+    state.present,
+  );
   if (Either.isLeft(remapped)) {
     announce('The copied graph could not be remapped.');
     return false;
   }
+  const { linked, cloned } = fragmentRecordCounts(
+    state.present,
+    remapped.right,
+  );
   dispatch(Action.InsertFragment({ diagramId, fragment: remapped.right }));
   if (modelStore.getState().present === state.present) {
     return false;
@@ -255,6 +262,8 @@ function insertCopy(
   if (first !== undefined) {
     focusElement(first);
   }
-  announce(message);
+  announce(
+    `${message} Records linked: ${String(linked)}. Records cloned: ${String(cloned)}.`,
+  );
   return true;
 }
