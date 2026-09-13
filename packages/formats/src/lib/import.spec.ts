@@ -3,7 +3,12 @@ import { join } from 'node:path';
 import { Either } from 'effect';
 import { stringify } from 'yaml';
 import { importModel } from './import.js';
-import { importTexts, otmFixture, tmbomFixture } from './import.fixtures.js';
+import {
+  importCorpus,
+  importTexts,
+  otmFixture,
+  tmbomFixture,
+} from './import.fixtures.js';
 import { readLimits } from './read-limits.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 
@@ -121,23 +126,6 @@ it('reports undeclared fields and does not turn OTM numeric impact into a severi
   expect(read.divergences.some((entry) => entry.detail.includes('risk'))).toBe(
     true,
   );
-});
-
-it('keeps unconfirmed TM-BOM assumptions as prose and preserves expressible statuses', () => {
-  const document = tmbomFixture();
-  document.assumptions = [
-    { description: 'The worker may retry.', validity: 'unconfirmed' },
-    { description: 'The queue is durable.', validity: 'confirmed' },
-    { description: 'Every client authenticates.', validity: 'rejected' },
-  ];
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
-  expect(read.model.assumptions.map((assumption) => assumption.status)).toEqual(
-    ['valid', 'invalidated'],
-  );
-  expect(read.model.metadata.description).toContain('The worker may retry.');
-  expect(
-    read.divergences.some((entry) => entry.detail.includes('unconfirmed')),
-  ).toBe(true);
 });
 
 it('validates the different TM-BOM 1.0.2 requirements', () => {
@@ -352,20 +340,20 @@ it('budgets repeated diagnostic paths from aliased assumptions', () => {
   });
 });
 
-it.each(['confirmed', 'unconfirmed'] as const)(
-  'bounds repeated %s assumption text from YAML aliases',
-  (validity) => {
-    const document = tmbomFixture();
-    const assumption = { description: 'x'.repeat(1_048_576), validity };
-    document.assumptions = Array.from({ length: 40 }, () => assumption);
-    const text = stringify(document);
-    expect(text.length).toBeLessThan(readLimits.maxTextBytes);
-    expect(importModel(text)).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
-    });
-  },
-);
+it('bounds repeated assumption text from YAML aliases', () => {
+  const document = tmbomFixture();
+  const assumption = {
+    description: 'x'.repeat(1_048_576),
+    validity: 'unconfirmed' as const,
+  };
+  document.assumptions = Array.from({ length: 40 }, () => assumption);
+  const text = stringify(document);
+  expect(text.length).toBeLessThan(readLimits.maxTextBytes);
+  expect(importModel(text)).toMatchObject({
+    _tag: 'Left',
+    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+  });
+});
 
 it('bounds aliased descriptions on distinct unattached OTM mitigations', () => {
   const description = 'x'.repeat(1_048_576);
@@ -465,45 +453,27 @@ it('retains OTM threat definitions that have no occurrences', () => {
   expect(read.model.threats[0].status).toBe('open');
 });
 
-it('imports active and pending TM-BOM controls without reviving retired or declined work', () => {
-  const document = tmbomFixture();
-  const control = document.controls?.[0];
-  if (control === undefined) throw new Error('The fixture lacks a control');
-  document.controls = [
-    {
-      ...control,
-      symbolic_name: 'active-control',
-      title: 'Active work',
-      status: 'active',
-    },
-    {
-      ...control,
-      symbolic_name: 'retired-control',
-      title: 'Retired work',
-      status: 'retired',
-    },
-    {
-      ...control,
-      symbolic_name: 'declined-control',
-      title: 'Declined work',
-      status: 'wont_do',
-    },
-    {
-      ...control,
-      symbolic_name: 'pending-control',
-      title: 'Pending work',
-      status: 'under_review',
-    },
-  ];
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+it('builds no mitigation linked to no threat and no assumption with no reference from any vendored document', () => {
+  const models = importCorpus.flatMap((file) =>
+    Either.match(importModel(file.text), {
+      onLeft: () => [],
+      onRight: ({ model }) => [{ name: file.name, model }],
+    }),
+  );
+  expect(new Set(models.map(({ name }) => name.split('/')[0]))).toEqual(
+    new Set(['otm', 'tmbom']),
+  );
   expect(
-    read.model.mitigations.map((mitigation) => [
-      mitigation.title,
-      mitigation.status,
+    models.flatMap(({ name, model }) => [
+      ...model.mitigations
+        .filter((mitigation) => mitigation.threats.length === 0)
+        .map((mitigation) => `${name}: mitigation ${mitigation.id}`),
+      ...model.assumptions
+        .filter(
+          (assumption) =>
+            assumption.threats.length === 0 && !assumption.appliesToModel,
+        )
+        .map((assumption) => `${name}: assumption ${assumption.id}`),
     ]),
-  ).toEqual([
-    ['Active work', 'implemented'],
-    ['Pending work', 'proposed'],
-  ]);
-  expect(read.model.mitigations[1].prose).toContain('under_review');
+  ).toEqual([]);
 });

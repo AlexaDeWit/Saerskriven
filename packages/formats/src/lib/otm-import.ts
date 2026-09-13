@@ -24,7 +24,10 @@ export function mapOtm(document: OtmDocument) {
     'owner',
   ]);
   const graph = otmGraph(document, context);
-  const register = otmRegister(document, context);
+  const { threats, mitigations, descriptionLines } = otmRegister(
+    document,
+    context,
+  );
   context.omitted(document);
   return {
     context,
@@ -32,7 +35,10 @@ export function mapOtm(document: OtmDocument) {
       metadata: {
         title: project.name,
         owner: project.owner ?? '',
-        description: project.description ?? '',
+        description: context.text([
+          project.description ?? '',
+          ...descriptionLines,
+        ]),
         contributors: [],
       },
       diagrams: [
@@ -42,9 +48,10 @@ export function mapOtm(document: OtmDocument) {
           elements: graph.elements,
         },
       ],
-      ...register,
+      threats,
+      mitigations,
       assumptions: [],
-      lastIssuedThreatNumber: register.threats.length,
+      lastIssuedThreatNumber: threats.length,
     },
   };
 }
