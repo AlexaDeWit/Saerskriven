@@ -14,7 +14,7 @@ const forwarded = /Forwarded caller credentials/u;
 
 const offered = {
   first: /^Fail-closed caps bound the input/u,
-  middle: /^The freshness quarantine/u,
+  middle: /^The control is an operator-architecture invariant/u,
   last: /^Dredger must verify explicit operator consent/u,
 } as const;
 
