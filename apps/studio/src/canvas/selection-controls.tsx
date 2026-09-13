@@ -20,7 +20,7 @@ import { elementById, selectedElement } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { announce } from './announcements.js';
-import { focusElement, resizeNode } from './edits.js';
+import { focusCanvas, focusElement, resizeNode } from './edits.js';
 import { flowEnds } from './elements.js';
 import { currentLayout } from './layout.js';
 import {
@@ -128,7 +128,7 @@ function SelectionEditor({
       window.removeEventListener('blur', blur);
       document.removeEventListener('keydown', key, true);
       if (panel?.contains(document.activeElement)) {
-        document.querySelector<HTMLElement>('.react-flow')?.focus();
+        focusCanvas();
       }
     };
   }, []);

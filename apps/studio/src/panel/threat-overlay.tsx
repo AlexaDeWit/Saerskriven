@@ -2,7 +2,7 @@ import type { ElementPropertyDrafts } from './element-properties.js';
 import type { ElementId } from '@saerskriven/model';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { focusElement } from '../canvas/edits.js';
+import { focusCanvas, focusElement } from '../canvas/edits.js';
 import { Action } from '../store/actions.js';
 import { selectedElements } from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
@@ -28,7 +28,7 @@ const freshHeld = (file: string | undefined): Held => ({
 
 const hideModelProperties = (): void => {
   dispatch(Action.HideModelProperties());
-  document.querySelector<HTMLElement>('.react-flow')?.focus();
+  focusCanvas();
 };
 
 /** Draws the pane for the selection or the model's properties, retaining drafts and pane width across both. Canvas-only parent renders do not rerender the pane. */

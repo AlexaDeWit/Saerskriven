@@ -16,7 +16,12 @@ import {
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { chooseFrom, editorTimeout } from './panel.fixtures.js';
+import {
+  chooseFrom,
+  editorTimeout,
+  present,
+  undoable,
+} from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 import { ThreatEditor } from './threat-editor.js';
 
@@ -55,10 +60,6 @@ const button = (name: string): HTMLElement =>
 
 const textbox = (name: string): HTMLElement =>
   screen.getByRole('textbox', { name });
-
-const present = () => modelStore.getState().present;
-
-const undoable = () => modelStore.getState().past.length;
 
 describe(
   'the records of a threat',
@@ -199,7 +200,9 @@ describe(
       expect(present().assumptions).toMatchObject([
         { id: firstAssumption, threats: [], appliesToModel: true },
       ]);
-      expect(currentAnnouncement().message).not.toContain('removed');
+      expect(currentAnnouncement().message).toContain(
+        recordedModel.assumptions[0].prose,
+      );
     });
 
     it('offers to link only records not on the threat, and names how many other threats hold a linked one', async () => {

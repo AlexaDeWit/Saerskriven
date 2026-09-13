@@ -1,9 +1,10 @@
 import type { ModelMetadataChange } from '@saerskriven/model';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { announce, resetAnnouncements } from '../canvas/announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import { ProseField, TextField } from '../ui/text-field.js';
+import { modelPropertiesFocusHandler } from './panel-focus.js';
 import { PanelFrame } from './panel-frame.js';
 import { assumptionKind, modelTarget } from './records.js';
 import { draftIn, useRefusals, type RefusedField } from './refusals.js';
@@ -33,6 +34,7 @@ export function ModelPropertiesPanel({
   onCover,
 }: ModelPropertiesPanelProps) {
   const metadata = useModelStore((state) => state.present.metadata);
+  const titleField = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<RefusedField | undefined>(held);
   const { refusals, note, refused } = useRefusals((refusal) => {
     const alreadyHeld =
@@ -45,6 +47,14 @@ export function ModelPropertiesPanel({
       announce(refusal.said);
     }
   });
+
+  useEffect(
+    () =>
+      modelPropertiesFocusHandler(() => {
+        titleField.current?.focus();
+      }),
+    [],
+  );
 
   const commit =
     (field: 'title' | 'description') =>
@@ -74,6 +84,7 @@ export function ModelPropertiesPanel({
         onChange={resetAnnouncements}
         onCommit={commit('title')}
         onRefused={refused('Title')}
+        ref={titleField}
         value={metadata.title}
       />
       <ProseField

@@ -1,12 +1,13 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
-  closeMenu,
+  canvasSurface,
+  chooseInPanel,
   expandThreat,
+  menuButton,
   menuItem,
   nodeNamed,
   onScreen,
   openEcluse,
-  openMenu,
   panelControl,
   panelField,
   runFromMenu,
@@ -14,6 +15,7 @@ import {
   selectByKeyboard,
   selectNode,
   threatPanel,
+  undoOffered,
 } from './studio.fixtures.js';
 
 const proxy = /^Écluse proxy, process/u;
@@ -37,23 +39,6 @@ const modelControl = (page: Page, name: string): Locator =>
 const openModelProperties = async (page: Page): Promise<void> => {
   await runFromMenu(page, 'Model properties');
   await expect(modelPanel(page)).toBeVisible();
-};
-
-const chooseInModel = async (
-  page: Page,
-  field: string,
-  option: string,
-): Promise<void> => {
-  await modelField(page, 'combobox', field).click();
-  await page.getByRole('option', { name: option, exact: true }).click();
-  await expect(page.getByRole('listbox')).toHaveCount(0);
-};
-
-const undoOffered = async (page: Page): Promise<boolean> => {
-  await openMenu(page);
-  const disabled = await menuItem(page, 'Undo').getAttribute('aria-disabled');
-  await closeMenu(page);
-  return disabled !== 'true';
 };
 
 const replaceText = async (field: Locator, text: string): Promise<void> => {
@@ -97,19 +82,25 @@ test('Model properties takes the selection panel location and clears the selecti
   await expect(threatPanel(page)).toBeVisible();
 });
 
-test('Model properties opens with nothing selected, and Escape or Close closes it', async ({
+test('Model properties opened from the menu by keyboard focuses Title, and Escape or Close closes it with focus on the canvas', async ({
   page,
 }) => {
   await openEcluse(page);
 
-  await openModelProperties(page);
-  await modelField(page, 'textbox', 'Title').click();
+  await menuButton(page).focus();
+  await page.keyboard.press('Enter');
+  const item = menuItem(page, 'Model properties');
+  await item.focus();
+  await page.keyboard.press('Enter');
+  await expect(modelField(page, 'textbox', 'Title')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(modelPanel(page)).toHaveCount(0);
+  await expect(canvasSurface(page)).toBeFocused();
 
   await openModelProperties(page);
   await modelControl(page, 'Close model properties').click();
   await expect(modelPanel(page)).toHaveCount(0);
+  await expect(canvasSurface(page)).toBeFocused();
 });
 
 test('the title and the description commit as one undo step each, and Tab runs from Title through Description to the Assumptions group', async ({
@@ -166,7 +157,7 @@ test('an assumption added from the empty row applies to the model, its status ch
   await onScreenUnscrolled(page, status);
   await onScreenUnscrolled(page, modelControl(page, 'Unlink assumption 1'));
 
-  await chooseInModel(page, 'Assumption 1 status', 'valid');
+  await chooseInPanel(page, 'Assumption 1 status', 'valid', modelPanel(page));
   await expect(status).toContainText(/valid/iu);
   await onScreenUnscrolled(page, status);
 
@@ -208,7 +199,12 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await expect(
     modelControl(page, 'Unlink assumption 1'),
   ).toHaveAccessibleDescription(/1/u);
-  await chooseInModel(page, 'Assumption 1 status', 'invalidated');
+  await chooseInPanel(
+    page,
+    'Assumption 1 status',
+    'invalidated',
+    modelPanel(page),
+  );
 
   await selectByKeyboard(page, proxy);
   await expandThreat(page, forwarded);

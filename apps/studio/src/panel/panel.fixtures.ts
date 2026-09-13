@@ -1,5 +1,6 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { modelStore } from '../store/store.js';
 
 /**
  * How long a spec that drives the threat editor is given, past the root
@@ -22,3 +23,9 @@ export const chooseFrom = async (
   await user.click(screen.getByRole('combobox', { name: field }));
   await user.click(screen.getByRole('option', { name: option }));
 };
+
+/** The model the store holds now. */
+export const present = () => modelStore.getState().present;
+
+/** How many edits the store can undo. */
+export const undoable = (): number => modelStore.getState().past.length;

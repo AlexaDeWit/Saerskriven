@@ -13,7 +13,12 @@ import {
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { ModelPropertiesPanel } from './model-properties.js';
-import { chooseFrom, editorTimeout } from './panel.fixtures.js';
+import {
+  chooseFrom,
+  editorTimeout,
+  present,
+  undoable,
+} from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 
 const softHyphen = '­';
@@ -45,10 +50,6 @@ const button = (name: string): HTMLElement =>
 
 const textbox = (name: string): HTMLElement =>
   screen.getByRole('textbox', { name });
-
-const present = () => modelStore.getState().present;
-
-const undoable = () => modelStore.getState().past.length;
 
 const undo = (): void => {
   act(() => {

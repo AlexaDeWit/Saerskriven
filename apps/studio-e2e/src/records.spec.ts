@@ -2,18 +2,16 @@ import { expect, test, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
   chooseInPanel,
-  closeMenu,
   expandThreat,
-  menuItem,
   nodeNamed,
   onScreen,
   openEcluse,
-  openMenu,
   panelControl,
   panelField,
   runFromMenu,
   selectNode,
   threatPanel,
+  undoOffered,
 } from './studio.fixtures.js';
 
 const proxy = /^Écluse proxy, process/u;
@@ -39,13 +37,6 @@ const offeredToLink = async (page: Page, label: string): Promise<boolean> => {
   await page.keyboard.press('Escape');
   await expect(page.getByRole('listbox')).toHaveCount(0);
   return found > 0;
-};
-
-const undoOffered = async (page: Page): Promise<boolean> => {
-  await openMenu(page);
-  const disabled = await menuItem(page, 'Undo').getAttribute('aria-disabled');
-  await closeMenu(page);
-  return disabled !== 'true';
 };
 
 test('a mitigation added from the empty row is one undo step, and its status changes in place', async ({

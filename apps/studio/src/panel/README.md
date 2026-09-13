@@ -13,15 +13,16 @@ floats over the right edge of the canvas container, mounted from
 `../canvas/diagram-canvas.tsx`, and it is on the page only while something is
 selected or the model's properties are shown. With nothing selected there is
 no panel and the diagram has the whole canvas, which is why the panel is the
-only place a threat is added from. It is held clear of the zoom cluster in the corner below it rather than
-drawn over it, and the diagram is not resized when it opens: what the panel
-covers is dealt with by panning, not by taking the room off the canvas ([the
-canvas](../canvas/README.md)). The normal pane is 460 pixels wide. Widen pane
-adds half the default coverage, and Restore pane width returns to normal.
-The icon button sits left of the heading and supports the keyboard.
-Widening and restoring leave the diagram viewport unchanged. The overlay retains that choice across
-selection changes and closing during the session. CSS bounds either width to
-the canvas, including on narrow or zoomed viewports.
+only place a threat is added from. It is held clear of the zoom cluster in the
+corner below it rather than drawn over it, and the diagram is not resized when
+it opens: what the panel covers is dealt with by panning, not by taking the
+room off the canvas ([the canvas](../canvas/README.md)). The normal pane is
+460 pixels wide. Widen pane adds half the default coverage, and Restore pane
+width returns to normal. The icon button sits left of the heading and supports
+the keyboard. Widening and restoring leave the diagram viewport unchanged. The
+overlay retains that choice across selection changes and closing during the
+session. CSS bounds either width to the canvas, including on narrow or zoomed
+viewports.
 
 The pane observes its own box and the canvas with `ResizeObserver`. It reports
 its actual coverage, including the outer inset, to the canvas. Selection changes and reopening the pane reveal a covered node using that
@@ -39,8 +40,9 @@ for the model.
 
 `threats.ts` holds the selectors and pure functions for the panel.
 `panelSubject` returns one element, the count of several selected elements,
-the model while its properties are shown, or nothing. `attachedThreats` returns threats only for a single selection. A flow
-is an element here because it carries threats.
+the model while its properties are shown, or nothing. `attachedThreats`
+returns threats only for a single selection. A flow is an element here because
+it carries threats.
 
 For several selected elements, the panel states the count and offers no field.
 There is no single element to record a threat against.
@@ -105,13 +107,13 @@ content to 24 lines. They retain the browser's manual vertical resize control.
 
 ## Mitigations and assumptions
 
-An expanded threat carries a Mitigations group and an Assumptions group,
-after its description and before its delete control. A record has meaning on
-a threat, and an assumption also on the model, so the studio gives records no
+An expanded threat carries a Mitigations group and an Assumptions group, after
+its description and before its delete control. A record has meaning on a
+threat, and an assumption also on the model, so the studio gives records no
 panel, list or tab of their own: the assumptions that apply to the model are
-edited in [the model's properties](#the-models-properties). `threat-records.tsx` draws
-one group, `records.ts` holds what differs between the two kinds and the pure
-functions the groups read.
+edited in [the model's properties](#the-models-properties).
+`threat-records.tsx` draws one group, `records.ts` holds what differs between
+the two kinds and the pure functions the groups read.
 
 - **Add** opens an empty row with focus in its first field (a mitigation's
   title, an assumption's text). Nothing enters the model until a field in
@@ -134,14 +136,14 @@ functions the groups read.
   long first line is drawn cut to two lines, and the option's accessible name
   is the whole line.
 - Each row edits the record's text in place, changes its status in place and
-  unlinks it. A record on other threats says how many, an assumption that
-  also applies to the model says so, and the unlink control is described by
-  both. Unlinking a record from its last reference removes it, which is the
-  model operation's rule rather than the studio's, and one undo brings it
-  back linked. An assumption that applies to the model is not removed by
-  unlinking its last threat. The announcement names the record by its title
-  or first line, and says whether it was unlinked or removed. A row that goes while it holds focus,
-  by an unlink or an undo, leaves focus in its group.
+  unlinks it. A record on other threats says how many, an assumption that also
+  applies to the model says so, and the unlink control is described by both.
+  Unlinking a record from its last reference removes it, which is the model
+  operation's rule rather than the studio's, and one undo brings it back
+  linked. An assumption that applies to the model is not removed by unlinking
+  its last threat. The announcement names the record by its title or first
+  line, and says whether it was unlinked or removed. A row that goes while it
+  holds focus, by an unlink or an undo, leaves focus in its group.
 
 Every edit is one store action carrying one model operation, so each is one
 undo step, reaches other tabs through the same sync as every other edit,
@@ -161,15 +163,15 @@ mitigation". Positions renumber when a row above is unlinked.
 
 ## The model's properties
 
-The Model properties command in the root menu shows the model's properties
-in the panel location. It replaces the selection panel if that is open and
-clears the canvas selection, since both are one `ShowModelProperties` in the
-store. Selecting anything on the canvas brings the selection panel back, and
-an empty selection leaves the model's properties where they are. Close model
-properties and Escape close the panel, as they close the threat panel, and
-hand focus to the canvas. Whether the properties are shown belongs to the
-tab, like the selection, so an edit another tab makes changes what they show
-but not whether they are shown.
+The Model properties command in the root menu shows the model's properties in
+the panel location. It replaces the selection panel if that is open and clears
+the canvas selection, since both are one `ShowModelProperties` in the store.
+Selecting anything on the canvas brings the selection panel back, and an empty
+selection leaves the model's properties where they are. Opened from the menu,
+the panel takes focus in its Title. Close model properties and Escape close
+the panel, as they close the threat panel, and hand focus to the canvas.
+Whether the properties are shown belongs to the tab, like the selection, so an
+edit another tab makes changes what they show but not whether they are shown.
 
 The panel holds the model's Title and Description and an Assumptions group.
 Each text field commits one `SetModelMetadata` naming that field alone, so
