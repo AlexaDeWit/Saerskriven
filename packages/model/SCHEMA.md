@@ -172,7 +172,6 @@ every test run, so it cannot fall behind them. Regenerate it with
   - `severity`: one of `low`, `medium`, `high`, `critical`, `undecided`
   - `status`: one of `open`, `mitigated`, `transferred`, `avoided`, `accepted-risk`, `eliminated`, `not-applicable`
   - `description`: text
-  - `mitigation`: text
   - `elements`: list of ElementId (text, at least 2 characters)
 - `lastIssuedThreatNumber`: integer, 0 or more
 - `mitigations`: list of object

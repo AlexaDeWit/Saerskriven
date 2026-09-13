@@ -4,6 +4,7 @@ import {
   crowdedTree,
   ecluseWorkspace,
   everyRecordTree,
+  treeHolding,
 } from './read-tools.fixtures.js';
 import { dataNotInstructions } from './preface.js';
 import { renderThreatSearch, searchThreats } from './search-threats.js';
@@ -42,13 +43,13 @@ describe('what saer_search_threats finds', () => {
     ).toEqual({ matched: 0, returned: 0, truncated: false });
   });
 
-  it('adds the prose of the record where detail is asked for', () => {
+  it('adds the description and the linked mitigations where detail is asked for', () => {
     const [threat] = search({
       severity: 'high',
       response_format: 'detailed',
     }).threats;
     expect(threat?.description).toBeDefined();
-    expect(threat?.mitigation).toBeDefined();
+    expect(threat?.mitigations).toBeDefined();
   });
 
   it('leaves the prose out of a concise row', () => {
@@ -112,6 +113,53 @@ describe('a Threat Dragon threat found by the text of its mitigation', () => {
     expect(
       content?.type === 'text' ? content.text.split('\n')[0] : undefined,
     ).toBe(dataNotInstructions);
+  });
+});
+
+describe('a version 1 threat found by the mitigation text its file held', () => {
+  const found = answerOf(
+    searchThreats(
+      treeHolding(`formatVersion: 1
+metadata:
+  title: Held text
+  owner: Owner
+  description: ''
+  contributors: []
+assumptions: []
+mitigations: []
+diagrams: []
+threats:
+  - id: threat-1
+    number: 1
+    title: Spoofed caller
+    category: { methodology: STRIDE, category: spoofing }
+    severity: high
+    status: mitigated
+    description: ''
+    mitigation: Pin the certificate.
+    elements: []
+lastIssuedThreatNumber: 1
+`),
+      { query: 'pin the certificate', response_format: 'detailed' },
+    ),
+  );
+  const [row] = found.threats;
+
+  it('matches through the record the read made of that text', () => {
+    expect(found.threats.map(({ id }) => id)).toEqual(['threat-1']);
+    expect(
+      row?.mitigations?.map(({ id, status, prose }) => ({ id, status, prose })),
+    ).toEqual([
+      {
+        id: 'threat-1-mitigation',
+        status: 'implemented',
+        prose: 'Pin the certificate.',
+      },
+    ]);
+  });
+
+  it('carries no mitigation prose on the threat itself', () => {
+    expect(row).not.toHaveProperty('mitigation');
   });
 });
 

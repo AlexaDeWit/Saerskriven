@@ -1,4 +1,4 @@
-import { diagramIdSchema } from '@saerskriven/model';
+import { diagramIdSchema, inNumberOrder, type Model } from '@saerskriven/model';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
@@ -66,12 +66,13 @@ const mitigationTrips = [
 const textsOf = (document: ThreatDragonDocument) =>
   allThreats(document).map((threat) => threat.mitigation);
 
-const firstTexts = (document: ThreatDragonDocument) =>
-  [...indexById(allThreats(document)).values()].flatMap((threat) =>
-    threat.mitigation === ''
-      ? []
-      : [{ threats: [threat.id], prose: threat.mitigation }],
-  );
+const firstTexts = (document: ThreatDragonDocument, model: Model) => {
+  const held = indexById(allThreats(document));
+  return inNumberOrder(model.threats).flatMap(({ id }) => {
+    const text = held.get(id)?.mitigation ?? '';
+    return text === '' ? [] : [{ threats: [id], prose: text }];
+  });
+};
 
 const scalarsOf = (
   value: unknown,
@@ -221,11 +222,11 @@ describe('the Écluse model, the one file this codec preserves whole', () => {
 
 describe('the mitigation text of every vendored file and the current Écluse file', () => {
   it.each(mitigationTrips)(
-    'reads each text of $name as one record of its threat alone',
+    'reads each text of $name as one record of its threat alone, in threat number order',
     ({ source, model }) => {
       expect(
         model.mitigations.map(({ threats, prose }) => ({ threats, prose })),
-      ).toEqual(firstTexts(source));
+      ).toEqual(firstTexts(source, model));
     },
   );
 

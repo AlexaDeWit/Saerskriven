@@ -20,7 +20,11 @@ import { mitigationStatusSchema } from './mitigations.js';
 import { parseModel, type Model, type ParseIssue } from './parse.js';
 import { elementsAcross } from './references.js';
 import { threatFlags } from './threat-flags.js';
-import { severitySchema, threatStatusSchema } from './threats.js';
+import {
+  inNumberOrder,
+  severitySchema,
+  threatStatusSchema,
+} from './threats.js';
 import { vocabularyComplementFixture } from './vocabulary.fixtures.js';
 
 const ecluse = parsedFixture(ecluseFixture);
@@ -163,9 +167,9 @@ describe('ecluseFixture', () => {
     });
   });
 
-  it('holds the mitigation text of each threat as one record linked to it alone', () => {
+  it('holds the mitigation text of each threat as one record linked to it alone, in threat number order', () => {
     expect(ecluse.mitigations.map((mitigation) => mitigation.threats)).toEqual(
-      ecluse.threats.map((threat) => [threat.id]),
+      inNumberOrder(ecluse.threats).map((threat) => [threat.id]),
     );
   });
 

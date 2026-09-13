@@ -130,7 +130,6 @@ export const validModelFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'open',
       description: 'An order can be altered between the customer and the API.',
-      mitigation: '',
       elements: ['element-api', 'element-order-flow'],
     },
   ],
@@ -247,7 +246,6 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'open',
       description: 'A stolen session cookie passes as the shopper.',
-      mitigation: '',
       elements: ['element-shopper'],
     },
     {
@@ -258,7 +256,6 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       severity: 'critical',
       status: 'open',
       description: 'The basket total is altered on its way to checkout.',
-      mitigation: '',
       elements: ['element-pay-flow', 'element-checkout'],
     },
     {
@@ -272,7 +269,6 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       severity: 'high',
       status: 'mitigated',
       description: 'A backup of the vault leaves the trust boundary.',
-      mitigation: 'Backups are encrypted with a key held off the host.',
       elements: ['element-vault'],
     },
     {
@@ -283,7 +279,6 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       severity: 'low',
       status: 'open',
       description: 'Repeated basket submissions exhaust checkout capacity.',
-      mitigation: '',
       elements: ['element-checkout'],
     },
     {
@@ -298,7 +293,6 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       severity: 'undecided',
       status: 'accepted-risk',
       description: 'The diagrams fall behind the system they describe.',
-      mitigation: '',
       elements: [],
     },
   ],

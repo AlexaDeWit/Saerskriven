@@ -75,9 +75,10 @@ describe(
     it('shows every field of the threat once it is expanded', () => {
       showEditor();
 
-      for (const name of ['Title', 'Description', 'Mitigation']) {
+      for (const name of ['Title', 'Description']) {
         expect(textbox(name)).toBeDefined();
       }
+      expect(screen.queryByRole('textbox', { name: 'Mitigation' })).toBeNull();
       for (const name of ['Category', 'Severity', 'Status']) {
         expect(screen.getByRole('combobox', { name })).toBeDefined();
       }
@@ -111,18 +112,6 @@ describe(
       expect(onCommit).toHaveBeenCalledTimes(1);
       expect(onCommit).toHaveBeenCalledWith({
         description: 'The reader has a token they may only read with.',
-      });
-    });
-
-    it('commits a mitigation left behind as a patch of that field alone', async () => {
-      const onCommit = commits();
-      showEditor({ onCommit });
-
-      await typeInto('Mitigation', 'Check the token on every write.');
-
-      expect(onCommit).toHaveBeenCalledTimes(1);
-      expect(onCommit).toHaveBeenCalledWith({
-        mitigation: 'Check the token on every write.',
       });
     });
 
@@ -167,7 +156,7 @@ describe(
       });
       expect(refusedDescription?.said).toContain('7');
 
-      await typeInto('Mitigation', 'Check the token.');
+      await typeInto('Title', ' by token');
 
       expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
     });

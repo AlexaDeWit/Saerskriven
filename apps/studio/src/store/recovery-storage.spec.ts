@@ -233,6 +233,36 @@ describe('local recovery storage', () => {
     ]);
   });
 
+  it('restores a document whose threat carries mitigation text, holding the text as its mitigation record', () => {
+    const memory = memoryStorage();
+    memory.values.set(
+      recoveryStorageKey,
+      JSON.stringify({
+        version: 2,
+        document: {
+          ...documentWithElementLinkedAssumption,
+          threats: documentWithElementLinkedAssumption.threats.map(
+            (threat) => ({ ...threat, mitigation: 'Readers sign in.' }),
+          ),
+        },
+        writtenBy: { studioVersion: '0.4.0' },
+        dirty: false,
+        file: { _tag: 'NoFile' },
+      }),
+    );
+    const loaded = localRecoveryStorage(() => memory.backend).load();
+
+    expect(Either.getOrThrow(loaded)?.present.mitigations).toEqual([
+      {
+        id: 'threat-spoofed-reader-mitigation',
+        title: '',
+        prose: 'Readers sign in.',
+        status: 'proposed',
+        threats: ['threat-spoofed-reader'],
+      },
+    ]);
+  });
+
   it('rejects a version 1 snapshot, saying an earlier release wrote it', () => {
     const older = failureFor(version1Snapshot);
 

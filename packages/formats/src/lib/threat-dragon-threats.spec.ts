@@ -59,7 +59,6 @@ const threat = (number: number): ModelInput['threats'][number] => ({
   severity: 'low',
   status: 'open',
   description: '',
-  mitigation: '',
   elements: ['cell-1'],
 });
 

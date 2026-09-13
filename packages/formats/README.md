@@ -145,12 +145,18 @@ one of them is written in English.
 `readSaerskrivenYaml` and `writeSaerskrivenYaml` are the Saerskriven YAML format,
 version 1, paired as `saerskrivenYamlCodec`. It is the native format. A write
 leaves out only an assumption's model link, which version 1 has no key for,
-and reports each assumption that applies to the model as `narrowed`. A read
-sets no model link, and maps nothing away but assumption element links, which
-the model no longer holds: `withoutAssumptionElementLinks` empties them and
+and reports each assumption that applies to the model as `narrowed`. It
+states `mitigation: ""` on every threat, since a mitigation is a record. A
+read sets no model link, and maps away assumption element links, which the
+model no longer holds: `withoutAssumptionElementLinks` empties them and
 `droppedAssumptionElementLinks` reports each assumption that held any as
-`narrowed`. [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md)
-describes the file itself.
+`narrowed`. A read also turns each threat's `mitigation` text into a record
+through `withMitigationTextAsRecords`, on the terms of the Threat Dragon read
+below, with every id the file holds taken, and reports nothing, since nothing
+is lost. Both steps are functions over the version 1 document, and the
+document a read hands back has been through them.
+[`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the
+file itself.
 
 The format is declared by [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md),
 which imports zod and nothing else. A file is a contract with people who
@@ -262,10 +268,11 @@ status `implemented` where the threat is `mitigated` and `proposed` otherwise.
 A status is inferred only across a one-to-one correspondence like this one. The
 record's id is `<threat id>-mitigation`, counted on with `-2`, `-3` past any
 id the model already holds, as `mitigationsFromText` in `mitigation-text.ts`
-states. The write flattens the mitigations linked to a threat, in register
+states. The records follow threat number order, so this read and the
+Saerskriven YAML version 1 read make the same records in the same order of
+one model. The write flattens the mitigations linked to a threat, in register
 order, into its one text: a record's title on a line above its prose, a blank
-line between records, and the threat's own `mitigation` prose first while that
-field exists. A text merging more than one part, or carrying a record's
+line between records. A text merging more than one record, or carrying a record's
 title, reads back as one record with no title, so it is reported once per
 threat as `narrowed`. A record with neither title nor prose writes nothing and
 is `unrepresentable` once per threat it would be written into. A record written into several threats' texts is

@@ -29,7 +29,7 @@ import { Either } from 'effect';
 import type { z } from 'zod';
 import { ReadFailure, type ReadResult } from './codec.js';
 import type { Divergence } from './divergence.js';
-import { mitigationsFromText } from './mitigation-text.js';
+import { idsHeld, mitigationsFromText } from './mitigation-text.js';
 import { parseWithinLimits } from './read-limits.js';
 import {
   cellsOf,
@@ -132,16 +132,16 @@ function toMitigations(
   return mitigationsFromText(
     threats.map(({ record, text }) => ({
       id: record.id,
+      number: record.number,
       status: record.status,
       text,
     })),
-    [
-      ...diagrams.flatMap((diagram) => [
-        diagram.id,
-        ...diagram.elements.map((element) => element.id),
-      ]),
-      ...threats.map(({ record }) => record.id),
-    ],
+    idsHeld({
+      diagrams,
+      threats: threats.map(({ record }) => record),
+      mitigations: [],
+      assumptions: [],
+    }),
   );
 }
 
@@ -336,7 +336,6 @@ function toThreat(entry: ThreatEntry): {
       severity: severity.value,
       status: status.value,
       description: threat.description,
-      mitigation: '',
       elements: [...entry.elements],
     },
     text: threat.mitigation,

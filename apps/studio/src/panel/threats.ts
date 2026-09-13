@@ -107,7 +107,6 @@ export function freshThreat(number: number, elementId: ElementId): Threat {
     severity: 'undecided',
     status: 'open',
     description: '',
-    mitigation: '',
     elements: [elementId],
   };
 }

@@ -27,16 +27,7 @@ const record = (
 
 const withRecords = (
   mitigations: readonly ReturnType<typeof record>[],
-  prose: Readonly<Record<string, string>> = {},
-): Model =>
-  parsedFixture({
-    ...read.model,
-    threats: read.model.threats.map((threat) => ({
-      ...threat,
-      mitigation: prose[threat.id] ?? '',
-    })),
-    mitigations,
-  });
+): Model => parsedFixture({ ...read.model, mitigations });
 
 const writtenOnto = (model: Model) => {
   const written = writeThreatDragon(model, read.source);
@@ -97,20 +88,6 @@ describe('flattening the records of a threat into its one text', () => {
     );
     expect(written.texts['threat-open']).toBe(
       'Rate limit\nAt the edge.\n\nAlert\nOn a spike.',
-    );
-    expect(about(written.divergences, 'narrowed')).toEqual([
-      'threat threat-open',
-    ]);
-  });
-
-  it('writes the prose field first, a blank line before the record', () => {
-    const written = writtenOnto(
-      withRecords([record('mitigation-limit', ['threat-open'])], {
-        'threat-open': 'Held as prose.',
-      }),
-    );
-    expect(written.texts['threat-open']).toBe(
-      'Held as prose.\n\nThe text of mitigation-limit.',
     );
     expect(about(written.divergences, 'narrowed')).toEqual([
       'threat threat-open',

@@ -50,7 +50,6 @@ const threat = {
   description:
     'An attacker who gains control of osv.dev can push malicious ' +
     'vulnerability records.',
-  mitigation: 'Risk treatment: accepted by trust assumption.',
   elements: ['f1646094-9885-422a-b7e7-7888c72905ef'],
 };
 

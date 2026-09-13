@@ -86,14 +86,14 @@ into `--pn-chrome-block-size` rather than by a constant, and ends above the
 zoom controls.
 The heading, width control, and close button sit outside the scrollable body.
 A long element name scrolls within a three-line heading, reachable by Tab.
-Severity and status share a row when space permits. Description and Mitigation
-start at eight lines and grow with content to 24 lines. They retain the
-browser's manual vertical resize control.
+Severity and status share a row when space permits. A description starts
+at eight lines, and a record's description at three, and each grows with
+content to 24 lines. They retain the browser's manual vertical resize control.
 
 ## Mitigations and assumptions
 
 An expanded threat carries a Mitigations group and an Assumptions group,
-after its Mitigation prose field and before its delete control. They live
+after its description and before its delete control. They live
 here and nowhere else: a record only has meaning on a threat, so the studio
 gives records no panel, list or tab of their own. `threat-records.tsx` draws
 one group, `records.ts` holds what differs between the two kinds and the pure
@@ -222,7 +222,7 @@ reaching the control that collapses an item, by pointer or by Tab, takes
 focus out of the field, which is the commit. A commit the model refuses is
 the exception, and the item stays open until it is settled. Which field holds
 a refusal is kept in the item rather than in the panel, so a second field
-committing cleanly does not report the first field's draft away.
+committing with no refusal does not report the first field's draft away.
 
 The panel sits after the canvas in the DOM, so Tab reaches it after every
 element and every flow. Which of the two a keyboard user should reach first
@@ -237,8 +237,6 @@ is in it.
 - Records have no surface outside the threat editor, by design. A record is
   reached through a threat, and removing one means unlinking it from every
   threat it is on. The model's explicit remove operations have no control.
-- The threat's own `mitigation` prose is still a threat field and is edited
-  here beside its mitigation records, until the model drops the field.
 - The collapsed threat summary shows no record counts or flags.
 - Link existing lists every unlinked record of its kind, with no search or
   filter over them.

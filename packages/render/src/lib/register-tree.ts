@@ -1,6 +1,7 @@
 import type { RegisterBadge } from '@saerskriven/canvas';
 import type { RegisterOptions } from './register-options.js';
 import {
+  inNumberOrder,
   recordsLinkedTo,
   threatFlags,
   type Assumption,
@@ -104,8 +105,7 @@ export function registerDocument(
   options: RegisterOptions = {},
 ): Root {
   const first = options.headingLevel ?? 1;
-  const threats = [...model.threats];
-  threats.sort((left, right) => left.number - right.number);
+  const threats = inNumberOrder(model.threats);
   const context: SectionContext = {
     model,
     elements: elementsById(model),
@@ -198,7 +198,6 @@ function threatSection(threat: Threat, context: SectionContext): RootContent[] {
     ),
     fieldList(threat, context),
     ...labelled('Description', proseContent(threat.description, context)),
-    ...labelled('Mitigation', proseContent(threat.mitigation, context)),
     ...labelled(
       'Mitigations',
       recordList(

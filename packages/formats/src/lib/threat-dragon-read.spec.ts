@@ -282,14 +282,6 @@ describe('reading the mitigation text of a threat', () => {
     ]);
   });
 
-  it('leaves the prose field of every threat empty', () => {
-    expect(read.model.threats.map((threat) => threat.mitigation)).toEqual([
-      '',
-      '',
-      '',
-    ]);
-  });
-
   it('gives the records the same ids on every read', () => {
     expect(readOrThrow(text).model.mitigations.map(({ id }) => id)).toEqual(
       read.model.mitigations.map(({ id }) => id),

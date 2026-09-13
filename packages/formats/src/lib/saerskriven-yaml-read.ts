@@ -45,6 +45,7 @@ import {
   toModelCategory,
 } from './saerskriven-yaml-vocabulary.js';
 import { parseYaml } from './parse-yaml.js';
+import { withMitigationTextAsRecords } from './threat-mitigation-text.js';
 import { undeclaredDivergences } from './undeclared.js';
 
 type MetadataInput = z.input<typeof modelMetadataSchema>;
@@ -65,10 +66,18 @@ export function readSaerskrivenYaml(
 
 /**
  * Maps a validated wire document. Absent security facts remain unknown,
- * assumption element links are dropped without a report, and no assumption
- * applies to the model, since version 1 has no key for that link.
+ * assumption element links are dropped without a report, no assumption
+ * applies to the model, since version 1 has no key for that link, and each
+ * threat's mitigation text is read as a record on the terms of
+ * {@link withMitigationTextAsRecords}.
  */
 export function readSaerskrivenYamlDocument(
+  document: SaerskrivenYamlDocument,
+): Either.Either<Model, ReadFailure> {
+  return modelOf(withMitigationTextAsRecords(document));
+}
+
+function modelOf(
   document: SaerskrivenYamlDocument,
 ): Either.Either<Model, ReadFailure> {
   return Either.mapLeft(parseModel(toModelInput(document)), (failure) =>
@@ -87,8 +96,10 @@ function mapDocument(
       }),
     );
   }
-  const source = withoutAssumptionElementLinks(wire.data);
-  return Either.map(readSaerskrivenYamlDocument(source), (model) => ({
+  const source = withMitigationTextAsRecords(
+    withoutAssumptionElementLinks(wire.data),
+  );
+  return Either.map(modelOf(source), (model) => ({
     model,
     source,
     divergences: [
@@ -205,7 +216,6 @@ function toThreat(threat: SaerskrivenYamlThreat): ThreatInput {
     severity: severitiesToModel[threat.severity],
     status: threatStatusesToModel[threat.status],
     description: threat.description,
-    mitigation: threat.mitigation,
     elements: threat.elements,
   };
 }

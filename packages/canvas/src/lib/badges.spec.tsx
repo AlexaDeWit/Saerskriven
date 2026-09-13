@@ -29,7 +29,6 @@ const threat = (
   severity,
   status,
   description: '',
-  mitigation: '',
   elements,
 });
 

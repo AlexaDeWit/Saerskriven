@@ -160,7 +160,6 @@ const document = {
       severity: 'medium',
       status: 'open',
       description: '',
-      mitigation: '',
       elements: [actorElement],
     },
   ],

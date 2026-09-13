@@ -16,10 +16,9 @@ export const mitigationStatusSchema = z.enum([
 export type MitigationStatus = z.infer<typeof mitigationStatusSchema>;
 
 /**
- * One piece of mitigating work, addressing any number of threats by id.
- * A threat's own `mitigation` prose stays on the threat beside it. `prose`
- * is markdown. Whether the threat ids resolve is checked by parseModel, not
- * here.
+ * One piece of mitigating work, addressing any number of threats by id. It is
+ * the only place a threat's mitigation is held. `prose` is markdown. Whether
+ * the threat ids resolve is checked by parseModel, not here.
  */
 export const mitigationSchema = z.object({
   id: mitigationIdSchema,

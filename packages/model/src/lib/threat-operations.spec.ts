@@ -55,7 +55,6 @@ const replayInput = {
   severity: 'medium',
   status: 'open',
   description: 'A captured payment request is submitted a second time.',
-  mitigation: '',
   elements: ['element-pay-flow'],
 };
 

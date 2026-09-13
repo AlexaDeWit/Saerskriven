@@ -170,10 +170,6 @@ align(center + horizon)[
 
 #"Under the canonical passthrough strategy the proxy transiently holds every caller's own CodeArtifact bearer token in process memory while it relays reads and publishes. One proxy compromise therefore harvests the credentials of all callers in transit, not one. A heap or memory dump, a log-field leak, and a malicious dependency in Écluse's own supply chain all reach that result. Passthrough spreads credential exposure across every user. A service identity would instead concentrate it in one short-lived token."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -191,10 +187,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"Écluse is a mandatory chokepoint, so degrading its availability is itself a supply-chain attack. Builds fail, or operators are tempted to bypass the gate. A hostile or compromised upstream registry, or a pathological public package, could return an oversized, version-flooded, or deeply nested packument. Parsing it and evaluating the rules per version could then exhaust CPU or memory."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -214,10 +206,6 @@ align(center + horizon)[
 
 #"The edge token, server.authToken (ECLUSE_SERVER__AUTH_TOKEN), is off by default. Écluse delegates 'who may reach the proxy' to the operator's access edge: a gateway, a mesh, or a network policy. If that boundary fails, an unauthenticated caller can drive the proxy. The east-west case is the notable one: a compromised neighbour reaches the pod directly and bypasses an ingress-only IP allow-list."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -235,10 +223,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"The upstream registry is attacker-influenceable and must never receive a caller's credential. A failure to strip the caller token on the public fetch would disclose a live CodeArtifact token to public npm. So would following a cross-host 3xx with the bearer still attached, to an attacker-chosen redirect target, over the unguarded private manager."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -258,10 +242,6 @@ align(center + horizon)[
 
 #"Écluse builds outbound URLs from client-supplied package identifiers and upstream-declared artifact locations. A traversal, encoded-slash, or absolute-URL name could steer a fetch to an unintended target such as cloud metadata or the private network. So could a dist.tarball that points at an internal or attacker-chosen host."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -279,10 +259,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"Écluse relays a publish to the private store with the publisher's own token. The packument merge serves private versions as trusted, winning collisions over public ones. A compromised-CI or insider publisher could clear the publish-scope check, or slip past it. They could then publish a name that the merge serves as a trusted version over the public package. That is a dependency-confusion path through Écluse's own trust model."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -302,10 +278,6 @@ align(center + horizon)[
 
 #"The mirror worker holds Écluse's only standing self-minted credential. It carries write access to the mirror store (Registry B), which feeds the trusted read path. A worker compromise, or any bypass of the admission gate, could write attacker-chosen bytes into the trusted store and poison future reads."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -323,10 +295,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"Container-role token minting must reach the instance-metadata endpoint (169.254.169.254) and STS. An SSRF that reached metadata could mint the worker's CodeArtifact credential."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -346,10 +314,6 @@ align(center + horizon)[
 
 #"A cache key carries no credential dimension. If the cache held a private-origin document, one caller could warm an entry and a second, differently authorised caller could receive it. That second caller receives the document without the upstream ever authorising their own request."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -367,10 +331,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"Écluse supports collapsing its internal registry roles onto as few as one store. The recommended topology keeps the first-party store (A) and the public-derived mirror store (B) separate. It then unions them into the pull-through read endpoint (C) at the registry level. Collapsing them onto a single shared store is the degenerate floor. An undeclared mounts."#"<eco>"#".mirrorTarget makes the mount serve-only, with no mirror store at all. The fold is a mirrorTarget set equal to the private upstream, which the boot warns about and then accepts. Collapse loses the physical separation between first-party and public-derived inventory. Distinct storage-level rule sets and scanning per provenance become impossible. Collapse also muddies post-disclosure incident scoping, 'which mirrored public packages did we hold?', which weakens the arithmetic-not-forensics response."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -390,10 +350,6 @@ align(center + horizon)[
 
 #"The merge flags an integrity divergence when the private and public copies of a version contradict on a shared digest algorithm. A weak-only or absent digest could let a substituted artifact pass undetected and reach the client as the trusted copy. So could a flaw in the divergence key."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -411,10 +367,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"Écluse's freshness quarantine and integrity reasoning consume fields the upstream registry asserts, notably the per-version publish time and server-side integrity. A registry that asserted forged values could admit content the age and integrity gates would otherwise hold back. A backdated time defeats the age quarantine, and a manufactured digest defeats the integrity check."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -434,10 +386,6 @@ align(center + horizon)[
 
 #"Écluse mirrors approved public versions into Registry B and, by design, resists upstream yanks so a benign yank does not break installs. The cost is that a version later found malicious persists in B and is served as trusted. The merge serves the private origin unfiltered by the rules. Nothing removes it automatically: neither an upstream yank nor a rules change reaches an already-mirrored artifact."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Proposed", rgb("#756E63"))
@@ -455,10 +403,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"The mirror worker fetches the approved artifact from an upstream-declared dist.tarball location to replicate it. Like the serve-path public fetch, this is untrusted egress to an attacker-influenceable target. In principle it carries the same SSRF surface: a dist.tarball steered at an internal or cloud-metadata address."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -478,10 +422,6 @@ align(center + horizon)[
 
 #"The recommended topology unions the trusted stores, first-party A and the sanitised mirror B, into the pull-through read endpoint C at the registry level. CodeArtifact upstream relationships are one such mechanism. If that aggregation also holds a direct connection to the upstream registry, raw public packages reach clients through C as a trusted source. They skip Écluse's gate entirely: the rules, the integrity floor, and the freshness quarantine. The same upstream-merger mechanism that makes the ideal topology work makes this the natural misconfiguration. A CodeArtifact repository's default npm-store upstream to npmjs is exactly this shape."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -499,10 +439,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"An attacker who controls the DNS for an allowlisted host can repoint it at internal addresses. https-only egress with certificate validation makes the TLS handshake fail, because an internal address cannot present a CA-trusted certificate for the requested host. Écluse therefore sends no request and leaks no data. The success or failure and the timing of the TCP connect and the TLS handshake are still a coarse internal-reachability or port-scan oracle."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -522,10 +458,6 @@ align(center + horizon)[
 
 #"An attacker who compromises Pilot could use its standing container credentials."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -543,10 +475,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"An attacker who can write to the S3 bucket could supply a tampered osv.db and bypass the vulnerability gates. Worse, they could exploit memory-corruption bugs in the underlying C SQLite engine when the proxy runs a query. A Magellan-style exploit or a malicious trigger is the vector."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -566,10 +494,6 @@ align(center + horizon)[
 
 #"OSV.dev, or a compromised upstream, could serve an oversized, deeply nested, or malformed JSON file. Parsing it could exhaust CPU or memory and crash Pilot."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -587,10 +511,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"A bug in Dredger, or a malicious rule configuration, could fire thousands of deletion requests at once. That exhausts the registry API limits and denies service to the private mirror."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -610,10 +530,6 @@ align(center + horizon)[
 
 #"A minted CodeArtifact write token is a live bearer credential scoped to a domain. If an operator could choose the write credential and the mirror-target endpoint independently, the two could diverge. They could point the mirror target at one registry while the token was minted for another. That would disclose the bearer to an endpoint that could log or replay it."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Implemented", rgb("#46788A"))
@@ -631,10 +547,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"A requested or published package name can impersonate another package to a human reader. Unicode format characters (zero-width and bidirectional controls) render invisibly or reorder glyphs, so two distinct names look identical in a lockfile, a log line, or a review diff. A name can arrive from an upstream fetch as well as from a first-party publish, so the boundary applies to both directions."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -654,10 +566,6 @@ align(center + horizon)[
 
 #"A name built only from permitted ASCII characters can read as another name to a human: a capital I in place of a lowercase l, rn in place of m, a swapped or doubled letter, a hyphen moved or dropped. The upstream npm namespace already contains such look-alike names, and a first-party publish can introduce one. A reader of a lockfile, a log line, or a review diff resolves the wrong package."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Proposed", rgb("#756E63"))
@@ -675,10 +583,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"A misconfiguration in Dredger, or poisoned OSV data, could delete legitimate, needed packages from Registry B. That causes cache misses or upstream fetch failures."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -698,10 +602,6 @@ align(center + horizon)[
 
 #"Dredger holds a standing high privilege over Registry B: delete-only. An attacker who compromised Dredger could wipe the whole registry."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Proposed", rgb("#756E63"))
@@ -719,10 +619,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"A maliciously crafted or unexpectedly massive OSV payload from upstream could cause Pilot to exhaust memory or crash during JSON parsing."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 
@@ -742,10 +638,6 @@ align(center + horizon)[
 
 #"An operator can collapse the mirror target and the publication target onto a single registry. Dredger could then purge first-party packages, taking them for stale or vulnerable public ones."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Proposed", rgb("#756E63"))
@@ -764,10 +656,6 @@ align(center + horizon)[
 
 #"An attacker who gains control of osv.dev can push malicious vulnerability records. Those records trigger false positives, or fast-lane a malicious remediation package. The attack is strongest when the attacker also publishes a malicious package. Écluse explicitly trusts the OSV database as the oracle of truth."
 
-#strong[#"Mitigation"]
-
-#"None recorded."
-
 #strong[#"Mitigations"]
 
 #list([#saer-badge("Proposed", rgb("#756E63"))
@@ -785,10 +673,6 @@ align(center + horizon)[
 #strong[#"Description"]
 
 #"Dredger issues permanent hard deletions against the mirror registry. Misconfigured, or pointed at the wrong registry, it destroys data permanently."
-
-#strong[#"Mitigation"]
-
-#"None recorded."
 
 #strong[#"Mitigations"]
 

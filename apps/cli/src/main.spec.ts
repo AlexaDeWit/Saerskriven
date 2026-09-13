@@ -275,7 +275,7 @@ for (const runner of runners) {
           ).toEqual({ code: 0, out: '', err: '' });
           const pdf = readFileSync(out);
           expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-          expect(pageCount(pdf)).toBe(18);
+          expect(pageCount(pdf)).toBe(17);
           expect(outlineTitles(pdf)).toContain('Écluse threat register');
         },
         compileTimeout,
@@ -303,7 +303,7 @@ for (const runner of runners) {
           ]);
           expect(streamed.code).toEqual(0);
           expect(streamed.out.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-          expect(pageCount(streamed.out)).toBe(18);
+          expect(pageCount(streamed.out)).toBe(17);
           expect(streamed.out).toEqual(readFileSync(out));
         },
         bytePathCompileTimeout,

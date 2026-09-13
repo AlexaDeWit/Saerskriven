@@ -7,19 +7,19 @@ Saerskriven's own threat model, in Saerskriven's own format.
 Two diagrams. `read-and-render` is the path a model file takes from disk
 through the codecs into a register or a diagram. `agent-and-desktop` is the
 path an agent or the desktop shell takes to the same core. Between them, 37
-elements and 4 trust boundaries, 25 threats, 12 mitigations and 3
+elements and 4 trust boundaries, 25 threats, 37 mitigations and 3
 assumptions.
 The threats are the ones this repository actually has: hostile files reaching
 the read limits and the wire schemas, foreign prose reaching the render
 paths, the desktop IPC bridge, and the MCP write tools.
 
 Every status is true to the tree. A threat is mitigated where a mechanism is
-on `main` and its mitigation prose names that mechanism, open where the
+on `main` and a mitigation record names that mechanism, open where the
 surface is designed and its issue is named but nothing is built, and carries
 an undecided severity where there is nothing built to assess. A third case
 sits between the first two. A threat is partly held where a mechanism is on
-`main` and does not cover the whole surface: it stays open, and its prose
-names the mechanism and what the mechanism leaves behind rather than an
+`main` and does not cover the whole surface: it stays open, and its mitigation
+record names the mechanism and what the mechanism leaves behind rather than an
 issue. Threat 25 is the one of those. Fifteen are mitigated, nine are open,
 and one is transferred to whoever publishes a register. Every mitigated
 threat names a mitigation record, and every open one names either the issue

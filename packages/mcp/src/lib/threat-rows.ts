@@ -31,13 +31,11 @@ export const threatRowSchema = z.object({
 });
 
 /**
- * A threat row with the prose of the record and the mitigations linked to
- * it, which is what a caller reads to judge the threat rather than to find
- * it.
+ * A threat row with its description and the mitigations linked to it, which
+ * is what a caller reads to judge the threat rather than to find it.
  */
 export const threatDetailSchema = threatRowSchema.extend({
   description: acceptedTextSchema.optional(),
-  mitigation: acceptedTextSchema.optional(),
   mitigations: z.array(mitigationSchema).optional(),
 });
 
@@ -57,12 +55,11 @@ export function threatRow(threat: Threat): ThreatDetail {
   };
 }
 
-/** One threat with the prose the record carries and the mitigations `model` links to it. */
+/** One threat with its description and the mitigations `model` links to it. */
 export function threatDetail(threat: Threat, model: Model): ThreatDetail {
   return {
     ...threatRow(threat),
     description: threat.description,
-    mitigation: threat.mitigation,
     mitigations: recordsLinkedTo(model.mitigations, threat.id),
   };
 }
@@ -110,9 +107,6 @@ function detailLines(row: ThreatDetail): readonly string[] {
     ...(row.description === undefined || row.description.length === 0
       ? []
       : [`description: ${escapedForTerminal(row.description)}`]),
-    ...(row.mitigation === undefined || row.mitigation.length === 0
-      ? []
-      : [`mitigation: ${escapedForTerminal(row.mitigation)}`]),
     ...(row.mitigations ?? []).flatMap((mitigation) => {
       const [heading = '', ...prose] = renderMitigation(mitigation);
       return [`mitigation ${heading}`, ...prose];

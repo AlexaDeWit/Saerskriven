@@ -11,12 +11,6 @@ const dredgerDeletion = {
     'Dredger issues permanent hard deletions against the mirror registry. ' +
     'Misconfigured, or pointed at the wrong registry, it destroys data ' +
     'permanently.',
-  mitigation:
-    'Dredger must verify explicit operator consent before it runs any ' +
-    'destructive action. It queries the target CodeArtifact repository for ' +
-    'a specific resource tag, for example `Dredger: ' +
-    'PermanentDeletionAllowed`. Without that tag, Dredger fails closed. It ' +
-    'also refuses to boot if MIRROR_TARGET == PUBLICATION_TARGET.',
   elements: ['f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff'],
 };
 

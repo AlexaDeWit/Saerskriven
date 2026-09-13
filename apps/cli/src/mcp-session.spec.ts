@@ -110,7 +110,6 @@ const calls = async (session: McpSession) => {
           severity: threat.severity,
           status: 'mitigated',
           description: threat.description,
-          mitigation: threat.mitigation,
           elements: threat.elements,
         },
       },

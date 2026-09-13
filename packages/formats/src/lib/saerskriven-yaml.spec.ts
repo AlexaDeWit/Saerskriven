@@ -1,6 +1,6 @@
 import {
+  inNumberOrder,
   parseModel,
-  recordsLinkedTo,
   type Flow,
   type FlowEndpoint,
   type Model,
@@ -39,10 +39,8 @@ const documentedExample = description.slice(
   description.indexOf('```', exampleStart),
 );
 
-function inNumberOrder(model: Model): Model {
-  const threats = [...model.threats];
-  threats.sort((left, right) => left.number - right.number);
-  return { ...model, threats };
+function withThreatsInNumberOrder(model: Model): Model {
+  return { ...model, threats: inNumberOrder(model.threats) };
 }
 
 function withoutModelLinks(model: Model): Model {
@@ -77,19 +75,6 @@ function withoutPinnedSides(model: Model): Model {
   };
 }
 
-function withMitigationsFolded(model: Model): Model {
-  return {
-    ...model,
-    threats: model.threats.map((threat) => ({
-      ...threat,
-      mitigation: recordsLinkedTo(model.mitigations, threat.id)
-        .map((mitigation) => mitigation.prose)
-        .join(''),
-    })),
-    mitigations: [],
-  };
-}
-
 function unpinned(endpoint: FlowEndpoint): FlowEndpoint {
   return endpoint.kind === 'attached'
     ? { kind: 'attached', element: endpoint.element }
@@ -111,7 +96,7 @@ describe('the Saerskriven YAML codec', () => {
 
   it('reads the committed fixture as the model it was written from', () => {
     const reading = readOrThrow(golden);
-    expect(reading.model).toEqual(inNumberOrder(ecluseModel));
+    expect(reading.model).toEqual(withThreatsInNumberOrder(ecluseModel));
     expect(reading.divergences).toEqual([]);
   });
 
@@ -180,9 +165,7 @@ describe('the document shape v0.2.1 wrote', () => {
   it('reads as the model it describes, with nothing diverging', () => {
     const reading = readOrThrow(frozenV021);
     expect(reading.divergences).toEqual([]);
-    const legacy = withMitigationsFolded(
-      withoutPinnedSides(inNumberOrder(ecluseModel)),
-    );
+    const legacy = withoutPinnedSides(withThreatsInNumberOrder(ecluseModel));
     const diagrams = legacy.diagrams.map((diagram) => ({
       ...diagram,
       elements: diagram.elements.map((element) =>
@@ -260,7 +243,7 @@ describe(
           expect(written.divergences).toEqual([]);
           const reading = readOrThrow(written.output);
           expect(reading.divergences).toEqual([]);
-          expect(reading.model).toEqual(inNumberOrder(model));
+          expect(reading.model).toEqual(withThreatsInNumberOrder(model));
         }),
       );
     });
@@ -284,7 +267,7 @@ describe(
               })),
           );
           expect(readOrThrow(written.output).model).toEqual(
-            inNumberOrder(withoutModelLinks(model)),
+            withThreatsInNumberOrder(withoutModelLinks(model)),
           );
         }),
       );

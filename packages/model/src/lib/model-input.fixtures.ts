@@ -295,7 +295,6 @@ function threatArbitrary(
     severity: fc.constantFrom(...severitySchema.options),
     status: fc.constantFrom(...threatStatusSchema.options),
     description: textArbitrary,
-    mitigation: textArbitrary,
     elements: fc.subarray([...elementIds]),
   });
 }

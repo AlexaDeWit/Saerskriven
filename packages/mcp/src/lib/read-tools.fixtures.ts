@@ -137,7 +137,6 @@ const everyRecordModel: Model = parsed({
       severity: 'undecided',
       status: 'accepted-risk',
       description: '',
-      mitigation: '',
       elements: [],
     },
   ],

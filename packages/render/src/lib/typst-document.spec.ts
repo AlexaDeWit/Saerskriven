@@ -32,7 +32,6 @@ const threatOf = (fields: {
   readonly number: number;
   readonly title?: string;
   readonly description?: string;
-  readonly mitigation?: string;
 }): Threat =>
   threatSchema.parse({
     id: `threat-${String(fields.number)}`,
@@ -41,7 +40,6 @@ const threatOf = (fields: {
     severity: 'medium',
     status: 'open',
     description: '',
-    mitigation: '',
     elements: [],
     ...fields,
   });
@@ -194,9 +192,7 @@ describe('threat prose', () => {
   });
 
   it('keeps a mitigation an author wrote as HTML alone', () => {
-    const model = modelOf([
-      threatOf({ number: 1, mitigation: '<img src=x onerror="alert(1)">' }),
-    ]);
+    const model = recordsModel([{ prose: '<img src=x onerror="alert(1)">' }]);
     expect(sourceOf(model)).toContain('<img src=x onerror=');
     expect(renderRegister(model)).toContain('<img src=x onerror=');
   });

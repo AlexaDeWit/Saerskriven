@@ -185,8 +185,8 @@ describe('the hostile fixture', () => {
         'Injection model #eval("1+1") threat register',
         'Threat 1: Title #eval("1+1") <script>alert(1)</script>',
         'Threat 2: Raw HTML in prose',
-        '<img src=x onerror="alert(3)">',
         '<img src=x onerror="alert(6)">',
+        '<img src=x onerror="alert(3)">',
         'Injection model #eval("1+1")',
       ]);
     },

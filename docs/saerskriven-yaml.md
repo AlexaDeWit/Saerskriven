@@ -124,6 +124,18 @@ assumption that applies to the model writes its threat links, `threats: []`
 where it has none, and reports the model link it could not write as a
 `narrowed` divergence naming that assumption.
 
+A mitigation is a record, so a threat's `mitigation` text has no place in the
+model. The read makes one mitigation record of a non-empty text, linked to
+that threat alone, with an empty title, the text as its prose, and the status
+`implemented` where the threat is `mitigated` and `proposed` otherwise. Its id
+is `<threat id>-mitigation`, counted on with `-2`, `-3` past any id the file
+already holds, and the records follow the file's own mitigations in threat
+number order, which is the rule the Threat Dragon read follows too. An empty
+text makes no record, and the read reports nothing, since nothing is lost. A
+write states `mitigation: ""` on every threat, so a file this release writes
+is still a version 1 file an older release reads, with its mitigations held
+as records.
+
 What a read does refuse, it refuses with a path: into the file where the
 schema is what said no, and into the model where a rule no schema states did,
 such as a threat referring to an element no diagram holds.
