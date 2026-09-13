@@ -103,10 +103,18 @@ themselves, regenerated and checked on every test run.
 Unit tests: `pnpm nx test @saerskriven/model`.
 
 `selectionFragment` copies a selection, closes its attached flow endpoints,
-and restricts related record links and declared boundary relationships to the copied graph. `remapFragment` gives
-every record a caller-supplied fresh prefix and translates its geometry.
-`insertFragment` validates the combined graph before returning it and issues
-new threat numbers. An ID collision refuses the entire insertion.
+and restricts related record links and declared boundary relationships to the
+copied graph. A copied assumption leaves its model link behind.
+`remapFragment` gives every ID a caller-supplied fresh prefix and translates
+the geometry, except a mitigation or assumption the target model holds an
+identical record of, which keeps its ID. Identical means the same kind, the
+same ID and the same content: a mitigation's title, prose and status, an
+assumption's prose and status. `appliesToModel` is not compared.
+`insertFragment` links the pasted threats to each identical record, which
+keeps its own model link, and adds every other copied record as a clone with
+no model link. It validates the combined graph before returning it and issues
+new threat numbers. Any other ID collision refuses the entire insertion.
+`fragmentRecordCounts` says how many records an insertion links and clones.
 
 `reconnectFlow` changes one endpoint to an actor, process, or store in the
 same diagram, the element it already names included, and pins the end to a
