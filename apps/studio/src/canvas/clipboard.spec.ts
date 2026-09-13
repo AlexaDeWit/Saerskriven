@@ -351,7 +351,7 @@ it('links a version 1 selection to identical records the target holds', async ()
       threats: [placeholderThreat, pasted],
     },
   ]);
-  expect(announcedCounts()).toEqual(['2', '0']);
+  expect(announcedCounts()).toEqual({ linked: 2, cloned: 0 });
 });
 
 it('refuses a selection copied before assumptions dropped their element links', async () => {
@@ -443,8 +443,11 @@ function openModel(model: Model) {
   modelStore.setState({ ...initialState(model), selection: [actor] }, true);
 }
 
-function announcedCounts(): string[] {
-  return currentAnnouncement().message.match(/\d+/g) ?? [];
+function announcedCounts(): { linked: number; cloned: number } {
+  const { message } = currentAnnouncement();
+  const count = (label: string) =>
+    Number(new RegExp(`${label}: (\\d+)`, 'u').exec(message)?.[1]);
+  return { linked: count('linked'), cloned: count('cloned') };
 }
 
 it('duplicates a threat linked to the records its original links', () => {
@@ -464,6 +467,7 @@ it('duplicates a threat linked to the records its original links', () => {
       threats: [placeholderThreat, duplicate],
     },
   ]);
+  expect(announcedCounts()).toEqual({ linked: 2, cloned: 0 });
 });
 
 it('pastes a link to an unchanged record and a clone of an edited one as one undo step', async () => {
@@ -490,7 +494,7 @@ it('pastes a link to an unchanged record and a clone of an edited one as one und
   expect(after.assumptions).toEqual([
     { ...edited.assumptions[0], threats: [placeholderThreat, pasted] },
   ]);
-  expect(announcedCounts()).toEqual(['1', '1']);
+  expect(announcedCounts()).toEqual({ linked: 1, cloned: 1 });
   dispatch(Action.Undo());
   expect(modelStore.getState().present).toBe(edited);
 });

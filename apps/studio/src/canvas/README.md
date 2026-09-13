@@ -102,8 +102,9 @@ gains the pasted threats as links. Every other copied record is cloned under
 a new ID, linked to the pasted threats only. A pasted assumption never carries
 a model link from its source. The announcement counts linked and cloned
 records. Each insertion is one undo step. Repeated Paste offsets the copies by
-another grid interval. Duplicate leaves the clipboard alone. Source-format fields outside the model
-are not copied, which the announcement reports for Threat Dragon files.
+another grid interval. Duplicate leaves the clipboard alone. Source-format
+fields outside the model are not copied, which the announcement reports for
+Threat Dragon files.
 
 ### Geometry, arrangement, and endpoints
 

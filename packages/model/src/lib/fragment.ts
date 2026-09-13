@@ -1,20 +1,15 @@
 import { restrictRelationships } from './relationships.js';
 import { Either } from 'effect';
+import { linkAssumption } from './assumption-operations.js';
 import type { Assumption } from './assumptions.js';
 import type { Element } from './elements.js';
 import type { DiagramId, ElementId, ThreatId } from './ids.js';
+import { linkMitigation } from './mitigation-operations.js';
 import type { Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
 import { translatedElement } from './operations.js';
 import type { Point } from './geometry.js';
-import {
-  assumptionRegister,
-  linkedThreats,
-  mitigationRegister,
-  relinkedRecord,
-  type RecordRegister,
-} from './records.js';
 
 /**
  * Copies a selection and its flow endpoints, with related records restricted
@@ -212,10 +207,24 @@ export function insertFragment(
     lastIssuedThreatNumber:
       model.lastIssuedThreatNumber + fragment.threats.length,
   };
-  const linked = Either.flatMap(
-    withThreatLinks(graph, mitigationRegister, mitigations.linked),
-    (withMitigations) =>
-      withThreatLinks(withMitigations, assumptionRegister, assumptions.linked),
+  const links: ((current: Model) => Either.Either<Model, OperationFailure>)[] =
+    [
+      ...mitigations.linked.flatMap(({ id, threats }) =>
+        threats.map(
+          (threatId) => (current: Model) =>
+            linkMitigation(current, id, threatId),
+        ),
+      ),
+      ...assumptions.linked.flatMap(({ id, threats }) =>
+        threats.map(
+          (threatId) => (current: Model) =>
+            linkAssumption(current, id, threatId),
+        ),
+      ),
+    ];
+  const linked = links.reduce<Either.Either<Model, OperationFailure>>(
+    (result, link) => Either.flatMap(result, link),
+    Either.right(graph),
   );
   return Either.flatMap(linked, (withLinks) =>
     checkedFragment({
@@ -277,26 +286,6 @@ function splitRecords<Held extends { readonly threats: readonly ThreatId[] }>(
     linked: pasted.filter(identical),
     cloned: pasted.filter((copy) => !identical(copy)),
   };
-}
-
-function withThreatLinks<Key extends 'mitigations' | 'assumptions', Unknown>(
-  model: Model,
-  register: RecordRegister<Key, Unknown>,
-  records: readonly Model[Key][number][],
-): Either.Either<Model, Unknown | OperationFailure> {
-  return records.reduce<Either.Either<Model, Unknown | OperationFailure>>(
-    (result, record) =>
-      record.threats.reduce(
-        (linking, threatId) =>
-          Either.flatMap(linking, (current) =>
-            relinkedRecord(current, register, record.id, threatId, (threats) =>
-              linkedThreats(threats, threatId),
-            ),
-          ),
-        result,
-      ),
-    Either.right(model),
-  );
 }
 
 function identicalIn<Held extends { readonly id: string }>(
