@@ -264,9 +264,11 @@ id the model already holds, as `mitigationsFromText` in `mitigation-text.ts`
 states. The write flattens the mitigations linked to a threat, in register
 order, into its one text: a record's title on a line above its prose, a blank
 line between records, and the threat's own `mitigation` prose first while that
-field exists. A text merging more than one part reads back as one record, so
-it is reported once per threat as `narrowed`. A record written into several
-threats' texts is `split`, and one written into none is `unrepresentable`. The
+field exists. A text merging more than one part, or carrying a record's
+title, reads back as one record with no title, so it is reported once per
+threat as `narrowed`. A record with neither title nor prose writes nothing and
+is `unrepresentable`. A record written into several threats' texts is
+`split`, and one written into none is `unrepresentable`. The
 format has no place for a record's status, and the write adds no text or key
 for one, so a mitigation whose status differs from what a read of a threat it
 is written into infers is reported as `unrepresentable` once for each such

@@ -18,12 +18,13 @@ export function mitigationText(threat: Threat, model: Model): string {
 }
 
 /**
- * What writing the mitigation text of every threat in `written` costs: a
- * text merging more than one part reads back as one record (`narrowed`, once
- * per threat), a mitigation whose status differs from what a read of that
- * threat infers loses it (`unrepresentable`, once per threat), a mitigation
- * written into several threats' texts is `split`, and one written into none
- * is `unrepresentable`.
+ * What writing the mitigation text of every threat in `written` costs. A
+ * threat whose text merges more than one part, or carries a mitigation title,
+ * reads back as one record with no title (`narrowed`, once per threat). A
+ * mitigation with neither title nor prose writes nothing, and one whose
+ * status differs from what a read of that threat infers loses it (each
+ * `unrepresentable`, once per threat). A mitigation written into several
+ * threats' texts is `split`, and one written into none is `unrepresentable`.
  */
 export function mitigationDivergences(
   model: Model,
@@ -32,7 +33,8 @@ export function mitigationDivergences(
   const writtenIds = new Set<string>(written.map((threat) => threat.id));
   return [
     ...written.flatMap((threat) => [
-      ...merged(threat, model),
+      ...narrowedText(threat, model),
+      ...emptyRecords(threat, model),
       ...lostStatuses(threat, model),
     ]),
     ...model.mitigations.flatMap((mitigation) =>
@@ -57,17 +59,33 @@ function recordText({ title, prose }: Mitigation): string {
     : `${title}\n${prose}`;
 }
 
-function merged(threat: Threat, model: Model): Divergence[] {
+function narrowedText(threat: Threat, model: Model): Divergence[] {
   const parts = textParts(threat, model).length;
-  return parts > 1
+  const titled = recordsLinkedTo(model.mitigations, threat.id).some(
+    ({ title }) => title !== '',
+  );
+  return parts > 1 || titled
     ? [
         {
           subject: { kind: 'threat', id: threat.id },
-          detail: `the ${String(parts)} mitigations written into its one mitigation text, which reads back as one record`,
+          detail:
+            parts > 1
+              ? `the ${String(parts)} parts merged into its one mitigation text, which reads back as one record with no title`
+              : 'the mitigation title written into its one mitigation text, which reads back as one record with no title',
           reason: 'narrowed',
         },
       ]
     : [];
+}
+
+function emptyRecords(threat: Threat, model: Model): Divergence[] {
+  return recordsLinkedTo(model.mitigations, threat.id)
+    .filter(({ title, prose }) => title === '' && prose === '')
+    .map((mitigation): Divergence => ({
+      subject: { kind: 'mitigation', id: mitigation.id },
+      detail: `the mitigation with no title and no text, which writes nothing into the text of the threat "${threat.id}"`,
+      reason: 'unrepresentable',
+    }));
 }
 
 function lostStatuses(threat: Threat, model: Model): Divergence[] {

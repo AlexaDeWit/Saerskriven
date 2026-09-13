@@ -26,7 +26,7 @@ const badgeTone = (node: Locator): Locator =>
   node.locator('.pn-badge-primary circle');
 
 const titleField = (page: Page): Locator =>
-  threatPanel(page).getByRole('textbox', { name: 'Title' });
+  threatPanel(page).getByRole('textbox', { name: 'Title', exact: true });
 
 const boxOf = async (locator: Locator): Promise<Record<string, number>> => {
   const box = await locator.boundingBox();
@@ -241,7 +241,7 @@ test('a title edited in the panel is one undo step', async ({ page }) => {
   await selectNode(page, /^Écluse Dredger, process/u);
   await disclosure(page, /Massive Purge DoS/u).click();
 
-  const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
+  const title = titleField(page);
   await title.click();
   await page.keyboard.press('ControlOrMeta+a');
   await page.keyboard.type('Massive purge denial of service');
@@ -311,15 +311,17 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     'The queue accepts a job nobody enqueued.',
   );
 
-  for (const [group, control] of [
-    ['Mitigations', 'Add mitigation'],
-    ['Assumptions', 'Add assumption'],
+  for (const [group, role, control] of [
+    ['Mitigations', 'button', 'Add mitigation'],
+    ['Mitigations', 'combobox', 'Existing mitigation'],
+    ['Mitigations', 'button', 'Link existing mitigation'],
+    ['Assumptions', 'button', 'Add assumption'],
   ] as const) {
     await page.keyboard.press('Tab');
     await expect(
       threatPanel(page)
         .getByRole('group', { name: group })
-        .getByRole('button', { name: control }),
+        .getByRole(role, { name: control, exact: true }),
     ).toBeFocused();
   }
 
@@ -521,7 +523,7 @@ test('long titles and fields remain usable in a narrow viewport', async ({
     panel.getByRole('combobox', { name: 'Severity' }),
   );
   const desktopStatus = await boxOf(
-    panel.getByRole('combobox', { name: 'Status' }),
+    panel.getByRole('combobox', { name: 'Status', exact: true }),
   );
   expect(desktopStatus.top).toBe(desktopSeverity.top);
   await titleField(page).fill('A long threat title '.repeat(15));
@@ -537,7 +539,9 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   const severity = await boxOf(
     panel.getByRole('combobox', { name: 'Severity' }),
   );
-  const status = await boxOf(panel.getByRole('combobox', { name: 'Status' }));
+  const status = await boxOf(
+    panel.getByRole('combobox', { name: 'Status', exact: true }),
+  );
   expect(status.top).toBeGreaterThan(severity.top);
   const longSummary = disclosure(page, /A long threat title/u);
   await longSummary.scrollIntoViewIfNeeded();

@@ -1022,7 +1022,7 @@
       },
       "severity": "medium",
       "status": "open",
-      "description": "An agent saving a model with mitigations and assumptions into Threat Dragon's format loses both, since that format keeps no record of either. An agent that is not told cannot tell the person who asked.",
+      "description": "An agent saving a model into Threat Dragon's format loses its assumptions, which that format keeps no record of, and flattens its mitigations into one text per threat, which loses their titles, their statuses and which threats share them. An agent that is not told cannot tell the person who asked.",
       "mitigation": "Nothing is built. The divergence list that names every such loss is on main, and `renderDivergences` already turns it into lines for a person. Issue #48 requires that report to reach the tool result on a lossy write, which is what remains.",
       "elements": [
         "el-mcp",

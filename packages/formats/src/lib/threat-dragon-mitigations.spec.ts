@@ -117,6 +117,31 @@ describe('flattening the records of a threat into its one text', () => {
     ]);
   });
 
+  it('writes a lone titled record as its title line and prose, and reports the title narrowed', () => {
+    const written = writtenOnto(
+      withRecords([
+        record('mitigation-limit', ['threat-open'], {
+          title: 'Rate limit',
+          prose: 'At the edge.',
+        }),
+      ]),
+    );
+    expect(written.texts['threat-open']).toBe('Rate limit\nAt the edge.');
+    expect(about(written.divergences, 'narrowed')).toEqual([
+      'threat threat-open',
+    ]);
+  });
+
+  it('reports a record with no title and no text, which writes nothing', () => {
+    const written = writtenOnto(
+      withRecords([record('mitigation-empty', ['threat-open'], { prose: '' })]),
+    );
+    expect(written.texts['threat-open']).toBe('');
+    expect(about(written.divergences, 'unrepresentable')).toEqual([
+      'mitigation mitigation-empty',
+    ]);
+  });
+
   it('writes a record shared by two threats into both, and reports it split', () => {
     const written = writtenOnto(
       withRecords([

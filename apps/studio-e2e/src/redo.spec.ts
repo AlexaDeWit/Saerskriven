@@ -30,7 +30,10 @@ test('redo puts back an edit undone on the canvas and one undone in the panel', 
     name: /Massive Purge DoS/u,
   });
   await disclosure.click();
-  const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
+  const title = threatPanel(page).getByRole('textbox', {
+    name: 'Title',
+    exact: true,
+  });
   await title.click();
   await page.keyboard.press('ControlOrMeta+a');
   await page.keyboard.type(retitled);
