@@ -125,7 +125,9 @@ functions the groups read.
   commits it, and the control reads Unlink by the time it has focus: to
   discard from the keyboard, clear the text first.
 - **Link existing** offers the model's records of that kind that are not on
-  this threat, by title or first line of text, and links the one chosen.
+  this threat, by title or first line of text, and links the one chosen. A
+  long first line is drawn cut to two lines, and the option's accessible name
+  is the whole line.
 - Each row edits the record's text in place, changes its status in place and
   unlinks it. A record on other threats says how many, and the unlink
   control is described by that count. Unlinking a record from its last
@@ -247,7 +249,8 @@ is in it.
   reached through a threat, and removing one means unlinking it from every
   threat it is on. The model's explicit remove operations have no control.
 - Link existing lists every unlinked record of its kind, with no search or
-  filter over them.
+  filter over them. Two records whose first lines agree past the cut look
+  alike in the list, and differ only in their accessible names.
 - Markdown is edited as its source. A preview beside the prose is deferred
   with the rest of the rendering surface.
 - A shared threat lists its attached elements by name. The list is read-only,

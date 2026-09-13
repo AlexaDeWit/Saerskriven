@@ -13,6 +13,8 @@ const proxy = /^Écluse proxy, process/u;
 
 const forwarded = /Forwarded caller credentials/u;
 
+const freshness = /^The freshness quarantine/u;
+
 const unbacked = 'mitigated-without-implemented-work';
 
 const invalidated = 'rests-on-invalidated-assumption';
@@ -88,8 +90,11 @@ test('collapsed counts follow records linked and unlinked from the expanded view
   await namesItsParts(summary);
 
   await expandThreat(page, forwarded);
+  await chooseInPanel(page, 'Existing mitigation', freshness);
   await panelControl(page, 'Link existing mitigation').click();
-  await expect(panelField(page, 'textbox', 'Mitigation 3 title')).toBeVisible();
+  await expect(
+    panelField(page, 'textbox', 'Mitigation 2 description'),
+  ).toHaveValue(freshness);
   await collapse(page, forwarded);
   await expect.poll(() => countOf(summary, 'mitigations')).toBe(3);
 

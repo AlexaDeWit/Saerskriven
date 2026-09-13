@@ -156,4 +156,46 @@ describe('EnumField', () => {
 
     expect(onCommit).toHaveBeenCalledTimes(0);
   });
+
+  it('sizes the open listbox to the box the field scrolls in, not the viewport', async () => {
+    const user = userEvent.setup();
+    render(
+      <div data-testid="scroll-box" style={{ overflowY: 'auto' }}>
+        <EnumField
+          label="Rank"
+          onCommit={noop}
+          options={options}
+          value="first"
+        />
+      </div>,
+    );
+    const box = screen.getByTestId('scroll-box');
+    const room = { x: 0, y: 0, width: 300, height: 120 };
+    const viewport = document.documentElement;
+    Object.defineProperties(viewport, {
+      clientWidth: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 1000 },
+    });
+    onTestFinished(() => {
+      Reflect.deleteProperty(viewport, 'clientWidth');
+      Reflect.deleteProperty(viewport, 'clientHeight');
+    });
+    box.getBoundingClientRect = () => DOMRect.fromRect(room);
+    Object.defineProperties(box, {
+      clientWidth: { value: room.width },
+      clientHeight: { value: room.height },
+    });
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    const placed = screen.getByRole('listbox').parentElement;
+    const available = (): number =>
+      Number.parseFloat(
+        placed?.style.getPropertyValue('--radix-popper-available-height') ?? '',
+      );
+    await vi.waitFor(() => {
+      expect(available()).toBeLessThanOrEqual(room.height);
+    });
+  });
 });

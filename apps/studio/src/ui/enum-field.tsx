@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useCallback, useId, useState } from 'react';
 import { Select } from 'radix-ui';
 
 import styles from './enum-field.module.css';
@@ -16,6 +16,13 @@ export function enumCommitter<Value extends string>(
   };
 }
 
+function scrollBox(element: Element | null): Element | null {
+  const parent = element?.parentElement ?? null;
+  return parent === null || getComputedStyle(parent).overflowY !== 'visible'
+    ? parent
+    : scrollBox(parent);
+}
+
 function listed(named: string, label: string, selected: boolean) {
   return (
     <Select.Item
@@ -24,7 +31,9 @@ function listed(named: string, label: string, selected: boolean) {
       value={named}
       tabIndex={selected ? 0 : -1}
     >
-      <Select.ItemText>{label}</Select.ItemText>
+      <Select.ItemText>
+        <span className={styles.text}>{label}</span>
+      </Select.ItemText>
       <Select.ItemIndicator className={styles.indicator}>
         ✓
       </Select.ItemIndicator>
@@ -54,7 +63,11 @@ export type EnumFieldProps<Value extends string> = {
   readonly onCommit: (chosen: Value) => void;
 };
 
-/** A labelled listbox that commits one choice and keeps its overlay within the containing landmark. */
+/**
+ * A labelled listbox that commits one choice. Its overlay stays in the DOM
+ * of the containing landmark, and is placed and sized within the box the
+ * field scrolls in, so it opens clear of whatever is drawn over that box.
+ */
 export function EnumField<Value extends string>({
   label,
   value,
@@ -64,6 +77,11 @@ export function EnumField<Value extends string>({
   onCommit,
 }: EnumFieldProps<Value>) {
   const triggerId = useId();
+  const [boundary, setBoundary] = useState<Element[]>([]);
+  const bound = useCallback((trigger: HTMLButtonElement | null) => {
+    const box = scrollBox(trigger);
+    setBoundary(box === null ? [] : [box]);
+  }, []);
   const item = (option: Value) =>
     listed(option, labelOf?.(option) ?? option, option === value);
 
@@ -76,11 +94,15 @@ export function EnumField<Value extends string>({
         onValueChange={enumCommitter(options, onCommit)}
         value={value}
       >
-        <Select.Trigger className={styles.trigger} id={triggerId}>
+        <Select.Trigger className={styles.trigger} id={triggerId} ref={bound}>
           <Select.Value />
           <Select.Icon className={styles.icon}>▾</Select.Icon>
         </Select.Trigger>
-        <Select.Content className={styles.content} position="popper">
+        <Select.Content
+          className={styles.content}
+          collisionBoundary={boundary}
+          position="popper"
+        >
           <Select.Viewport className={styles.viewport}>
             {groupOf === undefined
               ? options.map(item)

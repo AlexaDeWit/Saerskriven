@@ -111,8 +111,13 @@ the page at rest and every open overlay in its own scope.
 
 A control takes its value as a prop and reports an edit through one commit
 callback, so the edit becomes a store action and is undoable. No form library
-holds it and no control holds model state of its own. `EnumField` accepts a `labelOf` function when an option stores an ID but shows
-a name. Its listbox stays within the available viewport. It is the
+holds it and no control holds model state of its own. `EnumField` accepts a
+`labelOf` function when an option stores an ID but shows a name. The trigger
+and each option draw at most two lines of their label and end in an ellipsis,
+so a long label cannot grow the trigger past the room its listbox needs. The
+accessible name is still the whole label. The listbox is placed and sized
+within the box the field scrolls in, the panel body, so it opens clear of the
+chrome card and the pane header and inside the viewport. It is the
 worked example, and `SeverityField`, `StatusField` and `CategoryField` are it
 three times: each reads its options from a model schema, so the field offers
 what the model names and nothing else, and each hands its committed value to
