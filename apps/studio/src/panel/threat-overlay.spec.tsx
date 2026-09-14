@@ -222,6 +222,32 @@ describe('ThreatOverlay', () => {
     expect(modelStore.getState().selection).toEqual([]);
   });
 
+  it('widens the model properties pane, and keeps a refused draft through closing and opening them again', async () => {
+    const user = userEvent.setup();
+    render(<ThreatOverlay />);
+    showModelProperties();
+    await user.click(screen.getByRole('button', { name: 'Widen pane' }));
+    expect(
+      screen
+        .getByRole('button', { name: 'Restore pane width' })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+
+    await user.click(screen.getByRole('textbox', { name: 'Description' }));
+    await user.keyboard(`Pasted${softHyphen}prose`);
+    await user.click(screen.getByRole('textbox', { name: 'Title' }));
+    act(() => {
+      dispatch(Action.HideModelProperties());
+    });
+    showModelProperties();
+
+    expect(
+      screen
+        .getByDisplayValue(`Pasted${softHyphen}prose`)
+        .getAttribute('aria-invalid'),
+    ).toBe('true');
+  });
+
   it('gives way to the selection panel when an element is selected', () => {
     render(<ThreatOverlay />);
     act(() => {

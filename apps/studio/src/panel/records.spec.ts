@@ -89,6 +89,12 @@ describe('the model as a record target', () => {
 
   it('describes a row by where else its record is referenced', () => {
     expect(modelTarget.elsewhere(applying)).toContain('1');
+    expect(
+      modelTarget.elsewhere({
+        ...applying,
+        threats: [firstThreat, secondThreat],
+      }),
+    ).toMatch(/2 threats/u);
     expect(modelTarget.elsewhere({ ...applying, threats: [] })).toBeUndefined();
     expect(
       threatTarget(assumptionKind, firstThreat).elsewhere(applying),
