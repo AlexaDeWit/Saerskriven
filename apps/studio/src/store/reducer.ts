@@ -3,12 +3,15 @@ import {
   addDiagram,
   addMitigation,
   linkAssumption,
+  linkAssumptionToModel,
   linkMitigation,
   replaceAssumption,
   replaceMitigation,
   setAssumptionStatus,
+  setModelMetadata,
   setMitigationStatus,
   unlinkAssumption,
+  unlinkAssumptionFromModel,
   unlinkMitigation,
   addElement,
   setElementProperties,
@@ -128,18 +131,25 @@ export function reduce(state: State, action: Action): State {
       edited(state, unlinkAssumption(state.present, assumptionId, threatId)),
     SetAssumptionStatus: ({ assumptionId, status }) =>
       edited(state, setAssumptionStatus(state.present, assumptionId, status)),
+    LinkAssumptionToModel: ({ assumptionId }) =>
+      edited(state, linkAssumptionToModel(state.present, assumptionId)),
+    UnlinkAssumptionFromModel: ({ assumptionId }) =>
+      edited(state, unlinkAssumptionFromModel(state.present, assumptionId)),
+    SetModelMetadata: ({ change }) =>
+      edited(state, setModelMetadata(state.present, change)),
     AddDiagram: ({ diagram }) => addedDiagram(state, diagram),
     RenameDiagram: ({ diagramId, title }) =>
       edited(state, renameDiagram(state.present, diagramId, title)),
     Undo: () => undone(state),
     Redo: () => redone(state),
     SelectDiagram: ({ diagramId }) => selectedDiagram(state, diagramId),
-    Select: ({ elementIds }) => {
-      const selection = [...new Set(elementIds)];
-      return sameSelection(state.selection, selection)
+    Select: ({ elementIds }) => withSelection(state, elementIds),
+    ShowModelProperties: () =>
+      state.modelProperties && state.selection.length === 0
         ? state
-        : { ...state, selection };
-    },
+        : { ...state, selection: [], modelProperties: true },
+    HideModelProperties: () =>
+      state.modelProperties ? { ...state, modelProperties: false } : state,
     InlineEditing: ({ editor }) => ({ ...state, inlineEditor: editor }),
     Opened: ({ model, name, source }) => ({
       ...initialState(model),
@@ -228,6 +238,15 @@ function selectedDiagram(state: State, diagramId: DiagramId): State {
     selection: state.selection.length === 0 ? state.selection : [],
     inlineEditor: undefined,
   };
+}
+
+function withSelection(state: State, elementIds: readonly ElementId[]): State {
+  const selection = [...new Set(elementIds)];
+  const modelProperties = state.modelProperties && selection.length === 0;
+  return sameSelection(state.selection, selection) &&
+    modelProperties === state.modelProperties
+    ? state
+    : { ...state, selection, modelProperties };
 }
 
 function removedElement(state: State, elementId: ElementId): State {

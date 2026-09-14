@@ -279,6 +279,11 @@ export function drawnElement(
     : elements.get(drawn);
 }
 
+/** Focuses the canvas itself, where focus goes when a control over it closes. */
+export function focusCanvas(): void {
+  document.querySelector<HTMLElement>('.react-flow')?.focus();
+}
+
 /** Focuses a drawn element, retrying across renders until state or focus changes. */
 export function focusElement(
   elementId: ElementId,

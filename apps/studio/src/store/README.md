@@ -37,7 +37,9 @@ and no immutable snapshot to push onto a stack.
   fields. Invalid changes preserve the model and history. The mitigation and
   assumption actions (add, replace, link, unlink, set status) each carry one
   model operation, so an unlink that removes a record from its last threat
-  is one undo step. `MoveElements` and `RemoveElements`
+  is one undo step. `LinkAssumptionToModel` and `UnlinkAssumptionFromModel`
+  carry the model link the same way, and `SetModelMetadata` carries one
+  metadata change. `MoveElements` and `RemoveElements`
   fold the matching operation over one ID array before history records the
   result. `AddDiagram` appends a diagram and shows it, the one edit that
   moves the view as well as the model, since a diagram is added to be drawn
@@ -69,8 +71,11 @@ and no immutable snapshot to push onto a stack.
   the tab and the menu cannot disagree on what the model is called.
   `showingPlaceholder` identifies that opening state for the document title.
 
-The active diagram, selection, the inline editor, the last refusal, and the
-file lifecycle stay out of the undo stacks. `activeDiagram` names the
+The active diagram, selection, whether the model's properties are shown, the
+inline editor, the last refusal, and the file lifecycle stay out of the undo
+stacks. `ShowModelProperties` shows the model's properties and clears the
+selection, a `Select` naming an element hides them, and
+`HideModelProperties` hides them. `activeDiagram` names the
 diagram on screen, and nothing until one has been chosen, the first the
 model holds being on screen meanwhile. `SelectDiagram` sets it, clears the
 selection and closes the editor, since both belong to the diagram left, and
@@ -132,7 +137,8 @@ placeholder opens.
 
 `dispatch` writes each changed recoverable field before it publishes the new
 state. The reducer performs no storage work. The snapshot excludes the undo
-and redo stacks, selection, rename state, and the last failure. A restored
+and redo stacks, selection, whether the model's properties are shown, rename
+state, and the last failure. A restored
 session starts with those fields empty.
 
 Startup bounds and parses the stored text before its schema validates the
@@ -159,7 +165,8 @@ other tabs fold it into `Followed`. The result is the model, both stacks, the
 saved point, the file and whether the recovery storage holds it, sent by
 structured clone, which keeps the references the stacks and the identity-based
 dirty check share. Selection, an open field and the diagram on screen stay
-with the tab that made them, the first two trimmed to the elements the adopted
+with the tab that made them, and so does whether the model's properties are
+shown, the first two trimmed to the elements the adopted
 model still draws and the last falling back to the first diagram where the
 adopted model lacks it. A diagram switch writes the shared snapshot, so a
 reload restores the diagram whichever tab switched last, but publishes no

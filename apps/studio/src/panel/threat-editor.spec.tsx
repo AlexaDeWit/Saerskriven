@@ -10,11 +10,8 @@ import {
   storeElement,
 } from '../store/store.fixtures.js';
 import { editorTimeout } from './panel.fixtures.js';
-import {
-  ThreatEditor,
-  type RefusedField,
-  type ThreatEditorProps,
-} from './threat-editor.js';
+import type { RefusedField } from './refusals.js';
+import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
 
 const softHyphen = '­';
 

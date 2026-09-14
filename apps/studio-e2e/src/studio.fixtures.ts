@@ -306,15 +306,36 @@ export const expandThreat = async (
   await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
 };
 
-/** Chooses an option in one of the panel's listboxes, by pointer, and waits for the listbox to close. */
+/** Chooses an option in one listbox of a panel, the threat panel unless another region is named, by pointer, and waits for the listbox to close. */
 export const chooseInPanel = async (
   page: Page,
   field: string,
   option: string | RegExp,
+  region: Locator = threatPanel(page),
 ): Promise<void> => {
-  await panelField(page, 'combobox', field).click();
+  await region.getByRole('combobox', { name: field, exact: true }).click();
   await page.getByRole('option', { name: option, exact: true }).click();
   await expect(page.getByRole('listbox')).toHaveCount(0);
+};
+
+/** Scrolls a control into view and fails where it is off screen or something else covers its centre. */
+export const onScreen = async (target: Locator): Promise<void> => {
+  await target.scrollIntoViewIfNeeded();
+  await expect(target).toBeInViewport();
+  const at = await centreOf(target);
+  const reached = await target.evaluate(
+    (node, point) => node.contains(document.elementFromPoint(point.x, point.y)),
+    at,
+  );
+  expect(reached, 'the control is covered').toBe(true);
+};
+
+/** Whether the menu offers Undo, read by opening the menu and putting it away again. */
+export const undoOffered = async (page: Page): Promise<boolean> => {
+  await openMenu(page);
+  const disabled = await menuItem(page, 'Undo').getAttribute('aria-disabled');
+  await closeMenu(page);
+  return disabled !== 'true';
 };
 
 /** Reads a node position from its transform without including the selection-dependent stacking style. */

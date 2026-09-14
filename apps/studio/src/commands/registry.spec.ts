@@ -32,7 +32,7 @@ const chordsOn = (platform: (typeof platforms)[number]): string[] =>
   );
 
 describe('the command registry', () => {
-  it('leaves the import, export and diagram-switcher commands without shortcuts', () => {
+  it('leaves the import, export, diagram-switcher and model properties commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
@@ -46,6 +46,7 @@ describe('the command registry', () => {
       'export-typst',
       'export-pdf',
       'export-png',
+      'model-properties',
     ]);
   });
 

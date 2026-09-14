@@ -1,19 +1,17 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
-  centreOf,
   chooseInPanel,
-  closeMenu,
   expandThreat,
-  menuItem,
   nodeNamed,
+  onScreen,
   openEcluse,
-  openMenu,
   panelControl,
   panelField,
   runFromMenu,
   selectNode,
   threatPanel,
+  undoOffered,
 } from './studio.fixtures.js';
 
 const proxy = /^Écluse proxy, process/u;
@@ -25,17 +23,6 @@ const purge = /Dredger inappropriately purges/u;
 const forwarded = /Forwarded caller credentials/u;
 
 const chokepoint = /Chokepoint exhaustion/u;
-
-const onScreen = async (target: Locator): Promise<void> => {
-  await target.scrollIntoViewIfNeeded();
-  await expect(target).toBeInViewport();
-  const at = await centreOf(target);
-  const reached = await target.evaluate(
-    (node, point) => node.contains(document.elementFromPoint(point.x, point.y)),
-    at,
-  );
-  expect(reached, 'a record control is covered').toBe(true);
-};
 
 const offeredToLink = async (page: Page, label: string): Promise<boolean> => {
   const existing = panelField(page, 'combobox', 'Existing mitigation');
@@ -50,13 +37,6 @@ const offeredToLink = async (page: Page, label: string): Promise<boolean> => {
   await page.keyboard.press('Escape');
   await expect(page.getByRole('listbox')).toHaveCount(0);
   return found > 0;
-};
-
-const undoOffered = async (page: Page): Promise<boolean> => {
-  await openMenu(page);
-  const disabled = await menuItem(page, 'Undo').getAttribute('aria-disabled');
-  await closeMenu(page);
-  return disabled !== 'true';
 };
 
 test('a mitigation added from the empty row is one undo step, and its status changes in place', async ({

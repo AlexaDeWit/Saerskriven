@@ -16,6 +16,7 @@ import type {
   MitigationId,
   MitigationStatus,
   Model,
+  ModelMetadataChange,
   Point,
   Side,
   Size,
@@ -101,12 +102,17 @@ export type Action = Data.TaggedEnum<{
     readonly assumptionId: AssumptionId;
     readonly status: AssumptionStatus;
   };
+  LinkAssumptionToModel: { readonly assumptionId: AssumptionId };
+  UnlinkAssumptionFromModel: { readonly assumptionId: AssumptionId };
+  SetModelMetadata: { readonly change: ModelMetadataChange };
   AddDiagram: { readonly diagram: Diagram };
   RenameDiagram: { readonly diagramId: DiagramId; readonly title: string };
   Undo: {};
   Redo: {};
   SelectDiagram: { readonly diagramId: DiagramId };
   Select: { readonly elementIds: readonly ElementId[] };
+  ShowModelProperties: {};
+  HideModelProperties: {};
   InlineEditing: { readonly editor: InlineEditor | undefined };
   Opened: {
     readonly model: Model;

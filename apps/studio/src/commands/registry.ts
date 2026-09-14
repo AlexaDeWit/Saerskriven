@@ -22,7 +22,10 @@ import {
   toggleFlowDirection,
 } from '../canvas/edits.js';
 import { selectTool, type Tool } from '../canvas/tools.js';
-import { focusThreatPanel } from '../panel/panel-focus.js';
+import {
+  focusThreatPanel,
+  requestModelPropertiesFocus,
+} from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
 import { severalDiagrams } from '../store/selectors.js';
 import type { State } from '../store/state.js';
@@ -499,6 +502,18 @@ const table = {
     inTextFields: false,
     dispatch: runs(() => {
       renameSelected();
+    }),
+  },
+  'model-properties': {
+    id: 'model-properties',
+    label: 'Model properties',
+    group: 'Edit',
+    shortcuts: [],
+    when: 'From the menu. Clears the canvas selection',
+    inTextFields: false,
+    dispatch: runs(() => {
+      requestModelPropertiesFocus();
+      dispatch(Action.ShowModelProperties());
     }),
   },
   'focus-threats': {

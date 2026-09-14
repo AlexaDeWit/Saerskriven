@@ -41,6 +41,7 @@ import {
   vendoredFile,
   type SpecBridge,
 } from './files.fixtures.js';
+import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports, StudioMenu } from './menu.js';
 
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
@@ -439,6 +440,44 @@ describe('what the studio says about the file', () => {
     expect(modelStore.getState().inlineEditor).toEqual({
       kind: 'name',
       elementId: actorElement,
+    });
+  });
+
+  it('shows the model properties from the menu, clearing the selection', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+
+    await choose(user, 'Model properties');
+
+    expect(modelStore.getState()).toMatchObject({
+      selection: [],
+      modelProperties: true,
+    });
+  });
+
+  it('hands focus to the model properties Title as the menu closes on Model properties, and only that once', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Menu bridge={specBridge()} />
+        <ThreatOverlay />
+      </>,
+    );
+
+    await choose(user, 'Model properties');
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole('textbox', { name: 'Title' }),
+      );
+    });
+    await openMenu(user);
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(document.activeElement).toBe(burger());
     });
   });
 

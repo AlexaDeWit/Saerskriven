@@ -14,7 +14,7 @@ import { activeDiagramId } from '../store/selectors.js';
 import { FileLifecycle, type State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
-import { focusElement, removeSelected } from './edits.js';
+import { focusCanvas, focusElement, removeSelected } from './edits.js';
 
 const marker = '# Saerskriven selection v1\n';
 let lastPaste = '';
@@ -148,7 +148,7 @@ export async function copySelected(cut = false): Promise<void> {
     announce(
       `Cut selection. Copied ${copy.right.report} Original threats remain in the register. Other attached flows retain free endpoints.`,
     );
-    document.querySelector<HTMLElement>('.react-flow')?.focus();
+    focusCanvas();
   } else {
     announce(
       `Copied ${copy.right.report}${cut ? ' The selection changed while copying. Nothing was cut.' : ''}`,

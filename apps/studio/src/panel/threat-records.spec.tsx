@@ -16,8 +16,14 @@ import {
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { chooseFrom, editorTimeout } from './panel.fixtures.js';
-import { ThreatEditor, type RefusedField } from './threat-editor.js';
+import {
+  chooseFrom,
+  editorTimeout,
+  present,
+  undoable,
+} from './panel.fixtures.js';
+import type { RefusedField } from './refusals.js';
+import { ThreatEditor } from './threat-editor.js';
 
 const softHyphen = '­';
 
@@ -54,10 +60,6 @@ const button = (name: string): HTMLElement =>
 
 const textbox = (name: string): HTMLElement =>
   screen.getByRole('textbox', { name });
-
-const present = () => modelStore.getState().present;
-
-const undoable = () => modelStore.getState().past.length;
 
 describe(
   'the records of a threat',
@@ -176,6 +178,31 @@ describe(
       expect(present().assumptions).toMatchObject([
         { id: firstAssumption, threats: [secondThreat] },
       ]);
+    });
+
+    it('describes the unlink control of an assumption that also applies to the model, and keeps that assumption in the model when it leaves its only threat', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(firstThreat));
+      const unlink = button('Unlink assumption 1');
+      expect(unlink.getAttribute('aria-describedby')).toBeNull();
+
+      act(() => {
+        dispatch(
+          Action.LinkAssumptionToModel({ assumptionId: firstAssumption }),
+        );
+      });
+      expect(
+        document.getElementById(unlink.getAttribute('aria-describedby') ?? ''),
+      ).not.toBeNull();
+
+      await user.click(unlink);
+
+      expect(present().assumptions).toMatchObject([
+        { id: firstAssumption, threats: [], appliesToModel: true },
+      ]);
+      expect(currentAnnouncement().message).toContain(
+        recordedModel.assumptions[0].prose,
+      );
     });
 
     it('offers to link only records not on the threat, and names how many other threats hold a linked one', async () => {
