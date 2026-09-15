@@ -413,6 +413,41 @@ describe(
       expect(assumptionRows()).toEqual([firstAssumption, added]);
     });
 
+    it('gives a row brought back by undoing its unlink its old slot', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+      await user.click(button('Link existing assumption'));
+      await user.click(button('Add assumption'));
+      await user.keyboard('Share links expire.');
+      await user.tab();
+      const added = present().assumptions.at(-1)?.id;
+      expect(assumptionRows()).toEqual([firstAssumption, added]);
+
+      await user.click(button('Unlink assumption 1'));
+      expect(assumptionRows()).toEqual([added]);
+      act(() => {
+        dispatch(Action.Undo());
+      });
+
+      expect(assumptionRows()).toEqual([firstAssumption, added]);
+    });
+
+    it('gives a record linked again after its unlink its old slot', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+      await user.click(button('Link existing assumption'));
+      await user.click(button('Add assumption'));
+      await user.keyboard('Share links expire.');
+      await user.tab();
+      const added = present().assumptions.at(-1)?.id;
+
+      await user.click(button('Unlink assumption 1'));
+      await user.click(button('Link existing assumption'));
+
+      expect(assumptionRows()).toEqual([firstAssumption, added]);
+      expect(document.activeElement).toBe(textbox('Assumption 1'));
+    });
+
     it('puts a held mitigation draft back in its empty row', () => {
       showRecords(threatOf(secondThreat), {
         field: 'new-mitigation/title/mitigation-drafted',

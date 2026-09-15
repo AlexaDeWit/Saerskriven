@@ -93,7 +93,7 @@ test('collapsed counts follow records linked and unlinked from the expanded view
   await chooseInPanel(page, 'Existing mitigation', freshness);
   await panelControl(page, 'Link existing mitigation').click();
   await expect(
-    panelField(page, 'textbox', 'Mitigation 2 description'),
+    panelField(page, 'textbox', 'Mitigation 3 description'),
   ).toHaveValue(freshness);
   await collapse(page, forwarded);
   await expect.poll(() => countOf(summary, 'mitigations')).toBe(3);

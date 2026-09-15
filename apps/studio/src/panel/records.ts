@@ -220,18 +220,26 @@ export function linkableRecords<Held extends ThreatRecord>(
 }
 
 /**
- * `rows` with those whose ids `shown` names first, in that order, and the
- * rest after them in the order given, so a row that arrives while a group is
- * mounted lands after the rows already on screen.
+ * `rows` in the order of the ids a group has shown, and that order with the
+ * ids of rows it has not shown before appended. A shown id whose row is gone
+ * keeps its slot, so the row takes it back when it returns. The order comes
+ * back as `shown` itself when no row is new.
  */
 export function inShownOrder<Row extends { readonly id: string }>(
   rows: readonly Row[],
   shown: readonly string[],
-): readonly Row[] {
-  return [
-    ...shown.flatMap((id) => rows.filter((row) => row.id === id)),
-    ...rows.filter(({ id }) => !shown.includes(id)),
-  ];
+): { readonly rows: readonly Row[]; readonly shown: readonly string[] } {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const known = new Set(shown);
+  const arrived = [...byId.keys()].filter((id) => !known.has(id));
+  const order =
+    arrived.length === 0 && known.size === shown.length
+      ? shown
+      : [...known, ...arrived];
+  return {
+    rows: order.flatMap((id) => byId.get(id) ?? []),
+    shown: order,
+  };
 }
 
 /**
