@@ -361,8 +361,9 @@ browser and a process that keeps no session, so read the file in the same turn
 you edit it. What the format cannot hold comes back in the result's
 divergences rather than as a refusal. A Threat Dragon file keeps no assumption
 and one mitigation text per threat, so a write to one reports every assumption,
-and each mitigation status, title, merge of several records into one text and
-record shared by several threats that the text cannot give back.
+and each mitigation status, title, merge of several records into one text,
+mitigation with neither title nor text, or record shared by several threats or
+linked to none the format holds, that the text cannot give back.
 
 `saer_create` writes a new model in the native YAML format at version 2, and
 `saer_import` converts an OTM or TM-BOM file into one. Both refuse a path that

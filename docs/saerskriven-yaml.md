@@ -39,9 +39,9 @@ something. A flow's `bidirectional` is absent where the read takes the flow as
 one way. An attached endpoint's `side`, one of `top`, `right`, `bottom` and
 `left`, pins the end to that side of its element, and absent leaves the side to
 the renderer. A write states `bidirectional` on every flow and `side` on every
-pinned end. The security facts below are optional too, with absence meaning
-unknown. What a key added later costs the format is under `formatVersion`
-below.
+pinned end. The security facts and declared relationships below are optional
+from the first release too, with absence meaning unknown. What a key added
+later costs the format is under `formatVersion` below.
 
 That order is three tiers, so a key added to the format later has an obvious
 home rather than an argued one. The header comes first, `formatVersion` and
@@ -70,8 +70,7 @@ A change to the format is additive when the absence of what it adds means
 something. A new key is then optional on read, the mapping in
 `@saerskriven/formats` supplies what its absence means, a write states it
 wherever the model holds a value for it, and `formatVersion` stays where it
-is. Optional security facts and declared relationships follow the same additive
-contract, with absence meaning unknown.
+is.
 
 A new value in an enumerated vocabulary is additive too: the version stays
 where it is, and every file that does not use the value reads and writes as

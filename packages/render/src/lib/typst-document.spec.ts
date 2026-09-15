@@ -346,6 +346,8 @@ describe("a threat's flags", () => {
         threatOf({ number: 2 }),
       ],
     });
+    expect(source).toContain('#"Threat 1: ');
+    expect(source).toContain('#"Threat 2: ');
     const flagsOf = (heading: string): string =>
       between(source.slice(source.indexOf(heading)), '#strong[#"Flags"]', '\n');
     const flagged = flagsOf('#"Threat 1: ');
