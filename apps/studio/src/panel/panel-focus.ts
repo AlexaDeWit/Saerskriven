@@ -1,8 +1,10 @@
+import { focusCanvas } from '../canvas/edits.js';
+import { Action } from '../store/actions.js';
+import { dispatch, modelStore } from '../store/store.js';
+
 let take: (() => boolean) | undefined;
 
-let modelPropertiesRequested = false;
-
-let focusTitle: (() => void) | undefined;
+let titleRequested = false;
 
 /**
  * Registers what moves focus into the threat panel, and hands back the
@@ -28,35 +30,28 @@ export function focusThreatPanel(): boolean {
 }
 
 /**
- * Notes that the model's properties were just opened on request, so the menu
- * that ran the command hands focus to their Title as it closes rather than
- * back to its own button.
+ * Opens the model's properties with focus in their Title, clearing the canvas
+ * selection, or closes them with focus on the canvas where they already show.
  */
-export function requestModelPropertiesFocus(): void {
-  modelPropertiesRequested = true;
-}
-
-/** Registers what focuses the model properties' Title while the panel is mounted, and hands back the removal. */
-export function modelPropertiesFocusHandler(handler: () => void): () => void {
-  focusTitle = handler;
-  return () => {
-    if (focusTitle === handler) {
-      focusTitle = undefined;
-    }
-  };
-}
-
-/**
- * Focuses the model properties' Title where a request is pending and the
- * panel is mounted, and reports whether it did. The request is spent either
- * way, so a later menu close leaves focus to the menu.
- */
-export function focusRequestedModelProperties(): boolean {
-  const requested = modelPropertiesRequested;
-  modelPropertiesRequested = false;
-  if (!requested || focusTitle === undefined) {
-    return false;
+export function toggleModelProperties(): void {
+  if (modelStore.getState().modelProperties) {
+    hideModelProperties();
+    return;
   }
-  focusTitle();
-  return true;
+  titleRequested = true;
+  dispatch(Action.ShowModelProperties());
+}
+
+/** Closes the model's properties and hands focus to the canvas. */
+export function hideModelProperties(): void {
+  dispatch(Action.HideModelProperties());
+  focusCanvas();
+}
+
+/** Focuses the Title through `focusTitle` where {@link toggleModelProperties} opened the panel now mounting. */
+export function takeModelPropertiesFocus(focusTitle: () => void): void {
+  if (titleRequested) {
+    titleRequested = false;
+    focusTitle();
+  }
 }

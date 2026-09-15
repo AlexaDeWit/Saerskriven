@@ -1,5 +1,6 @@
 import { initialState, placeholderModel } from '../store/state.js';
 import {
+  actorElement,
   mainDiagram,
   newProcess,
   sampleModel,
@@ -32,7 +33,7 @@ const chordsOn = (platform: (typeof platforms)[number]): string[] =>
   );
 
 describe('the command registry', () => {
-  it('leaves the import, export, diagram-switcher and model properties commands without shortcuts', () => {
+  it('leaves the import, export and diagram-switcher commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
@@ -46,7 +47,6 @@ describe('the command registry', () => {
       'export-typst',
       'export-pdf',
       'export-png',
-      'model-properties',
     ]);
   });
 
@@ -157,6 +157,44 @@ describe('commandFor', () => {
     ).toBe(command);
   });
 
+  it('gives M to Model properties alone, unshifted and unmodified, on either platform', () => {
+    const press = {
+      key: 'm',
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      altKey: false,
+    };
+    for (const platform of platforms) {
+      expect(
+        commands
+          .filter((command) =>
+            shortcutsOn(command.shortcuts, platform).some(
+              (chord) => chord.key === 'm',
+            ),
+          )
+          .map((command) => command.id),
+      ).toEqual(['model-properties']);
+      expect(commandFor(press, platform)?.id).toBe('model-properties');
+      expect(commandFor({ ...press, key: 'M' }, platform)?.id).toBe(
+        'model-properties',
+      );
+      expect(
+        commandFor({ ...press, key: 'M', shiftKey: true }, platform),
+      ).toBeUndefined();
+      expect(
+        commandFor(
+          {
+            ...press,
+            ctrlKey: platform === 'other',
+            metaKey: platform === 'apple',
+          },
+          platform,
+        ),
+      ).toBeUndefined();
+    }
+  });
+
   it('maps T to the threat panel', () => {
     expect(
       commandFor(
@@ -259,6 +297,23 @@ describe('runCommand', () => {
 
     expect(asked).toBe(true);
     release();
+  });
+
+  it('opens the model properties with a selection cleared, and closes them when they show', () => {
+    const recording = recordingSurface();
+    modelStore.setState(initialState(sampleModel), true);
+    dispatch(Action.Select({ elementIds: [actorElement] }));
+
+    runCommand(commandById('model-properties'), recording.surface);
+    expect(modelStore.getState()).toMatchObject({
+      selection: [],
+      modelProperties: true,
+    });
+
+    runCommand(commandById('model-properties'), recording.surface);
+    expect(modelStore.getState().modelProperties).toBe(false);
+    expect(modelStore.getState().past).toEqual([]);
+    expect(recording.asked).toEqual([]);
   });
 
   it('announces only completed history moves', () => {

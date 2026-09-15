@@ -2,12 +2,11 @@ import type { ElementPropertyDrafts } from './element-properties.js';
 import type { ElementId } from '@saerskriven/model';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { focusCanvas, focusElement } from '../canvas/edits.js';
-import { Action } from '../store/actions.js';
+import { focusElement } from '../canvas/edits.js';
 import { selectedElements } from '../store/selectors.js';
-import { dispatch, useModelStore } from '../store/store.js';
+import { useModelStore } from '../store/store.js';
 import { ModelPropertiesPanel } from './model-properties.js';
-import { panelFocusHandler } from './panel-focus.js';
+import { hideModelProperties, panelFocusHandler } from './panel-focus.js';
 import type { RefusedField } from './refusals.js';
 import { ThreatPanel, type HeldDraft } from './threat-panel.js';
 import { openFileName, panelSubject } from './threats.js';
@@ -25,11 +24,6 @@ const freshHeld = (file: string | undefined): Held => ({
   propertyDrafts: new Map(),
   model: undefined,
 });
-
-const hideModelProperties = (): void => {
-  dispatch(Action.HideModelProperties());
-  focusCanvas();
-};
 
 /** Draws the pane for the selection or the model's properties, retaining drafts and pane width across both. Canvas-only parent renders do not rerender the pane. */
 export const ThreatOverlay = memo(function ThreatOverlay({

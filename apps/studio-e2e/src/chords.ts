@@ -38,7 +38,7 @@ export const registeredChords = {
   redo: ['ControlOrMeta+Shift+z', 'Control+y'],
   delete: ['Delete', 'Backspace'],
   rename: ['F2'],
-  'model-properties': [],
+  'model-properties': ['m'],
   'focus-threats': ['t'],
   'select-all': ['ControlOrMeta+a'],
   'fit-to-view': ['ControlOrMeta+0'],

@@ -1,5 +1,4 @@
 import { focusSelectionControl } from '../canvas/selection-control.js';
-import { focusRequestedModelProperties } from '../panel/panel-focus.js';
 import { useSnap } from '../canvas/snap.js';
 import { ExternalLinkIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from 'radix-ui';
@@ -212,7 +211,7 @@ function MenuPanel({
     <DropdownMenu.Content
       tabIndex={0}
       onCloseAutoFocus={(event) => {
-        if (focusSelectionControl() || focusRequestedModelProperties()) {
+        if (focusSelectionControl()) {
           event.preventDefault();
         }
       }}
