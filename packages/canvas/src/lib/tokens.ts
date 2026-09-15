@@ -182,7 +182,8 @@ export const cueWidths = {
 /**
  * A square resize handle in the interactive canvas, in pixels at full zoom:
  * `size` is its side inside React Flow's 1px `border`, and `badgeGap` is how
- * far a handle beside a threat badge keeps from the badge's ink.
+ * far a handle beside a threat badge keeps from the badge's ink, on screen at
+ * every zoom.
  */
 export const resizeHandle = {
   size: 9,

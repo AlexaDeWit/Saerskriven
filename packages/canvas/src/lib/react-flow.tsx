@@ -196,9 +196,10 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * controls. A boundary curve carries none because the model has no extent.
  * The badge draws in a layer of its own after the controls, so a canvas can
  * stack it above the selection frame. On an element with a badge, the
- * top-right corner control sits on the top edge a `resizeHandle.badgeGap` left
- * of the badge's ink, growing away from it as React Flow scales it up at low
- * zoom, and never passes the top-left control.
+ * top-right corner control sits on the top edge left of the badge's ink. The
+ * `resizeHandle.badgeGap` is scaled with the control, so it holds on screen as
+ * React Flow scales the control up at low zoom. In diagram units at full zoom
+ * it stays clear of the top-left control.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
@@ -389,16 +390,14 @@ function controlStyle(
     return visible ? undefined : hidden;
   }
   const handleExtent = resizeHandle.size + 2 * resizeHandle.border;
-  const clear =
-    badgeExtent(badge).radius +
-    strokeWidths.badgeRing / 2 +
-    resizeHandle.badgeGap;
-  const beyondTopLeft = 2 * handleExtent + resizeHandle.badgeGap;
+  const gap = `${svgNumber(resizeHandle.badgeGap)}px`;
+  const reach = badgeExtent(badge).radius + strokeWidths.badgeRing / 2;
+  const beyondTopLeft = 2 * (handleExtent + resizeHandle.badgeGap);
   return {
     ...hidden,
-    left: `max(${svgNumber(beyondTopLeft)}px, calc(100% - ${svgNumber(clear)}px))`,
-    translate: '-100% -50%',
-    transformOrigin: '100% 50%',
+    left: `max(${svgNumber(beyondTopLeft)}px, calc(100% - ${svgNumber(reach)}px))`,
+    translate: `calc(-100% - ${gap}) -50%`,
+    transformOrigin: `calc(100% + ${gap}) 50%`,
   };
 }
 

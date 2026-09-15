@@ -1,15 +1,14 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { boxesOverlap, boxOf, inkBoxOf } from './canvas-geometry.fixtures.js';
+import { viewportZoom } from './commands.fixtures.js';
 import {
-  boxesOverlap,
-  boxOf,
-  inkBoxOf,
-  type Box,
-  type Point,
-} from './canvas-geometry.fixtures.js';
-import {
+  canvasSettled,
   dragBy,
+  onScreen,
   openModelDocument,
+  reachesAt,
+  screenBoxOf,
   selectNode,
   threatPanel,
   vendored,
@@ -44,23 +43,12 @@ const selectClear = async (page: Page, name: RegExp): Promise<Locator> => {
   return node;
 };
 
-const measured = async (locator: Locator): Promise<Box> => {
-  const box = await locator.boundingBox();
-  expect(box).not.toBeNull();
-  return box ?? { x: 0, y: 0, width: 0, height: 0 };
-};
+const lowZoom = 0.45;
 
-const centreOf = (box: Box): Point => ({
-  x: box.x + box.width / 2,
-  y: box.y + box.height / 2,
-});
+const onScreenGap = 2;
 
-const topmostIs = (target: Locator, at: Point): Promise<boolean> =>
-  target.evaluate(
-    (element, point) =>
-      element.contains(document.elementFromPoint(point.x, point.y)),
-    at,
-  );
+const badgeInk = (node: Locator) =>
+  inkBoxOf(node.locator('.pn-badge circle, .pn-badge path'));
 
 for (const [badge, element, name, counts] of cases) {
   test(`no corner handle of a selected element covers ${badge}`, async ({
@@ -68,14 +56,12 @@ for (const [badge, element, name, counts] of cases) {
   }) => {
     const node = await selectClear(page, name);
     await expect(node.locator('.pn-badge-primary')).toHaveCount(counts);
-    const ink = await inkBoxOf(
-      node.locator('.pn-badge').locator('circle, path'),
-    );
+    const ink = await badgeInk(node);
     const handles = node.locator('.react-flow__resize-control.handle');
     await expect(handles).toHaveCount(4);
 
     for (const handle of await handles.all()) {
-      expect(boxesOverlap(await measured(handle), ink)).toBe(false);
+      expect(boxesOverlap(await screenBoxOf(handle), ink)).toBe(false);
     }
   });
 
@@ -87,16 +73,14 @@ for (const [badge, element, name, counts] of cases) {
       content:
         '.react-flow__node.selected::after, .react-flow__resize-control.line { pointer-events: auto !important; }',
     });
-    const corner = await measured(node);
-    const ink = await inkBoxOf(
-      node.locator('.pn-badge circle, .pn-badge path'),
-    );
+    const corner = await screenBoxOf(node);
+    const ink = await badgeInk(node);
     const inside = {
       x: corner.x + corner.width - ink.width * 0.1,
       y: corner.y + ink.width * 0.17,
     };
 
-    expect(await topmostIs(node.locator('.pn-badge'), inside)).toBe(true);
+    expect(await reachesAt(node.locator('.pn-badge'), inside)).toBe(true);
   });
 
   test(`${badge} leaves every resize control of a selected element under the pointer`, async ({
@@ -107,10 +91,32 @@ for (const [badge, element, name, counts] of cases) {
     await expect(controls).toHaveCount(8);
 
     for (const control of await controls.all()) {
-      expect(await topmostIs(control, centreOf(await measured(control)))).toBe(
-        true,
-      );
+      await onScreen(control);
     }
+  });
+
+  test(`the top right handle keeps a gap from ${badge} on screen at low zoom`, async ({
+    page,
+  }) => {
+    const node = await selectClear(page, name);
+    const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
+    for (
+      let step = 0;
+      step < 10 && (await viewportZoom(page)) > lowZoom;
+      step++
+    ) {
+      await zoomOut.click();
+      await canvasSettled(page);
+    }
+    expect(await viewportZoom(page)).toBeLessThanOrEqual(lowZoom);
+    const handle = await screenBoxOf(
+      node.locator('.react-flow__resize-control.handle.top.right'),
+    );
+    const ink = await badgeInk(node);
+
+    expect(ink.x - (handle.x + handle.width)).toBeGreaterThanOrEqual(
+      onScreenGap,
+    );
   });
 
   for (const [control, offset, growsHeight] of resizeDrags) {
