@@ -207,6 +207,27 @@ describe(
       expect(present()).toBe(before);
     });
 
+    it('edits the text of an assumption that applies to the model in place as one undo step, and it still applies to the model', async () => {
+      const user = userEvent.setup();
+      applyToModel();
+      const before = present();
+      showPanel();
+
+      await user.click(textbox('Assumption 1'));
+      await user.keyboard('{End} Readers are too.');
+      await user.tab();
+
+      expect(present().assumptions).toEqual([
+        {
+          ...before.assumptions[0],
+          prose: 'Every editor is signed in. Readers are too.',
+        },
+      ]);
+      expect(undoable()).toBe(2);
+      undo();
+      expect(present()).toBe(before);
+    });
+
     it('changes a status in place as one undo step that moves no threat status', async () => {
       applyToModel();
       const before = present();

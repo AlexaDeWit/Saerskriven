@@ -31,13 +31,17 @@ order:
 | `threats`                | The threats, each attached to elements by id                              |
 | `lastIssuedThreatNumber` | The highest threat number ever issued, counting removed ones              |
 
-Every key the first release of a version declared is required and every list
-may be empty. Nothing is defaulted: a model saves before it is drawn, and it does so
-with empty strings and empty lists rather than with absent keys. Keys added by later releases are optional on read. These include a flow's `bidirectional`, absent
-where the read takes the flow as one way, and an attached endpoint's `side`,
-one of `top`, `right`, `bottom` and `left`, which pins the end to that side
-of its element and absent leaves the side to the renderer. What a key added
-later costs the format is under `formatVersion` below.
+Every key is required unless the schema marks it optional, and every list may
+be empty. Nothing is defaulted: a model saves before it is drawn, and it does so
+with empty strings and empty lists rather than with absent keys. Version 2
+declares a few keys optional from its first release, each where absence means
+something. A flow's `bidirectional` is absent where the read takes the flow as
+one way. An attached endpoint's `side`, one of `top`, `right`, `bottom` and
+`left`, pins the end to that side of its element, and absent leaves the side to
+the renderer. A write states `bidirectional` on every flow and `side` on every
+pinned end. The security facts below are optional too, with absence meaning
+unknown. What a key added later costs the format is under `formatVersion`
+below.
 
 That order is three tiers, so a key added to the format later has an obvious
 home rather than an argued one. The header comes first, `formatVersion` and
@@ -66,8 +70,7 @@ A change to the format is additive when the absence of what it adds means
 something. A new key is then optional on read, the mapping in
 `@saerskriven/formats` supplies what its absence means, a write states it
 wherever the model holds a value for it, and `formatVersion` stays where it
-is. A write states `bidirectional` on every flow and `side` on every pinned
-end. Optional security facts and declared relationships follow the same additive
+is. Optional security facts and declared relationships follow the same additive
 contract, with absence meaning unknown.
 
 A new value in an enumerated vocabulary is additive too: the version stays
@@ -106,9 +109,15 @@ A key this release does not declare is not a refusal. The read drops it and
 reports it as an `undeclared` divergence naming its path, so a file written
 by a later release of version 2 still reads here, minus what this release has
 no home for. Older releases can open extended files of their version but lose
-these new fields when saving. Use a release that understands the fields for lossless edits.
-A value this release does not declare in an enumerated vocabulary is a
-refusal, at the path of that value, as the additive rule above sets out.
+these new fields when saving. Use a release that understands the fields for
+lossless edits. A value this release does not declare in an enumerated
+vocabulary is a refusal, at the path of that value, as the additive rule above
+sets out.
+
+A record with no reference in the file, a mitigation that links no threat or an
+assumption that links no threat and does not apply to the model, is kept on
+read and not culled. Culling is edit-triggered, as the
+[model package](../packages/model/README.md) sets out.
 
 Version 2 removed two keys and added one, and the v1 to v2 migration reads a
 version 1 file in three steps over its document:
