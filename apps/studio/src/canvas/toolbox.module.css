@@ -116,3 +116,15 @@
 .message {
   margin: 0;
 }
+
+/* While a pane is open the pane leaves `--pn-announcement-slot` for the
+   announcement, two lines of it, and the message stops there rather than
+   growing over the pane's header. A named thing in it is already bounded, so
+   the cut falls on fixed words. The clamp is visual: the region still says
+   the whole message. */
+:global(:root:has([data-pane])) .message {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

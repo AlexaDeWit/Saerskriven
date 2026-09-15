@@ -35,10 +35,10 @@ The canvas is the studio's window: it fills the viewport. The chrome card, the
 threat panel and the zoom cluster float inside it instead of taking space from
 the diagram. `../app/chrome.tsx` is the card: one box centred at the top
 holding the menu button, the diagram control and the tool modes ([the file
-menu](../files/README.md)). The measured height of the card and what hangs
-under it reaches the panel location and the selection controls as
-`--pn-chrome-block-size`, so a tools row that wraps on a narrow viewport, a
-notice, or an announcement moves both down rather than covering them.
+menu](../files/README.md)). The card's measured height, and the measured
+height of the notices and flow chooser under it, reach the panel location
+and the selection controls through `--pn-pane-block-start`, which adds a
+fixed two-line slot for the announcement ([the panel](../panel/README.md)).
 
 React Flow draws the graph-paper ground at the grid spacing from the canvas
 package. The studio supplies its grid and connection-handle colours through
@@ -248,7 +248,7 @@ the region below, which speaks only for edits that landed.
   draw nothing.
 - **Start a flow.** The chord the registry gives the start-flow command opens
   the target chooser on the selected element, from wherever a person is and
-  with no flow tool ([the commands](../commands/README.md)). `CanvasMessages`
+  with no flow tool ([the commands](../commands/README.md)). `FlowTargetChooser`
   mounts the listbox under the card only while that command is in progress, so
   the arrow keys and typeahead move the choice, Enter commits and Escape
   cancels. Escape reaches
@@ -307,7 +307,7 @@ their focused control or React Flow's message instead.
 
 An announcement that names something a person wrote (an element, flow,
 diagram or record) quotes it through `quoted` in `announcements.ts`: on one
-line, in quotation marks, and past `quotedLength` characters cut to a prefix
+line, in quotation marks, and past `quotedLength` grapheme clusters cut to a prefix
 ending in an ellipsis. The accessible names on the canvas and in the panel stay whole.
 
 The status is outside the model store because it does not belong in the undo

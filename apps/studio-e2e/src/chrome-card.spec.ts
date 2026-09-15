@@ -13,6 +13,7 @@ import {
   menuButton,
   menuItem,
   nodeNamed,
+  onScreen,
   openFile,
   openMenu,
   openModel,
@@ -117,6 +118,31 @@ test('a refused read and a loss report hang under the card', async ({
   await expect(report).not.toBeEmpty();
   await below(report, card);
   await cardControlsClear(page);
+});
+
+test('a notice under the card leaves an open pane header uncovered', async ({
+  page,
+}) => {
+  await page.addInitScript(withoutPickers);
+  await openPlaceholder(page);
+  await selectByKeyboard(page, /^Actor, actor/u);
+  await expect(threatPanel(page)).toBeVisible();
+
+  await page.getByTestId('file-input').setInputFiles({
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('no threat model here'),
+  });
+  const notice = page.getByTestId('failure-notice');
+  await expect(notice).toContainText('notes.txt');
+
+  await below(threatPanel(page), await screenBoxOf(notice));
+  await onScreen(
+    threatPanel(page).getByRole('button', {
+      name: 'Close threats',
+      exact: true,
+    }),
+  );
 });
 
 type OpenedSubmenu = {

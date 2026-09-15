@@ -8,8 +8,8 @@ export type Announcement = {
 
 const nothingSaid: Announcement = { message: '', sequence: 0 };
 
-/** How many characters of a person's own text an announcement quotes before it cuts the rest. */
-export const quotedLength = 40;
+/** How many grapheme clusters of a person's own text an announcement quotes before it cuts the rest. */
+export const quotedLength = 24;
 
 const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 
@@ -26,21 +26,21 @@ export function announce(message: string): void {
 
 /**
  * A person's own text as an announcement names it: on one line, in quotation
- * marks, and cut to {@link quotedLength} characters ending in an ellipsis. A
+ * marks, and cut to {@link quotedLength} grapheme clusters ending in an ellipsis. A
  * name or a record's first line has no length limit, and the region hangs
  * over the canvas.
  */
 export function quoted(text: string): string {
-  const characters = Array.from(
+  const clusters = Array.from(
     graphemes.segment(text.replace(/\s+/gu, ' ').trim()),
     ({ segment }) => segment,
   );
-  return characters.length > quotedLength
-    ? `“${characters
+  return clusters.length > quotedLength
+    ? `“${clusters
         .slice(0, quotedLength - 1)
         .join('')
         .trimEnd()}…”`
-    : `“${characters.join('')}”`;
+    : `“${clusters.join('')}”`;
 }
 
 /** An element's own name as {@link quoted} gives it, or `unnamed` while it has none. */

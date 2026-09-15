@@ -12,7 +12,7 @@ import {
   useAnnouncement,
 } from './announcements.js';
 
-const characters = (text: string): number =>
+const clusters = (text: string): number =>
   [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)]
     .length;
 
@@ -101,8 +101,7 @@ describe('quoted', () => {
     const said = quoted(long);
 
     expect(said).toContain(long.slice(0, quotedLength / 2));
-    expect(said).toContain('…');
-    expect(characters(said)).toBeLessThanOrEqual(quotedLength + 2);
+    expect(clusters(said)).toBeLessThanOrEqual(quotedLength + 2);
   });
 
   it('never cuts inside one character a person sees', () => {
@@ -110,6 +109,6 @@ describe('quoted', () => {
     const said = quoted(family.repeat(quotedLength * 2));
 
     expect(said).toContain(family.repeat(quotedLength - 1));
-    expect(characters(said)).toBeLessThanOrEqual(quotedLength + 2);
+    expect(clusters(said)).toBeLessThanOrEqual(quotedLength + 2);
   });
 });

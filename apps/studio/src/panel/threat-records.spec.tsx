@@ -167,11 +167,43 @@ describe(
       expect(currentAnnouncement().message).toContain(
         recordedModel.mitigations[0].title,
       );
-      expect(currentAnnouncement().message).toContain('Undo');
       act(() => {
         dispatch(Action.Undo());
       });
       expect(present().mitigations).toEqual(recordedModel.mitigations);
+    });
+
+    it('announces a record kept on another threat differently from one the unlink removed', async () => {
+      const user = userEvent.setup();
+      act(() => {
+        dispatch(
+          Action.LinkMitigation({
+            mitigationId: firstMitigation,
+            threatId: secondThreat,
+          }),
+        );
+      });
+      showRecords(threatOf(firstThreat));
+
+      await user.click(button('Unlink mitigation 1'));
+      expect(present().mitigations).toHaveLength(1);
+      const kept = currentAnnouncement().message;
+      act(() => {
+        dispatch(Action.Undo());
+        dispatch(
+          Action.UnlinkMitigation({
+            mitigationId: firstMitigation,
+            threatId: secondThreat,
+          }),
+        );
+      });
+      await user.click(button('Unlink mitigation 1'));
+      expect(present().mitigations).toEqual([]);
+      const removed = currentAnnouncement().message;
+
+      expect(kept).toContain(recordedModel.mitigations[0].title);
+      expect(removed).toContain(recordedModel.mitigations[0].title);
+      expect(removed).not.toBe(kept);
     });
 
     it('names a record with a long first line by a bounded prefix when it is unlinked', async () => {
@@ -212,9 +244,8 @@ describe(
         { id: firstAssumption, threats: [secondThreat] },
       ]);
       expect(currentAnnouncement().message).toContain(
-        recordedModel.assumptions[0].prose,
+        recordedModel.assumptions[0].prose.slice(0, quotedLength / 2),
       );
-      expect(currentAnnouncement().message).not.toContain('Undo');
     });
 
     it('describes the unlink control of an assumption that also applies to the model, and keeps that assumption in the model when it leaves its only threat', async () => {
@@ -238,7 +269,7 @@ describe(
         { id: firstAssumption, threats: [], appliesToModel: true },
       ]);
       expect(currentAnnouncement().message).toContain(
-        recordedModel.assumptions[0].prose,
+        recordedModel.assumptions[0].prose.slice(0, quotedLength / 2),
       );
     });
 

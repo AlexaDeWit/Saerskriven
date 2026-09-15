@@ -61,30 +61,23 @@ export function Toolbox() {
   );
 }
 
-/**
- * What the canvas last said an edit did, and the flow chooser a start-flow
- * chord opens. Both hang under the chrome card rather than sitting in it: the
- * chooser is in the page only while a connection is in progress, and the
- * region is empty until there is something to announce.
- */
-export function CanvasMessages() {
+/** What the canvas last said an edit did, hanging under the chrome card, and an empty region until there is something to say. */
+export function CanvasAnnouncement() {
   const announcement = useAnnouncement();
 
   return (
-    <>
-      <LiveRegion className={styles.announcement} testId="canvas-announcement">
-        {announcement.message !== '' && (
-          <p className={styles.message} key={announcement.sequence}>
-            {announcement.message}
-          </p>
-        )}
-      </LiveRegion>
-      <FlowTargetChooser />
-    </>
+    <LiveRegion className={styles.announcement} testId="canvas-announcement">
+      {announcement.message !== '' && (
+        <p className={styles.message} key={announcement.sequence}>
+          {announcement.message}
+        </p>
+      )}
+    </LiveRegion>
   );
 }
 
-function FlowTargetChooser() {
+/** The listbox a start-flow chord opens under the chrome card, in the page only while that connection is in progress. */
+export function FlowTargetChooser() {
   const layout = useModelStore(currentLayout);
   const connecting = useConnecting();
   if (!connecting.open || connecting.from === undefined) {

@@ -191,7 +191,7 @@ export function RecordGroup<Held extends ThreatRecord>({
     announce(
       kept
         ? `Unlinked ${named}. It stays on its other references.`
-        : `Removed ${named}, since nothing else referenced it. Undo restores it.`,
+        : `Removed ${named}. Nothing else used it. Undo restores it.`,
     );
   };
 

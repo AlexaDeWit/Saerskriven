@@ -96,10 +96,13 @@ included, is the accordion control's accessible name, in the order it is
 drawn. It holds no control of its own, and hidden content has no layout box
 or keyboard controls.
 
-The pane starts below the chrome card and whatever hangs under it, offset by
-the height the chrome measures into `--pn-chrome-block-size` rather than by a
-constant, and ends above the zoom controls. A notice or an announcement moves
-the pane down while it shows, so it never covers the pane's header.
+The pane starts below the chrome card, the notices and flow chooser hanging
+under it, and a fixed slot two lines tall for the canvas announcement
+(`--pn-pane-block-start`), and ends above the zoom controls. The card and
+the notices are measured, so a notice moves the pane down until it is
+dismissed. An announcement does not move it: while a pane is open the
+announcement stops at two lines, so the controls under the pointer stay put
+as edits are announced and cleared.
 The heading, width control, and close button sit outside the scrollable body.
 A long element name scrolls within a three-line heading, reachable by Tab.
 Severity and status share a row when space permits. A description starts

@@ -249,6 +249,14 @@ export const panelCover = 472;
  */
 export const chromeCard = '5rem';
 
+/**
+ * The room a pane leaves under the chrome card and its notices for the canvas
+ * announcement: two lines, with the announcement's gap, border and padding.
+ * The `lh` resolves where a pane reads the property, on a box with the body's
+ * line height, not on the root.
+ */
+export const announcementSlot = 'calc(var(--pn-space-2) * 3 + 2px + 2lh)';
+
 const colourProperties = {
   surfaceApp: '--pn-colour-surface',
   surfaceCanvas: '--pn-colour-canvas',
@@ -319,6 +327,12 @@ ${colourBlock(lightPalette, '  ')}
 
   --pn-panel-cover: ${String(panelCover)}px;
   --pn-chrome-block-size: ${chromeCard};
+  --pn-chrome-reports-block-size: 0px;
+  --pn-announcement-slot: ${announcementSlot};
+  --pn-pane-block-start: calc(
+    var(--pn-space-3) * 2 + var(--pn-chrome-block-size) +
+      var(--pn-chrome-reports-block-size) + var(--pn-announcement-slot)
+  );
 
   --pn-focus-ring-width: ${focusRing.width};
   --pn-focus-ring: var(--pn-focus-ring-width) solid var(--pn-colour-accent);
