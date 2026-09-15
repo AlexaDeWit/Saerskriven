@@ -9,10 +9,10 @@ import {
 } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { announce } from './announcements.js';
+import { announce, quotedName } from './announcements.js';
 import { flowEnds, freshBoundaryCurve, freshFlow } from './elements.js';
 import { currentLayout } from './layout.js';
-import { accessibleNames } from './names.js';
+import { edgeLabel, nodeLabel } from './names.js';
 import { elementIds } from './nodes.js';
 
 /** Counts flows detached and threat links dropped by removal. */
@@ -71,11 +71,8 @@ export function toggleFlowDirection(): void {
   if (
     changedModel(Action.SetFlowDirection({ elementId: flow.id, bidirectional }))
   ) {
-    announce(
-      bidirectional
-        ? `${flow.name || 'The flow'} now runs both ways.`
-        : `${flow.name || 'The flow'} now runs one way.`,
-    );
+    const named = quotedName(flow.name, 'The flow');
+    announce(`${named} now runs ${bidirectional ? 'both ways' : 'one way'}.`);
   }
 }
 
@@ -251,10 +248,15 @@ function changedModel(action: Action): boolean {
 }
 
 function spokenName(state: State, elementId: ElementId): string {
-  return (
-    accessibleNames(currentLayout(state), state.present).get(elementId) ??
-    elementId
-  );
+  const layout = currentLayout(state);
+  const node = layout.nodes.find(({ id }) => id === elementId);
+  if (node !== undefined) {
+    return quotedName(node.name, nodeLabel(node));
+  }
+  const edge = layout.edges.find(({ id }) => id === elementId);
+  return edge === undefined
+    ? elementId
+    : quotedName(edge.name, edgeLabel(edge));
 }
 
 function counted(total: number, thing: string): string {

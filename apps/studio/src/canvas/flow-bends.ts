@@ -13,7 +13,7 @@ import { Action } from '../store/actions.js';
 import { elementById, selectedElement } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
-import { announce } from './announcements.js';
+import { announce, quotedName } from './announcements.js';
 import { currentLayout } from './layout.js';
 import { currentTool, useTool } from './tools.js';
 
@@ -83,12 +83,13 @@ function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
 }
 
 function routeAnnouncement(flow: Flow, target: RouteTarget): string {
+  const named = quotedName(flow.name, 'the flow');
   if (target.kind !== 'anchor') {
-    return `${target.kind === 'insert' ? 'Added' : 'Moved'} bend ${String(target.index + 1)} on ${flow.name}.`;
+    return `${target.kind === 'insert' ? 'Added' : 'Moved'} bend ${String(target.index + 1)} on ${named}.`;
   }
   return target.side === undefined
-    ? `Released the ${target.end} of ${flow.name} to follow its route.`
-    : `Pinned the ${target.end} of ${flow.name} to the ${target.side} side.`;
+    ? `Released the ${target.end} of ${named} to follow its route.`
+    : `Pinned the ${target.end} of ${named} to the ${target.side} side.`;
 }
 
 function currentDraft(draft: RouteDraft): boolean {
@@ -184,7 +185,9 @@ export function useFlowBends() {
         }),
       );
       setHeld(undefined);
-      announce(`Removed bend ${String(index + 1)} from ${flow.name}.`);
+      announce(
+        `Removed bend ${String(index + 1)} from ${quotedName(flow.name, 'the flow')}.`,
+      );
     },
   };
 }

@@ -3,6 +3,7 @@ import { registeredChords } from './chords.js';
 import {
   canvasSurface,
   chooseInPanel,
+  editAnnouncement,
   expandThreat,
   menuButton,
   menuItem,
@@ -352,4 +353,37 @@ test('model properties edited in one tab reach another, which keeps its own sele
   );
   await expect(modelPanel(page)).toBeVisible();
   await expect(nodeNamed(page, proxy)).not.toHaveClass(/selected/u);
+});
+
+test('the Model properties header stays usable while an unlink announcement shows', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await openModelProperties(page);
+  await modelControl(page, 'Add assumption').click();
+  await page.keyboard.insertText(
+    'Every caller of the proxy presents a token that it scopes to one tenant, and the proxy never forwards it.',
+  );
+  await page.keyboard.press('Tab');
+  await expect(
+    modelField(page, 'combobox', 'Assumption 1 status'),
+  ).toBeFocused();
+
+  const unlink = modelControl(page, 'Unlink assumption 1');
+  await onScreen(unlink);
+  await unlink.click();
+  const said = editAnnouncement(page);
+  await expect(said).toContainText('Every caller');
+  expect((await said.textContent())?.length ?? 0).toBeLessThan(160);
+
+  const widen = modelControl(page, 'Widen pane');
+  await onScreen(widen);
+  await widen.click();
+  await expect(modelControl(page, 'Restore pane width')).toBeVisible();
+  await expect(said).not.toBeEmpty();
+
+  const close = modelControl(page, 'Close model properties');
+  await onScreen(close);
+  await close.click();
+  await expect(modelPanel(page)).toHaveCount(0);
 });

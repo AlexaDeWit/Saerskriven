@@ -5,14 +5,19 @@ import {
   type Model,
 } from '@saerskriven/model';
 import { elementId } from '@saerskriven/model/fixtures';
+import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
   otherElement,
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
-import { modelStore } from '../store/store.js';
-import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import { dispatch, modelStore } from '../store/store.js';
+import {
+  currentAnnouncement,
+  quotedLength,
+  resetAnnouncements,
+} from './announcements.js';
 import { currentLayout } from './layout.js';
 import {
   boundaryElement,
@@ -285,6 +290,17 @@ describe('removeSelected', () => {
     expect(removeSelected()).toBe(true);
     expect(said()).toContain('Reader');
     expect(said()).toContain('1');
+  });
+
+  it('names an element with a long name by a bounded prefix', () => {
+    const long = 'Reader of every shared model '.repeat(10).trim();
+    opened([readerElement]);
+    dispatch(Action.RenameElement({ elementId: readerElement, name: long }));
+
+    removeSelected();
+
+    expect(said()).toContain(long.slice(0, quotedLength / 2));
+    expect(said()).not.toContain(long);
   });
 
   it('leaves the removed element out of the model and its flow attached to nothing', () => {

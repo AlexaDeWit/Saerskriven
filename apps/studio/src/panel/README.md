@@ -96,9 +96,10 @@ included, is the accordion control's accessible name, in the order it is
 drawn. It holds no control of its own, and hidden content has no layout box
 or keyboard controls.
 
-The pane starts below the chrome card, offset by the height the card measures
-into `--pn-chrome-block-size` rather than by a constant, and ends above the
-zoom controls.
+The pane starts below the chrome card and whatever hangs under it, offset by
+the height the chrome measures into `--pn-chrome-block-size` rather than by a
+constant, and ends above the zoom controls. A notice or an announcement moves
+the pane down while it shows, so it never covers the pane's header.
 The heading, width control, and close button sit outside the scrollable body.
 A long element name scrolls within a three-line heading, reachable by Tab.
 Severity and status share a row when space permits. A description starts
@@ -146,7 +147,9 @@ the two kinds and the pure functions the groups read.
   operation's rule rather than the studio's, and one undo brings it back
   linked. An assumption that applies to the model is not removed by unlinking
   its last threat. The announcement names the record by its title or first
-  line, and says whether it was unlinked or removed. A row that goes while it
+  line, quoted and bounded ([the canvas announcement](../canvas/README.md)). A
+  removal says nothing else referenced the record and that Undo restores it,
+  and an unlink that keeps the record says it stays on its other references. A row that goes while it
   holds focus, by an unlink or an undo, leaves focus in its group.
 
 Every edit is one store action carrying one model operation, so each is one

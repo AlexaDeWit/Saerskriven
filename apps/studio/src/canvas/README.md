@@ -35,9 +35,10 @@ The canvas is the studio's window: it fills the viewport. The chrome card, the
 threat panel and the zoom cluster float inside it instead of taking space from
 the diagram. `../app/chrome.tsx` is the card: one box centred at the top
 holding the menu button, the diagram control and the tool modes ([the file
-menu](../files/README.md)). Its measured height reaches the threat panel and
-the selection controls as `--pn-chrome-block-size`, so a tools row that wraps
-on a narrow viewport moves both.
+menu](../files/README.md)). The measured height of the card and what hangs
+under it reaches the panel location and the selection controls as
+`--pn-chrome-block-size`, so a tools row that wraps on a narrow viewport, a
+notice, or an announcement moves both down rather than covering them.
 
 React Flow draws the graph-paper ground at the grid spacing from the canvas
 package. The studio supplies its grid and connection-handle colours through
@@ -303,6 +304,11 @@ only when the next focus does not expose the result. Canvas and threat
 deletion, refused text, and completed Undo or Redo commands use it. Placement,
 connection, renaming, threat adds, field edits, and keyboard moves rely on
 their focused control or React Flow's message instead.
+
+An announcement that names something a person wrote (an element, flow,
+diagram or record) quotes it through `quoted` in `announcements.ts`: on one
+line, in quotation marks, and past `quotedLength` characters cut to a prefix
+ending in an ellipsis. The accessible names on the canvas and in the panel stay whole.
 
 The status is outside the model store because it does not belong in the undo
 stacks. The empty host stays mounted, and a sequence key makes repeated words

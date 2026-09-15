@@ -13,6 +13,7 @@ import {
 } from '../store/store.fixtures.js';
 import {
   currentAnnouncement,
+  quotedLength,
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -166,10 +167,31 @@ describe(
       expect(currentAnnouncement().message).toContain(
         recordedModel.mitigations[0].title,
       );
+      expect(currentAnnouncement().message).toContain('Undo');
       act(() => {
         dispatch(Action.Undo());
       });
       expect(present().mitigations).toEqual(recordedModel.mitigations);
+    });
+
+    it('names a record with a long first line by a bounded prefix when it is unlinked', async () => {
+      const user = userEvent.setup();
+      const long = `${'Every share link is signed and expires '.repeat(8)}soon.`;
+      act(() => {
+        dispatch(
+          Action.ReplaceMitigation({
+            mitigation: { ...recordedModel.mitigations[0], title: long },
+          }),
+        );
+      });
+      showRecords(threatOf(firstThreat));
+
+      await user.click(button('Unlink mitigation 1'));
+
+      const message = currentAnnouncement().message;
+      expect(message).toContain(long.slice(0, quotedLength / 2));
+      expect(message).not.toContain(long);
+      expect(message.length).toBeLessThan(long.length);
     });
 
     it('keeps a shared record on its other threats when it is unlinked here', async () => {
@@ -189,6 +211,10 @@ describe(
       expect(present().assumptions).toMatchObject([
         { id: firstAssumption, threats: [secondThreat] },
       ]);
+      expect(currentAnnouncement().message).toContain(
+        recordedModel.assumptions[0].prose,
+      );
+      expect(currentAnnouncement().message).not.toContain('Undo');
     });
 
     it('describes the unlink control of an assumption that also applies to the model, and keeps that assumption in the model when it leaves its only threat', async () => {

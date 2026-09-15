@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
   chooseInPanel,
+  editAnnouncement,
   expandThreat,
   nodeNamed,
   onScreen,
@@ -242,6 +243,32 @@ test('a linked record names the other threats that hold it by number, and unlink
 
   await runFromMenu(page, 'Undo');
   await expect(kept).toHaveValue(bound);
+});
+
+test('unlinking a record with a long first line announces a bounded name, and the pane header stays usable under it', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  const unlink = panelControl(page, 'Unlink mitigation 1');
+  await onScreen(unlink);
+  await unlink.click();
+
+  const said = editAnnouncement(page);
+  await expect(said).toContainText('Écluse carries a token');
+  expect((await said.textContent())?.length ?? 0).toBeLessThan(160);
+
+  const widen = panelControl(page, 'Widen pane');
+  await onScreen(widen);
+  await widen.click();
+  await expect(panelControl(page, 'Restore pane width')).toBeVisible();
+  await expect(said).not.toBeEmpty();
+
+  const close = panelControl(page, 'Close threats');
+  await onScreen(close);
+  await close.click();
+  await expect(threatPanel(page)).toHaveCount(0);
 });
 
 test('a record edit in one tab reaches another, which keeps its own selection', async ({

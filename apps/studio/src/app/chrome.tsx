@@ -8,16 +8,16 @@ import {
 import { useMeasured } from '../ui/measure.js';
 import styles from './chrome.module.css';
 
-const cardHeight = '--pn-chrome-block-size';
+const chromeHeight = '--pn-chrome-block-size';
 
 /**
  * The one floating card of shell chrome: the menu button and the diagram
  * control on row one, the tool modes on row two, and the failure notice, the
  * file reports, the canvas announcement and the flow chooser hanging under it.
- * The card's height goes back to the document root as `--pn-chrome-block-size`
- * for the controls that start below it, measured rather than counted from the
- * rows: the tools row wraps on a narrow enough viewport, and a constant would
- * then be short by a line.
+ * The height of the card and what hangs under it goes back to the document
+ * root as `--pn-chrome-block-size` for the panes that start below it, measured
+ * because the tools row wraps on a narrow viewport and a report or an
+ * announcement comes and goes.
  */
 export function StudioChrome({
   colourMode,
@@ -25,24 +25,24 @@ export function StudioChrome({
   session,
   triggerRef,
 }: StudioMenuProps) {
-  const card = useRef<HTMLDivElement>(null);
+  const chrome = useRef<HTMLDivElement>(null);
 
   useMeasured(
-    card,
+    chrome,
     (node) => {
       document.documentElement.style.setProperty(
-        cardHeight,
+        chromeHeight,
         `${String(node.getBoundingClientRect().height)}px`,
       );
     },
     () => {
-      document.documentElement.style.removeProperty(cardHeight);
+      document.documentElement.style.removeProperty(chromeHeight);
     },
   );
 
   return (
-    <div className={styles.chrome}>
-      <div className={styles.card} data-testid="chrome-card" ref={card}>
+    <div className={styles.chrome} ref={chrome}>
+      <div className={styles.card} data-testid="chrome-card">
         <StudioMenu
           colourMode={colourMode}
           onColourModeChange={onColourModeChange}

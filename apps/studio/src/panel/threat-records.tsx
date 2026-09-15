@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FocusEvent } from 'react';
-import { announce } from '../canvas/announcements.js';
+import { announce, quoted } from '../canvas/announcements.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { EnumField } from '../ui/enum-field.js';
 import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
@@ -187,8 +187,11 @@ export function RecordGroup<Held extends ThreatRecord>({
       .held(modelStore.getState().present)
       .some(({ id }) => id === record.id);
     focus.current = { kind: 'unlinked', index };
+    const named = `${kind.noun} ${quoted(recordLabel(record))}`;
     announce(
-      `${kind.title} ${recordLabel(record)} ${kept ? 'unlinked' : 'removed'}.`,
+      kept
+        ? `Unlinked ${named}. It stays on its other references.`
+        : `Removed ${named}, since nothing else referenced it. Undo restores it.`,
     );
   };
 

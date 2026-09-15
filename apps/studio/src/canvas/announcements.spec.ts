@@ -6,9 +6,15 @@ import { dispatch, modelStore } from '../store/store.js';
 import {
   announce,
   currentAnnouncement,
+  quoted,
+  quotedLength,
   resetAnnouncements,
   useAnnouncement,
 } from './announcements.js';
+
+const characters = (text: string): number =>
+  [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)]
+    .length;
 
 describe('announce', () => {
   const message = 'message';
@@ -79,5 +85,31 @@ describe('useAnnouncement', () => {
       resetAnnouncements();
     });
     expect(result.current.message).toBe('');
+  });
+});
+
+describe('quoted', () => {
+  it('sets short text off whole, on one line', () => {
+    const said = quoted('Callers\n never share');
+
+    expect(said).toContain('Callers never share');
+    expect(said).not.toBe('Callers never share');
+  });
+
+  it('cuts long text to a bounded prefix ending in an ellipsis', () => {
+    const long = 'Écluse carries a token in a redacted type. '.repeat(20);
+    const said = quoted(long);
+
+    expect(said).toContain(long.slice(0, quotedLength / 2));
+    expect(said).toContain('…');
+    expect(characters(said)).toBeLessThanOrEqual(quotedLength + 2);
+  });
+
+  it('never cuts inside one character a person sees', () => {
+    const family = '👩‍👩‍👧';
+    const said = quoted(family.repeat(quotedLength * 2));
+
+    expect(said).toContain(family.repeat(quotedLength - 1));
+    expect(characters(said)).toBeLessThanOrEqual(quotedLength + 2);
   });
 });

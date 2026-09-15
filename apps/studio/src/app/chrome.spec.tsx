@@ -13,7 +13,7 @@ import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { StudioChrome } from './chrome.js';
 
-const cardHeight = '--pn-chrome-block-size';
+const chromeHeight = '--pn-chrome-block-size';
 
 function Chrome() {
   const session = useFileSession(specBridge());
@@ -83,15 +83,15 @@ describe('StudioChrome', () => {
     expect(held.contains(region)).toBe(false);
   });
 
-  it('measures the card height back onto the document root', () => {
+  it('measures the chrome height back onto the document root', () => {
     const view = render(<Chrome />);
-    expect(document.documentElement.style.getPropertyValue(cardHeight)).toMatch(
-      /px$/u,
-    );
+    expect(
+      document.documentElement.style.getPropertyValue(chromeHeight),
+    ).toMatch(/px$/u);
 
     view.unmount();
 
-    expect(document.documentElement.style.getPropertyValue(cardHeight)).toBe(
+    expect(document.documentElement.style.getPropertyValue(chromeHeight)).toBe(
       '',
     );
   });
