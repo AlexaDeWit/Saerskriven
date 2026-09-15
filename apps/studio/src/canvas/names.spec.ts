@@ -1,8 +1,6 @@
-import {
-  layoutDiagram,
-  type CanvasLayout,
-  type ThreatBadge,
-} from '@saerskriven/canvas';
+import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
+import type { Model, ThreatStatus } from '@saerskriven/model';
+import { assumptionId, elementId } from '@saerskriven/model/fixtures';
 import {
   canvasModel,
   probeFlow,
@@ -14,23 +12,45 @@ import { accessibleNames } from './names.js';
 
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
-const names = accessibleNames(layout);
+const names = accessibleNames(layout, canvasModel);
 
 const withoutNodes = (from: CanvasLayout): CanvasLayout => ({
   ...from,
   nodes: [],
 });
 
-const withBadge = (id: string, badge: ThreatBadge) =>
-  accessibleNames({
-    ...layout,
-    nodes: layout.nodes.map((node) =>
-      node.id === id ? { ...node, badge } : node,
-    ),
-    edges: layout.edges.map((edge) =>
-      edge.id === id ? { ...edge, badge } : edge,
-    ),
+type Rework = {
+  readonly status?: ThreatStatus;
+  readonly elements?: readonly string[];
+  readonly invalidated?: boolean;
+};
+
+const reworked = (byThreat: Readonly<Record<string, Rework>>): Model => {
+  const threats = canvasModel.threats.map((threat) => {
+    const rework = byThreat[threat.id] ?? {};
+    return {
+      ...threat,
+      status: rework.status ?? threat.status,
+      elements: rework.elements?.map(elementId) ?? threat.elements,
+    };
   });
+  return {
+    ...canvasModel,
+    threats,
+    assumptions: threats
+      .filter((threat) => byThreat[threat.id]?.invalidated === true)
+      .map((threat) => ({
+        id: assumptionId(`assumption-${threat.id}`),
+        prose: '',
+        status: 'invalidated' as const,
+        threats: [threat.id],
+        appliesToModel: false,
+      })),
+  };
+};
+
+const namedIn = (model: Model, id: string): string | undefined =>
+  accessibleNames(layoutDiagram(model.diagrams[0], model), model).get(id);
 
 describe('accessibleNames', () => {
   it('names an element by what it is called and what kind it is', () => {
@@ -52,31 +72,36 @@ describe('accessibleNames', () => {
     expect(names.get(readerElement)).toContain('1 open threat,');
   });
 
-  it('says a threat on a counted badge is flagged', () => {
-    expect(
-      withBadge(readerElement, {
-        kind: 'counted',
-        count: 1,
-        severity: 'medium',
-        secondary: 0,
-        flagged: true,
-      }).get(readerElement),
-    ).toBe(
-      'Reader, actor, 1 open threat, highest severity medium, a threat flagged',
+  it('names the flag raised on an open threat after the count it joins', () => {
+    const model = reworked({ 'threat-tampering': { invalidated: true } });
+    expect(namedIn(model, readerElement)).toBe(
+      'Reader, actor, 1 open threat, highest severity medium, Rests on an invalidated assumption',
     );
   });
 
-  it('says a flag-only badge is flagged and counts no open threat', () => {
-    const spoken = withBadge(studioElement, { kind: 'flag-only' }).get(
-      studioElement,
+  it('names each flag once, in flag order, whichever threat raises it', () => {
+    const model = reworked({
+      'threat-disclosure': { invalidated: true },
+      'threat-repudiation': { status: 'mitigated' },
+      'threat-tampering': { elements: [requestFlow], invalidated: true },
+    });
+    expect(namedIn(model, requestFlow)).toBe(
+      'Opens a model, flow, from Reader to Studio, 2 open threats, highest severity medium, Mitigated without implemented work, Rests on an invalidated assumption',
     );
-    expect(spoken).toBe('Studio, process, a threat flagged');
   });
 
-  it('says a flagged flow is flagged', () => {
-    expect(withBadge(probeFlow, { kind: 'flag-only' }).get(probeFlow)).toBe(
-      'Reads a file, flow, from Studio to a free point, a threat flagged',
-    );
+  it('names the flags of a threat in no open status, with no count', () => {
+    const model = reworked({
+      'threat-tampering': {
+        status: 'mitigated',
+        elements: [studioElement, probeFlow],
+        invalidated: true,
+      },
+    });
+    expect([namedIn(model, studioElement), namedIn(model, probeFlow)]).toEqual([
+      'Studio, process, Mitigated without implemented work, Rests on an invalidated assumption',
+      'Reads a file, flow, from Studio to a free point, Mitigated without implemented work, Rests on an invalidated assumption',
+    ]);
   });
 
   it('names a flow by the elements its ends attach to', () => {
@@ -86,12 +111,15 @@ describe('accessibleNames', () => {
   });
 
   it('says a bidirectional flow runs between its ends rather than from one to the other', () => {
-    const bothWays = accessibleNames({
-      ...layout,
-      edges: layout.edges.map((edge) =>
-        edge.id === requestFlow ? { ...edge, bidirectional: true } : edge,
-      ),
-    });
+    const bothWays = accessibleNames(
+      {
+        ...layout,
+        edges: layout.edges.map((edge) =>
+          edge.id === requestFlow ? { ...edge, bidirectional: true } : edge,
+        ),
+      },
+      canvasModel,
+    );
     expect(bothWays.get(requestFlow)).toContain(
       'Opens a model, flow, between Reader and Studio',
     );
@@ -104,9 +132,9 @@ describe('accessibleNames', () => {
   });
 
   it('falls back to the id of an end the layout drew no node for', () => {
-    expect(accessibleNames(withoutNodes(layout)).get(requestFlow)).toContain(
-      `from ${readerElement} to ${studioElement}`,
-    );
+    expect(
+      accessibleNames(withoutNodes(layout), canvasModel).get(requestFlow),
+    ).toContain(`from ${readerElement} to ${studioElement}`);
   });
 
   it('names an unnamed element by its kind, so a flow end still reads', () => {
@@ -114,7 +142,7 @@ describe('accessibleNames', () => {
       ...layout,
       nodes: layout.nodes.map((node) => ({ ...node, name: '' })),
     };
-    const spoken = accessibleNames(unnamed);
+    const spoken = accessibleNames(unnamed, canvasModel);
     expect(spoken.get(studioElement)).toBe('process');
     expect(spoken.get(requestFlow)).toContain('from actor to process');
   });

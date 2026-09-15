@@ -11,7 +11,7 @@ import {
   type CanvasLayout,
   type CanvasNode,
 } from '@saerskriven/canvas';
-import type { ElementId } from '@saerskriven/model';
+import type { ElementId, Model } from '@saerskriven/model';
 import { flowEnds } from './elements.js';
 import { accessibleNames } from './names.js';
 
@@ -26,8 +26,9 @@ export type DiagramGraph = {
 
 /**
  * The laid-out diagram as React Flow takes it: every element named for
- * assistive technology and carrying whether the store has it selected and
- * whether a flow can end on it, then the anchors a flow's free end rides on.
+ * assistive technology, with the flags `model` raises on it, and carrying
+ * whether the store has it selected and whether a flow can end on it, then
+ * the anchors a flow's free end rides on.
  * The nodes and the flows come back together because one pass over the layout
  * names both. A node a flow cannot end on is not connectable, so React Flow
  * refuses the gesture where it starts rather than letting it settle into an
@@ -40,9 +41,10 @@ export type DiagramGraph = {
  */
 export function diagramGraph(
   layout: CanvasLayout,
+  model: Model,
   selection: readonly ElementId[],
 ): DiagramGraph {
-  const names = accessibleNames(layout);
+  const names = accessibleNames(layout, model);
   const ends = new Set<string>(flowEnds(layout).map((node) => node.id));
   const selected = new Set<string>(selection);
   return {
