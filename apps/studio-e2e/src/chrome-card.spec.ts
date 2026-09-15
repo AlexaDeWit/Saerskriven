@@ -22,6 +22,7 @@ import {
   saerskrivenDiagrams,
   saerskrivenModel,
   screenBoxOf,
+  scrolledAbove,
   selectByKeyboard,
   threatPanel,
   withoutPickers,
@@ -259,17 +260,8 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
   expect(download.suggestedFilename()).toBe('ecluse.svg');
 });
 
-const chromeScroll = (page: Page): Promise<number> =>
-  chromeCard(page).evaluate((card) => {
-    let scrolled = 0;
-    for (let node = card.parentElement; node; node = node.parentElement) {
-      scrolled += node.scrollTop;
-    }
-    return scrolled;
-  });
-
 const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
-  expect(await chromeScroll(page)).toBe(0);
+  expect(await scrolledAbove(chromeCard(page))).toBe(0);
   expect(await screenBoxOf(menuButton(page))).toEqual(burger);
 };
 

@@ -311,6 +311,22 @@ export const expandThreat = async (
   await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
 };
 
+/** Adds a record through the panel's Add control, typing its first field and, when given, a mitigation's description, each left by Tab. */
+export const addRecord = async (
+  page: Page,
+  kind: 'mitigation' | 'assumption',
+  text: string,
+  description?: string,
+): Promise<void> => {
+  await panelControl(page, `Add ${kind}`).click();
+  await page.keyboard.type(text);
+  await page.keyboard.press('Tab');
+  if (description !== undefined) {
+    await page.keyboard.type(description);
+    await page.keyboard.press('Tab');
+  }
+};
+
 /** Chooses an option in one listbox of a panel, the threat panel unless another region is named, by pointer, and waits for the listbox to close. */
 export const chooseInPanel = async (
   page: Page,
@@ -358,6 +374,16 @@ export const reachesAt = (target: Locator, at: Point): Promise<boolean> =>
     at,
   );
 
+/** How far every ancestor of `target` is scrolled, summed, so a scroll anywhere above it shows. */
+export const scrolledAbove = (target: Locator): Promise<number> =>
+  target.evaluate((element) => {
+    let scrolled = 0;
+    for (let node = element.parentElement; node; node = node.parentElement) {
+      scrolled += node.scrollTop;
+    }
+    return scrolled;
+  });
+
 /** Where a control is drawn on screen, held to be drawn at all. */
 export const screenBoxOf = async (target: Locator): Promise<Box> => {
   const box = await target.boundingBox();
@@ -365,6 +391,7 @@ export const screenBoxOf = async (target: Locator): Promise<Box> => {
   return box ?? { x: 0, y: 0, width: 0, height: 0 };
 };
 
+/** The centre of where a control is drawn on screen. */
 export const centreOf = async (target: Locator): Promise<Point> => {
   const box = await screenBoxOf(target);
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };

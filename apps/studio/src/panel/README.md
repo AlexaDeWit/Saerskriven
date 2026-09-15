@@ -182,8 +182,16 @@ editor and the model's properties draw the same group.
   its last threat. The announcement names the record by its title or first
   line, quoted and bounded ([the canvas announcement](../canvas/README.md)). A
   removal says nothing else referenced the record and that Undo restores it,
-  and an unlink that keeps the record says it stays on its other references. A row that goes while it
-  holds focus, by an unlink or an undo, leaves focus in its group.
+  and an unlink that keeps the record says it stays on its other references.
+  A row that goes while it holds focus, by an unlink or an undo, leaves focus
+  in its group. An unlink leaves the panel body scrolled where it was, so the
+  rows below move up under the pointer, and scrolls it only as far as the
+  newly focused control needs to be seen. The unlink puts back the body's
+  scroll position before the frame paints, because the browser's scroll
+  anchoring would otherwise hold a row below the removed one in place and
+  pull the content away from the pointer. Anchoring stays on for every other
+  change, so a record arriving above the rows in view, from another tab or by
+  an undo or redo, leaves those rows where they are.
 
 Every edit is one store action carrying one model operation, so each is one
 undo step, reaches other tabs through the same sync as every other edit,

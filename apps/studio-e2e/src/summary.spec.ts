@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
+  addRecord,
   chooseInPanel,
   expandThreat,
   openEcluse,
@@ -56,16 +57,6 @@ const namesItsParts = async (summary: Locator): Promise<void> => {
   await expect
     .poll(async () => partsInOrder(await summary.ariaSnapshot(), parts))
     .toBe(true);
-};
-
-const addRecord = async (
-  page: Page,
-  kind: 'mitigation' | 'assumption',
-  text: string,
-): Promise<void> => {
-  await panelControl(page, `Add ${kind}`).click();
-  await page.keyboard.type(text);
-  await page.keyboard.press('Tab');
 };
 
 const raiseBothFlags = async (page: Page): Promise<void> => {

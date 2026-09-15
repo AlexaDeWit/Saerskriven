@@ -1,6 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import type { Box } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.js';
 import {
+  addRecord,
   chooseInPanel,
   editAnnouncement,
   expandThreat,
@@ -11,6 +13,7 @@ import {
   panelField,
   runFromMenu,
   screenBoxOf,
+  scrolledAbove,
   selectByKeyboard,
   selectNode,
   threatPanel,
@@ -302,6 +305,126 @@ test('the pane and its record fields stay where they are when an unlink is annou
   await expect(editAnnouncement(page)).toBeEmpty();
   expect((await screenBoxOf(threatPanel(page))).y).toBe(top);
   expect((await screenBoxOf(remaining)).y).toBe(field);
+});
+
+const scrollPaneTo = (
+  target: Locator,
+  edge: 'top' | 'bottom',
+): Promise<boolean> =>
+  target.evaluate((element, side) => {
+    let pane = element.parentElement;
+    while (pane !== null && getComputedStyle(pane).overflowY !== 'auto') {
+      pane = pane.parentElement;
+    }
+    if (pane === null) {
+      return false;
+    }
+    const drawn = element.getBoundingClientRect();
+    const port = pane.getBoundingClientRect().top + pane.clientTop;
+    const wanted =
+      pane.scrollTop +
+      (side === 'top'
+        ? drawn.top - port
+        : drawn.bottom - port - pane.clientHeight);
+    pane.scrollTop = wanted;
+    return Math.abs(pane.scrollTop - wanted) < 1;
+  }, edge);
+
+const settledBox = async (target: Locator): Promise<Box> => {
+  let before = '';
+  let box = await screenBoxOf(target);
+  await expect
+    .poll(async () => {
+      box = await screenBoxOf(target);
+      const now = JSON.stringify(box);
+      const settled = now === before;
+      before = now;
+      return settled;
+    })
+    .toBe(true);
+  return box;
+};
+
+test('an unlink keeps the pane scrolled where it was while the next Unlink is on screen', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
+  await addRecord(page, 'mitigation', 'Rotate the upstream token hourly');
+
+  const unlink = panelControl(page, 'Unlink mitigation 1');
+  await onScreen(unlink);
+  const add = panelControl(page, 'Add mitigation');
+  const scrolled = await scrolledAbove(add);
+  await unlink.click();
+
+  await expect(panelField(page, 'textbox', 'Mitigation 1 title')).toHaveValue(
+    'Strip caller tokens at the edge',
+  );
+  await expect(unlink).toBeFocused();
+  await expect(unlink).toBeInViewport({ ratio: 1 });
+  expect(await scrolledAbove(add)).toBe(scrolled);
+});
+
+test('an unlink scrolls the pane only as far as the next Unlink needs to be seen', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
+  await addRecord(
+    page,
+    'mitigation',
+    'Rotate the upstream token hourly',
+    'Issue tokens per caller.\nExpire them within the hour.\nRefuse a replay.\nLog each rotation.\nAlert on a failed rotation.',
+  );
+
+  const unlink = panelControl(page, 'Unlink mitigation 2');
+  expect(await scrollPaneTo(unlink, 'bottom')).toBe(true);
+  const pressed = await screenBoxOf(unlink);
+  const add = panelControl(page, 'Add mitigation');
+  const scrolled = await scrolledAbove(add);
+  await unlink.click();
+
+  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
+    'Rotate the upstream token hourly',
+  );
+  await expect(unlink).toBeFocused();
+  await expect(unlink).toBeInViewport({ ratio: 1 });
+  expect(await scrolledAbove(add)).toBeGreaterThan(scrolled);
+  const revealed = await screenBoxOf(unlink);
+  expect(
+    Math.abs(revealed.y + revealed.height - (pressed.y + pressed.height)),
+  ).toBeLessThanOrEqual(1);
+});
+
+test('a record arriving from another tab above the rows in view leaves those rows where they are', async ({
+  context,
+  page,
+}) => {
+  const other = await context.newPage();
+  await openEcluse(page);
+  await openEcluse(other);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  await addRecord(page, 'assumption', 'Callers rotate their tokens.');
+  await addRecord(page, 'assumption', 'The edge strips unknown headers.');
+  await addRecord(page, 'assumption', 'Upstream logs never hold tokens.');
+  const addMitigation = panelControl(page, 'Add mitigation');
+  expect(await scrollPaneTo(addMitigation, 'top')).toBe(true);
+  const drawn = await settledBox(addMitigation);
+
+  await selectNode(other, proxy);
+  await expandThreat(other, forwarded);
+  await addRecord(other, 'mitigation', 'Strip caller tokens at the edge');
+
+  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
+    'Strip caller tokens at the edge',
+  );
+  expect(await settledBox(addMitigation)).toEqual(drawn);
 });
 
 test('a message longer than two lines stops above the open pane at phone width', async ({
