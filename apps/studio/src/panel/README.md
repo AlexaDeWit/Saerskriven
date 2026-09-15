@@ -136,8 +136,12 @@ the two kinds and the pure functions the groups read.
   long first line is drawn cut to two lines, and the option's accessible name
   is the whole line.
 - Each row edits the record's text in place, changes its status in place and
-  unlinks it. A record on other threats says how many, an assumption that also
-  applies to the model says so, and the unlink control is described by both.
+  unlinks it. A record on other threats names them by number, in number
+  order ("Also on threat 4", "Also on threats 4 and 25"). Up to four are
+  named, and past that the first three and a count of the rest ("Also on
+  threats 4, 7, 9 and 3 more"). An assumption that also applies to the model
+  says so, and the unlink control is described by both. The Model
+  properties rows name their threats in the same form.
   Unlinking a record from its last reference removes it, which is the model
   operation's rule rather than the studio's, and one undo brings it back
   linked. An assumption that applies to the model is not removed by unlinking
@@ -185,24 +189,25 @@ Close and Escape close the threat panel, and hand focus to the canvas.
 Whether the properties are shown belongs to the tab, like the selection, so an
 edit another tab makes changes what they show but not whether they are shown.
 
-The panel holds the model's Title and Description and an Assumptions group.
-Each text field commits one `SetModelMetadata` naming that field alone, so
-each commit is one undo step, and a commit that changes nothing dispatches
-nothing. Refused text is held as threat text is ([the commit
-rule](#the-commit-rule)), in the overlay, so a draft survives the panel
-closing and is dropped when the file changes.
+The panel holds the model's Title and Description and a group of the
+assumptions that apply to the model, headed with the register's label for that
+section (`sectionLabel` in `@saerskriven/render`). Each text field commits one
+`SetModelMetadata` naming that field alone, so each commit is one undo step,
+and a commit that changes nothing dispatches nothing. Refused text is held as
+threat text is ([the commit rule](#the-commit-rule)), in the overlay, so a
+draft survives the panel closing and is dropped when the file changes.
 
-The Assumptions group is the threat editor's group bound to the model rather
-than to a threat: `records.ts` holds a `RecordTarget` per target, which says
-which records the group shows, attaches a new record, links, unlinks, and
+That group is the threat editor's group bound to the model rather than to a
+threat: `records.ts` holds a `RecordTarget` per target, which heads the group,
+says which records the group shows, attaches a new record, links, unlinks, and
 says where else a record is referenced. Add opens an empty row, whose first
 commit is one `AddAssumption` that applies to the model, links no threat and
 starts `unconfirmed`. Link existing offers the assumptions that do not apply
 to the model and applies the chosen one with `LinkAssumptionToModel`, which
 keeps its threat links. Unlink is `UnlinkAssumptionFromModel`, which removes
-an assumption that links no threat. A row whose assumption links threats says
-how many, and describes its unlink control by it. Status changes in place,
-and no record edit moves a threat's status.
+an assumption that links no threat. A row whose assumption links threats names
+them as a threat editor row does, and describes its unlink control by it.
+Status changes in place, and no record edit moves a threat's status.
 
 ## Element security properties
 

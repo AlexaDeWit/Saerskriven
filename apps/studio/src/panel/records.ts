@@ -3,13 +3,16 @@ import {
   assumptionStatusSchema,
   generateAssumptionId,
   generateMitigationId,
+  inNumberOrder,
   mitigationIdSchema,
   mitigationStatusSchema,
   type Assumption,
   type Mitigation,
   type Model,
+  type Threat,
   type ThreatId,
 } from '@saerskriven/model';
+import { sectionLabel } from '@saerskriven/render';
 import { Action } from '../store/actions.js';
 import { distinctLabels } from './distinct-labels.js';
 
@@ -129,18 +132,26 @@ export const assumptionKind: RecordKind<Assumption> = {
     Action.SetAssumptionStatus({ assumptionId: id, status }),
 };
 
+/** A threat as a shared row names it. */
+export type NumberedThreat = Pick<Threat, 'id' | 'number'>;
+
 /**
  * What one record group's records are linked to: a threat, or for
- * assumptions the model. It says which records the group holds, links a new
- * record to itself, gives the store action that links or unlinks one, and
- * says where else a record is referenced, which describes the unlink control.
+ * assumptions the model. It heads the group, says which records the group
+ * holds, links a new record to itself, gives the store action that links or
+ * unlinks one, and says where else a record is referenced by threat number,
+ * which describes the unlink control.
  */
 export type RecordTarget<Held extends ThreatRecord> = {
+  readonly heading: string;
   readonly holds: (record: Held) => boolean;
   readonly attach: (record: Held) => Held;
   readonly link: (record: Held) => Action;
   readonly unlink: (record: Held) => Action;
-  readonly elsewhere: (record: Held) => string | undefined;
+  readonly elsewhere: (
+    record: Held,
+    threats: readonly NumberedThreat[],
+  ) => string | undefined;
 };
 
 /** The records of one kind on one threat. */
@@ -149,33 +160,29 @@ export function threatTarget<Held extends ThreatRecord>(
   threatId: ThreatId,
 ): RecordTarget<Held> {
   return {
+    heading: kind.heading,
     holds: (record) => record.threats.includes(threatId),
     attach: (record) => ({ ...record, threats: [threatId] }),
     link: (record) => kind.link(record, threatId),
     unlink: (record) => kind.unlink(record, threatId),
-    elsewhere: (record) => {
-      const others = otherThreats(record, threatId);
-      return joined([
-        others > 0 && `Also on ${String(others)} other ${threatNoun(others)}.`,
+    elsewhere: (record, threats) =>
+      joined([
+        alsoOn(record, threats, threatId),
         'appliesToModel' in record &&
           record.appliesToModel &&
           'Also applies to the model.',
-      ]);
-    },
+      ]),
   };
 }
 
 /** The assumptions that apply to the model. */
 export const modelTarget: RecordTarget<Assumption> = {
+  heading: sectionLabel('model-assumptions'),
   holds: (assumption) => assumption.appliesToModel,
   attach: (assumption) => ({ ...assumption, appliesToModel: true }),
   link: ({ id }) => Action.LinkAssumptionToModel({ assumptionId: id }),
   unlink: ({ id }) => Action.UnlinkAssumptionFromModel({ assumptionId: id }),
-  elsewhere: ({ threats }) =>
-    joined([
-      threats.length > 0 &&
-        `Also on ${String(threats.length)} ${threatNoun(threats.length)}.`,
-    ]),
+  elsewhere: (assumption, threats) => joined([alsoOn(assumption, threats)]),
 };
 
 /** The text of one part of a record. */
@@ -185,11 +192,6 @@ export function textOf(record: ThreatRecord, part: RecordPart): string {
       ? record.title
       : ''
     : record.prose;
-}
-
-/** How many threats other than this one the record is linked to. */
-export function otherThreats(record: ThreatRecord, threatId: ThreatId): number {
-  return record.threats.filter((id) => id !== threatId).length;
 }
 
 /** What a person calls a record: its title or the first line of its text, and its id while both are empty. */
@@ -305,8 +307,33 @@ export function isRecordField(
   return recordFieldIn(field, noun) !== undefined;
 }
 
-function threatNoun(count: number): string {
-  return count === 1 ? 'threat' : 'threats';
+const namedThreats = 3;
+
+function alsoOn(
+  record: ThreatRecord,
+  threats: readonly NumberedThreat[],
+  except?: ThreatId,
+): string | false {
+  const numbers = inNumberOrder(
+    threats.filter(({ id }) => id !== except && record.threats.includes(id)),
+  ).map(({ number }) => String(number));
+  if (numbers.length === 0) {
+    return false;
+  }
+  const named =
+    numbers.length > namedThreats + 1
+      ? [
+          ...numbers.slice(0, namedThreats),
+          `${String(numbers.length - namedThreats)} more`,
+        ]
+      : numbers;
+  return `Also on ${numbers.length === 1 ? 'threat' : 'threats'} ${listed(named)}.`;
+}
+
+function listed(items: readonly string[]): string {
+  return items.length === 1
+    ? items[0]
+    : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 function joined(sentences: readonly (string | false)[]): string | undefined {

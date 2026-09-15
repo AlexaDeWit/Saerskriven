@@ -18,6 +18,7 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import {
   chooseFrom,
+  describedNumbers,
   editorTimeout,
   present,
   undoable,
@@ -215,7 +216,7 @@ describe(
       );
     });
 
-    it('offers to link only records not on the threat, and names how many other threats hold a linked one', async () => {
+    it('offers to link only records not on the threat, and names by number the other threats that hold a linked one', async () => {
       const user = userEvent.setup();
       showRecords(threatOf(secondThreat));
 
@@ -232,12 +233,7 @@ describe(
         { id: firstMitigation, threats: [firstThreat, secondThreat] },
       ]);
       expect(document.activeElement).toBe(textbox('Mitigation 1 title'));
-      const described = button('Unlink mitigation 1').getAttribute(
-        'aria-describedby',
-      );
-      expect(document.getElementById(described ?? '')?.textContent).toContain(
-        '1',
-      );
+      expect(describedNumbers(button('Unlink mitigation 1'))).toEqual([1]);
       expect(
         screen.queryByRole('combobox', { name: 'Existing mitigation' }),
       ).toBeNull();

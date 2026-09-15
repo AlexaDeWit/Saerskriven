@@ -1,5 +1,5 @@
 export * from './lib/markdown-register.js';
-export { flagLabel } from './lib/register-labels.js';
+export { flagLabel, sectionLabel } from './lib/register-labels.js';
 export { deepestProse } from './lib/register-tree.js';
 export * from './lib/svg-document.js';
 export * from './lib/typst-document.js';

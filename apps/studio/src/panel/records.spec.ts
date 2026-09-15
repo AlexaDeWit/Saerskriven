@@ -1,5 +1,6 @@
 import { recordsLinkedTo } from '@saerskriven/model';
-import { mitigationId } from '@saerskriven/model/fixtures';
+import { mitigationId, threatId } from '@saerskriven/model/fixtures';
+import { sectionLabel } from '@saerskriven/render';
 import {
   firstThreat,
   recordedModel,
@@ -11,13 +12,13 @@ import {
   inShownOrder,
   linkableRecords,
   mitigationKind,
-  otherThreats,
   recordFieldIn,
   recordFieldName,
   modelTarget,
   recordLabel,
   threatTarget,
 } from './records.js';
+import { numbersIn } from './panel.fixtures.js';
 
 const [mitigation] = recordedModel.mitigations;
 
@@ -69,11 +70,6 @@ describe('recordsLinkedTo and linkableRecords', () => {
         .label,
     ).toContain(mitigation.id);
   });
-
-  it('counts the other threats a record is on', () => {
-    expect(otherThreats(shared, firstThreat)).toBe(1);
-    expect(otherThreats(mitigation, firstThreat)).toBe(0);
-  });
 });
 
 describe('the model as a record target', () => {
@@ -88,21 +84,62 @@ describe('the model as a record target', () => {
     ).toEqual([assumption]);
   });
 
-  it('describes a row by where else its record is referenced', () => {
-    expect(modelTarget.elsewhere(applying)).toContain('1');
+  it('heads its group as the register heads that section', () => {
+    expect(modelTarget.heading).toBe(sectionLabel('model-assumptions'));
+    expect(threatTarget(assumptionKind, firstThreat).heading).toBe(
+      assumptionKind.heading,
+    );
+  });
+});
+
+describe('where else a shared row says its record is referenced', () => {
+  const [assumption] = recordedModel.assumptions;
+  const numbered = [25, 9, 4, 7, 31, 12].map((number) => ({
+    id: threatId(`threat-${String(number)}`),
+    number,
+  }));
+  const on = (...numbers: readonly number[]) => ({
+    ...assumption,
+    threats: numbered
+      .filter(({ number }) => numbers.includes(number))
+      .map(({ id }) => id),
+  });
+  const onThreat = (number: number) =>
+    threatTarget(
+      assumptionKind,
+      numbered.find((threat) => threat.number === number)?.id ?? firstThreat,
+    );
+
+  it('names the other threats by number, in number order, alike in both panels', () => {
+    expect(numbersIn(onThreat(9).elsewhere(on(9, 25, 4), numbered))).toEqual([
+      4, 25,
+    ]);
+    expect(numbersIn(modelTarget.elsewhere(on(25, 4), numbered))).toEqual([
+      4, 25,
+    ]);
+    expect(onThreat(9).elsewhere(on(9, 25, 4), numbered)).toBe(
+      modelTarget.elsewhere(on(25, 4), numbered),
+    );
+  });
+
+  it('names up to four threats, and past four names three and counts the rest', () => {
+    expect(numbersIn(modelTarget.elsewhere(on(4, 7, 9, 25), numbered))).toEqual(
+      [4, 7, 9, 25],
+    );
     expect(
-      modelTarget.elsewhere({
-        ...applying,
-        threats: [firstThreat, secondThreat],
-      }),
-    ).toMatch(/2 threats/u);
-    expect(modelTarget.elsewhere({ ...applying, threats: [] })).toBeUndefined();
+      numbersIn(modelTarget.elsewhere(on(4, 7, 9, 12, 25), numbered)),
+    ).toEqual([4, 7, 9, 2]);
     expect(
-      threatTarget(assumptionKind, firstThreat).elsewhere(applying),
-    ).toBeDefined();
-    expect(
-      threatTarget(assumptionKind, firstThreat).elsewhere(assumption),
-    ).toBeUndefined();
+      numbersIn(modelTarget.elsewhere(on(4, 7, 9, 12, 25, 31), numbered)),
+    ).toEqual([4, 7, 9, 3]);
+  });
+
+  it('says an assumption on a threat also applies to the model, and says nothing of a record on this target alone', () => {
+    const applying = { ...on(9), appliesToModel: true };
+    expect(onThreat(9).elsewhere(applying, numbered)).toBeDefined();
+    expect(numbersIn(onThreat(9).elsewhere(applying, numbered))).toEqual([]);
+    expect(onThreat(9).elsewhere(on(9), numbered)).toBeUndefined();
+    expect(modelTarget.elsewhere(on(), numbered)).toBeUndefined();
   });
 });
 

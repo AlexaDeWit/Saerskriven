@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
   chooseInPanel,
@@ -23,6 +23,15 @@ const purge = /Dredger inappropriately purges/u;
 const forwarded = /Forwarded caller credentials/u;
 
 const chokepoint = /Chokepoint exhaustion/u;
+
+const describedNumbers = (control: Locator): Promise<readonly number[]> =>
+  control.evaluate((element) =>
+    (
+      document
+        .getElementById(element.getAttribute('aria-describedby') ?? '')
+        ?.textContent.match(/\d+/gu) ?? []
+    ).map(Number),
+  );
 
 const offeredToLink = async (page: Page, label: string): Promise<boolean> => {
   const existing = panelField(page, 'combobox', 'Existing mitigation');
@@ -187,7 +196,7 @@ test('leaving the empty row leaves no record and nothing to undo', async ({
   expect(await undoOffered(page)).toBe(false);
 });
 
-test('a linked record says how many other threats hold it, and unlinking culls it only from its last threat', async ({
+test('a linked record names the other threats that hold it by number, and unlinking culls it only from its last threat', async ({
   page,
 }) => {
   await openEcluse(page);
@@ -212,9 +221,9 @@ test('a linked record says how many other threats hold it, and unlinking culls i
   await expect(linked).toHaveValue(bound);
   await expect(linked).toBeFocused();
   expect(await offeredToLink(page, bound)).toBe(false);
-  await expect(
-    panelControl(page, 'Unlink mitigation 2'),
-  ).toHaveAccessibleDescription(/1/u);
+  await expect
+    .poll(() => describedNumbers(panelControl(page, 'Unlink mitigation 2')))
+    .toEqual([1]);
 
   await panelControl(page, 'Unlink mitigation 2').click();
   await expect(linked).toHaveCount(0);
@@ -223,9 +232,9 @@ test('a linked record says how many other threats hold it, and unlinking culls i
   await expandThreat(page, forwarded);
   const kept = panelField(page, 'textbox', 'Mitigation 2 title');
   await expect(kept).toHaveValue(bound);
-  await expect(
-    panelControl(page, 'Unlink mitigation 2'),
-  ).not.toHaveAccessibleDescription(/1/u);
+  await expect
+    .poll(() => describedNumbers(panelControl(page, 'Unlink mitigation 2')))
+    .toEqual([]);
 
   await panelControl(page, 'Unlink mitigation 2').click();
   await expect(kept).toHaveCount(0);
