@@ -103,7 +103,7 @@ test('Model properties opened from the menu by keyboard focuses Title, and Escap
   await expect(canvasSurface(page)).toBeFocused();
 });
 
-test('the title and the description commit as one undo step each, and Tab runs from Title through Description to the Assumptions group', async ({
+test('the title and the description commit as one undo step each, and Tab runs from Title through Description to the assumptions group', async ({
   page,
 }) => {
   await openEcluse(page);
@@ -121,7 +121,10 @@ test('the title and the description commit as one undo step each, and Tab runs f
   await page.keyboard.press('Tab');
   await expect(modelControl(page, 'Add assumption')).toBeFocused();
   await expect(
-    modelPanel(page).getByRole('group', { name: 'Assumptions' }),
+    modelPanel(page).getByRole('group', {
+      name: 'Assumptions that apply to the model',
+      exact: true,
+    }),
   ).toBeVisible();
 
   await replaceText(title, 'Écluse, retitled');

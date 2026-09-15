@@ -13,8 +13,10 @@ import {
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { ModelPropertiesPanel } from './model-properties.js';
+import { sectionLabel } from '@saerskriven/render';
 import {
   chooseFrom,
+  describedNumbers,
   editorTimeout,
   present,
   undoable,
@@ -71,7 +73,7 @@ describe(
       resetAnnouncements();
     });
 
-    it('is a named region whose Tab order runs from Title through Description to the Assumptions group', async () => {
+    it('is a named region whose Tab order runs from Title through Description to the assumptions group', async () => {
       const user = userEvent.setup();
       showPanel();
 
@@ -85,7 +87,7 @@ describe(
       expect(document.activeElement).toBe(button('Add assumption'));
       expect(
         screen
-          .getByRole('group', { name: 'Assumptions' })
+          .getByRole('group', { name: sectionLabel('model-assumptions') })
           .contains(document.activeElement),
       ).toBe(true);
     });
@@ -162,12 +164,7 @@ describe(
       expect(
         screen.queryByRole('combobox', { name: 'Existing assumption' }),
       ).toBeNull();
-      const described = button('Unlink assumption 1').getAttribute(
-        'aria-describedby',
-      );
-      expect(document.getElementById(described ?? '')?.textContent).toContain(
-        '1',
-      );
+      expect(describedNumbers(button('Unlink assumption 1'))).toEqual([1]);
     });
 
     it('keeps an assumption on its threat when its model link is removed', async () => {

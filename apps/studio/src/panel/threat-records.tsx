@@ -82,6 +82,7 @@ export function RecordGroup<Held extends ThreatRecord>({
   onRefused,
 }: RecordGroupProps<Held>) {
   const all = useModelStore((state) => kind.held(state.present));
+  const threats = useModelStore((state) => state.present.threats);
   const records = all.filter(target.holds);
   const linkable = linkableRecords(all, target);
   const group = useRef<HTMLFieldSetElement>(null);
@@ -196,7 +197,7 @@ export function RecordGroup<Held extends ThreatRecord>({
 
   return (
     <fieldset className={styles.records} ref={group}>
-      <legend>{kind.heading}</legend>
+      <legend>{target.heading}</legend>
       <div className={styles.recordBody} onBlur={tracked} onFocus={tracked}>
         {rows.map((record, index) => (
           <RecordRow
@@ -234,7 +235,7 @@ export function RecordGroup<Held extends ThreatRecord>({
                 unlink(record, index);
               }
             }}
-            elsewhere={target.elsewhere(record)}
+            elsewhere={target.elsewhere(record, threats)}
             record={record}
           />
         ))}

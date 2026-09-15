@@ -23,7 +23,7 @@ export type ModelPropertiesPanelProps = {
 /**
  * The model's title, description and the assumptions that apply to it. Each
  * text field commits one `SetModelMetadata` naming that field alone, and the
- * Assumptions group is the threat editor's record group bound to the model.
+ * assumptions group is the threat editor's record group bound to the model.
  */
 export function ModelPropertiesPanel({
   held,

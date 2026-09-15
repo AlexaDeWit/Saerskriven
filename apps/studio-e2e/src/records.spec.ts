@@ -187,7 +187,7 @@ test('leaving the empty row leaves no record and nothing to undo', async ({
   expect(await undoOffered(page)).toBe(false);
 });
 
-test('a linked record says how many other threats hold it, and unlinking culls it only from its last threat', async ({
+test('a linked record names the other threats that hold it by number, and unlinking culls it only from its last threat', async ({
   page,
 }) => {
   await openEcluse(page);
@@ -214,7 +214,10 @@ test('a linked record says how many other threats hold it, and unlinking culls i
   expect(await offeredToLink(page, bound)).toBe(false);
   await expect(
     panelControl(page, 'Unlink mitigation 2'),
-  ).toHaveAccessibleDescription(/1/u);
+  ).toHaveAccessibleDescription(/\b1\b/u);
+  await expect(
+    panelControl(page, 'Unlink mitigation 2'),
+  ).not.toHaveAccessibleDescription(/\b2\b/u);
 
   await panelControl(page, 'Unlink mitigation 2').click();
   await expect(linked).toHaveCount(0);
@@ -225,7 +228,7 @@ test('a linked record says how many other threats hold it, and unlinking culls i
   await expect(kept).toHaveValue(bound);
   await expect(
     panelControl(page, 'Unlink mitigation 2'),
-  ).not.toHaveAccessibleDescription(/1/u);
+  ).not.toHaveAccessibleDescription(/\d/u);
 
   await panelControl(page, 'Unlink mitigation 2').click();
   await expect(kept).toHaveCount(0);
