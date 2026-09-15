@@ -40,13 +40,15 @@ import {
   toWireCategory,
 } from './saerskriven-yaml-vocabulary.js';
 
-const stringifyOptions = { lineWidth: 0 };
+const stringifyOptions = { lineWidth: 0, aliasDuplicateObjects: false };
 
 /**
  * Writes canonical native YAML in the current version, without wrapping
  * prose. A non-empty list is a block sequence, one item a line, so a long
- * link list never makes a long line. The source cannot override the model,
- * and nothing is reported, since the format holds the whole model.
+ * link list never makes a long line. A list several elements hold is written
+ * out in full each time, never as an anchor and alias. The source cannot
+ * override the model, and nothing is reported, since the format holds the
+ * whole model.
  */
 export function writeSaerskrivenYaml(
   model: Model,

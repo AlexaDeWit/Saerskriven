@@ -233,8 +233,43 @@ describe('a Saerskriven YAML write of a long link list', () => {
       [],
     );
     expect(
-      threatIds.every((id) => lines.some((line) => line.endsWith(`- ${id}`))),
+      lines.some((_, start) =>
+        threatIds.every((id, offset) =>
+          lines[start + offset]?.endsWith(`- ${id}`),
+        ),
+      ),
     ).toBe(true);
+  });
+});
+
+describe('a Saerskriven YAML write of one list held by several elements', () => {
+  const [diagram, ...otherDiagrams] = ecluseModel.diagrams;
+  const boundary = diagram.elements.find(
+    ({ kind }) => kind === 'trust-boundary',
+  );
+  const crossed = boundary === undefined ? [] : [boundary.id];
+  const shared: Model = {
+    ...ecluseModel,
+    diagrams: [
+      {
+        ...diagram,
+        elements: diagram.elements.map((element) =>
+          element.kind === 'flow'
+            ? { ...element, trustBoundaryIds: crossed }
+            : element,
+        ),
+      },
+      ...otherDiagrams,
+    ],
+  };
+
+  it('writes the list out in full each time, with no anchor or alias', () => {
+    const output = writeSaerskrivenYaml(shared).output;
+    expect(crossed).toHaveLength(1);
+    expect(output.split('\n').filter((line) => /[&*]a\d/u.test(line))).toEqual(
+      [],
+    );
+    expect(Either.isRight(readSaerskrivenYaml(output))).toBe(true);
   });
 });
 
