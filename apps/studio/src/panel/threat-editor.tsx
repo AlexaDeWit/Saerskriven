@@ -59,7 +59,11 @@ export function ThreatEditor({
   }, [focus, onFocused]);
 
   return (
-    <Accordion.Item className={styles.item} value={threat.id}>
+    <Accordion.Item
+      className={styles.item}
+      data-threat-item={threat.id}
+      value={threat.id}
+    >
       <Accordion.Header className={styles.header}>
         <Accordion.Trigger className={styles.disclosure} ref={disclosure}>
           <ThreatSummary threat={threat} />

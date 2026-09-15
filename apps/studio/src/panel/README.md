@@ -58,6 +58,11 @@ uses `panel-focus.ts`, a channel of its own rather than a field of the store.
 Focus does not belong in the model or its undo stacks. Enter on the focused
 control adds a threat and moves focus to its title.
 
+Undo and redo run through the same channel. An undo that takes away the
+threat holding focus sends focus to "Add a threat", and a redo pressed there
+sends it back to the restored threat's title. An undo or redo leaves focus
+anywhere else where it is.
+
 The visible Close threats button and Escape close the panel and return focus
 to the element, which
 stays selected, so a second Escape is the studio's own and clears the

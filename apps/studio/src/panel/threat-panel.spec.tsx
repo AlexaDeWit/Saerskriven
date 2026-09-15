@@ -6,6 +6,8 @@ import {
   currentAnnouncement,
   resetAnnouncements,
 } from '../canvas/announcements.js';
+import { recordingSurface } from '../commands/commands.fixtures.js';
+import { commandById, runCommand } from '../commands/registry.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
@@ -59,6 +61,12 @@ const severityOf = (): string =>
 
 const threatsInStore = (): number =>
   modelStore.getState().present.threats.length;
+
+const runHistory = (id: 'undo' | 'redo'): void => {
+  act(() => {
+    runCommand(commandById(id), recordingSurface().surface);
+  });
+};
 
 const addThreat = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(addControl());
@@ -166,6 +174,68 @@ describe(
 
       expect(threatsInStore()).toBe(1);
       expect(document.activeElement).toBe(addControl());
+    });
+
+    it('hands focus to the add control when an undo takes away the threat holding it, and back to its title on redo', async () => {
+      const user = userEvent.setup();
+      showPanel(processElement);
+      await addThreat(user);
+
+      runHistory('undo');
+
+      expect(threatsInStore()).toBe(1);
+      expect(document.activeElement).toBe(addControl());
+
+      runHistory('redo');
+
+      expect(threatsInStore()).toBe(2);
+      expect(document.activeElement).toBe(titleField());
+    });
+
+    it('leaves focus in another threat when an undo or redo takes away the threat just added', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+      await addThreat(user);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      const kept = titleField();
+      await user.click(kept);
+
+      runHistory('undo');
+
+      expect(threatsInStore()).toBe(1);
+      expect(document.activeElement).toBe(kept);
+
+      runHistory('redo');
+
+      expect(threatsInStore()).toBe(2);
+      expect(document.activeElement).toBe(kept);
+    });
+
+    it('leaves focus outside the panel where an undo or redo moves a threat', async () => {
+      const user = userEvent.setup();
+      render(<button type="button">Canvas</button>);
+      const canvas = screen.getByRole('button', { name: 'Canvas' });
+      showPanel(processElement);
+      await addThreat(user);
+      act(() => {
+        canvas.focus();
+      });
+
+      runHistory('undo');
+      expect(document.activeElement).toBe(canvas);
+      runHistory('redo');
+      expect(document.activeElement).toBe(canvas);
+
+      await user.click(titleField());
+      runHistory('undo');
+      expect(document.activeElement).toBe(addControl());
+      act(() => {
+        canvas.focus();
+      });
+      runHistory('redo');
+
+      expect(threatsInStore()).toBe(2);
+      expect(document.activeElement).toBe(canvas);
     });
 
     it('commits one undoable step per field left behind', async () => {

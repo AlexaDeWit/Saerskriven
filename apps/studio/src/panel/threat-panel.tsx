@@ -4,11 +4,18 @@ import {
 } from './element-properties.js';
 import type { ElementId, Threat, ThreatId } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { announce, resetAnnouncements } from '../canvas/announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { historyFocusHandler } from './panel-focus.js';
 import { PanelFrame } from './panel-frame.js';
 import type { RefusedField } from './refusals.js';
 import { ThreatEditor, type EditorFocus } from './threat-editor.js';
@@ -49,6 +56,51 @@ function focusIn(
     return undefined;
   }
   return focus.kind;
+}
+
+function useHistoryFocus(
+  addControl: RefObject<HTMLButtonElement | null>,
+  restore: (threatId: ThreatId) => void,
+): void {
+  const undone = useRef<ThreatId | undefined>(undefined);
+  const toAdd = useRef(false);
+
+  useEffect(() => {
+    if (toAdd.current) {
+      toAdd.current = false;
+      addControl.current?.focus();
+    }
+  });
+
+  useEffect(
+    () =>
+      historyFocusHandler(() => {
+        const active = document.activeElement;
+        const item =
+          active?.closest<HTMLElement>('[data-threat-item]')?.dataset[
+            'threatItem'
+          ];
+        const holder = attachedThreats(modelStore.getState()).find(
+          ({ id }) => id === item,
+        );
+        const onAdd = active !== null && active === addControl.current;
+        return () => {
+          const attached = attachedThreats(modelStore.getState());
+          const restored = attached.find(({ id }) => id === undone.current);
+          if (
+            holder !== undefined &&
+            !attached.some(({ id }) => id === holder.id)
+          ) {
+            undone.current = holder.id;
+            toAdd.current = true;
+          } else if (onAdd && restored !== undefined) {
+            undone.current = undefined;
+            restore(restored.id);
+          }
+        };
+      }),
+    [addControl, restore],
+  );
 }
 
 /** Edits the selected element in place. Listboxes retain ownership of Escape. */
@@ -93,6 +145,13 @@ export function ThreatPanel({
       drafts.set(element.id, draft);
     }
   }, [draft, drafts, element]);
+
+  const restore = useCallback((threatId: ThreatId) => {
+    setExpanded(threatId);
+    setFocus({ kind: 'title', threatId });
+  }, []);
+
+  useHistoryFocus(addControl, restore);
 
   useEffect(() => {
     if (!focusing) {
