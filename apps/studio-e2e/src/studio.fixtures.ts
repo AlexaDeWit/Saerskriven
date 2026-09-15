@@ -311,6 +311,22 @@ export const expandThreat = async (
   await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
 };
 
+/** Adds a record through the panel's Add control, typing its first field and, when given, a mitigation's description, each left by Tab. */
+export const addRecord = async (
+  page: Page,
+  kind: 'mitigation' | 'assumption',
+  text: string,
+  description?: string,
+): Promise<void> => {
+  await panelControl(page, `Add ${kind}`).click();
+  await page.keyboard.type(text);
+  await page.keyboard.press('Tab');
+  if (description !== undefined) {
+    await page.keyboard.type(description);
+    await page.keyboard.press('Tab');
+  }
+};
+
 /** Chooses an option in one listbox of a panel, the threat panel unless another region is named, by pointer, and waits for the listbox to close. */
 export const chooseInPanel = async (
   page: Page,

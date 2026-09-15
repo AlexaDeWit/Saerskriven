@@ -1,5 +1,12 @@
 import { Link2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { useEffect, useId, useRef, useState, type FocusEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+} from 'react';
 import {
   announce,
   quoted,
@@ -44,7 +51,12 @@ type RecordGroupProps<Held extends ThreatRecord> = {
 type FocusRequest =
   | { readonly kind: 'text'; readonly recordId: string }
   | { readonly kind: 'add' }
-  | { readonly kind: 'unlinked'; readonly index: number };
+  | {
+      readonly kind: 'unlinked';
+      readonly index: number;
+      readonly body: Element | null | undefined;
+      readonly scrolled: number;
+    };
 
 const rowSelector = '[data-record-row]';
 
@@ -131,6 +143,13 @@ export function RecordGroup<Held extends ThreatRecord>({
     }
   }, [stale, onRefused]);
 
+  useLayoutEffect(() => {
+    const request = focus.current;
+    if (request?.kind === 'unlinked' && request.body) {
+      request.body.scrollTop = request.scrolled;
+    }
+  });
+
   useEffect(() => {
     const request = focus.current;
     focus.current = undefined;
@@ -190,11 +209,17 @@ export function RecordGroup<Held extends ThreatRecord>({
   };
 
   const unlink = (record: Held, index: number): void => {
+    const body = group.current?.closest(`.${styles.body}`);
+    focus.current = {
+      kind: 'unlinked',
+      index,
+      body,
+      scrolled: body?.scrollTop ?? 0,
+    };
     dispatch(target.unlink(record));
     const kept = kind
       .held(modelStore.getState().present)
       .some(({ id }) => id === record.id);
-    focus.current = { kind: 'unlinked', index };
     const named = `${kind.noun} ${quoted(recordLabel(record), recordQuoteLength)}`;
     announce(
       kept

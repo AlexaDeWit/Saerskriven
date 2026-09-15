@@ -186,9 +186,12 @@ editor and the model's properties draw the same group.
   A row that goes while it holds focus, by an unlink or an undo, leaves focus
   in its group. An unlink leaves the panel body scrolled where it was, so the
   rows below move up under the pointer, and scrolls it only as far as the
-  newly focused control needs to be seen. The body opts out of the browser's
-  scroll anchoring, which would otherwise hold a row below the removed one in
-  place and pull the content away from the pointer.
+  newly focused control needs to be seen. The unlink puts back the body's
+  scroll position before the frame paints, because the browser's scroll
+  anchoring would otherwise hold a row below the removed one in place and
+  pull the content away from the pointer. Anchoring stays on for every other
+  change, so a record arriving above the rows in view, from another tab or by
+  an undo or redo, leaves those rows where they are.
 
 Every edit is one store action carrying one model operation, so each is one
 undo step, reaches other tabs through the same sync as every other edit,

@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
+  addRecord,
   chooseInPanel,
   editAnnouncement,
   expandThreat,
@@ -305,28 +306,14 @@ test('the pane and its record fields stay where they are when an unlink is annou
   expect((await screenBoxOf(remaining)).y).toBe(field);
 });
 
-const addMitigation = async (
-  page: Page,
-  title: string,
-  description = '',
-): Promise<void> => {
-  const add = panelControl(page, 'Add mitigation');
-  await onScreen(add);
-  await add.click();
-  await page.keyboard.type(title);
-  await page.keyboard.press('Tab');
-  await page.keyboard.type(description);
-  await page.keyboard.press('Tab');
-};
-
 test('an unlink keeps the pane scrolled where it was while the next Unlink is on screen', async ({
   page,
 }) => {
   await openEcluse(page);
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
-  await addMitigation(page, 'Strip caller tokens at the edge');
-  await addMitigation(page, 'Rotate the upstream token hourly');
+  await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
+  await addRecord(page, 'mitigation', 'Rotate the upstream token hourly');
 
   const unlink = panelControl(page, 'Unlink mitigation 1');
   await onScreen(unlink);
@@ -348,9 +335,10 @@ test('an unlink scrolls the pane only as far as the next Unlink needs to be seen
   await openEcluse(page);
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
-  await addMitigation(page, 'Strip caller tokens at the edge');
-  await addMitigation(
+  await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
+  await addRecord(
     page,
+    'mitigation',
     'Rotate the upstream token hourly',
     'Issue tokens per caller.\nExpire them within the hour.\nRefuse a replay.\nLog each rotation.\nAlert on a failed rotation.',
   );
@@ -374,6 +362,33 @@ test('an unlink scrolls the pane only as far as the next Unlink needs to be seen
   expect(
     Math.abs(revealed.y + revealed.height - (pressed.y + pressed.height)),
   ).toBeLessThanOrEqual(1);
+});
+
+test('a record arriving from another tab above the rows in view leaves those rows where they are', async ({
+  context,
+  page,
+}) => {
+  const other = await context.newPage();
+  await openEcluse(page);
+  await openEcluse(other);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  const addAssumption = panelControl(page, 'Add assumption');
+  await addAssumption.evaluate((element) => {
+    element.scrollIntoView({ block: 'start' });
+  });
+  const scrolled = await scrolledAbove(addAssumption);
+  const drawn = await screenBoxOf(addAssumption);
+
+  await selectNode(other, proxy);
+  await expandThreat(other, forwarded);
+  await addRecord(other, 'mitigation', 'Strip caller tokens at the edge');
+
+  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
+    'Strip caller tokens at the edge',
+  );
+  expect(scrolled).toBeGreaterThan(0);
+  expect(await screenBoxOf(addAssumption)).toEqual(drawn);
 });
 
 test('a message longer than two lines stops above the open pane at phone width', async ({
