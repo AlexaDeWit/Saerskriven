@@ -32,6 +32,7 @@ const threatOf = (fields: {
   readonly number: number;
   readonly title?: string;
   readonly description?: string;
+  readonly status?: Threat['status'];
 }): Threat =>
   threatSchema.parse({
     id: `threat-${String(fields.number)}`,
@@ -333,6 +334,28 @@ describe("a threat's records", () => {
     );
     expect(quotesIn(admitted)).toBe(deepestProse - 4);
     expect(quotesIn(refused)).toBe(0);
+  });
+});
+
+describe("a threat's flags", () => {
+  it('carry the badge of a mitigated threat with only proposed work in its Flags field', () => {
+    const source = sourceOf({
+      ...recordsModel([{ prose: 'alpha' }]),
+      threats: [
+        threatOf({ number: 1, status: 'mitigated' }),
+        threatOf({ number: 2 }),
+      ],
+    });
+    expect(source).toContain('#"Threat 1: ');
+    expect(source).toContain('#"Threat 2: ');
+    const flagsOf = (heading: string): string =>
+      between(source.slice(source.indexOf(heading)), '#strong[#"Flags"]', '\n');
+    const flagged = flagsOf('#"Threat 1: ');
+    expect(flagged.split('#saer-badge(').length - 1).toBe(1);
+    expect(flagged).toContain(
+      `#saer-badge("${badgeLabel({ kind: 'flag', value: 'mitigated-without-implemented-work' })}"`,
+    );
+    expect(flagsOf('#"Threat 2: ')).not.toContain('#saer-badge(');
   });
 });
 

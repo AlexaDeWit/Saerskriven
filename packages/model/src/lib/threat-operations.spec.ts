@@ -139,7 +139,7 @@ describe('removeThreat', () => {
     ]);
   });
 
-  it('culls every record whose only threat link it was, element links or not', () => {
+  it('culls every record whose only reference it was', () => {
     const next = modelOf(removeThreat(base, spoofShopper));
     expect(next.assumptions).toEqual([]);
     const again = modelOf(
