@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { registeredChords } from './chords.js';
 import {
   canvasSurface,
   chooseInPanel,
@@ -101,6 +102,36 @@ test('Model properties opened from the menu by keyboard focuses Title, and Escap
   await modelControl(page, 'Close model properties').click();
   await expect(modelPanel(page)).toHaveCount(0);
   await expect(canvasSurface(page)).toBeFocused();
+});
+
+test('M opens Model properties with focus in Title, types into Title, and closes them again from outside a text field', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  const node = await selectNode(page, proxy);
+  const [shortcut] = registeredChords['model-properties'];
+
+  await page.keyboard.press(shortcut);
+  const title = modelField(page, 'textbox', 'Title');
+  await expect(title).toBeFocused();
+  await expect(threatPanel(page)).toHaveCount(0);
+  await expect(node).not.toHaveClass(/selected/u);
+
+  const before = await title.inputValue();
+  await page.keyboard.press('End');
+  await page.keyboard.press(shortcut);
+  await expect(title).toHaveValue(`${before}m`);
+  await page.keyboard.press('Backspace');
+  await expect(title).toHaveValue(before);
+
+  await modelControl(page, 'Add assumption').focus();
+  await page.keyboard.press(shortcut);
+  await expect(modelPanel(page)).toHaveCount(0);
+  await expect(canvasSurface(page)).toBeFocused();
+  expect(await undoOffered(page)).toBe(false);
+
+  await page.keyboard.press(shortcut);
+  await expect(modelField(page, 'textbox', 'Title')).toBeFocused();
 });
 
 test('the title and the description commit as one undo step each, and Tab runs from Title through Description to the Assumptions group', async ({

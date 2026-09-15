@@ -165,7 +165,7 @@ describe('what the menu offers', () => {
     ).toContain('Control+S');
     expect(
       items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
-    ).toHaveLength(10);
+    ).toHaveLength(11);
     for (const name of [
       'Copy',
       'Cut',
@@ -353,6 +353,9 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     expect(item('Save').getAttribute('aria-keyshortcuts')).toBe('Control+S');
+    expect(item('Model properties').getAttribute('aria-keyshortcuts')).toBe(
+      'M',
+    );
 
     await user.hover(item('Export'));
     expect(
@@ -470,6 +473,7 @@ describe('what the studio says about the file', () => {
     await choose(user, 'Model properties');
 
     await waitFor(() => {
+      expect(screen.queryByRole('menu')).toBeNull();
       expect(document.activeElement).toBe(
         screen.getByRole('textbox', { name: 'Title' }),
       );

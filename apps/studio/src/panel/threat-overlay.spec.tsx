@@ -10,7 +10,7 @@ import {
   sampleModel,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { focusThreatPanel } from './panel-focus.js';
+import { focusThreatPanel, toggleModelProperties } from './panel-focus.js';
 import { ThreatOverlay } from './threat-overlay.js';
 
 const softHyphen = '­';
@@ -279,6 +279,30 @@ describe('ThreatOverlay', () => {
     );
     expect(modelProperties()).toBeNull();
     expect(document.activeElement).toBe(screen.getByTestId('canvas'));
+  });
+
+  it('focuses Title when the toggle opens the model properties, and hands focus to the canvas when it closes them', () => {
+    render(
+      <>
+        <div className="react-flow" data-testid="canvas" tabIndex={-1} />
+        <ThreatOverlay />
+      </>,
+    );
+    showModelProperties();
+    expect(document.activeElement).toBe(document.body);
+
+    act(() => {
+      toggleModelProperties();
+    });
+    expect(modelProperties()).toBeNull();
+    expect(document.activeElement).toBe(screen.getByTestId('canvas'));
+
+    act(() => {
+      toggleModelProperties();
+    });
+    expect(document.activeElement).toBe(
+      screen.getByRole('textbox', { name: 'Title' }),
+    );
   });
 
   it('closes the model properties on Escape, which Focus threats does not open again', async () => {

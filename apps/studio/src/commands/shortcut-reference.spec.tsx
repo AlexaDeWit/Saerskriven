@@ -54,6 +54,7 @@ describe('ShortcutReference', () => {
     );
     expect(within(commandRow('save')).getByText('⌘S')).toBeTruthy();
     expect(keysIn(commandRow('shortcut-reference'))).toEqual(['?', 'F1']);
+    expect(keysIn(commandRow('model-properties'))).toEqual(['M']);
     expect(
       within(commandRow('export-pdf')).getByText('No shortcut'),
     ).toBeTruthy();

@@ -4,7 +4,7 @@ import { announce, resetAnnouncements } from '../canvas/announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import { ProseField, TextField } from '../ui/text-field.js';
-import { modelPropertiesFocusHandler } from './panel-focus.js';
+import { takeModelPropertiesFocus } from './panel-focus.js';
 import { PanelFrame } from './panel-frame.js';
 import { assumptionKind, modelTarget } from './records.js';
 import { draftIn, useRefusals, type RefusedField } from './refusals.js';
@@ -48,13 +48,11 @@ export function ModelPropertiesPanel({
     }
   });
 
-  useEffect(
-    () =>
-      modelPropertiesFocusHandler(() => {
-        titleField.current?.focus();
-      }),
-    [],
-  );
+  useEffect(() => {
+    takeModelPropertiesFocus(() => {
+      titleField.current?.focus();
+    });
+  }, []);
 
   const commit =
     (field: 'title' | 'description') =>

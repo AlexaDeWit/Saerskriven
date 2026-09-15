@@ -163,13 +163,14 @@ mitigation". Positions renumber when a row above is unlinked.
 
 ## The model's properties
 
-The Model properties command in the root menu shows the model's properties in
-the panel location. It replaces the selection panel if that is open and clears
-the canvas selection, since both are one `ShowModelProperties` in the store.
-Selecting anything on the canvas brings the selection panel back, and an empty
-selection leaves the model's properties where they are. Opened from the menu,
-the panel takes focus in its Title. Close model properties and Escape close
-the panel, as they close the threat panel, and hand focus to the canvas.
+The Model properties command, in the root menu or on M outside text fields,
+shows the model's properties in the panel location. It replaces the selection
+panel if that is open and clears the canvas selection, since both are one
+`ShowModelProperties` in the store. Selecting anything on the canvas brings
+the selection panel back, and an empty selection leaves the model's properties
+where they are. Opened by the command, the panel takes focus in its Title.
+Close model properties, Escape, and the command run again close the panel, as
+Close and Escape close the threat panel, and hand focus to the canvas.
 Whether the properties are shown belongs to the tab, like the selection, so an
 edit another tab makes changes what they show but not whether they are shown.
 

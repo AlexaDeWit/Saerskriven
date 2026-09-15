@@ -24,7 +24,7 @@ import {
 import { selectTool, type Tool } from '../canvas/tools.js';
 import {
   focusThreatPanel,
-  requestModelPropertiesFocus,
+  toggleModelProperties,
 } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
 import { severalDiagrams } from '../store/selectors.js';
@@ -508,13 +508,10 @@ const table = {
     id: 'model-properties',
     label: 'Model properties',
     group: 'Edit',
-    shortcuts: [],
-    when: 'From the menu. Clears the canvas selection',
+    shortcuts: [bare('m')],
+    when: 'Focus is outside a text field or open menu. Opens with focus in Title and clears the canvas selection, or closes where already shown',
     inTextFields: false,
-    dispatch: runs(() => {
-      requestModelPropertiesFocus();
-      dispatch(Action.ShowModelProperties());
-    }),
+    dispatch: runs(toggleModelProperties),
   },
   'focus-threats': {
     id: 'focus-threats',

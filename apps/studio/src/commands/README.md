@@ -43,10 +43,13 @@ Focus threats is a page command on T. It uses the panel's focus channel to
 open the selected element's panel when needed and focus "Add a threat". Text
 fields and open overlays keep T for their own input.
 
-Model properties has no chord and runs from the Edit group of the root menu.
-It dispatches `ShowModelProperties`, which clears the canvas selection and
-shows the model's properties in the panel location ([the
-panel](../panel/README.md#the-models-properties)).
+Model properties is a page command on M, and runs from the Edit group of the
+root menu too. It dispatches `ShowModelProperties`, which clears the canvas
+selection and shows the model's properties in the panel location with focus in
+Title ([the panel](../panel/README.md#the-models-properties)). Where they
+already show, it closes them and focuses the canvas, as Escape does. Text
+fields and open overlays keep M for their own input, so M typed into Title is
+a letter of the title.
 
 ## Chords, and how a platform writes them
 
