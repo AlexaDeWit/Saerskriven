@@ -121,10 +121,13 @@ describe('where else a shared row says its record is referenced', () => {
     );
   });
 
-  it('names at most three threats and counts the rest', () => {
+  it('names up to four threats, and past four names three and counts the rest', () => {
     expect(numbersIn(modelTarget.elsewhere(on(4, 7, 9, 25), numbered))).toEqual(
       [4, 7, 9, 25],
     );
+    expect(
+      numbersIn(modelTarget.elsewhere(on(4, 7, 9, 12, 25), numbered)),
+    ).toEqual([4, 7, 9, 2]);
     expect(
       numbersIn(modelTarget.elsewhere(on(4, 7, 9, 12, 25, 31), numbered)),
     ).toEqual([4, 7, 9, 3]);

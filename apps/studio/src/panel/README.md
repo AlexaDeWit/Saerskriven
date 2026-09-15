@@ -179,24 +179,23 @@ edit another tab makes changes what they show but not whether they are shown.
 
 The panel holds the model's Title and Description and a group of the
 assumptions that apply to the model, headed with the register's label for that
-section (`sectionLabel` in `@saerskriven/render`).
-Each text field commits one `SetModelMetadata` naming that field alone, so
-each commit is one undo step, and a commit that changes nothing dispatches
-nothing. Refused text is held as threat text is ([the commit
-rule](#the-commit-rule)), in the overlay, so a draft survives the panel
-closing and is dropped when the file changes.
+section (`sectionLabel` in `@saerskriven/render`). Each text field commits one
+`SetModelMetadata` naming that field alone, so each commit is one undo step,
+and a commit that changes nothing dispatches nothing. Refused text is held as
+threat text is ([the commit rule](#the-commit-rule)), in the overlay, so a
+draft survives the panel closing and is dropped when the file changes.
 
-That group is the threat editor's group bound to the model rather
-than to a threat: `records.ts` holds a `RecordTarget` per target, which heads
-the group, says which records the group shows, attaches a new record, links, unlinks, and
+That group is the threat editor's group bound to the model rather than to a
+threat: `records.ts` holds a `RecordTarget` per target, which heads the group,
+says which records the group shows, attaches a new record, links, unlinks, and
 says where else a record is referenced. Add opens an empty row, whose first
 commit is one `AddAssumption` that applies to the model, links no threat and
 starts `unconfirmed`. Link existing offers the assumptions that do not apply
 to the model and applies the chosen one with `LinkAssumptionToModel`, which
 keeps its threat links. Unlink is `UnlinkAssumptionFromModel`, which removes
 an assumption that links no threat. A row whose assumption links threats names
-them as a threat editor row does, and describes its unlink control by it. Status changes in place,
-and no record edit moves a threat's status.
+them as a threat editor row does, and describes its unlink control by it.
+Status changes in place, and no record edit moves a threat's status.
 
 ## Element security properties
 
