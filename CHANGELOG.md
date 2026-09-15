@@ -1,3 +1,49 @@
+## 0.5.0 (2026-09-15)
+
+### 🚀 Features
+
+- **canvas:** mark flagged threats on the threat badge ([#429](https://github.com/AlexaDeWit/Saerskriven/pull/429))
+- **formats:** read Threat Dragon mitigation text as a record and write records back ([#422](https://github.com/AlexaDeWit/Saerskriven/pull/422))
+- ⚠️ **formats:** write Saerskriven YAML version 2, and read version 1 through the migration ([#431](https://github.com/AlexaDeWit/Saerskriven/pull/431))
+- **formats:** import TM-BOM assumptions as assumptions that apply to the model ([#433](https://github.com/AlexaDeWit/Saerskriven/pull/433), [#407](https://github.com/AlexaDeWit/Saerskriven/issues/407))
+- ⚠️ **mcp:** link, unlink and set status on records, and read records and flags ([#435](https://github.com/AlexaDeWit/Saerskriven/pull/435), [#408](https://github.com/AlexaDeWit/Saerskriven/issues/408))
+- **model:** link, unlink and cull records, and derive threat flags ([#413](https://github.com/AlexaDeWit/Saerskriven/pull/413))
+- **model:** add the unconfirmed assumption status ([#416](https://github.com/AlexaDeWit/Saerskriven/pull/416))
+- ⚠️ **model:** link assumptions to threats only ([#417](https://github.com/AlexaDeWit/Saerskriven/pull/417))
+- **model:** let an assumption apply to the model ([#426](https://github.com/AlexaDeWit/Saerskriven/pull/426))
+- ⚠️ **model:** hold every mitigation as a record, and drop the threat's prose ([#428](https://github.com/AlexaDeWit/Saerskriven/pull/428))
+- **model:** link a pasted threat to an identical record ([#434](https://github.com/AlexaDeWit/Saerskriven/pull/434))
+- **render:** list each threat's records and flags in the register ([#418](https://github.com/AlexaDeWit/Saerskriven/pull/418), [#402](https://github.com/AlexaDeWit/Saerskriven/issues/402))
+- **render:** list the assumptions that apply to the model in the register ([#427](https://github.com/AlexaDeWit/Saerskriven/pull/427))
+- **studio:** edit a threat's mitigations and assumptions in the threat editor ([#421](https://github.com/AlexaDeWit/Saerskriven/pull/421))
+- **studio:** show record counts and flags on the collapsed threat summary ([#430](https://github.com/AlexaDeWit/Saerskriven/pull/430), [#410](https://github.com/AlexaDeWit/Saerskriven/issues/410))
+- **studio:** edit model-scoped assumptions in the model properties panel ([#438](https://github.com/AlexaDeWit/Saerskriven/pull/438))
+- **studio:** open and close Model properties with the M shortcut ([#457](https://github.com/AlexaDeWit/Saerskriven/pull/457))
+- **studio:** keep record rows in place when a record is added or linked ([#455](https://github.com/AlexaDeWit/Saerskriven/pull/455))
+- **studio:** name each raised flag in a canvas node's accessible name ([#454](https://github.com/AlexaDeWit/Saerskriven/pull/454))
+- **studio:** name the threats a shared record is on, and head the model's assumptions as the register does ([#453](https://github.com/AlexaDeWit/Saerskriven/pull/453))
+
+### 🩹 Fixes
+
+- **canvas:** keep a selected element's threat badge clear of its resize handle ([#458](https://github.com/AlexaDeWit/Saerskriven/pull/458))
+- **studio:** keep the root menu inside a short viewport ([#420](https://github.com/AlexaDeWit/Saerskriven/pull/420))
+- **studio:** keep the Link existing picker usable with long record text ([#436](https://github.com/AlexaDeWit/Saerskriven/pull/436))
+- **studio:** lay out records as cards and start the link existing picker empty ([#460](https://github.com/AlexaDeWit/Saerskriven/pull/460), [#445](https://github.com/AlexaDeWit/Saerskriven/issues/445), [#439](https://github.com/AlexaDeWit/Saerskriven/issues/439))
+- **studio:** bound the record announcement and keep it off the panel header ([#459](https://github.com/AlexaDeWit/Saerskriven/pull/459))
+- **studio:** keep keyboard focus in the panel when undo removes a just-added threat ([#456](https://github.com/AlexaDeWit/Saerskriven/pull/456))
+- **studio:** keep the threat pane's scroll position after an unlink at phone width ([#466](https://github.com/AlexaDeWit/Saerskriven/pull/466))
+
+### ⚠️ Breaking Changes
+
+- **mcp:** link, unlink and set status on records, and read records and flags ([#435](https://github.com/AlexaDeWit/Saerskriven/pull/435), [#408](https://github.com/AlexaDeWit/Saerskriven/issues/408))
+- **formats:** write Saerskriven YAML version 2, and read version 1 through the migration ([#431](https://github.com/AlexaDeWit/Saerskriven/pull/431))
+- **model:** hold every mitigation as a record, and drop the threat's prose ([#428](https://github.com/AlexaDeWit/Saerskriven/pull/428))
+- **model:** link assumptions to threats only ([#417](https://github.com/AlexaDeWit/Saerskriven/pull/417))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.4.0 (2026-09-13)
 
 ### 🚀 Features
