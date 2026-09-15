@@ -1,5 +1,6 @@
 import type { Threat } from '@saerskriven/model';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { mitigationId } from '@saerskriven/model/fixtures';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Accordion } from 'radix-ui';
 import { Action } from '../store/actions.js';
@@ -61,6 +62,13 @@ const button = (name: string): HTMLElement =>
 
 const textbox = (name: string): HTMLElement =>
   screen.getByRole('textbox', { name });
+
+const linkFirstOffered = async (noun: string): Promise<void> => {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole('combobox', { name: `Existing ${noun}` }));
+  await user.click(screen.getAllByRole('option')[0]);
+  await user.click(button(`Link existing ${noun}`));
+};
 
 const assumptionRows = (): readonly (string | undefined)[] =>
   screen
@@ -227,7 +235,17 @@ describe(
         screen.getAllByRole('option').map((option) => option.textContent),
       ).toEqual([expect.stringContaining('Read-only share links')]);
       await user.keyboard('{Escape}');
-      await user.click(button('Link existing mitigation'));
+      const link = button('Link existing mitigation');
+      expect(link.getAttribute('aria-disabled')).toBe('true');
+      await user.click(link);
+      expect(present()).toBe(recordedModel);
+
+      await user.click(
+        screen.getByRole('combobox', { name: 'Existing mitigation' }),
+      );
+      await user.click(screen.getByRole('option'));
+      expect(link.getAttribute('aria-disabled')).toBe('false');
+      await user.click(link);
 
       expect(present().mitigations).toMatchObject([
         { id: firstMitigation, threats: [firstThreat, secondThreat] },
@@ -237,6 +255,73 @@ describe(
       expect(
         screen.queryByRole('combobox', { name: 'Existing mitigation' }),
       ).toBeNull();
+    });
+
+    it('starts the Existing picker with nothing chosen, and returns it to nothing chosen after a link', async () => {
+      const user = userEvent.setup();
+      act(() => {
+        dispatch(
+          Action.AddMitigation({
+            mitigation: {
+              ...recordedModel.mitigations[0],
+              id: mitigationId('mitigation-second'),
+              title: 'Rotate share links',
+            },
+          }),
+        );
+      });
+      showRecords(threatOf(secondThreat));
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing mitigation',
+      });
+      expect(existing.hasAttribute('data-placeholder')).toBe(true);
+
+      await chooseFrom('Existing mitigation', 'Rotate share links');
+      expect(existing.hasAttribute('data-placeholder')).toBe(false);
+      await user.click(button('Link existing mitigation'));
+
+      expect(present().mitigations[1].threats).toContain(secondThreat);
+      expect(
+        screen
+          .getByRole('combobox', { name: 'Existing mitigation' })
+          .hasAttribute('data-placeholder'),
+      ).toBe(true);
+      const disabled = button('Link existing mitigation');
+      expect(disabled.getAttribute('aria-disabled')).toBe('true');
+      expect(
+        document.getElementById(
+          disabled.getAttribute('aria-describedby') ?? '',
+        ),
+      ).not.toBeNull();
+    });
+
+    it('sends focus into a new row still holding a refused draft when Add is pressed, opening no second row', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat), {
+        field: 'new-mitigation/title/mitigation-drafted',
+        text: `Pasted${softHyphen}title`,
+        said: 'A refusal',
+      });
+
+      await user.click(button('Add mitigation'));
+
+      expect(document.activeElement).toBe(textbox('Mitigation 1 title'));
+      expect(screen.queryByRole('group', { name: 'Mitigation 2' })).toBeNull();
+    });
+
+    it('names each record card as a group holding its controls, and keeps their names', () => {
+      showRecords(threatOf(firstThreat));
+
+      const card = screen.getByRole('group', { name: 'Mitigation 1' });
+      expect(
+        within(card).getByRole('combobox', { name: 'Mitigation 1 status' }),
+      ).toBeDefined();
+      expect(
+        within(screen.getByRole('group', { name: 'Assumption 1' })).getByRole(
+          'textbox',
+          { name: 'Assumption 1' },
+        ),
+      ).toBeDefined();
     });
 
     it('changes a status in place as one undo step that moves no threat status', async () => {
@@ -349,6 +434,10 @@ describe(
       const user = userEvent.setup();
       showRecords(threatOf(secondThreat));
 
+      await user.click(
+        screen.getByRole('combobox', { name: 'Existing assumption' }),
+      );
+      await user.click(screen.getByRole('option'));
       await user.click(button('Link existing assumption'));
       expect(present().assumptions[0].threats).toEqual([
         firstThreat,
@@ -370,7 +459,7 @@ describe(
       await user.keyboard('Share links expire.');
       await user.tab();
       const added = present().assumptions.at(-1)?.id;
-      await user.click(button('Link existing assumption'));
+      await linkFirstOffered('assumption');
 
       expect(assumptionRows()).toEqual([added, firstAssumption]);
       expect(document.activeElement).toBe(textbox('Assumption 2'));
@@ -412,7 +501,7 @@ describe(
     it('gives a row brought back by undoing its unlink its old slot', async () => {
       const user = userEvent.setup();
       showRecords(threatOf(secondThreat));
-      await user.click(button('Link existing assumption'));
+      await linkFirstOffered('assumption');
       await user.click(button('Add assumption'));
       await user.keyboard('Share links expire.');
       await user.tab();
@@ -431,14 +520,14 @@ describe(
     it('gives a record linked again after its unlink its old slot', async () => {
       const user = userEvent.setup();
       showRecords(threatOf(secondThreat));
-      await user.click(button('Link existing assumption'));
+      await linkFirstOffered('assumption');
       await user.click(button('Add assumption'));
       await user.keyboard('Share links expire.');
       await user.tab();
       const added = present().assumptions.at(-1)?.id;
 
       await user.click(button('Unlink assumption 1'));
-      await user.click(button('Link existing assumption'));
+      await linkFirstOffered('assumption');
 
       expect(assumptionRows()).toEqual([firstAssumption, added]);
       expect(document.activeElement).toBe(textbox('Assumption 1'));

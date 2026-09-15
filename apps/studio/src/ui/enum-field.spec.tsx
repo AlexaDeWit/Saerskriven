@@ -78,6 +78,97 @@ describe('EnumField', () => {
     }
   });
 
+  it('draws a suffix outside the label it tells apart, keeps both in the option name, and describes the option by its detail', async () => {
+    const user = userEvent.setup();
+    render(
+      <EnumField
+        label="Rank"
+        labelOf={(option) => ({
+          label: 'Same long label',
+          suffix: `(${option})`,
+          detail: `detail of ${option}`,
+        })}
+        onCommit={noop}
+        options={options}
+        value="first"
+      />,
+    );
+
+    expect(
+      screen
+        .getByRole('combobox', { name: 'Rank' })
+        .querySelector('[data-option-suffix]')?.textContent,
+    ).toBe('(first)');
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    const option = screen.getByRole('option', {
+      name: 'Same long label (second)',
+    });
+    expect(option.querySelector('[data-option-suffix]')?.textContent).toBe(
+      '(second)',
+    );
+    expect(
+      document.getElementById(option.getAttribute('aria-describedby') ?? '')
+        ?.textContent,
+    ).toContain('second');
+  });
+
+  it('shows its placeholder with nothing chosen while it has no value', async () => {
+    const user = userEvent.setup();
+    render(
+      <EnumField
+        label="Rank"
+        onCommit={noop}
+        options={options}
+        placeholder="Pick a rank"
+        value={undefined}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox', { name: 'Rank' });
+    expect(trigger.textContent).toContain('Pick a rank');
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    expect(
+      screen
+        .getAllByRole('option')
+        .filter((option) => option.getAttribute('aria-selected') === 'true'),
+    ).toHaveLength(0);
+  });
+
+  it('keeps its accessible name when the label drawn is replaced or left out', () => {
+    render(
+      <>
+        <EnumField
+          label="Rank of the first"
+          onCommit={noop}
+          options={options}
+          shownLabel="Rank"
+          value="first"
+        />
+        <EnumField
+          label="Rank of the second"
+          onCommit={noop}
+          options={options}
+          shownLabel=""
+          value="first"
+        />
+      </>,
+    );
+
+    expect(
+      screen.getByRole('combobox', { name: 'Rank of the first' }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole('combobox', { name: 'Rank of the second' }),
+    ).toBeDefined();
+    expect(screen.queryByText('Rank of the second')).toBeNull();
+  });
+
   it('puts the options under the heading each was grouped under', async () => {
     const user = userEvent.setup();
     render(

@@ -197,6 +197,26 @@ describe('TextField', () => {
 });
 
 describe('ProseField', () => {
+  it('sets its height from its text only where CSS cannot size it to its content', () => {
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(120);
+    vi.stubGlobal('CSS', { supports: () => false });
+    onTestFinished(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    });
+    const { unmount } = render(
+      <ProseField label="Notes" onCommit={noop} onRefused={noop} value="" />,
+    );
+    expect(textbox('Notes').style.height).toBe('120px');
+    unmount();
+
+    vi.stubGlobal('CSS', { supports: () => true });
+    render(
+      <ProseField label="Notes" onCommit={noop} onRefused={noop} value="" />,
+    );
+    expect(textbox('Notes').style.height).toBe('');
+  });
+
   it('keeps Enter in the prose and commits when it is left', async () => {
     const user = userEvent.setup();
     const onCommit = commits();

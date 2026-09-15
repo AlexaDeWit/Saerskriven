@@ -1,6 +1,15 @@
 import { firstRefusedCharacter, isEmptyName } from '@saerskriven/model';
-import { useEffect, useId, useRef, useState, type Ref } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type Ref,
+} from 'react';
 
+import { growUnlessResized, sizesFieldsToContent } from './grow-to-content.js';
 import styles from './text-field.module.css';
 
 type Draft = { readonly shown: string; readonly text: string };
@@ -103,9 +112,15 @@ export function refusedName(
     : refusedText(label, text);
 }
 
-/** A controlled value, an optional refused draft, and callbacks for changes and commits. */
+/**
+ * A controlled value, an optional refused draft, and callbacks for changes
+ * and commits. `label` is the accessible name and names the field in a
+ * refusal. `shownLabel` replaces the label drawn above the field, and an
+ * empty one draws none.
+ */
 export type TextFieldProps = {
   readonly label: string;
+  readonly shownLabel?: string;
   readonly value: string;
   readonly held?: string;
   readonly onChange?: () => void;
@@ -114,9 +129,57 @@ export type TextFieldProps = {
   readonly ref?: Ref<HTMLInputElement>;
 };
 
+function Labelled({
+  label,
+  shownLabel,
+  fieldId,
+  refusalId,
+  refusal,
+  children,
+}: {
+  readonly label: string;
+  readonly shownLabel: string | undefined;
+  readonly fieldId: string;
+  readonly refusalId: string;
+  readonly refusal: TextRefusal | undefined;
+  readonly children: ReactNode;
+}) {
+  return (
+    <div className={styles.field}>
+      {shownLabel !== '' && (
+        <label className={styles.label} htmlFor={fieldId}>
+          {shownLabel ?? label}
+        </label>
+      )}
+      {children}
+      {refusal !== undefined && (
+        <p className={styles.refusal} id={refusalId}>
+          {refusal.shown}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function controlProps(
+  label: string,
+  shownLabel: string | undefined,
+  fieldId: string,
+  refusalId: string,
+  refusal: TextRefusal | undefined,
+) {
+  return {
+    'aria-describedby': refusal === undefined ? undefined : refusalId,
+    'aria-invalid': refusal !== undefined,
+    'aria-label': shownLabel === undefined ? undefined : label,
+    id: fieldId,
+  };
+}
+
 /** Commits a single line on blur or Enter, keeping each edit as one undo step. */
 export function TextField({
   label,
+  shownLabel,
   value,
   held,
   onChange,
@@ -135,15 +198,16 @@ export function TextField({
   );
 
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={fieldId}>
-        {label}
-      </label>
+    <Labelled
+      fieldId={fieldId}
+      label={label}
+      refusal={refusal}
+      refusalId={refusalId}
+      shownLabel={shownLabel}
+    >
       <input
-        aria-describedby={refusal === undefined ? undefined : refusalId}
-        aria-invalid={refusal !== undefined}
+        {...controlProps(label, shownLabel, fieldId, refusalId, refusal)}
         className={styles.input}
-        id={fieldId}
         onBlur={commit}
         onChange={(event) => {
           onChange?.();
@@ -159,23 +223,19 @@ export function TextField({
         type="text"
         value={text}
       />
-      {refusal !== undefined && (
-        <p className={styles.refusal} id={refusalId}>
-          {refusal.shown}
-        </p>
-      )}
-    </div>
+    </Labelled>
   );
 }
 
-/** A {@link TextFieldProps} for prose, which starts at three lines rather than eight when `compact`. */
+/** A {@link TextFieldProps} for prose, which starts at two lines rather than eight when `compact`. */
 export type ProseFieldProps = Omit<TextFieldProps, 'ref'> & {
   readonly compact?: boolean;
 };
 
-/** Edits Markdown source and commits on blur. The textarea grows with content and supports vertical resizing. */
+/** Edits Markdown source and commits on blur. The textarea grows with content to a bound, scrolls past it, and supports vertical resizing. */
 export function ProseField({
   label,
+  shownLabel,
   value,
   held,
   compact = false,
@@ -185,6 +245,8 @@ export function ProseField({
 }: ProseFieldProps) {
   const fieldId = useId();
   const refusalId = useId();
+  const field = useRef<HTMLTextAreaElement>(null);
+  const written = useRef<string | undefined>(undefined);
   const { text, refusal, change, commit } = useTextDraft(
     label,
     value,
@@ -193,29 +255,32 @@ export function ProseField({
     onRefused,
   );
 
+  useLayoutEffect(() => {
+    if (!sizesFieldsToContent()) {
+      written.current = growUnlessResized(field.current, written.current);
+    }
+  });
+
   return (
-    <div className={styles.field}>
-      <label className={styles.label} htmlFor={fieldId}>
-        {label}
-      </label>
+    <Labelled
+      fieldId={fieldId}
+      label={label}
+      refusal={refusal}
+      refusalId={refusalId}
+      shownLabel={shownLabel}
+    >
       <textarea
-        aria-describedby={refusal === undefined ? undefined : refusalId}
-        aria-invalid={refusal !== undefined}
+        {...controlProps(label, shownLabel, fieldId, refusalId, refusal)}
         className={compact ? `${styles.prose} ${styles.compact}` : styles.prose}
-        id={fieldId}
         onBlur={commit}
         onChange={(event) => {
           onChange?.();
           change(event.target.value);
         }}
-        rows={compact ? 3 : 8}
+        ref={field}
+        rows={compact ? 2 : 8}
         value={text}
       />
-      {refusal !== undefined && (
-        <p className={styles.refusal} id={refusalId}>
-          {refusal.shown}
-        </p>
-      )}
-    </div>
+    </Labelled>
   );
 }

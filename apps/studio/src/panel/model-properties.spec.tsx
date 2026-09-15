@@ -155,7 +155,7 @@ describe(
         screen.getByRole('combobox', { name: 'Existing assumption' }),
       );
       expect(screen.getAllByRole('option')).toHaveLength(1);
-      await user.keyboard('{Escape}');
+      await user.click(screen.getByRole('option'));
       await user.click(button('Link existing assumption'));
 
       expect(present().assumptions).toMatchObject([

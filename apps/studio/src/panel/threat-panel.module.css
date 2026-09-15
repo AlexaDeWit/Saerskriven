@@ -159,6 +159,12 @@
   font-size: var(--pn-font-size);
 }
 
+.counts {
+  display: inline-flex;
+  gap: var(--pn-space-2);
+  white-space: nowrap;
+}
+
 .severity,
 .flag {
   display: inline-flex;
@@ -210,43 +216,119 @@
 }
 
 .records {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pn-space-3);
   min-inline-size: 0;
   margin: 0;
-  padding: var(--pn-space-2);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-}
-
-.recordBody {
-  display: contents;
+  padding: 0;
+  border: 0;
 }
 
 .records legend {
-  padding-inline: var(--pn-space-1);
+  margin-block-end: var(--pn-space-2);
+  padding: 0;
   font-weight: 600;
 }
 
-.record {
+.recordBody {
   display: flex;
   flex-direction: column;
   gap: var(--pn-space-2);
-  padding-block-end: var(--pn-space-3);
-  border-bottom: 1px solid var(--pn-colour-border);
 }
 
-.recordState,
-.existing {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
-  align-items: end;
+.record {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid var(--pn-colour-border);
+  border-radius: var(--pn-radius);
+  background: var(--pn-colour-surface-raised);
+}
+
+.recordFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.recordName {
+  margin-block-end: var(--pn-space-2);
+  padding: 0;
+  font-weight: 600;
+}
+
+.recordState {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pn-space-2);
+}
+
+.recordState [role='combobox'] {
+  min-inline-size: 9rem;
+}
+
+.unlink {
+  padding: var(--pn-space-2) var(--pn-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--pn-radius);
+  background: none;
+  color: var(--pn-colour-text-muted);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.unlink:hover {
+  color: var(--pn-colour-text);
+}
+
+.unlink:focus-visible {
+  outline: var(--pn-focus-ring);
+  outline-offset: var(--pn-focus-ring-offset);
+}
+
+.shared {
+  margin: 0;
+  color: var(--pn-colour-text-muted);
+}
+
+.addLink {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--pn-space-2);
 }
 
 .recordAction {
-  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pn-space-1);
+  white-space: nowrap;
+}
+
+.recordAction[aria-disabled='true'] {
+  border-style: dashed;
+  color: var(--pn-colour-text-muted);
+  cursor: not-allowed;
+}
+
+.existing {
+  display: flex;
+  flex: 1 1 14rem;
+  align-items: center;
+  gap: var(--pn-space-2);
+  min-inline-size: 0;
+}
+
+.existing > :first-child {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.existing [role='combobox'] {
+  inline-size: 100%;
 }
 
 .existing [role='combobox'],
@@ -254,9 +336,8 @@
   text-transform: none;
 }
 
-.shared {
-  margin: 0;
-  color: var(--pn-colour-text-muted);
+.existing [role='combobox'] [data-option-label] {
+  -webkit-line-clamp: 1;
 }
 
 .content[hidden] {
@@ -277,4 +358,17 @@
   gap: var(--pn-space-3);
   padding: var(--pn-space-3);
   border-top: 1px solid var(--pn-colour-border);
+}
+
+/* At phone width the panel, the threat item and each record card would each
+   take a full inset from the room the fields have, so the inner two narrow. */
+@media (max-width: 30rem) {
+  .body,
+  .content {
+    padding-inline: var(--pn-space-2);
+  }
+
+  .record {
+    padding-inline: var(--pn-space-2);
+  }
 }

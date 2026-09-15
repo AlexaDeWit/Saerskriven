@@ -3,6 +3,18 @@ import { Select } from 'radix-ui';
 
 import styles from './enum-field.module.css';
 
+/**
+ * How an option reads. The accessible name is `label`, a space and `suffix`.
+ * The suffix is drawn on a line of its own, so it stays visible when a long
+ * label is cut short. `detail` is a line under both that describes the
+ * option without naming it.
+ */
+export type OptionText = {
+  readonly label: string;
+  readonly suffix?: string;
+  readonly detail?: string;
+};
+
 /** Narrows a primitive choice to the declared options before committing. */
 export function enumCommitter<Value extends string>(
   options: readonly Value[],
@@ -23,17 +35,43 @@ function scrollBox(element: Element | null): Element | null {
     : scrollBox(parent);
 }
 
-function listed(named: string, label: string, selected: boolean) {
+function Listed({
+  value,
+  text,
+  tabStop,
+}: {
+  readonly value: string;
+  readonly text: OptionText;
+  readonly tabStop: boolean;
+}) {
+  const detailId = useId();
   return (
     <Select.Item
+      aria-describedby={text.detail === undefined ? undefined : detailId}
       className={styles.item}
-      key={named}
-      value={named}
-      tabIndex={selected ? 0 : -1}
+      value={value}
+      tabIndex={tabStop ? 0 : -1}
     >
-      <Select.ItemText>
-        <span className={styles.text}>{label}</span>
-      </Select.ItemText>
+      <span className={styles.body}>
+        <Select.ItemText>
+          <span className={styles.text} data-option-label>
+            {text.label}
+          </span>
+          {text.suffix !== undefined && (
+            <>
+              {' '}
+              <span className={styles.suffix} data-option-suffix>
+                {text.suffix}
+              </span>
+            </>
+          )}
+        </Select.ItemText>
+        {text.detail !== undefined && (
+          <span className={styles.detail} data-option-detail id={detailId}>
+            {text.detail}
+          </span>
+        )}
+      </span>
       <Select.ItemIndicator className={styles.indicator}>
         ✓
       </Select.ItemIndicator>
@@ -53,12 +91,19 @@ function grouped<Value extends string>(
   return [...groups];
 }
 
-/** What an {@link EnumField} shows, what it offers, and where an edit goes. */
+/**
+ * What an {@link EnumField} shows, what it offers, and where an edit goes.
+ * `label` is the accessible name. `shownLabel` replaces the label drawn
+ * above the trigger, and an empty one draws none. With no `value` the
+ * trigger shows `placeholder`.
+ */
 export type EnumFieldProps<Value extends string> = {
   readonly label: string;
-  readonly value: Value;
+  readonly shownLabel?: string;
+  readonly value: Value | undefined;
+  readonly placeholder?: string;
   readonly options: readonly Value[];
-  readonly labelOf?: (option: Value) => string;
+  readonly labelOf?: (option: Value) => string | OptionText;
   readonly groupOf?: (option: Value) => string;
   readonly onCommit: (chosen: Value) => void;
 };
@@ -70,7 +115,9 @@ export type EnumFieldProps<Value extends string> = {
  */
 export function EnumField<Value extends string>({
   label,
+  shownLabel,
   value,
+  placeholder,
   options,
   groupOf,
   labelOf,
@@ -82,20 +129,36 @@ export function EnumField<Value extends string>({
     const box = scrollBox(trigger);
     setBoundary(box === null ? [] : [box]);
   }, []);
-  const item = (option: Value) =>
-    listed(option, labelOf?.(option) ?? option, option === value);
+  const item = (option: Value) => {
+    const text = labelOf?.(option) ?? option;
+    return (
+      <Listed
+        key={option}
+        tabStop={option === (value ?? options.at(0))}
+        text={typeof text === 'string' ? { label: text } : text}
+        value={option}
+      />
+    );
+  };
 
   return (
     <div className={styles.field}>
-      <label className={styles.label} htmlFor={triggerId}>
-        {label}
-      </label>
+      {shownLabel !== '' && (
+        <label className={styles.label} htmlFor={triggerId}>
+          {shownLabel ?? label}
+        </label>
+      )}
       <Select.Root
         onValueChange={enumCommitter(options, onCommit)}
-        value={value}
+        value={value ?? ''}
       >
-        <Select.Trigger className={styles.trigger} id={triggerId} ref={bound}>
-          <Select.Value />
+        <Select.Trigger
+          aria-label={shownLabel === undefined ? undefined : label}
+          className={styles.trigger}
+          id={triggerId}
+          ref={bound}
+        >
+          <Select.Value placeholder={placeholder} />
           <Select.Icon className={styles.icon}>▾</Select.Icon>
         </Select.Trigger>
         <Select.Content

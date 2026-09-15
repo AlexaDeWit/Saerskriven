@@ -24,11 +24,13 @@
   field-sizing: content;
   min-block-size: calc(8lh + var(--pn-space-2) * 2);
   max-block-size: 24lh;
+  overflow-y: auto;
   resize: vertical;
 }
 
 .compact {
-  min-block-size: calc(3lh + var(--pn-space-2) * 2);
+  min-block-size: 2lh;
+  max-block-size: 10lh;
 }
 
 .input:focus-visible,

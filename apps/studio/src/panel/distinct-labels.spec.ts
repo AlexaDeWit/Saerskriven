@@ -1,4 +1,4 @@
-import { distinctLabels } from './distinct-labels.js';
+import { distinctLabels, optionName } from './distinct-labels.js';
 
 describe('distinctLabels', () => {
   it('keeps a unique name as it is', () => {
@@ -9,8 +9,8 @@ describe('distinctLabels', () => {
       ]),
     ).toEqual(
       new Map([
-        ['a1', 'Ledger'],
-        ['b2', 'Queue'],
+        ['a1', { label: 'Ledger' }],
+        ['b2', { label: 'Queue' }],
       ]),
     );
   });
@@ -21,9 +21,10 @@ describe('distinctLabels', () => {
       { id: 'b2', label: 'Ledger', unnamed: false },
       { id: 'c3', label: 'the store', unnamed: true },
     ]);
-    expect(labels.get('a1')).toContain('a1');
-    expect(labels.get('b2')).toContain('b2');
-    expect(labels.get('c3')).toContain('c3');
+    expect(labels.get('a1')?.suffix).toContain('a1');
+    expect(labels.get('b2')?.suffix).toContain('b2');
+    expect(labels.get('c3')?.suffix).toContain('c3');
+    expect(labels.get('a1')?.label).toBe('Ledger');
   });
 
   it('numbers every label where they still collide once normalized', () => {
@@ -31,8 +32,8 @@ describe('distinctLabels', () => {
       { id: 'a1', label: 'Ledger (b2)', unnamed: false },
       { id: 'b2', label: 'Ledger', unnamed: true },
     ]);
-    expect(new Set(labels.values()).size).toBe(2);
-    expect(labels.get('a1')).toMatch(/^1\b/u);
-    expect(labels.get('b2')).toMatch(/^2\b/u);
+    expect(new Set([...labels.values()].map(optionName)).size).toBe(2);
+    expect(labels.get('a1')?.label).toMatch(/^1\b/u);
+    expect(labels.get('b2')?.label).toMatch(/^2\b/u);
   });
 });

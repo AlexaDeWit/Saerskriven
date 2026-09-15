@@ -51,8 +51,10 @@ export function ThreatSummary({ threat }: { readonly threat: Threat }) {
             Severity: {threat.severity}
           </span>
           <span>Status: {threat.status}</span>
-          <span data-count="mitigations">Mitigations: {mitigations}</span>
-          <span data-count="assumptions">Assumptions: {assumptions}</span>
+          <span className={styles.counts}>
+            <span data-count="mitigations">Mitigations: {mitigations}</span>
+            <span data-count="assumptions">Assumptions: {assumptions}</span>
+          </span>
           {flags.map((flag) => (
             <span className={styles.flag} data-flag={flag} key={flag}>
               <svg

@@ -230,7 +230,7 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await openModelProperties(page);
   await modelField(page, 'combobox', 'Existing assumption').click();
   await expect(page.getByRole('option')).toHaveCount(1);
-  await page.keyboard.press('Escape');
+  await page.getByRole('option').click();
   await modelControl(page, 'Link existing assumption').click();
   await expect(modelField(page, 'textbox', 'Assumption 1')).toHaveValue(rotate);
   await expect(modelField(page, 'combobox', 'Existing assumption')).toHaveCount(
@@ -294,6 +294,7 @@ test('an older assumption linked after an added one lands after it, and leaves a
   await expect(
     modelField(page, 'combobox', 'Assumption 1 status'),
   ).toBeFocused();
+  await chooseInPanel(page, 'Existing assumption', older, modelPanel(page));
   await modelControl(page, 'Link existing assumption').click();
 
   const first = modelField(page, 'textbox', 'Assumption 1');

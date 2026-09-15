@@ -38,6 +38,7 @@ import {
 import { hostPlatform } from '../commands/shortcuts.js';
 import type { State } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
+import { growToContent } from '../ui/grow-to-content.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import {
   refusedName,
@@ -148,13 +149,8 @@ function InlineField({
   }, []);
 
   useLayoutEffect(() => {
-    const element = field.current;
-    if (element === null || multiline) {
-      return;
-    }
-    element.style.height = '';
-    if (element.scrollHeight > 0) {
-      element.style.height = `${String(element.scrollHeight)}px`;
+    if (!multiline) {
+      growToContent(field.current);
     }
   });
 
