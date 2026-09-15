@@ -220,6 +220,21 @@ export function linkableRecords<Held extends ThreatRecord>(
 }
 
 /**
+ * `rows` with those whose ids `shown` names first, in that order, and the
+ * rest after them in the order given, so a row that arrives while a group is
+ * mounted lands after the rows already on screen.
+ */
+export function inShownOrder<Row extends { readonly id: string }>(
+  rows: readonly Row[],
+  shown: readonly string[],
+): readonly Row[] {
+  return [
+    ...shown.flatMap((id) => rows.filter((row) => row.id === id)),
+    ...rows.filter(({ id }) => !shown.includes(id)),
+  ];
+}
+
+/**
  * The record `text` makes of one part of `record`, and nothing where the
  * part already holds that text, so an edit nobody made dispatches nothing.
  */

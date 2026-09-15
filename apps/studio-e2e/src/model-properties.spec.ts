@@ -232,6 +232,44 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await expect(kept).toHaveValue(rotate);
 });
 
+test('an older assumption linked after an added one lands after it, and leaves and returns there on undo and redo', async ({
+  page,
+}) => {
+  const older = 'Callers rotate their tokens.';
+  const added = 'The model is kept true by hand.';
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  await panelControl(page, 'Add assumption').click();
+  await page.keyboard.type(older);
+  await page.keyboard.press('Tab');
+  await expect(
+    panelField(page, 'combobox', 'Assumption 1 status'),
+  ).toBeFocused();
+
+  await openModelProperties(page);
+  await modelControl(page, 'Add assumption').click();
+  await page.keyboard.type(added);
+  await page.keyboard.press('Tab');
+  await expect(
+    modelField(page, 'combobox', 'Assumption 1 status'),
+  ).toBeFocused();
+  await modelControl(page, 'Link existing assumption').click();
+
+  const first = modelField(page, 'textbox', 'Assumption 1');
+  const second = modelField(page, 'textbox', 'Assumption 2');
+  await expect(first).toHaveValue(added);
+  await expect(second).toHaveValue(older);
+  await expect(second).toBeFocused();
+
+  await runFromMenu(page, 'Undo');
+  await expect(second).toHaveCount(0);
+  await expect(first).toHaveValue(added);
+  await runFromMenu(page, 'Redo');
+  await expect(first).toHaveValue(added);
+  await expect(second).toHaveValue(older);
+});
+
 test('model properties edited in one tab reach another, which keeps its own selection and open panel', async ({
   context,
   page,

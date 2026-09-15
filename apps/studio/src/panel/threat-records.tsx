@@ -1,10 +1,12 @@
 import { useEffect, useId, useRef, useState, type FocusEvent } from 'react';
+import { shallow } from 'zustand/shallow';
 import { announce } from '../canvas/announcements.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { EnumField } from '../ui/enum-field.js';
 import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
 import {
   editedRecord,
+  inShownOrder,
   isRecordField,
   linkableRecords,
   recordFieldIn,
@@ -71,7 +73,8 @@ function focusTarget(
  * The records of one kind linked to one target, a threat or the model. Add
  * opens an empty row that becomes a record on its first commit and leaves
  * nothing behind when it is left empty. Every other row edits, relinks or
- * re-statuses a record in place.
+ * re-statuses a record in place. Rows mount in the model's record order, and
+ * a row that arrives later lands after them.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,
@@ -100,7 +103,15 @@ export function RecordGroup<Held extends ThreatRecord>({
   const [chosen, setChosen] = useState<string | undefined>(undefined);
   const drafting =
     draft !== undefined && !records.some(({ id }) => id === draft.id);
-  const rows = drafting ? [...records, draft] : records;
+  const listed = drafting ? [...records, draft] : records;
+  const [order, setOrder] = useState<readonly string[]>(() =>
+    listed.map(({ id }) => id),
+  );
+  const rows = inShownOrder(listed, order);
+  const rowIds = rows.map(({ id }) => id);
+  if (!shallow(rowIds, order)) {
+    setOrder(rowIds);
+  }
   const shown = new Set<string>(rows.map(({ id }) => id));
   const stale = [...refusals.keys(), held?.field ?? '']
     .filter((field) => isRecordField(field, kind.noun))

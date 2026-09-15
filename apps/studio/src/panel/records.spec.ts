@@ -8,6 +8,7 @@ import {
 import {
   assumptionKind,
   editedRecord,
+  inShownOrder,
   linkableRecords,
   mitigationKind,
   otherThreats,
@@ -102,6 +103,16 @@ describe('the model as a record target', () => {
     expect(
       threatTarget(assumptionKind, firstThreat).elsewhere(assumption),
     ).toBeUndefined();
+  });
+});
+
+describe('inShownOrder', () => {
+  it('keeps shown rows in their shown order, drops the gone, and puts new rows after them', () => {
+    const rows = ['a', 'b', 'c', 'd'].map((id) => ({ id }));
+
+    expect(inShownOrder(rows, ['c', 'gone', 'a'])).toEqual(
+      ['c', 'a', 'b', 'd'].map((id) => ({ id })),
+    );
   });
 });
 
