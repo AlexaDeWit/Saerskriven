@@ -53,6 +53,10 @@ const boundaryHitTargetClass = 'pn-boundary-hit-target';
 
 const badgeLayerClass = 'pn-badge-layer';
 
+const badgeClearClass = 'pn-badge-clear';
+
+const badgeReachProperty = '--pn-badge-reach';
+
 const resizableKinds = new Set<CanvasNodeKind>([
   'actor',
   'process',
@@ -194,10 +198,11 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  *
  * A selected resizable element carries four side controls and four corner
  * controls. A boundary curve carries none because the model has no extent.
- * The badge draws in a layer of its own after the controls, so the selection
- * frame and side lines pass under it. On an element with a badge, the
- * top-right corner control sits diagonally outside the badge and grows away
- * from it as React Flow scales the control up at low zoom.
+ * The badge draws in a layer of its own after the controls, so a canvas can
+ * stack it above the selection frame. On an element with a badge, the
+ * top-right corner control carries the `pn-badge-clear` class and the badge's
+ * reach, ring included, as `--pn-badge-reach`, for the canvas to place the
+ * control clear of the badge.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
@@ -332,6 +337,7 @@ function ResizeControls({
     <>
       {resizeControlPositions.map((position) => (
         <NodeResizeControl
+          className={clearsBadge(node, position) ? badgeClearClass : undefined}
           key={position}
           minHeight={minimumNodeExtent}
           minWidth={minimumNodeExtent}
@@ -377,23 +383,28 @@ function ResizeControls({
   );
 }
 
+function clearsBadge(
+  node: CanvasNode,
+  position: ResizeControlPosition,
+): boolean {
+  return position === 'top-right' && node.badge !== undefined;
+}
+
 function controlStyle(
   node: CanvasNode,
   position: ResizeControlPosition,
   visible: boolean,
 ): CSSProperties | undefined {
-  const hidden = visible ? undefined : ({ visibility: 'hidden' } as const);
-  if (position !== 'top-right' || node.badge === undefined) {
-    return hidden;
+  const style: CSSProperties & Record<`--${string}`, string> = {};
+  if (!visible) {
+    style.visibility = 'hidden';
   }
-  const reach = badgeExtent(node.badge).radius + strokeWidths.badgeRing / 2;
-  return {
-    ...hidden,
-    left: `calc(100% + ${svgNumber(reach)}px)`,
-    top: -reach,
-    translate: '0 -100%',
-    transformOrigin: '0 100%',
-  };
+  const badge = position === 'top-right' ? node.badge : undefined;
+  if (badge !== undefined) {
+    const reach = badgeExtent(badge).radius + strokeWidths.badgeRing / 2;
+    style[badgeReachProperty] = `${svgNumber(reach)}px`;
+  }
+  return Object.keys(style).length === 0 ? undefined : style;
 }
 
 function BoundaryHitTarget({

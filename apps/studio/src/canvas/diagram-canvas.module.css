@@ -15,6 +15,11 @@
   --xy-background-pattern-color: var(--pn-colour-grid);
   --xy-handle-background-color: var(--pn-colour-accent);
   --xy-handle-border-color: var(--pn-colour-badge-ground);
+
+  /* A resize handle's side, and the side with React Flow's 1px border. */
+  --pn-resize-handle-size: 9px;
+  --pn-resize-handle-extent: calc(var(--pn-resize-handle-size) + 2px);
+  --pn-badge-gap: 3px;
 }
 
 /* React Flow names its own parts with global classes, so the studio reaches
@@ -109,20 +114,23 @@
 
 /* Hand owns a drag wherever it begins, including over a drawn element. */
 .canvas[data-tool='hand'] :global(.react-flow__node),
-.canvas[data-tool='hand'] :global(.react-flow__edge) {
+.canvas[data-tool='hand'] :global(.react-flow__edge),
+.canvas[data-tool='hand'] :global(.pn-badge-layer g) {
   pointer-events: none;
 }
 
 /* A threat badge draws over the selection frame and the side lines, and under
-   the corner handles, which the canvas package keeps clear of it. */
+   every control's hit area: a side line forms no stacking context, so its
+   button stacks above the badge while its border stays beneath it. The canvas
+   package keeps the corner handles clear of the badge. */
 .canvas :global(.pn-badge-layer) {
   z-index: 1;
 }
 
 /* Resize handles stay square to differ from round connection handles. */
 .canvas :global(.react-flow__resize-control.handle) {
-  width: 9px;
-  height: 9px;
+  width: var(--pn-resize-handle-size);
+  height: var(--pn-resize-handle-size);
   background: var(--pn-colour-text);
   border-color: var(--pn-colour-badge-ground);
   z-index: 2;
@@ -131,7 +139,6 @@
 .canvas :global(.react-flow__resize-control.line) {
   border-color: var(--pn-colour-text);
   pointer-events: none;
-  z-index: 1;
 }
 
 .canvas :global(.react-flow__resize-control.line.left),
@@ -144,17 +151,20 @@
   height: 9px;
 }
 
-.canvas :global(.react-flow__resize-control.line.top),
-.canvas :global(.react-flow__resize-control.line.left) {
-  transform: translate(0, 0);
+/* Side lines are placed by offsets rather than a transform, which would give
+   each one a stacking context and trap its button under the badge layer. */
+.canvas :global(.react-flow__resize-control.line) {
+  transform: none;
 }
 
 .canvas :global(.react-flow__resize-control.line.right) {
-  transform: translate(-100%, 0);
+  left: auto;
+  right: 0;
 }
 
 .canvas :global(.react-flow__resize-control.line.bottom) {
-  transform: translate(0, -100%);
+  top: auto;
+  bottom: 0;
 }
 
 .canvas :global(.react-flow__resize-control.handle.top.left) {
@@ -163,6 +173,18 @@
 
 .canvas :global(.react-flow__resize-control.handle.top.right) {
   translate: -100% 0;
+}
+
+/* On an element with a threat badge, the top-right handle sits on the top
+   edge a gap left of the badge, and grows away from it as React Flow scales it
+   up at low zoom. It never passes the top-left handle. */
+.canvas :global(.react-flow__resize-control.handle.top.right.pn-badge-clear) {
+  left: max(
+    calc(2 * var(--pn-resize-handle-extent) + var(--pn-badge-gap)),
+    calc(100% - var(--pn-badge-reach) - var(--pn-badge-gap))
+  );
+  translate: -100% -50%;
+  transform-origin: 100% 50%;
 }
 
 .canvas :global(.react-flow__resize-control.handle.bottom.right) {
@@ -185,6 +207,7 @@
 }
 
 .canvas :global(.react-flow__resize-control.line > button) {
+  z-index: 2;
   inset: auto;
   width: 16px;
   height: 16px;

@@ -193,6 +193,20 @@ describe('CanvasNodeBody', () => {
     );
   });
 
+  it('draws no badge layer for an element without a badge', () => {
+    expect(bodyMarkup(nodeNamed('el-note'), true)).not.toContain(
+      `class="${canvasClassNames.badge}"`,
+    );
+  });
+
+  it('dims the badge layer of an out-of-scope element', () => {
+    const node = nodeNamed('el-db');
+    expect(node.outOfScope).toBe(true);
+    const markup = bodyMarkup(node);
+    const layer = markup.slice(markup.indexOf('pn-badge-layer'));
+    expect(layer).toContain(`<g class="${canvasClassNames.outOfScope}"`);
+  });
+
   it('hides connection and resize controls while a name field is open', () => {
     const markup = bodyMarkup(nodeNamed('el-client'), true, true, false);
     expect(markup.match(/visibility:hidden/gu)).toHaveLength(12);

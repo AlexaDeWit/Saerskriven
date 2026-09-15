@@ -361,9 +361,10 @@ Four lines resize a selected element from its sides. Four square handles
 resize it from its corners. A side line takes the pointer away from the round
 connection handle at the midpoint. Each control uses a directional cursor and
 shows hover and keyboard focus ([Resize](#editing)). A threat badge draws over
-the selection frame and the side lines. The top-right handle of an element
-with a badge sits outside the badge, so the badge stays readable while the
-element is selected.
+the selection frame and the side lines and under every control's hit area. The
+top-right handle of an element with a badge sits on the top edge a few units
+left of the badge, and grows away from it at low zoom. On an element too
+narrow for that, it stops beside the top-left handle and can meet the badge.
 
 ## The view
 
