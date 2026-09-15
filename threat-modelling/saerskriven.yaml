@@ -2,7 +2,7 @@ formatVersion: 2
 metadata:
   title: Saerskriven
   owner: Alexandra de Wit
-  description: "The threat model of Saerskriven itself, in Saerskriven's own format. Two diagrams: the path a model file takes from disk through the codecs into a register or a diagram, and the path an agent or the desktop shell takes to the same core. Every status is true to the tree at the time of writing. Mitigated means a mechanism is on main and a mitigation record names it. Open means the surface is designed and its issue is named, with nothing built yet. An undecided severity means there is nothing built to assess. The model is also a fixture: the codec round trip, the format detection, the read-limit corpus, the markdown register, the standalone SVG documents and the canvas scenes all gate on it."
+  description: "The threat model of Saerskriven itself, in Saerskriven's own format. Two diagrams: the path a model file takes from disk through the codecs into a register or a diagram, and the path an agent or the desktop shell takes to the same core. Every status is true to the tree at the time of writing. Mitigated means a mechanism is on main and a mitigation record names it. Open means the surface is designed and its issue is named, with nothing built yet, or that the threat is partly held: a mechanism is on main, and its mitigation record names what the mechanism leaves behind. An undecided severity means there is nothing built to assess. The model is also a fixture: the codec round trip, the format detection, the read-limit corpus, the markdown register, the standalone SVG documents and the canvas scenes all gate on it."
   contributors:
     - Alexandra de Wit
 assumptions:
@@ -20,15 +20,12 @@ assumptions:
       - th-version
     appliesToModel: false
   - id: as-planned-surfaces
-    prose: The desktop shell and the MCP server are designs rather than code. Every threat on them is assessed against the acceptance criteria of its own issue, not against anything on main, and each one is assessed again when the code lands. The studio renderer is left out of this assumption because part of it is built, and its own description says which part.
+    prose: The desktop shell is a design rather than code. Every threat on it is assessed against the acceptance criteria of its own issue, not against anything on main, and each one is assessed again when the code lands. The MCP server was in this assumption until it landed, and its threats are now assessed against main. The studio renderer is left out of this assumption because part of it is built, and its own description says which part.
     status: valid
     threats:
       - th-renderer-fs
       - th-ipc
       - th-path
-      - th-agent-write
-      - th-agent-loss
-      - th-prompt
     appliesToModel: false
   - id: as-hand-written
     prose: This model is kept true by hand. CI proves that it parses, that it stays in the writer's canonical form, and that every projection of it still matches its golden. Nothing proves that its content still describes the tool, so it is read again whenever a milestone closes.
@@ -82,7 +79,7 @@ diagrams:
       - kind: store
         id: el-model-file
         name: Threat model file
-        description: Saerskriven YAML or Threat Dragon v2 JSON. The file name is never consulted in either direction, so the format is whatever the bytes turn out to be.
+        description: Saerskriven YAML or Threat Dragon v2 JSON, or an OTM or TM-BOM document an import converts into a new Saerskriven model. The file name is never consulted in either direction, so the format is whatever the bytes turn out to be.
         outOfScope: false
         reasonOutOfScope: ""
         position:
@@ -130,7 +127,7 @@ diagrams:
       - kind: process
         id: el-diagram
         name: Canvas glyphs and SVG
-        description: "packages/canvas draws every glyph from model data alone, measuring nothing. The standalone SVG document that composes them into a file is issue #31, and is not on main."
+        description: packages/canvas draws every glyph from model data alone, measuring nothing. `renderSvg` in packages/render composes them into a standalone SVG document, and the `png` subpath rasterizes that document through the flake-built resvg module.
         outOfScope: false
         reasonOutOfScope: ""
         position:
@@ -154,7 +151,7 @@ diagrams:
       - kind: store
         id: el-output
         name: Rendered and saved files
-        description: What a run leaves on disk. A register, a diagram, and the model file a save wrote back.
+        description: What a run leaves on disk. A markdown register, a diagram as SVG or PNG, a PDF of the diagrams and the register, and the model file a save wrote back.
         outOfScope: false
         reasonOutOfScope: ""
         position:
@@ -363,7 +360,7 @@ diagrams:
       - kind: trust-boundary
         id: tb-desktop
         name: Electron main process
-        description: "The privileged half of the desktop shell, issue #42. Window, menu and file plumbing, importing nothing from packages/, which the layer matrix enforces."
+        description: "The privileged half of the desktop shell, issue #42. Window, menu and file plumbing, importing nothing from packages/, which that issue asks the layer matrix to enforce. Not built."
         outOfScope: false
         reasonOutOfScope: ""
         shape:
@@ -389,7 +386,7 @@ diagrams:
       - kind: process
         id: el-renderer
         name: Studio renderer
-        description: The studio running in a browser or in an Electron renderer. On main it is a skeleton that mounts the canvas and nothing else, with no editing, no file access and no Electron around it. What it will hold is the model core and the canvas, and still no file access of its own.
+        description: "The studio running in a browser or in an Electron renderer. On main it runs in a browser only, with no Electron around it: it edits the model through the model operations, draws it through the canvas, and reaches files through `FileBridge` in `apps/studio/src/files`, whose browser implementation hands every open and save to the browser's own picker or to a file input and a download. The Electron renderer and its bridge are issues #42 and #43."
         outOfScope: false
         reasonOutOfScope: ""
         position:
@@ -401,7 +398,7 @@ diagrams:
       - kind: process
         id: el-mcp
         name: MCP server and tools
-        description: "`saer mcp` over stdio, launched by the host. The server object lives in `packages/mcp` and carries no transport, no session and no parsed model, so every call names its file and reads it again. Paths are confined to the root the invocation named. The `saer_inspect` tool is built, and so are the writing tools `saer_edit`, `saer_create` and `saer_import`: each confines its path to the root and writes through a temporary file in the target's own directory, `saer_edit` refuses a revision handle the file no longer hashes to, and `saer_create` and `saer_import` refuse a path already taken. The revision handle is compared against the bytes the call itself read, so a write that lands between that read and the rename is overwritten rather than refused. Read and query tools are issue #47, and Streamable HTTP on 127.0.0.1 is issue #318."
+        description: "`saer mcp` over stdio, launched by the host, or with `--http` over Streamable HTTP on 127.0.0.1, where a request needs the bearer token minted at start and written to a file only its owner reads, and a foreign Origin or Host is refused (`apps/cli/src/mcp-http.ts`). The server object lives in `packages/mcp` and carries no transport, no session and no parsed model, so every call names its file and reads it again. Paths are confined to the root the invocation named, symbolic links followed (`confined` in `workspace.ts`). The tools read, query, draw and write, the register and each diagram are resources, and `stride_pass` and `review_model` are prompts. `saer_edit` writes through a temporary file in the target's own directory, refuses a revision handle the file no longer hashes to, and hashes the file again immediately before the rename. A write that lands between that second hash and the rename is still overwritten rather than refused. `saer_create`, `saer_import` and a drawing given an `out` path write only a path that is free."
         outOfScope: false
         reasonOutOfScope: ""
         position:
@@ -425,7 +422,7 @@ diagrams:
       - kind: process
         id: el-bridge
         name: Preload and IPC bridge
-        description: "The typed file bridge of issue #43. Bounded channel definitions, zod-validated messages, and the one adapter the studio's file access goes behind, with a web implementation and a desktop one. Not built."
+        description: "The typed file bridge of issue #43. Bounded channel definitions, zod-validated messages, and a desktop implementation of the one adapter the studio's file access goes behind. The adapter, `FileBridge`, and its browser implementation are on main. The preload, the IPC channels and the desktop implementation are not built."
         outOfScope: false
         reasonOutOfScope: ""
         position:
@@ -460,7 +457,7 @@ diagrams:
           height: 90
       - kind: flow
         id: fl-tool-call
-        name: Tool calls over stdio
+        name: Tool calls
         description: ""
         outOfScope: false
         reasonOutOfScope: ""
@@ -553,7 +550,7 @@ diagrams:
 mitigations:
   - id: mit-read-limits
     title: Bounded reads
-    prose: "`readLimits` in `@saerskriven/formats` is one exported value carrying four numbers: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads."
+    prose: "`readLimits` in `@saerskriven/formats` is one exported value carrying the bounds: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. A fifth, `maxImportTextUnits`, holds the text an OTM or TM-BOM import builds by expanding references and generating identifiers to 16,777,216 UTF-16 units. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each of the four read bounds has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads. The import budget is enforced by `importBudget` in `import-budget.ts`, and `import.spec.ts` gates it on OTM and TM-BOM documents built to exceed it."
     status: verified
     threats:
       - th-oversize
@@ -583,7 +580,7 @@ mitigations:
       - th-detection-claim
   - id: mit-register-is-a-tree
     title: The register is built as nodes
-    prose: "`renderRegister` builds mdast nodes and hands them to remark, and concatenates no markdown anywhere. A heading inside a threat's prose is demoted below the section heading, a title's line breaks are collapsed so that no title can forge another threat's heading, and prose nested past 32 levels is written out as the author's own bytes in one paragraph rather than recursed over."
+    prose: "`renderRegister` builds mdast nodes and hands them to remark, and concatenates no markdown anywhere. A heading inside a threat's prose is demoted below the section heading, a title's line breaks are collapsed so that no title can forge another threat's heading, and prose nested past `deepestProse`, 16 levels counted from the register's root, is written out as the author's own bytes in one paragraph rather than recursed over."
     status: verified
     threats:
       - th-register-forge
@@ -596,7 +593,7 @@ mitigations:
       - th-badge-drift
   - id: mit-pinned-toolchain
     title: The toolchain is pinned
-    prose: The flake is the toolchain authority and CI runs every step through `nix develop .#ci`. `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, external versions live only in the `pnpm-workspace.yaml` catalog, and every GitHub Action is pinned to a full commit SHA with zizmor's hash-pin policy failing an unpinned one.
+    prose: The flake is the toolchain authority and CI runs its builds, test suites and source checks through `nix develop .#ci`. `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, external versions live only in the `pnpm-workspace.yaml` catalog, and every GitHub Action is pinned to a full commit SHA with zizmor's hash-pin policy failing an unpinned one.
     status: implemented
     threats:
       - th-supply-chain
@@ -620,7 +617,7 @@ mitigations:
       - th-upstream-release
   - id: mit-ipc-is-schema-first
     title: The IPC surface is schema-first
-    prose: "Issue #43 asks of the file bridge what the codecs already do of a file: bounded channel definitions, zod-validated messages, no direct filesystem access from the renderer, and one adapter interface with a web implementation and a desktop one. Nothing of it is written."
+    prose: "Issue #43 asks of the file bridge what the codecs already do of a file: bounded channel definitions, zod-validated messages, no direct filesystem access from the renderer, and one adapter interface with a web implementation and a desktop one. The adapter is on main as `FileBridge`, with its browser implementation in `apps/studio/src/files/browser-bridge.ts`. The channels, the validation and the desktop implementation are not written."
     status: proposed
     threats:
       - th-renderer-fs
@@ -628,14 +625,14 @@ mitigations:
       - th-path
   - id: mit-agent-writes-through-the-core
     title: An agent edit goes through the core
-    prose: "Issue #48 asks that every mutation an edit tool makes goes through `parseModel` and the model operations, that an invalid operation return a typed error and leave the file untouched, and that a lossy write carry its loss report into the tool result. Nothing of it is written."
-    status: proposed
+    prose: Every edit `saer_edit` applies is one of the model operations of `@saerskriven/model`, record links, unlinks and status changes included, dispatched by `applyEdits` in `packages/mcp/src/lib/edits.ts` onto a model the parse produced. An operation that does not hold comes back as a typed `OperationFailure` naming the edit it stopped at, the batch is all or nothing, and nothing reaches the disk until every edit has held. A lossy write carries the codec's divergences into the tool result. `edit.spec.ts` pins that a refused edit, a stale revision, a file no codec claims and a batch past the read bound each leave the file byte for byte as it was.
+    status: implemented
     threats:
       - th-agent-write
       - th-agent-loss
   - id: th-oversize-mitigation
     title: ""
-    prose: The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 8 MiB and about sixty times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
+    prose: The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 8 MiB and about forty-five times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.
     status: implemented
     threats:
       - th-oversize
@@ -701,7 +698,7 @@ mitigations:
       - th-register-html
   - id: th-register-depth-mitigation
     title: ""
-    prose: Prose nested deeper than 32 levels is rendered as one paragraph of the author's own bytes. The text still reaches the reader, the structure does not, and the package reports no failure and does not throw.
+    prose: Prose nested deeper than `deepestProse`, 16 levels counted from the register's root, is rendered as one paragraph of the author's own bytes. The text still reaches the reader, the structure does not, and the package reports no failure and does not throw.
     status: implemented
     threats:
       - th-register-depth
@@ -713,8 +710,8 @@ mitigations:
       - th-svg-text
   - id: th-pdf-mitigation
     title: ""
-    prose: "Nothing is built. Issue #34 carries the work and requires the landing pull request to record the pipeline and how it reaches end users. The severity is medium rather than undecided because the ruling removed the browser, and with it the scripting context that would have made it worse; what is left is foreign text reaching a compiler inside the caller's own process."
-    status: proposed
+    prose: "Issue #34 landed, and the CLI and the studio share one compile step, `compilePdf` on the `pdf` subpath of `@saerskriven/render`. `renderTypst` writes every run of foreign text into the Typst source as a string literal, escaped by `literal`, so a title, a name or a paragraph of prose reaches the compiler as text and never as markup. The compiler is built with a dummy access model rather than the host's files, and the faces it sets text in are the five pinned Liberation faces the build carries, never a font the model names or the host holds. Prose nested past `deepestProse` is one paragraph, which keeps the source inside the nesting Typst accepts. `apps/cli/src/pdf.spec.ts` compiles `test-data/adversarial/typst-injection.yaml`, holds its source to no call outside a string literal but the package's own, and reads the injection attempts in its titles back out of the PDF's outline as text. The compiler and the shaper still read text the author wrote, inside the caller's own process or tab, which is what the medium severity is for: the ruling removed the browser, and with it the scripting context that would have made it worse."
+    status: implemented
     threats:
       - th-pdf
   - id: th-badge-drift-mitigation
@@ -743,19 +740,19 @@ mitigations:
       - th-path
   - id: th-agent-write-mitigation
     title: ""
-    prose: "Nothing is built. Issue #48 requires every mutation to go through `parseModel` and the model operations, and requires proof in tests that an invalid operation cannot modify the file. The mechanism it rests on, a parse that is the only way a model comes into existence, is on main already."
-    status: proposed
+    prose: "Issue #48 landed. `saer_edit` reads the file through the parse, applies the batch as model operations that refuse rather than produce a model the parse would not, and writes nothing until the whole batch has held. The write goes through a temporary file renamed onto the target, so a reader sees the old file or the new one and nothing between, and a text past the read bound is refused before anything is written. `saer_create` and `saer_import` write only a path that is free, so neither replaces a good file. The model's operation specs put each operation's output back through `parseModel`, and `edit.spec.ts` pins that every refusal leaves the file byte for byte as it was."
+    status: implemented
     threats:
       - th-agent-write
   - id: th-agent-loss-mitigation
     title: ""
-    prose: "Nothing is built. The divergence list that names every such loss is on main, and `renderDivergences` already turns it into lines for a person. Issue #48 requires that report to reach the tool result on a lossy write, which is what remains."
-    status: proposed
+    prose: "`saer_edit` answers with the divergences the codec write reported, as `divergences` in its structured result and through `renderDivergences` in its text, and its description tells the agent to read them after a write to a Threat Dragon file. Since issue #404 that write reports what the format cannot keep: every assumption as `unrepresentable`, a threat whose records merge into its one mitigation text or whose record title is written into it as `narrowed`, a record written into several threats as `split`, and a record status a read of the written threat would not give back as `unrepresentable` (`mitigationDivergences` in `threat-dragon-mitigations.ts`). `saer_import` carries the divergences of its conversion the same way. `edit.spec.ts` pins a Threat Dragon edit reporting its merge."
+    status: implemented
     threats:
       - th-agent-loss
   - id: th-prompt-mitigation
     title: ""
-    prose: "Every text result the server returns opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path issue #48 puts every write through the model operations. The severity stays undecided until the tool surface is whole."
+    prose: "Partly held. Every text result the server returns opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it, and the register and diagram resources and both prompts open with the same line. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path the write tools bound what a steered agent can do through this server: paths confined to the root the invocation named, every edit a model operation that refuses rather than writes a model the parse would not read, and a created file, an import or a drawing written only to a path that is free. What is left is the residual. The line is a statement to the agent rather than a control, and nothing stops an agent that acts on the prose from making an edit the model accepts, such as a threat removed or a status changed, which the tool result reports to an agent that has just been steered. Medium, because what this server can be steered into is a wrong model file or a picture under the root, not a reach past it."
     status: proposed
     threats:
       - th-prompt
@@ -764,7 +761,7 @@ mitigations:
     prose: |-
       Three mechanisms, all of them on main.
 
-      - The flake is the toolchain authority, and CI runs every step through `nix develop .#ci` rather than through whatever the runner ships.
+      - The flake is the toolchain authority, and CI runs its builds, test suites and source checks through `nix develop .#ci` rather than through whatever the runner ships.
       - `pnpm install --frozen-lockfile` installs the lockfile rather than resolving against a registry, and external versions live only in the `pnpm-workspace.yaml` catalog.
       - Every GitHub Action is pinned to a full commit SHA with the version in a trailing comment. zizmor's hash-pin policy fails an unpinned one, and Renovate bumps them.
     status: implemented
@@ -772,8 +769,8 @@ mitigations:
       - th-supply-chain
   - id: th-pdf-html-mitigation
     title: ""
-    prose: "Nothing is built. Issue #34 carries a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. This one is owned rather than transferred, because here Saerskriven is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the ruled pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine."
-    status: proposed
+    prose: "Issue #34 carried a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. `renderTypst` writes a raw HTML node as a string literal of the text the author wrote, so the markup is set as characters rather than interpreted. `test-data/adversarial/typst-injection.yaml` carries a script tag and an `onerror` handler in its titles, names and prose, and `apps/cli/src/pdf.spec.ts` compiles it. The spec holds the Typst source to no call outside a string literal but the package's own, which covers the `onclick` span and script tag in the threat prose, and reads the script tag in the titles and the `onerror` handlers in the headings back out of the PDF's outline as text. This one is owned rather than transferred, because here Saerskriven is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine."
+    status: implemented
     threats:
       - th-pdf-html
   - id: th-detection-claim-mitigation
@@ -942,8 +939,8 @@ threats:
       methodology: STRIDE
       category: tampering
     severity: medium
-    status: open
-    description: "A PDF of the diagram and the register has to turn foreign prose into glyphs, and it does so inside the process that ran the command. The owner ruled the pipeline on 2026-09-03, on issue #34: Typst through its WebAssembly build, embedded in the CLI binary with a default font set, and no browser anywhere in the render path. So the surface is a compiler and a font shaper reading text the file's author wrote, rather than a scripting engine."
+    status: mitigated
+    description: "A PDF of the diagram and the register has to turn foreign prose into glyphs, and it does so inside the process that ran the command, or inside the studio's own tab where the studio exports it. The owner ruled the pipeline on 2026-09-03, on issue #34: Typst through its WebAssembly build, embedded in the CLI binary with a default font set, and no browser anywhere in the render path. So the surface is a compiler and a font shaper reading text the file's author wrote, rather than a scripting engine."
     elements:
       - el-register
       - el-diagram
@@ -1002,7 +999,7 @@ threats:
       methodology: STRIDE
       category: tampering
     severity: high
-    status: open
+    status: mitigated
     description: An agent calling an edit tool with an operation that does not hold leaves a file that no longer parses, and the model it replaced is gone. The workflow that started this project was an agent hand-editing JSON, which is this failure without the tool.
     elements:
       - el-mcp
@@ -1014,7 +1011,7 @@ threats:
       methodology: STRIDE
       category: tampering
     severity: medium
-    status: open
+    status: mitigated
     description: An agent saving a model into Threat Dragon's format loses its assumptions, which that format keeps no record of, and flattens its mitigations into one text per threat, which loses their titles, their statuses and which threats share them. An agent that is not told cannot tell the person who asked.
     elements:
       - el-mcp
@@ -1026,7 +1023,7 @@ threats:
       methodology: custom
       methodologyName: OWASP LLM Top 10
       category: Prompt injection
-    severity: undecided
+    severity: medium
     status: open
     description: A threat description is free text that an agent reads as part of its context. A model file is passed between people and pulled from repositories, so its prose is an input channel into an agent that can also write files.
     elements:
@@ -1049,7 +1046,7 @@ threats:
       methodology: STRIDE
       category: tampering
     severity: medium
-    status: open
+    status: mitigated
     description: Threat prose is markdown, and markdown carries raw HTML. The register hands the decision about that to whatever publishes it, because a register is markdown somebody else renders. The PDF path is Saerskriven composing a document itself, so there is nobody to hand it to.
     elements:
       - el-register
