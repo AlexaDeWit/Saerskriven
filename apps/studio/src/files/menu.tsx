@@ -29,6 +29,7 @@ import {
   renameable,
 } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
+import { useCloseFocus } from '../ui/close-focus.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
 import { colourModes, type ColourMode } from '../theme-preference.js';
@@ -191,9 +192,6 @@ export function StudioMenu({
   );
 }
 
-const focusMovedOn = (): boolean =>
-  document.activeElement !== null && document.activeElement !== document.body;
-
 const titled = (mode: ColourMode): string =>
   mode[0].toUpperCase() + mode.slice(1);
 
@@ -210,21 +208,12 @@ function MenuPanel({
   onColourModeChange,
   session,
 }: MenuPanelProps) {
-  const interactedOutside = useRef(false);
+  const closeFocus = useCloseFocus(focusSelectionControl);
 
   return (
     <DropdownMenu.Content
       tabIndex={0}
-      onCloseAutoFocus={(event) => {
-        const outside = interactedOutside.current;
-        interactedOutside.current = false;
-        if ((!outside && focusMovedOn()) || focusSelectionControl()) {
-          event.preventDefault();
-        }
-      }}
-      onInteractOutside={() => {
-        interactedOutside.current = true;
-      }}
+      {...closeFocus}
       align="start"
       className={styles.panel}
       sideOffset={6}

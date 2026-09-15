@@ -34,7 +34,8 @@ page during tests. Its output and the Playwright reports stay under this
 project's ignored `test-output/` directory.
 
 A failed test keeps its trace and error context under
-`test-output/playwright/output/`. When the smoke fails in CI, the job uploads
+`test-output/playwright/output/`, except in `frame-time`, which records no
+trace. When the smoke fails or times out in CI, the job uploads
 `test-output/playwright/` as the `playwright-output` artifact for 14 days.
 Open a trace with `pnpm exec playwright show-trace <trace.zip>`.
 
