@@ -48,12 +48,7 @@ export function hideModelProperties(): void {
   focusCanvas();
 }
 
-/**
- * Focuses the model properties' Title through `focusTitle` where
- * {@link toggleModelProperties} opened the panel now mounting. Focus moving
- * out of an open menu this way also keeps the menu from returning focus to
- * its own button as it closes.
- */
+/** Focuses the Title through `focusTitle` where {@link toggleModelProperties} opened the panel now mounting. */
 export function takeModelPropertiesFocus(focusTitle: () => void): void {
   if (titleRequested) {
     titleRequested = false;

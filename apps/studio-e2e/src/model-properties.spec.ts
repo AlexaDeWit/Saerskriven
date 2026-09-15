@@ -83,7 +83,7 @@ test('Model properties takes the selection panel location and clears the selecti
   await expect(threatPanel(page)).toBeVisible();
 });
 
-test('Model properties opened from the menu by keyboard focuses Title, and Escape or Close closes it with focus on the canvas', async ({
+test('Model properties opened from the menu by keyboard focuses Title, Escape, Close or the menu item again closes it with focus on the canvas', async ({
   page,
 }) => {
   await openEcluse(page);
@@ -101,6 +101,12 @@ test('Model properties opened from the menu by keyboard focuses Title, and Escap
   await openModelProperties(page);
   await modelControl(page, 'Close model properties').click();
   await expect(modelPanel(page)).toHaveCount(0);
+  await expect(canvasSurface(page)).toBeFocused();
+
+  await openModelProperties(page);
+  await runFromMenu(page, 'Model properties');
+  await expect(modelPanel(page)).toHaveCount(0);
+  await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(canvasSurface(page)).toBeFocused();
 });
 
