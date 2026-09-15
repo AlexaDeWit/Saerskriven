@@ -174,6 +174,7 @@ test('a selected regular node stays above a later overlapping node', async ({
 }) => {
   await openPlaceholder(page);
   const actor = await selectNode(page, /^Actor, actor/u);
+  await page.getByRole('button', { name: 'Fit to view' }).click();
   const store = nodeNamed(page, /^Store, store/u);
   await dragOnto(page, actor, store);
   const actorBox = await actor.boundingBox();
