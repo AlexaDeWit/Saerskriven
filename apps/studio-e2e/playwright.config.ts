@@ -24,7 +24,7 @@ export default defineConfig({
   forbidOnly: !!process.env['CI'],
   use: {
     baseURL: 'http://localhost:4200',
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
   },
   webServer: [
     // This command string is load-bearing twice. @nx/playwright parses it to

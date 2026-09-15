@@ -29,6 +29,7 @@ import {
   renameable,
 } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
+import { useCloseFocus } from '../ui/close-focus.js';
 import { FailureNotice } from '../ui/failure-notice.js';
 import { LiveRegion } from '../ui/live-region.js';
 import { colourModes, type ColourMode } from '../theme-preference.js';
@@ -207,14 +208,12 @@ function MenuPanel({
   onColourModeChange,
   session,
 }: MenuPanelProps) {
+  const closeFocus = useCloseFocus(focusSelectionControl);
+
   return (
     <DropdownMenu.Content
       tabIndex={0}
-      onCloseAutoFocus={(event) => {
-        if (focusSelectionControl()) {
-          event.preventDefault();
-        }
-      }}
+      {...closeFocus}
       align="start"
       className={styles.panel}
       sideOffset={6}

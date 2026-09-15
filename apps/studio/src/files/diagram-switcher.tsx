@@ -20,6 +20,7 @@ import {
   useTextDraft,
   type RefusedDraft,
 } from '../ui/text-field.js';
+import { useCloseFocus } from '../ui/close-focus.js';
 import styles from './menu.module.css';
 import { MenuCommand } from './menu-items.js';
 import { RadioChoices } from './radio-choices.js';
@@ -44,6 +45,7 @@ export function DiagramSwitcher() {
   const editing = active !== undefined && renaming === active.id;
   const wasEditing = useRef(false);
   const blurred = useRef(false);
+  const closeFocus = useCloseFocus();
 
   useEffect(() => {
     if (wasEditing.current && !editing) {
@@ -84,6 +86,7 @@ export function DiagramSwitcher() {
         {active?.title ?? noDiagram}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
+        {...closeFocus}
         align="start"
         className={styles.panel}
         sideOffset={6}

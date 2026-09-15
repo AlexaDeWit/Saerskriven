@@ -1,4 +1,10 @@
-import { act, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { emptyModel } from '@saerskriven/model';
 import {
@@ -194,6 +200,47 @@ describe('the diagram switcher', () => {
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: 'Elsewhere' }),
     );
+  });
+
+  it('leaves focus on a control that took it before the closed switcher returned focus to its button', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(sampleModel), true);
+    render(
+      <CommandSurfaceProvider surface={unmountedSurface}>
+        <DiagramSwitcher />
+        <button type="button">Elsewhere</button>
+      </CommandSurfaceProvider>,
+    );
+    const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+    await user.click(switcher('Diagram: Main'));
+    const menu = await screen.findByRole('menu');
+
+    fireEvent.keyDown(menu, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    act(() => {
+      elsewhere.focus();
+    });
+    await act(async () => {
+      await new Promise((settled) => {
+        setTimeout(settled, 10);
+      });
+    });
+
+    expect(document.activeElement).toBe(elsewhere);
+  });
+
+  it('hands focus back to its button when Escape closes it', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(sampleModel), true);
+    mounted();
+    await user.click(switcher('Diagram: Main'));
+    await screen.findByRole('menu');
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(switcher('Diagram: Main'));
+    });
   });
 
   it('closes the field when an undo takes the diagram it was open on away', async () => {

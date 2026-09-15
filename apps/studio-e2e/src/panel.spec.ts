@@ -9,8 +9,10 @@ import {
   chooseInPanel,
   editAnnouncement,
   nodeNamed,
+  onScreen,
   openEcluse,
   openPlaceholder,
+  panelField,
   runFromMenu,
   selectByKeyboard,
   selectNode,
@@ -26,7 +28,7 @@ const badgeTone = (node: Locator): Locator =>
   node.locator('.pn-badge-primary circle');
 
 const titleField = (page: Page): Locator =>
-  threatPanel(page).getByRole('textbox', { name: 'Title', exact: true });
+  panelField(page, 'textbox', 'Title');
 
 const boxOf = async (locator: Locator): Promise<Record<string, number>> => {
   const box = await locator.boundingBox();
@@ -192,9 +194,7 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
 
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
 
-  await expect(
-    threatPanel(page).getByRole('textbox', { name: 'Title' }),
-  ).toBeFocused();
+  await expect(titleField(page)).toBeFocused();
   await expect(editAnnouncement(page)).toBeEmpty();
   await expect(
     nodeNamed(
@@ -287,39 +287,30 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   await add.focus();
   await page.keyboard.press('Enter');
 
-  const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
+  const title = titleField(page);
   await expect(title).toBeFocused();
   await title.press('ControlOrMeta+a');
   await page.keyboard.type('Queue poisoning');
   await page.keyboard.press('Tab');
 
-  await expect(
-    threatPanel(page).getByRole('combobox', { name: 'Category' }),
-  ).toBeFocused();
+  await expect(panelField(page, 'combobox', 'Category')).toBeFocused();
   await chooseByKeyboard(page, 'ArrowDown');
-  await expect(
-    threatPanel(page).getByRole('combobox', { name: 'Category' }),
-  ).toContainText('STRIDE tampering');
+  await expect(panelField(page, 'combobox', 'Category')).toContainText(
+    'STRIDE tampering',
+  );
 
   await page.keyboard.press('Tab');
-  await expect(
-    threatPanel(page).getByRole('combobox', { name: 'Severity' }),
-  ).toBeFocused();
+  await expect(panelField(page, 'combobox', 'Severity')).toBeFocused();
   await chooseByKeyboard(page, 'ArrowUp');
-  await expect(
-    threatPanel(page).getByRole('combobox', { name: 'Severity' }),
-  ).toContainText('critical');
+  await expect(panelField(page, 'combobox', 'Severity')).toContainText(
+    'critical',
+  );
 
   await page.keyboard.press('Tab');
-  await expect(
-    threatPanel(page).getByRole('combobox', { name: 'Status' }),
-  ).toBeFocused();
+  await expect(panelField(page, 'combobox', 'Status')).toBeFocused();
 
   await page.keyboard.press('Tab');
-  const description = threatPanel(page).getByRole('textbox', {
-    name: 'Description',
-    exact: true,
-  });
+  const description = panelField(page, 'textbox', 'Description');
   await expect(description).toBeFocused();
   await page.keyboard.type('The queue accepts a job nobody enqueued.');
 
@@ -581,12 +572,10 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   await selectByKeyboard(page, /^Écluse Dredger, process/u);
   const panel = threatPanel(page);
   await disclosure(page, /Massive Purge DoS/u).click();
-  const desktopSeverity = await boxOf(
-    panel.getByRole('combobox', { name: 'Severity' }),
-  );
-  const desktopStatus = await boxOf(
-    panel.getByRole('combobox', { name: 'Status', exact: true }),
-  );
+  const severityField = panelField(page, 'combobox', 'Severity');
+  const statusField = panelField(page, 'combobox', 'Status');
+  const desktopSeverity = await boxOf(severityField);
+  const desktopStatus = await boxOf(statusField);
   expect(desktopStatus.top).toBe(desktopSeverity.top);
   await titleField(page).fill('A long threat title '.repeat(15));
   await titleField(page).press('Enter');
@@ -598,13 +587,22 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   expect(
     await panel.evaluate((node) => node.scrollWidth <= node.clientWidth),
   ).toBe(true);
-  const severity = await boxOf(
-    panel.getByRole('combobox', { name: 'Severity' }),
-  );
-  const status = await boxOf(
-    panel.getByRole('combobox', { name: 'Status', exact: true }),
-  );
-  expect(status.top).toBeGreaterThan(severity.top);
+  await onScreen(severityField);
+  await onScreen(statusField);
+  const severity = await boxOf(severityField);
+  const status = await boxOf(statusField);
+  expect(severity.left).toBeGreaterThanOrEqual(bounds.left);
+  expect(severity.right).toBeLessThanOrEqual(bounds.right);
+  expect(status.left).toBeGreaterThanOrEqual(bounds.left);
+  expect(status.right).toBeLessThanOrEqual(bounds.right);
+  expect(
+    status.left >= severity.right || status.top >= severity.bottom,
+    'Severity and Status overlap',
+  ).toBe(true);
+  await chooseInPanel(page, 'Severity', 'critical');
+  await expect(severityField).toContainText('critical');
+  await chooseInPanel(page, 'Status', 'mitigated');
+  await expect(statusField).toContainText('mitigated');
   const longSummary = disclosure(page, /A long threat title/u);
   await longSummary.scrollIntoViewIfNeeded();
   expect((await boxOf(longSummary)).right).toBeLessThanOrEqual(bounds.right);

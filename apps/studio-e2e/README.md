@@ -19,17 +19,25 @@ catalog's `@playwright/test` version matches the flake's driver.
 The projects run in order:
 
 - `chromium` runs the main browser specs.
-- `phone` re-runs the badge clearance, chrome-card, link-existing, model properties, notices, records and summary specs on a `Pixel 7`
-  preset, the viewport the shell chrome and the threat panel have least room
-  in. `chromium` runs the same specs at desktop width.
+- `phone` re-runs the badge clearance, chrome-card, link-existing, model
+  properties, notices, records and summary specs on a `Pixel 7` preset, the
+  viewport the shell chrome and the threat panel have least room in.
+  `chromium` runs the same specs at desktop width.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
 - `frame-time` measures an Écluse drag with one worker and one retry. Earlier
-  project failures skip it. Other browser work must not compete with this measurement.
+  project failures skip it. Other browser work must not compete with this
+  measurement.
 
 The Pages build uses a separate Vite cache to avoid reloading the development
 page during tests. Its output and the Playwright reports stay under this
 project's ignored `test-output/` directory.
+
+A failed test keeps its trace and error context under
+`test-output/playwright/output/`, except in `frame-time`, which records no
+trace. When the smoke fails or times out in CI, the job uploads
+`test-output/playwright/` as the `playwright-output` artifact for 14 days.
+Open a trace with `pnpm exec playwright show-trace <trace.zip>`.
 
 ## Waiting on the canvas
 
