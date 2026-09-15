@@ -217,6 +217,27 @@ describe('a Saerskriven YAML write of mitigations', () => {
   });
 });
 
+describe('a Saerskriven YAML write of a long link list', () => {
+  const threatIds = ecluseModel.threats.map(({ id }) => id);
+  const [first, ...rest] = ecluseModel.mitigations;
+  const lines = writeSaerskrivenYaml(
+    parsedFixture({
+      ...ecluseModel,
+      mitigations: [{ ...first, threats: threatIds }, ...rest],
+    }),
+  ).output.split('\n');
+
+  it('writes each linked id on a line of its own rather than one flow sequence', () => {
+    expect(threatIds.length).toBeGreaterThan(5);
+    expect(lines.filter((line) => /^\s*threats: \[.+\]$/u.test(line))).toEqual(
+      [],
+    );
+    expect(
+      threatIds.every((id) => lines.some((line) => line.endsWith(`- ${id}`))),
+    ).toBe(true);
+  });
+});
+
 describe('a Saerskriven YAML write of an assumption that applies to the model', () => {
   const [assumption] = validModelFixture.assumptions;
   const model = (threats: readonly string[]) =>

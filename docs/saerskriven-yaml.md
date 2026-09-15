@@ -207,6 +207,9 @@ produce the same file, so a diff shows the edit and nothing else.
 - **No line is wrapped.** A long description is one long line, so editing a
   sentence changes the line it is on rather than reflowing the paragraph
   under it.
+- **Lists are block sequences**, one item a line, and only an empty list is
+  written inline as `[]`. A mitigation linked to many threats therefore never
+  makes a long line, and linking or unlinking one threat changes one line.
 
 A read preserves the order the file states. It is a write that orders, so a
 hand-edited file reaches canonical order the next time Saerskriven saves it.
