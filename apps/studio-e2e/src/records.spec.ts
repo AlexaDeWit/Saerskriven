@@ -11,6 +11,7 @@ import {
   panelField,
   runFromMenu,
   screenBoxOf,
+  scrolledAbove,
   selectByKeyboard,
   selectNode,
   threatPanel,
@@ -302,6 +303,77 @@ test('the pane and its record fields stay where they are when an unlink is annou
   await expect(editAnnouncement(page)).toBeEmpty();
   expect((await screenBoxOf(threatPanel(page))).y).toBe(top);
   expect((await screenBoxOf(remaining)).y).toBe(field);
+});
+
+const addMitigation = async (
+  page: Page,
+  title: string,
+  description = '',
+): Promise<void> => {
+  const add = panelControl(page, 'Add mitigation');
+  await onScreen(add);
+  await add.click();
+  await page.keyboard.type(title);
+  await page.keyboard.press('Tab');
+  await page.keyboard.type(description);
+  await page.keyboard.press('Tab');
+};
+
+test('an unlink keeps the pane scrolled where it was while the next Unlink is on screen', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  await addMitigation(page, 'Strip caller tokens at the edge');
+  await addMitigation(page, 'Rotate the upstream token hourly');
+
+  const unlink = panelControl(page, 'Unlink mitigation 1');
+  await onScreen(unlink);
+  const add = panelControl(page, 'Add mitigation');
+  const scrolled = await scrolledAbove(add);
+  await unlink.click();
+
+  await expect(panelField(page, 'textbox', 'Mitigation 1 title')).toHaveValue(
+    'Strip caller tokens at the edge',
+  );
+  await expect(unlink).toBeFocused();
+  await expect(unlink).toBeInViewport({ ratio: 1 });
+  expect(await scrolledAbove(add)).toBe(scrolled);
+});
+
+test('an unlink scrolls the pane only as far as the next Unlink needs to be seen', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  await addMitigation(page, 'Strip caller tokens at the edge');
+  await addMitigation(
+    page,
+    'Rotate the upstream token hourly',
+    'Issue tokens per caller.\nExpire them within the hour.\nRefuse a replay.\nLog each rotation.\nAlert on a failed rotation.',
+  );
+
+  const unlink = panelControl(page, 'Unlink mitigation 2');
+  await unlink.evaluate((element) => {
+    element.scrollIntoView({ block: 'end' });
+  });
+  const pressed = await screenBoxOf(unlink);
+  const add = panelControl(page, 'Add mitigation');
+  const scrolled = await scrolledAbove(add);
+  await unlink.click();
+
+  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
+    'Rotate the upstream token hourly',
+  );
+  await expect(unlink).toBeFocused();
+  await expect(unlink).toBeInViewport({ ratio: 1 });
+  expect(await scrolledAbove(add)).toBeGreaterThan(scrolled);
+  const revealed = await screenBoxOf(unlink);
+  expect(
+    Math.abs(revealed.y + revealed.height - (pressed.y + pressed.height)),
+  ).toBeLessThanOrEqual(1);
 });
 
 test('a message longer than two lines stops above the open pane at phone width', async ({

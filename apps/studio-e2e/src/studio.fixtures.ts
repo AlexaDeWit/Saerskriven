@@ -358,6 +358,16 @@ export const reachesAt = (target: Locator, at: Point): Promise<boolean> =>
     at,
   );
 
+/** How far every ancestor of `target` is scrolled, summed, so a scroll anywhere above it shows. */
+export const scrolledAbove = (target: Locator): Promise<number> =>
+  target.evaluate((element) => {
+    let scrolled = 0;
+    for (let node = element.parentElement; node; node = node.parentElement) {
+      scrolled += node.scrollTop;
+    }
+    return scrolled;
+  });
+
 /** Where a control is drawn on screen, held to be drawn at all. */
 export const screenBoxOf = async (target: Locator): Promise<Box> => {
   const box = await target.boundingBox();
@@ -365,6 +375,7 @@ export const screenBoxOf = async (target: Locator): Promise<Box> => {
   return box ?? { x: 0, y: 0, width: 0, height: 0 };
 };
 
+/** The centre of where a control is drawn on screen. */
 export const centreOf = async (target: Locator): Promise<Point> => {
   const box = await screenBoxOf(target);
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };

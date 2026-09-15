@@ -134,8 +134,13 @@ export function RecordGroup<Held extends ThreatRecord>({
   useEffect(() => {
     const request = focus.current;
     focus.current = undefined;
-    if (request !== undefined) {
-      focusTarget(group.current, request)?.focus();
+    const control =
+      request === undefined ? undefined : focusTarget(group.current, request);
+    if (request?.kind === 'unlinked') {
+      control?.focus({ preventScroll: true });
+      control?.scrollIntoView({ block: 'nearest' });
+    } else {
+      control?.focus();
     }
     const lost = focusedRow.current;
     if (

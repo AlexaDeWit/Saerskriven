@@ -59,6 +59,7 @@
   min-block-size: 0;
   padding: var(--pn-space-3);
   overflow-y: auto;
+  overflow-anchor: none;
   scrollbar-gutter: stable;
 }
 
