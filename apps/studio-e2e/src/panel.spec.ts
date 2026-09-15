@@ -98,6 +98,27 @@ test('T hands the panel the keyboard, and the two Escapes give it back and clear
   await expect(actor).not.toHaveClass(/selected/u);
 });
 
+test('undoing a threat just added from the keyboard hands focus to Add a threat, and redo hands it back to its Title', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await selectByKeyboard(page, /^Actor, actor/u);
+  const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
+  await page.keyboard.press(registeredChords['focus-threats'][0]);
+  await expect(add).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(titleField(page)).toBeFocused();
+
+  await page.keyboard.press(registeredChords.undo[0]);
+
+  await expect(titleField(page)).toHaveCount(0);
+  await expect(add).toBeFocused();
+
+  await page.keyboard.press(registeredChords.redo[0]);
+
+  await expect(titleField(page)).toBeFocused();
+});
+
 test('an element the panel would cover stays where it was drawn', async ({
   page,
 }) => {

@@ -24,6 +24,7 @@ import {
 import { selectTool, type Tool } from '../canvas/tools.js';
 import {
   focusThreatPanel,
+  stepHistory,
   toggleModelProperties,
 } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
@@ -128,7 +129,9 @@ const activates = (tool: Tool): CommandDispatch =>
 const history = (action: Action, message: string): CommandDispatch =>
   runs(() => {
     const before = modelStore.getState().present;
-    dispatch(action);
+    stepHistory(() => {
+      dispatch(action);
+    });
     if (modelStore.getState().present !== before) {
       announce(message);
     }

@@ -6,6 +6,8 @@ let take: (() => boolean) | undefined;
 
 let titleRequested = false;
 
+let historyStep: (() => () => void) | undefined;
+
 /**
  * Registers what moves focus into the threat panel, and hands back the
  * removal. The overlay registers itself while it is mounted, so the canvas
@@ -54,4 +56,28 @@ export function takeModelPropertiesFocus(focusTitle: () => void): void {
     titleRequested = false;
     focusTitle();
   }
+}
+
+/**
+ * Registers the threat panel's look at focus before an undo or redo, which
+ * returns how to settle focus after it. Returns the removal.
+ */
+export function historyFocusHandler(handler: () => () => void): () => void {
+  historyStep = handler;
+  return () => {
+    if (historyStep === handler) {
+      historyStep = undefined;
+    }
+  };
+}
+
+/**
+ * Runs an undo or redo step between the mounted threat panel's two looks at
+ * focus, so focus in a threat the step removes, or on the control it was sent
+ * to, has somewhere to go.
+ */
+export function stepHistory(step: () => void): void {
+  const settle = historyStep?.();
+  step();
+  settle?.();
 }
