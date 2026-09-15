@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import type { Box } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.js';
 import {
   addRecord,
@@ -306,6 +307,44 @@ test('the pane and its record fields stay where they are when an unlink is annou
   expect((await screenBoxOf(remaining)).y).toBe(field);
 });
 
+const scrollPaneTo = (
+  target: Locator,
+  edge: 'top' | 'bottom',
+): Promise<boolean> =>
+  target.evaluate((element, side) => {
+    let pane = element.parentElement;
+    while (pane !== null && getComputedStyle(pane).overflowY !== 'auto') {
+      pane = pane.parentElement;
+    }
+    if (pane === null) {
+      return false;
+    }
+    const drawn = element.getBoundingClientRect();
+    const port = pane.getBoundingClientRect().top + pane.clientTop;
+    const wanted =
+      pane.scrollTop +
+      (side === 'top'
+        ? drawn.top - port
+        : drawn.bottom - port - pane.clientHeight);
+    pane.scrollTop = wanted;
+    return Math.abs(pane.scrollTop - wanted) < 1;
+  }, edge);
+
+const settledBox = async (target: Locator): Promise<Box> => {
+  let before = '';
+  let box = await screenBoxOf(target);
+  await expect
+    .poll(async () => {
+      box = await screenBoxOf(target);
+      const now = JSON.stringify(box);
+      const settled = now === before;
+      before = now;
+      return settled;
+    })
+    .toBe(true);
+  return box;
+};
+
 test('an unlink keeps the pane scrolled where it was while the next Unlink is on screen', async ({
   page,
 }) => {
@@ -344,9 +383,7 @@ test('an unlink scrolls the pane only as far as the next Unlink needs to be seen
   );
 
   const unlink = panelControl(page, 'Unlink mitigation 2');
-  await unlink.evaluate((element) => {
-    element.scrollIntoView({ block: 'end' });
-  });
+  expect(await scrollPaneTo(unlink, 'bottom')).toBe(true);
   const pressed = await screenBoxOf(unlink);
   const add = panelControl(page, 'Add mitigation');
   const scrolled = await scrolledAbove(add);
@@ -373,12 +410,12 @@ test('a record arriving from another tab above the rows in view leaves those row
   await openEcluse(other);
   await selectNode(page, proxy);
   await expandThreat(page, forwarded);
-  const addAssumption = panelControl(page, 'Add assumption');
-  await addAssumption.evaluate((element) => {
-    element.scrollIntoView({ block: 'start' });
-  });
-  const scrolled = await scrolledAbove(addAssumption);
-  const drawn = await screenBoxOf(addAssumption);
+  await addRecord(page, 'assumption', 'Callers rotate their tokens.');
+  await addRecord(page, 'assumption', 'The edge strips unknown headers.');
+  await addRecord(page, 'assumption', 'Upstream logs never hold tokens.');
+  const addMitigation = panelControl(page, 'Add mitigation');
+  expect(await scrollPaneTo(addMitigation, 'top')).toBe(true);
+  const drawn = await settledBox(addMitigation);
 
   await selectNode(other, proxy);
   await expandThreat(other, forwarded);
@@ -387,8 +424,7 @@ test('a record arriving from another tab above the rows in view leaves those row
   await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
     'Strip caller tokens at the edge',
   );
-  expect(scrolled).toBeGreaterThan(0);
-  expect(await screenBoxOf(addAssumption)).toEqual(drawn);
+  expect(await settledBox(addMitigation)).toEqual(drawn);
 });
 
 test('a message longer than two lines stops above the open pane at phone width', async ({
