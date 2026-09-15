@@ -13,7 +13,7 @@ import {
 } from '../store/store.fixtures.js';
 import {
   currentAnnouncement,
-  quotedLength,
+  recordQuoteLength,
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -221,7 +221,7 @@ describe(
       await user.click(button('Unlink mitigation 1'));
 
       const message = currentAnnouncement().message;
-      expect(message).toContain(long.slice(0, quotedLength / 2));
+      expect(message).toContain(long.slice(0, recordQuoteLength / 2));
       expect(message).not.toContain(long);
       expect(message.length).toBeLessThan(long.length);
     });
@@ -244,7 +244,7 @@ describe(
         { id: firstAssumption, threats: [secondThreat] },
       ]);
       expect(currentAnnouncement().message).toContain(
-        recordedModel.assumptions[0].prose.slice(0, quotedLength / 2),
+        recordedModel.assumptions[0].prose.slice(0, recordQuoteLength / 2),
       );
     });
 
@@ -269,7 +269,7 @@ describe(
         { id: firstAssumption, threats: [], appliesToModel: true },
       ]);
       expect(currentAnnouncement().message).toContain(
-        recordedModel.assumptions[0].prose.slice(0, quotedLength / 2),
+        recordedModel.assumptions[0].prose.slice(0, recordQuoteLength / 2),
       );
     });
 

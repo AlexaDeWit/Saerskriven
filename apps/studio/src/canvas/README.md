@@ -307,8 +307,12 @@ their focused control or React Flow's message instead.
 
 An announcement that names something a person wrote (an element, flow,
 diagram or record) quotes it through `quoted` in `announcements.ts`: on one
-line, in quotation marks, and past `quotedLength` grapheme clusters cut to a prefix
-ending in an ellipsis. The accessible names on the canvas and in the panel stay whole.
+line, in quotation marks, and cut to a prefix ending in an ellipsis past its
+bound. An element, flow or diagram name keeps 40 grapheme clusters
+(`nameQuoteLength`) and a record's first line 24 (`recordQuoteLength`).
+While a pane or a selection editor is open, the announcement stops at two
+lines on screen. The accessible names on the canvas and in the panel stay
+whole.
 
 The status is outside the model store because it does not belong in the undo
 stacks. The empty host stays mounted, and a sequence key makes repeated words

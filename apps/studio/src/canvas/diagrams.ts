@@ -4,7 +4,7 @@ import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { untitledDiagram } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { announce, quoted } from './announcements.js';
+import { announce, nameQuoteLength, quoted } from './announcements.js';
 
 /**
  * Puts the diagram `diagramId` names on screen and says so, and does nothing
@@ -17,7 +17,7 @@ export function showDiagram(diagramId: DiagramId): boolean {
   if (shown === undefined || shown.id === before) {
     return false;
   }
-  announce(`Showing ${quoted(shown.title)}.`);
+  announce(`Showing ${quoted(shown.title, nameQuoteLength)}.`);
   return true;
 }
 
@@ -53,7 +53,7 @@ export function createDiagram(): boolean {
   if (modelStore.getState().present === before) {
     return false;
   }
-  announce(`Added ${quoted(diagram.title)}.`);
+  announce(`Added ${quoted(diagram.title, nameQuoteLength)}.`);
   beginRenamingDiagram();
   return true;
 }
@@ -70,7 +70,7 @@ export function renameActiveDiagram(title: string): boolean {
   if (renamed === undefined || renamed.title !== title) {
     return false;
   }
-  announce(`Renamed the diagram to ${quoted(title)}.`);
+  announce(`Renamed the diagram to ${quoted(title, nameQuoteLength)}.`);
   return true;
 }
 

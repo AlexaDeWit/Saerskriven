@@ -11,6 +11,7 @@ import {
   panelField,
   runFromMenu,
   screenBoxOf,
+  selectByKeyboard,
   selectNode,
   threatPanel,
   undoOffered,
@@ -301,6 +302,28 @@ test('the pane and its record fields stay where they are when an unlink is annou
   await expect(editAnnouncement(page)).toBeEmpty();
   expect((await screenBoxOf(threatPanel(page))).y).toBe(top);
   expect((await screenBoxOf(remaining)).y).toBe(field);
+});
+
+test('a message longer than two lines stops above the open pane at phone width', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'Only a phone-width message runs past two lines');
+  await openEcluse(page);
+  await selectByKeyboard(page, /^Registry B/u);
+  await expect(threatPanel(page)).toBeVisible();
+
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('End');
+  await page.keyboard.insertText('\u00AD');
+  await page.keyboard.press('Enter');
+  const said = editAnnouncement(page);
+  await expect(said).toContainText('Registry B');
+
+  const message = await screenBoxOf(said);
+  const pane = await screenBoxOf(threatPanel(page));
+  expect(message.y + message.height).toBeLessThanOrEqual(pane.y);
+  await onScreen(panelControl(page, 'Close threats'));
 });
 
 test('a record edit in one tab reaches another, which keeps its own selection', async ({

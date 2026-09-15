@@ -15,7 +15,7 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import {
   currentAnnouncement,
-  quotedLength,
+  nameQuoteLength,
   resetAnnouncements,
 } from './announcements.js';
 import { currentLayout } from './layout.js';
@@ -299,7 +299,7 @@ describe('removeSelected', () => {
 
     removeSelected();
 
-    expect(said()).toContain(long.slice(0, quotedLength / 2));
+    expect(said()).toContain(long.slice(0, nameQuoteLength / 2));
     expect(said()).not.toContain(long);
   });
 

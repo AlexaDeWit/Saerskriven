@@ -7,7 +7,6 @@ import {
   announce,
   currentAnnouncement,
   quoted,
-  quotedLength,
   resetAnnouncements,
   useAnnouncement,
 } from './announcements.js';
@@ -89,8 +88,10 @@ describe('useAnnouncement', () => {
 });
 
 describe('quoted', () => {
+  const bound = 24;
+
   it('sets short text off whole, on one line', () => {
-    const said = quoted('Callers\n never share');
+    const said = quoted('Callers\n never share', bound);
 
     expect(said).toContain('Callers never share');
     expect(said).not.toBe('Callers never share');
@@ -98,17 +99,17 @@ describe('quoted', () => {
 
   it('cuts long text to a bounded prefix ending in an ellipsis', () => {
     const long = 'Écluse carries a token in a redacted type. '.repeat(20);
-    const said = quoted(long);
+    const said = quoted(long, bound);
 
-    expect(said).toContain(long.slice(0, quotedLength / 2));
-    expect(clusters(said)).toBeLessThanOrEqual(quotedLength + 2);
+    expect(said).toContain(long.slice(0, bound / 2));
+    expect(clusters(said)).toBeLessThanOrEqual(bound + 2);
   });
 
   it('never cuts inside one character a person sees', () => {
     const family = '👩‍👩‍👧';
-    const said = quoted(family.repeat(quotedLength * 2));
+    const said = quoted(family.repeat(bound * 2), bound);
 
-    expect(said).toContain(family.repeat(quotedLength - 1));
-    expect(clusters(said)).toBeLessThanOrEqual(quotedLength + 2);
+    expect(said).toContain(family.repeat(bound - 1));
+    expect(clusters(said)).toBeLessThanOrEqual(bound + 2);
   });
 });
