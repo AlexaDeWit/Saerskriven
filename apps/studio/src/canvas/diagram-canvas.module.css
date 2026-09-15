@@ -15,11 +15,6 @@
   --xy-background-pattern-color: var(--pn-colour-grid);
   --xy-handle-background-color: var(--pn-colour-accent);
   --xy-handle-border-color: var(--pn-colour-badge-ground);
-
-  /* A resize handle's side, and the side with React Flow's 1px border. */
-  --pn-resize-handle-size: 9px;
-  --pn-resize-handle-extent: calc(var(--pn-resize-handle-size) + 2px);
-  --pn-badge-gap: 3px;
 }
 
 /* React Flow names its own parts with global classes, so the studio reaches
@@ -173,18 +168,6 @@
 
 .canvas :global(.react-flow__resize-control.handle.top.right) {
   translate: -100% 0;
-}
-
-/* On an element with a threat badge, the top-right handle sits on the top
-   edge a gap left of the badge, and grows away from it as React Flow scales it
-   up at low zoom. It never passes the top-left handle. */
-.canvas :global(.react-flow__resize-control.handle.top.right.pn-badge-clear) {
-  left: max(
-    calc(2 * var(--pn-resize-handle-extent) + var(--pn-badge-gap)),
-    calc(100% - var(--pn-badge-reach) - var(--pn-badge-gap))
-  );
-  translate: -100% -50%;
-  transform-origin: 100% 50%;
 }
 
 .canvas :global(.react-flow__resize-control.handle.bottom.right) {

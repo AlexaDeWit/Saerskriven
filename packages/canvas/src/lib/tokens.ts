@@ -179,6 +179,17 @@ export const cueWidths = {
   flowSelection: 4,
 } as const;
 
+/**
+ * A square resize handle in the interactive canvas, in pixels at full zoom:
+ * `size` is its side inside React Flow's 1px `border`, and `badgeGap` is how
+ * far a handle beside a threat badge keeps from the badge's ink.
+ */
+export const resizeHandle = {
+  size: 9,
+  border: 1,
+  badgeGap: 3,
+} as const;
+
 /** The invisible stroke widths that make thin diagram lines easier to grab. */
 export const interactionWidths = {
   boundary: 20,
@@ -327,6 +338,8 @@ ${colourBlock(lightPalette, '  ')}
   --pn-cue-selection: ${cueWidths.selection}px;
   --pn-cue-flow-hover: ${cueWidths.flowHover}px;
   --pn-cue-flow-selection: ${cueWidths.flowSelection}px;
+
+  --pn-resize-handle-size: ${String(resizeHandle.size)}px;
 }
 
 @media (prefers-color-scheme: dark) {

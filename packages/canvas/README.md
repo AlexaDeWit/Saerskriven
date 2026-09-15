@@ -355,11 +355,14 @@ no controls because the model has no extent for one. A node wrapper draws an
 element's threat badge in an SVG layer of its own after the controls, classed
 `pn-badge-layer`, so a canvas can stack the badge above the selection frame
 and the side lines. On an element with a badge, the top-right corner control
-carries the `pn-badge-clear` class and the badge's reach from its anchor, ring
-included, as the `--pn-badge-reach` custom property, for the canvas to place
-the control clear of the badge. The headless render draws the badge inside the element glyph. The studio receives
-the settled position and size together, so a resize from the top or left can
-move that edge without splitting one gesture into two edits.
+sits on the top edge `resizeHandle.badgeGap` pixels left of the badge's ink and
+grows away from the badge when React Flow scales it up below full zoom. It
+never passes the top-left control, so on a very narrow element it can meet
+the badge. `resizeHandle.size` reaches the studio as
+`--pn-resize-handle-size`. The headless render draws the badge inside the
+element glyph. The studio receives the settled position and size together, so
+a resize from the top or left can move that edge without splitting one
+gesture into two edits.
 `toReactFlowNodes` carries the layout's nodes over with their position and
 extent set explicitly, so React Flow measures nothing; a boundary curve rides
 as a node too, sized to the box its waypoints span, so it drags and selects as
