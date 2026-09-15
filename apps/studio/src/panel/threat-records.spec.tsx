@@ -1,4 +1,5 @@
 import type { Threat } from '@saerskriven/model';
+import { mitigationId } from '@saerskriven/model/fixtures';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Accordion } from 'radix-ui';
@@ -227,7 +228,17 @@ describe(
         screen.getAllByRole('option').map((option) => option.textContent),
       ).toEqual([expect.stringContaining('Read-only share links')]);
       await user.keyboard('{Escape}');
-      await user.click(button('Link existing mitigation'));
+      const link = button('Link existing mitigation');
+      expect(link.getAttribute('aria-disabled')).toBe('true');
+      await user.click(link);
+      expect(present()).toBe(recordedModel);
+
+      await user.click(
+        screen.getByRole('combobox', { name: 'Existing mitigation' }),
+      );
+      await user.click(screen.getByRole('option'));
+      expect(link.getAttribute('aria-disabled')).toBe('false');
+      await user.click(link);
 
       expect(present().mitigations).toMatchObject([
         { id: firstMitigation, threats: [firstThreat, secondThreat] },
@@ -237,6 +248,40 @@ describe(
       expect(
         screen.queryByRole('combobox', { name: 'Existing mitigation' }),
       ).toBeNull();
+    });
+
+    it('starts the Existing picker with nothing chosen, and returns it to nothing chosen after a link', async () => {
+      const user = userEvent.setup();
+      act(() => {
+        dispatch(
+          Action.AddMitigation({
+            mitigation: {
+              ...recordedModel.mitigations[0],
+              id: mitigationId('mitigation-second'),
+              title: 'Rotate share links',
+            },
+          }),
+        );
+      });
+      showRecords(threatOf(secondThreat));
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing mitigation',
+      });
+      expect(existing.hasAttribute('data-placeholder')).toBe(true);
+
+      await chooseFrom('Existing mitigation', 'Rotate share links');
+      expect(existing.hasAttribute('data-placeholder')).toBe(false);
+      await user.click(button('Link existing mitigation'));
+
+      expect(present().mitigations[1].threats).toContain(secondThreat);
+      expect(
+        screen
+          .getByRole('combobox', { name: 'Existing mitigation' })
+          .hasAttribute('data-placeholder'),
+      ).toBe(true);
+      expect(
+        button('Link existing mitigation').getAttribute('aria-disabled'),
+      ).toBe('true');
     });
 
     it('changes a status in place as one undo step that moves no threat status', async () => {
@@ -349,6 +394,10 @@ describe(
       const user = userEvent.setup();
       showRecords(threatOf(secondThreat));
 
+      await user.click(
+        screen.getByRole('combobox', { name: 'Existing assumption' }),
+      );
+      await user.click(screen.getByRole('option'));
       await user.click(button('Link existing assumption'));
       expect(present().assumptions[0].threats).toEqual([
         firstThreat,

@@ -14,6 +14,7 @@ import {
 } from '@saerskriven/model';
 import { sectionLabel } from '@saerskriven/render';
 import { Action } from '../store/actions.js';
+import type { OptionText } from '../ui/enum-field.js';
 import { distinctLabels } from './distinct-labels.js';
 
 const recordParts = ['title', 'prose'] as const;
@@ -201,12 +202,14 @@ export function recordLabel(record: ThreatRecord): string {
 
 /**
  * The records of one kind that "Link existing" offers a target: every one
- * not already linked to it, each under a label a person can tell apart.
+ * not already linked to it, each under a label a person can tell apart and
+ * a line giving its status and the threats, by number, that hold it.
  */
 export function linkableRecords<Held extends ThreatRecord>(
   records: readonly Held[],
   target: Pick<RecordTarget<Held>, 'holds'>,
-): readonly { readonly record: Held; readonly label: string }[] {
+  threats: readonly NumberedThreat[],
+): readonly { readonly record: Held; readonly text: OptionText }[] {
   const offered = records.filter((record) => !target.holds(record));
   const labels = distinctLabels(
     offered.map((record) => ({
@@ -217,8 +220,27 @@ export function linkableRecords<Held extends ThreatRecord>(
   );
   return offered.map((record) => ({
     record,
-    label: labels.get(record.id) ?? record.id,
+    text: {
+      ...(labels.get(record.id) ?? { label: record.id }),
+      detail: recordDetail(record, threats),
+    },
   }));
+}
+
+function recordDetail(
+  record: ThreatRecord,
+  threats: readonly NumberedThreat[],
+): string {
+  const numbers = threatNumbers(record, threats);
+  return [
+    record.status,
+    numbers.length > 0 && `${threatWord(numbers.length)} ${numbers.join(', ')}`,
+    'appliesToModel' in record &&
+      record.appliesToModel &&
+      'applies to the model',
+  ]
+    .filter((part) => part !== false)
+    .join(' · ');
 }
 
 /**
@@ -314,9 +336,7 @@ function alsoOn(
   threats: readonly NumberedThreat[],
   except?: ThreatId,
 ): string | false {
-  const numbers = inNumberOrder(
-    threats.filter(({ id }) => id !== except && record.threats.includes(id)),
-  ).map(({ number }) => String(number));
+  const numbers = threatNumbers(record, threats, except);
   if (numbers.length === 0) {
     return false;
   }
@@ -327,7 +347,21 @@ function alsoOn(
           `${String(numbers.length - namedThreats)} more`,
         ]
       : numbers;
-  return `Also on ${numbers.length === 1 ? 'threat' : 'threats'} ${listed(named)}.`;
+  return `Also on ${threatWord(numbers.length)} ${listed(named)}.`;
+}
+
+function threatNumbers(
+  record: ThreatRecord,
+  threats: readonly NumberedThreat[],
+  except?: ThreatId,
+): readonly string[] {
+  return inNumberOrder(
+    threats.filter(({ id }) => id !== except && record.threats.includes(id)),
+  ).map(({ number }) => String(number));
+}
+
+function threatWord(count: number): string {
+  return count === 1 ? 'threat' : 'threats';
 }
 
 function listed(items: readonly string[]): string {

@@ -18,6 +18,7 @@ import {
   recordLabel,
   threatTarget,
 } from './records.js';
+import { optionName } from './distinct-labels.js';
 import { numbersIn } from './panel.fixtures.js';
 
 const [mitigation] = recordedModel.mitigations;
@@ -57,17 +58,48 @@ describe('recordsLinkedTo and linkableRecords', () => {
   it('split one register into what the threat holds and what it could link', () => {
     expect(recordsLinkedTo(records, secondThreat)).toEqual([shared]);
     expect(
-      linkableRecords(records, threatTarget(mitigationKind, secondThreat)).map(
-        ({ record }) => record,
-      ),
+      linkableRecords(
+        records,
+        threatTarget(mitigationKind, secondThreat),
+        recordedModel.threats,
+      ).map(({ record }) => record),
     ).toEqual([mitigation]);
+  });
+
+  it('describes an offered record by its status and the numbers of the threats holding it, in number order', () => {
+    const [{ text }] = linkableRecords(
+      [{ ...shared, threats: [secondThreat, firstThreat] }],
+      { holds: () => false },
+      recordedModel.threats,
+    );
+    expect(text.detail).toContain(shared.status);
+    expect(text.detail).toMatch(/1\D+2/u);
+  });
+
+  it('says where an offered assumption applies to the model, naming no threat where it holds none', () => {
+    const [assumption] = recordedModel.assumptions;
+    const [onModel, onNothing] = linkableRecords(
+      [
+        { ...assumption, threats: [], appliesToModel: true },
+        { ...assumption, threats: [], appliesToModel: false },
+      ],
+      { holds: () => false },
+      recordedModel.threats,
+    );
+    expect(onModel.text.detail).not.toBe(onNothing.text.detail);
+    expect(onModel.text.detail).not.toMatch(/\d/u);
   });
 
   it('labels a record with no text by its id', () => {
     const blank = { ...mitigation, title: '', prose: '\n' };
     expect(
-      linkableRecords([blank], threatTarget(mitigationKind, secondThreat))[0]
-        .label,
+      optionName(
+        linkableRecords(
+          [blank],
+          threatTarget(mitigationKind, secondThreat),
+          recordedModel.threats,
+        )[0].text,
+      ),
     ).toContain(mitigation.id);
   });
 });
@@ -78,9 +110,11 @@ describe('the model as a record target', () => {
 
   it('offers to link only the assumptions that do not apply to the model', () => {
     expect(
-      linkableRecords([assumption, applying], modelTarget).map(
-        ({ record }) => record,
-      ),
+      linkableRecords(
+        [assumption, applying],
+        modelTarget,
+        recordedModel.threats,
+      ).map(({ record }) => record),
     ).toEqual([assumption]);
   });
 

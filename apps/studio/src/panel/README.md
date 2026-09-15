@@ -102,8 +102,12 @@ zoom controls.
 The heading, width control, and close button sit outside the scrollable body.
 A long element name scrolls within a three-line heading, reachable by Tab.
 Severity and status share a row when space permits. A description starts
-at eight lines, and a record's description at three, and each grows with
-content to 24 lines. They retain the browser's manual vertical resize control.
+at eight lines and grows with content to 24 lines. A record's text starts at
+two lines and grows to ten. Past its bound a text area scrolls, and each
+keeps the browser's manual vertical resize control. The two record counts on
+a collapsed summary wrap as one group. At phone width the panel body and an
+expanded threat take a narrower inset, so the record cards inside keep more
+of the width.
 
 ## Mitigations and assumptions
 
@@ -114,6 +118,15 @@ panel, list or tab of their own: the assumptions that apply to the model are
 edited in [the model's properties](#the-models-properties).
 `threat-records.tsx` draws one group, `records.ts` holds what differs between
 the two kinds and the pure functions the groups read.
+
+Each record is a bordered card: its name ("Mitigation 2"), then its text
+fields (a mitigation's Title and Description, an assumption's text alone),
+then one line holding the status listbox and a text-weight Unlink control,
+with the note saying where else the record is referenced at the foot of the
+card. The group's heading is a plain legend with no border of its own. Under
+the cards, Add, the Existing picker and Link sit on one row, and the picker
+and Link wrap below Add together where the row has no room. The threat
+editor and the model's properties draw the same group.
 
 - **Add** opens an empty row with focus in its first field (a mitigation's
   title, an assumption's text). Nothing enters the model until a field in
@@ -132,9 +145,16 @@ the two kinds and the pure functions the groups read.
   commits it, and the control reads Unlink by the time it has focus: to
   discard from the keyboard, clear the text first.
 - **Link existing** offers the model's records of that kind that are not on
-  this threat, by title or first line of text, and links the one chosen. A
-  long first line is drawn cut to two lines, and the option's accessible name
-  is the whole line.
+  this threat, by title or first line of text, and links the one chosen. The
+  picker starts with nothing chosen and shows a placeholder naming the kind.
+  Link is disabled (`aria-disabled`, so it stays on the Tab path) until a
+  record is chosen, and the picker is back to nothing chosen after a link.
+  Each option draws its first line cut to two lines, with the whole line as
+  its accessible name, and under it a line giving the record's status, the
+  numbers of the threats that hold it, and whether it applies to the model,
+  which is the option's accessible description. Two records whose labels
+  match carry their ids as a suffix, drawn on a line of its own under the cut
+  label in the listbox and in the trigger, so the two read apart.
 - Each row edits the record's text in place, changes its status in place and
   unlinks it. A record on other threats names them by number, in number
   order ("Also on threat 4", "Also on threats 4 and 25"). Up to four are
@@ -163,7 +183,11 @@ went.
 Control names carry the kind and the row's position: "Mitigation 2 title",
 "Mitigation 2 description", "Mitigation 2 status", "Unlink mitigation 2",
 "Assumption 1", "Add assumption", "Existing mitigation", "Link existing
-mitigation". Positions renumber when a row above is unlinked.
+mitigation". Positions renumber when a row above is unlinked. The card name
+already says which record a control belongs to, so the text drawn is shorter
+than the name and begins it or is contained in it: Title, Description, Add,
+Link, Unlink and Discard. The status listbox and an assumption's text draw no
+label of their own.
 
 A group mounts its rows in the model's record order, and holds that order for
 as long as it stays mounted. A record added or linked while it is mounted,
@@ -310,8 +334,7 @@ is in it.
 - The model's owner and contributors are not edited in the studio. Its title
   and description are, in the model's properties.
 - Link existing lists every unlinked record of its kind, with no search or
-  filter over them. Two records whose first lines agree past the cut look
-  alike in the list, and differ only in their accessible names.
+  filter over them.
 - Markdown is edited as its source. A preview beside the prose is deferred
   with the rest of the rendering surface.
 - A shared threat lists its attached elements by name. The list is read-only,

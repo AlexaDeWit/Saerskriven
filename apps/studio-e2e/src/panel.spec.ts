@@ -510,7 +510,7 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
     .getByRole('button', { name: 'Add mitigation', exact: true })
     .click();
   const recordInitial = await boxOf(recordProse);
-  expect(recordInitial.height).toBeGreaterThanOrEqual(lineHeight * 3);
+  expect(recordInitial.height).toBeGreaterThanOrEqual(lineHeight * 2);
   expect(recordInitial.height).toBeLessThan(initial.height);
   await recordProse.fill(prose.split('\n').slice(0, 6).join('\n'));
   const recordGrown = await boxOf(recordProse);

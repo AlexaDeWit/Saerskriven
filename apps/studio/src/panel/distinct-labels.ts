@@ -1,3 +1,5 @@
+import type { OptionText } from '../ui/enum-field.js';
+
 /** One choice a listbox offers: its id, what it is called, and whether that name is a stand-in. */
 export type LabelledChoice = {
   readonly id: string;
@@ -7,29 +9,41 @@ export type LabelledChoice = {
 
 /**
  * Option labels a person can tell apart. A stand-in name or a repeated name
- * carries its id, and where labels still collide after normalization every
- * one takes a numbered prefix.
+ * carries its id as a suffix, and where the whole labels still collide after
+ * normalization every one takes a numbered prefix.
  */
 export function distinctLabels(
   choices: readonly LabelledChoice[],
-): ReadonlyMap<string, string> {
+): ReadonlyMap<string, OptionText> {
   const counts = new Map<string, number>();
   for (const { label } of choices) {
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
-  const labels = choices.map(({ id, label, unnamed }) =>
-    unnamed || (counts.get(label) ?? 0) > 1 ? `${label} (${id})` : label,
+  const texts = choices.map(({ id, label, unnamed }): OptionText =>
+    unnamed || (counts.get(label) ?? 0) > 1
+      ? { label, suffix: `(${id})` }
+      : { label },
   );
   const distinct =
     new Set(
-      labels.map((label) =>
-        label.normalize('NFC').replace(/\s+/gu, ' ').trim(),
+      texts.map((text) =>
+        optionName(text).normalize('NFC').replace(/\s+/gu, ' ').trim(),
       ),
     ).size === choices.length;
   return new Map(
     choices.map(({ id }, index) => [
       id,
-      distinct ? labels[index] : `${String(index + 1)}: ${labels[index]}`,
+      distinct
+        ? texts[index]
+        : {
+            ...texts[index],
+            label: `${String(index + 1)}: ${texts[index].label}`,
+          },
     ]),
   );
+}
+
+/** The accessible name an option drawn from `text` carries. */
+export function optionName({ label, suffix }: OptionText): string {
+  return suffix === undefined ? label : `${label} ${suffix}`;
 }

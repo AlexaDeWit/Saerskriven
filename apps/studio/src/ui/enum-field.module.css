@@ -37,7 +37,8 @@
 /* A value or option label stops at two lines, so a long label (a record's
    first paragraph) cannot grow the trigger past the room Radix measures for
    the listbox and leave it none. The clamp is visual: the accessible name is
-   still the whole label. */
+   still the whole label. A suffix that tells two labels apart sits on its
+   own line outside the clamp, so it stays drawn when the label is cut. */
 .text {
   display: -webkit-box;
   min-inline-size: 0;
@@ -45,6 +46,36 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   text-align: start;
+}
+
+.suffix {
+  display: block;
+  color: var(--pn-colour-text-muted);
+  font-size: 0.8em;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pn-space-1);
+  min-inline-size: 0;
+}
+
+.detail {
+  color: var(--pn-colour-text-muted);
+  font-size: 0.8em;
+  font-weight: 400;
+  text-align: start;
+}
+
+.detail::first-letter {
+  text-transform: uppercase;
+}
+
+.trigger[data-placeholder] {
+  color: var(--pn-colour-text-muted);
 }
 
 .icon {
@@ -85,6 +116,11 @@
 .item[data-highlighted] {
   background: var(--pn-colour-accent);
   color: var(--pn-colour-accent-text);
+}
+
+.item[data-highlighted] .suffix,
+.item[data-highlighted] .detail {
+  color: inherit;
 }
 
 /* Radix puts real DOM focus on the highlighted item, so the app's focus
