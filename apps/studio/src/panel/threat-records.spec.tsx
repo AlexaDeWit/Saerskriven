@@ -61,6 +61,16 @@ const button = (name: string): HTMLElement =>
 const textbox = (name: string): HTMLElement =>
   screen.getByRole('textbox', { name });
 
+const assumptionRows = (): readonly (string | undefined)[] =>
+  screen
+    .queryAllByRole('textbox', { name: /^Assumption \d+$/u })
+    .map(
+      (_, index) =>
+        textbox(`Assumption ${String(index + 1)}`).closest<HTMLElement>(
+          '[data-record-row]',
+        )?.dataset['recordRow'],
+    );
+
 describe(
   'the records of a threat',
   () => {
@@ -354,6 +364,88 @@ describe(
       expect(present().assumptions[0].status).toBe('invalidated');
       expect(present().threats).toBe(recordedModel.threats);
       expect(undoable()).toBe(2);
+    });
+
+    it('keeps shown rows in place while a record is added, linked, undone, redone or edited in another tab, and mounts again in model order', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+
+      await user.click(button('Add assumption'));
+      await user.keyboard('Share links expire.');
+      await user.tab();
+      const added = present().assumptions.at(-1)?.id;
+      await user.click(button('Link existing assumption'));
+
+      expect(assumptionRows()).toEqual([added, firstAssumption]);
+      expect(document.activeElement).toBe(textbox('Assumption 2'));
+
+      act(() => {
+        dispatch(Action.Undo());
+      });
+      expect(assumptionRows()).toEqual([added]);
+      act(() => {
+        dispatch(Action.Redo());
+      });
+      expect(assumptionRows()).toEqual([added, firstAssumption]);
+
+      const { present: model, ...synced } = modelStore.getState();
+      act(() => {
+        dispatch(
+          Action.Followed({
+            state: {
+              ...synced,
+              present: {
+                ...model,
+                assumptions: model.assumptions.map((assumption) =>
+                  assumption.id === firstAssumption
+                    ? { ...assumption, prose: 'Edited in another tab.' }
+                    : assumption,
+                ),
+              },
+            },
+          }),
+        );
+      });
+      expect(assumptionRows()).toEqual([added, firstAssumption]);
+
+      cleanup();
+      showRecords(threatOf(secondThreat));
+      expect(assumptionRows()).toEqual([firstAssumption, added]);
+    });
+
+    it('gives a row brought back by undoing its unlink its old slot', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+      await user.click(button('Link existing assumption'));
+      await user.click(button('Add assumption'));
+      await user.keyboard('Share links expire.');
+      await user.tab();
+      const added = present().assumptions.at(-1)?.id;
+      expect(assumptionRows()).toEqual([firstAssumption, added]);
+
+      await user.click(button('Unlink assumption 1'));
+      expect(assumptionRows()).toEqual([added]);
+      act(() => {
+        dispatch(Action.Undo());
+      });
+
+      expect(assumptionRows()).toEqual([firstAssumption, added]);
+    });
+
+    it('gives a record linked again after its unlink its old slot', async () => {
+      const user = userEvent.setup();
+      showRecords(threatOf(secondThreat));
+      await user.click(button('Link existing assumption'));
+      await user.click(button('Add assumption'));
+      await user.keyboard('Share links expire.');
+      await user.tab();
+      const added = present().assumptions.at(-1)?.id;
+
+      await user.click(button('Unlink assumption 1'));
+      await user.click(button('Link existing assumption'));
+
+      expect(assumptionRows()).toEqual([firstAssumption, added]);
+      expect(document.activeElement).toBe(textbox('Assumption 1'));
     });
 
     it('puts a held mitigation draft back in its empty row', () => {

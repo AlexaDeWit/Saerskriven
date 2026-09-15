@@ -161,6 +161,17 @@ Control names carry the kind and the row's position: "Mitigation 2 title",
 "Assumption 1", "Add assumption", "Existing mitigation", "Link existing
 mitigation". Positions renumber when a row above is unlinked.
 
+A group mounts its rows in the model's record order, and holds that order for
+as long as it stays mounted. A record added or linked while it is mounted,
+from this tab or another, joins after the rows already shown, so no shown row
+changes position or number. A record that was shown earlier in the same mount
+and returns, by an undo of its unlink, by a redo of its link or by being linked
+again, takes its old slot back. The group mounts
+again, in the model's order, when the panel reopens, the threat is expanded
+again or the selection changes. The order is the panel's alone: the model has
+no per-threat record order, and moving a record in the model would move it
+for every other threat and in the file.
+
 ## The model's properties
 
 The Model properties command, in the root menu or on M outside text fields,
