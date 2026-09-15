@@ -352,9 +352,19 @@ A selected node of a kind the model can resize adds four line
 corners. Side controls resize one axis. Corner controls resize both axes. The
 minimum width and height are ten model units. Each control contains a named
 button whose arrow-key route uses model-space steps. A boundary curve carries
-no controls because the model has no extent for one. The studio receives the
-settled position and size together, so a resize from the top or left can move
-that edge without splitting one gesture into two edits.
+no controls because the model has no extent for one. A node wrapper draws an
+element's threat badge in an SVG layer of its own after the controls, classed
+`pn-badge-layer`, so a canvas can stack the badge above the selection frame
+and the side lines. On an element with a badge, the top-right corner control
+sits on the top edge `resizeHandle.badgeGap` screen pixels left of the badge's
+ink at every zoom, growing away from the badge when React Flow scales it up
+below full zoom. At full zoom it stays clear of the top-left control, so on a
+very narrow element it can meet the badge, and below full zoom the two top
+handles can overlap. `resizeHandle.size` reaches the studio as
+`--pn-resize-handle-size`. The headless render draws the badge inside the
+element glyph. The studio receives the settled position and size together, so
+a resize from the top or left can move that edge without splitting one
+gesture into two edits.
 `toReactFlowNodes` carries the layout's nodes over with their position and
 extent set explicitly, so React Flow measures nothing; a boundary curve rides
 as a node too, sized to the box its waypoints span, so it drags and selects as

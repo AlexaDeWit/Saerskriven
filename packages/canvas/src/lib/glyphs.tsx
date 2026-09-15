@@ -80,12 +80,15 @@ function boxStrokeStyle(
  * element's position: its outline, its run of text, and its badge, in that
  * order. React Flow places a node itself; the headless render places it with
  * {@link PlacedElementGlyph}. `textVisible` false leaves the run of text out,
- * for a canvas with an editor open where that text is drawn.
+ * for a canvas with an editor open where that text is drawn. `badgeVisible`
+ * false leaves the badge out, for a canvas that draws it in a layer of its own.
  */
 export function ElementGlyph({
+  badgeVisible = true,
   node,
   textVisible = true,
 }: {
+  readonly badgeVisible?: boolean;
   readonly node: CanvasNode;
   readonly textVisible?: boolean;
 }): ReactElement {
@@ -93,7 +96,7 @@ export function ElementGlyph({
     <g className={groupClass(node.outOfScope)}>
       {outlineOf(node)}
       {textVisible ? <WrappedText {...nodeTextPlacement(node)} /> : null}
-      {node.badge === undefined ? null : (
+      {!badgeVisible || node.badge === undefined ? null : (
         <ThreatBadgeGlyph badge={node.badge} at={badgeAnchor(node.size)} />
       )}
     </g>

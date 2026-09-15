@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
 const pagesExport = /pages-export\.spec\.ts$/u;
 const phoneSmoke =
-  /(?:chrome-card|link-existing|model-properties|notices|records|summary)\.spec\.ts$/u;
+  /(?:badge-clearance|chrome-card|link-existing|model-properties|notices|records|summary)\.spec\.ts$/u;
 const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 

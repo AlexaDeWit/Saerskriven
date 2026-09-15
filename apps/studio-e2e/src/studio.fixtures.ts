@@ -41,9 +41,11 @@ export const focusSettled = async (target: Locator): Promise<void> => {
     .toBe(true);
 };
 
-/** Opens a vendored model through the development hook. Existing recovery still takes precedence. */
-export const openModel = async (page: Page, path: string): Promise<void> => {
-  const model: unknown = JSON.parse(readFileSync(vendored(path), 'utf8'));
+/** Opens a model document through the development hook. Existing recovery still takes precedence. */
+export const openModelDocument = async (
+  page: Page,
+  model: unknown,
+): Promise<void> => {
   await page.addInitScript(
     ({ key, model: document }) => {
       Object.defineProperty(globalThis, key, { value: document });
@@ -53,6 +55,14 @@ export const openModel = async (page: Page, path: string): Promise<void> => {
   await page.goto('/');
   await expect(canvasContainer(page)).toBeVisible();
   await canvasSettled(page);
+};
+
+/** Opens a vendored model through {@link openModelDocument}. */
+export const openModel = async (page: Page, path: string): Promise<void> => {
+  await openModelDocument(
+    page,
+    JSON.parse(readFileSync(vendored(path), 'utf8')),
+  );
 };
 
 /** Opens the studio on Écluse's model, through {@link openModel}. */
@@ -267,12 +277,7 @@ export const cardControlsClear = async (page: Page): Promise<void> => {
   ];
   for (const control of controls) {
     await expect(control).toBeInViewport();
-    const at = await centreOf(control);
-    const reached = await control.evaluate(
-      (node, point) =>
-        node.contains(document.elementFromPoint(point.x, point.y)),
-      at,
-    );
+    const reached = await reachesAt(control, await centreOf(control));
     const named = await control.getAttribute('aria-label');
     expect(reached, `${named ?? 'a card control'} is covered`).toBe(true);
   }
@@ -322,11 +327,7 @@ export const chooseInPanel = async (
 export const onScreen = async (target: Locator): Promise<void> => {
   await target.scrollIntoViewIfNeeded();
   await expect(target).toBeInViewport();
-  const at = await centreOf(target);
-  const reached = await target.evaluate(
-    (node, point) => node.contains(document.elementFromPoint(point.x, point.y)),
-    at,
-  );
+  const reached = await reachesAt(target, await centreOf(target));
   expect(reached, 'the control is covered').toBe(true);
 };
 
@@ -349,6 +350,13 @@ export const widthOf = async (node: Locator): Promise<string> => {
   const style = (await node.getAttribute('style')) ?? '';
   return /width:\s*[^;]*/u.exec(style)?.[0] ?? style;
 };
+
+/** Whether the topmost element at a screen point is `target` or inside it. */
+export const reachesAt = (target: Locator, at: Point): Promise<boolean> =>
+  target.evaluate(
+    (node, point) => node.contains(document.elementFromPoint(point.x, point.y)),
+    at,
+  );
 
 /** Where a control is drawn on screen, held to be drawn at all. */
 export const screenBoxOf = async (target: Locator): Promise<Box> => {

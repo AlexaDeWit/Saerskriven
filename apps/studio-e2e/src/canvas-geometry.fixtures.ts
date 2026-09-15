@@ -8,6 +8,13 @@ export type Box = {
   readonly height: number;
 };
 
+/** Whether two boxes share any area. Boxes that only touch do not. */
+export const boxesOverlap = (one: Box, other: Box): boolean =>
+  one.x < other.x + other.width &&
+  other.x < one.x + one.width &&
+  one.y < other.y + other.height &&
+  other.y < one.y + one.height;
+
 /** One point in the diagram's own coordinates. */
 export type Point = { readonly x: number; readonly y: number };
 

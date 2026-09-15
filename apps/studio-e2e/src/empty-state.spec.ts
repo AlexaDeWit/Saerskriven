@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
+import { boxesOverlap, type Box } from './canvas-geometry.fixtures.js';
 import {
   elementNodes,
   nodeNamed,
@@ -7,14 +8,7 @@ import {
   withoutPickers,
 } from './studio.fixtures.js';
 
-type DrawnBox = {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-};
-
-const nowhere: DrawnBox = { x: 0, y: 0, width: 0, height: 0 };
+const nowhere: Box = { x: 0, y: 0, width: 0, height: 0 };
 
 const drawnNames = [
   { of: /^Actor, actor/u, className: 'pn-label', says: 'Actor' },
@@ -22,17 +16,11 @@ const drawnNames = [
   { of: /^Records, flow/u, className: 'pn-flow-label', says: 'Records' },
 ] as const;
 
-const boxOf = async (locator: Locator, called: string): Promise<DrawnBox> => {
+const boxOf = async (locator: Locator, called: string): Promise<Box> => {
   const measured = await locator.boundingBox();
   expect(measured, `${called} is on the page`).not.toBeNull();
   return measured ?? nowhere;
 };
-
-const overlap = (one: DrawnBox, other: DrawnBox): boolean =>
-  one.x < other.x + other.width &&
-  other.x < one.x + one.width &&
-  one.y < other.y + other.height &&
-  other.y < one.y + one.height;
 
 test('the studio opens on an actor, the records it sends, and the store they land in', async ({
   page,
@@ -67,7 +55,7 @@ test('the chrome floating over the canvas covers no part of the diagram', async 
   for (const over of floating) {
     for (const under of drawn) {
       expect(
-        overlap(
+        boxesOverlap(
           await boxOf(over.locator, over.called),
           await boxOf(under.locator, under.called),
         ),
