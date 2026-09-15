@@ -5,7 +5,8 @@ import type {
   CanvasNodeKind,
   ThreatBadge,
 } from '@saerskriven/canvas';
-import type { ElementId } from '@saerskriven/model';
+import { flagsByElement, type ElementId, type Model } from '@saerskriven/model';
+import { flagLabel } from '@saerskriven/render';
 
 const kindWords = {
   actor: 'actor',
@@ -18,23 +19,32 @@ const kindWords = {
 
 const freeEndWords = 'a free point';
 
-const flaggedWords = 'a threat flagged';
-
 /**
  * What every element the layout drew is called to assistive technology,
  * keyed by the id React Flow knows it by. The glyphs are hidden from a
  * screen reader, so a name here is the only account of the element it has:
- * what the element is called, what kind it is, and what its badge says. A
- * flow also names the elements its ends attach to, from one to the other or
- * between the two where it runs both ways.
+ * what the element is called, what kind it is, what its badge says, and
+ * which flags `model` raises on the threats naming it. The badge draws one
+ * mark for either flag, so the name is where the two are told apart. A flow
+ * also names the elements its ends attach to, from one to the other or
+ * between the two where it runs both ways. `layout` must be laid out from
+ * `model`, or the flags named belong to another model's threats.
  */
 export function accessibleNames(
   layout: CanvasLayout,
+  model: Model,
 ): ReadonlyMap<string, string> {
   const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
+  const flags = flagsByElement(model);
+  const flagWords = (element: ElementId): string[] =>
+    (flags.get(element) ?? []).map(flagLabel);
   return new Map<string, string>([
-    ...layout.nodes.map((node) => [node.id, nodeName(node)] as const),
-    ...layout.edges.map((edge) => [edge.id, edgeName(edge, nodes)] as const),
+    ...layout.nodes.map(
+      (node) => [node.id, nodeName(node, flagWords(node.id))] as const,
+    ),
+    ...layout.edges.map(
+      (edge) => [edge.id, edgeName(edge, nodes, flagWords(edge.id))] as const,
+    ),
   ]);
 }
 
@@ -53,13 +63,19 @@ export function edgeLabel(edge: CanvasEdge): string {
   return edge.name === '' ? 'the flow' : edge.name;
 }
 
-function nodeName(node: CanvasNode): string {
-  return spoken([node.name, kindWords[node.kind], ...badgeWords(node.badge)]);
+function nodeName(node: CanvasNode, flags: readonly string[]): string {
+  return spoken([
+    node.name,
+    kindWords[node.kind],
+    ...badgeWords(node.badge),
+    ...flags,
+  ]);
 }
 
 function edgeName(
   edge: CanvasEdge,
   nodes: ReadonlyMap<ElementId, CanvasNode>,
+  flags: readonly string[],
 ): string {
   const source = endName(edge.sourceElement, nodes);
   const target = endName(edge.targetElement, nodes);
@@ -70,6 +86,7 @@ function edgeName(
       ? `between ${source} and ${target}`
       : `from ${source} to ${target}`,
     ...badgeWords(edge.badge),
+    ...flags,
   ]);
 }
 
@@ -88,18 +105,14 @@ function endName(
 }
 
 function badgeWords(badge: ThreatBadge | undefined): string[] {
-  if (badge === undefined) {
+  if (badge === undefined || badge.kind === 'flag-only') {
     return [];
-  }
-  if (badge.kind === 'flag-only') {
-    return [flaggedWords];
   }
   return [
     badge.count === 1 ? '1 open threat' : `${badge.count} open threats`,
     badge.severity === 'undecided'
       ? 'severity not assessed'
       : `highest severity ${badge.severity}`,
-    ...(badge.flagged ? [flaggedWords] : []),
   ];
 }
 

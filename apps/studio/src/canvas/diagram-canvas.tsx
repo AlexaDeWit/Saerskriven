@@ -142,12 +142,13 @@ export function DiagramCanvas({
   const backgroundSelection = useBackgroundSelection();
   const bends = useFlowBends();
   const { layout } = bends;
+  const model = useModelStore((state) => state.present);
   const selection = useModelStore(selectedElements);
   const selected = useModelStore(selectedElement);
   const keyboardDescriptionId = useId();
   const graph = useMemo(
-    () => diagramGraph(layout, selection),
-    [layout, selection],
+    () => diagramGraph(layout, model, selection),
+    [layout, model, selection],
   );
   const elements = useMemo(() => elementIds(layout), [layout]);
   const positions = useMemo(() => nodesById(layout), [layout]);

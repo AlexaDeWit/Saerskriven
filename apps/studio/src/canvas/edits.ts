@@ -251,7 +251,10 @@ function changedModel(action: Action): boolean {
 }
 
 function spokenName(state: State, elementId: ElementId): string {
-  return accessibleNames(currentLayout(state)).get(elementId) ?? elementId;
+  return (
+    accessibleNames(currentLayout(state), state.present).get(elementId) ??
+    elementId
+  );
 }
 
 function counted(total: number, thing: string): string {
