@@ -47,7 +47,7 @@ import {
   type RefusedDraft,
   type TextRefusal,
 } from '../ui/text-field.js';
-import { announce, resetAnnouncements } from './announcements.js';
+import { announce, quotedName, resetAnnouncements } from './announcements.js';
 import {
   commitNote,
   commitRename,
@@ -111,6 +111,14 @@ function typeOf(textStyle: WrappedTextStyle, room?: number): CSSProperties {
     lineHeight: lineHeightRatio,
     maxHeight: room === undefined ? undefined : `${String(room)}px`,
   };
+}
+
+function refusedNameOf(
+  name: string,
+  unnamed: string,
+): (label: string, text: string) => TextRefusal | undefined {
+  const spoken = `Name of ${quotedName(name, unnamed)}`;
+  return (_label, text) => refusedName(spoken, text);
 }
 
 function InlineField({
@@ -277,7 +285,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
             elementId={node.id}
             label={`Name of ${nodeLabel(node)}`}
             onCommit={commitRename}
-            refuse={refusedName}
+            refuse={refusedNameOf(node.name, nodeLabel(node))}
             room={
               node.kind === 'boundary-curve'
                 ? undefined
@@ -328,7 +336,7 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
               elementId={edge.id}
               label={`Name of ${edgeLabel(edge)}`}
               onCommit={commitRename}
-              refuse={refusedName}
+              refuse={refusedNameOf(edge.name, edgeLabel(edge))}
               textStyle={edge.label.name.textStyle}
               value={edge.name}
             />

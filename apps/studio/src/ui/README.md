@@ -43,6 +43,9 @@ and the focus ring, are declared once, being the same in both.
 | `--pn-space-1` to `--pn-space-4`                                     | Every gap and every pad            |
 | `--pn-panel-cover`                                                   | Default threat pane coverage       |
 | `--pn-chrome-block-size`                                             | The chrome card's height, measured |
+| `--pn-chrome-reports-block-size`                                     | Notices under the card, measured   |
+| `--pn-announcement-slot`                                             | Two announcement lines under it    |
+| `--pn-pane-block-start`                                              | Where a pane starts                |
 | `--pn-radius`                                                        | Every corner                       |
 | `--pn-focus-ring`, `--pn-focus-ring-width`, `--pn-focus-ring-offset` | The one visible focus indicator    |
 

@@ -587,7 +587,7 @@ test('the delete key removes a selected flow, and undo puts it back', async ({
   await page.keyboard.press('Delete');
 
   await expect(flows).toHaveCount(19);
-  await expect(editAnnouncement(page)).toContainText('Removed npm read');
+  await expect(editAnnouncement(page)).toContainText('npm read');
   await expect(canvasSurface(page)).toBeFocused();
 
   await runFromMenu(page, 'Undo');

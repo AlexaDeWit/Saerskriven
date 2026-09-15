@@ -1,5 +1,9 @@
-import { useRef } from 'react';
-import { CanvasMessages, Toolbox } from '../canvas/toolbox.js';
+import { useRef, type RefObject } from 'react';
+import {
+  CanvasAnnouncement,
+  FlowTargetChooser,
+  Toolbox,
+} from '../canvas/toolbox.js';
 import {
   FileReports,
   StudioMenu,
@@ -10,14 +14,18 @@ import styles from './chrome.module.css';
 
 const cardHeight = '--pn-chrome-block-size';
 
+const reportsHeight = '--pn-chrome-reports-block-size';
+
 /**
  * The one floating card of shell chrome: the menu button and the diagram
- * control on row one, the tool modes on row two, and the failure notice, the
- * file reports, the canvas announcement and the flow chooser hanging under it.
- * The card's height goes back to the document root as `--pn-chrome-block-size`
- * for the controls that start below it, measured rather than counted from the
- * rows: the tools row wraps on a narrow enough viewport, and a constant would
- * then be short by a line.
+ * control on row one, the tool modes on row two, and under it the failure
+ * notice, the file reports, the flow chooser and last the canvas
+ * announcement. The card's height goes back to the document root as
+ * `--pn-chrome-block-size`, and the height of what hangs above the
+ * announcement as `--pn-chrome-reports-block-size`, both measured: the tools
+ * row wraps on a narrow viewport, and a notice is as tall as its details. The
+ * announcement is left out, and an open pane reserves a fixed slot for it
+ * instead, so the pane does not move each time an edit is announced.
  */
 export function StudioChrome({
   colourMode,
@@ -26,19 +34,10 @@ export function StudioChrome({
   triggerRef,
 }: StudioMenuProps) {
   const card = useRef<HTMLDivElement>(null);
+  const reports = useRef<HTMLDivElement>(null);
 
-  useMeasured(
-    card,
-    (node) => {
-      document.documentElement.style.setProperty(
-        cardHeight,
-        `${String(node.getBoundingClientRect().height)}px`,
-      );
-    },
-    () => {
-      document.documentElement.style.removeProperty(cardHeight);
-    },
-  );
+  useMeasuredHeight(card, cardHeight);
+  useMeasuredHeight(reports, reportsHeight);
 
   return (
     <div className={styles.chrome}>
@@ -52,9 +51,30 @@ export function StudioChrome({
         <Toolbox />
       </div>
       <div className={styles.below}>
-        <FileReports session={session} />
-        <CanvasMessages />
+        <div className={styles.reports} ref={reports}>
+          <FileReports session={session} />
+          <FlowTargetChooser />
+        </div>
+        <CanvasAnnouncement />
       </div>
     </div>
+  );
+}
+
+function useMeasuredHeight(
+  target: RefObject<HTMLDivElement | null>,
+  property: string,
+): void {
+  useMeasured(
+    target,
+    (node) => {
+      document.documentElement.style.setProperty(
+        property,
+        `${String(node.getBoundingClientRect().height)}px`,
+      );
+    },
+    () => {
+      document.documentElement.style.removeProperty(property);
+    },
   );
 }

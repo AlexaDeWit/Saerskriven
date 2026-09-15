@@ -36,9 +36,13 @@
 /* What hangs under the card: wider than the card where there is room, the
    card's width on a phone. No gap here, each report carrying its own, so an
    empty one adds nothing between the card and the diagram. */
-.below {
+.below,
+.reports {
   display: flex;
   flex-direction: column;
+}
+
+.below {
   inline-size: 30rem;
   max-inline-size: 100%;
   pointer-events: auto;

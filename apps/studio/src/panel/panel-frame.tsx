@@ -77,6 +77,7 @@ export function PanelFrame({
       aria-describedby={keyboardDescriptionId}
       aria-label={label}
       className={styles.panel}
+      data-pane=""
       data-testid={testId}
       data-wide={wide}
       ref={panel}

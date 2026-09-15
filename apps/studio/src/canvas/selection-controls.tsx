@@ -137,6 +137,7 @@ function SelectionEditor({
       aria-label={
         control === 'geometry' ? 'Position and size' : 'Flow endpoint'
       }
+      data-pane=""
       data-selection-editor
       className={styles.panel}
       ref={root}
@@ -409,7 +410,11 @@ export function FlowEndpointCommands() {
   return flow?.kind === 'flow' &&
     state.inlineEditor === undefined &&
     tool.active === 'select' ? (
-    <section aria-label="Reconnect flow" className={styles.endpoints}>
+    <section
+      aria-label="Reconnect flow"
+      className={styles.endpoints}
+      data-pane=""
+    >
       <CommandButton command="reconnect-source" />
       <CommandButton command="reconnect-target" />
       <CommandButton command="toggle-flow-direction" />

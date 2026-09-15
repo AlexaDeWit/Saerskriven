@@ -84,7 +84,7 @@ test('the switcher lists the diagrams by title, and a choice draws the one chose
     `Diagram: ${secondTitle}`,
   );
   await expect(page.getByTestId('canvas-announcement')).toContainText(
-    secondTitle,
+    secondTitle.slice(0, 12),
   );
 });
 

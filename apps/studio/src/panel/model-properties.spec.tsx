@@ -2,6 +2,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   currentAnnouncement,
+  recordQuoteLength,
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { Action } from '../store/actions.js';
@@ -198,7 +199,7 @@ describe(
 
       expect(present().assumptions).toEqual([]);
       expect(currentAnnouncement().message).toContain(
-        recordedModel.assumptions[0].prose,
+        recordedModel.assumptions[0].prose.slice(0, recordQuoteLength / 2),
       );
       undo();
       expect(present()).toBe(before);

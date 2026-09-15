@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { registeredChords } from './chords.js';
 import {
   chooseInPanel,
+  editAnnouncement,
   expandThreat,
   nodeNamed,
   onScreen,
@@ -9,6 +10,8 @@ import {
   panelControl,
   panelField,
   runFromMenu,
+  screenBoxOf,
+  selectByKeyboard,
   selectNode,
   threatPanel,
   undoOffered,
@@ -242,6 +245,85 @@ test('a linked record names the other threats that hold it by number, and unlink
 
   await runFromMenu(page, 'Undo');
   await expect(kept).toHaveValue(bound);
+});
+
+test('unlinking a record with a long first line announces a bounded name, and the pane header stays usable under it', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  const unlink = panelControl(page, 'Unlink mitigation 1');
+  await onScreen(unlink);
+  await unlink.click();
+
+  const said = editAnnouncement(page);
+  await expect(said).toContainText('Écluse carries a token');
+  expect((await said.textContent())?.length ?? 0).toBeLessThan(160);
+
+  const widen = panelControl(page, 'Widen pane');
+  await onScreen(widen);
+  await widen.click();
+  await expect(panelControl(page, 'Restore pane width')).toBeVisible();
+  await expect(said).not.toBeEmpty();
+
+  const close = panelControl(page, 'Close threats');
+  await onScreen(close);
+  await close.click();
+  await expect(threatPanel(page)).toHaveCount(0);
+});
+
+test('the pane and its record fields stay where they are when an unlink is announced and when the next keystroke clears it', async ({
+  page,
+}) => {
+  await openEcluse(page);
+  await selectNode(page, proxy);
+  await expandThreat(page, forwarded);
+  await panelControl(page, 'Add mitigation').click();
+  await page.keyboard.type('Strip caller tokens at the edge');
+  await page.keyboard.press('Tab');
+  const description = panelField(page, 'textbox', 'Mitigation 2 description');
+  await expect(description).toBeFocused();
+
+  const top = (await screenBoxOf(threatPanel(page))).y;
+  const unlink = panelControl(page, 'Unlink mitigation 1');
+  await onScreen(unlink);
+  await unlink.click();
+  await expect(editAnnouncement(page)).not.toBeEmpty();
+  expect((await screenBoxOf(threatPanel(page))).y).toBe(top);
+
+  const remaining = panelField(page, 'textbox', 'Mitigation 1 title');
+  await remaining.focus();
+  await remaining.press('End');
+  const field = (await screenBoxOf(remaining)).y;
+  await page.keyboard.type('s');
+  await page.keyboard.press('Tab');
+  await expect(remaining).toHaveValue('Strip caller tokens at the edges');
+  await expect(editAnnouncement(page)).toBeEmpty();
+  expect((await screenBoxOf(threatPanel(page))).y).toBe(top);
+  expect((await screenBoxOf(remaining)).y).toBe(field);
+});
+
+test('a message longer than two lines stops above the open pane at phone width', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'Only a phone-width message runs past two lines');
+  await openEcluse(page);
+  await selectByKeyboard(page, /^Registry B/u);
+  await expect(threatPanel(page)).toBeVisible();
+
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('End');
+  await page.keyboard.insertText('\u00AD');
+  await page.keyboard.press('Enter');
+  const said = editAnnouncement(page);
+  await expect(said).toContainText('Registry B');
+
+  const message = await screenBoxOf(said);
+  const pane = await screenBoxOf(threatPanel(page));
+  expect(message.y + message.height).toBeLessThanOrEqual(pane.y);
+  await onScreen(panelControl(page, 'Close threats'));
 });
 
 test('a record edit in one tab reaches another, which keeps its own selection', async ({

@@ -8,7 +8,7 @@ import { announce, resetAnnouncements } from './announcements.js';
 import { resetConnecting, startFlow } from './connecting.js';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
 import { currentTool, resetTools } from './tools.js';
-import { CanvasMessages, Toolbox } from './toolbox.js';
+import { CanvasAnnouncement, FlowTargetChooser, Toolbox } from './toolbox.js';
 
 const opened = (selected?: State['selection'][number]): void => {
   const selection = selected === undefined ? [] : [selected];
@@ -25,7 +25,8 @@ const chrome = (): void => {
   render(
     <>
       <Toolbox />
-      <CanvasMessages />
+      <CanvasAnnouncement />
+      <FlowTargetChooser />
     </>,
   );
 };

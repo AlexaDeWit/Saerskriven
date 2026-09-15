@@ -1,7 +1,7 @@
 .panel {
   position: absolute;
   z-index: 1;
-  inset-block-start: calc(var(--pn-space-3) * 2 + var(--pn-chrome-block-size));
+  inset-block-start: var(--pn-pane-block-start);
   inset-inline-end: var(--pn-space-3);
   box-sizing: border-box;
   display: flex;
@@ -10,7 +10,7 @@
   /* The bare term is the zoom cluster's height, which the pane ends above:
      one 2rem control, the cluster's pad on each side and its border. */
   max-block-size: calc(
-    100% - var(--pn-space-3) * 4 - var(--pn-chrome-block-size) -
+    100% - var(--pn-space-3) * 2 - var(--pn-pane-block-start) -
       (2rem + var(--pn-space-1) * 2 + 2px)
   );
   max-inline-size: calc(100% - var(--pn-space-3) * 2);
