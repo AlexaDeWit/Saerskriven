@@ -9,7 +9,7 @@ import {
   type Ref,
 } from 'react';
 
-import { growToContent, sizesFieldsToContent } from './grow-to-content.js';
+import { growUnlessResized, sizesFieldsToContent } from './grow-to-content.js';
 import styles from './text-field.module.css';
 
 type Draft = { readonly shown: string; readonly text: string };
@@ -246,6 +246,7 @@ export function ProseField({
   const fieldId = useId();
   const refusalId = useId();
   const field = useRef<HTMLTextAreaElement>(null);
+  const written = useRef<string | undefined>(undefined);
   const { text, refusal, change, commit } = useTextDraft(
     label,
     value,
@@ -256,7 +257,7 @@ export function ProseField({
 
   useLayoutEffect(() => {
     if (!sizesFieldsToContent()) {
-      growToContent(field.current);
+      written.current = growUnlessResized(field.current, written.current);
     }
   });
 

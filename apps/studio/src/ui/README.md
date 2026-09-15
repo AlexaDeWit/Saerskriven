@@ -156,8 +156,10 @@ the panel itself has been unmounted ([the panel](../panel/README.md)).
 at two and grows to ten when `compact`, which is how the threat editor's
 record cards stay short. Past its bound it scrolls, and it keeps manual
 vertical resizing. CSS `field-sizing: content` does the growing where the
-browser supports it. Elsewhere, Firefox among them, `growToContent` sets
-the height from the text after each render, as the canvas rename field does,
-and the same CSS bounds still apply.
+browser supports it. Elsewhere, Firefox among them, `growUnlessResized`
+sets the height from the text after each render, through the
+`growToContent` the canvas rename field also uses, and the same CSS bounds
+still apply. Once a person drags the resize handle, the field keeps the
+height they gave it and stops growing.
 
 The Appearance choice in the File menu selects System, Light, or Dark. System uses the browser media preference. An explicit choice sets `data-pn-colour-mode` on the document root and persists through reload. Components read tokens only, so the mode does not add palette values to component styles.

@@ -104,9 +104,10 @@ A long element name scrolls within a three-line heading, reachable by Tab.
 Severity and status share a row when space permits. A description starts
 at eight lines and grows with content to 24 lines. A record's text starts at
 two lines and grows to ten. Where a browser has no `field-sizing`, Firefox
-among them, `growToContent` grows both. Past its bound a text area scrolls,
-and each keeps the browser's manual vertical resize control. The two record counts on
-a collapsed summary wrap as one group. At phone width the panel body and an
+among them, `growUnlessResized` grows both. Past its bound a text area
+scrolls, and each keeps the browser's manual vertical resize control, whose
+height then stands as the text changes. The two record counts on a
+collapsed summary wrap as one group. At phone width the panel body and an
 expanded threat take a narrower inset, so the record cards inside keep more
 of the width.
 
@@ -151,8 +152,8 @@ editor and the model's properties draw the same group.
   Link is disabled (`aria-disabled`, so it stays on the Tab path, with a
   dashed border and a description saying to choose a record) until a
   record is chosen, and the picker is back to nothing chosen after a link.
-  The trigger draws the chosen record's first line cut to one line, so the
-  row keeps one height. Each option in the listbox draws it cut to two
+  The trigger draws the chosen record's first line cut to one line, with
+  the id suffix on the lines below it where the record has one. Each option in the listbox draws it cut to two
   lines, with the whole line as its accessible name, and under it a line
   giving the record's status, the numbers of the threats that hold it, and
   whether it applies to the model, which is the option's accessible

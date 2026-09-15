@@ -1,6 +1,7 @@
 import {
   contentHeight,
   growToContent,
+  growUnlessResized,
   sizesFieldsToContent,
 } from './grow-to-content.js';
 
@@ -58,6 +59,22 @@ describe('growToContent', () => {
     expect(() => {
       growToContent(null);
     }).not.toThrow();
+  });
+});
+
+describe('growUnlessResized', () => {
+  it('grows a field until its height is no longer the one it wrote, then leaves the resized height', () => {
+    const element = withScrollHeight(
+      { boxSizing: 'border-box', borderWidth: '0px' },
+      120,
+    );
+    const written = growUnlessResized(element, undefined);
+    expect(written).toBe('120px');
+    expect(growUnlessResized(element, written)).toBe('120px');
+
+    element.style.height = '200px';
+    expect(growUnlessResized(element, written)).toBe(written);
+    expect(element.style.height).toBe('200px');
   });
 });
 

@@ -30,16 +30,33 @@ export function contentHeight(
 
 /**
  * Sets a textarea's height to its content, clearing it first so it can
- * shrink. The CSS minimum and maximum sizes still bound it, and past the
- * maximum it scrolls. Call it from a layout effect that runs every render.
+ * shrink, and gives back the height it left in the element's style. The CSS
+ * minimum and maximum sizes still bound it, and past the maximum it scrolls.
+ * Call it from a layout effect that runs every render.
  */
-export function growToContent(element: HTMLTextAreaElement | null): void {
+export function growToContent(element: HTMLTextAreaElement | null): string {
   if (element === null) {
-    return;
+    return '';
   }
   element.style.height = '';
   const height = contentHeight(element);
   if (height !== undefined) {
     element.style.height = `${String(height)}px`;
   }
+  return element.style.height;
+}
+
+/**
+ * {@link growToContent}, unless the height in the element's style is no
+ * longer the one `written` holds from the last call, which means a person
+ * has resized the field and their height stands. Gives back what `written`
+ * should hold next.
+ */
+export function growUnlessResized(
+  element: HTMLTextAreaElement | null,
+  written: string | undefined,
+): string | undefined {
+  return written !== undefined && element?.style.height !== written
+    ? written
+    : growToContent(element);
 }

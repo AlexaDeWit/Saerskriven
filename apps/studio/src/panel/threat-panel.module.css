@@ -251,12 +251,8 @@
   border: 0;
 }
 
-/* Floated, the legend is laid out as the first flex item rather than drawn
-   into the fieldset's border. */
 .recordName {
-  float: inline-start;
-  inline-size: 100%;
-  margin: 0;
+  margin-block-end: var(--pn-space-2);
   padding: 0;
   font-weight: 600;
 }

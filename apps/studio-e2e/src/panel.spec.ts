@@ -531,7 +531,13 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
   await page.mouse.move(manual.right - 5, manual.bottom + 40, { steps: 5 });
   await page.mouse.up();
   await expect(recordProse).toHaveCSS('resize', 'vertical');
-  expect((await boxOf(recordProse)).height).toBeGreaterThan(manual.height);
+  const resized = (await boxOf(recordProse)).height;
+  expect(resized).toBeGreaterThan(manual.height);
+  await recordProse.press('End');
+  await recordProse.press('x');
+  expect((await boxOf(recordProse)).height).toBe(resized);
+  await recordProse.press('Backspace');
+  expect((await boxOf(recordProse)).height).toBe(resized);
   await runFromMenu(page, 'Undo');
   await expect(recordProse).toHaveCount(0);
   await runFromMenu(page, 'Undo');
