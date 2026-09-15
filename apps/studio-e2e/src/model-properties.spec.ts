@@ -294,6 +294,7 @@ test('an older assumption linked after an added one lands after it, and leaves a
   await expect(
     modelField(page, 'combobox', 'Assumption 1 status'),
   ).toBeFocused();
+  await chooseInPanel(page, 'Existing assumption', older, modelPanel(page));
   await modelControl(page, 'Link existing assumption').click();
 
   const first = modelField(page, 'textbox', 'Assumption 1');

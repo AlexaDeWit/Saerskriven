@@ -15,7 +15,7 @@ import {
 import { sectionLabel } from '@saerskriven/render';
 import { Action } from '../store/actions.js';
 import type { OptionText } from '../ui/enum-field.js';
-import { distinctLabels } from './distinct-labels.js';
+import { distinctTexts } from './distinct-labels.js';
 
 const recordParts = ['title', 'prose'] as const;
 
@@ -210,20 +210,18 @@ export function linkableRecords<Held extends ThreatRecord>(
   target: Pick<RecordTarget<Held>, 'holds'>,
   threats: readonly NumberedThreat[],
 ): readonly { readonly record: Held; readonly text: OptionText }[] {
-  const offered = records.filter((record) => !target.holds(record));
-  const labels = distinctLabels(
-    offered.map((record) => ({
-      id: record.id,
-      label: recordLabel(record),
-      unnamed: firstLine(record) === undefined,
-    })),
-  );
-  return offered.map((record) => ({
+  return distinctTexts(
+    records
+      .filter((record) => !target.holds(record))
+      .map((record) => ({
+        id: record.id,
+        label: recordLabel(record),
+        unnamed: firstLine(record) === undefined,
+        record,
+      })),
+  ).map(([{ record }, text]) => ({
     record,
-    text: {
-      ...(labels.get(record.id) ?? { label: record.id }),
-      detail: recordDetail(record, threats),
-    },
+    text: { ...text, detail: recordDetail(record, threats) },
   }));
 }
 
@@ -240,7 +238,7 @@ function recordDetail(
       'applies to the model',
   ]
     .filter((part) => part !== false)
-    .join(' · ');
+    .join(', ');
 }
 
 /**

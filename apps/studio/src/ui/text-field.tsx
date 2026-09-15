@@ -2,12 +2,14 @@ import { firstRefusedCharacter, isEmptyName } from '@saerskriven/model';
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
   type Ref,
 } from 'react';
 
+import { growToContent, sizesFieldsToContent } from './grow-to-content.js';
 import styles from './text-field.module.css';
 
 type Draft = { readonly shown: string; readonly text: string };
@@ -243,6 +245,7 @@ export function ProseField({
 }: ProseFieldProps) {
   const fieldId = useId();
   const refusalId = useId();
+  const field = useRef<HTMLTextAreaElement>(null);
   const { text, refusal, change, commit } = useTextDraft(
     label,
     value,
@@ -250,6 +253,12 @@ export function ProseField({
     onCommit,
     onRefused,
   );
+
+  useLayoutEffect(() => {
+    if (!sizesFieldsToContent()) {
+      growToContent(field.current);
+    }
+  });
 
   return (
     <Labelled
@@ -267,6 +276,7 @@ export function ProseField({
           onChange?.();
           change(event.target.value);
         }}
+        ref={field}
         rows={compact ? 2 : 8}
         value={text}
       />

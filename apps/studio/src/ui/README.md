@@ -118,14 +118,16 @@ tells two like labels apart, drawn on its own line so the cut below cannot
 hide it, and a `detail` line under the option that becomes its accessible
 description. The trigger and each option draw at most two lines of their
 label and end in an ellipsis, so a long label cannot grow the trigger past
-the room its listbox needs. The accessible name is still the whole label and
-its suffix. A field with no `value` shows its `placeholder`, and its first
-option keeps the listbox's tab stop. `EnumField`, `TextField` and
-`ProseField` take a `shownLabel` that draws a shorter label, or none, where
-the surroundings already say what the field is. The control keeps `label` as
-its accessible name, and a refusal still names the field by it. The listbox is placed and sized
-within the box the field scrolls in, the panel body, so it opens clear of the
-chrome card and the pane header and inside the viewport. It is the
+the room its listbox needs. A caller can cut the trigger shorter, as the
+threat panel's Existing picker does to one line. The accessible name is
+still the whole label and its suffix. A field with no `value` shows its
+`placeholder`, and its first option keeps the listbox's tab stop.
+`EnumField`, `TextField` and `ProseField` take a `shownLabel` that draws a
+shorter label, or none, where the surroundings already say what the field
+is. The control keeps `label` as its accessible name, and a refusal still
+names the field by it. The listbox is placed and sized within the box the
+field scrolls in, the panel body, so it opens clear of the chrome card and
+the pane header and inside the viewport. It is the
 worked example, and `SeverityField`, `StatusField` and `CategoryField` are it
 three times: each reads its options from a model schema, so the field offers
 what the model names and nothing else, and each hands its committed value to
@@ -150,10 +152,12 @@ a draft reported that way rather than on the value it is given, which is how
 the threat panel puts a refused draft back in the field it was typed in after
 the panel itself has been unmounted ([the panel](../panel/README.md)).
 
-`ProseField` starts at eight lines, or three when `compact`, which is how the
-threat editor's record rows stay short. CSS `field-sizing: content` grows it
-with its text up to 24 lines while preserving manual vertical resizing.
-Browsers without this CSS property keep the starting height and its resize
-control.
+`ProseField` starts at eight lines and grows with its text to 24, or starts
+at two and grows to ten when `compact`, which is how the threat editor's
+record cards stay short. Past its bound it scrolls, and it keeps manual
+vertical resizing. CSS `field-sizing: content` does the growing where the
+browser supports it. Elsewhere, Firefox among them, `growToContent` sets
+the height from the text after each render, as the canvas rename field does,
+and the same CSS bounds still apply.
 
 The Appearance choice in the File menu selects System, Light, or Dark. System uses the browser media preference. An explicit choice sets `data-pn-colour-mode` on the document root and persists through reload. Components read tokens only, so the mode does not add palette values to component styles.

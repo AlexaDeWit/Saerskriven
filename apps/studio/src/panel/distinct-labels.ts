@@ -8,21 +8,18 @@ export type LabelledChoice = {
 };
 
 /**
- * Option labels a person can tell apart. A stand-in name or a repeated name
- * carries its id as a suffix, and where the whole labels still collide after
- * normalization every one takes a numbered prefix.
+ * Option labels a person can tell apart, each beside the choice it labels
+ * and in the order given. A stand-in name or a repeated name carries its id
+ * as a suffix, and where the whole labels still collide after normalization
+ * every one takes a numbered prefix.
  */
-export function distinctLabels(
-  choices: readonly LabelledChoice[],
-): ReadonlyMap<string, OptionText> {
-  const counts = new Map<string, number>();
-  for (const { label } of choices) {
-    counts.set(label, (counts.get(label) ?? 0) + 1);
-  }
+export function distinctTexts<Choice extends LabelledChoice>(
+  choices: readonly Choice[],
+): readonly (readonly [Choice, OptionText])[] {
+  const repeated = (label: string): boolean =>
+    choices.filter((choice) => choice.label === label).length > 1;
   const texts = choices.map(({ id, label, unnamed }): OptionText =>
-    unnamed || (counts.get(label) ?? 0) > 1
-      ? { label, suffix: `(${id})` }
-      : { label },
+    unnamed || repeated(label) ? { label, suffix: `(${id})` } : { label },
   );
   const distinct =
     new Set(
@@ -30,17 +27,22 @@ export function distinctLabels(
         optionName(text).normalize('NFC').replace(/\s+/gu, ' ').trim(),
       ),
     ).size === choices.length;
-  return new Map(
-    choices.map(({ id }, index) => [
-      id,
-      distinct
-        ? texts[index]
-        : {
-            ...texts[index],
-            label: `${String(index + 1)}: ${texts[index].label}`,
-          },
-    ]),
-  );
+  return choices.map((choice, index) => [
+    choice,
+    distinct
+      ? texts[index]
+      : {
+          ...texts[index],
+          label: `${String(index + 1)}: ${texts[index].label}`,
+        },
+  ]);
+}
+
+/** {@link distinctTexts} by the id of the choice each labels. */
+export function distinctLabels(
+  choices: readonly LabelledChoice[],
+): ReadonlyMap<string, OptionText> {
+  return new Map(distinctTexts(choices).map(([{ id }, text]) => [id, text]));
 }
 
 /** The accessible name an option drawn from `text` carries. */

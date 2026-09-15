@@ -70,11 +70,15 @@ test('the keyboard links the last mitigation offered', async ({ page }) => {
 const suffixShownIn = async (holder: Locator): Promise<string> => {
   const suffix = holder.locator('[data-option-suffix]');
   await expect(suffix).toBeVisible();
-  const [outer, inner] = await Promise.all([
+  const [outer, label, inner] = await Promise.all([
     holder.boundingBox(),
+    holder.locator('[data-option-label]').boundingBox(),
     suffix.boundingBox(),
   ]);
   expect(inner?.height).toBeGreaterThan(0);
+  expect(inner?.y).toBeGreaterThanOrEqual(
+    (label?.y ?? Infinity) + (label?.height ?? 0),
+  );
   expect(inner?.y).toBeGreaterThanOrEqual(outer?.y ?? Infinity);
   expect((inner?.y ?? 0) + (inner?.height ?? 0)).toBeLessThanOrEqual(
     (outer?.y ?? 0) + (outer?.height ?? 0),

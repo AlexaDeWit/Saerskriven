@@ -103,8 +103,9 @@ The heading, width control, and close button sit outside the scrollable body.
 A long element name scrolls within a three-line heading, reachable by Tab.
 Severity and status share a row when space permits. A description starts
 at eight lines and grows with content to 24 lines. A record's text starts at
-two lines and grows to ten. Past its bound a text area scrolls, and each
-keeps the browser's manual vertical resize control. The two record counts on
+two lines and grows to ten. Where a browser has no `field-sizing`, Firefox
+among them, `growToContent` grows both. Past its bound a text area scrolls,
+and each keeps the browser's manual vertical resize control. The two record counts on
 a collapsed summary wrap as one group. At phone width the panel body and an
 expanded threat take a narrower inset, so the record cards inside keep more
 of the width.
@@ -119,11 +120,11 @@ edited in [the model's properties](#the-models-properties).
 `threat-records.tsx` draws one group, `records.ts` holds what differs between
 the two kinds and the pure functions the groups read.
 
-Each record is a bordered card: its name ("Mitigation 2"), then its text
-fields (a mitigation's Title and Description, an assumption's text alone),
-then one line holding the status listbox and a text-weight Unlink control,
-with the note saying where else the record is referenced at the foot of the
-card. The group's heading is a plain legend with no border of its own. Under
+Each record is a bordered card, a group named by its name ("Mitigation 2")
+drawn at its top, then its text fields (a mitigation's Title and
+Description, an assumption's text alone), then one line holding the status
+listbox and a text-weight Unlink control, with the note saying where else the
+record is referenced at the foot of the card. The group's heading is a plain legend with no border of its own. Under
 the cards, Add, the Existing picker and Link sit on one row, and the picker
 and Link wrap below Add together where the row has no room. The threat
 editor and the model's properties draw the same group.
@@ -147,12 +148,15 @@ editor and the model's properties draw the same group.
 - **Link existing** offers the model's records of that kind that are not on
   this threat, by title or first line of text, and links the one chosen. The
   picker starts with nothing chosen and shows a placeholder naming the kind.
-  Link is disabled (`aria-disabled`, so it stays on the Tab path) until a
+  Link is disabled (`aria-disabled`, so it stays on the Tab path, with a
+  dashed border and a description saying to choose a record) until a
   record is chosen, and the picker is back to nothing chosen after a link.
-  Each option draws its first line cut to two lines, with the whole line as
-  its accessible name, and under it a line giving the record's status, the
-  numbers of the threats that hold it, and whether it applies to the model,
-  which is the option's accessible description. Two records whose labels
+  The trigger draws the chosen record's first line cut to one line, so the
+  row keeps one height. Each option in the listbox draws it cut to two
+  lines, with the whole line as its accessible name, and under it a line
+  giving the record's status, the numbers of the threats that hold it, and
+  whether it applies to the model, which is the option's accessible
+  description. Two records whose labels
   match carry their ids as a suffix, drawn on a line of its own under the cut
   label in the listbox and in the trigger, so the two read apart.
 - Each row edits the record's text in place, changes its status in place and

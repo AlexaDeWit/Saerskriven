@@ -4,6 +4,7 @@ import { announce } from '../canvas/announcements.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { EnumField, type OptionText } from '../ui/enum-field.js';
 import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
+import { VisuallyHidden } from '../ui/visually-hidden.js';
 import {
   editedRecord,
   inShownOrder,
@@ -302,14 +303,16 @@ function LinkExisting<Held extends ThreatRecord>({
 }: LinkExistingProps<Held>) {
   const [chosen, setChosen] = useState<string | undefined>(undefined);
   const offered = linkable.find(({ record }) => record.id === chosen);
+  const reasonId = useId();
+  const texts = new Map<string, OptionText>(
+    linkable.map(({ record, text }) => [record.id, text]),
+  );
 
   return (
     <div className={styles.existing}>
       <EnumField
         label={`Existing ${noun}`}
-        labelOf={(id) =>
-          linkable.find(({ record }) => record.id === id)?.text ?? id
-        }
+        labelOf={(id) => texts.get(id) ?? id}
         onCommit={setChosen}
         options={linkable.map(({ record }) => record.id)}
         placeholder={`Existing ${noun}`}
@@ -317,6 +320,7 @@ function LinkExisting<Held extends ThreatRecord>({
         value={offered?.record.id}
       />
       <button
+        aria-describedby={offered === undefined ? reasonId : undefined}
         aria-disabled={offered === undefined}
         aria-label={`Link existing ${noun}`}
         className={styles.recordAction}
@@ -331,6 +335,11 @@ function LinkExisting<Held extends ThreatRecord>({
         <Link2Icon aria-hidden="true" />
         Link
       </button>
+      {offered === undefined && (
+        <VisuallyHidden id={reasonId}>
+          {`Choose an existing ${noun} first.`}
+        </VisuallyHidden>
+      )}
     </div>
   );
 }
@@ -401,45 +410,47 @@ function RecordRow<Held extends ThreatRecord>({
       data-record-row={record.id}
       onBlur={draft ? onBlur : undefined}
     >
-      <p className={styles.recordName}>{name}</p>
-      {kind.parts.map((part) =>
-        part === 'title' ? (
-          <TextField key={part} {...fieldProps(part)} />
-        ) : (
-          <ProseField compact key={part} {...fieldProps(part)} />
-        ),
-      )}
-      <div className={styles.recordState}>
-        <EnumField
-          label={`${name} status`}
-          onCommit={onStatus}
-          options={kind.statuses}
-          shownLabel=""
-          value={record.status}
-        />
-        <button
-          aria-describedby={elsewhere === undefined ? undefined : sharedId}
-          aria-label={`${draft ? 'Discard' : 'Unlink'} ${name.toLowerCase()}`}
-          className={styles.unlink}
-          data-unlink-record={draft ? undefined : true}
-          onClick={onRemove}
-          onMouseDown={
-            draft
-              ? (event) => {
-                  event.preventDefault();
-                }
-              : undefined
-          }
-          type="button"
-        >
-          {draft ? 'Discard' : 'Unlink'}
-        </button>
-      </div>
-      {elsewhere !== undefined && (
-        <p className={styles.shared} id={sharedId}>
-          {elsewhere}
-        </p>
-      )}
+      <fieldset className={styles.recordFields}>
+        <legend className={styles.recordName}>{name}</legend>
+        {kind.parts.map((part) =>
+          part === 'title' ? (
+            <TextField key={part} {...fieldProps(part)} />
+          ) : (
+            <ProseField compact key={part} {...fieldProps(part)} />
+          ),
+        )}
+        <div className={styles.recordState}>
+          <EnumField
+            label={`${name} status`}
+            onCommit={onStatus}
+            options={kind.statuses}
+            shownLabel=""
+            value={record.status}
+          />
+          <button
+            aria-describedby={elsewhere === undefined ? undefined : sharedId}
+            aria-label={`${draft ? 'Discard' : 'Unlink'} ${name.toLowerCase()}`}
+            className={styles.unlink}
+            data-unlink-record={draft ? undefined : true}
+            onClick={onRemove}
+            onMouseDown={
+              draft
+                ? (event) => {
+                    event.preventDefault();
+                  }
+                : undefined
+            }
+            type="button"
+          >
+            {draft ? 'Discard' : 'Unlink'}
+          </button>
+        </div>
+        {elsewhere !== undefined && (
+          <p className={styles.shared} id={sharedId}>
+            {elsewhere}
+          </p>
+        )}
+      </fieldset>
     </div>
   );
 }
