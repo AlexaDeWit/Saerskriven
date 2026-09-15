@@ -5,7 +5,12 @@ import { threatRegisterFixture } from './fixtures.js';
 import type { MitigationStatus } from './mitigations.js';
 import type { AssumptionStatus } from './assumptions.js';
 import { parseModel, type Model } from './parse.js';
-import { threatFlags, type ThreatFlag } from './threat-flags.js';
+import {
+  flagsByElement,
+  threatFlags,
+  threatFlagSchema,
+  type ThreatFlag,
+} from './threat-flags.js';
 import type { ThreatStatus } from './threats.js';
 
 const generatedModel = modelInputArbitrary.map((input) =>
@@ -182,6 +187,31 @@ describe('threatFlags over generated models', () => {
           threatFlags(model, threat);
         }
         expect(model).toEqual(before);
+      }),
+    );
+  });
+});
+
+describe('flagsByElement', () => {
+  it('holds, per element, each flag a threat naming it raises, once and in schema order', () => {
+    fc.assert(
+      fc.property(generatedModel, (model) => {
+        const expected = new Map(
+          [...new Set(model.threats.flatMap(({ elements }) => elements))]
+            .map((element) => {
+              const raised = new Set(
+                model.threats
+                  .filter(({ elements }) => elements.includes(element))
+                  .flatMap((threat) => threatFlags(model, threat)),
+              );
+              return [
+                element,
+                threatFlagSchema.options.filter((flag) => raised.has(flag)),
+              ] as const;
+            })
+            .filter(([, flags]) => flags.length > 0),
+        );
+        expect(flagsByElement(model)).toEqual(expected);
       }),
     );
   });

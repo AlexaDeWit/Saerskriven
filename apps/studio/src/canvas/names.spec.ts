@@ -1,8 +1,8 @@
 import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
-import type { Model, ThreatStatus } from '@saerskriven/model';
-import { assumptionId, elementId } from '@saerskriven/model/fixtures';
+import type { Model } from '@saerskriven/model';
 import {
   canvasModel,
+  flaggedCanvasModel,
   probeFlow,
   readerElement,
   requestFlow,
@@ -18,36 +18,6 @@ const withoutNodes = (from: CanvasLayout): CanvasLayout => ({
   ...from,
   nodes: [],
 });
-
-type Rework = {
-  readonly status?: ThreatStatus;
-  readonly elements?: readonly string[];
-  readonly invalidated?: boolean;
-};
-
-const reworked = (byThreat: Readonly<Record<string, Rework>>): Model => {
-  const threats = canvasModel.threats.map((threat) => {
-    const rework = byThreat[threat.id] ?? {};
-    return {
-      ...threat,
-      status: rework.status ?? threat.status,
-      elements: rework.elements?.map(elementId) ?? threat.elements,
-    };
-  });
-  return {
-    ...canvasModel,
-    threats,
-    assumptions: threats
-      .filter((threat) => byThreat[threat.id]?.invalidated === true)
-      .map((threat) => ({
-        id: assumptionId(`assumption-${threat.id}`),
-        prose: '',
-        status: 'invalidated' as const,
-        threats: [threat.id],
-        appliesToModel: false,
-      })),
-  };
-};
 
 const namedIn = (model: Model, id: string): string | undefined =>
   accessibleNames(layoutDiagram(model.diagrams[0], model), model).get(id);
@@ -73,14 +43,16 @@ describe('accessibleNames', () => {
   });
 
   it('names the flag raised on an open threat after the count it joins', () => {
-    const model = reworked({ 'threat-tampering': { invalidated: true } });
+    const model = flaggedCanvasModel({
+      'threat-tampering': { invalidated: true },
+    });
     expect(namedIn(model, readerElement)).toBe(
       'Reader, actor, 1 open threat, highest severity medium, Rests on an invalidated assumption',
     );
   });
 
   it('names each flag once, in flag order, whichever threat raises it', () => {
-    const model = reworked({
+    const model = flaggedCanvasModel({
       'threat-disclosure': { invalidated: true },
       'threat-repudiation': { status: 'mitigated' },
       'threat-tampering': { elements: [requestFlow], invalidated: true },
@@ -91,7 +63,7 @@ describe('accessibleNames', () => {
   });
 
   it('names the flags of a threat in no open status, with no count', () => {
-    const model = reworked({
+    const model = flaggedCanvasModel({
       'threat-tampering': {
         status: 'mitigated',
         elements: [studioElement, probeFlow],

@@ -1,5 +1,9 @@
-import type { Model } from '@saerskriven/model';
-import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
+import type { Model, ThreatStatus } from '@saerskriven/model';
+import {
+  assumptionId,
+  elementId,
+  parsedFixture,
+} from '@saerskriven/model/fixtures';
 
 /** The actor the fixture threat is attached to. */
 export const readerElement = elementId('actor-reader');
@@ -148,3 +152,43 @@ const document = {
  * flow, which is what the connecting controls read.
  */
 export const canvasModel: Model = parsedFixture(document);
+
+/**
+ * How {@link flaggedCanvasModel} changes one threat: its status, the elements
+ * it names, and whether an invalidated assumption is linked to it.
+ */
+export type ThreatRework = {
+  readonly status?: ThreatStatus;
+  readonly elements?: readonly string[];
+  readonly invalidated?: boolean;
+};
+
+/**
+ * {@link canvasModel} with threats changed by id, so a spec can raise either
+ * flag on the elements it chooses.
+ */
+export const flaggedCanvasModel = (
+  byThreat: Readonly<Record<string, ThreatRework>>,
+): Model => {
+  const threats = canvasModel.threats.map((threat) => {
+    const rework = byThreat[threat.id] ?? {};
+    return {
+      ...threat,
+      status: rework.status ?? threat.status,
+      elements: rework.elements?.map(elementId) ?? threat.elements,
+    };
+  });
+  return {
+    ...canvasModel,
+    threats,
+    assumptions: threats
+      .filter((threat) => byThreat[threat.id]?.invalidated === true)
+      .map((threat) => ({
+        id: assumptionId(`assumption-${threat.id}`),
+        prose: '',
+        status: 'invalidated' as const,
+        threats: [threat.id],
+        appliesToModel: false,
+      })),
+  };
+};

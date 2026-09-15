@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ElementId } from './ids.js';
 import type { MitigationStatus } from './mitigations.js';
 import type { Model } from './parse.js';
 import type { Threat } from './threats.js';
@@ -43,5 +44,35 @@ export function threatFlags(
   );
   return threatFlagSchema.options.filter((flag) =>
     flag === 'mitigated-without-implemented-work' ? unbacked : invalidated,
+  );
+}
+
+/**
+ * The flags `model`'s records raise on the threats naming each element, keyed
+ * by element id, each flag once and in schema order. An element no flagged
+ * threat names has no entry.
+ */
+export function flagsByElement(
+  model: Model,
+): ReadonlyMap<ElementId, readonly ThreatFlag[]> {
+  const raised = new Map<ElementId, Set<ThreatFlag>>();
+  for (const threat of model.threats) {
+    const flags = threatFlags(model, threat);
+    if (flags.length === 0) {
+      continue;
+    }
+    for (const element of threat.elements) {
+      const onElement = raised.get(element) ?? new Set<ThreatFlag>();
+      for (const flag of flags) {
+        onElement.add(flag);
+      }
+      raised.set(element, onElement);
+    }
+  }
+  return new Map(
+    [...raised].map(([element, flags]) => [
+      element,
+      threatFlagSchema.options.filter((flag) => flags.has(flag)),
+    ]),
   );
 }

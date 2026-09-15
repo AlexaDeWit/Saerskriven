@@ -32,7 +32,8 @@ export type DiagramGraph = {
  * The nodes and the flows come back together because one pass over the layout
  * names both. A node a flow cannot end on is not connectable, so React Flow
  * refuses the gesture where it starts rather than letting it settle into an
- * edit the store would drop.
+ * edit the store would drop. `layout` must be laid out from `model`, as
+ * {@link accessibleNames} requires.
  *
  * Every node and every edge object is built afresh here, so a selection
  * rebuilds them all and React Flow re-renders each one. That is one pass

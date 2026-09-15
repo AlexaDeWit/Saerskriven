@@ -104,10 +104,10 @@ undecided shows the primary alone, neutral. Where any threat naming the
 element carries a flag, a flag mark hangs beneath the stack: a triangle drawn
 in the ink colour with an exclamation mark inside, a shape and a glyph no
 severity mark uses, so it reads in greyscale and in forced colours. It is the
-same mark for either flag. An element
-whose flagged threats are all in a status other than open shows the flag mark
-alone, with no count, so a `mitigated` threat's flag reaches the diagram. An
-element with no open threat and no flagged threat shows no badge.
+same mark for either flag. An element whose flagged threats are all in a
+status other than open shows the flag mark alone, with no count, so a
+`mitigated` threat's flag reaches the diagram. An element with no open threat
+and no flagged threat shows no badge.
 `badgeExtent` reaches past the flag mark, so the bounds and the flow-label
 search keep clear of it.
 

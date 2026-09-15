@@ -2,6 +2,7 @@ import { flowEndNodeId, layoutDiagram } from '@saerskriven/canvas';
 import {
   boundaryElement,
   canvasModel,
+  flaggedCanvasModel,
   noteElement,
   probeFlow,
   readerElement,
@@ -37,6 +38,20 @@ describe('diagramGraph', () => {
     expect(nodes.find((node) => node.id === studioElement)?.selected).toBe(
       false,
     );
+  });
+
+  it('names a node by the flags the model raises on it', () => {
+    const flagged = flaggedCanvasModel({
+      'threat-tampering': { invalidated: true },
+    });
+    const { nodes } = diagramGraph(
+      layoutDiagram(flagged.diagrams[0], flagged),
+      flagged,
+      [],
+    );
+    expect(
+      nodes.find((node) => node.id === readerElement)?.ariaLabel,
+    ).toContain('Rests on an invalidated assumption');
   });
 
   it('keeps a selected boundary below unselected nodes', () => {

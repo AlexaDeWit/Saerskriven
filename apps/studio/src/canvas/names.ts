@@ -5,13 +5,7 @@ import type {
   CanvasNodeKind,
   ThreatBadge,
 } from '@saerskriven/canvas';
-import {
-  threatFlags,
-  threatFlagSchema,
-  type ElementId,
-  type Model,
-  type ThreatFlag,
-} from '@saerskriven/model';
+import { flagsByElement, type ElementId, type Model } from '@saerskriven/model';
 import { flagLabel } from '@saerskriven/render';
 
 const kindWords = {
@@ -33,7 +27,8 @@ const freeEndWords = 'a free point';
  * which flags `model` raises on the threats naming it. The badge draws one
  * mark for either flag, so the name is where the two are told apart. A flow
  * also names the elements its ends attach to, from one to the other or
- * between the two where it runs both ways.
+ * between the two where it runs both ways. `layout` must be laid out from
+ * `model`, or the flags named belong to another model's threats.
  */
 export function accessibleNames(
   layout: CanvasLayout,
@@ -119,22 +114,6 @@ function badgeWords(badge: ThreatBadge | undefined): string[] {
       ? 'severity not assessed'
       : `highest severity ${badge.severity}`,
   ];
-}
-
-function flagsByElement(model: Model): Map<ElementId, ThreatFlag[]> {
-  const raised = new Map<ElementId, Set<ThreatFlag>>();
-  for (const threat of model.threats) {
-    const flags = threatFlags(model, threat);
-    for (const element of flags.length === 0 ? [] : threat.elements) {
-      raised.set(element, new Set([...(raised.get(element) ?? []), ...flags]));
-    }
-  }
-  return new Map(
-    [...raised].map(([element, flags]) => [
-      element,
-      threatFlagSchema.options.filter((flag) => flags.has(flag)),
-    ]),
-  );
 }
 
 function spoken(parts: readonly string[]): string {
