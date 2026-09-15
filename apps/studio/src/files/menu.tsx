@@ -191,6 +191,9 @@ export function StudioMenu({
   );
 }
 
+const focusMovedOn = (): boolean =>
+  document.activeElement !== null && document.activeElement !== document.body;
+
 const titled = (mode: ColourMode): string =>
   mode[0].toUpperCase() + mode.slice(1);
 
@@ -207,13 +210,20 @@ function MenuPanel({
   onColourModeChange,
   session,
 }: MenuPanelProps) {
+  const interactedOutside = useRef(false);
+
   return (
     <DropdownMenu.Content
       tabIndex={0}
       onCloseAutoFocus={(event) => {
-        if (focusSelectionControl()) {
+        const outside = interactedOutside.current;
+        interactedOutside.current = false;
+        if ((!outside && focusMovedOn()) || focusSelectionControl()) {
           event.preventDefault();
         }
+      }}
+      onInteractOutside={() => {
+        interactedOutside.current = true;
       }}
       align="start"
       className={styles.panel}

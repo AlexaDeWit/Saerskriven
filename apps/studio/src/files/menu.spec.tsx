@@ -41,6 +41,7 @@ import {
   vendoredFile,
   type SpecBridge,
 } from './files.fixtures.js';
+import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports, StudioMenu } from './menu.js';
 
@@ -483,6 +484,32 @@ describe('what the studio says about the file', () => {
     await waitFor(() => {
       expect(document.activeElement).toBe(burger());
     });
+  });
+
+  it('leaves focus on the Title that Model properties took before the closed menu returned focus to its button', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Menu bridge={specBridge()} />
+        <ThreatOverlay />
+      </>,
+    );
+    await openMenu(user);
+
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    act(() => {
+      toggleModelProperties();
+    });
+    const title = screen.getByRole('textbox', { name: 'Title' });
+    expect(document.activeElement).toBe(title);
+    await act(async () => {
+      await new Promise((settled) => {
+        setTimeout(settled, 10);
+      });
+    });
+
+    expect(document.activeElement).toBe(title);
   });
 
   it('names the file, its format, and whether it holds everything on screen', async () => {
