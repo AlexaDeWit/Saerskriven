@@ -165,7 +165,7 @@
         {
           "id": "el-output",
           "name": "Rendered and saved files",
-          "description": "What a run leaves on disk. A register, a diagram, and the model file a save wrote back.",
+          "description": "What a run leaves on disk. A markdown register, a diagram as SVG or PNG, a PDF of the diagrams and the register, and the model file a save wrote back.",
           "outOfScope": false,
           "reasonOutOfScope": "",
           "position": {
@@ -579,7 +579,7 @@
         },
         {
           "id": "fl-tool-call",
-          "name": "Tool calls over stdio",
+          "name": "Tool calls",
           "description": "",
           "outOfScope": false,
           "reasonOutOfScope": "",
@@ -1089,7 +1089,7 @@
     {
       "id": "mit-read-limits",
       "title": "Bounded reads",
-      "prose": "`readLimits` in `@saerskriven/formats` is one exported value carrying the bounds: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. A fifth, `maxImportTextUnits`, holds the text an OTM or TM-BOM import builds by expanding references and generating identifiers to 16,777,216 UTF-16 units. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each number has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads.",
+      "prose": "`readLimits` in `@saerskriven/formats` is one exported value carrying the bounds: 8 MiB of text measured in UTF-8 bytes before a parser sees it, 64 levels of nesting measured afterwards by a walk that carries its own stack, 50 aliases counted on the composed document before any of them is resolved, and 100,000 nodes those aliases may reach between them. A fifth, `maxImportTextUnits`, holds the text an OTM or TM-BOM import builds by expanding references and generating identifiers to 16,777,216 UTF-16 units. Both reads pass their text through `parseWithinLimits`, and detection is the reads themselves, so the bounds hold whether or not the caller knows the format. Each of the four read bounds has a fixture under `test-data/adversarial` built to break it, and `read-limits.spec.ts` hands every one of them to both reads. The import budget is enforced by `importBudget` in `import-budget.ts`, and `import.spec.ts` gates it on OTM and TM-BOM documents built to exceed it.",
       "status": "verified",
       "threats": [
         "th-oversize",
@@ -1405,7 +1405,7 @@
     {
       "id": "th-pdf-html-mitigation",
       "title": "",
-      "prose": "Issue #34 carried a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. `renderTypst` writes a raw HTML node as a string literal of the text the author wrote, so the markup is set as characters rather than interpreted. `test-data/adversarial/typst-injection.yaml` carries a script tag and an `onerror` handler in its titles, names and prose, and `apps/cli/src/pdf.spec.ts` compiles it, finds no call in its source outside a string literal but the package's own, and reads the script tag and the handlers back out of the PDF's outline as text. This one is owned rather than transferred, because here Saerskriven is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine.",
+      "prose": "Issue #34 carried a criterion of its own for this: a hostile fixture holding a script tag and event-handler HTML in threat prose has to come out of the PDF path inert. `renderTypst` writes a raw HTML node as a string literal of the text the author wrote, so the markup is set as characters rather than interpreted. `test-data/adversarial/typst-injection.yaml` carries a script tag and an `onerror` handler in its titles, names and prose, and `apps/cli/src/pdf.spec.ts` compiles it. The spec holds the Typst source to no call outside a string literal but the package's own, which covers the `onclick` span and script tag in the threat prose, and reads the script tag in the titles and the `onerror` handlers in the headings back out of the PDF's outline as text. This one is owned rather than transferred, because here Saerskriven is the composer rather than the author of an intermediate. Medium for the reason threat 14 is medium: the pipeline is Typst compiled to WebAssembly with no browser, so the markup reaches a typesetter rather than a scripting engine.",
       "status": "implemented",
       "threats": [
         "th-pdf-html"
