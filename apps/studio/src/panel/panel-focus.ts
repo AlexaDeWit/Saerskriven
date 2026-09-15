@@ -59,8 +59,8 @@ export function takeModelPropertiesFocus(focusTitle: () => void): void {
 }
 
 /**
- * Registers what the threat panel reads before an undo or redo and hands
- * back what it settles focus with after one, and hands back the removal.
+ * Registers the threat panel's look at focus before an undo or redo, which
+ * returns how to settle focus after it. Returns the removal.
  */
 export function historyFocusHandler(handler: () => () => void): () => void {
   historyStep = handler;

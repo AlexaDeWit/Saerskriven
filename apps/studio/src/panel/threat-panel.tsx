@@ -93,9 +93,11 @@ function useHistoryFocus(
           ) {
             undone.current = holder.id;
             toAdd.current = true;
-          } else if (onAdd && restored !== undefined) {
+          } else if (restored !== undefined) {
             undone.current = undefined;
-            restore(restored.id);
+            if (onAdd) {
+              restore(restored.id);
+            }
           }
         };
       }),

@@ -238,6 +238,26 @@ describe(
       expect(document.activeElement).toBe(canvas);
     });
 
+    it('forgets an undone threat that came back while focus was elsewhere', async () => {
+      const user = userEvent.setup();
+      render(<button type="button">Canvas</button>);
+      const canvas = screen.getByRole('button', { name: 'Canvas' });
+      showPanel(processElement);
+      await addThreat(user);
+      runHistory('undo');
+      act(() => {
+        canvas.focus();
+      });
+      runHistory('redo');
+      await user.click(screen.getByRole('button', { name: 'Delete threat 2' }));
+      expect(document.activeElement).toBe(addControl());
+
+      runHistory('undo');
+
+      expect(threatsInStore()).toBe(2);
+      expect(document.activeElement).toBe(addControl());
+    });
+
     it('commits one undoable step per field left behind', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
