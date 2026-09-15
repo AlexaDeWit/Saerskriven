@@ -113,6 +113,12 @@
   pointer-events: none;
 }
 
+/* A threat badge draws over the selection frame and the side lines, and under
+   the corner handles, which the canvas package keeps clear of it. */
+.canvas :global(.pn-badge-layer) {
+  z-index: 1;
+}
+
 /* Resize handles stay square to differ from round connection handles. */
 .canvas :global(.react-flow__resize-control.handle) {
   width: 9px;

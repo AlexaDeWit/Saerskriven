@@ -360,7 +360,10 @@ over the canvas. Hand uses `grab`, then `grabbing` during its pan.
 Four lines resize a selected element from its sides. Four square handles
 resize it from its corners. A side line takes the pointer away from the round
 connection handle at the midpoint. Each control uses a directional cursor and
-shows hover and keyboard focus ([Resize](#editing)).
+shows hover and keyboard focus ([Resize](#editing)). A threat badge draws over
+the selection frame and the side lines. The top-right handle of an element
+with a badge sits outside the badge, so the badge stays readable while the
+element is selected.
 
 ## The view
 

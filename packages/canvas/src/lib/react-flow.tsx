@@ -13,7 +13,8 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import type { KeyboardEvent, ReactElement } from 'react';
+import type { CSSProperties, KeyboardEvent, ReactElement } from 'react';
+import { badgeAnchor, badgeExtent, ThreatBadgeGlyph } from './badges.js';
 import { ElementGlyph, FlowGlyph } from './glyphs.js';
 import { shiftedBy } from './geometry.js';
 import { handleSides, type HandleSide, type NodeBox } from './handles.js';
@@ -29,6 +30,7 @@ import {
 } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { polylinePath, smoothPath } from './paths.js';
+import { canvasClassNames } from './stylesheet.js';
 import {
   keyboardResizeStep,
   minimumNodeExtent,
@@ -39,7 +41,7 @@ import {
   shiftedKeyboardResizeStep,
   type ResizeControlPosition,
 } from './resizing.js';
-import { interactionWidths } from './tokens.js';
+import { interactionWidths, strokeWidths } from './tokens.js';
 
 const anchorExtent = 1;
 
@@ -48,6 +50,8 @@ const boundaryZIndex = -1;
 const nodeZIndex = 0;
 
 const boundaryHitTargetClass = 'pn-boundary-hit-target';
+
+const badgeLayerClass = 'pn-badge-layer';
 
 const resizableKinds = new Set<CanvasNodeKind>([
   'actor',
@@ -190,6 +194,10 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  *
  * A selected resizable element carries four side controls and four corner
  * controls. A boundary curve carries none because the model has no extent.
+ * The badge draws in a layer of its own after the controls, so the selection
+ * frame and side lines pass under it. On an element with a badge, the
+ * top-right corner control sits diagonally outside the badge and grows away
+ * from it as React Flow scales the control up at low zoom.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
@@ -230,7 +238,11 @@ export function CanvasNodeBody({
         aria-hidden="true"
       >
         {isBoundary(shownNode) ? <BoundaryHitTarget node={shownNode} /> : null}
-        <ElementGlyph node={shownNode} textVisible={textVisible} />
+        <ElementGlyph
+          badgeVisible={false}
+          node={shownNode}
+          textVisible={textVisible}
+        />
       </svg>
       {handleSides.map((side) => (
         <Handle
@@ -250,7 +262,36 @@ export function CanvasNodeBody({
           visible={controlsVisible}
         />
       ) : null}
+      <BadgeLayer node={shownNode} />
     </>
+  );
+}
+
+function BadgeLayer({
+  node,
+}: {
+  readonly node: CanvasNode;
+}): ReactElement | null {
+  if (node.badge === undefined) {
+    return null;
+  }
+  return (
+    <svg
+      aria-hidden="true"
+      className={badgeLayerClass}
+      height={svgNumber(node.size.height)}
+      overflow="visible"
+      pointerEvents="none"
+      style={{ position: 'absolute', left: 0, top: 0 }}
+      width={svgNumber(node.size.width)}
+    >
+      <g
+        className={node.outOfScope ? canvasClassNames.outOfScope : undefined}
+        pointerEvents={isBoundary(node) ? undefined : 'visiblePainted'}
+      >
+        <ThreatBadgeGlyph badge={node.badge} at={badgeAnchor(node.size)} />
+      </g>
+    </svg>
   );
 }
 
@@ -315,7 +356,7 @@ function ResizeControls({
                 ? 'vertical'
                 : undefined
           }
-          style={visible ? undefined : { visibility: 'hidden' }}
+          style={controlStyle(node, position, visible)}
           variant={
             sideControls.has(position)
               ? ResizeControlVariant.Line
@@ -334,6 +375,25 @@ function ResizeControls({
       ))}
     </>
   );
+}
+
+function controlStyle(
+  node: CanvasNode,
+  position: ResizeControlPosition,
+  visible: boolean,
+): CSSProperties | undefined {
+  const hidden = visible ? undefined : ({ visibility: 'hidden' } as const);
+  if (position !== 'top-right' || node.badge === undefined) {
+    return hidden;
+  }
+  const reach = badgeExtent(node.badge).radius + strokeWidths.badgeRing / 2;
+  return {
+    ...hidden,
+    left: `calc(100% + ${svgNumber(reach)}px)`,
+    top: -reach,
+    translate: '0 -100%',
+    transformOrigin: '0 100%',
+  };
 }
 
 function BoundaryHitTarget({

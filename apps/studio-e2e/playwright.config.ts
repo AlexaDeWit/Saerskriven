@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
 const pagesExport = /pages-export\.spec\.ts$/u;
 const phoneSmoke =
-  /(?:chrome-card|link-existing|model-properties|notices|records|summary)\.spec\.ts$/u;
+  /(?:badge-clearance|chrome-card|link-existing|model-properties|notices|records|summary)\.spec\.ts$/u;
 const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 
@@ -70,7 +70,8 @@ export default defineConfig({
     // reason. So does the Link existing spec, because its listbox must open
     // clear of the chrome card there, and so does the summary spec, because a
     // collapsed threat with its counts and both flag marks must fit the panel
-    // there. The preset carries the viewport, the touch flags and the device
+    // there. The badge clearance spec runs here too, because React Flow scales
+    // a resize handle up at the phone's low zoom. The preset carries the viewport, the touch flags and the device
     // pixel ratio together, so a change of preset changes all three at once.
     // The set is small on purpose: the rest of the suite is about behaviour
     // that does not turn on the viewport.

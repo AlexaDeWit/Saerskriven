@@ -41,9 +41,11 @@ export const focusSettled = async (target: Locator): Promise<void> => {
     .toBe(true);
 };
 
-/** Opens a vendored model through the development hook. Existing recovery still takes precedence. */
-export const openModel = async (page: Page, path: string): Promise<void> => {
-  const model: unknown = JSON.parse(readFileSync(vendored(path), 'utf8'));
+/** Opens a model document through the development hook. Existing recovery still takes precedence. */
+export const openModelDocument = async (
+  page: Page,
+  model: unknown,
+): Promise<void> => {
   await page.addInitScript(
     ({ key, model: document }) => {
       Object.defineProperty(globalThis, key, { value: document });
@@ -53,6 +55,14 @@ export const openModel = async (page: Page, path: string): Promise<void> => {
   await page.goto('/');
   await expect(canvasContainer(page)).toBeVisible();
   await canvasSettled(page);
+};
+
+/** Opens a vendored model through {@link openModelDocument}. */
+export const openModel = async (page: Page, path: string): Promise<void> => {
+  await openModelDocument(
+    page,
+    JSON.parse(readFileSync(vendored(path), 'utf8')),
+  );
 };
 
 /** Opens the studio on Écluse's model, through {@link openModel}. */
