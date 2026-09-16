@@ -53,15 +53,13 @@ export function loadPngAssets(): Promise<
   );
 }
 
-const faces: Loaded<readonly Face[]> = once(async () =>
-  Either.all(
-    await Promise.all(
-      renderFaces.map(async (face) =>
-        Either.map(await fetchBytes(face.url), (bytes) => ({
-          name: face.name,
-          bytes,
-        })),
-      ),
+const faces: Loaded<readonly Face[]> = once(() =>
+  firstFailureOrAll(
+    renderFaces.map(async (face) =>
+      Either.map(await fetchBytes(face.url), (bytes) => ({
+        name: face.name,
+        bytes,
+      })),
     ),
   ),
 );
@@ -88,6 +86,28 @@ async function assembled(
       fonts: ordered.map((face) => face.bytes),
     }),
   });
+}
+
+function firstFailureOrAll<Value>(
+  loads: readonly Promise<Either.Either<Value, RenderAssetFailure>>[],
+): Promise<Either.Either<Value[], RenderAssetFailure>> {
+  const firstFailure = new Promise<Either.Either<Value[], RenderAssetFailure>>(
+    (resolve) => {
+      const failed = async (
+        load: Promise<Either.Either<Value, RenderAssetFailure>>,
+      ): Promise<void> => {
+        const outcome = await load;
+        if (Either.isLeft(outcome)) {
+          resolve(Either.left(outcome.left));
+        }
+      };
+      void Promise.all(loads.map(failed));
+    },
+  );
+  return Promise.race([
+    firstFailure,
+    Promise.all(loads).then((outcomes) => Either.all(outcomes)),
+  ]);
 }
 
 function once<Value>(load: Loaded<Value>): Loaded<Value> {

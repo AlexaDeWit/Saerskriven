@@ -397,9 +397,7 @@ const table = {
     group: 'Edit',
     shortcuts: [bare('Delete'), bare('Backspace')],
     when: 'A canvas selection exists and focus is outside a text field',
-    run: () => {
-      removeSelected();
-    },
+    run: removeSelected,
   }),
   rename: command({
     id: 'rename',
@@ -423,9 +421,7 @@ const table = {
     group: 'Edit',
     shortcuts: [bare('t')],
     when: 'One canvas item is selected and focus is outside a text field',
-    run: () => {
-      focusThreatPanel();
-    },
+    run: focusThreatPanel,
   }),
   'select-all': command({
     id: 'select-all',
@@ -522,9 +518,7 @@ const table = {
     group: 'Diagram',
     shortcuts: [],
     when: 'From the diagram switcher',
-    run: () => {
-      createDiagram();
-    },
+    run: createDiagram,
   }),
   'rename-diagram': command({
     id: 'rename-diagram',
@@ -632,7 +626,7 @@ export function commandById(id: CommandId): Command {
   return table[id];
 }
 
-/** The command whose shortcut matches the event. No event matches two. */
+/** The first command whose shortcut matches the event, in table order. */
 export function commandFor(
   event: ChordEvent,
   platform: Platform,

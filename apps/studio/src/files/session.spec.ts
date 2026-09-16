@@ -6,12 +6,7 @@ import {
   type Divergence,
 } from '@saerskriven/formats';
 import { Action } from '../store/actions.js';
-import {
-  FileLifecycle,
-  nameOf,
-  untitledModel,
-  type RetainedSource,
-} from '../store/state.js';
+import { FileLifecycle, type RetainedSource } from '../store/state.js';
 import {
   foreignSource,
   nativeSource,
@@ -256,11 +251,9 @@ describe('naming', () => {
     expect(formatOfName('notes.txt')).toBeUndefined();
   });
 
-  it('reads the format and the name of the file the model lives in', () => {
+  it('reads the format of the file the model lives in', () => {
     expect(formatOf(FileLifecycle.NoFile())).toBe('saerskriven-yaml');
     expect(formatOf(openedForeign)).toBe('threat-dragon');
-    expect(nameOf(FileLifecycle.NoFile())).toBe(untitledModel);
-    expect(nameOf(openedForeign)).toBe('model.json');
   });
 });
 

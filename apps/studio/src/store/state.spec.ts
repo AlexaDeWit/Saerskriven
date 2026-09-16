@@ -14,9 +14,11 @@ import { emptyModel } from '@saerskriven/model';
 import {
   FileLifecycle,
   initialState,
+  nameOf,
   placeholderModel,
   untitledModel,
 } from './state.js';
+import { foreignSource } from './store.fixtures.js';
 
 const layout = layoutDiagram(placeholderModel.diagrams[0], placeholderModel);
 
@@ -42,6 +44,17 @@ describe('initialState', () => {
     expect(state.selection).toEqual([]);
     expect(state.lastFailure).toBeUndefined();
     expect(state.file).toEqual(FileLifecycle.NoFile());
+  });
+});
+
+describe('nameOf', () => {
+  it('reads the name of the file the model lives in', () => {
+    expect(nameOf(FileLifecycle.NoFile())).toBe(untitledModel);
+    expect(
+      nameOf(
+        FileLifecycle.Opened({ name: 'model.json', source: foreignSource }),
+      ),
+    ).toBe('model.json');
   });
 });
 
