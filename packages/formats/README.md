@@ -66,7 +66,9 @@ Two native files are committed and compared byte for byte:
 [`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md).
 `nativeFixtures` in
 [`saerskriven-yaml.fixtures.ts`](src/lib/saerskriven-yaml.fixtures.ts) lists
-them, and [`test-data/README.md`](../../test-data/README.md) names the model
-files this suite writes for the packages that cannot import a codec.
+them, [`test-data/README.md`](../../test-data/README.md#saerskrivenmodeljson)
+describes the model JSON this suite derives for the packages that cannot import
+a codec, and the [threat model's README](../../threat-modelling/README.md) says
+how a further native file joins.
 
 Unit tests: `pnpm nx test @saerskriven/formats`.

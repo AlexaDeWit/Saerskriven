@@ -227,7 +227,12 @@ export function editNote(
   );
 }
 
-/** Validates a property edit for the existing element kind. Unknown values clear only explicitly named fields. */
+/**
+ * Validates a property edit for the existing element kind. Unknown values
+ * clear only explicitly named fields. The edited element's text and its
+ * relationship targets are validated, and every field the patch does not name
+ * keeps its value.
+ */
 export function setElementProperties(
   model: Model,
   elementId: ElementId,

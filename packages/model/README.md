@@ -114,8 +114,8 @@ declare, and every category of every enumerated methodology, so a construct
 that stops being representable fails a named assertion or the type-check. The
 suite holds `ecluseFixture` against
 [`test-data/ecluse.model.json`](../../test-data/ecluse.model.json) as a file
-snapshot, which `packages/formats` compares its own read of the vendored file
-against ([test-data](../../test-data/README.md)).
+snapshot, which `packages/formats` compares its own read of
+[`test-data/ecluse.json`](../../test-data/ecluse.json) against ([test-data](../../test-data/README.md)).
 
 `@saerskriven/model/fixtures` is the one home for the fixture helpers every
 suite in the workspace shares: the id parsers (`elementId`, `diagramId`,
@@ -127,7 +127,7 @@ library build. Who may import it is a workspace rule, stated in
 [`CODING.md`](../../CODING.md#tests).
 
 [`SCHEMA.md`](SCHEMA.md) is the whole model expanded from the schemas
-themselves, regenerated and checked on every test run. Regenerate the
-snapshots with `pnpm snapshots:update @saerskriven/model`.
+themselves, regenerated and checked on every test run. Snapshots are updated as
+[`CODING.md`](../../CODING.md#build-targets) says.
 
 Unit tests: `pnpm nx test @saerskriven/model`.

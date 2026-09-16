@@ -116,7 +116,9 @@ where it fits there, and otherwise scrolls on the side with more room. The menu
 also holds the fallback picker's input and the guard on closing the tab, which
 stands only while the model is dirty and the latest recovery write is
 unconfirmed. A notice or report cannot go inside the menu, which owns items and
-groups only, so `file-reports.tsx` hangs them under the card.
+groups only, so `file-reports.tsx` hangs them under the card. The crossing
+report and the export report share one named live region there, and the
+failure notice holds its own.
 
 ## Exports
 

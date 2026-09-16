@@ -93,9 +93,9 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   refused name keeps its field open wherever the selection goes, and its draft
   goes only when a rename opens on another element.
 - **The announcement speaks only where the next focus does not show the
-  result**: canvas and threat deletion, refused text, and Undo or Redo.
-  Placement, connection, renaming, field edits and keyboard moves rely on the
-  focused control or React Flow's own message. A name a person wrote is quoted
+  result.** An action whose result the focused control or React Flow's own
+  message already reports, such as a placement, a rename or a keyboard move,
+  announces nothing. A name a person wrote is quoted
   through `quoted` in `announcements.ts`, on one line and cut past
   `nameQuoteLength` (40 grapheme clusters) or `recordQuoteLength` (24). While a
   pane or a selection editor is open the announcement stops at two lines on
@@ -162,10 +162,7 @@ threat summary. The card comes before the canvas in the page, and the target
 chooser exists only while the start-flow command is in progress, so it adds no
 dead stop to the tab path.
 
-React Flow's container carries `role="application"`, which turns off a screen
-reader's browse mode inside the canvas. React Flow writes the role after any
-property handed to it, so it cannot be overridden from here. Tab order follows
-React Flow's DOM order, with every flow before every node.
-
-An unplaced flow has no drawn bounds, so Select All and box selection leave it
-out.
+React Flow writes `role="application"` on its container after any property
+handed to it, so neither that role nor React Flow's DOM order, which sets the
+tab order, can be changed from here. What they mean for a person is in
+[Using the studio](../../../../docs/studio.md#accessibility).

@@ -8,6 +8,19 @@ space and radius from the design tokens, with Radix state read through its own
 component would have to keep in step. No CSS-in-JS, no Tailwind, and no second
 stylesheet.
 
+## Modules
+
+| Module                                                         | What it holds                                                                |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `enum-field.tsx`                                               | `EnumField`, the listbox control                                             |
+| `severity-field.tsx`, `status-field.tsx`, `category-field.tsx` | `EnumField` bound to a model schema                                          |
+| `text-field.tsx`, `grow-to-content.ts`                         | `TextField` and `ProseField` with their draft state, and textarea growth     |
+| `live-region.tsx`, `failure-notice.tsx`, `detail-lines.tsx`    | Announcements, the refusal notice, and notice lines folded into a disclosure |
+| `error-boundary.tsx`                                           | The last stop for a throw                                                    |
+| `visually-hidden.tsx`                                          | Text for assistive technology that is not drawn                              |
+| `external-store.ts`                                            | The subscription helper every module-level store in the studio shares        |
+| `close-focus.ts`, `measure.ts`                                 | Keeping a closed dropdown from taking focus back, and measuring an element   |
+
 ## Tokens
 
 The values are the canvas package's `tokens.ts`
@@ -140,9 +153,6 @@ class because React offers no other way to catch one. It holds the only
 component state in this directory for that reason, and needs no live region,
 because it replaces the tree it was guarding rather than announcing into it.
 
-`external-store.ts` is the subscription helper every module-level store in the
-studio shares: the module holds a value, calls `notify` after it moves, and
-components read it through `use`, which wraps `useSyncExternalStore`.
-`close-focus.ts` keeps a closed Radix dropdown from taking focus back to its
-trigger once focus has moved on, and `measure.ts` reads an element's size in a
-layout effect and on every resize.
+A module-level store built with `external-store.ts` holds its value, calls
+`notify` after the value moves, and components read it through `use`, which
+wraps `useSyncExternalStore`.

@@ -97,9 +97,8 @@ are. A row that goes while it holds focus leaves focus in its group.
 The empty row carries its status control and a Discard control from the start,
 so nothing moves when it becomes a record and a click on Add or Link existing
 lands where it was aimed. A pointer press on Discard keeps focus in the text,
-so typed text is discarded rather than committed. From the keyboard, Tab out of
-typed text commits it, so discarding from the keyboard means clearing the text
-first.
+so typed text is discarded rather than committed. Keyboard focus leaving the
+text commits it before Discard can be reached.
 
 Control names carry the kind and the row's position ("Mitigation 2 title",
 "Unlink mitigation 2", "Link existing mitigation"), and positions renumber when
@@ -161,8 +160,3 @@ The panel sits after the canvas in the DOM, so Tab reaches it after every
 element and flow. It is a region rather than a dialog: it takes no focus of its
 own when it opens, traps none while it is open, and leaves every shortcut in
 the studio live.
-
-A shared threat lists its attached elements read-only, so `AttachThreat` and
-`DetachThreat` have no control here, and deleting removes the threat from the
-model rather than detaching it. The model's explicit record removals have no
-control either.

@@ -36,7 +36,12 @@ export function setFlowWaypoints(
   });
 }
 
-/** Reattaches an endpoint inside its diagram. An absent anchor releases its pinned side. */
+/**
+ * Reattaches an endpoint inside its diagram. The new endpoint must be an
+ * actor, process or store in the flow's diagram, and one the flow's other end
+ * does not already attach to, so a flow never connects an element to itself.
+ * An absent anchor releases its pinned side.
+ */
 export function reconnectFlow(
   model: Model,
   elementId: ElementId,

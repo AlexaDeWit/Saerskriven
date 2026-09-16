@@ -102,8 +102,8 @@ says what each golden holds and which other suites read it. The drawings and
 their rasters are one list in `src/goldens.fixtures.ts`, and the registers keep
 their own list in their spec, so a further model or diagram joins every check
 by being added there. Cached tests write no snapshot, so a missing golden
-fails. Regenerate them with `pnpm snapshots:update @saerskriven/render` in the
-commit that moved them, with the rasterizer module built first, as
-[`SAERSKRIVEN_RESVG_WASM`](../../docs/build.md#the-svg-rasterizer) describes.
+fails. Regenerate them in the commit that moved them, as
+[`CODING.md`](../../CODING.md#build-targets) says, with the rasterizer module
+built first ([Building the executables](../../docs/build.md#the-svg-rasterizer)).
 
 Unit tests: `pnpm nx test @saerskriven/render`.

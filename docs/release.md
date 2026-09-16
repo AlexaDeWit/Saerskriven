@@ -39,8 +39,8 @@ The repository's rulesets set the shape:
   or rewriting its history.
 - **Signed Commits**, **PR Status Checks** and **Pull Requests Review** carry
   the rest of the requirements on `main`. Each of those three names the admin
-  role as a bypass actor, so they are the maintainer's discipline, and the
-  rulesets above are what no one can pass.
+  role as a bypass actor, so they are the maintainer's discipline, while Tag
+  Integrity, PR Only and Main Integrity are what no one can pass.
 
 So `nx release` writes files and touches git not at all
 ([`nx.json`](../nx.json), `release`), the owner lands them like any change, and

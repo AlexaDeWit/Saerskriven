@@ -161,8 +161,9 @@ it is safe.
 What the format cannot hold comes back in the result's divergences rather than
 as a refusal. A Threat Dragon file keeps no assumption and one mitigation text
 per threat, so a write to one reports every assumption, and every mitigation
-status, title, merge of several records into one text, or record shared by
-several threats or linked to none, that the text cannot give back.
+status, title, merge of several records into one text, mitigation with neither
+title nor text, or record shared by several threats or linked to none, that the
+text cannot give back.
 
 `saer_create` writes a new model in the native YAML format at version 2, and
 `saer_import` converts an OTM or TM-BOM file into one ([import](import.md)).
@@ -322,9 +323,11 @@ What the command does and does not do to a host's file:
 - It creates a file at mode 0600 and leaves an existing file's mode alone,
   since a host's configuration can hold a sign-in session or a token.
 - It writes through a symbolic link and keeps the link, and refuses a link
-  pointing at nothing.
+  pointing at nothing. Point that link at a file, or remove it, and run the
+  command again.
 - Of two runs at once, the second is refused, saying the file was taken or
-  changed while it was working.
+  changed while it was working. Running it again adds the entry to what the
+  file holds now.
 - It refuses a file it cannot parse, or one past the bound every foreign text
   here is read within, and leaves it as it is. A `.vscode/mcp.json` carrying
   comments is such a file, since what this writes back is JSON.

@@ -19,9 +19,10 @@ its omitted information matters.
 `importModel(text)` in `@saerskriven/formats` provides the same conversion to
 application code. It returns Effect's `Either`, with `ReadFailure` on refusal.
 Content determines the format. JSON and YAML alike pass the size, depth and
-alias bounds every read has, and the text a conversion expands and the
-identifiers it generates share one budget, `readLimits.maxImportTextUnits`,
-charged before the text is built. A conversion over it returns
+alias bounds every read has. The text a conversion joins, the identifiers it
+generates, and the escaped paths its report names for undeclared fields share
+one budget, `readLimits.maxImportTextUnits`, charged before each string is
+built. A conversion over it returns
 `ExceededReadLimit`. Imported identifiers use an ASCII alphabet the canvas can
 address. The mapping validates the references it uses and then parses the
 result through `parseModel`.

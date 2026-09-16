@@ -5,9 +5,7 @@ from it. That is the whole package: no reading, no writing, no mapping, and no
 import of any internal package, the version 1 package included.
 
 Version 2 is the version `saerskrivenYamlCodec` in
-[`@saerskriven/formats`](../formats/README.md) writes. A file stamped with any
-other `formatVersion` fails at that path, and a key the schema does not declare
-is dropped rather than refused.
+[`@saerskriven/formats`](../formats/README.md) writes.
 [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the file
 and its compatibility contract.
 

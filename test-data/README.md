@@ -17,9 +17,9 @@ input. Fixture changes do not invalidate lint or build targets.
 
 ## Who writes each file, and who reads it
 
-Cached Nx tests compare committed snapshots without writing them. Update a
-producer's snapshots outside Nx with `pnpm snapshots:update <project>`.
-The producers are `@saerskriven/model`, `@saerskriven/formats`, and
+Cached tests only read committed snapshots, and
+[`CODING.md`](../CODING.md#build-targets) says how to update them. The
+producers are `@saerskriven/model`, `@saerskriven/formats`, and
 `@saerskriven/render`. Review and commit the snapshot diff with the source change.
 
 | File                                                | Written by         | Read by                                                                     |
@@ -130,13 +130,13 @@ The internal model decoded from
 [`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md).
 `packages/formats` produces it for the canvas and render suites, which the
 layer matrix keeps from importing a codec. Its `nativeFixtures` entry in
-`saerskriven-yaml.fixtures.ts` names the output path, so a further native file
-brings its own. Écluse names none, since `packages/model` writes
-`ecluse.model.json` from its own transcription.
+`saerskriven-yaml.fixtures.ts` names the output path. Écluse's entry names
+none, since `packages/model` writes `ecluse.model.json` from its own
+transcription.
 
 ## `render/ecluse.register.snapshot.md`
 
-The markdown register from `ecluse.model.json`: an overview of 29 threats,
+The Markdown register from `ecluse.model.json`: an overview of 29 threats,
 followed by a section for each. It covers the full register structure,
 escaping, and prose handling.
 
@@ -304,9 +304,9 @@ something to a markup language: Typst calls (`#eval("1+1")`,
 attribute), what delimits and escapes a Typst string literal (a bare `"` and a
 trailing `\`), and a Typst string escape (`\u{1f600}`).
 
-`packages/render` writes it as Typst source with every one of those fragments
-inside a string literal, and `apps/cli` compiles it and reads the text back out
-of the PDF, where each one is text a reader sees. Threat 2's mitigation is a
+The CLI specs render it through `packages/render`, which writes every one of
+those fragments inside a Typst string literal, compile it, and read the text
+back out of the PDF, where each one is text a reader sees. Threat 2's mitigation is a
 Markdown heading whose content is a raw HTML tag, and its untitled mitigation's
 prose has the same shape: a heading becomes a PDF outline entry, a PDF string
 rather than glyphs, so a spec reads it back without a font or a content stream.

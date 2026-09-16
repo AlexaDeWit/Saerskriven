@@ -124,7 +124,7 @@ release's installer replaces the existing regular file after verification.
 A failed download or verification leaves the existing executable unchanged.
 It refuses symbolic links and directories at the `saer` executable path.
 It also refuses an unrelated `saer` in the destination or on PATH. Updates
-recognise an existing installation by its `saerskriven -> saer` link.
+recognize an existing installation by its `saerskriven -> saer` link.
 An older installation containing only a regular `saerskriven` executable migrates
 to the new layout. To uninstall, remove both `~/.local/bin/saer` and
 `~/.local/bin/saerskriven`.

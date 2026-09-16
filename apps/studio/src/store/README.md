@@ -12,6 +12,21 @@ for its internal store, which no code here uses. The reducer shape and the
 immutable snapshots the undo stacks hold are the constraint, not something the
 host provides.
 
+## Modules
+
+| Module                 | What it holds                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `state.ts`             | `State`, its enums, the initial state and the placeholder model                    |
+| `actions.ts`           | The `Action` union                                                                 |
+| `reducer.ts`           | `reduce`, the one pure function                                                    |
+| `store.ts`             | The store, `dispatch`, `useModelStore` and the canvas-or-panel change subscription |
+| `selectors.ts`         | What views derive from the state                                                   |
+| `selection.ts`         | `sameSelection`, which keeps an unchanged selection's array identity               |
+| `recovery-storage.ts`  | The recovery snapshot                                                              |
+| `sync.ts`              | The tab sync channel                                                               |
+| `development-model.ts` | The model a development session injects, read in development builds only           |
+| `../reason.ts`         | A thrown or rejected value as text, shared with the file bridge                    |
+
 ## The shape
 
 - `state.ts` holds `State`, the `FileLifecycle` and `StudioFailure` enums, the
@@ -57,8 +72,6 @@ host provides.
   ([the canvas](../canvas/README.md#the-view)). `windowTitle` names the browser
   tab with `nameOf` the file ahead of the product name, so the tab and the menu
   cannot disagree. `showingPlaceholder` identifies the untouched opening state.
-- `../reason.ts` words a thrown or rejected value, for the store's recovery
-  storage and the file bridge alike, so neither imports the other.
 
 The active diagram, the selection, whether the model's properties are shown,
 the inline editor, the last refusal, and the file lifecycle stay out of the
