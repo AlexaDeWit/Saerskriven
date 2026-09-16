@@ -44,10 +44,13 @@ import {
   refusedName,
   refusedText,
   useTextDraft,
-  type RefusedDraft,
   type TextRefusal,
 } from '../ui/text-field.js';
-import { announce, quotedName, resetAnnouncements } from './announcements.js';
+import {
+  announceRefusal,
+  quotedName,
+  resetAnnouncements,
+} from './announcements.js';
 import {
   commitNote,
   commitRename,
@@ -56,7 +59,7 @@ import {
   stopInlineEditing,
 } from './edits.js';
 import { edgeLabel, nodeLabel } from './names.js';
-import styles from './rename-field.module.css';
+import styles from './inline-editing.module.css';
 
 type InlineFieldProps = {
   readonly elementId: ElementId;
@@ -69,12 +72,26 @@ type InlineFieldProps = {
   readonly refuse?: (label: string, text: string) => TextRefusal | undefined;
 };
 
-/**
- * The height of a name field holding one line, which is what a newly placed
- * element has to be tall and wide enough for before its name opens in place:
- * one line of the label type, the field carrying no frame inside its box.
- */
+/** The height of a one-line name field, which a placed element must reach in both dimensions for its name to open in place. */
 export const nameFieldExtent = lineHeight(wrappedTextStyles.label.fontSize);
+
+/**
+ * The canvas node types, each drawing its inline name or Note field in place
+ * of its text while the store's inline editor names it.
+ */
+export const editingNodeTypes = {
+  actor: EditingNodeBody,
+  process: EditingNodeBody,
+  store: EditingNodeBody,
+  text: EditingNodeBody,
+  'boundary-box': EditingNodeBody,
+  'boundary-curve': EditingNodeBody,
+  [freeEndNodeKind]: CanvasFreeEndBody,
+} as const satisfies Record<CanvasNodeKind, typeof EditingNodeBody> &
+  Record<typeof freeEndNodeKind, typeof CanvasFreeEndBody>;
+
+/** The flow edge type, with its name field in React Flow's label layer. */
+export const editingEdgeTypes = { flow: EditingEdgeBody } as const;
 
 function withoutLineBreaks(text: string): string {
   return text.replace(/[\r\n]+/gu, '');
@@ -135,11 +152,6 @@ function InlineField({
   const keyboardDescriptionId = useId();
   const field = useRef<HTMLTextAreaElement>(null);
   const settled = useRef(false);
-  const reportRefusal = useCallback((refused: RefusedDraft | undefined) => {
-    if (refused !== undefined) {
-      announce(refused.said);
-    }
-  }, []);
   const draft = useTextDraft(
     label,
     value,
@@ -147,7 +159,7 @@ function InlineField({
     (text) => {
       onCommit(elementId, text);
     },
-    reportRefusal,
+    announceRefusal,
     refuse,
   );
 
@@ -346,25 +358,3 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
     </>
   );
 }
-
-/**
- * The canvas node types, with an inline name or Note editor when requested.
- * Each node subscribes only to its own editor state, and a node or flow
- * whose editor is open draws no text of its own, the field standing where
- * that text was drawn.
- */
-export const editingNodeTypes = {
-  actor: EditingNodeBody,
-  process: EditingNodeBody,
-  store: EditingNodeBody,
-  text: EditingNodeBody,
-  'boundary-box': EditingNodeBody,
-  'boundary-curve': EditingNodeBody,
-  [freeEndNodeKind]: CanvasFreeEndBody,
-} as const satisfies Record<CanvasNodeKind, typeof EditingNodeBody> &
-  Record<typeof freeEndNodeKind, typeof CanvasFreeEndBody>;
-
-/**
- * The flow edge type, with its name editor in React Flow's label layer.
- */
-export const editingEdgeTypes = { flow: EditingEdgeBody } as const;

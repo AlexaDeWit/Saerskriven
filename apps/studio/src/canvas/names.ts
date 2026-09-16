@@ -5,7 +5,12 @@ import type {
   CanvasNodeKind,
   ThreatBadge,
 } from '@saerskriven/canvas';
-import { flagsByElement, type ElementId, type Model } from '@saerskriven/model';
+import {
+  flagsByElement,
+  type Element,
+  type ElementId,
+  type Model,
+} from '@saerskriven/model';
 import { flagLabel } from '@saerskriven/render';
 
 const kindWords = {
@@ -13,22 +18,25 @@ const kindWords = {
   process: 'process',
   store: 'store',
   text: 'text',
-  'boundary-box': 'trust boundary',
-  'boundary-curve': 'trust boundary',
-} as const satisfies Record<CanvasNodeKind, string>;
+  flow: 'flow',
+  'trust-boundary': 'trust boundary',
+} as const satisfies Record<Element['kind'], string>;
+
+const elementKindOf = {
+  actor: 'actor',
+  process: 'process',
+  store: 'store',
+  text: 'text',
+  'boundary-box': 'trust-boundary',
+  'boundary-curve': 'trust-boundary',
+} as const satisfies Record<CanvasNodeKind, Element['kind']>;
 
 const freeEndWords = 'a free point';
 
 /**
- * What every element the layout drew is called to assistive technology,
- * keyed by the id React Flow knows it by. The glyphs are hidden from a
- * screen reader, so a name here is the only account of the element it has:
- * what the element is called, what kind it is, what its badge says, and
- * which flags `model` raises on the threats naming it. The badge draws one
- * mark for either flag, so the name is where the two are told apart. A flow
- * also names the elements its ends attach to, from one to the other or
- * between the two where it runs both ways. `layout` must be laid out from
- * `model`, or the flags named belong to another model's threats.
+ * The accessible name of every element the layout drew, keyed by its React
+ * Flow id: its name, kind, badge and raised flags, and for a flow the
+ * elements its ends attach to. `layout` must be laid out from `model`.
  */
 export function accessibleNames(
   layout: CanvasLayout,
@@ -48,25 +56,25 @@ export function accessibleNames(
   ]);
 }
 
-/**
- * What one drawn element is called where a control has to name it in a
- * sentence: its own name, or what kind of thing it is while it has none. It
- * is the phrase the rename field is labelled with, so a screen reader hears
- * which element the field renames rather than that a field is open.
- */
-export function nodeLabel(node: CanvasNode): string {
-  return node.name === '' ? `the ${kindWords[node.kind]}` : node.name;
+/** What an element is called in a sentence: its name, or "the" and its kind while it has none. */
+export function kindLabel(name: string, kind: Element['kind']): string {
+  return name === '' ? `the ${kindWords[kind]}` : name;
 }
 
-/** What one drawn flow is called, on the same terms as {@link nodeLabel}. */
+/** {@link kindLabel} for one drawn element. */
+export function nodeLabel(node: CanvasNode): string {
+  return kindLabel(node.name, elementKindOf[node.kind]);
+}
+
+/** {@link kindLabel} for one drawn flow. */
 export function edgeLabel(edge: CanvasEdge): string {
-  return edge.name === '' ? 'the flow' : edge.name;
+  return kindLabel(edge.name, 'flow');
 }
 
 function nodeName(node: CanvasNode, flags: readonly string[]): string {
   return spoken([
     node.name,
-    kindWords[node.kind],
+    kindWords[elementKindOf[node.kind]],
     ...badgeWords(node.badge),
     ...flags,
   ]);
@@ -101,7 +109,7 @@ function endName(
   if (node === undefined) {
     return element;
   }
-  return node.name === '' ? kindWords[node.kind] : node.name;
+  return node.name === '' ? kindWords[elementKindOf[node.kind]] : node.name;
 }
 
 function badgeWords(badge: ThreatBadge | undefined): string[] {

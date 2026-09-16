@@ -7,20 +7,12 @@ import {
   type Threat,
   type ThreatId,
 } from '@saerskriven/model';
+import { kindLabel } from '../canvas/names.js';
 import { Action } from '../store/actions.js';
-import { selectedElement } from '../store/selectors.js';
+import { selectedElement, selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 
 const threatFields = threatSchema.keyof().options;
-
-const kindWords = {
-  actor: 'actor',
-  process: 'process',
-  store: 'store',
-  text: 'text',
-  flow: 'flow',
-  'trust-boundary': 'trust boundary',
-} as const satisfies Record<Element['kind'], string>;
 
 /** What an open panel shows: one or several selected elements, or the model's own properties. */
 export type PanelSubject =
@@ -28,14 +20,7 @@ export type PanelSubject =
   | { readonly kind: 'several'; readonly count: number }
   | { readonly kind: 'model' };
 
-/**
- * What the panel is bound to, and nothing at all while nothing is selected
- * and the model's properties are not shown, which is where no panel is drawn.
- * A flow is an element like any other here: it carries threats, so it opens
- * the panel as a box does. The canvas has a selector of its own over the same
- * field, which returns the id it draws the selection from rather than the
- * record this one reads.
- */
+/** What the panel is bound to, and nothing while nothing is selected and the model's properties are hidden. */
 export function panelSubject(state: State): PanelSubject | undefined {
   if (state.modelProperties) {
     return { kind: 'model' };
@@ -44,36 +29,18 @@ export function panelSubject(state: State): PanelSubject | undefined {
   if (selected.length > 1) {
     return { kind: 'several', count: selected.length };
   }
-  const selectedId = selectedElement(state);
-  const element =
-    selectedId === undefined
-      ? undefined
-      : state.present.diagrams
-          .flatMap((diagram) => diagram.elements)
-          .find((candidate) => candidate.id === selectedId);
+  const element = selectedElementRecord(state);
   return element === undefined ? undefined : { kind: 'element', element };
 }
 
-/**
- * The file the studio has open, by name, and nothing at all while it has
- * none. It is what the panel's held drafts belong to: a draft is about a
- * threat in the file it was typed in, so closing that file or opening another
- * drops it, and so does a save that writes another name, this being the only
- * thing the state tells a reader about which file is in front of them. A save
- * over the same name keeps them. Keying the drafts on the sitting rather than
- * on the name needs a field the store does not have, and is recorded as a
- * follow-up rather than done here.
- */
+/** The name of the open file, which the panel's held drafts are kept against. */
 export function openFileName(state: State): string | undefined {
   return state.file._tag === 'Opened' ? state.file.name : undefined;
 }
 
 /**
- * Every threat naming the selected element, in register order, and none while
- * nothing is selected. Status plays no part: the panel lists what has been
- * recorded against the element, where the canvas badge counts what is still
- * open. The array is rebuilt on every call, so a component reading it
- * subscribes through zustand's `useShallow`.
+ * Every threat naming the selected element in register order, whatever its
+ * status. The array is rebuilt on every call, so read it through `useShallow`.
  */
 export function attachedThreats(state: State): readonly Threat[] {
   const selected = selectedElement(state);
@@ -84,9 +51,9 @@ export function attachedThreats(state: State): readonly Threat[] {
       );
 }
 
-/** What the panel calls an element: its name, or what kind it is while it has none. */
+/** What the panel calls an element, as {@link kindLabel} words it. */
 export function elementLabel(element: Element): string {
-  return element.name === '' ? `the ${kindWords[element.kind]}` : element.name;
+  return kindLabel(element.name, element.kind);
 }
 
 /** The number the next threat added here takes, which the model issues. */
@@ -94,15 +61,7 @@ export function nextNumber(state: State): number {
   return nextThreatNumber(state.present);
 }
 
-/**
- * The threat an add starts from, attached to the element the panel is bound
- * to and carrying the number the model issued for it. The model defines no
- * defaults, so the panel chooses the ones that claim least: `undecided` is
- * the severity the model offers for a threat nobody has assessed, `open` the
- * status for one nobody has dispositioned, and STRIDE's first category stands
- * until the person picks the case, the category union having no member for
- * "not yet decided".
- */
+/** The threat an add starts from: undecided, open, STRIDE spoofing, attached to `elementId`. */
 export function freshThreat(number: number, elementId: ElementId): Threat {
   return {
     id: generateThreatId(),
@@ -116,12 +75,7 @@ export function freshThreat(number: number, elementId: ElementId): Threat {
   };
 }
 
-/**
- * Which threat the panel focuses once `deleted` is gone: the one that takes
- * its place in the list, the one before it where it was last, and nothing at
- * all where it was the only one, which is the panel's word for the add
- * control.
- */
+/** The threat focused once `deleted` is gone: the next, else the previous, else none. */
 export function threatAfterDeleting(
   threats: readonly Threat[],
   deleted: ThreatId,
@@ -136,14 +90,8 @@ export function threatAfterDeleting(
 }
 
 /**
- * The panel's commit handler, bound to one threat. A field hands it what it
- * changed and the change leaves as one `ReplaceThreat`, so every field of the
- * panel commits the same way and one edit is one undo step. A patch that
- * leaves every field as it was dispatches nothing: a model operation returns
- * a new model whatever it was asked to do, so the store would push an undo
- * entry and mark the file dirty over an edit nobody made. Fields are compared
- * by identity, which is exact for the threat's scalars and reads a rebuilt
- * category or element list as a change.
+ * The panel's commit handler for one threat, sending a patch as one
+ * `ReplaceThreat`. A patch leaving every field identical dispatches nothing.
  */
 export function threatCommitter(
   send: (action: Action) => void,

@@ -7,8 +7,7 @@ export type CanvasExtent = {
   readonly height: number;
 };
 
-/** Space reserved around a fitted diagram for floating controls, in screen pixels. */
-export const canvasPadding = 64;
+const canvasPadding = 64;
 
 /** Zoom bounds shared with React Flow. */
 export const zoomLimits = { minimum: 0.1, maximum: 2 } as const;

@@ -13,6 +13,7 @@ import {
   type ThreatId,
 } from '@saerskriven/model';
 import { sectionLabel } from '@saerskriven/render';
+import type { z } from 'zod';
 import { Action } from '../store/actions.js';
 import type { OptionText } from '../ui/enum-field.js';
 import { distinctTexts } from './distinct-labels.js';
@@ -32,10 +33,8 @@ export type RecordFieldName =
 type RecordNoun = 'mitigation' | 'assumption';
 
 /**
- * What a record group needs to know about one kind of record: where the
- * model holds it, the text it carries, its statuses and the one it starts
- * in, and the store action for each edit. A fresh or restored record links
- * nothing until a {@link RecordTarget} attaches it.
+ * One kind of record as a record group edits it. A fresh or restored record
+ * links nothing until a {@link RecordTarget} attaches it.
  */
 export type RecordKind<Held extends ThreatRecord> = {
   readonly noun: RecordNoun;
@@ -65,24 +64,12 @@ export const mitigationKind: RecordKind<Mitigation> = {
   parts: ['title', 'prose'],
   statuses: mitigationStatusSchema.options,
   held: (model) => model.mitigations,
-  fresh: () => ({
-    id: generateMitigationId(),
-    title: '',
-    prose: '',
-    status: 'proposed',
-    threats: [],
-  }),
-  restored: (id, status) => {
-    const parsed = mitigationIdSchema.safeParse(id);
-    const fresh = mitigationKind.fresh();
-    return parsed.success
-      ? {
-          ...fresh,
-          id: parsed.data,
-          status: mitigationStatusSchema.catch(fresh.status).parse(status),
-        }
-      : undefined;
-  },
+  fresh: freshMitigation,
+  restored: restoredRecord(
+    mitigationIdSchema,
+    mitigationStatusSchema,
+    freshMitigation,
+  ),
   withText: (record, part, text) =>
     part === 'title' ? { ...record, title: text } : { ...record, prose: text },
   add: (mitigation) => Action.AddMitigation({ mitigation }),
@@ -103,24 +90,12 @@ export const assumptionKind: RecordKind<Assumption> = {
   parts: ['prose'],
   statuses: assumptionStatusSchema.options,
   held: (model) => model.assumptions,
-  fresh: () => ({
-    id: generateAssumptionId(),
-    prose: '',
-    status: 'unconfirmed',
-    threats: [],
-    appliesToModel: false,
-  }),
-  restored: (id, status) => {
-    const parsed = assumptionIdSchema.safeParse(id);
-    const fresh = assumptionKind.fresh();
-    return parsed.success
-      ? {
-          ...fresh,
-          id: parsed.data,
-          status: assumptionStatusSchema.catch(fresh.status).parse(status),
-        }
-      : undefined;
-  },
+  fresh: freshAssumption,
+  restored: restoredRecord(
+    assumptionIdSchema,
+    assumptionStatusSchema,
+    freshAssumption,
+  ),
   withText: (record, part, text) =>
     part === 'prose' ? { ...record, prose: text } : record,
   add: (assumption) => Action.AddAssumption({ assumption }),
@@ -133,15 +108,11 @@ export const assumptionKind: RecordKind<Assumption> = {
     Action.SetAssumptionStatus({ assumptionId: id, status }),
 };
 
-/** A threat as a shared row names it. */
-export type NumberedThreat = Pick<Threat, 'id' | 'number'>;
+type NumberedThreat = Pick<Threat, 'id' | 'number'>;
 
 /**
  * What one record group's records are linked to: a threat, or for
- * assumptions the model. It heads the group, says which records the group
- * holds, links a new record to itself, gives the store action that links or
- * unlinks one, and says where else a record is referenced by threat number,
- * which describes the unlink control.
+ * assumptions the model. `elsewhere` says which other threats hold a record.
  */
 export type RecordTarget<Held extends ThreatRecord> = {
   readonly heading: string;
@@ -223,6 +194,25 @@ export function linkableRecords<Held extends ThreatRecord>(
     record,
     text: { ...text, detail: recordDetail(record, threats) },
   }));
+}
+
+function restoredRecord<Held extends ThreatRecord>(
+  idSchema: Pick<z.ZodType<Held['id']>, 'safeParse'>,
+  statusSchema: Pick<z.ZodType<Held['status']>, 'safeParse'>,
+  fresh: () => Held,
+): RecordKind<Held>['restored'] {
+  return (id, status) => {
+    const parsed = idSchema.safeParse(id);
+    const record = fresh();
+    const restoredStatus = statusSchema.safeParse(status);
+    return parsed.success
+      ? {
+          ...record,
+          id: parsed.data,
+          status: restoredStatus.success ? restoredStatus.data : record.status,
+        }
+      : undefined;
+  };
 }
 
 function recordDetail(
@@ -377,4 +367,24 @@ function firstLine(record: ThreatRecord): string | undefined {
   return [textOf(record, 'title'), record.prose]
     .map((text) => text.split('\n')[0].trim())
     .find((line) => line !== '');
+}
+
+function freshMitigation(): Mitigation {
+  return {
+    id: generateMitigationId(),
+    title: '',
+    prose: '',
+    status: 'proposed',
+    threats: [],
+  };
+}
+
+function freshAssumption(): Assumption {
+  return {
+    id: generateAssumptionId(),
+    prose: '',
+    status: 'unconfirmed',
+    threats: [],
+    appliesToModel: false,
+  };
 }

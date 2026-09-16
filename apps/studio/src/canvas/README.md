@@ -21,15 +21,18 @@ mode outside the model store, and `placement.tsx` binds that mode to pointer
 and Enter gestures. `edits.ts` is the command side of the same boundary, one
 function per edit a control asks for. `connecting.ts` holds the
 flow a chord started until a target is chosen or the chooser closes,
-`rename-field.tsx` holds the inline name and Note editors and the node and edge
-bodies that mount them. `announcements.ts` carries what an edit did to the region that says it,
+`inline-editing.tsx` holds the inline name and Note editors and the node and
+edge bodies that mount them. `live-edges.ts` and `box-selection.ts` are the
+hooks `diagram-canvas.tsx` tracks a drag's flows and a selection box with, and
+`geometry-editor.tsx` and `endpoint-editor.tsx` are the forms
+`selection-controls.tsx` opens. `announcements.ts` carries what an edit did to the region that says it,
 and `viewport.ts` is the arithmetic of the view,
 whether a node is drawn inside the canvas and the viewport that fits a diagram
-into it, `view-commands.tsx` applies that to React Flow, and `toolbox.tsx` and
-`zoom-cluster.tsx` are the controls. `toolbox.tsx` holds two of them: the tool
-modes, which the shell mounts as row two of its chrome card, and the canvas
-announcement and flow chooser, which hang under that card. Neither reads a
-React Flow hook, which is what lets the shell host them.
+into it, `view-commands.tsx` applies that to React Flow, and the controls are
+`zoom-cluster.tsx`, `toolbox.tsx`, which the shell mounts as row two of its
+chrome card, and `canvas-announcement.tsx` and `flow-target-chooser.tsx`,
+which hang under that card. None of the last three reads a React Flow hook,
+which is what lets the shell host them.
 
 The canvas is the studio's window: it fills the viewport. The chrome card, the
 threat panel and the zoom cluster float inside it instead of taking space from

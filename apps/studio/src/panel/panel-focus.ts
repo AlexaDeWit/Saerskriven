@@ -8,11 +8,7 @@ let titleRequested = false;
 
 let historyStep: (() => () => void) | undefined;
 
-/**
- * Registers what moves focus into the threat panel, and hands back the
- * removal. The overlay registers itself while it is mounted, so the canvas
- * can offer a key press to the panel without holding a reference to it.
- */
+/** Registers what moves focus into the mounted threat panel, and returns the removal. */
 export function panelFocusHandler(handler: () => boolean): () => void {
   take = handler;
   return () => {
@@ -22,11 +18,7 @@ export function panelFocusHandler(handler: () => boolean): () => void {
   };
 }
 
-/**
- * Moves focus into the threat panel, opening it again where Escape closed it,
- * and reports whether there was a panel to take it. The registered command
- * calls this channel because focus does not belong in the model store.
- */
+/** Moves focus into the threat panel, reopening it where Escape closed it, and answers whether a panel took it. */
 export function focusThreatPanel(): boolean {
   return take?.() ?? false;
 }
@@ -58,10 +50,7 @@ export function takeModelPropertiesFocus(focusTitle: () => void): void {
   }
 }
 
-/**
- * Registers the threat panel's look at focus before an undo or redo, which
- * returns how to settle focus after it. Returns the removal.
- */
+/** Registers the threat panel's look at focus before an undo or redo, which returns how to settle it after. Returns the removal. */
 export function historyFocusHandler(handler: () => () => void): () => void {
   historyStep = handler;
   return () => {
@@ -71,11 +60,7 @@ export function historyFocusHandler(handler: () => () => void): () => void {
   };
 }
 
-/**
- * Runs an undo or redo step between the mounted threat panel's two looks at
- * focus, so focus in a threat the step removes, or on the control it was sent
- * to, has somewhere to go.
- */
+/** Runs an undo or redo step between the mounted threat panel's two looks at focus. */
 export function stepHistory(step: () => void): void {
   const settle = historyStep?.();
   step();

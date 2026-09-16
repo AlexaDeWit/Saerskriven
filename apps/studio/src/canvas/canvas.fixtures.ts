@@ -145,27 +145,20 @@ const document = {
 
 /**
  * The model the canvas specs draw: two elements inside a trust boundary, a
- * note beside them, a flow between them, a flow ending at a position that
- * belongs to no element, and threats spread so a name has one of each kind to
- * account for, a single assessed threat on an element and a pair of undecided
- * ones on a flow. The boundary and the note are drawn and are no end of a
- * flow, which is what the connecting controls read.
+ * note, a flow between the two, a flow with a free end, one assessed threat on
+ * an element and two undecided threats on a flow.
  */
 export const canvasModel: Model = parsedFixture(document);
 
-/**
- * How {@link flaggedCanvasModel} changes one threat: its status, the elements
- * it names, and whether an invalidated assumption is linked to it.
- */
-export type ThreatRework = {
+type ThreatRework = {
   readonly status?: ThreatStatus;
   readonly elements?: readonly string[];
   readonly invalidated?: boolean;
 };
 
 /**
- * {@link canvasModel} with threats changed by id, so a spec can raise either
- * flag on the elements it chooses.
+ * {@link canvasModel} with threats changed by id: a status, the elements named,
+ * and whether an invalidated assumption links the threat.
  */
 export const flaggedCanvasModel = (
   byThreat: Readonly<Record<string, ThreatRework>>,

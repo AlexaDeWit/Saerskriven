@@ -92,6 +92,12 @@ export function selectedElement(state: State): ElementId | undefined {
   return state.selection.length === 1 ? state.selection.at(0) : undefined;
 }
 
+/** The record of the one selected element. */
+export function selectedElementRecord(state: State): Element | undefined {
+  const selected = selectedElement(state);
+  return selected === undefined ? undefined : elementById(state, selected);
+}
+
 /** The selected element IDs, in selection order. */
 export function selectedElements(state: State): readonly ElementId[] {
   return state.selection;

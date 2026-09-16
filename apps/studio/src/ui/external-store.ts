@@ -1,15 +1,14 @@
 import { useSyncExternalStore } from 'react';
 
-/** A module-level value components read through `useSyncExternalStore`. */
-export type ExternalStore<Snapshot> = {
+type ExternalStore<Snapshot> = {
   readonly notify: () => void;
   readonly use: () => Snapshot;
 };
 
 /**
- * Subscribers for a value its module holds and reads with `read`. The module
- * calls `notify` after the value moves. `readOnServer` is the snapshot for a
- * server render, `read` itself unless given.
+ * Subscribers to a value its module holds and reads with `read`, which the
+ * module calls `notify` on after the value moves and components read through
+ * `use`. `readOnServer` is the server snapshot, `read` unless given.
  */
 export function externalStore<Snapshot>(
   read: () => Snapshot,

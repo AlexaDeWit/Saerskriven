@@ -81,6 +81,13 @@ export const modelStore = runtime.modelStore;
 /** Reduces an action and returns the recovery storage outcome. */
 export const dispatch = runtime.dispatch;
 
+/** Dispatches `action` and answers whether the model on screen moved. */
+export function changedModel(action: Action): boolean {
+  const before = modelStore.getState().present;
+  dispatch(action);
+  return modelStore.getState().present !== before;
+}
+
 /**
  * Runs `changed` whenever an action moves the model on screen, the selection,
  * or the open inline field. Returns the unsubscribe.

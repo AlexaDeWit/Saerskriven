@@ -2,7 +2,12 @@ import {
   ElementPropertiesEditor,
   type ElementPropertyDrafts,
 } from './element-properties.js';
-import type { ElementId, Threat, ThreatId } from '@saerskriven/model';
+import {
+  elementsAcross,
+  type ElementId,
+  type Threat,
+  type ThreatId,
+} from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import {
   useCallback,
@@ -12,7 +17,11 @@ import {
   type RefObject,
 } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { announce, resetAnnouncements } from '../canvas/announcements.js';
+import {
+  announce,
+  announceRefusal,
+  resetAnnouncements,
+} from '../canvas/announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { historyFocusHandler } from './panel-focus.js';
@@ -47,63 +56,6 @@ export type ThreatPanelProps = {
   readonly onToggleWidth: () => void;
   readonly onCover?: (cover: number) => void;
 };
-
-function focusIn(
-  focus: PanelFocus | undefined,
-  threat: Threat,
-): EditorFocus | undefined {
-  if (focus === undefined || focus.threatId !== threat.id) {
-    return undefined;
-  }
-  return focus.kind;
-}
-
-function useHistoryFocus(
-  addControl: RefObject<HTMLButtonElement | null>,
-  restore: (threatId: ThreatId) => void,
-): void {
-  const undone = useRef<ThreatId | undefined>(undefined);
-  const toAdd = useRef(false);
-
-  useEffect(() => {
-    if (toAdd.current) {
-      toAdd.current = false;
-      addControl.current?.focus();
-    }
-  });
-
-  useEffect(
-    () =>
-      historyFocusHandler(() => {
-        const active = document.activeElement;
-        const item =
-          active?.closest<HTMLElement>('[data-threat-item]')?.dataset[
-            'threatItem'
-          ];
-        const holder = attachedThreats(modelStore.getState()).find(
-          ({ id }) => id === item,
-        );
-        const onAdd = active !== null && active === addControl.current;
-        return () => {
-          const attached = attachedThreats(modelStore.getState());
-          const restored = attached.find(({ id }) => id === undone.current);
-          if (
-            holder !== undefined &&
-            !attached.some(({ id }) => id === holder.id)
-          ) {
-            undone.current = holder.id;
-            toAdd.current = true;
-          } else if (restored !== undefined) {
-            undone.current = undefined;
-            if (onAdd) {
-              restore(restored.id);
-            }
-          }
-        };
-      }),
-    [addControl, restore],
-  );
-}
 
 /** Edits the selected element in place. Listboxes retain ownership of Escape. */
 export function ThreatPanel({
@@ -195,11 +147,10 @@ export function ThreatPanel({
   const refused =
     (threat: Threat) =>
     (refusal: RefusedField | undefined): void => {
-      const alreadyHeld =
-        refusal !== undefined &&
-        draft?.threatId === threat.id &&
-        draft.field === refusal.field &&
-        draft.text === refusal.text;
+      const heldText =
+        draft?.threatId === threat.id && draft.field === refusal?.field
+          ? draft.text
+          : undefined;
       const next =
         refusal === undefined ? undefined : { threatId: threat.id, ...refusal };
       setDraft(next);
@@ -210,9 +161,7 @@ export function ThreatPanel({
           drafts.set(element.id, next);
         }
       }
-      if (refusal !== undefined && !alreadyHeld) {
-        announce(refusal.said);
-      }
+      announceRefusal(refusal, heldText);
     };
 
   const expand = (value: string): void => {
@@ -273,11 +222,9 @@ export function ThreatPanel({
             >
               {threats.map((threat) => (
                 <ThreatEditor
-                  attachments={diagrams
-                    .flatMap((diagram) => diagram.elements)
-                    .filter((candidate) =>
-                      threat.elements.includes(candidate.id),
-                    )}
+                  attachments={elementsAcross(diagrams).filter((candidate) =>
+                    threat.elements.includes(candidate.id),
+                  )}
                   focus={focusIn(focus, threat)}
                   held={held?.threatId === threat.id ? held : undefined}
                   key={threat.id}
@@ -296,5 +243,62 @@ export function ThreatPanel({
         </>
       )}
     </PanelFrame>
+  );
+}
+
+function focusIn(
+  focus: PanelFocus | undefined,
+  threat: Threat,
+): EditorFocus | undefined {
+  if (focus === undefined || focus.threatId !== threat.id) {
+    return undefined;
+  }
+  return focus.kind;
+}
+
+function useHistoryFocus(
+  addControl: RefObject<HTMLButtonElement | null>,
+  restore: (threatId: ThreatId) => void,
+): void {
+  const undone = useRef<ThreatId | undefined>(undefined);
+  const toAdd = useRef(false);
+
+  useEffect(() => {
+    if (toAdd.current) {
+      toAdd.current = false;
+      addControl.current?.focus();
+    }
+  });
+
+  useEffect(
+    () =>
+      historyFocusHandler(() => {
+        const active = document.activeElement;
+        const item =
+          active?.closest<HTMLElement>('[data-threat-item]')?.dataset[
+            'threatItem'
+          ];
+        const holder = attachedThreats(modelStore.getState()).find(
+          ({ id }) => id === item,
+        );
+        const onAdd = active !== null && active === addControl.current;
+        return () => {
+          const attached = attachedThreats(modelStore.getState());
+          const restored = attached.find(({ id }) => id === undone.current);
+          if (
+            holder !== undefined &&
+            !attached.some(({ id }) => id === holder.id)
+          ) {
+            undone.current = holder.id;
+            toAdd.current = true;
+          } else if (restored !== undefined) {
+            undone.current = undefined;
+            if (onAdd) {
+              restore(restored.id);
+            }
+          }
+        };
+      }),
+    [addControl, restore],
   );
 }

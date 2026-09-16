@@ -60,39 +60,11 @@ type FocusRequest =
 
 const rowSelector = '[data-record-row]';
 
-function rowOf(
-  group: HTMLFieldSetElement | null,
-  recordId: string,
-): HTMLElement | undefined {
-  return [...(group?.querySelectorAll<HTMLElement>(rowSelector) ?? [])].find(
-    (row) => row.dataset['recordRow'] === recordId,
-  );
-}
-
-function focusTarget(
-  group: HTMLFieldSetElement | null,
-  focus: FocusRequest,
-): HTMLElement | null | undefined {
-  if (focus.kind === 'text') {
-    return rowOf(group, focus.recordId)?.querySelector<HTMLElement>(
-      'input, textarea',
-    );
-  }
-  const add = group?.querySelector<HTMLElement>('[data-add-record]');
-  if (focus.kind === 'add') {
-    return add;
-  }
-  const unlinks = group?.querySelectorAll<HTMLElement>('[data-unlink-record]');
-  return unlinks?.[focus.index] ?? unlinks?.[focus.index - 1] ?? add;
-}
-
 /**
  * The records of one kind linked to one target, a threat or the model. Add
- * opens an empty row that becomes a record on its first commit and leaves
- * nothing behind when it is left empty. Every other row edits, relinks or
- * re-statuses a record in place. Rows mount in the model's record order, a
- * row that arrives later lands after them, and a row that returns while the
- * group is mounted takes its old slot back.
+ * opens an empty row that becomes a record on its first commit and goes when
+ * left empty. A row that returns while the group is mounted takes its old
+ * slot back.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,
@@ -122,6 +94,7 @@ export function RecordGroup<Held extends ThreatRecord>({
   const drafting =
     draft !== undefined && !records.some(({ id }) => id === draft.id);
   const listed = drafting ? [...records, draft] : records;
+  const isDraft = (record: Held): boolean => drafting && record.id === draft.id;
   const [order, setOrder] = useState<readonly string[]>(() =>
     listed.map(({ id }) => id),
   );
@@ -179,7 +152,7 @@ export function RecordGroup<Held extends ThreatRecord>({
       if (next === undefined) {
         return;
       }
-      if (!drafting || record.id !== draft.id) {
+      if (!isDraft(record)) {
         dispatch(kind.replace(next));
         return;
       }
@@ -248,7 +221,7 @@ export function RecordGroup<Held extends ThreatRecord>({
       <div className={styles.recordBody} onBlur={tracked} onFocus={tracked}>
         {rows.map((record, index) => (
           <RecordRow
-            draft={drafting && record.id === draft.id}
+            draft={isDraft(record)}
             held={held}
             key={record.id}
             kind={kind}
@@ -260,12 +233,12 @@ export function RecordGroup<Held extends ThreatRecord>({
               onRefused([[recordFieldName(field), refusal]]);
             }}
             onStatus={(status) => {
-              if (drafting && record.id === draft.id) {
-                setDraft({ ...draft, status });
+              if (isDraft(record)) {
+                setDraft({ ...record, status });
                 onRefused(
                   [...refusals].flatMap(([field, refusal]) =>
                     isRecordField(field, kind.noun) &&
-                    recordFieldIn(field, kind.noun)?.recordId === draft.id
+                    recordFieldIn(field, kind.noun)?.recordId === record.id
                       ? [[field, { ...refusal, status }] as const]
                       : [],
                   ),
@@ -275,7 +248,7 @@ export function RecordGroup<Held extends ThreatRecord>({
               }
             }}
             onRemove={() => {
-              if (drafting && record.id === draft.id) {
+              if (isDraft(record)) {
                 focus.current = { kind: 'add' };
                 setDraft(undefined);
               } else {
@@ -490,4 +463,30 @@ function RecordRow<Held extends ThreatRecord>({
       </fieldset>
     </div>
   );
+}
+
+function rowOf(
+  group: HTMLFieldSetElement | null,
+  recordId: string,
+): HTMLElement | undefined {
+  return [...(group?.querySelectorAll<HTMLElement>(rowSelector) ?? [])].find(
+    (row) => row.dataset['recordRow'] === recordId,
+  );
+}
+
+function focusTarget(
+  group: HTMLFieldSetElement | null,
+  focus: FocusRequest,
+): HTMLElement | null | undefined {
+  if (focus.kind === 'text') {
+    return rowOf(group, focus.recordId)?.querySelector<HTMLElement>(
+      'input, textarea',
+    );
+  }
+  const add = group?.querySelector<HTMLElement>('[data-add-record]');
+  if (focus.kind === 'add') {
+    return add;
+  }
+  const unlinks = group?.querySelectorAll<HTMLElement>('[data-unlink-record]');
+  return unlinks?.[focus.index] ?? unlinks?.[focus.index - 1] ?? add;
 }

@@ -1,9 +1,7 @@
 import { useRef, type RefObject } from 'react';
-import {
-  CanvasAnnouncement,
-  FlowTargetChooser,
-  Toolbox,
-} from '../canvas/toolbox.js';
+import { CanvasAnnouncement } from '../canvas/canvas-announcement.js';
+import { FlowTargetChooser } from '../canvas/flow-target-chooser.js';
+import { Toolbox } from '../canvas/toolbox.js';
 import { FileReports } from '../files/file-reports.js';
 import { StudioMenu, type StudioMenuProps } from '../files/menu.js';
 import { useMeasured } from '../ui/measure.js';

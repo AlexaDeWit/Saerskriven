@@ -8,7 +8,9 @@ import { announce, resetAnnouncements } from './announcements.js';
 import { resetConnecting, startFlow } from './connecting.js';
 import { canvasModel, readerElement } from './canvas.fixtures.js';
 import { currentTool, resetTools } from './tools.js';
-import { CanvasAnnouncement, FlowTargetChooser, Toolbox } from './toolbox.js';
+import { CanvasAnnouncement } from './canvas-announcement.js';
+import { FlowTargetChooser } from './flow-target-chooser.js';
+import { Toolbox } from './toolbox.js';
 
 const opened = (selected?: State['selection'][number]): void => {
   const selection = selected === undefined ? [] : [selected];

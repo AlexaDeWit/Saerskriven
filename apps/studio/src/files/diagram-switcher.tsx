@@ -1,12 +1,6 @@
 import { DropdownMenu } from 'radix-ui';
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  type KeyboardEvent,
-} from 'react';
-import { announce } from '../canvas/announcements.js';
+import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
+import { announceRefusal } from '../canvas/announcements.js';
 import {
   endRenamingDiagram,
   renameActiveDiagram,
@@ -15,11 +9,7 @@ import {
 } from '../canvas/diagrams.js';
 import { activeDiagram } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
-import {
-  refusedName,
-  useTextDraft,
-  type RefusedDraft,
-} from '../ui/text-field.js';
+import { refusedName, useTextDraft } from '../ui/text-field.js';
 import { useCloseFocus } from '../ui/close-focus.js';
 import styles from './menu.module.css';
 import { MenuCommand } from './menu-items.js';
@@ -118,11 +108,6 @@ function TitleField({ title, onClose }: TitleFieldProps) {
   const field = useRef<HTMLInputElement>(null);
   const refusalId = useId();
   const settled = useRef(false);
-  const report = useCallback((refused: RefusedDraft | undefined) => {
-    if (refused !== undefined) {
-      announce(refused.said);
-    }
-  }, []);
   const draft = useTextDraft(
     'Diagram title',
     title,
@@ -130,7 +115,7 @@ function TitleField({ title, onClose }: TitleFieldProps) {
     (text) => {
       renameActiveDiagram(text);
     },
-    report,
+    announceRefusal,
     refusedName,
   );
 

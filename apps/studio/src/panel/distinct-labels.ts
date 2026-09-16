@@ -1,7 +1,6 @@
 import type { OptionText } from '../ui/enum-field.js';
 
-/** One choice a listbox offers: its id, what it is called, and whether that name is a stand-in. */
-export type LabelledChoice = {
+type LabelledChoice = {
   readonly id: string;
   readonly label: string;
   readonly unnamed: boolean;
