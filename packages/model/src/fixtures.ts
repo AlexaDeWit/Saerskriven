@@ -1,6 +1,7 @@
 import { Either } from 'effect';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
+import { threatCategorySchema } from './lib/categories.js';
 import type { Element, Flow } from './lib/elements.js';
 import {
   emptyRegisterFixture,
@@ -82,6 +83,18 @@ export const registerModel: Model = parsedFixture(threatRegisterFixture);
 
 /** {@link emptyRegisterFixture}, parsed. */
 export const emptyRegisterModel: Model = parsedFixture(emptyRegisterFixture);
+
+/**
+ * Each methodology with a closed category list, beside that list, read from
+ * `threatCategorySchema` so a category added there reaches every spec that
+ * walks them.
+ */
+export const enumeratedCategories = threatCategorySchema.options.flatMap(
+  (option): [string, readonly string[]][] =>
+    'options' in option.shape.category
+      ? [[option.shape.methodology.value, option.shape.category.options]]
+      : [],
+);
 
 /**
  * A character the model's text rule refuses, invisible where a literal would

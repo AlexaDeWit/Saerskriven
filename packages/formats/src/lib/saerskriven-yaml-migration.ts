@@ -42,7 +42,10 @@ export type CurrentSaerskrivenYaml = {
 /**
  * A document of any released version in the current one. A version 2
  * document comes back as it is, reporting nothing. A version 1 document goes
- * through {@link migratedFromVersion1}.
+ * through three steps: element links dropped with a report per assumption
+ * that held any, each threat's mitigation text made a record under the
+ * one-to-one status rule, and each assumption given the model link
+ * {@link assumptionsWithModelLinks} reads. Statuses carry over one to one.
  */
 export function currentSaerskrivenYaml(
   document: SaerskrivenYamlVersionedDocument,
@@ -52,14 +55,7 @@ export function currentSaerskrivenYaml(
     : migratedFromVersion1(document);
 }
 
-/**
- * The v1 to v2 migration, three steps over the version 1 document: element
- * links dropped with a report per assumption that held any, each threat's
- * mitigation text made a record under the one-to-one status rule, and each
- * assumption given the model link {@link assumptionsWithModelLinks} reads.
- * Statuses carry over one to one.
- */
-export function migratedFromVersion1(
+function migratedFromVersion1(
   document: SaerskrivenYamlDocument,
 ): CurrentSaerskrivenYaml {
   const stepped = withMitigationTextAsRecords(

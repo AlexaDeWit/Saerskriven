@@ -1,22 +1,17 @@
+import { threatCategorySchema } from '@saerskriven/model';
+import { enumeratedCategories } from '@saerskriven/model/fixtures';
+import { equivalent } from './equivalence.js';
 import {
   assumptionStatusesToModel,
   assumptionStatusesToWire,
-  ciaCategoriesToModel,
-  ciaCategoriesToWire,
-  ciaDieCategoriesToModel,
-  ciaDieCategoriesToWire,
-  linddunCategoriesToModel,
-  linddunCategoriesToWire,
   mitigationStatusesToModel,
   mitigationStatusesToWire,
-  plot4aiCategoriesToModel,
-  plot4aiCategoriesToWire,
   severitiesToModel,
   severitiesToWire,
-  strideCategoriesToModel,
-  strideCategoriesToWire,
   threatStatusesToModel,
   threatStatusesToWire,
+  toModelCategory,
+  toWireCategory,
 } from './saerskriven-yaml-vocabulary.js';
 
 type Table = Readonly<Record<string, string>>;
@@ -26,11 +21,6 @@ const vocabularies: readonly (readonly [string, Table, Table])[] = [
   ['threat status', threatStatusesToModel, threatStatusesToWire],
   ['mitigation status', mitigationStatusesToModel, mitigationStatusesToWire],
   ['assumption status', assumptionStatusesToModel, assumptionStatusesToWire],
-  ['STRIDE', strideCategoriesToModel, strideCategoriesToWire],
-  ['LINDDUN', linddunCategoriesToModel, linddunCategoriesToWire],
-  ['CIA', ciaCategoriesToModel, ciaCategoriesToWire],
-  ['CIA-DIE', ciaDieCategoriesToModel, ciaDieCategoriesToWire],
-  ['PLOT4ai', plot4aiCategoriesToModel, plot4aiCategoriesToWire],
 ];
 
 function strays([name, toModel, toWire]: readonly [
@@ -48,8 +38,17 @@ function strays([name, toModel, toWire]: readonly [
   ];
 }
 
+const unrecovered = enumeratedCategories.flatMap(([methodology, categories]) =>
+  categories
+    .filter((category) => {
+      const held = threatCategorySchema.parse({ methodology, category });
+      return !equivalent(toModelCategory(toWireCategory(held)), held);
+    })
+    .map((category) => `${methodology}: ${category} to the file and back`),
+);
+
 describe('the tables between the format and the model', () => {
   it('carry every member of every vocabulary back to itself', () => {
-    expect(vocabularies.flatMap(strays)).toEqual([]);
+    expect([...vocabularies.flatMap(strays), ...unrecovered]).toEqual([]);
   });
 });

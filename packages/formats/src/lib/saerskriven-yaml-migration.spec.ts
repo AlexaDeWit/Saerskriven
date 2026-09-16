@@ -7,7 +7,6 @@ import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml
 import type { canonicalOrder } from './canonical-order.js';
 import {
   currentSaerskrivenYaml,
-  migratedFromVersion1,
   saerskrivenYamlVersionsSchema,
 } from './saerskriven-yaml-migration.js';
 
@@ -76,6 +75,8 @@ const version1: SaerskrivenYamlDocument = saerskrivenYamlWireSchema.parse({
   ],
 });
 
+const migrated = currentSaerskrivenYaml(version1);
+
 describe('saerskrivenYamlVersionsSchema', () => {
   it.each([
     ['stamped with a later version', { ...version1, formatVersion: 3 }],
@@ -96,10 +97,10 @@ describe('saerskrivenYamlVersionsSchema', () => {
     [
       'a version 2 assumption without its model link',
       {
-        ...migratedFromVersion1(version1).document,
+        ...migrated.document,
         assumptions: [
           {
-            ...migratedFromVersion1(version1).document.assumptions[0],
+            ...migrated.document.assumptions[0],
             appliesToModel: undefined,
           },
         ],
@@ -123,9 +124,7 @@ describe('the version 2 wire schema', () => {
   });
 });
 
-describe('migratedFromVersion1', () => {
-  const migrated = migratedFromVersion1(version1);
-
+describe('currentSaerskrivenYaml', () => {
   it('gives a document the version 2 schema holds as it is', () => {
     expect(saerskrivenYamlV2WireSchema.parse(migrated.document)).toEqual(
       migrated.document,
@@ -183,21 +182,12 @@ describe('migratedFromVersion1', () => {
       }),
     ]);
   });
-});
 
-describe('currentSaerskrivenYaml', () => {
   it('hands back a version 2 document as it is, reporting nothing', () => {
-    const document: SaerskrivenYamlV2Document =
-      migratedFromVersion1(version1).document;
+    const document: SaerskrivenYamlV2Document = migrated.document;
     expect(currentSaerskrivenYaml(document)).toEqual({
       document,
       divergences: [],
     });
-  });
-
-  it('migrates a version 1 document', () => {
-    expect(currentSaerskrivenYaml(version1)).toEqual(
-      migratedFromVersion1(version1),
-    );
   });
 });

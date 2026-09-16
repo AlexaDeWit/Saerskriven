@@ -1,5 +1,5 @@
 import { Either } from 'effect';
-import { elementId, parsedFixture } from '../fixtures.js';
+import { elementId, enumeratedCategories, parsedFixture } from '../fixtures.js';
 import { assumptionStatusSchema } from './assumptions.js';
 import { threatCategorySchema } from './categories.js';
 import {
@@ -44,13 +44,6 @@ const tally = (values: readonly string[]): Record<string, number> =>
 
 const spanning = (reach: (model: Model) => readonly string[]): Set<string> =>
   new Set(fixtures.flatMap(reach));
-
-const enumeratedCategories = threatCategorySchema.options.flatMap(
-  (option): [string, readonly string[]][] =>
-    'options' in option.shape.category
-      ? [[option.shape.methodology.value, option.shape.category.options]]
-      : [],
-);
 
 const categoriesUnder =
   (methodology: string) =>

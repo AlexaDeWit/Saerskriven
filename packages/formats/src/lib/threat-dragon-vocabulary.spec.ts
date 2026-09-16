@@ -8,6 +8,7 @@ import {
   threatCategorySchema,
   threatStatusSchema,
 } from '@saerskriven/model';
+import { enumeratedCategories } from '@saerskriven/model/fixtures';
 import type { ThreatDragonThreat } from '@saerskriven/wire-threat-dragon';
 import { equivalent } from './equivalence.js';
 import {
@@ -32,13 +33,6 @@ const threat = (part: Partial<ThreatDragonThreat>): ThreatDragonThreat => ({
   ...base,
   ...part,
 });
-
-const enumeratedCategories = threatCategorySchema.options.flatMap(
-  (option): [string, readonly string[]][] =>
-    'options' in option.shape.category
-      ? [[option.shape.methodology.value, option.shape.category.options]]
-      : [],
-);
 
 const written = (methodology: string, category: string) => {
   const held = threatCategorySchema.parse({ methodology, category });
