@@ -171,7 +171,8 @@ compatibility.
 After source checks pass, `pages-build` builds the website from that exact tag.
 It takes the Pages base path and site URL from GitHub, so project sites and
 custom domains receive matching asset URLs, and the same value sets the
-canonical URL, `sitemap.xml` and `robots.txt`. It stamps the workspace version
+canonical URL, `sitemap.xml` and `robots.txt`. Those always name the https
+site, because GitHub reports a custom domain as http until HTTPS is enforced. It stamps the workspace version
 into the browser bundle and `version.json`. It compares every project manifest
 and the built version with the tag before creating `studio.tar` and
 `studio-release.json`. The latter records the source commit and CI run.
@@ -212,8 +213,10 @@ run cannot overwrite a newer deployment. GitHub can replace a pending job when
 another enters the group, so retry a cancelled deployment as described below.
 The previous website remains visible during promotion or after failure.
 
-For the first release, select **GitHub Actions** as the Pages source and set
-the intended custom domain before tagging. The `github-pages` environment must
+For the first release, select **GitHub Actions** as the Pages source, set
+the intended custom domain, and enable **Enforce HTTPS** before tagging.
+Without it the http address serves a duplicate of the site instead of
+redirecting. The `github-pages` environment must
 allow `v*` tags for automatic releases and `main` for manual retries. The
 separate `release` environment remains restricted to tags. Check the Pages
 policy with:
