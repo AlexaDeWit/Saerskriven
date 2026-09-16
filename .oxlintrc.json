@@ -53,9 +53,9 @@
   "overrides": [
     {
       // Test helpers reach production code without a type or boundary error:
-      // a fixtures subpath resolves like any entry point, and a relative
-      // import pulls a fixtures module in past the lib tsconfig's exclude.
-      // Only a spec or a fixture module may import them (CODING.md, Tests).
+      // a fixtures subpath resolves like any entry point, and an import pulls
+      // a fixtures module in even where a lib tsconfig excludes it. Only a
+      // spec, a test, or a fixture module may import them (CODING.md, Tests).
       "files": ["**/*"],
       "excludeFiles": [
         "**/*.spec.*",
@@ -69,8 +69,8 @@
           {
             "patterns": [
               {
-                "regex": "(^|/)(fixtures|[^/]+\\.fixtures)(\\.[cm]?[jt]sx?)?$",
-                "message": "Fixture helpers belong to a *.spec.* or *.fixtures.* module. A production module that imports them ships them (CODING.md, Tests)."
+                "regex": "(^|/)(fixtures|[^/]+\\.fixtures)(\\.[cm]?[jt]sx?)?(\\?.*)?$",
+                "message": "Fixture helpers belong to a spec, a test, or a fixture module. A production module that imports them ships them (CODING.md, Tests)."
               }
             ]
           }

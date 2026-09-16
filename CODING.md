@@ -93,17 +93,17 @@ ceiling for the root value: a spec needing longer declares its own at the
 narrowest scope that needs it, with the reason beside it, as the CLI's PDF
 compiles do.
 
-The fixture helpers every suite shares have one home, the
-`@saerskriven/model/fixtures` subpath, and only a spec or a `*.fixtures.*`
-module imports it. The subpath resolves to source, so every project that
-depends on `@saerskriven/model` reaches it, and nothing structural stops a
-downstream production module: the typecheck resolves it like any other
-entry point and the layer matrix reasons about projects rather than entry
-points, so a studio bundle carrying a fixture-derived value passes both. A
-relative import of a package's own `*.fixtures.*` module slips past the same
-way. The `no-restricted-imports` override in `.oxlintrc.json` refuses any
-fixtures subpath or fixtures module from every file but a spec, a test, or a
-fixture module.
+The fixture helpers every suite shares live on the
+`@saerskriven/model/fixtures` subpath, and only a spec, a test, or a fixture
+module imports a fixture helper. The subpath resolves to source, so every
+project that depends on `@saerskriven/model` reaches it, and nothing
+structural stops a downstream production module: the typecheck resolves it
+like any other entry point and the layer matrix reasons about projects rather
+than entry points, so a studio bundle carrying a fixture-derived value passes
+both. A relative import of a package's own fixtures module compiles too,
+since an import pulls in a module the lib tsconfig excludes. The
+`no-restricted-imports` override in `.oxlintrc.json` refuses both forms from
+every file but a spec, a test, or a fixture module.
 
 ## Prose register
 
