@@ -1,21 +1,19 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Either } from 'effect';
-import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import {
-  mainDiagram,
-  newProcess,
-  sampleModel,
-} from '../store/store.fixtures.js';
+import { addedProcess, sampleModel } from '../store/store.fixtures.js';
 import { browserFileBridge } from './browser-bridge.js';
 import { useFileSession } from './file-commands.js';
 import {
   chosenFile,
   deferred,
   handleFor,
+  openPicker,
+  recordDownloads,
+  sampleNativeText,
   specBridge,
   vendoredFile,
 } from './files.fixtures.js';
@@ -71,12 +69,7 @@ it('asks before replacing edited work and allows cancellation', async () => {
   const open = vi.spyOn(bridge, 'open');
   const { result } = renderHook(() => useFileSession(bridge));
   act(() => {
-    dispatch(
-      Action.AddElement({
-        diagramId: mainDiagram,
-        element: newProcess('new-process', 'New'),
-      }),
-    );
+    dispatch(addedProcess);
     result.current.commands.import();
   });
   expect(result.current.importing).toBe(true);
@@ -100,10 +93,10 @@ it('asks before replacing edited work and allows cancellation', async () => {
 it('releases the imported source handle and keeps the existing handle after a failed import', async () => {
   const original: FileContent[] = [];
   const source: FileContent[] = [];
-  const native = saerskrivenYamlCodec.write(sampleModel).output;
-  const picker = vi
-    .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
-    .mockResolvedValueOnce([handleFor('original.yaml', native, original)])
+  const picker = openPicker()
+    .mockResolvedValueOnce([
+      handleFor('original.yaml', sampleNativeText, original),
+    ])
     .mockResolvedValueOnce([
       handleFor('invalid.otm', 'otmVersion: 0.2.0', source),
     ])
@@ -141,16 +134,12 @@ it('releases the imported source handle and keeps the existing handle after a fa
   await waitFor(() => {
     expect(modelStore.getState().file).toMatchObject({ name: 'source.yaml' });
   });
-  const download = vi
-    .spyOn(HTMLAnchorElement.prototype, 'click')
-    .mockImplementation(() => {});
-  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
-  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+  const downloads = recordDownloads();
   act(() => {
     result.current.commands.save();
   });
   await waitFor(() => {
-    expect(download).toHaveBeenCalledOnce();
+    expect(downloads).toHaveLength(1);
   });
   expect(original).toHaveLength(1);
   expect(source).toEqual([]);
@@ -159,16 +148,14 @@ it('releases the imported source handle and keeps the existing handle after a fa
 it('ignores a late import when a newer open already owns the session', async () => {
   const pending = deferred<string>();
   const bridge = specBridge({
-    offers: { ...chosenFile('slow.otm', ''), text: () => pending.promise },
+    offers: chosenFile('slow.otm', '', () => pending.promise),
   });
   const { result } = renderHook(() => useFileSession(bridge));
   act(() => {
     result.current.commands.import();
   });
   await act(() =>
-    result.current.receive(
-      chosenFile('new.yaml', saerskrivenYamlCodec.write(sampleModel).output),
-    ),
+    result.current.receive(chosenFile('new.yaml', sampleNativeText)),
   );
   await act(async () => {
     pending.resolve(await vendoredFile('test-data/otm/example.json').text());

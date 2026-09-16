@@ -1,3 +1,5 @@
+import { screen } from '@testing-library/react';
+
 /**
  * How long the category field's suite is given, past the root
  * `vitest.shared.mts` sets. Its tests open a Radix select in jsdom through
@@ -9,3 +11,14 @@
  * at 5.3 s worst are too small a sample to retire.
  */
 export const listboxTimeout = 30_000;
+
+/** A handler a spec passes where the component needs one and the test reads nothing from it. */
+export const noop = (): void => undefined;
+
+/** The text box of an accessible name. */
+export const textbox = (name: string): HTMLElement =>
+  screen.getByRole('textbox', { name });
+
+/** The panel's control that starts a new threat. */
+export const addControl = (): HTMLElement =>
+  screen.getByRole('button', { name: 'Add a threat' });

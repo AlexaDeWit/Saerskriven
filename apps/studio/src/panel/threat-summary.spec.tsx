@@ -11,14 +11,8 @@ import {
   secondThreat,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { recordedThreat } from './panel.fixtures.js';
 import { ThreatSummary } from './threat-summary.js';
-
-const threatOf = (id: Threat['id'], status?: Threat['status']): Threat => {
-  const threat =
-    recordedModel.threats.find((held) => held.id === id) ??
-    recordedModel.threats[0];
-  return { ...threat, status: status ?? threat.status };
-};
 
 const showSummary = (threat: Threat): void => {
   render(
@@ -59,7 +53,7 @@ describe('ThreatSummary', () => {
   });
 
   it('counts the records linked to the threat, and follows a link and an unlink', () => {
-    showSummary(threatOf(firstThreat));
+    showSummary(recordedThreat(firstThreat));
     run(
       Action.AddMitigation({
         mitigation: {
@@ -88,7 +82,7 @@ describe('ThreatSummary', () => {
   });
 
   it('counts an assumption that applies to the model only on the threats it links', () => {
-    showSummary(threatOf(secondThreat));
+    showSummary(recordedThreat(secondThreat));
     run(
       Action.AddAssumption({
         assumption: {
@@ -116,7 +110,7 @@ describe('ThreatSummary', () => {
   });
 
   it('marks a mitigated threat with no implemented work until its mitigation is implemented', () => {
-    showSummary(threatOf(firstThreat, 'mitigated'));
+    showSummary(recordedThreat(firstThreat, 'mitigated'));
 
     expect(raised()).toEqual(['mitigated-without-implemented-work']);
     expect(named(markOf('mitigated-without-implemented-work'))).not.toBeNull();
@@ -132,7 +126,7 @@ describe('ThreatSummary', () => {
   });
 
   it('marks a threat resting on an invalidated assumption, and no other assumption status', () => {
-    showSummary(threatOf(firstThreat));
+    showSummary(recordedThreat(firstThreat));
 
     for (const status of ['unconfirmed', 'valid'] as const) {
       run(
@@ -153,7 +147,7 @@ describe('ThreatSummary', () => {
   });
 
   it('gives each flag a glyph of its own beside its label', () => {
-    showSummary(threatOf(firstThreat, 'mitigated'));
+    showSummary(recordedThreat(firstThreat, 'mitigated'));
     run(
       Action.SetAssumptionStatus({
         assumptionId: firstAssumption,

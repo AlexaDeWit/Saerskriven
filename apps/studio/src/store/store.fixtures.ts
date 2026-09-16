@@ -20,6 +20,7 @@ import {
   recoverySnapshotSchema,
   type RecoverySnapshot,
 } from './recovery-storage.js';
+import { Action } from './actions.js';
 import { elementCount } from './selectors.js';
 import type { FileLifecycle, RetainedSource } from './state.js';
 import { modelStore } from './store.js';
@@ -309,3 +310,9 @@ export const undoable = (): number => modelStore.getState().past.length;
 
 /** How many elements the store's model holds, across its diagrams. */
 export const heldElements = (): number => elementCount(modelStore.getState());
+
+/** Adds {@link newProcess} `process-added` to {@link mainDiagram}. */
+export const addedProcess = Action.AddElement({
+  diagramId: mainDiagram,
+  element: newProcess('process-added', 'Added'),
+});

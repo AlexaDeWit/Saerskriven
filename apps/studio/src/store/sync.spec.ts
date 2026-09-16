@@ -1,13 +1,13 @@
 import { studioBuildId } from '../version.js';
 import { FileLifecycle, initialState } from './state.js';
-import { sampleModel } from './store.fixtures.js';
+import { nativeSource, sampleModel } from './store.fixtures.js';
 import { channelStoreSync, type SyncedState } from './sync.js';
 
 const synced: SyncedState = {
   ...initialState(sampleModel),
   file: FileLifecycle.Opened({
     name: 'model.yaml',
-    source: { format: 'saerskriven-yaml', document: undefined },
+    source: nativeSource,
   }),
   recoveryCurrent: true,
 };

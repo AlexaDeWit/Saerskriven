@@ -8,8 +8,6 @@ import {
 } from '@saerskriven/formats';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import {
@@ -21,8 +19,9 @@ import { dispatch, modelStore } from '../store/store.js';
 import {
   settled,
   specBridge,
-  vendoredFile,
   type SpecBridge,
+  vendoredFile,
+  vendoredText,
 } from './files.fixtures.js';
 import {
   formatOf,
@@ -44,13 +43,7 @@ const gated: readonly Gated[] = [
 
 const validate = new Ajv({ allowUnionTypes: true }).compile(
   JSON.parse(
-    readFileSync(
-      join(
-        import.meta.dirname,
-        '../../../../test-data/threat-dragon/schema/threat-dragon-v2.schema.json',
-      ),
-      'utf8',
-    ),
+    vendoredText('test-data/threat-dragon/schema/threat-dragon-v2.schema.json'),
   ),
 );
 

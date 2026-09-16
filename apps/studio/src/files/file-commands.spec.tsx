@@ -1,19 +1,14 @@
 import { readLimits, saerskrivenYamlCodec } from '@saerskriven/formats';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { Action } from '../store/actions.js';
 import {
   FileLifecycle,
   initialState,
   placeholderModel,
 } from '../store/state.js';
 import { isDirty } from '../store/selectors.js';
-import { dispatch, modelStore } from '../store/store.js';
+import { modelStore } from '../store/store.js';
 import type { StoreSync, SyncedState } from '../store/sync.js';
-import {
-  mainDiagram,
-  newProcess,
-  sampleModel,
-} from '../store/store.fixtures.js';
+import { mainDiagram, sampleModel } from '../store/store.fixtures.js';
 import type { RenderExports } from './export-commands.js';
 import {
   SaveOutcome,
@@ -26,20 +21,21 @@ import { useFileSession } from './file-commands.js';
 import {
   chosenFile,
   deferred,
+  edit,
   handleFor,
+  openPicker,
+  recordDownloads,
+  sampleNativeText,
   specBridge,
   specRenders,
+  unreadableFile,
 } from './files.fixtures.js';
 
-const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
-const downloads: string[] = [];
+let downloads: readonly string[] = [];
 
 const failedFiles: readonly ChosenFile[] = [
   { ...chosenFile('large.yaml', ''), size: readLimits.maxTextBytes + 1 },
-  {
-    ...chosenFile('unreadable.yaml', ''),
-    text: () => Promise.reject(new Error('The file was moved.')),
-  },
+  unreadableFile('unreadable.yaml', 0),
   chosenFile('notes.txt', 'not a model'),
 ];
 
@@ -66,34 +62,9 @@ function anotherTab() {
   };
 }
 
-const edit = (): void => {
-  act(() => {
-    dispatch(
-      Action.AddElement({
-        diagramId: mainDiagram,
-        element: newProcess('process-added', 'Added'),
-      }),
-    );
-  });
-};
-
 beforeEach(() => {
   browserFileBridge.release();
-  downloads.length = 0;
-  vi.stubGlobal(
-    'URL',
-    class extends URL {
-      static override createObjectURL(): string {
-        return 'blob:model';
-      }
-      static override revokeObjectURL(): void {}
-    },
-  );
-  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-    function (this: HTMLAnchorElement) {
-      downloads.push(this.download);
-    },
-  );
+  downloads = recordDownloads();
   modelStore.setState(initialState(sampleModel), true);
 });
 
@@ -119,16 +90,14 @@ describe('useFileSession', () => {
           const original: FileContent[] = [];
           const replacement: FileContent[] = [];
           const text = vi.fn<() => Promise<string>>(() => success.promise);
-          const picker = vi
-            .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
-            .mockResolvedValueOnce([
-              handleFor(
-                'original.yaml',
-                nativeText,
-                original,
-                () => failure.promise,
-              ),
-            ]);
+          const picker = openPicker().mockResolvedValueOnce([
+            handleFor(
+              'original.yaml',
+              sampleNativeText,
+              original,
+              () => failure.promise,
+            ),
+          ]);
           vi.stubGlobal('showOpenFilePicker', picker);
           const result = session(browserFileBridge);
           await act(() => {
@@ -139,21 +108,23 @@ describe('useFileSession', () => {
           if (older === 'open') {
             picker.mockResolvedValueOnce([
               {
-                ...handleFor('failed.yaml', nativeText, []),
+                ...handleFor('failed.yaml', sampleNativeText, []),
                 getFile: () =>
-                  Promise.resolve({
-                    ...chosenFile('failed.yaml', nativeText),
-                    text: () => failure.promise.then(() => nativeText),
-                  }),
+                  Promise.resolve(
+                    chosenFile('failed.yaml', sampleNativeText, () =>
+                      failure.promise.then(() => sampleNativeText),
+                    ),
+                  ),
               },
             ]);
           }
           act(() => {
             if (older === 'fallback') {
-              void result.current.receive({
-                ...chosenFile('failed.yaml', nativeText),
-                text: () => failure.promise.then(() => nativeText),
-              });
+              void result.current.receive(
+                chosenFile('failed.yaml', sampleNativeText, () =>
+                  failure.promise.then(() => sampleNativeText),
+                ),
+              );
             } else {
               result.current.commands[older]();
               if (older === 'open') {
@@ -163,20 +134,18 @@ describe('useFileSession', () => {
           });
           picker.mockResolvedValueOnce([
             {
-              ...handleFor('replacement.yaml', nativeText, replacement),
+              ...handleFor('replacement.yaml', sampleNativeText, replacement),
               getFile: () =>
-                Promise.resolve({
-                  ...chosenFile('replacement.yaml', nativeText),
-                  text,
-                }),
+                Promise.resolve(
+                  chosenFile('replacement.yaml', sampleNativeText, text),
+                ),
             },
           ]);
           act(() => {
             if (newer === 'fallback') {
-              void result.current.receive({
-                ...chosenFile('replacement.yaml', nativeText),
-                text,
-              });
+              void result.current.receive(
+                chosenFile('replacement.yaml', sampleNativeText, text),
+              );
             } else {
               result.current.commands.open();
               result.current.confirmOpen();
@@ -188,9 +157,9 @@ describe('useFileSession', () => {
           await act(async () => {
             if (order === 'failure first') {
               failure.reject(new Error('NotAllowedError'));
-              success.resolve(nativeText);
+              success.resolve(sampleNativeText);
             } else {
-              success.resolve(nativeText);
+              success.resolve(sampleNativeText);
               failure.reject(new Error('NotAllowedError'));
             }
             await Promise.allSettled([failure.promise, success.promise]);
@@ -217,8 +186,8 @@ describe('useFileSession', () => {
     'retries a refused %s through the original handle',
     async (command) => {
       const written: FileContent[] = [];
-      const original = handleFor('original.yaml', nativeText, written);
-      const elsewhere = handleFor('elsewhere.yaml', nativeText, []);
+      const original = handleFor('original.yaml', sampleNativeText, written);
+      const elsewhere = handleFor('elsewhere.yaml', sampleNativeText, []);
       vi.stubGlobal('showOpenFilePicker', () => Promise.resolve([original]));
       vi.stubGlobal('showSaveFilePicker', () => Promise.resolve(elsewhere));
       const result = session(browserFileBridge);
@@ -280,23 +249,22 @@ describe('useFileSession', () => {
       );
       const original = handleFor(
         'original.yaml',
-        nativeText,
+        sampleNativeText,
         writes['original.yaml'],
         command === 'save' ? close : undefined,
       );
       const elsewhere = handleFor(
         'elsewhere.yaml',
-        nativeText,
+        sampleNativeText,
         writes['elsewhere.yaml'],
         command === 'saveAs' ? close : undefined,
       );
       const replacement = handleFor(
         'replacement.yaml',
-        nativeText,
+        sampleNativeText,
         writes['replacement.yaml'],
       );
-      const picker = vi
-        .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
+      const picker = openPicker()
         .mockResolvedValueOnce([original])
         .mockResolvedValue([replacement]);
       vi.stubGlobal('showOpenFilePicker', picker);
@@ -433,11 +401,13 @@ describe('useFileSession', () => {
           });
           const close = vi.fn<() => Promise<void>>(() => savePending);
           vi.stubGlobal('showOpenFilePicker', () =>
-            Promise.resolve([handleFor('original.yaml', nativeText, original)]),
+            Promise.resolve([
+              handleFor('original.yaml', sampleNativeText, original),
+            ]),
           );
           vi.stubGlobal('showSaveFilePicker', () =>
             Promise.resolve(
-              handleFor('elsewhere.yaml', nativeText, elsewhere, close),
+              handleFor('elsewhere.yaml', sampleNativeText, elsewhere, close),
             ),
           );
           const result = session(browserFileBridge);
@@ -446,17 +416,15 @@ describe('useFileSession', () => {
             return Promise.resolve();
           });
           edit();
-          const file = {
-            ...chosenFile('replacement.yaml', nativeText),
-            text: () =>
-              readPending.then(() =>
-                outcome === 'unreadable'
-                  ? Promise.reject(new Error('NotAllowedError'))
-                  : outcome === 'refused'
-                    ? 'not a model'
-                    : nativeText,
-              ),
-          };
+          const file = chosenFile('replacement.yaml', sampleNativeText, () =>
+            readPending.then(() =>
+              outcome === 'unreadable'
+                ? Promise.reject(new Error('NotAllowedError'))
+                : outcome === 'refused'
+                  ? 'not a model'
+                  : sampleNativeText,
+            ),
+          );
           const reading = result.current.receive(
             outcome === 'cancelled' ? undefined : file,
           );
@@ -684,10 +652,9 @@ describe('useFileSession', () => {
   it('keeps an older read active when the Save As format menu is cancelled', async () => {
     const pending = deferred<string>();
     const result = session(browserFileBridge);
-    const reading = result.current.receive({
-      ...chosenFile('replacement.yaml', nativeText),
-      text: () => pending.promise,
-    });
+    const reading = result.current.receive(
+      chosenFile('replacement.yaml', sampleNativeText, () => pending.promise),
+    );
     act(() => {
       result.current.commands.saveAs();
     });
@@ -697,7 +664,7 @@ describe('useFileSession', () => {
       result.current.cancelChoice();
     });
     await act(async () => {
-      pending.resolve(nativeText);
+      pending.resolve(sampleNativeText);
       await reading;
     });
 
@@ -715,7 +682,9 @@ describe('useFileSession', () => {
         const bridge = specBridge({ offers: file });
         const result = session(bridge);
         await act(async () => {
-          await result.current.receive(chosenFile('model.yaml', nativeText));
+          await result.current.receive(
+            chosenFile('model.yaml', sampleNativeText),
+          );
         });
         edit();
         const before = modelStore.getState();
@@ -768,7 +737,9 @@ describe('useFileSession', () => {
       });
       const result = session(bridge);
       await act(async () => {
-        await result.current.receive(chosenFile('model.yaml', nativeText));
+        await result.current.receive(
+          chosenFile('model.yaml', sampleNativeText),
+        );
       });
       edit();
       const before = modelStore.getState();
@@ -795,7 +766,7 @@ describe('useFileSession', () => {
     const bridge = specBridge();
     const result = session(bridge);
     await act(async () => {
-      await result.current.receive(chosenFile('model.yaml', nativeText));
+      await result.current.receive(chosenFile('model.yaml', sampleNativeText));
     });
     const before = modelStore.getState();
 
@@ -877,7 +848,7 @@ describe('useFileSession', () => {
 
   it('holds an open until the question over unsaved work is answered', async () => {
     const result = session(
-      specBridge({ offers: chosenFile('model.yaml', nativeText) }),
+      specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }),
     );
     edit();
     const before = modelStore.getState().present;

@@ -1,8 +1,6 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { studioVersion } from '../version.js';
 import { FileLifecycle, type RetainedSource } from './state.js';
 import {
@@ -19,6 +17,7 @@ import {
   recoveryStorageKey,
   RecoveryStorageFailure,
 } from './recovery-storage.js';
+import { vendoredText } from '../files/files.fixtures.js';
 
 const opened = (source: RetainedSource = foreignSource): FileLifecycle =>
   FileLifecycle.Opened({ name: 'model.json', source });
@@ -46,12 +45,8 @@ function failureFor(raw: string) {
   return Either.isLeft(loaded) ? loaded.left : undefined;
 }
 
-const snapshotBeforeVersion2 = readFileSync(
-  join(
-    import.meta.dirname,
-    '../../../../test-data/studio/recovery-v0.4.0.json',
-  ),
-  'utf8',
+const snapshotBeforeVersion2 = vendoredText(
+  'test-data/studio/recovery-v0.4.0.json',
 );
 
 const version1Snapshot = JSON.stringify({

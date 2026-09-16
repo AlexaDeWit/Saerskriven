@@ -1,27 +1,25 @@
+import { elementIn } from '@saerskriven/model/fixtures';
 import {
   commandById,
   runCommand,
   type CommandId,
 } from '../commands/registry.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
-import { sampleModel } from '../store/store.fixtures.js';
+import {
+  actorElement,
+  processElement,
+  sampleModel,
+} from '../store/store.fixtures.js';
 import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
-import { initialState, placeholderModel } from '../store/state.js';
+import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { arrangementMoves, arrangeSelected } from './arrangement.js';
+import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { currentLayout } from './layout.js';
 
 it('aligns against outer bounds without changing flow metadata or creating a no-op history entry', () => {
-  modelStore.setState(
-    {
-      ...initialState(placeholderModel),
-      selection: placeholderModel.diagrams[0].elements.map(
-        (element) => element.id,
-      ),
-    },
-    true,
-  );
+  openCanvas(canvasModel.diagrams[0].elements.map((element) => element.id));
   const nodes = currentLayout(modelStore.getState()).nodes;
   expect(arrangementMoves(nodes, 'left')).toEqual(
     nodes.map((node) => ({
@@ -31,22 +29,16 @@ it('aligns against outer bounds without changing flow metadata or creating a no-
   );
   arrangeSelected('left');
   const state = modelStore.getState();
-  expect(state.past).toEqual([placeholderModel]);
-  expect(
-    state.present.diagrams[0].elements.find(
-      (element) => element.kind === 'flow',
-    ),
-  ).toEqual(
-    placeholderModel.diagrams[0].elements.find(
-      (element) => element.kind === 'flow',
-    ),
+  expect(state.past).toEqual([canvasModel]);
+  expect(elementIn(state.present, requestFlow)).toEqual(
+    elementIn(canvasModel, requestFlow),
   );
   arrangeSelected('left');
   expect(modelStore.getState().present).toBe(state.present);
 });
 
 it('distributes unequal sizes with fixed outer nodes and equal gaps', () => {
-  const base = currentLayout(initialState(placeholderModel)).nodes[0];
+  const base = currentLayout(initialState(canvasModel)).nodes[0];
   const nodes = [
     { ...base, position: { x: 0, y: 20 }, size: { width: 40, height: 30 } },
     { ...base, position: { x: 70, y: 20 }, size: { width: 80, height: 30 } },
@@ -118,14 +110,14 @@ it.each(alignments)(
       { width: 80, height: 60 },
     ];
     const model = {
-      ...placeholderModel,
-      diagrams: placeholderModel.diagrams.map((diagram) => ({
+      ...sampleModel,
+      diagrams: sampleModel.diagrams.map((diagram) => ({
         ...diagram,
-        elements: diagram.elements.map((element, index) =>
-          'position' in element
-            ? { ...element, position: positions[index], size: sizes[index] }
-            : element,
-        ),
+        elements: [actorElement, processElement].map((id, index) => ({
+          ...elementIn(sampleModel, id),
+          position: positions[index],
+          size: sizes[index],
+        })),
       })),
     };
     modelStore.setState(
@@ -186,7 +178,7 @@ it.each(['distribute-horizontal', 'distribute-vertical'] as const)(
 );
 
 it('does not dirty a selection with too few nodes to arrange', () => {
-  modelStore.setState(initialState(placeholderModel), true);
+  openCanvas();
   const before = modelStore.getState();
   runCommand(commandById('align-left'), recordingSurface().surface);
   expect(modelStore.getState()).toBe(before);

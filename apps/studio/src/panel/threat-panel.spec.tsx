@@ -24,10 +24,21 @@ import {
   type HeldDraft,
   type ThreatPanelProps,
 } from './threat-panel.js';
+import { addControl, noop } from '../ui/ui.fixtures.js';
+import { softHyphen } from '@saerskriven/model/fixtures';
 
-const softHyphen = '­';
-
-const noop = (): void => undefined;
+const panelProps = (
+  overrides: Partial<ThreatPanelProps> = {},
+): ThreatPanelProps => ({
+  drafts: new Map(),
+  focusing: false,
+  onClose: noop,
+  wide: false,
+  onToggleWidth: noop,
+  onFocused: noop,
+  subject: { kind: 'several', count: 0 },
+  ...overrides,
+});
 
 const showPanel = (
   selection: ElementId,
@@ -36,20 +47,13 @@ const showPanel = (
   dispatch(Action.Select({ elementIds: [selection] }));
   render(
     <ThreatPanel
-      drafts={new Map()}
-      focusing={false}
-      onClose={noop}
-      wide={false}
-      onToggleWidth={noop}
-      onFocused={noop}
-      subject={{ kind: 'element', element: sampleElement(selection) }}
-      {...overrides}
+      {...panelProps({
+        subject: { kind: 'element', element: sampleElement(selection) },
+        ...overrides,
+      })}
     />,
   );
 };
-
-const addControl = (): HTMLElement =>
-  screen.getByRole('button', { name: 'Add a threat' });
 
 const announcement = (): string => currentAnnouncement().message;
 
@@ -83,13 +87,7 @@ describe(
     it('says how many are selected where more than one is, and offers no edit', () => {
       render(
         <ThreatPanel
-          drafts={new Map()}
-          focusing={false}
-          onClose={noop}
-          wide={false}
-          onToggleWidth={noop}
-          onFocused={noop}
-          subject={{ kind: 'several', count: 3 }}
+          {...panelProps({ subject: { kind: 'several', count: 3 } })}
         />,
       );
 
@@ -383,15 +381,10 @@ describe(
 
     it('moves focus to its first control when it is asked for, and not before', () => {
       const focused = vi.fn<() => void>();
-      const props: ThreatPanelProps = {
-        drafts: new Map(),
-        focusing: false,
-        onClose: noop,
-        wide: false,
-        onToggleWidth: noop,
+      const props = panelProps({
         onFocused: focused,
         subject: { kind: 'element', element: sampleElement(processElement) },
-      };
+      });
       dispatch(Action.Select({ elementIds: [processElement] }));
       const { rerender } = render(<ThreatPanel {...props} />);
       expect(document.activeElement).toBe(document.body);

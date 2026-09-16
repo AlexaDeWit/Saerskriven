@@ -9,6 +9,7 @@ import {
   diagramId,
   elementId,
   mitigationId,
+  softHyphen,
   threatId,
 } from '@saerskriven/model/fixtures';
 import { Action } from './actions.js';
@@ -23,6 +24,7 @@ import {
 } from './state.js';
 import {
   actorElement,
+  addedProcess,
   firstAssumption,
   firstMitigation,
   firstThreat,
@@ -54,8 +56,6 @@ const noteModel = {
   })),
 };
 const noteStart = initialState(noteModel);
-const softHyphen = '\u00AD';
-
 type StudioActionTag =
   | 'Undo'
   | 'Redo'
@@ -104,10 +104,7 @@ const applied: ActionsByTag<ModelActionTag> = {
     side: 'source',
     endpointId: elementId('extra-actor'),
   }),
-  AddElement: Action.AddElement({
-    diagramId: mainDiagram,
-    element: newProcess('process-added', 'Added'),
-  }),
+  AddElement: addedProcess,
   RemoveElement: Action.RemoveElement({ elementId: processElement }),
   RemoveElements: Action.RemoveElements({
     elementIds: [actorElement, processElement],

@@ -10,8 +10,7 @@ import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { canvasModel, noteElement } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { actorElement, processElement } from '../store/store.fixtures.js';
-
-const softHyphen = '­';
+import { softHyphen } from '@saerskriven/model/fixtures';
 
 const editing = (
   elementId: ElementId,
@@ -118,7 +117,10 @@ describe('the inline editor', () => {
       kind: 'name',
       elementId: actorElement,
     });
-    expect(field('Name of Reader')).toHaveProperty('value', 'Soft­hyphen');
+    expect(field('Name of Reader')).toHaveProperty(
+      'value',
+      `Soft${softHyphen}hyphen`,
+    );
     expect(currentAnnouncement().message).toContain('Reader');
     expect(currentAnnouncement().message).toContain('5');
   });

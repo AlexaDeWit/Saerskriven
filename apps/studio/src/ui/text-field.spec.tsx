@@ -7,17 +7,12 @@ import {
   refusedText,
   type RefusedDraft,
 } from './text-field.js';
-
-const softHyphen = '­';
+import { noop, textbox } from './ui.fixtures.js';
+import { softHyphen } from '@saerskriven/model/fixtures';
 
 const commits = () => vi.fn<(text: string) => void>();
 
 const refusals = () => vi.fn<(refused: RefusedDraft | undefined) => void>();
-
-const noop = (): void => undefined;
-
-const textbox = (name: string): HTMLElement =>
-  screen.getByRole('textbox', { name });
 
 describe('refusedText', () => {
   it('accepts text of the character set the model defines', () => {

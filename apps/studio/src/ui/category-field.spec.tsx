@@ -8,7 +8,7 @@ import {
   categoryKey,
   enumeratedCategoryKeys,
 } from './category-field.js';
-import { listboxTimeout } from './ui.fixtures.js';
+import { listboxTimeout, noop } from './ui.fixtures.js';
 
 const stride: ThreatCategory = {
   methodology: 'STRIDE',
@@ -20,8 +20,6 @@ const custom: ThreatCategory = {
   methodologyName: 'House rules',
   category: 'billing abuse',
 };
-
-const noop = (): void => undefined;
 
 describe('categoryKey', () => {
   it('pairs an enumerated methodology with its category', () => {

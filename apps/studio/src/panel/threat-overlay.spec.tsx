@@ -12,8 +12,8 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { focusThreatPanel, toggleModelProperties } from './panel-focus.js';
 import { ThreatOverlay } from './threat-overlay.js';
-
-const softHyphen = '­';
+import { addControl } from '../ui/ui.fixtures.js';
+import { softHyphen } from '@saerskriven/model/fixtures';
 
 const panel = () => screen.queryByRole('region', { name: 'Threats' });
 
@@ -25,9 +25,6 @@ const showModelProperties = (): void => {
 
 const modelProperties = () =>
   screen.queryByRole('region', { name: 'Model properties' });
-
-const addControl = (): HTMLElement =>
-  screen.getByRole('button', { name: 'Add a threat' });
 
 const description = (): HTMLElement =>
   screen.getByRole('textbox', { name: 'Description' });

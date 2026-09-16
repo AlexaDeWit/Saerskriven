@@ -3,8 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { SeverityField } from './severity-field.js';
-
-const noop = (): void => undefined;
+import { noop } from './ui.fixtures.js';
 
 describe('SeverityField', () => {
   it('names its trigger Severity, as a combobox', () => {

@@ -4,10 +4,10 @@ import { useEffect } from 'react';
 import { Action } from './actions.js';
 import {
   actorElement,
+  addedProcess,
   foreignSource,
-  nativeSource,
   mainDiagram,
-  newProcess,
+  nativeSource,
   restorableSnapshot,
   sampleModel,
   secondDiagram,
@@ -44,11 +44,6 @@ function ElementCount() {
   return <span data-testid="count">{count}</span>;
 }
 
-const addProcess = Action.AddElement({
-  diagramId: mainDiagram,
-  element: newProcess('process-added', 'Added'),
-});
-
 describe('the model store', () => {
   beforeEach(() => {
     modelStore.setState(initialState(sampleModel), true);
@@ -59,7 +54,7 @@ describe('the model store', () => {
     render(<ElementCount />);
     expect(screen.getByTestId('count').textContent).toBe('3');
     act(() => {
-      dispatch(addProcess);
+      dispatch(addedProcess);
     });
     expect(screen.getByTestId('count').textContent).toBe('4');
     act(() => {
@@ -76,7 +71,7 @@ describe('the model store', () => {
     });
     expect(painted).toEqual([3]);
     act(() => {
-      dispatch(addProcess);
+      dispatch(addedProcess);
     });
     expect(painted).toEqual([3, 4]);
   });
@@ -227,7 +222,7 @@ describe('session recovery', () => {
     };
     runtime = createModelStore(storage, silent, sampleModel);
 
-    runtime.dispatch(addProcess);
+    runtime.dispatch(addedProcess);
 
     expect(stored?.document.diagrams[0].elements).toHaveLength(4);
     expect(runtime.modelStore.getState().recoveryCurrent).toBe(true);
@@ -264,7 +259,7 @@ describe('session recovery', () => {
     };
     const runtime = createModelStore(storage, silent, sampleModel);
 
-    runtime.dispatch(addProcess);
+    runtime.dispatch(addedProcess);
     expect(needsCloseGuard(runtime.modelStore.getState())).toBe(false);
     runtime.dispatch(
       Action.RenameElement({ elementId: actorElement, name: 'Changed' }),
@@ -283,7 +278,7 @@ describe('session recovery', () => {
     const runtime = createModelStore(tab.storage, tab.sync, sampleModel);
 
     runtime.dispatch(Action.Select({ elementIds: [actorElement] }));
-    runtime.dispatch(addProcess);
+    runtime.dispatch(addedProcess);
     runtime.dispatch(Action.Undo());
 
     expect(tab.published.map((state) => state.past.length)).toEqual([1, 0]);
@@ -304,7 +299,7 @@ describe('session recovery', () => {
     };
     const runtime = createModelStore(tab.storage, tab.sync, sampleModel);
 
-    runtime.dispatch(addProcess);
+    runtime.dispatch(addedProcess);
 
     expect(tab.published).toHaveLength(1);
     expect(tab.published[0]?.recoveryCurrent).toBe(false);
@@ -313,7 +308,7 @@ describe('session recovery', () => {
   it('publishes a save, which moves the saved point and the file, and a close', () => {
     const tab = tabs();
     const runtime = createModelStore(tab.storage, tab.sync, sampleModel);
-    runtime.dispatch(addProcess);
+    runtime.dispatch(addedProcess);
     const file = FileLifecycle.Opened({
       name: 'model.yaml',
       source: nativeSource,

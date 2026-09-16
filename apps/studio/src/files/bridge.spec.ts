@@ -1,16 +1,5 @@
-import {
-  OpenOutcome,
-  fileOwnership,
-  readWithin,
-  type ChosenFile,
-} from './bridge.js';
-import { chosenFile } from './files.fixtures.js';
-
-const unreadable = (size: number): ChosenFile => ({
-  name: 'gone.json',
-  size,
-  text: () => Promise.reject(new Error('The file was moved.')),
-});
+import { OpenOutcome, fileOwnership, readWithin } from './bridge.js';
+import { chosenFile, unreadableFile } from './files.fixtures.js';
 
 describe('fileOwnership', () => {
   it.each([true, false])(
@@ -47,7 +36,7 @@ describe('readWithin', () => {
   });
 
   it('refuses a file past the bound without reading any of it', async () => {
-    const file = unreadable(1025);
+    const file = unreadableFile('gone.json', 1025);
 
     const outcome = await readWithin(file, 1024);
 
@@ -63,7 +52,7 @@ describe('readWithin', () => {
   });
 
   it('reports a file that would not read rather than throwing', async () => {
-    const outcome = await readWithin(unreadable(4), 1024);
+    const outcome = await readWithin(unreadableFile('gone.json', 4), 1024);
 
     expect(outcome).toEqual(
       OpenOutcome.Unreadable({ reason: 'The file was moved.' }),

@@ -22,10 +22,8 @@ import {
   editorTimeout,
 } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-
-const softHyphen = '­';
-
-const noop = (): void => undefined;
+import { noop, textbox } from '../ui/ui.fixtures.js';
+import { softHyphen } from '@saerskriven/model/fixtures';
 
 const showPanel = ({
   held,
@@ -49,9 +47,6 @@ const showPanel = ({
 
 const button = (name: string): HTMLElement =>
   screen.getByRole('button', { name });
-
-const textbox = (name: string): HTMLElement =>
-  screen.getByRole('textbox', { name });
 
 const undo = (): void => {
   act(() => {

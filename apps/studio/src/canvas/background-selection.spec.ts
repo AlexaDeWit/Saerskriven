@@ -1,23 +1,17 @@
 import { act, renderHook } from '@testing-library/react';
-import { initialState, placeholderModel } from '../store/state.js';
+import { actorElement } from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
 import { useBackgroundSelection } from './background-selection.js';
-import { currentAnnouncement, resetAnnouncements } from './announcements.js';
-import { resetTools, selectTool } from './tools.js';
-import { primaryPointer } from './canvas.fixtures.js';
+import { currentAnnouncement } from './announcements.js';
+import { selectTool } from './tools.js';
+import { canvasModel, openCanvas, primaryPointer } from './canvas.fixtures.js';
 
-const actor = placeholderModel.diagrams[0].elements[0].id;
 const pane = document.createElement('div');
 pane.className = 'react-flow__pane';
 const event = primaryPointer({ x: 10, y: 10 }, { target: pane });
 
 beforeEach(() => {
-  resetTools();
-  resetAnnouncements();
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [actor] },
-    true,
-  );
+  openCanvas([actorElement]);
 });
 
 it.each(['select', 'hand'] as const)(
@@ -32,7 +26,7 @@ it.each(['select', 'hand'] as const)(
       result.current.up(event);
     });
     expect(modelStore.getState().selection).toEqual([]);
-    expect(modelStore.getState().present).toBe(placeholderModel);
+    expect(modelStore.getState().present).toBe(canvasModel);
     expect(modelStore.getState().past).toEqual([]);
     expect(currentAnnouncement().message).toContain('cleared');
   },
@@ -45,7 +39,7 @@ it('preserves selection after a pan even when the pointer returns to its startin
     result.current.move({ ...event, clientX: 40 });
     result.current.up(event);
   });
-  expect(modelStore.getState().selection).toEqual([actor]);
+  expect(modelStore.getState().selection).toEqual([actorElement]);
 });
 
 it('does not interpret a second touch or cancelled gesture as a tap', () => {
@@ -55,13 +49,13 @@ it('does not interpret a second touch or cancelled gesture as a tap', () => {
     result.current.down({ ...event, isPrimary: false, pointerId: 2 });
     result.current.up(event);
   });
-  expect(modelStore.getState().selection).toEqual([actor]);
+  expect(modelStore.getState().selection).toEqual([actorElement]);
   act(() => {
     result.current.down(event);
     result.current.cancel();
     result.current.up(event);
   });
-  expect(modelStore.getState().selection).toEqual([actor]);
+  expect(modelStore.getState().selection).toEqual([actorElement]);
 });
 
 it('leaves placement and presses that change tools alone', () => {
@@ -71,10 +65,10 @@ it('leaves placement and presses that change tools alone', () => {
     selectTool('actor');
     result.current.up(event);
   });
-  expect(modelStore.getState().selection).toEqual([actor]);
+  expect(modelStore.getState().selection).toEqual([actorElement]);
   act(() => {
     result.current.down(event);
     result.current.up(event);
   });
-  expect(modelStore.getState().selection).toEqual([actor]);
+  expect(modelStore.getState().selection).toEqual([actorElement]);
 });

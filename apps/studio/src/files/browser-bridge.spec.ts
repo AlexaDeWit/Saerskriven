@@ -5,7 +5,14 @@ import {
   type FileContent,
   type SaveFileType,
 } from './bridge.js';
-import { chosenFile, deferred, handleFor, settled } from './files.fixtures.js';
+import {
+  chosenFile,
+  deferred,
+  handleFor,
+  openPicker,
+  recordDownloads,
+  settled,
+} from './files.fixtures.js';
 
 const types: readonly SaveFileType[] = [
   {
@@ -21,7 +28,7 @@ const types: readonly SaveFileType[] = [
 const inTheFormatOf = (name: string): string =>
   name.endsWith('.json') ? '{}' : 'a: 1';
 
-const downloads: string[] = [];
+let downloads: readonly string[] = [];
 
 const dismissal = (): DOMException =>
   new DOMException('The user dismissed the picker.', 'AbortError');
@@ -32,14 +39,7 @@ const freshBridge = async (): Promise<FileBridge> => {
 };
 
 beforeEach(() => {
-  downloads.length = 0;
-  URL.createObjectURL = () => 'blob:model';
-  URL.revokeObjectURL = () => undefined;
-  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-    function (this: HTMLAnchorElement) {
-      downloads.push(this.download);
-    },
-  );
+  downloads = recordDownloads();
 });
 
 afterEach(() => {
@@ -54,11 +54,9 @@ describe('opening', () => {
       const failure = deferred<void>();
       const success = deferred<string>();
       const written: FileContent[] = [];
-      const picker = vi
-        .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
-        .mockResolvedValueOnce([
-          handleFor('original.yaml', 'a: 1', [], () => failure.promise),
-        ]);
+      const picker = openPicker().mockResolvedValueOnce([
+        handleFor('original.yaml', 'a: 1', [], () => failure.promise),
+      ]);
       vi.stubGlobal('showOpenFilePicker', picker);
       const bridge = await freshBridge();
       await settled(bridge.open(1024));
@@ -67,10 +65,11 @@ describe('opening', () => {
           {
             ...handleFor('failed.yaml', '', []),
             getFile: () =>
-              Promise.resolve({
-                ...chosenFile('failed.yaml', ''),
-                text: () => failure.promise.then(() => ''),
-              }),
+              Promise.resolve(
+                chosenFile('failed.yaml', '', () =>
+                  failure.promise.then(() => ''),
+                ),
+              ),
           },
         ]);
       }
@@ -83,10 +82,9 @@ describe('opening', () => {
         {
           ...handleFor('replacement.yaml', 'a: 1', written),
           getFile: () =>
-            Promise.resolve({
-              ...chosenFile('replacement.yaml', 'a: 1'),
-              text: () => success.promise,
-            }),
+            Promise.resolve(
+              chosenFile('replacement.yaml', 'a: 1', () => success.promise),
+            ),
         },
       ]);
       const opened = bridge.open(1024).then((result) => result.settle(true));
@@ -334,8 +332,7 @@ describe('saving', () => {
     async (path) => {
       const original: FileContent[] = [];
       const rejected: FileContent[] = [];
-      const picker = vi
-        .fn<() => Promise<ReturnType<typeof handleFor>[]>>()
+      const picker = openPicker()
         .mockResolvedValueOnce([handleFor('model.yaml', 'a: 1', original)])
         .mockResolvedValueOnce([
           handleFor('notes.txt', 'not a model', rejected),

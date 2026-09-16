@@ -3,14 +3,14 @@ import type { Point } from '@saerskriven/model';
 import type { ReactFlowInstance } from '@xyflow/react';
 import { act, renderHook } from '@testing-library/react';
 import type { RefObject } from 'react';
-import { initialState, placeholderModel } from '../store/state.js';
+import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { canvasModel, primaryPointer } from './canvas.fixtures.js';
 import { currentLayout } from './layout.js';
 import type { DiagramNode } from './nodes.js';
 import { usePlacement, type PlacementControls } from './placement.js';
 import { resetTools, selectTool } from './tools.js';
-import { heldElements } from '../store/store.fixtures.js';
+import { heldElements, sampleModel } from '../store/store.fixtures.js';
 
 type ViewTransform = {
   readonly pan: Point;
@@ -144,7 +144,7 @@ describe('box placement gestures', () => {
       result.current.pointerDown(primaryPointer({ x: 100, y: 80 }, onPane));
       result.current.pointerMove(primaryPointer({ x: 180, y: 140 }, onPane));
     });
-    modelStore.setState(initialState(placeholderModel), true);
+    modelStore.setState(initialState(sampleModel), true);
     rerender({ current: currentLayout(modelStore.getState()) });
     rerender({ current: firstLayout });
 

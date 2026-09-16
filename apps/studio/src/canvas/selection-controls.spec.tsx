@@ -5,8 +5,9 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import { elementIn } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
-import { initialState, placeholderModel } from '../store/state.js';
+import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   SelectionControls,
@@ -14,23 +15,23 @@ import {
 } from './selection-controls.js';
 import { commandById, runCommand } from '../commands/registry.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
-import { resetTools, selectTool } from './tools.js';
+import { selectTool } from './tools.js';
 import { currentAnnouncement } from './announcements.js';
-import { newProcess } from '../store/store.fixtures.js';
+import {
+  actorElement,
+  mainDiagram,
+  newProcess,
+  sampleModel,
+} from '../store/store.fixtures.js';
+import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 
 const flowOf = () =>
   modelStore
     .getState()
     .present.diagrams[0].elements.find((element) => element.kind === 'flow');
 
-const actor = placeholderModel.diagrams[0].elements[0].id;
-
 beforeEach(() => {
-  resetTools();
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [actor] },
-    true,
-  );
+  openCanvas([actorElement]);
 });
 
 it('holds geometry drafts until Apply and records position plus size as one edit', async () => {
@@ -47,11 +48,11 @@ it('holds geometry drafts until Apply and records position plus size as one edit
   fireEvent.change(screen.getByRole('spinbutton', { name: 'Height' }), {
     target: { value: '90' },
   });
-  expect(modelStore.getState().present).toBe(placeholderModel);
+  expect(modelStore.getState().present).toBe(canvasModel);
   fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
-  expect(modelStore.getState().past).toEqual([placeholderModel]);
-  expect(modelStore.getState().present.diagrams[0].elements[0]).toMatchObject({
-    position: { x: 41 },
+  expect(modelStore.getState().past).toEqual([canvasModel]);
+  expect(elementIn(modelStore.getState().present, actorElement)).toMatchObject({
+    position: { x: 1 },
     size: { height: 90 },
   });
   expect(
@@ -67,7 +68,7 @@ it('retains invalid dimensions and cancels by Escape without history', () => {
   const width = screen.getByRole('spinbutton', { name: 'Width' });
   fireEvent.change(width, { target: { value: '-2' } });
   fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
-  expect(modelStore.getState().present).toBe(placeholderModel);
+  expect(modelStore.getState().present).toBe(canvasModel);
   expect(currentAnnouncement().message).toContain('positive');
   width.focus();
   fireEvent.keyDown(width, { key: 'Escape' });
@@ -76,14 +77,9 @@ it('retains invalid dimensions and cancels by Escape without history', () => {
 });
 
 it('moves a multi-selection by one offset and invalidates a draft on tool changes', () => {
-  modelStore.setState(
-    {
-      ...initialState(placeholderModel),
-      selection: placeholderModel.diagrams[0].elements.map(
-        (element) => element.id,
-      ),
-    },
-    true,
+  openCanvas(
+    sampleModel.diagrams[0].elements.map((element) => element.id),
+    sampleModel,
   );
   render(<SelectionControls />);
   act(() => {
@@ -92,18 +88,17 @@ it('moves a multi-selection by one offset and invalidates a draft on tool change
   expect(screen.queryByRole('spinbutton', { name: 'Width' })).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Decrease Y' }));
   fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
-  expect(
-    modelStore.getState().present.diagrams[0].elements.slice(0, 2),
-  ).toEqual(
-    placeholderModel.diagrams[0].elements
-      .slice(0, 2)
-      .map((element) =>
-        'position' in element
-          ? { ...element, position: { ...element.position, y: 39 } }
-          : element,
-      ),
+  expect(modelStore.getState().present.diagrams[0].elements).toEqual(
+    sampleModel.diagrams[0].elements.map((element) =>
+      'position' in element
+        ? {
+            ...element,
+            position: { ...element.position, y: element.position.y - 1 },
+          }
+        : element,
+    ),
   );
-  expect(modelStore.getState().past).toEqual([placeholderModel]);
+  expect(modelStore.getState().past).toEqual([sampleModel]);
   act(() => {
     runCommand(commandById('edit-geometry'), recordingSurface().surface);
     selectTool('hand');
@@ -114,7 +109,7 @@ it('moves a multi-selection by one offset and invalidates a draft on tool change
 it('changes either endpoint with a chooser and keeps cancelling out of history', () => {
   dispatch(
     Action.AddElement({
-      diagramId: placeholderModel.diagrams[0].id,
+      diagramId: mainDiagram,
       element: newProcess('extra-node', 'Extra'),
     }),
   );
@@ -157,11 +152,7 @@ it('changes either endpoint with a chooser and keeps cancelling out of history',
 });
 
 it('reports a flow-only geometry selection and ignores editor requests during placement', () => {
-  const flow = placeholderModel.diagrams[0].elements[2];
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [flow.id] },
-    true,
-  );
+  openCanvas([requestFlow]);
   render(<SelectionControls />);
   act(() => {
     runCommand(commandById('edit-geometry'), recordingSurface().surface);
@@ -176,16 +167,7 @@ it('reports a flow-only geometry selection and ignores editor requests during pl
 });
 
 it('pins the chosen endpoint to a side, and releases it, through the endpoint editor', () => {
-  const flow = placeholderModel.diagrams[0].elements.find(
-    (element) => element.kind === 'flow',
-  );
-  if (flow === undefined) {
-    throw new Error('The placeholder holds a flow');
-  }
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [flow.id] },
-    true,
-  );
+  openCanvas([requestFlow]);
   render(<SelectionControls />);
   act(() => {
     runCommand(commandById('reconnect-source'), recordingSurface().surface);
@@ -197,7 +179,7 @@ it('pins the chosen endpoint to a side, and releases it, through the endpoint ed
   fireEvent.change(side, { target: { value: 'bottom' } });
   fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
   expect(flowOf()).toMatchObject({
-    source: { kind: 'attached', element: actor, side: 'bottom' },
+    source: { kind: 'attached', element: actorElement, side: 'bottom' },
   });
   expect(modelStore.getState().past).toHaveLength(1);
   act(() => {
@@ -212,21 +194,12 @@ it('pins the chosen endpoint to a side, and releases it, through the endpoint ed
   fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
   expect(flowOf()?.kind === 'flow' && flowOf()?.source).toEqual({
     kind: 'attached',
-    element: actor,
+    element: actorElement,
   });
 });
 
 it('toggles a flow between one way and both ways as one undo step each', () => {
-  const flow = placeholderModel.diagrams[0].elements.find(
-    (element) => element.kind === 'flow',
-  );
-  if (flow === undefined) {
-    throw new Error('The placeholder holds a flow');
-  }
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [flow.id] },
-    true,
-  );
+  openCanvas([requestFlow]);
   render(<FlowEndpointCommands />);
   fireEvent.click(
     screen.getByRole('button', { name: /Toggle bidirectional flow/u }),

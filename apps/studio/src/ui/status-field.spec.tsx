@@ -3,8 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { StatusField } from './status-field.js';
-
-const noop = (): void => undefined;
+import { noop } from './ui.fixtures.js';
 
 describe('StatusField', () => {
   it('names its trigger Status, as a combobox', () => {

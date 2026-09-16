@@ -1,7 +1,6 @@
 import {
   ReadFailure,
   hasDiverged,
-  saerskrivenYamlCodec,
   threatDragonCodec,
   type Divergence,
 } from '@saerskriven/formats';
@@ -26,12 +25,11 @@ import {
   savedBy,
   writeThrough,
 } from './session.js';
+import { sampleNativeText } from './files.fixtures.js';
 
 type OutcomesByTag<Outcome extends { readonly _tag: string }> = {
   readonly [Tag in Outcome['_tag']]: Extract<Outcome, { readonly _tag: Tag }>;
 };
-
-const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
 const foreignText = threatDragonCodec.write(sampleModel).output;
 
@@ -41,7 +39,7 @@ const projectedForeign: RetainedSource = {
 };
 
 const openOutcomes: OutcomesByTag<OpenOutcome> = {
-  Chosen: OpenOutcome.Chosen({ name: 'model.yaml', text: nativeText }),
+  Chosen: OpenOutcome.Chosen({ name: 'model.yaml', text: sampleNativeText }),
   TooLarge: OpenOutcome.TooLarge({
     name: 'huge.json',
     bound: 4,
@@ -259,7 +257,9 @@ describe('naming', () => {
 
 describe('writeThrough', () => {
   it('writes the format the source names', () => {
-    expect(writeThrough(sampleModel, nativeSource).output).toBe(nativeText);
+    expect(writeThrough(sampleModel, nativeSource).output).toBe(
+      sampleNativeText,
+    );
     expect(writeThrough(sampleModel, projectedForeign).output).toBe(
       foreignText,
     );

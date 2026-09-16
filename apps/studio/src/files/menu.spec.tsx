@@ -1,4 +1,3 @@
-import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { PdfFailure } from '@saerskriven/render/pdf';
@@ -26,7 +25,6 @@ import {
   mainDiagram,
   nativeSource,
   newNote,
-  newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
@@ -34,31 +32,20 @@ import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
   chosenFile,
+  edit,
   pngSignature,
+  sampleNativeText,
   specBridge,
+  type SpecBridge,
   specRenders,
   vendoredFile,
-  type SpecBridge,
 } from './files.fixtures.js';
 import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
 
-const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
-
 type User = ReturnType<typeof userEvent.setup>;
-
-const edit = (): void => {
-  act(() => {
-    dispatch(
-      Action.AddElement({
-        diagramId: mainDiagram,
-        element: newProcess('process-added', 'Added'),
-      }),
-    );
-  });
-};
 
 const burger = (): HTMLElement =>
   screen.getByRole('button', { name: /^Menu/u });
@@ -565,7 +552,7 @@ describe('what the studio says about the file', () => {
 describe('opening', () => {
   it('puts the model a file carries into the store', async () => {
     const user = userEvent.setup();
-    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    mounted(specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }));
 
     await choose(user, 'Open');
 
@@ -577,7 +564,7 @@ describe('opening', () => {
 
   it('asks in the menu before losing changes that are in no file', async () => {
     const user = userEvent.setup();
-    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    mounted(specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }));
     edit();
 
     await choose(user, 'Open');
@@ -594,7 +581,7 @@ describe('opening', () => {
 
   it('opens on the second step, dropping the changes it warned about', async () => {
     const user = userEvent.setup();
-    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    mounted(specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }));
     edit();
 
     await choose(user, 'Open');
@@ -660,7 +647,7 @@ describe('opening', () => {
     mounted(specBridge());
 
     fireEvent.change(screen.getByTestId('file-input'), {
-      target: { files: [chosenFile('model.yaml', nativeText)] },
+      target: { files: [chosenFile('model.yaml', sampleNativeText)] },
     });
     await openMenu(user);
 
@@ -851,7 +838,7 @@ describe('saving', () => {
 describe('closing', () => {
   it('closes at once while there is nothing to lose', async () => {
     const user = userEvent.setup();
-    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    mounted(specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }));
     await choose(user, 'Open');
     await waitFor(() => {
       expect(nameOf(modelStore.getState().file)).toBe('model.yaml');

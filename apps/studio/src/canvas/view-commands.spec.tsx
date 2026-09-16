@@ -11,15 +11,16 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { Action } from '../store/actions.js';
-import { initialState, placeholderModel } from '../store/state.js';
+import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   actorElement,
   nativeSource,
+  sampleModel,
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
-import { canvasModel } from './canvas.fixtures.js';
+import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { FitOnOpen, useViewCommands } from './view-commands.js';
 
 const unfitted = 'transform: translate(0px, 0px) scale(1)';
@@ -58,7 +59,7 @@ describe('FitOnOpen', () => {
     act(() => {
       dispatch(
         Action.Opened({
-          model: placeholderModel,
+          model: sampleModel,
           name: 'other.yaml',
           source: nativeSource,
           divergences: [],
@@ -119,11 +120,7 @@ function ViewControls({ cover = 0 }: { readonly cover?: number }) {
 }
 
 it('fits a selected flow and resets zoom without editing the document or its history', async () => {
-  const flow = placeholderModel.diagrams[0].elements[2];
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [flow.id] },
-    true,
-  );
+  openCanvas([requestFlow]);
   const before = modelStore.getState();
   render(
     <ReactFlow width={800} height={600} edges={[]} nodes={[]}>
@@ -160,11 +157,7 @@ it('fits a selected flow and resets zoom without editing the document or its his
 });
 
 it('refits the selection when pane coverage changes without changing the document', async () => {
-  const flow = placeholderModel.diagrams[0].elements[2];
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [flow.id] },
-    true,
-  );
+  openCanvas([requestFlow]);
   const before = modelStore.getState();
   const { rerender } = render(
     <ReactFlow width={1000} height={600} edges={[]} nodes={[]}>

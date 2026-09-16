@@ -1,11 +1,10 @@
 import { waitFor } from '@testing-library/react';
 import { readLimits } from '@saerskriven/formats';
-import { emptyModel, type Model } from '@saerskriven/model';
+import { emptyModel } from '@saerskriven/model';
 import {
   elementId,
-  mitigationId,
   parsedFixture,
-  threatId,
+  threatIn,
 } from '@saerskriven/model/fixtures';
 import { commandById, runCommand } from '../commands/registry.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
@@ -14,41 +13,43 @@ import { FileLifecycle } from '../store/state.js';
 import { Either } from 'effect';
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { Action } from '../store/actions.js';
-import { initialState, placeholderModel } from '../store/state.js';
+import { initialState } from '../store/state.js';
 import {
   actorElement,
+  firstMitigation,
+  firstThreat,
+  processElement,
+  recordedModel,
+  sampleModel,
+  sampleThreat,
   secondDiagram,
+  storeElement,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { copySelected, duplicateSelected, pasteSelected } from './clipboard.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 
-const actor = placeholderModel.diagrams[0].elements[0].id;
+const canvasElements = canvasModel.diagrams[0].elements.length;
 
 beforeEach(() => {
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [actor] },
-    true,
-  );
-  resetAnnouncements();
+  openCanvas([actorElement]);
 });
 
 it('duplicates attached threats under fresh IDs in one undoable edit without touching the clipboard', () => {
   const { writeText } = recordingClipboard();
   duplicateSelected();
   const after = modelStore.getState();
-  expect(after.past).toEqual([placeholderModel]);
-  expect(after.present.diagrams[0].elements).toHaveLength(4);
-  const copy = after.present.diagrams[0].elements[3];
-  expect(copy.id).not.toBe(actor);
-  expect(after.present.threats.at(-1)?.elements).toEqual([copy.id]);
-  expect(after.present.threats.at(-1)?.id).not.toBe(
-    placeholderModel.threats[0].id,
-  );
+  expect(after.past).toEqual([canvasModel]);
+  expect(after.present.diagrams[0].elements).toHaveLength(canvasElements + 1);
+  const copy = after.present.diagrams[0].elements.at(-1);
+  expect(copy?.id).not.toBe(actorElement);
+  expect(after.present.threats.at(-1)?.elements).toEqual([copy?.id]);
+  expect(after.present.threats.at(-1)?.id).not.toBe(firstThreat);
   expect(writeText).not.toHaveBeenCalled();
   dispatch(Action.Undo());
-  expect(modelStore.getState().present).toBe(placeholderModel);
+  expect(modelStore.getState().present).toBe(canvasModel);
 });
 
 it('keeps the document and clipboard when a cut write fails', async () => {
@@ -63,11 +64,7 @@ it('keeps the document and clipboard when a cut write fails', async () => {
 
 it('copies a flow with its endpoints, and pastes with distinct IDs on each press', async () => {
   const clipboard = recordingClipboard();
-  dispatch(
-    Action.Select({
-      elementIds: [placeholderModel.diagrams[0].elements[2].id],
-    }),
-  );
+  dispatch(Action.Select({ elementIds: [requestFlow] }));
   await copySelected();
   expect(
     Either.getOrThrow(saerskrivenYamlCodec.read(clipboard.text())).model
@@ -77,8 +74,10 @@ it('copies a flow with its endpoints, and pastes with distinct IDs on each press
   await pasteSelected();
   const after = modelStore.getState();
   const elements = after.present.diagrams[0].elements;
-  expect(elements).toHaveLength(9);
-  expect(new Set(elements.map((element) => element.id)).size).toBe(9);
+  expect(elements).toHaveLength(canvasElements + 6);
+  expect(new Set(elements.map((element) => element.id)).size).toBe(
+    canvasElements + 6,
+  );
   expect(after.past).toHaveLength(2);
 });
 
@@ -135,33 +134,39 @@ it('runs the registered reuse commands through clipboard I/O and atomic history'
   });
   runCommand(commandById('cut'), surface);
   await waitFor(() => {
-    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(2);
+    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(
+      canvasElements - 1,
+    );
   });
-  expect(modelStore.getState().past).toEqual([placeholderModel]);
-  expect(modelStore.getState().present.threats[0].elements).toEqual([]);
+  expect(modelStore.getState().past).toEqual([canvasModel]);
+  expect(threatIn(modelStore.getState().present, firstThreat).elements).toEqual(
+    [],
+  );
   dispatch(Action.Undo());
   runCommand(commandById('paste'), surface);
   await waitFor(() => {
-    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(4);
+    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(
+      canvasElements + 1,
+    );
   });
   runCommand(commandById('duplicate'), surface);
-  expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(5);
+  expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(
+    canvasElements + 2,
+  );
   expect(modelStore.getState().past).toHaveLength(2);
 });
 
 it('reports excluded links in related records and source-only format fields', async () => {
   const clipboard = recordingClipboard();
-  const originalThreat = placeholderModel.threats[0];
-  const store = placeholderModel.diagrams[0].elements[1].id;
   const model = parsedFixture({
-    ...placeholderModel,
+    ...sampleModel,
     threats: [
-      { ...originalThreat, elements: [actor, store] },
+      { ...sampleThreat, elements: [actorElement, storeElement] },
       {
-        ...originalThreat,
+        ...sampleThreat,
         id: 'external-threat',
         number: 2,
-        elements: [store],
+        elements: [storeElement],
       },
     ],
     lastIssuedThreatNumber: 2,
@@ -171,7 +176,7 @@ it('reports excluded links in related records and source-only format fields', as
         title: 'Protection',
         prose: 'Shared',
         status: 'proposed',
-        threats: [originalThreat.id, 'external-threat'],
+        threats: [firstThreat, 'external-threat'],
       },
     ],
     assumptions: [
@@ -179,7 +184,7 @@ it('reports excluded links in related records and source-only format fields', as
         id: 'shared-assumption',
         prose: 'Shared',
         status: 'valid',
-        threats: [originalThreat.id, 'external-threat'],
+        threats: [firstThreat, 'external-threat'],
         appliesToModel: true,
       },
     ],
@@ -187,7 +192,7 @@ it('reports excluded links in related records and source-only format fields', as
   modelStore.setState(
     {
       ...initialState(model),
-      selection: [actor],
+      selection: [actorElement],
       file: FileLifecycle.Opened({
         name: 'source.json',
         source: { format: 'threat-dragon', document: undefined },
@@ -199,9 +204,9 @@ it('reports excluded links in related records and source-only format fields', as
   const copy = Either.getOrThrow(
     saerskrivenYamlCodec.read(clipboard.text()),
   ).model;
-  expect(copy.threats[0].elements).toEqual([actor]);
-  expect(copy.mitigations[0].threats).toEqual([originalThreat.id]);
-  expect(copy.assumptions[0].threats).toEqual([originalThreat.id]);
+  expect(copy.threats[0].elements).toEqual([actorElement]);
+  expect(copy.mitigations[0].threats).toEqual([firstThreat]);
+  expect(copy.assumptions[0].threats).toEqual([firstThreat]);
   expect(currentAnnouncement().message).toContain('4 external links excluded');
   expect(currentAnnouncement().message).toContain('Source-format fields');
   expect(modelStore.getState().present).toBe(model);
@@ -212,14 +217,10 @@ it('does not cut a selection that changes while clipboard writing is pending', a
   const written = deferred<void>();
   clipboard.writeText.mockReturnValueOnce(written.promise);
   const pending = copySelected(true);
-  dispatch(
-    Action.Select({
-      elementIds: [placeholderModel.diagrams[0].elements[1].id],
-    }),
-  );
+  dispatch(Action.Select({ elementIds: [processElement] }));
   written.resolve(undefined);
   await pending;
-  expect(modelStore.getState().present).toBe(placeholderModel);
+  expect(modelStore.getState().present).toBe(canvasModel);
   expect(currentAnnouncement().message).toContain('Nothing was cut');
 });
 
@@ -228,9 +229,11 @@ it('refuses a paste into a document replaced during the clipboard read', async (
   const read = deferred<string>();
   clipboard.readText.mockReturnValueOnce(read.promise);
   const pending = pasteSelected();
-  dispatch(Action.MoveElement({ elementId: actor, offset: { x: 1, y: 0 } }));
+  dispatch(
+    Action.MoveElement({ elementId: actorElement, offset: { x: 1, y: 0 } }),
+  );
   const changed = modelStore.getState().present;
-  read.resolve(marker + saerskrivenYamlCodec.write(placeholderModel).output);
+  read.resolve(marker + saerskrivenYamlCodec.write(canvasModel).output);
   await pending;
   expect(modelStore.getState().present).toBe(changed);
   expect(currentAnnouncement().message).toContain('document changed');
@@ -299,9 +302,7 @@ it('pastes a version 1 selection copied before version 2, its mitigation text as
   clipboard.readText.mockResolvedValueOnce(version1Selection);
   await pasteSelected();
   const after = modelStore.getState().present;
-  expect(after.diagrams[0].elements).toHaveLength(
-    placeholderModel.diagrams[0].elements.length + 1,
-  );
+  expect(after.diagrams[0].elements).toHaveLength(canvasElements + 1);
   const pasted = after.threats.at(-1);
   expect(after.mitigations.at(-1)).toMatchObject({
     prose: 'Callers sign in.',
@@ -317,14 +318,14 @@ it('pastes a version 1 selection copied before version 2, its mitigation text as
 it('links a version 1 selection to identical records the target holds', async () => {
   const clipboard = recordingClipboard();
   const holding = parsedFixture({
-    ...placeholderModel,
+    ...canvasModel,
     mitigations: [
       {
         id: 'threat-copied-mitigation',
         title: '',
         prose: 'Callers sign in.',
         status: 'implemented',
-        threats: [placeholderThreat],
+        threats: [firstThreat],
       },
     ],
     assumptions: [
@@ -332,23 +333,23 @@ it('links a version 1 selection to identical records the target holds', async ()
         id: 'assumption-copied',
         prose: 'Callers sign in.',
         status: 'valid',
-        threats: [placeholderThreat],
+        threats: [firstThreat],
         appliesToModel: false,
       },
     ],
   });
-  openModel(holding);
+  openCanvas([actorElement], holding);
   clipboard.readText.mockResolvedValueOnce(version1Selection);
   await pasteSelected();
   const after = modelStore.getState().present;
   const pasted = after.threats.at(-1)?.id;
   expect(after.mitigations).toEqual([
-    { ...holding.mitigations[0], threats: [placeholderThreat, pasted] },
+    { ...holding.mitigations[0], threats: [firstThreat, pasted] },
   ]);
   expect(after.assumptions).toEqual([
     {
       ...holding.assumptions[0],
-      threats: [placeholderThreat, pasted],
+      threats: [firstThreat, pasted],
     },
   ]);
   expect(announcedCounts()).toEqual({ linked: 2, cloned: 0 });
@@ -380,7 +381,7 @@ it('reports clipboard read refusal and a missing destination diagram', async () 
   expect(currentAnnouncement().message).toContain('read failed');
   modelStore.setState(initialState(emptyModel), true);
   clipboard.readText.mockResolvedValueOnce(
-    marker + saerskrivenYamlCodec.write(placeholderModel).output,
+    marker + saerskrivenYamlCodec.write(canvasModel).output,
   );
   await pasteSelected();
   expect(modelStore.getState().present).toBe(emptyModel);
@@ -396,52 +397,32 @@ it('keeps the clipboard when no selection exists or its IDs no longer resolve', 
   await copySelected();
   expect(clipboard.text()).toBe('existing clipboard');
   expect(clipboard.writeText).not.toHaveBeenCalled();
-  expect(modelStore.getState().present).toBe(placeholderModel);
+  expect(modelStore.getState().present).toBe(canvasModel);
 });
 
 it('refuses oversized copies before overwriting the system clipboard', async () => {
   const clipboard = recordingClipboard();
   const model = {
-    ...placeholderModel,
+    ...canvasModel,
     metadata: {
-      ...placeholderModel.metadata,
+      ...canvasModel.metadata,
       description: 'x'.repeat(readLimits.maxTextBytes + 1),
     },
   };
-  modelStore.setState({ ...initialState(model), selection: [actor] }, true);
+  openCanvas([actorElement], model);
   await copySelected();
   expect(clipboard.writeText).not.toHaveBeenCalled();
   expect(clipboard.text()).toBe('existing clipboard');
   expect(currentAnnouncement().message).toContain('size limit');
 });
 
-const placeholderThreat = placeholderModel.threats[0].id;
-
-const recordedModel = parsedFixture({
-  ...placeholderModel,
-  mitigations: [
-    {
-      id: 'mitigation-checked',
-      title: 'Check records',
-      prose: 'Validate each record.',
-      status: 'proposed',
-      threats: [placeholderThreat],
-    },
-  ],
-  assumptions: [
-    {
-      id: 'assumption-trusted',
-      prose: 'The actor is trusted.',
-      status: 'valid',
-      threats: [placeholderThreat],
-      appliesToModel: true,
-    },
-  ],
+const recordedModelWide = parsedFixture({
+  ...recordedModel,
+  assumptions: recordedModel.assumptions.map((assumption) => ({
+    ...assumption,
+    appliesToModel: true,
+  })),
 });
-
-function openModel(model: Model) {
-  modelStore.setState({ ...initialState(model), selection: [actor] }, true);
-}
 
 function announcedCounts(): { linked: number; cloned: number } {
   const { message } = currentAnnouncement();
@@ -452,20 +433,20 @@ function announcedCounts(): { linked: number; cloned: number } {
 }
 
 it('duplicates a threat linked to the records its original links', () => {
-  openModel(recordedModel);
+  openCanvas([actorElement], recordedModelWide);
   duplicateSelected();
   const after = modelStore.getState().present;
   const duplicate = after.threats.at(-1)?.id;
   expect(after.mitigations).toEqual([
     {
-      ...recordedModel.mitigations[0],
-      threats: [placeholderThreat, duplicate],
+      ...recordedModelWide.mitigations[0],
+      threats: [firstThreat, duplicate],
     },
   ]);
   expect(after.assumptions).toEqual([
     {
-      ...recordedModel.assumptions[0],
-      threats: [placeholderThreat, duplicate],
+      ...recordedModelWide.assumptions[0],
+      threats: [firstThreat, duplicate],
     },
   ]);
   expect(announcedCounts()).toEqual({ linked: 2, cloned: 0 });
@@ -473,11 +454,11 @@ it('duplicates a threat linked to the records its original links', () => {
 
 it('pastes a link to an unchanged record and a clone of an edited one as one undo step', async () => {
   recordingClipboard();
-  openModel(recordedModel);
+  openCanvas([actorElement], recordedModelWide);
   await copySelected();
   dispatch(
     Action.ReplaceMitigation({
-      mitigation: { ...recordedModel.mitigations[0], prose: 'Edited.' },
+      mitigation: { ...recordedModelWide.mitigations[0], prose: 'Edited.' },
     }),
   );
   const edited = modelStore.getState().present;
@@ -487,13 +468,14 @@ it('pastes a link to an unchanged record and a clone of an edited one as one und
   expect(after.mitigations).toEqual([
     edited.mitigations[0],
     expect.objectContaining({
-      prose: 'Validate each record.',
+      title: recordedModelWide.mitigations[0].title,
+      prose: recordedModelWide.mitigations[0].prose,
       threats: [pasted],
     }),
   ]);
   expect(after.mitigations[1].id).not.toBe(edited.mitigations[0].id);
   expect(after.assumptions).toEqual([
-    { ...edited.assumptions[0], threats: [placeholderThreat, pasted] },
+    { ...edited.assumptions[0], threats: [firstThreat, pasted] },
   ]);
   expect(announcedCounts()).toEqual({ linked: 1, cloned: 1 });
   dispatch(Action.Undo());
@@ -502,12 +484,12 @@ it('pastes a link to an unchanged record and a clone of an edited one as one und
 
 it('pastes a clone of a record culled after copying', async () => {
   recordingClipboard();
-  openModel(recordedModel);
+  openCanvas([actorElement], recordedModelWide);
   await copySelected();
   dispatch(
     Action.UnlinkMitigation({
-      mitigationId: mitigationId('mitigation-checked'),
-      threatId: threatId(placeholderThreat),
+      mitigationId: firstMitigation,
+      threatId: firstThreat,
     }),
   );
   expect(modelStore.getState().present.mitigations).toEqual([]);
@@ -515,9 +497,9 @@ it('pastes a clone of a record culled after copying', async () => {
   const after = modelStore.getState().present;
   expect(after.mitigations).toEqual([
     expect.objectContaining({
-      prose: 'Validate each record.',
+      title: recordedModelWide.mitigations[0].title,
       threats: [after.threats.at(-1)?.id],
     }),
   ]);
-  expect(after.mitigations[0].id).not.toBe('mitigation-checked');
+  expect(after.mitigations[0].id).not.toBe(firstMitigation);
 });
