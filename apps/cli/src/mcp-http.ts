@@ -11,6 +11,7 @@ import {
   type McpHttpHandler,
   type McpServerFactory,
 } from '@modelcontextprotocol/server';
+import { reasonOf } from '@saerskriven/mcp';
 import { Either } from 'effect';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import {
@@ -21,7 +22,7 @@ import {
 } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { pipeline } from 'node:stream/promises';
-import { createPrivateFile, reasonOf } from './files.js';
+import { createPrivateFile } from './files.js';
 import {
   lines,
   succeeded,

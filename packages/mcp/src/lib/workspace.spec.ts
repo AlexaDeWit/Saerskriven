@@ -6,6 +6,7 @@ import {
   WorkspaceFailure,
   openWorkspace,
   readModelFile,
+  reasonOf,
   renderWorkspaceFailure,
   type ModelWorkspace,
 } from './workspace.js';
@@ -127,5 +128,11 @@ describe('a path a tool call names', () => {
       'The file "unclaimed.yaml" was not read.',
       'No format claimed the file. Saerskriven tried threat-dragon, saerskriven-yaml.',
     ]);
+  });
+});
+
+describe('the reason a thrown value gives', () => {
+  it('reports a thrown value that is not an Error as it prints', () => {
+    expect(reasonOf('the disk went away')).toEqual('the disk went away');
   });
 });

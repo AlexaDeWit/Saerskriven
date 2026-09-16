@@ -28,7 +28,7 @@ const nodeRequireBanner = [
 // tree carries, so their provenance is the nixpkgs revision flake.lock pins
 // (CODING.md, Dependencies and versions).
 // Named one at a time rather than copied wholesale: liberation_ttf ships
-// twelve faces, src/pdf.ts loads every .ttf it finds beside the bundle, and a
+// twelve faces, src/assets.ts loads every .ttf it finds beside the bundle, and a
 // face that arrives there moves the PDF the render golden fixes. Mono is
 // carried in the regular face alone, so strong and emphasised inline code is
 // synthesised by the typesetter rather than drawn: the other three faces are

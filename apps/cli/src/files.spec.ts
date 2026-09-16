@@ -8,12 +8,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  createPrivateFile,
-  readTextFile,
-  reasonOf,
-  writeFile,
-} from './files.js';
+import { createPrivateFile, readTextFile, writeFile } from './files.js';
 
 const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-files-'));
 
@@ -53,9 +48,5 @@ describe('text files at the edge', () => {
       ),
     );
     expect(existsSync(path)).toBe(false);
-  });
-
-  it('reports a thrown value that is not an Error as it prints', () => {
-    expect(reasonOf('the disk went away')).toEqual('the disk went away');
   });
 });

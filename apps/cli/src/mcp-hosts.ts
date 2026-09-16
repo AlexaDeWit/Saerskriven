@@ -5,6 +5,7 @@ import {
 } from '@saerskriven/formats';
 import {
   WriteFailure,
+  reasonOf,
   renderWriteFailure,
   serialized,
   serverName,
@@ -13,7 +14,6 @@ import { Data, Either } from 'effect';
 import { join, resolve } from 'node:path';
 import { parse as parseToml, stringify as stringifyToml } from 'smol-toml';
 import { z } from 'zod';
-import { reasonOf } from './files.js';
 
 /** The agent hosts `saer mcp install` writes a registration for. */
 export const hostNameSchema = z.enum(
@@ -39,11 +39,8 @@ export type HostPlatform = 'macos' | 'windows' | 'other';
 
 /**
  * What resolving a host's file needs: the directory a project file is
- * written under, and where this user's own configuration lives. `home` is
- * whatever the environment names, which is nothing where it names neither
- * variable, and only a user-level scope reads it. A spec hands over a
- * temporary directory for both, so no test reads or writes the machine's own
- * configuration.
+ * written under, and where this user's own configuration lives. Only a
+ * user-level scope reads `home`.
  */
 export type InstallEnvironment = {
   readonly directory: string;
@@ -164,18 +161,9 @@ export const hostRegistrations: Record<HostName, HostRegistration> = {
 };
 
 /**
- * Why a registration was not written. `NoProjectForm` and `Undocumented` are
- * about the host: one keeps nothing a project commits, and the other keeps a
- * user-level file whose path its documentation does not name on this
- * platform. `NoHome` is an environment that names no home directory for a
- * user-level file to sit under. `TooLarge` and `Malformed` are the file: one
- * past the shared read bound, and one no parser will read, and neither is
- * replaced with a document that would drop what the read could not take.
- * `Occupied` and `Changed` are the file moving under this run, which the
- * write refuses rather than replaces, and `DanglingLink` is a symbolic link
- * at the target pointing at nothing, which the write will not turn into a
- * regular file. `Unwritten` carries what the writer said for everything
- * else, which is the system's own reason.
+ * Why a registration was not written. `Occupied` and `Changed` are the file
+ * moving under this run, and `DanglingLink` a symbolic link to nothing, which
+ * the write will not turn into a regular file.
  */
 export type InstallFailure = Data.TaggedEnum<{
   NoProjectForm: { readonly host: HostName };
