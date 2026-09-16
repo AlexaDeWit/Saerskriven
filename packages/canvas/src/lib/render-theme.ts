@@ -1,10 +1,3 @@
-import {
-  assumptionStatusSchema,
-  mitigationStatusSchema,
-  severitySchema,
-  threatFlagSchema,
-  threatStatusSchema,
-} from '@saerskriven/model';
 import { z } from 'zod';
 import { lightPalette, strokeWidths, type Colour } from './tokens.js';
 
@@ -116,51 +109,6 @@ export const defaultRenderTheme: RenderTheme = {
     borderWidth: strokeWidths.badgeRing,
   },
 };
-
-const semanticBase = z.object({});
-
-/**
- * Semantic badge identity stays separate from its readable label. Each kind
- * names the theme section its colour comes from.
- */
-export const registerBadgeSchema = z.discriminatedUnion('kind', [
-  semanticBase.extend({ kind: z.literal('severity'), value: severitySchema }),
-  semanticBase.extend({ kind: z.literal('status'), value: threatStatusSchema }),
-  semanticBase.extend({
-    kind: z.literal('mitigation'),
-    value: mitigationStatusSchema,
-  }),
-  semanticBase.extend({
-    kind: z.literal('assumption'),
-    value: assumptionStatusSchema,
-  }),
-  semanticBase.extend({ kind: z.literal('flag'), value: threatFlagSchema }),
-]);
-
-/** The semantic colour assigned to one generated label. */
-export type RegisterBadge = z.infer<typeof registerBadgeSchema>;
-
-/** Every badge kind, which is also the theme section holding its colours. */
-export const registerBadgeKinds = registerBadgeSchema.options.map(
-  (option) => option.shape.kind.value,
-);
-
-/** Resolves a semantic role without reading its display text. */
-export function badgeColour(theme: RenderTheme, badge: RegisterBadge): Colour {
-  if (badge.kind === 'severity') {
-    return theme.severity[badge.value];
-  }
-  if (badge.kind === 'status') {
-    return theme.status[badge.value];
-  }
-  if (badge.kind === 'mitigation') {
-    return theme.mitigation[badge.value];
-  }
-  if (badge.kind === 'assumption') {
-    return theme.assumption[badge.value];
-  }
-  return theme.flag[badge.value];
-}
 
 /** Automatic lettering follows the semantic tone on outlined badges. */
 export function badgeTextColour(theme: RenderTheme, tone: Colour): Colour {

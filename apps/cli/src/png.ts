@@ -1,4 +1,4 @@
-import type { RenderTheme } from '@saerskriven/render';
+import type { RenderTheme } from '@saerskriven/canvas';
 import type { Diagram, Model } from '@saerskriven/model';
 import {
   drawingFace,

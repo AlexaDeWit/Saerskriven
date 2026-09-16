@@ -3,7 +3,6 @@ import {
   canvasClassNames,
   contrastRatio,
   defaultRenderTheme,
-  registerBadgeKinds,
   severityToneClass,
 } from '@saerskriven/canvas';
 import { Either } from 'effect';
@@ -17,6 +16,7 @@ import {
 } from '@saerskriven/model';
 import { ecluseModel } from '../goldens.fixtures.js';
 import { renderRegister } from './markdown-register.js';
+import { registerBadgeKinds } from './register-badges.js';
 import { registerDocument } from './register-tree.js';
 import { registerStylesheet } from './register-stylesheet.js';
 import { renderSvg } from './svg-document.js';

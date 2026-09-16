@@ -22,7 +22,6 @@ import {
   type ThreatStatus,
 } from '@saerskriven/model';
 import { Either } from 'effect';
-import type { RegisterBadge } from '@saerskriven/canvas';
 import type { ListItem, Root, RootContent, Strong } from 'mdast';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -30,6 +29,7 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { renderRegister } from './markdown-register.js';
+import type { RegisterBadge } from './register-badges.js';
 import { registerDocument } from './register-tree.js';
 
 const repositoryRoot = join(import.meta.dirname, '../../../..');

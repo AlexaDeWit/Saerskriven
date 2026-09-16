@@ -1,3 +1,4 @@
+import { defaultRenderTheme } from '@saerskriven/canvas';
 import {
   escapedForTerminal,
   parseYaml,
@@ -6,7 +7,6 @@ import {
   renderReadFailure,
 } from '@saerskriven/formats';
 import {
-  defaultRenderTheme,
   readThemeOverrides,
   withBundledFonts,
   type ThemeRead,

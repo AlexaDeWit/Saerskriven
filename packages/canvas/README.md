@@ -80,7 +80,10 @@ for a theme, and the studio injects `themedCanvasStylesheet`, the same sheet
 with every colour read from a custom property. `wrappedTextStyles` pairs each
 run of text with its class and font size, `severityToneClass` names each
 severity's tone, and `boundaryStrokeWidth` is the one weight a boundary is
-drawn and bounded with.
+drawn and bounded with. [`render-theme.ts`](src/lib/render-theme.ts):
+`renderThemeSchema` and `defaultRenderTheme` are the theme headless output is
+drawn with, and `badgeTextColour` resolves a badge's lettering under it.
+[Render themes](../../docs/render-themes.md) describes overriding it.
 
 [`tokens.ts`](src/lib/tokens.ts) decides every colour, size and step of
 spacing, for the diagram and the studio's chrome: `lightPalette`,

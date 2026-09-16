@@ -1,5 +1,6 @@
 import { Either } from 'effect';
 import { PdfFailure } from './pdf-failures.js';
+import { promisePerBytes } from './promise-per-bytes.js';
 
 export { PdfFailure } from './pdf-failures.js';
 
@@ -17,7 +18,8 @@ const debugEscape = /\\(.)/gu;
 
 const runsOfSpace = /\s+/gu;
 
-const starts = new WeakMap<Uint8Array, Promise<void>>();
+const started = promisePerBytes<void>();
+
 let firstStart: Promise<void> | undefined;
 
 type CompilerModule = typeof import('@myriaddreamin/typst-ts-web-compiler');
@@ -33,8 +35,13 @@ export type PdfAssets = {
 };
 
 /**
- * Compiles Typst source with caller-owned assets. The asynchronous module
- * start supports browsers, and a refusal returns as {@link PdfFailure}.
+ * Compiles Typst source with caller-owned assets, or refuses with
+ * {@link PdfFailure}. The compiler gets no file or package access. The module
+ * starts asynchronously, once per process, which keeps a browser within its
+ * bound on synchronous compilation, and a later `wasm` waits on that first
+ * start rather than replacing it. Each call frees its compiler afterwards. A
+ * thrown diagnostic keeps its messages and hints, and one this does not
+ * recognize is carried whole.
  */
 export async function compilePdf(
   source: string,
@@ -63,7 +70,7 @@ export async function compilePdf(
 
 async function compilerWith(assets: PdfAssets) {
   const compiler = await import('@myriaddreamin/typst-ts-web-compiler');
-  await started(assets.wasm, compiler.default);
+  await started(assets.wasm, () => moduleStart(assets.wasm, compiler.default));
   const builder = new compiler.TypstCompilerBuilder();
   builder.set_dummy_access_model();
   for (const font of assets.fonts) {
@@ -72,14 +79,10 @@ async function compilerWith(assets: PdfAssets) {
   return builder.build();
 }
 
-function started(
+function moduleStart(
   wasm: Uint8Array,
   initialise: CompilerModule['default'],
 ): Promise<void> {
-  const known = starts.get(wasm);
-  if (known !== undefined) {
-    return known;
-  }
   firstStart ??= initialise({ module_or_path: wasm }).then(
     () => undefined,
     (error: unknown) => {
@@ -87,12 +90,7 @@ function started(
       throw error;
     },
   );
-  const attempt = firstStart.catch((error: unknown) => {
-    starts.delete(wasm);
-    throw error;
-  });
-  starts.set(wasm, attempt);
-  return attempt;
+  return firstStart;
 }
 
 function refusalOf(error: unknown): readonly string[] {

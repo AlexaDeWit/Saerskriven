@@ -1,4 +1,3 @@
-import type { RegisterBadge } from '@saerskriven/canvas';
 import type {
   AssumptionStatus,
   CustomCategory,
@@ -8,6 +7,7 @@ import type {
   ThreatFlag,
   ThreatStatus,
 } from '@saerskriven/model';
+import type { RegisterBadge } from './register-badges.js';
 
 const severityLabels = {
   low: 'Low',
@@ -103,7 +103,7 @@ const categoryLabels = {
   },
 } satisfies CategoryLabels;
 
-/** The display label of a badge, from a table the compiler checks for totality. */
+/** The display label of a badge, from tables the compiler checks are total. */
 export function badgeLabel(badge: RegisterBadge): string {
   if (badge.kind === 'severity') {
     return severityLabels[badge.value];
@@ -120,7 +120,7 @@ export function badgeLabel(badge: RegisterBadge): string {
   return flagLabel(badge.value);
 }
 
-/** The display label of a flag a threat raises, shared by every surface that names one. */
+/** The display label of a flag, for every surface that names one. */
 export function flagLabel(flag: ThreatFlag): string {
   return flagLabels[flag];
 }

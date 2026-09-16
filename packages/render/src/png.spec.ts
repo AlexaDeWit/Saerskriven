@@ -1,4 +1,5 @@
-import { defaultRenderTheme, readThemeOverrides } from './lib/theme.js';
+import { defaultRenderTheme } from '@saerskriven/canvas';
+import { readThemeOverrides } from './lib/theme.js';
 import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { readFileSync, writeFileSync } from 'node:fs';

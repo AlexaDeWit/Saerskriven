@@ -1,7 +1,10 @@
 import { renderThemeSchema } from '@saerskriven/canvas';
 import { z } from 'zod';
 
-/** The starting level belongs to the first generated heading that is included. */
+/**
+ * Heading controls shared by every register writer: whether the title heading
+ * is written, and the level of the first heading that is.
+ */
 export const registerOptionsSchema = z.object({
   title: z.boolean().optional(),
   headingLevel: z
@@ -16,8 +19,7 @@ export const registerOptionsSchema = z.object({
     .optional(),
 });
 
-/** Markdown appearance controls do not alter the register's semantic content. */
-export const markdownOptionsSchema = registerOptionsSchema.extend({
+const markdownOptionsSchema = registerOptionsSchema.extend({
   theme: renderThemeSchema.optional(),
   styled: z.boolean().optional(),
   stylesheet: z.boolean().optional(),
@@ -26,5 +28,9 @@ export const markdownOptionsSchema = registerOptionsSchema.extend({
 /** Heading controls shared by portable and styled registers. */
 export type RegisterOptions = z.infer<typeof registerOptionsSchema>;
 
-/** Styled Markdown can carry its scoped stylesheet or use the host's own. */
+/**
+ * The Markdown register's options: the heading controls, and for styled
+ * output the theme and whether the scoped stylesheet is written. None of them
+ * changes what the register says.
+ */
 export type MarkdownOptions = z.infer<typeof markdownOptionsSchema>;

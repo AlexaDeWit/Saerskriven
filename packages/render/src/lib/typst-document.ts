@@ -1,12 +1,12 @@
 import {
   badgeTextColour,
-  badgeColour,
   defaultRenderTheme,
   type RenderTheme,
   type UnplacedEndpoint,
 } from '@saerskriven/canvas';
 import type { Model } from '@saerskriven/model';
 import type { RootContent } from 'mdast';
+import { badgeColour } from './register-badges.js';
 import { registerDocument } from './register-tree.js';
 import { renderSvg } from './svg-document.js';
 
@@ -20,7 +20,20 @@ export type TypstDocument = {
   readonly unplaced: readonly UnplacedEndpoint[];
 };
 
-/** Renders every diagram and the shared register as one Typst document. */
+/**
+ * The whole model as the source of one Typst document: every diagram on a
+ * landscape page, embedded as the bytes {@link renderSvg} writes, then the
+ * register. The source references no file, font, package or URL and carries
+ * no date, so a compiler with no access writes the same PDF twice. It names
+ * the theme's font families without carrying them, and a compiler lacking
+ * one substitutes in the drawings as well as the text.
+ *
+ * No value out of the model is written as markup: each is a string literal
+ * shown in markup position, so every `#` in the output is this package's.
+ * Every mdast node type is walked, checked by the compiler. Raw HTML is
+ * written as its text, and a link or image as its text with its address
+ * beside it, never live.
+ */
 export function renderTypst(
   model: Model,
   theme: RenderTheme = defaultRenderTheme,

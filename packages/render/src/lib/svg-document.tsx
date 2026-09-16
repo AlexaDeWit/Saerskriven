@@ -14,7 +14,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 const margin = 8;
 
-/** Standalone SVG bytes, dimensions, and undrawn endpoints. */
+/**
+ * A standalone SVG document, its size in user units, and the flow endpoints
+ * the layout could not place, which the markup leaves out.
+ */
 export type SvgDocument = {
   readonly svg: string;
   readonly width: number;
@@ -22,7 +25,16 @@ export type SvgDocument = {
   readonly unplaced: readonly UnplacedEndpoint[];
 };
 
-/** Draws a diagram with the resolved theme and the shared canvas primitives. */
+/**
+ * One diagram as a standalone SVG document, drawn with the canvas primitives:
+ * a `title` carrying the diagram's title, the themed background, a `style`
+ * element resolving the theme to values, and the glyphs in painting order,
+ * ending in a newline. The viewBox is the canvas's drawn bounds grown by 8 on
+ * every side. The document references nothing outside itself, and its bytes
+ * depend on the model alone, painting order included. The title goes through
+ * `xmlSafeText` as the glyphs' text does, since a model built in memory can
+ * carry characters its parse would refuse.
+ */
 export function renderSvg(
   diagram: Diagram,
   model: Model,

@@ -1,11 +1,13 @@
 import {
-  badgeColour,
   defaultRenderTheme,
-  registerBadgeKinds,
-  registerBadgeSchema,
   renderThemeSchema,
   type RenderTheme,
-} from './render-theme.js';
+} from '@saerskriven/canvas';
+import {
+  badgeColour,
+  registerBadgeKinds,
+  registerBadgeSchema,
+} from './register-badges.js';
 
 const badgeRoles = registerBadgeKinds.flatMap((kind) =>
   Object.keys(defaultRenderTheme[kind]).map((value) => ({ kind, value })),

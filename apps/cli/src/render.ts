@@ -1,9 +1,9 @@
+import type { RenderTheme } from '@saerskriven/canvas';
 import { escapedForTerminal } from '@saerskriven/formats';
 import { diagramsNamed, type Diagram, type Model } from '@saerskriven/model';
 import {
   renderRegister,
   registerOptionsSchema,
-  type RenderTheme,
   renderSvg,
   renderTypst,
   renderUnplacedWarning,

@@ -90,13 +90,9 @@ export {
   type FlowEndSide,
 } from './lib/react-flow.js';
 export {
-  badgeColour,
   badgeTextColour,
   defaultRenderTheme,
-  registerBadgeKinds,
-  registerBadgeSchema,
   renderThemeSchema,
-  type RegisterBadge,
   type RenderTheme,
 } from './lib/render-theme.js';
 export {
