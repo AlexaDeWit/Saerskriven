@@ -4,6 +4,7 @@ import { modelSchema } from './model.js';
 import {
   elementIdsAcross,
   elementIdsIn,
+  elementsById,
   endpointViolationsOf,
 } from './references.js';
 import { relationshipIssues } from './relationships.js';
@@ -292,9 +293,7 @@ function referenceViolations(model: StructuralModel): Violation[] {
 
 function relationshipViolations(model: StructuralModel): Violation[] {
   return model.diagrams.flatMap((diagram, diagramIndex) => {
-    const known = new Map(
-      diagram.elements.map((element) => [element.id, element]),
-    );
+    const known = elementsById(diagram.elements);
     return diagram.elements.flatMap((element, elementIndex) =>
       relationshipIssues(element, known).map((issue) => ({
         path: [

@@ -1,6 +1,11 @@
 import { Either } from 'effect';
 import { linkAssumption } from './assumption-operations.js';
 import type { Assumption } from './assumptions.js';
+import {
+  diagramIndexOf,
+  locatedDiagram,
+  type UnknownElementFailure,
+} from './diagram-edits.js';
 import { translatedElement } from './element-geometry.js';
 import type { Element } from './elements.js';
 import type { Point } from './geometry.js';
@@ -9,7 +14,7 @@ import { linkMitigation } from './mitigation-operations.js';
 import type { Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
-import { elementsAcross } from './references.js';
+import { elementsAcross, elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
 
 /** The failures {@link selectionFragment} can produce. */
@@ -47,15 +52,8 @@ export function selectionFragment(
   diagramId: DiagramId,
   selection: readonly ElementId[],
 ): Either.Either<Model, SelectionFragmentFailure> {
-  const diagram = model.diagrams.find(
-    (candidate) => candidate.id === diagramId,
-  );
-  if (diagram === undefined) {
-    return Either.left(OperationFailure.UnknownDiagram({ diagramId }));
-  }
-  return Either.flatMap(
-    closedSelection(diagram.elements, selection),
-    (included) => {
+  return Either.flatMap(locatedDiagram(model, diagramId), (diagram) =>
+    Either.flatMap(closedSelection(diagram.elements, selection), (included) => {
       const elements = diagram.elements
         .filter((element) => included.has(element.id))
         .map((element) => restrictRelationships(element, included));
@@ -75,7 +73,7 @@ export function selectionFragment(
           (item) => ({ ...item, appliesToModel: false }),
         ),
       });
-    },
+    }),
   );
 }
 
@@ -133,8 +131,9 @@ export function insertFragment(
   diagramId: DiagramId,
   fragment: Model,
 ): Either.Either<Model, InsertFragmentFailure> {
-  if (!model.diagrams.some((diagram) => diagram.id === diagramId)) {
-    return Either.left(OperationFailure.UnknownDiagram({ diagramId }));
+  const target = diagramIndexOf(model, diagramId);
+  if (Either.isLeft(target)) {
+    return Either.left(target.left);
   }
   const elements = elementsAcross(fragment.diagrams);
   if (elements.length === 0) {
@@ -209,11 +208,8 @@ export function fragmentRecordCounts(
 function closedSelection(
   elements: readonly Element[],
   selection: readonly ElementId[],
-): Either.Either<
-  Set<ElementId>,
-  Extract<OperationFailure, { _tag: 'UnknownElement' }>
-> {
-  const known = new Map(elements.map((element) => [element.id, element]));
+): Either.Either<Set<ElementId>, UnknownElementFailure> {
+  const known = elementsById(elements);
   const included = new Set(selection);
   for (const id of included) {
     const element = known.get(id);

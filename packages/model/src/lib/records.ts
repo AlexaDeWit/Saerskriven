@@ -27,6 +27,18 @@ type UnknownThreatFailure = Extract<
   { _tag: 'UnknownThreat' }
 >;
 
+/** The failure for a mitigation id the register does not hold. */
+export type UnknownMitigationFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownMitigation' }
+>;
+
+/** The failure for an assumption id the register does not hold. */
+export type UnknownAssumptionFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownAssumption' }
+>;
+
 type RegisterFailures = {
   readonly unknown: OperationFailure;
   readonly duplicate: OperationFailure;
@@ -56,7 +68,7 @@ const threatLinked = (record: { readonly threats: readonly string[] }) =>
 export const mitigationRegister: RecordRegister<
   'mitigations',
   {
-    unknown: Extract<OperationFailure, { _tag: 'UnknownMitigation' }>;
+    unknown: UnknownMitigationFailure;
     duplicate: Extract<OperationFailure, { _tag: 'DuplicateMitigationId' }>;
     unreferenced: Extract<OperationFailure, { _tag: 'RecordWithoutThreat' }>;
   }
@@ -77,7 +89,7 @@ export const mitigationRegister: RecordRegister<
 export const assumptionRegister: RecordRegister<
   'assumptions',
   {
-    unknown: Extract<OperationFailure, { _tag: 'UnknownAssumption' }>;
+    unknown: UnknownAssumptionFailure;
     duplicate: Extract<OperationFailure, { _tag: 'DuplicateAssumptionId' }>;
     unreferenced: Extract<
       OperationFailure,

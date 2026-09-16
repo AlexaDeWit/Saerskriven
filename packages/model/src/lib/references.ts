@@ -101,6 +101,13 @@ export function elementIdsIn(diagram: Diagram): Set<string> {
   return new Set(diagram.elements.map((element) => element.id));
 }
 
+/** The given elements keyed by id. */
+export function elementsById(
+  elements: readonly Element[],
+): Map<ElementId, Element> {
+  return new Map(elements.map((element) => [element.id, element]));
+}
+
 /** Every element the given diagrams own, in diagram order. */
 export function elementsAcross(diagrams: readonly Diagram[]): Element[] {
   return diagrams.flatMap((diagram) => diagram.elements);

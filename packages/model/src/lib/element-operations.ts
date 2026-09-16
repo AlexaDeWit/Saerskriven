@@ -19,7 +19,7 @@ import type { DiagramId, ElementId } from './ids.js';
 import { sameItems } from './lists.js';
 import { OperationFailure } from './operation-failures.js';
 import { toParseIssues, type Model } from './parse.js';
-import { elementIdsAcross, elementIdsIn } from './references.js';
+import { elementIdsAcross, elementIdsIn, elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
 import { firstRefusedCharacter, isEmptyName } from './text.js';
 
@@ -89,12 +89,7 @@ export function addElement(
         flowEndpointFailure(element, diagram) ??
         invalidRelationships(
           element,
-          new Map(
-            [...diagram.elements, element].map((candidate) => [
-              candidate.id,
-              candidate,
-            ]),
-          ),
+          elementsById([...diagram.elements, element]),
         );
       if (failure !== undefined) {
         return Either.left(failure);
@@ -280,12 +275,7 @@ export function setElementProperties(
       }
       const failure = invalidRelationships(
         next.data,
-        new Map(
-          model.diagrams[located.diagramIndex].elements.map((element) => [
-            element.id,
-            element,
-          ]),
-        ),
+        elementsById(model.diagrams[located.diagramIndex].elements),
       );
       return failure === undefined
         ? Either.right(withElement(model, located.diagramIndex, next.data))

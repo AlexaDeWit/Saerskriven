@@ -13,12 +13,8 @@ import {
   withId,
   withoutId,
   withRecordStatus,
+  type UnknownAssumptionFailure,
 } from './records.js';
-
-type UnknownAssumptionFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownAssumption' }
->;
 
 type AssumptionRecordFailure = Extract<
   OperationFailure,

@@ -263,8 +263,9 @@ const diagramSchema = z.object({
 });
 
 /**
- * A Threat Dragon v2 file, whole, on the terms the package README states. An
- * undeclared key is dropped, and `@saerskriven/formats` reports each one.
+ * A Threat Dragon v2 file, whole. Nothing is defaulted and nothing is
+ * transformed, so a key the file omits stays omitted. An undeclared key is
+ * dropped, and `@saerskriven/formats` reports each one.
  *
  * A threat's `status`, `severity`, `type`, and `modelType` are plain text
  * because Threat Dragon stores each label in the author's own locale, and

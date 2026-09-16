@@ -22,8 +22,8 @@ failure, and zod stays behind the parse boundary on the terms
 Every string the model holds is text of a defined character set: an allowlist
 of the letters, marks, numbers, punctuation, symbols and space separators
 Unicode defines, tab, line feed and carriage return, and the format characters
-a script owns. What it does not name, the bidirectional controls among them, is
-refused. [`SCHEMA.md`](SCHEMA.md) states the set in full.
+a script owns. [`SCHEMA.md`](SCHEMA.md) states the set in full, and what it
+refuses.
 
 Which format characters that rule reaches depends on the Unicode data the
 runtime carries, so

@@ -1,5 +1,6 @@
 import { Either } from 'effect';
 import { elementId } from '../fixtures.js';
+import { addElement } from './element-operations.js';
 import {
   reconnectFlow,
   setFlowDirection,
@@ -16,7 +17,6 @@ import {
   withNote,
   writeFlow,
 } from './operations.fixtures.js';
-import { addElement } from './element-operations.js';
 
 describe('setFlowWaypoints', () => {
   const before = modelOf(addElement(base, mainDiagram, writeFlow));

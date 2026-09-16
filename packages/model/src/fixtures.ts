@@ -1,5 +1,4 @@
 import { Either } from 'effect';
-import type { z } from 'zod';
 import {
   assumptionIdSchema,
   diagramIdSchema,
@@ -21,27 +20,25 @@ export {
   securityPropertyFixtures,
 } from './lib/security.fixtures.js';
 
-const parsing =
-  <Schema extends z.ZodType>(schema: Schema) =>
-  (value: string): z.infer<Schema> =>
-    schema.parse(value);
-
 /** Parses a spec's literal string into a branded element id. */
-export const elementId: (value: string) => ElementId = parsing(elementIdSchema);
+export const elementId = (value: string): ElementId =>
+  elementIdSchema.parse(value);
 
 /** Parses a spec's literal string into a branded diagram id. */
-export const diagramId: (value: string) => DiagramId = parsing(diagramIdSchema);
+export const diagramId = (value: string): DiagramId =>
+  diagramIdSchema.parse(value);
 
 /** Parses a spec's literal string into a branded threat id. */
-export const threatId: (value: string) => ThreatId = parsing(threatIdSchema);
+export const threatId = (value: string): ThreatId =>
+  threatIdSchema.parse(value);
 
 /** Parses a spec's literal string into a branded mitigation id. */
-export const mitigationId: (value: string) => MitigationId =
-  parsing(mitigationIdSchema);
+export const mitigationId = (value: string): MitigationId =>
+  mitigationIdSchema.parse(value);
 
 /** Parses a spec's literal string into a branded assumption id. */
-export const assumptionId: (value: string) => AssumptionId =
-  parsing(assumptionIdSchema);
+export const assumptionId = (value: string): AssumptionId =>
+  assumptionIdSchema.parse(value);
 
 /** A broken fixture throws with the model's path-bearing issues. */
 export function parsedFixture(input: unknown): Model {

@@ -3,13 +3,14 @@ import {
   diagramIndexOf,
   flowEndpointFailure,
   invalidRelationships,
+  locatedDiagram,
   withDiagram,
 } from './diagram-edits.js';
 import type { DiagramId } from './ids.js';
 import type { Diagram } from './model.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
-import { elementIdsAcross } from './references.js';
+import { elementIdsAcross, elementsById } from './references.js';
 import { firstRefusedCharacter, isEmptyName } from './text.js';
 
 /** The failures {@link addDiagram} can produce. */
@@ -62,9 +63,7 @@ export function addDiagram(
     }
     own.add(element.id);
   }
-  const known = new Map(
-    diagram.elements.map((element) => [element.id, element]),
-  );
+  const known = elementsById(diagram.elements);
   for (const element of diagram.elements) {
     const failure =
       flowEndpointFailure(element, diagram) ??
@@ -103,24 +102,23 @@ export function removeDiagram(
   model: Model,
   diagramId: DiagramId,
 ): Either.Either<Model, RemoveDiagramFailure> {
-  const diagram = model.diagrams.find(
-    (candidate) => candidate.id === diagramId,
+  return Either.flatMap(
+    locatedDiagram(model, diagramId),
+    (diagram): Either.Either<Model, RemoveDiagramFailure> =>
+      diagram.elements.length > 0
+        ? Either.left(
+            OperationFailure.DiagramNotEmpty({
+              diagramId,
+              elements: diagram.elements.length,
+            }),
+          )
+        : Either.right({
+            ...model,
+            diagrams: model.diagrams.filter(
+              (candidate) => candidate.id !== diagramId,
+            ),
+          }),
   );
-  if (diagram === undefined) {
-    return Either.left(OperationFailure.UnknownDiagram({ diagramId }));
-  }
-  if (diagram.elements.length > 0) {
-    return Either.left(
-      OperationFailure.DiagramNotEmpty({
-        diagramId,
-        elements: diagram.elements.length,
-      }),
-    );
-  }
-  return Either.right({
-    ...model,
-    diagrams: model.diagrams.filter((candidate) => candidate.id !== diagramId),
-  });
 }
 
 function refusedTitle(

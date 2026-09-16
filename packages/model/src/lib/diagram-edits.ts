@@ -13,6 +13,12 @@ export type UnknownElementFailure = Extract<
   { _tag: 'UnknownElement' }
 >;
 
+/** The failure for a diagram id the model does not hold. */
+export type UnknownDiagramFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownDiagram' }
+>;
+
 /** An element and the index of the diagram holding it. */
 export type Located<Held extends Element> = {
   readonly diagramIndex: number;
@@ -35,14 +41,24 @@ export function locatedElement(
   return Either.left(OperationFailure.UnknownElement({ elementId }));
 }
 
+/** The diagram `diagramId` names. */
+export function locatedDiagram(
+  model: Model,
+  diagramId: DiagramId,
+): Either.Either<Diagram, UnknownDiagramFailure> {
+  const diagram = model.diagrams.find(
+    (candidate) => candidate.id === diagramId,
+  );
+  return diagram === undefined
+    ? Either.left(OperationFailure.UnknownDiagram({ diagramId }))
+    : Either.right(diagram);
+}
+
 /** The index of the diagram `diagramId` names. */
 export function diagramIndexOf(
   model: Model,
   diagramId: DiagramId,
-): Either.Either<
-  number,
-  Extract<OperationFailure, { _tag: 'UnknownDiagram' }>
-> {
+): Either.Either<number, UnknownDiagramFailure> {
   const diagramIndex = model.diagrams.findIndex(
     (diagram) => diagram.id === diagramId,
   );

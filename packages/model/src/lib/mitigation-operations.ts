@@ -12,12 +12,8 @@ import {
   withId,
   withoutId,
   withRecordStatus,
+  type UnknownMitigationFailure,
 } from './records.js';
-
-type UnknownMitigationFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownMitigation' }
->;
 
 type MitigationRecordFailure = Extract<
   OperationFailure,
