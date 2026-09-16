@@ -1,8 +1,15 @@
-import { Either } from 'effect';
-import { elementId, parsedFixture, threatId } from '../fixtures.js';
-import { emptyRegisterFixture, threatRegisterFixture } from './fixtures.js';
+import {
+  elementId,
+  emptyRegisterModel,
+  parsedFixture,
+  registerModel,
+  threatId,
+  threatIn,
+} from '../fixtures.js';
+import { threatRegisterFixture } from './fixtures.js';
 import { OperationFailure } from './operation-failures.js';
-import { parseModel, type Model } from './parse.js';
+import { errorOf, modelOf, operationContract } from './operations.fixtures.js';
+import type { Model } from './parse.js';
 import {
   addThreat,
   attachThreat,
@@ -11,35 +18,12 @@ import {
   removeThreat,
   replaceThreat,
 } from './threat-operations.js';
-import { threatSchema, type Threat } from './threats.js';
-
-const base = parsedFixture(threatRegisterFixture);
-const emptyRegister = parsedFixture(emptyRegisterFixture);
+import { threatSchema } from './threats.js';
 
 const shopper = elementId('element-shopper');
 const ledger = elementId('element-ledger');
 const spoofShopper = threatId('threat-spoof-shopper');
 const floodCheckout = threatId('threat-flood-checkout');
-
-type OperationOutcome = Either.Either<Model, OperationFailure>;
-
-const modelOf = (result: OperationOutcome): Model => {
-  if (Either.isLeft(result)) {
-    throw new Error(`Expected the operation to succeed: ${result.left._tag}`);
-  }
-  return result.right;
-};
-
-const errorOf = (result: OperationOutcome): OperationFailure | undefined =>
-  Either.isLeft(result) ? result.left : undefined;
-
-const threatIn = (model: Model, id: string): Threat => {
-  const threat = model.threats.find((candidate) => candidate.id === id);
-  if (!threat) {
-    throw new Error(`Threat ${id} is missing from the model.`);
-  }
-  return threat;
-};
 
 const threatIds = (model: Model): string[] =>
   model.threats.map((threat) => threat.id);
@@ -61,7 +45,7 @@ const replayInput = {
 const replay = threatSchema.parse(replayInput);
 
 const editedFlood = threatSchema.parse({
-  ...threatIn(base, 'threat-flood-checkout'),
+  ...threatIn(registerModel, 'threat-flood-checkout'),
   title: 'Checkout flooding from a botnet',
   severity: 'high',
   status: 'mitigated',
@@ -70,14 +54,14 @@ const editedFlood = threatSchema.parse({
 
 describe('addThreat', () => {
   it('appends the threat to the register', () => {
-    const next = modelOf(addThreat(base, replay));
-    expect(threatIds(next)).toEqual([...threatIds(base), replay.id]);
+    const next = modelOf(addThreat(registerModel, replay));
+    expect(threatIds(next)).toEqual([...threatIds(registerModel), replay.id]);
   });
 
   it('accepts a threat linked to no element', () => {
     const unlinked = threatSchema.parse({ ...replayInput, elements: [] });
     expect(
-      threatIn(modelOf(addThreat(base, unlinked)), replay.id).elements,
+      threatIn(modelOf(addThreat(registerModel, unlinked)), replay.id).elements,
     ).toEqual([]);
   });
 
@@ -86,29 +70,31 @@ describe('addThreat', () => {
       ...replayInput,
       id: 'threat-spoof-shopper',
     });
-    expect(errorOf(addThreat(base, clash))).toEqual(
+    expect(errorOf(addThreat(registerModel, clash))).toEqual(
       OperationFailure.DuplicateThreatId({ threatId: spoofShopper }),
     );
   });
 
   it('advances the last issued number to the added threat', () => {
-    expect(modelOf(addThreat(base, replay)).lastIssuedThreatNumber).toBe(13);
+    expect(
+      modelOf(addThreat(registerModel, replay)).lastIssuedThreatNumber,
+    ).toBe(13);
   });
 
   it('fails on the number last issued', () => {
     const spent = threatSchema.parse({ ...replayInput, number: 12 });
-    expect(errorOf(addThreat(base, spent))).toEqual(
+    expect(errorOf(addThreat(registerModel, spent))).toEqual(
       OperationFailure.ReusedThreatNumber({ number: 12 }),
     );
   });
 
   it('fails on a number below the last issued, held or not', () => {
     const held = threatSchema.parse({ ...replayInput, number: 5 });
-    expect(errorOf(addThreat(base, held))).toEqual(
+    expect(errorOf(addThreat(registerModel, held))).toEqual(
       OperationFailure.ReusedThreatNumber({ number: 5 }),
     );
     const gap = threatSchema.parse({ ...replayInput, number: 11 });
-    expect(errorOf(addThreat(base, gap))).toEqual(
+    expect(errorOf(addThreat(registerModel, gap))).toEqual(
       OperationFailure.ReusedThreatNumber({ number: 11 }),
     );
   });
@@ -118,7 +104,7 @@ describe('addThreat', () => {
       ...replayInput,
       elements: ['element-ghost'],
     });
-    expect(errorOf(addThreat(base, dangling))).toEqual(
+    expect(errorOf(addThreat(registerModel, dangling))).toEqual(
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
       }),
@@ -128,19 +114,22 @@ describe('addThreat', () => {
 
 describe('removeThreat', () => {
   it('removes the threat from the register', () => {
-    const next = modelOf(removeThreat(base, spoofShopper));
+    const next = modelOf(removeThreat(registerModel, spoofShopper));
     expect(threatIds(next)).not.toContain('threat-spoof-shopper');
   });
 
   it('unlinks the removed threat from a record that still links another', () => {
-    const next = modelOf(removeThreat(base, spoofShopper));
+    const next = modelOf(removeThreat(registerModel, spoofShopper));
     expect(next.mitigations).toEqual([
-      { ...base.mitigations[0], threats: [threatId('threat-tamper-payment')] },
+      {
+        ...registerModel.mitigations[0],
+        threats: [threatId('threat-tamper-payment')],
+      },
     ]);
   });
 
   it('culls every record whose only reference it was', () => {
-    const next = modelOf(removeThreat(base, spoofShopper));
+    const next = modelOf(removeThreat(registerModel, spoofShopper));
     expect(next.assumptions).toEqual([]);
     const again = modelOf(
       removeThreat(next, threatId('threat-tamper-payment')),
@@ -171,21 +160,25 @@ describe('removeThreat', () => {
   });
 
   it('leaves the surviving numbers and the last issued number alone', () => {
-    const next = modelOf(removeThreat(base, spoofShopper));
+    const next = modelOf(removeThreat(registerModel, spoofShopper));
     expect(threatNumbers(next)).toEqual([5, 9, 4, 7]);
-    expect(next.lastIssuedThreatNumber).toBe(base.lastIssuedThreatNumber);
+    expect(next.lastIssuedThreatNumber).toBe(
+      registerModel.lastIssuedThreatNumber,
+    );
   });
 
   it('never lets the removed number be issued again', () => {
-    const issued = modelOf(addThreat(base, replay));
+    const issued = modelOf(addThreat(registerModel, replay));
     const removed = modelOf(removeThreat(issued, replay.id));
-    expect(threatIds(removed)).toEqual(threatIds(base));
+    expect(threatIds(removed)).toEqual(threatIds(registerModel));
     expect(nextThreatNumber(issued)).toBe(14);
     expect(nextThreatNumber(removed)).toBe(14);
   });
 
   it('fails on a threat the register does not hold', () => {
-    expect(errorOf(removeThreat(base, threatId('threat-ghost')))).toEqual(
+    expect(
+      errorOf(removeThreat(registerModel, threatId('threat-ghost'))),
+    ).toEqual(
       OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
     );
   });
@@ -193,26 +186,26 @@ describe('removeThreat', () => {
 
 describe('replaceThreat', () => {
   it('swaps the whole record in, keeping its place in the register', () => {
-    const next = modelOf(replaceThreat(base, editedFlood));
+    const next = modelOf(replaceThreat(registerModel, editedFlood));
     expect(next.threats[3]).toEqual(editedFlood);
-    expect(threatIds(next)).toEqual(threatIds(base));
+    expect(threatIds(next)).toEqual(threatIds(registerModel));
   });
 
   it('leaves the last issued number where it was', () => {
     expect(
-      modelOf(replaceThreat(base, editedFlood)).lastIssuedThreatNumber,
-    ).toBe(base.lastIssuedThreatNumber);
+      modelOf(replaceThreat(registerModel, editedFlood)).lastIssuedThreatNumber,
+    ).toBe(registerModel.lastIssuedThreatNumber);
   });
 
   it('fails on an id the register does not hold', () => {
-    expect(errorOf(replaceThreat(base, replay))).toEqual(
+    expect(errorOf(replaceThreat(registerModel, replay))).toEqual(
       OperationFailure.UnknownThreat({ threatId: replay.id }),
     );
   });
 
   it('fails on a changed number', () => {
     const renumbered = threatSchema.parse({ ...editedFlood, number: 13 });
-    expect(errorOf(replaceThreat(base, renumbered))).toEqual(
+    expect(errorOf(replaceThreat(registerModel, renumbered))).toEqual(
       OperationFailure.ChangedThreatNumber({
         threatId: floodCheckout,
         number: 13,
@@ -225,7 +218,7 @@ describe('replaceThreat', () => {
       ...editedFlood,
       elements: ['element-ghost'],
     });
-    expect(errorOf(replaceThreat(base, dangling))).toEqual(
+    expect(errorOf(replaceThreat(registerModel, dangling))).toEqual(
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
       }),
@@ -235,7 +228,7 @@ describe('replaceThreat', () => {
 
 describe('attachThreat', () => {
   it('links an element of any diagram to the threat', () => {
-    const next = modelOf(attachThreat(base, floodCheckout, ledger));
+    const next = modelOf(attachThreat(registerModel, floodCheckout, ledger));
     expect(threatIn(next, 'threat-flood-checkout').elements).toEqual([
       'element-checkout',
       'element-ledger',
@@ -243,12 +236,14 @@ describe('attachThreat', () => {
   });
 
   it('changes nothing when the element is already linked', () => {
-    expect(modelOf(attachThreat(base, spoofShopper, shopper))).toEqual(base);
+    expect(modelOf(attachThreat(registerModel, spoofShopper, shopper))).toEqual(
+      registerModel,
+    );
   });
 
   it('fails on an unknown threat', () => {
     expect(
-      errorOf(attachThreat(base, threatId('threat-ghost'), shopper)),
+      errorOf(attachThreat(registerModel, threatId('threat-ghost'), shopper)),
     ).toEqual(
       OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
     );
@@ -256,7 +251,9 @@ describe('attachThreat', () => {
 
   it('fails on an unknown element', () => {
     expect(
-      errorOf(attachThreat(base, spoofShopper, elementId('element-ghost'))),
+      errorOf(
+        attachThreat(registerModel, spoofShopper, elementId('element-ghost')),
+      ),
     ).toEqual(
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
@@ -267,17 +264,19 @@ describe('attachThreat', () => {
 
 describe('detachThreat', () => {
   it('unlinks the element from the threat', () => {
-    const next = modelOf(detachThreat(base, spoofShopper, shopper));
+    const next = modelOf(detachThreat(registerModel, spoofShopper, shopper));
     expect(threatIn(next, 'threat-spoof-shopper').elements).toEqual([]);
   });
 
   it('changes nothing when the element is not linked', () => {
-    expect(modelOf(detachThreat(base, spoofShopper, ledger))).toEqual(base);
+    expect(modelOf(detachThreat(registerModel, spoofShopper, ledger))).toEqual(
+      registerModel,
+    );
   });
 
   it('fails on an unknown threat', () => {
     expect(
-      errorOf(detachThreat(base, threatId('threat-ghost'), shopper)),
+      errorOf(detachThreat(registerModel, threatId('threat-ghost'), shopper)),
     ).toEqual(
       OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
     );
@@ -285,7 +284,9 @@ describe('detachThreat', () => {
 
   it('fails on an unknown element', () => {
     expect(
-      errorOf(detachThreat(base, spoofShopper, elementId('element-ghost'))),
+      errorOf(
+        detachThreat(registerModel, spoofShopper, elementId('element-ghost')),
+      ),
     ).toEqual(
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
@@ -296,40 +297,36 @@ describe('detachThreat', () => {
 
 describe('nextThreatNumber', () => {
   it('is one above the number last issued, not one above the highest held', () => {
-    expect(threatNumbers(base)).toEqual([2, 5, 9, 4, 7]);
-    expect(nextThreatNumber(base)).toBe(13);
+    expect(threatNumbers(registerModel)).toEqual([2, 5, 9, 4, 7]);
+    expect(nextThreatNumber(registerModel)).toBe(13);
   });
 
   it('is 1 for a register that has issued nothing', () => {
-    expect(nextThreatNumber(emptyRegister)).toBe(1);
+    expect(nextThreatNumber(emptyRegisterModel)).toBe(1);
   });
 });
 
-describe('threat operation purity', () => {
-  it('leaves the input model untouched', () => {
-    const pristine = structuredClone(base);
-    addThreat(base, replay);
-    removeThreat(base, spoofShopper);
-    replaceThreat(base, editedFlood);
-    attachThreat(base, floodCheckout, ledger);
-    detachThreat(base, spoofShopper, shopper);
-    nextThreatNumber(base);
-    expect(base).toEqual(pristine);
+describe('threat operations', () => {
+  operationContract({
+    addThreat: {
+      input: registerModel,
+      run: (model) => addThreat(model, replay),
+    },
+    removeThreat: {
+      input: registerModel,
+      run: (model) => removeThreat(model, spoofShopper),
+    },
+    replaceThreat: {
+      input: registerModel,
+      run: (model) => replaceThreat(model, editedFlood),
+    },
+    attachThreat: {
+      input: registerModel,
+      run: (model) => attachThreat(model, floodCheckout, ledger),
+    },
+    detachThreat: {
+      input: registerModel,
+      run: (model) => detachThreat(model, spoofShopper, shopper),
+    },
   });
-});
-
-describe('threat operation outputs re-parse through parseModel', () => {
-  const outputs: [string, Model][] = [
-    ['addThreat', modelOf(addThreat(base, replay))],
-    ['removeThreat', modelOf(removeThreat(base, spoofShopper))],
-    ['replaceThreat', modelOf(replaceThreat(base, editedFlood))],
-    ['attachThreat', modelOf(attachThreat(base, floodCheckout, ledger))],
-    ['detachThreat', modelOf(detachThreat(base, spoofShopper, shopper))],
-  ];
-
-  for (const [operation, model] of outputs) {
-    it(`${operation} returns a model parseModel accepts`, () => {
-      expect(Either.isRight(parseModel(model))).toBe(true);
-    });
-  }
 });

@@ -1,4 +1,12 @@
 import { Either } from 'effect';
+import { readFileSync, realpathSync } from 'node:fs';
+import { join } from 'node:path';
+import type { Element, Flow } from './lib/elements.js';
+import {
+  emptyRegisterFixture,
+  threatRegisterFixture,
+  validModelFixture,
+} from './lib/fixtures.js';
 import {
   assumptionIdSchema,
   diagramIdSchema,
@@ -12,6 +20,7 @@ import {
   type ThreatId,
 } from './lib/ids.js';
 import { parseModel, type Model } from './lib/parse.js';
+import type { Threat } from './lib/threats.js';
 
 export { validModelFixture } from './lib/fixtures.js';
 export { modelInputArbitrary } from './lib/model-input.fixtures.js';
@@ -52,3 +61,67 @@ export function parsedFixture(input: unknown): Model {
       ),
   );
 }
+
+/** {@link validModelFixture}, parsed. */
+export const validModel: Model = parsedFixture(validModelFixture);
+
+/** {@link threatRegisterFixture}, parsed. */
+export const registerModel: Model = parsedFixture(threatRegisterFixture);
+
+/** {@link emptyRegisterFixture}, parsed. */
+export const emptyRegisterModel: Model = parsedFixture(emptyRegisterFixture);
+
+/**
+ * A character the model's text rule refuses, invisible where a literal would
+ * sit in a spec.
+ */
+export const softHyphen = '\u00AD';
+
+/**
+ * The checkout root in its resolved form, which is the form the MCP server's
+ * confinement check compares against.
+ */
+export const repositoryRoot = realpathSync(
+  join(import.meta.dirname, '../../..'),
+);
+
+/** A path under the committed `test-data` directory. */
+export const testDataPath = (...segments: readonly string[]): string =>
+  join(repositoryRoot, 'test-data', ...segments);
+
+/**
+ * Reads and parses a committed model under `test-data`. The read happens at
+ * the call, so importing this entry reads no file. A consumer lists the file
+ * among its nx test inputs.
+ */
+export const committedModel = (name: string): Model =>
+  parsedFixture(JSON.parse(readFileSync(testDataPath(name), 'utf8')));
+
+/** The element of any diagram under the id, throwing where none is. */
+export const elementIn = (model: Model, id: string): Element => {
+  const element = model.diagrams
+    .flatMap((diagram) => diagram.elements)
+    .find((candidate) => candidate.id === id);
+  if (!element) {
+    throw new Error(`Element ${id} is missing from the model.`);
+  }
+  return element;
+};
+
+/** The flow under the id, throwing where the element is missing or no flow. */
+export const flowIn = (model: Model, id: string): Flow => {
+  const element = elementIn(model, id);
+  if (element.kind !== 'flow') {
+    throw new Error(`Element ${id} is not a flow.`);
+  }
+  return element;
+};
+
+/** The threat under the id, throwing where the register holds none. */
+export const threatIn = (model: Model, id: string): Threat => {
+  const threat = model.threats.find((candidate) => candidate.id === id);
+  if (!threat) {
+    throw new Error(`Threat ${id} is missing from the model.`);
+  }
+  return threat;
+};

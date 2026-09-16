@@ -1,15 +1,17 @@
-import { elementId, parsedFixture } from '../fixtures.js';
+import {
+  elementId,
+  emptyRegisterModel,
+  parsedFixture,
+  registerModel,
+} from '../fixtures.js';
 import {
   elementsWithoutThreats,
   openThreatsBySeverity,
   threatCountByElement,
 } from './coverage.js';
 import type { Element } from './elements.js';
-import { emptyRegisterFixture, threatRegisterFixture } from './fixtures.js';
+import { threatRegisterFixture } from './fixtures.js';
 import type { Threat } from './threats.js';
-
-const base = parsedFixture(threatRegisterFixture);
-const emptyRegister = parsedFixture(emptyRegisterFixture);
 
 const idsOfElements = (elements: Element[]): string[] =>
   elements.map((element) => element.id);
@@ -19,20 +21,20 @@ const idsOfThreats = (threats: Threat[]): string[] =>
 
 describe('elementsWithoutThreats', () => {
   it('returns the elements no threat references, across every diagram', () => {
-    expect(idsOfElements(elementsWithoutThreats(base))).toEqual([
+    expect(idsOfElements(elementsWithoutThreats(registerModel))).toEqual([
       'element-ledger',
     ]);
   });
 
   it('returns whole element records', () => {
-    expect(elementsWithoutThreats(base)[0]).toMatchObject({
+    expect(elementsWithoutThreats(registerModel)[0]).toMatchObject({
       kind: 'process',
       name: 'Ledger',
     });
   });
 
   it('returns every element when the register is empty', () => {
-    expect(idsOfElements(elementsWithoutThreats(emptyRegister))).toEqual([
+    expect(idsOfElements(elementsWithoutThreats(emptyRegisterModel))).toEqual([
       'element-shopper',
       'element-checkout',
       'element-pay-flow',
@@ -44,7 +46,7 @@ describe('elementsWithoutThreats', () => {
 
 describe('openThreatsBySeverity', () => {
   it('groups the open threats under a key for every severity', () => {
-    const grouped = openThreatsBySeverity(base);
+    const grouped = openThreatsBySeverity(registerModel);
     expect(idsOfThreats(grouped.low)).toEqual(['threat-flood-checkout']);
     expect(idsOfThreats(grouped.medium)).toEqual([]);
     expect(idsOfThreats(grouped.high)).toEqual(['threat-spoof-shopper']);
@@ -53,7 +55,7 @@ describe('openThreatsBySeverity', () => {
   });
 
   it('returns whole threat records', () => {
-    expect(openThreatsBySeverity(base).high[0]).toMatchObject({
+    expect(openThreatsBySeverity(registerModel).high[0]).toMatchObject({
       number: 2,
       title: 'Shopper impersonation',
       status: 'open',
@@ -63,7 +65,7 @@ describe('openThreatsBySeverity', () => {
 
 describe('threatCountByElement', () => {
   it('counts the threats on every element of the model', () => {
-    expect([...threatCountByElement(base)]).toEqual([
+    expect([...threatCountByElement(registerModel)]).toEqual([
       ['element-shopper', 1],
       ['element-checkout', 2],
       ['element-pay-flow', 1],

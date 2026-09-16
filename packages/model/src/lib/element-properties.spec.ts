@@ -1,72 +1,37 @@
 import { Either } from 'effect';
-import { elementId, parsedFixture, validModelFixture } from '../fixtures.js';
-import type { ElementProperties } from './element-properties.js';
+import {
+  elementId,
+  parsedFixture,
+  securityModelFixture,
+  validModel,
+  validModelFixture,
+} from '../fixtures.js';
 import { setElementProperties } from './element-operations.js';
 import { parseModel } from './parse.js';
 
-const model = parsedFixture(validModelFixture);
-const edits: { id: string; properties: ElementProperties }[] = [
-  {
-    id: 'element-customer',
-    properties: { kind: 'actor', providesAuthentication: false },
-  },
-  {
-    id: 'element-api',
-    properties: {
-      kind: 'process',
-      handlesCardPayment: true,
-      handlesGoodsOrServices: false,
-      isWebApplication: true,
-      privilegeLevel: '',
-    },
-  },
-  {
-    id: 'element-db',
-    properties: {
-      kind: 'store',
-      isALog: false,
-      isEncrypted: true,
-      isSigned: false,
-      storesCredentials: true,
-      storesInventory: false,
-    },
-  },
-  {
-    id: 'element-order-flow',
-    properties: {
-      kind: 'flow',
-      protocol: '',
-      isEncrypted: true,
-      isPublicNetwork: false,
-      trustBoundaryIds: [elementId('element-perimeter')],
-    },
-  },
-  {
-    id: 'element-perimeter',
-    properties: {
-      kind: 'trust-boundary',
-      containedElements: [elementId('element-api')],
-      crossingFlows: [],
-    },
-  },
-];
+const edits = parsedFixture(securityModelFixture).diagrams[0].elements.flatMap(
+  (properties) =>
+    properties.kind === 'text' ? [] : [{ id: properties.id, properties }],
+);
 
 describe('setElementProperties', () => {
   it.each(edits)(
     'edits $properties.kind facts without changing identity, geometry or register data',
     ({ id, properties }) => {
-      const before = model.diagrams[0].elements.find(
+      const before = validModel.diagrams[0].elements.find(
         (element) => element.id === id,
       );
       const result = Either.getOrThrow(
-        setElementProperties(model, elementId(id), properties),
+        setElementProperties(validModel, elementId(id), properties),
       );
       const after = result.diagrams[0].elements.find(
         (element) => element.id === id,
       );
       expect(after).toMatchObject({ ...before, ...properties });
-      expect(result.threats).toBe(model.threats);
-      expect(result.lastIssuedThreatNumber).toBe(model.lastIssuedThreatNumber);
+      expect(result.threats).toBe(validModel.threats);
+      expect(result.lastIssuedThreatNumber).toBe(
+        validModel.lastIssuedThreatNumber,
+      );
       expect(Either.isRight(parseModel(result))).toBe(true);
       expect(
         Either.getOrThrow(
@@ -79,7 +44,7 @@ describe('setElementProperties', () => {
   it('keeps omitted fields, clears explicit undefined, and returns the original model for an unchanged patch', () => {
     const id = elementId('element-order-flow');
     const recorded = Either.getOrThrow(
-      setElementProperties(model, id, {
+      setElementProperties(validModel, id, {
         kind: 'flow',
         protocol: '',
         isEncrypted: false,
@@ -120,16 +85,16 @@ describe('setElementProperties', () => {
 
   it('rejects unknown elements, a mismatched kind and text the model cannot store', () => {
     expect(
-      setElementProperties(model, elementId('missing'), { kind: 'actor' }),
+      setElementProperties(validModel, elementId('missing'), { kind: 'actor' }),
     ).toMatchObject({ left: { _tag: 'UnknownElement' } });
     expect(
-      setElementProperties(model, elementId('element-api'), {
+      setElementProperties(validModel, elementId('element-api'), {
         kind: 'actor',
         providesAuthentication: true,
       }),
     ).toMatchObject({ left: { _tag: 'InvalidElementProperties' } });
     expect(
-      setElementProperties(model, elementId('element-api'), {
+      setElementProperties(validModel, elementId('element-api'), {
         kind: 'process',
         privilegeLevel: '\u202E',
       }),
@@ -144,24 +109,24 @@ describe('setElementProperties', () => {
   it('rejects missing, wrong-kind and self references without changing the supplied model', () => {
     for (const reference of ['missing', 'element-db', 'element-order-flow']) {
       expect(
-        setElementProperties(model, elementId('element-order-flow'), {
+        setElementProperties(validModel, elementId('element-order-flow'), {
           kind: 'flow',
           trustBoundaryIds: [elementId(reference)],
         }),
       ).toMatchObject({ left: { _tag: 'InvalidElementRelationship' } });
     }
     expect(
-      setElementProperties(model, elementId('element-perimeter'), {
+      setElementProperties(validModel, elementId('element-perimeter'), {
         kind: 'trust-boundary',
         containedElements: [elementId('element-perimeter')],
       }),
     ).toMatchObject({ left: { _tag: 'InvalidElementRelationship' } });
-    expect(model).toStrictEqual(parsedFixture(validModelFixture));
+    expect(validModel).toStrictEqual(parsedFixture(validModelFixture));
   });
 
   it('preserves relationship order and repeated assertions without adding reciprocal links', () => {
     const result = Either.getOrThrow(
-      setElementProperties(model, elementId('element-perimeter'), {
+      setElementProperties(validModel, elementId('element-perimeter'), {
         kind: 'trust-boundary',
         crossingFlows: [
           elementId('element-order-flow'),
