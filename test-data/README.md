@@ -18,24 +18,20 @@ input. Fixture changes do not invalidate lint or build targets.
 ## Who writes each file, and who reads it
 
 Cached tests only read committed snapshots, and
-[`CODING.md`](../CODING.md#build-targets) says how to update them. The
-producers are `@saerskriven/formats` and `@saerskriven/render`. Review and
-commit the snapshot diff with the source change.
+[`CODING.md`](../CODING.md#build-targets) says how to update them. The one
+producer is `@saerskriven/render`. Review and commit the snapshot diff with the
+source change.
 
-| File                                                | Written by         | Read by                                                 |
-| --------------------------------------------------- | ------------------ | ------------------------------------------------------- |
-| `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`, `apps/studio-e2e` |
-| `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`, `apps/studio-e2e`                           |
-| `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                           |
-| `render/saerskriven-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                              |
-| `render/saerskriven-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                              |
-| `render/saerskriven.register.snapshot.md`           | `packages/render`  | no other suite                                          |
-| `render/ecluse.snapshot.png`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                           |
-| `render/saerskriven-read-and-render.snapshot.png`   | `packages/render`  | `apps/cli`                                              |
-| `render/saerskriven-agent-and-desktop.snapshot.png` | `packages/render`  | no other suite                                          |
-| `render/every-glyph.snapshot.png`                   | `packages/render`  | no other suite                                          |
-| `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                          |
-| `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                       |
+| File                                          | Written by        | Read by        |
+| --------------------------------------------- | ----------------- | -------------- |
+| `render/every-glyph.snapshot.svg`             | `packages/render` | no other suite |
+| `render/every-glyph.snapshot.png`             | `packages/render` | no other suite |
+| `render/two-diagrams-storefront.snapshot.svg` | `packages/render` | no other suite |
+| `render/two-diagrams-storefront.snapshot.png` | `packages/render` | no other suite |
+| `render/two-diagrams-fulfilment.snapshot.svg` | `packages/render` | no other suite |
+| `render/two-diagrams-fulfilment.snapshot.png` | `packages/render` | no other suite |
+| `render/two-diagrams.snapshot.typ`            | `packages/render` | no other suite |
+| `render/two-diagrams.register.snapshot.md`    | `packages/render` | no other suite |
 
 The `.snapshot.png` rasters are written only where the rasterizer module
 [`SAERSKRIVEN_RESVG_WASM`](../docs/build.md#the-svg-rasterizer) names has been
@@ -44,13 +40,25 @@ built.
 The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
 is the expected PDF digest for the CLI and studio browser suites,
 `every-glyph.model.json` is read by `packages/canvas`, `packages/render` and
-`apps/studio-e2e`, and the two feature-complete files and the frozen release
-files are read by `packages/formats`.
+`apps/studio-e2e`, `two-diagrams.model.json` by `packages/canvas` and
+`packages/render`, and the two feature-complete files and the frozen release
+files by `packages/formats`.
 
-Two files are no longer written by any target and wait for their last readers
-to move off them: `ecluse.model.json`, read by `packages/canvas`,
-`packages/render` and `apps/studio-e2e`, and `saerskriven/ecluse.yaml`, read by
-`packages/mcp`, `apps/cli` and `apps/studio-e2e`. Neither is regenerated.
+These files are no longer written by any target and wait for their last
+readers to move off them. None is regenerated.
+
+| File                                                | Read by                                       |
+| --------------------------------------------------- | --------------------------------------------- |
+| `ecluse.model.json`                                 | `apps/studio-e2e`                             |
+| `saerskriven.model.json`                            | `apps/studio-e2e`                             |
+| `saerskriven/ecluse.yaml`                           | `packages/mcp`, `apps/cli`, `apps/studio-e2e` |
+| `render/ecluse.snapshot.svg`                        | `apps/cli`, `apps/studio-e2e`                 |
+| `render/ecluse.snapshot.png`                        | `apps/cli`, `apps/studio-e2e`                 |
+| `render/ecluse.snapshot.typ`                        | `apps/studio-e2e`                             |
+| `render/ecluse.register.snapshot.md`                | `apps/cli`, `apps/studio-e2e`                 |
+| `render/saerskriven-read-and-render.snapshot.svg`   | `apps/cli`                                    |
+| `render/saerskriven-read-and-render.snapshot.png`   | `apps/cli`                                    |
+| `render/saerskriven-agent-and-desktop.snapshot.svg` | `apps/cli`                                    |
 
 ## `ecluse.json`
 
@@ -126,30 +134,12 @@ envelope is the shape v0.4.0's `recoverySnapshot` stores. It is committed data,
 never regenerated. The studio recovery spec restores it through the v1 to v2
 migration.
 
-## `ecluse.model.json`
-
-The internal model of `ecluse.json`. No target writes it. Canvas, render and
-studio-e2e tests consume it as data.
-
 ## `saerskriven.model.json`
 
-The internal model decoded from
-[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md).
-`packages/formats` produces it for the canvas and render suites, which the
-layer matrix keeps from importing a codec. Its `nativeFixtures` entry in
-`saerskriven-yaml.fixtures.ts` names the output path.
-
-## `render/ecluse.register.snapshot.md`
-
-The Markdown register from `ecluse.model.json`: an overview of 29 threats,
-followed by a section for each. It covers the full register structure,
-escaping, and prose handling.
-
-## `render/saerskriven.register.snapshot.md`
-
-The register from `saerskriven.model.json`. It adds a custom methodology, a
-CIA category, two unattached threats, and a mitigation record whose prose holds a
-Markdown list to the cases covered by Écluse.
+The internal model of
+[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) as
+`packages/formats` last wrote it. No target writes it now, and it is not kept
+in step with the YAML.
 
 ## `every-glyph.model.json`
 
@@ -159,26 +149,49 @@ naming another flow. Its open threats exercise paired badges and a neutral
 badge. A flow's open threat resting on an invalidated assumption draws the
 flag mark under a count, and a boundary curve named only by a `mitigated`
 threat with a proposed mitigation draws the flag-only mark. Canvas and render
-tests parse it and keep separate drawing snapshots.
+tests parse it, and render draws its goldens.
 
-## `render/ecluse.snapshot.typ`
+## `two-diagrams.model.json`
 
-The Typst document from `ecluse.model.json`: every diagram on a landscape
-page, followed by the register on portrait pages. It embeds
-`ecluse.snapshot.svg` verbatim, so a drawing change updates both snapshots.
+A hand-written model of a small shop on two diagrams, `storefront` and
+`fulfilment`, built for drawing. Between them it has every element kind, a
+box and a curve boundary, pairs of flows sharing one line, flows converging on
+one process, and flow names long enough to crowd, so the canvas label
+placement checks have something to place. Its register has threats over four
+methodologies, one custom, a threat on no element, mitigations and assumptions
+in every status, assumptions that apply to the model, and both flags. The
+canvas suite lays both diagrams out, and render draws its goldens from it.
+`committedDiagrams` on `@saerskriven/model/fixtures` lists the diagrams both
+suites draw.
+
+## `render/two-diagrams.register.snapshot.md`
+
+The Markdown register from `two-diagrams.model.json`: the overview table, the
+section for the assumptions that apply to the model, and a section per threat.
+
+## `render/two-diagrams.snapshot.typ`
+
+The Typst document from `two-diagrams.model.json`: each diagram on a landscape
+page, followed by the register on portrait pages. It embeds the SVG drawings
+verbatim, so a drawing change updates both snapshots.
 
 ## `render/*.snapshot.svg`
 
-Standalone SVG documents from `packages/render`:
+Standalone SVG documents from `packages/render`, one per entry of
+`committedDiagrams`:
 
-- `ecluse.snapshot.svg`: the `High Level` diagram of `ecluse.model.json`.
 - `every-glyph.snapshot.svg`: the diagram in `every-glyph.model.json`.
-- `saerskriven-read-and-render.snapshot.svg` and
-  `saerskriven-agent-and-desktop.snapshot.svg`: the two diagrams of
-  `saerskriven.model.json`, covering a model with multiple diagrams.
+- `two-diagrams-storefront.snapshot.svg` and
+  `two-diagrams-fulfilment.snapshot.svg`: the two diagrams of
+  `two-diagrams.model.json`. A model of more than one diagram names each
+  golden with the diagram id after the file's stem.
 
 Each has a `.snapshot.png` beside it, the same drawing rasterized, committed
 as a picture so a reviewer can open it.
+
+The `ecluse` and `saerskriven-*` renders beside them are the leftovers listed
+above, drawn by an earlier render suite from `ecluse.model.json` and
+`saerskriven.model.json`.
 
 ## `threat-dragon/`
 
