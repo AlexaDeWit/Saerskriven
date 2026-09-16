@@ -1,10 +1,10 @@
-import { threatOf } from '@saerskriven/model/fixtures';
-import { badgeAnchor, badgeBox } from './badges.js';
+import type { Model } from '@saerskriven/model';
 import {
-  ecluseModel,
-  everyGlyphModel,
-  saerskrivenModel,
-} from './canvas.fixtures.js';
+  committedDiagrams,
+  committedModel,
+  threatOf,
+} from '@saerskriven/model/fixtures';
+import { badgeAnchor, badgeBox } from './badges.js';
 import {
   boxesOverlap,
   boxMeetsCircle,
@@ -93,22 +93,16 @@ export const openThreatOn = (element: string, number = 1) =>
     elements: [element],
   });
 
-/** The Écluse diagram laid out. */
-export const ecluseLayout = layoutOf(ecluseModel);
-
-/** Every committed diagram laid out, named for a test title. */
+/**
+ * Every committed diagram laid out, named for a test title, beside the model
+ * and the index of the diagram it lays out.
+ */
 export const scenes: readonly {
   readonly name: string;
+  readonly model: Model;
+  readonly diagram: number;
   readonly layout: CanvasLayout;
-}[] = [
-  { name: 'the Écluse diagram', layout: ecluseLayout },
-  { name: 'every glyph', layout: layoutOf(everyGlyphModel) },
-  {
-    name: 'the Saerskriven read and render diagram',
-    layout: layoutOf(saerskrivenModel, 0),
-  },
-  {
-    name: 'the Saerskriven agent and desktop diagram',
-    layout: layoutOf(saerskrivenModel, 1),
-  },
-];
+}[] = committedDiagrams.map(({ name, file, diagram }) => {
+  const model = committedModel(file);
+  return { name, model, diagram, layout: layoutOf(model, diagram) };
+});

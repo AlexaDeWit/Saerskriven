@@ -15,6 +15,7 @@ import {
   nodeNamed,
 } from './canvas.fixtures.js';
 import { handlePositions } from './handles.js';
+import { scenes } from './label-placement.fixtures.js';
 import { reanchoredFlow } from './layout-move.js';
 import { layoutOf, twoBoxDiagram } from './layout.fixtures.js';
 import type { CanvasNode, CanvasNodeKind } from './layout.js';
@@ -29,6 +30,10 @@ const boxKinds = {
   'boundary-curve': true,
 } as const satisfies Record<CanvasNodeKind, true>;
 
+const unplacedFlows: Readonly<Record<string, readonly string[]>> = {
+  'every glyph': ['el-replay'],
+};
+
 const curveLayout = (waypoints: readonly Point[]) =>
   layoutOf(modelWith({ elements: [curveBoundary('el-curve', waypoints)] }));
 
@@ -42,6 +47,18 @@ describe('layoutDiagram', () => {
     );
     expect(everyGlyphLayout.edges).toHaveLength(3);
   });
+
+  it.each(scenes)(
+    'draws or reports every element of $name',
+    ({ name, model, diagram, layout }) => {
+      expect(layout.unplaced.map((end) => end.flow)).toEqual(
+        unplacedFlows[name] ?? [],
+      );
+      expect(
+        layout.nodes.length + layout.edges.length + layout.unplaced.length,
+      ).toBe(model.diagrams[diagram].elements.length);
+    },
+  );
 
   it('takes a node position and size from the model and nowhere else', () => {
     const element = elementIn(everyGlyphModel, 'el-api');

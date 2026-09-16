@@ -96,12 +96,14 @@ reaching an SVG attribute goes through `svgNumber`
 ([`numbers.ts`](src/lib/numbers.ts)), so one model gives one set of bytes on
 every run and platform.
 
-The suite pins that with a golden SVG per scene in `scene.spec.tsx`: the
-Écluse model, `test-data/every-glyph.model.json`, and each diagram of
-[Saerskriven's own threat model](../../threat-modelling/README.md). The
-every-glyph model lives under `test-data` because `packages/render` draws it
-too and cannot import this package's spec fixtures, which no entry point
-exports.
+The bytes are pinned once, by the SVG goldens of
+[`packages/render`](../render/README.md#the-goldens), which draws these glyphs.
+The diagrams this suite lays out whole, for its element count and label
+placement checks, are `committedDiagrams` on `@saerskriven/model/fixtures`:
+`test-data/every-glyph.model.json` and the two diagrams of
+`test-data/two-diagrams.model.json`. They live under `test-data` because
+`packages/render` draws them too and cannot import this package's spec
+fixtures, which no entry point exports.
 
 ## React Flow
 

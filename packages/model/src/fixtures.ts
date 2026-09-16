@@ -122,6 +122,30 @@ export const testDataPath = (...segments: readonly string[]): string =>
 export const committedModel = (name: string): Model =>
   parsedFixture(JSON.parse(readFileSync(testDataPath(name), 'utf8')));
 
+/**
+ * Every diagram the canvas and render suites draw from committed data: a test
+ * title, the model's file under `test-data` as {@link committedModel} takes
+ * it, and the diagram's index in that model. It names files and reads none,
+ * so each suite loads the models itself and lists the files among its inputs.
+ */
+export const committedDiagrams: readonly {
+  readonly name: string;
+  readonly file: string;
+  readonly diagram: number;
+}[] = [
+  { name: 'every glyph', file: 'every-glyph.model.json', diagram: 0 },
+  {
+    name: 'the storefront diagram',
+    file: 'two-diagrams.model.json',
+    diagram: 0,
+  },
+  {
+    name: 'the fulfilment diagram',
+    file: 'two-diagrams.model.json',
+    diagram: 1,
+  },
+];
+
 /** The element of any diagram under the id, throwing where none is. */
 export const elementIn = (model: Model, id: string): Element => {
   const element = model.diagrams

@@ -115,9 +115,11 @@ writes and reads back ([`packages/formats`](../formats/README.md)).
 `@saerskriven/model/fixtures` is the one home for the fixture helpers every
 suite in the workspace shares: the id parsers (`elementId`, `diagramId`,
 `threatId`, `mitigationId`, `assumptionId`), `modelInputArbitrary`, the
-fast-check generator of `parseModel` input, and `parsedFixture`, which throws
+fast-check generator of `parseModel` input, `parsedFixture`, which throws
 where a fixture document stops parsing, since that is a broken suite rather
-than a case under test. The subpath resolves to source and stays out of the
+than a case under test, `committedModel`, which reads a model under
+`test-data`, and `committedDiagrams`, the diagrams the canvas and render suites
+draw from those files. The subpath resolves to source and stays out of the
 library build. Who may import it is a workspace rule, stated in
 [`CODING.md`](../../CODING.md#tests).
 

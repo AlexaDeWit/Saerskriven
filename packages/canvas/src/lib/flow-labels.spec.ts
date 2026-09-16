@@ -7,7 +7,7 @@ import {
   modelWith,
 } from '@saerskriven/model/fixtures';
 import { badgeBox } from './badges.js';
-import { ecluseModel, everyGlyphModel } from './canvas.fixtures.js';
+import { everyGlyphLayout, everyGlyphModel } from './canvas.fixtures.js';
 import { flowLabelPlacements, type FlowGeometry } from './flow-labels.js';
 import {
   boxesOverlap,
@@ -24,7 +24,6 @@ import {
   asSolid,
   circleOf,
   drawnSolids,
-  ecluseLayout,
   elementBadges,
   isEnclosure,
   openThreatOn,
@@ -417,12 +416,6 @@ describe('the placement as a function of the model alone', () => {
     expect(placement.name.at.y).toBeGreaterThan(still.y);
   });
 
-  it('lays the Écluse diagram out the same way twice', () => {
-    expect(placementsById(layoutOf(ecluseModel))).toEqual(
-      placementsById(layoutOf(ecluseModel)),
-    );
-  });
-
   it('follows the flow ids, not the order the model holds them in', () => {
     const elements = [
       boxAt('el-left', 0, 0),
@@ -491,8 +484,8 @@ describe('the placement as a function of the model alone', () => {
 
 describe('the id of every fixture flow', () => {
   it('reads as an element id', () => {
-    expect(ecluseLayout.edges.map((edge) => edge.id)).toContain(
-      elementId('f2d6c311-b8b3-4a9f-bef7-b78e4adaa17e'),
+    expect(everyGlyphLayout.edges.map((edge) => edge.id)).toContain(
+      elementId('el-request'),
     );
   });
 });

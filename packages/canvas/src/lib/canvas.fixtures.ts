@@ -16,16 +16,6 @@ import type { CanvasEdge, CanvasNode } from './layout.js';
  */
 export const everyGlyphModel: Model = committedModel('every-glyph.model.json');
 
-/** The Écluse model in the internal form, so the canvas draws the corpus the model and format suites check. */
-export const ecluseModel: Model = committedModel('ecluse.model.json');
-
-/**
- * Saerskriven's own threat model in the internal form, written out of
- * `threat-modelling/saerskriven.yaml` by the formats suite. Two diagrams, so
- * the canvas draws a model that holds more than one.
- */
-export const saerskrivenModel: Model = committedModel('saerskriven.model.json');
-
 /** The every-glyph diagram laid out. */
 export const everyGlyphLayout = layoutOf(everyGlyphModel);
 
