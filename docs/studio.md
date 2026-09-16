@@ -136,8 +136,9 @@ opens under the card. The arrow keys and typing choose, Enter draws the
 flow, and Escape cancels.
 
 Select one flow to edit its route. While one flow is selected with the Select
-tool and no name field is open, the **Flow route** toolbar at the bottom centre
-of the canvas holds Add bend and says what the current gesture expects.
+tool and no name or note is open for editing, the **Flow route** toolbar at the
+bottom centre of the canvas holds Add bend and says what the current gesture
+expects.
 
 - Drag any segment to make a bend, and drag a bend to move it. Click a bend for
   Remove bend or Move bend, which takes a destination click.
@@ -152,12 +153,12 @@ of the canvas holds Add bend and says what the current gesture expects.
   and Delete or Backspace returns it to following the route. A pinned side is
   saved, and a Threat Dragon file carries it as a port.
 
-While one flow is selected with the Select tool and no name field is open, the
-**Reconnect flow** card pinned at the top left, under the chrome card, holds
-**Change flow source**, **Change flow target** and **Toggle bidirectional
-flow**. The first two choose another actor, process or store for one end, with
-a side to pin it to or Automatic. The third draws an arrowhead at both ends or
-one again, and the flow keeps its source and target either way.
+While one flow is selected with the Select tool and no name or note is open for
+editing, the **Reconnect flow** card pinned at the top left, under the chrome
+card, holds **Change flow source**, **Change flow target** and **Toggle
+bidirectional flow**. The first two choose another actor, process or store for
+one end, with a side to pin it to or Automatic. The third draws an arrowhead at
+both ends or one again, and the flow keeps its source and target either way.
 
 ## Names and Note text
 
@@ -291,9 +292,9 @@ between card headers, and several cards can stay open. Escape closes it while
 focus is inside.
 
 Every edit has a keyboard path. Below, Mod is Command on macOS and Control
-elsewhere. These chords apply outside text fields and open menus. Save, Save
-as, Undo and Redo also work inside a text field, and no chord works while a
-menu, listbox or dialog is open.
+elsewhere. The chords act where keyboard focus is: Save, Save as, Undo and Redo
+also work while focus is in a text field, the rest only outside one, and none
+works while focus is inside an open menu or list.
 
 | Command                                | Keys                                         | Also on             |
 | -------------------------------------- | -------------------------------------------- | ------------------- |

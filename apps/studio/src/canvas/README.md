@@ -97,9 +97,9 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   message already reports, such as a placement, a rename or a keyboard move,
   announces nothing. A name a person wrote is quoted through `quoted` in
   `announcements.ts`, on one line and cut past `nameQuoteLength` (40 grapheme
-  clusters) or `recordQuoteLength` (24). While a
-  pane or a selection editor is open the announcement stops at two lines on
-  screen, and the accessible names stay whole.
+  clusters) or `recordQuoteLength` (24). While a pane or a selection editor is
+  open the announcement stops at two lines on screen, and the accessible names
+  stay whole.
 - **The status lives outside the model store**, since it does not belong in the
   undo stacks. The empty host stays mounted, a sequence key makes repeated
   words arrive as separate messages, and the store defines when a message ends
