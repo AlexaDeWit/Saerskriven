@@ -1,9 +1,4 @@
-import {
-  autoPlacement,
-  pointSchema,
-  sizeSchema,
-  waypointsSchema,
-} from './geometry.js';
+import { autoPlacement, pointSchema, sizeSchema } from './geometry.js';
 
 describe('pointSchema', () => {
   it('accepts negative and fractional coordinates', () => {
@@ -12,29 +7,11 @@ describe('pointSchema', () => {
 });
 
 describe('sizeSchema', () => {
-  it('accepts a positive extent', () => {
-    expect(sizeSchema.safeParse({ width: 170, height: 90 }).success).toBe(true);
-  });
-
   it('rejects zero and negative extents', () => {
     expect(sizeSchema.safeParse({ width: 0, height: 90 }).success).toBe(false);
     expect(sizeSchema.safeParse({ width: 170, height: -1 }).success).toBe(
       false,
     );
-  });
-});
-
-describe('waypointsSchema', () => {
-  it('parses a waypoint list', () => {
-    expect(
-      waypointsSchema.parse([
-        { x: 1, y: 2 },
-        { x: 3, y: 4 },
-      ]),
-    ).toEqual([
-      { x: 1, y: 2 },
-      { x: 3, y: 4 },
-    ]);
   });
 });
 

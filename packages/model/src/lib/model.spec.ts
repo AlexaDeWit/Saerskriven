@@ -1,17 +1,17 @@
 import { diagramSchema, modelMetadataSchema, modelSchema } from './model.js';
 
 const metadata = {
-  title: 'Écluse',
+  title: 'Order service',
   owner: 'Alexandra de Wit',
-  description: 'STRIDE threat model for a supply-chain policy proxy.',
+  description: 'Sample model exercising every record kind.',
   contributors: ['Alexandra de Wit'],
 };
 
 const actor = {
   kind: 'actor',
-  id: '0ec10e5e-0000-4000-8000-000000000010',
-  name: 'npm client (developer / CI)',
-  description: 'The caller. It presents its own CodeArtifact bearer token.',
+  id: 'element-customer',
+  name: 'Customer',
+  description: 'Places orders from a browser.',
   outOfScope: false,
   reasonOutOfScope: '',
   position: { x: 10, y: 350 },
@@ -20,14 +20,14 @@ const actor = {
 
 const flow = {
   kind: 'flow',
-  id: '0ec10e5e-0000-4000-8000-000000000040',
-  name: 'npm read / publish',
+  id: 'element-order-flow',
+  name: 'Submit order',
   description: '',
   outOfScope: false,
   reasonOutOfScope: '',
   source: {
     kind: 'attached',
-    element: '0ec10e5e-0000-4000-8000-000000000010',
+    element: 'element-customer',
   },
   target: { kind: 'free', position: { x: 700, y: 400 } },
   waypoints: [],
@@ -35,38 +35,35 @@ const flow = {
 };
 
 const diagram = {
-  id: 'diagram-high-level',
-  title: 'High Level',
+  id: 'diagram-main',
+  title: 'Main data flow',
   elements: [actor, flow],
 };
 
 const threat = {
-  id: 'c87367bd-fc3f-4792-94b6-8db459011823',
+  id: 'threat-tamper-order',
   number: 101,
-  title: 'Oracle Blackout / Supply Chain DoS via OSV.dev compromise',
-  category: { methodology: 'STRIDE', category: 'spoofing' },
+  title: 'Order tampering in transit',
+  category: { methodology: 'STRIDE', category: 'tampering' },
   severity: 'high',
   status: 'accepted-risk',
-  description:
-    'An attacker who gains control of osv.dev can push malicious ' +
-    'vulnerability records.',
-  elements: ['f1646094-9885-422a-b7e7-7888c72905ef'],
+  description: 'An order can be altered between the customer and the API.',
+  elements: ['element-api'],
 };
 
 const mitigation = {
-  id: 'last-good-database',
-  title: 'Last-good-database fallback',
-  prose:
-    'Transport, parsing, and validation controls with a kept last-good db.',
+  id: 'mitigation-tls',
+  title: 'TLS on the order flow',
+  prose: 'Terminate TLS at the perimeter and pin the certificate.',
   status: 'implemented',
-  threats: ['c87367bd-fc3f-4792-94b6-8db459011823'],
+  threats: ['threat-tamper-order'],
 };
 
 const assumption = {
-  id: 'osv-is-trusted',
-  prose: 'Écluse trusts the OSV database as the oracle of vulnerability truth.',
+  id: 'assumption-managed-db',
+  prose: 'The order database encrypts its disks.',
   status: 'valid',
-  threats: ['c87367bd-fc3f-4792-94b6-8db459011823'],
+  threats: ['threat-tamper-order'],
   appliesToModel: false,
 };
 

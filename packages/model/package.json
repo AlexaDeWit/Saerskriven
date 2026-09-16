@@ -31,13 +31,7 @@
     ],
     "targets": {
       "boundaries": {},
-      "lint": {},
-      "test": {
-        "inputs": [
-          "...",
-          "{workspaceRoot}/test-data/ecluse.model.json"
-        ]
-      }
+      "lint": {}
     }
   }
 }
