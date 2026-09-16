@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 12 1256 536" width="1256" height="536"><title>Taking an order</title><rect x="-8" y="12" width="1256" height="536" fill="#F9F6F0"></rect><style>.pn-element {
+  font-family: "Liberation Sans";
+}
+.pn-shape {
+  fill: #FAF8F2;
+  stroke: #38342E;
+  stroke-width: 2;
+}
+.pn-actor {
+  fill: #EAE5DA;
+}
+.pn-process {
+  fill: #E7E9E1;
+}
+.pn-store {
+  fill: none;
+  stroke-width: 2.5;
+}
+.pn-boundary-box,
+.pn-boundary-curve {
+  fill: none;
+  stroke: #6B655C;
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+}
+.pn-out-of-scope {
+  opacity: 0.5;
+}
+.pn-out-of-scope .pn-shape {
+  stroke-dasharray: 6 4;
+}
+.pn-label {
+  fill: #38342E;
+  font-size: 10px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.pn-note {
+  fill: #6B655C;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.pn-flow {
+  fill: none;
+}
+.pn-flow-arrow {
+  fill: #38342E;
+  stroke: none;
+}
+.pn-flow-label {
+  fill: #6B655C;
+  font-size: 10px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: #F9F6F0;
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+.pn-badge {
+  stroke: #FAF8F2;
+  stroke-width: 3;
+}
+.pn-badge-count {
+  fill: #FAF8F2;
+  stroke: none;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.pn-badge-primary .pn-badge-count {
+  font-size: 11px;
+}
+.pn-badge-secondary .pn-badge-count {
+  font-size: 9px;
+}
+.pn-badge-mark {
+  fill: #FAF8F2;
+  stroke: none;
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.pn-badge-flag {
+  stroke-linejoin: round;
+}
+.pn-tone-critical {
+  fill: #C14339;
+}
+.pn-tone-high {
+  fill: #A85E1D;
+}
+.pn-tone-medium {
+  fill: #46788A;
+}
+.pn-tone-low {
+  fill: #4B6B50;
+}
+.pn-tone-neutral {
+  fill: #756E63;
+}
+.pn-tone-flag {
+  fill: #38342E;
+}
+
+.pn-tone-low { fill: #4B6B50; stroke: #4B6B50; stroke-width: 3; }
+.pn-tone-low ~ .pn-badge-count, .pn-tone-low ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-medium { fill: #46788A; stroke: #46788A; stroke-width: 3; }
+.pn-tone-medium ~ .pn-badge-count, .pn-tone-medium ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-high { fill: #A85E1D; stroke: #A85E1D; stroke-width: 3; }
+.pn-tone-high ~ .pn-badge-count, .pn-tone-high ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-critical { fill: #C14339; stroke: #C14339; stroke-width: 3; }
+.pn-tone-critical ~ .pn-badge-count, .pn-tone-critical ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-neutral { fill: #756E63; stroke: #756E63; stroke-width: 3; }
+.pn-tone-neutral ~ .pn-badge-count, .pn-tone-neutral ~ .pn-badge-mark { fill: #FAF8F2; }
+.pn-tone-flag { fill: #38342E; stroke: #38342E; stroke-width: 3; }
+.pn-tone-flag ~ .pn-badge-count, .pn-tone-flag ~ .pn-badge-mark { fill: #FAF8F2; }</style><g transform="translate(300, 20)"><g class="pn-element"><rect class="pn-shape pn-boundary-box" width="560" height="520"></rect><text class="pn-label" x="280" y="11"><tspan x="280" dy="0">Shop network</tspan></text></g></g><g transform="translate(0, 220)"><g class="pn-element"><rect class="pn-shape pn-actor" width="140" height="80"></rect><text class="pn-label" x="70" y="40"><tspan x="70" dy="0">Shopper</tspan></text><g class="pn-badge" transform="translate(140, 0)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="6">H</text></g></g></g></g><g transform="translate(460, 200)"><g class="pn-element"><circle class="pn-shape pn-process" cx="70" cy="70" r="70"></circle><text class="pn-label" x="70" y="70"><tspan x="70" dy="0">Web shop</tspan></text></g></g><g transform="translate(680, 60)"><g class="pn-element"><line class="pn-shape pn-store" x1="0" y1="0" x2="150" y2="0"></line><line class="pn-shape pn-store" x1="0" y1="80" x2="150" y2="80"></line><text class="pn-label" x="75" y="40"><tspan x="75" dy="0">Catalogue</tspan></text></g></g><g transform="translate(680, 420)"><g class="pn-element"><line class="pn-shape pn-store" x1="0" y1="0" x2="150" y2="0"></line><line class="pn-shape pn-store" x1="0" y1="80" x2="150" y2="80"></line><text class="pn-label" x="75" y="40"><tspan x="75" dy="0">Order ledger</tspan></text><g class="pn-badge" transform="translate(150, 0)"><g class="pn-badge-flag" transform="translate(0, 0)"><path class="pn-tone-flag" d="M 0 -11 L 11 11 L -11 11 Z"></path><text class="pn-badge-mark" y="4">!</text></g></g></g></g><g transform="translate(1040, 200)"><g class="pn-element pn-out-of-scope"><circle class="pn-shape pn-process" cx="70" cy="70" r="70"></circle><text class="pn-label" x="70" y="63.75"><tspan x="70" dy="0">Payment</tspan><tspan x="70" dy="12.5">gateway</tspan></text></g></g><g transform="translate(0, 420)"><g class="pn-element"><text class="pn-note" x="100" y="37.5"><tspan x="100" dy="0">Card numbers never reach the</tspan><tspan x="100" dy="15">shop.</tspan></text></g></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 140 260 L 460 270"></path><path class="pn-flow-arrow" d="M 460 270 L 441.79 276.434 L 442.227 262.441 Z"></path><text class="pn-flow-label" x="379.147" y="288.543"><tspan x="379.147" dy="0">browse the catalogue and</tspan><tspan x="379.147" dy="12.5">fill a basket</tspan></text><g class="pn-badge" transform="translate(380.856, 240.114)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="6">H</text></g></g></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 460 270 L 140 260"></path><path class="pn-flow-arrow" d="M 140 260 L 158.21 253.566 L 157.773 267.559 Z"></path><text class="pn-flow-label" x="219.342" y="283.549"><tspan x="219.342" dy="0">return the rendered page</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 600 270 L 680 100"></path><path class="pn-flow-arrow" d="M 680 100 L 678.669 119.267 L 666.002 113.306 Z"></path><text class="pn-flow-label" x="710.879" y="218.355"><tspan x="710.879" dy="0">read the product listings</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 600 270 L 1040 270"></path><path class="pn-flow-arrow" d="M 1040 270 L 1022 277 L 1022 263 Z"></path><text class="pn-flow-label" x="710" y="289"><tspan x="710" dy="0">authorise the card</tspan><tspan x="710" dy="12.5">payment</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 1040 270 L 600 270"></path><path class="pn-flow-arrow" d="M 600 270 L 618 263 L 618 277 Z"></path><text class="pn-flow-label" x="930" y="289"><tspan x="930" dy="0">confirm the authorisation</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 530 340 L 530 460 L 680 460"></path><path class="pn-flow-arrow" d="M 680 460 L 662 467 L 662 453 Z"></path><text class="pn-flow-label" x="605" y="479"><tspan x="605" dy="0">record the paid order</tspan></text><g class="pn-badge" transform="translate(605, 435)"><g class="pn-badge-flag" transform="translate(0, 0)"><path class="pn-tone-flag" d="M 0 -11 L 11 11 L -11 11 Z"></path><text class="pn-badge-mark" y="4">!</text></g></g></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 1240 480 L 1110 340"></path><path class="pn-flow-arrow" d="M 1110 340 L 1127.378 348.427 L 1117.119 357.953 Z"></path><text class="pn-flow-label" x="1131.237" y="450.637"><tspan x="1131.237" dy="0">card network callback</tspan></text><g class="pn-badge" transform="translate(1211.188, 376.397)"><g class="pn-badge-primary"><circle class="pn-tone-neutral" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="6">?</text></g><g class="pn-badge-flag" transform="translate(0, 27)"><path class="pn-tone-flag" d="M 0 -11 L 11 11 L -11 11 Z"></path><text class="pn-badge-mark" y="4">!</text></g></g></g></svg>
