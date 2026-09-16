@@ -95,40 +95,15 @@ leads the faces with `drawingFace`, which `ledBy` arranges or refuses.
 
 ## The goldens
 
-The files under [`test-data/render/`](../../test-data/render) are this
-package's output, committed so a change to what it writes arrives as a diff on
-a file rather than as a test that still passes:
-
-- `ecluse.register.snapshot.md`, the Écluse model as a threat register.
-- `saerskriven.register.snapshot.md`, the same of
-  [Saerskriven's own threat model](../../threat-modelling/README.md), which
-  carries what Écluse does not: a custom methodology, a CIA category, threats
-  attached to no element, and a mitigation written as a Markdown list.
-- `ecluse.snapshot.svg`, the one diagram of the Écluse model.
-- `every-glyph.snapshot.svg`, the diagram of
-  `test-data/every-glyph.model.json`, drawing one of every glyph the canvas
-  knows. `@saerskriven/canvas` draws the same model into a golden of its own,
-  which is why the model sits under `test-data`.
-- `saerskriven-read-and-render.snapshot.svg` and
-  `saerskriven-agent-and-desktop.snapshot.svg`, the two diagrams of the
-  Saerskriven model.
-- One `<diagram>.snapshot.png` beside each of those four drawings, that same
-  drawing rasterized, committed as a picture so a reviewer can open it.
-- `ecluse.snapshot.typ`, the Écluse model as the Typst source of a whole
-  document.
-
-The drawings and their rasters are one list in `src/goldens.fixtures.ts`, so a
-further model or diagram joins every check by being added there. The
-registers keep their own list in their own spec. Cached tests write no
-snapshot, so a missing golden fails. Regenerate them with
-`pnpm snapshots:update @saerskriven/render` in the commit that moved them, and
-read the diff. That command runs Vitest directly rather than through nx, so
-the raster goldens need the rasterizer module built first, at the path
-[`SAERSKRIVEN_RESVG_WASM`](../../docs/build.md#the-svg-rasterizer) names. Whether
-a missing module skips that suite or fails it turns on the variable rather
-than the file, which that section describes.
-
-The CLI's suites read several of the goldens as fixtures, and the Saerskriven
-ones use the model `@saerskriven/formats` maintains under `test-data`.
+This package's output is committed under
+[`test-data/render/`](../../test-data/render), so a change to what it writes
+arrives as a diff on a file. [`test-data/README.md`](../../test-data/README.md)
+says what each golden holds and which other suites read it. The drawings and
+their rasters are one list in `src/goldens.fixtures.ts`, and the registers keep
+their own list in their spec, so a further model or diagram joins every check
+by being added there. Cached tests write no snapshot, so a missing golden
+fails. Regenerate them with `pnpm snapshots:update @saerskriven/render` in the
+commit that moved them, with the rasterizer module built first, as
+[`SAERSKRIVEN_RESVG_WASM`](../../docs/build.md#the-svg-rasterizer) describes.
 
 Unit tests: `pnpm nx test @saerskriven/render`.

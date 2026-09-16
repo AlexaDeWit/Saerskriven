@@ -26,13 +26,13 @@ The producers are `@saerskriven/model`, `@saerskriven/formats`, and
 | --------------------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
 | `ecluse.model.json`                                 | `packages/model`   | `packages/formats`, `packages/canvas`, `packages/render`, `apps/studio-e2e` |
 | `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`, `apps/studio-e2e`                     |
-| `saerskriven/ecluse.yaml`                           | `packages/formats` | `apps/cli`, `apps/studio-e2e`                                               |
+| `saerskriven/ecluse.yaml`                           | `packages/formats` | `packages/mcp`, `apps/cli`, `apps/studio-e2e`                               |
 | `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
 | `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
 | `render/saerskriven-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                                                  |
 | `render/saerskriven-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                                                  |
 | `render/saerskriven.register.snapshot.md`           | `packages/render`  | no other suite                                                              |
-| `render/ecluse.snapshot.png`                        | `packages/render`  | `apps/cli`                                                                  |
+| `render/ecluse.snapshot.png`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
 | `render/saerskriven-read-and-render.snapshot.png`   | `packages/render`  | `apps/cli`                                                                  |
 | `render/saerskriven-agent-and-desktop.snapshot.png` | `packages/render`  | no other suite                                                              |
 | `render/every-glyph.snapshot.png`                   | `packages/render`  | no other suite                                                              |
@@ -41,11 +41,12 @@ The producers are `@saerskriven/model`, `@saerskriven/formats`, and
 
 The `.snapshot.png` rasters are written only where the rasterizer module
 [`SAERSKRIVEN_RESVG_WASM`](../docs/build.md#the-svg-rasterizer) names has been
-built, which that section describes.
+built.
 
 The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
-is the expected PDF digest for the CLI and studio browser suites.
-The browser suite runs separately from `pnpm check` and only reads fixtures.
+is the expected PDF digest for the CLI and studio browser suites, and
+`every-glyph.model.json` is read by `packages/canvas`, `packages/render` and
+`apps/studio-e2e`.
 
 ## `ecluse.json`
 
@@ -127,8 +128,11 @@ vocabularies alone would miss. Canvas and render tests consume it as data.
 
 The internal model decoded from
 [`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md).
-`packages/formats` produces it for canvas and render tests, which cannot
-import codecs. A `nativeFixtures` entry selects its output path.
+`packages/formats` produces it for the canvas and render suites, which the
+layer matrix keeps from importing a codec. Its `nativeFixtures` entry in
+`saerskriven-yaml.fixtures.ts` names the output path, so a further native file
+brings its own. Écluse names none, since `packages/model` writes
+`ecluse.model.json` from its own transcription.
 
 ## `render/ecluse.register.snapshot.md`
 
@@ -167,6 +171,9 @@ Standalone SVG documents from `packages/render`:
 - `saerskriven-read-and-render.snapshot.svg` and
   `saerskriven-agent-and-desktop.snapshot.svg`: the two diagrams of
   `saerskriven.model.json`, covering a model with multiple diagrams.
+
+Each has a `.snapshot.png` beside it, the same drawing rasterized, committed
+as a picture so a reviewer can open it.
 
 ## `threat-dragon/`
 
@@ -221,11 +228,10 @@ against the codec that wrote it. It gates the shape of the document: a
 threat is not something it describes, so nothing it says holds one to
 anything.
 
-It is not the schema `threat-dragon-wire.ts` follows. That one describes what
-Threat Dragon writes, and the two differ: the published schema puts a cell's
-threats beside `data` rather than under it, names a threat's id `threatId`,
-and declares neither ports nor tools nor labels nor the boundary bookkeeping.
-What it does pin, and what a written file therefore has to carry, is
+It is not the schema `@saerskriven/wire-threat-dragon` follows, which declares
+what Threat Dragon writes, and [its README](../packages/wire-threat-dragon/README.md)
+says where the two differ. What the published schema does pin, and what a
+written file therefore has to carry, is
 `contributors`, `diagramTop`, `reviewer` and `threatTop` on the detail, a
 `thumbnail` and a `version` on every diagram, and a `zIndex` and a
 `data.hasOpenThreats` on every cell.
@@ -269,102 +275,39 @@ update changes the file below and the test says which table fell behind.
 
 Hostile inputs, none of them vendored. Most are small payloads built to break
 one of the read bounds `@saerskriven/formats` exports as `readLimits`, so each
-bound is pinned by an input rather than by its own definition. None of those
-is a threat model, and none is large: an oversized text is generated in the
-spec instead, since committing megabytes to prove a size bound would be the
-wrong trade. `read-limits.spec.ts` hands every one of them to both reads, the
-Saerskriven YAML read and the Threat Dragon read, because YAML is a superset of
-JSON and a hostile file arrives with whatever extension its author chose.
+bound is pinned by an input rather than by its own definition. An oversized
+text is generated in the spec instead of committed. `read-limits.spec.ts`
+hands every payload to both the Saerskriven YAML read and the Threat Dragon
+read, because YAML is a superset of JSON and a hostile file arrives with
+whatever extension its author chose. The bounds and the alias accounting are
+described in the TSDoc of `read-limits.ts` and `yaml-alias-cost.ts`.
 
-`typst-injection.yaml` is the exception, and is described under its own
-heading below: it is a valid model, and what is hostile about it is its
-prose.
+| File                   | Bytes | What it is                                                                                           | What it pins                                                                                                 |
+| ---------------------- | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `deep-nesting.json`    | 6,000 | 3,000 nested empty arrays: `'['.repeat(3000) + ']'.repeat(3000)`                                     | Nesting is checked on the parsed value, since this parses and then overflows the stack of a recursive walk   |
+| `deep-block.yaml`      | 9,287 | A YAML block mapping 128 deep, one space of indent per level                                         | The same bound through block nesting, which costs a square of its depth in bytes                             |
+| `cyclic-anchor.yaml`   | 48    | An anchor on `metadata` with an alias to it underneath                                               | An anchor reached from inside itself is refused as an alias count, before the walk                           |
+| `branching-cycle.yaml` | 15    | A sequence anchored to itself twice, so every level branches in two                                  | The same refusal for a cycle a path-counting walk would never finish                                         |
+| `wide-cycle.yaml`      | 2,408 | A sequence anchored to itself 800 times                                                              | Alias cost is measured before resolution, since resolving this costs about a cube of the alias count         |
+| `alias-expansion.yaml` | 88    | A seed scalar and three anchors, each a sequence of three aliases to the one before                  | The alias bound is ours: it refuses this, which the `yaml` package's default accepts, at 54 expanded aliases |
+| `shared-anchor.yaml`   | 8,355 | One anchored sequence of 3,000 scalars aliased from forty depths, `sharedFromDepths(3000, 40)`       | `maxAliasExpansion`, since the nesting walk expands a node again for each depth an alias reaches it from     |
+| `nested-anchors.yaml`  | 1,114 | Twenty-five nested anchors, the innermost aliasing twenty-five one-node anchors, `nestedAnchors(25)` | Handing the parser `maxAliasCount: -1`, since the parser's own accounting is what this shape makes slow      |
 
-| File                   | Bytes | What it is                                                                                                                                     | How it was built                                                                |
-| ---------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `deep-nesting.json`    | 6,000 | 3,000 nested empty arrays, the reproducer found during #26                                                                                     | `'['.repeat(3000) + ']'.repeat(3000)`                                           |
-| `deep-block.yaml`      | 9,287 | A YAML block mapping 128 deep, one space of indent per level                                                                                   | `nested:` at rising indent, then `bottom`                                       |
-| `cyclic-anchor.yaml`   | 48    | An anchor on `metadata` and an alias to it underneath, a cycle in 3 lines                                                                      | Written by hand                                                                 |
-| `alias-expansion.yaml` | 88    | A seed scalar and three anchors, each a sequence of three aliases to the one before                                                            | Written by hand, sized to land between our alias bound and the parser's default |
-| `branching-cycle.yaml` | 15    | A sequence anchored to itself twice, so every level of it branches in two                                                                      | Written by hand                                                                 |
-| `wide-cycle.yaml`      | 2,408 | The same sequence anchored to itself 800 times                                                                                                 | `a: &a [` then `*a` 800 times, comma-joined, then `]`                           |
-| `shared-anchor.yaml`   | 8,355 | One anchored sequence of 3,000 scalars, aliased from forty rising depths                                                                       | Written by a generator the spec re-runs, `sharedFromDepths(3000, 40)`           |
-| `nested-anchors.yaml`  | 1,114 | Twenty-five anchors nested in each other, the innermost holding an alias to each of twenty-five one-node anchors, all twenty-five then aliased | Written by a generator the spec re-runs, `nestedAnchors(25)`                    |
-
-`deep-nesting.json` is the known reproducer: 6 KB of JSON parses without
-complaint and then overflows the stack of anything that walks it, which is
-how it was found, inside a recursive `z.lazy` schema that has since been
-withdrawn. It is why the nesting bound is checked on the parsed value rather
-than on the text. `cyclic-anchor.yaml` costs three lines to say the same
-thing about depth, and is refused ahead of that walk now, as an alias count:
-an anchor an alias reaches from inside itself expands without end.
-
-`branching-cycle.yaml` is fifteen bytes and closes its cycle through two
-aliases rather than one, so a walk that counted paths instead of nodes would
-double its work at every level and never reach the depth that would stop it.
-It is refused before that walk now, as an alias count, because an anchor
-reached from inside itself expands without end; the walk's own handling of a
-value like it is pinned in `read-limits.spec.ts` on a JavaScript object built
-to reach itself, since no YAML read reaches the walk with one any more.
-
-`deep-block.yaml` is the same class through the other kind of YAML nesting.
-It is the largest file here because block nesting costs a square of its depth
-in bytes, one space of indent per level, which is also why a flow document is
-the cheaper attack and why both are here.
-
-`wide-cycle.yaml` is the width of that cycle rather than its branching. Every
-bound admitted it on paper: two kilobytes, two levels deep, and an alias score
-of nothing, because the parser scores a self-referential anchor while it is
-still composing it. Resolving it is what costs, about a cube of the alias
-count, and reading it took a minute before the alias measurement was moved
-ahead of resolution. It is the fixture for that ordering.
-
-`alias-expansion.yaml` is refused by the alias bound this project sets and
-accepted by the one the `yaml` package defaults to, which is what makes it
-proof that the bound is ours. Raising the bound to the parser's default
-turns the spec over it red. It expands to 54 aliases out of the nine it
-holds, which is the number the spec pins.
-
-`shared-anchor.yaml` is one large anchored node aliased many times, and
-every other bound admits it: eight kilobytes, and forty aliases against a
-bound of fifty with nothing inside the anchor for any of them to expand to.
-What it costs is not a copy, because `toJS` hands every alias the same
-value: it is that the nesting walk expands a node again each time it
-reaches that node deeper than before, so the sequence is walked once per
-depth an alias reaches it from. At the size it was found, a 4 MiB text
-holding a two-million-element sequence aliased from forty depths, the nesting
-walk spent six seconds on that one sequence where resolving the whole document
-cost under half a second. This is that shape at a size worth committing.
+A generated fixture's generator is re-run by the spec, so the committed bytes
+and the generator cannot drift.
 
 ### `adversarial/typst-injection.yaml`
 
-A valid model of two elements, two threats, two mitigations and one
-assumption, whose every free-text field
-carries something that means something to a markup language: `#eval("1+1")`
-and `#read("/etc/passwd")` and `#include`, which are Typst function calls, a
-`<script>` tag and an `onerror` attribute, which are HTML, a bare `"` and a
-trailing `\`, which are what a Typst string literal is delimited and escaped
-by, and `\u{1f600}`, which is what a Typst string escape looks like.
+A valid model whose every free-text field carries something that means
+something to a markup language: Typst calls (`#eval("1+1")`,
+`#read("/etc/passwd")`, `#include`), HTML (a `<script>` tag and an `onerror`
+attribute), what delimits and escapes a Typst string literal (a bare `"` and a
+trailing `\`), and a Typst string escape (`\u{1f600}`).
 
-It reads and renders like any other model. `packages/render` writes it as
-Typst source whose every one of those fragments sits inside a string literal,
-and `apps/cli` compiles it and reads the text back out of the PDF, where each
-one is text a reader sees rather than anything the compiler ran. It is
-committed rather than built in a spec because it is the input a reviewer
-should be able to read, and because both packages read it.
-
-Threat 2's mitigation is a markdown heading whose content is a raw HTML tag.
-That shape is deliberate: a heading becomes a PDF outline entry, which is a
-PDF string rather than glyphs, so a spec reads it back without a font or a
-content stream. It is how the register's treatment of raw HTML is proven in
-the artifact rather than only in the source. Its untitled mitigation's prose
-has the same shape, so a record's prose is held to it too.
-
-`nested-anchors.yaml` is what the parser's own alias accounting costs rather
-than what an alias costs. `yaml` resolves an alias by scanning the whole
-document, and its accounting takes that scan once per anchor, so anchors
-nested in each other pay it once per level: this shape padded to 4 MiB spent
-147 seconds inside `toJS` before this package took the accounting over, and
-none of it was visible from outside the parser. It is refused as an alias
-count now, in a fifth of a millisecond of measurement, and it is the fixture
-for handing the parser `maxAliasCount: -1`.
+`packages/render` writes it as Typst source with every one of those fragments
+inside a string literal, and `apps/cli` compiles it and reads the text back out
+of the PDF, where each one is text a reader sees. Threat 2's mitigation is a
+Markdown heading whose content is a raw HTML tag, and its untitled mitigation's
+prose has the same shape: a heading becomes a PDF outline entry, a PDF string
+rather than glyphs, so a spec reads it back without a font or a content stream.
+It is committed rather than built in a spec so a reviewer can read it.

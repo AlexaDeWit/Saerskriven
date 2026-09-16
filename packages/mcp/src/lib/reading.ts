@@ -38,7 +38,7 @@ export const readingSchema = z.object({
   revision: z.string(),
 });
 
-/** What every read tool reports about the file it read. */
+/** What every read and write tool reports about the file. */
 export type Reading = z.infer<typeof readingSchema>;
 
 /**

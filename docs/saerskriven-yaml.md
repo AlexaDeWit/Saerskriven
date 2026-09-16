@@ -12,9 +12,8 @@ Each version is declared by a package of one zod schema that imports nothing
 but zod: `@saerskriven/wire-saerskriven-yaml-v2` for version 2 and
 `@saerskriven/wire-saerskriven-yaml` for version 1. Those are the format's
 definition, and this page describes them rather than restating them. The codec
-is `readSaerskrivenYaml` and `writeSaerskrivenYaml` in `@saerskriven/formats`,
-paired as `saerskrivenYamlCodec`, and it is the only place that knows both the
-file and the model.
+is `saerskrivenYamlCodec` in `@saerskriven/formats`, the only place that knows
+both the file and the model.
 
 ## The file
 

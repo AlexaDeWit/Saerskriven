@@ -274,9 +274,11 @@ const colourBlock = (palette: Palette, indent: string): string => {
  * `data-pn-colour-mode`. `color-scheme` rides along, so scrollbars and native
  * controls follow the same preference. The headless render reads none of it.
  *
- * The `--pn-cue-*` widths sit a step above the outline weight and at most one
- * past the heaviest stroke, a selected flow heavier than a hovered one, and
- * each is a pixel length that a CSS border and an SVG stroke read alike.
+ * Each `--pn-cue-*` width sits a step above the outline weight, so a selection
+ * reads without colour, and at most one step past the heaviest stroke, so a
+ * flow does not swell past its arrowhead. A selected flow is heavier than a
+ * hovered one, and each width is a pixel length that a CSS border and an SVG
+ * stroke read alike.
  * `--pn-chrome-block-size` is a placeholder the studio's chrome card
  * overwrites with its measured height, since its tool row can wrap.
  * `--pn-announcement-slot` holds two lines of the canvas announcement with

@@ -33,7 +33,10 @@ export const inspectDescription = [
   'This tool never writes. A path that leaves the server root is refused rather than read.',
 ].join(' ');
 
-/** The `file` argument every tool of this server takes and extends. */
+/**
+ * The `file` argument every tool of this server takes, which each tool's own
+ * argument schema extends.
+ */
 export const fileArgumentSchema = z.object({
   file: z
     .string()

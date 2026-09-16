@@ -59,8 +59,8 @@ its side midpoints. An attached flow end takes its pinned side, or else
 waypoint moves, and several flows can meet at one midpoint.
 
 [`paths.ts`](src/lib/paths.ts): `polylinePath` and `smoothPath` write SVG
-paths, and [`geometry.ts`](src/lib/geometry.ts): `boxOfPoints` and
-`boxesOverlap` measure boxes.
+paths. In [`geometry.ts`](src/lib/geometry.ts), `boxOfPoints` bounds a list of
+points and `boxesOverlap` tests whether two boxes overlap.
 
 ## The visual system
 
