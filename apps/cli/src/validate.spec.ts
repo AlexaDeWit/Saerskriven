@@ -19,9 +19,12 @@ describe('validate', () => {
   it('reads a Threat Dragon file and counts what the model holds', () => {
     expect(
       validate(testDataPath('threat-dragon/feature-complete.json')),
-    ).toMatchObject({
+    ).toEqual({
       code: 0,
       out: 'threat-dragon: 2 diagrams, 13 elements, 24 threats\n',
+      err:
+        'warning: the file and the model do not correspond exactly.\n' +
+        'threat "threat-card": the Elevation of Privilege card, of which the model holds the suit alone (reduced to fit the format)\n',
     });
   });
 

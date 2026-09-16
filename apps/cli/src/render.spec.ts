@@ -1,6 +1,10 @@
 import { smallYaml, unplacedFlowYaml } from '@saerskriven/mcp/fixtures';
-import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
-import { createHash } from 'node:crypto';
+import {
+  committedText,
+  repositoryRoot,
+  sha256Of,
+  testDataPath,
+} from '@saerskriven/model/fixtures';
 import { copyFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -172,7 +176,7 @@ describe('render', () => {
     const colliding = fixtureFile(
       directory,
       'colliding.yaml',
-      readFileSync(twoDiagrams, 'utf8').replace(
+      committedText('saerskriven/two-diagrams.yaml').replace(
         'title: Taking an order',
         'title: fulfilment',
       ),
@@ -259,7 +263,7 @@ describe('render', () => {
       const pdf = run.bytes();
       expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
       expect(pageCount(pdf)).toBe(6);
-      expect(createHash('sha256').update(pdf).digest('hex')).toBe(pdfDigest);
+      expect(sha256Of(pdf)).toBe(pdfDigest);
     },
     compileTimeout,
   );

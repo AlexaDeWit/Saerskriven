@@ -31,7 +31,10 @@
       "{workspaceRoot}/test-data/adversarial/deep-nesting.json",
       "{workspaceRoot}/test-data/adversarial/typst-injection.yaml",
       "{workspaceRoot}/test-data/absent.json",
-      "{workspaceRoot}/test-data/render/two-diagrams*"
+      "{workspaceRoot}/test-data/render/two-diagrams-*.snapshot.svg",
+      "{workspaceRoot}/test-data/render/two-diagrams-*.snapshot.png",
+      "{workspaceRoot}/test-data/render/two-diagrams.register.snapshot.md",
+      "{workspaceRoot}/test-data/render/two-diagrams.snapshot.pdf.sha256"
     ],
     "studioTestFixtures": [
       "{workspaceRoot}/test-data/otm/**/*",

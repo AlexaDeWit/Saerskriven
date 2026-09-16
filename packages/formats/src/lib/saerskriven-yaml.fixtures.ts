@@ -1,5 +1,9 @@
 import type { ModelInput } from '@saerskriven/model';
-import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
+import {
+  committedText,
+  repositoryRoot,
+  testDataPath,
+} from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -13,9 +17,8 @@ const featureCompletePath = testDataPath('saerskriven/feature-complete.yaml');
  * in every status, severity and category, a mitigation in every status, and
  * an assumption in every status, one of them applying to the model.
  */
-export const featureCompleteYaml: string = readFileSync(
-  featureCompletePath,
-  'utf8',
+export const featureCompleteYaml: string = committedText(
+  'saerskriven/feature-complete.yaml',
 );
 
 /**
@@ -969,7 +972,9 @@ const twoDiagramsPath = testDataPath('saerskriven/two-diagrams.yaml');
  * `test-data/two-diagrams.model.json` as the writer produced it, so the apps
  * that open files render the model the render goldens were drawn from.
  */
-export const twoDiagramsYaml: string = readFileSync(twoDiagramsPath, 'utf8');
+export const twoDiagramsYaml: string = committedText(
+  'saerskriven/two-diagrams.yaml',
+);
 
 const saerskrivenModelPath = join(
   repositoryRoot,

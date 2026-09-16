@@ -1,5 +1,5 @@
 import type { ModelInput } from '@saerskriven/model';
-import { testDataPath } from '@saerskriven/model/fixtures';
+import { committedText, testDataPath } from '@saerskriven/model/fixtures';
 import type {
   ThreatDragonDocument,
   threatDragonWireSchema,
@@ -9,7 +9,7 @@ import { Either } from 'effect';
 import { readdirSync } from 'node:fs';
 import { z } from 'zod';
 import type { ReadResult } from './codec.js';
-import { testDataText, vendoredTexts } from './corpus.fixtures.js';
+import { vendoredTexts } from './corpus.fixtures.js';
 import { allCells, threatsOf } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 
@@ -45,7 +45,7 @@ const ethics: ThreatDragonThreat = {
  * a threat nested under two cells, an Elevation of Privilege card, a gap in
  * the threat numbers, and a `threatTop` below the highest of them.
  */
-export const featureCompleteText: string = testDataText(
+export const featureCompleteText: string = committedText(
   'threat-dragon/feature-complete.json',
 );
 
@@ -654,7 +654,7 @@ export const threatDragonJsonSchema: Readonly<Record<string, unknown>> = z
   .record(z.string(), z.unknown())
   .parse(
     JSON.parse(
-      testDataText('threat-dragon/schema/threat-dragon-v2.schema.json'),
+      committedText('threat-dragon/schema/threat-dragon-v2.schema.json'),
     ),
   );
 
@@ -674,7 +674,7 @@ export const localeCategories: Readonly<
 );
 
 function categoriesIn(name: string): Record<string, Record<string, string>> {
-  const parsed: unknown = JSON.parse(testDataText('threat-dragon/i18n', name));
+  const parsed: unknown = JSON.parse(committedText('threat-dragon/i18n', name));
   return z.record(z.string(), z.record(z.string(), z.string())).parse(parsed);
 }
 

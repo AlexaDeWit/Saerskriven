@@ -1,5 +1,5 @@
+import { sha256Of } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { createHash } from 'node:crypto';
 import {
   bundledFonts,
   fontBytes,
@@ -22,9 +22,6 @@ const rectangle = svg('<rect width="40" height="20" fill="#123456"/>', 40, 20);
 
 const label = (family: string): string =>
   `<text x="4" y="30" font-size="20" font-family="${family}" fill="#000000">Saerskriven</text>`;
-
-const digestOf = (png: Uint8Array): string =>
-  createHash('sha256').update(png).digest('hex');
 
 const drawn = async (document: string, assets: ResvgAssets, longEdge: number) =>
   Either.getOrThrow(await rasterizeSvg(document, assets, longEdge));
@@ -187,7 +184,7 @@ describe.skipIf(resvgUnbuilt)('an SVG document rasterized to a PNG', () => {
     expect(Array.from(raster.png.subarray(0, 8))).toEqual([
       137, 80, 78, 71, 13, 10, 26, 10,
     ]);
-    expect(digestOf(raster.png)).toBe(
+    expect(sha256Of(raster.png)).toBe(
       '900aee59f6b2ec4c280c8826e5187bacd6f12a958edf52313f2cfb59ec9c1578',
     );
   });
@@ -212,14 +209,14 @@ describe.skipIf(resvgUnbuilt)('an SVG document rasterized to a PNG', () => {
     const set = await drawn(document, withFonts(), 400);
     const unset = await drawn(document, withoutFonts(), 400);
     expect([set.width, set.height]).toEqual([400, 80]);
-    expect(digestOf(set.png)).not.toBe(digestOf(unset.png));
+    expect(sha256Of(set.png)).not.toBe(sha256Of(unset.png));
   });
 
   it('draws a family no face carries in the first face it was offered', async () => {
     const document = svg(label('Helvetica'), 200, 40);
     const set = await drawn(document, withFonts(), 400);
     const unset = await drawn(document, withoutFonts(), 400);
-    expect(digestOf(set.png)).not.toBe(digestOf(unset.png));
+    expect(sha256Of(set.png)).not.toBe(sha256Of(unset.png));
   });
 
   it('refuses an image past what it draws, rather than trapping', async () => {
@@ -277,8 +274,8 @@ describe.skipIf(resvgUnbuilt)('an SVG document rasterized to a PNG', () => {
       20,
     );
     const raster = await drawn(pointed, withoutFonts(), 200);
-    expect(digestOf(raster.png)).toBe(
-      digestOf((await drawn(rectangle, withoutFonts(), 200)).png),
+    expect(sha256Of(raster.png)).toBe(
+      sha256Of((await drawn(rectangle, withoutFonts(), 200)).png),
     );
   });
 });

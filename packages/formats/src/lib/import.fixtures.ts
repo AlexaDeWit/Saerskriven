@@ -1,6 +1,7 @@
+import { committedText } from '@saerskriven/model/fixtures';
 import { otmWireSchema, type OtmDocument } from '@saerskriven/wire-otm';
 import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
-import { testDataText, vendoredTexts } from './corpus.fixtures.js';
+import { vendoredTexts } from './corpus.fixtures.js';
 
 /**
  * Every OTM and TM-BOM document the repository vendors, named by its path
@@ -14,8 +15,8 @@ export const importCorpus: readonly { name: string; text: string }[] =
 
 /** The upstream examples retain unknown fields to exercise import reports. */
 export const importTexts = {
-  otm: testDataText('otm/example.json'),
-  tmbom: testDataText('tmbom/example.json'),
+  otm: committedText('otm/example.json'),
+  tmbom: committedText('tmbom/example.json'),
 };
 
 /** A fresh OTM example for tests that change source facts. */

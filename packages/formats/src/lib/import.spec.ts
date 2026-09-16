@@ -1,10 +1,10 @@
 import type { Model } from '@saerskriven/model';
+import { committedText } from '@saerskriven/model/fixtures';
 import { otmWireSchema } from '@saerskriven/wire-otm';
 import { tmbomWireSchema } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { stringify } from 'yaml';
 import { z } from 'zod';
-import { testDataText } from './corpus.fixtures.js';
 import { importModel } from './import.js';
 import {
   importCorpus,
@@ -220,7 +220,7 @@ it('enforces the existing size, depth, and alias limits on imports', () => {
 });
 
 it('rejects the upstream Vault example with dangling trust-zone references', () => {
-  const text = testDataText('tmbom/vault-invalid-zones.json');
+  const text = committedText('tmbom/vault-invalid-zones.json');
   const result = importModel(text);
   expect(result).toMatchObject({
     _tag: 'Left',

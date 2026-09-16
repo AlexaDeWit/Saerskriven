@@ -1,6 +1,5 @@
-import { repositoryRoot } from '@saerskriven/model/fixtures';
+import { repositoryRoot, sha256Of } from '@saerskriven/model/fixtures';
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { closeSync, existsSync, openSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderGolden, scratchDirectory } from './cli.fixtures.js';
@@ -31,9 +30,6 @@ const directory = scratchDirectory('main');
 const fullDevice = '/dev/full';
 
 const twoDiagrams = 'test-data/saerskriven/two-diagrams.yaml';
-
-const digestOf = (bytes: Uint8Array): string =>
-  createHash('sha256').update(bytes).digest('hex');
 
 const scenarios: readonly Scenario[] = [
   {
@@ -140,8 +136,8 @@ for (const runner of runners) {
           'storefront',
         ]);
         expect(streamed.code).toEqual(0);
-        expect(digestOf(streamed.out)).toEqual(
-          digestOf(renderGolden('two-diagrams-storefront.snapshot.png')),
+        expect(sha256Of(streamed.out)).toEqual(
+          sha256Of(renderGolden('two-diagrams-storefront.snapshot.png')),
         );
       });
 
@@ -171,13 +167,13 @@ for (const runner of runners) {
           expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
           expect(pageCount(pdf)).toBe(6);
           expect(outlineTitles(pdf)).toContain('Two diagrams threat register');
-          expect(digestOf(pdf)).toEqual(
+          expect(sha256Of(pdf)).toEqual(
             renderGolden('two-diagrams.snapshot.pdf.sha256')
               .toString('utf8')
               .trim(),
           );
           expect(streamed.code).toEqual(0);
-          expect(digestOf(streamed.out)).toEqual(digestOf(pdf));
+          expect(sha256Of(streamed.out)).toEqual(sha256Of(pdf));
         },
         bytePathCompileTimeout,
       );

@@ -1,8 +1,12 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
-import { parsedFixture, repositoryRoot } from '@saerskriven/model/fixtures';
+import {
+  committedText,
+  parsedFixture,
+  repositoryRoot,
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -60,7 +64,7 @@ export function twoDiagramsWorkspace(): ModelWorkspace {
 
 /** The two-diagram model as text, for a fixture that rewrites part of it. */
 export function twoDiagramsYaml(): string {
-  return readFileSync(join(repositoryRoot, twoDiagramsFile), 'utf8');
+  return committedText('saerskriven/two-diagrams.yaml');
 }
 
 /** A workspace over the checkout carrying no default model. */

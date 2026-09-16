@@ -1,4 +1,5 @@
 import { Either } from 'effect';
+import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { threatCategorySchema } from './lib/categories.js';
@@ -115,12 +116,29 @@ export const testDataPath = (...segments: readonly string[]): string =>
   join(repositoryRoot, 'test-data', ...segments);
 
 /**
+ * The text of a committed file under `test-data`. The read happens at the
+ * call, so importing this entry reads no file. A consumer lists the file
+ * among its nx test inputs.
+ */
+export const committedText = (...segments: readonly string[]): string =>
+  readFileSync(testDataPath(...segments), 'utf8');
+
+/**
+ * The SHA-256 digest of bytes as hex, which is how a binary golden is
+ * compared: a failed comparison of the buffers themselves is pretty-printed
+ * and diffed element by element, which takes minutes on a picture and
+ * reports nothing while it runs.
+ */
+export const sha256Of = (bytes: Uint8Array): string =>
+  createHash('sha256').update(bytes).digest('hex');
+
+/**
  * Reads and parses a committed model under `test-data`. The read happens at
  * the call, so importing this entry reads no file. A consumer lists the file
  * among its nx test inputs.
  */
 export const committedModel = (name: string): Model =>
-  parsedFixture(JSON.parse(readFileSync(testDataPath(name), 'utf8')));
+  parsedFixture(JSON.parse(committedText(name)));
 
 /**
  * Every diagram the canvas and render suites draw from committed data: a test
