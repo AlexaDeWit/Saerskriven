@@ -1,4 +1,4 @@
-import { threatSchema, threatStatusSchema } from './threats.js';
+import { inNumberOrder, threatSchema, threatStatusSchema } from './threats.js';
 
 const threat = {
   id: 'threat-tamper-order',
@@ -25,5 +25,15 @@ describe('threatSchema', () => {
     expect(threatSchema.safeParse({ ...threat, number: 1.5 }).success).toBe(
       false,
     );
+  });
+});
+
+describe('inNumberOrder', () => {
+  it('returns a copy ordered by number and leaves the input as it was', () => {
+    const threats = [{ number: 3 }, { number: 1 }, { number: 2 }];
+    const ordered = inNumberOrder(threats);
+    expect(ordered.map(({ number }) => number)).toEqual([1, 2, 3]);
+    expect(ordered).not.toBe(threats);
+    expect(threats.map(({ number }) => number)).toEqual([3, 1, 2]);
   });
 });

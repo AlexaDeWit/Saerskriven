@@ -78,7 +78,8 @@
           },
           "{workspaceRoot}/test-data/every-glyph.model.json",
           "{workspaceRoot}/test-data/two-diagrams.model.json",
-          "{workspaceRoot}/test-data/render/**/*",
+          "{workspaceRoot}/test-data/render/every-glyph.*",
+          "{workspaceRoot}/test-data/render/two-diagrams*",
           {
             "env": "SAERSKRIVEN_FONTS_DIR"
           }

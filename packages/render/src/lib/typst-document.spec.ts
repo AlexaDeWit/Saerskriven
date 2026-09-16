@@ -7,7 +7,7 @@ import {
   threatOf,
 } from '@saerskriven/model/fixtures';
 import { join } from 'node:path';
-import { twoDiagramsModel } from '../render.fixtures.js';
+import { everyGlyphModel, twoDiagramsModel } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import { badgeLabel } from './register-labels.js';
 import { deepestProse } from './register-tree.js';
@@ -104,7 +104,9 @@ describe('the Typst document', () => {
   });
 
   it('reports a flow endpoint no diagram could draw', () => {
-    expect(renderTypst(twoDiagramsModel).unplaced).toEqual([]);
+    expect(renderTypst(everyGlyphModel).unplaced).toEqual([
+      { flow: 'el-replay', side: 'source', element: 'el-request' },
+    ]);
   });
 });
 
