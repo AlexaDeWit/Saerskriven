@@ -30,8 +30,17 @@ const metadataTag = (attrs: Record<string, string>) => ({
   injectTo: 'head' as const,
 });
 
+// GitHub Pages reports a custom domain as http until HTTPS is enforced, and a
+// search engine then treats the served https page as an alternate of an http
+// canonical. The published site is always https.
+const httpsSiteUrl = (siteUrl: string): string => {
+  const url = new URL(siteUrl);
+  url.protocol = 'https:';
+  return url.href.endsWith('/') ? url.href : `${url.href}/`;
+};
+
 const siteFiles = (siteUrl: string, socialImage?: SocialImage): Plugin => {
-  const canonicalUrl = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`;
+  const canonicalUrl = httpsSiteUrl(siteUrl);
 
   return {
     name: 'site-files',
