@@ -102,7 +102,8 @@ for byte.
 ## Placing names
 
 `packages/canvas` places the names, in
-`packages/canvas/src/lib/label-placement.ts`. A curve boundary's name, such as
+`packages/canvas/src/lib/text-placement.ts` and
+`packages/canvas/src/lib/flow-labels.ts`. A curve boundary's name, such as
 `tb-untrusted` on `agent-and-desktop`, hangs beside the curve rather than on
 it. A flow's name takes the cheapest of the candidates along the flow, where
 each shape, line, name or badge it overlaps is a cost, and a tie goes to the

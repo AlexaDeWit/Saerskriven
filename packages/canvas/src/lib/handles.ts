@@ -1,6 +1,14 @@
-import { sides, type Point, type Side, type Size } from '@saerskriven/model';
+import {
+  sides,
+  type ElementId,
+  type Point,
+  type Side,
+  type Size,
+} from '@saerskriven/model';
+import type { Box } from './geometry.js';
+import { squaredDistance } from './vectors.js';
 
-/** The sides of a node, in the order a tie between them breaks: the model's own. */
+/** The sides of a node, in the model's order, which breaks a tie. */
 export const handleSides: readonly Side[] = sides;
 
 /** One side of a node, where a flow endpoint attaches. */
@@ -52,6 +60,34 @@ export function nearestHandleSide(box: NodeBox, toward: Point): HandleSide {
   return nearest;
 }
 
-function squaredDistance(from: Point, to: Point): number {
-  return (from.x - to.x) ** 2 + (from.y - to.y) ** 2;
+/** The box a node covers, as its low and high bound on each axis. */
+export function nodeBox(box: NodeBox): Box {
+  return {
+    minX: box.position.x,
+    minY: box.position.y,
+    maxX: box.position.x + box.size.width,
+    maxY: box.position.y + box.size.height,
+  };
+}
+
+/** Whether two node boxes share a position and a size. */
+export function sameNodeBox(one: NodeBox, other: NodeBox): boolean {
+  return (
+    one.position.x === other.position.x &&
+    one.position.y === other.position.y &&
+    one.size.width === other.size.width &&
+    one.size.height === other.size.height
+  );
+}
+
+/** The box of each given node, keyed by the node's id. */
+export function nodeBoxesOf(
+  nodes: readonly (NodeBox & { readonly id: ElementId })[],
+): Map<ElementId, NodeBox> {
+  return new Map(
+    nodes.map((node) => [
+      node.id,
+      { position: node.position, size: node.size },
+    ]),
+  );
 }

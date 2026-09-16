@@ -9,7 +9,8 @@ import {
   type Size,
 } from '@saerskriven/model';
 import type { ReactElement } from 'react';
-import type { Box } from './geometry.js';
+import { shiftedBy, type Box } from './geometry.js';
+import type { NodeBox } from './handles.js';
 import { svgNumber } from './numbers.js';
 import { polylinePath, translate } from './paths.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
@@ -22,6 +23,8 @@ const countOffset = -3;
 const markOffset = 6;
 
 const flagMarkOffset = 4;
+
+const secondaryCentre = badgeRadius.primary + badgeGap + badgeRadius.secondary;
 
 /**
  * Order of the severities, worst last. `undecided` ranks zero because it is
@@ -74,6 +77,8 @@ export type ThreatBadge =
     }
   | { readonly kind: 'flag-only' };
 
+type CountedBadge = Extract<ThreatBadge, { kind: 'counted' }>;
+
 /**
  * The badge each element earns, keyed by element id, over the whole model.
  * Open is the model's own definition, taken from `openThreatsBySeverity`, so
@@ -99,12 +104,15 @@ export function badgesByElement(model: Model): Map<ElementId, ThreatBadge> {
 
 /**
  * Where an element's badge hangs on its box: the top-right corner, in the
- * coordinates the caller draws the box in. A caller bounding the badge and
- * the glyph that draws it take the corner from here rather than each
- * naming it.
+ * element's own coordinates.
  */
 export function badgeAnchor(size: Size): Point {
   return { x: size.width, y: 0 };
+}
+
+/** {@link badgeAnchor} in diagram coordinates, for a placed node. */
+export function placedBadgeAnchor(box: NodeBox): Point {
+  return shiftedBy(badgeAnchor(box.size), box.position);
 }
 
 /** How far a badge reaches from the point it hangs on. */
@@ -116,7 +124,7 @@ export type BadgeExtent = {
 /**
  * How far a badge reaches from the point it hangs on: `radius` to either
  * side and above, `depth` below, where a secondary badge and a flag mark
- * stack. A caller placing one clear of something measures it with this.
+ * stack.
  */
 export function badgeExtent(badge: ThreatBadge): BadgeExtent {
   if (badge.kind === 'flag-only') {
@@ -130,11 +138,7 @@ export function badgeExtent(badge: ThreatBadge): BadgeExtent {
   };
 }
 
-/**
- * The box a badge fills when it hangs on `at`, in the coordinates the caller
- * draws it in. A caller bounding a badge or keeping a label clear of one
- * takes the box from here rather than composing {@link badgeExtent} itself.
- */
+/** The box a badge fills when it hangs on `at`, in the coordinates of `at`. */
 export function badgeBox(at: Point, badge: ThreatBadge): Box {
   const extent = badgeExtent(badge);
   return {
@@ -229,10 +233,6 @@ function FlagMarkGlyph({ centre }: { readonly centre: number }): ReactElement {
     </g>
   );
 }
-
-type CountedBadge = Extract<ThreatBadge, { kind: 'counted' }>;
-
-const secondaryCentre = badgeRadius.primary + badgeGap + badgeRadius.secondary;
 
 function countsDepth(badge: CountedBadge): number {
   return badge.secondary === 0

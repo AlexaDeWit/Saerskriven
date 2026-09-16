@@ -19,7 +19,7 @@ import {
 import { badgeExtent, type ThreatBadge } from './badges.js';
 import type { Point } from '@saerskriven/model';
 import { segmentMeetsBox, type Box } from './geometry.js';
-import { flowLabelPlacements } from './label-placement.js';
+import { flowLabelPlacements } from './flow-labels.js';
 import {
   flowLabelClearance,
   looseLabelWidth,

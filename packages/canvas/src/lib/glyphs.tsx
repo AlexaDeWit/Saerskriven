@@ -1,18 +1,23 @@
 import type { Size } from '@saerskriven/model';
 import type { CSSProperties, ReactElement } from 'react';
 import { badgeAnchor, ThreatBadgeGlyph } from './badges.js';
+import { edgePoints } from './flow-anchors.js';
 import { WrappedText } from './labels.js';
-import { nodeTextPlacement, processCircle } from './label-placement.js';
 import type { CanvasEdge, CanvasNode, CanvasNodeKind } from './layout.js';
 import { svgNumber } from './numbers.js';
+import { processCircle } from './obstacles.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
 import { canvasClassNames } from './stylesheet.js';
+import { nodeTextPlacement } from './text-placement.js';
 import { strokeWidths } from './tokens.js';
 
 /** An element kind whose model geometry is a position and size. */
 export type BoxElementKind = Exclude<CanvasNodeKind, 'boundary-curve' | 'text'>;
 
-/** How far a box element's stroke reaches past its model box. */
+/**
+ * How far a box element's stroke reaches past its model box. Given a size,
+ * the stroke is narrowed to fit a box thinner than it.
+ */
 export function boxElementStrokeInsets(
   kind: BoxElementKind,
   size?: Size,
@@ -22,15 +27,7 @@ export function boxElementStrokeInsets(
   readonly bottom: number;
   readonly left: number;
 } {
-  const nominal = kind === 'store' ? strokeWidths.store : strokeWidths.outline;
-  const stroke =
-    size === undefined
-      ? nominal
-      : Math.min(
-          nominal,
-          kind === 'store' ? size.height : Math.min(size.width, size.height),
-        );
-  const halfStroke = stroke / 2;
+  const halfStroke = fittedStroke(kind, size) / 2;
   return kind === 'store'
     ? { top: halfStroke, right: 0, bottom: halfStroke, left: 0 }
     : {
@@ -51,7 +48,7 @@ export function BoxElementGlyph({
 }): ReactElement {
   const style = boxStrokeStyle(kind, size);
   if (kind === 'actor') {
-    return actorOutline(size, style);
+    return rectOutline(canvasClassNames.actor, size, style);
   }
   if (kind === 'process') {
     return processOutline(size, style);
@@ -59,20 +56,7 @@ export function BoxElementGlyph({
   if (kind === 'store') {
     return storeOutline(size, style);
   }
-  return boundaryBoxOutline(size, style);
-}
-
-function boxStrokeStyle(
-  kind: BoxElementKind,
-  size: Size,
-): CSSProperties | undefined {
-  const nominal = boxElementStrokeInsets(kind);
-  const fitted = boxElementStrokeInsets(kind, size);
-  const nominalWidth = nominal.top + nominal.bottom;
-  const fittedWidth = fitted.top + fitted.bottom;
-  return fittedWidth === nominalWidth
-    ? undefined
-    : { strokeWidth: svgNumber(fittedWidth) };
+  return rectOutline(canvasClassNames.boundaryBox, size, style);
 }
 
 /**
@@ -133,7 +117,7 @@ export function FlowGlyph({
   readonly edge: CanvasEdge;
   readonly textVisible?: boolean;
 }): ReactElement {
-  const points = [edge.source, ...edge.waypoints, edge.target];
+  const points = edgePoints(edge);
   return (
     <g className={groupClass(edge.outOfScope)}>
       <path
@@ -177,10 +161,34 @@ function outlineOf(node: CanvasNode): ReactElement | null {
   );
 }
 
-function actorOutline(size: Size, style?: CSSProperties): ReactElement {
+function fittedStroke(kind: BoxElementKind, size?: Size): number {
+  const nominal = kind === 'store' ? strokeWidths.store : strokeWidths.outline;
+  return size === undefined
+    ? nominal
+    : Math.min(
+        nominal,
+        kind === 'store' ? size.height : Math.min(size.width, size.height),
+      );
+}
+
+function boxStrokeStyle(
+  kind: BoxElementKind,
+  size: Size,
+): CSSProperties | undefined {
+  const fitted = fittedStroke(kind, size);
+  return fitted === fittedStroke(kind)
+    ? undefined
+    : { strokeWidth: svgNumber(fitted) };
+}
+
+function rectOutline(
+  outline: string,
+  size: Size,
+  style?: CSSProperties,
+): ReactElement {
   return (
     <rect
-      className={shapeClass(canvasClassNames.actor)}
+      className={shapeClass(outline)}
       style={style}
       width={svgNumber(size.width)}
       height={svgNumber(size.height)}
@@ -223,17 +231,6 @@ function storeOutline(size: Size, style?: CSSProperties): ReactElement {
         y2={bottom}
       />
     </>
-  );
-}
-
-function boundaryBoxOutline(size: Size, style?: CSSProperties): ReactElement {
-  return (
-    <rect
-      className={shapeClass(canvasClassNames.boundaryBox)}
-      style={style}
-      width={svgNumber(size.width)}
-      height={svgNumber(size.height)}
-    />
   );
 }
 

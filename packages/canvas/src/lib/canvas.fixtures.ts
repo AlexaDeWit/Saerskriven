@@ -19,8 +19,8 @@ const modelFile = (name: string): unknown =>
  * badges and another carries the neutral badge alone, a flow whose open
  * threat is flagged, and a boundary curve named only by a flagged
  * `mitigated` threat, which carries the flag-only badge. It lives under
- * test-data because `packages/render` draws it too, and the layer matrix
- * allows no package dependency between the two readers.
+ * test-data because `packages/render` draws it too, and render cannot import
+ * canvas's spec fixtures, which no entry point exports.
  */
 export const everyGlyphModel: Model = parsedFixture(
   modelFile('every-glyph.model.json'),

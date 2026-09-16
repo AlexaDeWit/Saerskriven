@@ -70,14 +70,11 @@ export function innerWidth(boxWidth: number): number {
 /**
  * The given text with every character XML 1.0 forbids replaced by U+FFFD:
  * the C0 controls other than tab, newline and carriage return, an unpaired
- * surrogate, U+FFFE and U+FFFF. A name, a title, and a note are free text
- * the model takes as it finds it, so a file written elsewhere can carry one
- * of these into a diagram, and an SVG document holding one is refused whole
- * by every XML parser rather than drawn with a gap. Replacing rather than
- * dropping keeps the character count, so a wrap estimated on the result is
- * the wrap of what is drawn. Every run of text this package draws goes
- * through {@link wrapText}, which calls this; a document composed around
- * those glyphs applies it to its own text as well.
+ * surrogate, U+FFFE and U+FFFF. The model takes free text as it finds it, and
+ * an SVG document holding one of these is refused whole by every XML parser.
+ * Replacing rather than dropping keeps the character count, so the wrap
+ * estimated is the wrap drawn. A document composed around this package's
+ * glyphs applies it to its own text, a title for instance.
  */
 export function xmlSafeText(text: string): string {
   let safe = '';
@@ -102,14 +99,12 @@ function allowedInXml(character: string): boolean {
  * {@link averageGlyphWidthRatio} rather than by measurement. A newline breaks
  * a line where it stands, a word wider than the width is broken across lines,
  * and text holding nothing but whitespace yields no lines at all. What comes
- * back is {@link xmlSafeText} of the input, so no line carries a character
- * the document it lands in cannot hold.
+ * back is {@link xmlSafeText} of the input.
  *
  * A column is one grapheme cluster, so a break falls between clusters: a
- * regional-indicator flag stays one flag rather than two letters, a family
- * joined by zero-width joiners stays one family, and half a surrogate pair
- * never lands on a line of its own, which is the document refused whole that
- * {@link xmlSafeText} exists to prevent, arrived at after it has run.
+ * regional-indicator flag stays one flag, a family joined by zero-width
+ * joiners stays one family, and half a surrogate pair never lands on a line
+ * of its own.
  *
  * A cluster is settled by an explicit rule over code points rather than by
  * `Intl.Segmenter`, whose segmentation data moves with the runtime's ICU and

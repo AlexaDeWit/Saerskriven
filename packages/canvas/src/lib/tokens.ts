@@ -10,7 +10,7 @@ export type Colour = `#${string}`;
  * consumer never learns which table it was handed.
  */
 export type Palette = {
-  /** The studio shell, and the cream a badge lifts itself off the canvas with. */
+  /** The studio shell, and the cream a badge lifts itself off the canvas. */
   readonly surfaceApp: Colour;
   /** What a diagram is drawn on, and the halo a flow name is stroked in. */
   readonly surfaceCanvas: Colour;
@@ -53,15 +53,15 @@ export type Palette = {
 };
 
 /**
- * The light palette: the maintainer's vintage draftsman colours with the
- * lightness moved where the contrast floors demanded it and the hue left
- * alone. Six values are not the starting palette's own. The ochre and the
- * warm grey are darker, because cream lettering on them measured 3.2 and 4.4
- * where a badge needs 4.5. The secondary text and the hairline are darker,
- * because they measured 3.2 and 1.4 on the canvas ground where text needs 4.5
- * and a control's outline 3. The last two are roles the starting palette has
- * none of: the fifth severity, which is the olive of the primary action, and
- * the grid line, a warm taupe at a graph-paper weight over the canvas ground.
+ * The light palette: the maintainer's draftsman colours with the lightness
+ * moved where a contrast floor demanded it and the hue left alone. The ochre
+ * and the warm grey are darker, because cream lettering on them measured 3.2
+ * and 4.4 where a badge needs 4.5. The secondary text and the hairline are
+ * darker, because they measured 3.2 and 1.4 on the canvas ground where text
+ * needs 4.5 and a control's outline 3. The fifth severity, which the starting
+ * palette lacks, is the olive of the primary action, and the grid line is a
+ * warm taupe measured on a band, 1.3 to 1.6 on the canvas ground, since it is
+ * worse for being darker.
  */
 export const lightPalette = {
   surfaceApp: '#F0EDE5',
@@ -86,9 +86,9 @@ export const lightPalette = {
 
 /**
  * The dark palette: the same hues over warm ink grounds, measured against the
- * same floors, its hairline lightened a step past the first table so it clears
- * 3 on the wash a process is filled with. The studio takes it under the
- * system's dark preference. The headless render stays on the light table.
+ * same floors, its hairline lightened so it clears 3 on the wash a process is
+ * filled with. The studio takes it under the system's dark preference, and
+ * the headless render stays on the light table.
  */
 export const darkPalette = {
   surfaceApp: '#282522',
@@ -123,11 +123,9 @@ export const uiType = {
 } as const;
 
 /**
- * The type a diagram is drawn in. Every size is user units rather than a CSS
- * length, because the wrap estimates its columns in the same units. The stack
- * asks for Arial last: Liberation Sans is metric-compatible with it and is
- * what the CLI typesets a PDF with, so a diagram keeps the layout the canvas
- * measured.
+ * The type a diagram is drawn in. Every size is in user units, the units the
+ * wrap estimates columns in. The stack ends on Arial, which Liberation Sans,
+ * the face the CLI typesets a PDF with, is metric-compatible with.
  */
 export const canvasType = {
   family: "'Helvetica Neue', Helvetica, Arial, sans-serif",
@@ -139,13 +137,11 @@ export const canvasType = {
 } as const;
 
 /**
- * Every stroke the drawing lays down, in user units rather than CSS lengths,
- * since a diagram is measured in the model's own coordinates. One weight
- * carries an element's outline, a trust boundary's dashes and a flow's line,
- * so a diagram reads as drawn by one hand. A store is heavier because its two
- * lines are the whole glyph and have no box to sit in. The badge ring and the
- * halo under a flow name are laid down in a ground colour rather than in ink:
- * they cut the mark out of whatever it is drawn over.
+ * Every stroke the drawing lays down, in user units. One weight carries an
+ * element's outline, a trust boundary's dashes and a flow's line. A store's
+ * two lines are heavier, being its whole glyph. The badge ring and the halo
+ * under a flow name are drawn in a ground colour, cutting the mark out of
+ * what lies beneath.
  */
 export const strokeWidths = {
   outline: 2,
@@ -155,23 +151,13 @@ export const strokeWidths = {
 } as const;
 
 /**
- * How heavily the studio marks what is selected and what the pointer is over,
- * in the same user units as {@link strokeWidths}: the canvas draws a model
- * unit as a pixel, so a cue laid over the drawing is measured against the
- * weight the drawing was laid down at. Each is a step above the outline
- * weight, which is what makes a selection legible with no colour read off it,
- * in greyscale and at any zoom, and none is more than one step past the
- * heaviest weight the drawing itself lays down, so a cue stays inside the
- * hand the diagram is drawn by: a flow taken further swells past the
- * arrowhead that ends it. A flow's two are apart because a flow has no box to
- * frame and its line carries both, so a selected flow under the pointer has
- * to stay the heavier of the two. The headless render lays none of them down:
- * a file has nothing selected and nothing under a pointer.
- *
- * {@link tokenStylesheet} writes each as a pixel length, which a CSS border
- * demands and an SVG stroke reads as that many units of the space it is drawn
- * in, so one property serves the frame around an element and the line of a
- * flow.
+ * How heavily the studio marks what is selected and what the pointer is
+ * over, in the units of {@link strokeWidths}. Each is a step above the
+ * outline weight, so a selection reads without colour, and no more than one
+ * step past the heaviest stroke, or a flow swells past its arrowhead. A
+ * selected flow stays heavier than a hovered one, its line carrying both
+ * cues. {@link tokenStylesheet} writes each as a pixel length, which serves a
+ * CSS border and an SVG stroke alike. The headless render draws none.
  */
 export const cueWidths = {
   selection: 3,
@@ -199,9 +185,7 @@ export const interactionWidths = {
 
 /**
  * The triangle that marks where a flow ends, in user units: how far its base
- * sits back from the tip, and how far each wing reaches from the line. It is
- * sized to be read at the zoom a diagram opens at rather than off the line it
- * ends, which is two units wide and would leave a mark to look for.
+ * sits back from the tip, and how far each wing reaches from the line.
  */
 export const arrowhead = {
   length: 18,
@@ -209,12 +193,10 @@ export const arrowhead = {
 } as const;
 
 /**
- * How far a threat badge reaches from its own centre, in user units. The ring
- * in {@link strokeWidths} is centred on the circle, so half of it eats into
- * the disc the count is lettered on, and each radius carries the room the
- * count needs inside what the ring leaves. `flag` is the half-width and
- * half-height of the flag mark's triangle, whose base runs across its box's
- * foot.
+ * How far a threat badge reaches from its own centre, in user units. Half the
+ * ring in {@link strokeWidths} falls inside each circle, and each radius
+ * leaves room for the count inside that. `flag` is the half-width and
+ * half-height of the flag mark's triangle.
  */
 export const badgeRadius = {
   primary: 13,
@@ -223,10 +205,8 @@ export const badgeRadius = {
 } as const;
 
 /**
- * The gap between the ruled lines of the graph paper the studio draws a
- * diagram on, in user units, so the grid scales with the viewport. The
- * headless render lays down no grid: it writes the diagram rather than the
- * surface it was drawn on.
+ * The gap between the ruled lines of the studio's graph paper, in user units,
+ * so the grid scales with the viewport. The headless render draws no grid.
  */
 export const gridSpacing = 25;
 
@@ -251,7 +231,7 @@ export const focusRing = {
   offset: '2px',
 } as const;
 
-/** Default threat pane coverage, including its outer inset, in screen pixels. */
+/** Default threat pane coverage with its outer inset, in screen pixels. */
 export const panelCover = 472;
 
 /**
@@ -292,11 +272,9 @@ const colourProperties = {
 
 /**
  * How a stylesheet inside a document names one colour role: the custom
- * property carrying it rather than a value, so the rule draws with whichever
- * table the document root resolved. The names have one home, the table this
- * reads, which the two `:root` blocks below are written from as well, and
- * that table is total over the roles, so a role added to {@link Palette} does
- * not compile until it has been named a property.
+ * property carrying it, so the rule draws with whichever table the document
+ * root resolved. A role added to {@link Palette} does not compile until it is
+ * named a property.
  */
 export function paletteProperty(role: keyof Palette): string {
   return `var(${colourProperties[role]})`;
@@ -310,16 +288,11 @@ const colourBlock = (palette: Palette, indent: string): string => {
 };
 
 /**
- * The tokens as the custom properties the studio's CSS modules read, for
- * injection once at the app root: the light table on the root, the dark one
- * over it under the system's dark preference, so nothing below the root
- * learns which mode it is in. `color-scheme` rides along, which is what makes
- * a scrollbar and a native control follow the same preference.
- *
- * One function over a palette writes both blocks, so a property cannot reach
- * one table and miss the other. The headless render reads neither:
- * `canvasStylesheet` resolves its colours to values, the standalone SVG
- * having no document around it to hold a `:root`.
+ * The tokens as the `--pn-*` custom properties the studio's CSS modules read,
+ * injected once at the app root: the light table on the root, the dark one
+ * under the system's dark preference, and each forced by
+ * `data-pn-colour-mode`. `color-scheme` rides along, so scrollbars and native
+ * controls follow the same preference. The headless render reads none of it.
  */
 export const tokenStylesheet = `:root {
   color-scheme: light dark;

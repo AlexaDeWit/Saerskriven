@@ -1,9 +1,9 @@
+import { severitySchema, type Severity } from '@saerskriven/model';
 import {
   badgeTextColour,
   defaultRenderTheme,
   type RenderTheme,
 } from './render-theme.js';
-import { severitySchema, type Severity } from '@saerskriven/model';
 import {
   canvasType,
   lightPalette,
@@ -42,9 +42,6 @@ export const canvasClassNames = {
   toneFlag: 'pn-tone-flag',
 } as const;
 
-/** One class name the primitives emit. */
-export type CanvasClassName = keyof typeof canvasClassNames;
-
 /** Which run of text a primitive is drawing. */
 export type WrappedTextStyle = 'label' | 'note' | 'flowLabel';
 
@@ -79,122 +76,114 @@ export const severityToneClass = {
 /** Shared stroke width for drawing and bounding a trust boundary. */
 export const boundaryStrokeWidth = strokeWidths.outline;
 
-const name = canvasClassNames;
-
-const text = wrappedTextStyles;
-
-const type = canvasType;
-
-const stroke = strokeWidths;
-
 const sheetFrom = (
   colour: (role: keyof Palette) => string,
-  family: string = type.family,
-): string => `.${name.element} {
+  family: string = canvasType.family,
+): string => `.${canvasClassNames.element} {
   font-family: ${family};
 }
-.${name.shape} {
+.${canvasClassNames.shape} {
   fill: ${colour('surfacePanel')};
   stroke: ${colour('textPrimary')};
-  stroke-width: ${stroke.outline};
+  stroke-width: ${strokeWidths.outline};
 }
-.${name.actor} {
+.${canvasClassNames.actor} {
   fill: ${colour('surfaceActor')};
 }
-.${name.process} {
+.${canvasClassNames.process} {
   fill: ${colour('surfaceProcess')};
 }
-.${name.store} {
+.${canvasClassNames.store} {
   fill: none;
-  stroke-width: ${stroke.store};
+  stroke-width: ${strokeWidths.store};
 }
-.${name.boundaryBox},
-.${name.boundaryCurve} {
+.${canvasClassNames.boundaryBox},
+.${canvasClassNames.boundaryCurve} {
   fill: none;
   stroke: ${colour('textSecondary')};
   stroke-width: ${boundaryStrokeWidth};
   stroke-dasharray: 8 6;
 }
-.${name.outOfScope} {
+.${canvasClassNames.outOfScope} {
   opacity: 0.5;
 }
-.${name.outOfScope} .${name.shape} {
+.${canvasClassNames.outOfScope} .${canvasClassNames.shape} {
   stroke-dasharray: 6 4;
 }
-.${text.label.className} {
+.${wrappedTextStyles.label.className} {
   fill: ${colour('textPrimary')};
-  font-size: ${text.label.fontSize}px;
+  font-size: ${wrappedTextStyles.label.fontSize}px;
   font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
 }
-.${text.note.className} {
+.${wrappedTextStyles.note.className} {
   fill: ${colour('textSecondary')};
-  font-size: ${text.note.fontSize}px;
+  font-size: ${wrappedTextStyles.note.fontSize}px;
   text-anchor: middle;
   dominant-baseline: central;
 }
-.${name.flow} {
+.${canvasClassNames.flow} {
   fill: none;
 }
-.${name.flowArrow} {
+.${canvasClassNames.flowArrow} {
   fill: ${colour('textPrimary')};
   stroke: none;
 }
-.${text.flowLabel.className} {
+.${wrappedTextStyles.flowLabel.className} {
   fill: ${colour('textSecondary')};
-  font-size: ${text.flowLabel.fontSize}px;
+  font-size: ${wrappedTextStyles.flowLabel.fontSize}px;
   text-anchor: middle;
   dominant-baseline: central;
   paint-order: stroke;
   stroke: ${colour('surfaceCanvas')};
-  stroke-width: ${stroke.labelHalo};
+  stroke-width: ${strokeWidths.labelHalo};
   stroke-linejoin: round;
 }
-.${name.badge} {
+.${canvasClassNames.badge} {
   stroke: ${colour('badgeGround')};
-  stroke-width: ${stroke.badgeRing};
+  stroke-width: ${strokeWidths.badgeRing};
 }
-.${name.badgeCount} {
+.${canvasClassNames.badgeCount} {
   fill: ${colour('badgeGround')};
   stroke: none;
   font-weight: 600;
   text-anchor: middle;
   dominant-baseline: central;
 }
-.${name.badgePrimary} .${name.badgeCount} {
-  font-size: ${type.badgeCount}px;
+.${canvasClassNames.badgePrimary} .${canvasClassNames.badgeCount} {
+  font-size: ${canvasType.badgeCount}px;
 }
-.${name.badgeSecondary} .${name.badgeCount} {
-  font-size: ${type.secondaryBadgeCount}px;
+.${canvasClassNames.badgeSecondary} .${canvasClassNames.badgeCount} {
+  font-size: ${canvasType.secondaryBadgeCount}px;
 }
-.${name.badgeMark} {
+.${canvasClassNames.badgeMark} {
   fill: ${colour('badgeGround')};
   stroke: none;
-  font-size: ${type.badgeMark}px;
+  font-size: ${canvasType.badgeMark}px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
 }
-.${name.badgeFlag} {
+.${canvasClassNames.badgeFlag} {
   stroke-linejoin: round;
 }
-.${name.toneCritical} {
+.${canvasClassNames.toneCritical} {
   fill: ${colour('toneCritical')};
 }
-.${name.toneHigh} {
+.${canvasClassNames.toneHigh} {
   fill: ${colour('toneHigh')};
 }
-.${name.toneMedium} {
+.${canvasClassNames.toneMedium} {
   fill: ${colour('toneMedium')};
 }
-.${name.toneLow} {
+.${canvasClassNames.toneLow} {
   fill: ${colour('toneLow')};
 }
-.${name.toneNeutral} {
+.${canvasClassNames.toneNeutral} {
   fill: ${colour('toneNeutral')};
 }
-.${name.toneFlag} {
+.${canvasClassNames.toneFlag} {
   fill: ${colour('textPrimary')};
 }
 `;
@@ -202,7 +191,7 @@ const sheetFrom = (
 /** The studio-independent canvas stylesheet with resolved light colours. */
 export const canvasStylesheet = sheetFrom((role) => lightPalette[role]);
 
-/** The studio canvas stylesheet resolves colours through its root properties. */
+/** The canvas stylesheet with colours read from the studio root properties. */
 export const themedCanvasStylesheet = sheetFrom(paletteProperty);
 
 /** Resolves headless drawing colours, font family, and badge appearance. */
@@ -229,13 +218,13 @@ export function renderCanvasStylesheet(
       (severity) =>
         [severityToneClass[severity], theme.severity[severity]] as const,
     ),
-    [name.toneFlag, theme.colours.text],
+    [canvasClassNames.toneFlag, theme.colours.text],
   ];
   const outlined = theme.badges.style === 'outline';
   const badges = tones.map(
     ([className, tone]) =>
       `.${className} { fill: ${outlined ? theme.colours.background : tone}; stroke: ${tone}; stroke-width: ${String(theme.badges.borderWidth)}; }
-.${className} ~ .${name.badgeCount}, .${className} ~ .${name.badgeMark} { fill: ${badgeTextColour(theme, tone)}; }`,
+.${className} ~ .${canvasClassNames.badgeCount}, .${className} ~ .${canvasClassNames.badgeMark} { fill: ${badgeTextColour(theme, tone)}; }`,
   );
   return [
     sheetFrom((role) => palette[role], JSON.stringify(theme.fonts.body)),
