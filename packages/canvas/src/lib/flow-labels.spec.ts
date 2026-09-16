@@ -24,13 +24,13 @@ import {
   elementBadges,
   elementSolids,
   isEnclosure,
-  layoutOf,
   openThreatOn,
   scenes,
   textBoxOf,
   type Drawn,
   type Solid,
 } from './label-placement.fixtures.js';
+import { layoutOf } from './layout.fixtures.js';
 import type { CanvasLayout, CanvasNode } from './layout.js';
 import { controlPolygon } from './paths.js';
 import { textPlacementCorners } from './text-placement.js';

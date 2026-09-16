@@ -14,13 +14,10 @@ import {
   type Box,
   type Circle,
 } from './geometry.js';
-import { layoutDiagram, type CanvasLayout, type CanvasNode } from './layout.js';
+import { layoutOf } from './layout.fixtures.js';
+import type { CanvasLayout, CanvasNode } from './layout.js';
 import { processCircle } from './obstacles.js';
 import { nodeTextPlacement, textPlacementCorners } from './text-placement.js';
-
-/** One diagram of a model laid out, the first by default. */
-export const layoutOf = (model: Model, diagram = 0): CanvasLayout =>
-  layoutDiagram(model.diagrams[diagram], model);
 
 /** Whether a node is a trust boundary, which a label may sit inside. */
 export const isEnclosure = (node: CanvasNode): boolean =>

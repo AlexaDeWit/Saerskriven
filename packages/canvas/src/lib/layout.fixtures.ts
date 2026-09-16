@@ -1,10 +1,10 @@
 import type { Model } from '@saerskriven/model';
 import { parsedFixture } from '@saerskriven/model/fixtures';
-import { layoutDiagram } from './layout.js';
+import { layoutDiagram, type CanvasLayout } from './layout.js';
 
-/** The first diagram of a model laid out. */
-export const layoutOf = (model: Model) =>
-  layoutDiagram(model.diagrams[0], model);
+/** One diagram of a model laid out, the first by default. */
+export const layoutOf = (model: Model, diagram = 0): CanvasLayout =>
+  layoutDiagram(model.diagrams[diagram], model);
 
 /** A flow named `el-flow` between the given ends. */
 export const flowBetween = (

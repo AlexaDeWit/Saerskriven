@@ -76,8 +76,8 @@ export type FlowGeometry = {
  * an element's drawn shape (a box, or a process's circle), name or badge, a
  * straight run of a trust boundary's outline or of any flow's line, its own
  * included, and every name or badge already placed. A badge box is tested
- * against every other badge grown by a clearance, so two badges never read as
- * one element's stacked pair.
+ * against every other badge grown by a clearance, so a badge within a
+ * clearance of another costs as much as one drawn over it.
  *
  * Flows are placed in ascending id order and the cheapest candidate wins. A
  * tie goes to the candidate nearest the midpoint of the flow's longest

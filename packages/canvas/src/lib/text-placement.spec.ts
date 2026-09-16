@@ -12,11 +12,11 @@ import {
   boxAt,
   diagramOf,
   elementSolids,
-  layoutOf,
   openThreatOn,
   scenes,
   textBoxOf,
 } from './label-placement.fixtures.js';
+import { layoutOf } from './layout.fixtures.js';
 import type { CanvasLayout, CanvasNode } from './layout.js';
 import { sampledCurve } from './paths.js';
 import { nodeTextPlacement, textPlacementCorners } from './text-placement.js';
