@@ -46,7 +46,7 @@ Dragon and license it under the same Apache License 2.0. See
 | `packages/mcp`                      | The MCP server object: tools over the model and the codecs, with no transport of its own                                                                                                                                                                                                                                         |
 | `apps/studio`                       | The drawing UI: its [canvas](apps/studio/src/canvas/README.md), its [threat panel](apps/studio/src/panel/README.md), its [model store](apps/studio/src/store/README.md), its [file bridge](apps/studio/src/files/README.md), its [commands](apps/studio/src/commands/README.md) and its [controls](apps/studio/src/ui/README.md) |
 | `apps/cli`                          | The command-line interface                                                                                                                                                                                                                                                                                                       |
-| `apps/studio-e2e`                   | The studio's [browser suite](apps/studio-e2e/README.md), and the round-trip coverage matrix it holds                                                                                                                                                                                                                             |
+| `apps/studio-e2e`                   | The studio's [browser suite](apps/studio-e2e/README.md)                                                                                                                                                                                                                                                                          |
 
 A wire package declares one file format and depends on zod alone, so no
 change to the internal model can change what a released format version
@@ -60,15 +60,16 @@ fixture.
 
 ## Documentation
 
-| Page                                                          | For                                                     |
-| ------------------------------------------------------------- | ------------------------------------------------------- |
-| [The Saerskriven YAML format](docs/saerskriven-yaml.md)       | The native file format and its compatibility contract   |
-| [Importing a foreign model](docs/import.md)                   | What OTM and TM-BOM import carries over and reports     |
-| [Render themes and embedded registers](docs/render-themes.md) | Appearance overrides, website badges, heading controls  |
-| [The MCP server](docs/mcp.md)                                 | `saer mcp`: tools, resources, HTTP, host registration   |
-| [Nix](docs/nix.md)                                            | Consuming the released CLI from a flake                 |
-| [Building the executables](docs/build.md)                     | Packaging, the WebAssembly modules, reproducible builds |
-| [Cutting a release](docs/release.md)                          | The release procedure and the website deployment        |
+| Page                                                          | For                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------- |
+| [The Saerskriven YAML format](docs/saerskriven-yaml.md)       | The native file format and its compatibility contract         |
+| [Using the studio](docs/studio.md)                            | Drawing, editing threats and records, files, and the keyboard |
+| [Importing a foreign model](docs/import.md)                   | What OTM and TM-BOM import carries over and reports           |
+| [Render themes and embedded registers](docs/render-themes.md) | Appearance overrides, website badges, heading controls        |
+| [The MCP server](docs/mcp.md)                                 | `saer mcp`: tools, resources, HTTP, host registration         |
+| [Nix](docs/nix.md)                                            | Consuming the released CLI from a flake                       |
+| [Building the executables](docs/build.md)                     | Packaging, the WebAssembly modules, reproducible builds       |
+| [Cutting a release](docs/release.md)                          | The release procedure and the website deployment              |
 
 ## Install
 

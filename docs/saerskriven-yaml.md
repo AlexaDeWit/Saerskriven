@@ -183,9 +183,8 @@ Copying a selection restricts the copied relationship lists to copied targets,
 matching threat links. Pasting remaps every retained target ID.
 The original model retains its full lists.
 
-In Studio, select an element and expand **Security properties** to view or edit
-these values. The controls distinguish **Not recorded**, explicit flags and
-recorded empty values. Every committed edit supports undo and redo.
+The studio edits these values under **Security properties**
+([using the studio](studio.md#security-properties)).
 
 ## Ordering
 

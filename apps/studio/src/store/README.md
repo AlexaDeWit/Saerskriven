@@ -5,17 +5,12 @@ file lifecycle, last refusal, and recovery status. Outside a spec reset,
 `dispatch(action)` is the only way the state moves. It applies one pure
 `reduce(state, action)`. Views read through selectors.
 
-Zustand hosts it because it is the programming model React Flow 12 is built
-on, so the canvas and the studio subscribe the same way and a component
-re-renders only when the slice its selector returns changes. The runtime is
-not shared: React Flow carries a zustand 4 copy of its own for its internal
-store, which is its business and no version this workspace uses. The reducer
-shape is the constraint the host had to satisfy, not something it provides.
-Redux Toolkit is the same shape with more ceremony and Immer over operations
-that are already pure, XState Store dispatches to per-event handlers rather
-than one reducer and has a younger API, `useReducer` with context re-renders
-every consumer on every dispatch, and jotai and valtio offer no reducer shape
-and no immutable snapshot to push onto a stack.
+Zustand hosts it because React Flow 12 is built on it, so the canvas and the
+studio subscribe the same way and a component re-renders only when the slice
+its selector returns changes. React Flow carries a zustand 4 copy of its own
+for its internal store, which no code here uses. The reducer shape and the
+immutable snapshots the undo stacks hold are the constraint, not something the
+host provides.
 
 ## The shape
 
@@ -23,181 +18,146 @@ and no immutable snapshot to push onto a stack.
   state a model starts in, and the placeholder model the studio opens on until
   a file is opened. The stacks hold whole models: the model's operations return
   new models sharing everything they did not change, so a snapshot is cheap.
-  The placeholder is the smallest thing that is still a data-flow diagram, an
-  actor, the records it sends, and the store they land in, and each box is a
-  two-to-one box on the studio's grid, chosen for proportion, with room inside
-  for its name at the canvas type size and a height of one line plus padding
-  rounded up to the grid, so no name wraps and the flow's name has somewhere
-  to hang clear of both. Its title is `Untitled`, which is what a model that
-  has never been in a file is called, so the tab, the file controls and a
-  saved file all read one string rather than a word a view supplied.
-- `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. Model edits
-  carry one operation and its arguments. `SetElementProperties` applies a typed
-  patch to the existing element kind, including explicit clearing of optional
-  fields. Invalid changes preserve the model and history. The mitigation and
-  assumption actions (add, replace, link, unlink, set status) each carry one
-  model operation, so an unlink that removes a record from its last threat
-  is one undo step. `LinkAssumptionToModel` and `UnlinkAssumptionFromModel`
-  carry the model link the same way, and `SetModelMetadata` carries one
-  metadata change. `MoveElements` and `RemoveElements`
-  fold the matching operation over one ID array before history records the
-  result. `AddDiagram` appends a diagram and shows it, the one edit that
-  moves the view as well as the model, since a diagram is added to be drawn
-  on. The other tags cover history, the diagram on screen, selection, inline
+  The placeholder is the smallest data-flow diagram, an actor, a flow and a
+  store, sized on the studio's grid so no name wraps and the flow's name has
+  room clear of both boxes. Its title is `untitledModel`, the name `nameOf`
+  gives a model in no file, so the tab, the file controls and a saved file read
+  one string.
+- `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. A model edit
+  carries one operation and its arguments, so an unlink that removes a record
+  from its last reference is one undo step. `MoveElements` and
+  `RemoveElements` fold the matching operation over one ID array, and
+  `InsertFragment` and `ArrangeElements` apply a paste or an arrangement
+  atomically, before history records the result. `AddDiagram` appends a
+  diagram and shows it, the one edit that moves the view as well as the model.
+  The other tags cover history, the diagram on screen, selection, inline
   editing, files and failures. `DismissFailure` puts `lastFailure` away and
-  touches nothing else, so a person can clear a refusal without the stacks,
-  the saved point or the file moving. `Saved` names a file as `Opened` does,
-  because a first save is a save-as, and folding both into `file` keeps
-  "this model lives in this file" one fact. `Closed` is the third: the
-  studio goes back to the state it booted in, placeholder model and all, so
-  nothing of the file that was open survives for a later save to merge onto.
+  touches nothing else. `Saved` names a file as `Opened` does, because a first
+  save is a save-as, and folding both into `file` keeps "this model lives in
+  this file" one fact. `Closed` returns to the state the studio booted in,
+  placeholder model and all, so nothing of the file that was open survives for
+  a later save to merge onto.
 - `reducer.ts` is the one pure function, beside the private helpers its arms
   share. It is total: an operation the model refuses leaves the present and
   both stacks alone and records the refusal in `lastFailure`, so no dispatch
   fails and no view handles an error. A successful edit pushes the old present
   onto `past` and clears `future`.
-- `store.ts` creates the vanilla store, `dispatch` applies the reducer to
-  it, writes recoverable changes, publishes the state, and sends the result
-  to the other tabs ([Other tabs](#other-tabs)). `useModelStore(selector)`
-  is the React half. The store opens from recovery, the development model,
-  or the placeholder, in that order. `onCanvasOrPanelChange(changed)`
-  subscribes to the model on screen, the selection and the open inline
-  field, which is the lifetime of a transient status: it ends at the next
-  action that moves one of the three, never on a clock.
-- `selectors.ts` derives what views show. Unsaved work is `present !== saved`
-  by identity, so undoing back to the saved point clears it with no
-  bookkeeping. `windowTitle` is what the browser tab is named: the model's
-  name as `nameOf` in `state.ts` gives it, ahead of the product name, so
-  the tab and the menu cannot disagree on what the model is called.
-  `showingPlaceholder` identifies that opening state for the document title.
+- `store.ts` creates the vanilla store. `dispatch` applies the reducer, writes
+  recoverable changes, publishes the state, and sends the result to the other
+  tabs ([Other tabs](#other-tabs)). `useModelStore(selector)` is the React
+  half. The store opens from recovery, the development model, or the
+  placeholder, in that order. `onCanvasOrPanelChange(changed)` subscribes to
+  the model on screen, the selection and the open inline field, which is the
+  lifetime of a transient status: it ends at the next action that moves one of
+  the three, never on a clock.
+- `selectors.ts` derives what views show. `isDirty` is `present !== saved` by
+  identity, so undoing back to the saved point clears it with no bookkeeping.
+  `modelAsOpened` is the present model while both stacks are empty, which is
+  how the canvas tells a model that arrived from one that was edited
+  ([the canvas](../canvas/README.md#the-view)). `windowTitle` names the browser
+  tab with `nameOf` the file ahead of the product name, so the tab and the menu
+  cannot disagree. `showingPlaceholder` identifies the untouched opening state.
+- `../reason.ts` words a thrown or rejected value, for the store's recovery
+  storage and the file bridge alike, so neither imports the other.
 
-The active diagram, selection, whether the model's properties are shown, the
-inline editor, the last refusal, and the file lifecycle stay out of the undo
-stacks. `ShowModelProperties` shows the model's properties and clears the
+The active diagram, the selection, whether the model's properties are shown,
+the inline editor, the last refusal, and the file lifecycle stay out of the
+undo stacks. `ShowModelProperties` shows the model's properties and clears the
 selection, a `Select` naming an element hides them, and
-`HideModelProperties` hides them. `activeDiagram` names the
-diagram on screen, and nothing until one has been chosen, the first the
-model holds being on screen meanwhile. `SelectDiagram` sets it, clears the
+`HideModelProperties` hides them. `activeDiagram` names the diagram on screen,
+and nothing until one has been chosen. `SelectDiagram` sets it, clears the
 selection and closes the editor, since both belong to the diagram left, and
-moves neither the model nor the history. The `activeDiagram` selector
-resolves it, falling back to the first diagram while the model does not hold
-the one named, so an open, an undo or a redo that takes the diagram away
-leaves the canvas on something rather than refusing. `selection` is a
-unique, ordered array of element IDs. A removal drops every removed ID from
-it and closes a matching editor. `inlineEditor` names the element and
-whether the field edits its name or its Note text. It is in the store
-because a command reaches it from the keyboard
-([the canvas](../canvas/README.md)). Being total, the reducer cannot refuse
-`Opened` or `Closed` over unsaved work, so the guards on those, and the one
-on closing the tab, belong in the view
+moves neither the model nor the history. The `activeDiagram` selector falls
+back to the first diagram while the model does not hold the one named, so an
+open, an undo or a redo that takes the diagram away leaves the canvas on
+something. `selection` is a unique, ordered array of element IDs, and an
+unchanged selection keeps its array identity, so repeated canvas callbacks do
+not erase the announcement for the selection change they completed. A removal
+drops every removed ID from it and closes a matching editor. `inlineEditor`
+names the element and whether the field edits its name or its Note text. It is
+in the store because a command reaches it from the keyboard. Being total, the
+reducer cannot refuse `Opened` or `Closed` over unsaved work, so those guards,
+and the one on closing the tab, belong in the view
 ([the file bridge](../files/README.md)).
 
 `FileLifecycle.Opened` carries the file's name and its `RetainedSource`: the
-format it was read as, and the wire document that read produced. The document
-is there because a save merges the model onto it, and what Saerskriven does not
-model survives only that way. It rides in the store rather than in a component
-so that one dispatch settles which file the model lives in and what a save
-merges onto, and it stays out of the stacks with the rest of the file: an undo
-moves the model, never the file. The type is derived from the formats
-package's detected-read union, so a document cannot be filed under the wrong
-format and nothing has to assert which codec owns which.
+format it was read as, and the wire document that read produced. A save merges
+the model onto that document, and what Saerskriven does not model survives
+only that way. It rides in the store so that one dispatch settles which file
+the model lives in and what a save merges onto, and it stays out of the stacks
+with the rest of the file: an undo moves the model, never the file. The type is
+derived from the formats package's detected-read union, so a document cannot be
+filed under the wrong format.
 
 ## Recovery
 
-`recovery-storage.ts` owns loading, replacing, and clearing one snapshot. The
-browser adapter uses `saerskriven:studio:recovery` in `localStorage`.
-Version 2 stores the model as a Saerskriven YAML wire document, with dirty
-status, the file lifecycle, the studio version that wrote it, and the active
-diagram as an optional field, so a snapshot written before that field existed
-still loads. The file lifecycle includes the name, format, and retained wire
-document. A restored active diagram the model no longer holds is dropped.
+`recovery-storage.ts` owns loading, replacing, and clearing one snapshot under
+`saerskriven:studio:recovery` in `localStorage`. Version 2 of the snapshot
+stores the model as a Saerskriven YAML wire document, with dirty status, the
+file lifecycle (name, format, retained wire document), the studio version that
+wrote it, and the active diagram as an optional field, so a snapshot written
+before that field existed still loads. A restored active diagram the model no
+longer holds is dropped.
 
-The model travels as a document of
-[the native format](../../../../docs/saerskriven-yaml.md) in the version this
-release writes, so the snapshot inherits that format's compatibility contract:
-a session survives every upgrade a file in that format survives. A field added
-to the model costs the snapshot nothing, because the format declares the new
-key as optional within its version and the read maps a document written
-without it onto the model the current release requires. A breaking format
-change ships as a new version with a migration in `formats`, and the snapshot
-follows that migration rather than carry one of its own: a stored document of
-version 1, and the retained source of a version 1 file, restore through the v1
-to v2 migration. A document of a version this release does not know is
-rejected like any malformed snapshot. The studio version in `writtenBy` is
-information for a refusal, never a guard on what loads.
+The snapshot holds a document of [the native
+format](../../../../docs/saerskriven-yaml.md) rather than the model, so it
+inherits that format's compatibility contract: a session survives every
+upgrade a file in that format survives, a field added to the model costs the
+snapshot nothing, and a stored version 1 document, or the retained source of a
+version 1 file, restores through the formats package's migration rather than
+one of the snapshot's own. A document of a version this release does not know
+is rejected like any malformed snapshot. The studio version in `writtenBy` is
+information for a refusal, never a guard on what loads. Going through the
+format costs the order of the threat register, which a restore puts in number
+order as an open of the saved file does.
 
-Going through the format costs the order of the threat register: the format
-writes threats in number order, so a restore puts them in number order, as an
-open of the saved file does.
-
-Version 1 of the snapshot held the model itself rather than a document, and
-nothing maps it. It is refused with a reason saying an earlier release wrote
-it, distinct from the reason a malformed or unsupported snapshot gets, and the
-placeholder opens.
+Version 1 of the snapshot held the model itself, and nothing maps it. It is
+refused with a reason saying an earlier release wrote it, distinct from the
+reason a malformed or unsupported snapshot gets, and the placeholder opens.
 
 `dispatch` writes each changed recoverable field before it publishes the new
-state. The reducer performs no storage work. The snapshot excludes the undo
-and redo stacks, selection, whether the model's properties are shown, rename
-state, and the last failure. A restored
-session starts with those fields empty.
+state, and the reducer performs no storage work. The snapshot excludes the
+stacks, the selection, whether the model's properties are shown, rename state,
+and the last failure. Startup bounds and parses the stored text before its
+schema validates the version, document, file data, and retained source.
+Missing data opens the placeholder without a report, and rejected data opens it
+and records `StoredRecoveryRejected`.
 
-Startup bounds and parses the stored text before its schema validates the
-version, document, file data, and retained source. Missing data opens the
-placeholder without a report. Rejected data opens the placeholder and records
-`StoredRecoveryRejected`.
-
-A successful write marks the current state as recoverable. A failed write
-records `RecoveryUnavailable` and leaves that mark false. The page guard uses
-that mark with dirty status. A later recoverable change retries the write.
-Close clears the snapshot. A failed clear keeps the session open for retry.
-
-The snapshot never holds a browser file handle. A restored file keeps its name,
-format, and retained source. Its next Save uses a new bridge with no handle.
+A successful write marks the state recoverable. A failed write records
+`RecoveryUnavailable` and leaves that mark false, and a later recoverable change
+retries. The close guard reads that mark with dirty status (`needsCloseGuard`).
+Close clears the snapshot, and a failed clear keeps the session open for retry.
+The snapshot never holds a browser file handle.
 
 ### Other tabs
 
-Every studio tab in one browser profile shows the same result, so a person
-edits in whichever tab is in front of them. `sync.ts` carries it over a
-`BroadcastChannel`, which the browser delivers to every other tab of the
-origin and never back to the sender: `dispatch` publishes the result of each
-change that moved the model, a stack, the saved point or the file, and the
-other tabs fold it into `Followed`. The result is the model, both stacks, the
-saved point, the file and whether the recovery storage holds it, sent by
-structured clone, which keeps the references the stacks and the identity-based
-dirty check share. Selection, an open field and the diagram on screen stay
-with the tab that made them, and so does whether the model's properties are
-shown, the first two trimmed to the elements the adopted
-model still draws and the last falling back to the first diagram where the
+`sync.ts` carries every change that moved the model, a stack, the saved point
+or the file to the other tabs of the origin over a `BroadcastChannel`, which
+never delivers back to the sender, and the other tabs fold it into `Followed`.
+The message is the model, both stacks, the saved point, the file and whether
+the recovery storage holds it, sent by structured clone, which keeps the
+references the stacks and the identity-based dirty check share. Selection, an
+open field, the diagram on screen and whether the model's properties are shown
+stay with the tab that made them, the first two trimmed to the elements the
+adopted model still draws and the diagram falling back to the first where the
 adopted model lacks it. A diagram switch writes the shared snapshot, so a
-reload restores the diagram whichever tab switched last, but publishes no
-result. Following writes nothing and publishes nothing, since the result is
-already the other tab's.
-The file session is what watches ([the file bridge](../files/README.md)),
-because a model another tab wrote is one the handle it holds does not
-describe.
+reload restores the diagram whichever tab switched last, but publishes nothing.
+Following writes nothing and publishes nothing. The file session watches the
+channel ([the file bridge](../files/README.md)), because a model another tab
+wrote is one the handle it holds does not describe.
 
-A message is trusted on its build alone: it comes from this origin's own
-code, and the envelope carries the commit CI built the bundle from
-(`studioBuildId`), so a tab left open across a deploy and a tab on the new
-code ignore each other rather than exchange state neither describes. That is
-what lets a message carry the model as the running code holds it, with no
-format in between: two tabs share a build exactly when they run the same code.
-State that outlives a build travels in the recovery snapshot instead, which is
-why the snapshot holds a document and the channel does not. Two
-tabs editing at once each adopt the other's result, so they diverge until
-the next change in either, while the recovery storage holds whichever wrote
-last. A tab opened later starts from the recovery snapshot, without history,
-and catches up at the next change in any tab. A followed result with empty
-stacks, another tab's open or close, fits the follower's viewport as an open
-here would.
+A message is trusted on its build alone: it comes from this origin's own code,
+and the envelope carries the commit CI built the bundle from (`studioBuildId`),
+so a tab left open across a deploy and a tab on the new code ignore each other.
+That is what lets a message carry the model as the running code holds it, with
+no format in between. State that outlives a build travels in the recovery
+snapshot instead, which is why the snapshot holds a document and the channel
+does not. Two tabs editing at once each adopt the other's result, so they
+diverge until the next change in either, while the recovery storage holds
+whichever wrote last. A tab opened later starts from the recovery snapshot,
+without history.
 
 ## Rules for changes
-
-`InsertFragment` inserts copied elements and related records as one edit.
-`ArrangeElements` applies separate node offsets atomically.
-`ReconnectFlow` replaces one endpoint through the model operation.
-An unchanged selection retains its array identity, so repeated canvas
-callbacks do not erase the announcement for the completed selection change.
 
 - A reducer arm changes the model only by calling a `@saerskriven/model`
   operation and folding its `Either`. Never assign into `state.present` or
@@ -214,8 +174,8 @@ callbacks do not erase the announcement for the completed selection change.
 - A new kind of refusal is a `StudioFailure` member, not a second field beside
   `lastFailure`, so a view renders one value however the refusal arose.
 - `reduce` folds the action with Effect's `$match`, whose cases object is typed
-  by the union, so a tag with no arm beside it does not compile and an arm for
-  a tag the union does not declare does not either. Keep it that way.
+  by the union, so a tag with no arm does not compile and an arm for a tag the
+  union does not declare does not either. Keep it that way.
 - The spec tables are typed over every model tag too, so a new operation cannot
   land without its happy-path case, its refusal, its undo round-trip and its
   purity case.
@@ -223,5 +183,5 @@ callbacks do not erase the announcement for the completed selection change.
   zustand's `useShallow` at the call site, or the component re-renders on every
   dispatch.
 - A high-frequency gesture reaches the store once, at its end. React Flow keeps
-  positions during a drag. A drop dispatches one `MoveElement` or one
+  positions during a drag, and a drop dispatches one `MoveElement` or one
   `MoveElements` for the full selection.

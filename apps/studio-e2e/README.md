@@ -19,10 +19,8 @@ catalog's `@playwright/test` version matches the flake's driver.
 The projects run in order:
 
 - `chromium` runs the main browser specs.
-- `phone` re-runs the badge clearance, chrome-card, link-existing, model
-  properties, notices, records and summary specs on a `Pixel 7` preset, the
-  viewport the shell chrome and the threat panel have least room in.
-  `chromium` runs the same specs at desktop width.
+- `phone` re-runs the specs whose layout turns on the viewport on a `Pixel 7`
+  preset. `playwright.config.ts` lists them and says why each is there.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
 - `frame-time` measures an Écluse drag with one worker and one retry. Earlier
@@ -46,48 +44,7 @@ gesture. Opening a model fits its diagram after React Flow measures the
 canvas. A click sent during that fit can land at the wrong position.
 The fixture polls the viewport transform until consecutive readings match.
 
-## The round-trip coverage matrix
-
-The studio requirements from [M4](https://github.com/AlexaDeWit/Saerskriven/milestone/5)
-map to the browser specs below. Paths are relative to `src/`.
-
-| Behaviour                                                                          | Specs                                                    |
-| ---------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Boot and initial diagram                                                           | `smoke.spec.ts`, `empty-state.spec.ts`                   |
-| Threat Dragon and native YAML open/save                                            | `files.spec.ts`, `round-trip.spec.ts`                    |
-| Lossless open/edit/save, geometry, and threat data                                 | `round-trip.spec.ts`                                     |
-| SVG, PNG, markdown, Typst, and PDF export parity                                   | `exports.spec.ts`, `pages-export.spec.ts`                |
-| Selection, tab order, node movement, and boundary hit targets                      | `canvas.spec.ts`                                         |
-| Group selection, movement, and deletion                                            | `multi-selection.spec.ts`                                |
-| Toolbox placement, curve drawing, deletion, and Hand mode                          | `editing.spec.ts`                                        |
-| Pointer and keyboard connections, handle visibility, and cancellation              | `connectors.spec.ts`                                     |
-| Flow paths, labels, and badges during a drag                                       | `flow-drag.spec.ts`                                      |
-| Flow bend insertion, movement, removal, and format round trips                     | `flow-bends.spec.ts`                                     |
-| Pinned flow ends, bidirectional flows, and their round trips                       | `flow-anchors.spec.ts`                                   |
-| Side, corner, and keyboard resizing                                                | `resize.spec.ts`                                         |
-| Corner handles clear of a selected element's threat badge, at desktop and phone    | `badge-clearance.spec.ts`                                |
-| Hover, selection, focus, and cursor cues                                           | `selection-cues.spec.ts`                                 |
-| Inline names and Note text                                                         | `renaming.spec.ts`                                       |
-| Element security fields, declared relationships, save/reload and responsive layout | `element-properties.spec.ts`                             |
-| Threat fields, badges, pane layout, focus, and draft retention                     | `panel.spec.ts`                                          |
-| Mitigation and assumption records inside a threat, across tabs and at phone width  | `records.spec.ts`                                        |
-| Picking a record to link by pointer and keyboard, with long record text            | `link-existing.spec.ts`                                  |
-| Record counts and flag marks on the collapsed threat summary                       | `summary.spec.ts`                                        |
-| The model's title, description and model assumptions, across tabs and on a phone   | `model-properties.spec.ts`                               |
-| Undo and redo across canvas and panel edits                                        | `commands.spec.ts`, `redo.spec.ts`, `round-trip.spec.ts` |
-| Menu navigation, dirty state, open/close guards, and loss reports                  | `menu.spec.ts`                                           |
-| Shortcuts and their reference                                                      | `commands.spec.ts`                                       |
-| Fit, zoom, and viewport placement                                                  | `viewport.spec.ts`                                       |
-| Clipboard, geometry fields, reconnection, arrangement, and snapping                | `interaction-controls.spec.ts`                           |
-| Touch panning, scrolling, and startup overlays                                     | `interaction-nits.spec.ts`                               |
-| Edit announcements                                                                 | `edit-status.spec.ts`                                    |
-| Folding and dismissing a refusal notice                                            | `notices.spec.ts`                                        |
-| Reload recovery, and tabs staying in sync                                          | `recovery.spec.ts`                                       |
-| Switching between, adding, and renaming the diagrams of a model                    | `diagrams.spec.ts`                                       |
-| The chrome card and its submenus at desktop and phone width                        | `chrome-card.spec.ts`                                    |
-| System and saved colour preferences                                                | `dark-mode.spec.ts`, `appearance.spec.ts`                |
-| axe-core checks of the page and open controls                                      | `accessibility.spec.ts`                                  |
-| Drag frame times                                                                   | `drag-frame-time.spec.ts`                                |
+## Scope
 
 `tests/` holds unit specs for shared browser helpers: shortcut chords against
 the command registry, and the path comparison used by the round-trip test.
@@ -99,5 +56,5 @@ checks. Automated accessibility checks do not replace manual screen-reader
 review. The configured browser projects use Chromium only, the phone one
 through a device preset rather than another engine.
 
-Current interaction limitations live in the
-[canvas documentation](../studio/src/canvas/README.md#what-is-not-attempted-here).
+Current interaction limitations live in
+[Using the studio](../../docs/studio.md#current-limitations).

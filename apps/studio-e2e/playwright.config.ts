@@ -8,9 +8,8 @@ const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 
 // Browsers come from the flake (PLAYWRIGHT_BROWSERS_PATH points into the nix
-// store), never from playwright's downloader. What the suite covers, why each
-// spec needs a browser at all, and which line of M4's definition of done each
-// one holds are in README.md beside this file.
+// store), never from playwright's downloader. How to run and debug the suite,
+// and what it leaves to other suites, is in README.md beside this file.
 export default defineConfig({
   testDir: './src',
   outputDir: './test-output/playwright/output',
