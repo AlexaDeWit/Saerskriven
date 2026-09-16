@@ -10,11 +10,10 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, test } from 'node:test';
 import { z } from 'zod';
+import { workspaceRoot } from './release.fixtures.mts';
 
-const root = fileURLToPath(new URL('../../', import.meta.url));
 const directories: string[] = [];
 afterEach(() => {
   for (const directory of directories.splice(0))
@@ -114,19 +113,23 @@ console.log(JSON.stringify({ tag: state.liveTag, version: state.liveTag.slice(1)
         .map((line) => z.array(z.string()).parse(JSON.parse(line))),
     output: () => readFileSync(output, 'utf8'),
     run: (mode: string, env: Record<string, string> = {}) =>
-      spawnSync('bash', [join(root, 'scripts/release/pages.sh'), mode], {
-        cwd: directory,
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${bin}:${process.env['PATH'] ?? ''}`,
-          GH_REPO: repository,
-          GITHUB_OUTPUT: output,
-          PAGES_TEST_STATE: stateFile,
-          PAGES_TEST_LOG: log,
-          ...env,
+      spawnSync(
+        'bash',
+        [join(workspaceRoot, 'scripts/release/pages.sh'), mode],
+        {
+          cwd: directory,
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            PATH: `${bin}:${process.env['PATH'] ?? ''}`,
+            GH_REPO: repository,
+            GITHUB_OUTPUT: output,
+            PAGES_TEST_STATE: stateFile,
+            PAGES_TEST_LOG: log,
+            ...env,
+          },
         },
-      }),
+      ),
   };
 };
 
@@ -261,11 +264,11 @@ void test('packaging checks every manifest and the built stamp before making the
   ])
     mkdirSync(join(probe.directory, directory), { recursive: true });
   symlinkSync(
-    join(root, 'scripts/release/release.mts'),
+    join(workspaceRoot, 'scripts/release/release.mts'),
     join(probe.directory, 'scripts/release/release.mts'),
   );
   symlinkSync(
-    join(root, 'node_modules'),
+    join(workspaceRoot, 'node_modules'),
     join(probe.directory, 'node_modules'),
   );
   for (const file of [

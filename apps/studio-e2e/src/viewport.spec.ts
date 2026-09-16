@@ -3,13 +3,12 @@ import { viewportTransform, viewportZoom } from './commands.fixtures.js';
 import {
   canvasContainer,
   canvasSettled,
+  nodeNamed,
   openEcluse,
   openFile,
   openPlaceholder,
-  nodeNamed,
+  screenBoxOf,
 } from './studio.fixtures.js';
-
-const nowhere = { x: 0, y: 0, width: 0, height: 0 };
 
 const furthestAcross = /^OSV\.dev, actor/u;
 
@@ -21,12 +20,8 @@ const clearanceOf = async (
   page: Page,
   name: RegExp,
 ): Promise<Record<string, number>> => {
-  const measured = await page.getByTestId('canvas-container').boundingBox();
-  const drawn = await nodeNamed(page, name).boundingBox();
-  expect(measured, 'the canvas is on the page').not.toBeNull();
-  expect(drawn, `${name.source} is drawn`).not.toBeNull();
-  const canvas = measured ?? nowhere;
-  const node = drawn ?? nowhere;
+  const canvas = await screenBoxOf(canvasContainer(page), 'the canvas');
+  const node = await screenBoxOf(nodeNamed(page, name), name.source);
   return {
     left: node.x - canvas.x,
     top: node.y - canvas.y,
@@ -47,12 +42,8 @@ const clusterRegion = (page: Page): Locator =>
   page.getByRole('region', { name: 'Zoom and fit' });
 
 const clearOfTheCluster = async (page: Page, name: RegExp): Promise<void> => {
-  const floating = await clusterRegion(page).boundingBox();
-  const drawn = await nodeNamed(page, name).boundingBox();
-  expect(floating, 'the cluster is on the page').not.toBeNull();
-  expect(drawn, `${name.source} is drawn`).not.toBeNull();
-  const cluster = floating ?? nowhere;
-  const node = drawn ?? nowhere;
+  const cluster = await screenBoxOf(clusterRegion(page), 'the cluster');
+  const node = await screenBoxOf(nodeNamed(page, name), name.source);
 
   expect(
     cluster.y - (node.y + node.height),
@@ -136,12 +127,8 @@ test('the cluster floats over the bottom right corner of the canvas', async ({
 }) => {
   await openPlaceholder(page);
 
-  const measured = await page.getByTestId('canvas-container').boundingBox();
-  const floating = await clusterRegion(page).boundingBox();
-  expect(measured, 'the canvas is on the page').not.toBeNull();
-  expect(floating, 'the cluster is on the page').not.toBeNull();
-  const canvas = measured ?? nowhere;
-  const cluster = floating ?? nowhere;
+  const canvas = await screenBoxOf(canvasContainer(page), 'the canvas');
+  const cluster = await screenBoxOf(clusterRegion(page), 'the cluster');
 
   expect(cluster.x).toBeGreaterThan(canvas.x + canvas.width / 2);
   expect(cluster.y).toBeGreaterThan(canvas.y + canvas.height / 2);

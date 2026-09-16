@@ -1,9 +1,8 @@
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { themedCanvasStylesheet } from '@saerskriven/canvas';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { initialPageStylesheet } from '../initial-page.mjs';
-
-const repositoryRoot = join(import.meta.dirname, '../../..');
 
 const studioTree = join(repositoryRoot, 'apps/studio/src');
 

@@ -385,9 +385,15 @@ export const scrolledAbove = (target: Locator): Promise<number> =>
   });
 
 /** Where a control is drawn on screen, held to be drawn at all. */
-export const screenBoxOf = async (target: Locator): Promise<Box> => {
+export const screenBoxOf = async (
+  target: Locator,
+  called?: string,
+): Promise<Box> => {
   const box = await target.boundingBox();
-  expect(box).not.toBeNull();
+  expect(
+    box,
+    called === undefined ? undefined : `${called} is on the page`,
+  ).not.toBeNull();
   return box ?? { x: 0, y: 0, width: 0, height: 0 };
 };
 

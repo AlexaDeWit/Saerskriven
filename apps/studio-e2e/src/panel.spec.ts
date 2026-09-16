@@ -14,6 +14,7 @@ import {
   openPlaceholder,
   panelField,
   runFromMenu,
+  screenBoxOf,
   selectByKeyboard,
   selectNode,
   threatPanel,
@@ -31,9 +32,7 @@ const titleField = (page: Page): Locator =>
   panelField(page, 'textbox', 'Title');
 
 const boxOf = async (locator: Locator): Promise<Record<string, number>> => {
-  const box = await locator.boundingBox();
-  expect(box, 'the box is on the page').not.toBeNull();
-  const drawn = box ?? { x: 0, y: 0, width: 0, height: 0 };
+  const drawn = await screenBoxOf(locator, 'the box');
   return {
     left: drawn.x,
     right: drawn.x + drawn.width,
@@ -45,8 +44,7 @@ const boxOf = async (locator: Locator): Promise<Record<string, number>> => {
 };
 
 const panAcross = async (page: Page, by: number): Promise<void> => {
-  const box = await page.locator('.react-flow__pane').boundingBox();
-  const pane = box ?? { x: 0, y: 0, width: 0, height: 0 };
+  const pane = await screenBoxOf(page.locator('.react-flow__pane'), 'the pane');
   const from = { x: pane.x + 24, y: pane.y + pane.height / 2 };
   await page.keyboard.down('Space');
   await page.mouse.move(from.x, from.y);
