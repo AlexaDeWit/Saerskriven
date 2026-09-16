@@ -23,22 +23,7 @@ import type {
   SaerskrivenYamlV2ThreatStatus,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
 
-/**
- * The file's severities as the model holds them.
- *
- * Every vocabulary below is two tables rather than one reversible table,
- * each annotated with the whole `Record` of the side it reads, so a member
- * added to either vocabulary is a compile error here rather than a value
- * falling through. The two key sets are free to stop matching: the format
- * is a contract with files in the wild and the model is not, and that they
- * hold the same words today is a coincidence this file is where anyone
- * would notice ending.
- *
- * No table here is lossy in either direction, so no caller reports a
- * divergence for a vocabulary. That is the difference between a native
- * format and Threat Dragon's, where `threat-dragon-vocabulary.ts` reads a
- * foreign label that may have no home at all.
- */
+/** The file's severities as the model holds them. */
 export const severitiesToModel = {
   low: 'low',
   medium: 'medium',
@@ -249,10 +234,8 @@ export const plot4aiCategoriesToWire = {
 >;
 
 /**
- * A category as the file states it, as the model holds it. The methodology
- * picks the table, and a methodology the format does not enumerate carries
- * its own two names across unchanged: the format's custom variant and the
- * model's are the same escape hatch.
+ * A category as the file states it, as the model holds it. A custom
+ * category carries its two names across unchanged.
  */
 export function toModelCategory(
   category: SaerskrivenYamlV2Category,
@@ -295,11 +278,9 @@ export function toModelCategory(
 }
 
 /**
- * A category as the model holds it, as the file states it. The inverse of
- * {@link toModelCategory}. A methodology added to either side falls to the
- * custom branch these two chains end in, where it stops compiling: the
- * names a custom category needs are not the ones an enumerated variant
- * carries.
+ * A category as the model holds it, as the file states it, the inverse of
+ * {@link toModelCategory}. A methodology added to either side reaches the
+ * final custom branch of both and stops compiling there.
  */
 export function toWireCategory(
   category: ThreatCategory,

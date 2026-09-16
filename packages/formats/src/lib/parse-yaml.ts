@@ -2,16 +2,17 @@ import { Either } from 'effect';
 import { parseDocument, YAMLParseError } from 'yaml';
 import { ReadFailure } from './codec.js';
 import {
-  aliasCostIn,
-  type ComposedDocument,
-} from './saerskriven-yaml-document.js';
-import {
   exceededReadLimit,
   parseWithinLimits,
   readLimits,
 } from './read-limits.js';
+import { aliasCostIn, type ComposedDocument } from './yaml-alias-cost.js';
 
-/** Parses YAML or JSON within the shared size, nesting, and alias bounds. */
+/**
+ * YAML or JSON parsed within the size, nesting and alias bounds, the alias
+ * bounds measured by {@link aliasCostIn}. A nesting the parser has no stack
+ * for is reported as `maxNestingDepth`.
+ */
 export function parseYaml(text: string): Either.Either<unknown, ReadFailure> {
   return parseWithinLimits(text, (bounded) =>
     Either.flatMap(

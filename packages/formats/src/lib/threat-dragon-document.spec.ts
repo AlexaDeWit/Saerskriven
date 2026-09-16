@@ -2,7 +2,6 @@ import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
 import {
   allCells,
-  allThreats,
   cellsOf,
   hostsThreats,
   indexById,
@@ -10,7 +9,11 @@ import {
   threatsOf,
 } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
-import { complementFixture, ecluseText } from './threat-dragon.fixtures.js';
+import {
+  allThreats,
+  complementFixture,
+  ecluseText,
+} from './threat-dragon.fixtures.js';
 
 const documentOf = (text: string): ThreatDragonDocument =>
   Either.getOrThrowWith(

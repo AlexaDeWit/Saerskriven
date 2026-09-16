@@ -2,13 +2,16 @@ import { Either } from 'effect';
 import { ReadFailure } from './codec.js';
 import { isKeyed } from './records.js';
 
-const encoder = new TextEncoder();
-
-/** Shared resource bounds for parsing and importing foreign documents. */
+/**
+ * What a read may spend on a text before refusing it, one value so a caller
+ * checking a file first enforces the codecs' own numbers. Each parsing bound
+ * has headroom over the largest vendored file and a fixture under
+ * `test-data/adversarial` built to break it.
+ */
 export const readLimits = Object.freeze({
-  /** UTF-8 input bytes, checked before parsing. */
+  /** UTF-8 input bytes, checked before parsing. Up to 0.3.0 it was 4 MiB. */
   maxTextBytes: 8_388_608,
-  /** Cumulative UTF-16 units charged for reference expansion and escaped identifiers. */
+  /** UTF-16 units an import may charge for expanded references and escaped ids. */
   maxImportTextUnits: 16_777_216,
   /** Maximum parsed depth, including values in extension maps. */
   maxNestingDepth: 64,
@@ -22,14 +25,10 @@ export const readLimits = Object.freeze({
 export type ReadLimit = keyof typeof readLimits;
 
 /**
- * A read stopped by a bound, carrying the number it was set to and what
- * the read had measured when it stopped. For `maxTextBytes` the
- * measurement is the text's UTF-8 byte count, or its UTF-16 length where
- * that alone breaks the bound, since a text that long is refused without
- * being measured further and its UTF-8 length is never below it. Where a
- * read stops rather than measuring on, which is the nesting walk and both
- * alias measurements, it is one past the bound: none of the three is taken
- * further than the answer needs.
+ * A read stopped by a bound. `observed` is the UTF-8 byte count for
+ * `maxTextBytes`, or the UTF-16 length where that alone breaks the bound, and
+ * one past the bound for the depth and alias limits, which stop measuring
+ * there.
  */
 export function exceededReadLimit(
   limit: ReadLimit,
@@ -42,7 +41,14 @@ export function exceededReadLimit(
   });
 }
 
-/** Checks text size before parsing and graph depth before schema validation. */
+/**
+ * `parse` run on a text within `maxTextBytes`, its result then walked for
+ * `maxNestingDepth`. The walk keeps its own stack and expands a node only when
+ * it reaches that node deeper than before, so a value an alias makes
+ * reachable along many paths costs its own size, and a cycle is refused at
+ * the bound rather than followed. `JSON.parse` builds any depth without
+ * recursing, which leaves this walk as the depth bound on a JSON read.
+ */
 export function parseWithinLimits(
   text: string,
   parse: (text: string) => Either.Either<unknown, ReadFailure>,
@@ -73,6 +79,8 @@ export function withinTextLimit(
 export function withinTextBytes(bytes: number): boolean {
   return bytes <= readLimits.maxTextBytes;
 }
+
+const encoder = new TextEncoder();
 
 function withinNestingLimit(
   value: unknown,

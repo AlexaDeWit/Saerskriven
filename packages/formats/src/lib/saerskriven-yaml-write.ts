@@ -1,11 +1,4 @@
 import {
-  actorProperties,
-  processProperties,
-  storeProperties,
-  flowProperties,
-  boundaryProperties,
-} from './security-properties.js';
-import {
   inNumberOrder,
   type Assumption,
   type BoundaryShape,
@@ -39,12 +32,19 @@ import {
   threatStatusesToWire,
   toWireCategory,
 } from './saerskriven-yaml-vocabulary.js';
-
-const stringifyOptions = { lineWidth: 0 };
+import {
+  actorProperties,
+  boundaryProperties,
+  flowProperties,
+  processProperties,
+  storeProperties,
+} from './security-properties.js';
 
 /**
- * Writes canonical native YAML in the current version, without wrapping
- * prose. The source cannot override the model, and nothing is reported,
+ * The model as native YAML in the current version, reporting nothing. Two
+ * writes of one model are byte-identical: keys follow {@link canonicalOrder},
+ * threats follow {@link writeSaerskrivenYamlDocument}, and no line is wrapped,
+ * so an edited sentence changes only its own line. The source is ignored,
  * since the format holds the whole model.
  */
 export function writeSaerskrivenYaml(
@@ -63,7 +63,11 @@ export function writeSaerskrivenYaml(
   };
 }
 
-/** Projects model fields explicitly and orders threats by number. Other lists retain their order. */
+/**
+ * The model as a current-version document, threats in number order and every
+ * other list in the model's order. Records are mapped field by field,
+ * mirroring `saerskriven-yaml-read.ts`.
+ */
 export function writeSaerskrivenYamlDocument(
   model: Model,
 ): SaerskrivenYamlV2Document {
@@ -77,6 +81,8 @@ export function writeSaerskrivenYamlDocument(
     lastIssuedThreatNumber: model.lastIssuedThreatNumber,
   };
 }
+
+const stringifyOptions = { lineWidth: 0 };
 
 function toWireMetadata(metadata: ModelMetadata): SaerskrivenYamlV2Metadata {
   return {

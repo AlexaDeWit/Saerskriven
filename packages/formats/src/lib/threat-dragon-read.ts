@@ -1,21 +1,12 @@
-import {
-  actorProperties,
-  processProperties,
-  storeProperties,
-  flowProperties,
-  boundaryProperties,
-} from './security-properties.js';
-import {
-  diagramSchema,
-  elementSchema,
-  flowEndpointSchema,
-  mitigationSchema,
-  modelMetadataSchema,
-  parseModel,
-  threatSchema,
-  toParseIssues,
-  type Model,
-  type ThreatCategory,
+import type {
+  DiagramInput,
+  ElementInput,
+  FlowEndpointInput,
+  MitigationInput,
+  Model,
+  ModelMetadataInput,
+  ThreatCategory,
+  ThreatInput,
 } from '@saerskriven/model';
 import {
   threatDragonWireSchema,
@@ -26,11 +17,22 @@ import {
   type ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
-import type { z } from 'zod';
-import { ReadFailure, type ReadResult } from './codec.js';
+import {
+  modelFrom,
+  ReadFailure,
+  refusedWireDocument,
+  type ReadResult,
+} from './codec.js';
 import type { Divergence } from './divergence.js';
 import { idsHeld, mitigationsFromText } from './mitigation-text.js';
 import { parseWithinLimits } from './read-limits.js';
+import {
+  actorProperties,
+  boundaryProperties,
+  flowProperties,
+  processProperties,
+  storeProperties,
+} from './security-properties.js';
 import {
   cellsOf,
   isAnchored,
@@ -50,25 +52,30 @@ import {
 } from './threat-dragon-vocabulary.js';
 import { undeclaredDivergences } from './undeclared.js';
 
-type MetadataInput = z.input<typeof modelMetadataSchema>;
-type DiagramInput = z.input<typeof diagramSchema>;
-type ElementInput = z.input<typeof elementSchema>;
-type EndpointInput = z.input<typeof flowEndpointSchema>;
-type ThreatInput = z.input<typeof threatSchema>;
-type MitigationInput = z.input<typeof mitigationSchema>;
+/**
+ * A Threat Dragon v2 text as the model, with its document kept for a merge.
+ *
+ * A category label is looked up in the language Threat Dragon wrote it in,
+ * and a methodology the model does not enumerate becomes a custom category
+ * with Threat Dragon's names unchanged, reported as nothing. A status,
+ * severity or label the model has no value for, and an Elevation of
+ * Privilege card, of which the model holds the suit alone, are reported as
+ * `narrowed`. A threat the file leaves unnumbered is issued the next number
+ * above the file's mark and its highest number. Each non-empty mitigation
+ * text becomes a record on the terms of {@link mitigationsFromText}, and a
+ * port's group becomes the pinned side of the flow end fastened to it.
+ */
+export function readThreatDragon(
+  text: string,
+): Either.Either<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
+  return Either.flatMap(parseJson(text), mapDocument);
+}
 
 type ThreatEntry = {
   readonly threat: ThreatDragonThreat;
   readonly elements: readonly string[];
   readonly number: number;
 };
-
-/** Reads Threat Dragon and retains its source for merging. Security facts preserve absence. */
-export function readThreatDragon(
-  text: string,
-): Either.Either<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
-  return Either.flatMap(parseJson(text), mapDocument);
-}
 
 function parseJson(text: string): Either.Either<unknown, ReadFailure> {
   return parseWithinLimits(text, (bounded) =>
@@ -84,24 +91,17 @@ function mapDocument(
 ): Either.Either<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
   const wire = threatDragonWireSchema.safeParse(given);
   if (!wire.success) {
-    return Either.left(
-      ReadFailure.InvalidWireDocument({
-        issues: toParseIssues(wire.error.issues),
-      }),
-    );
+    return Either.left(refusedWireDocument(wire.error.issues));
   }
   const mapping = toMapping(wire.data);
-  return Either.mapBoth(parseModel(mapping.input), {
-    onLeft: (failure) => ReadFailure.InvalidModel({ issues: failure.issues }),
-    onRight: (model) => ({
-      model,
-      source: wire.data,
-      divergences: [
-        ...undeclaredDivergences(given, wire.data),
-        ...narrowings(model, mapping.notes),
-      ],
-    }),
-  });
+  return Either.map(modelFrom(mapping.input), (model) => ({
+    model,
+    source: wire.data,
+    divergences: [
+      ...undeclaredDivergences(given, wire.data),
+      ...narrowings(model, mapping.notes),
+    ],
+  }));
 }
 
 function toMapping(document: ThreatDragonDocument) {
@@ -158,7 +158,7 @@ function narrowings(
   );
 }
 
-function toMetadata(document: ThreatDragonDocument): MetadataInput {
+function toMetadata(document: ThreatDragonDocument): ModelMetadataInput {
   return {
     title: document.summary.title,
     owner: document.summary.owner ?? '',
@@ -267,7 +267,7 @@ function toBoundaryCommon(cell: ThreatDragonBoundary) {
 function toEndpoint(
   endpoint: ThreatDragonEndpoint,
   ports: PortSides,
-): EndpointInput {
+): FlowEndpointInput {
   if (!isAnchored(endpoint)) {
     return { kind: 'free', position: endpoint };
   }

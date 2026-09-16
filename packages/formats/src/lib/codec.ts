@@ -1,25 +1,71 @@
-import type { Model, ParseIssue } from '@saerskriven/model';
-import { Data, type Either } from 'effect';
+import {
+  parseModel,
+  toParseIssues,
+  type Model,
+  type ParseIssue,
+  type SchemaIssue,
+} from '@saerskriven/model';
+import { Data, Either } from 'effect';
 import type { z } from 'zod';
 import type { Divergence } from './divergence.js';
 import type { ReadLimit } from './read-limits.js';
 
 /**
- * Why a codec refused a text, one variant per place a read stops, in the
- * order a read reaches them.
+ * A file format, read and written.
  *
- * `ExceededReadLimit` is the text costing more than `readLimits` allows,
- * naming which bound and what the read had measured when it stopped. It is
- * the one variant that says nothing about whether the text was a threat
- * model, since the read stopped before it could tell.
- * `MalformedText` is the text failing the format's own syntax, before any
- * path into a document exists, so it carries the parser's message alone.
- * `InvalidWireDocument` is the text parsing but the format's wire schema
- * refusing it, with paths into the wire document. `InvalidModel` is the
- * wire document mapping to something `parseModel` refuses, with paths into
- * the internal model. The two schema variants carry the model package's
- * {@link ParseIssue}, so a caller reads issues one way whichever boundary
- * produced them.
+ * The type parameter is the format's own zod schema, `wire` carries it, and
+ * `write` accepts only a document that schema describes. The types do not
+ * check what a wire schema owes this contract: it declares everything its
+ * format carries, the parts Saerskriven does not model included, since a
+ * merge leaves only a declared key untouched. It drops what it does not
+ * declare, which `read` reports as `undeclared`. It neither transforms nor
+ * coerces a value it round-trips.
+ *
+ * `write` given a source document merges onto it, and given none projects
+ * the model into the format's canonical form. A merge of an unedited model
+ * onto the document it was read from reports nothing the model or an edit
+ * caused, though a codec may still report its own decision, such as the
+ * release it stamps. The type pairs a document with its format rather than
+ * with a file, so merging onto a document some other read produced is the
+ * caller's mistake to avoid.
+ *
+ * `write` returns no `Either`: what the format cannot hold is a divergence
+ * rather than a failure, so a caller asking what a save would cost calls
+ * `write` and discards the output.
+ */
+export interface Codec<WireSchema extends z.ZodType<object>> {
+  readonly wire: WireSchema;
+  read(text: string): Either.Either<ReadResult<WireSchema>, ReadFailure>;
+  write(model: Model, source?: z.infer<WireSchema>): WriteResult;
+}
+
+/**
+ * What a read produced. `source` is the wire document, returned so a later
+ * write can merge onto it and keep what the model does not describe.
+ * `divergences` holds both the keys the schema dropped (`undeclared`) and the
+ * values the model holds less exactly than the file stated (`narrowed`).
+ */
+export type ReadResult<WireSchema extends z.ZodType<object>> = {
+  readonly model: Model;
+  readonly source: z.infer<WireSchema>;
+  readonly divergences: readonly Divergence[];
+};
+
+/**
+ * What a write produced: the output text, and where it does not correspond to
+ * the model or to the source it was merged onto.
+ */
+export type WriteResult = {
+  readonly output: string;
+  readonly divergences: readonly Divergence[];
+};
+
+/**
+ * Why a codec refused a text, in the order a read reaches each stop.
+ * `ExceededReadLimit` names the bound and what the read measured before it
+ * stopped. `MalformedText` carries the parser's message, since no path into
+ * a document exists yet. `InvalidWireDocument` has paths into the wire
+ * document, and `InvalidModel` paths into the internal model.
  */
 export type ReadFailure = Data.TaggedEnum<{
   ExceededReadLimit: {
@@ -32,19 +78,10 @@ export type ReadFailure = Data.TaggedEnum<{
   InvalidModel: { readonly issues: readonly ParseIssue[] };
 }>;
 
-/**
- * Constructors for {@link ReadFailure}, one per variant, plus Effect's
- * `$is` and `$match` helpers. Values compare structurally under Effect's
- * Equal and serialize to their plain tagged shape.
- */
+/** Constructors and matchers for {@link ReadFailure}. */
 export const ReadFailure = Data.taggedEnum<ReadFailure>();
 
-/**
- * The issues a failure carries, and an empty list for the two that carry
- * none: a text stopped by a bound and a text the format's own parser
- * refused have no document for a path to point into. A caller rendering a
- * failure folds it here rather than narrowing the variants itself.
- */
+/** The issues a failure carries, none for a bound or a syntax error. */
 export function readFailureIssues(failure: ReadFailure): readonly ParseIssue[] {
   return ReadFailure.$match(failure, {
     ExceededReadLimit: () => [],
@@ -54,75 +91,16 @@ export function readFailureIssues(failure: ReadFailure): readonly ParseIssue[] {
   });
 }
 
-/**
- * What a read produced: the internal model, the wire document it was mapped
- * from, and where the two do not correspond. The document comes back so a
- * later write can merge onto it instead of serializing the model from
- * scratch, which is how the parts of a file Saerskriven does not model reach
- * the output: the wire schema declares them, so a merge that does not touch
- * them leaves them as the file had them. `divergences` is the read side of
- * the same list a write returns: the keys the schema did not declare and so
- * did not keep, and the values the model holds less exactly than the file
- * stated them. A caller that treats every entry as a dropped key will
- * mistake the second kind for the first.
- */
-export type ReadResult<WireSchema extends z.ZodType<object>> = {
-  readonly model: Model;
-  readonly source: z.infer<WireSchema>;
-  readonly divergences: readonly Divergence[];
-};
+/** A wire schema's refusal as the read failure a codec returns. */
+export function refusedWireDocument(
+  issues: readonly SchemaIssue[],
+): ReadFailure {
+  return ReadFailure.InvalidWireDocument({ issues: toParseIssues(issues) });
+}
 
-/**
- * What a write produced: the output text, and where that text does not
- * correspond to the model, or to the source it was merged onto.
- */
-export type WriteResult = {
-  readonly output: string;
-  readonly divergences: readonly Divergence[];
-};
-
-/**
- * A file format, read and written.
- *
- * The type parameter is the format's own zod schema, `wire` carries it as a
- * member, and the document types are that schema's inference. So the
- * contract cannot describe a codec that has no wire schema, the `object`
- * output bound keeps `z.unknown()` out of the position, and `write` accepts
- * only a document its own schema describes.
- *
- * What a wire schema owes this contract, none of which the types check. It
- * declares everything its format carries, the parts Saerskriven does not model
- * included, because that completeness is what preserves them: a merge
- * leaves untouched what it does not map, and only a declared key is there
- * to leave alone. It is demanding about what it declares and silent about
- * the rest, which it drops rather than carries, so `read` reports a dropped
- * key as a divergence and an incomplete schema announces itself. And it neither
- * transforms nor coerces a value it round-trips, or the document and the
- * model disagree about what the file said.
- *
- * `write` takes the source document as an option, and that option is the
- * whole difference between the two paths: given one it merges onto it,
- * given none it projects the model into the format's canonical form. Both
- * paths report {@link Divergence} entries: what the format cannot hold when
- * projecting, what an edit cost when merging, and on either path what the
- * codec decided on its own. A merge of an unedited model onto the document
- * it was read from is required to report nothing the model or an edit
- * caused, and a codec may still record its own decision there, such as a
- * format release it stamps rather than repeats.
- *
- * The type pairs a document with its format, not with a model or a file, so
- * merging onto a document of the right format that some other read produced
- * writes the wrong file, and passing none after a read failed takes the
- * projection path and drops everything the file held outside the model.
- * Both are the caller's to get right.
- *
- * `write` returns no `Either` because a model always produces text: what
- * the format cannot hold becomes a divergence rather than a failure.
- * Nothing else produces the write-side divergences, so a caller asking what
- * a save would cost before saving calls `write` and discards the output.
- */
-export interface Codec<WireSchema extends z.ZodType<object>> {
-  readonly wire: WireSchema;
-  read(text: string): Either.Either<ReadResult<WireSchema>, ReadFailure>;
-  write(model: Model, source?: z.infer<WireSchema>): WriteResult;
+/** A mapped model input through `parseModel`, refused as `InvalidModel`. */
+export function modelFrom(input: unknown): Either.Either<Model, ReadFailure> {
+  return Either.mapLeft(parseModel(input), (failure) =>
+    ReadFailure.InvalidModel({ issues: failure.issues }),
+  );
 }

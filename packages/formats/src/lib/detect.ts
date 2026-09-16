@@ -6,17 +6,64 @@ import { ReadFailure, type Codec, type ReadResult } from './codec.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
-/**
- * The formats {@link readAnyFormat} tries, as the words a caller prints and
- * a failure lists. The registry below holds one codec per name, and the
- * specs compare what a failure says it tried against this list, so a name
- * added here without a codec beside it fails the suite rather than becoming
- * a format nothing reads.
- */
+/** The formats {@link readAnyFormat} tries, as a caller prints them. */
 export const formatNameSchema = z.enum(['threat-dragon', 'saerskriven-yaml']);
 
 /** One registered format, named. */
 export type FormatName = z.infer<typeof formatNameSchema>;
+
+/**
+ * A read and the codec that answered it, one member per registered codec.
+ * Narrowing on `format` pairs `source` with its own codec, so
+ * `codec.write(model, source)` type-checks without an assertion.
+ */
+export type DetectedRead =
+  | Answer<'threat-dragon', typeof threatDragonWireSchema>
+  | Answer<'saerskriven-yaml', typeof saerskrivenYamlV2WireSchema>;
+
+/**
+ * No registered codec claimed the text. `tried` names every format offered
+ * it, in order, and no codec's issues are carried, since a codec that did not
+ * claim was describing a document nobody wrote.
+ */
+export type DetectionFailure = Data.TaggedEnum<{
+  NoFormatClaimed: { readonly tried: readonly FormatName[] };
+}>;
+
+/** Constructors and matchers for {@link DetectionFailure}. */
+export const DetectionFailure = Data.taggedEnum<DetectionFailure>();
+
+/**
+ * A text read by whichever registered codec claims it, the file name never
+ * consulted. The codecs are tried by reading, Threat Dragon first because a
+ * YAML text stops the JSON parser at its first character, where the reverse
+ * order would run the YAML parser over every Threat Dragon file.
+ *
+ * A codec claims a text when its read succeeds, when the model refuses the
+ * mapping, or when its wire schema refuses the document below the root keys
+ * that name the format. It declines malformed syntax and a refusal at or
+ * above a naming key, so a file that lost `summary` whole is no format's,
+ * while one that lost `summary.title` is a broken Threat Dragon file. A
+ * claimed failure is returned as that codec's own, and an
+ * `ExceededReadLimit` stops detection outright, since the next codec would
+ * pay the same cost. A file from an unmodelled release, such as a
+ * `formatVersion` other than 1 and 2, is claimed by nobody.
+ */
+export function readAnyFormat(
+  text: string,
+): Either.Either<DetectedRead, ReadFailure | DetectionFailure> {
+  for (const entry of registry) {
+    const answer = entry.read(text);
+    if (answer !== undefined) {
+      return answer;
+    }
+  }
+  return Either.left(
+    DetectionFailure.NoFormatClaimed({
+      tried: registry.map((entry) => entry.format),
+    }),
+  );
+}
 
 type DiscriminatorPath = readonly string[];
 
@@ -29,40 +76,6 @@ type Answer<
   readonly format: Name;
   readonly codec: Codec<WireSchema>;
 };
-
-/**
- * What a read answered with: the format's name, the codec that answered,
- * and everything that codec produced. One member per registered codec,
- * discriminated by `format`, so narrowing on the name pairs a source
- * document with the codec that produced it and `codec.write(model, source)`
- * type-checks with nothing asserted. A caller holding the union writes
- * nothing until it narrows, which is what the union is for: pairing a
- * document with a codec is what a caller cannot check by looking.
- */
-export type DetectedRead =
-  | Answer<'threat-dragon', typeof threatDragonWireSchema>
-  | Answer<'saerskriven-yaml', typeof saerskrivenYamlV2WireSchema>;
-
-/**
- * Why detection produced no reading: no registered codec claimed the text.
- * `tried` names every format offered it, in the order it was offered.
- *
- * It carries no issue from any codec on purpose. A codec that did not claim
- * was refusing a format the text is not in, so its complaints are about a
- * document nobody wrote. This is detection's own failure and no codec's,
- * which is why it is declared here rather than beside {@link ReadFailure}:
- * a codec still answers with {@link ReadFailure} alone.
- */
-export type DetectionFailure = Data.TaggedEnum<{
-  NoFormatClaimed: { readonly tried: readonly FormatName[] };
-}>;
-
-/**
- * Constructor for {@link DetectionFailure}, plus Effect's `$is` and
- * `$match` helpers. Values compare structurally under Effect's Equal and
- * serialize to their plain tagged shape.
- */
-export const DetectionFailure = Data.taggedEnum<DetectionFailure>();
 
 const threatDragonDiscriminators: readonly DiscriminatorPath[] = [
   ['version'],
@@ -89,67 +102,6 @@ const registry: readonly Attempt[] = [
     saerskrivenYamlDiscriminators,
   ),
 ];
-
-/**
- * A text as the model it holds, read by whichever registered codec claims
- * it, with that codec beside the result so a later write goes back through
- * the same one. A file name is never consulted: a Saerskriven model saved as
- * `.json` and a Threat Dragon model saved as nothing at all are both
- * ordinary, so the content decides.
- *
- * Detection is the reads themselves, in the order the registry lists them.
- * A codec claims a text when its read succeeds, when the mapping fails
- * (`InvalidModel`), or when its wire schema refuses the document over
- * something other than the root keys that name the format, which the
- * registry lists beside each codec. It does not claim when the text is not
- * the format's syntax at all (`MalformedText`), nor when the schema's
- * complaint is at one of those naming keys or above them, a text that is no
- * mapping at all being no format's file.
- *
- * A document that has lost a whole naming key is therefore claimed by
- * nobody, where the same document broken one level under a naming key is
- * claimed and refused: a Threat Dragon file whose `summary` has gone is
- * likelier a file of some other tool that stamps a version, and one whose
- * `summary.title` has gone is a broken file of this one. Once a codec
- * claims, its answer stands: a failure comes back as that codec's own
- * failure rather than falling through to the next codec, so a broken file
- * of a known format is reported where it broke.
- *
- * A read bound stops detection outright, ahead of any question of
- * claiming. What a text costs to read is a property of the text and not of
- * a format, so an `ExceededReadLimit` comes back as the answer and no
- * further codec is offered the text: the next codec would spend the same
- * cost to learn the same thing.
- *
- * The order is a cost decision and either order is correct. JSON is YAML,
- * so trying Saerskriven YAML first runs the YAML parser over every Threat
- * Dragon file before the schema refuses it at `formatVersion`, where trying
- * Threat Dragon first stops on a YAML file at the first character JSON
- * cannot begin with. Threat Dragon goes first.
- *
- * Where no codec claims, the failure is {@link DetectionFailure} naming
- * every format tried, in order, and carrying no codec's issues. A file
- * neither codec models lands there, a missing `formatVersion` or one other
- * than 1 and 2, and a Threat Dragon version outside major 2, among them. A
- * Saerskriven YAML file of either version is claimed, and one broken below
- * `formatVersion` is refused with a path. A later release of either format
- * needs a reader of its own rather than a looser one.
- */
-export function readAnyFormat(
-  text: string,
-): Either.Either<DetectedRead, ReadFailure | DetectionFailure> {
-  for (const entry of registry) {
-    const answer = entry.read(text);
-    if (answer !== undefined) {
-      return answer;
-    }
-  }
-  return Either.left(
-    DetectionFailure.NoFormatClaimed({
-      tried: registry.map((entry) => entry.format),
-    }),
-  );
-}
 
 function attempt<Name extends FormatName, WireSchema extends z.ZodType<object>>(
   format: Name,

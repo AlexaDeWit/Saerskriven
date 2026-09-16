@@ -24,6 +24,7 @@ import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
   isAnchored,
+  isNodeCell,
   portOnSide,
   sideOfPort,
   type PortSides,
@@ -38,31 +39,26 @@ import {
 } from './threat-dragon-preservation.js';
 import { fromThreatStatus } from './threat-dragon-vocabulary.js';
 
-const openStatus = fromThreatStatus('open');
-
 /** A port a flow's pinned end needs on a node cell that declares none on that side. */
 export type NeededPort = {
   readonly cell: string;
   readonly side: Side;
 };
 
-/** A cell as a merge produced it, what producing it cost, and the ports it needs on other cells. */
+/**
+ * A cell as a merge produced it, what producing it cost, and the ports it
+ * needs on other cells.
+ */
 export type MergedCell = {
   readonly cell: ThreatDragonCell;
   readonly divergences: readonly Divergence[];
   readonly ports: readonly NeededPort[];
 };
 
-type ProjectedEndpoint = {
-  readonly endpoint: ThreatDragonEndpoint;
-  readonly ports: readonly NeededPort[];
-};
-
-const noPorts: readonly NeededPort[] = [];
-
-type NodePorts = NonNullable<ThreatDragonNode['ports']>;
-
-/** Merges mapped fields onto the matching source shape and reports discarded source data. */
+/**
+ * One element merged onto the source cell of its id where that cell has the
+ * same shape. A source cell of another shape is discarded and reported.
+ */
 export function mergeCell(
   element: Element,
   held: ThreatDragonCell | undefined,
@@ -71,130 +67,216 @@ export function mergeCell(
   ports: PortSides,
 ): MergedCell {
   if (element.kind === 'actor') {
-    const from = held?.shape === 'actor' ? held : undefined;
-    return {
-      cell: {
-        ...from,
-        ...nodeParts(element, from, index),
-        shape: 'actor',
-        data: {
-          ...from?.data,
-          ...elementData(element, from?.data, threats),
-          providesAuthentication: element.providesAuthentication,
-          type: 'tm.Actor',
-        },
-      },
-      divergences: reshaped(element, held, from),
-      ports: noPorts,
-    };
+    return actorCell(element, held, threats, index);
   }
   if (element.kind === 'process') {
-    const from = held?.shape === 'process' ? held : undefined;
-    return {
-      cell: {
-        ...from,
-        ...nodeParts(element, from, index),
-        shape: 'process',
-        data: {
-          ...from?.data,
-          ...elementData(element, from?.data, threats),
-          handlesCardPayment: element.handlesCardPayment,
-          handlesGoodsOrServices: element.handlesGoodsOrServices,
-          isWebApplication: element.isWebApplication,
-          privilegeLevel: element.privilegeLevel,
-          type: 'tm.Process',
-        },
-      },
-      divergences: reshaped(element, held, from),
-      ports: noPorts,
-    };
+    return processCell(element, held, threats, index);
   }
   if (element.kind === 'store') {
-    const from = held?.shape === 'store' ? held : undefined;
-    return {
-      cell: {
-        ...from,
-        ...nodeParts(element, from, index),
-        shape: 'store',
-        data: {
-          ...from?.data,
-          ...elementData(element, from?.data, threats),
-          isALog: element.isALog,
-          isEncrypted: element.isEncrypted,
-          isSigned: element.isSigned,
-          storesCredentials: element.storesCredentials,
-          storesInventory: element.storesInventory,
-          type: 'tm.Store',
-        },
-      },
-      divergences: reshaped(element, held, from),
-      ports: noPorts,
-    };
+    return storeCell(element, held, threats, index);
   }
   if (element.kind === 'flow') {
-    const from = held?.shape === 'flow' ? held : undefined;
-    const source = preservedEndpoint(from?.source, element.source, ports);
-    const target = preservedEndpoint(from?.target, element.target, ports);
-    return {
-      cell: {
-        ...from,
-        id: element.id,
-        zIndex: from?.zIndex ?? index + 1,
-        shape: 'flow',
-        source: source.endpoint,
-        target: target.endpoint,
-        vertices: preservedList(from?.vertices, element.waypoints),
-        data: {
-          ...from?.data,
-          ...elementData(element, from?.data, threats),
-          isBidirectional: preservedFlag(
-            from?.data.isBidirectional,
-            element.bidirectional,
-          ),
-          protocol: element.protocol,
-          isEncrypted: element.isEncrypted,
-          isPublicNetwork: element.isPublicNetwork,
-          trustBoundaryIds: element.trustBoundaryIds,
-          type: 'tm.Flow',
-        },
-      },
-      divergences: reshaped(element, held, from),
-      ports: [...source.ports, ...target.ports],
-    };
+    return flowCell(element, held, threats, index, ports);
   }
   if (element.kind === 'text') {
-    const from = held?.shape === 'td-text-block' ? held : undefined;
-    const shown = from?.data.name ?? from?.attrs?.text?.text ?? '';
-    return {
-      cell: {
-        ...from,
-        id: element.id,
-        zIndex: from?.zIndex ?? index + 1,
-        shape: 'td-text-block',
-        position: element.position,
-        size: element.size,
-        data: {
-          ...from?.data,
-          name: shown === element.text ? from?.data.name : element.text,
-          description: preservedText(
-            from?.data.description,
-            element.description,
-          ),
-          hasOpenThreats: from?.data.hasOpenThreats ?? false,
-          type: 'tm.Text',
-        },
-      },
-      divergences: [
-        ...reshaped(element, held, from),
-        ...unlabelled(element),
-        ...unscoped(element),
-      ],
-      ports: noPorts,
-    };
+    return textCell(element, held, index);
   }
   return element.shape.kind === 'box'
     ? boxBoundary(element, element.shape, held, index)
     : curveBoundary(element, element.shape, held, index);
+}
+
+/**
+ * The cells with every port {@link mergeCell} asked for declared: a group
+ * for the side where the cell declares none, and an item named for the side
+ * in it. A port asked of a cell that is not a node is left undeclared, a flow
+ * end the model's own parse refuses.
+ */
+export function withNeededPorts(
+  cells: readonly ThreatDragonCell[],
+  needed: readonly NeededPort[],
+): ThreatDragonCell[] {
+  const sides = new Map<string, Set<Side>>();
+  for (const port of needed) {
+    sides.set(port.cell, (sides.get(port.cell) ?? new Set()).add(port.side));
+  }
+  return cells.map((cell) => {
+    const wanted = sides.get(cell.id);
+    if (wanted === undefined || !isNodeCell(cell)) {
+      return cell;
+    }
+    const groups: NonNullable<NodePorts['groups']> = { ...cell.ports?.groups };
+    const items: NonNullable<NodePorts['items']> = [
+      ...(cell.ports?.items ?? []),
+    ];
+    for (const side of wanted) {
+      groups[side] ??= { position: side };
+      if (!items.some((item) => item.group === side && item.id === side)) {
+        items.push({ group: side, id: side });
+      }
+    }
+    return { ...cell, ports: { ...cell.ports, groups, items } };
+  });
+}
+
+type ProjectedEndpoint = {
+  readonly endpoint: ThreatDragonEndpoint;
+  readonly ports: readonly NeededPort[];
+};
+
+type NodePorts = NonNullable<ThreatDragonNode['ports']>;
+
+const noPorts: readonly NeededPort[] = [];
+
+const openStatus = fromThreatStatus('open');
+
+function actorCell(
+  element: Actor,
+  held: ThreatDragonCell | undefined,
+  threats: readonly ThreatDragonThreat[],
+  index: number,
+): MergedCell {
+  const from = held?.shape === 'actor' ? held : undefined;
+  return {
+    cell: {
+      ...from,
+      ...nodeParts(element, from, index),
+      shape: 'actor',
+      data: {
+        ...from?.data,
+        ...elementData(element, from?.data, threats),
+        providesAuthentication: element.providesAuthentication,
+        type: 'tm.Actor',
+      },
+    },
+    divergences: reshaped(element, held, from),
+    ports: noPorts,
+  };
+}
+
+function processCell(
+  element: Process,
+  held: ThreatDragonCell | undefined,
+  threats: readonly ThreatDragonThreat[],
+  index: number,
+): MergedCell {
+  const from = held?.shape === 'process' ? held : undefined;
+  return {
+    cell: {
+      ...from,
+      ...nodeParts(element, from, index),
+      shape: 'process',
+      data: {
+        ...from?.data,
+        ...elementData(element, from?.data, threats),
+        handlesCardPayment: element.handlesCardPayment,
+        handlesGoodsOrServices: element.handlesGoodsOrServices,
+        isWebApplication: element.isWebApplication,
+        privilegeLevel: element.privilegeLevel,
+        type: 'tm.Process',
+      },
+    },
+    divergences: reshaped(element, held, from),
+    ports: noPorts,
+  };
+}
+
+function storeCell(
+  element: Store,
+  held: ThreatDragonCell | undefined,
+  threats: readonly ThreatDragonThreat[],
+  index: number,
+): MergedCell {
+  const from = held?.shape === 'store' ? held : undefined;
+  return {
+    cell: {
+      ...from,
+      ...nodeParts(element, from, index),
+      shape: 'store',
+      data: {
+        ...from?.data,
+        ...elementData(element, from?.data, threats),
+        isALog: element.isALog,
+        isEncrypted: element.isEncrypted,
+        isSigned: element.isSigned,
+        storesCredentials: element.storesCredentials,
+        storesInventory: element.storesInventory,
+        type: 'tm.Store',
+      },
+    },
+    divergences: reshaped(element, held, from),
+    ports: noPorts,
+  };
+}
+
+function flowCell(
+  element: Flow,
+  held: ThreatDragonCell | undefined,
+  threats: readonly ThreatDragonThreat[],
+  index: number,
+  ports: PortSides,
+): MergedCell {
+  const from = held?.shape === 'flow' ? held : undefined;
+  const source = preservedEndpoint(from?.source, element.source, ports);
+  const target = preservedEndpoint(from?.target, element.target, ports);
+  return {
+    cell: {
+      ...from,
+      id: element.id,
+      zIndex: zIndexOf(from, index),
+      shape: 'flow',
+      source: source.endpoint,
+      target: target.endpoint,
+      vertices: preservedList(from?.vertices, element.waypoints),
+      data: {
+        ...from?.data,
+        ...elementData(element, from?.data, threats),
+        isBidirectional: preservedFlag(
+          from?.data.isBidirectional,
+          element.bidirectional,
+        ),
+        protocol: element.protocol,
+        isEncrypted: element.isEncrypted,
+        isPublicNetwork: element.isPublicNetwork,
+        trustBoundaryIds: element.trustBoundaryIds,
+        type: 'tm.Flow',
+      },
+    },
+    divergences: reshaped(element, held, from),
+    ports: [...source.ports, ...target.ports],
+  };
+}
+
+function textCell(
+  element: TextElement,
+  held: ThreatDragonCell | undefined,
+  index: number,
+): MergedCell {
+  const from = held?.shape === 'td-text-block' ? held : undefined;
+  const shown = from?.data.name ?? from?.attrs?.text?.text ?? '';
+  return {
+    cell: {
+      ...from,
+      id: element.id,
+      zIndex: zIndexOf(from, index),
+      shape: 'td-text-block',
+      position: element.position,
+      size: element.size,
+      data: {
+        ...from?.data,
+        name: shown === element.text ? from?.data.name : element.text,
+        description: preservedText(from?.data.description, element.description),
+        hasOpenThreats: from?.data.hasOpenThreats ?? false,
+        type: 'tm.Text',
+      },
+    },
+    divergences: [
+      ...reshaped(element, held, from),
+      ...unlabelled(element),
+      ...unscoped(element),
+    ],
+    ports: noPorts,
+  };
 }
 
 function boxBoundary(
@@ -208,7 +290,7 @@ function boxBoundary(
     cell: {
       ...from,
       id: element.id,
-      zIndex: from?.zIndex ?? index + 1,
+      zIndex: zIndexOf(from, index),
       shape: 'trust-boundary-box',
       position: shape.position,
       size: shape.size,
@@ -241,7 +323,7 @@ function curveBoundary(
   };
   const body = {
     id: element.id,
-    zIndex: from?.zIndex ?? index + 1,
+    zIndex: zIndexOf(from, index),
     ...curvePoints(from, shape),
     data,
   };
@@ -273,6 +355,13 @@ function curvePoints(
       };
 }
 
+function zIndexOf(
+  from: { readonly zIndex?: number } | undefined,
+  index: number,
+): number {
+  return from?.zIndex ?? index + 1;
+}
+
 function nodeParts(
   element: Actor | Process | Store,
   from: ThreatDragonNode | undefined,
@@ -280,7 +369,7 @@ function nodeParts(
 ): { id: ElementId; zIndex: number; position: Point; size: Size } {
   return {
     id: element.id,
-    zIndex: from?.zIndex ?? index + 1,
+    zIndex: zIndexOf(from, index),
     position: element.position,
     size: element.size,
   };
@@ -355,44 +444,6 @@ function preservedEndpoint(
         ports: [{ cell: wanted.element, side: wanted.side }],
       }
     : { endpoint: { cell: wanted.element, port }, ports: noPorts };
-}
-
-/**
- * The cells with every port {@link mergeCell} asked for declared: a group
- * for the side where the cell declares none, and an item named for the side
- * in it. A cell drawn as no box has no sides, so a port asked of one is
- * left undeclared, which is a flow end the model's own parse refuses.
- */
-export function withNeededPorts(
-  cells: readonly ThreatDragonCell[],
-  needed: readonly NeededPort[],
-): ThreatDragonCell[] {
-  const sides = new Map<string, Set<Side>>();
-  for (const port of needed) {
-    sides.set(port.cell, (sides.get(port.cell) ?? new Set()).add(port.side));
-  }
-  return cells.map((cell) => {
-    const wanted = sides.get(cell.id);
-    if (
-      wanted === undefined ||
-      (cell.shape !== 'actor' &&
-        cell.shape !== 'process' &&
-        cell.shape !== 'store')
-    ) {
-      return cell;
-    }
-    const groups: NonNullable<NodePorts['groups']> = { ...cell.ports?.groups };
-    const items: NonNullable<NodePorts['items']> = [
-      ...(cell.ports?.items ?? []),
-    ];
-    for (const side of wanted) {
-      groups[side] ??= { position: side };
-      if (!items.some((item) => item.group === side && item.id === side)) {
-        items.push({ group: side, id: side });
-      }
-    }
-    return { ...cell, ports: { ...cell.ports, groups, items } };
-  });
 }
 
 function unlabelled(element: TextElement): readonly Divergence[] {

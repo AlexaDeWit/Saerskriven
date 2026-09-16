@@ -1,9 +1,11 @@
 import type { Divergence } from './divergence.js';
 import { isRecord } from './records.js';
 
-const escapableSegment = /[\\.]/g;
-
-/** Reports stripped keys. An import can reserve diagnostic space before paths are assembled. */
+/**
+ * One `undeclared` divergence for each key of `given` that the schema
+ * stripped from `kept`. An import passes `reservePath` to charge each path to
+ * its budget before the path is joined, and a refused path is left out.
+ */
 export function undeclaredDivergences(
   given: unknown,
   kept: unknown,
@@ -40,6 +42,8 @@ function undeclaredKeys(
   }
   return [];
 }
+
+const escapableSegment = /[\\.]/g;
 
 function joinPath(path: readonly string[]): string {
   return path

@@ -1,4 +1,10 @@
-import type { Element, Model, Threat, ThreatId } from '@saerskriven/model';
+import {
+  elementsAcross,
+  type Element,
+  type Model,
+  type Threat,
+  type ThreatId,
+} from '@saerskriven/model';
 import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
@@ -6,16 +12,16 @@ import type {
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
-  mitigationDivergences,
-  mitigationText,
-} from './threat-dragon-mitigations.js';
-import {
   allCells,
   hostsThreats,
   indexById,
   threatsOf,
   type ThreatDragonHost,
 } from './threat-dragon-document.js';
+import {
+  mitigationDivergences,
+  mitigationText,
+} from './threat-dragon-mitigations.js';
 import {
   fromSeverity,
   fromThreatCategory,
@@ -27,14 +33,10 @@ import {
 } from './threat-dragon-vocabulary.js';
 
 /**
- * A mark a file carries so a number already in use is not handed out again,
- * and why this write moved it: `issued` where the write put a number in the
- * file that the file did not already carry, `unreachable` where the model
- * has issued above every number the file holds, which is the gap a removed
- * threat left. Both can happen in one write. What is exclusive is which one
- * sets the value: a number this write issues is written into the file and so
- * is reachable from it, which puts it below a mark that is not, so
- * `unreachable` names the cause wherever it applies.
+ * A mark a file carries so Threat Dragon issues no number twice, and what
+ * set its value. `issued`: a number this write put in the file that the file
+ * did not carry. `unreachable`: the model has issued above every number the
+ * file holds, so the mark keeps the gap a removed threat left.
  */
 export type HighWaterMark = {
   readonly value: number;
@@ -42,9 +44,8 @@ export type HighWaterMark = {
 };
 
 /**
- * Where every threat of the model goes: the wire threat to nest under each
- * cell that hosts it, keyed by cell id; the `threatTop` the file needs; and
- * what the format could not hold of them.
+ * Where every threat of the model goes: the wire threats to nest under each
+ * cell id, the `threatTop` the file needs, and what the format could not hold.
  */
 export type ThreatPlan = {
   readonly byCell: ReadonlyMap<string, readonly ThreatDragonThreat[]>;
@@ -53,33 +54,23 @@ export type ThreatPlan = {
 };
 
 /**
- * The model's threats as Threat Dragon nests them. Ours attach to any
- * number of elements and Threat Dragon nests each under one cell, so a
- * threat naming several is written under each of them, and one naming a
- * trust boundary, a note, or nothing at all is reported as unrepresentable,
- * since those are not cells a threat attaches to.
+ * The model's threats as Threat Dragon nests them. A threat naming several
+ * elements is written under each, reported as `split` unless the source
+ * already nested it under all of them. An attachment to a trust boundary or a
+ * note, and a threat with no cell to go under, are `unrepresentable`. A
+ * category Threat Dragon's own labels do not name, such as PLOT4ai's, is
+ * `narrowed`, since the label reaches the file and reads back as custom.
  *
- * `split` is reported for the record this write is the one to divide. A
- * source that already nests the threat under every cell the model names was
- * split before this write ran, and nothing became several here, so a merge
- * of an unedited model onto that document reports nothing.
+ * A threat the source holds under a cell is merged onto that copy in the
+ * cell's own order, keeping the source's status, severity and category
+ * spelling wherever it still reads back as the model's value. Its mitigation
+ * text is {@link mitigationText}.
  *
- * A threat the source already holds under a cell is merged onto that copy
- * and the cell's own order is kept, so a threat nobody touched leaves the
- * file exactly as it was. Its status, severity and category stay as the
- * source spelled them wherever that spelling still reads back as the model's
- * value, because Threat Dragon writes a category in its author's own
- * language and reads two spellings of the undecided severity. Its mitigation
- * text is built from the mitigations linked to it, on the terms of
- * {@link mitigationText}.
- *
- * The {@link HighWaterMark} the plan carries is floored on what the file
- * declared, since a mark the file already carries is its own claim, and on
- * what the file holds where it declared none, since a zero written onto a
- * file holding a threat numbered 4 would have Threat Dragon hand 1 to 4 out
- * again. Above that floor it covers every number this write put in the file
- * that the file did not already carry, and the model's own mark where the
- * file's numbers fall short of it.
+ * `threatTop` never falls below the mark the file declared, or, where it
+ * declared none, below the highest number it holds, which a zero mark would
+ * have Threat Dragon issue again. Above that it covers every number this
+ * write issued, and the model's own mark where the file's numbers fall short
+ * of it.
  */
 export function planThreats(
   model: Model,
@@ -153,26 +144,22 @@ export function planThreats(
 
 function elementKinds(model: Model): ReadonlyMap<string, Element['kind']> {
   return new Map(
-    model.diagrams.flatMap((diagram) =>
-      diagram.elements.map((element): [string, Element['kind']] => [
-        element.id,
-        element.kind,
-      ]),
-    ),
+    elementsAcross(model.diagrams).map((element): [string, Element['kind']] => [
+      element.id,
+      element.kind,
+    ]),
   );
 }
+
+const hostKinds: ReadonlySet<Element['kind'] | undefined> = new Set<
+  Element['kind'] | undefined
+>(['actor', 'process', 'store', 'flow']);
 
 function canHost(
   kinds: ReadonlyMap<string, Element['kind']>,
   id: string,
 ): boolean {
-  const kind = kinds.get(id);
-  return (
-    kind === 'actor' ||
-    kind === 'process' ||
-    kind === 'store' ||
-    kind === 'flow'
-  );
+  return hostKinds.has(kinds.get(id));
 }
 
 function highWaterMark(

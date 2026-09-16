@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse, parseDocument } from 'yaml';
 import type { ReadFailure } from './codec.js';
-import { aliasCostIn } from './saerskriven-yaml-document.js';
+import { aliasCostIn } from './yaml-alias-cost.js';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { nativeFixtures } from './saerskriven-yaml.fixtures.js';
 import {

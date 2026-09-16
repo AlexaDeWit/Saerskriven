@@ -18,14 +18,14 @@ export function mitigationText(threat: Threat, model: Model): string {
 }
 
 /**
- * What writing the mitigation text of every threat in `written` costs. A
- * threat whose text merges more than one record, or carries a mitigation title,
- * reads back as one record with no title (`narrowed`, once per threat). A
- * mitigation with neither title nor prose writes nothing, and one whose
- * status differs from what a read of that threat infers loses it (each
- * `unrepresentable`, once per threat), and a mitigation that writes nothing
- * reports nothing else. A mitigation written into several threats' texts is
- * `split`, and one written into none is `unrepresentable`.
+ * What writing the mitigation text of every threat in `written` costs, none
+ * of it for an unedited read written back. A text that merges several
+ * records, or carries a title, reads back as one untitled record and is
+ * `narrowed` once per threat. Once per threat, a mitigation with neither
+ * title nor prose writes nothing and one whose status differs from what a
+ * read infers loses that status, each `unrepresentable`. A mitigation that
+ * writes something into several threats' texts is `split`, and one written
+ * into none is `unrepresentable`.
  */
 export function mitigationDivergences(
   model: Model,

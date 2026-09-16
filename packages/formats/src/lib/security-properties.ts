@@ -1,26 +1,16 @@
-import type { z } from 'zod';
 import type {
   Actor,
+  FlowInput,
   Process,
   Store,
-  flowSchema,
-  trustBoundarySchema,
+  TrustBoundaryInput,
 } from '@saerskriven/model';
 
-function presentProperties<T, Key extends keyof T>(
-  source: T,
-  keys: readonly Key[],
-): Partial<Pick<T, Key>> {
-  const selected: Partial<Pick<T, Key>> = {};
-  for (const key of keys) {
-    if (source[key] !== undefined) {
-      selected[key] = source[key];
-    }
-  }
-  return selected;
-}
-
-/** Actor facts shared by the native and Threat Dragon mappings. */
+/**
+ * Actor facts shared by the native and Threat Dragon mappings. Every function
+ * here copies only the facts present, so an absent fact stays unknown
+ * while an explicit `false` or empty value is kept.
+ */
 export function actorProperties(source: Pick<Actor, 'providesAuthentication'>) {
   return presentProperties(source, ['providesAuthentication']);
 }
@@ -66,7 +56,7 @@ export function storeProperties(
 /** Flow facts shared by the native and Threat Dragon mappings. */
 export function flowProperties(
   source: Pick<
-    z.input<typeof flowSchema>,
+    FlowInput,
     'protocol' | 'isEncrypted' | 'isPublicNetwork' | 'trustBoundaryIds'
   >,
 ) {
@@ -80,10 +70,20 @@ export function flowProperties(
 
 /** Boundary assertions shared by the native and Threat Dragon mappings. */
 export function boundaryProperties(
-  source: Pick<
-    z.input<typeof trustBoundarySchema>,
-    'containedElements' | 'crossingFlows'
-  >,
+  source: Pick<TrustBoundaryInput, 'containedElements' | 'crossingFlows'>,
 ) {
   return presentProperties(source, ['containedElements', 'crossingFlows']);
+}
+
+function presentProperties<T, Key extends keyof T>(
+  source: T,
+  keys: readonly Key[],
+): Partial<Pick<T, Key>> {
+  const selected: Partial<Pick<T, Key>> = {};
+  for (const key of keys) {
+    if (source[key] !== undefined) {
+      selected[key] = source[key];
+    }
+  }
+  return selected;
 }

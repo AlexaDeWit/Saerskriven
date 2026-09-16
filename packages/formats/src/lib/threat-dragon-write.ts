@@ -1,5 +1,6 @@
 import {
   diagramIdSchema,
+  elementIdsAcross,
   threatIdSchema,
   type Model,
 } from '@saerskriven/model';
@@ -21,12 +22,28 @@ import { allCells, indexById, threatsOf } from './threat-dragon-document.js';
 import { preservedText } from './threat-dragon-preservation.js';
 import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
 
-const writtenVersion = '2.6.2';
-
 /**
- * Writes model fields and preserves source fields the codec does not map.
- * An absent optional model property clears its mapped source property.
- * The package README defines the numbering and divergence rules.
+ * The model as a Threat Dragon v2 file, merged onto `source` where one is
+ * given and projected into Threat Dragon's canonical form where none is.
+ *
+ * A merge writes over the mapped fields and leaves the rest of the document,
+ * `attrs` styling, `zIndex` and `tools` among it, as it was. A mapped field is
+ * rewritten only where the source no longer reads back as the model, because
+ * a German category label and the severity `TBA` read as the model's value
+ * too. An absent optional model property clears its mapped source property.
+ * A pinned flow end is fastened to a port on its side: the source's own,
+ * else one the cell declares there, else one this write declares and names
+ * for the side. An end the model leaves unpinned is written with no port.
+ *
+ * The codec stamps release 2.6.2 and reports a different source stamp as
+ * `overridden`. Threat and diagram numbers, and the `threatTop` and
+ * `diagramTop` marks, follow `planThreats` and `numberDiagrams`, and a mark
+ * this write moves is reported as `overridden`. Issuing a number is not a
+ * divergence. What the format cannot hold is reported as `unrepresentable`:
+ * an assumption, a threat on a trust boundary or a note, a note's name, an
+ * out-of-scope boundary or note, and a diagram's name. A diagram, cell or
+ * threat the source held and the model no longer does is reported as
+ * `discarded-by-edit`. Mitigation texts follow `mitigationDivergences`.
  */
 export function writeThreatDragon(
   model: Model,
@@ -93,6 +110,8 @@ export function writeThreatDragon(
   };
 }
 
+const writtenVersion = '2.6.2';
+
 function mergedContributors(
   model: Model,
   source: ThreatDragonDocument | undefined,
@@ -154,11 +173,7 @@ function discarded(
     return [];
   }
   const kept = new Set<string>(model.diagrams.map((diagram) => diagram.id));
-  const elements = new Set<string>(
-    model.diagrams.flatMap((diagram) =>
-      diagram.elements.map((element) => element.id),
-    ),
-  );
+  const elements = elementIdsAcross(model.diagrams);
   const attached = new Map<string, ReadonlySet<string>>(
     model.threats.map((threat) => [
       threat.id,

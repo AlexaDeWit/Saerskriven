@@ -35,37 +35,27 @@ export type ThreatDragonCurve = Extract<
   { shape: 'trust-boundary-curve' | 'trust-broundary-curve' }
 >;
 
-/** A note on the canvas, belonging to no other cell. */
-export type ThreatDragonText = Extract<
-  ThreatDragonCell,
-  { shape: 'td-text-block' }
->;
-
-/**
- * A cell Threat Dragon nests threats under. The boundary and text shapes
- * are not among them, so a threat the internal model attaches to one of
- * those has nowhere to go in this format.
- */
+/** A cell Threat Dragon nests threats under: a node or a flow. */
 export type ThreatDragonHost = ThreatDragonNode | ThreatDragonFlow;
 
-/**
- * Whether a cell is one Threat Dragon nests threats under. Narrowing here
- * rather than at each call site is what keeps the path from a document down
- * to `detail.diagrams[i].cells[j].data.threats[k]` free of casts.
- */
-export function hostsThreats(cell: ThreatDragonCell): cell is ThreatDragonHost {
+/** Whether a cell is drawn as a box: an actor, a process, or a store. */
+export function isNodeCell(cell: ThreatDragonCell): cell is ThreatDragonNode {
   return (
-    cell.shape === 'actor' ||
-    cell.shape === 'process' ||
-    cell.shape === 'store' ||
-    cell.shape === 'flow'
+    cell.shape === 'actor' || cell.shape === 'process' || cell.shape === 'store'
   );
 }
 
 /**
+ * Whether a cell is one Threat Dragon nests threats under, narrowed so the
+ * path down to `data.threats` needs no cast.
+ */
+export function hostsThreats(cell: ThreatDragonCell): cell is ThreatDragonHost {
+  return isNodeCell(cell) || cell.shape === 'flow';
+}
+
+/**
  * Whether an endpoint is fastened to a cell rather than left on empty
- * canvas. Membership is `Object.hasOwn`, so an endpoint from a foreign file
- * cannot take the wrong branch on a key it inherited.
+ * canvas, tested with `Object.hasOwn` so an inherited key does not count.
  */
 export function isAnchored(
   endpoint: ThreatDragonEndpoint,
@@ -77,10 +67,8 @@ export function isAnchored(
 export type PortSides = ReadonlyMap<string, ReadonlyMap<string, Side>>;
 
 /**
- * Where every port of the given cells sits. Threat Dragon fastens a flow to
- * a port rather than to a cell, and a port belongs to one of four groups
- * named for the sides of the cell, so a port id resolves to the side the
- * flow attaches at. A cell declaring no ports resolves nothing.
+ * The side every port of the given cells sits on. Threat Dragon fastens a
+ * flow to a port, and a port's group is named for the side of its cell.
  */
 export function portSides(cells: readonly ThreatDragonCell[]): PortSides {
   return new Map(
@@ -139,13 +127,6 @@ export function allCells(
   document: ThreatDragonDocument,
 ): readonly ThreatDragonCell[] {
   return document.detail.diagrams.flatMap(cellsOf);
-}
-
-/** Every threat of a document, in the order its cells nest them. */
-export function allThreats(
-  document: ThreatDragonDocument,
-): readonly ThreatDragonThreat[] {
-  return allCells(document).flatMap(threatsOf);
 }
 
 /**

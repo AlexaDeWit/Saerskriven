@@ -19,10 +19,8 @@ import { categoryTranslations } from './threat-dragon-locales.js';
 
 /**
  * The fields of a Threat Dragon threat that name its category: the
- * methodology, the label in whatever language its author saw, and, for an
- * Elevation of Privilege threat, the suit of the card it was drawn from.
- * Reading and writing a category both work in these terms alone, so a write
- * can hand its own projection back to the read to see what it would say.
+ * methodology, the label in its author's language, and an Elevation of
+ * Privilege card's suit. A write reads its own projection back through these.
  */
 export type ThreatDragonCategoryFields = Pick<
   ThreatDragonThreat,
@@ -30,9 +28,8 @@ export type ThreatDragonCategoryFields = Pick<
 >;
 
 /**
- * A Threat Dragon value as the internal model holds it, and whether the
- * model holds it exactly. `exact` is false where the codec had to fall
- * back, which is a read's cue to report a divergence.
+ * A Threat Dragon value as the model holds it. `exact` is false where the
+ * codec fell back, which a read reports as a divergence.
  */
 export type Reading<Value> = {
   readonly value: Value;
@@ -136,29 +133,14 @@ const enumeratedCategories: Readonly<
       'CIA',
       resolve(ciaCategories, ciaLabels, categoryTranslations.cia, label),
     ),
-  CIADIE: (label) =>
-    paired(
-      'CIA-DIE',
-      resolve(ciaDieCategories, ciaDieLabels, ciaDieTranslations, label),
-    ),
-  DIE: (label) =>
-    paired(
-      'CIA-DIE',
-      resolve(ciaDieCategories, ciaDieLabels, ciaDieTranslations, label),
-    ),
+  CIADIE: ciaDieCategory,
+  DIE: ciaDieCategory,
 };
 
 /**
- * A Threat Dragon status as the model's own. Threat Dragon 2.6.2 offers
- * NotApplicable, Open and Mitigated, writes Accepted as well, and its
- * unreleased main adds the other three treatments. A status this codec does
- * not know reads as open, the state of a threat nobody has dispositioned,
- * and says it was not exact.
- *
- * The reading searches the spelling table {@link fromThreatStatus} writes
- * from rather than a second table of its own, so every state the model holds
- * is reachable from a file by construction: that table is declared over the
- * model's own states, and the search runs over the model's own options.
+ * A Threat Dragon status as the model's own, read back through the table
+ * {@link fromThreatStatus} writes with. An unknown status reads as `open`, not
+ * exact.
  */
 export function toThreatStatus(status: string): Reading<ThreatStatus> {
   const known = readBack(threatStatusSchema.options, statusLabels, status);
@@ -166,12 +148,9 @@ export function toThreatStatus(status: string): Reading<ThreatStatus> {
 }
 
 /**
- * A Threat Dragon severity as the model's own, read off the spelling table
- * on the terms {@link toThreatStatus} sets. Threat Dragon offers TBD and has
- * shipped TBA in a demo model, and both are the model's `undecided`, so TBA
- * is named here as the one spelling that table does not carry. A severity
- * this codec does not know reads as `undecided` too, which is what an
- * unreadable level amounts to, and says it was not exact.
+ * A Threat Dragon severity as the model's own. `TBA`, which a Threat Dragon
+ * demo model uses, is an alias of `undecided`, and an unknown severity reads
+ * as `undecided`, not exact.
  */
 export function toSeverity(severity: string): Reading<Severity> {
   const known =
@@ -182,27 +161,15 @@ export function toSeverity(severity: string): Reading<Severity> {
 }
 
 /**
- * A Threat Dragon threat's methodology and category as the model's own.
- *
- * STRIDE, LINDDUN and CIA name the same categories under different words,
- * and LINDDUN is the one that renamed them: Threat Dragon still ships the
- * older Linkability, Identifiability, Detectability, and Disclosure of
- * information. `DIE` joins `CIADIE` because Threat Dragon treats it as an
- * alias of it. Each label is looked up in the language Threat Dragon wrote
- * it in before the category is read, so a German file and an English one
- * describing the same threat reach the same category.
- *
- * Everything else becomes a custom category carrying Threat Dragon's own
- * methodology name and category string unchanged, `default` included, which
- * is what Threat Dragon stores for a generic threat: renaming either would
- * be a claim the file did not make. That is the model's escape hatch
- * working as intended, so it reads as exact. What is not exact is an
- * enumerated methodology whose label no language of Threat Dragon's names,
- * which falls to custom having lost the category, and an Elevation of
- * Privilege threat, whose card has only a suit the model can hold: the deck
- * and the card number have no home. A methodology or category the file
- * leaves out reads as `unspecified`, since the custom variant holds no
- * empty names.
+ * A Threat Dragon threat's methodology and category as the model's own. A
+ * label is first translated from the language Threat Dragon wrote it in, a
+ * LINDDUN label is Threat Dragon's older name for the model's category, and
+ * `DIE` is an alias of `CIADIE`. Any other methodology becomes an exact
+ * custom category with Threat Dragon's names unchanged, `default` included.
+ * Not exact: an enumerated methodology whose label no language names, which
+ * falls to custom, and an Elevation of Privilege card, of which the model
+ * holds the suit alone. A missing methodology or label reads as
+ * `unspecified`.
  */
 export function toThreatCategory(
   threat: ThreatDragonCategoryFields,
@@ -225,50 +192,26 @@ export function toThreatCategory(
     : { value: category, exact: true };
 }
 
-/**
- * The internal status as Threat Dragon spells it. Every state the model
- * holds has a spelling, so nothing is lost, and the spec walks the schema's
- * own options through this table and back, so one spelling used for two
- * states is caught.
- */
+/** The model's status as Threat Dragon spells it. */
 export function fromThreatStatus(status: ThreatStatus): string {
   return statusLabels[status];
 }
 
 /**
- * The internal severity as Threat Dragon spells it. `undecided` is written
- * TBD, the one of the two spellings Threat Dragon's own editor offers; a
- * file that said TBA keeps saying it, because a write leaves a value the
- * source already holds alone where it still reads back the same.
+ * The model's severity as Threat Dragon spells it, `undecided` as `TBD`, the
+ * spelling Threat Dragon's editor offers.
  */
 export function fromSeverity(severity: Severity): string {
   return severityLabels[severity];
 }
 
 /**
- * The internal category as the fields a Threat Dragon threat names it with.
- * The methodologies the model enumerates are written in Threat Dragon's own
- * English labels, since the file has no language of its own to write and a
- * translated label reaches the same category on the way back.
- *
- * Two of them do not survive the return trip, and a write reports each as
- * narrowed rather than this function claiming otherwise. PLOT4ai is written
- * under the model's own category names because Threat Dragon ships an older
- * eight-category set that names something else, so the label reaches the
- * file whole but reads back as a custom category. A custom category whose
- * methodology name is one Threat Dragon enumerates reads back as that
- * methodology rather than as custom. The caller sees both by reading its own
- * projection back with {@link toThreatCategory}.
- *
- * Narrowed rather than unrepresentable is the distinction the divergence
- * vocabulary draws: the category reaches the file whole and comes back
- * holding less, where something unrepresentable never reaches the file at
- * all. A diagram's name, which the format replaces with a number, is the
- * second kind.
- *
- * An Elevation of Privilege threat is the one category written somewhere
- * other than `type`: Threat Dragon's own editor writes the suit to
- * `cardSuit` and leaves `type` null, and the model holds the suit alone.
+ * The model's category as a Threat Dragon threat names it, enumerated
+ * methodologies in Threat Dragon's English labels. An Elevation of Privilege
+ * category writes its suit to `cardSuit` and a null `type`. Two do not read
+ * back as written, which {@link toThreatCategory} shows: a PLOT4ai label,
+ * since Threat Dragon ships a different PLOT4ai set, and a custom category
+ * whose methodology name Threat Dragon enumerates.
  */
 export function fromThreatCategory(
   category: ThreatCategory,
@@ -291,6 +234,13 @@ export function fromThreatCategory(
   return category.methodologyName === eop
     ? { modelType: eop, type: null, cardSuit: category.category }
     : { modelType: category.methodologyName, type: category.category };
+}
+
+function ciaDieCategory(label: string): ThreatCategory | undefined {
+  return paired(
+    'CIA-DIE',
+    resolve(ciaDieCategories, ciaDieLabels, ciaDieTranslations, label),
+  );
 }
 
 function custom(methodologyName: string, category: string): CustomCategory {

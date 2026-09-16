@@ -1,5 +1,5 @@
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
-import { assumptionsWithModelLinks } from './assumption-model-links.js';
+import { assumptionsWithModelLinks } from './saerskriven-yaml-migration-assumption-model-links.js';
 
 const assumption = (id: string, threats: string[]) => ({
   id,

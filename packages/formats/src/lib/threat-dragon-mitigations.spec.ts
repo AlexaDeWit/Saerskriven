@@ -3,10 +3,9 @@ import { parsedFixture } from '@saerskriven/model/fixtures';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
 import type { Divergence } from './divergence.js';
-import { allThreats } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
-import { mitigationTextFixture } from './threat-dragon.fixtures.js';
+import { allThreats, mitigationTextFixture } from './threat-dragon.fixtures.js';
 
 const read = Either.getOrThrow(
   readThreatDragon(JSON.stringify(mitigationTextFixture)),

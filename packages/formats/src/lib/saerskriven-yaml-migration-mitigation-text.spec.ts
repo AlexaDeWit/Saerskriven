@@ -2,7 +2,7 @@ import type {
   SaerskrivenYamlDocument,
   SaerskrivenYamlThreat,
 } from '@saerskriven/wire-saerskriven-yaml';
-import { withMitigationTextAsRecords } from './threat-mitigation-text.js';
+import { withMitigationTextAsRecords } from './saerskriven-yaml-migration-mitigation-text.js';
 
 const threat = (
   id: string,
