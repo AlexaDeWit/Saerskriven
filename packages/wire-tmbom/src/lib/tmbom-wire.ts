@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const versionSchema = z.string().regex(new RegExp('^\\d+(\\.\\d+)*$'));
+const versionSchema = z.string().regex(/^\d+(\.\d+)*$/);
 
 const degreeSchema = z.enum(['minimal', 'low', 'moderate', 'high', 'maximal']);
 
@@ -49,7 +49,7 @@ const diagramSchema = z.object({
   source: z.string(),
 });
 
-const symbolicNameSchema = z.string().regex(new RegExp('^[0-9a-z-]+$'));
+const symbolicNameSchema = z.string().regex(/^[0-9a-z-]+$/);
 
 const namedSchema = z.object({
   symbolic_name: symbolicNameSchema,
@@ -80,9 +80,12 @@ const authenticationMethodSchema = z.enum([
   'social',
 ]);
 
-const trustBoundarySchema = z.object({
+const trustBoundaryRefSchema = z.object({
   trust_zone_a: symbolicNameSchema,
   trust_zone_b: symbolicNameSchema,
+});
+
+const trustBoundarySchema = trustBoundaryRefSchema.extend({
   access_control_methods: z.array(accessControlMethodSchema).optional(),
   authentication_methods: z.array(authenticationMethodSchema).optional(),
   access_token_expires: z.boolean().optional(),
@@ -202,11 +205,6 @@ const threatSchema = namedSchema.extend({
   weaknesses: z.array(cweRefSchema).optional(),
 });
 
-const trustBoundaryRefSchema = z.object({
-  trust_zone_a: symbolicNameSchema,
-  trust_zone_b: symbolicNameSchema,
-});
-
 const controlStatusSchema = z.enum([
   'assumed',
   'active',
@@ -285,9 +283,7 @@ const tmbom101Schema = z.object({
       z
         .string()
         .regex(
-          new RegExp(
-            "^([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\.)+[A-Za-z]+(/[-$%'()*+,.:;=@^_~0-9A-Za-z]+)+$",
-          ),
+          /^([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]+(\/[-$%'()*+,.:;=@^_~0-9A-Za-z]+)+$/,
         ),
       z.unknown(),
     )

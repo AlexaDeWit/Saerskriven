@@ -263,51 +263,20 @@ const diagramSchema = z.object({
 });
 
 /**
- * A Threat Dragon v2 file, whole, and the whole of what this package
- * declares. Every key the format carries is here, the parts Saerskriven does
- * not model included (text blocks, port styling, `attrs` styling, `zIndex`,
- * `tools`, `placeholder`, `thumbnail`, `diagramTop`), because a write
- * merges onto this document and only a declared key is there to leave
- * alone. Nothing is defaulted and nothing is transformed: a key the file
- * omits stays omitted, so the document keeps saying what the file said.
- *
- * What this schema declares, it demands, and it demands nothing else. An
- * undeclared key is dropped rather than refused, since Threat Dragon owns
- * this shape and may add to it, and `@saerskriven/formats` reports each
- * dropped key, so a schema that has fallen behind the format announces
- * itself rather than quietly shortening a file.
+ * A Threat Dragon v2 file, whole, on the terms the package README states. An
+ * undeclared key is dropped, and `@saerskriven/formats` reports each one.
  *
  * A threat's `status`, `severity`, `type`, and `modelType` are plain text
- * because Threat Dragon stores each label in the author's own locale: a
- * German file holds `Manipulation` where an English one holds `Tampering`,
- * and its own schema types all four as strings. `number` is optional
- * because Threat Dragon requires only a threat's description, mitigation,
- * severity, status, title, and type, and most threats in its shipped demo
- * models carry no number at all. `diagramType` is text too, its generic
- * value being the word "Generic" translated, and so is what belongs to the
- * drawing library rather than to Threat Dragon: stroke colours, dash
- * arrays, marker and connector names, port visibility.
- *
- * A cell id, a threat id, the cell an edge anchors to, and the string form
- * of `summary.id` are two characters or more. Threat Dragon's own schema
- * puts that bound on a cell id, on the `threatId` it names a threat by, and
- * on `summary.id`, and an anchor names a cell, so one character there names
- * no cell a file can hold.
- *
- * `version` accepts `2`, `2.x`, and `2.x.y`, and nothing else. Threat
- * Dragon's own test for a v2 file is that the version is present and does
- * not start with `1.`, and its models carry `2.0` as well as `2.6.2`, at
- * the root and on each diagram. A file from another major is refused whole
- * rather than read in part.
- *
- * The shape is Threat Dragon's `data` payload wrapped around AntV X6's own
- * cell serialization, which is why the styling, port, tool, and label
- * shapes are here at all: Threat Dragon saves whatever X6 hands it.
- * `trust-broundary-curve` is here on purpose, since Threat Dragon registers
- * that misspelling itself and one of the models it ships carries it. An `EOP`
- * threat's `eopGameId`, `cardSuit`, and `cardNumber` are read from the
- * threat editor's own bindings, where each is a string or null, and its
- * `type` is the null that editor writes.
+ * because Threat Dragon stores each label in the author's own locale, and
+ * `diagramType` is a translated label too. `number` is optional because most
+ * threats in Threat Dragon's shipped demo models carry none. `version`
+ * accepts `2`, `2.x`, and `2.x.y`, so a file from another major is refused
+ * whole. The styling, port, tool and label shapes are AntV X6's own cell
+ * serialization, which Threat Dragon saves as X6 hands it.
+ * `trust-broundary-curve` is Threat Dragon's own registered
+ * misspelling, which one of its shipped models carries. An `EOP` threat's
+ * `eopGameId`, `cardSuit`, and `cardNumber` are each a string or null, and
+ * its `type` is null.
  */
 export const threatDragonWireSchema = z.object({
   version: versionSchema,
@@ -336,17 +305,7 @@ export type ThreatDragonDiagram = z.infer<typeof diagramSchema>;
 /** One cell of a Threat Dragon diagram. */
 export type ThreatDragonCell = z.infer<typeof cellSchema>;
 
-/**
- * The `data` fields every cell carries, whatever it draws. A merge writes
- * onto these on a cell no threat can attach to, a trust boundary or a note.
- */
-export type ThreatDragonBaseData = z.infer<typeof dataBaseSchema>;
-
-/**
- * The `data` fields a cell a threat can attach to carries beyond the base:
- * the scoping pair and the nested threats. Every such cell's own data
- * extends this, so a merge writes the group once rather than per shape.
- */
+/** The `data` fields every cell a threat can attach to carries: the base fields, the scoping pair and the nested threats. */
 export type ThreatDragonElementData = z.infer<typeof elementDataSchema>;
 
 /** One threat, as Threat Dragon nests it under the cell it concerns. */

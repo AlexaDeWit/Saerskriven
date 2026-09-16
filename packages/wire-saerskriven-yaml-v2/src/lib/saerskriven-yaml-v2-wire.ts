@@ -329,8 +329,3 @@ export type SaerskrivenYamlV2CiaDieCategory = z.infer<
 export type SaerskrivenYamlV2Plot4aiCategory = z.infer<
   typeof plot4aiCategorySchema
 >;
-
-/** A category from a methodology the format does not enumerate. */
-export type SaerskrivenYamlV2CustomCategory = z.infer<
-  typeof customCategorySchema
->;
