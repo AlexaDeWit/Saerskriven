@@ -1,13 +1,11 @@
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { join } from 'node:path';
 import { runCli, writeOutcome, type CliStreams } from './cli.js';
 import { render, renderOptionsSchema } from './render.js';
 import { validate } from './validate.js';
 import { cliVersion } from './version.js';
 
-const repositoryRoot = join(import.meta.dirname, '../../..');
-
-const ecluse = join(repositoryRoot, 'test-data/ecluse.json');
+const ecluse = testDataPath('ecluse.json');
 
 const collecting = (failing?: 'out' | 'err') => {
   const written = { out: '', err: '' };

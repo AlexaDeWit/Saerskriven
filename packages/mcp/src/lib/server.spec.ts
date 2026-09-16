@@ -3,6 +3,7 @@ import {
   ProtocolError,
   type CallToolResult,
 } from '@modelcontextprotocol/server';
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -18,6 +19,7 @@ import {
   resourceProseOf,
   structuredOf,
   textOf,
+  type McpSession,
   type ResultProse,
 } from '../fixtures.js';
 import {
@@ -33,13 +35,13 @@ import { dataNotInstructions } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
 import { renderDiagramResultSchema } from './render-diagram.js';
 import { revisionOf } from './revision.js';
-import { noRasterizer, session, type Session } from './server.fixtures.js';
+import { noRasterizer, session } from './server.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
-import { saerskrivenYaml, treeHolding } from './read-tools.fixtures.js';
-
-const repositoryRoot = realpathSync(join(import.meta.dirname, '../../../..'));
-
-const ecluse = 'test-data/ecluse.json';
+import {
+  ecluseFile,
+  saerskrivenYaml,
+  treeHolding,
+} from './read-tools.fixtures.js';
 
 const tree = workspaceTree();
 
@@ -163,12 +165,12 @@ const callArguments = (
 
 for (const era of eras) {
   describe(`a ${era} client of the server object`, () => {
-    let fixture: Session;
+    let fixture: McpSession;
 
     beforeAll(async () => {
       fixture = await session({
         root: repositoryRoot,
-        file: ecluse,
+        file: ecluseFile,
         era,
         rasterizer,
       });
@@ -417,7 +419,7 @@ for (const era of eras) {
       it('answers a diagram this install cannot draw as an internal error', async () => {
         const undrawn = await session({
           root: repositoryRoot,
-          file: ecluse,
+          file: ecluseFile,
           era,
           rasterizer: noRasterizer,
         });
@@ -693,9 +695,9 @@ for (const era of eras) {
           totals: reading.totals,
           divergences: reading.divergences,
         }).toEqual({
-          file: ecluse,
+          file: ecluseFile,
           format: 'threat-dragon',
-          revision: revisionOf(readFileSync(join(repositoryRoot, ecluse))),
+          revision: revisionOf(readFileSync(join(repositoryRoot, ecluseFile))),
           diagrams: [
             { id: '0', title: 'High Level', elements: 38, threats: 29 },
           ],
@@ -729,7 +731,7 @@ for (const era of eras) {
       it('answers a named file and the default file alike', async () => {
         const named = await fixture.client.callTool({
           name: 'saer_inspect',
-          arguments: { file: ecluse },
+          arguments: { file: ecluseFile },
         });
         expect(readingOf(named)).toEqual(readingOf(await inspecting()));
       });

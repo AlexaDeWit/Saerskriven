@@ -1,23 +1,22 @@
 import { deepestProse, renderTypst } from '@saerskriven/render';
 import { Either } from 'effect';
-import { copyFileSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
+import { copyFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fixtureFile, proseThreatYaml } from './cli.fixtures.js';
+import {
+  fixtureFile,
+  proseThreatYaml,
+  scratchDirectory,
+} from './cli.fixtures.js';
 import { readModel } from './input.js';
 import { compilePdf } from './pdf.js';
 import { compileTimeout, outlineTitles, pageCount } from './pdf.fixtures.js';
 
-const repositoryRoot = join(import.meta.dirname, '../../..');
-
 const assets = join(repositoryRoot, 'apps/cli/dist/assets');
 
-const hostileFile = join(
-  repositoryRoot,
-  'test-data/adversarial/typst-injection.yaml',
-);
+const hostileFile = testDataPath('adversarial/typst-injection.yaml');
 
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-pdf-'));
+const directory = scratchDirectory('pdf');
 
 const deepProseFile = fixtureFile(
   directory,
@@ -107,7 +106,7 @@ describe('Typst source compiled to a PDF', () => {
 });
 
 describe('an install with the module and no font face', () => {
-  const bareDirectory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-no-font-'));
+  const bareDirectory = scratchDirectory('no-font');
   copyFileSync(
     join(assets, 'typst_ts_web_compiler_bg.wasm'),
     join(bareDirectory, 'typst_ts_web_compiler_bg.wasm'),

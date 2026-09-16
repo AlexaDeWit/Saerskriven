@@ -1,35 +1,28 @@
-import { resvgWasmFile as builtResvgWasmFile } from '@saerskriven/render/build-assets';
+import { smallYaml, unplacedFlowYaml } from '@saerskriven/mcp/fixtures';
+import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdtempSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { copyFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   danglingReferenceYaml,
   fixtureFile,
-  noDiagramYaml,
-  unplacedFlowYaml,
+  renderGolden,
+  scratchDirectory,
 } from './cli.fixtures.js';
 import { compileTimeout, pageCount } from './pdf.fixtures.js';
-import { resvgWasmFile } from './png.js';
 import { render, type RenderOptions } from './render.js';
 
-const repositoryRoot = join(import.meta.dirname, '../../..');
+const directory = scratchDirectory('render');
 
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-render-'));
+const ecluse = testDataPath('ecluse.json');
 
-const ecluse = join(repositoryRoot, 'test-data/ecluse.json');
-
-const ecluseYaml = join(repositoryRoot, 'test-data/saerskriven/ecluse.yaml');
+const ecluseYaml = testDataPath('saerskriven/ecluse.yaml');
 
 const saerskriven = join(repositoryRoot, 'threat-modelling/saerskriven.yaml');
 
-const golden = (name: string): string =>
-  readFileSync(join(repositoryRoot, 'test-data/render', name), 'utf8');
+const golden = (name: string): string => renderGolden(name).toString('utf8');
 
 const pdfDigest = golden('ecluse.snapshot.pdf.sha256').trim();
-
-const raster = (name: string): Buffer =>
-  readFileSync(join(repositoryRoot, 'test-data/render', name));
 
 const options = (given: Partial<RenderOptions>): RenderOptions => ({
   format: 'svg',
@@ -108,7 +101,7 @@ describe('render', () => {
   it('rasterizes the Écluse fixture as the golden picture', async () => {
     const run = await written('ecluse.png', ecluse, { format: 'png' });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-    expect(run.bytes()).toEqual(raster('ecluse.snapshot.png'));
+    expect(run.bytes()).toEqual(renderGolden('ecluse.snapshot.png'));
   });
 
   it('writes a PNG to standard output as bytes, not as text', async () => {
@@ -120,7 +113,7 @@ describe('render', () => {
     expect(outcome.code).toBe(0);
     expect(outcome.out).toBeInstanceOf(Uint8Array);
     expect(Buffer.from(bytesOf(outcome.out))).toEqual(
-      raster('ecluse.snapshot.png'),
+      renderGolden('ecluse.snapshot.png'),
     );
   });
 
@@ -131,16 +124,12 @@ describe('render', () => {
     });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
     expect(run.bytes()).toEqual(
-      raster('saerskriven-read-and-render.snapshot.png'),
+      renderGolden('saerskriven-read-and-render.snapshot.png'),
     );
   });
 
-  it('reads the module under the name the build writes it as', () => {
-    expect(resvgWasmFile).toBe(builtResvgWasmFile);
-  });
-
   it('refuses an install with the module and no font face', async () => {
-    const bare = mkdtempSync(join(tmpdir(), 'saerskriven-cli-bare-'));
+    const bare = scratchDirectory('bare');
     copyFileSync(
       join(assets, 'saerskriven_resvg.wasm'),
       join(bare, 'saerskriven_resvg.wasm'),
@@ -158,7 +147,7 @@ describe('render', () => {
   });
 
   it('refuses an install whose faces the drawing is not lettered in', async () => {
-    const bare = mkdtempSync(join(tmpdir(), 'saerskriven-cli-mono-'));
+    const bare = scratchDirectory('mono');
     copyFileSync(
       join(assets, 'saerskriven_resvg.wasm'),
       join(bare, 'saerskriven_resvg.wasm'),
@@ -252,7 +241,7 @@ describe('render', () => {
   });
 
   it('refuses to draw a model that holds no diagram', async () => {
-    const file = fixtureFile(directory, 'no-diagram.yaml', noDiagramYaml);
+    const file = fixtureFile(directory, 'no-diagram.yaml', smallYaml);
     await expect(render(file, options({}))).resolves.toEqual({
       code: 2,
       out: '',
@@ -336,9 +325,7 @@ describe('render', () => {
   it(
     'refuses an install with the module and no font face, and writes nothing',
     async () => {
-      const bareAssets = mkdtempSync(
-        join(tmpdir(), 'saerskriven-cli-render-no-font-'),
-      );
+      const bareAssets = scratchDirectory('render-no-font');
       copyFileSync(
         join(assets, 'typst_ts_web_compiler_bg.wasm'),
         join(bareAssets, 'typst_ts_web_compiler_bg.wasm'),

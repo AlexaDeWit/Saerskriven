@@ -1,3 +1,4 @@
+import { unclaimedFile } from '../fixtures.js';
 import {
   answerOf,
   ecluseFile,
@@ -5,7 +6,6 @@ import {
   invalidFile,
   refusalOf,
   rootWorkspace,
-  unclaimedFile,
   unreadableTree,
 } from './read-tools.fixtures.js';
 import { validate } from './validate.js';

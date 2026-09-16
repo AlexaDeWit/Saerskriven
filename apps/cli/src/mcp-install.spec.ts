@@ -4,15 +4,13 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   statSync,
   symlinkSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse as parseToml } from 'smol-toml';
-import { fixtureFile } from './cli.fixtures.js';
+import { fixtureFile, scratchDirectory } from './cli.fixtures.js';
 import type { HostPlatform, HostSyntax } from './mcp-hosts.js';
 import {
   installedIn,
@@ -28,8 +26,7 @@ import {
   type InstallOptions,
 } from './mcp-install.js';
 
-const directory = (): string =>
-  mkdtempSync(join(tmpdir(), 'saerskriven-cli-install-'));
+const directory = (): string => scratchDirectory('install');
 
 const parsedAs = (syntax: HostSyntax, text: string): unknown =>
   syntax === 'json' ? JSON.parse(text) : parseToml(text);

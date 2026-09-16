@@ -3,7 +3,7 @@ import {
   resvgWasmAsset,
   typstFontAssets,
 } from '@saerskriven/render/build-assets';
-import { drawingFace } from '@saerskriven/render/png';
+import { drawingFace, ledBy } from '@saerskriven/render/png';
 import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
@@ -22,19 +22,21 @@ export const rasterizerUnbuilt =
  * The flake-built module with the faces led by the one the drawings are
  * lettered in. The Typst compiler's own order leads with the Mono face, and a
  * rasterization offered that order letters the whole diagram in Liberation
- * Mono, so the reordering here is the decision `apps/cli` makes for the CLI.
+ * Mono, so the faces are ordered by `ledBy`, as `apps/cli` orders them.
  */
-export const builtRasterizer: RasterizerAssets = () => {
-  const faces = typstFontAssets(refuse);
-  const assets: ResvgAssets = {
-    wasm: new Uint8Array(readFileSync(resvgWasmAsset(refuse))),
-    fonts: [
-      ...faces.filter((font) => font.name === drawingFace),
-      ...faces.filter((font) => font.name !== drawingFace),
-    ].map((font) => new Uint8Array(readFileSync(font.from))),
-  };
-  return Either.right(assets);
-};
+export const builtRasterizer: RasterizerAssets = () =>
+  Either.map(
+    ledBy(
+      typstFontAssets(refuse),
+      (font) => font.name,
+      drawingFace,
+      'the flake-built fonts',
+    ),
+    (faces): ResvgAssets => ({
+      wasm: new Uint8Array(readFileSync(resvgWasmAsset(refuse))),
+      fonts: faces.map((font) => new Uint8Array(readFileSync(font.from))),
+    }),
+  );
 
 function refuse(sentence: string): never {
   throw new Error(sentence);

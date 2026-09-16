@@ -1,12 +1,13 @@
 import { ReadFailure, readLimits } from '@saerskriven/formats';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   ansiElementIdYaml,
   fixtureFile,
   literalEscapeIdYaml,
+  scratchDirectory,
 } from './cli.fixtures.js';
 import * as files from './files.js';
 import {
@@ -15,9 +16,7 @@ import {
   readModel,
 } from './input.js';
 
-const repositoryRoot = join(import.meta.dirname, '../../..');
-
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-input-'));
+const directory = scratchDirectory('input');
 
 const refusedModel = (err: string) => Either.left({ code: 1, out: '', err });
 
@@ -27,12 +26,12 @@ describe('a model file read at the edge', () => {
   });
 
   it('gives the read back where a codec claimed the file', () => {
-    const read = readModel(join(repositoryRoot, 'test-data/ecluse.json'));
+    const read = readModel(testDataPath('ecluse.json'));
     expect(Either.isRight(read)).toBe(true);
   });
 
   it('answers a file the process cannot read with a usage outcome', () => {
-    const path = join(repositoryRoot, 'test-data/absent.json');
+    const path = testDataPath('absent.json');
     expect(readModel(path)).toEqual(
       Either.left({
         code: 2,

@@ -1,16 +1,10 @@
 import { Either } from 'effect';
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { scratchDirectory } from './cli.fixtures.js';
 import { createPrivateFile, readTextFile, writeFile } from './files.js';
 
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-files-'));
+const directory = scratchDirectory('files');
 
 describe('text files at the edge', () => {
   it('replaces a symbolic link with a private file, leaving its target alone', () => {

@@ -1,3 +1,4 @@
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,9 +15,6 @@ export type Runner = {
   readonly leading: readonly string[];
   readonly absence: string | undefined;
 };
-
-/** The checkout, which every runner is spawned with as its working directory. */
-export const repositoryRoot = join(import.meta.dirname, '../../..');
 
 /** Where the esbuild target writes the bundle a runner runs under node. */
 export const bundlePath = join(repositoryRoot, 'apps/cli/dist/saer.js');

@@ -1,3 +1,4 @@
+import { smallYaml } from '../fixtures.js';
 import {
   answerOf,
   crowdedThreats,
@@ -124,27 +125,12 @@ describe('a Threat Dragon threat found by the text of its mitigation', () => {
 describe('a version 1 threat found by the mitigation text its file held', () => {
   const found = answerOf(
     searchThreats(
-      treeHolding(`formatVersion: 1
-metadata:
-  title: Held text
-  owner: Owner
-  description: ''
-  contributors: []
-assumptions: []
-mitigations: []
-diagrams: []
-threats:
-  - id: threat-1
-    number: 1
-    title: Spoofed caller
-    category: { methodology: STRIDE, category: spoofing }
-    severity: high
-    status: mitigated
-    description: ''
-    mitigation: Pin the certificate.
-    elements: []
-lastIssuedThreatNumber: 1
-`),
+      treeHolding(
+        smallYaml
+          .replace('title: Small', 'title: Held text')
+          .replace('status: open', 'status: mitigated')
+          .replace("mitigation: ''", 'mitigation: Pin the certificate.'),
+      ),
       { query: 'pin the certificate', response_format: 'detailed' },
     ),
   );

@@ -15,7 +15,8 @@ import { editOf, readingOf, structuredOf, textOf } from '../fixtures.js';
 import { editableTree } from './edit.fixtures.js';
 import { getThreatResultSchema } from './get-threat.js';
 import { searchElementsResultSchema } from './search-elements.js';
-import { session, type Session } from './server.fixtures.js';
+import type { McpSession } from '../fixtures.js';
+import { session } from './server.fixtures.js';
 
 const model = parsedFixture(securityModelFixture);
 const elements = model.diagrams.flatMap((diagram) => diagram.elements);
@@ -29,7 +30,7 @@ for (const { format, codec } of [
   { format: 'Threat Dragon', codec: threatDragonCodec },
 ]) {
   describe(`MCP security properties in ${format}`, () => {
-    let connected: Session;
+    let connected: McpSession;
     let root: string;
     const file = 'security.model';
     let revision: string;
@@ -57,7 +58,7 @@ for (const { format, codec } of [
     beforeEach(async () => {
       root = editableTree().root;
       writeFileSync(join(root, file), codec.write(model).output);
-      connected = await session({ root, file });
+      connected = await session({ root, file, era: 'legacy' });
       revision = readingOf(
         await connected.client.callTool({ name: 'saer_inspect' }),
       ).revision;

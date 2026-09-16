@@ -4,11 +4,11 @@ import { assumptionId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { unclaimedFile } from '../fixtures.js';
 import {
   dragonFile,
   editableTree,
   modelFile,
-  unclaimedFile,
   type EditInput,
 } from './edit.fixtures.js';
 import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
@@ -17,6 +17,7 @@ import { describeOperationFailure } from './operation-failure.js';
 import { revisionOf } from './revision.js';
 import { searchThreats } from './search-threats.js';
 import { openWorkspace } from './workspace.js';
+import { refusalOf } from './read-tools.fixtures.js';
 
 const staleRevision = `sha256:${'0'.repeat(64)}`;
 
@@ -83,9 +84,9 @@ describe('what a refused edit leaves on disk', () => {
     const before = attempted.bytes(modelFile);
     const refused = attempted.edit(modelFile, staleRevision, [renaming]);
     expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the edit was applied',
-    ).toContain('changed since the read this call quoted');
+    expect(refusalOf(refused).join('\n')).toContain(
+      'changed since the read this call quoted',
+    );
   });
 
   it('writes nothing when no codec claims the file', () => {
@@ -97,9 +98,7 @@ describe('what a refused edit leaves on disk', () => {
       [renaming],
     );
     expect(attempted.bytes(unclaimedFile)).toEqual(before);
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the edit was applied',
-    ).toContain('was not read');
+    expect(refusalOf(refused).join('\n')).toContain('was not read');
   });
 
   it('writes nothing when the edited model would be past the size this server reads', () => {
@@ -116,9 +115,9 @@ describe('what a refused edit leaves on disk', () => {
       ],
     );
     expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the edit was applied',
-    ).toContain('past the size this server reads');
+    expect(refusalOf(refused).join('\n')).toContain(
+      'past the size this server reads',
+    );
   });
 });
 

@@ -1,16 +1,12 @@
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { spawnSync } from 'node:child_process';
-import {
-  closeSync,
-  existsSync,
-  mkdtempSync,
-  openSync,
-  readFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { closeSync, existsSync, openSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   danglingReferenceYaml,
   fixtureFile,
+  renderGolden,
+  scratchDirectory,
   undeclaredKeyYaml,
 } from './cli.fixtures.js';
 import {
@@ -21,7 +17,6 @@ import {
 } from './pdf.fixtures.js';
 import {
   ran,
-  repositoryRoot,
   runners,
   spawnTimeout,
   text,
@@ -37,12 +32,9 @@ type Scenario = {
   readonly err: string;
 };
 
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-main-'));
+const directory = scratchDirectory('main');
 
 const fullDevice = '/dev/full';
-
-const golden = (name: string): Buffer =>
-  readFileSync(join(repositoryRoot, 'test-data/render', name));
 
 const danglingFile = fixtureFile(
   directory,
@@ -183,7 +175,7 @@ for (const runner of runners) {
           ]),
         ).toEqual({ code: 0, out: '', err: '' });
         expect(readFileSync(out)).toEqual(
-          golden('ecluse.register.snapshot.md'),
+          renderGolden('ecluse.register.snapshot.md'),
         );
       });
 
@@ -199,7 +191,7 @@ for (const runner of runners) {
             out,
           ]),
         ).toEqual({ code: 0, out: '', err: '' });
-        expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.svg'));
+        expect(readFileSync(out)).toEqual(renderGolden('ecluse.snapshot.svg'));
       });
 
       it('rasterizes the Écluse fixture as the golden picture', () => {
@@ -214,7 +206,7 @@ for (const runner of runners) {
             out,
           ]),
         ).toEqual({ code: 0, out: '', err: '' });
-        expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.png'));
+        expect(readFileSync(out)).toEqual(renderGolden('ecluse.snapshot.png'));
       });
 
       it('writes a PNG to standard output as bytes, not as text', () => {
@@ -236,7 +228,7 @@ for (const runner of runners) {
           out,
         ]);
         expect(streamed.code).toEqual(0);
-        expect(streamed.out).toEqual(golden('ecluse.snapshot.png'));
+        expect(streamed.out).toEqual(renderGolden('ecluse.snapshot.png'));
         expect(streamed.out).toEqual(readFileSync(out));
       });
 
@@ -255,7 +247,7 @@ for (const runner of runners) {
           ]),
         ).toEqual({ code: 0, out: '', err: '' });
         expect(readFileSync(out)).toEqual(
-          golden('saerskriven-read-and-render.snapshot.png'),
+          renderGolden('saerskriven-read-and-render.snapshot.png'),
         );
       });
 
@@ -364,7 +356,7 @@ for (const runner of runners) {
           '-',
         ]);
         expect(result.code).toEqual(0);
-        expect(result.out).toEqual(golden('ecluse.snapshot.svg'));
+        expect(result.out).toEqual(renderGolden('ecluse.snapshot.svg'));
         expect(result.err.toString('utf8')).toEqual('');
       });
 
@@ -408,7 +400,7 @@ for (const runner of runners) {
             name,
           ]);
           expect(result.code).toEqual(0);
-          expect(result.out).toEqual(golden(file));
+          expect(result.out).toEqual(renderGolden(file));
         }
       });
 

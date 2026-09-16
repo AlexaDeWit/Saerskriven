@@ -1,21 +1,18 @@
 import { typstFontFiles } from '@saerskriven/render/build-assets';
 import { drawingFace } from '@saerskriven/render/png';
 import { Either } from 'effect';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { resvgWasmFile as builtResvgWasmFile } from '@saerskriven/render/build-assets';
+import { fakeAssets, scratchDirectory } from './cli.fixtures.js';
 import { pngAssets, resvgWasmFile } from './png.js';
 
 const faceBytes = (name: string): Buffer => Buffer.from(`face:${name}`, 'utf8');
 
-const assetsHolding = (faces: readonly string[]): string => {
-  const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-faces-'));
-  writeFileSync(join(directory, resvgWasmFile), 'module');
-  for (const name of faces) {
-    writeFileSync(join(directory, name), faceBytes(name));
-  }
-  return directory;
-};
+const assetsHolding = (faces: readonly string[]): string =>
+  fakeAssets(scratchDirectory('faces'), faces);
+
+it('reads the module under the name the build writes it as', () => {
+  expect(resvgWasmFile).toBe(builtResvgWasmFile);
+});
 
 describe('the faces a rasterization is offered', () => {
   it('leads with the face the drawings are lettered in', () => {

@@ -1,21 +1,14 @@
 import { defaultRenderTheme } from '@saerskriven/canvas';
 import { readLimits } from '@saerskriven/formats';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fixtureFile } from './cli.fixtures.js';
+import { fixtureFile, scratchDirectory } from './cli.fixtures.js';
 import { runCli } from './cli.js';
 import { commandTheme, readThemeFile, themeWarnings } from './theme.js';
 
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-theme-'));
-const model = join(
-  import.meta.dirname,
-  '../../../test-data/saerskriven/ecluse.yaml',
-);
-afterAll(() => {
-  rmSync(directory, { recursive: true, force: true });
-});
+const directory = scratchDirectory('theme');
+const model = testDataPath('saerskriven/ecluse.yaml');
 
 function file(text: string): string {
   return fixtureFile(directory, 'theme.yaml', text);

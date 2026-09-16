@@ -28,7 +28,9 @@ import {
   resourceProseOf,
   structuredOf,
   textOf,
+  type McpSession,
 } from '@saerskriven/mcp/fixtures';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import {
   mkdtempSync,
   readFileSync,
@@ -43,12 +45,10 @@ import { join } from 'node:path';
 import {
   httpProcess,
   sessionOpeners,
-  type McpSession,
   type SessionOpener,
 } from './mcp-session.fixtures.js';
 import {
   ran,
-  repositoryRoot,
   runners,
   spawnTimeout,
   titleOf,
@@ -57,7 +57,7 @@ import {
 
 const ecluse = ['mcp', '--file', 'test-data/ecluse.json'];
 
-const ecluseBytes = readFileSync(join(repositoryRoot, 'test-data/ecluse.json'));
+const ecluseBytes = readFileSync(testDataPath('ecluse.json'));
 
 const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
@@ -161,7 +161,7 @@ const recordThreat = (id: string) => ({
 const recordSession = async (opener: SessionOpener, runner: Runner) => {
   const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-records-'));
   const file = 'records.yaml';
-  const session = await opener.open(runner, ['mcp', '--root', root]);
+  const session = await opener.open(runner, ['mcp', '--root', root], 'modern');
   try {
     const call = (name: string, args: Record<string, unknown>) =>
       session.client.callTool({ name, arguments: { file, ...args } });
@@ -367,7 +367,11 @@ for (const runner of runners) {
               join(tmpdir(), 'saerskriven-mcp-properties-'),
             );
             const file = 'model.yaml';
-            const session = await opener.open(runner, ['mcp', '--root', root]);
+            const session = await opener.open(
+              runner,
+              ['mcp', '--root', root],
+              'modern',
+            );
             try {
               const created = await session.client.callTool({
                 name: 'saer_create',
@@ -503,7 +507,7 @@ for (const runner of runners) {
         );
 
         it('completes discovery on the revision the split SDK negotiates', async () => {
-          const session = await opener.open(runner, ecluse);
+          const session = await opener.open(runner, ecluse, 'modern');
           const listed = await session.client.listTools();
           const era = session.client.getProtocolEra();
           await session.end();
@@ -525,7 +529,7 @@ for (const runner of runners) {
         });
 
         it('checks the Écluse fixture through saer_validate', async () => {
-          const session = await opener.open(runner, ecluse);
+          const session = await opener.open(runner, ecluse, 'modern');
           const result = await session.client.callTool({
             name: 'saer_validate',
           });
@@ -541,7 +545,7 @@ for (const runner of runners) {
         });
 
         it('reports coverage over the Écluse fixture', async () => {
-          const session = await opener.open(runner, ecluse);
+          const session = await opener.open(runner, ecluse, 'modern');
           const result = await session.client.callTool({
             name: 'saer_coverage',
           });
@@ -554,7 +558,7 @@ for (const runner of runners) {
         });
 
         it('writes the register of the Écluse fixture', async () => {
-          const session = await opener.open(runner, ecluse);
+          const session = await opener.open(runner, ecluse, 'modern');
           const result = await session.client.callTool({
             name: 'saer_register',
           });
@@ -565,7 +569,7 @@ for (const runner of runners) {
         });
 
         it('searches the elements of the Écluse fixture', async () => {
-          const session = await opener.open(runner, ecluse);
+          const session = await opener.open(runner, ecluse, 'modern');
           const result = await session.client.callTool({
             name: 'saer_search_elements',
             arguments: { kind: 'store' },
@@ -579,7 +583,7 @@ for (const runner of runners) {
         });
 
         it('refuses to draw over a file the root already holds', async () => {
-          const session = await opener.open(runner, ecluse);
+          const session = await opener.open(runner, ecluse, 'modern');
           const result = await session.client.callTool({
             name: 'saer_render_diagram',
             arguments: { out: 'test-data/render/ecluse.snapshot.png' },
@@ -591,7 +595,7 @@ for (const runner of runners) {
         });
 
         it('refuses an out path that names anything but a PNG', async () => {
-          const session = await opener.open(runner, ecluse);
+          const session = await opener.open(runner, ecluse, 'modern');
           const result = await session.client.callTool({
             name: 'saer_render_diagram',
             arguments: { out: 'package.json' },
@@ -603,11 +607,11 @@ for (const runner of runners) {
         });
 
         it('refuses a file no format claims with the formats it tried', async () => {
-          const session = await opener.open(runner, [
-            'mcp',
-            '--file',
-            'package.json',
-          ]);
+          const session = await opener.open(
+            runner,
+            ['mcp', '--file', 'package.json'],
+            'modern',
+          );
           const result = await session.client.callTool({
             name: 'saer_validate',
           });
@@ -619,11 +623,11 @@ for (const runner of runners) {
         });
 
         it('refuses a file outside the root as a tool result', async () => {
-          const session = await opener.open(runner, [
-            'mcp',
-            '--root',
-            'test-data',
-          ]);
+          const session = await opener.open(
+            runner,
+            ['mcp', '--root', 'test-data'],
+            'modern',
+          );
           const result = await session.client.callTool({
             name: 'saer_inspect',
             arguments: { file: '../package.json' },

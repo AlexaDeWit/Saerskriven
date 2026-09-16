@@ -14,6 +14,7 @@ import {
   renderImport,
 } from './import.js';
 import { openWorkspace } from './workspace.js';
+import { refusalOf } from './read-tools.fixtures.js';
 
 const converted = (root: string, file: string, target: string) =>
   importIntoModel(
@@ -71,16 +72,12 @@ describe('converting a foreign model', () => {
     const before = readFileSync(join(tree.root, modelFile));
     const refused = converted(tree.root, otmFile, modelFile);
     expect(readFileSync(join(tree.root, modelFile))).toEqual(before);
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the file was written',
-    ).toContain('is already there');
+    expect(refusalOf(refused).join('\n')).toContain('is already there');
   });
 
   it('refuses a file that is neither OTM nor TM-BOM, writing nothing', () => {
     const tree = editableTree();
     const refused = converted(tree.root, modelFile, 'converted.yaml');
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the file was written',
-    ).toContain('was not converted');
+    expect(refusalOf(refused).join('\n')).toContain('was not converted');
   });
 });

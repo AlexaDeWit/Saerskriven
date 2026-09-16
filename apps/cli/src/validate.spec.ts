@@ -1,26 +1,24 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { unclaimedYaml } from '@saerskriven/mcp/fixtures';
+import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
 import { join } from 'node:path';
 import {
   brokenDocumentYaml,
   danglingReferenceYaml,
   elementLinkedAssumptionYaml,
   fixtureFile,
-  unclaimedYaml,
+  scratchDirectory,
   undeclaredKeyYaml,
 } from './cli.fixtures.js';
 import { validate } from './validate.js';
 
-const repositoryRoot = join(import.meta.dirname, '../../..');
-
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-validate-'));
+const directory = scratchDirectory('validate');
 
 const validated = (name: string, text: string) =>
   validate(fixtureFile(directory, name, text));
 
 describe('validate', () => {
   it('reads a Threat Dragon file and counts what the model holds', () => {
-    expect(validate(join(repositoryRoot, 'test-data/ecluse.json'))).toEqual({
+    expect(validate(testDataPath('ecluse.json'))).toEqual({
       code: 0,
       out: 'threat-dragon: 1 diagram, 38 elements, 29 threats\n',
       err: '',
@@ -28,9 +26,7 @@ describe('validate', () => {
   });
 
   it('reads the same model in the native format', () => {
-    expect(
-      validate(join(repositoryRoot, 'test-data/saerskriven/ecluse.yaml')),
-    ).toEqual({
+    expect(validate(testDataPath('saerskriven/ecluse.yaml'))).toEqual({
       code: 0,
       out: 'saerskriven-yaml: 1 diagram, 38 elements, 29 threats\n',
       err: '',
@@ -87,9 +83,7 @@ describe('validate', () => {
   });
 
   it('names the bound a text was past', () => {
-    expect(
-      validate(join(repositoryRoot, 'test-data/adversarial/deep-nesting.json')),
-    ).toEqual({
+    expect(validate(testDataPath('adversarial/deep-nesting.json'))).toEqual({
       code: 1,
       out: '',
       err:
@@ -106,7 +100,7 @@ describe('validate', () => {
   });
 
   it('reports a file it cannot read as the invocation being wrong', () => {
-    const path = join(repositoryRoot, 'test-data/absent.json');
+    const path = testDataPath('absent.json');
     expect(validate(path)).toEqual({
       code: 2,
       out: '',

@@ -2,32 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-
-/** A model of one threat and no diagram, in the native format. */
-export const smallYaml = `formatVersion: 1
-metadata:
-  title: Small
-  owner: Owner
-  description: ''
-  contributors: []
-assumptions: []
-mitigations: []
-diagrams: []
-threats:
-  - id: threat-1
-    number: 1
-    title: Spoofed caller
-    category: { methodology: STRIDE, category: spoofing }
-    severity: high
-    status: open
-    description: ''
-    mitigation: ''
-    elements: []
-lastIssuedThreatNumber: 1
-`;
-
-/** A YAML text no registered codec claims. */
-export const unclaimedYaml = 'hello: world\n';
+import { smallYaml, unclaimedYaml } from '../fixtures.js';
 
 /**
  * A root holding one model, one text no codec claims, a nested directory

@@ -1,7 +1,10 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
-import { parseModel, type Model } from '@saerskriven/model';
-import { validModelFixture } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import type { Model } from '@saerskriven/model';
+import {
+  parsedFixture,
+  testDataPath,
+  validModelFixture,
+} from '@saerskriven/model/fixtures';
 import {
   copyFileSync,
   mkdtempSync,
@@ -12,7 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { z } from 'zod';
 import type { modelEditSchema } from './edits.js';
-import { unclaimedYaml } from './workspace.fixtures.js';
+import { unclaimedFile, unclaimedYaml } from '../fixtures.js';
 
 /** One edit as a client sends it, before the schema fills its defaults in. */
 export type EditInput = z.input<typeof modelEditSchema>;
@@ -23,16 +26,11 @@ export const modelFile = 'model.yaml';
 /** The Threat Dragon model a tree holds: the Écluse fixture, copied. */
 export const dragonFile = 'dragon.json';
 
-/** A YAML text no codec claims, for the failed parse a write has to survive. */
-export const unclaimedFile = 'unclaimed.yaml';
-
 /** The OTM example a tree holds, for the conversion tools. */
 export const otmFile = 'source-otm.json';
 
 /** The TM-BOM example a tree holds, for the conversion tools. */
 export const tmbomFile = 'source-tmbom.json';
-
-const repositoryRoot = join(import.meta.dirname, '../../../..');
 
 const draft = structuredClone(validModelFixture);
 
@@ -59,10 +57,7 @@ draft.diagrams.push({
  * canvas note and an empty diagram beside it, which are what the note and
  * diagram edits need and what no other fixture holds.
  */
-export const editableModel: Model = Either.getOrThrowWith(
-  parseModel(draft),
-  () => new Error('The editable fixture does not parse.'),
-);
+export const editableModel: Model = parsedFixture(draft);
 
 /** {@link editableModel} as the native YAML a tree writes. */
 export const editableYaml = saerskrivenYamlCodec.write(editableModel).output;
@@ -86,18 +81,9 @@ export function editableTree(): EditableTree {
   );
   writeFileSync(join(root, modelFile), editableYaml);
   writeFileSync(join(root, unclaimedFile), unclaimedYaml);
-  copyFileSync(
-    join(repositoryRoot, 'test-data/ecluse.json'),
-    join(root, dragonFile),
-  );
-  copyFileSync(
-    join(repositoryRoot, 'test-data/otm/example.json'),
-    join(root, otmFile),
-  );
-  copyFileSync(
-    join(repositoryRoot, 'test-data/tmbom/example.json'),
-    join(root, tmbomFile),
-  );
+  copyFileSync(testDataPath('ecluse.json'), join(root, dragonFile));
+  copyFileSync(testDataPath('otm/example.json'), join(root, otmFile));
+  copyFileSync(testDataPath('tmbom/example.json'), join(root, tmbomFile));
   return {
     root,
     copy: (name) => {
