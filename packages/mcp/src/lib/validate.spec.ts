@@ -1,8 +1,8 @@
 import { unclaimedFile } from '../fixtures.js';
 import {
   answerOf,
-  ecluseFile,
-  ecluseWorkspace,
+  featureCompleteFile,
+  featureCompleteWorkspace,
   invalidFile,
   refusalOf,
   rootWorkspace,
@@ -10,26 +10,26 @@ import {
 } from './read-tools.fixtures.js';
 import { validate } from './validate.js';
 
-const ecluse = ecluseWorkspace();
+const workspace = featureCompleteWorkspace();
 
 const unreadable = unreadableTree();
 
 describe('what saer_validate reports', () => {
-  it('reads the Ecluse fixture as the format its content names', () => {
-    const checked = answerOf(validate(ecluse, {}));
+  it('reads a Threat Dragon file as the format its content names, and says the read diverged', () => {
+    const checked = answerOf(validate(workspace, {}));
     expect({
       file: checked.file,
       format: checked.format,
       diverged: checked.diverged,
     }).toEqual({
-      file: ecluseFile,
+      file: featureCompleteFile,
       format: 'threat-dragon',
-      diverged: false,
+      diverged: true,
     });
   });
 
   it('carries the revision handle a write has to quote back', () => {
-    expect(answerOf(validate(ecluse, {})).revision).toMatch(
+    expect(answerOf(validate(workspace, {})).revision).toMatch(
       /^sha256:[0-9a-f]{64}$/u,
     );
   });

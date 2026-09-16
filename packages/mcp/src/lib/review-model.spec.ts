@@ -6,17 +6,17 @@ import { dataNotInstructions } from './preface.js';
 import { PromptFailure, promptMessages } from './prompt-result.js';
 import {
   answerOf,
-  ecluseWorkspace,
+  featureCompleteWorkspace,
   rootWorkspace,
-  saerskrivenWorkspace,
+  twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
 import { readNamed } from './reading.js';
 import { reviewBrief, reviewModel } from './review-model.js';
 
 describe('what review_model renders', () => {
   it.each([
-    ['the Écluse fixture', ecluseWorkspace()],
-    ["the repository's own model", saerskrivenWorkspace()],
+    ['a Threat Dragon file', featureCompleteWorkspace()],
+    ['a native file of two diagrams', twoDiagramsWorkspace()],
   ])('renders the coverage and the register of %s', (_name, workspace) => {
     const reading = answerOf(readNamed(workspace, undefined));
     const [data, brief] = promptProseOf(

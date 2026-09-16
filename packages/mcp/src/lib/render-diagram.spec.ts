@@ -8,11 +8,11 @@ import {
 import {
   answerOf,
   drawableTree,
-  ecluseWorkspace,
   refusalOf,
   rootWorkspace,
-  saerskrivenYaml,
   treeHolding,
+  twoDiagramsFile,
+  twoDiagramsYaml,
   unplacedTree,
 } from './read-tools.fixtures.js';
 import {
@@ -24,38 +24,36 @@ import { noRasterizer } from './server.fixtures.js';
 
 const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
-const ecluse = ecluseWorkspace();
-
-const saerskriven = 'threat-modelling/saerskriven.yaml';
+const drawable = drawableTree();
 
 describe('what saer_render_diagram refuses', () => {
   it('names the reason where this install carries no rasterizer', async () => {
     expect(
-      refusalOf(await renderDiagram(ecluse, noRasterizer, {}))[0],
+      refusalOf(await renderDiagram(drawable, noRasterizer, {}))[0],
     ).toContain('cannot draw a PNG');
   });
 
   it('asks for a diagram where the model holds several', async () => {
     const refused = refusalOf(
       await renderDiagram(rootWorkspace(), noRasterizer, {
-        file: saerskriven,
+        file: twoDiagramsFile,
       }),
     );
     expect(refused[0]).toContain('holds several diagrams');
-    expect(refused.slice(1).join('\n')).toContain('read-and-render');
+    expect(refused.slice(1).join('\n')).toContain('fulfilment');
   });
 
   it('refuses a diagram the model does not hold', async () => {
     expect(
       refusalOf(
-        await renderDiagram(ecluse, noRasterizer, { diagram: 'Nothing' }),
+        await renderDiagram(drawable, noRasterizer, { diagram: 'Nothing' }),
       )[0],
     ).toContain('holds no diagram named "Nothing"');
   });
 
   it('words what the rasterizer refused where the module will not start', async () => {
     expect(
-      refusalOf(await renderDiagram(ecluse, brokenRasterizer, {}))[0],
+      refusalOf(await renderDiagram(drawable, brokenRasterizer, {}))[0],
     ).toContain('cannot draw a PNG');
   });
 
@@ -63,7 +61,7 @@ describe('what saer_render_diagram refuses', () => {
     const refused = await Promise.all(
       ['diagram', 'diagram.', 'diagram.png.yaml', 'model.yaml', '.png'].map(
         async (out) =>
-          refusalOf(await renderDiagram(ecluse, noRasterizer, { out }))[0],
+          refusalOf(await renderDiagram(drawable, noRasterizer, { out }))[0],
       ),
     );
     expect(
@@ -75,7 +73,7 @@ describe('what saer_render_diagram refuses', () => {
     const drawn = await Promise.all(
       ['diagram.PNG', 'diagram.Png', 'diagram.yaml.png'].map(
         async (out) =>
-          refusalOf(await renderDiagram(ecluse, noRasterizer, { out }))[0],
+          refusalOf(await renderDiagram(drawable, noRasterizer, { out }))[0],
       ),
     );
     expect(
@@ -86,7 +84,7 @@ describe('what saer_render_diagram refuses', () => {
   it('refuses an out path that leaves the root before it draws', async () => {
     expect(
       refusalOf(
-        await renderDiagram(ecluse, noRasterizer, {
+        await renderDiagram(drawable, noRasterizer, {
           out: '../escaped.png',
         }),
       )[0],
@@ -96,7 +94,7 @@ describe('what saer_render_diagram refuses', () => {
 
 describe.skipIf(rasterizerUnbuilt)('what saer_render_diagram draws', () => {
   it('answers with the bytes of a PNG and never an SVG', async () => {
-    const drawn = answerOf(await renderDiagram(ecluse, builtRasterizer, {}));
+    const drawn = answerOf(await renderDiagram(drawable, builtRasterizer, {}));
     const [image] = drawn.blocks;
     expect(drawn.answer.image.mimeType).toEqual('image/png');
     expect(image?.type).toEqual('image');
@@ -125,7 +123,7 @@ describe.skipIf(rasterizerUnbuilt)('what saer_render_diagram draws', () => {
 
   it('draws the long edge at the width a call names', async () => {
     const drawn = answerOf(
-      await renderDiagram(ecluse, builtRasterizer, { width: 640 }),
+      await renderDiagram(drawable, builtRasterizer, { width: 640 }),
     );
     expect(Math.max(drawn.answer.image.width, drawn.answer.image.height)).toBe(
       640,
@@ -134,29 +132,26 @@ describe.skipIf(rasterizerUnbuilt)('what saer_render_diagram draws', () => {
 
   it('draws the diagram whose id a name is before one whose title it is', async () => {
     const colliding = treeHolding(
-      saerskrivenYaml().replace(
-        'title: Reading a file and rendering it',
-        'title: agent-and-desktop',
-      ),
+      twoDiagramsYaml().replace('title: Taking an order', 'title: fulfilment'),
     );
     const drawn = answerOf(
       await renderDiagram(colliding, builtRasterizer, {
-        diagram: 'agent-and-desktop',
+        diagram: 'fulfilment',
         width: 320,
       }),
     );
-    expect(drawn.answer.diagram.id).toEqual('agent-and-desktop');
+    expect(drawn.answer.diagram.id).toEqual('fulfilment');
   });
 
   it('draws the diagram a call names out of a model holding several', async () => {
     const drawn = answerOf(
       await renderDiagram(rootWorkspace(), builtRasterizer, {
-        file: saerskriven,
-        diagram: 'read-and-render',
+        file: twoDiagramsFile,
+        diagram: 'storefront',
         width: 320,
       }),
     );
-    expect(drawn.answer.diagram.id).toEqual('read-and-render');
+    expect(drawn.answer.diagram.id).toEqual('storefront');
   });
 
   it('writes the file an out path names and links to it', async () => {

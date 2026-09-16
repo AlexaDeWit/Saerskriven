@@ -41,7 +41,7 @@ const addedMitigation = (
   },
 });
 
-const ecluseThreat = '0ec10e5e-0000-4000-8000-00000000010c';
+const dragonThreat = 'threat-tampering';
 
 const attempt = () => {
   const tree = editableTree();
@@ -164,7 +164,7 @@ describe('what an applied edit writes', () => {
     const applied = attempted.edit(
       dragonFile,
       revisionIn(attempted, dragonFile),
-      [addedMitigation(ecluseThreat)],
+      [addedMitigation(dragonThreat)],
     );
     const reread = readAnyFormat(attempted.bytes(dragonFile).toString('utf8'));
     expect(Either.getOrUndefined(applied)?.format).toEqual('threat-dragon');
@@ -173,7 +173,7 @@ describe('what an applied edit writes', () => {
         ({ subject, reason }) => ({ subject, reason }),
       ),
     ).toEqual([
-      { subject: { kind: 'threat', id: ecluseThreat }, reason: 'narrowed' },
+      { subject: { kind: 'threat', id: dragonThreat }, reason: 'narrowed' },
     ]);
     expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
   });
@@ -538,7 +538,7 @@ describe('what the flow direction and metadata ops write', () => {
   });
 
   const metadata = {
-    title: 'Écluse, second pass',
+    title: 'Clinic booking, second pass',
     owner: 'Jonas Lindqvist',
     description: 'Reviewed with the platform team.\nSecond line.',
     contributors: ['Alexandra de Wit', 'Jonas Lindqvist', ''],

@@ -23,7 +23,7 @@ export type EditInput = z.input<typeof modelEditSchema>;
 /** The native model a tree holds, named by the spec that edits it. */
 export const modelFile = 'model.yaml';
 
-/** The Threat Dragon model a tree holds: the Écluse fixture, copied. */
+/** The Threat Dragon model a tree holds: the feature-complete file, copied. */
 export const dragonFile = 'dragon.json';
 
 /** The OTM example a tree holds, for the conversion tools. */
@@ -81,7 +81,10 @@ export function editableTree(): EditableTree {
   );
   writeFileSync(join(root, modelFile), editableYaml);
   writeFileSync(join(root, unclaimedFile), unclaimedYaml);
-  copyFileSync(testDataPath('ecluse.json'), join(root, dragonFile));
+  copyFileSync(
+    testDataPath('threat-dragon/feature-complete.json'),
+    join(root, dragonFile),
+  );
   copyFileSync(testDataPath('otm/example.json'), join(root, otmFile));
   copyFileSync(testDataPath('tmbom/example.json'), join(root, tmbomFile));
   return {

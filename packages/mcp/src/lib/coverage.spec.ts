@@ -4,14 +4,18 @@ import {
   threatCountByElement,
 } from '@saerskriven/model';
 import { coverage, renderCoverage } from './coverage.js';
-import { answerOf, ecluseWorkspace } from './read-tools.fixtures.js';
+import {
+  answerOf,
+  featureCompleteFile,
+  featureCompleteWorkspace,
+} from './read-tools.fixtures.js';
 import { readNamed } from './reading.js';
 
-const ecluse = ecluseWorkspace();
+const workspace = featureCompleteWorkspace();
 
-const reported = answerOf(coverage(ecluse, {}));
+const reported = answerOf(coverage(workspace, {}));
 
-const model = answerOf(readNamed(ecluse, undefined)).model;
+const model = answerOf(readNamed(workspace, undefined)).model;
 
 describe('what saer_coverage reports', () => {
   it('lists the elements the model coverage query calls unanalyzed', () => {
@@ -44,7 +48,7 @@ describe('what saer_coverage reports', () => {
 
   it('opens its text with the file, the format and the revision', () => {
     expect(renderCoverage(reported).slice(0, 2)).toEqual([
-      'file: test-data/ecluse.json',
+      `file: ${featureCompleteFile}`,
       'format: threat-dragon',
     ]);
   });

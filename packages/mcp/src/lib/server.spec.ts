@@ -38,9 +38,10 @@ import { revisionOf } from './revision.js';
 import { noRasterizer, session } from './server.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import {
-  ecluseFile,
-  saerskrivenYaml,
+  featureCompleteFile,
   treeHolding,
+  twoDiagramsFile,
+  twoDiagramsYaml,
 } from './read-tools.fixtures.js';
 
 const tree = workspaceTree();
@@ -170,7 +171,7 @@ for (const era of eras) {
     beforeAll(async () => {
       fixture = await session({
         root: repositoryRoot,
-        file: ecluseFile,
+        file: featureCompleteFile,
         era,
         rasterizer,
       });
@@ -281,6 +282,7 @@ for (const era of eras) {
         expect(resources.resources.map((resource) => resource.uri)).toEqual([
           'saer://register',
           'saer://diagram/0',
+          'saer://diagram/1',
         ]);
         expect(
           templates.resourceTemplates.map((template) => template.uriTemplate),
@@ -307,7 +309,7 @@ for (const era of eras) {
           ref: { type: 'ref/resource', uri: 'saer://diagram/{diagram}' },
           argument: { name: 'diagram', value: '' },
         });
-        expect(completed.completion.values).toEqual(['0']);
+        expect(completed.completion.values).toEqual(['0', '1']);
       });
 
       it('opens every resource read and every prompt with the data line', async () => {
@@ -320,7 +322,7 @@ for (const era of eras) {
         const prompts = await Promise.all([
           fixture.client.getPrompt({
             name: 'stride_pass',
-            arguments: { element: 'Écluse proxy' },
+            arguments: { element: 'Booking service' },
           }),
           fixture.client.getPrompt({ name: 'review_model' }),
         ]);
@@ -337,12 +339,9 @@ for (const era of eras) {
       describe.skipIf(rasterizerUnbuilt)('a diagram read by its URI', () => {
         it('draws the diagram its id names, past URI syntax and a colliding title', async () => {
           const odd = treeHolding(
-            saerskrivenYaml()
-              .replace('id: read-and-render', "id: '../a b/c?d#e'")
-              .replace(
-                'title: Reading a file and rendering it',
-                'title: agent-and-desktop',
-              ),
+            twoDiagramsYaml()
+              .replace('id: storefront', "id: '../a b/c?d#e'")
+              .replace('title: Taking an order', 'title: fulfilment'),
           );
           const run = await session({
             root: odd.root,
@@ -366,11 +365,11 @@ for (const era of eras) {
           expect(drawn).toEqual([
             [
               'saer://diagram/..%2Fa%20b%2Fc%3Fd%23e',
-              'diagram: ../a b/c?d#e (agent-and-desktop)',
+              'diagram: ../a b/c?d#e (fulfilment)',
             ],
             [
-              'saer://diagram/agent-and-desktop',
-              'diagram: agent-and-desktop (Agents and the desktop shell)',
+              'saer://diagram/fulfilment',
+              'diagram: fulfilment (Shipping an order)',
             ],
           ]);
         });
@@ -419,13 +418,13 @@ for (const era of eras) {
       it('answers a diagram this install cannot draw as an internal error', async () => {
         const undrawn = await session({
           root: repositoryRoot,
-          file: ecluseFile,
+          file: featureCompleteFile,
           era,
           rasterizer: noRasterizer,
         });
         const refused = await rejectionOf(
-          undrawn.client.readResource({ uri: 'saer://diagram/High%20Level' }),
-          'High Level',
+          undrawn.client.readResource({ uri: 'saer://diagram/Booking' }),
+          'Booking',
         );
         await undrawn.end();
         expect(refused).toEqual({
@@ -684,7 +683,7 @@ for (const era of eras) {
       });
     });
 
-    describe('saer_inspect against the Ecluse fixture', () => {
+    describe('saer_inspect against a Threat Dragon file', () => {
       it('reports the format, the counts and the revision of the file', async () => {
         const reading = readingOf(await inspecting());
         expect({
@@ -695,20 +694,28 @@ for (const era of eras) {
           totals: reading.totals,
           divergences: reading.divergences,
         }).toEqual({
-          file: ecluseFile,
+          file: featureCompleteFile,
           format: 'threat-dragon',
-          revision: revisionOf(readFileSync(join(repositoryRoot, ecluseFile))),
+          revision: revisionOf(
+            readFileSync(join(repositoryRoot, featureCompleteFile)),
+          ),
           diagrams: [
-            { id: '0', title: 'High Level', elements: 38, threats: 29 },
+            { id: '0', title: 'Booking', elements: 9, threats: 15 },
+            { id: '1', title: 'Records', elements: 4, threats: 9 },
           ],
           totals: {
-            diagrams: 1,
-            elements: 38,
-            threats: 29,
-            mitigations: 29,
+            diagrams: 2,
+            elements: 13,
+            threats: 24,
+            mitigations: 13,
             assumptions: 0,
           },
-          divergences: [],
+          divergences: [
+            expect.objectContaining({
+              subject: { kind: 'threat', id: 'threat-card' },
+              reason: 'narrowed',
+            }),
+          ],
         });
       });
 
@@ -722,25 +729,25 @@ for (const era of eras) {
           contributors: reading.metadata.contributors,
         }).toEqual({
           root: repositoryRoot,
-          title: 'Écluse',
+          title: 'Clinic booking',
           owner: 'Alexandra de Wit',
-          contributors: ['Alexandra de Wit'],
+          contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
         });
       });
 
       it('answers a named file and the default file alike', async () => {
         const named = await fixture.client.callTool({
           name: 'saer_inspect',
-          arguments: { file: ecluseFile },
+          arguments: { file: featureCompleteFile },
         });
         expect(readingOf(named)).toEqual(readingOf(await inspecting()));
       });
 
-      it('reads the same model in the native format as that format', async () => {
+      it('reads a native file as that format', async () => {
         const reading = readingOf(
           await fixture.client.callTool({
             name: 'saer_inspect',
-            arguments: { file: 'test-data/saerskriven/ecluse.yaml' },
+            arguments: { file: twoDiagramsFile },
           }),
         );
         expect(reading.format).toEqual('saerskriven-yaml');

@@ -1,20 +1,12 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
-import {
-  parsedFixture,
-  repositoryRoot,
-  testDataPath,
-} from '@saerskriven/model/fixtures';
+import { parsedFixture, repositoryRoot } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import {
-  copyFileSync,
-  mkdtempSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  referencingYaml,
   smallYaml,
   unclaimedFile,
   unclaimedYaml,
@@ -22,9 +14,6 @@ import {
 } from '../fixtures.js';
 import { editableModel } from './edit.fixtures.js';
 import { openWorkspace, type ModelWorkspace } from './workspace.js';
-
-/** The Écluse fixture, in the Threat Dragon format the file is committed in. */
-export const ecluseFile = 'test-data/ecluse.json';
 
 /**
  * A Saerskriven YAML file the native codec claims and refuses: the format
@@ -39,28 +28,39 @@ const invalidYaml = smallYaml.replace(
 );
 
 /**
- * A workspace over the checkout with the Écluse fixture as its default
- * model, which is what a read tool called with no `file` argument reads.
+ * The feature-complete Threat Dragon file, which draws two diagrams and whose
+ * read reports the Elevation of Privilege card it reduces.
  */
-export function ecluseWorkspace(): ModelWorkspace {
+export const featureCompleteFile =
+  'test-data/threat-dragon/feature-complete.json';
+
+/**
+ * A workspace over the checkout with the feature-complete Threat Dragon file
+ * as its default model, which is what a read tool called with no `file`
+ * argument reads.
+ */
+export function featureCompleteWorkspace(): ModelWorkspace {
   return Either.getOrThrow(
-    openWorkspace({ root: repositoryRoot, file: ecluseFile }),
+    openWorkspace({ root: repositoryRoot, file: featureCompleteFile }),
   );
 }
 
-/** Saerskriven's own threat model, in the native format. */
-export const saerskrivenFile = 'threat-modelling/saerskriven.yaml';
+/**
+ * The two-diagram model render draws its goldens from, as the native file,
+ * with the diagrams `storefront` and `fulfilment`.
+ */
+export const twoDiagramsFile = 'test-data/saerskriven/two-diagrams.yaml';
 
-/** A workspace over the checkout with Saerskriven's own model as its default. */
-export function saerskrivenWorkspace(): ModelWorkspace {
+/** A workspace over the checkout with the two-diagram model as its default. */
+export function twoDiagramsWorkspace(): ModelWorkspace {
   return Either.getOrThrow(
-    openWorkspace({ root: repositoryRoot, file: saerskrivenFile }),
+    openWorkspace({ root: repositoryRoot, file: twoDiagramsFile }),
   );
 }
 
-/** Saerskriven's own model as text, for a fixture that rewrites part of it. */
-export function saerskrivenYaml(): string {
-  return readFileSync(join(repositoryRoot, saerskrivenFile), 'utf8');
+/** The two-diagram model as text, for a fixture that rewrites part of it. */
+export function twoDiagramsYaml(): string {
+  return readFileSync(join(repositoryRoot, twoDiagramsFile), 'utf8');
 }
 
 /** A workspace over the checkout carrying no default model. */
@@ -80,13 +80,11 @@ export function unreadableTree(): ModelWorkspace {
 }
 
 /**
- * A disposable root holding a copy of the Écluse fixture as its default
- * model, for a tool that reads a model and writes a projection beside it.
+ * A disposable root whose default model draws one diagram, `only`, for a tool
+ * that reads a model and draws or writes a projection beside it.
  */
 export function drawableTree(): ModelWorkspace {
-  const root = mkdtempSync(join(tmpdir(), 'saerskriven-mcp-out-'));
-  copyFileSync(testDataPath('ecluse.json'), join(root, 'ecluse.json'));
-  return Either.getOrThrow(openWorkspace({ root, file: 'ecluse.json' }));
+  return treeHolding(referencingYaml('element-1'));
 }
 
 /** What a tool refused, as the lines it refused with. */
@@ -132,9 +130,7 @@ const everyRecordModel: Model = parsedFixture({
  * A disposable root whose default model holds every record kind: the editable
  * fixture, which already carries a canvas note, an out-of-scope store, a flow
  * free at one end, both boundary shapes, a mitigation and an assumption, with
- * one threat added under a methodology of its own carrying no prose. The
- * committed Écluse fixture holds none of the last four, so the branches that
- * render them need this.
+ * one threat added under a methodology of its own carrying no prose.
  */
 export function everyRecordTree(): ModelWorkspace {
   return treeHolding(saerskrivenYamlCodec.write(everyRecordModel).output);
