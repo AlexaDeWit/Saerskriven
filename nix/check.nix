@@ -21,18 +21,18 @@ runCommand "saerskriven-installed-check" {
 
   test "$(saerskriven --version)" = ${lib.escapeShellArg saerskriven.version}
   test "$(saer --version)" = ${lib.escapeShellArg saerskriven.version}
-  cp ${../test-data/saerskriven/ecluse-v0.2.1.yaml} model.yaml
+  cp ${../test-data/saerskriven/v0.2.1.yaml} model.yaml
   saer validate model.yaml > validation.txt
   for format in md svg pdf; do
     saer render model.yaml --format "$format" --out "model.$format"
     test -s "model.$format"
   done
 
-  grep -Fq 'Écluse' model.md
+  grep -Fq 'Pilot' model.md
   grep -F '<svg' model.svg > /dev/null
   test "$(head -c 5 model.pdf)" = '%PDF-'
   pdftotext model.pdf model.txt
-  grep -Fq 'Écluse' model.txt
+  grep -Fq 'Pilot' model.txt
   pdffonts model.pdf > fonts.txt
   awk '
     NR > 2 && $1 ~ /LiberationSans/ {

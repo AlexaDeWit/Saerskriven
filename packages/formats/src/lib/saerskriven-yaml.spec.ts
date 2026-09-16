@@ -3,11 +3,9 @@ import {
   parseModel,
   threatFlags,
   type Flow,
-  type FlowEndpoint,
   type Model,
 } from '@saerskriven/model';
 import {
-  committedModel,
   modelInputArbitrary,
   parsedFixture,
   repositoryRoot,
@@ -24,6 +22,7 @@ import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
   emittedModels,
   featureCompleteYaml,
+  frozenV021Model,
   frozenV021Path,
   frozenV030Path,
   nativeFixtures,
@@ -31,8 +30,6 @@ import {
 } from './saerskriven-yaml.fixtures.js';
 import { threatStatusesToModel } from './saerskriven-yaml-vocabulary.js';
 import { unusedConstructs } from './wire-coverage.fixtures.js';
-
-const ecluseModel = committedModel('ecluse.model.json');
 
 const frozenV021 = readFileSync(frozenV021Path, 'utf8');
 
@@ -89,30 +86,6 @@ function textRecordsIn(model: Model, text: string) {
 
 function readOrThrow(text: string) {
   return Either.getOrThrow(saerskrivenYamlCodec.read(text));
-}
-
-function withoutPinnedSides(model: Model): Model {
-  return {
-    ...model,
-    diagrams: model.diagrams.map((diagram) => ({
-      ...diagram,
-      elements: diagram.elements.map((element) =>
-        element.kind === 'flow'
-          ? {
-              ...element,
-              source: unpinned(element.source),
-              target: unpinned(element.target),
-            }
-          : element,
-      ),
-    })),
-  };
-}
-
-function unpinned(endpoint: FlowEndpoint): FlowEndpoint {
-  return endpoint.kind === 'attached'
-    ? { kind: 'attached', element: endpoint.element }
-    : endpoint;
 }
 
 function flowsOf(model: Model): readonly Flow[] {
@@ -206,35 +179,7 @@ describe('the document shape v0.2.1 wrote', () => {
   it('reads as the model it describes, with nothing diverging', () => {
     const reading = readOrThrow(frozenV021);
     expect(reading.divergences).toEqual([]);
-    const legacy = withoutPinnedSides(withThreatsInNumberOrder(ecluseModel));
-    const diagrams = legacy.diagrams.map((diagram) => ({
-      ...diagram,
-      elements: diagram.elements.map((element) =>
-        Object.fromEntries(
-          Object.entries(element).filter(
-            ([key]) =>
-              ![
-                'providesAuthentication',
-                'handlesCardPayment',
-                'handlesGoodsOrServices',
-                'isWebApplication',
-                'privilegeLevel',
-                'isALog',
-                'isEncrypted',
-                'isSigned',
-                'storesCredentials',
-                'storesInventory',
-                'protocol',
-                'isPublicNetwork',
-                'trustBoundaryIds',
-                'containedElements',
-                'crossingFlows',
-              ].includes(key),
-          ),
-        ),
-      ),
-    }));
-    expect(reading.model).toEqual({ ...legacy, diagrams });
+    expect(reading.model).toStrictEqual(parsedFixture(frozenV021Model));
   });
 
   it('holds one record for each non-empty mitigation text, under the one-to-one status rule', () => {
@@ -258,7 +203,7 @@ describe('the document shape v0.2.1 wrote', () => {
 
   it('takes every flow as one-way and every attached end as unpinned', () => {
     const flows = flowsOf(readOrThrow(frozenV021).model);
-    expect(flows).toHaveLength(20);
+    expect(flows).toHaveLength(3);
     expect(flows.filter((flow) => flow.bidirectional)).toEqual([]);
     expect(
       flows
