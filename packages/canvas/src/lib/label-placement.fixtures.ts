@@ -1,5 +1,4 @@
-import type { Model } from '@saerskriven/model';
-import { parsedFixture } from '@saerskriven/model/fixtures';
+import { threatOf } from '@saerskriven/model/fixtures';
 import { badgeAnchor, badgeBox } from './badges.js';
 import {
   ecluseModel,
@@ -14,6 +13,7 @@ import {
   type Box,
   type Circle,
 } from './geometry.js';
+import { nodeBox } from './handles.js';
 import { layoutOf } from './layout.fixtures.js';
 import type { CanvasLayout, CanvasNode } from './layout.js';
 import { processCircle } from './obstacles.js';
@@ -22,14 +22,6 @@ import { nodeTextPlacement, textPlacementCorners } from './text-placement.js';
 /** Whether a node is a trust boundary, which a label may sit inside. */
 export const isEnclosure = (node: CanvasNode): boolean =>
   node.kind === 'boundary-box' || node.kind === 'boundary-curve';
-
-/** A node's box in diagram coordinates. */
-export const boxOf = (node: CanvasNode): Box => ({
-  minX: node.position.x,
-  minY: node.position.y,
-  maxX: node.position.x + node.size.width,
-  maxY: node.position.y + node.size.height,
-});
 
 /** Something drawn, named for a failure message, and the box it fills. */
 export type Drawn = { readonly of: string; readonly box: Box };
@@ -58,7 +50,7 @@ export const circleOf = (node: CanvasNode): Circle => {
 const outlineSolid = (node: CanvasNode): Solid =>
   node.kind === 'process'
     ? { of: node.name, meets: (box) => boxMeetsCircle(box, circleOf(node)) }
-    : asSolid({ of: node.name, box: boxOf(node) });
+    : asSolid({ of: node.name, box: nodeBox(node) });
 
 /** The box a node's own text fills, in diagram coordinates. */
 export const textBoxOf = (node: CanvasNode): Box | undefined =>
@@ -85,56 +77,20 @@ export const elementBadges = (layout: CanvasLayout): Drawn[] =>
   );
 
 /** Every element shape other than a boundary, and every element badge. */
-export const elementSolids = (layout: CanvasLayout): Solid[] => [
+export const drawnSolids = (layout: CanvasLayout): Solid[] => [
   ...layout.nodes.flatMap((node) =>
     isEnclosure(node) ? [] : [outlineSolid(node)],
   ),
   ...elementBadges(layout).map(asSolid),
 ];
 
-/** An actor, or another box element, at a position. */
-export const boxAt = (
-  value: string,
-  x: number,
-  y: number,
-  kind = 'actor',
-  size = { width: 120, height: 80 },
-) => ({
-  kind,
-  id: value,
-  name: value,
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  position: { x, y },
-  size,
-});
-
-/** An open, high threat on one element. */
-export const openThreatOn = (element: string, number = 1) => ({
-  id: `th-${element}`,
-  number,
-  title: 'Session theft',
-  category: { methodology: 'STRIDE', category: 'spoofing' },
-  severity: 'high',
-  status: 'open',
-  description: '',
-  elements: [element],
-});
-
-/** A model of one diagram holding the given elements. */
-export const diagramOf = (
-  elements: unknown[],
-  threats: unknown[] = [],
-  assumptions: unknown[] = [],
-): Model =>
-  parsedFixture({
-    metadata: { title: 't', owner: '', description: '', contributors: [] },
-    diagrams: [{ id: 'd', title: 'Diagram', elements }],
-    threats,
-    lastIssuedThreatNumber: threats.length,
-    mitigations: [],
-    assumptions,
+/** An open, high threat on one element, under `th-<element>`. */
+export const openThreatOn = (element: string, number = 1) =>
+  threatOf({
+    id: `th-${element}`,
+    number,
+    severity: 'high',
+    elements: [element],
   });
 
 /** The Écluse diagram laid out. */

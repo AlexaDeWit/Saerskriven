@@ -2,7 +2,7 @@ import { elementId } from '@saerskriven/model/fixtures';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { everyGlyphModel } from './canvas.fixtures.js';
+import { edgeNamed, nodeNamed } from './canvas.fixtures.js';
 import {
   boxElementStrokeInsets,
   BoxElementGlyph,
@@ -10,7 +10,7 @@ import {
   FlowGlyph,
   PlacedElementGlyph,
 } from './glyphs.js';
-import { layoutDiagram, type CanvasEdge, type CanvasNode } from './layout.js';
+import type { CanvasEdge, CanvasNode } from './layout.js';
 import {
   boundaryStrokeWidth,
   canvasClassNames,
@@ -26,24 +26,6 @@ import {
   textExtent,
 } from './typography.js';
 import { strokeWidths } from './tokens.js';
-
-const layout = layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel);
-
-const nodeNamed = (value: string): CanvasNode => {
-  const found = layout.nodes.find((node) => node.id === elementId(value));
-  if (found === undefined) {
-    throw new Error(`No node ${value} in the layout`);
-  }
-  return found;
-};
-
-const edgeNamed = (value: string): CanvasEdge => {
-  const found = layout.edges.find((edge) => edge.id === elementId(value));
-  if (found === undefined) {
-    throw new Error(`No edge ${value} in the layout`);
-  }
-  return found;
-};
 
 const glyphOf = (value: string): string =>
   renderToStaticMarkup(<ElementGlyph node={nodeNamed(value)} />);

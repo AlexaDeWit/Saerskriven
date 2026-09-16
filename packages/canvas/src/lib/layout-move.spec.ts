@@ -1,4 +1,4 @@
-import { elementId } from '@saerskriven/model/fixtures';
+import { attached, elementId, flowBetween } from '@saerskriven/model/fixtures';
 import { flowLabelPlacements } from './flow-labels.js';
 import type { NodeBox } from './handles.js';
 import {
@@ -6,12 +6,7 @@ import {
   layoutDuringMove,
   reanchoredFlow,
 } from './layout-move.js';
-import {
-  attached,
-  flowBetween,
-  layoutOf,
-  twoBoxDiagram,
-} from './layout.fixtures.js';
+import { layoutOf, twoBoxDiagram } from './layout.fixtures.js';
 
 const nodeBoxAt = (x: number, y: number): NodeBox => ({
   position: { x, y },

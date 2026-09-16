@@ -1,86 +1,40 @@
-import type { Model } from '@saerskriven/model';
-import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
-import { badgeExtent } from './badges.js';
-import { everyGlyphModel } from './canvas.fixtures.js';
-import { handlePositions } from './handles.js';
-import { reanchoredFlow } from './layout-move.js';
+import type { Model, Point } from '@saerskriven/model';
 import {
   attached,
+  curveBoundary,
+  elementId,
+  elementIn,
   flowBetween,
-  layoutOf,
-  twoBoxDiagram,
-} from './layout.fixtures.js';
-import type { CanvasEdge, CanvasNode } from './layout.js';
+  modelWith,
+} from '@saerskriven/model/fixtures';
+import { badgeExtent } from './badges.js';
+import {
+  edgeNamed,
+  everyGlyphLayout,
+  everyGlyphModel,
+  nodeNamed,
+} from './canvas.fixtures.js';
+import { handlePositions } from './handles.js';
+import { reanchoredFlow } from './layout-move.js';
+import { layoutOf, twoBoxDiagram } from './layout.fixtures.js';
+import type { CanvasNode } from './layout.js';
 import { canvasNodeTypes, freeEndNodeKind } from './react-flow.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 
-const layout = layoutOf(everyGlyphModel);
+const curveLayout = (waypoints: readonly Point[]) =>
+  layoutOf(modelWith({ elements: [curveBoundary('el-curve', waypoints)] }));
 
-const nodeNamed = (value: string): CanvasNode => {
-  const found = layout.nodes.find((node) => node.id === elementId(value));
-  if (found === undefined) {
-    throw new Error(`No node ${value} in the layout`);
-  }
-  return found;
-};
-
-const edgeNamed = (value: string): CanvasEdge => {
-  const found = layout.edges.find((edge) => edge.id === elementId(value));
-  if (found === undefined) {
-    throw new Error(`No edge ${value} in the layout`);
-  }
-  return found;
-};
-
-const elementIn = (model: Model, value: string) => {
-  const found = model.diagrams[0].elements.find(
-    (element) => element.id === elementId(value),
-  );
-  if (found === undefined) {
-    throw new Error(`No element ${value} in the fixture`);
-  }
-  return found;
-};
-
-const curveLayout = (waypoints: unknown[]) =>
-  layoutOf(
-    parsedFixture({
-      metadata: { title: 't', owner: '', description: '', contributors: [] },
-      diagrams: [
-        {
-          id: 'd',
-          title: 'Diagram',
-          elements: [
-            {
-              kind: 'trust-boundary',
-              id: 'el-curve',
-              name: '',
-              description: '',
-              outOfScope: false,
-              reasonOutOfScope: '',
-              shape: { kind: 'curve', waypoints },
-            },
-          ],
-        },
-      ],
-      threats: [],
-      lastIssuedThreatNumber: 0,
-      mitigations: [],
-      assumptions: [],
-    }),
-  );
-
-const curveBoundary = (waypoints: unknown[]): CanvasNode =>
+const curveNode = (waypoints: readonly Point[]): CanvasNode =>
   curveLayout(waypoints).nodes[0];
 
 describe('layoutDiagram', () => {
   it('lays out a node of every kind the canvas draws as a box', () => {
-    expect(new Set(layout.nodes.map((node) => node.kind))).toEqual(
+    expect(new Set(everyGlyphLayout.nodes.map((node) => node.kind))).toEqual(
       new Set<string>(
         Object.keys(canvasNodeTypes).filter((kind) => kind !== freeEndNodeKind),
       ),
     );
-    expect(layout.edges).toHaveLength(3);
+    expect(everyGlyphLayout.edges).toHaveLength(3);
   });
 
   it('takes a node position and size from the model and nowhere else', () => {
@@ -171,7 +125,7 @@ describe('layoutDiagram', () => {
   });
 
   it('reports the fixture flow whose endpoint names another flow', () => {
-    expect(layout.unplaced).toEqual([
+    expect(everyGlyphLayout.unplaced).toEqual([
       {
         flow: elementId('el-replay'),
         side: 'source',
@@ -181,15 +135,20 @@ describe('layoutDiagram', () => {
   });
 
   it('bounds everything it draws', () => {
-    expect(layout.bounds).toEqual({ x: 0, y: -13, width: 653, height: 423 });
+    expect(everyGlyphLayout.bounds).toEqual({
+      x: 0,
+      y: -13,
+      width: 653,
+      height: 423,
+    });
   });
 
   it('reaches past a node box for the badge hanging off its corner', () => {
     const zone = nodeNamed('el-zone');
     const reach = zone.badge === undefined ? 0 : badgeExtent(zone.badge).radius;
     expect(reach).toBeGreaterThan(0);
-    expect(layout.bounds.y).toBe(zone.position.y - reach);
-    expect(layout.bounds.x + layout.bounds.width).toBe(
+    expect(everyGlyphLayout.bounds.y).toBe(zone.position.y - reach);
+    expect(everyGlyphLayout.bounds.x + everyGlyphLayout.bounds.width).toBe(
       zone.position.x + zone.size.width + reach,
     );
   });
@@ -208,7 +167,7 @@ describe('layoutDiagram', () => {
   });
 
   it('gives a straight curve boundary an extent to pick', () => {
-    const straight = curveBoundary([
+    const straight = curveNode([
       { x: 0, y: 50 },
       { x: 400, y: 50 },
     ]);
@@ -219,7 +178,7 @@ describe('layoutDiagram', () => {
   });
 
   it('gives a curve boundary of one repeated point an extent to pick', () => {
-    const degenerate = curveBoundary([
+    const degenerate = curveNode([
       { x: 20, y: 20 },
       { x: 20, y: 20 },
     ]);
@@ -236,14 +195,7 @@ describe('layoutDiagram', () => {
   });
 
   it('bounds an empty diagram at the origin', () => {
-    const empty = parsedFixture({
-      metadata: { title: 't', owner: '', description: '', contributors: [] },
-      diagrams: [{ id: 'd', title: 'Diagram', elements: [] }],
-      threats: [],
-      lastIssuedThreatNumber: 0,
-      mitigations: [],
-      assumptions: [],
-    });
+    const empty = modelWith({ elements: [] });
     expect(layoutOf(empty)).toEqual({
       nodes: [],
       edges: [],

@@ -22,6 +22,18 @@ import {
 import { parseModel, type Model } from './lib/parse.js';
 import type { Threat } from './lib/threats.js';
 
+export {
+  assumptionOf,
+  attached,
+  boxAt,
+  curveBoundary,
+  flowBetween,
+  flowFrom,
+  mitigationOf,
+  modelFrom,
+  modelWith,
+  threatOf,
+} from './lib/builders.fixtures.js';
 export { validModelFixture } from './lib/fixtures.js';
 export { modelInputArbitrary } from './lib/model-input.fixtures.js';
 export {

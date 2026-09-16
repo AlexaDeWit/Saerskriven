@@ -1,5 +1,11 @@
 import type { Point } from '@saerskriven/model';
-import { elementId } from '@saerskriven/model/fixtures';
+import {
+  assumptionOf,
+  boxAt,
+  elementId,
+  flowFrom,
+  modelWith,
+} from '@saerskriven/model/fixtures';
 import { badgeBox } from './badges.js';
 import { ecluseModel, everyGlyphModel } from './canvas.fixtures.js';
 import { flowLabelPlacements, type FlowGeometry } from './flow-labels.js';
@@ -16,13 +22,10 @@ import {
 } from './geometry.js';
 import {
   asSolid,
-  boxAt,
-  boxOf,
   circleOf,
-  diagramOf,
+  drawnSolids,
   ecluseLayout,
   elementBadges,
-  elementSolids,
   isEnclosure,
   openThreatOn,
   scenes,
@@ -30,6 +33,7 @@ import {
   type Drawn,
   type Solid,
 } from './label-placement.fixtures.js';
+import { nodeBox } from './handles.js';
 import { layoutOf } from './layout.fixtures.js';
 import type { CanvasLayout, CanvasNode } from './layout.js';
 import { controlPolygon } from './paths.js';
@@ -44,7 +48,7 @@ const outlineOf = (node: CanvasNode): Segment[] => {
       ),
     );
   }
-  return segmentsOfBox(boxOf(node));
+  return segmentsOfBox(nodeBox(node));
 };
 
 const elementNames = (layout: CanvasLayout): Drawn[] =>
@@ -54,7 +58,7 @@ const elementNames = (layout: CanvasLayout): Drawn[] =>
   });
 
 const elementBoxes = (layout: CanvasLayout): Solid[] => [
-  ...elementSolids(layout),
+  ...drawnSolids(layout),
   ...elementNames(layout).map(asSolid),
 ];
 
@@ -127,32 +131,6 @@ const collisionsIn = (layout: CanvasLayout): string[] => {
 const placementsById = (layout: CanvasLayout): [string, Point][] =>
   layout.edges.map((edge) => [edge.id, edge.label.name.at]);
 
-const flowFrom = (
-  value: string,
-  source: string,
-  target: string,
-  name = value,
-) => ({
-  kind: 'flow',
-  id: value,
-  name,
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  source: { kind: 'attached', element: source },
-  target: { kind: 'attached', element: target },
-  waypoints: [],
-  bidirectional: false,
-});
-
-const invalidatedAssumptionOn = (threats: string[]) => ({
-  id: 'as-stale',
-  prose: 'No longer holds.',
-  status: 'invalidated',
-  threats,
-  appliesToModel: false,
-});
-
 describe('the flow labels of a whole diagram', () => {
   it.each(scenes)('leaves nothing overlapping on $name', ({ layout }) => {
     expect(collisionsIn(layout)).toEqual([]);
@@ -174,15 +152,15 @@ describe('the flow labels of a whole diagram', () => {
 
 describe("a flow whose badge would land beside an element's badge", () => {
   const layout = layoutOf(
-    diagramOf(
-      [
+    modelWith({
+      elements: [
         boxAt('el-top', 0, 0),
         boxAt('el-bottom', 0, 300),
         boxAt('el-tag', -115, 190),
         flowFrom('el-carry', 'el-top', 'el-bottom', 'ship the parcel'),
       ],
-      [openThreatOn('el-carry'), openThreatOn('el-tag', 2)],
-    ),
+      threats: [openThreatOn('el-carry'), openThreatOn('el-tag', 2)],
+    }),
   );
 
   it('takes another anchor, so the two do not read as one pair', () => {
@@ -195,15 +173,15 @@ describe("a flow whose badge would land beside an element's badge", () => {
 
 describe("a flow's name where its badge would be moved on", () => {
   const layout = layoutOf(
-    diagramOf(
-      [
+    modelWith({
+      elements: [
         boxAt('el-left', 0, 0),
         boxAt('el-right', 400, 0),
         boxAt('el-tag', 205, 70),
         flowFrom('el-carry', 'el-left', 'el-right', 'ship the parcel'),
       ],
-      [openThreatOn('el-tag')],
-    ),
+      threats: [openThreatOn('el-tag')],
+    }),
   );
 
   it('stands within a clearance of an element badge, clear of it', () => {
@@ -218,12 +196,14 @@ describe("a flow's name where its badge would be moved on", () => {
 
 describe('two flows between one pair of elements', () => {
   const layout = layoutOf(
-    diagramOf([
-      boxAt('el-left', 0, 0),
-      boxAt('el-right', 460, 0),
-      flowFrom('el-out', 'el-left', 'el-right', 'ship the parcel'),
-      flowFrom('el-back', 'el-right', 'el-left', 'return the parcel'),
-    ]),
+    modelWith({
+      elements: [
+        boxAt('el-left', 0, 0),
+        boxAt('el-right', 460, 0),
+        flowFrom('el-out', 'el-left', 'el-right', 'ship the parcel'),
+        flowFrom('el-back', 'el-right', 'el-left', 'return the parcel'),
+      ],
+    }),
   );
 
   it('shares one segment between them', () => {
@@ -246,15 +226,15 @@ describe('two flows between one pair of elements', () => {
 
 describe('two badged flows between one pair of elements', () => {
   const layout = layoutOf(
-    diagramOf(
-      [
+    modelWith({
+      elements: [
         boxAt('el-left', 0, 0),
         boxAt('el-right', 460, 0),
         flowFrom('el-out', 'el-left', 'el-right', 'ship the parcel'),
         flowFrom('el-back', 'el-right', 'el-left', 'return the parcel'),
       ],
-      [openThreatOn('el-out'), openThreatOn('el-back', 2)],
-    ),
+      threats: [openThreatOn('el-out'), openThreatOn('el-back', 2)],
+    }),
   );
 
   it('holds their badges a clearance apart, so the two read as one each', () => {
@@ -267,21 +247,28 @@ describe('two badged flows between one pair of elements', () => {
   });
 });
 
+const carrying = (assumptions: unknown[]) =>
+  layoutOf(
+    modelWith({
+      elements: [
+        boxAt('el-left', 0, 0),
+        boxAt('el-right', 460, 0),
+        boxAt('el-floor', 130, 75, 'actor', { width: 320, height: 80 }),
+        flowFrom('el-carry', 'el-left', 'el-right', 'ship the parcel'),
+      ],
+      threats: [openThreatOn('el-carry')],
+      assumptions,
+    }),
+  );
+
 describe('a flow whose badge carries a flag mark', () => {
-  const carrying = (assumptions: unknown[]) =>
-    layoutOf(
-      diagramOf(
-        [
-          boxAt('el-left', 0, 0),
-          boxAt('el-right', 460, 0),
-          boxAt('el-floor', 130, 75, 'actor', { width: 320, height: 80 }),
-          flowFrom('el-carry', 'el-left', 'el-right', 'ship the parcel'),
-        ],
-        [openThreatOn('el-carry')],
-        assumptions,
-      ),
-    );
-  const flagged = carrying([invalidatedAssumptionOn(['th-el-carry'])]);
+  const flagged = carrying([
+    assumptionOf({
+      id: 'as-stale',
+      status: 'invalidated',
+      threats: ['th-el-carry'],
+    }),
+  ]);
   const plain = carrying([]);
   const [flaggedBadge] = flowBadges(flagged);
   const [plainBadge] = flowBadges(plain);
@@ -318,28 +305,30 @@ describe('the every-glyph label beside the Order API process', () => {
 
   it('keeps the smaller name clear of the process box', () => {
     const name = boxNamed('"Submit order"');
-    expect(boxesOverlap(name, boxOf(orderApi))).toBe(false);
+    expect(boxesOverlap(name, nodeBox(orderApi))).toBe(false);
     expect(boxMeetsCircle(name, circleOf(orderApi))).toBe(false);
   });
 
   it('hangs the badge beside the flow rather than in that corner beside the name', () => {
     const badge = boxNamed('"Submit order" badge');
-    expect(boxesOverlap(badge, boxOf(orderApi))).toBe(false);
+    expect(boxesOverlap(badge, nodeBox(orderApi))).toBe(false);
     expect(boxMeetsCircle(badge, circleOf(orderApi))).toBe(false);
   });
 });
 
 describe('three flows converging on one element', () => {
   const layout = layoutOf(
-    diagramOf([
-      boxAt('el-hub', 400, 300),
-      boxAt('el-one', 0, 0),
-      boxAt('el-two', 0, 300),
-      boxAt('el-three', 0, 600),
-      flowFrom('el-a', 'el-one', 'el-hub', 'mint a token for the caller'),
-      flowFrom('el-b', 'el-two', 'el-hub', 'mint a token for the worker'),
-      flowFrom('el-c', 'el-three', 'el-hub', 'mint a token for the pilot'),
-    ]),
+    modelWith({
+      elements: [
+        boxAt('el-hub', 400, 300),
+        boxAt('el-one', 0, 0),
+        boxAt('el-two', 0, 300),
+        boxAt('el-three', 0, 600),
+        flowFrom('el-a', 'el-one', 'el-hub', 'mint a token for the caller'),
+        flowFrom('el-b', 'el-two', 'el-hub', 'mint a token for the worker'),
+        flowFrom('el-c', 'el-three', 'el-hub', 'mint a token for the pilot'),
+      ],
+    }),
   );
 
   it('leaves nothing overlapping', () => {
@@ -349,14 +338,16 @@ describe('three flows converging on one element', () => {
 
 describe('a long diagonal crossing another flow', () => {
   const layout = layoutOf(
-    diagramOf([
-      boxAt('el-nw', 0, 0),
-      boxAt('el-se', 600, 500),
-      boxAt('el-ne', 600, 0),
-      boxAt('el-sw', 0, 500),
-      flowFrom('el-falling', 'el-nw', 'el-se', 'prune the stale versions'),
-      flowFrom('el-rising', 'el-sw', 'el-ne', 'push the rebuilt index'),
-    ]),
+    modelWith({
+      elements: [
+        boxAt('el-nw', 0, 0),
+        boxAt('el-se', 600, 500),
+        boxAt('el-ne', 600, 0),
+        boxAt('el-sw', 0, 500),
+        flowFrom('el-falling', 'el-nw', 'el-se', 'prune the stale versions'),
+        flowFrom('el-rising', 'el-sw', 'el-ne', 'push the rebuilt index'),
+      ],
+    }),
   );
 
   it('leaves nothing overlapping', () => {
@@ -366,13 +357,20 @@ describe('a long diagonal crossing another flow', () => {
 
 describe('a label beside a store', () => {
   const layout = layoutOf(
-    diagramOf([
-      boxAt('el-worker', 0, 300),
-      boxAt('el-store', 400, 280, 'store', { width: 200, height: 120 }),
-      boxAt('el-far', 900, 300),
-      flowFrom('el-past', 'el-worker', 'el-far', 'read through to the origin'),
-      flowFrom('el-into', 'el-worker', 'el-store', 'write the mirrored copy'),
-    ]),
+    modelWith({
+      elements: [
+        boxAt('el-worker', 0, 300),
+        boxAt('el-store', 400, 280, 'store', { width: 200, height: 120 }),
+        boxAt('el-far', 900, 300),
+        flowFrom(
+          'el-past',
+          'el-worker',
+          'el-far',
+          'read through to the origin',
+        ),
+        flowFrom('el-into', 'el-worker', 'el-store', 'write the mirrored copy'),
+      ],
+    }),
   );
 
   it('leaves nothing overlapping', () => {
@@ -432,9 +430,11 @@ describe('the placement as a function of the model alone', () => {
       flowFrom('el-out', 'el-left', 'el-right', 'ship the parcel'),
       flowFrom('el-back', 'el-right', 'el-left', 'return the parcel'),
     ];
-    const forwards = layoutOf(diagramOf(elements));
+    const forwards = layoutOf(modelWith({ elements }));
     const backwards = layoutOf(
-      diagramOf([elements[0], elements[1], elements[3], elements[2]]),
+      modelWith({
+        elements: [elements[0], elements[1], elements[3], elements[2]],
+      }),
     );
     expect(new Map(placementsById(backwards))).toEqual(
       new Map(placementsById(forwards)),
@@ -443,11 +443,13 @@ describe('the placement as a function of the model alone', () => {
 
   it('places a flow with no name at all beside its line', () => {
     const layout = layoutOf(
-      diagramOf([
-        boxAt('el-left', 0, 0),
-        boxAt('el-right', 460, 0),
-        { ...flowFrom('el-quiet', 'el-left', 'el-right'), name: '' },
-      ]),
+      modelWith({
+        elements: [
+          boxAt('el-left', 0, 0),
+          boxAt('el-right', 460, 0),
+          { ...flowFrom('el-quiet', 'el-left', 'el-right'), name: '' },
+        ],
+      }),
     );
     expect(textPlacementCorners(layout.edges[0].label.name)).toEqual([]);
     expect(layout.edges[0].label.name.at.y).toBeGreaterThan(0);
@@ -455,28 +457,32 @@ describe('the placement as a function of the model alone', () => {
 
   it('places a flow whose ends sit on one point', () => {
     const layout = layoutOf(
-      diagramOf([
-        boxAt('el-still', 0, 0),
-        {
-          ...flowFrom('el-loop', 'el-still', 'el-still'),
-          source: { kind: 'free', position: { x: 300, y: 300 } },
-          target: { kind: 'free', position: { x: 300, y: 300 } },
-          name: 'a flow of no length at all',
-        },
-      ]),
+      modelWith({
+        elements: [
+          boxAt('el-still', 0, 0),
+          {
+            ...flowFrom('el-loop', 'el-still', 'el-still'),
+            source: { kind: 'free', position: { x: 300, y: 300 } },
+            target: { kind: 'free', position: { x: 300, y: 300 } },
+            name: 'a flow of no length at all',
+          },
+        ],
+      }),
     );
     expect(layout.edges[0].label.name.at.y).toBeGreaterThan(300);
   });
 
   it('keeps the label of a flow it cannot place clear inside a crowd', () => {
     const layout = layoutOf(
-      diagramOf([
-        boxAt('el-a', 0, 0, 'actor', { width: 300, height: 300 }),
-        boxAt('el-b', 300, 0, 'actor', { width: 300, height: 300 }),
-        boxAt('el-c', 0, 300, 'actor', { width: 300, height: 300 }),
-        boxAt('el-d', 300, 300, 'actor', { width: 300, height: 300 }),
-        flowFrom('el-boxed', 'el-a', 'el-d', 'nowhere at all to put this'),
-      ]),
+      modelWith({
+        elements: [
+          boxAt('el-a', 0, 0, 'actor', { width: 300, height: 300 }),
+          boxAt('el-b', 300, 0, 'actor', { width: 300, height: 300 }),
+          boxAt('el-c', 0, 300, 'actor', { width: 300, height: 300 }),
+          boxAt('el-d', 300, 300, 'actor', { width: 300, height: 300 }),
+          flowFrom('el-boxed', 'el-a', 'el-d', 'nowhere at all to put this'),
+        ],
+      }),
     );
     expect(layout.edges).toHaveLength(1);
     expect(collisionsIn(layout).length).toBeGreaterThan(0);

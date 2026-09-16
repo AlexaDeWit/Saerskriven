@@ -1,61 +1,19 @@
+import type { Assumption, Model } from '@saerskriven/model';
 import {
-  assumptionSchema,
-  mitigationSchema,
-  parseModel,
-  threatSchema,
-  type Assumption,
-  type Model,
-  type Threat,
-} from '@saerskriven/model';
-import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
+  assumptionOf,
+  mitigationOf,
+  modelFrom,
+  repositoryRoot,
+  threatOf,
+} from '@saerskriven/model/fixtures';
 import { join } from 'node:path';
+import { ecluseModel, saerskrivenModel } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import { badgeLabel } from './register-labels.js';
 import { deepestProse } from './register-tree.js';
 import { renderTypst } from './typst-document.js';
 
-const repositoryRoot = join(import.meta.dirname, '../../../..');
-
 const goldenPath = join(repositoryRoot, 'test-data/render/ecluse.snapshot.typ');
-
-const committedModel = (name: string): Model =>
-  Either.getOrThrow(
-    parseModel(JSON.parse(readFileSync(join(repositoryRoot, name), 'utf8'))),
-  );
-
-const ecluseModel = committedModel('test-data/ecluse.model.json');
-
-const saerskrivenModel = committedModel('test-data/saerskriven.model.json');
-
-const threatOf = (fields: {
-  readonly number: number;
-  readonly title?: string;
-  readonly description?: string;
-  readonly status?: Threat['status'];
-}): Threat =>
-  threatSchema.parse({
-    id: `threat-${String(fields.number)}`,
-    title: `Threat ${String(fields.number)}`,
-    category: { methodology: 'STRIDE', category: 'tampering' },
-    severity: 'medium',
-    status: 'open',
-    description: '',
-    elements: [],
-    ...fields,
-  });
-
-const modelOf = (threats: readonly Threat[], title = 'Sample'): Model => ({
-  metadata: { title, owner: '', description: '', contributors: [] },
-  diagrams: [],
-  threats: [...threats],
-  lastIssuedThreatNumber: Math.max(
-    0,
-    ...threats.map((threat) => threat.number),
-  ),
-  mitigations: [],
-  assumptions: [],
-});
 
 const sourceOf = (model: Model): string => renderTypst(model).typst;
 
@@ -71,22 +29,19 @@ const recordsModel = (
     readonly appliesToModel?: boolean;
   }[] = [],
 ): Model => ({
-  ...modelOf([threatOf({ number: 1 }), threatOf({ number: 2 })]),
+  ...modelFrom({ threats: [threatOf({ number: 1 }), threatOf({ number: 2 })] }),
   mitigations: mitigations.map((fields, index) =>
-    mitigationSchema.parse({
+    mitigationOf({
       id: `mitigation-${String(index)}`,
-      title: '',
-      status: 'proposed',
       threats: ['threat-1'],
       ...fields,
     }),
   ),
   assumptions: assumptions.map((fields, index) =>
-    assumptionSchema.parse({
+    assumptionOf({
       id: `assumption-${String(index)}`,
       status: 'valid',
       threats: ['threat-1'],
-      appliesToModel: false,
       ...fields,
     }),
   ),
@@ -110,7 +65,9 @@ const between = (source: string, from: string, to: string): string =>
   source.slice(source.indexOf(from), source.indexOf(to, source.indexOf(from)));
 
 const proseOf = (written: string): string =>
-  sourceOf(modelOf([threatOf({ number: 1, description: written })]));
+  sourceOf(
+    modelFrom({ threats: [threatOf({ number: 1, description: written })] }),
+  );
 
 const nested = (levels: number): string => `${'> '.repeat(levels)}bottom`;
 
@@ -126,7 +83,7 @@ describe('the Typst document', () => {
   });
 
   it('keeps Markdown navigation out of the PDF text', () => {
-    const source = sourceOf(modelOf([threatOf({ number: 7 })]));
+    const source = sourceOf(modelFrom({ threats: [threatOf({ number: 7 })] }));
     expect(source).not.toContain('<a name="threat-7">');
     expect(source).not.toContain('(#threat-7)');
   });
@@ -179,7 +136,9 @@ describe('a value out of the model', () => {
 
   it('writes a control character as a Typst escape', () => {
     const title = `bell${String.fromCodePoint(7)}end`;
-    expect(sourceOf(modelOf([], title))).toContain('bell\\u{7}end');
+    expect(sourceOf(modelFrom({ threats: [], title: title }))).toContain(
+      'bell\\u{7}end',
+    );
   });
 });
 
@@ -468,7 +427,9 @@ describe('the prose depth bound', () => {
     expect(quotesIn(source)).toBe(admitted);
     expect(
       renderRegister(
-        modelOf([threatOf({ number: 1, description: nested(admitted) })]),
+        modelFrom({
+          threats: [threatOf({ number: 1, description: nested(admitted) })],
+        }),
       ),
     ).toContain('bottom');
   });

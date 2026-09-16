@@ -2,21 +2,20 @@ import { defaultRenderTheme } from '@saerskriven/canvas';
 import { readThemeOverrides } from './lib/theme.js';
 import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  resvgVariable,
-  resvgWasmAsset,
-  typstFontAssets,
-} from './build-assets.js';
-import {
+  bundledFonts,
   diagramOf,
   ecluseModel,
   everyGlyphModel,
+  fontBytes,
   goldenDocuments,
-  repositoryRoot,
+  resvgUnbuilt,
+  resvgWasm,
   type GoldenDocument,
-} from './goldens.fixtures.js';
+} from './render.fixtures.js';
 import {
   defaultLongEdge,
   drawingFace,
@@ -26,36 +25,23 @@ import {
 } from './png.js';
 import type { ResvgAssets } from './resvg.js';
 
-const stop = (sentence: string): never => {
-  throw new Error(sentence);
-};
-
-const unbuilt =
-  process.env[resvgVariable] === undefined || process.env[resvgVariable] === '';
-
 const monoFace = 'LiberationMono-Regular.ttf';
 
 const named = (face: string): string => face;
 
-let loaded: ResvgAssets | undefined;
-
-const assetsLedBy = (leading: string): ResvgAssets => {
-  loaded ??= {
-    wasm: new Uint8Array(readFileSync(resvgWasmAsset(stop))),
-    fonts: [],
-  };
-  return {
-    wasm: loaded.wasm,
-    fonts: Either.getOrThrow(
+const assetsLedBy = (leading: string): ResvgAssets => ({
+  wasm: resvgWasm(),
+  fonts: fontBytes(
+    Either.getOrThrow(
       ledBy(
-        typstFontAssets(stop),
+        bundledFonts(),
         (face) => face.name,
         leading,
         'the pinned font directory',
       ),
-    ).map((face) => new Uint8Array(readFileSync(face.from))),
-  };
-};
+    ),
+  ),
+});
 
 const rasterized = async (
   model: Model,
@@ -98,7 +84,7 @@ describe('the faces a rasterization is offered', () => {
   });
 });
 
-describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
+describe.skipIf(resvgUnbuilt)('a diagram rasterized as a PNG', () => {
   it.each(goldenDocuments)(
     'draws $name as the committed picture',
     async (entry) => {
@@ -164,7 +150,7 @@ describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
   });
 });
 
-describe.skipIf(unbuilt)('the selected PNG theme', () => {
+describe.skipIf(resvgUnbuilt)('the selected PNG theme', () => {
   it('applies font, badge, and background overrides to the raster', async () => {
     const base = await renderPng(ecluseModel.diagrams[0], ecluseModel, {
       assets: assetsLedBy(drawingFace),

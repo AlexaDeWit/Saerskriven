@@ -30,7 +30,7 @@ studio suites all read it. The formats, render and canvas suites read it
 through lists (`nativeFixtures` in
 `packages/formats/src/lib/saerskriven-yaml.fixtures.ts`, the register list in
 `markdown-register.spec.ts`, `goldenDocuments` in
-`packages/render/src/goldens.fixtures.ts`, and the scene list in the canvas
+`packages/render/src/render.fixtures.ts`, and the scene list in the canvas
 spec), so a further native model joins them by being added to each, its
 `nativeFixtures` entry naming where the derived model JSON goes
 ([test-data](../test-data/README.md#saerskrivenmodeljson)).

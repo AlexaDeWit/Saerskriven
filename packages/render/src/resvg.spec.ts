@@ -1,33 +1,19 @@
 import { Either } from 'effect';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import {
-  resvgVariable,
-  resvgWasmAsset,
-  typstFontAssets,
-} from './build-assets.js';
+  bundledFonts,
+  fontBytes,
+  resvgUnbuilt,
+  resvgWasm,
+} from './render.fixtures.js';
 import { rasterizeSvg, ResvgFailure, type ResvgAssets } from './resvg.js';
 
-const stop = (sentence: string): never => {
-  throw new Error(sentence);
-};
-
-const unbuilt =
-  process.env[resvgVariable] === undefined || process.env[resvgVariable] === '';
-
-let loaded: Uint8Array | undefined;
-
-const wasm = (): Uint8Array =>
-  (loaded ??= new Uint8Array(readFileSync(resvgWasmAsset(stop))));
-
 const withFonts = (): ResvgAssets => ({
-  wasm: wasm(),
-  fonts: typstFontAssets(stop).map(
-    (font) => new Uint8Array(readFileSync(font.from)),
-  ),
+  wasm: resvgWasm(),
+  fonts: fontBytes(bundledFonts()),
 });
 
-const withoutFonts = (): ResvgAssets => ({ wasm: wasm(), fonts: [] });
+const withoutFonts = (): ResvgAssets => ({ wasm: resvgWasm(), fonts: [] });
 
 const svg = (body: string, width: number, height: number): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">${body}</svg>`;
@@ -194,7 +180,7 @@ describe('a module that will not do the work', () => {
   });
 });
 
-describe.skipIf(unbuilt)('an SVG document rasterized to a PNG', () => {
+describe.skipIf(resvgUnbuilt)('an SVG document rasterized to a PNG', () => {
   it('draws the document at the long edge it is given', async () => {
     const raster = await drawn(rectangle, withoutFonts(), 200);
     expect([raster.width, raster.height]).toEqual([200, 100]);
@@ -272,7 +258,7 @@ describe.skipIf(unbuilt)('an SVG document rasterized to a PNG', () => {
         refusalOf(
           await rasterizeSvg(
             rectangle,
-            { wasm: wasm(), fonts: [take(fonts[0])] },
+            { wasm: resvgWasm(), fonts: [take(fonts[0])] },
             200,
           ),
         ),

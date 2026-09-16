@@ -6,15 +6,13 @@ import {
   severityToneClass,
 } from '@saerskriven/canvas';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
-import { typstFontAssets, typstWasmModule } from '../build-assets.js';
 import { compilePdf } from '../pdf.js';
 import {
   assumptionSchema,
   mitigationSchema,
   threatSchema,
 } from '@saerskriven/model';
-import { ecluseModel } from '../goldens.fixtures.js';
+import { ecluseModel, typstAssets } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import { registerBadgeKinds } from './register-badges.js';
 import { registerDocument } from './register-tree.js';
@@ -278,18 +276,15 @@ describe('themed PDF compilation', () => {
   it.each(['filled', 'outline'] as const)(
     'typesets %s badges and embedded drawings',
     async (style) => {
-      const fonts = typstFontAssets((message) => {
-        throw new Error(message);
-      });
       const theme = readThemeOverrides({
         severity: { high: '#b45309' },
         fonts: { body: 'Liberation Mono' },
         badges: { style },
       }).theme;
-      const result = await compilePdf(renderTypst(sample, theme).typst, {
-        wasm: readFileSync(typstWasmModule),
-        fonts: fonts.map((font) => readFileSync(font.from)),
-      });
+      const result = await compilePdf(
+        renderTypst(sample, theme).typst,
+        typstAssets(),
+      );
       expect(Either.isRight(result)).toBe(true);
       expect(
         Buffer.from(Either.getOrThrow(result).subarray(0, 5)).toString(),

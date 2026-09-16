@@ -1,13 +1,8 @@
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { compilePdf, PdfFailure, type PdfAssets } from './pdf.js';
+import { compilePdf, PdfFailure } from './pdf.js';
+import { typstAssets } from './render.fixtures.js';
 
-const wasmModule = createRequire(import.meta.url).resolve(
-  '@myriaddreamin/typst-ts-web-compiler/wasm',
-);
-
-const assets: PdfAssets = { wasm: readFileSync(wasmModule), fonts: [] };
+const assets = typstAssets(false);
 
 const refusalOf = (
   outcome: Either.Either<Uint8Array, PdfFailure>,

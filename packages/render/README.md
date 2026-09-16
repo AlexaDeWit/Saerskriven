@@ -99,7 +99,7 @@ This package's output is committed under
 [`test-data/render/`](../../test-data/render), so a change to what it writes
 arrives as a diff on a file. [`test-data/README.md`](../../test-data/README.md)
 says what each golden holds and which other suites read it. The drawings and
-their rasters are one list in `src/goldens.fixtures.ts`, and the registers keep
+their rasters are one list in `src/render.fixtures.ts`, and the registers keep
 their own list in their spec, so a further model or diagram joins every check
 by being added there. Cached tests write no snapshot, so a missing golden
 fails. Regenerate them in the commit that moved them, as
