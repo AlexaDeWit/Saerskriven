@@ -99,9 +99,11 @@ module imports it. The subpath resolves to source, so every project that
 depends on `@saerskriven/model` reaches it, and nothing structural stops a
 downstream production module: the typecheck resolves it like any other
 entry point and the layer matrix reasons about projects rather than entry
-points, so a studio bundle carrying a fixture-derived value passes both. The
-`no-restricted-imports` rule in `.oxlintrc.json` refuses that import, and the
-override beside it names the two file patterns that keep it.
+points, so a studio bundle carrying a fixture-derived value passes both. A
+relative import of a package's own `*.fixtures.*` module slips past the same
+way. The `no-restricted-imports` override in `.oxlintrc.json` refuses any
+fixtures subpath or fixtures module from every file but a spec, a test, or a
+fixture module.
 
 ## Prose register
 

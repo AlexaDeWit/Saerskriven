@@ -52,25 +52,24 @@
   },
   "overrides": [
     {
-      // Test helpers on a subpath every downstream project can reach, which
-      // the layer matrix does not see because it reasons about projects
-      // rather than entry points. Only a spec or a fixture module may import
-      // them (CODING.md, Tests), so the rule is declared here, on every file
-      // but those, rather than in the rules above with an exemption that
-      // would also switch off any path added to the rule later.
+      // Test helpers reach production code without a type or boundary error:
+      // a fixtures subpath resolves like any entry point, and a relative
+      // import pulls a fixtures module in past the lib tsconfig's exclude.
+      // Only a spec or a fixture module may import them (CODING.md, Tests).
       "files": ["**/*"],
-      "excludeFiles": ["**/*.spec.*", "**/*.fixtures.*"],
+      "excludeFiles": [
+        "**/*.spec.*",
+        "**/*.test.*",
+        "**/*.fixtures.*",
+        "**/fixtures.*"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "paths": [
+            "patterns": [
               {
-                "name": "@saerskriven/model/fixtures",
-                "message": "Fixture helpers belong to a *.spec.* or *.fixtures.* module. A production module that imports them ships them (CODING.md, Tests)."
-              },
-              {
-                "name": "@saerskriven/mcp/fixtures",
+                "regex": "(^|/)(fixtures|[^/]+\\.fixtures)(\\.[cm]?[jt]sx?)?$",
                 "message": "Fixture helpers belong to a *.spec.* or *.fixtures.* module. A production module that imports them ships them (CODING.md, Tests)."
               }
             ]
