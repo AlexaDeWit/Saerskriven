@@ -28,19 +28,15 @@ protocol error the SDK contract requires, and they are the only place in the
 server that throws. The functions they call still return `Either`.
 
 An operation with no value to return is typed `Either<void, E>`, never a
-bare `void`, which is the shape at 16 sites across `packages` and `apps`.
-Narrowing such a parameter to `void` is not the simplification it looks
-like. TypeScript accepts a function returning anything where a
+bare `void`. Narrowing such a parameter to `void` is not the simplification
+it looks like: TypeScript accepts a function returning anything where a
 `void`-returning function is expected, so every callback already passed in
 still compiles, and the function taking the callback then drops the
-failure and reports success. `packages/mcp/src/lib/write.ts` is the case
-in this tree: `throughTemporary` takes
-`commit: (temporary: string) => Either.Either<void, WriteFailure>`, and
-both callers refuse from inside that callback, one when the target changed
-since it was read and the other when the path to create is already taken.
-Narrow the parameter, follow it through the one line that consumes the
-result, and `tsc --build` reports nothing while the write path answers
-with a fresh revision handle for a file it never replaced.
+failure and reports success. `throughTemporary` in
+`packages/mcp/src/lib/write.ts` is the case in this tree: both callers refuse
+from inside its `commit` callback, and with the parameter narrowed
+`tsc --build` reports nothing while the write answers with a fresh revision
+for a file it never replaced.
 
 ## Schema-first typing
 
@@ -118,37 +114,20 @@ manifest, test-only ones under `devDependencies`. Never reach a library
 through another package's re-export, or rely on it resolving transitively:
 the version tested against is then someone else's to change.
 
-The root manifest is a leaf under that rule too, and what it declares is the
-workspace's own tooling in four groups. First, the tools a root script or a
-target's command runs: `nx`, `typescript`, `oxlint`, `oxfmt`, and `eslint` as
-the host of the boundaries rule. Second, the nx plugins and executors
-`nx.json` names: `@nx/js`, `@nx/vite`, `@nx/vitest` and `@nx/playwright` as
-plugins, and `@nx/esbuild` as the executor a build target selects. Third,
-what the root configs and operator scripts import by name: `@nx/eslint-plugin` and
-`@typescript-eslint/parser` in `eslint.config.mjs`, `vite` and
-`@vitejs/plugin-react` in `vite.shared.mts`, `vitest` in `vitest.shared.mts`
-and `vitest.config.mts`, plus `effect` and `zod` in the release tool. Fourth, a tool's
-optional peers, held beside the tool that declares them so their versions are
-this workspace's to pin rather than that tool's: `@swc-node/register` and
-`@swc/core` for `nx`, `@swc/helpers` for `@swc/core`, `oxlint-tsgolint` for
-`oxlint`, `jiti` for `eslint` and `vite`, `esbuild` for `@nx/esbuild` and
-`vite`, `@types/node` for `vite` and `vitest`, and `jsdom`,
-`@vitest/coverage-v8` and `@vitest/ui` for `vitest`, the first two of which
-`vitest.shared.mts` selects as the environment and the coverage provider every
-project tests under. `tslib` sits outside all four: `tsconfig.base.json` sets
-`importHelpers`, so emitted code imports it.
-
-React, react-dom, the testing libraries and Playwright are on none of these
-lists, which is what the rule is for. A project that renders or tests React
-declares them itself, so no project resolves them through the root.
+The root manifest is a leaf under that rule too, and declares the workspace's
+own tooling in four groups: the tools a root script or a target's command
+runs, the nx plugins and executors `nx.json` names, what the root configs and
+operator scripts import by name, and a tool's optional peers, held at the root
+so their versions are this workspace's to pin rather than that tool's.
+`tslib` sits outside all four, because `tsconfig.base.json` sets
+`importHelpers` and emitted code imports it. A package a project renders or
+tests with, React and Playwright among them, belongs to that project's
+manifest, so no project resolves it through the root.
 
 A binary Saerskriven did not author is a toolchain input rather than a file the
 tree carries, so it comes from the flake or from the lockfile and its
-provenance is that pin. The Liberation fonts the CLI typesets a PDF with
-arrive as `SAERSKRIVEN_FONTS_DIR`, which both dev shells export from the pinned
-nixpkgs' `liberation_ttf`, and the Typst WebAssembly module arrives through
-the catalog. A build outside the flake fails naming the missing input rather
-than writing an executable that cannot typeset. Text a spec reads is a
+provenance is that pin, and a build outside the flake fails naming the missing
+input ([Building the executables](docs/build.md) lists what the CLI carries). Text a spec reads is a
 different thing: the vendored Threat Dragon schema under
 `test-data/threat-dragon/schema/` is a fixture, versioned with the tests that
 read it and readable in a diff, so it stays committed with its provenance
