@@ -1,5 +1,5 @@
 import type { Diagram, Model } from '@saerskriven/model';
-import { committedModel } from '@saerskriven/model/fixtures';
+import { committedDiagrams, committedModel } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import {
   resvgVariable,
@@ -14,14 +14,16 @@ const svgSuffix = '.snapshot.svg';
 
 const pngSuffix = '.snapshot.png';
 
-/** The Écluse model in the internal form. */
-export const ecluseModel: Model = committedModel('ecluse.model.json');
-
 /** The model that draws every glyph and every badge tone. */
 export const everyGlyphModel: Model = committedModel('every-glyph.model.json');
 
-/** Saerskriven's own threat model in the internal form, two diagrams. */
-export const saerskrivenModel: Model = committedModel('saerskriven.model.json');
+/**
+ * A small shop on two diagrams, with crowded flow names and a register that
+ * carries every record kind, both flags and a threat on no element.
+ */
+export const twoDiagramsModel: Model = committedModel(
+  'two-diagrams.model.json',
+);
 
 /**
  * One diagram this package commits goldens for: `svg` is the drawing as a
@@ -37,44 +39,31 @@ export type GoldenDocument = {
 };
 
 /**
- * Every diagram the goldens cover. Each suite over them drives off this one
- * list, so a further model or diagram joins all of them by being added here.
+ * Every committed diagram as a golden. A golden takes the stem of its model's
+ * file, and the diagram id after it where the model holds more than one
+ * diagram, so a diagram joins every suite here by joining `committedDiagrams`.
  */
-export const goldenDocuments: readonly GoldenDocument[] = [
-  golden('the Écluse diagram', ecluseModel, 0, 'ecluse'),
-  golden('every glyph', everyGlyphModel, 0, 'every-glyph'),
-  golden(
-    "Saerskriven's read and render diagram",
-    saerskrivenModel,
-    0,
-    'saerskriven-read-and-render',
-  ),
-  golden(
-    "Saerskriven's agent and desktop diagram",
-    saerskrivenModel,
-    1,
-    'saerskriven-agent-and-desktop',
-  ),
-];
+export const goldenDocuments: readonly GoldenDocument[] = committedDiagrams.map(
+  ({ name, file, diagram }) => {
+    const model = committedModel(file);
+    const fileStem = file.replace(/\.model\.json$/u, '');
+    const stem =
+      model.diagrams.length === 1
+        ? fileStem
+        : `${fileStem}-${model.diagrams[diagram].id}`;
+    return {
+      name,
+      model,
+      diagram,
+      svg: `test-data/render/${stem}${svgSuffix}`,
+      png: `test-data/render/${stem}${pngSuffix}`,
+    };
+  },
+);
 
 /** The diagram a golden entry names. */
 export function diagramOf(entry: GoldenDocument): Diagram {
   return entry.model.diagrams[entry.diagram];
-}
-
-function golden(
-  name: string,
-  model: Model,
-  diagram: number,
-  stem: string,
-): GoldenDocument {
-  return {
-    name,
-    model,
-    diagram,
-    svg: `test-data/render/${stem}${svgSuffix}`,
-    png: `test-data/render/${stem}${pngSuffix}`,
-  };
 }
 
 const stop = (sentence: string): never => {

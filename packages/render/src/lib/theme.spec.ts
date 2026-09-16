@@ -12,7 +12,7 @@ import {
   mitigationSchema,
   threatSchema,
 } from '@saerskriven/model';
-import { ecluseModel, typstAssets } from '../render.fixtures.js';
+import { twoDiagramsModel, typstAssets } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import { registerBadgeKinds } from './register-badges.js';
 import { registerDocument } from './register-tree.js';
@@ -22,17 +22,17 @@ import { renderTypst } from './typst-document.js';
 import { readThemeOverrides, withBundledFonts } from './theme.js';
 
 const sample = {
-  ...ecluseModel,
+  ...twoDiagramsModel,
   threats: [
     threatSchema.parse({
-      ...ecluseModel.threats[0],
+      ...twoDiagramsModel.threats[0],
       number: 7,
       severity: 'high',
       status: 'open',
       description: '# First\n\n###### Last',
     }),
     threatSchema.parse({
-      ...ecluseModel.threats[0],
+      ...twoDiagramsModel.threats[0],
       id: 'accepted-example',
       number: 8,
       status: 'accepted-risk',

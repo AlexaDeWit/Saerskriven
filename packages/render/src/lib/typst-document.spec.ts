@@ -7,13 +7,16 @@ import {
   threatOf,
 } from '@saerskriven/model/fixtures';
 import { join } from 'node:path';
-import { ecluseModel, saerskrivenModel } from '../render.fixtures.js';
+import { twoDiagramsModel } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import { badgeLabel } from './register-labels.js';
 import { deepestProse } from './register-tree.js';
 import { renderTypst } from './typst-document.js';
 
-const goldenPath = join(repositoryRoot, 'test-data/render/ecluse.snapshot.typ');
+const goldenPath = join(
+  repositoryRoot,
+  'test-data/render/two-diagrams.snapshot.typ',
+);
 
 const sourceOf = (model: Model): string => renderTypst(model).typst;
 
@@ -78,8 +81,11 @@ const withoutLiterals = (source: string): string =>
   source.replace(/"(?:[^"\\]|\\[\s\S])*"/gu, '""');
 
 describe('the Typst document', () => {
-  it('matches the golden file committed under test-data', async () => {
-    await expect(sourceOf(ecluseModel)).toMatchFileSnapshot(goldenPath);
+  it('matches the golden file committed under test-data, on a second run too', async () => {
+    const first = sourceOf(twoDiagramsModel);
+    const second = sourceOf(twoDiagramsModel);
+    expect(second).toBe(first);
+    await expect(second).toMatchFileSnapshot(goldenPath);
   });
 
   it('keeps Markdown navigation out of the PDF text', () => {
@@ -89,20 +95,16 @@ describe('the Typst document', () => {
   });
 
   it('draws every diagram of the model, ahead of the register', () => {
-    const source = sourceOf(saerskrivenModel);
+    const source = sourceOf(twoDiagramsModel);
     const images = source.split('#image(bytes(').length - 1;
-    expect(images).toBe(saerskrivenModel.diagrams.length);
+    expect(images).toBe(twoDiagramsModel.diagrams.length);
     expect(source.indexOf('#image(bytes(')).toBeLessThan(
       source.indexOf('threat register'),
     );
   });
 
   it('reports a flow endpoint no diagram could draw', () => {
-    expect(renderTypst(ecluseModel).unplaced).toEqual([]);
-  });
-
-  it('writes the same source twice for the same model', () => {
-    expect(sourceOf(ecluseModel)).toBe(sourceOf(ecluseModel));
+    expect(renderTypst(twoDiagramsModel).unplaced).toEqual([]);
   });
 });
 

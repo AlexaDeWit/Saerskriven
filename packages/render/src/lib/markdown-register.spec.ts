@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import { ecluseModel, saerskrivenModel } from '../render.fixtures.js';
+import { twoDiagramsModel } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import type { RegisterBadge } from './register-badges.js';
 import { registerDocument } from './register-tree.js';
@@ -35,28 +35,10 @@ const labelsPath = join(
   'markdown-register.labels.snapshot.txt',
 );
 
-const registers: readonly {
-  readonly name: string;
-  readonly model: Model;
-  readonly golden: string;
-}[] = [
-  {
-    name: 'Écluse',
-    model: ecluseModel,
-    golden: join(
-      repositoryRoot,
-      'test-data/render/ecluse.register.snapshot.md',
-    ),
-  },
-  {
-    name: 'Saerskriven',
-    model: saerskrivenModel,
-    golden: join(
-      repositoryRoot,
-      'test-data/render/saerskriven.register.snapshot.md',
-    ),
-  },
-];
+const registerGolden = join(
+  repositoryRoot,
+  'test-data/render/two-diagrams.register.snapshot.md',
+);
 
 const reader = unified().use(remarkParse).use(remarkGfm);
 
@@ -277,9 +259,14 @@ function threatSectionsIn(tree: Root): RootContent[][] {
   );
 }
 
-describe.each(registers)('the $name register', ({ model, golden }) => {
-  it('matches the golden file committed under test-data', async () => {
-    await expect(renderRegister(model)).toMatchFileSnapshot(golden);
+describe('the two-diagram register', () => {
+  const model = twoDiagramsModel;
+
+  it('matches the golden file committed under test-data, on a second run too', async () => {
+    const first = renderRegister(model);
+    const second = renderRegister(model);
+    expect(second).toBe(first);
+    await expect(second).toMatchFileSnapshot(registerGolden);
   });
 
   it('carries one section per threat, in number order, after the section for the assumptions that apply to the model', () => {
@@ -776,10 +763,7 @@ describe('the assumptions that apply to the model', () => {
       ],
     });
     expect(modelSectionIn(registerDocument(unscoped))).toEqual([]);
-    expect(modelSectionIn(registerDocument(ecluseModel))).toEqual([]);
-    expect(modelSectionIn(reader.parse(renderRegister(ecluseModel)))).toEqual(
-      [],
-    );
+    expect(modelSectionIn(reader.parse(renderRegister(unscoped)))).toEqual([]);
   });
 
   it('follow the no-threats paragraph in a model holding no threats', () => {
@@ -963,10 +947,6 @@ describe('a hostile threat title', () => {
 });
 
 describe('a register render', () => {
-  it('writes the same bytes twice for the same model', () => {
-    expect(renderRegister(ecluseModel)).toBe(renderRegister(ecluseModel));
-  });
-
   it('writes the same bytes whatever order the threats arrive in', () => {
     const threats = [
       threatOf({ number: 3 }),

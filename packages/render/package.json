@@ -76,9 +76,8 @@
             "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
             "transitive": false
           },
-          "{workspaceRoot}/test-data/ecluse.model.json",
           "{workspaceRoot}/test-data/every-glyph.model.json",
-          "{workspaceRoot}/test-data/saerskriven.model.json",
+          "{workspaceRoot}/test-data/two-diagrams.model.json",
           "{workspaceRoot}/test-data/render/**/*",
           {
             "env": "SAERSKRIVEN_FONTS_DIR"

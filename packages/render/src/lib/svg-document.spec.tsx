@@ -392,18 +392,12 @@ const forbiddenCharacterSvg = svgOf(forbiddenCharacterModel);
 
 describe('a diagram as a standalone SVG document', () => {
   it.each(goldenDocuments)(
-    'writes $name as the committed golden file',
+    'writes $name as the committed golden file, on a second run too',
     async (entry) => {
-      await expect(svgOfEntry(entry)).toMatchFileSnapshot(
-        join(repositoryRoot, entry.svg),
-      );
-    },
-  );
-
-  it.each(goldenDocuments)(
-    'writes $name the same bytes on a second run',
-    (entry) => {
-      expect(svgOfEntry(entry)).toBe(svgOfEntry(entry));
+      const first = svgOfEntry(entry);
+      const second = svgOfEntry(entry);
+      expect(second).toBe(first);
+      await expect(second).toMatchFileSnapshot(join(repositoryRoot, entry.svg));
     },
   );
 
