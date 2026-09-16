@@ -9,11 +9,16 @@ import {
   saerskrivenYamlV2WireSchema,
   type SaerskrivenYamlV2Document,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
-import { parsedFixture, validModelFixture } from '@saerskriven/model/fixtures';
+import {
+  committedModel,
+  parsedFixture,
+  validModel,
+  validModelFixture,
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { parse } from 'yaml';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
-import { ecluseModel, goldenPath } from './saerskriven-yaml.fixtures.js';
+import { goldenPath } from './saerskriven-yaml.fixtures.js';
 import {
   writeSaerskrivenYaml,
   writeSaerskrivenYamlDocument,
@@ -21,6 +26,8 @@ import {
 import { isRecord } from './records.js';
 
 const parseDocument: (text: string) => unknown = parse;
+
+const ecluseModel = committedModel('ecluse.model.json');
 
 const written = writeSaerskrivenYaml(ecluseModel);
 
@@ -178,7 +185,7 @@ describe('a Saerskriven YAML write', () => {
 });
 
 describe('a Saerskriven YAML write of assumptions', () => {
-  const output = writeSaerskrivenYaml(parsedFixture(validModelFixture)).output;
+  const output = writeSaerskrivenYaml(validModel).output;
 
   it('states a model link and no element list on every assumption', () => {
     const assumptions = listOf(at(parseDocument(output), 'assumptions'));

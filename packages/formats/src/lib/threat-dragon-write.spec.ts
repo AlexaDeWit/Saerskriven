@@ -1,11 +1,10 @@
 import type { ModelInput } from '@saerskriven/model';
-import { parsedFixture } from '@saerskriven/model/fixtures';
+import { committedModel, parsedFixture } from '@saerskriven/model/fixtures';
 import {
   threatDragonWireSchema,
   type ThreatDragonDocument,
 } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
-import { Either } from 'effect';
 import type { Codec } from './codec.js';
 import { renderDivergences } from './divergence.js';
 import { threatsOf } from './threat-dragon-document.js';
@@ -14,11 +13,11 @@ import { writeThreatDragon } from './threat-dragon-write.js';
 import {
   allThreats,
   complementFixture,
-  ecluseModel,
   ecluseText,
   richerThanFormatFixture,
   richerThanFormatSource,
   threatDragonJsonSchema,
+  threatDragonReading,
   unmodelledFixture,
 } from './threat-dragon.fixtures.js';
 
@@ -32,19 +31,14 @@ const validate = new Ajv({ allowUnionTypes: true }).compile(
   threatDragonJsonSchema,
 );
 
-const readOrThrow = (text: string) =>
-  Either.getOrThrowWith(
-    readThreatDragon(text),
-    (failure) => new Error(`The codec refused a text: ${failure._tag}`),
-  );
-
 const documentOf = (text: string): ThreatDragonDocument =>
-  readOrThrow(text).source;
+  threatDragonReading(text).source;
 
 const numbersIn = (document: ThreatDragonDocument): (number | undefined)[] =>
   allThreats(document).map((threat) => threat.number);
 
-const ecluse = readOrThrow(ecluseText);
+const ecluse = threatDragonReading(ecluseText);
+const ecluseModel = committedModel('ecluse.model.json');
 
 const richer = parsedFixture(richerThanFormatFixture);
 
@@ -59,12 +53,14 @@ const mergedCell = mergedDocument.detail.diagrams[0]?.cells?.[0];
 describe('writing the Écluse model back onto the file it came from', () => {
   it('reads back as the model it was written from, whole', () => {
     const written = threatDragon.write(ecluse.model, ecluse.source);
-    expect(readOrThrow(written.output).model).toEqual(ecluse.model);
+    expect(threatDragonReading(written.output).model).toEqual(ecluse.model);
   });
 
   it('reads back as the internal model both packages are held to', () => {
     const written = threatDragon.write(ecluse.model, ecluse.source);
-    expect(readOrThrow(written.output).model).toStrictEqual(ecluseModel);
+    expect(threatDragonReading(written.output).model).toStrictEqual(
+      ecluseModel,
+    );
   });
 
   it('leaves the gap at 19 that a removed threat left, unfilled', () => {
@@ -89,7 +85,7 @@ describe('writing the Écluse model back onto the file it came from', () => {
 
 describe('writing a threat the file left unnumbered', () => {
   const source = documentOf(JSON.stringify(unmodelledFixture));
-  const read = readOrThrow(JSON.stringify(unmodelledFixture));
+  const read = threatDragonReading(JSON.stringify(unmodelledFixture));
   const written = threatDragon.write(read.model, source);
   const document = documentOf(written.output);
 
@@ -151,7 +147,7 @@ describe('projecting a model the format is smaller than', () => {
   });
 
   it('carries the model over, all but what it reported losing', () => {
-    const back = readOrThrow(projected.output).model;
+    const back = threatDragonReading(projected.output).model;
     expect(back.metadata).toEqual(richer.metadata);
     expect(back.threats.map((threat) => threat.id)).toEqual([
       'threat-privacy',
@@ -264,13 +260,13 @@ describe('merging what the Écluse file has no example of', () => {
     ['a note, a card and a translated label', unmodelledFixture],
   ])('leaves %s as the document had it', (_name, fixture) => {
     const text = JSON.stringify(fixture);
-    const read = readOrThrow(text);
+    const read = threatDragonReading(text);
     const written = threatDragon.write(read.model, read.source);
-    expect(readOrThrow(written.output).model).toEqual(read.model);
+    expect(threatDragonReading(written.output).model).toEqual(read.model);
   });
 
   it('reports nothing on a threat the document already nested twice', () => {
-    const read = readOrThrow(JSON.stringify(complementFixture));
+    const read = threatDragonReading(JSON.stringify(complementFixture));
     const written = threatDragon.write(read.model, read.source);
     expect(read.model.threats[0]?.elements).toHaveLength(2);
     expect(renderDivergences(written.divergences).split('\n')).toEqual([
@@ -280,7 +276,7 @@ describe('merging what the Écluse file has no example of', () => {
   });
 
   it('marks a document that declared none over the numbers it holds', () => {
-    const read = readOrThrow(JSON.stringify(complementFixture));
+    const read = threatDragonReading(JSON.stringify(complementFixture));
     const written = documentOf(
       threatDragon.write(read.model, read.source).output,
     );
@@ -295,7 +291,7 @@ describe('merging what the Écluse file has no example of', () => {
   });
 
   it('keeps the misspelled curve shape Threat Dragon registers itself', () => {
-    const read = readOrThrow(JSON.stringify(complementFixture));
+    const read = threatDragonReading(JSON.stringify(complementFixture));
     const written = threatDragon.write(read.model, read.source);
     expect(
       documentOf(written.output).detail.diagrams[0]?.cells?.map(
@@ -311,7 +307,7 @@ describe('merging what the Écluse file has no example of', () => {
   });
 
   it('leaves a diagram that draws nothing without a cell list', () => {
-    const read = readOrThrow(JSON.stringify(complementFixture));
+    const read = threatDragonReading(JSON.stringify(complementFixture));
     const written = threatDragon.write(read.model, read.source);
     expect(
       documentOf(written.output).detail.diagrams[1]?.cells,
@@ -319,7 +315,7 @@ describe('merging what the Écluse file has no example of', () => {
   });
 
   it('leaves the severity spelling the file chose of the two it reads', () => {
-    const read = readOrThrow(JSON.stringify(unmodelledFixture));
+    const read = threatDragonReading(JSON.stringify(unmodelledFixture));
     const written = threatDragon.write(read.model, read.source);
     expect(
       allThreats(documentOf(written.output)).map((threat) => [

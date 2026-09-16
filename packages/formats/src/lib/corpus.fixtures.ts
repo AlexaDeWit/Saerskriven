@@ -1,8 +1,13 @@
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
-/** The repository's `test-data` directory. */
-export const testData = join(import.meta.dirname, '../../../../test-data');
+/** The text of a file under `test-data`. */
+export const testDataText = (...segments: readonly string[]): string =>
+  readFileSync(testDataPath(...segments), 'utf8');
+
+/** The text of a hostile input under `test-data/adversarial`. */
+export const adversarialText = (name: string): string =>
+  testDataText('adversarial', name);
 
 /**
  * Every file `include` keeps in each of `folders` under `test-data`, named
@@ -14,11 +19,11 @@ export function vendoredTexts(
   include: (name: string) => boolean,
 ): { name: string; text: string }[] {
   return folders.flatMap((folder) =>
-    readdirSync(join(testData, folder))
+    readdirSync(testDataPath(folder))
       .filter(include)
       .map((name) => ({
         name: `${folder}/${name}`,
-        text: readFileSync(join(testData, folder, name), 'utf8'),
+        text: testDataText(folder, name),
       })),
   );
 }

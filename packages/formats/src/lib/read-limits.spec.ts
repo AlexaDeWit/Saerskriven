@@ -1,8 +1,7 @@
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { parse, parseDocument } from 'yaml';
 import type { ReadFailure } from './codec.js';
+import { adversarialText } from './corpus.fixtures.js';
 import { aliasCostIn } from './yaml-alias-cost.js';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { nativeFixtures } from './saerskriven-yaml.fixtures.js';
@@ -15,14 +14,6 @@ import { readThreatDragon } from './threat-dragon-read.js';
 import { corpusTexts, corpusTimeout } from './threat-dragon.fixtures.js';
 
 type Read = (text: string) => Either.Either<unknown, ReadFailure>;
-
-const adversarial = join(
-  import.meta.dirname,
-  '../../../../test-data/adversarial',
-);
-
-const vendored = (name: string): string =>
-  readFileSync(join(adversarial, name), 'utf8');
 
 const nestedBy = (steps: number): string =>
   `${'['.repeat(steps + 1)}${']'.repeat(steps + 1)}`;
@@ -62,49 +53,49 @@ const fixtures: readonly {
 }[] = [
   {
     name: 'deep-nesting.json',
-    text: vendored('deep-nesting.json'),
+    text: adversarialText('deep-nesting.json'),
     asYaml: 'maxNestingDepth',
     asJson: 'maxNestingDepth',
   },
   {
     name: 'deep-block.yaml',
-    text: vendored('deep-block.yaml'),
+    text: adversarialText('deep-block.yaml'),
     asYaml: 'maxNestingDepth',
     asJson: 'MalformedText',
   },
   {
     name: 'cyclic-anchor.yaml',
-    text: vendored('cyclic-anchor.yaml'),
+    text: adversarialText('cyclic-anchor.yaml'),
     asYaml: 'maxAliasCount',
     asJson: 'MalformedText',
   },
   {
     name: 'alias-expansion.yaml',
-    text: vendored('alias-expansion.yaml'),
+    text: adversarialText('alias-expansion.yaml'),
     asYaml: 'maxAliasCount',
     asJson: 'MalformedText',
   },
   {
     name: 'branching-cycle.yaml',
-    text: vendored('branching-cycle.yaml'),
+    text: adversarialText('branching-cycle.yaml'),
     asYaml: 'maxAliasCount',
     asJson: 'MalformedText',
   },
   {
     name: 'wide-cycle.yaml',
-    text: vendored('wide-cycle.yaml'),
+    text: adversarialText('wide-cycle.yaml'),
     asYaml: 'maxAliasCount',
     asJson: 'MalformedText',
   },
   {
     name: 'shared-anchor.yaml',
-    text: vendored('shared-anchor.yaml'),
+    text: adversarialText('shared-anchor.yaml'),
     asYaml: 'maxAliasExpansion',
     asJson: 'MalformedText',
   },
   {
     name: 'nested-anchors.yaml',
-    text: vendored('nested-anchors.yaml'),
+    text: adversarialText('nested-anchors.yaml'),
     asYaml: 'maxAliasCount',
     asJson: 'MalformedText',
   },
@@ -299,7 +290,7 @@ describe('the nesting bound', () => {
 
 describe('the alias bound', () => {
   it('counts an alias and the aliases its anchor expands to', () => {
-    const document = parseDocument(vendored('alias-expansion.yaml'));
+    const document = parseDocument(adversarialText('alias-expansion.yaml'));
     expect(
       aliasCostIn(document, { expanded: 1_000, reached: 1_000 }).expanded,
     ).toBe(54);
@@ -307,7 +298,7 @@ describe('the alias bound', () => {
 
   it('stops that count where it holds, before an alias is resolved', () => {
     expect(
-      failureOf(readSaerskrivenYaml, vendored('alias-expansion.yaml')),
+      failureOf(readSaerskrivenYaml, adversarialText('alias-expansion.yaml')),
     ).toEqual({
       _tag: 'ExceededReadLimit',
       limit: 'maxAliasCount',
@@ -317,19 +308,19 @@ describe('the alias bound', () => {
   });
 
   it('refuses a cycle, which expands without end', () => {
-    expect(failureOf(readSaerskrivenYaml, vendored('wide-cycle.yaml'))).toEqual(
-      {
-        _tag: 'ExceededReadLimit',
-        limit: 'maxAliasCount',
-        bound: readLimits.maxAliasCount,
-        observed: readLimits.maxAliasCount + 1,
-      },
-    );
+    expect(
+      failureOf(readSaerskrivenYaml, adversarialText('wide-cycle.yaml')),
+    ).toEqual({
+      _tag: 'ExceededReadLimit',
+      limit: 'maxAliasCount',
+      bound: readLimits.maxAliasCount,
+      observed: readLimits.maxAliasCount + 1,
+    });
   });
 
   it('refuses anchors within anchors, which the parser charges per anchor', () => {
     expect(
-      failureOf(readSaerskrivenYaml, vendored('nested-anchors.yaml')),
+      failureOf(readSaerskrivenYaml, adversarialText('nested-anchors.yaml')),
     ).toEqual({
       _tag: 'ExceededReadLimit',
       limit: 'maxAliasCount',
@@ -339,7 +330,7 @@ describe('the alias bound', () => {
   });
 
   it('is this package measuring, where the parser is now handed nothing', () => {
-    const text = vendored('alias-expansion.yaml');
+    const text = adversarialText('alias-expansion.yaml');
     expect(refusalOf(readSaerskrivenYaml, text)).toBe('maxAliasCount');
     expect(() => {
       parse(text);
@@ -350,7 +341,7 @@ describe('the alias bound', () => {
 describe('the alias expansion bound', () => {
   it('counts what the aliases reach, and stops counting where it holds', () => {
     expect(
-      failureOf(readSaerskrivenYaml, vendored('shared-anchor.yaml')),
+      failureOf(readSaerskrivenYaml, adversarialText('shared-anchor.yaml')),
     ).toEqual({
       _tag: 'ExceededReadLimit',
       limit: 'maxAliasExpansion',
@@ -384,8 +375,8 @@ describe('the alias expansion bound', () => {
 describe('a generated fixture', () => {
   it('is the bytes its generator writes, so the file cannot drift', () => {
     expect([sharedFromDepths(3_000, 40), nestedAnchors(25)]).toEqual([
-      vendored('shared-anchor.yaml'),
-      vendored('nested-anchors.yaml'),
+      adversarialText('shared-anchor.yaml'),
+      adversarialText('nested-anchors.yaml'),
     ]);
   });
 });

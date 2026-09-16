@@ -1,77 +1,40 @@
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { ReadFailure } from './codec.js';
+import { adversarialText } from './corpus.fixtures.js';
 import {
   DetectionFailure,
   formatNameSchema,
   readAnyFormat,
   type DetectedRead,
 } from './detect.js';
-import { goldenPath, nativeFixtures } from './saerskriven-yaml.fixtures.js';
+import {
+  goldenText,
+  minimalYamlV1,
+  nativeFixtures,
+  oneThreatYamlV1,
+} from './saerskriven-yaml.fixtures.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { readLimits } from './read-limits.js';
 import { corpusTexts, ecluseText } from './threat-dragon.fixtures.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
-const nativeText = readFileSync(goldenPath, 'utf8');
+const branchingCycle = adversarialText('branching-cycle.yaml');
 
-const branchingCycle = readFileSync(
-  join(
-    import.meta.dirname,
-    '../../../../test-data/adversarial/branching-cycle.yaml',
-  ),
-  'utf8',
-);
-
-const nativeMinimal = `formatVersion: 1
-metadata:
-  title: Minimal
-  owner: ""
-  description: ""
-  contributors: []
-assumptions: []
-diagrams: []
-mitigations: []
-threats: []
-lastIssuedThreatNumber: 0
-`;
-
-const nativeMinimalVersion2 = nativeMinimal.replace(
+const nativeMinimalVersion2 = minimalYamlV1.replace(
   'formatVersion: 1',
   'formatVersion: 2',
 );
 
-const laterFormatVersion = nativeMinimal.replace(
+const laterFormatVersion = minimalYamlV1.replace(
   'formatVersion: 1',
   'formatVersion: 3',
 );
 
-const danglingReference = `formatVersion: 1
-metadata:
-  title: Dangling
-  owner: ""
-  description: ""
-  contributors: []
-assumptions: []
-diagrams: []
-mitigations: []
-threats:
-  - id: threat-1
-    number: 1
-    title: Spoofed caller
-    category:
-      methodology: STRIDE
-      category: spoofing
-    severity: high
-    status: open
-    description: ""
-    mitigation: ""
-    elements:
-      - element-1
-lastIssuedThreatNumber: 1
-`;
+const danglingReference = oneThreatYamlV1.replace(
+  '      - element-1',
+  '      - element-9',
+);
 
 const threatDragonMinimal =
   '{"version":"2.6.2","summary":{"title":"Minimal"},"detail":{"diagrams":[]}}';
@@ -82,7 +45,7 @@ const refusedCell =
   '{"version":"2.6.2","summary":{"title":"Refused"},"detail":{"diagrams":[{"id":0,"title":"Level 0","diagramType":"STRIDE","cells":[{"id":"a","shape":"process","position":{"x":0,"y":0},"size":{"width":10,"height":10},"data":{"type":"tm.Process"}}]}]}}';
 
 const nativeAsJson = JSON.stringify(
-  Either.getOrThrow(saerskrivenYamlCodec.read(nativeText)).source,
+  Either.getOrThrow(saerskrivenYamlCodec.read(goldenText)).source,
 );
 
 const unclaimed: readonly { name: string; text: string }[] = [
@@ -164,9 +127,9 @@ describe('opening a text without being told its format', () => {
   });
 
   it('hands back everything the codec that answered produced', () => {
-    const answer = opened(nativeText);
+    const answer = opened(goldenText);
     expect(answer.model).toEqual(
-      Either.getOrThrow(readSaerskrivenYaml(nativeText)).model,
+      Either.getOrThrow(readSaerskrivenYaml(goldenText)).model,
     );
     expect(answer.divergences).toEqual([]);
   });
@@ -174,7 +137,7 @@ describe('opening a text without being told its format', () => {
 
 describe('a file of one format offered to the other codec', () => {
   it('is not JSON, so the Threat Dragon codec refuses the native file', () => {
-    const reading = threatDragonCodec.read(nativeText);
+    const reading = threatDragonCodec.read(goldenText);
     expect(Either.isLeft(reading)).toBe(true);
     expect(Either.merge(reading)).toMatchObject({ _tag: 'MalformedText' });
   });
@@ -264,7 +227,7 @@ describe('a file a codec claimed and then refused', () => {
 describe('a file from a release neither codec models', () => {
   it('opens the smallest file of each release they do model', () => {
     expect(opened(threatDragonMinimal).format).toBe('threat-dragon');
-    expect(opened(nativeMinimal).format).toBe('saerskriven-yaml');
+    expect(opened(minimalYamlV1).format).toBe('saerskriven-yaml');
     expect(opened(nativeMinimalVersion2).format).toBe('saerskriven-yaml');
   });
 
@@ -284,7 +247,7 @@ describe('a file from a release neither codec models', () => {
 describe('the codec the result carries', () => {
   it.each([
     { name: 'the Écluse file', text: ecluseText, stamp: '2.6.2' },
-    { name: 'the native file', text: nativeText, stamp: 2 },
+    { name: 'the native file', text: goldenText, stamp: 2 },
   ])('writes $name back as the format that answered', ({ text, stamp }) => {
     const answer = opened(text);
     const written = rewritten(answer);

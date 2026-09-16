@@ -1,8 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { otmWireSchema } from '@saerskriven/wire-otm';
 import { tmbomWireSchema } from '@saerskriven/wire-tmbom';
-import { testData, vendoredTexts } from './corpus.fixtures.js';
+import { testDataText, vendoredTexts } from './corpus.fixtures.js';
 
 /**
  * Every OTM and TM-BOM document the repository vendors, named by its path
@@ -16,8 +14,8 @@ export const importCorpus: readonly { name: string; text: string }[] =
 
 /** The upstream examples retain unknown fields to exercise import reports. */
 export const importTexts = {
-  otm: readFileSync(join(testData, 'otm/example.json'), 'utf8'),
-  tmbom: readFileSync(join(testData, 'tmbom/example.json'), 'utf8'),
+  otm: testDataText('otm/example.json'),
+  tmbom: testDataText('tmbom/example.json'),
 };
 
 /** A fresh OTM example for tests that change source facts. */

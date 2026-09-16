@@ -6,7 +6,11 @@ import {
   type FlowEndpoint,
   type Model,
 } from '@saerskriven/model';
-import { modelInputArbitrary } from '@saerskriven/model/fixtures';
+import {
+  committedModel,
+  modelInputArbitrary,
+  repositoryRoot,
+} from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { Either } from 'effect';
@@ -17,24 +21,23 @@ import { parse } from 'yaml';
 import { inferredMitigationStatus } from './mitigation-text.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
-  ecluseModel,
   emittedModels,
   frozenV021Path,
   frozenV030Path,
-  goldenPath,
+  goldenText,
   nativeFixtures,
   propertyTimeout,
 } from './saerskriven-yaml.fixtures.js';
 import { threatStatusesToModel } from './saerskriven-yaml-vocabulary.js';
 
-const golden = readFileSync(goldenPath, 'utf8');
+const ecluseModel = committedModel('ecluse.model.json');
 
 const frozenV021 = readFileSync(frozenV021Path, 'utf8');
 
 const frozenV030 = readFileSync(frozenV030Path, 'utf8');
 
 const description = readFileSync(
-  join(import.meta.dirname, '../../../../docs/saerskriven-yaml.md'),
+  join(repositoryRoot, 'docs/saerskriven-yaml.md'),
   'utf8',
 );
 
@@ -124,7 +127,7 @@ describe('the Saerskriven YAML codec', () => {
   });
 
   it('reads the committed fixture as the model it was written from', () => {
-    const reading = readOrThrow(golden);
+    const reading = readOrThrow(goldenText);
     expect(reading.model).toEqual(withThreatsInNumberOrder(ecluseModel));
     expect(reading.divergences).toEqual([]);
   });
@@ -138,7 +141,7 @@ describe('the Saerskriven YAML codec', () => {
   });
 
   it('hands back the document it read, for a write to merge onto', () => {
-    expect(readOrThrow(golden).source.formatVersion).toBe(2);
+    expect(readOrThrow(goldenText).source.formatVersion).toBe(2);
   });
 });
 

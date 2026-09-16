@@ -1,13 +1,17 @@
 import type { ModelInput } from '@saerskriven/model';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import type {
   ThreatDragonDocument,
+  threatDragonWireSchema,
   ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { Either } from 'effect';
+import { readdirSync } from 'node:fs';
 import { z } from 'zod';
-import { vendoredTexts } from './corpus.fixtures.js';
+import type { ReadResult } from './codec.js';
+import { testDataText, vendoredTexts } from './corpus.fixtures.js';
 import { allCells, threatsOf } from './threat-dragon-document.js';
+import { readThreatDragon } from './threat-dragon-read.js';
 
 const linkability: ThreatDragonThreat = {
   id: 'threat-linkability',
@@ -41,25 +45,14 @@ const ethics: ThreatDragonThreat = {
  * internal to `packages/model` rather than on its entry point, so this
  * package pins the same counts and vocabularies instead.
  */
-export const ecluseText: string = readFileSync(
-  join(import.meta.dirname, '../../../../test-data/ecluse.json'),
-  'utf8',
-);
+export const ecluseText: string = testDataText('ecluse.json');
 
 /**
  * The current Écluse model as Threat Dragon wrote it, vendored at
  * `test-data/ecluse-security.json`. It is not in {@link corpusTexts}, since
  * the rendering fixtures read the older file.
  */
-export const ecluseSecurityText: string = readFileSync(
-  join(import.meta.dirname, '../../../../test-data/ecluse-security.json'),
-  'utf8',
-);
-
-const vendored = join(
-  import.meta.dirname,
-  '../../../../test-data/threat-dragon',
-);
+export const ecluseSecurityText: string = testDataText('ecluse-security.json');
 
 /**
  * How long the spec that reads the whole corpus twice is given, past the
@@ -96,26 +89,9 @@ export const threatDragonJsonSchema: Readonly<Record<string, unknown>> = z
   .record(z.string(), z.unknown())
   .parse(
     JSON.parse(
-      readFileSync(
-        join(vendored, 'schema/threat-dragon-v2.schema.json'),
-        'utf8',
-      ),
+      testDataText('threat-dragon/schema/threat-dragon-v2.schema.json'),
     ),
   );
-
-/**
- * The Écluse model in the internal form, as `packages/model` writes it out
- * of its own fixture. Both packages read this one file: the model package
- * regenerates it from `ecluseFixture` and fails where the two differ, and
- * the read here is compared against it whole, so a drift in an element
- * description or an endpoint no longer passes both suites unnoticed.
- */
-export const ecluseModel: unknown = JSON.parse(
-  readFileSync(
-    join(import.meta.dirname, '../../../../test-data/ecluse.model.json'),
-    'utf8',
-  ),
-);
 
 /**
  * Threat Dragon's category labels in every language it ships, keyed by
@@ -127,16 +103,13 @@ export const ecluseModel: unknown = JSON.parse(
 export const localeCategories: Readonly<
   Record<string, Readonly<Record<string, Readonly<Record<string, string>>>>>
 > = Object.fromEntries(
-  readdirSync(join(vendored, 'i18n'))
+  readdirSync(testDataPath('threat-dragon/i18n'))
     .filter((name) => name.endsWith('.json'))
-    .map((name) => [
-      name.replace(/\.json$/, ''),
-      categoriesIn(join(vendored, 'i18n', name)),
-    ]),
+    .map((name) => [name.replace(/\.json$/, ''), categoriesIn(name)]),
 );
 
-function categoriesIn(path: string): Record<string, Record<string, string>> {
-  const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
+function categoriesIn(name: string): Record<string, Record<string, string>> {
+  const parsed: unknown = JSON.parse(testDataText('threat-dragon/i18n', name));
   return z.record(z.string(), z.record(z.string(), z.string())).parse(parsed);
 }
 
@@ -681,3 +654,13 @@ export function allThreats(
 ): readonly ThreatDragonThreat[] {
   return allCells(document).flatMap(threatsOf);
 }
+
+/** What the Threat Dragon read makes of a text, throwing where it refuses one. */
+export const threatDragonReading = (
+  text: string,
+): ReadResult<typeof threatDragonWireSchema> =>
+  Either.getOrThrowWith(
+    readThreatDragon(text),
+    (failure) =>
+      new Error(`The Threat Dragon codec refused a text: ${failure._tag}`),
+  );

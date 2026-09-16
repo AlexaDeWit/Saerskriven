@@ -1,40 +1,24 @@
-import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { readThreatDragon } from './threat-dragon-read.js';
-import { ecluseText } from './threat-dragon.fixtures.js';
-
-const repositoryRoot = join(import.meta.dirname, '../../../..');
-
-/**
- * The Écluse model, read from the Threat Dragon file the repository
- * vendors, which is the only production-scale model the project has. The
- * Threat Dragon corpus spec is what gates that the file reads at all, so a
- * failure here needs no message of its own.
- */
-export const ecluseModel: Model = Either.getOrThrow(
-  readThreatDragon(ecluseText),
-).model;
 
 /**
  * The Écluse model as this format writes it, committed so a change to what
  * the format writes arrives as a diff on a file rather than as a test that
  * still passes.
  */
-export const goldenPath: string = join(
-  repositoryRoot,
-  'test-data/saerskriven/ecluse.yaml',
-);
+export const goldenPath: string = testDataPath('saerskriven/ecluse.yaml');
+
+/** The committed bytes at {@link goldenPath}. */
+export const goldenText: string = readFileSync(goldenPath, 'utf8');
 
 /**
  * The Écluse model in the document shape v0.2.1 wrote, committed as data and
  * never regenerated, so a file from before a flow's `bidirectional` and an
  * attached endpoint's `side` still has a reader to answer to.
  */
-export const frozenV021Path: string = join(
-  repositoryRoot,
-  'test-data/saerskriven/ecluse-v0.2.1.yaml',
+export const frozenV021Path: string = testDataPath(
+  'saerskriven/ecluse-v0.2.1.yaml',
 );
 
 /**
@@ -43,9 +27,8 @@ export const frozenV021Path: string = join(
  * assumption element links and an assumption that links no threat, so the v1
  * to v2 migration has a released file to answer to.
  */
-export const frozenV030Path: string = join(
-  repositoryRoot,
-  'test-data/saerskriven/saerskriven-v0.3.0.yaml',
+export const frozenV030Path: string = testDataPath(
+  'saerskriven/saerskriven-v0.3.0.yaml',
 );
 
 const saerskrivenModelPath = join(
@@ -53,10 +36,7 @@ const saerskrivenModelPath = join(
   'threat-modelling/saerskriven.yaml',
 );
 
-const saerskrivenModelJsonPath = join(
-  repositoryRoot,
-  'test-data/saerskriven.model.json',
-);
+const saerskrivenModelJsonPath = testDataPath('saerskriven.model.json');
 
 /**
  * A Saerskriven YAML file this repository commits, with its committed bytes and,
@@ -96,7 +76,7 @@ export const nativeFixtures: readonly NativeFixture[] = [
   {
     name: 'Écluse model',
     path: goldenPath,
-    text: readFileSync(goldenPath, 'utf8'),
+    text: goldenText,
     modelJsonPath: undefined,
   },
   {
@@ -129,3 +109,68 @@ export const emittedModels: readonly EmittedModel[] = nativeFixtures.flatMap(
  * 9.5 seconds.
  */
 export const propertyTimeout = 30_000;
+
+/**
+ * The smallest version 1 document the read accepts: a title and every list
+ * empty. A spec derives the variant it needs with a `replace`.
+ */
+export const minimalYamlV1 = [
+  'formatVersion: 1',
+  'metadata:',
+  '  title: Minimal',
+  '  owner: ""',
+  '  description: ""',
+  '  contributors: []',
+  'diagrams: []',
+  'threats: []',
+  'lastIssuedThreatNumber: 0',
+  'mitigations: []',
+  'assumptions: []',
+  '',
+].join('\n');
+
+/**
+ * A version 1 document with one process on one diagram and one threat
+ * linked to it. A spec derives the variant it needs with a `replace`.
+ */
+export const oneThreatYamlV1 = [
+  'formatVersion: 1',
+  'metadata:',
+  '  title: One threat',
+  '  owner: ""',
+  '  description: ""',
+  '  contributors: []',
+  'diagrams:',
+  '  - id: diagram-1',
+  '    title: Only',
+  '    elements:',
+  '      - kind: process',
+  '        id: element-1',
+  '        name: Gateway',
+  '        description: ""',
+  '        outOfScope: false',
+  '        reasonOutOfScope: ""',
+  '        position:',
+  '          x: 0',
+  '          y: 0',
+  '        size:',
+  '          width: 10',
+  '          height: 10',
+  'threats:',
+  '  - id: threat-1',
+  '    number: 1',
+  '    title: Spoofed caller',
+  '    category:',
+  '      methodology: STRIDE',
+  '      category: spoofing',
+  '    severity: high',
+  '    status: open',
+  '    description: ""',
+  '    mitigation: ""',
+  '    elements:',
+  '      - element-1',
+  'lastIssuedThreatNumber: 1',
+  'mitigations: []',
+  'assumptions: []',
+  '',
+].join('\n');

@@ -1,5 +1,3 @@
-import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
 import {
   allCells,
   cellsOf,
@@ -8,22 +6,18 @@ import {
   isAnchored,
   threatsOf,
 } from './threat-dragon-document.js';
-import { readThreatDragon } from './threat-dragon-read.js';
 import {
   allThreats,
   complementFixture,
   ecluseText,
+  threatDragonReading,
 } from './threat-dragon.fixtures.js';
 
-const documentOf = (text: string): ThreatDragonDocument =>
-  Either.getOrThrowWith(
-    readThreatDragon(text),
-    (failure) => new Error(`The codec refused a text: ${failure._tag}`),
-  ).source;
+const ecluse = threatDragonReading(ecluseText).source;
 
-const ecluse = documentOf(ecluseText);
-
-const complement = documentOf(JSON.stringify(complementFixture));
+const complement = threatDragonReading(
+  JSON.stringify(complementFixture),
+).source;
 
 describe('walking a Threat Dragon document', () => {
   it('reaches every threat the diagrams nest under their cells', () => {

@@ -1,24 +1,17 @@
-import type { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
+import { committedModel } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFailureIssues } from './codec.fixtures.js';
-import { ReadFailure, type ReadResult } from './codec.js';
+import { ReadFailure } from './codec.js';
 import { renderDivergences } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import {
   complementFixture,
-  ecluseModel,
   ecluseText,
   minimalFixture,
   mitigationTextFixture,
+  threatDragonReading,
   unmodelledFixture,
 } from './threat-dragon.fixtures.js';
-
-const readOrThrow = (text: string): ReadResult<typeof threatDragonWireSchema> =>
-  Either.getOrThrowWith(
-    readThreatDragon(text),
-    (failure) =>
-      new Error(`The Threat Dragon codec refused a text: ${failure._tag}`),
-  );
 
 const failureOf = (text: string): ReadFailure =>
   Either.match(readThreatDragon(text), {
@@ -37,10 +30,11 @@ const tally = (values: readonly string[]): Record<string, number> =>
 const nested = (depth: number): string =>
   `${'{"deeper":'.repeat(depth)}1${'}'.repeat(depth)}`;
 
-const ecluse = readOrThrow(ecluseText);
-const complement = readOrThrow(JSON.stringify(complementFixture));
-const minimal = readOrThrow(JSON.stringify(minimalFixture));
-const unmodelled = readOrThrow(JSON.stringify(unmodelledFixture));
+const ecluse = threatDragonReading(ecluseText);
+const ecluseModel = committedModel('ecluse.model.json');
+const complement = threatDragonReading(JSON.stringify(complementFixture));
+const minimal = threatDragonReading(JSON.stringify(minimalFixture));
+const unmodelled = threatDragonReading(JSON.stringify(unmodelledFixture));
 
 const ecluseElements = ecluse.model.diagrams.flatMap(
   (diagram) => diagram.elements,
@@ -262,7 +256,7 @@ describe('reading what the Écluse file has no example of', () => {
 
 describe('reading the mitigation text of a threat', () => {
   const text = JSON.stringify(mitigationTextFixture);
-  const read = readOrThrow(text);
+  const read = threatDragonReading(text);
 
   it('makes one record of each text, linked to its threat, its status inferred from the threat', () => {
     expect(read.model.mitigations).toEqual([
@@ -284,9 +278,9 @@ describe('reading the mitigation text of a threat', () => {
   });
 
   it('gives the records the same ids on every read', () => {
-    expect(readOrThrow(text).model.mitigations.map(({ id }) => id)).toEqual(
-      read.model.mitigations.map(({ id }) => id),
-    );
+    expect(
+      threatDragonReading(text).model.mitigations.map(({ id }) => id),
+    ).toEqual(read.model.mitigations.map(({ id }) => id));
   });
 
   it('diverges in nothing', () => {
@@ -460,7 +454,7 @@ describe('a Threat Dragon read that stops', () => {
 
 describe('a Threat Dragon read that strips a key', () => {
   it('reports what the wire schema did not declare, and where it sat', () => {
-    const result = readOrThrow(
+    const result = threatDragonReading(
       JSON.stringify({
         ...minimalFixture,
         summary: { ...minimalFixture.summary, mystery: 'held by no schema' },
@@ -472,7 +466,7 @@ describe('a Threat Dragon read that strips a key', () => {
   });
 
   it('reports a stripped value without walking into it', () => {
-    const result = readOrThrow(
+    const result = threatDragonReading(
       `{"version":"2.6.2","summary":{"title":""},"detail":{"diagrams":[]},"mystery":${nested(8)}}`,
     );
     expect(renderDivergences(result.divergences)).toBe(

@@ -7,65 +7,9 @@ import {
   readSaerskrivenYaml,
   readSaerskrivenYamlDocument,
 } from './saerskriven-yaml-read.js';
+import { minimalYamlV1, oneThreatYamlV1 } from './saerskriven-yaml.fixtures.js';
 
-const minimalDocument = [
-  'formatVersion: 1',
-  'metadata:',
-  '  title: Minimal',
-  '  owner: ""',
-  '  description: ""',
-  '  contributors: []',
-  'diagrams: []',
-  'threats: []',
-  'lastIssuedThreatNumber: 0',
-  'mitigations: []',
-  'assumptions: []',
-  '',
-].join('\n');
-
-const oneThreatDocument = [
-  'formatVersion: 1',
-  'metadata:',
-  '  title: One threat',
-  '  owner: ""',
-  '  description: ""',
-  '  contributors: []',
-  'diagrams:',
-  '  - id: diagram-1',
-  '    title: Only',
-  '    elements:',
-  '      - kind: process',
-  '        id: element-1',
-  '        name: Gateway',
-  '        description: ""',
-  '        outOfScope: false',
-  '        reasonOutOfScope: ""',
-  '        position:',
-  '          x: 0',
-  '          y: 0',
-  '        size:',
-  '          width: 10',
-  '          height: 10',
-  'threats:',
-  '  - id: threat-1',
-  '    number: 1',
-  '    title: Spoofed caller',
-  '    category:',
-  '      methodology: STRIDE',
-  '      category: spoofing',
-  '    severity: high',
-  '    status: open',
-  '    description: ""',
-  '    mitigation: ""',
-  '    elements:',
-  '      - element-1',
-  'lastIssuedThreatNumber: 1',
-  'mitigations: []',
-  'assumptions: []',
-  '',
-].join('\n');
-
-const oneFlowDocument = oneThreatDocument.replace(
+const oneFlowDocument = oneThreatYamlV1.replace(
   'threats:',
   [
     '      - kind: store',
@@ -132,7 +76,7 @@ const threatlessAssumptionInVersion2 = threatlessAssumption
   .replace('    elements: []\n    threats: []', '    threats: []');
 
 const withMitigationText = (status: string) =>
-  oneThreatDocument
+  oneThreatYamlV1
     .replace('    status: open', `    status: ${status}`)
     .replace('    mitigation: ""', '    mitigation: Sign every request.');
 
@@ -150,7 +94,7 @@ const withMitigationRecord = (id: string) =>
     ].join('\n'),
   );
 
-const withExtras = `${oneThreatDocument.replace(
+const withExtras = `${oneThreatYamlV1.replace(
   '    number: 1',
   '    number: 1\n    likelihood: high',
 )}notes: kept nowhere\n`;
@@ -181,16 +125,13 @@ function issuePathsOf(text: string) {
 
 describe('a Saerskriven YAML read', () => {
   it('refuses a file with no formatVersion at that path', () => {
-    const without = minimalDocument.replace('formatVersion: 1\n', '');
+    const without = minimalYamlV1.replace('formatVersion: 1\n', '');
     expect(failureOf(without)?._tag).toBe('InvalidWireDocument');
     expect(issuePathsOf(without)).toEqual([['formatVersion']]);
   });
 
   it('refuses a file stamped with a release it does not know at that path', () => {
-    const later = minimalDocument.replace(
-      'formatVersion: 1',
-      'formatVersion: 3',
-    );
+    const later = minimalYamlV1.replace('formatVersion: 1', 'formatVersion: 3');
     expect(failureOf(later)?._tag).toBe('InvalidWireDocument');
     expect(issuePathsOf(later)).toEqual([['formatVersion']]);
   });
@@ -220,7 +161,7 @@ describe('a Saerskriven YAML read', () => {
   });
 
   it('refuses a document the model refuses, with a path into the model', () => {
-    const dangling = oneThreatDocument.replace(
+    const dangling = oneThreatYamlV1.replace(
       '      - element-1',
       '      - element-9',
     );
@@ -229,7 +170,7 @@ describe('a Saerskriven YAML read', () => {
   });
 
   it('refuses a title carrying a character the model refuses, pathed into the model', () => {
-    const overridden = minimalDocument.replace(
+    const overridden = minimalYamlV1.replace(
       '  title: Minimal',
       '  title: "Minimal\u202E"',
     );
@@ -238,7 +179,7 @@ describe('a Saerskriven YAML read', () => {
   });
 
   it('reads a valid file with nothing to report', () => {
-    expect(readingOf(minimalDocument)?.divergences).toEqual([]);
+    expect(readingOf(minimalYamlV1)?.divergences).toEqual([]);
   });
 
   it('reads a flow written before it had a direction or a pinned side, and one that has both', () => {
@@ -355,7 +296,7 @@ describe('a version 1 threat that carries mitigation text', () => {
   );
 
   it('reads as no record when the text is empty', () => {
-    expect(readingOf(oneThreatDocument)?.model.mitigations).toEqual([]);
+    expect(readingOf(oneThreatYamlV1)?.model.mitigations).toEqual([]);
   });
 
   it('reads to the same record ids every time', () => {
@@ -433,7 +374,7 @@ describe('a Saerskriven YAML document mapped without its text', () => {
 describe('a key the wire schema does not declare', () => {
   it('is dropped from the model rather than refusing the file', () => {
     expect(readingOf(withExtras)?.model).toEqual(
-      readingOf(oneThreatDocument)?.model,
+      readingOf(oneThreatYamlV1)?.model,
     );
   });
 

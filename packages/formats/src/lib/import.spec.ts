@@ -1,7 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { Either } from 'effect';
 import { stringify } from 'yaml';
+import { testDataText } from './corpus.fixtures.js';
 import { importModel } from './import.js';
 import {
   importCorpus,
@@ -213,13 +212,7 @@ it('enforces the existing size, depth, and alias limits on imports', () => {
 });
 
 it('rejects the upstream Vault example with dangling trust-zone references', () => {
-  const text = readFileSync(
-    join(
-      import.meta.dirname,
-      '../../../../test-data/tmbom/vault-invalid-zones.json',
-    ),
-    'utf8',
-  );
+  const text = testDataText('tmbom/vault-invalid-zones.json');
   const result = importModel(text);
   expect(result).toMatchObject({
     _tag: 'Left',

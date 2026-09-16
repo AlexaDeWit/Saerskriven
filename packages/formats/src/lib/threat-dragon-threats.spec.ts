@@ -1,23 +1,16 @@
 import type { ModelInput } from '@saerskriven/model';
 import { parsedFixture } from '@saerskriven/model/fixtures';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
 import { renderDivergences } from './divergence.js';
-import { readThreatDragon } from './threat-dragon-read.js';
 import { planThreats } from './threat-dragon-threats.js';
 import {
   complementFixture,
   ecluseText,
   richerThanFormatFixture,
+  threatDragonReading,
 } from './threat-dragon.fixtures.js';
 
-const readOrThrow = (text: string) =>
-  Either.getOrThrowWith(
-    readThreatDragon(text),
-    (failure) => new Error(`The codec refused a text: ${failure._tag}`),
-  );
-
-const ecluse = readOrThrow(ecluseText);
+const ecluse = threatDragonReading(ecluseText);
 
 const richer = parsedFixture(richerThanFormatFixture);
 
@@ -187,7 +180,7 @@ describe('the high-water mark a plan writes', () => {
 
 describe('a threat the source document already nests under two cells', () => {
   it('is not the record this write split, so nothing is reported', () => {
-    const read = readOrThrow(JSON.stringify(complementFixture));
+    const read = threatDragonReading(JSON.stringify(complementFixture));
     const plan = planThreats(read.model, read.source);
     expect(read.model.threats[0]?.elements.map((id) => String(id))).toEqual([
       'actor-1',
@@ -197,7 +190,7 @@ describe('a threat the source document already nests under two cells', () => {
   });
 
   it('is reported where this write is the one dividing it', () => {
-    const read = readOrThrow(JSON.stringify(complementFixture));
+    const read = threatDragonReading(JSON.stringify(complementFixture));
     expect(
       renderDivergences(planThreats(read.model, undefined).divergences),
     ).toBe(
