@@ -335,7 +335,7 @@ type TmbomStoreType = TmbomDocument['data_stores'][number]['type'];
  * and holds every enumerated value a list or a record can carry: an actor
  * and a data store of each type, a persona of each skill, a control in each
  * status and priority, a risk at each level, and an assumption of each
- * validity. The scope holds one value of each of its own enums, which
+ * validity. One control names no threat and has no description. The scope holds one value of each of its own enums, which
  * {@link tmbomScopeVariants} vary.
  */
 export const tmbomFeatureComplete: Tmbom102 = {
@@ -540,6 +540,12 @@ export const tmbomFeatureComplete: Tmbom102 = {
     control('scheduled', 'medium', []),
     control('retired', 'low', ['threat-spoofing']),
     control('wont_do', 'none', ['threat-fee']),
+    {
+      ...control('scheduled', 'low', []),
+      symbolic_name: 'control-unwritten',
+      title: 'Unwritten control',
+      description: '',
+    },
   ],
   risks: [
     risk('very_low', 'rare', 'negligible', 1),

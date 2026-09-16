@@ -2,7 +2,11 @@ import {
   enumeratedCategories,
   parsedFixture,
 } from '@saerskriven/model/fixtures';
-import { severitySchema, threatStatusSchema } from '@saerskriven/model';
+import {
+  severitySchema,
+  threatCategorySchema,
+  threatStatusSchema,
+} from '@saerskriven/model';
 import {
   threatDragonWireSchema,
   type ThreatDragonDocument,
@@ -12,6 +16,10 @@ import { readFailureIssues } from './codec.fixtures.js';
 import { ReadFailure } from './codec.js';
 import { renderDivergences } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';
+import {
+  fromThreatCategory,
+  toThreatCategory,
+} from './threat-dragon-vocabulary.js';
 import {
   complementFixture,
   featureCompleteModel,
@@ -52,7 +60,15 @@ const elementNamed = (id: string) =>
     ...featureComplete.model.diagrams.flatMap((diagram) => diagram.elements),
   ].find((element) => element.id === id);
 
-const threatDragonMethodologies = ['STRIDE', 'LINDDUN', 'CIA', 'CIA-DIE'];
+const threatDragonMethodologies: readonly string[] =
+  enumeratedCategories.flatMap(([methodology, [category]]): string[] => {
+    const labelled = toThreatCategory(
+      fromThreatCategory(threatCategorySchema.parse({ methodology, category })),
+    );
+    return labelled.exact && labelled.value.methodology === methodology
+      ? [methodology]
+      : [];
+  });
 
 describe('reading the feature-complete Threat Dragon file', () => {
   it('uses every field, enum value and variant the wire schema declares', () => {
@@ -72,6 +88,7 @@ describe('reading the feature-complete Threat Dragon file', () => {
 
   it('holds every threat status, severity and category Threat Dragon labels', () => {
     const { threats } = featureComplete.model;
+    expect(threatDragonMethodologies.length).toBeGreaterThan(0);
     expect(new Set(threats.map(({ status }) => status))).toEqual(
       new Set(threatStatusSchema.options),
     );
@@ -102,9 +119,19 @@ describe('reading the feature-complete Threat Dragon file', () => {
     );
   });
 
-  it('issues up to 40, the greater of threatTop 30 and its own highest', () => {
+  it('issues up to its highest threat number, 40, where threatTop 30 is below it', () => {
     expect(featureComplete.source.detail.threatTop).toBe(30);
     expect(featureComplete.model.lastIssuedThreatNumber).toBe(40);
+  });
+
+  it('issues up to threatTop where threatTop is above its highest threat number', () => {
+    const marked: ThreatDragonDocument = {
+      ...featureComplete.source,
+      detail: { ...featureComplete.source.detail, threatTop: 60 },
+    };
+    expect(
+      threatDragonReading(JSON.stringify(marked)).model.lastIssuedThreatNumber,
+    ).toBe(60);
   });
 
   it('reports the Elevation of Privilege card alone, of which the model holds the suit', () => {

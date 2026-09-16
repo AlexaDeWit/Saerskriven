@@ -22,6 +22,7 @@ import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
   emittedModels,
   featureCompleteYaml,
+  featureCompleteYamlModel,
   frozenV021Model,
   frozenV021Path,
   frozenV030Path,
@@ -105,13 +106,11 @@ describe('the Saerskriven YAML codec', () => {
     ).toEqual([]);
   });
 
-  it('reads the feature-complete file as the model it states, with nothing diverging', () => {
-    const { formatVersion, ...stated } = saerskrivenYamlV2WireSchema.parse(
-      parse(featureCompleteYaml),
-    );
+  it('reads the feature-complete file as the model written out by hand, with nothing diverging', () => {
     const reading = readOrThrow(featureCompleteYaml);
-    expect(formatVersion).toBe(2);
-    expect(reading.model).toStrictEqual(parsedFixture(stated));
+    expect(reading.model).toStrictEqual(
+      parsedFixture(featureCompleteYamlModel),
+    );
     expect(reading.divergences).toEqual([]);
   });
 

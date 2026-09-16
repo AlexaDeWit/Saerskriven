@@ -19,6 +19,25 @@ type Schema = {
 
 type Construct = { readonly name: string; readonly key: string };
 
+const leafTypes: ReadonlySet<string> = new Set([
+  'string',
+  'number',
+  'boolean',
+  'literal',
+  'null',
+  'unknown',
+  'enum',
+]);
+
+const containerTypes: ReadonlySet<string> = new Set([
+  'optional',
+  'nullable',
+  'object',
+  'array',
+  'record',
+  'union',
+]);
+
 type Keys = {
   readonly field: (field: string, fieldSchema: Schema) => string;
   readonly value: (schema: Schema, value: string) => string;
@@ -28,12 +47,16 @@ type Keys = {
 /**
  * Every construct a wire schema declares that none of the documents uses: a
  * field no document sets, an enum value no document holds, and a union
- * variant no document takes. A construct is told apart by the schema that
- * declares it, so a field an `.extend()` inherits, or an enum several fields
- * share, is used once for all of them. A nullable union's `null` is not a
- * variant, and a record's keys are free. Each is named by the first path the
- * schema declares it at, and the result is empty where the documents
- * together use the whole schema.
+ * variant no document takes. A construct is told apart by the schema
+ * instance that declares it, not by its path: a field schema counts once
+ * under its name wherever it is used, whether shared through `.extend()` or
+ * through a constant, and an enum counts once however many fields share it.
+ * A new field built from a shared schema already used under the same name
+ * elsewhere is therefore not flagged. A nullable union's `null` is not a
+ * variant, and a record's keys are free. Each construct is named by the first
+ * path the schema declares it at. A schema type the walk does not know
+ * throws, so a wrapper such as `.readonly()` cannot hide what it wraps. The
+ * result is empty where the documents together use the whole schema.
  */
 export function unusedConstructs(
   schema: Schema,
@@ -121,7 +144,7 @@ function children(
   schema: Schema,
   path: string,
 ): readonly (readonly [Schema, string])[] {
-  const def = schema.def;
+  const def = walked(schema, path);
   if ((def.type === 'optional' || def.type === 'nullable') && def.innerType) {
     return [[def.innerType, path]];
   }
@@ -153,7 +176,7 @@ function use(
   keys: Keys,
   into: Set<string>,
 ): void {
-  const def = schema.def;
+  const def = walked(schema, 'a document');
   if (value === undefined || value === null) {
     return;
   }
@@ -185,6 +208,20 @@ function use(
       use(taken, value, keys, into);
     }
   }
+}
+
+function walked(schema: Schema, path: string): SchemaDef {
+  const def = schema.def;
+  const known =
+    containerTypes.has(def.type) ||
+    (leafTypes.has(def.type) &&
+      (def.type !== 'literal' || def.values?.length === 1));
+  if (!known) {
+    throw new Error(
+      `The coverage walk does not know the ${def.type} schema at ${path === '' ? 'the root' : path}.`,
+    );
+  }
+  return def;
 }
 
 function variantsOf(schema: Schema): readonly Schema[] {

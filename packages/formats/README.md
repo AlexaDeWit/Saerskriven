@@ -81,8 +81,12 @@ beside it:
 `unusedConstructs` in
 [`wire-coverage.fixtures.ts`](src/lib/wire-coverage.fixtures.ts) walks a wire
 schema and names what no fixture uses, so a construct added to a wire package
-fails a test until a fixture carries it. Version 1 of Saerskriven YAML is held
-by the frozen files a release wrote, `test-data/saerskriven/v0.2.1.yaml` and
+fails a test until a fixture carries it. It tells constructs apart by schema
+instance: a field schema counts once wherever it is used, whether shared through
+`.extend()` or a constant, so a new field built from a shared schema already
+used under the same name is not flagged. A schema type the walk does not know
+fails the test. Version 1 of Saerskriven YAML is held by the frozen files a
+release wrote, `test-data/saerskriven/v0.2.1.yaml` and
 `saerskriven-v0.3.0.yaml`, which are never extended.
 
 `nativeFixtures` in

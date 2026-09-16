@@ -748,7 +748,7 @@ describe('the feature-complete TM-BOM document', () => {
       ],
     });
     expect(read.model.metadata.description).toBe(
-      'Every field a TM-BOM file carries.\n\nA clinic books appointments online.\n\nMitigation: Control scheduled (proposed, source status scheduled). A control the team marks scheduled.',
+      'Every field a TM-BOM file carries.\n\nA clinic books appointments online.\n\nMitigation: Control scheduled (proposed, source status scheduled). A control the team marks scheduled.\n\nMitigation: Unwritten control (proposed, source status scheduled). ',
     );
   });
 
@@ -761,6 +761,7 @@ describe('the feature-complete TM-BOM document', () => {
       'Control "control-under-review" imports as proposed. Its original status remains in the description.',
       'Control "control-approved" imports as proposed. Its original status remains in the description.',
       'Control "control-scheduled" names no threat and becomes a line of the model description.',
+      'Control "control-unwritten" names no threat and becomes a line of the model description.',
       'Threats import as open with undecided severity and an unspecified category. Separate risk assessments are not converted into threat severity.',
     ]);
     expect(unretainedFieldsOf(read.divergences)).toEqual(
@@ -794,6 +795,7 @@ describe('the feature-complete TM-BOM document', () => {
         'controls.7.symbolic_name',
         'controls.7.threats',
         'controls.7.title',
+        'controls.8.priority',
         'data_sets.0.access_control_methods',
         'data_sets.0.data_sensitivity',
         'data_sets.0.placements.0.encrypted',

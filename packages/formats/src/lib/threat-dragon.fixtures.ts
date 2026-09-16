@@ -182,6 +182,9 @@ export const featureCompleteModel: ModelInput = {
           ),
           outOfScope: true,
           reasonOutOfScope: 'Held by the records office.',
+          isALog: true,
+          isSigned: true,
+          storesCredentials: true,
         },
         {
           kind: 'text',
@@ -292,14 +295,20 @@ export const featureCompleteModel: ModelInput = {
             ],
           },
         },
-        node(
-          'process',
-          'process-records',
-          'Records desk',
-          'Answers requests for records.',
-          [120, 120, 120, 120],
-        ),
-        node('actor', 'actor-clerk', 'Clerk', '', [320, 120, 140, 80]),
+        {
+          ...node(
+            'process',
+            'process-records',
+            'Records desk',
+            'Answers requests for records.',
+            [120, 120, 120, 120],
+          ),
+          handlesGoodsOrServices: true,
+        },
+        {
+          ...node('actor', 'actor-clerk', 'Clerk', '', [320, 120, 140, 80]),
+          providesAuthentication: true,
+        },
       ],
     },
   ],

@@ -37,14 +37,17 @@ spec), so a further native model joins them by being added to each, its
 
 ## Editing it
 
-The committed bytes are what `saerskrivenYamlCodec` writes, compared as a
-Vitest file snapshot against the file itself, so a hand edit that leaves the
-writer's canonical form fails the suite. `.oxfmtrc.json` leaves the YAML here
-alone for the same reason. Edit the file, then regenerate it and everything
-derived from it in the same commit:
+The committed bytes must stay what `saerskrivenYamlCodec` writes: the formats
+suite compares a write of the file's read with the file itself, and nothing
+rewrites the file, so a hand edit that leaves the writer's canonical form fails
+the suite. `.oxfmtrc.json` leaves the YAML here alone for the same reason. To
+get the canonical form, save the file from the studio or edit it through the
+MCP server's `saer_edit`, both of which write through the codec, or match the
+form by hand until the formats suite passes. Then regenerate everything derived
+from it in the same commit:
 
 ```sh
-pnpm snapshots:update @saerskriven/formats  # YAML and model JSON
+pnpm snapshots:update @saerskriven/formats  # model JSON
 pnpm snapshots:update @saerskriven/render   # register, SVG and PNG
 pnpm snapshots:update @saerskriven/canvas   # canvas SVG
 ```

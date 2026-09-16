@@ -112,6 +112,9 @@ diagrams:
         size:
           width: 160
           height: 80
+        isALog: true
+        isSigned: true
+        storesCredentials: true
       - kind: text
         id: note-hours
         name: Opening hours
@@ -221,6 +224,7 @@ diagrams:
         size:
           width: 120
           height: 120
+        handlesGoodsOrServices: true
       - kind: actor
         id: actor-clerk
         name: Clerk
@@ -233,6 +237,7 @@ diagrams:
         size:
           width: 140
           height: 80
+        providesAuthentication: true
 mitigations:
   - id: mitigation-one-time-code
     title: One-time code

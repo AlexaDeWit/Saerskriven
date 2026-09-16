@@ -267,5 +267,5 @@ Two production-scale examples are committed.
 [`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) is Saerskriven's
 own threat model, the file to read first, because it was authored in this
 format rather than converted into it. `test-data/saerskriven/ecluse.yaml` is the
-Écluse threat model, read from its Threat Dragon file and written here, which
-is what a conversion into this format looks like.
+Écluse threat model converted from its Threat Dragon file, committed data that
+the MCP, CLI and browser suites read.

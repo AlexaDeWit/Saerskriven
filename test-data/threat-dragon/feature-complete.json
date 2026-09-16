@@ -532,6 +532,9 @@
               "outOfScope": true,
               "reasonOutOfScope": "Held by the records office.",
               "hasOpenThreats": false,
+              "isALog": true,
+              "isSigned": true,
+              "storesCredentials": true,
               "threats": []
             }
           },
@@ -973,6 +976,7 @@
               "outOfScope": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": true,
+              "handlesGoodsOrServices": true,
               "threats": [
                 {
                   "id": "threat-linkability",
@@ -1085,6 +1089,7 @@
               "outOfScope": false,
               "reasonOutOfScope": "",
               "hasOpenThreats": true,
+              "providesAuthentication": true,
               "threats": [
                 {
                   "id": "threat-linkability",
