@@ -72,7 +72,7 @@
           "{workspaceRoot}/scripts/package-cli.sh",
           "{workspaceRoot}/flake.nix",
           "{workspaceRoot}/flake.lock",
-          "{workspaceRoot}/test-data/ecluse.json",
+          "{workspaceRoot}/test-data/saerskriven/two-diagrams.yaml",
           {
             "json": "{workspaceRoot}/package.json",
             "fields": [

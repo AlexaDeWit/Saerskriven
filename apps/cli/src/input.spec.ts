@@ -26,7 +26,7 @@ describe('a model file read at the edge', () => {
   });
 
   it('gives the read back where a codec claimed the file', () => {
-    const read = readModel(testDataPath('ecluse.json'));
+    const read = readModel(testDataPath('threat-dragon/feature-complete.json'));
     expect(Either.isRight(read)).toBe(true);
   });
 

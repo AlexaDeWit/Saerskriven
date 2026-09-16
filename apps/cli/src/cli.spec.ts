@@ -5,7 +5,7 @@ import { render, renderOptionsSchema } from './render.js';
 import { validate } from './validate.js';
 import { cliVersion } from './version.js';
 
-const ecluse = testDataPath('ecluse.json');
+const model = testDataPath('saerskriven/two-diagrams.yaml');
 
 const collecting = (failing?: 'out' | 'err') => {
   const written = { out: '', err: '' };
@@ -47,7 +47,7 @@ describe('the arguments as the outcome they ask for', () => {
   });
 
   it('refuses a flag it does not know', async () => {
-    await expect(runCli(['validate', ecluse, '--nope'])).resolves.toEqual({
+    await expect(runCli(['validate', model, '--nope'])).resolves.toEqual({
       code: 2,
       out: '',
       err: "error: unknown option '--nope'\n",
@@ -71,19 +71,17 @@ describe('the arguments as the outcome they ask for', () => {
   });
 
   it('hands validate the file it was given', async () => {
-    await expect(runCli(['validate', ecluse])).resolves.toEqual(
-      validate(ecluse),
-    );
+    await expect(runCli(['validate', model])).resolves.toEqual(validate(model));
   });
 
   it('hands render the options it was given', async () => {
     await expect(
-      runCli(['render', ecluse, '--format', 'md', '--out', '-']),
-    ).resolves.toEqual(await render(ecluse, { format: 'md', out: '-' }));
+      runCli(['render', model, '--format', 'md', '--out', '-']),
+    ).resolves.toEqual(await render(model, { format: 'md', out: '-' }));
   });
 
   it('says which options a render needs where it was given none', async () => {
-    await expect(runCli(['render', ecluse])).resolves.toEqual({
+    await expect(runCli(['render', model])).resolves.toEqual({
       code: 2,
       out: '',
       err:
@@ -94,7 +92,7 @@ describe('the arguments as the outcome they ask for', () => {
 
   it('says which formats there are where the one given is none of them', async () => {
     await expect(
-      runCli(['render', ecluse, '--format', 'ps', '--out', '-']),
+      runCli(['render', model, '--format', 'ps', '--out', '-']),
     ).resolves.toEqual({
       code: 2,
       out: '',
@@ -162,7 +160,7 @@ describe('the arguments as the outcome they ask for', () => {
       throw new Error('the option schema gave out');
     });
     await expect(
-      runCli(['render', ecluse, '--format', 'md', '--out', '-']),
+      runCli(['render', model, '--format', 'md', '--out', '-']),
     ).resolves.toEqual({
       code: 2,
       out: '',
@@ -221,7 +219,7 @@ describe('a command that rejects rather than answering', () => {
     }));
     const rejecting = await import('./cli.js');
     await expect(
-      rejecting.runCli(['render', ecluse, '--format', 'md', '--out', '-']),
+      rejecting.runCli(['render', model, '--format', 'md', '--out', '-']),
     ).resolves.toEqual({
       code: 2,
       out: '',

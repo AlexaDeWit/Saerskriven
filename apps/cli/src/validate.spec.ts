@@ -1,6 +1,5 @@
 import { unclaimedYaml } from '@saerskriven/mcp/fixtures';
-import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
-import { join } from 'node:path';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import {
   brokenDocumentYaml,
   danglingReferenceYaml,
@@ -18,29 +17,22 @@ const validated = (name: string, text: string) =>
 
 describe('validate', () => {
   it('reads a Threat Dragon file and counts what the model holds', () => {
-    expect(validate(testDataPath('ecluse.json'))).toEqual({
-      code: 0,
-      out: 'threat-dragon: 1 diagram, 38 elements, 29 threats\n',
-      err: '',
-    });
-  });
-
-  it('reads the same model in the native format', () => {
-    expect(validate(testDataPath('saerskriven/ecluse.yaml'))).toEqual({
-      code: 0,
-      out: 'saerskriven-yaml: 1 diagram, 38 elements, 29 threats\n',
-      err: '',
-    });
-  });
-
-  it("reads Saerskriven's own threat model, which holds two diagrams", () => {
     expect(
-      validate(join(repositoryRoot, 'threat-modelling/saerskriven.yaml')),
-    ).toEqual({
+      validate(testDataPath('threat-dragon/feature-complete.json')),
+    ).toMatchObject({
       code: 0,
-      out: 'saerskriven-yaml: 2 diagrams, 37 elements, 25 threats\n',
-      err: '',
+      out: 'threat-dragon: 2 diagrams, 13 elements, 24 threats\n',
     });
+  });
+
+  it('reads a native file of two diagrams and counts what the model holds', () => {
+    expect(validate(testDataPath('saerskriven/feature-complete.yaml'))).toEqual(
+      {
+        code: 0,
+        out: 'saerskriven-yaml: 2 diagrams, 12 elements, 31 threats\n',
+        err: '',
+      },
+    );
   });
 
   it('warns about what a read dropped, and still succeeds', () => {

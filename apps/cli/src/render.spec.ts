@@ -14,15 +14,13 @@ import { render, type RenderOptions } from './render.js';
 
 const directory = scratchDirectory('render');
 
-const ecluse = testDataPath('ecluse.json');
-
-const ecluseYaml = testDataPath('saerskriven/ecluse.yaml');
-
-const saerskriven = join(repositoryRoot, 'threat-modelling/saerskriven.yaml');
+const twoDiagrams = testDataPath('saerskriven/two-diagrams.yaml');
 
 const golden = (name: string): string => renderGolden(name).toString('utf8');
 
-const pdfDigest = golden('ecluse.snapshot.pdf.sha256').trim();
+const pdfDigest = golden('two-diagrams.snapshot.pdf.sha256').trim();
+
+const storefront = { diagram: 'storefront' };
 
 const options = (given: Partial<RenderOptions>): RenderOptions => ({
   format: 'svg',
@@ -49,82 +47,64 @@ const written = async (
 };
 
 describe('render', () => {
-  it('writes the register of the Écluse fixture as the golden file', async () => {
-    const run = await written('ecluse.register.md', ecluse, { format: 'md' });
+  it('writes the register of the two-diagram model as the golden file', async () => {
+    const run = await written('two-diagrams.register.md', twoDiagrams, {
+      format: 'md',
+    });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-    expect(run.text()).toEqual(golden('ecluse.register.snapshot.md'));
+    expect(run.text()).toEqual(golden('two-diagrams.register.snapshot.md'));
   });
 
-  it('draws the Écluse fixture as the golden file', async () => {
-    const run = await written('ecluse.svg', ecluse, { format: 'svg' });
+  it('draws a diagram of the two-diagram model as the golden file', async () => {
+    const run = await written('storefront.svg', twoDiagrams, {
+      format: 'svg',
+      ...storefront,
+    });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-    expect(run.text()).toEqual(golden('ecluse.snapshot.svg'));
+    expect(run.text()).toEqual(golden('two-diagrams-storefront.snapshot.svg'));
   });
 
   it('writes the register to standard output for an out of -', async () => {
     await expect(
-      render(ecluse, options({ format: 'md', out: '-' })),
+      render(twoDiagrams, options({ format: 'md', out: '-' })),
     ).resolves.toEqual({
       code: 0,
-      out: golden('ecluse.register.snapshot.md'),
+      out: golden('two-diagrams.register.snapshot.md'),
       err: '',
     });
   });
 
   it('draws to standard output for an out of -', async () => {
     await expect(
-      render(ecluse, options({ format: 'svg', out: '-' })),
+      render(twoDiagrams, options({ format: 'svg', out: '-', ...storefront })),
     ).resolves.toEqual({
       code: 0,
-      out: golden('ecluse.snapshot.svg'),
+      out: golden('two-diagrams-storefront.snapshot.svg'),
       err: '',
     });
   });
 
-  it('projects the same model out of the native format, byte for byte', async () => {
-    await expect(
-      render(ecluseYaml, options({ format: 'md', out: '-' })),
-    ).resolves.toEqual({
-      code: 0,
-      out: golden('ecluse.register.snapshot.md'),
-      err: '',
+  it('rasterizes the diagram a model of several names by id', async () => {
+    const run = await written('fulfilment.png', twoDiagrams, {
+      format: 'png',
+      diagram: 'fulfilment',
     });
-    await expect(
-      render(ecluseYaml, options({ format: 'svg', out: '-' })),
-    ).resolves.toEqual({
-      code: 0,
-      out: golden('ecluse.snapshot.svg'),
-      err: '',
-    });
-  });
-
-  it('rasterizes the Écluse fixture as the golden picture', async () => {
-    const run = await written('ecluse.png', ecluse, { format: 'png' });
     expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-    expect(run.bytes()).toEqual(renderGolden('ecluse.snapshot.png'));
+    expect(run.bytes()).toEqual(
+      renderGolden('two-diagrams-fulfilment.snapshot.png'),
+    );
   });
 
   it('writes a PNG to standard output as bytes, not as text', async () => {
     const outcome = await render(
-      ecluse,
-      options({ format: 'png', out: '-' }),
+      twoDiagrams,
+      options({ format: 'png', out: '-', ...storefront }),
       assets,
     );
     expect(outcome.code).toBe(0);
     expect(outcome.out).toBeInstanceOf(Uint8Array);
     expect(Buffer.from(bytesOf(outcome.out))).toEqual(
-      renderGolden('ecluse.snapshot.png'),
-    );
-  });
-
-  it('rasterizes the diagram a model of several names by id', async () => {
-    const run = await written('chosen.png', saerskriven, {
-      format: 'png',
-      diagram: 'read-and-render',
-    });
-    expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-    expect(run.bytes()).toEqual(
-      renderGolden('saerskriven-read-and-render.snapshot.png'),
+      renderGolden('two-diagrams-storefront.snapshot.png'),
     );
   });
 
@@ -135,8 +115,8 @@ describe('render', () => {
       join(bare, 'saerskriven_resvg.wasm'),
     );
     const outcome = await render(
-      ecluse,
-      options({ format: 'png', out: '-' }),
+      twoDiagrams,
+      options({ format: 'png', out: '-', ...storefront }),
       bare,
     );
     expect(outcome.code).toBe(2);
@@ -157,8 +137,8 @@ describe('render', () => {
       join(bare, 'LiberationMono-Regular.ttf'),
     );
     const outcome = await render(
-      ecluse,
-      options({ format: 'png', out: '-' }),
+      twoDiagrams,
+      options({ format: 'png', out: '-', ...storefront }),
       bare,
     );
     expect(outcome.code).toBe(2);
@@ -169,8 +149,8 @@ describe('render', () => {
 
   it('reports an install missing the module it rasterizes with', async () => {
     const outcome = await render(
-      ecluse,
-      options({ format: 'png', out: '-' }),
+      twoDiagrams,
+      options({ format: 'png', out: '-', ...storefront }),
       join(repositoryRoot, 'apps/cli/dist/absent'),
     );
     expect(outcome.code).toBe(2);
@@ -178,22 +158,12 @@ describe('render', () => {
     expect(outcome.err).toContain('error: cannot draw the PNG');
   });
 
-  it('draws the diagram a model of several names by id', async () => {
-    await expect(
-      render(saerskriven, options({ diagram: 'read-and-render' })),
-    ).resolves.toEqual({
-      code: 0,
-      out: golden('saerskriven-read-and-render.snapshot.svg'),
-      err: '',
-    });
-  });
-
   it('draws the diagram a model of several names by title', async () => {
     await expect(
-      render(saerskriven, options({ diagram: 'Agents and the desktop shell' })),
+      render(twoDiagrams, options({ diagram: 'Shipping an order' })),
     ).resolves.toEqual({
       code: 0,
-      out: golden('saerskriven-agent-and-desktop.snapshot.svg'),
+      out: golden('two-diagrams-fulfilment.snapshot.svg'),
       err: '',
     });
   });
@@ -202,41 +172,41 @@ describe('render', () => {
     const colliding = fixtureFile(
       directory,
       'colliding.yaml',
-      readFileSync(saerskriven, 'utf8').replace(
-        'title: Reading a file and rendering it',
-        'title: agent-and-desktop',
+      readFileSync(twoDiagrams, 'utf8').replace(
+        'title: Taking an order',
+        'title: fulfilment',
       ),
     );
     await expect(
-      render(colliding, options({ diagram: 'agent-and-desktop' })),
+      render(colliding, options({ diagram: 'fulfilment' })),
     ).resolves.toEqual({
       code: 0,
-      out: golden('saerskriven-agent-and-desktop.snapshot.svg'),
+      out: golden('two-diagrams-fulfilment.snapshot.svg'),
       err: '',
     });
   });
 
   it('lists the diagrams where a model of several names none', async () => {
-    await expect(render(saerskriven, options({}))).resolves.toEqual({
+    await expect(render(twoDiagrams, options({}))).resolves.toEqual({
       code: 2,
       out: '',
       err:
         'error: --diagram chooses which diagram to draw, and the model holds several:\n' +
-        '  read-and-render: Reading a file and rendering it\n' +
-        '  agent-and-desktop: Agents and the desktop shell\n',
+        '  storefront: Taking an order\n' +
+        '  fulfilment: Shipping an order\n',
     });
   });
 
   it('lists the diagrams where the name given is none of them', async () => {
     await expect(
-      render(saerskriven, options({ diagram: 'nope' })),
+      render(twoDiagrams, options({ diagram: 'nope' })),
     ).resolves.toEqual({
       code: 2,
       out: '',
       err:
         'error: the model holds no diagram named "nope".\n' +
-        '  read-and-render: Reading a file and rendering it\n' +
-        '  agent-and-desktop: Agents and the desktop shell\n',
+        '  storefront: Taking an order\n' +
+        '  fulfilment: Shipping an order\n',
     });
   });
 
@@ -261,7 +231,7 @@ describe('render', () => {
 
   it('refuses a diagram chosen for a register, which holds them all', async () => {
     await expect(
-      render(ecluse, options({ format: 'md', diagram: '0' })),
+      render(twoDiagrams, options({ format: 'md', ...storefront })),
     ).resolves.toEqual({
       code: 2,
       out: '',
@@ -271,7 +241,7 @@ describe('render', () => {
 
   it('refuses a diagram chosen for a PDF, which draws them all', async () => {
     await expect(
-      render(ecluse, options({ format: 'pdf', diagram: '0' })),
+      render(twoDiagrams, options({ format: 'pdf', ...storefront })),
     ).resolves.toEqual({
       code: 2,
       out: '',
@@ -280,13 +250,15 @@ describe('render', () => {
   });
 
   it(
-    'compiles the Écluse fixture to a PDF of diagram and register',
+    'compiles the two-diagram model to a PDF of diagrams and register',
     async () => {
-      const run = await written('ecluse.pdf', ecluse, { format: 'pdf' });
+      const run = await written('two-diagrams.pdf', twoDiagrams, {
+        format: 'pdf',
+      });
       expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
       const pdf = run.bytes();
       expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-      expect(pageCount(pdf)).toBe(17);
+      expect(pageCount(pdf)).toBe(6);
       expect(createHash('sha256').update(pdf).digest('hex')).toBe(pdfDigest);
     },
     compileTimeout,
@@ -296,13 +268,13 @@ describe('render', () => {
     'writes a PDF to standard output for an out of -',
     async () => {
       const outcome = await render(
-        ecluse,
+        twoDiagrams,
         options({ format: 'pdf', out: '-' }),
         assets,
       );
       expect(outcome.code).toBe(0);
       expect(outcome.out).toBeInstanceOf(Uint8Array);
-      expect(pageCount(bytesOf(outcome.out))).toBe(17);
+      expect(pageCount(bytesOf(outcome.out))).toBe(6);
     },
     compileTimeout,
   );
@@ -311,7 +283,7 @@ describe('render', () => {
     'reports an install missing the files it typesets with, and exits 2',
     async () => {
       const outcome = await render(
-        ecluse,
+        twoDiagrams,
         options({ format: 'pdf', out: '-' }),
         join(repositoryRoot, 'apps/cli/dist/absent'),
       );
@@ -331,7 +303,7 @@ describe('render', () => {
         join(bareAssets, 'typst_ts_web_compiler_bg.wasm'),
       );
       const outcome = await render(
-        ecluse,
+        twoDiagrams,
         options({ format: 'pdf', out: '-' }),
         bareAssets,
       );
@@ -345,8 +317,10 @@ describe('render', () => {
   );
 
   it('reports an out it cannot write as the invocation being wrong', async () => {
-    const out = join(directory, 'absent', 'ecluse.svg');
-    await expect(render(ecluse, options({ out }))).resolves.toEqual({
+    const out = join(directory, 'absent', 'storefront.svg');
+    await expect(
+      render(twoDiagrams, options({ out, ...storefront })),
+    ).resolves.toEqual({
       code: 2,
       out: '',
       err: `error: cannot write ${out}: ENOENT: no such file or directory, open '${out}'\n`,

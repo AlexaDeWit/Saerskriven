@@ -181,7 +181,7 @@ if [ "${reported}" != "${version}" ]; then
   exit 1
 fi
 
-readonly fixture='test-data/ecluse.json'
+readonly fixture='test-data/saerskriven/two-diagrams.yaml'
 summary="$("${host_binary}" validate "${fixture}")"
 readonly summary
 
@@ -198,7 +198,8 @@ fi
 
 # The same for the embedded resvg module, which the PDF check does not reach.
 readonly png_check="${scratch}/png-check.png"
-"${host_binary}" render "${fixture}" --format png --out "${png_check}"
+"${host_binary}" render "${fixture}" --format png --diagram storefront \
+  --out "${png_check}"
 png_header="$(head -c 8 -- "${png_check}" | od -An -tx1 | tr -d ' \n')"
 readonly png_header
 if [ "${png_header}" != '89504e470d0a1a0a' ]; then

@@ -21,8 +21,8 @@ describe('text files at the edge', () => {
 
   it('writes a text and reads back what it wrote', () => {
     const path = join(directory, 'written.txt');
-    expect(writeFile(path, 'Écluse\n')).toEqual(Either.right(undefined));
-    expect(readTextFile(path)).toEqual(Either.right('Écluse\n'));
+    expect(writeFile(path, 'Særskriven\n')).toEqual(Either.right(undefined));
+    expect(readTextFile(path)).toEqual(Either.right('Særskriven\n'));
   });
 
   it('names the path and the reason where a file is not there', () => {

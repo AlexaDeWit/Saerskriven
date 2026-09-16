@@ -1,6 +1,6 @@
 import { defaultRenderTheme } from '@saerskriven/canvas';
 import { readLimits } from '@saerskriven/formats';
-import { testDataPath } from '@saerskriven/model/fixtures';
+import { referencingYaml } from '@saerskriven/mcp/fixtures';
 import { Either } from 'effect';
 import { join } from 'node:path';
 import { fixtureFile, scratchDirectory } from './cli.fixtures.js';
@@ -8,7 +8,11 @@ import { runCli } from './cli.js';
 import { commandTheme, readThemeFile, themeWarnings } from './theme.js';
 
 const directory = scratchDirectory('theme');
-const model = testDataPath('saerskriven/ecluse.yaml');
+const model = fixtureFile(
+  directory,
+  'model.yaml',
+  referencingYaml('element-1'),
+);
 
 function file(text: string): string {
   return fixtureFile(directory, 'theme.yaml', text);
