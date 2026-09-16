@@ -962,6 +962,15 @@ export const frozenV030Path: string = testDataPath(
   'saerskriven/saerskriven-v0.3.0.yaml',
 );
 
+const twoDiagramsPath = testDataPath('saerskriven/two-diagrams.yaml');
+
+/**
+ * `test-data/saerskriven/two-diagrams.yaml`, the native encoding of
+ * `test-data/two-diagrams.model.json` as the writer produced it, so the apps
+ * that open files render the model the render goldens were drawn from.
+ */
+export const twoDiagramsYaml: string = readFileSync(twoDiagramsPath, 'utf8');
+
 const saerskrivenModelPath = join(
   repositoryRoot,
   'threat-modelling/saerskriven.yaml',
@@ -987,6 +996,11 @@ export const nativeFixtures: readonly NativeFixture[] = [
     name: 'feature-complete file',
     path: featureCompletePath,
     text: featureCompleteYaml,
+  },
+  {
+    name: 'two-diagram file',
+    path: twoDiagramsPath,
+    text: twoDiagramsYaml,
   },
   {
     name: 'Saerskriven model',

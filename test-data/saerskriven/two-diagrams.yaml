@@ -1,0 +1,532 @@
+formatVersion: 2
+metadata:
+  title: Two diagrams
+  owner: Alexandra de Wit
+  description: A small shop drawn on two diagrams, with crowded flow names and a register that uses every record kind.
+  contributors:
+    - Alexandra de Wit
+assumptions:
+  - id: as-provider-certified
+    prose: The payment provider holds its own card data certification.
+    status: valid
+    threats:
+      - th-card-data
+    appliesToModel: true
+  - id: as-callback-signed
+    prose: The card network signs every callback it sends.
+    status: invalidated
+    threats:
+      - th-forged-callback
+    appliesToModel: false
+  - id: as-couriers-vetted
+    prose: Every courier is vetted by the carrier.
+    status: unconfirmed
+    threats:
+      - th-address-exposure
+    appliesToModel: true
+diagrams:
+  - id: storefront
+    title: Taking an order
+    elements:
+      - kind: trust-boundary
+        id: el-shop-network
+        name: Shop network
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        shape:
+          kind: box
+          position:
+            x: 300
+            y: 20
+          size:
+            width: 560
+            height: 520
+      - kind: actor
+        id: el-shopper
+        name: Shopper
+        description: Browses and pays.
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 0
+          y: 220
+        size:
+          width: 140
+          height: 80
+      - kind: process
+        id: el-web-shop
+        name: Web shop
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 460
+          y: 200
+        size:
+          width: 140
+          height: 140
+      - kind: store
+        id: el-catalogue
+        name: Catalogue
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 680
+          y: 60
+        size:
+          width: 150
+          height: 80
+      - kind: store
+        id: el-ledger
+        name: Order ledger
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 680
+          y: 420
+        size:
+          width: 150
+          height: 80
+      - kind: process
+        id: el-payment
+        name: |-
+          Payment
+          gateway
+        description: ""
+        outOfScope: true
+        reasonOutOfScope: Run by the payment provider.
+        position:
+          x: 1040
+          y: 200
+        size:
+          width: 140
+          height: 140
+      - kind: text
+        id: el-card-note
+        name: Card note
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 0
+          y: 420
+        size:
+          width: 200
+          height: 90
+        text: Card numbers never reach the shop.
+      - kind: flow
+        id: el-browse
+        name: browse the catalogue and fill a basket
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-shopper
+        target:
+          kind: attached
+          element: el-web-shop
+        waypoints: []
+        bidirectional: false
+      - kind: flow
+        id: el-page
+        name: return the rendered page
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-web-shop
+        target:
+          kind: attached
+          element: el-shopper
+        waypoints: []
+        bidirectional: false
+      - kind: flow
+        id: el-listings
+        name: read the product listings
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-web-shop
+        target:
+          kind: attached
+          element: el-catalogue
+        waypoints: []
+        bidirectional: false
+      - kind: flow
+        id: el-charge
+        name: authorise the card payment
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-web-shop
+        target:
+          kind: attached
+          element: el-payment
+        waypoints: []
+        bidirectional: false
+      - kind: flow
+        id: el-confirm
+        name: confirm the authorisation
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-payment
+        target:
+          kind: attached
+          element: el-web-shop
+        waypoints: []
+        bidirectional: false
+      - kind: flow
+        id: el-record
+        name: record the paid order
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-web-shop
+        target:
+          kind: attached
+          element: el-ledger
+        waypoints:
+          - x: 530
+            y: 460
+        bidirectional: false
+      - kind: flow
+        id: el-callback
+        name: card network callback
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: free
+          position:
+            x: 1240
+            y: 480
+        target:
+          kind: attached
+          element: el-payment
+        waypoints: []
+        bidirectional: false
+  - id: fulfilment
+    title: Shipping an order
+    elements:
+      - kind: trust-boundary
+        id: el-warehouse-floor
+        name: Warehouse floor
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        shape:
+          kind: curve
+          waypoints:
+            - x: 0
+              y: 330
+            - x: 420
+              y: 400
+            - x: 860
+              y: 330
+      - kind: store
+        id: el-stock
+        name: Stock
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 40
+          y: 80
+        size:
+          width: 150
+          height: 80
+      - kind: process
+        id: el-dispatch
+        name: Dispatch
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 400
+          y: 60
+        size:
+          width: 140
+          height: 140
+      - kind: process
+        id: el-label-printer
+        name: Label printer
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 760
+          y: 70
+        size:
+          width: 120
+          height: 120
+      - kind: actor
+        id: el-picker
+        name: Picker
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 40
+          y: 480
+        size:
+          width: 140
+          height: 80
+      - kind: actor
+        id: el-courier
+        name: Courier
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 760
+          y: 480
+        size:
+          width: 140
+          height: 80
+      - kind: flow
+        id: el-reserve
+        name: reserve the stock for the order
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-stock
+        target:
+          kind: attached
+          element: el-dispatch
+        waypoints: []
+        bidirectional: false
+      - kind: flow
+        id: el-picked
+        name: report the picked items
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-picker
+        target:
+          kind: attached
+          element: el-dispatch
+        waypoints: []
+        bidirectional: false
+      - kind: flow
+        id: el-collect
+        name: collect the parcel
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-courier
+        target:
+          kind: attached
+          element: el-dispatch
+        waypoints: []
+        bidirectional: true
+      - kind: flow
+        id: el-print
+        name: print the shipping label
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-dispatch
+        target:
+          kind: attached
+          element: el-label-printer
+        waypoints: []
+        bidirectional: false
+      - kind: flow
+        id: el-hand-over
+        name: hand over the parcel
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: el-picker
+        target:
+          kind: attached
+          element: el-courier
+        waypoints:
+          - x: 470
+            y: 620
+        bidirectional: false
+mitigations:
+  - id: mi-sign-in-throttle
+    title: Sign-in throttling
+    prose: |-
+      Throttle sign-in attempts:
+
+      - per account
+      - per network address
+    status: proposed
+    threats:
+      - th-account-takeover
+  - id: mi-server-pricing
+    title: ""
+    prose: The server prices the basket from the catalogue and ignores any price the page sends.
+    status: implemented
+    threats:
+      - th-basket-price
+  - id: mi-signed-basket
+    title: Signed basket
+    prose: The basket token is signed, and a changed token is refused.
+    status: verified
+    threats:
+      - th-basket-price
+  - id: mi-ledger-audit
+    title: ""
+    prose: Write an audit entry with each ledger change.
+    status: proposed
+    threats:
+      - th-order-denied
+  - id: mi-reservation-expiry
+    title: Reservation expiry
+    prose: A reservation lapses after thirty minutes, and a hold outlives no reservation.
+    status: implemented
+    threats:
+      - th-stock-hoarding
+      - th-picker-override
+threats:
+  - id: th-account-takeover
+    number: 1
+    title: Account takeover by credential stuffing
+    category:
+      methodology: STRIDE
+      category: spoofing
+    severity: high
+    status: open
+    description: Reused passwords from another breach sign in as the shopper.
+    elements:
+      - el-shopper
+      - el-browse
+  - id: th-basket-price
+    number: 2
+    title: Basket price changed in the page
+    category:
+      methodology: STRIDE
+      category: tampering
+    severity: critical
+    status: mitigated
+    description: The page carries the price back with the basket, so an edited page could set its own.
+    elements:
+      - el-web-shop
+      - el-page
+  - id: th-draft-listings
+    number: 3
+    title: Unpublished listings readable
+    category:
+      methodology: CIA
+      category: confidentiality
+    severity: medium
+    status: accepted-risk
+    description: |-
+      A guessed listing address shows a product before launch:
+
+      - its draft price
+      - its launch date
+    elements:
+      - el-catalogue
+      - el-listings
+  - id: th-card-data
+    number: 4
+    title: Card data disclosed in transit
+    category:
+      methodology: STRIDE
+      category: information-disclosure
+    severity: high
+    status: transferred
+    description: ""
+    elements:
+      - el-payment
+      - el-charge
+  - id: th-order-denied
+    number: 6
+    title: Shopper denies placing an order
+    category:
+      methodology: STRIDE
+      category: repudiation
+    severity: low
+    status: mitigated
+    description: ""
+    elements:
+      - el-ledger
+      - el-record
+  - id: th-forged-callback
+    number: 7
+    title: Forged payment callback
+    category:
+      methodology: custom
+      methodologyName: Payments checklist
+      category: Callback integrity
+    severity: undecided
+    status: open
+    description: A callback that is not from the card network marks an order paid.
+    elements:
+      - el-callback
+  - id: th-stock-hoarding
+    number: 8
+    title: Stock held by abandoned reservations
+    category:
+      methodology: STRIDE
+      category: denial-of-service
+    severity: medium
+    status: open
+    description: ""
+    elements:
+      - el-stock
+      - el-reserve
+  - id: th-address-exposure
+    number: 9
+    title: Courier learns more than the address
+    category:
+      methodology: LINDDUN
+      category: data-disclosure
+    severity: low
+    status: open
+    description: ""
+    elements:
+      - el-courier
+      - el-hand-over
+  - id: th-picker-override
+    number: 10
+    title: Picker overrides a dispatch hold
+    category:
+      methodology: STRIDE
+      category: elevation-of-privilege
+    severity: high
+    status: open
+    description: ""
+    elements:
+      - el-picker
+      - el-dispatch
+      - el-picked
+  - id: th-refund-abuse
+    number: 11
+    title: Refund policy abused
+    category:
+      methodology: CIA
+      category: integrity
+    severity: low
+    status: open
+    description: "Not tied to one element: the policy itself is the weakness."
+    elements: []
+lastIssuedThreatNumber: 11

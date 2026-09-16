@@ -39,10 +39,12 @@ built.
 
 The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
 is the expected PDF digest for the CLI and studio browser suites,
-`every-glyph.model.json` is read by `packages/canvas`, `packages/render` and
+`render/two-diagrams.snapshot.pdf.sha256` is the one for the CLI's compile of
+`saerskriven/two-diagrams.yaml`, `every-glyph.model.json` is read by `packages/canvas`, `packages/render` and
 `apps/studio-e2e`, `two-diagrams.model.json` by `packages/canvas` and
-`packages/render`, and the two feature-complete files and the frozen release
-files by `packages/formats`.
+`packages/render`, and the two feature-complete files,
+`saerskriven/two-diagrams.yaml` and the frozen release files by
+`packages/formats`.
 
 These files are no longer written by any target and wait for their last
 readers to move off them. None is regenerated.
@@ -95,6 +97,34 @@ A version 2 Saerskriven YAML file written by hand in the writer's canonical
 form, using every field, enum value and union variant
 `@saerskriven/wire-saerskriven-yaml-v2` declares. `packages/formats` reads it
 as the model it states and writes it back to the byte.
+
+## `saerskriven/two-diagrams.yaml`
+
+The native encoding of `two-diagrams.model.json`, so a suite that opens a file
+from disk renders the model the render goldens were drawn from. It was written
+once through the Saerskriven YAML codec's write of that model, and
+`packages/formats` holds it to both: its read equals the JSON model, and a
+write of that read gives back the committed bytes. To reproduce it after a
+change to the model file, write `committedModel('two-diagrams.model.json')`
+through `saerskrivenYamlCodec.write` from a spec run in `packages/formats`
+and commit the output.
+
+## `render/two-diagrams.snapshot.pdf.sha256`
+
+The SHA-256 digest of the PDF the CLI compiles from
+`saerskriven/two-diagrams.yaml`, one lowercase hex line. The PDF itself is
+not committed. The digest was produced by the CLI bundle, and is reproduced
+the same way inside `nix develop` with the rasterizer module built:
+
+```sh
+pnpm nx build @saerskriven/cli
+node apps/cli/dist/saer.js render test-data/saerskriven/two-diagrams.yaml \
+  --format pdf --out - | sha256sum | cut -d' ' -f1 \
+  > test-data/render/two-diagrams.snapshot.pdf.sha256
+```
+
+A change to the drawing, the Typst document or the bundled fonts changes the
+digest, so reproduce it in the commit that changed them.
 
 ## `saerskriven/ecluse.yaml`
 

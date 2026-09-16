@@ -6,6 +6,7 @@ import {
   type Model,
 } from '@saerskriven/model';
 import {
+  committedModel,
   modelInputArbitrary,
   parsedFixture,
   repositoryRoot,
@@ -27,6 +28,7 @@ import {
   frozenV030Path,
   nativeFixtures,
   propertyTimeout,
+  twoDiagramsYaml,
 } from './saerskriven-yaml.fixtures.js';
 import { threatStatusesToModel } from './saerskriven-yaml-vocabulary.js';
 import { unusedConstructs } from './wire-coverage.fixtures.js';
@@ -294,6 +296,14 @@ describe.each(nativeFixtures)('the committed $name', ({ text }) => {
     const reading = readOrThrow(text);
     expect(reading.divergences).toEqual([]);
     expect(saerskrivenYamlCodec.write(reading.model).output).toBe(text);
+  });
+});
+
+describe('the committed two-diagram file', () => {
+  it('reads as the two-diagram model the render goldens are drawn from', () => {
+    expect(readOrThrow(twoDiagramsYaml).model).toEqual(
+      committedModel('two-diagrams.model.json'),
+    );
   });
 });
 
