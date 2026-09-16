@@ -1,0 +1,1137 @@
+{
+  "version": "2.6.2",
+  "summary": {
+    "title": "Clinic booking",
+    "owner": "Alexandra de Wit",
+    "description": "Every construct a Threat Dragon file carries, in one small model.",
+    "id": 0,
+    "tags": [
+      "booking",
+      "fixture"
+    ]
+  },
+  "detail": {
+    "contributors": [
+      {
+        "name": "Alexandra de Wit"
+      },
+      {
+        "name": "Jonas Lindqvist"
+      }
+    ],
+    "diagrams": [
+      {
+        "id": 0,
+        "title": "Booking",
+        "diagramType": "STRIDE",
+        "description": "How a patient books an appointment.",
+        "placeholder": "New STRIDE diagram description",
+        "thumbnail": "./public/content/images/thumbnail.stride.jpg",
+        "version": "2.6.2",
+        "cells": [
+          {
+            "position": {
+              "x": 220,
+              "y": 20
+            },
+            "size": {
+              "width": 620,
+              "height": 420
+            },
+            "attrs": {
+              "label": {
+                "text": "Clinic network"
+              }
+            },
+            "visible": true,
+            "shape": "trust-boundary-box",
+            "zIndex": -1,
+            "id": "zone-clinic",
+            "data": {
+              "type": "tm.BoundaryBox",
+              "description": "Hosts the clinic runs.",
+              "isTrustBoundary": true,
+              "hasOpenThreats": false,
+              "containedElements": [
+                "process-booking",
+                "store-appointments"
+              ],
+              "crossingFlows": [
+                "flow-request"
+              ]
+            },
+            "tools": {
+              "items": [
+                "boundary",
+                "button-remove"
+              ],
+              "name": "boundary"
+            }
+          },
+          {
+            "position": {
+              "x": 20,
+              "y": 180
+            },
+            "size": {
+              "width": 140,
+              "height": 80
+            },
+            "angle": 0,
+            "attrs": {
+              "text": {
+                "text": "Patient"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "actor",
+            "zIndex": 1,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "actor-patient-top"
+                },
+                {
+                  "group": "right",
+                  "id": "actor-patient-right"
+                },
+                {
+                  "group": "bottom",
+                  "id": "actor-patient-bottom"
+                },
+                {
+                  "group": "left",
+                  "id": "actor-patient-left"
+                }
+              ]
+            },
+            "id": "actor-patient",
+            "data": {
+              "type": "tm.Actor",
+              "name": "Patient",
+              "description": "Books appointments from a phone.",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "providesAuthentication": false,
+              "threats": [
+                {
+                  "id": "threat-spoofing",
+                  "number": 1,
+                  "title": "Someone books under another patient's name",
+                  "type": "Spoofing",
+                  "modelType": "STRIDE",
+                  "status": "Open",
+                  "severity": "High",
+                  "description": "A booking asks for a name and a birth date alone.",
+                  "mitigation": "Send a one-time code to the phone on file."
+                },
+                {
+                  "id": "threat-repudiation",
+                  "number": 2,
+                  "title": "A patient denies a booking they made",
+                  "type": "Repudiation",
+                  "modelType": "STRIDE",
+                  "status": "Mitigated",
+                  "severity": "Medium",
+                  "description": "No-show fees are disputed.",
+                  "mitigation": "Record every booking with its session.\n\nKeep the record for a year."
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": 320,
+              "y": 160
+            },
+            "size": {
+              "width": 120,
+              "height": 120
+            },
+            "attrs": {
+              "text": {
+                "text": "Booking service"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 2,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "process-booking-top"
+                },
+                {
+                  "group": "right",
+                  "id": "process-booking-right"
+                },
+                {
+                  "group": "bottom",
+                  "id": "process-booking-bottom"
+                },
+                {
+                  "group": "left",
+                  "id": "process-booking-left"
+                }
+              ]
+            },
+            "id": "process-booking",
+            "data": {
+              "type": "tm.Process",
+              "name": "Booking service",
+              "description": "Takes bookings and payment.",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "handlesCardPayment": true,
+              "handlesGoodsOrServices": false,
+              "isWebApplication": true,
+              "privilegeLevel": "service account",
+              "threatFrequency": {
+                "tampering": 1,
+                "elevationOfPrivilege": 1,
+                "denialOfService": 1
+              },
+              "threats": [
+                {
+                  "id": "threat-tampering",
+                  "number": 3,
+                  "title": "The fee is altered on its way to payment",
+                  "type": "Tampering",
+                  "modelType": "STRIDE",
+                  "status": "Transferred",
+                  "severity": "Critical",
+                  "description": "The fee travels in a form field.",
+                  "mitigation": "",
+                  "score": "7",
+                  "new": false
+                },
+                {
+                  "id": "threat-elevation",
+                  "number": 4,
+                  "title": "The service account can change clinic settings",
+                  "type": "Elevation of privilege",
+                  "modelType": "STRIDE",
+                  "status": "Avoided",
+                  "severity": "Low",
+                  "description": "One account serves bookings and settings.",
+                  "mitigation": "Split the settings into their own service."
+                },
+                {
+                  "id": "threat-denial",
+                  "number": 5,
+                  "title": "Bulk bookings fill every slot",
+                  "type": "Denial of service",
+                  "modelType": "STRIDE",
+                  "status": "Accepted",
+                  "severity": "TBD",
+                  "description": "Nothing limits bookings per patient.",
+                  "mitigation": ""
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": 600,
+              "y": 170
+            },
+            "size": {
+              "width": 160,
+              "height": 80
+            },
+            "attrs": {
+              "text": {
+                "text": "Appointments"
+              },
+              "topLine": {
+                "strokeWidth": 1,
+                "strokeDasharray": null
+              },
+              "bottomLine": {
+                "strokeWidth": 1,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "store",
+            "zIndex": 3,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "store-appointments-top"
+                },
+                {
+                  "group": "right",
+                  "id": "store-appointments-right"
+                },
+                {
+                  "group": "bottom",
+                  "id": "store-appointments-bottom"
+                },
+                {
+                  "group": "left",
+                  "id": "store-appointments-left"
+                }
+              ]
+            },
+            "id": "store-appointments",
+            "data": {
+              "type": "tm.Store",
+              "name": "Appointments",
+              "description": "Every booking, past and upcoming.",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isALog": false,
+              "isEncrypted": true,
+              "isSigned": false,
+              "storesCredentials": false,
+              "storesInventory": true,
+              "threats": [
+                {
+                  "id": "threat-disclosure",
+                  "number": 6,
+                  "title": "A backup exposes appointment reasons",
+                  "type": "Information disclosure",
+                  "modelType": "STRIDE",
+                  "status": "Eliminated",
+                  "severity": "High",
+                  "description": "Backups were copied to a shared drive.",
+                  "mitigation": "Stop copying backups off the host."
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": 600,
+              "y": 520
+            },
+            "size": {
+              "width": 160,
+              "height": 80
+            },
+            "attrs": {
+              "text": {
+                "text": "Paper archive"
+              }
+            },
+            "visible": true,
+            "shape": "store",
+            "zIndex": 4,
+            "id": "store-archive",
+            "data": {
+              "type": "tm.Store",
+              "name": "Paper archive",
+              "description": "",
+              "isTrustBoundary": false,
+              "outOfScope": true,
+              "reasonOutOfScope": "Held by the records office.",
+              "hasOpenThreats": false,
+              "threats": []
+            }
+          },
+          {
+            "position": {
+              "x": 20,
+              "y": 20
+            },
+            "size": {
+              "width": 180,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "Open 8 to 18 on weekdays"
+              }
+            },
+            "visible": true,
+            "shape": "td-text-block",
+            "zIndex": 5,
+            "id": "note-hours",
+            "data": {
+              "type": "tm.Text",
+              "name": "Open 8 to 18 on weekdays",
+              "description": "",
+              "isTrustBoundary": false,
+              "hasOpenThreats": false
+            }
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "strokeWidth": 1,
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "visible": true,
+            "data": {
+              "type": "tm.Flow",
+              "name": "Book appointment",
+              "description": "The booking form, sent over the internet.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "isBidirectional": false,
+              "isEncrypted": true,
+              "isPublicNetwork": true,
+              "protocol": "HTTPS",
+              "trustBoundaryIds": [
+                "zone-clinic"
+              ],
+              "threats": [
+                {
+                  "id": "threat-cia-confidentiality",
+                  "number": 8,
+                  "title": "The booking form is read in transit",
+                  "type": "Confidentiality",
+                  "modelType": "CIA",
+                  "status": "NotApplicable",
+                  "severity": "Medium",
+                  "description": "The form travels over TLS.",
+                  "mitigation": ""
+                },
+                {
+                  "id": "threat-cia-integrity",
+                  "number": 9,
+                  "title": "A booking changes after it is confirmed",
+                  "type": "Integrity",
+                  "modelType": "CIA",
+                  "status": "Open",
+                  "severity": "Low",
+                  "description": "Nothing signs a confirmed booking.",
+                  "mitigation": ""
+                },
+                {
+                  "id": "threat-cia-availability",
+                  "number": 10,
+                  "title": "The booking form is down during a release",
+                  "type": "Availability",
+                  "modelType": "CIA",
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "description": "Releases take the only host offline.",
+                  "mitigation": "Serve the form from two hosts."
+                }
+              ]
+            },
+            "labels": [
+              {
+                "markup": [
+                  {
+                    "tagName": "rect",
+                    "selector": "labelBody"
+                  },
+                  {
+                    "tagName": "text",
+                    "selector": "labelText"
+                  }
+                ],
+                "attrs": {
+                  "label": {
+                    "text": "Book"
+                  },
+                  "text": {
+                    "text": "Book"
+                  },
+                  "labelText": {
+                    "text": "Book",
+                    "textAnchor": "middle",
+                    "textVerticalAnchor": "middle"
+                  },
+                  "labelBody": {
+                    "ref": "labelText",
+                    "refRx": "3",
+                    "refRy": "3",
+                    "fill": "#ffffff",
+                    "stroke": "#333333",
+                    "strokeWidth": 1
+                  }
+                },
+                "position": {
+                  "distance": 0.5,
+                  "args": {
+                    "keepGradient": true,
+                    "ensureLegibility": true
+                  }
+                }
+              }
+            ],
+            "id": "flow-request",
+            "source": {
+              "cell": "actor-patient",
+              "port": "actor-patient-right"
+            },
+            "target": {
+              "cell": "process-booking",
+              "port": "process-booking-left"
+            },
+            "vertices": [
+              {
+                "x": 240,
+                "y": 210
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "strokeWidth": 1,
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": "block",
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 11,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Sync appointments",
+              "description": "",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "isBidirectional": true,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "trustBoundaryIds": [],
+              "threats": [
+                {
+                  "id": "threat-die-confidentiality",
+                  "number": 11,
+                  "title": "Sync traffic is readable on the clinic network",
+                  "type": "Confidentiality",
+                  "modelType": "CIADIE",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "description": "The sync runs without TLS.",
+                  "mitigation": "Turn TLS on for the sync."
+                },
+                {
+                  "id": "threat-die-integrity",
+                  "number": 12,
+                  "title": "A sync overwrites a newer booking",
+                  "type": "Integrity",
+                  "modelType": "CIADIE",
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "description": "The last write wins.",
+                  "mitigation": "Compare versions before a write."
+                },
+                {
+                  "id": "threat-die-availability",
+                  "number": 13,
+                  "title": "The store is unreachable during a sync",
+                  "type": "Availability",
+                  "modelType": "CIADIE",
+                  "status": "Accepted",
+                  "severity": "Low",
+                  "description": "The sync locks the table.",
+                  "mitigation": ""
+                },
+                {
+                  "id": "threat-die-distributed",
+                  "number": 14,
+                  "title": "Every copy sits on one host",
+                  "type": "Distributed",
+                  "modelType": "CIADIE",
+                  "status": "Open",
+                  "severity": "Critical",
+                  "description": "The store has no replica.",
+                  "mitigation": ""
+                },
+                {
+                  "id": "threat-die-immutable",
+                  "number": 15,
+                  "title": "A sync can rewrite a past appointment",
+                  "type": "Immutable",
+                  "modelType": "CIADIE",
+                  "status": "Transferred",
+                  "severity": "Medium",
+                  "description": "Past bookings are editable.",
+                  "mitigation": ""
+                },
+                {
+                  "id": "threat-die-ephemeral",
+                  "number": 16,
+                  "title": "Sync credentials never expire",
+                  "type": "Ephemeral",
+                  "modelType": "CIADIE",
+                  "status": "Avoided",
+                  "severity": "TBD",
+                  "description": "The sync uses a long-lived key.",
+                  "mitigation": "Issue a key per sync."
+                }
+              ]
+            },
+            "labels": [
+              "Sync appointments"
+            ],
+            "id": "flow-sync",
+            "source": {
+              "cell": "process-booking",
+              "port": "process-booking-bottom"
+            },
+            "target": {
+              "cell": "store-appointments",
+              "port": "store-appointments-top"
+            },
+            "vertices": []
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                }
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 12,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Holiday feed",
+              "description": "",
+              "hasOpenThreats": false,
+              "threats": []
+            },
+            "labels": [
+              {
+                "attrs": {
+                  "label": {
+                    "text": "Holiday feed"
+                  }
+                },
+                "position": 0.5
+              }
+            ],
+            "id": "flow-feed",
+            "source": {
+              "x": 880,
+              "y": 60
+            },
+            "target": {
+              "cell": "store-appointments"
+            },
+            "vertices": [
+              {
+                "x": 860,
+                "y": 120
+              },
+              {
+                "x": 800,
+                "y": 150
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 1,
+        "title": "Records",
+        "diagramType": "LINDDUN",
+        "placeholder": "New LINDDUN diagram description",
+        "thumbnail": "./public/content/images/thumbnail.linddun.jpg",
+        "version": "2.6.2",
+        "cells": [
+          {
+            "shape": "trust-boundary-curve",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "strokeWidth": 3,
+                "strokeDasharray": "5 5",
+                "sourceMarker": {
+                  "name": ""
+                },
+                "targetMarker": {
+                  "name": ""
+                }
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Boundary",
+              "name": "Records office",
+              "description": "Where paper records are kept.",
+              "isTrustBoundary": true,
+              "hasOpenThreats": false,
+              "containedElements": [
+                "process-records"
+              ],
+              "crossingFlows": []
+            },
+            "id": "boundary-records",
+            "source": {
+              "x": 0,
+              "y": 300
+            },
+            "target": {
+              "x": 400,
+              "y": 300
+            },
+            "vertices": [
+              {
+                "x": 200,
+                "y": 340
+              }
+            ]
+          },
+          {
+            "shape": "trust-broundary-curve",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "strokeWidth": 3,
+                "targetMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": "5 5"
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 11,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Boundary",
+              "name": "Legacy zone",
+              "description": "",
+              "isTrustBoundary": true,
+              "hasOpenThreats": false
+            },
+            "id": "boundary-legacy",
+            "source": {
+              "x": 0,
+              "y": 40
+            },
+            "target": {
+              "x": 400,
+              "y": 40
+            }
+          },
+          {
+            "position": {
+              "x": 120,
+              "y": 120
+            },
+            "size": {
+              "width": 120,
+              "height": 120
+            },
+            "attrs": {
+              "text": {
+                "text": "Records desk"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 1,
+            "id": "process-records",
+            "data": {
+              "type": "tm.Process",
+              "name": "Records desk",
+              "description": "Answers requests for records.",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "id": "threat-linkability",
+                  "number": 17,
+                  "title": "Bookings link a patient across clinics",
+                  "type": "Linkability",
+                  "modelType": "LINDDUN",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "description": "The same patient number is used at every clinic.",
+                  "mitigation": "Issue a number per clinic."
+                },
+                {
+                  "id": "threat-identifiability",
+                  "number": 18,
+                  "title": "A request log names the patient behind a pseudonym",
+                  "type": "Identifiability",
+                  "modelType": "LINDDUN",
+                  "status": "Mitigated",
+                  "severity": "High",
+                  "description": "The log keeps the full name.",
+                  "mitigation": "Log the pseudonym alone."
+                },
+                {
+                  "id": "threat-non-repudiation",
+                  "number": 19,
+                  "title": "A signed request leaves a patient no deniability",
+                  "type": "Non-repudiation",
+                  "modelType": "LINDDUN",
+                  "status": "NotApplicable",
+                  "severity": "Low",
+                  "description": "Requests are not signed.",
+                  "mitigation": ""
+                },
+                {
+                  "id": "threat-detectability",
+                  "number": 20,
+                  "title": "Response times show that a record exists",
+                  "type": "Detectability",
+                  "modelType": "LINDDUN",
+                  "status": "Open",
+                  "severity": "Low",
+                  "description": "A hit is slower than a miss.",
+                  "mitigation": ""
+                },
+                {
+                  "id": "threat-data-disclosure",
+                  "number": 21,
+                  "title": "A copy of a record includes other patients",
+                  "type": "Disclosure of information",
+                  "modelType": "LINDDUN",
+                  "status": "Eliminated",
+                  "severity": "Critical",
+                  "description": "Copies were made page by page.",
+                  "mitigation": "Print from the record alone."
+                },
+                {
+                  "id": "threat-unawareness",
+                  "number": 22,
+                  "title": "Patients are not told what the desk keeps",
+                  "type": "Unawareness",
+                  "modelType": "LINDDUN",
+                  "status": "Accepted",
+                  "severity": "Medium",
+                  "description": "No notice describes the request log.",
+                  "mitigation": ""
+                },
+                {
+                  "id": "threat-non-compliance",
+                  "number": 23,
+                  "title": "Records are kept past their retention period",
+                  "type": "Non-compliance",
+                  "modelType": "LINDDUN",
+                  "status": "Transferred",
+                  "severity": "High",
+                  "description": "Nobody reviews the archive.",
+                  "mitigation": "Review the archive every year."
+                }
+              ]
+            }
+          },
+          {
+            "position": {
+              "x": 320,
+              "y": 120
+            },
+            "size": {
+              "width": 140,
+              "height": 80
+            },
+            "attrs": {
+              "text": {
+                "text": "Clerk"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "actor",
+            "zIndex": 2,
+            "id": "actor-clerk",
+            "data": {
+              "type": "tm.Actor",
+              "name": "Clerk",
+              "description": "",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "threats": [
+                {
+                  "id": "threat-linkability",
+                  "number": 17,
+                  "title": "Bookings link a patient across clinics",
+                  "type": "Linkability",
+                  "modelType": "LINDDUN",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "description": "The same patient number is used at every clinic.",
+                  "mitigation": "Issue a number per clinic."
+                },
+                {
+                  "id": "threat-ethics",
+                  "number": 24,
+                  "title": "A patient cannot ask why a request was refused",
+                  "type": "Ethics & Human Rights",
+                  "modelType": "PLOT4ai",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "description": "Refusals carry no reason.",
+                  "mitigation": "Write the reason on every refusal."
+                },
+                {
+                  "id": "threat-card",
+                  "number": 40,
+                  "title": "The clerk's session token is guessable",
+                  "type": null,
+                  "modelType": "EOP",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "description": "Found in a Cornucopia session.",
+                  "mitigation": "",
+                  "eopGameId": "cornucopia",
+                  "cardSuit": "Authentication",
+                  "cardNumber": "5",
+                  "new": true,
+                  "score": ""
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "diagramTop": 2,
+    "reviewer": "Jonas Lindqvist",
+    "threatTop": 30
+  }
+}

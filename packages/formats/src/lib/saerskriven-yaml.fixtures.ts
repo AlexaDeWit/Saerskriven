@@ -3,14 +3,22 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * The Écluse model as this format writes it, committed so a change to what
- * the format writes arrives as a diff on a file rather than as a test that
- * still passes.
+ * `test-data/saerskriven/feature-complete.yaml`, a version 2 file written by
+ * hand to use every construct the wire schema declares, in the writer's
+ * canonical form: each element kind with every security fact it can state,
+ * both endpoint kinds and a side of each name, both boundary shapes, a threat
+ * in every status, severity and category, a mitigation in every status, and
+ * an assumption in every status, one of them applying to the model.
  */
-export const goldenPath: string = testDataPath('saerskriven/ecluse.yaml');
+export const featureCompletePath: string = testDataPath(
+  'saerskriven/feature-complete.yaml',
+);
 
-/** The committed bytes at {@link goldenPath}. */
-export const goldenText: string = readFileSync(goldenPath, 'utf8');
+/** The committed bytes at {@link featureCompletePath}. */
+export const featureCompleteYaml: string = readFileSync(
+  featureCompletePath,
+  'utf8',
+);
 
 /**
  * The Écluse model in the document shape v0.2.1 wrote, committed as data and
@@ -58,25 +66,22 @@ export type EmittedModel = {
 };
 
 /**
- * Every Saerskriven YAML file this repository commits as a fixed point of the
- * codec: what a read of the committed bytes writes back is those bytes
- * again. The suites that gate a native file read this list rather than a
- * path, so a third file joins all of them by being added here. The frozen
+ * Every Saerskriven YAML file this repository commits in the writer's
+ * canonical form: what a read of the committed bytes writes back is those
+ * bytes again. The suites that gate a native file read this list rather than
+ * a path, so a third file joins all of them by being added here. The frozen
  * fixtures at {@link frozenV021Path} and {@link frozenV030Path} are not among
  * them, because a write of their models is a later shape.
  *
  * `modelJsonPath` is where a file's internal model is written out for
  * `packages/render` and `packages/canvas`, which gate on a model and cannot
- * import a codec. Écluse names none, because `packages/model` writes that
- * one from its own transcription of the Threat Dragon file and this suite
- * compares against it rather than producing it. A file this suite is the
- * only reader of names its own.
+ * import a codec.
  */
 export const nativeFixtures: readonly NativeFixture[] = [
   {
-    name: 'Écluse model',
-    path: goldenPath,
-    text: goldenText,
+    name: 'feature-complete file',
+    path: featureCompletePath,
+    text: featureCompleteYaml,
     modelJsonPath: undefined,
   },
   {

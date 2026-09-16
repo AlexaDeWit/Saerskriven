@@ -38,21 +38,579 @@ const ethics: ThreatDragonThreat = {
 };
 
 /**
- * The Écluse threat model as Threat Dragon 2.6.2 wrote it, read from the
- * file vendored at `test-data/ecluse.json`. It lives at the repository root
- * because `packages/model` transcribes the same file and neither package
- * owns it. That transcription is not compared against directly: it is
- * internal to `packages/model` rather than on its entry point, so this
- * package pins the same counts and vocabularies instead.
+ * `test-data/threat-dragon/feature-complete.json`, a Threat Dragon 2.6.2 file
+ * written by hand to use every construct the wire schema declares: each cell
+ * shape, both curve spellings, a port on each side, a free flow end, every
+ * security fact, a threat in each status, severity and enumerated category,
+ * a threat nested under two cells, an Elevation of Privilege card, a gap in
+ * the threat numbers, and a `threatTop` below the highest of them.
  */
-export const ecluseText: string = testDataText('ecluse.json');
+export const featureCompleteText: string = testDataText(
+  'threat-dragon/feature-complete.json',
+);
+
+const node = (
+  kind: 'actor' | 'process' | 'store',
+  id: string,
+  name: string,
+  description: string,
+  [x, y, width, height]: readonly [number, number, number, number],
+) => ({
+  kind,
+  id,
+  name,
+  description,
+  outOfScope: false,
+  reasonOutOfScope: '',
+  position: { x, y },
+  size: { width, height },
+});
+
+const recorded = (
+  id: string,
+  number: number,
+  title: string,
+  category: ModelInput['threats'][number]['category'],
+  severity: ModelInput['threats'][number]['severity'],
+  status: ModelInput['threats'][number]['status'],
+  description: string,
+  elements: readonly string[],
+): ModelInput['threats'][number] => ({
+  id,
+  number,
+  title,
+  category,
+  severity,
+  status,
+  description,
+  elements: [...elements],
+});
+
+const fromText = (
+  threat: string,
+  prose: string,
+  status: 'proposed' | 'implemented',
+): ModelInput['mitigations'][number] => ({
+  id: `${threat}-mitigation`,
+  title: '',
+  prose,
+  status,
+  threats: [threat],
+});
 
 /**
- * The current Écluse model as Threat Dragon wrote it, vendored at
- * `test-data/ecluse-security.json`. It is not in {@link corpusTexts}, since
- * the rendering fixtures read the older file.
+ * The internal model a read of {@link featureCompleteText} lands as, written
+ * out by hand from the file: cells in the order the file draws them, threats
+ * in the order the cells nest them with the one nested twice joined into one
+ * record, a mitigation record for each non-empty text in threat number
+ * order, the last issued number the greater of `threatTop` 30 and the
+ * highest number 40, and each security fact the file states, `false` and
+ * empty ones included.
  */
-export const ecluseSecurityText: string = testDataText('ecluse-security.json');
+export const featureCompleteModel: ModelInput = {
+  metadata: {
+    title: 'Clinic booking',
+    owner: 'Alexandra de Wit',
+    description:
+      'Every construct a Threat Dragon file carries, in one small model.',
+    contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
+  },
+  diagrams: [
+    {
+      id: '0',
+      title: 'Booking',
+      elements: [
+        {
+          kind: 'trust-boundary',
+          id: 'zone-clinic',
+          name: 'Clinic network',
+          description: 'Hosts the clinic runs.',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          containedElements: ['process-booking', 'store-appointments'],
+          crossingFlows: ['flow-request'],
+          shape: {
+            kind: 'box',
+            position: { x: 220, y: 20 },
+            size: { width: 620, height: 420 },
+          },
+        },
+        {
+          ...node(
+            'actor',
+            'actor-patient',
+            'Patient',
+            'Books appointments from a phone.',
+            [20, 180, 140, 80],
+          ),
+          providesAuthentication: false,
+        },
+        {
+          ...node(
+            'process',
+            'process-booking',
+            'Booking service',
+            'Takes bookings and payment.',
+            [320, 160, 120, 120],
+          ),
+          handlesCardPayment: true,
+          handlesGoodsOrServices: false,
+          isWebApplication: true,
+          privilegeLevel: 'service account',
+        },
+        {
+          ...node(
+            'store',
+            'store-appointments',
+            'Appointments',
+            'Every booking, past and upcoming.',
+            [600, 170, 160, 80],
+          ),
+          isALog: false,
+          isEncrypted: true,
+          isSigned: false,
+          storesCredentials: false,
+          storesInventory: true,
+        },
+        {
+          ...node(
+            'store',
+            'store-archive',
+            'Paper archive',
+            '',
+            [600, 520, 160, 80],
+          ),
+          outOfScope: true,
+          reasonOutOfScope: 'Held by the records office.',
+        },
+        {
+          kind: 'text',
+          id: 'note-hours',
+          name: '',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          position: { x: 20, y: 20 },
+          size: { width: 180, height: 60 },
+          text: 'Open 8 to 18 on weekdays',
+        },
+        {
+          kind: 'flow',
+          id: 'flow-request',
+          name: 'Book appointment',
+          description: 'The booking form, sent over the internet.',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          protocol: 'HTTPS',
+          isEncrypted: true,
+          isPublicNetwork: true,
+          trustBoundaryIds: ['zone-clinic'],
+          source: { kind: 'attached', element: 'actor-patient', side: 'right' },
+          target: {
+            kind: 'attached',
+            element: 'process-booking',
+            side: 'left',
+          },
+          waypoints: [{ x: 240, y: 210 }],
+          bidirectional: false,
+        },
+        {
+          kind: 'flow',
+          id: 'flow-sync',
+          name: 'Sync appointments',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          protocol: '',
+          isEncrypted: false,
+          isPublicNetwork: false,
+          trustBoundaryIds: [],
+          source: {
+            kind: 'attached',
+            element: 'process-booking',
+            side: 'bottom',
+          },
+          target: {
+            kind: 'attached',
+            element: 'store-appointments',
+            side: 'top',
+          },
+          waypoints: [],
+          bidirectional: true,
+        },
+        {
+          kind: 'flow',
+          id: 'flow-feed',
+          name: 'Holiday feed',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          source: { kind: 'free', position: { x: 880, y: 60 } },
+          target: { kind: 'attached', element: 'store-appointments' },
+          waypoints: [
+            { x: 860, y: 120 },
+            { x: 800, y: 150 },
+          ],
+          bidirectional: false,
+        },
+      ],
+    },
+    {
+      id: '1',
+      title: 'Records',
+      elements: [
+        {
+          kind: 'trust-boundary',
+          id: 'boundary-records',
+          name: 'Records office',
+          description: 'Where paper records are kept.',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          containedElements: ['process-records'],
+          crossingFlows: [],
+          shape: {
+            kind: 'curve',
+            waypoints: [
+              { x: 0, y: 300 },
+              { x: 200, y: 340 },
+              { x: 400, y: 300 },
+            ],
+          },
+        },
+        {
+          kind: 'trust-boundary',
+          id: 'boundary-legacy',
+          name: 'Legacy zone',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          shape: {
+            kind: 'curve',
+            waypoints: [
+              { x: 0, y: 40 },
+              { x: 400, y: 40 },
+            ],
+          },
+        },
+        node(
+          'process',
+          'process-records',
+          'Records desk',
+          'Answers requests for records.',
+          [120, 120, 120, 120],
+        ),
+        node('actor', 'actor-clerk', 'Clerk', '', [320, 120, 140, 80]),
+      ],
+    },
+  ],
+  threats: [
+    recorded(
+      'threat-spoofing',
+      1,
+      "Someone books under another patient's name",
+      { methodology: 'STRIDE', category: 'spoofing' },
+      'high',
+      'open',
+      'A booking asks for a name and a birth date alone.',
+      ['actor-patient'],
+    ),
+    recorded(
+      'threat-repudiation',
+      2,
+      'A patient denies a booking they made',
+      { methodology: 'STRIDE', category: 'repudiation' },
+      'medium',
+      'mitigated',
+      'No-show fees are disputed.',
+      ['actor-patient'],
+    ),
+    recorded(
+      'threat-tampering',
+      3,
+      'The fee is altered on its way to payment',
+      { methodology: 'STRIDE', category: 'tampering' },
+      'critical',
+      'transferred',
+      'The fee travels in a form field.',
+      ['process-booking'],
+    ),
+    recorded(
+      'threat-elevation',
+      4,
+      'The service account can change clinic settings',
+      { methodology: 'STRIDE', category: 'elevation-of-privilege' },
+      'low',
+      'avoided',
+      'One account serves bookings and settings.',
+      ['process-booking'],
+    ),
+    recorded(
+      'threat-denial',
+      5,
+      'Bulk bookings fill every slot',
+      { methodology: 'STRIDE', category: 'denial-of-service' },
+      'undecided',
+      'accepted-risk',
+      'Nothing limits bookings per patient.',
+      ['process-booking'],
+    ),
+    recorded(
+      'threat-disclosure',
+      6,
+      'A backup exposes appointment reasons',
+      { methodology: 'STRIDE', category: 'information-disclosure' },
+      'high',
+      'eliminated',
+      'Backups were copied to a shared drive.',
+      ['store-appointments'],
+    ),
+    recorded(
+      'threat-cia-confidentiality',
+      8,
+      'The booking form is read in transit',
+      { methodology: 'CIA', category: 'confidentiality' },
+      'medium',
+      'not-applicable',
+      'The form travels over TLS.',
+      ['flow-request'],
+    ),
+    recorded(
+      'threat-cia-integrity',
+      9,
+      'A booking changes after it is confirmed',
+      { methodology: 'CIA', category: 'integrity' },
+      'low',
+      'open',
+      'Nothing signs a confirmed booking.',
+      ['flow-request'],
+    ),
+    recorded(
+      'threat-cia-availability',
+      10,
+      'The booking form is down during a release',
+      { methodology: 'CIA', category: 'availability' },
+      'high',
+      'mitigated',
+      'Releases take the only host offline.',
+      ['flow-request'],
+    ),
+    recorded(
+      'threat-die-confidentiality',
+      11,
+      'Sync traffic is readable on the clinic network',
+      { methodology: 'CIA-DIE', category: 'confidentiality' },
+      'medium',
+      'open',
+      'The sync runs without TLS.',
+      ['flow-sync'],
+    ),
+    recorded(
+      'threat-die-integrity',
+      12,
+      'A sync overwrites a newer booking',
+      { methodology: 'CIA-DIE', category: 'integrity' },
+      'high',
+      'mitigated',
+      'The last write wins.',
+      ['flow-sync'],
+    ),
+    recorded(
+      'threat-die-availability',
+      13,
+      'The store is unreachable during a sync',
+      { methodology: 'CIA-DIE', category: 'availability' },
+      'low',
+      'accepted-risk',
+      'The sync locks the table.',
+      ['flow-sync'],
+    ),
+    recorded(
+      'threat-die-distributed',
+      14,
+      'Every copy sits on one host',
+      { methodology: 'CIA-DIE', category: 'distributed' },
+      'critical',
+      'open',
+      'The store has no replica.',
+      ['flow-sync'],
+    ),
+    recorded(
+      'threat-die-immutable',
+      15,
+      'A sync can rewrite a past appointment',
+      { methodology: 'CIA-DIE', category: 'immutable' },
+      'medium',
+      'transferred',
+      'Past bookings are editable.',
+      ['flow-sync'],
+    ),
+    recorded(
+      'threat-die-ephemeral',
+      16,
+      'Sync credentials never expire',
+      { methodology: 'CIA-DIE', category: 'ephemeral' },
+      'undecided',
+      'avoided',
+      'The sync uses a long-lived key.',
+      ['flow-sync'],
+    ),
+    recorded(
+      'threat-linkability',
+      17,
+      'Bookings link a patient across clinics',
+      { methodology: 'LINDDUN', category: 'linking' },
+      'medium',
+      'open',
+      'The same patient number is used at every clinic.',
+      ['process-records', 'actor-clerk'],
+    ),
+    recorded(
+      'threat-identifiability',
+      18,
+      'A request log names the patient behind a pseudonym',
+      { methodology: 'LINDDUN', category: 'identifying' },
+      'high',
+      'mitigated',
+      'The log keeps the full name.',
+      ['process-records'],
+    ),
+    recorded(
+      'threat-non-repudiation',
+      19,
+      'A signed request leaves a patient no deniability',
+      { methodology: 'LINDDUN', category: 'non-repudiation' },
+      'low',
+      'not-applicable',
+      'Requests are not signed.',
+      ['process-records'],
+    ),
+    recorded(
+      'threat-detectability',
+      20,
+      'Response times show that a record exists',
+      { methodology: 'LINDDUN', category: 'detecting' },
+      'low',
+      'open',
+      'A hit is slower than a miss.',
+      ['process-records'],
+    ),
+    recorded(
+      'threat-data-disclosure',
+      21,
+      'A copy of a record includes other patients',
+      { methodology: 'LINDDUN', category: 'data-disclosure' },
+      'critical',
+      'eliminated',
+      'Copies were made page by page.',
+      ['process-records'],
+    ),
+    recorded(
+      'threat-unawareness',
+      22,
+      'Patients are not told what the desk keeps',
+      { methodology: 'LINDDUN', category: 'unawareness' },
+      'medium',
+      'accepted-risk',
+      'No notice describes the request log.',
+      ['process-records'],
+    ),
+    recorded(
+      'threat-non-compliance',
+      23,
+      'Records are kept past their retention period',
+      { methodology: 'LINDDUN', category: 'non-compliance' },
+      'high',
+      'transferred',
+      'Nobody reviews the archive.',
+      ['process-records'],
+    ),
+    recorded(
+      'threat-ethics',
+      24,
+      'A patient cannot ask why a request was refused',
+      {
+        methodology: 'custom',
+        methodologyName: 'PLOT4ai',
+        category: 'Ethics & Human Rights',
+      },
+      'medium',
+      'open',
+      'Refusals carry no reason.',
+      ['actor-clerk'],
+    ),
+    recorded(
+      'threat-card',
+      40,
+      "The clerk's session token is guessable",
+      {
+        methodology: 'custom',
+        methodologyName: 'EOP',
+        category: 'Authentication',
+      },
+      'medium',
+      'open',
+      'Found in a Cornucopia session.',
+      ['actor-clerk'],
+    ),
+  ],
+  lastIssuedThreatNumber: 40,
+  mitigations: [
+    fromText(
+      'threat-spoofing',
+      'Send a one-time code to the phone on file.',
+      'proposed',
+    ),
+    fromText(
+      'threat-repudiation',
+      'Record every booking with its session.\n\nKeep the record for a year.',
+      'implemented',
+    ),
+    fromText(
+      'threat-elevation',
+      'Split the settings into their own service.',
+      'proposed',
+    ),
+    fromText(
+      'threat-disclosure',
+      'Stop copying backups off the host.',
+      'proposed',
+    ),
+    fromText(
+      'threat-cia-availability',
+      'Serve the form from two hosts.',
+      'implemented',
+    ),
+    fromText(
+      'threat-die-confidentiality',
+      'Turn TLS on for the sync.',
+      'proposed',
+    ),
+    fromText(
+      'threat-die-integrity',
+      'Compare versions before a write.',
+      'implemented',
+    ),
+    fromText('threat-die-ephemeral', 'Issue a key per sync.', 'proposed'),
+    fromText('threat-linkability', 'Issue a number per clinic.', 'proposed'),
+    fromText(
+      'threat-identifiability',
+      'Log the pseudonym alone.',
+      'implemented',
+    ),
+    fromText(
+      'threat-data-disclosure',
+      'Print from the record alone.',
+      'proposed',
+    ),
+    fromText(
+      'threat-non-compliance',
+      'Review the archive every year.',
+      'proposed',
+    ),
+    fromText('threat-ethics', 'Write the reason on every refusal.', 'proposed'),
+  ],
+  assumptions: [],
+};
 
 /**
  * How long the spec that reads the whole corpus twice is given, past the
@@ -65,17 +623,15 @@ export const corpusTimeout = 30_000;
 
 /**
  * Every Threat Dragon threat model the repository vendors, named by its
- * path under `test-data`. The twelve models Threat Dragon ships in its own
- * repository, described in `test-data/README.md`, plus the Écluse model.
- * The vendored locale tables live under the same root and are not threat
- * models, so they are not read here.
+ * path under `test-data`: the twelve models Threat Dragon ships in its own
+ * repository, described in `test-data/README.md`. The vendored locale tables
+ * live under the same root and are not threat models, so they are not read
+ * here.
  */
-export const corpusTexts: readonly { name: string; text: string }[] = [
-  { name: 'ecluse.json', text: ecluseText },
-  ...vendoredTexts(['threat-dragon/demo', 'threat-dragon/models'], (name) =>
+export const corpusTexts: readonly { name: string; text: string }[] =
+  vendoredTexts(['threat-dragon/demo', 'threat-dragon/models'], (name) =>
     name.endsWith('.json'),
-  ),
-];
+  );
 
 /**
  * The JSON Schema Threat Dragon validates a v2 model against before it
@@ -114,17 +670,14 @@ function categoriesIn(name: string): Record<string, Record<string, string>> {
 }
 
 /**
- * A Threat Dragon document carrying what the Écluse file has no example of:
- * a text block named in `data`, another named only in `attrs`, and a third
- * named nowhere, a threat whose status, severity and category are each from
- * a vocabulary this codec does not know,
- * boundary curves under both the correct shape name and the misspelling
- * Threat Dragon registers for compatibility, a boundary named in `data` and
- * another named nowhere, one threat nested under two cells, a methodology
- * that reaches the model as a custom category, a contributor with no name,
- * a cell whose `data` holds nothing but its type, and a diagram with no
- * cells at all. Stamped `2.0.0`, so a read of it is also evidence that the
- * version pin accepts the major rather than one release.
+ * A Threat Dragon document stamped `2.0.0`, holding boundary curves under
+ * both the correct shape name and the misspelling Threat Dragon registers
+ * for compatibility, a boundary named in `data` and another named nowhere,
+ * one threat nested under two cells, a methodology that reaches the model as
+ * a custom category, a contributor with no name, a cell whose `data` holds
+ * nothing but its type, and a diagram with no cells at all. A read of it is
+ * also evidence that the version pin accepts the major rather than one
+ * release.
  */
 export const complementFixture: ThreatDragonDocument = {
   version: '2.0.0',

@@ -1,0 +1,603 @@
+formatVersion: 2
+metadata:
+  title: Clinic booking
+  owner: Alexandra de Wit
+  description: Every construct a Saerskriven YAML file carries, in one small model.
+  contributors:
+    - Alexandra de Wit
+    - Jonas Lindqvist
+assumptions:
+  - id: assumption-unconfirmed
+    prose: The phone on file belongs to the patient.
+    status: unconfirmed
+    threats:
+      - threat-spoofing
+    appliesToModel: false
+  - id: assumption-valid
+    prose: The clinic network is not reachable from the internet.
+    status: valid
+    threats:
+      - threat-die-confidentiality
+      - threat-die-integrity
+    appliesToModel: false
+  - id: assumption-invalidated
+    prose: Backups never leave the host.
+    status: invalidated
+    threats:
+      - threat-cia-availability
+    appliesToModel: false
+  - id: assumption-model
+    prose: The model is reviewed when the booking service changes.
+    status: valid
+    threats: []
+    appliesToModel: true
+diagrams:
+  - id: diagram-booking
+    title: Booking
+    elements:
+      - kind: trust-boundary
+        id: zone-clinic
+        name: Clinic network
+        description: Hosts the clinic runs.
+        outOfScope: false
+        reasonOutOfScope: ""
+        containedElements:
+          - process-booking
+          - store-appointments
+        crossingFlows:
+          - flow-request
+        shape:
+          kind: box
+          position:
+            x: 220
+            y: 20
+          size:
+            width: 620
+            height: 420
+      - kind: actor
+        id: actor-patient
+        name: Patient
+        description: Books appointments from a phone.
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 20
+          y: 180
+        size:
+          width: 140
+          height: 80
+        providesAuthentication: false
+      - kind: process
+        id: process-booking
+        name: Booking service
+        description: Takes bookings and payment.
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 320
+          y: 160
+        size:
+          width: 120
+          height: 120
+        handlesCardPayment: true
+        handlesGoodsOrServices: false
+        isWebApplication: true
+        privilegeLevel: service account
+      - kind: store
+        id: store-appointments
+        name: Appointments
+        description: Every booking, past and upcoming.
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 600
+          y: 170
+        size:
+          width: 160
+          height: 80
+        isALog: false
+        isEncrypted: true
+        isSigned: false
+        storesCredentials: false
+        storesInventory: true
+      - kind: store
+        id: store-archive
+        name: Paper archive
+        description: ""
+        outOfScope: true
+        reasonOutOfScope: Held by the records office.
+        position:
+          x: 600
+          y: 520
+        size:
+          width: 160
+          height: 80
+      - kind: text
+        id: note-hours
+        name: Opening hours
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 20
+          y: 20
+        size:
+          width: 180
+          height: 60
+        text: Open 8 to 18 on weekdays
+      - kind: flow
+        id: flow-request
+        name: Book appointment
+        description: The booking form, sent over the internet.
+        outOfScope: false
+        reasonOutOfScope: ""
+        protocol: HTTPS
+        isEncrypted: true
+        isPublicNetwork: true
+        trustBoundaryIds:
+          - zone-clinic
+        source:
+          kind: attached
+          element: actor-patient
+          side: right
+        target:
+          kind: attached
+          element: process-booking
+          side: left
+        waypoints:
+          - x: 240
+            y: 210
+        bidirectional: false
+      - kind: flow
+        id: flow-sync
+        name: Sync appointments
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        protocol: ""
+        isEncrypted: false
+        isPublicNetwork: false
+        trustBoundaryIds: []
+        source:
+          kind: attached
+          element: process-booking
+          side: bottom
+        target:
+          kind: attached
+          element: store-appointments
+          side: top
+        waypoints: []
+        bidirectional: true
+      - kind: flow
+        id: flow-feed
+        name: Holiday feed
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: free
+          position:
+            x: 880.5
+            y: -60
+        target:
+          kind: attached
+          element: store-appointments
+        waypoints:
+          - x: 860
+            y: 120
+          - x: 800
+            y: 150
+        bidirectional: false
+  - id: diagram-records
+    title: Records
+    elements:
+      - kind: trust-boundary
+        id: boundary-records
+        name: Records office
+        description: Where paper records are kept.
+        outOfScope: false
+        reasonOutOfScope: ""
+        containedElements:
+          - process-records
+        crossingFlows: []
+        shape:
+          kind: curve
+          waypoints:
+            - x: 0
+              y: 300
+            - x: 200
+              y: 340
+            - x: 400
+              y: 300
+      - kind: process
+        id: process-records
+        name: Records desk
+        description: Answers requests for records.
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 120
+          y: 120
+        size:
+          width: 120
+          height: 120
+      - kind: actor
+        id: actor-clerk
+        name: Clerk
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 320
+          y: 120
+        size:
+          width: 140
+          height: 80
+mitigations:
+  - id: mitigation-one-time-code
+    title: One-time code
+    prose: Send a one-time code to the phone on file.
+    status: proposed
+    threats:
+      - threat-spoofing
+  - id: mitigation-booking-log
+    title: ""
+    prose: |-
+      Record every booking with its session.
+
+      Keep the record for a year.
+    status: implemented
+    threats:
+      - threat-repudiation
+      - threat-identifiability
+  - id: mitigation-two-hosts
+    title: Two hosts
+    prose: Serve the form from two hosts.
+    status: verified
+    threats:
+      - threat-cia-availability
+      - threat-die-integrity
+threats:
+  - id: threat-spoofing
+    number: 1
+    title: Someone books under another patient's name
+    category:
+      methodology: STRIDE
+      category: spoofing
+    severity: high
+    status: open
+    description: A booking asks for a name and a birth date alone.
+    elements:
+      - actor-patient
+  - id: threat-repudiation
+    number: 2
+    title: A patient denies a booking they made
+    category:
+      methodology: STRIDE
+      category: repudiation
+    severity: medium
+    status: mitigated
+    description: No-show fees are disputed.
+    elements:
+      - actor-patient
+  - id: threat-tampering
+    number: 3
+    title: The fee is altered on its way to payment
+    category:
+      methodology: STRIDE
+      category: tampering
+    severity: critical
+    status: transferred
+    description: The fee travels in a form field.
+    elements:
+      - process-booking
+      - flow-request
+  - id: threat-elevation
+    number: 4
+    title: The service account can change clinic settings
+    category:
+      methodology: STRIDE
+      category: elevation-of-privilege
+    severity: low
+    status: avoided
+    description: One account serves bookings and settings.
+    elements:
+      - process-booking
+  - id: threat-denial
+    number: 5
+    title: Bulk bookings fill every slot
+    category:
+      methodology: STRIDE
+      category: denial-of-service
+    severity: undecided
+    status: accepted-risk
+    description: Nothing limits bookings per patient.
+    elements:
+      - process-booking
+  - id: threat-disclosure
+    number: 6
+    title: A backup exposes appointment reasons
+    category:
+      methodology: STRIDE
+      category: information-disclosure
+    severity: high
+    status: eliminated
+    description: Backups were copied to a shared drive.
+    elements:
+      - store-appointments
+  - id: threat-cia-confidentiality
+    number: 8
+    title: The booking form is read in transit
+    category:
+      methodology: CIA
+      category: confidentiality
+    severity: medium
+    status: not-applicable
+    description: The form travels over TLS.
+    elements:
+      - flow-request
+  - id: threat-cia-integrity
+    number: 9
+    title: A booking changes after it is confirmed
+    category:
+      methodology: CIA
+      category: integrity
+    severity: low
+    status: open
+    description: Nothing signs a confirmed booking.
+    elements:
+      - flow-request
+  - id: threat-cia-availability
+    number: 10
+    title: The booking form is down during a release
+    category:
+      methodology: CIA
+      category: availability
+    severity: high
+    status: mitigated
+    description: Releases take the only host offline.
+    elements:
+      - flow-request
+  - id: threat-die-confidentiality
+    number: 11
+    title: Sync traffic is readable on the clinic network
+    category:
+      methodology: CIA-DIE
+      category: confidentiality
+    severity: medium
+    status: open
+    description: The sync runs without TLS.
+    elements:
+      - flow-sync
+  - id: threat-die-integrity
+    number: 12
+    title: A sync overwrites a newer booking
+    category:
+      methodology: CIA-DIE
+      category: integrity
+    severity: high
+    status: mitigated
+    description: The last write wins.
+    elements:
+      - flow-sync
+  - id: threat-die-availability
+    number: 13
+    title: The store is unreachable during a sync
+    category:
+      methodology: CIA-DIE
+      category: availability
+    severity: low
+    status: accepted-risk
+    description: The sync locks the table.
+    elements:
+      - flow-sync
+  - id: threat-die-distributed
+    number: 14
+    title: Every copy sits on one host
+    category:
+      methodology: CIA-DIE
+      category: distributed
+    severity: critical
+    status: open
+    description: The store has no replica.
+    elements:
+      - store-appointments
+  - id: threat-die-immutable
+    number: 15
+    title: A sync can rewrite a past appointment
+    category:
+      methodology: CIA-DIE
+      category: immutable
+    severity: medium
+    status: transferred
+    description: Past bookings are editable.
+    elements:
+      - flow-sync
+  - id: threat-die-ephemeral
+    number: 16
+    title: Sync credentials never expire
+    category:
+      methodology: CIA-DIE
+      category: ephemeral
+    severity: undecided
+    status: avoided
+    description: The sync uses a long-lived key.
+    elements:
+      - flow-sync
+  - id: threat-linkability
+    number: 17
+    title: Bookings link a patient across clinics
+    category:
+      methodology: LINDDUN
+      category: linking
+    severity: medium
+    status: open
+    description: The same patient number is used at every clinic.
+    elements:
+      - process-records
+      - actor-clerk
+  - id: threat-identifiability
+    number: 18
+    title: A request log names the patient behind a pseudonym
+    category:
+      methodology: LINDDUN
+      category: identifying
+    severity: high
+    status: mitigated
+    description: The log keeps the full name.
+    elements:
+      - process-records
+  - id: threat-non-repudiation
+    number: 19
+    title: A signed request leaves a patient no deniability
+    category:
+      methodology: LINDDUN
+      category: non-repudiation
+    severity: low
+    status: not-applicable
+    description: Requests are not signed.
+    elements:
+      - process-records
+  - id: threat-detectability
+    number: 20
+    title: Response times show that a record exists
+    category:
+      methodology: LINDDUN
+      category: detecting
+    severity: low
+    status: open
+    description: A hit is slower than a miss.
+    elements:
+      - process-records
+  - id: threat-data-disclosure
+    number: 21
+    title: A copy of a record includes other patients
+    category:
+      methodology: LINDDUN
+      category: data-disclosure
+    severity: critical
+    status: eliminated
+    description: Copies were made page by page.
+    elements:
+      - process-records
+  - id: threat-unawareness
+    number: 22
+    title: Patients are not told what the desk keeps
+    category:
+      methodology: LINDDUN
+      category: unawareness
+    severity: medium
+    status: accepted-risk
+    description: No notice describes the request log.
+    elements:
+      - process-records
+  - id: threat-non-compliance
+    number: 23
+    title: Records are kept past their retention period
+    category:
+      methodology: LINDDUN
+      category: non-compliance
+    severity: high
+    status: transferred
+    description: Nobody reviews the archive.
+    elements:
+      - boundary-records
+  - id: threat-oversight
+    number: 24
+    title: No one reviews an automated cancellation
+    category:
+      methodology: PLOT4ai
+      category: accountability-and-human-oversight
+    severity: high
+    status: open
+    description: Unpaid bookings are cancelled on a schedule.
+    elements:
+      - process-booking
+  - id: threat-bias
+    number: 25
+    title: Reminders reach some patients less often
+    category:
+      methodology: PLOT4ai
+      category: bias-fairness-and-discrimination
+    severity: medium
+    status: accepted-risk
+    description: Reminders go by text message alone.
+    elements: []
+  - id: threat-cybersecurity
+    number: 26
+    title: The reminder model is trained on unreviewed data
+    category:
+      methodology: PLOT4ai
+      category: cybersecurity
+    severity: high
+    status: open
+    description: Training data is taken from the live store.
+    elements:
+      - store-appointments
+  - id: threat-governance
+    number: 27
+    title: Bookings enter the store with no recorded owner
+    category:
+      methodology: PLOT4ai
+      category: data-and-data-governance
+    severity: medium
+    status: mitigated
+    description: Nothing names who answers for a booking.
+    elements:
+      - store-appointments
+  - id: threat-ethics
+    number: 28
+    title: A patient cannot ask why a request was refused
+    category:
+      methodology: PLOT4ai
+      category: ethics-and-human-rights
+    severity: medium
+    status: open
+    description: Refusals carry no reason.
+    elements:
+      - actor-clerk
+  - id: threat-privacy
+    number: 29
+    title: Appointment reasons are kept beyond their purpose
+    category:
+      methodology: PLOT4ai
+      category: privacy-and-data-protection
+    severity: high
+    status: mitigated
+    description: The reason field is never cleared.
+    elements:
+      - store-appointments
+  - id: threat-safety
+    number: 30
+    title: Printed schedules are not shredded
+    category:
+      methodology: PLOT4ai
+      category: safety-and-environmental-impact
+    severity: low
+    status: open
+    description: Schedules go into the paper bin.
+    elements:
+      - note-hours
+  - id: threat-transparency
+    number: 31
+    title: The retention schedule is not published
+    category:
+      methodology: PLOT4ai
+      category: transparency-and-accessibility
+    severity: undecided
+    status: not-applicable
+    description: The schedule is internal.
+    elements: []
+  - id: threat-card
+    number: 40
+    title: The clerk's session token is guessable
+    category:
+      methodology: custom
+      methodologyName: EOP
+      category: Authentication
+    severity: medium
+    status: open
+    description: Found in a Cornucopia session.
+    elements:
+      - actor-clerk
+lastIssuedThreatNumber: 42

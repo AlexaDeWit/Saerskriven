@@ -1,31 +1,21 @@
 import type { ModelInput } from '@saerskriven/model';
-import { committedModel, parsedFixture } from '@saerskriven/model/fixtures';
-import {
-  threatDragonWireSchema,
-  type ThreatDragonDocument,
-} from '@saerskriven/wire-threat-dragon';
+import { parsedFixture } from '@saerskriven/model/fixtures';
+import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
-import type { Codec } from './codec.js';
 import { renderDivergences } from './divergence.js';
 import { threatsOf } from './threat-dragon-document.js';
-import { readThreatDragon } from './threat-dragon-read.js';
-import { writeThreatDragon } from './threat-dragon-write.js';
 import {
   allThreats,
   complementFixture,
-  ecluseText,
+  featureCompleteModel,
+  featureCompleteText,
   richerThanFormatFixture,
   richerThanFormatSource,
   threatDragonJsonSchema,
   threatDragonReading,
   unmodelledFixture,
 } from './threat-dragon.fixtures.js';
-
-const threatDragon: Codec<typeof threatDragonWireSchema> = {
-  wire: threatDragonWireSchema,
-  read: readThreatDragon,
-  write: writeThreatDragon,
-};
+import { threatDragonCodec } from './threat-dragon.js';
 
 const validate = new Ajv({ allowUnionTypes: true }).compile(
   threatDragonJsonSchema,
@@ -37,56 +27,46 @@ const documentOf = (text: string): ThreatDragonDocument =>
 const numbersIn = (document: ThreatDragonDocument): (number | undefined)[] =>
   allThreats(document).map((threat) => threat.number);
 
-const ecluse = threatDragonReading(ecluseText);
-const ecluseModel = committedModel('ecluse.model.json');
+const featureComplete = threatDragonReading(featureCompleteText);
 
 const richer = parsedFixture(richerThanFormatFixture);
 
-const projected = threatDragon.write(richer);
+const projected = threatDragonCodec.write(richer);
 
-const merged = threatDragon.write(richer, richerThanFormatSource);
+const merged = threatDragonCodec.write(richer, richerThanFormatSource);
 
 const mergedDocument = documentOf(merged.output);
 
 const mergedCell = mergedDocument.detail.diagrams[0]?.cells?.[0];
 
-describe('writing the Écluse model back onto the file it came from', () => {
-  it('reads back as the model it was written from, whole', () => {
-    const written = threatDragon.write(ecluse.model, ecluse.source);
-    expect(threatDragonReading(written.output).model).toEqual(ecluse.model);
-  });
+describe('writing the feature-complete model back onto the file it came from', () => {
+  const written = threatDragonCodec.write(
+    featureComplete.model,
+    featureComplete.source,
+  );
 
-  it('reads back as the internal model both packages are held to', () => {
-    const written = threatDragon.write(ecluse.model, ecluse.source);
+  it('reads back as the model written out by hand', () => {
     expect(threatDragonReading(written.output).model).toStrictEqual(
-      ecluseModel,
+      parsedFixture(featureCompleteModel),
     );
   });
 
-  it('leaves the gap at 19 that a removed threat left, unfilled', () => {
-    const written = threatDragon.write(ecluse.model, ecluse.source);
+  it('leaves the gap at 7 that a removed threat left, unfilled', () => {
     const numbers = numbersIn(documentOf(written.output));
-    expect(numbers).not.toContain(19);
-    expect(numbers).toEqual(numbersIn(ecluse.source));
-  });
-
-  it('repeats the mark the file declared, since it issued no number', () => {
-    const written = threatDragon.write(ecluse.model, ecluse.source);
-    expect(documentOf(written.output).detail.threatTop).toBe(28);
-    expect(ecluse.model.lastIssuedThreatNumber).toBe(102);
+    expect(numbers).not.toContain(7);
+    expect(numbers).toEqual(numbersIn(featureComplete.source));
   });
 
   it('lays the file out as Threat Dragon does, two spaces and a last line', () => {
-    const output = threatDragon.write(ecluse.model, ecluse.source).output;
-    expect(output.split('\n')[1]).toBe('  "version": "2.6.2",');
-    expect(output.endsWith('}\n')).toBe(true);
+    expect(written.output.split('\n')[1]).toBe('  "version": "2.6.2",');
+    expect(written.output.endsWith('}\n')).toBe(true);
   });
 });
 
 describe('writing a threat the file left unnumbered', () => {
   const source = documentOf(JSON.stringify(unmodelledFixture));
   const read = threatDragonReading(JSON.stringify(unmodelledFixture));
-  const written = threatDragon.write(read.model, source);
+  const written = threatDragonCodec.write(read.model, source);
   const document = documentOf(written.output);
 
   it('writes the number the read issued above the file own high mark', () => {
@@ -254,20 +234,20 @@ describe('merging a model onto the document it is written over', () => {
   });
 });
 
-describe('merging what the Écluse file has no example of', () => {
+describe('merging curves, notes, cards and translated labels', () => {
   it.each([
     ['a curve under either spelling', complementFixture],
     ['a note, a card and a translated label', unmodelledFixture],
   ])('leaves %s as the document had it', (_name, fixture) => {
     const text = JSON.stringify(fixture);
     const read = threatDragonReading(text);
-    const written = threatDragon.write(read.model, read.source);
+    const written = threatDragonCodec.write(read.model, read.source);
     expect(threatDragonReading(written.output).model).toEqual(read.model);
   });
 
   it('reports nothing on a threat the document already nested twice', () => {
     const read = threatDragonReading(JSON.stringify(complementFixture));
-    const written = threatDragon.write(read.model, read.source);
+    const written = threatDragonCodec.write(read.model, read.source);
     expect(read.model.threats[0]?.elements).toHaveLength(2);
     expect(renderDivergences(written.divergences).split('\n')).toEqual([
       'model: the release "2.0.0" the source was written by, for the 2.6.2 this codec writes (not repeated by the codec)',
@@ -278,7 +258,7 @@ describe('merging what the Écluse file has no example of', () => {
   it('marks a document that declared none over the numbers it holds', () => {
     const read = threatDragonReading(JSON.stringify(complementFixture));
     const written = documentOf(
-      threatDragon.write(read.model, read.source).output,
+      threatDragonCodec.write(read.model, read.source).output,
     );
     expect(complementFixture.detail.threatTop).toBeUndefined();
     expect(complementFixture.detail.diagramTop).toBeUndefined();
@@ -292,7 +272,7 @@ describe('merging what the Écluse file has no example of', () => {
 
   it('keeps the misspelled curve shape Threat Dragon registers itself', () => {
     const read = threatDragonReading(JSON.stringify(complementFixture));
-    const written = threatDragon.write(read.model, read.source);
+    const written = threatDragonCodec.write(read.model, read.source);
     expect(
       documentOf(written.output).detail.diagrams[0]?.cells?.map(
         (cell) => cell.shape,
@@ -308,7 +288,7 @@ describe('merging what the Écluse file has no example of', () => {
 
   it('leaves a diagram that draws nothing without a cell list', () => {
     const read = threatDragonReading(JSON.stringify(complementFixture));
-    const written = threatDragon.write(read.model, read.source);
+    const written = threatDragonCodec.write(read.model, read.source);
     expect(
       documentOf(written.output).detail.diagrams[1]?.cells,
     ).toBeUndefined();
@@ -316,7 +296,7 @@ describe('merging what the Écluse file has no example of', () => {
 
   it('leaves the severity spelling the file chose of the two it reads', () => {
     const read = threatDragonReading(JSON.stringify(unmodelledFixture));
-    const written = threatDragon.write(read.model, read.source);
+    const written = threatDragonCodec.write(read.model, read.source);
     expect(
       allThreats(documentOf(written.output)).map((threat) => [
         threat.severity,
@@ -431,7 +411,7 @@ describe('a merge onto a document an edit has moved out from under', () => {
     assumptions: [],
   } satisfies ModelInput);
 
-  const written = threatDragon.write(edited, source);
+  const written = threatDragonCodec.write(edited, source);
   const document = documentOf(written.output);
 
   it('draws the cell afresh where the element is no longer that shape', () => {
@@ -548,7 +528,7 @@ describe('a threat an edit detached from one of the cells holding it', () => {
     assumptions: [],
   } satisfies ModelInput);
 
-  const written = threatDragon.write(detached, source);
+  const written = threatDragonCodec.write(detached, source);
   const cells = documentOf(written.output).detail.diagrams[0]?.cells ?? [];
 
   it('keeps the copy under the cell the model still attaches it to', () => {

@@ -1,4 +1,12 @@
-import { committedModel } from '@saerskriven/model/fixtures';
+import {
+  enumeratedCategories,
+  parsedFixture,
+} from '@saerskriven/model/fixtures';
+import { severitySchema, threatStatusSchema } from '@saerskriven/model';
+import {
+  threatDragonWireSchema,
+  type ThreatDragonDocument,
+} from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
 import { readFailureIssues } from './codec.fixtures.js';
 import { ReadFailure } from './codec.js';
@@ -6,12 +14,14 @@ import { renderDivergences } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import {
   complementFixture,
-  ecluseText,
+  featureCompleteModel,
+  featureCompleteText,
   minimalFixture,
   mitigationTextFixture,
   threatDragonReading,
   unmodelledFixture,
 } from './threat-dragon.fixtures.js';
+import { unusedConstructs } from './wire-coverage.fixtures.js';
 
 const failureOf = (text: string): ReadFailure =>
   Either.match(readThreatDragon(text), {
@@ -21,152 +31,96 @@ const failureOf = (text: string): ReadFailure =>
     },
   });
 
-const tally = (values: readonly string[]): Record<string, number> =>
-  values.reduce<Record<string, number>>(
-    (counts, value) => ({ ...counts, [value]: (counts[value] ?? 0) + 1 }),
-    {},
-  );
-
 const nested = (depth: number): string =>
   `${'{"deeper":'.repeat(depth)}1${'}'.repeat(depth)}`;
 
-const ecluse = threatDragonReading(ecluseText);
-const ecluseModel = committedModel('ecluse.model.json');
+const featureComplete = threatDragonReading(featureCompleteText);
 const complement = threatDragonReading(JSON.stringify(complementFixture));
 const minimal = threatDragonReading(JSON.stringify(minimalFixture));
 const unmodelled = threatDragonReading(JSON.stringify(unmodelledFixture));
 
-const ecluseElements = ecluse.model.diagrams.flatMap(
-  (diagram) => diagram.elements,
-);
+const namedById: ThreatDragonDocument = {
+  ...featureComplete.source,
+  summary: { ...featureComplete.source.summary, id: 'clinic-booking' },
+};
 
 const complementElements = complement.model.diagrams[0]?.elements ?? [];
 
 const elementNamed = (id: string) =>
-  complementElements.find((element) => element.id === id);
+  [
+    ...complementElements,
+    ...featureComplete.model.diagrams.flatMap((diagram) => diagram.elements),
+  ].find((element) => element.id === id);
 
-describe('reading the Écluse threat model', () => {
-  it('lands every cell of the source diagram, 38 over five kinds', () => {
-    expect(ecluse.model.diagrams).toHaveLength(1);
-    expect(tally(ecluseElements.map((element) => element.kind))).toEqual({
-      actor: 4,
-      process: 5,
-      store: 6,
-      flow: 20,
-      'trust-boundary': 3,
-    });
-  });
+const threatDragonMethodologies = ['STRIDE', 'LINDDUN', 'CIA', 'CIA-DIE'];
 
-  it('lands every threat the cells nest, 29 across 13 elements', () => {
-    expect(ecluse.model.threats).toHaveLength(29);
+describe('reading the feature-complete Threat Dragon file', () => {
+  it('uses every field, enum value and variant the wire schema declares', () => {
     expect(
-      new Set(ecluse.model.threats.flatMap((threat) => threat.elements)).size,
-    ).toBe(13);
+      unusedConstructs(threatDragonWireSchema, [
+        featureComplete.source,
+        namedById,
+      ]),
+    ).toEqual([]);
   });
 
-  it('takes the metadata from the summary, one contributor flattened', () => {
-    expect(ecluse.model.metadata.title).toBe('Écluse');
-    expect(ecluse.model.metadata.owner).toBe('Alexandra de Wit');
-    expect(ecluse.model.metadata.description).toContain('STRIDE threat model');
-    expect(ecluse.model.metadata.contributors).toEqual(['Alexandra de Wit']);
-  });
-
-  it('names a diagram by the number Threat Dragon gives it', () => {
-    expect(ecluse.model.diagrams[0]?.id).toBe('0');
-    expect(ecluse.model.diagrams[0]?.title).toBe('High Level');
-  });
-
-  it('issues up to 102, the greater of threatTop 28 and its own highest', () => {
-    expect(ecluse.model.lastIssuedThreatNumber).toBe(102);
-  });
-
-  it('reads the statuses the source uses, Accepted among them', () => {
-    expect(tally(ecluse.model.threats.map((threat) => threat.status))).toEqual({
-      mitigated: 19,
-      open: 7,
-      'accepted-risk': 3,
-    });
-  });
-
-  it('reads the severities and the STRIDE categories the source uses', () => {
-    expect(
-      tally(ecluse.model.threats.map((threat) => threat.severity)),
-    ).toEqual({ high: 14, medium: 12, low: 2, critical: 1 });
-    expect(
-      tally(ecluse.model.threats.map((threat) => threat.category.category)),
-    ).toEqual({
-      'elevation-of-privilege': 7,
-      tampering: 6,
-      'denial-of-service': 6,
-      'information-disclosure': 5,
-      spoofing: 4,
-      repudiation: 1,
-    });
-  });
-
-  it('keeps the one flow endpoint the source leaves on empty canvas', () => {
-    const free = ecluseElements.filter(
-      (element) =>
-        element.kind === 'flow' &&
-        (element.source.kind === 'free' || element.target.kind === 'free'),
+  it('reads a summary id given as text as it reads one given as a number', () => {
+    expect(threatDragonReading(JSON.stringify(namedById)).model).toEqual(
+      featureComplete.model,
     );
-    expect(free.map((element) => element.name)).toEqual([
-      'OSV Dataset for Supported Registries',
-    ]);
   });
 
-  it('keeps the one flow the source routes through a waypoint', () => {
-    const routed = ecluseElements.filter(
-      (element) => element.kind === 'flow' && element.waypoints.length > 0,
+  it('holds every threat status, severity and category Threat Dragon labels', () => {
+    const { threats } = featureComplete.model;
+    expect(new Set(threats.map(({ status }) => status))).toEqual(
+      new Set(threatStatusSchema.options),
+    );
+    expect(new Set(threats.map(({ severity }) => severity))).toEqual(
+      new Set(severitySchema.options),
     );
     expect(
-      routed.map((element) => element.kind === 'flow' && element.waypoints),
-    ).toEqual([[{ x: 1180, y: 1065 }]]);
-  });
-
-  it('pins the seven flow ends the source fastens to a port, on the side of that port', () => {
-    const pinned = ecluseElements.flatMap((element) =>
-      element.kind === 'flow'
-        ? [element.source, element.target].flatMap((end) =>
-            end.kind === 'attached' && end.side !== undefined
-              ? [`${element.name}: ${end.side}`]
-              : [],
-          )
-        : [],
+      enumeratedCategories
+        .filter(([methodology]) =>
+          threatDragonMethodologies.includes(methodology),
+        )
+        .map(([methodology, categories]) => [methodology, new Set(categories)]),
+    ).toEqual(
+      threatDragonMethodologies.map((methodology) => [
+        methodology,
+        new Set(
+          threats.flatMap(({ category }) =>
+            category.methodology === methodology ? [category.category] : [],
+          ),
+        ),
+      ]),
     );
-    expect(pinned).toEqual([
-      'mint token (container role): right',
-      'mint token (container role): left',
-      'OSV Dataset for Supported Registries: right',
-      'Push osv.db (SQLite): top',
-      'Push osv.db (SQLite): bottom',
-      'Download osv.db: left',
-      'Download osv.db: right',
-    ]);
   });
 
-  it('reads every Écluse flow as one-way, which is what the file says of each', () => {
-    expect(
-      ecluseElements.every(
-        (element) => element.kind !== 'flow' || !element.bidirectional,
-      ),
-    ).toBe(true);
+  it('lands as the model written out by hand, compared as one value', () => {
+    expect(featureComplete.model).toStrictEqual(
+      parsedFixture(featureCompleteModel),
+    );
   });
 
-  it('lands as the expected internal model, compared as one value', () => {
-    expect(ecluse.model).toStrictEqual(ecluseModel);
+  it('issues up to 40, the greater of threatTop 30 and its own highest', () => {
+    expect(featureComplete.source.detail.threatTop).toBe(30);
+    expect(featureComplete.model.lastIssuedThreatNumber).toBe(40);
   });
 
-  it('diverges in nothing, so the schema declares every key it holds', () => {
-    expect(ecluse.divergences).toEqual([]);
+  it('reports the Elevation of Privilege card alone, of which the model holds the suit', () => {
+    expect(renderDivergences(featureComplete.divergences)).toBe(
+      'threat "threat-card": the Elevation of Privilege card, of which the model holds the suit alone (reduced to fit the format)',
+    );
   });
 
   it('returns the document whole, for a write to merge onto', () => {
-    expect(ecluse.source).toEqual(JSON.parse(ecluseText) as unknown);
+    expect(featureComplete.source).toEqual(
+      JSON.parse(featureCompleteText) as unknown,
+    );
   });
 });
 
-describe('reading what the Écluse file has no example of', () => {
+describe('reading curves, shared threats and defaults', () => {
   it('draws a boundary curve through its endpoints and its vertices', () => {
     const curve = elementNamed('boundary-curve');
     expect(curve?.kind === 'trust-boundary' && curve.shape).toEqual({
@@ -186,10 +140,8 @@ describe('reading what the Écluse file has no example of', () => {
 
   it('names a boundary from its data, or from the label, or not at all', () => {
     expect(elementNamed('boundary-curve')?.name).toBe('Operator zone');
+    expect(elementNamed('zone-clinic')?.name).toBe('Clinic network');
     expect(elementNamed('boundary-typo')?.name).toBe('');
-    expect(ecluseElements[0]?.name).toBe(
-      'Operator trust zone (VPC / mesh): access edge enforced here',
-    );
   });
 
   it('joins one threat nested under two cells into one record', () => {
@@ -198,17 +150,6 @@ describe('reading what the Écluse file has no example of', () => {
     ).toEqual([
       ['threat-linkability', ['actor-1', 'store-1']],
       ['threat-ethics', ['store-1']],
-    ]);
-  });
-
-  it('carries a methodology the model does not enumerate as custom', () => {
-    expect(complement.model.threats.map((threat) => threat.category)).toEqual([
-      { methodology: 'LINDDUN', category: 'linking' },
-      {
-        methodology: 'custom',
-        methodologyName: 'PLOT4ai',
-        category: 'Ethics & Human Rights',
-      },
     ]);
   });
 
@@ -312,15 +253,6 @@ describe('reading what the model has only just grown a home for', () => {
       ['threat-card', 4],
     ]);
     expect(unmodelled.model.lastIssuedThreatNumber).toBe(6);
-  });
-
-  it('recovers a category its author wrote in another language', () => {
-    expect(unmodelled.model.threats[0]?.category).toEqual({
-      methodology: 'STRIDE',
-      category: 'tampering',
-    });
-    expect(unmodelled.model.threats[0]?.severity).toBe('undecided');
-    expect(unmodelled.model.threats[0]?.status).toBe('accepted-risk');
   });
 
   it('reports what the model holds less exactly than the file said it', () => {

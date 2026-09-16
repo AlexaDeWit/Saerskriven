@@ -8,7 +8,7 @@ import {
   type DetectedRead,
 } from './detect.js';
 import {
-  goldenText,
+  featureCompleteYaml,
   minimalYamlV1,
   nativeFixtures,
   oneThreatYamlV1,
@@ -16,7 +16,7 @@ import {
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { readLimits } from './read-limits.js';
-import { corpusTexts, ecluseText } from './threat-dragon.fixtures.js';
+import { corpusTexts, featureCompleteText } from './threat-dragon.fixtures.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
 const branchingCycle = adversarialText('branching-cycle.yaml');
@@ -45,7 +45,7 @@ const refusedCell =
   '{"version":"2.6.2","summary":{"title":"Refused"},"detail":{"diagrams":[{"id":0,"title":"Level 0","diagramType":"STRIDE","cells":[{"id":"a","shape":"process","position":{"x":0,"y":0},"size":{"width":10,"height":10},"data":{"type":"tm.Process"}}]}]}}';
 
 const nativeAsJson = JSON.stringify(
-  Either.getOrThrow(saerskrivenYamlCodec.read(goldenText)).source,
+  Either.getOrThrow(saerskrivenYamlCodec.read(featureCompleteYaml)).source,
 );
 
 const unclaimed: readonly { name: string; text: string }[] = [
@@ -106,20 +106,19 @@ function rewritten(answer: DetectedRead): {
 }
 
 describe('opening a text without being told its format', () => {
-  it('reads the Écluse file as Threat Dragon', () => {
-    const answer = opened(ecluseText);
-    expect(answer.format).toBe('threat-dragon');
-    expect(answer.codec).toBe(threatDragonCodec);
-  });
-
   it.each(nativeFixtures)('reads the $name as Saerskriven YAML', ({ text }) => {
     const answer = opened(text);
     expect(answer.format).toBe('saerskriven-yaml');
     expect(answer.codec).toBe(saerskrivenYamlCodec);
   });
 
-  it.each(corpusTexts)('reads $name as Threat Dragon', ({ text }) => {
-    expect(opened(text).format).toBe('threat-dragon');
+  it.each([
+    ...corpusTexts,
+    { name: 'the feature-complete file', text: featureCompleteText },
+  ])('reads $name as Threat Dragon', ({ text }) => {
+    const answer = opened(text);
+    expect(answer.format).toBe('threat-dragon');
+    expect(answer.codec).toBe(threatDragonCodec);
   });
 
   it('reads a Saerskriven model saved as JSON as Saerskriven YAML', () => {
@@ -127,9 +126,9 @@ describe('opening a text without being told its format', () => {
   });
 
   it('hands back everything the codec that answered produced', () => {
-    const answer = opened(goldenText);
+    const answer = opened(featureCompleteYaml);
     expect(answer.model).toEqual(
-      Either.getOrThrow(readSaerskrivenYaml(goldenText)).model,
+      Either.getOrThrow(readSaerskrivenYaml(featureCompleteYaml)).model,
     );
     expect(answer.divergences).toEqual([]);
   });
@@ -137,7 +136,7 @@ describe('opening a text without being told its format', () => {
 
 describe('a file of one format offered to the other codec', () => {
   it('is not JSON, so the Threat Dragon codec refuses the native file', () => {
-    const reading = threatDragonCodec.read(goldenText);
+    const reading = threatDragonCodec.read(featureCompleteYaml);
     expect(Either.isLeft(reading)).toBe(true);
     expect(Either.merge(reading)).toMatchObject({ _tag: 'MalformedText' });
   });
@@ -148,8 +147,10 @@ describe('a file of one format offered to the other codec', () => {
     expect(issuePaths(refused)).toEqual(['version', 'summary', 'detail']);
   });
 
-  it('is YAML, so the Saerskriven codec refuses the Écluse file at its stamp', () => {
-    const refused = Either.merge(saerskrivenYamlCodec.read(ecluseText));
+  it('is YAML, so the Saerskriven codec refuses a Threat Dragon file at its stamp', () => {
+    const refused = Either.merge(
+      saerskrivenYamlCodec.read(featureCompleteText),
+    );
     expect(refused).toMatchObject({ _tag: 'InvalidWireDocument' });
     expect(issuePaths(refused)).toContain('formatVersion');
   });
@@ -158,12 +159,6 @@ describe('a file of one format offered to the other codec', () => {
 describe('a text no codec claims', () => {
   it.each(unclaimed)('names every format tried for $name', ({ text }) => {
     expect(outcome(text)).toEqual(
-      DetectionFailure.NoFormatClaimed({ tried: formatNameSchema.options }),
-    );
-  });
-
-  it('tries Threat Dragon first and Saerskriven YAML second', () => {
-    expect(outcome('{"hello":"you"}')).toEqual(
       DetectionFailure.NoFormatClaimed({
         tried: ['threat-dragon', 'saerskriven-yaml'],
       }),
@@ -246,8 +241,12 @@ describe('a file from a release neither codec models', () => {
 
 describe('the codec the result carries', () => {
   it.each([
-    { name: 'the Écluse file', text: ecluseText, stamp: '2.6.2' },
-    { name: 'the native file', text: goldenText, stamp: 2 },
+    {
+      name: 'the Threat Dragon file',
+      text: featureCompleteText,
+      stamp: '2.6.2',
+    },
+    { name: 'the native file', text: featureCompleteYaml, stamp: 2 },
   ])('writes $name back as the format that answered', ({ text, stamp }) => {
     const answer = opened(text);
     const written = rewritten(answer);
@@ -258,8 +257,8 @@ describe('the codec the result carries', () => {
   });
 
   it('refuses at compile time what nothing refuses at run time', () => {
-    expect(opened(writtenAsSaerskrivenYaml(opened(ecluseText))).format).toBe(
-      'saerskriven-yaml',
-    );
+    expect(
+      opened(writtenAsSaerskrivenYaml(opened(featureCompleteText))).format,
+    ).toBe('saerskriven-yaml');
   });
 });

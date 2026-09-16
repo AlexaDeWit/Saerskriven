@@ -32,7 +32,7 @@ import {
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import { allCells, threatsOf } from './threat-dragon-document.js';
-import { ecluseSecurityText } from './threat-dragon.fixtures.js';
+import { featureCompleteText } from './threat-dragon.fixtures.js';
 import { isRecord } from './records.js';
 import { readFailureIssues } from './codec.fixtures.js';
 
@@ -207,10 +207,9 @@ describe('security facts across Threat Dragon and native YAML', () => {
   });
 });
 
-describe('the current Écluse migration', () => {
+describe('the feature-complete Threat Dragon file through both codecs', () => {
   it('preserves source facts, declared relationships, threat links, numbers and issuance bookkeeping', () => {
-    const before = Either.getOrThrow(readThreatDragon(ecluseSecurityText));
-    expect(before.divergences).toEqual([]);
+    const before = Either.getOrThrow(readThreatDragon(featureCompleteText));
     const expected = allCells(before.source).map((cell) => ({
       id: cell.id,
       ...facts(cell.data),
@@ -245,7 +244,7 @@ describe('the current Écluse migration', () => {
     );
     const written = writeThreatDragon(after);
     const restored = Either.getOrThrow(readThreatDragon(written.output));
-    expect(restored.divergences).toEqual([]);
+    expect(restored.divergences).toEqual(before.divergences);
     expect(elementFacts(restored.model)).toStrictEqual(expected);
     expect(
       new Map(restored.model.threats.map((threat) => [threat.id, threat])),

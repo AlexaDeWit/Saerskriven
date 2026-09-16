@@ -9,6 +9,7 @@ import {
 import {
   committedModel,
   modelInputArbitrary,
+  parsedFixture,
   repositoryRoot,
 } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
@@ -22,13 +23,14 @@ import { inferredMitigationStatus } from './mitigation-text.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
   emittedModels,
+  featureCompleteYaml,
   frozenV021Path,
   frozenV030Path,
-  goldenText,
   nativeFixtures,
   propertyTimeout,
 } from './saerskriven-yaml.fixtures.js';
 import { threatStatusesToModel } from './saerskriven-yaml-vocabulary.js';
+import { unusedConstructs } from './wire-coverage.fixtures.js';
 
 const ecluseModel = committedModel('ecluse.model.json');
 
@@ -122,13 +124,21 @@ function flowsOf(model: Model): readonly Flow[] {
 }
 
 describe('the Saerskriven YAML codec', () => {
-  it('pairs the read and the write with the schema they share', () => {
-    expect(saerskrivenYamlCodec.wire).toBe(saerskrivenYamlV2WireSchema);
+  it('reads a feature-complete file that uses every field, enum value and variant the wire schema declares', () => {
+    expect(
+      unusedConstructs(saerskrivenYamlV2WireSchema, [
+        parse(featureCompleteYaml),
+      ]),
+    ).toEqual([]);
   });
 
-  it('reads the committed fixture as the model it was written from', () => {
-    const reading = readOrThrow(goldenText);
-    expect(reading.model).toEqual(withThreatsInNumberOrder(ecluseModel));
+  it('reads the feature-complete file as the model it states, with nothing diverging', () => {
+    const { formatVersion, ...stated } = saerskrivenYamlV2WireSchema.parse(
+      parse(featureCompleteYaml),
+    );
+    const reading = readOrThrow(featureCompleteYaml);
+    expect(formatVersion).toBe(2);
+    expect(reading.model).toStrictEqual(parsedFixture(stated));
     expect(reading.divergences).toEqual([]);
   });
 
@@ -141,7 +151,7 @@ describe('the Saerskriven YAML codec', () => {
   });
 
   it('hands back the document it read, for a write to merge onto', () => {
-    expect(readOrThrow(goldenText).source.formatVersion).toBe(2);
+    expect(readOrThrow(featureCompleteYaml).source.formatVersion).toBe(2);
   });
 });
 
@@ -336,13 +346,11 @@ describe('the document shape v0.3.0 wrote', () => {
   });
 });
 
-describe.each(nativeFixtures)('the committed $name', ({ path, text }) => {
-  it('reads with nothing diverging, and writes back the bytes committed', async () => {
+describe.each(nativeFixtures)('the committed $name', ({ text }) => {
+  it('reads with nothing diverging, and writes back the bytes committed', () => {
     const reading = readOrThrow(text);
     expect(reading.divergences).toEqual([]);
-    await expect(
-      saerskrivenYamlCodec.write(reading.model).output,
-    ).toMatchFileSnapshot(path);
+    expect(saerskrivenYamlCodec.write(reading.model).output).toBe(text);
   });
 });
 

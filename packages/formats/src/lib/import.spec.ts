@@ -1,15 +1,23 @@
+import type { Model } from '@saerskriven/model';
+import { otmWireSchema } from '@saerskriven/wire-otm';
+import { tmbomWireSchema } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { stringify } from 'yaml';
+import { z } from 'zod';
 import { testDataText } from './corpus.fixtures.js';
 import { importModel } from './import.js';
 import {
   importCorpus,
   importTexts,
+  otmFeatureComplete,
   otmFixture,
+  tmbomFeatureComplete,
   tmbomFixture,
+  tmbomScopeVariants,
 } from './import.fixtures.js';
 import { readLimits } from './read-limits.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
+import { unusedConstructs } from './wire-coverage.fixtures.js';
 
 it.each(['otm', 'tmbom'] as const)(
   'imports the upstream %s graph into a native file in JSON or YAML syntax',
@@ -475,4 +483,364 @@ it('builds no mitigation linked to no threat and no assumption with no reference
         .map((assumption) => `${name}: assumption ${assumption.id}`),
     ]),
   ).toEqual([]);
+});
+
+const imported = (document: unknown) =>
+  Either.getOrThrowWith(
+    importModel(JSON.stringify(document)),
+    (failure) => new Error(JSON.stringify(failure)),
+  );
+
+const namesIn = (model: Model): ReadonlyMap<string, string> =>
+  new Map<string, string>([
+    ...model.diagrams.flatMap((diagram) =>
+      diagram.elements.map((element): [string, string] => [
+        element.id,
+        element.name,
+      ]),
+    ),
+    ...model.threats.map((threat): [string, string] => [
+      threat.id,
+      threat.title,
+    ]),
+  ]);
+
+const registerOf = (model: Model) => {
+  const names = namesIn(model);
+  const named = (ids: readonly string[]) => ids.map((id) => names.get(id));
+  return {
+    elements: model.diagrams.flatMap((diagram) =>
+      diagram.elements.map((element) => [element.kind, element.name]),
+    ),
+    threats: model.threats.map((threat) => [
+      threat.title,
+      threat.status,
+      named(threat.elements),
+    ]),
+    mitigations: model.mitigations.map((mitigation) => [
+      mitigation.title,
+      mitigation.status,
+      named(mitigation.threats),
+    ]),
+    assumptions: model.assumptions.map((assumption) => [
+      assumption.prose,
+      assumption.status,
+      assumption.appliesToModel,
+    ]),
+  };
+};
+
+const unretained = /^The source field (\[.*\]) is not retained by import\.$/;
+
+const reportsOf = (divergences: readonly { detail: string }[]) =>
+  divergences
+    .map(({ detail }) => detail)
+    .filter((detail) => !unretained.test(detail));
+
+const unretainedFieldsOf = (divergences: readonly { detail: string }[]) =>
+  new Set(
+    divergences.flatMap(({ detail }) => {
+      const path = unretained.exec(detail)?.[1];
+      return path === undefined
+        ? []
+        : [z.array(z.string()).parse(JSON.parse(path)).join('.')];
+    }),
+  );
+
+describe('the feature-complete OTM document', () => {
+  const read = imported(otmFeatureComplete);
+
+  it('uses every field and variant the wire schema declares', () => {
+    expect(unusedConstructs(otmWireSchema, [otmFeatureComplete])).toEqual([]);
+  });
+
+  it('lands components as processes, zones as boxes and dataflows as flows', () => {
+    expect(registerOf(read.model).elements).toEqual([
+      ['process', 'Patient app'],
+      ['process', 'Booking service'],
+      ['process', 'Appointments'],
+      ['trust-boundary', 'Internet'],
+      ['trust-boundary', 'Clinic network'],
+      ['trust-boundary', 'Service host'],
+      ['flow', 'Book appointment'],
+      ['flow', 'Store booking'],
+    ]);
+    expect(
+      read.model.diagrams[0].elements.flatMap((element) =>
+        element.kind === 'flow' ? [element.bidirectional] : [],
+      ),
+    ).toEqual([true, false]);
+  });
+
+  it('makes one threat of each occurrence, in the status its state maps to', () => {
+    expect(registerOf(read.model).threats).toEqual([
+      ['Spoofed patient', 'open', ['Patient app']],
+      ['Spoofed patient', 'open', ['Patient app']],
+      ['Altered fee', 'open', ['Booking service']],
+      ['Leaked reason', 'mitigated', ['Booking service']],
+      ['Bulk booking', 'accepted-risk', ['Booking service']],
+      ['Denied booking', 'accepted-risk', ['Booking service']],
+      ['Settings changed by the service', 'transferred', ['Appointments']],
+      ['Backup copied off the host', 'avoided', ['Appointments']],
+      ['Replayed booking', 'eliminated', ['Book appointment']],
+      ['Form read in transit', 'not-applicable', ['Book appointment']],
+      ['Model left unreviewed', 'open', []],
+    ]);
+    expect(read.model.lastIssuedThreatNumber).toBe(11);
+  });
+
+  it('makes one mitigation of each reference, implemented or verified only where its state says so', () => {
+    expect(registerOf(read.model).mitigations).toEqual([
+      ['Sign the booking', 'implemented', ['Altered fee']],
+      ['Review the fee', 'verified', ['Altered fee']],
+      ['Sign the booking', 'proposed', ['Replayed booking']],
+      ['TLS everywhere', 'proposed', ['Form read in transit']],
+      ['Review the fee', 'proposed', ['Form read in transit']],
+    ]);
+    expect(read.model.metadata.description).toBe(
+      'Every field an OTM file carries.\n\nMitigation: Rotate keys. No occurrence names this mitigation.',
+    );
+  });
+
+  it('reports what it narrowed, and names every source field it keeps nowhere', () => {
+    expect(reportsOf(read.divergences)).toEqual([
+      'Element "appointments" receives generated geometry where the source has none.',
+      'OTM component types become process nodes. Their original types remain in the descriptions.',
+      'Element "zone-clinic" receives generated geometry where the source has none.',
+      'Element "zone-service" receives generated geometry where the source has none.',
+      'Referenced asset names become descriptions on flows and components. Shared data identity is not retained.',
+      'Threat "threat-spoofing" imports with undecided severity and an unspecified category.',
+      'Threat "threat-spoofing" becomes separate records for its occurrences.',
+      'Threat status "under-review" imports as open. Supplied status text remains in the description.',
+      'Threat "threat-spoofing" imports with undecided severity and an unspecified category.',
+      'Threat "threat-tampering" imports with undecided severity and an unspecified category.',
+      'Threat "threat-disclosure" imports with undecided severity and an unspecified category.',
+      'Threat "threat-denial" imports with undecided severity and an unspecified category.',
+      'Threat "threat-repudiation" imports with undecided severity and an unspecified category.',
+      'Threat "threat-elevation" imports with undecided severity and an unspecified category.',
+      'Threat "threat-backup" imports with undecided severity and an unspecified category.',
+      'Threat "threat-replay" imports with undecided severity and an unspecified category.',
+      'Mitigation "mitigation-signing" becomes separate records for its occurrences.',
+      'Threat "threat-sniffing" imports with undecided severity and an unspecified category.',
+      'Mitigation "mitigation-review" becomes separate records for its occurrences.',
+      'Mitigation "mitigation-review" has source status "rejected", retained in its description and imported as proposed.',
+      'Threat status absent imports as open. Supplied status text remains in the description.',
+      'Threat "threat-unattached" imports with undecided severity and an unspecified category.',
+      'Mitigation "mitigation-unused" names no threat and becomes a line of the model description.',
+    ]);
+    expect(unretainedFieldsOf(read.divergences)).toEqual(
+      new Set([
+        'assets.0.attributes',
+        'assets.0.risk',
+        'components.0.attributes',
+        'components.0.parent',
+        'components.0.representations.1.codeSnippet',
+        'components.0.representations.1.file',
+        'components.0.representations.1.id',
+        'components.0.representations.1.line',
+        'components.0.representations.1.representation',
+        'components.0.tags',
+        'components.1.parent',
+        'components.1.threats.0.mitigations.3.mitigation',
+        'components.1.threats.0.mitigations.3.state',
+        'components.2.parent',
+        'dataflows.0.attributes',
+        'dataflows.0.tags',
+        'mitigations.0.attributes',
+        'mitigations.0.riskReduction',
+        'mitigations.1.riskReduction',
+        'mitigations.2.riskReduction',
+        'mitigations.3.riskReduction',
+        'project.attributes',
+        'project.ownerContact',
+        'project.tags',
+        'representations.0.attributes',
+        'representations.0.description',
+        'representations.0.size',
+        'representations.1.id',
+        'representations.1.name',
+        'representations.1.repository',
+        'representations.1.type',
+        'threats.0.attributes',
+        'threats.0.categories',
+        'threats.0.cwes',
+        'threats.0.risk',
+        'threats.0.tags',
+        'threats.1.risk',
+        'threats.2.risk',
+        'threats.3.risk',
+        'threats.4.risk',
+        'threats.5.risk',
+        'threats.6.risk',
+        'threats.7.risk',
+        'threats.8.risk',
+        'threats.9.risk',
+        'trustZones.0.attributes',
+        'trustZones.0.representations.0.attributes',
+        'trustZones.0.representations.0.name',
+        'trustZones.0.risk',
+        'trustZones.0.type',
+        'trustZones.1.parent',
+        'trustZones.1.risk',
+        'trustZones.2.parent',
+        'trustZones.2.risk',
+      ]),
+    );
+  });
+});
+
+describe('the feature-complete TM-BOM document', () => {
+  const read = imported(tmbomFeatureComplete);
+
+  it('uses every field, enum value and variant the wire schema declares, across its scope variants', () => {
+    expect(
+      unusedConstructs(tmbomWireSchema, [
+        tmbomFeatureComplete,
+        ...tmbomScopeVariants,
+      ]),
+    ).toEqual([]);
+  });
+
+  it('lands actors, components and stores as nodes in a band for each zone, and data flows as flows', () => {
+    expect(registerOf(read.model).elements).toEqual([
+      ['trust-boundary', 'Internet'],
+      ['actor', 'Patient'],
+      ['actor', 'Reminder job'],
+      ['actor', 'Receptionist'],
+      ['actor', 'Clinic administrator'],
+      ['actor', 'On-call engineer'],
+      ['actor', 'Payment provider'],
+      ['trust-boundary', 'Clinic network'],
+      ['process', 'Booking service'],
+      ['process', 'Fee calculator'],
+      ['store', 'Appointments'],
+      ['store', 'Sessions'],
+      ['store', 'Forms'],
+      ['store', 'Scans'],
+      ['store', 'Referrals'],
+      ['store', 'Metrics'],
+      ['flow', 'Book appointment'],
+      ['flow', 'Store booking'],
+    ]);
+  });
+
+  it('imports threats open and undecided, live controls as mitigations, and every assumption as applying to the model', () => {
+    expect(registerOf(read.model)).toMatchObject({
+      threats: [
+        ['Spoofed patient', 'open', ['Booking service']],
+        ['Altered fee', 'open', []],
+      ],
+      mitigations: [
+        ['Control assumed', 'proposed', ['Spoofed patient']],
+        ['Control active', 'implemented', ['Spoofed patient']],
+        ['Control suggested', 'proposed', ['Altered fee']],
+        ['Control under_review', 'proposed', ['Altered fee']],
+        ['Control approved', 'proposed', ['Altered fee']],
+      ],
+      assumptions: [
+        ['The phone on file belongs to the patient.', 'unconfirmed', true],
+        [
+          'The clinic network is not reachable from the internet.',
+          'valid',
+          true,
+        ],
+        ['Backups never leave the host.', 'invalidated', true],
+      ],
+    });
+    expect(read.model.metadata.description).toBe(
+      'Every field a TM-BOM file carries.\n\nA clinic books appointments online.\n\nMitigation: Control scheduled (proposed, source status scheduled). A control the team marks scheduled.',
+    );
+  });
+
+  it('reports what it narrowed, and names every source field it keeps nowhere', () => {
+    expect(reportsOf(read.divergences)).toEqual([
+      'Data set "appointment-records" becomes prose on its stores. Shared data identity is not retained.',
+      'The diagram receives generated geometry grouped by source trust zone. Membership becomes visual.',
+      'Flow encryption and sensitivity fields remain prose in the flow descriptions.',
+      'Control "control-assumed" imports as proposed. Its original status remains in the description.',
+      'Control "control-under-review" imports as proposed. Its original status remains in the description.',
+      'Control "control-approved" imports as proposed. Its original status remains in the description.',
+      'Control "control-scheduled" names no threat and becomes a line of the model description.',
+      'Threats import as open with undecided severity and an unspecified category. Separate risk assessments are not converted into threat severity.',
+    ]);
+    expect(unretainedFieldsOf(read.divergences)).toEqual(
+      new Set([
+        'actors.0.permissions',
+        'actors.0.type',
+        'actors.1.type',
+        'actors.2.type',
+        'actors.3.type',
+        'actors.4.type',
+        'actors.5.type',
+        'assumptions.0.topics',
+        'components.0.repo_link',
+        'components.1.parent_component',
+        'controls.0.priority',
+        'controls.1.priority',
+        'controls.1.trust_boundary',
+        'controls.2.priority',
+        'controls.3.priority',
+        'controls.4.priority',
+        'controls.5.priority',
+        'controls.6.description',
+        'controls.6.priority',
+        'controls.6.status',
+        'controls.6.symbolic_name',
+        'controls.6.threats',
+        'controls.6.title',
+        'controls.7.description',
+        'controls.7.priority',
+        'controls.7.status',
+        'controls.7.symbolic_name',
+        'controls.7.threats',
+        'controls.7.title',
+        'data_sets.0.access_control_methods',
+        'data_sets.0.data_sensitivity',
+        'data_sets.0.placements.0.encrypted',
+        'data_sets.0.record_count',
+        'data_stores.0.product',
+        'data_stores.0.type',
+        'data_stores.0.vendor',
+        'data_stores.1.type',
+        'data_stores.2.type',
+        'data_stores.3.type',
+        'data_stores.4.type',
+        'data_stores.5.type',
+        'diagrams',
+        'extensions',
+        'frozen',
+        'product_release_date',
+        'release_docs_link',
+        'released_at',
+        'repo_link',
+        'reviewed_at',
+        'risks',
+        'scope.business_criticality',
+        'scope.data_sensitivity',
+        'scope.exposure',
+        'scope.tier',
+        'threat_personas',
+        'threats.0.attack_mechanisms',
+        'threats.0.sources',
+        'threats.0.threat_persona',
+        'threats.0.weaknesses',
+        'threats.1.sources',
+        'threats.1.threat_persona',
+        'trust_boundaries',
+        'version',
+      ]),
+    );
+  });
+
+  it('imports the same register under every scope and under the 1.0.1 release', () => {
+    for (const variant of tmbomScopeVariants) {
+      const { model, divergences } = imported(variant);
+      expect(registerOf(model)).toMatchObject({
+        threats: registerOf(read.model).threats,
+        mitigations: registerOf(read.model).mitigations,
+        assumptions: registerOf(read.model).assumptions,
+      });
+      expect(reportsOf(divergences)).toEqual(reportsOf(read.divergences));
+    }
+  });
 });
