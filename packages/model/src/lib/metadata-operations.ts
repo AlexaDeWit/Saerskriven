@@ -1,4 +1,5 @@
 import { Either } from 'effect';
+import { sameItems } from './lists.js';
 import type { ModelMetadata, ModelMetadataChange } from './model.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
@@ -63,7 +64,6 @@ function refusedText(
 function sameMetadata(held: ModelMetadata, next: ModelMetadata): boolean {
   return (
     textFields.every((field) => held[field] === next[field]) &&
-    held.contributors.length === next.contributors.length &&
-    held.contributors.every((name, index) => name === next.contributors[index])
+    sameItems(held.contributors, next.contributors)
   );
 }

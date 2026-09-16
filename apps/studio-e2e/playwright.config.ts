@@ -8,9 +8,8 @@ const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 
 // Browsers come from the flake (PLAYWRIGHT_BROWSERS_PATH points into the nix
-// store), never from playwright's downloader. What the suite covers, why each
-// spec needs a browser at all, and which line of M4's definition of done each
-// one holds are in README.md beside this file.
+// store), never from playwright's downloader. How to run and debug the suite,
+// and what it leaves to other suites, is in README.md beside this file.
 export default defineConfig({
   testDir: './src',
   outputDir: './test-output/playwright/output',
@@ -70,8 +69,11 @@ export default defineConfig({
     // reason. So does the Link existing spec, because its listbox must open
     // clear of the chrome card there, and so does the summary spec, because a
     // collapsed threat with its counts and both flag marks must fit the panel
-    // there. The preset carries the viewport, the touch flags and the device
-    // pixel ratio together, so a change of preset changes all three at once.
+    // there. So does the badge clearance spec, because the gap it holds between
+    // a corner handle and a threat badge is measured on screen, and has to hold
+    // on the phone preset as well as at desktop width (#447). The preset
+    // carries the viewport, the touch flags and the device pixel ratio
+    // together, so a change of preset changes all three at once.
     // The set is small on purpose: the rest of the suite is about behaviour
     // that does not turn on the viewport.
     {

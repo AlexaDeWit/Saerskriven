@@ -1,4 +1,5 @@
 import { Either } from 'effect';
+import { promisePerBytes } from './promise-per-bytes.js';
 import { ResvgFailure } from './resvg-failures.js';
 
 export { ResvgFailure } from './resvg-failures.js';
@@ -28,7 +29,7 @@ type Rasterizer = {
   readonly release: (outcome: number) => void;
 };
 
-const modules = new WeakMap<Uint8Array, Promise<WebAssembly.Module>>();
+const compiled = promisePerBytes<WebAssembly.Module>();
 
 /**
  * The bytes a rasterization runs on, because this package reads no file:
@@ -51,14 +52,13 @@ export type Raster = {
 /**
  * Rasterizes an SVG document with caller-owned assets, scaled so its longer
  * side is `longEdge` pixels, or at the size the document names when `longEdge`
- * is 0. This returns rather than throws, {@link ResvgFailure} on the left: a
- * long edge that is not a whole number of pixels, an image past what the
- * module draws, a buffer holding no face, and a module that stopped partway
- * all arrive there.
+ * is 0. A long edge that is not a whole number of pixels, an image past
+ * 67108864 pixels, a buffer holding no face, and a module that stopped
+ * partway come back as {@link ResvgFailure}. The renderer reads no file.
  *
- * Each call runs its own instance of the module, so the faces one call offers
- * reach no other, and an instance that stopped partway is dropped rather than
- * called again to free what it held.
+ * The compiled module is held per `wasm` array. Each call runs its own
+ * instance, so the faces one call offers reach no other, and an instance that
+ * stopped partway is dropped rather than called again.
  */
 export async function rasterizeSvg(
   source: string,
@@ -81,7 +81,9 @@ async function instantiated(
 ): Promise<Either.Either<Rasterizer, ResvgFailure>> {
   try {
     const { exports } = await WebAssembly.instantiate(
-      await compiled(assets.wasm),
+      await compiled(assets.wasm, () =>
+        WebAssembly.compile(new Uint8Array(assets.wasm)),
+      ),
     );
     return rasterizes(exports)
       ? offered(exports, assets.fonts)
@@ -102,21 +104,6 @@ function rasterizes(
     exports['memory'] instanceof WebAssembly.Memory &&
     calls.every((name) => typeof exports[name] === 'function')
   );
-}
-
-function compiled(wasm: Uint8Array): Promise<WebAssembly.Module> {
-  const known = modules.get(wasm);
-  if (known !== undefined) {
-    return known;
-  }
-  const attempt = WebAssembly.compile(new Uint8Array(wasm)).catch(
-    (error: unknown) => {
-      modules.delete(wasm);
-      throw error;
-    },
-  );
-  modules.set(wasm, attempt);
-  return attempt;
 }
 
 function offered(

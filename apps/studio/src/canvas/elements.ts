@@ -3,6 +3,7 @@ import {
   type BoxElementKind,
   type CanvasLayout,
   type CanvasNode,
+  type NodeBox,
 } from '@saerskriven/canvas';
 import {
   generateElementId,
@@ -35,8 +36,7 @@ export const placeholderNames = {
   'boundary-curve': 'New trust boundary curve',
 } as const satisfies Record<ElementTool, string>;
 
-/** What a flow drawn on the canvas is called until something renames it. */
-export const newFlowName = 'New flow';
+const newFlowName = 'New flow';
 
 /** The actors, processes and stores that a flow can connect. */
 export function flowEnds(layout: CanvasLayout): CanvasNode[] {
@@ -64,10 +64,7 @@ export function defaultSize(kind: ElementTool): Size {
 }
 
 /** A default-sized element centred on `centre`. */
-export function centredPlacement(
-  kind: ElementTool,
-  centre: Point,
-): { readonly position: Point; readonly size: Size } {
+export function centredPlacement(kind: ElementTool, centre: Point): NodeBox {
   const size = defaultSize(kind);
   return {
     position: {
@@ -86,7 +83,7 @@ export function draggedPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
   to: Point,
-): { readonly position: Point; readonly size: Size } {
+): NodeBox {
   const width = Math.max(Math.abs(to.x - from.x), 1);
   const height = Math.max(Math.abs(to.y - from.y), 1);
   if (kind === 'note') {
@@ -111,45 +108,13 @@ export function draggedPlacement(
   });
 }
 
-function insideStroke(
-  kind: BoxElementKind,
-  outer: { readonly position: Point; readonly size: Size },
-): { readonly position: Point; readonly size: Size } {
-  const nominal = boxElementStrokeInsets(kind);
-  const nominalWidth = nominal.top + nominal.bottom;
-  const available =
-    kind === 'store'
-      ? outer.size.height / 2
-      : Math.min(outer.size.width, outer.size.height) / 2;
-  const strokeWidth = Math.min(nominalWidth, available);
-  const halfStroke = strokeWidth / 2;
-  const inset =
-    kind === 'store'
-      ? { top: halfStroke, right: 0, bottom: halfStroke, left: 0 }
-      : {
-          top: halfStroke,
-          right: halfStroke,
-          bottom: halfStroke,
-          left: halfStroke,
-        };
-  const width = outer.size.width - inset.left - inset.right;
-  const height = outer.size.height - inset.top - inset.bottom;
-  return {
-    position: {
-      x: outer.position.x + (outer.size.width - width) / 2,
-      y: outer.position.y + (outer.size.height - height) / 2,
-    },
-    size: { width, height },
-  };
-}
-
 /** The geometry a completed pointer press asks an element tool to place. */
 export function pointerPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
   to: Point,
   screenDistance: number,
-): { readonly position: Point; readonly size: Size } {
+): NodeBox {
   return screenDistance < placementClickDistance
     ? centredPlacement(kind, from)
     : draggedPlacement(kind, from, to);
@@ -167,13 +132,7 @@ export function freshElement(
   position: Point,
   size: Size = defaultSize(kind),
 ): Element {
-  const named = {
-    id: generateElementId(),
-    name: placeholderNames[kind],
-    description: '',
-    outOfScope: false,
-    reasonOutOfScope: '',
-  };
+  const named = namedElement(placeholderNames[kind]);
   if (kind === 'boundary-box') {
     return {
       ...named,
@@ -214,33 +173,31 @@ export function withPlacement(
 /** A boundary curve through the waypoints a person committed. */
 export function freshBoundaryCurve(waypoints: readonly Point[]): Element {
   return {
-    id: generateElementId(),
+    ...namedElement(placeholderNames['boundary-curve']),
     kind: 'trust-boundary',
-    name: placeholderNames['boundary-curve'],
-    description: '',
-    outOfScope: false,
-    reasonOutOfScope: '',
     shape: { kind: 'curve', waypoints: [...waypoints] },
   };
 }
 
-/**
- * One new flow between two elements, with a fresh id and no waypoints, which
- * leaves the route to the layout. Both ends are attached: a flow the canvas
- * draws between two elements is what either way of connecting asks for.
- */
+/** A new flow attached at both ends, with a fresh id and no waypoints. */
 export function freshFlow(source: ElementId, target: ElementId): Element {
   return {
     kind: 'flow',
-    id: generateElementId(),
-    name: newFlowName,
-    description: '',
-    outOfScope: false,
-    reasonOutOfScope: '',
+    ...namedElement(newFlowName),
     source: { kind: 'attached', element: source },
     target: { kind: 'attached', element: target },
     waypoints: [],
     bidirectional: false,
+  };
+}
+
+function namedElement(name: string) {
+  return {
+    id: generateElementId(),
+    name,
+    description: '',
+    outOfScope: false,
+    reasonOutOfScope: '',
   };
 }
 
@@ -250,4 +207,33 @@ function arch(position: Point, size: Size): Point[] {
     { x: position.x + size.width / 2, y: position.y },
     { x: position.x + size.width, y: position.y + size.height },
   ];
+}
+
+function insideStroke(kind: BoxElementKind, outer: NodeBox): NodeBox {
+  const nominal = boxElementStrokeInsets(kind);
+  const nominalWidth = nominal.top + nominal.bottom;
+  const available =
+    kind === 'store'
+      ? outer.size.height / 2
+      : Math.min(outer.size.width, outer.size.height) / 2;
+  const strokeWidth = Math.min(nominalWidth, available);
+  const halfStroke = strokeWidth / 2;
+  const inset =
+    kind === 'store'
+      ? { top: halfStroke, right: 0, bottom: halfStroke, left: 0 }
+      : {
+          top: halfStroke,
+          right: halfStroke,
+          bottom: halfStroke,
+          left: halfStroke,
+        };
+  const width = outer.size.width - inset.left - inset.right;
+  const height = outer.size.height - inset.top - inset.bottom;
+  return {
+    position: {
+      x: outer.position.x + (outer.size.width - width) / 2,
+      y: outer.position.y + (outer.size.height - height) / 2,
+    },
+    size: { width, height },
+  };
 }

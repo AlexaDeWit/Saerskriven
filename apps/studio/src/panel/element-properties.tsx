@@ -1,7 +1,10 @@
 import type { Element, ElementId, ElementProperties } from '@saerskriven/model';
 import { Collapsible } from 'radix-ui';
 import { useEffect, useState } from 'react';
-import { announce, resetAnnouncements } from '../canvas/announcements.js';
+import {
+  announceRefusal,
+  resetAnnouncements,
+} from '../canvas/announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import type { RefusedDraft } from '../ui/text-field.js';
@@ -42,24 +45,34 @@ export function ElementPropertiesEditor({
       ([field, draft]) => propertyValue(element, field) === draft.value,
     ),
   );
-  if (current.size !== refusals.size) setRefusals(current);
+  if (current.size !== refusals.size) {
+    setRefusals(current);
+  }
   useEffect(() => {
     drafts?.set(elementId, refusals);
   }, [drafts, elementId, refusals]);
-  if (element === undefined || element.kind === 'text' || diagram === undefined)
+  if (
+    element === undefined ||
+    element.kind === 'text' ||
+    diagram === undefined
+  ) {
     return null;
+  }
   const commit = (properties: ElementProperties) => {
     resetAnnouncements();
     dispatch(Action.SetElementProperties({ elementId, properties }));
   };
   const refused = (field: string) => (draft: RefusedDraft | undefined) => {
-    if (draft === undefined && !refusals.has(field)) return;
+    if (draft === undefined && !refusals.has(field)) {
+      return;
+    }
     const next = new Map(refusals);
-    if (draft === undefined) next.delete(field);
-    else {
+    if (draft === undefined) {
+      next.delete(field);
+    } else {
       next.set(field, { ...draft, value: propertyValue(element, field) });
       setOpen(true);
-      if (refusals.get(field)?.text !== draft.text) announce(draft.said);
+      announceRefusal(draft, refusals.get(field)?.text);
     }
     setRefusals(next);
   };
@@ -68,7 +81,9 @@ export function ElementPropertiesEditor({
       className={styles.properties}
       open={open}
       onOpenChange={(next) => {
-        if (next) setHasOpened(true);
+        if (next) {
+          setHasOpened(true);
+        }
         setOpen(next || current.size > 0);
       }}
     >
@@ -97,9 +112,12 @@ function propertyValue(
   element: Element | undefined,
   field: string,
 ): string | undefined {
-  if (field === 'protocol' && element?.kind === 'flow') return element.protocol;
-  if (field === 'privilegeLevel' && element?.kind === 'process')
+  if (field === 'protocol' && element?.kind === 'flow') {
+    return element.protocol;
+  }
+  if (field === 'privilegeLevel' && element?.kind === 'process') {
     return element.privilegeLevel;
+  }
   return undefined;
 }
 
@@ -118,7 +136,7 @@ function PropertyFields({
   ) => (draft: RefusedDraft | undefined) => void;
   readonly drafts: ReadonlyMap<string, PropertyDraft>;
 }) {
-  if (element.kind === 'actor')
+  if (element.kind === 'actor') {
     return (
       <>
         <BooleanProperty
@@ -130,7 +148,8 @@ function PropertyFields({
         />
       </>
     );
-  if (element.kind === 'process')
+  }
+  if (element.kind === 'process') {
     return (
       <>
         <BooleanProperty
@@ -165,7 +184,8 @@ function PropertyFields({
         />
       </>
     );
-  if (element.kind === 'store')
+  }
+  if (element.kind === 'store') {
     return (
       <>
         <BooleanProperty
@@ -205,7 +225,8 @@ function PropertyFields({
         />
       </>
     );
-  if (element.kind === 'flow')
+  }
+  if (element.kind === 'flow') {
     return (
       <>
         <BooleanProperty
@@ -243,6 +264,7 @@ function PropertyFields({
         />
       </>
     );
+  }
   return (
     <>
       <RelationshipProperty

@@ -1,4 +1,4 @@
-import type { NodeBox } from './handles.js';
+import { sameNodeBox, type NodeBox } from './handles.js';
 
 /** Positions of the four side controls and four corner controls. */
 export const resizeControlPositions = [
@@ -55,13 +55,7 @@ export function resizeBoxByKey(
   const changed = horizontal
     ? resizeOnHorizontalAxis(box, control, requested)
     : resizeOnVerticalAxis(box, control, requested);
-  if (changed === undefined) {
-    return undefined;
-  }
-  return changed.position.x === box.position.x &&
-    changed.position.y === box.position.y &&
-    changed.size.width === box.size.width &&
-    changed.size.height === box.size.height
+  return changed === undefined || sameNodeBox(changed, box)
     ? undefined
     : changed;
 }

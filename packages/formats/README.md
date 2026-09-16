@@ -1,371 +1,74 @@
 # @saerskriven/formats
 
-The codec contract for Saerskriven's file formats. `Codec` is one interface over
-two paths. `read` returns the internal model together with the wire document
-it was mapped from. `write` takes that document back as an option: given one
-it merges onto it, so what the model does not describe stays as the file had
-it; given none it projects the model into the format's canonical form.
+Reads and writes Saerskriven's file formats, and imports OTM and TM-BOM. It is
+the only package that maps between the model and the wire packages: it imports
+`@saerskriven/model` and the wire packages, and no other internal package.
+Behavioural detail lives in the TSDoc of the module named beside each part
+below.
 
-A format is adopted completely or not at all. Its wire schema declares
-everything the format carries, the parts Saerskriven does not model included,
-because that completeness is what preserves them: a merge leaves untouched
-what it does not map, and only a declared key is there to leave alone. The
-schema is demanding about what it declares and drops what it does not, so
-`read` returns divergences of its own naming the keys it stripped, and an
-incomplete schema announces itself rather than quietly shortening the file.
+## Codecs
 
-The interface is generic over that schema and carries it as a member, so the
-contract cannot describe a codec without one, and `write` accepts only a
-document its own schema describes.
+A `Codec` ([`codec.ts`](src/lib/codec.ts)) is one interface over two paths.
+`read` returns the model together with the wire document it was mapped from.
+`write` merges the model onto that document when given it, so what the model
+does not describe stays as the file had it, and projects the model into the
+format's canonical form when given none. A read that fails returns a
+`ReadFailure` in an Effect `Either`, and `renderReadFailure`
+([`read-failure.ts`](src/lib/read-failure.ts)) words it for a person.
 
-A divergence is any place a file and the model do not correspond exactly, or
-a written file and the source it was merged onto, and one list of them serves
-every path. Each entry names the entity, what did not correspond, and why:
-`unrepresentable` for what the format cannot express, `undeclared` for a key a
-read dropped, `narrowed` for a value reduced to fit, `split` for one record
-the format forces into several, `overridden` for a value the codec wrote over
-rather than repeated, and `discarded-by-edit` for what an edit removed from
-the file. An empty list is the aligned case, and `renderDivergences` turns the
-list into lines for a person, escaping what an imported id could otherwise do
-to a line. `escapedForTerminal` is that escaping less the quote an id in
-quotes takes on top of it, exported because the CLI writes model text to a
-terminal on paths of its own and one escaper is what keeps the two from
-drifting apart.
+Two codecs are registered:
 
-`read` returns Effect's `Either` with a package-owned `ReadFailure` on the
-error channel, one variant per place a read stops: a text past a read limit,
-text the format's syntax refuses, a document the wire schema refuses, and a
-mapping `parseModel` refuses. The two schema variants carry the model
-package's `ParseIssue`, so issues read the same way whichever boundary
-produced them, and `readFailureIssues` folds any failure to the issues it
-carries. Nothing throws. Imports `@saerskriven/model` and the wire packages,
-and no other internal package.
+- `threatDragonCodec`, Threat Dragon v2, declared by
+  [`@saerskriven/wire-threat-dragon`](../wire-threat-dragon/README.md). The read
+  is [`threat-dragon-read.ts`](src/lib/threat-dragon-read.ts) and the merge and
+  its numbering rules are
+  [`threat-dragon-write.ts`](src/lib/threat-dragon-write.ts).
+- `saerskrivenYamlCodec`, the native format, declared by
+  [`@saerskriven/wire-saerskriven-yaml-v2`](../wire-saerskriven-yaml-v2/README.md)
+  for version 2 and
+  [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md) for
+  version 1. A write emits version 2, and a read takes both, migrating version 1
+  in [`saerskriven-yaml-migration.ts`](src/lib/saerskriven-yaml-migration.ts).
+  [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the
+  file.
 
-`readLimits` is what a read may spend on a text before it refuses it. It is
-one exported value, so a caller that checks a file before handing it over
-enforces the numbers the codecs enforce rather than numbers of its own. Four
-parsing bounds today, each with headroom over the largest file the repository vendors
-and each justified by a fixture under `test-data/adversarial` built to break
-it: the size of the text in UTF-8 bytes, 8 MiB and about sixty times that
-file (4 MiB up to 0.3.0, so an earlier release refuses a file between the
-two); how far below the root a value may sit, 64 levels; how many aliases
-resolving a document works through, 50; and how much of a document those
-aliases reach, 100,000 nodes.
+`readAnyFormat` ([`detect.ts`](src/lib/detect.ts)) opens a text without being
+told its format and answers with the codec that claimed it, so a later write
+goes back through the same one.
 
-Both reads pass their text through `parseWithinLimits`. The size is measured
-before a parser sees the text, since that bound is what keeps the parse itself
-finite, and the nesting of what it parsed to is measured after, by a walk
-carrying its own stack that stops one level past the bound. The walk bounds
-its own work as well as its depth: it goes level by level and expands a node
-only when it reaches that node deeper than it has before, so a value reachable
-along many paths costs its own size rather than the number of paths through
-it, and it holds every distinct node it has expanded while it runs, so a
-document costs about its own parsed size again. A cycle an alias closed is
-unbounded depth, which the walk climbs to the bound and refuses there rather
-than following, and one that branches costs its width rather than multiplying
-by it at every level.
+## Divergences
 
-The YAML read takes both alias bounds between composing a document and
-resolving it, which is the only place the cheap measurement exists, and it
-takes them itself: `toJS` is called with `maxAliasCount: -1`, so the parser
-accounts for nothing. Its accounting resolves an alias by scanning the whole
-document and takes that scan once per anchor, so a document nesting anchors
-within anchors pays it once per level: fifty aliases arranged that way in a
-4 MiB text cost 147 seconds inside the parser, where measuring them here costs
-a fifth of a millisecond. A nesting the parser has no stack for is still
-reported as the bound that stopped the read.
+A divergence is a place a file and the model do not correspond exactly, or a
+written file and the source it was merged onto. Reads and writes return one
+list of them, and an empty list is the aligned case. The reasons and the
+terminal escaping of `renderDivergences` are in
+[`divergence.ts`](src/lib/divergence.ts).
 
-One traversal of the composed document takes both numbers. How many aliases
-resolution works through is one for each alias plus the expanded aliases
-inside its anchor, weighed bottom up, so a cycle is an anchor reached from
-inside itself and is refused there rather than by the nesting walk further on.
-How much of the document those aliases reach is the nodes under each alias's
-anchor summed over the aliases, because a count says nothing about size: a
-one-node anchor is as cheap to alias as a two-million-node one. What an alias
-costs there is not a copy, since `toJS` hands every alias to one anchor the
-same value: it is that the nesting walk expands a node again for each depth an
-alias reaches it from. The traversal costs the document, once, and the
-counting after it costs the ceilings: a node is counted once under an anchor,
-an anchor is walked once however many aliases repeat it, and neither walk
-holds more than one node's children past what it can still count.
+## Read limits
 
-`JSON.parse` needs no such handling, since it builds a value of any depth
-without recursing, which leaves the walk as the only thing standing between a
-3,000-deep payload and whatever would have recursed over it. A text within the
-bounds reads exactly as it did before they existed.
+`readLimits` ([`read-limits.ts`](src/lib/read-limits.ts)) is what a read may
+spend on a text before refusing it, exported so a caller checking a file first
+enforces the same numbers. There are four parsing bounds: 8 MiB of UTF-8, 64
+levels of nesting, 50 YAML aliases, and 100,000 nodes reached through them.
+`maxImportTextUnits` is an import budget beside them. YAML alias accounting is
+in [`yaml-alias-cost.ts`](src/lib/yaml-alias-cost.ts).
 
-`readThreatDragon` is the Threat Dragon v2 read. The format is declared by
-[`@saerskriven/wire-threat-dragon`](../wire-threat-dragon/README.md), which
-imports zod and nothing else, and this package is the only one that maps
-between it and the model. That wire schema declares the whole file, the X6
-styling and port styling that Saerskriven does not model included. What it declares it demands, and it demands nothing else, because it
-describes the file rather than the subset Saerskriven can represent: a threat's
-status, severity, category and methodology are text, since Threat Dragon
-stores each label in the author's own locale, and a threat number is optional,
-since most threats in Threat Dragon's own demo models carry none. `version`
-accepts `2`, `2.x` and `2.x.y`, and a file from another major is refused whole
-rather than read in part. A cell id and a threat id are two characters or
-more, the bound Threat Dragon's own schema states, so a file that breaks it
-stops as `InvalidWireDocument` with a path into the file rather than as
-`InvalidModel` one layer later. A key the schema does not declare is dropped
-and reported through `undeclaredDivergences`, the walk every wire codec
-shares, so a schema that has fallen behind the format announces itself.
+## Import
 
-Element security facts and declared boundary relationships map into typed model
-properties and native YAML, which writes version 2 and reads version 1 too. The mappings preserve explicit negatives, empty
-values, and absence. Threat Dragon writes include these facts without needing the
-original JSON. With a source document, mapped facts follow the model while styling
-and other unmapped fields retain the source values. A removed optional model fact
-also disappears from the merged source. Invalid security text returns an
-`InvalidModel` failure with the field path. Invalid relationship targets do too,
-including missing, cross-diagram and wrong-kind references. Neither read silently
-removes a recorded assertion to make an invalid source pass.
+[Import](../../docs/import.md) converts OTM and TM-BOM into a native model through
+`importModel` ([`import.ts`](src/lib/import.ts)). No codec writes those
+formats.
 
-A value with no home in the internal model therefore reaches the document
-intact, and what the mapping then does with it is a separate question from
-how the file is read. A category label is looked up in the language Threat
-Dragon wrote it in before it is read, so a German file and an English one
-describing the same threat reach the same category. A methodology the model
-does not enumerate becomes a custom category carrying Threat Dragon's own
-names unchanged, which is the model's escape hatch working rather than a
-loss, so nothing is reported for it. Two things are reported, because the
-model does hold them less exactly than the file stated them: an Elevation of
-Privilege card, of which only the suit has a home, and a label from a
-language Threat Dragon has added since this codec read its translations. A
-threat the file leaves unnumbered is issued the next number above the model's
-own mark.
+## Fixtures
 
-Two corpora under `test-data/threat-dragon` gate this, each a different part
-of it. The twelve threat models Threat Dragon ships in its own v2 format all
-read, with no key undeclared and no value narrowed, which is the gate on the
-wire schema being complete. The label tables it ships in sixteen languages
-are the gate on the recovery above, which those models cannot exercise: every
-one of them is written in English.
-
-`readSaerskrivenYaml` and `writeSaerskrivenYaml` are the Saerskriven YAML format,
-paired as `saerskrivenYamlCodec`. It is the native format. A write emits
-version 2, which holds the whole model, and reports nothing. A read takes
-every released version: `saerskrivenYamlVersionsSchema` tells them apart by
-`formatVersion`, refusing any other stamp, or none, at that path, and
-`currentSaerskrivenYaml` brings a version 1 document to version 2 through
-`migratedFromVersion1`. The migration is three steps over the version 1
-document. `withoutAssumptionElementLinks` empties the element links the model
-no longer holds, and `droppedAssumptionElementLinks` reports each assumption
-that held any as `narrowed`. `withMitigationTextAsRecords` turns each threat's
-`mitigation` text into a record on the terms of the Threat Dragon read below,
-with every id the file holds taken. `assumptionsWithModelLinks` applies an
-assumption that links no threat to the model. The last two report nothing,
-since nothing is lost. The document a read
-hands back is in version 2, and `readSaerskrivenYamlDocument` maps a document
-of either version without its text, which is how the studio restores a
-recovery snapshot.
-[`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the
-file itself.
-
-Each version is declared by a wire package that imports zod and nothing else:
-[`@saerskriven/wire-saerskriven-yaml-v2`](../wire-saerskriven-yaml-v2/README.md)
-for version 2 and [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md)
-for version 1. A file is a contract with people who
-already have one and the model is ours to change, so the two are separate
-declarations that happen to say the same thing today, and this package is the
-only one that knows both. The mapping is written out record by record in both
-directions, and every vocabulary crosses through the tables in
-`saerskriven-yaml-vocabulary.ts`, each annotated with the whole `Record` of the
-side it reads: a member added to either vocabulary is a compile error in the
-mapping. Ids cross as the plain strings a file holds and are branded by
-`parseModel`, the same way the Threat Dragon read hands them over.
-
-`formatVersion` is a zod literal in each version, so a file stamped with a
-version this release does not know fails at that path rather than reaching the
-mapping, which is what lets the detection layer tell a Saerskriven file from a
-JSON one without the extension. A key the schema of the file's version does
-not declare is dropped and reported through `undeclaredDivergences`, the same
-walk the Threat Dragon read uses, so a file from a later release still reads.
-
-Two writes of one model are byte-identical, which is what makes a model file
-in git worth diffing. `canonicalOrder` puts each object's keys in the order
-its schema declares them, with the tag of a tagged union first; threats are
-written in number order, a number being unique and never reissued; and no
-line is wrapped, so an edited sentence changes its own line rather than
-reflowing the paragraph. Every other list keeps the model's order. `write`
-takes the contract's source document and cannot be changed by it: there is
-nothing for a merge to preserve when the format holds the whole model.
-
-Two files in this format are committed and compared byte for byte on every
-run, so a change to what the format writes arrives as a diff on a file.
-`test-data/saerskriven/ecluse.yaml` is the Écluse model, read from Threat Dragon
-and written here. [`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md)
-is Saerskriven's own threat model, authored in this format rather than read out
-of another, and it is its own golden: the read of the committed bytes is
-written back and compared against the file itself. `nativeFixtures` is the
-list of them, and the reads, the detection and the read-limit gates all
-iterate it, so a third file joins all of them by being added there. Each
-entry also names where its internal model is written out for the packages
-that cannot import a codec, or names none where another package is that
-file's producer. `test-data/saerskriven.model.json` is the one this suite writes
-out, read by `packages/canvas` and `packages/render`, while `apps/cli` reads
-both committed files above and `apps/studio` the Saerskriven one, so all four of
-those suites run after this one:
-[`test-data/README.md`](../../test-data/README.md) names
-the pairs and [`CODING.md`](../../CODING.md) the rule that orders them.
-Two version 1 files are frozen beside them and never regenerated:
-`ecluse-v0.2.1.yaml` from before a flow's `bidirectional` and an endpoint's
-`side`, and `saerskriven-v0.3.0.yaml`, the gate on the v1 to v2 migration.
-Models generated over the model's own shape gate the rest: each survives a
-write and a read as itself, with its threats in number order.
-
-`writeThreatDragon` is the other half, and the two are paired as
-`threatDragonCodec`. Given the document a read returned it merges the model
-onto it, and given none it projects the model into Threat Dragon's own
-canonical form. Output is built through the wire schema's
-inferred types, so the writer cannot emit a shape that schema would refuse,
-and the path down to a threat, which Threat Dragon nests eight levels deep at
-`detail.diagrams[i].cells[j].data.threats[k]`, is walked with the typed
-helpers in `threat-dragon-document.ts` rather than with casts.
-
-The merge writes over the mapped fields and leaves the document otherwise as
-it found it, which is how `attrs` styling, `zIndex` and `tools` survive a save. A port is half
-mapped: Threat Dragon fastens a flow end to a port, and a port belongs to one
-of four groups named for the sides of the cell, so the read takes the port's
-side as the end's pinned side and the write fastens a pinned end to a port on
-that side, the source's own where it already sits there, else one the cell
-declares there, else one the write declares on the cell and names for the
-side. An end the model leaves to the renderer is written with no port, since
-a port would read back as a pinned side. `isBidirectional` maps to the flow's
-`bidirectional` both ways. A mapped field is
-rewritten only where what the source says no longer reads back as what the
-model says, because the mapping is not injective in two places the corpus
-holds: Threat Dragon stores a category as the label its author saw, so a
-German file says `Manipulation` where an English one says `Tampering`, and it
-reads both `TBD` and `TBA` as the one undecided severity. Overwriting either
-would record a user's edit where the read merely normalized.
-
-Three decisions the codec makes on its own, each reported as `overridden`
-where the source said otherwise. It stamps the release it models, 2.6.2,
-rather than repeating the one the file arrived with. It raises
-`detail.threatTop` to cover a number it wrote that the file did not already
-carry, so Threat Dragon issues no number twice, and never lowers it: the mark
-is what keeps the gap a removed threat left from being handed out again. The
-mark rises for one other reason, and says which: a model that has issued
-above every number the file holds would otherwise lose that gap on the way
-back in. A file that declared no mark at all is given one covering the
-numbers it holds, since a zero there is a number Threat Dragon would reissue.
-`detail.diagramTop` follows the same rules for a diagram number. Issuing a
-number is not itself a divergence, since the file gains a fact rather than
-losing one.
-
-What the format cannot hold is named rather than dropped in silence: an
-assumption, which Threat Dragon keeps no record of; a threat
-attached to a trust boundary or a note, which it nests threats under neither;
-a note's name, which it holds one text for; an out-of-scope marking on a
-boundary or a note; and a diagram's name, which the format replaces with a
-number. A value that does reach the file and comes back holding less is
-narrowed rather than unrepresentable, which is where a PLOT4ai category
-lands: the label is written whole, and reads back as a custom category
-because Threat Dragon ships an older eight-category set naming something
-else. A threat this write is the one to divide across several cells is
-reported as `split`, and a document that already nested it under each of them
-was split before this write ran, so a merge onto it reports nothing. Where a
-merge meets a document an edit has moved out from under, the diagram, cell,
-or threat that went is reported as `discarded-by-edit` with what it was
-carrying.
-
-Threat Dragon holds one mitigation text per threat, and the model holds
-mitigations as records. The read makes one record of a non-empty text, linked
-to that threat alone, with an empty title, the text as its prose, and the
-status `implemented` where the threat is `mitigated` and `proposed` otherwise.
-A status is inferred only across a one-to-one correspondence like this one. The
-record's id is `<threat id>-mitigation`, counted on with `-2`, `-3` past any
-id the model already holds, as `mitigationsFromText` in `mitigation-text.ts`
-states. The records follow threat number order, so this read and the
-Saerskriven YAML v1 to v2 migration make the same records in the same order of
-one model. The write flattens the mitigations linked to a threat, in register
-order, into its one text: a record's title on a line above its prose, a blank
-line between records. A text merging more than one record, or carrying a record's
-title, reads back as one record with no title, so it is reported once per
-threat as `narrowed`. A record with neither title nor prose writes nothing and
-is `unrepresentable` once per threat it would be written into. A record written into several threats' texts is
-`split`, and one written into none is `unrepresentable`. The
-format has no place for a record's status, and the write adds no text or key
-for one, so a mitigation whose status differs from what a read of a threat it
-is written into infers is reported as `unrepresentable` once for each such
-threat. An unedited read written back keeps every text to the byte and reports
-none of these.
-
-Three oracles gate the write, all of them over the vendored corpus rather
-than over invented input. Every file is written straight back onto its own
-document and compared raw parsed input against raw parsed output: no scalar
-moves but the stamps above, and each one that moves is matched by the
-divergence that claims it. On `ecluse.json`, which is already stamped 2.6.2
-and already numbers every threat, nothing moves at all and nothing is
-reported. Every file then reads back as the model it was written from, and
-`ecluse.json` reads back as the internal model committed at
-`test-data/ecluse.model.json`, which `packages/model` holds against its own
-fixture and writes on an update run, ordered ahead of this suite as
-[`CODING.md`](../../CODING.md) states. And every written file validates
-against the JSON Schema Threat Dragon ships, run through ajv as that tool
-runs it. That schema describes the file Threat Dragon writes only in part,
-and threats least of all: it declares them beside `data` rather than under
-it, and constrains nothing this codec puts there. So the oracle gates the
-shape of the document, and the two oracles above are what gate its threats.
-
-`readAnyFormat` opens a text without being told which format it is, and
-answers with the codec that read it beside everything that read produced. The
-CLI, Studio and the MCP load tool will each open files, so the choice is made
-here once rather than three times.
-
-Detection is the reads themselves: the registered codecs are tried in order,
-and each is tried by reading. A codec claims a text when its read succeeds,
-when the mapping fails, or when its wire schema refuses the document over
-something other than the root keys that name the format, which `detect.ts`
-lists beside each codec. It does not claim when the text is not the format's
-syntax at all, when the schema's complaint is at one of those naming keys or
-above them, or when the complaint is about the document as a whole, a text
-that is no mapping at all being no format's file.
-
-A document that has lost a whole naming key at the root is therefore claimed
-by nobody, where the same document broken one level under a naming key is
-claimed and then refused. That is where the line falls: a version-stamped JSON
-file carrying no summary section at all is likelier a file of another tool
-than a Threat Dragon file that lost one, and a file holding a cell the schema
-refuses is a broken file of a known format rather than a file of some other.
-Once a codec claims, its answer stands: a claimed file that then fails comes
-back as that codec's own `ReadFailure`, where it broke, rather than falling
-through to the next codec.
-
-A read bound stops detection outright, ahead of any question of claiming: what
-a text costs to read is a property of the text rather than of a format, so an
-`ExceededReadLimit` is the answer and no further codec is offered the text.
-
-Threat Dragon is tried first, and the order is a cost decision rather than a
-correctness one. JSON is YAML, so trying Saerskriven YAML first would run the
-YAML parser over the whole of every Threat Dragon file before the schema
-refused it at `formatVersion`, where trying Threat Dragon first stops on a
-YAML file at the first character JSON cannot begin with. A file name is never
-consulted in either direction, so a Saerskriven model saved as `.json` opens as a
-Saerskriven model.
-
-Where no codec claims, the failure is `NoFormatClaimed`, which names every
-format tried, in the order tried, and carries no codec's issues: a codec that
-did not claim was refusing a format the text was never in, and its complaints
-describe a document nobody wrote. A file from a release neither codec models
-lands there, a `formatVersion` other than 1 and 2 and a Threat Dragon version
-outside major 2 among them, so a later release of either format needs a reader
-of its own rather than a looser one, and until there is one the person
-holding the file is told what was tried.
-
-The result is a union with one member per codec, discriminated by `format`, so
-narrowing on the name pairs a source document with the codec that produced it:
-`codec.write(model, source)` type-checks inside a member, and pairing one
-member's source with the other member's codec does not compile. Which document
-belongs to which codec is what a caller cannot check by looking at the
-document, which is why the codec comes back and not the model alone.
-
-[Import](IMPORT.md) is a separate conversion path for OTM and TM-BOM. It
-produces native models without adding those formats to Open or Save As.
-
-Nothing here parses a text of its own. Detection is the codec reads, so the
-bounds those reads put on size, nesting and aliases bound a detected read
-too.
+Two native files are committed and compared byte for byte:
+`test-data/saerskriven/ecluse.yaml` and
+[`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md).
+`nativeFixtures` in
+[`saerskriven-yaml.fixtures.ts`](src/lib/saerskriven-yaml.fixtures.ts) lists
+them, [`test-data/README.md`](../../test-data/README.md#saerskrivenmodeljson)
+describes the model JSON this suite derives for the packages that cannot import
+a codec, and the [threat model's README](../../threat-modelling/README.md) says
+how a further native file joins.
 
 Unit tests: `pnpm nx test @saerskriven/formats`.

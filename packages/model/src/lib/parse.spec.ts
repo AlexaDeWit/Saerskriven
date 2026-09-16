@@ -1,7 +1,7 @@
 import { Either } from 'effect';
 import * as api from '../index.js';
 import { issuesOf, seededModel, validModelFixture } from './fixtures.js';
-import { parseModel, toParseIssues } from './parse.js';
+import { issueLine, parseModel, toParseIssues } from './parse.js';
 
 const plantEverywhere = (value: unknown): unknown =>
   Array.isArray(value)
@@ -281,6 +281,17 @@ describe('toParseIssues', () => {
     ).toEqual([
       { path: ['diagrams', 0, 'Symbol(kind)'], message: 'no', code: 'custom' },
     ]);
+  });
+});
+
+describe('issueLine', () => {
+  it('prints an issue as its dotted path and message, and an empty path as (root)', () => {
+    expect(
+      issueLine({ path: ['diagrams', 0, 'id'], message: 'no', code: 'custom' }),
+    ).toBe('diagrams.0.id: no');
+    expect(issueLine({ path: [], message: 'no', code: 'custom' })).toBe(
+      '(root): no',
+    );
   });
 });
 

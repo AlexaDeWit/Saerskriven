@@ -2,9 +2,7 @@ import type { ElementId, Point } from '@saerskriven/model';
 import {
   BaseEdge,
   Handle,
-  NodeResizeControl,
   Position,
-  ResizeControlVariant,
   useInternalNode,
   useStore,
   type Edge,
@@ -13,15 +11,20 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import type { CSSProperties, KeyboardEvent, ReactElement } from 'react';
-import { badgeAnchor, badgeExtent, ThreatBadgeGlyph } from './badges.js';
-import { ElementGlyph, FlowGlyph } from './glyphs.js';
+import type { ReactElement } from 'react';
+import { badgeAnchor, ThreatBadgeGlyph } from './badges.js';
+import { edgePoints } from './flow-anchors.js';
 import { shiftedBy } from './geometry.js';
-import { handleSides, type HandleSide, type NodeBox } from './handles.js';
+import { ElementGlyph, FlowGlyph } from './glyphs.js';
+import {
+  handleSides,
+  nodeBoxesOf,
+  type HandleSide,
+  type NodeBox,
+} from './handles.js';
+import { layoutDuringMove, reanchoredFlow } from './layout-move.js';
 import {
   isBoundary,
-  layoutDuringMove,
-  reanchoredFlow,
   type CanvasBoundaryNode,
   type CanvasEdge,
   type CanvasLayout,
@@ -30,77 +33,17 @@ import {
 } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { polylinePath, smoothPath } from './paths.js';
+import { ResizeControls } from './resize-controls.js';
 import { canvasClassNames } from './stylesheet.js';
-import {
-  keyboardResizeStep,
-  minimumNodeExtent,
-  resizeBoxByKey,
-  resizeBoxOnControlAxes,
-  resizeControlPositions,
-  resizeKeys,
-  shiftedKeyboardResizeStep,
-  type ResizeControlPosition,
-} from './resizing.js';
-import { interactionWidths, resizeHandle, strokeWidths } from './tokens.js';
+import { interactionWidths } from './tokens.js';
 
-const anchorExtent = 1;
-
-const boundaryZIndex = -1;
-
-const nodeZIndex = 0;
-
-const boundaryHitTargetClass = 'pn-boundary-hit-target';
-
-const badgeLayerClass = 'pn-badge-layer';
-
-const resizableKinds = new Set<CanvasNodeKind>([
-  'actor',
-  'process',
-  'store',
-  'text',
-  'boundary-box',
-]);
-
-const handlePlacement = {
-  top: Position.Top,
-  right: Position.Right,
-  bottom: Position.Bottom,
-  left: Position.Left,
-} as const satisfies Record<HandleSide, Position>;
-
-const resizeControlLabels = {
-  top: 'top',
-  right: 'right',
-  bottom: 'bottom',
-  left: 'left',
-  'top-left': 'top left corner',
-  'top-right': 'top right corner',
-  'bottom-right': 'bottom right corner',
-  'bottom-left': 'bottom left corner',
-} as const satisfies Record<ResizeControlPosition, string>;
-
-const resizeControlKeys = {
-  top: resizeKeys.filter((key) => key === 'ArrowUp' || key === 'ArrowDown'),
-  right: resizeKeys.filter(
-    (key) => key === 'ArrowLeft' || key === 'ArrowRight',
-  ),
-  bottom: resizeKeys.filter((key) => key === 'ArrowUp' || key === 'ArrowDown'),
-  left: resizeKeys.filter((key) => key === 'ArrowLeft' || key === 'ArrowRight'),
-  'top-left': resizeKeys,
-  'top-right': resizeKeys,
-  'bottom-right': resizeKeys,
-  'bottom-left': resizeKeys,
-} as const satisfies Record<ResizeControlPosition, readonly string[]>;
-
-const sideControls = new Set<ResizeControlPosition>(handleSides);
-
-/** What a React Flow node of a Saerskriven diagram carries: the laid-out node. */
+/** What a React Flow node of a diagram carries: the laid-out node. */
 export type CanvasNodeData = { readonly node: CanvasNode };
 
 /** One React Flow node of a Saerskriven diagram. */
 export type CanvasFlowNode = Node<CanvasNodeData, CanvasNodeKind>;
 
-/** What a React Flow edge of a Saerskriven diagram carries: the laid-out flow. */
+/** What a React Flow edge of a diagram carries: the laid-out flow. */
 export type CanvasEdgeData = {
   readonly edge: CanvasEdge;
   readonly boxes?: ReadonlyMap<ElementId, NodeBox>;
@@ -110,63 +53,6 @@ export type CanvasEdgeData = {
 
 /** One React Flow edge of a Saerskriven diagram. */
 export type CanvasFlowEdge = Edge<CanvasEdgeData, 'flow'>;
-
-/**
- * The layout at the positions React Flow holds during a gesture. The first
- * moving selected node supplies the shared offset for selected flows.
- */
-export function layoutAtReactFlowNodes(
-  layout: CanvasLayout,
-  nodes: readonly (CanvasFlowNode | CanvasFreeEndNode)[],
-  selection: readonly ElementId[],
-  exactLabels = true,
-  labelBases: ReadonlyMap<string, CanvasEdge> = new Map(),
-): CanvasLayout {
-  const original = new Map<string, CanvasNode>(
-    layout.nodes.map((node) => [node.id, node]),
-  );
-  const selected = new Set(selection);
-  const boxes = new Map<ElementId, NodeBox>();
-  let offset = { x: 0, y: 0 };
-  for (const node of nodes) {
-    const settled = original.get(node.id);
-    if (
-      settled !== undefined &&
-      selected.has(settled.id) &&
-      offset.x === 0 &&
-      offset.y === 0
-    ) {
-      offset = {
-        x: node.position.x - settled.position.x,
-        y: node.position.y - settled.position.y,
-      };
-    }
-  }
-  for (const node of nodes) {
-    const settled = original.get(node.id);
-    if (settled === undefined) {
-      continue;
-    }
-    boxes.set(settled.id, {
-      position:
-        selected.has(settled.id) && (offset.x !== 0 || offset.y !== 0)
-          ? shiftedBy(settled.position, offset)
-          : node.position,
-      size: {
-        width: node.measured?.width ?? node.width ?? settled.size.width,
-        height: node.measured?.height ?? node.height ?? settled.size.height,
-      },
-    });
-  }
-  return layoutDuringMove(
-    layout,
-    boxes,
-    selected,
-    offset,
-    exactLabels,
-    labelBases,
-  );
-}
 
 /** The React Flow node type of the anchor a flow's free end rides on. */
 export const freeEndNodeKind = 'free-end';
@@ -181,25 +67,15 @@ export type CanvasFreeEndData = Record<string, never>;
 export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
 
 /**
- * One element as a React Flow node: the shared glyph at the model's own
- * width and height, and a handle at each side midpoint. Every handle is of
- * type `source`, so the canvas that mounts these passes
- * `connectionMode={ConnectionMode.Loose}` for a flow to be able to end on
- * one. Each handle takes the node's resolved connectability, so a trust
- * boundary handle cannot start a connection. The wrapper adds nothing of
- * its own to the drawing. The drawing is hidden from assistive technology:
- * the node's accessible name says what the glyph shows, and the canvas
- * mounting it settles that name. `textVisible` false leaves the glyph's text
- * out, for the canvas that mounts a text editor over it.
- *
- * A selected resizable element carries four side controls and four corner
- * controls. A boundary curve carries none because the model has no extent.
- * The badge draws in a layer of its own after the controls, so a canvas can
- * stack it above the selection frame. On an element with a badge, the
- * top-right corner control sits on the top edge left of the badge's ink. The
- * `resizeHandle.badgeGap` is scaled with the control, so it holds on screen as
- * React Flow scales the control up at low zoom. In diagram units at full zoom
- * it stays clear of the top-left control.
+ * One element as a React Flow node: the shared glyph at the model's own size
+ * and a `source` handle at each side midpoint, so the canvas mounting it
+ * passes `connectionMode={ConnectionMode.Loose}` for a flow to end on one.
+ * The drawing is hidden from assistive technology, so the mounting canvas
+ * gives the node its accessible name. `textVisible` false leaves the glyph's
+ * text out, for a canvas with a text editor over it. A selected element the
+ * model can resize carries the resize controls. The badge draws last, in an
+ * SVG layer classed `pn-badge-layer`, so a canvas can stack it above the
+ * selection frame.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
@@ -269,162 +145,6 @@ export function CanvasNodeBody({
   );
 }
 
-function BadgeLayer({
-  node,
-}: {
-  readonly node: CanvasNode;
-}): ReactElement | null {
-  if (node.badge === undefined) {
-    return null;
-  }
-  return (
-    <svg
-      aria-hidden="true"
-      className={badgeLayerClass}
-      height={svgNumber(node.size.height)}
-      overflow="visible"
-      pointerEvents="none"
-      style={{ position: 'absolute', left: 0, top: 0 }}
-      width={svgNumber(node.size.width)}
-    >
-      <g
-        className={node.outOfScope ? canvasClassNames.outOfScope : undefined}
-        pointerEvents={isBoundary(node) ? undefined : 'visiblePainted'}
-      >
-        <ThreatBadgeGlyph badge={node.badge} at={badgeAnchor(node.size)} />
-      </g>
-    </svg>
-  );
-}
-
-function ResizeControls({
-  node,
-  onResize,
-  onResizeEnd,
-  visible,
-}: {
-  readonly node: CanvasNode;
-  readonly onResize: (() => void) | undefined;
-  readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
-  readonly visible: boolean;
-}): ReactElement {
-  const name = node.name.trim() || node.kind.replace('-', ' ');
-  const settle = (box: NodeBox): void => {
-    onResizeEnd?.(box);
-  };
-  const keyDown = (
-    control: ResizeControlPosition,
-    event: KeyboardEvent<HTMLButtonElement>,
-  ): void => {
-    const resized = resizeBoxByKey(
-      { position: node.position, size: node.size },
-      control,
-      event.key,
-      event.shiftKey ? shiftedKeyboardResizeStep : keyboardResizeStep,
-    );
-    if (resized === undefined || onResizeEnd === undefined) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    settle(resized);
-  };
-
-  return (
-    <>
-      {resizeControlPositions.map((position) => (
-        <NodeResizeControl
-          key={position}
-          minHeight={minimumNodeExtent}
-          minWidth={minimumNodeExtent}
-          onResize={onResize}
-          onResizeEnd={(_, resized) => {
-            settle(
-              resizeBoxOnControlAxes(
-                { position: node.position, size: node.size },
-                position,
-                {
-                  position: { x: resized.x, y: resized.y },
-                  size: { width: resized.width, height: resized.height },
-                },
-              ),
-            );
-          }}
-          position={position}
-          resizeDirection={
-            position === 'left' || position === 'right'
-              ? 'horizontal'
-              : position === 'top' || position === 'bottom'
-                ? 'vertical'
-                : undefined
-          }
-          style={controlStyle(node, position, visible)}
-          variant={
-            sideControls.has(position)
-              ? ResizeControlVariant.Line
-              : ResizeControlVariant.Handle
-          }
-        >
-          <button
-            aria-keyshortcuts={resizeControlKeys[position].join(' ')}
-            aria-label={`Resize ${name} from ${resizeControlLabels[position]}`}
-            onKeyDown={(event) => {
-              keyDown(position, event);
-            }}
-            type="button"
-          />
-        </NodeResizeControl>
-      ))}
-    </>
-  );
-}
-
-function controlStyle(
-  node: CanvasNode,
-  position: ResizeControlPosition,
-  visible: boolean,
-): CSSProperties | undefined {
-  const hidden: CSSProperties = visible ? {} : { visibility: 'hidden' };
-  const badge = position === 'top-right' ? node.badge : undefined;
-  if (badge === undefined) {
-    return visible ? undefined : hidden;
-  }
-  const handleExtent = resizeHandle.size + 2 * resizeHandle.border;
-  const gap = `${svgNumber(resizeHandle.badgeGap)}px`;
-  const reach = badgeExtent(badge).radius + strokeWidths.badgeRing / 2;
-  const beyondTopLeft = 2 * (handleExtent + resizeHandle.badgeGap);
-  return {
-    ...hidden,
-    left: `max(${svgNumber(beyondTopLeft)}px, calc(100% - ${svgNumber(reach)}px))`,
-    translate: `calc(-100% - ${gap}) -50%`,
-    transformOrigin: `calc(100% + ${gap}) 50%`,
-  };
-}
-
-function BoundaryHitTarget({
-  node,
-}: {
-  readonly node: CanvasBoundaryNode;
-}): ReactElement {
-  const interaction = {
-    'aria-hidden': true,
-    className: boundaryHitTargetClass,
-    fill: 'none',
-    pointerEvents: 'stroke',
-    stroke: 'transparent',
-    strokeWidth: svgNumber(interactionWidths.boundary),
-  } as const;
-  return node.kind === 'boundary-box' ? (
-    <rect
-      {...interaction}
-      width={svgNumber(node.size.width)}
-      height={svgNumber(node.size.height)}
-    />
-  ) : (
-    <path {...interaction} d={smoothPath(node.waypoints)} />
-  );
-}
-
 /**
  * One flow from the transient layout a controlled canvas supplies. During a
  * drag it follows the live endpoint boxes and translates selected flow
@@ -471,7 +191,7 @@ export function CanvasEdgeBody({
     liveBox(data.targetBox, targetNode, offset),
     offset,
   );
-  const path = polylinePath([edge.source, ...edge.waypoints, edge.target]);
+  const path = polylinePath(edgePoints(edge));
   return (
     <>
       <BaseEdge
@@ -484,27 +204,6 @@ export function CanvasEdgeBody({
       </g>
     </>
   );
-}
-
-function liveBox(
-  settled: NodeBox | undefined,
-  node: InternalNode | undefined,
-  groupOffset: Point,
-): NodeBox | undefined {
-  if (settled === undefined || node === undefined) {
-    return undefined;
-  }
-  const { width, height } = node;
-  if (width === undefined || height === undefined) {
-    return undefined;
-  }
-  return {
-    position:
-      node.selected && (groupOffset.x !== 0 || groupOffset.y !== 0)
-        ? shiftedBy(settled.position, groupOffset)
-        : node.internals.positionAbsolute,
-    size: { width, height },
-  };
 }
 
 /**
@@ -537,12 +236,10 @@ export const canvasEdgeTypes = { flow: CanvasEdgeBody } as const;
 
 /**
  * The laid-out nodes as React Flow's own, each carrying the model's position
- * and extent explicitly so React Flow measures nothing. A boundary curve
- * rides as a node too, sized to the box its waypoints span, so it drags and
- * selects as one thing. Flows are left out: they come over as edges through
- * {@link toReactFlowEdges}, and an end of one that belongs to no element
- * rides on an anchor of its own from {@link freeEndNodes}. A boundary has a
- * lower z-index and leaves pointer events to its explicit hit targets.
+ * and extent so React Flow measures nothing. A boundary curve rides as a node
+ * sized to the box its waypoints span, so it drags and selects as one thing.
+ * A boundary sits below the other nodes and takes pointer events only on its
+ * outline. Flows come over through {@link toReactFlowEdges}.
  */
 export function toReactFlowNodes(layout: CanvasLayout): CanvasFlowNode[] {
   return layout.nodes.map((node) => {
@@ -561,15 +258,6 @@ export function toReactFlowNodes(layout: CanvasLayout): CanvasFlowNode[] {
 }
 
 /**
- * The id of the node a flow's free end rides on, the flow's own id with the
- * side appended. It is derived rather than stored, so the edge and the
- * anchor agree without either holding a reference to the other.
- */
-export function flowEndNodeId(flow: ElementId, side: FlowEndSide): string {
-  return `${flow}-${side}`;
-}
-
-/**
  * The laid-out flows as React Flow's own edges. A React Flow edge runs
  * between two nodes, so an end the model leaves free takes the anchor
  * {@link freeEndNodes} places at that position. The handle each attached end
@@ -577,12 +265,7 @@ export function flowEndNodeId(flow: ElementId, side: FlowEndSide): string {
  * an edge runs matches the drawn line.
  */
 export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
-  const boxes = new Map<ElementId, NodeBox>(
-    layout.nodes.map((node) => [
-      node.id,
-      { position: node.position, size: node.size },
-    ]),
-  );
+  const boxes = nodeBoxesOf(layout.nodes);
   return layout.edges.map((edge) => ({
     id: edge.id,
     type: 'flow',
@@ -617,6 +300,170 @@ export function freeEndNodes(layout: CanvasLayout): CanvasFreeEndNode[] {
     ...anchorOf(edge, 'source'),
     ...anchorOf(edge, 'target'),
   ]);
+}
+
+/**
+ * The id of the node a flow's free end rides on, the flow's own id with the
+ * side appended. It is derived rather than stored, so the edge and the
+ * anchor agree without either holding a reference to the other.
+ */
+export function flowEndNodeId(flow: ElementId, side: FlowEndSide): string {
+  return `${flow}-${side}`;
+}
+
+/**
+ * The layout at the positions React Flow holds during a gesture. The first
+ * moving selected node supplies the shared offset for selected flows.
+ */
+export function layoutAtReactFlowNodes(
+  layout: CanvasLayout,
+  nodes: readonly (CanvasFlowNode | CanvasFreeEndNode)[],
+  selection: readonly ElementId[],
+  exactLabels = true,
+  labelBases: ReadonlyMap<string, CanvasEdge> = new Map(),
+): CanvasLayout {
+  const original = new Map<string, CanvasNode>(
+    layout.nodes.map((node) => [node.id, node]),
+  );
+  const selected = new Set(selection);
+  const boxes = new Map<ElementId, NodeBox>();
+  let offset = { x: 0, y: 0 };
+  for (const node of nodes) {
+    const settled = original.get(node.id);
+    if (
+      settled !== undefined &&
+      selected.has(settled.id) &&
+      offset.x === 0 &&
+      offset.y === 0
+    ) {
+      offset = {
+        x: node.position.x - settled.position.x,
+        y: node.position.y - settled.position.y,
+      };
+    }
+  }
+  for (const node of nodes) {
+    const settled = original.get(node.id);
+    if (settled === undefined) {
+      continue;
+    }
+    boxes.set(settled.id, {
+      position:
+        selected.has(settled.id) && (offset.x !== 0 || offset.y !== 0)
+          ? shiftedBy(settled.position, offset)
+          : node.position,
+      size: {
+        width: node.measured?.width ?? node.width ?? settled.size.width,
+        height: node.measured?.height ?? node.height ?? settled.size.height,
+      },
+    });
+  }
+  return layoutDuringMove(
+    layout,
+    boxes,
+    selected,
+    offset,
+    exactLabels,
+    labelBases,
+  );
+}
+
+const anchorExtent = 1;
+
+const boundaryZIndex = -1;
+
+const nodeZIndex = 0;
+
+const boundaryHitTargetClass = 'pn-boundary-hit-target';
+
+const badgeLayerClass = 'pn-badge-layer';
+
+const resizableKinds = new Set<CanvasNodeKind>([
+  'actor',
+  'process',
+  'store',
+  'text',
+  'boundary-box',
+]);
+
+const handlePlacement = {
+  top: Position.Top,
+  right: Position.Right,
+  bottom: Position.Bottom,
+  left: Position.Left,
+} as const satisfies Record<HandleSide, Position>;
+
+function BadgeLayer({
+  node,
+}: {
+  readonly node: CanvasNode;
+}): ReactElement | null {
+  if (node.badge === undefined) {
+    return null;
+  }
+  return (
+    <svg
+      aria-hidden="true"
+      className={badgeLayerClass}
+      height={svgNumber(node.size.height)}
+      overflow="visible"
+      pointerEvents="none"
+      style={{ position: 'absolute', left: 0, top: 0 }}
+      width={svgNumber(node.size.width)}
+    >
+      <g
+        className={node.outOfScope ? canvasClassNames.outOfScope : undefined}
+        pointerEvents={isBoundary(node) ? undefined : 'visiblePainted'}
+      >
+        <ThreatBadgeGlyph badge={node.badge} at={badgeAnchor(node.size)} />
+      </g>
+    </svg>
+  );
+}
+
+function BoundaryHitTarget({
+  node,
+}: {
+  readonly node: CanvasBoundaryNode;
+}): ReactElement {
+  const interaction = {
+    'aria-hidden': true,
+    className: boundaryHitTargetClass,
+    fill: 'none',
+    pointerEvents: 'stroke',
+    stroke: 'transparent',
+    strokeWidth: svgNumber(interactionWidths.boundary),
+  } as const;
+  return node.kind === 'boundary-box' ? (
+    <rect
+      {...interaction}
+      width={svgNumber(node.size.width)}
+      height={svgNumber(node.size.height)}
+    />
+  ) : (
+    <path {...interaction} d={smoothPath(node.waypoints)} />
+  );
+}
+
+function liveBox(
+  settled: NodeBox | undefined,
+  node: InternalNode | undefined,
+  groupOffset: Point,
+): NodeBox | undefined {
+  if (settled === undefined || node === undefined) {
+    return undefined;
+  }
+  const { width, height } = node;
+  if (width === undefined || height === undefined) {
+    return undefined;
+  }
+  return {
+    position:
+      node.selected && (groupOffset.x !== 0 || groupOffset.y !== 0)
+        ? shiftedBy(settled.position, groupOffset)
+        : node.internals.positionAbsolute,
+    size: { width, height },
+  };
 }
 
 function anchorOf(edge: CanvasEdge, side: FlowEndSide): CanvasFreeEndNode[] {

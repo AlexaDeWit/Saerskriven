@@ -1,15 +1,12 @@
 import { generateDiagramId, type DiagramId } from '@saerskriven/model';
-import { useSyncExternalStore } from 'react';
 import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { untitledDiagram } from '../store/state.js';
-import { dispatch, modelStore } from '../store/store.js';
+import { changedModel, dispatch, modelStore } from '../store/store.js';
+import { externalStore } from '../ui/external-store.js';
 import { announce, nameQuoteLength, quoted } from './announcements.js';
 
-/**
- * Puts the diagram `diagramId` names on screen and says so, and does nothing
- * where it is on screen already or the model does not hold it.
- */
+/** Puts the diagram `diagramId` names on screen and says so, where it was not already. */
 export function showDiagram(diagramId: DiagramId): boolean {
   const before = activeDiagramId(modelStore.getState());
   dispatch(Action.SelectDiagram({ diagramId }));
@@ -21,10 +18,7 @@ export function showDiagram(diagramId: DiagramId): boolean {
   return true;
 }
 
-/**
- * Shows the diagram one place along the model's list from the one on screen,
- * forward or back, wrapping at either end.
- */
+/** Shows the next or previous diagram in the model's order, wrapping at either end. */
 export function stepDiagram(direction: 'next' | 'previous'): boolean {
   const state = modelStore.getState();
   const diagrams = state.present.diagrams;
@@ -38,19 +32,14 @@ export function stepDiagram(direction: 'next' | 'previous'): boolean {
   return target === undefined ? false : showDiagram(target.id);
 }
 
-/**
- * Adds an empty diagram after the model's others, shows it, and opens its
- * title for editing, so the diagram is named as it is made.
- */
+/** Adds an empty diagram after the others, shows it, and opens its title for editing. */
 export function createDiagram(): boolean {
   const diagram = {
     id: generateDiagramId(),
     title: untitledDiagram,
     elements: [],
   };
-  const before = modelStore.getState().present;
-  dispatch(Action.AddDiagram({ diagram }));
-  if (modelStore.getState().present === before) {
+  if (!changedModel(Action.AddDiagram({ diagram }))) {
     return false;
   }
   announce(`Added ${quoted(diagram.title, nameQuoteLength)}.`);
@@ -76,17 +65,7 @@ export function renameActiveDiagram(title: string): boolean {
 
 let renaming: DiagramId | undefined;
 
-const listeners = new Set<() => void>();
-
-function setRenaming(next: DiagramId | undefined): void {
-  if (renaming === next) {
-    return;
-  }
-  renaming = next;
-  for (const listener of listeners) {
-    listener();
-  }
-}
+const renamingStore = externalStore(() => renaming);
 
 /** Opens the title of the diagram on screen in the switcher's field. */
 export function beginRenamingDiagram(): void {
@@ -99,13 +78,11 @@ export function endRenamingDiagram(): void {
 }
 
 /**
- * The diagram whose title the switcher's field is open on, and nothing while
- * the switcher is its button. It names the diagram rather than answering
- * yes or no, so an undo, an open or a close that puts another diagram on
- * screen leaves no field open over it.
+ * The diagram whose title the switcher's field is open on. It names the
+ * diagram, so a field is not left open over another diagram put on screen.
  */
 export function useDiagramRenaming(): DiagramId | undefined {
-  return useSyncExternalStore(subscribe, () => renaming);
+  return renamingStore.use();
 }
 
 /** Puts the switcher back to its button, for specs. */
@@ -113,9 +90,10 @@ export function resetDiagramRenaming(): void {
   setRenaming(undefined);
 }
 
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+function setRenaming(next: DiagramId | undefined): void {
+  if (renaming === next) {
+    return;
+  }
+  renaming = next;
+  renamingStore.notify();
 }

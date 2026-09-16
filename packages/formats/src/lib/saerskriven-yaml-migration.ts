@@ -12,10 +12,10 @@ import { z } from 'zod';
 import {
   droppedAssumptionElementLinks,
   withoutAssumptionElementLinks,
-} from './assumption-element-links.js';
-import { assumptionsWithModelLinks } from './assumption-model-links.js';
+} from './saerskriven-yaml-migration-assumption-element-links.js';
+import { assumptionsWithModelLinks } from './saerskriven-yaml-migration-assumption-model-links.js';
 import type { Divergence } from './divergence.js';
-import { withMitigationTextAsRecords } from './threat-mitigation-text.js';
+import { withMitigationTextAsRecords } from './saerskriven-yaml-migration-mitigation-text.js';
 
 /**
  * Every released version of Saerskriven YAML, told apart by `formatVersion`.

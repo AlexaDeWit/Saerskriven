@@ -1,31 +1,23 @@
-import type { z } from 'zod';
 import type {
   Actor,
+  FlowInput,
   Process,
   Store,
-  flowSchema,
-  trustBoundarySchema,
+  TrustBoundaryInput,
 } from '@saerskriven/model';
 
-function presentProperties<T, Key extends keyof T>(
-  source: T,
-  keys: readonly Key[],
-): Partial<Pick<T, Key>> {
-  const selected: Partial<Pick<T, Key>> = {};
-  for (const key of keys) {
-    if (source[key] !== undefined) {
-      selected[key] = source[key];
-    }
-  }
-  return selected;
-}
-
-/** Actor facts shared by the native and Threat Dragon mappings. */
+/**
+ * The actor facts `source` holds, for the native and Threat Dragon mappings.
+ * An absent fact stays absent, and an explicit `false` or empty value is kept.
+ */
 export function actorProperties(source: Pick<Actor, 'providesAuthentication'>) {
   return presentProperties(source, ['providesAuthentication']);
 }
 
-/** Process facts shared by the native and Threat Dragon mappings. */
+/**
+ * The process facts `source` holds, for the native and Threat Dragon mappings.
+ * An absent fact stays absent, and an explicit `false` or empty value is kept.
+ */
 export function processProperties(
   source: Pick<
     Process,
@@ -43,7 +35,10 @@ export function processProperties(
   ]);
 }
 
-/** Store facts shared by the native and Threat Dragon mappings. */
+/**
+ * The store facts `source` holds, for the native and Threat Dragon mappings.
+ * An absent fact stays absent, and an explicit `false` or empty value is kept.
+ */
 export function storeProperties(
   source: Pick<
     Store,
@@ -63,10 +58,13 @@ export function storeProperties(
   ]);
 }
 
-/** Flow facts shared by the native and Threat Dragon mappings. */
+/**
+ * The flow facts `source` holds, for the native and Threat Dragon mappings.
+ * An absent fact stays absent, and an explicit `false` or empty value is kept.
+ */
 export function flowProperties(
   source: Pick<
-    z.input<typeof flowSchema>,
+    FlowInput,
     'protocol' | 'isEncrypted' | 'isPublicNetwork' | 'trustBoundaryIds'
   >,
 ) {
@@ -78,12 +76,25 @@ export function flowProperties(
   ]);
 }
 
-/** Boundary assertions shared by the native and Threat Dragon mappings. */
+/**
+ * The boundary assertions `source` holds, for the native and Threat Dragon
+ * mappings. An absent assertion stays absent, and an empty list is kept.
+ */
 export function boundaryProperties(
-  source: Pick<
-    z.input<typeof trustBoundarySchema>,
-    'containedElements' | 'crossingFlows'
-  >,
+  source: Pick<TrustBoundaryInput, 'containedElements' | 'crossingFlows'>,
 ) {
   return presentProperties(source, ['containedElements', 'crossingFlows']);
+}
+
+function presentProperties<T, Key extends keyof T>(
+  source: T,
+  keys: readonly Key[],
+): Partial<Pick<T, Key>> {
+  const selected: Partial<Pick<T, Key>> = {};
+  for (const key of keys) {
+    if (source[key] !== undefined) {
+      selected[key] = source[key];
+    }
+  }
+  return selected;
 }

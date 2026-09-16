@@ -1,3 +1,4 @@
+import type { ModelInput } from '@saerskriven/model';
 import { parsedFixture } from '@saerskriven/model/fixtures';
 import {
   threatDragonWireSchema,
@@ -7,10 +8,11 @@ import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import type { Codec } from './codec.js';
 import { renderDivergences } from './divergence.js';
-import { allThreats, threatsOf } from './threat-dragon-document.js';
+import { threatsOf } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import {
+  allThreats,
   complementFixture,
   ecluseModel,
   ecluseText,
@@ -18,7 +20,6 @@ import {
   richerThanFormatSource,
   threatDragonJsonSchema,
   unmodelledFixture,
-  type ModelInput,
 } from './threat-dragon.fixtures.js';
 
 const threatDragon: Codec<typeof threatDragonWireSchema> = {

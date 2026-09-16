@@ -1,12 +1,12 @@
+import { defaultRenderTheme } from '@saerskriven/canvas';
 import {
   escapedForTerminal,
+  exceededReadLimit,
   parseYaml,
-  readLimits,
-  ReadFailure,
   renderReadFailure,
+  type ReadFailure,
 } from '@saerskriven/formats';
 import {
-  defaultRenderTheme,
   readThemeOverrides,
   withBundledFonts,
   type ThemeRead,
@@ -31,11 +31,7 @@ export function readThemeFile(
   return Either.flatMap(
     withinReadBound(path, (observed) =>
       ThemeFileFailure.Unusable({
-        failure: ReadFailure.ExceededReadLimit({
-          limit: 'maxTextBytes',
-          bound: readLimits.maxTextBytes,
-          observed,
-        }),
+        failure: exceededReadLimit('maxTextBytes', observed),
       }),
     ),
     () =>
@@ -45,24 +41,6 @@ export function readThemeFile(
         ),
         themeText,
       ),
-  );
-}
-
-function themeText(text: string): Either.Either<ThemeRead, ThemeFileFailure> {
-  return Either.map(
-    Either.mapLeft(parseYaml(text), (failure) =>
-      ThemeFileFailure.Unusable({ failure }),
-    ),
-    (value) => {
-      const empty = text
-        .replace(/^\ufeff/u, '')
-        .split(/\r\n?|\n/u)
-        .every((line) => {
-          const content = line.replace(/^[ \t]*/u, '');
-          return content.length === 0 || content.startsWith('#');
-        });
-      return readThemeOverrides(empty ? {} : value);
-    },
   );
 }
 
@@ -97,12 +75,13 @@ export function commandTheme(
     fitted === read
       ? [...read.diagnostics]
       : [...read.diagnostics, ...fitted.diagnostics];
-  if (path !== undefined && format === 'md' && !styled)
+  if (path !== undefined && format === 'md' && !styled) {
     diagnostics.push({
       key: '',
       message:
         'portable Markdown cannot apply appearance settings, keeping readable text',
     });
+  }
   return { theme: fitted.theme, diagnostics };
 }
 
@@ -120,4 +99,23 @@ export function themeWarnings(
           ),
         ),
       );
+}
+
+function themeText(text: string): Either.Either<ThemeRead, ThemeFileFailure> {
+  return Either.map(
+    Either.mapLeft(parseYaml(text), (failure) =>
+      ThemeFileFailure.Unusable({ failure }),
+    ),
+    (value) => readThemeOverrides(holdsOnlyComments(text) ? {} : value),
+  );
+}
+
+function holdsOnlyComments(text: string): boolean {
+  return text
+    .replace(/^\ufeff/u, '')
+    .split(/\r\n?|\n/u)
+    .every((line) => {
+      const content = line.replace(/^[ \t]*/u, '');
+      return content.length === 0 || content.startsWith('#');
+    });
 }

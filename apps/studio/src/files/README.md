@@ -1,191 +1,150 @@
 # Opening, saving, importing and exporting
 
-The studio reaches files through `FileBridge`, a record of functions the app
-is handed rather than a platform it calls. `browser-bridge.ts` is the browser
-one: the File System Access API where it exists, so a save writes back to the
-file that was opened, and otherwise a hidden file input for opening and a
-download for saving. A spec is handed a recording one instead, and the typed
-IPC an Electron shell will offer (issue #43) replaces the record without a
-view changing. Every path answers with an outcome; nothing throws.
+The studio reaches files through `FileBridge` (`bridge.ts`), a record of
+functions the app is handed rather than a platform it calls. A spec is handed a
+recording one. Every path answers with an outcome, and nothing throws. What a
+person sees is in [Using the studio](../../../../docs/studio.md#files), and
+what an import carries over is in
+[Importing a foreign model](../../../../docs/import.md).
 
-`NoPicker` is the browser's arm of that union and nobody else's: only a
+## Modules
+
+| Module                                                           | What it holds                                                                                                              |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `bridge.ts`, `browser-bridge.ts`                                 | The bridge interface, and the browser's: the File System Access API where it exists, a file input and a download otherwise |
+| `session.ts`                                                     | What the studio does with a file, as pure functions: read, write, and `formatFiles`                                        |
+| `file-commands.ts`                                               | The one session the app owns: file and export commands, reports, and the questions the menu asks                           |
+| `export-commands.ts`, `render-assets.ts`                         | The projections through `@saerskriven/render`, and the loader for the WebAssembly modules and faces                        |
+| `menu.tsx`, `menu-items.tsx`, `submenu.tsx`, `radio-choices.tsx` | The burger menu, the items it and the switcher share, the second level, and a one-of-several group                         |
+| `diagram-switcher.tsx`                                           | The control joined to the burger that names, switches, adds and renames diagrams                                           |
+| `file-reports.tsx`                                               | The failure notice, the crossing report and the export report, hung under the chrome card                                  |
+
+## The bridge
+
+`NoPicker` is the browser's arm of the open outcome and nobody else's: only a
 component can hold a file input, so a bridge without a picker says "not me"
 and the view opens one. `asksWhere` is the same fact on the save side, and a
 question rather than an answer: a save-as puts every registered format in the
 platform's picker, so a platform with none is asked in advance and the studio
-puts the question in its own menu instead, handing the save-as the one format
-it settled on. The bridge holds the native handle only after the session
-accepts the outcome of the current operation.
+puts the question in its own menu, handing the save-as the one format it
+settled on.
 
-Each bridge open, fallback read, save, or save-as starts one operation identity.
-Without a save picker, Save As opens the format menu without bridge I/O.
-Selecting a format calls `chooseFormat` and starts the operation. Cancelling
-the format menu leaves an older read active.
-The latest request owns settlement, regardless of completion order. The
-bridge returns an outcome and a settlement function without changing its
-held handle. The session validates the read and settles the handle before
-dispatching the matching store action, with no asynchronous step between them.
-A stale settlement returns false and changes neither association. Close
-releases the handle and invalidates pending operations. Exports own no file
-association and do not interrupt these operations.
+Each bridge open, fallback read, save, or save-as starts one operation. The
+latest request owns settlement, regardless of completion order. The bridge
+returns an outcome and a settlement function without changing its held handle,
+and the session validates the read and settles the handle before dispatching
+the matching store action, with no asynchronous step between them. A stale
+settlement returns false and changes neither association. Close releases the
+handle and invalidates pending operations. Exports own no file association and
+do not interrupt these operations. A save already in progress can still write
+its target, but once another file operation starts it cannot rename or mark the
+current model saved.
 
-A failed open keeps the model, history, saved checkpoint, and loss report,
-but drops the file association and releases the bridge's handle. This applies
-to a read failure and to text a codec refuses. The next Save downloads native
-YAML, leaving both the previous file and any rejected file untouched. A
-refused save retains the current file and handle for retry. Unsaved changes
-stay guarded. Dismissing a picker keeps the last settled association but does
-not revive an older pending operation. An empty fallback selection starts no
-operation.
+A failed open, whether the read failed or a codec refused the text, keeps the
+model, history, saved checkpoint and loss report, but drops the file
+association and releases the handle, so the next Save leaves both files
+untouched. A refused save keeps the file and handle for retry. Dismissing a
+picker keeps the last settled association and does not revive an older pending
+operation. An empty fallback selection starts no operation, and a successful
+one settles with no handle, so its next Save downloads under the chosen name.
+Import shares operation ownership and unsaved-work guards with Open, releases
+the source handle on success, and proposes a YAML name.
 
-A save already in progress can still write its target. Once another file
-operation starts, that save cannot rename or mark the current model saved.
-A successful fallback selection settles with no handle, so its next Save
-downloads under the selected name.
+## Reading and writing
 
-`session.ts` is what the studio does with a file, as pure functions the
-component calls and a spec calls directly. A read is the size against
-`readLimits.maxTextBytes` first, since that bound keeps the parse finite, then
-`readAnyFormat`, then one action: the model, or the codec's own failure, which
-the panel renders with the paths it carries. A write is the codec's own write
-for the file's format, then the bridge, then one action.
-
-Import sits beside Export in the File menu and creates an unsaved native
-model. Its successful read releases the source handle and proposes a YAML
-name. A cancelled or refused import preserves the previous file association.
-Import shares operation ownership and unsaved-work guards with Open.
-[Format conversion rules](../../../../packages/formats/IMPORT.md) describe
-what each importer carries over and reports.
-
-`export-commands.ts` projects the current model through `@saerskriven/render`.
-It writes a diagram as SVG, the register as markdown, and the whole model as
-Typst. The PDF path compiles that Typst source through the render package's
-`pdf` subpath, and the PNG path draws the diagram on screen through its `png`
-subpath. Both read bytes rather than files, so both go through the loader
-below first, and a refusal from either reports as a notice and writes nothing.
-An export uses the bridge's picker or download path but never replaces the
-file handle that Save writes back to.
-
-`render-assets.ts` fetches the two WebAssembly modules and the five Liberation
-faces that the Vite build emits, the faces once for both readers. Vite's
-`?url` import owns each module. The face list and the compiler's order come
-from the same render-owned build module as the CLI, and the PNG loader leads
-that list with `drawingFace`, because the rasterizer letters a family no
-loaded face carries in the family of the first face it was offered and the
-drawings name Helvetica and Arial. A build carrying no such face is refused,
-which is the one rule `@saerskriven/render/png` holds for the CLI and the
-studio alike. The loader caches the bytes after the first successful read and
-returns a typed failure when an asset is not available.
-
-The render subpath loads the compiler JavaScript on the first PDF export.
-Vite keeps that code in a separate hashed chunk.
-
-A module and the faces load only after the PDF or PNG item runs. The other
-exports load none of those runtime assets.
+A read is the size against `readLimits.maxTextBytes` first, since that bound
+keeps the parse finite, then `readAnyFormat`, then one action: the model, or
+the codec's own failure, which the notice renders with the paths it carries.
+A write is the codec's own write for the file's format, then the bridge, then
+one action.
 
 `formatFiles` is the one table saying how a format appears as a file: the
 words a person reads, the media type a picker files it under, and the
 extensions it is written with. `saveTypes` is that table as a picker takes it,
-the file's own format first so it is the one proposed, and `formatOfName` is
-the way back: a picker answers with the name the person settled on, and its
-extension is what says which codec writes the text. Nothing else reads an
-extension as a format.
+the file's own format first, and `formatOfName` is the way back: the extension
+of the name a picker answers with says which codec writes the text. Nothing
+else reads an extension as a format. The text of a save-as is written once the
+picker has answered, because until then which codec writes it is the person's
+to decide.
 
-Which document a write merges onto is the whole difference between keeping
-what Saerskriven does not model and dropping it, so the document a read retained
-rides in the store beside the file's name ([the store's
-README](../store/README.md)). Saving in the format a model was read from merges
-onto it; saving in any other format has nothing to merge onto and the codec
-projects, which is where a loss report comes from. A read reports too: a wire
-schema drops every key it does not declare, and the retained document has lost
-them as well, so no later save can say what became of them. Both are held by
-the component, each describing one crossing of the file boundary rather than
-the model, and each stands until a save starts, an open lands, or the file is
-closed: an open that was refused leaves the report alone, nothing having
-crossed, and a close drops it because the file it describes is gone.
+Which document a write merges onto decides whether what Saerskriven does not
+model survives, so the document a read retained rides in the store beside the
+file's name ([the store](../store/README.md)). Saving in the format a model was
+read from merges onto it. Saving in any other format has nothing to merge onto,
+so the codec projects, which is where a loss report comes from. A read reports
+too: a wire schema drops every key it does not declare, and the retained
+document has lost them as well, so no later save can say what became of them.
+Both reports describe one crossing of the file boundary rather than the model,
+and each stands until a save starts, an open lands, or the file is closed. A
+refused open leaves the report alone, nothing having crossed.
 
-Recovery stores that file name, format, and retained document with the current
-model. It stores no native handle. After a reload, Save follows the browser
-bridge's no-handle path and still merges through the retained document. A
-model another tab wrote arrives the same way: the session watches the tab
-sync, and every result it follows releases the handle, one naming the same
-file included, since a name cannot say whether it is the same file. It also
-puts away the crossing report and every open question
-([the store's README](../store/README.md#other-tabs)). So once another tab has
-edited, Save in the tab that opened the file through the picker downloads a
-copy rather than writing back, as it does after a reload.
+Recovery stores the file's name, format and retained document with the model,
+and no native handle, so after a reload Save takes the no-handle path and
+still merges through the retained document. The session watches the tab sync,
+and every result it follows releases the handle, one naming the same file
+included, since a name cannot say whether it is the same file. It also puts
+away the crossing report and every open question
+([the store](../store/README.md#other-tabs)).
 
-`file-commands.ts` holds one session the app owns rather than handlers a
-control closes over. Its file and export actions are registered commands
-([the commands](../commands/README.md)). A chord and a menu item therefore run
-the same dispatch where a chord exists. Save as writes the format the file is
-already in, and the picker is where a person says otherwise: the text is
-written once the picker has answered, because until then which codec writes it
-is the person's to decide. Each reads the store as it runs rather than
-closing over a render, which is what lets the commands be built once. The reducer
-is total and cannot refuse an open or a close over work in no file, so the
-session asks first.
+## The session and the menu
 
-Open and New model ask before replacing unsaved work. The session holds
-these questions as `opening` and `closing`. A second press confirms Discard
-changes and open or Discard changes and create new model. Cancel keeps the
-current model. The session owns the question so a keyboard shortcut also
-opens the menu. Answering or dismissing the menu clears the question.
-The session also clears it when the model becomes clean.
+The file and export actions are registered commands
+([the commands](../commands/README.md)), so a chord and a menu item run the
+same dispatch. Each reads the store as it runs rather than closing over a
+render, which is what lets the commands be built once. The reducer is total
+and cannot refuse an open or a close over unsaved work, so the session asks
+first: it holds the question as `opening` or `closing`, the menu item becomes
+the confirmation, and answering, dismissing the menu or the model becoming
+clean clears it. The session owns the question so that a keyboard shortcut can
+open the menu on it. New model releases the native handle only after the
+recovery snapshot clears.
 
-`choosing` is that shape a second time, for the format a save-as writes, and
-the studio asks it only where the platform has no picker to ask it in. Save as
-holds the menu open and becomes the registered formats, the file's own in the
-place the item stood, so the person is still on the item they pressed. Firefox
-and Safari are that browser today, so the question is a path in its own
-right, not a fallback. It is a second press on an item rather than a submenu
-because that is one press deep, keeps the keyboard where it already was, and
-adds no second overlay to walk into. Whether the platform asks is read as the
-item is drawn rather than after a save-as has started, so nothing has to close
-the menu and open it again around an answer.
+`choosing` is that shape a second time, for the format a save-as writes, asked
+only where the platform has no picker. Firefox and Safari are that browser, so
+the question is a path in its own right, not a fallback. It is a second press
+on the item rather than a submenu because that is one press deep, keeps the
+keyboard where it was, and adds no second overlay. Whether the platform asks is
+read as the item is drawn, so nothing has to close the menu and open it again
+around an answer.
 
-`menu.tsx` mounts the rest: the burger button, which starts row one of the
-shell's chrome card ([`../app/chrome.tsx`](../app/chrome.tsx)), the file and
-edit commands, the Export submenu, the project link, and the
-state of the open file. `menu-items.tsx` holds the item components the menu
-and the switcher share. `submenu.tsx` is the second level the Appearance,
-Arrange and Export items open. It opens at the start edge of the chrome card
-rather than beside the menu, so every item in it, each export included, is on
-screen at every width down to a phone. It never covers its own row: it opens
-under the row where its whole height fits, over the row where it fits there,
-and otherwise scrolls on the side with more room.
-`diagram-switcher.tsx` is the control joined to the burger: it names the
-diagram on screen, and under it lists every diagram to switch to, New diagram, which adds an empty diagram and opens its title for
-naming, and Rename diagram, which turns the name into a field that commits
-on Enter or blur and cancels on Escape. The Next and Previous diagram chords
-step through the list without opening it. The Project group links to GitHub. The app shows the
-built version above the React Flow attribution, with `development` for builds
-without a release tag. The submenu has one SVG item per diagram when the
-model has several.
-The other items export the diagram on screen as a PNG, the register as
-markdown, or the whole model as Typst or PDF. Every proposed name replaces
-the open file's extension, or starts with `Untitled` when no file is open.
-The menu also holds the fallback picker's input and the guard on closing the
-tab. The guard stands only while the model is dirty and the latest recovery
-write is unconfirmed. Open and New model still ask before they replace or
-clear a dirty recovered session. New model releases the native handle only
-after the recovery snapshot clears.
+The burger starts row one of the shell's chrome card
+([`../app/chrome.tsx`](../app/chrome.tsx)). `submenu.tsx` opens the second
+level at the start edge of that card rather than beside the menu, so every
+item in it is on screen at every width down to a phone. It never covers its
+own row: it opens under the row where its whole height fits, over the row
+where it fits there, and otherwise scrolls on the side with more room. The menu
+also holds the fallback picker's input and the guard on closing the tab, which
+stands only while the model is dirty and the latest recovery write is
+unconfirmed. A notice or report cannot go inside the menu, which owns items and
+groups only, so `file-reports.tsx` hangs them under the card. The crossing
+report and the export report share one named live region there, and the
+failure notice holds its own.
 
-`FileReports` is the report of the last crossing, an export report, and the
-failure notice, which the shell hangs under the chrome card
-([`../app/chrome.tsx`](../app/chrome.tsx)): each is empty until something has
-been refused or has cost the model a key, and each can run to several lines,
-which is why they are under the card rather than in it. The crossing report and
-export report share one live region. An export reports every endpoint its
-projection could not place after it writes the file. A PDF compile refusal
-reports the compiler's sentences and writes nothing, as a rasterizer refusal
-reports the rasterizer's. Every export report
-carries a Dismiss button, and `refusal` on the report decides what else ends
-it. An export that was written reports informationally, so it goes at the
-next action that moves canvas or panel state, the transient lifetime the
-store defines ([the store](../store/README.md#the-shape)). An export the
-browser, the asset loader or the compiler refused is a problem, and it
-stands until Dismiss or a later export. No notice here is taken away by a
-timer: an error a clock removes is one a person reading slowly never reads.
+## Exports
 
-The File menu also exposes Appearance with System, Light, and Dark choices. The selected choice is shown in words and persists in `localStorage` under `saerskrivenColourMode`. Invalid or unavailable stored data selects System.
+`export-commands.ts` writes a diagram as SVG, the register as Markdown, and
+the whole model as Typst. The PDF path compiles that Typst source through the
+render package's `pdf` subpath, and the PNG path draws the diagram on screen
+through its `png` subpath. Both read bytes rather than files, so both go
+through `render-assets.ts` first, and a refusal from either reports as a notice
+and writes nothing. An export uses the bridge's picker or download path but
+never replaces the handle Save writes back to.
+
+`render-assets.ts` fetches the two WebAssembly modules and the five Liberation
+faces the Vite build emits, the faces once for both readers, and caches the
+bytes after the first successful read. Vite's `?url` import owns each module.
+The face list and the compiler's order come from the render-owned build module
+the CLI uses too, and the PNG loader leads that list with `drawingFace`,
+because the rasterizer letters a family no loaded face carries in the first
+face it was offered, and the drawings name Helvetica and Arial. A build
+carrying no such face is refused. The modules and faces load only when a PDF or
+PNG export runs, and Vite keeps the compiler's JavaScript in a separate hashed
+chunk.
+
+An export report carries a Dismiss button, and `refusal` on the report decides
+what else ends it. A written export reports informationally, so it goes at the
+next action that moves canvas or panel state, the transient lifetime the store
+defines ([the store](../store/README.md#the-shape)). An export the browser, the
+asset loader or the compiler refused stands until Dismiss or a later export.
+No notice here is taken away by a timer: an error a clock removes is one a
+person reading slowly never reads.

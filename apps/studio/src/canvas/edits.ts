@@ -1,22 +1,28 @@
 import type { CanvasNode, NodeBox } from '@saerskriven/canvas';
-import type { Element, ElementId, Model, Point } from '@saerskriven/model';
+import {
+  elementsAcross,
+  type Element,
+  type ElementId,
+  type Model,
+  type Point,
+} from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
   activeDiagramId,
   elementById,
   renameable,
   selectedElement,
+  selectedElementRecord,
 } from '../store/selectors.js';
 import type { State } from '../store/state.js';
-import { dispatch, modelStore } from '../store/store.js';
+import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { announce, quotedName } from './announcements.js';
 import { flowEnds, freshBoundaryCurve, freshFlow } from './elements.js';
 import { currentLayout } from './layout.js';
 import { edgeLabel, nodeLabel } from './names.js';
 import { elementIds } from './nodes.js';
 
-/** Counts flows detached and threat links dropped by removal. */
-export type RemovalCascade = {
+type RemovalCascade = {
   readonly flows: number;
   readonly threats: number;
 };
@@ -60,10 +66,7 @@ export function connectElements(source: ElementId, target: ElementId): void {
 
 /** Makes the selected flow bidirectional, or one-way again, as one undo step. */
 export function toggleFlowDirection(): void {
-  const state = modelStore.getState();
-  const elementId = selectedElement(state);
-  const flow =
-    elementId === undefined ? undefined : elementById(state, elementId);
+  const flow = selectedElementRecord(modelStore.getState());
   if (flow?.kind !== 'flow') {
     return;
   }
@@ -108,17 +111,15 @@ export function removalCascade(
   const removed = new Set(
     Array.isArray(removedIds) ? removedIds : [removedIds],
   );
-  const flows = model.diagrams
-    .flatMap((diagram) => diagram.elements)
-    .filter(
-      (element) =>
-        element.kind === 'flow' &&
-        !removed.has(element.id) &&
-        [element.source, element.target].some(
-          (endpoint) =>
-            endpoint.kind === 'attached' && removed.has(endpoint.element),
-        ),
-    ).length;
+  const flows = elementsAcross(model.diagrams).filter(
+    (element) =>
+      element.kind === 'flow' &&
+      !removed.has(element.id) &&
+      [element.source, element.target].some(
+        (endpoint) =>
+          endpoint.kind === 'attached' && removed.has(endpoint.element),
+      ),
+  ).length;
   const threats = model.threats.reduce(
     (count, threat) =>
       count +
@@ -216,56 +217,6 @@ export function resizeNode(node: CanvasNode, box: NodeBox): void {
   );
 }
 
-function added(action: Action, elementId: ElementId): void {
-  if (!changedModel(action)) {
-    return;
-  }
-  dispatch(Action.Select({ elementIds: [elementId] }));
-  focusElement(elementId);
-}
-
-function placed(
-  action: Action,
-  elementId: ElementId,
-  editor: 'name' | 'note' | undefined,
-): boolean {
-  if (!changedModel(action)) {
-    return false;
-  }
-  dispatch(Action.Select({ elementIds: [elementId] }));
-  if (editor !== undefined) {
-    dispatch(Action.InlineEditing({ editor: { kind: editor, elementId } }));
-  } else {
-    focusElement(elementId);
-  }
-  return true;
-}
-
-function changedModel(action: Action): boolean {
-  const before = modelStore.getState().present;
-  dispatch(action);
-  return modelStore.getState().present !== before;
-}
-
-function spokenName(state: State, elementId: ElementId): string {
-  const layout = currentLayout(state);
-  const node = layout.nodes.find(({ id }) => id === elementId);
-  if (node !== undefined) {
-    return quotedName(node.name, nodeLabel(node));
-  }
-  const edge = layout.edges.find(({ id }) => id === elementId);
-  return edge === undefined
-    ? elementId
-    : quotedName(edge.name, edgeLabel(edge));
-}
-
-function counted(total: number, thing: string): string {
-  if (total === 0) {
-    return `no ${thing}s`;
-  }
-  return total === 1 ? `1 ${thing}` : `${String(total)} ${thing}s`;
-}
-
 const drawnSelector = '.react-flow__node, .react-flow__edge';
 
 const focusAttempts = 3;
@@ -319,4 +270,48 @@ export function focusElement(
   } else {
     requestAnimationFrame(retry);
   }
+}
+
+function added(action: Action, elementId: ElementId): void {
+  if (!changedModel(action)) {
+    return;
+  }
+  dispatch(Action.Select({ elementIds: [elementId] }));
+  focusElement(elementId);
+}
+
+function placed(
+  action: Action,
+  elementId: ElementId,
+  editor: 'name' | 'note' | undefined,
+): boolean {
+  if (!changedModel(action)) {
+    return false;
+  }
+  dispatch(Action.Select({ elementIds: [elementId] }));
+  if (editor !== undefined) {
+    dispatch(Action.InlineEditing({ editor: { kind: editor, elementId } }));
+  } else {
+    focusElement(elementId);
+  }
+  return true;
+}
+
+function spokenName(state: State, elementId: ElementId): string {
+  const layout = currentLayout(state);
+  const node = layout.nodes.find(({ id }) => id === elementId);
+  if (node !== undefined) {
+    return quotedName(node.name, nodeLabel(node));
+  }
+  const edge = layout.edges.find(({ id }) => id === elementId);
+  return edge === undefined
+    ? elementId
+    : quotedName(edge.name, edgeLabel(edge));
+}
+
+function counted(total: number, thing: string): string {
+  if (total === 0) {
+    return `no ${thing}s`;
+  }
+  return total === 1 ? `1 ${thing}` : `${String(total)} ${thing}s`;
 }

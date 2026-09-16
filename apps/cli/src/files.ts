@@ -1,21 +1,9 @@
 import { withinTextBytes } from '@saerskriven/formats';
+import { reasonOf } from '@saerskriven/mcp';
 import { Either } from 'effect';
 import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 
-/**
- * What a thrown value says. Node's file calls throw an Error carrying the
- * system's own sentence, which is what a user needs to see; a value thrown
- * that is not an Error is reported as it prints rather than swallowed.
- */
-export function reasonOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-/**
- * A file as UTF-8 text, or a sentence naming the path and the system's
- * reason. Node's file calls throw, and they are contained here so no
- * command has to.
- */
+/** A file as UTF-8 text, or a sentence naming the path and the system's reason. */
 export function readTextFile(path: string): Either.Either<string, string> {
   return Either.try({
     try: () => readFileSync(path, 'utf8'),
@@ -24,17 +12,9 @@ export function readTextFile(path: string): Either.Either<string, string> {
 }
 
 /**
- * How many bytes a path holds, or nothing where it cannot be measured, in
- * which case the read that follows says why the path was no good.
- */
-export function sizeOf(path: string): number | undefined {
-  return Either.getOrUndefined(Either.try(() => statSync(path).size));
-}
-
-/**
  * Nothing where the path is inside the shared read bound, or the caller's own
  * refusal carrying the size measured where it is past it. A size that cannot
- * be measured passes, for the same reason as {@link sizeOf}.
+ * be measured passes, leaving the read that follows to say why.
  */
 export function withinReadBound<Failure>(
   path: string,
@@ -78,4 +58,8 @@ export function createPrivateFile(
     },
     catch: (error) => `cannot write ${path}: ${reasonOf(error)}`,
   });
+}
+
+function sizeOf(path: string): number | undefined {
+  return Either.getOrUndefined(Either.try(() => statSync(path).size));
 }

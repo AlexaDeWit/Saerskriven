@@ -2,8 +2,9 @@ import {
   canvasNodeOf,
   type CanvasFlowEdge,
   type CanvasLayout,
+  type NodeBox,
 } from '@saerskriven/canvas';
-import type { Element, Point, Size } from '@saerskriven/model';
+import type { Element, Point } from '@saerskriven/model';
 import type { ReactFlowInstance } from '@xyflow/react';
 import {
   useCallback,
@@ -29,12 +30,13 @@ import {
 } from './elements.js';
 import type { DiagramNode } from './nodes.js';
 import type { PlacementDraft } from './placement-preview.js';
-import { nameFieldExtent } from './rename-field.js';
+import { nameFieldExtent } from './inline-editing.js';
 import {
   currentTool,
   finishPlacement,
   isElementTool,
   useTool,
+  type Tool,
   type ToolState,
 } from './tools.js';
 
@@ -74,13 +76,8 @@ type PlacementGesture = {
   readonly layout: CanvasLayout;
   readonly screen: Point;
   readonly flow: Point;
-  readonly geometry: PlacementGeometry;
+  readonly geometry: NodeBox;
   readonly element: Element;
-};
-
-type PlacementGeometry = {
-  readonly position: Point;
-  readonly size: Size;
 };
 
 type CurveDraft = {
@@ -115,24 +112,15 @@ export function usePlacement(
   layout: CanvasLayout,
 ): PlacementControls {
   const mode = useTool();
-  const [curveDraft, setCurveDraft] = useState<CurveDraft>({
-    revision: mode.revision,
-    layout,
-    waypoints: [],
-    pointer: undefined,
-  });
+  const [curveDraft, setCurveDraft] = useState<CurveDraft>(
+    emptyCurve(mode.revision, layout),
+  );
 
   if (curveDraft.layout !== layout) {
-    setCurveDraft({
-      revision: mode.revision,
-      layout,
-      waypoints: [],
-      pointer: undefined,
-    });
+    setCurveDraft(emptyCurve(mode.revision, layout));
   }
 
-  const currentDraft =
-    curveDraft.revision === mode.revision && curveDraft.layout === layout;
+  const currentDraft = curveCurrent(curveDraft, mode.revision, layout);
   const curve = currentDraft ? curveDraft.waypoints : noPoints;
   const curvePointer = currentDraft ? curveDraft.pointer : undefined;
   const gesture = useRef<PlacementGesture | undefined>(undefined);
@@ -159,12 +147,7 @@ export function usePlacement(
   };
 
   const clearCurve = useCallback((): void => {
-    setCurveDraft({
-      revision: mode.revision,
-      layout,
-      waypoints: [],
-      pointer: undefined,
-    });
+    setCurveDraft(emptyCurve(mode.revision, layout));
   }, [layout, mode.revision]);
 
   const commitCurve = useCallback(
@@ -262,9 +245,9 @@ export function usePlacement(
         revision: mode.revision,
         layout,
         waypoints: [
-          ...(current.revision === mode.revision && current.layout === layout
+          ...(curveCurrent(current, mode.revision, layout)
             ? current.waypoints
-            : []),
+            : noPoints),
           point,
         ],
         pointer: undefined,
@@ -312,14 +295,7 @@ export function usePlacement(
   const pointerMove = (event: PlacementPointerEvent): void => {
     const started = gesture.current;
     if (started !== undefined && started.pointerId === event.pointerId) {
-      const current = currentTool();
-      if (
-        started.tool !== current.active ||
-        started.revision !== current.revision ||
-        started.transition !== current.transition ||
-        started.contextRevision !== boxDraft.contextRevision ||
-        started.layout !== layout
-      ) {
+      if (gestureStale(started, boxDraft.contextRevision, layout)) {
         gesture.current = undefined;
         setBoxGesture(undefined);
         return;
@@ -357,10 +333,9 @@ export function usePlacement(
     setCurveDraft((current) => ({
       revision: mode.revision,
       layout,
-      waypoints:
-        current.revision === mode.revision && current.layout === layout
-          ? current.waypoints
-          : noPoints,
+      waypoints: curveCurrent(current, mode.revision, layout)
+        ? current.waypoints
+        : noPoints,
       pointer: point,
     }));
   };
@@ -373,14 +348,7 @@ export function usePlacement(
     gesture.current = undefined;
     setBoxGesture(undefined);
     event.currentTarget.releasePointerCapture?.(event.pointerId);
-    const current = currentTool();
-    if (
-      started.tool !== current.active ||
-      started.revision !== current.revision ||
-      started.transition !== current.transition ||
-      started.contextRevision !== boxDraft.contextRevision ||
-      started.layout !== layout
-    ) {
+    if (gestureStale(started, boxDraft.contextRevision, layout)) {
       return;
     }
     event.preventDefault();
@@ -441,12 +409,33 @@ export function usePlacement(
   };
 }
 
-function isBoxTool(tool: string): tool is BoxTool {
+function isBoxTool(tool: Tool): tool is BoxTool {
+  return isElementTool(tool) && tool !== 'boundary-curve';
+}
+
+function emptyCurve(revision: number, layout: CanvasLayout): CurveDraft {
+  return { revision, layout, waypoints: [], pointer: undefined };
+}
+
+function curveCurrent(
+  draft: CurveDraft,
+  revision: number,
+  layout: CanvasLayout,
+): boolean {
+  return draft.revision === revision && draft.layout === layout;
+}
+
+function gestureStale(
+  started: PlacementGesture,
+  contextRevision: number,
+  layout: CanvasLayout,
+): boolean {
+  const tool = currentTool();
   return (
-    tool === 'actor' ||
-    tool === 'process' ||
-    tool === 'store' ||
-    tool === 'note' ||
-    tool === 'boundary-box'
+    started.tool !== tool.active ||
+    started.revision !== tool.revision ||
+    started.transition !== tool.transition ||
+    started.contextRevision !== contextRevision ||
+    started.layout !== layout
   );
 }

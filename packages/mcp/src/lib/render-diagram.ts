@@ -2,8 +2,9 @@ import type { ContentBlock } from '@modelcontextprotocol/server';
 import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
 import {
   acceptedTextSchema,
+  chosenDiagram,
+  DiagramChoiceFailure,
   diagramIdSchema,
-  diagramsNamed,
   elementIdSchema,
   type Diagram,
   type Model,
@@ -40,20 +41,11 @@ import {
 /** The media type of every image this server puts in a result. */
 export const imageMediaType = 'image/png';
 
-/**
- * The extension a file of those bytes has to carry. A render writes PNG
- * bytes, and a path under another extension would leave a file that a later
- * reader, this server's own codecs among them, takes for something it is
- * not.
- */
-export const imageExtension = '.png';
+const imageExtension = '.png';
 
 /**
- * Where a render gets the rasterizer module and the faces text is set in.
- * The bytes are the host process's to find, since this package reads no file
- * and a browser and an executable carry them differently, and the faces have
- * to lead with the one the drawings are lettered in, which
- * `@saerskriven/render/png` names as `drawingFace`.
+ * Where a render gets the rasterizer module and its faces, found by the host
+ * process. The faces lead with `drawingFace` from `@saerskriven/render/png`.
  */
 export type RasterizerAssets = () => Either.Either<ResvgAssets, string>;
 
@@ -99,9 +91,8 @@ const writtenImageSchema = z.object({
 });
 
 /**
- * What `saer_render_diagram` answers with. The bytes of the picture are in
- * the result's image block rather than here: a base64 image in the structured
- * content as well would double what the call costs a caller.
+ * What `saer_render_diagram` answers with. The picture's bytes travel in the
+ * result's image block alone.
  */
 export const renderDiagramResultSchema = readingSchema.extend({
   diagram: z.object({ id: diagramIdSchema, title: acceptedTextSchema }),
@@ -119,9 +110,8 @@ export const renderDiagramResultSchema = readingSchema.extend({
 export type RenderDiagramResult = z.infer<typeof renderDiagramResultSchema>;
 
 /**
- * What a resource link says about the picture it points at. It is built out
- * of the image's own numbers and carries no text out of the model file, so a
- * suite comparing a link against this catches a tool that starts quoting one.
+ * What a resource link says about the picture it points at, built from the
+ * image's own numbers and no text out of the model file.
  */
 export function imageLinkDescription(width: number, height: number): string {
   return `One diagram of a Saerskriven threat model, drawn as a PNG ${String(width)} by ${String(height)} pixels.`;
@@ -139,21 +129,17 @@ export const renderDiagramDescription = [
   'Called without `out` this tool writes nothing. Called with it, it writes that one PNG and never a model, and it refuses a path that is already taken rather than replacing what is there.',
 ].join(' ');
 
-/**
- * One diagram as a picture, or the lines saying why there is none: no model
- * to read, no diagram of that name, a rasterizer this install cannot start,
- * or a path for `out` that is outside the root or already taken.
- */
+/** One diagram as a picture, or the lines saying why there is none. */
 export async function renderDiagram(
   workspace: ModelWorkspace,
   assets: RasterizerAssets,
   args: RenderDiagramArguments,
 ): Promise<Either.Either<DrawnDiagram, readonly string[]>> {
   const prepared = Either.flatMap(readNamed(workspace, args.file), (reading) =>
-    Either.map(chosenDiagram(reading.model, args.diagram), (diagram) => ({
-      reading,
-      diagram,
-    })),
+    Either.mapBoth(chosenDiagram(reading.model.diagrams, args.diagram), {
+      onLeft: refusedChoice,
+      onRight: (diagram) => ({ reading, diagram }),
+    }),
   );
   return Either.isLeft(prepared)
     ? Either.left(prepared.left)
@@ -171,39 +157,6 @@ export function renderDrawing(result: RenderDiagramResult): readonly string[] {
       : [`written: ${escapedForTerminal(result.written.file)}`]),
     ...unplacedLines(result.unplaced),
   ];
-}
-
-function unplacedLines(
-  unplaced: readonly z.infer<typeof unplacedSchema>[],
-): readonly string[] {
-  const warning = renderUnplacedWarning(unplaced);
-  return warning === '' ? [] : warning.trimEnd().split('\n');
-}
-
-type ChosenDiagram = {
-  readonly reading: ModelReading;
-  readonly diagram: Diagram;
-};
-
-async function drawn(
-  workspace: ModelWorkspace,
-  assets: RasterizerAssets,
-  args: RenderDiagramArguments,
-  chosen: ChosenDiagram,
-): Promise<Either.Either<DrawnDiagram, readonly string[]>> {
-  const target = writeTarget(workspace, args.out);
-  if (Either.isLeft(target)) {
-    return Either.left(target.left);
-  }
-  const image = await rasterized(
-    chosen.diagram,
-    chosen.reading.model,
-    assets,
-    args.width ?? defaultLongEdge,
-  );
-  return Either.flatMap(image, (drawing) =>
-    answered(chosen, drawing, target.right),
-  );
 }
 
 /**
@@ -238,6 +191,39 @@ export function drawnOf(
 ): DrawnDiagram {
   const answer = resultOf({ reading, diagram }, drawing, undefined);
   return { answer, blocks: blocksOf(answer, drawing.png) };
+}
+
+function unplacedLines(
+  unplaced: readonly z.infer<typeof unplacedSchema>[],
+): readonly string[] {
+  const warning = renderUnplacedWarning(unplaced);
+  return warning === '' ? [] : warning.trimEnd().split('\n');
+}
+
+type ChosenDiagram = {
+  readonly reading: ModelReading;
+  readonly diagram: Diagram;
+};
+
+async function drawn(
+  workspace: ModelWorkspace,
+  assets: RasterizerAssets,
+  args: RenderDiagramArguments,
+  chosen: ChosenDiagram,
+): Promise<Either.Either<DrawnDiagram, readonly string[]>> {
+  const target = writeTarget(workspace, args.out);
+  if (Either.isLeft(target)) {
+    return Either.left(target.left);
+  }
+  const image = await rasterized(
+    chosen.diagram,
+    chosen.reading.model,
+    assets,
+    args.width ?? defaultLongEdge,
+  );
+  return Either.flatMap(image, (drawing) =>
+    answered(chosen, drawing, target.right),
+  );
 }
 
 function writeTarget(
@@ -357,47 +343,24 @@ function refused(failure: ResvgFailure): readonly string[] {
   });
 }
 
-function chosenDiagram(
-  model: Model,
-  named: string | undefined,
-): Either.Either<Diagram, readonly string[]> {
-  return named === undefined
-    ? theOnlyDiagram(model)
-    : theNamedDiagram(model, named);
+function refusedChoice(failure: DiagramChoiceFailure): readonly string[] {
+  return DiagramChoiceFailure.$match(failure, {
+    NoDiagram: () => [
+      'The model holds no diagram, so there is nothing to draw.',
+    ],
+    SeveralDiagrams: ({ diagrams }) => [
+      'The model holds several diagrams, so `diagram` has to name the one to draw:',
+      ...diagramList(diagrams),
+    ],
+    NoDiagramNamed: ({ name, diagrams }) => [
+      `The model holds no diagram named ${quotedForTerminal(name)}.`,
+      ...diagramList(diagrams),
+    ],
+  });
 }
 
-function theOnlyDiagram(
-  model: Model,
-): Either.Either<Diagram, readonly string[]> {
-  const [only] = model.diagrams;
-  if (only !== undefined && model.diagrams.length === 1) {
-    return Either.right(only);
-  }
-  return Either.left(
-    model.diagrams.length === 0
-      ? ['The model holds no diagram, so there is nothing to draw.']
-      : [
-          'The model holds several diagrams, so `diagram` has to name the one to draw:',
-          ...diagramList(model),
-        ],
-  );
-}
-
-function theNamedDiagram(
-  model: Model,
-  named: string,
-): Either.Either<Diagram, readonly string[]> {
-  const [found] = diagramsNamed(model.diagrams, named);
-  return found === undefined
-    ? Either.left([
-        `The model holds no diagram named ${quotedForTerminal(named)}.`,
-        ...diagramList(model),
-      ])
-    : Either.right(found);
-}
-
-function diagramList(model: Model): readonly string[] {
-  return model.diagrams.map(
+function diagramList(diagrams: readonly Diagram[]): readonly string[] {
+  return diagrams.map(
     (diagram) => `  ${diagram.id}: ${escapedForTerminal(diagram.title)}`,
   );
 }

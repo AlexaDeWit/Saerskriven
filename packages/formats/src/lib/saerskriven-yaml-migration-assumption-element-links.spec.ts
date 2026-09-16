@@ -3,7 +3,7 @@ import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml
 import {
   droppedAssumptionElementLinks,
   withoutAssumptionElementLinks,
-} from './assumption-element-links.js';
+} from './saerskriven-yaml-migration-assumption-element-links.js';
 
 const assumption = (id: string, elements: string[]) => ({
   id,

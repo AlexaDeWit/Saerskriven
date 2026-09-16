@@ -20,8 +20,7 @@ import {
 } from './state.js';
 import { browserStoreSync, type StoreSync, type SyncedState } from './sync.js';
 
-/** A store and its persistence-aware dispatcher. */
-export type ModelStoreRuntime = {
+type ModelStoreRuntime = {
   readonly modelStore: StoreApi<State>;
   readonly dispatch: (
     action: Action,
@@ -81,6 +80,13 @@ export const modelStore = runtime.modelStore;
 
 /** Reduces an action and returns the recovery storage outcome. */
 export const dispatch = runtime.dispatch;
+
+/** Dispatches `action` and answers whether the model on screen moved. */
+export function changedModel(action: Action): boolean {
+  const before = modelStore.getState().present;
+  dispatch(action);
+  return modelStore.getState().present !== before;
+}
 
 /**
  * Runs `changed` whenever an action moves the model on screen, the selection,

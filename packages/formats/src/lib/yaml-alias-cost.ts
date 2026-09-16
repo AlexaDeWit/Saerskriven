@@ -1,25 +1,15 @@
 import { isAlias, isCollection, isNode, isPair } from 'yaml';
 import type { parseDocument } from 'yaml';
 
-/**
- * A YAML text composed into a document, before any alias in it is resolved.
- * What its aliases will cost is measured here rather than on the value it
- * resolves to, because resolving them is the cost being bounded.
- */
+/** A YAML text composed into a document, before any alias in it is resolved. */
 export type ComposedDocument = ReturnType<typeof parseDocument>;
 
 /**
  * What resolving a document's aliases will cost, each number counted no
- * further than the ceiling it is measured against.
- *
- * `expanded` is how many aliases the resolution works through: one for each
- * alias in the document, plus the expanded aliases inside its anchor's
- * subtree. A cycle expands without end and takes the ceiling at once.
- *
- * `reached` is how much of the document those aliases repeat: the nodes
- * under each alias's anchor, summed over the aliases. It is 0 where
- * `expanded` has already passed its ceiling, since the read stops there and
- * a document past one bound is refused whatever the rest of it holds.
+ * further than its ceiling. `expanded` is one for each alias plus the
+ * expanded aliases inside its anchor, and a cycle takes the ceiling at once.
+ * `reached` is the nodes under each alias's anchor, summed over the aliases,
+ * and 0 once `expanded` has passed its ceiling.
  */
 export type AliasCost = {
   readonly expanded: number;
@@ -27,43 +17,21 @@ export type AliasCost = {
 };
 
 /**
- * What a composed document's aliases will cost, from one traversal of it.
+ * What a composed document's aliases will cost, taken between composing and
+ * resolving it. The `yaml` parser's own alias accounting scans the whole
+ * document once per anchor, so anchors nested within anchors pay that scan
+ * once per level: fifty aliases arranged that way in a 4 MiB text cost 147
+ * seconds inside the parser, and a fifth of a millisecond here. `toJS` is
+ * therefore called with `maxAliasCount: -1`, and this measures instead.
  *
- * This package owns the accounting rather than handing the parser a bound
- * of its own, because the parser's own costs more than what it bounds. An
- * alias in `yaml` resolves by scanning the whole document, and its alias
- * accounting takes that scan once per anchor, so a document nesting anchors
- * within anchors pays it once per level: fifty aliases arranged that way in
- * a 4 MiB text cost three minutes inside the parser, where nothing here can
- * see it. `toJS` is given `maxAliasCount: -1` for that reason, and both
- * numbers below are measured instead.
- *
- * `expanded` stands in for the parser's option rather than reproducing it,
- * bounding the quantity that option exists to bound: counted as a sum over
- * the document, where the parser takes a product per anchor against a
- * maximum over its children. It is measured bottom up, so that the sum
- * costs one traversal: a node's weight is the weight of its children, an
- * alias weighs one plus the weight of its anchor, and an anchor is weighed
- * before any alias can reach it because a YAML anchor precedes its aliases.
- * So every node is weighed once however many aliases repeat it, and an
- * anchor whose weight is still being taken when an alias reaches it has
- * been reached from inside itself, which is a cycle.
- *
- * `reached` is what the count alone does not bound, since a one-node anchor
- * is as cheap to alias as a two-million-node one. What an alias costs there
- * is not a copy, because `toJS` hands every alias to one anchor the same
- * value: it is that the nesting walk expands a node again whenever it
- * reaches that node deeper than before, and an alias is one more place its
- * anchor can be reached from. A node expanded again therefore sits under
- * some alias's anchor, so what the aliases add to that walk is at most this
- * count times the depth bound.
- *
- * The traversal costs the document, once. The counting after it costs the
- * ceilings: a node is counted once under an anchor, so a cycle is measured
- * rather than followed, an anchor is walked once however many aliases
- * repeat it and only as far as those repeats need to pass the ceiling, and
- * neither walk holds more than one node's children past what it can still
- * count.
+ * `expanded` bounds what the parser's option bounds, as a sum where the
+ * parser takes a product. It is weighed bottom up in one traversal, which
+ * works because a YAML anchor precedes its aliases, and an alias reaching an
+ * anchor still being weighed is a cycle. `reached` bounds what a count
+ * cannot, since a one-node anchor costs as little to alias as a huge one: the
+ * nesting walk expands a node again for each depth an alias reaches it from.
+ * The counting after the traversal costs the ceilings rather than the
+ * document.
  */
 export function aliasCostIn(
   document: ComposedDocument,

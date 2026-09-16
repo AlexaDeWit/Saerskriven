@@ -1,13 +1,13 @@
 import {
-  ReadFailure,
+  exceededReadLimit,
   hasDiverged,
   readAnyFormat,
-  readLimits,
   renderDivergences,
   renderReadFailure,
   type DetectedRead,
   type DetectionFailure,
   type Divergence,
+  type ReadFailure,
 } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { readTextFile, withinReadBound } from './files.js';
@@ -20,10 +20,8 @@ import {
 
 /**
  * The file read as whichever format claims its content, or the outcome the
- * edge reports instead. A path the process cannot read is the invocation's
- * fault and exits 2. A text no codec claims, one past a read bound, or one
- * a codec read and refused, is the input's and exits 1. Both commands start
- * here, so the two of them cannot word the same failure differently.
+ * edge reports instead. An unreadable path exits 2, and a text no codec
+ * claims, past a read bound, or refused by its codec exits 1.
  */
 export function readModel(
   file: string,
@@ -57,13 +55,7 @@ export function describeDivergences(
 function withinSizeBound(file: string): Either.Either<void, CommandOutcome> {
   return withinReadBound(file, (observed) =>
     invalidInput(
-      describeReadFailure(
-        ReadFailure.ExceededReadLimit({
-          limit: 'maxTextBytes',
-          bound: readLimits.maxTextBytes,
-          observed,
-        }),
-      ),
+      describeReadFailure(exceededReadLimit('maxTextBytes', observed)),
     ),
   );
 }

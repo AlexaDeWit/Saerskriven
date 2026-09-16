@@ -20,12 +20,7 @@ import {
 } from '@saerskriven/model';
 import { z } from 'zod';
 
-/**
- * What every threat row names: the number and id a further call passes, its
- * title, where it stands, how bad it is, its category, the elements it
- * attaches to, and the flags its records raise.
- */
-export const threatRowSchema = z.object({
+const threatRowSchema = z.object({
   number: z.int().positive(),
   id: threatIdSchema,
   title: acceptedTextSchema,

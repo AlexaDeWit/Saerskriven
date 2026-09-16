@@ -12,9 +12,8 @@ Each version is declared by a package of one zod schema that imports nothing
 but zod: `@saerskriven/wire-saerskriven-yaml-v2` for version 2 and
 `@saerskriven/wire-saerskriven-yaml` for version 1. Those are the format's
 definition, and this page describes them rather than restating them. The codec
-is `readSaerskrivenYaml` and `writeSaerskrivenYaml` in `@saerskriven/formats`,
-paired as `saerskrivenYamlCodec`, and it is the only place that knows both the
-file and the model.
+is `saerskrivenYamlCodec` in `@saerskriven/formats`, the only place that knows
+both the file and the model.
 
 ## The file
 
@@ -77,6 +76,12 @@ where it is, and every file that does not use the value reads and writes as
 it did. An older release refuses a file that holds the new value, at the path
 of that value, because its schema does not declare it. An assumption's
 `unconfirmed` status arrived this way in version 1.
+
+Version 1 grew by additive changes: every key its first release declared is
+required, and the keys later releases added are optional. Those are a flow's
+`bidirectional`, an attached endpoint's `side`, the security facts on actors,
+processes, stores and flows, and the relationship lists (`trustBoundaryIds`,
+`containedElements` and `crossingFlows`).
 
 Everything else is breaking: a rename, a type change, a removal, or a new key
 whose absence means nothing. That takes a new `formatVersion`, and a new
@@ -183,9 +188,8 @@ Copying a selection restricts the copied relationship lists to copied targets,
 matching threat links. Pasting remaps every retained target ID.
 The original model retains its full lists.
 
-In Studio, select an element and expand **Security properties** to view or edit
-these values. The controls distinguish **Not recorded**, explicit flags and
-recorded empty values. Every committed edit supports undo and redo.
+The studio edits these values under **Security properties**
+([using the studio](studio.md#security-properties)).
 
 ## Ordering
 

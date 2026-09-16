@@ -1,6 +1,8 @@
 import { gridSpacing } from '@saerskriven/canvas';
 import { saerskrivenYamlCodec, withinTextLimit } from '@saerskriven/formats';
 import {
+  elementIdsAcross,
+  elementsAcross,
   fragmentRecordCounts,
   generateElementId,
   remapFragment,
@@ -24,94 +26,6 @@ type ClipboardFailure = Data.TaggedEnum<{
   Refused: { readonly reason: string };
 }>;
 const ClipboardFailure = Data.taggedEnum<ClipboardFailure>();
-
-function selectedCopy(
-  state: State,
-): Either.Either<
-  { readonly fragment: Model; readonly text: string; readonly report: string },
-  ClipboardFailure
-> {
-  const diagramId = activeDiagramId(state);
-  if (diagramId === undefined || state.selection.length === 0) {
-    return Either.left(
-      ClipboardFailure.Refused({ reason: 'Select elements to copy.' }),
-    );
-  }
-  return Either.flatMap(
-    Either.mapLeft(
-      selectionFragment(state.present, diagramId, state.selection),
-      (failure) =>
-        ClipboardFailure.Refused({ reason: `Copy refused: ${failure._tag}.` }),
-    ),
-    (fragment) => {
-      const text = marker + saerskrivenYamlCodec.write(fragment).output;
-      const limit = withinTextLimit(text);
-      if (Either.isLeft(limit)) {
-        return Either.left(
-          ClipboardFailure.Refused({
-            reason: 'The selection exceeds the clipboard size limit.',
-          }),
-        );
-      }
-      const copiedIds = new Set(
-        fragment.diagrams.flatMap((item) =>
-          item.elements.map((element) => element.id),
-        ),
-      );
-      const excluded = externalLinkCount(state.present, fragment, copiedIds);
-      const extras =
-        FileLifecycle.$is('Opened')(state.file) &&
-        state.file.source.format === 'threat-dragon'
-          ? ' Source-format fields outside the model are not copied.'
-          : '';
-      return Either.right({
-        fragment,
-        text,
-        report: `${String(copiedIds.size)} elements and ${String(fragment.threats.length)} threats. ${String(excluded)} external links excluded.${extras}`,
-      });
-    },
-  );
-}
-
-function externalLinkCount(
-  present: Model,
-  fragment: Model,
-  copiedIds: ReadonlySet<string>,
-): number {
-  const copiedThreats = new Set<string>(
-    fragment.threats.map((threat) => threat.id),
-  );
-  const uncopied = (
-    records: readonly {
-      readonly id: string;
-      readonly threats: readonly string[];
-      readonly appliesToModel?: boolean;
-    }[],
-    copies: readonly { readonly id: string }[],
-  ): number => {
-    const copied = new Set(copies.map((copy) => copy.id));
-    return records
-      .filter((record) => copied.has(record.id))
-      .reduce(
-        (count, record) =>
-          count +
-          record.threats.filter((id) => !copiedThreats.has(id)).length +
-          (record.appliesToModel === true ? 1 : 0),
-        0,
-      );
-  };
-  return (
-    present.threats
-      .filter((threat) => copiedThreats.has(threat.id))
-      .reduce(
-        (count, threat) =>
-          count + threat.elements.filter((id) => !copiedIds.has(id)).length,
-        0,
-      ) +
-    uncopied(present.mitigations, fragment.mitigations) +
-    uncopied(present.assumptions, fragment.assumptions)
-  );
-}
 
 /** Copies the selection to the system clipboard and cuts only after a successful write. */
 export async function copySelected(cut = false): Promise<void> {
@@ -254,8 +168,8 @@ function insertCopy(
   if (modelStore.getState().present === state.present) {
     return false;
   }
-  const ids = remapped.right.diagrams.flatMap((item) =>
-    item.elements.map((element) => element.id),
+  const ids = elementsAcross(remapped.right.diagrams).map(
+    (element) => element.id,
   );
   dispatch(Action.Select({ elementIds: ids }));
   const first = ids[0];
@@ -266,4 +180,88 @@ function insertCopy(
     `${message} Records linked: ${String(linked)}. Records cloned: ${String(cloned)}.`,
   );
   return true;
+}
+
+function selectedCopy(
+  state: State,
+): Either.Either<
+  { readonly fragment: Model; readonly text: string; readonly report: string },
+  ClipboardFailure
+> {
+  const diagramId = activeDiagramId(state);
+  if (diagramId === undefined || state.selection.length === 0) {
+    return Either.left(
+      ClipboardFailure.Refused({ reason: 'Select elements to copy.' }),
+    );
+  }
+  return Either.flatMap(
+    Either.mapLeft(
+      selectionFragment(state.present, diagramId, state.selection),
+      (failure) =>
+        ClipboardFailure.Refused({ reason: `Copy refused: ${failure._tag}.` }),
+    ),
+    (fragment) => {
+      const text = marker + saerskrivenYamlCodec.write(fragment).output;
+      const limit = withinTextLimit(text);
+      if (Either.isLeft(limit)) {
+        return Either.left(
+          ClipboardFailure.Refused({
+            reason: 'The selection exceeds the clipboard size limit.',
+          }),
+        );
+      }
+      const copiedIds = elementIdsAcross(fragment.diagrams);
+      const excluded = externalLinkCount(state.present, fragment, copiedIds);
+      const extras =
+        FileLifecycle.$is('Opened')(state.file) &&
+        state.file.source.format === 'threat-dragon'
+          ? ' Source-format fields outside the model are not copied.'
+          : '';
+      return Either.right({
+        fragment,
+        text,
+        report: `${String(copiedIds.size)} elements and ${String(fragment.threats.length)} threats. ${String(excluded)} external links excluded.${extras}`,
+      });
+    },
+  );
+}
+
+function externalLinkCount(
+  present: Model,
+  fragment: Model,
+  copiedIds: ReadonlySet<string>,
+): number {
+  const copiedThreats = new Set<string>(
+    fragment.threats.map((threat) => threat.id),
+  );
+  const uncopied = (
+    records: readonly {
+      readonly id: string;
+      readonly threats: readonly string[];
+      readonly appliesToModel?: boolean;
+    }[],
+    copies: readonly { readonly id: string }[],
+  ): number => {
+    const copied = new Set(copies.map((copy) => copy.id));
+    return records
+      .filter((record) => copied.has(record.id))
+      .reduce(
+        (count, record) =>
+          count +
+          record.threats.filter((id) => !copiedThreats.has(id)).length +
+          (record.appliesToModel === true ? 1 : 0),
+        0,
+      );
+  };
+  return (
+    present.threats
+      .filter((threat) => copiedThreats.has(threat.id))
+      .reduce(
+        (count, threat) =>
+          count + threat.elements.filter((id) => !copiedIds.has(id)).length,
+        0,
+      ) +
+    uncopied(present.mitigations, fragment.mitigations) +
+    uncopied(present.assumptions, fragment.assumptions)
+  );
 }

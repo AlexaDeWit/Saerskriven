@@ -1,12 +1,11 @@
 import type { CommandSurface } from './registry.js';
 
-/** A surface that records what a command asked of it, in the order asked. */
-export type RecordingSurface = {
+type RecordingSurface = {
   readonly surface: CommandSurface;
   readonly asked: string[];
 };
 
-/** A {@link CommandSurface} that answers nothing and remembers everything. */
+/** A {@link CommandSurface} that records what a command asked of it, in the order asked. */
 export function recordingSurface(): RecordingSurface {
   const asked: string[] = [];
   const note = (what: string) => (): void => {

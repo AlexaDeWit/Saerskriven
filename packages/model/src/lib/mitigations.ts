@@ -30,3 +30,6 @@ export const mitigationSchema = z.object({
 
 /** Mitigation record. */
 export type Mitigation = z.infer<typeof mitigationSchema>;
+
+/** Mitigation record as {@link mitigationSchema} accepts it. */
+export type MitigationInput = z.input<typeof mitigationSchema>;

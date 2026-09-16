@@ -1,4 +1,4 @@
-import { quotedForTerminal, readLimits } from '@saerskriven/formats';
+import { quotedForTerminal } from '@saerskriven/formats';
 import {
   recordReferenceSchema,
   type Model,
@@ -14,6 +14,7 @@ import {
 } from './edits.js';
 import {
   namedFile,
+  readBoundPhrase,
   renderWriteFailure,
   renderWriteReport,
   replacedFile,
@@ -61,7 +62,7 @@ export type EditResult = z.infer<typeof editResultSchema>;
 export const editDescription = [
   'Apply a batch of edits to one Saerskriven threat model file and save the file in the format it is already in. A Saerskriven YAML file is written as version 2, whichever version it was read from.',
   'The edits are applied in order to one parsed model, and the file is written once at the end. The first edit the model refuses stops the batch: nothing is written, the file stays byte for byte as it was, and the result names the index that was refused and what the model said about it. The batch is the unit of change rather than the edit.',
-  `A batch that would take the file past ${String(readLimits.maxTextBytes / 1_048_576)} MiB, the size this server reads, is refused the same way, so make a smaller change rather than retrying it.`,
+  `A batch that would take the file past ${readBoundPhrase}, is refused the same way, so make a smaller change rather than retrying it.`,
   `Each edit is an object carrying \`op\` and that op's own fields. The ops are ${editOps.join(', ')}.`,
   '`add_element` accepts the optional security facts and declared relationships of its element kind. `set_element_properties` takes the element id and a `properties` object with `kind` and the fields to change. Omitted fields stay unchanged. Its optional `unset` list names fields to clear back to not recorded. False, empty text and empty lists are recorded values. A field cannot be set and unset in the same edit.',
   'Pass `revision` as the handle the last read of this file returned. A file that changed before this call is refused rather than overwritten, and the answer to that refusal is to read the file again and reconsider the edit against what the file now holds. The file is hashed again immediately before it is replaced, so a change that landed while this call was working is refused there instead of overwritten. That check is not a lock: a save landing between it and the replacement is still overwritten with neither side told, so read the file in the same turn you edit it, and expect to lose an edit where somebody is working in the same file from another tool.',

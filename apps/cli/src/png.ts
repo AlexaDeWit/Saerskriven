@@ -1,10 +1,10 @@
-import type { RenderTheme } from '@saerskriven/render';
+import type { RenderTheme } from '@saerskriven/canvas';
 import type { Diagram, Model } from '@saerskriven/model';
 import {
   drawingFace,
   renderPng,
-  ResvgFailure,
   type PngImage,
+  type ResvgFailure,
 } from '@saerskriven/render/png';
 import { Either } from 'effect';
 import { runtimeAssets, wasmAssets, type WasmAssets } from './assets.js';
@@ -46,8 +46,5 @@ async function rasterized(
 }
 
 function reported(failure: ResvgFailure): string {
-  return ResvgFailure.$match(failure, {
-    Refused: ({ sentence }) => `cannot draw the PNG: ${sentence}`,
-    Unusable: ({ sentence }) => `cannot draw the PNG: ${sentence}`,
-  });
+  return `cannot draw the PNG: ${failure.sentence}`;
 }

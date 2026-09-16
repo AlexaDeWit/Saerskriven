@@ -73,8 +73,8 @@
         # per target scripts/package-cli.sh builds. The URL version is
         # pkgs.deno's, so a deno bump moves all five URLs while the hashes
         # stay behind and the build fails on a mismatch. Renovate does not
-        # know this fetch: refetch the hashes by hand, per the maintenance
-        # section of docs/release.md, which says why they are pinned at all.
+        # know this fetch: refetch the hashes by hand, per docs/build.md, which
+        # says why they are pinned at all.
         denortVersion = pkgs.deno.version;
 
         denortHashes = {

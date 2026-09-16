@@ -134,9 +134,7 @@ function recorded(reading: ModelReading, threat: Threat): GetThreatResult {
     flags: threatFlags(model, threat),
     elements: elementsOnDiagrams(model.diagrams)
       .filter((placed) => attached.has(placed.element.id))
-      .map((placed) =>
-        elementDetail(placed, counts.get(placed.element.id) ?? 0),
-      ),
+      .map((placed) => elementDetail(placed, counts)),
     mitigations: recordsLinkedTo(model.mitigations, threat.id),
     assumptions: recordsLinkedTo(model.assumptions, threat.id),
   };

@@ -1,7 +1,8 @@
 # Contributing
 
 How we work on Saerskriven: the contribution process and the repository's
-requirements. Setup and build live in the [README](README.md#development).
+requirements. Setup, build and the local check live in the
+[README](README.md#development).
 
 ## Working language
 
@@ -25,8 +26,8 @@ low-effort, unreviewed AI output ("slop").
   trailer records a tool that helped. You remain the sole author, so it is
   **not** `Co-authored-by:`.
 - **Verify before you file**. Never open an issue that an AI produced and you
-  have not reproduced yourself. This matters most for a vulnerability report
-  (see [`SECURITY.md`](SECURITY.md)).
+  have not reproduced yourself. [`SECURITY.md`](SECURITY.md) says what happens
+  to an unverified vulnerability report.
 
 ## Developer Certificate of Origin (DCO)
 
@@ -56,8 +57,8 @@ Signed-off-by: Your Name <you@example.com>
 Open as a draft while work or review is moving, and mark it ready when it is
 not. The body is three headings, **What** (the goal), **Why** (the
 motivation), and **Consequences** (user-visible changes, deviations,
-trade-offs, one sentence each; the section goes when there are none), plus a
-one-line AI-assistance disclosure. Readable in seconds. There is no
+trade-offs, one sentence each, and the section goes when there are none), plus
+a one-line AI-assistance disclosure. Readable in seconds. There is no
 checklist on purpose: the gate enforces its items, and a body should not
 restate a gate.
 
@@ -70,11 +71,7 @@ appendices: that audit trail lives in the commit message of the change that
 produced it, and a review round rewrites the body only when the goal or a
 consequence changed. End with `Closes #NNN` where an issue completes.
 
-Before you push, run the local check:
-
-```sh
-pnpm check
-```
+Before you push, run the local check, `pnpm check`.
 
 ## Decision records
 
@@ -94,14 +91,10 @@ commitment. A weekend of rework is not serious commitment. Two more rules:
   Subjects are `type(scope): summary`. `type` is one of `feat`, `fix`,
   `docs`, `chore`, `ci`, `refactor`, `test`, `build`, `perf`. The scope is
   optional. Keep the summary short and imperative. A merge squashes to the
-  pull request title, and `nx release` derives the next version from those
-  subjects, so **the title decides the version bump**
-  ([the release procedure](docs/release.md)).
-- **Commits are GPG-signed and DCO signed off** (see above). Disclose
-  non-trivial AI assistance with an `Assisted-by:` trailer. A commit that
-  moves a dependency to a release attested from another source repository
-  declares that move with a `Provenance-Move:` trailer naming the package and
-  the old and the new repository, one line per package, which the provenance
-  check reads wherever a squash merge left it before it takes the move
-  ([the release procedure](docs/release.md)).
+  pull request title, so **the title decides the version bump**
+  ([what decides the version](docs/release.md#what-decides-the-version)).
+- **Commits are GPG-signed, DCO signed off, and AI-disclosed** (see above).
+- **A dependency that moves to another source repository** is declared with a
+  `Provenance-Move:` trailer on the commit that moves it
+  ([the provenance check](docs/release.md#3-rehearse-the-guarded-release-owner-github-cli)).
 - **The engineering rules live in [`CODING.md`](CODING.md)**.

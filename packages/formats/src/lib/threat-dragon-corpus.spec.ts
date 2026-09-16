@@ -3,10 +3,11 @@ import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import type { Divergence } from './divergence.js';
-import { allThreats, indexById } from './threat-dragon-document.js';
+import { indexById } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import {
+  allThreats,
   corpusTexts,
   ecluseSecurityText,
   threatDragonJsonSchema,

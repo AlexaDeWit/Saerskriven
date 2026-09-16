@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile release binaries offline. See docs/release.md for runtime pins and rebuilds.
+# Compile release binaries offline. See docs/build.md for runtime pins and rebuilds.
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"

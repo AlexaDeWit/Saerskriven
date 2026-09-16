@@ -1,3 +1,4 @@
+import { Data, Either } from 'effect';
 import type { Element, Flow } from './elements.js';
 import type { ElementId, ThreatId } from './ids.js';
 import type { Diagram } from './model.js';
@@ -17,8 +18,7 @@ export type EndpointViolation = {
  * The violations among one flow's attached endpoints, checked against the
  * element ids of the diagram meant to hold it. The self check runs first,
  * so a candidate flow not yet in the diagram reports a self anchor as such
- * rather than as absent. Shared by parseModel's refinements and the graph
- * operations, so both reject the same endpoints.
+ * rather than as absent.
  */
 export function endpointViolationsOf(
   flow: Flow,
@@ -43,10 +43,7 @@ export function endpointViolationsOf(
 /**
  * The diagrams a name selects: the one whose id it is first, then every other
  * one whose title it is exactly, in document order. A caller taking the first
- * therefore never draws a diagram titled with another one's id. A name
- * selecting none selects nothing, and what to say about that belongs to the
- * caller, whose wording is a command line's or a tool result's rather than
- * the model's.
+ * therefore never draws a diagram titled with another one's id.
  */
 export function diagramsNamed(
   diagrams: readonly Diagram[],
@@ -60,9 +57,55 @@ export function diagramsNamed(
   ];
 }
 
+/**
+ * Why {@link chosenDiagram} chose no diagram, as data for the caller to word:
+ * no name and no diagram, no name and several, or a name that selects none.
+ */
+export type DiagramChoiceFailure = Data.TaggedEnum<{
+  NoDiagram: {};
+  SeveralDiagrams: { readonly diagrams: readonly Diagram[] };
+  NoDiagramNamed: {
+    readonly name: string;
+    readonly diagrams: readonly Diagram[];
+  };
+}>;
+
+/** Constructors for {@link DiagramChoiceFailure}, with Effect's `$is` and `$match`. */
+export const DiagramChoiceFailure = Data.taggedEnum<DiagramChoiceFailure>();
+
+/**
+ * The diagram a caller means: without a name, the only one there is, and
+ * with one, the first {@link diagramsNamed} selects.
+ */
+export function chosenDiagram(
+  diagrams: readonly Diagram[],
+  name: string | undefined,
+): Either.Either<Diagram, DiagramChoiceFailure> {
+  if (name !== undefined) {
+    const [found] = diagramsNamed(diagrams, name);
+    return found === undefined
+      ? Either.left(DiagramChoiceFailure.NoDiagramNamed({ name, diagrams }))
+      : Either.right(found);
+  }
+  const [only] = diagrams;
+  if (only === undefined) {
+    return Either.left(DiagramChoiceFailure.NoDiagram());
+  }
+  return diagrams.length === 1
+    ? Either.right(only)
+    : Either.left(DiagramChoiceFailure.SeveralDiagrams({ diagrams }));
+}
+
 /** Ids of the elements one diagram owns. */
 export function elementIdsIn(diagram: Diagram): Set<string> {
   return new Set(diagram.elements.map((element) => element.id));
+}
+
+/** The given elements keyed by id. */
+export function elementsById(
+  elements: readonly Element[],
+): Map<ElementId, Element> {
+  return new Map(elements.map((element) => [element.id, element]));
 }
 
 /** Every element the given diagrams own, in diagram order. */
@@ -77,8 +120,7 @@ export function elementIdsAcross(diagrams: readonly Diagram[]): Set<string> {
 
 /**
  * The first of `elementIds` that names no element of the given diagrams,
- * and undefined where every one of them resolves. The operations report it
- * as the failure's offending reference.
+ * and undefined where every one of them resolves.
  */
 export function unknownElementIn(
   diagrams: readonly Diagram[],

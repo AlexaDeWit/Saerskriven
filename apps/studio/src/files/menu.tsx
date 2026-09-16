@@ -9,18 +9,11 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
   diagramExportCommand,
-  runCommand,
   type CommandId,
 } from '../commands/registry.js';
-import {
-  hostPlatform,
-  keyShortcutsAttribute,
-  spellShortcuts,
-} from '../commands/shortcuts.js';
 import {
   canRedo,
   canUndo,
@@ -28,10 +21,9 @@ import {
   needsCloseGuard,
   renameable,
 } from '../store/selectors.js';
+import { nameOf } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
 import { useCloseFocus } from '../ui/close-focus.js';
-import { FailureNotice } from '../ui/failure-notice.js';
-import { LiveRegion } from '../ui/live-region.js';
 import { colourModes, type ColourMode } from '../theme-preference.js';
 import { DiagramSwitcher } from './diagram-switcher.js';
 import { MenuCommand, MenuItem, RegisteredMenuCommand } from './menu-items.js';
@@ -39,15 +31,7 @@ import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
 import { RadioChoices } from './radio-choices.js';
 import { Submenu, SubmenuEdge } from './submenu.js';
-import {
-  formatFiles,
-  formatOf,
-  formatsFrom,
-  nameOf,
-  reportHeadlines,
-  reportLines,
-  type LossReport,
-} from './session.js';
+import { formatFiles, formatOf, formatsFrom } from './session.js';
 
 type UnsavedChangesCommandProps = {
   readonly asking: boolean;
@@ -66,33 +50,13 @@ function UnsavedChangesCommand({
   proceed,
   question,
 }: UnsavedChangesCommandProps) {
-  const entry = commandById(command);
-  const surface = useCommandSurface();
-
   return (
     <>
-      <MenuItem
-        chord={
-          asking || entry.shortcuts.length === 0
-            ? undefined
-            : spellShortcuts(entry.shortcuts, hostPlatform)
-        }
+      <RegisteredMenuCommand
+        asking={asking ? { question, answer: proceed } : undefined}
+        entry={commandById(command)}
         keepOpen={dirty && !asking}
-        keyShortcuts={
-          asking || entry.shortcuts.length === 0
-            ? undefined
-            : keyShortcutsAttribute(entry.shortcuts, hostPlatform)
-        }
-        onChoose={
-          asking
-            ? proceed
-            : () => {
-                runCommand(entry, surface);
-              }
-        }
-      >
-        {asking ? question : entry.label}
-      </MenuItem>
+      />
       {asking && <MenuItem onChoose={cancel}>Cancel</MenuItem>}
     </>
   );
@@ -267,63 +231,6 @@ function MenuPanel({
   );
 }
 
-/**
- * The last refused read and the report of the last crossing of the file
- * boundary, which hang under the chrome card rather than sitting in it: both
- * are empty until something has been refused or has cost the model a key, and
- * both can run to several lines.
- */
-export function FileReports({ session }: { readonly session: FileSession }) {
-  const failure = useModelStore((state) => state.lastFailure);
-  const { dismissExportNotice, dismissReport, exportNotice, report } = session;
-
-  return (
-    <>
-      <FailureNotice failure={failure} />
-      <LiveRegion
-        className={styles.report}
-        label="File reports"
-        testId="loss-report"
-      >
-        {report !== undefined && (
-          <>
-            <p className={styles.headline}>
-              {reportHeadlines[report.occasion]}
-            </p>
-            <ReportDetails report={report} />
-            <button
-              className={styles.dismiss}
-              onClick={dismissReport}
-              type="button"
-            >
-              Dismiss report
-            </button>
-          </>
-        )}
-        {exportNotice !== undefined && (
-          <div data-testid="export-report">
-            <p className={styles.headline}>{exportNotice.headline}</p>
-            {exportNotice.details.length > 0 && (
-              <ul className={styles.lines}>
-                {exportNotice.details.map((line, index) => (
-                  <li key={`${String(index)} ${line}`}>{line}</li>
-                ))}
-              </ul>
-            )}
-            <button
-              className={styles.dismiss}
-              onClick={dismissExportNotice}
-              type="button"
-            >
-              Dismiss export report
-            </button>
-          </div>
-        )}
-      </LiveRegion>
-    </>
-  );
-}
-
 function FileState({ dirty }: { readonly dirty: boolean }) {
   const file = useModelStore((state) => state.file);
 
@@ -357,7 +264,6 @@ function FileMenu({
     confirmClose,
     opening,
   } = session;
-  const saveAsCommand = commandById('save-as');
   const format = formatOf(file);
   const askingOpen = opening && dirty;
   const askingClose = closing && dirty;
@@ -374,32 +280,23 @@ function FileMenu({
         question="Discard changes and open"
       />
       <MenuCommand command="save" />
-      <MenuItem
-        chord={
+      <RegisteredMenuCommand
+        asking={
           choosing
-            ? undefined
-            : spellShortcuts(saveAsCommand.shortcuts, hostPlatform)
+            ? {
+                question: `Save as ${formatFiles[format].label}`,
+                answer: () => {
+                  chooseFormat(format);
+                },
+              }
+            : undefined
         }
+        entry={commandById('save-as')}
         keepOpen={asksFormat && !choosing}
-        keyShortcuts={
-          choosing
-            ? undefined
-            : keyShortcutsAttribute(saveAsCommand.shortcuts, hostPlatform)
-        }
-        onChoose={
-          choosing
-            ? () => {
-                chooseFormat(format);
-              }
-            : () => {
-                commands.saveAs();
-              }
-        }
-      >
-        {choosing
-          ? `Save as ${formatFiles[format].label}`
-          : saveAsCommand.label}
-      </MenuItem>
+        onChoose={() => {
+          commands.saveAs();
+        }}
+      />
       {choosing &&
         formatsFrom(format)
           .slice(1)
@@ -479,24 +376,6 @@ function ViewMenu() {
         {commandById('snap-to-grid').label}: {snapping ? 'on' : 'off'}
       </MenuCommand>
     </DropdownMenu.Group>
-  );
-}
-
-function ReportDetails({ report }: { readonly report: LossReport }) {
-  const lines = (
-    <ul className={styles.lines}>
-      {reportLines(report.divergences, report.occasion).map((line, index) => (
-        <li key={`${String(index)} ${line}`}>{line}</li>
-      ))}
-    </ul>
-  );
-  return report.occasion === 'import' ? (
-    <details>
-      <summary>{report.divergences.length} conversion details</summary>
-      {lines}
-    </details>
-  ) : (
-    lines
   );
 }
 

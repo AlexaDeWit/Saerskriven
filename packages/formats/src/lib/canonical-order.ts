@@ -1,37 +1,11 @@
 import { isRecord } from './records.js';
 
-type SchemaDef = {
-  readonly type: string;
-  readonly shape?: Readonly<Record<string, Schema>>;
-  readonly options?: readonly Schema[];
-  readonly discriminator?: string;
-  readonly element?: Schema;
-  readonly values?: readonly unknown[];
-};
-
-type Schema = { readonly def: SchemaDef };
-
-type Shape = Readonly<Record<string, Schema>>;
-
 /**
- * A value rebuilt with its keys in the order its schema declares them, and
- * the discriminator of a tagged variant first whatever position the schema
- * gives it.
- *
- * A serializer writes an object's keys in insertion order, so a projection
- * that hands a record straight to one inherits the order whoever built that
- * record chose. This replaces it with the schema's, which is what makes two
- * writes of one model byte-identical. The discriminator leads because a
- * variant is unreadable until you know which variant it is, and composing a
- * shape by extension puts the tag last.
- *
- * The walk descends through objects, arrays, and discriminated unions, and
- * returns anything else as it stands. Its depth is the schema's rather than
- * the value's, so a value carrying a cycle, which a YAML alias can build,
- * cannot drive it deeper than the schema goes. What comes back carries the
- * schema's key set: a key the schema declares and the value does not have is
- * left out, and a key the value has and the schema does not declare is
- * dropped.
+ * A value rebuilt with its keys in the order its schema declares them, the
+ * discriminator of a tagged variant first, which makes two writes of one
+ * model byte-identical. The walk follows the schema's depth rather than the
+ * value's, so a cycle a YAML alias built cannot drive it deeper. A key the
+ * schema does not declare is dropped.
  */
 export function canonicalOrder(schema: Schema, value: unknown): unknown {
   const { shape, element, options, discriminator } = schema.def;
@@ -48,6 +22,19 @@ export function canonicalOrder(schema: Schema, value: unknown): unknown {
   }
   return value;
 }
+
+type SchemaDef = {
+  readonly type: string;
+  readonly shape?: Readonly<Record<string, Schema>>;
+  readonly options?: readonly Schema[];
+  readonly discriminator?: string;
+  readonly element?: Schema;
+  readonly values?: readonly unknown[];
+};
+
+type Schema = { readonly def: SchemaDef };
+
+type Shape = Readonly<Record<string, Schema>>;
 
 function orderedVariant(
   options: readonly Schema[],

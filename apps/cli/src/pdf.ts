@@ -8,15 +8,8 @@ import { wasmAssets, type WasmAssets } from './assets.js';
 const wasmModule = 'typst_ts_web_compiler_bg.wasm';
 
 /**
- * Typst source compiled to a PDF, or a sentence saying why it was not.
- *
- * Finding the bytes is this side's work, in `assets.ts`, and typesetting them
- * is `@saerskriven/render/pdf`'s. The faces arrive in name order, which is the
- * order the compiler is given them in.
- *
- * The subpath answers with a tagged failure, which this side words: a
- * command prints one line, so the compiler's sentences are joined with
- * semicolons behind the same opening the unreadable directory gets.
+ * Typst source compiled to a PDF with the faces in name order, or one line
+ * saying why it was not.
  */
 export function compilePdf(
   source: string,

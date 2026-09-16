@@ -91,13 +91,7 @@ function grouped<Value extends string>(
   return [...groups];
 }
 
-/**
- * What an {@link EnumField} shows, what it offers, and where an edit goes.
- * `label` is the accessible name. `shownLabel` replaces the label drawn
- * above the trigger, and an empty one draws none. With no `value` the
- * trigger shows `placeholder`.
- */
-export type EnumFieldProps<Value extends string> = {
+type EnumFieldProps<Value extends string> = {
   readonly label: string;
   readonly shownLabel?: string;
   readonly value: Value | undefined;
@@ -109,9 +103,10 @@ export type EnumFieldProps<Value extends string> = {
 };
 
 /**
- * A labelled listbox that commits one choice. Its overlay stays in the DOM
- * of the containing landmark, and is placed and sized within the box the
- * field scrolls in, so it opens clear of whatever is drawn over that box.
+ * A labelled listbox that commits one choice. `label` is the accessible name,
+ * and `shownLabel` replaces the drawn label, an empty one drawing none. With
+ * no `value` the trigger shows `placeholder`. The overlay stays in the
+ * containing landmark and is placed within the box the field scrolls in.
  */
 export function EnumField<Value extends string>({
   label,

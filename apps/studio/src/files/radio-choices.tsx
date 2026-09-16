@@ -1,8 +1,7 @@
 import { DropdownMenu } from 'radix-ui';
 import styles from './menu.module.css';
 
-/** One choice of a {@link RadioChoices} group. */
-export type RadioChoice<Value extends string> = {
+type RadioChoice<Value extends string> = {
   readonly value: Value;
   readonly label: string;
 };
@@ -15,10 +14,9 @@ type RadioChoicesProps<Value extends string> = {
 };
 
 /**
- * A menu group of which one item is chosen, marked by its checked state for
- * assistive technology and with a dot for everyone else. Radix hands back the chosen
- * value as a string, so a choice is looked up before it is handed on and a
- * value outside the group chooses nothing.
+ * A menu group of which one item is chosen, marked by its checked state and
+ * with a dot. A value Radix hands back that is outside the group chooses
+ * nothing.
  */
 export function RadioChoices<Value extends string>({
   label,

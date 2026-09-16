@@ -1,15 +1,9 @@
 import { isRecord } from './records.js';
 
 /**
- * Whether two values a codec read out of a document, or is about to write
- * into one, say the same thing: the same primitives, the same array order,
- * and the same own keys throughout. A write asks this to decide whether a
- * value the source already carries still reads back as the model's, since
- * rewriting one that does would report a user's edit where there was none.
- *
- * Membership is `Object.hasOwn`, so a key named after a prototype member
- * (`__proto__`, `toString`) is compared like any other rather than matching
- * one the other side does not carry.
+ * Whether two parsed values say the same thing: the same primitives, array
+ * order and own keys throughout. Keys are compared with `Object.hasOwn`, so a
+ * key named after a prototype member matches only a key of that name.
  */
 export function equivalent(left: unknown, right: unknown): boolean {
   if (Array.isArray(left) || Array.isArray(right)) {

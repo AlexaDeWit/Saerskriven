@@ -1,12 +1,18 @@
+import type { RenderTheme } from '@saerskriven/canvas';
 import { escapedForTerminal } from '@saerskriven/formats';
-import { diagramsNamed, type Diagram, type Model } from '@saerskriven/model';
+import {
+  chosenDiagram,
+  DiagramChoiceFailure,
+  type Diagram,
+  type Model,
+} from '@saerskriven/model';
 import {
   renderRegister,
   registerOptionsSchema,
-  type RenderTheme,
   renderSvg,
   renderTypst,
   renderUnplacedWarning,
+  type ThemeRead,
 } from '@saerskriven/render';
 import { Either } from 'effect';
 import { z } from 'zod';
@@ -66,40 +72,53 @@ export function render(
         options.format,
         options.styled === true,
       );
-      if (
-        options.format === 'md' &&
-        options.styled === true &&
-        options.stylesheet === false &&
-        options.theme !== undefined
-      )
-        selected.diagnostics.push({
-          key: '',
-          message:
-            'the stylesheet is omitted, so the host CSS controls appearance',
-        });
-      if (
-        options.format !== 'md' &&
-        (options.title === false ||
-          options.headingLevel !== undefined ||
-          options.styled === true ||
-          options.stylesheet === false)
-      )
-        selected.diagnostics.push({
-          key: '',
-          message: 'Markdown embedding options do not apply to this output',
-        });
       const outcome = await projection(
         read.model,
         options,
         assets,
         selected.theme,
       );
+      const diagnostics = [
+        ...selected.diagnostics,
+        ...markdownOptionDiagnostics(options),
+      ];
       return {
         ...outcome,
-        err: themeWarnings(options.theme, selected.diagnostics) + outcome.err,
+        err: themeWarnings(options.theme, diagnostics) + outcome.err,
       };
     },
   });
+}
+
+function markdownOptionDiagnostics(
+  options: RenderOptions,
+): ThemeRead['diagnostics'] {
+  return [
+    ...(options.format === 'md' &&
+    options.styled === true &&
+    options.stylesheet === false &&
+    options.theme !== undefined
+      ? [
+          {
+            key: '',
+            message:
+              'the stylesheet is omitted, so the host CSS controls appearance',
+          },
+        ]
+      : []),
+    ...(options.format !== 'md' &&
+    (options.title === false ||
+      options.headingLevel !== undefined ||
+      options.styled === true ||
+      options.stylesheet === false)
+      ? [
+          {
+            key: '',
+            message: 'Markdown embedding options do not apply to this output',
+          },
+        ]
+      : []),
+  ];
 }
 
 function projection(
@@ -173,8 +192,8 @@ function drawing(
   assets: string,
   theme: RenderTheme,
 ): Promise<CommandOutcome> {
-  return Either.match(chosenDiagram(model, options.diagram), {
-    onLeft: (reason) => Promise.resolve(usageError(reason)),
+  return Either.match(chosenDiagram(model.diagrams, options.diagram), {
+    onLeft: (failure) => Promise.resolve(usageError(refusedChoice(failure))),
     onRight: (diagram) =>
       drawn(diagram, model, format, options.out, assets, theme),
   });
@@ -230,48 +249,25 @@ function written(
       });
 }
 
-function chosenDiagram(
-  model: Model,
-  name: string | undefined,
-): Either.Either<Diagram, string> {
-  return name === undefined
-    ? theOnlyDiagram(model)
-    : theNamedDiagram(model, name);
-}
-
-function theOnlyDiagram(model: Model): Either.Either<Diagram, string> {
-  const [only] = model.diagrams;
-  return model.diagrams.length === 1
-    ? Either.right(only)
-    : Either.left(noSingleDiagram(model));
-}
-
-function noSingleDiagram(model: Model): string {
-  return model.diagrams.length === 0
-    ? lines('error: the model holds no diagram, so there is nothing to draw.')
-    : lines(
+function refusedChoice(failure: DiagramChoiceFailure): string {
+  return DiagramChoiceFailure.$match(failure, {
+    NoDiagram: () =>
+      lines('error: the model holds no diagram, so there is nothing to draw.'),
+    SeveralDiagrams: ({ diagrams }) =>
+      lines(
         'error: --diagram chooses which diagram to draw, and the model holds several:',
-        ...diagramList(model),
-      );
+        ...diagramList(diagrams),
+      ),
+    NoDiagramNamed: ({ name, diagrams }) =>
+      lines(
+        `error: the model holds no diagram named ${quoted(name)}.`,
+        ...diagramList(diagrams),
+      ),
+  });
 }
 
-function theNamedDiagram(
-  model: Model,
-  name: string,
-): Either.Either<Diagram, string> {
-  const [found] = diagramsNamed(model.diagrams, name);
-  return found === undefined
-    ? Either.left(
-        lines(
-          `error: the model holds no diagram named ${quoted(name)}.`,
-          ...diagramList(model),
-        ),
-      )
-    : Either.right(found);
-}
-
-function diagramList(model: Model): readonly string[] {
-  return model.diagrams.map((diagram) =>
+function diagramList(diagrams: readonly Diagram[]): readonly string[] {
+  return diagrams.map((diagram) =>
     escapedForTerminal(`  ${diagram.id}: ${collapsed(diagram.title)}`),
   );
 }

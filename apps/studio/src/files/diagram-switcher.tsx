@@ -1,12 +1,6 @@
 import { DropdownMenu } from 'radix-ui';
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  type KeyboardEvent,
-} from 'react';
-import { announce } from '../canvas/announcements.js';
+import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
+import { announceRefusal } from '../canvas/announcements.js';
 import {
   endRenamingDiagram,
   renameActiveDiagram,
@@ -15,11 +9,7 @@ import {
 } from '../canvas/diagrams.js';
 import { activeDiagram } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
-import {
-  refusedName,
-  useTextDraft,
-  type RefusedDraft,
-} from '../ui/text-field.js';
+import { refusedName, useTextDraft } from '../ui/text-field.js';
 import { useCloseFocus } from '../ui/close-focus.js';
 import styles from './menu.module.css';
 import { MenuCommand } from './menu-items.js';
@@ -28,14 +18,10 @@ import { RadioChoices } from './radio-choices.js';
 const noDiagram = 'No diagram';
 
 /**
- * The diagram control joined to the menu button: the title of the diagram on
- * screen, and under it every diagram of the model to switch to, a New
- * diagram command, and Rename diagram, which turns the title into a field.
- * The field is drawn only while it is open on the diagram shown, so a
- * change of diagram under it closes it and clears the stale id. Enter and
- * Escape hand focus back to the button; a blur commits what it can, closes
- * either way, and leaves focus where the click put it, as the canvas name
- * field does.
+ * The title of the diagram on screen, opening a list of diagrams to switch
+ * to with New diagram and Rename diagram. The title field closes when the
+ * diagram on screen changes under it. Enter and Escape return focus to the
+ * button, and a blur commits and leaves focus where it went.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);
@@ -122,11 +108,6 @@ function TitleField({ title, onClose }: TitleFieldProps) {
   const field = useRef<HTMLInputElement>(null);
   const refusalId = useId();
   const settled = useRef(false);
-  const report = useCallback((refused: RefusedDraft | undefined) => {
-    if (refused !== undefined) {
-      announce(refused.said);
-    }
-  }, []);
   const draft = useTextDraft(
     'Diagram title',
     title,
@@ -134,7 +115,7 @@ function TitleField({ title, onClose }: TitleFieldProps) {
     (text) => {
       renameActiveDiagram(text);
     },
-    report,
+    announceRefusal,
     refusedName,
   );
 

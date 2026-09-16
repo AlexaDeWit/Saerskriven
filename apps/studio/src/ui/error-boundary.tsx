@@ -1,10 +1,10 @@
 import { Component, type ReactNode } from 'react';
+import { reasonOf } from '../reason.js';
 import styles from './error-boundary.module.css';
 
 type BoundaryState = { readonly message: string | undefined };
 
-/** The guarded content and an injectable page reload for specs. */
-export type ErrorBoundaryProps = {
+type ErrorBoundaryProps = {
   readonly children: ReactNode;
   readonly reload?: () => void;
 };
@@ -13,7 +13,7 @@ function reloadPage(): void {
   globalThis.location.reload();
 }
 
-/** Shows an unexpected render failure and offers a page reload. */
+/** Shows an unexpected render failure and offers a page reload, which a spec replaces through `reload`. */
 export class ErrorBoundary extends Component<
   ErrorBoundaryProps,
   BoundaryState
@@ -21,9 +21,7 @@ export class ErrorBoundary extends Component<
   override state: BoundaryState = { message: undefined };
 
   static getDerivedStateFromError(cause: unknown): BoundaryState {
-    return {
-      message: cause instanceof Error ? cause.message : String(cause),
-    };
+    return { message: reasonOf(cause) };
   }
 
   override render(): ReactNode {

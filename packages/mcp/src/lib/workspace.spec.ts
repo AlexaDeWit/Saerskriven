@@ -4,9 +4,9 @@ import { join } from 'node:path';
 import { namedPipeIn, workspaceTree } from './workspace.fixtures.js';
 import {
   WorkspaceFailure,
-  candidateFiles,
   openWorkspace,
   readModelFile,
+  reasonOf,
   renderWorkspaceFailure,
   type ModelWorkspace,
 } from './workspace.js';
@@ -131,11 +131,8 @@ describe('a path a tool call names', () => {
   });
 });
 
-describe('the candidate files under a root', () => {
-  it('lists model extensions from the root and below, and no link', () => {
-    expect(candidateFiles(workspace)).toEqual({
-      files: [join('nested', 'deeper.yaml'), 'small.yaml', 'unclaimed.yaml'],
-      truncated: false,
-    });
+describe('the reason a thrown value gives', () => {
+  it('reports a thrown value that is not an Error as it prints', () => {
+    expect(reasonOf('the disk went away')).toEqual('the disk went away');
   });
 });

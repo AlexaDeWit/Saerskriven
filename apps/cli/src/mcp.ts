@@ -12,7 +12,7 @@ import {
 import { Either } from 'effect';
 import type { Readable, Writable } from 'node:stream';
 import { z } from 'zod';
-import { runtimeAssets, type WasmAssets } from './assets.js';
+import { runtimeAssets } from './assets.js';
 import { processStopped, serveHttp, type HttpHost } from './mcp-http.js';
 import { pngAssets } from './png.js';
 import {
@@ -62,21 +62,11 @@ export const mcpOptionsSchema = z
 export type McpOptions = z.infer<typeof mcpOptionsSchema>;
 
 /**
- * Where one server gets its rasterizer. It holds bytes it read, but not a
- * refusal, so an install repaired under a long-lived host is read again.
+ * Where one server gets its rasterizer, read through the process-wide asset
+ * cache, which re-reads a refusal.
  */
 export function rasterizerIn(assets: string): RasterizerAssets {
-  let found: WasmAssets | undefined;
-  return () => {
-    if (found !== undefined) {
-      return Either.right(found);
-    }
-    const read = pngAssets(assets);
-    if (Either.isRight(read)) {
-      found = read.right;
-    }
-    return read;
-  };
+  return () => pngAssets(assets);
 }
 
 /**
@@ -104,11 +94,7 @@ export function processHost(): McpHost {
  * `saer mcp`: the MCP server over stdio until the host closes the input, or
  * with `--http` over Streamable HTTP until the process is signalled. Over
  * stdio, standard output carries the protocol alone, so what the transport
- * reported goes to standard error once the connection is over. Both eras of
- * client are served over both transports.
- *
- * `assets` is where a render tool reads the rasterizer module and its faces,
- * which is the directory beside the bundle unless a spec names another.
+ * reported goes to standard error once the connection is over.
  */
 export function serveMcp(
   options: McpOptions,

@@ -1,8 +1,8 @@
 import { escapedForTerminal } from '@saerskriven/formats';
+import { reasonOf } from '@saerskriven/mcp';
 import { Command } from 'commander';
 import { Either } from 'effect';
 import type { z } from 'zod';
-import { reasonOf } from './files.js';
 import {
   installMcp,
   installOptionsSchema,
@@ -234,13 +234,17 @@ function refused(issues: readonly z.core.$ZodIssue[]): Request {
 }
 
 function outcomeOf(request: Request): Promise<CommandOutcome> {
-  return request.kind === 'validate'
-    ? Promise.resolve(validate(request.file))
-    : request.kind === 'render'
-      ? render(request.file, request.options)
-      : request.kind === 'mcp'
-        ? serveMcp(request.options)
-        : request.kind === 'mcp-install'
-          ? Promise.resolve(installMcp(request.options))
-          : Promise.resolve(usageError(request.text));
+  switch (request.kind) {
+    case 'validate':
+      return Promise.resolve(validate(request.file));
+    case 'render':
+      return render(request.file, request.options);
+    case 'mcp':
+      return serveMcp(request.options);
+    case 'mcp-install':
+      return Promise.resolve(installMcp(request.options));
+    case 'usage':
+    default:
+      return Promise.resolve(usageError(request.text));
+  }
 }

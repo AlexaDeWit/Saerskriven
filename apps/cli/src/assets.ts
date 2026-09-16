@@ -1,8 +1,8 @@
+import { reasonOf } from '@saerskriven/mcp';
 import { ledBy } from '@saerskriven/render/png';
 import { Either } from 'effect';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { reasonOf } from './files.js';
 
 const fontFile = /\.ttf$/u;
 
@@ -26,27 +26,12 @@ export type WasmAssets = {
 };
 
 /**
- * The module named `wasmModule` in `directory` and every `.ttf` beside it, so
- * the faces are the ones the build carried and the host's own font
- * directories are never consulted.
- *
- * The faces come back in name order, except that `leading` names one to put
- * first. A renderer that falls a family no face carries back to the family of
- * the first face it was offered needs that, and a compiler that resolves
- * families by name does not, so only the caller that needs it asks. Whether a
- * directory holding no such face is refused or reordered as far as it can be
- * is for `ledBy` on the `png` subpath to decide, here and in the studio
- * alike.
- *
- * A directory holding no face at all is refused for the same reason, since a
- * compiler and a renderer both accept an empty list and both then write a
- * document with every shape drawn and no text in it.
- *
- * A directory that reads clean is read once per process, module and order.
- * That spares a second projection the WebAssembly bytes, and it is what lets
- * the PDF subpath's guard see that the process has already started from
- * them. A refused directory is re-read on every call, since nothing about the
- * refusal is worth remembering.
+ * The module named `wasmModule` in `directory` and every `.ttf` beside it,
+ * never the host's own fonts. The faces come in name order with `leading`
+ * first, as `ledBy` from the `png` subpath orders them. A directory with no
+ * face is refused, since a compiler or renderer given none draws no text. A
+ * successful read is cached per directory, module and leading face, and a
+ * refusal is read again on the next call.
  */
 export function wasmAssets(
   directory: string,

@@ -1,8 +1,5 @@
 <!--
-One to three sentences per section, readable in seconds. Never restate the
-diff; the reviewer has it. Never paste checklists, evidence transcripts, or
-per-round appendices; that audit trail lives in commit messages.
-CONTRIBUTING.md -> "Pull requests" has the rules.
+CONTRIBUTING.md -> "Pull requests" has the rules for this body.
 For a security fix, coordinate privately first. See SECURITY.md.
 -->
 

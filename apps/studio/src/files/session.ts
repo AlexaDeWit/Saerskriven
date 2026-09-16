@@ -18,6 +18,7 @@ import { Either } from 'effect';
 import { Action } from '../store/actions.js';
 import {
   FileLifecycle,
+  nameOf,
   untitledModel,
   type RetainedSource,
 } from '../store/state.js';
@@ -43,19 +44,9 @@ export const formatFiles = {
   },
 } as const satisfies Record<FormatName, FormatFile>;
 
-/** The default format holds the full internal model. */
-export const nativeFormat: FormatName = 'saerskriven-yaml';
+const nativeFormat: FormatName = 'saerskriven-yaml';
 
-/** The name a model with no file of its own is proposed under. */
-export const unnamedModel = 'threat-model';
-
-/** Uses the placeholder model title when no file is open. */
-export function nameOf(file: FileLifecycle): string {
-  return FileLifecycle.$match(file, {
-    NoFile: () => untitledModel,
-    Opened: ({ name }) => name,
-  });
-}
+const unnamedModel = 'threat-model';
 
 /** Which format the open file is in, and the native one while there is none. */
 export function formatOf(file: FileLifecycle): FormatName {
@@ -104,15 +95,6 @@ export function proposedExportName(
   extension: string,
 ): string {
   return withExtension(nameOf(file), extension, untitledModel);
-}
-
-function withExtension(
-  name: string,
-  extension: string,
-  fallback: string,
-): string {
-  const stem = name.replace(/\.[^./\\]*$/u, '').trim();
-  return `${stem === '' ? fallback : stem}${extension}`;
 }
 
 /** Where a save writes, and the document it merges the model onto. */
@@ -193,20 +175,20 @@ export function savedBy(
   });
 }
 
-/** Uses the codec renderer to escape foreign identifiers and format divergences. */
+/** A report's lines: an import's details escaped one per line, otherwise the codec's rendering of the divergences. */
 export function reportLines(
   divergences: readonly Divergence[],
   occasion?: LossOccasion,
 ): readonly string[] {
-  if (occasion === 'import')
+  if (occasion === 'import') {
     return divergences.map(({ detail }) => escapedForTerminal(detail));
+  }
   return hasDiverged(divergences)
     ? renderDivergences(divergences).split('\n')
     : [];
 }
 
-/** Whether a loss report is about a file being read or one being written. */
-export type LossOccasion = 'open' | 'save' | 'import';
+type LossOccasion = 'open' | 'save' | 'import';
 
 /** What one open or one save cost, and which of the two it was. */
 export type LossReport = {
@@ -236,8 +218,7 @@ export function saveReport(
   return reported('save', divergences);
 }
 
-/** Preserves the pairing between the detected format and its retained document. */
-export function retainedSource(read: DetectedRead): RetainedSource {
+function retainedSource(read: DetectedRead): RetainedSource {
   return read.format === 'threat-dragon'
     ? { format: 'threat-dragon', document: read.source }
     : { format: 'saerskriven-yaml', document: read.source };
@@ -273,4 +254,13 @@ function actionForImport(name: string, text: string): Action {
         divergences,
       }),
   });
+}
+
+function withExtension(
+  name: string,
+  extension: string,
+  fallback: string,
+): string {
+  const stem = name.replace(/\.[^./\\]*$/u, '').trim();
+  return `${stem === '' ? fallback : stem}${extension}`;
 }

@@ -1,6 +1,5 @@
-import type { RegisterBadge } from '@saerskriven/canvas';
-import type { RegisterOptions } from './register-options.js';
 import {
+  elementsAcross,
   inNumberOrder,
   recordsLinkedTo,
   threatFlags,
@@ -33,14 +32,9 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
+import type { RegisterBadge } from './register-badges.js';
 import { badgeLabel, categoryLabel, sectionLabel } from './register-labels.js';
-
-const prose = unified().use(remarkParse).use(remarkGfm);
-
-const headingDepths = [1, 2, 3, 4, 5, 6] as const;
-
-/** The largest prose depth accepted by both register writers. */
-export const deepestProse = 16;
+import type { RegisterOptions } from './register-options.js';
 
 declare module 'mdast' {
   interface TextData {
@@ -55,6 +49,19 @@ declare module 'mdast' {
     readonly registerTarget?: true;
   }
 }
+
+/**
+ * The deepest nesting of prose both register writers accept, counted from the
+ * register's root. Typst refuses seventeen nested blockquotes, which measure
+ * 19 here, so the exact bound is 18, and this sits two levels under it so a
+ * Typst release that lowers the limit does not refuse prose that rendered
+ * before.
+ */
+export const deepestProse = 16;
+
+const prose = unified().use(remarkParse).use(remarkGfm);
+
+const headingDepths = [1, 2, 3, 4, 5, 6] as const;
 
 const lineBreaks = /\s*[\r\n]+\s*/gu;
 
@@ -97,8 +104,27 @@ type SectionContext = {
 };
 
 /**
- * Builds the shared register tree: the overview, the assumptions that apply
- * to the model, then the threats in number order.
+ * The register as an mdast tree, the one definition both register writers
+ * serialize: the title, an overview table of every threat, a section of the
+ * assumptions that apply to the model where there are any, then one section
+ * per threat in number order.
+ *
+ * Each threat heading follows an empty anchor named `threat-<number>`, which
+ * the overview number links to, so a title edit keeps the target. GitHub's
+ * Markdown API prefixes the anchor's name with `user-content-` and leaves the
+ * link as written, and neither reaches the Typst output. A section
+ * lists the threat's fields and flags, its prose, then its mitigations and
+ * assumptions in model order, each led by its status. A record linked to
+ * several threats appears under each, and a record linked to none appears
+ * nowhere unless it is an assumption that applies to the model.
+ *
+ * Prose is parsed as Markdown and spliced in as nodes, its headings demoted
+ * below the section's and its raw HTML kept as written. Prose nested past
+ * {@link deepestProse}, counting a record's two enclosing levels, is one
+ * paragraph of the author's text. Line breaks in a heading collapse to
+ * spaces. Every enum reaches its label through a table the compiler checks
+ * is total, an absent value reads `None` or `None recorded.`, and a model
+ * with no threats says so in place of the overview table.
  */
 export function registerDocument(
   model: Model,
@@ -137,9 +163,7 @@ function headingText(value: string): string {
 
 function elementsById(model: Model): Map<string, Element> {
   return new Map(
-    model.diagrams
-      .flatMap((diagram) => diagram.elements)
-      .map((element) => [element.id, element]),
+    elementsAcross(model.diagrams).map((element) => [element.id, element]),
   );
 }
 

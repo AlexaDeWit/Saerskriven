@@ -1,6 +1,6 @@
-import { useSyncExternalStore } from 'react';
 import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
+import { externalStore } from '../ui/external-store.js';
 import { resetAnnouncements } from './announcements.js';
 import { elementTools, type ElementTool } from './elements.js';
 
@@ -29,7 +29,7 @@ let current = atRest;
 
 let beforeHeldHand: ToolState | undefined;
 
-const listeners = new Set<() => void>();
+const toolStore = externalStore(currentTool);
 
 /** Selects one toolbox mode. Selecting Select also clears the selection. */
 export function selectTool(tool: Tool): void {
@@ -87,14 +87,14 @@ export function resetTools(): void {
   moveTo(atRest);
 }
 
-/** What the toolbox is showing, for a spec and for {@link useTool}. */
+/** What the toolbox is showing. */
 export function currentTool(): ToolState {
   return current;
 }
 
 /** Subscribes a component to toolbox mode changes. */
 export function useTool(): ToolState {
-  return useSyncExternalStore(subscribe, currentTool, currentTool);
+  return toolStore.use();
 }
 
 function moveTo(
@@ -106,14 +106,5 @@ function moveTo(
   }
   current = { ...next, revision, transition: current.transition + 1 };
   resetAnnouncements();
-  for (const listener of listeners) {
-    listener();
-  }
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
+  toolStore.notify();
 }

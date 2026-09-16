@@ -2,8 +2,7 @@ import { threatStatusSchema, type ThreatStatus } from '@saerskriven/model';
 
 import { EnumField } from './enum-field.js';
 
-/** What a {@link StatusField} shows and where an edit goes. */
-export type StatusFieldProps = {
+type StatusFieldProps = {
   readonly value: ThreatStatus;
   readonly onCommit: (status: ThreatStatus) => void;
 };

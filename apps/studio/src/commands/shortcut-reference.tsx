@@ -22,18 +22,11 @@ import {
   spellChord,
   type Chord,
   type Platform,
+  type ShortcutEntry,
 } from './shortcuts.js';
 import styles from './shortcut-reference.module.css';
 
-type ReferenceEntry = {
-  readonly id: string;
-  readonly label: string;
-  readonly shortcuts: readonly Chord[];
-  readonly when: string;
-};
-
-/** State and commands used to mount the shortcut reference. */
-export type ShortcutReferenceControl = {
+type ShortcutReferenceControl = {
   readonly close: () => void;
   readonly commands: ReferenceCommands;
   readonly menuTrigger: RefObject<HTMLButtonElement | null>;
@@ -165,7 +158,7 @@ function ReferenceSection({
   title,
   type,
 }: {
-  readonly entries: readonly ReferenceEntry[];
+  readonly entries: readonly ShortcutEntry[];
   readonly platform: Platform;
   readonly title: string;
   readonly type: 'command' | 'contextual';

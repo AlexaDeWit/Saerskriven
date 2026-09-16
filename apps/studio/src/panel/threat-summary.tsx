@@ -16,11 +16,9 @@ const flagGlyphs = {
 } as const satisfies Record<ThreatFlag, string>;
 
 /**
- * What a collapsed threat says about itself: number, title, severity,
- * status, how many mitigations and assumptions it is linked to, and a mark
- * per flag it raises, in that order, which is also its accordion trigger's
- * accessible name. Each flag mark has a glyph shape of its own and its label
- * as text, so none depends on colour.
+ * A collapsed threat's summary, which is also its accordion trigger's
+ * accessible name: number, title, severity, status, record counts and a
+ * labelled glyph per raised flag.
  */
 export function ThreatSummary({ threat }: { readonly threat: Threat }) {
   const mitigations = useModelStore(

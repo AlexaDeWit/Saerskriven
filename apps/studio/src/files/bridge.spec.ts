@@ -2,7 +2,6 @@ import {
   OpenOutcome,
   fileOwnership,
   readWithin,
-  reasonOf,
   type ChosenFile,
 } from './bridge.js';
 import { chosenFile } from './files.fixtures.js';
@@ -69,15 +68,5 @@ describe('readWithin', () => {
     expect(outcome).toEqual(
       OpenOutcome.Unreadable({ reason: 'The file was moved.' }),
     );
-  });
-});
-
-describe('reasonOf', () => {
-  it('takes the message of what was thrown', () => {
-    expect(reasonOf(new Error('NotAllowedError'))).toBe('NotAllowedError');
-  });
-
-  it('renders what was thrown where it is no error at all', () => {
-    expect(reasonOf('refused')).toBe('refused');
   });
 });

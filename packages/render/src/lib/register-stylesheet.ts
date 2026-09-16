@@ -1,18 +1,21 @@
 import {
-  lightPalette,
+  badgeTextColour,
   defaultRenderTheme,
-  registerBadgeKinds,
   type RenderTheme,
 } from '@saerskriven/canvas';
+import { registerBadgeKinds } from './register-badges.js';
 
-/** Stable classes identify generated content independently of the stylesheet. */
+/** The classes a styled register carries, whatever stylesheet styles it. */
 export const registerClassNames = {
   root: 'saer-register',
   badge: 'saer-badge',
   label: 'saer-badge-label',
 } as const;
 
-/** CSS stays within the generated register and exposes appearance as custom properties. */
+/**
+ * CSS scoped to the generated register, with the theme exposed as custom
+ * properties a host can override.
+ */
 export function registerStylesheet(
   theme: RenderTheme = defaultRenderTheme,
 ): string {
@@ -31,7 +34,7 @@ export function registerStylesheet(
     ...(theme.badges.text === 'auto' && theme.badges.style === 'outline'
       ? []
       : [
-          `  --saer-badge-text: ${theme.badges.text === 'auto' ? lightPalette.badgeGround : theme.badges.text};`,
+          `  --saer-badge-text: ${badgeTextColour(theme, theme.colours.text)};`,
         ]),
     `  --saer-badge-border-width: ${String(theme.badges.borderWidth)}px;`,
     ...(theme.badges.style === 'outline'

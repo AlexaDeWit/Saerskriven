@@ -8,35 +8,31 @@ Edit here when the process changes, in the same PR as the change.
 - Required checks on `main`: **CI gate** and **codecov/project**.
 - The release tag guard requires **CI gate** on the exact `main` commit.
   Codecov commit statuses do not gate tags. Coverage upload is advisory on
-  main, tag, and manual runs, with a two-minute timeout. PR uploads remain required.
+  main, tag, and manual runs, with a two-minute timeout, and required on PRs.
 - "CI gate" in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
   requires source checks, the website build, and verified artifact
   attestations. Source checks require the full CLI matrix and existing test
   and scan jobs. Wire each new gating job into its `needs` and verdict.
-- Every PR rehearses the release builds. Repository PRs also generate and
-  verify attestations. Fork and Dependabot tokens cannot sign, so the gate
-  accepts an attestation skip only for those runs.
-- `publish` follows the gate and runs only on a push to a `v*` tag. PRs
-  upload workflow artifacts without creating releases or deploying Pages.
-- `pages-prepare` and `pages-deploy` follow publication in the same workflow.
-  A manual `deploy_pages` run on `main` retries the existing release archive.
-  The `github-pages` environment permits `main` and `v*` tags.
-- `publish` names the **`release`** GitHub environment, whose policy admits
-  `v*` tags only. That and the tag rulesets are repository settings rather
-  than workflow config, so a change to them is invisible in the diff;
-  [`docs/release.md`](../docs/release.md) records the live configuration and
-  the commands that read it back.
+- Every PR rehearses the release builds and, where its token can sign, the
+  attestations. `publish` runs only on a push to a `v*` tag, and the Pages
+  jobs follow it ([the release procedure](../docs/release.md)).
+- The `release` and `github-pages` environments and the tag rulesets are
+  repository settings rather than workflow config, so a change to them is
+  invisible in the diff. [`docs/release.md`](../docs/release.md) records the
+  live configuration and the commands that read it back.
 - A code scanning rule on `main` additionally requires a Semgrep OSS analysis
   per PR (alerts at `errors_and_warnings`, security alerts at
   `medium_or_higher`). The CI gate's semgrep step remains the strict
   enforcement: it fails the job on any ERROR or WARNING finding before the
   ruleset thresholds matter.
-- Informational contexts: **codecov/patch** (explicit once #14 lands).
+- Informational contexts: **codecov/patch**, reported against the 90% target
+  in `codecov.yml` and not required.
 
 ## Work decomposition
 
-- Slices are GitHub issues. Milestones are the waves, worked in order:
-  M0, M0.5, M1, M2, M3, M4, M5, M6.
+- Slices are GitHub issues. Milestones are the waves: M0, M0.5, M1, M2, M3,
+  M4, M5, M6, M7, M8. A milestone's description says when it is deferred, as
+  M5's is.
 - An issue body carries the goal, the acceptance criteria, and its dependency
   order. A cold start reads the milestone description before its issues.
 - Assignment signals in-progress. One issue, one PR.
@@ -75,39 +71,24 @@ Edit here when the process changes, in the same PR as the change.
 
 ## Model allocation (OpenCode)
 
-When the orchestration loop runs via OpenCode Go, all roles share one dollar pool:
-$12 per rolling 5-hour window, $30 per week, $60 per month. There is no
-Zen balance, so exhausting the pool blocks Go model requests until the
-window resets.
+When the loop runs through OpenCode Go, every role draws on one shared pool.
 
-- **Tech lead (resume-orchestration seat):** GPT 5.6 Luna
-  (`opencode-go/gpt-5.6-luna`). Decision-heavy but low-volume. Strong
-  reasoning, low per-token cost, 2,050 requests per 5-hour window,
-  $15/month usage allocation.
-- **Implementers (default):** Omen Alpha (`opencode-go/omen-alpha`).
-  11,600 requests per 5-hour window, $100/month usage allocation,
-  ~190 tokens per second, 500k context, reasoning. Highest throughput
-  per dollar in the Go lineup, so the pool lasts longest on the volume
-  seat. 23.14/40, rank 15 on the AI Coding Daily / OpenCode leaderboard
-  (Sep 2026); identity unconfirmed. A workhorse, not a reviewer.
-- **Reviewers:** GPT 5.6 Luna. Fresh-context evaluation sits at or
-  above the implementer's quality tier; Luna gives an independent
-  check on the implementer output.
-- **Per-slice pin:** For design-bearing or security-sensitive slices,
-  pin Kimi K2.7 Code (`opencode-go/kimi-k2.7-code`) or GPT 5.6 Luna
-  on the implementer instead of the default, per the orchestration
+- Tech lead (resume-orchestration seat): GPT 5.6 Luna (`opencode-go/gpt-5.6-luna`).
+- Implementers: Omen Alpha (`opencode-go/omen-alpha`).
+- Implementers on a design-bearing or security-sensitive slice: Kimi K2.7
+  Code (`opencode-go/kimi-k2.7-code`) or GPT 5.6 Luna, per the orchestration
   skill's pinning rule.
-- **Pool exhaustion:** Free models continue to serve after a Go pool
-  cap resets. Wire one into the opencode config fallback list so the
-  loop degrades rather than stalling outright.
+- Reviewers: GPT 5.6 Luna.
+- Fallback once the pool is exhausted: a free model in the opencode config's
+  fallback list.
 
 ## Worktrees
 
 - One worktree per agent:
   `git worktree add .agents/worktrees/<branch> -b <branch>` from the repository
-  root; `git worktree remove .agents/worktrees/<branch>` after merge.
-- `node_modules` is per-worktree: run `pnpm install` inside the flake in each
-  new worktree. The flake and direnv resolve per-worktree.
+  root, and `git worktree remove .agents/worktrees/<branch>` after merge.
+- `node_modules` is per-worktree, so run `pnpm install` inside the flake in
+  each new worktree. The flake and direnv resolve per-worktree.
 
 ## Compaction
 

@@ -159,6 +159,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "catalog:",
+    "@saerskriven/canvas": "workspace:*",
     "@saerskriven/formats": "workspace:*",
     "@saerskriven/mcp": "workspace:*",
     "@saerskriven/model": "workspace:*",

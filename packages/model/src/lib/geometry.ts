@@ -42,29 +42,17 @@ export type Side = z.infer<typeof sideSchema>;
  */
 export const waypointsSchema = z.array(pointSchema);
 
-/** Ordered route points. */
-export type Waypoints = z.infer<typeof waypointsSchema>;
-
 const placementColumns = 4;
 const placementMargin = 60;
 const placementStep = { x: 260, y: 160 };
 
-/**
- * The extent to give an element whose source states none, and the extent the
- * grid {@link autoPlacement} lays out is stepped for. The import mappings in
- * `@saerskriven/formats` give it to a record whose file carries no geometry,
- * and a caller placing an element rather than reading one takes it from here
- * rather than choosing its own.
- */
+/** The extent of an element whose source states none, and the one {@link autoPlacement}'s grid is stepped for. */
 export const autoExtent: Size = { width: 180, height: 80 };
 
 /**
- * Where to put the element at `index` among a run of elements the caller
- * has no position for: a row-major grid of four columns, laid out from a
- * fixed margin so the same index always lands on the same spot. The import
- * mappings in `@saerskriven/formats` place a record whose source file
- * carries no geometry with it; it is exported for any other caller that has
- * to choose a position rather than read one.
+ * The position of the element at `index` in a run with no geometry: a
+ * row-major grid of four columns from a fixed margin, the same spot for the
+ * same index.
  */
 export function autoPlacement(index: number): Point {
   return {

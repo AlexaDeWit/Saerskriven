@@ -71,15 +71,10 @@ type SubmenuProps = {
 };
 
 /**
- * A second level of the menu, at the start edge of {@link SubmenuEdge}. It
- * opens under its own row where its whole height fits there, over the row
- * where it fits there instead, and otherwise on the roomier side, scrolling. It
- * never covers its row, so the press after a hover lands on the row or a
- * submenu item.
- *
- * Radix keeps a submenu open only while the pointer heads right, the side it
- * fixes, so a pointer that leaves the row straight into this submenu keeps it
- * open whichever way it moved.
+ * A second level of the menu, at the start edge of {@link SubmenuEdge},
+ * under its row where it fits, over the row otherwise, and never covering
+ * the row. A pointer leaving the row straight into the submenu keeps it open
+ * in any direction, where Radix expects it to head right.
  */
 export function Submenu({ children, label, trigger }: SubmenuProps) {
   const edge = useContext(SubmenuEdge);

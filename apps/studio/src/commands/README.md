@@ -4,100 +4,90 @@ One home per command. Every command the studio offers is named once, in
 `registry.ts`, with the words a person reads, any assigned chord, and the
 dispatch it runs. A control does not hold a handler and a key press does not
 hold a second copy of one. Both go through the registry, so a button and its
-shortcut cannot drift apart.
+shortcut cannot drift apart. The keys a person uses are in
+[Using the studio](../../../../docs/studio.md#keyboard), and the full list is
+the in-app shortcut reference this directory renders.
+
+## Modules
+
+| Module                    | What it holds                                                                                             |
+| ------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `registry.ts`             | The command table, built from entry builders, with `commandById`, `commandFor` and `runCommand`           |
+| `shortcuts.ts`            | The chord type, its builders, and how each platform writes a chord                                        |
+| `binding.tsx`             | The document-level key listener, who owns a key press, and the `CommandSurface` context                   |
+| `contextual-shortcuts.ts` | Keys that act only inside one control, such as bend and resize keys, with their matchers and descriptions |
+| `command-button.tsx`      | `CommandButton` and `IconCommandButton`                                                                   |
+| `shortcut-reference.tsx`  | The non-modal shortcut reference panel                                                                    |
 
 ## What a command is
 
-`registry.ts` is one record, keyed by command id, and every lookup is over
-that key rather than a search. Each entry carries:
+`registry.ts` is one table keyed by command id. `commandById` reads it by key,
+and `commandFor` finds the one command whose chord matches a key event. Each
+entry carries:
 
-- **the label**, which is what a menu, a toolbox tooltip or a bare
-  `CommandButton` says;
-- **the group and context**, which place and explain it in the shortcut
-  reference;
-- **the shortcuts**, zero or more chords, in the order they are offered;
-- **`inTextFields`**, whether the chord still fires while a person is typing;
-- **the dispatch**, either a `run` against the `CommandSurface` or `pending`
-  naming the issue that will give the command one.
+- **The label**, which is what a menu, a toolbox tooltip or a bare
+  `CommandButton` says.
+- **The group and context**, which place and explain it in the shortcut
+  reference.
+- **The shortcuts**, zero or more chords, in the order they are offered.
+- **`inTextFields`**, whether the chord still fires while a person is typing.
+- **`available`**, where given, the state in which the command is the studio's
+  at all.
+- **The run**, which it calls with the `CommandSurface`.
 
-`pending` is a command whose surface has not landed. The chord is registered,
-shown and claimed from the browser now, so the shortcut a person learns does
-not move when the surface arrives, and the entry flips from `pending` to
-`runs` in the issue that builds it. Nothing else about the command changes.
-
-`CommandSurface` is what a command reaches that is not a module-level
-function: the file session, which holds the fallback picker only a component
-can hold and the question a close asks over unsaved work, and React Flow's
-viewport, which lives as long as the canvas is mounted. The
-store's own dispatches and the canvas edits need no surface, which is why a
-control runs those with nothing mounted above it. The app builds the one
-surface, in `app.tsx`, because that is the single place holding both the file
+`CommandSurface` is what a command reaches that is not a module-level function:
+the file session, which holds the fallback picker only a component can hold and
+the question a close asks over unsaved work, the shortcut reference, and React
+Flow's viewport, which lives as long as the canvas is mounted. The store's own
+dispatches and the canvas edits need no surface, which is why a control runs
+those with nothing mounted above it. The app builds the one surface, in
+`../app/app.tsx`, because that is the single place holding both the file
 session and the viewport. The viewport half is a hook the canvas exports, so
 the fit a command runs and the fit an open runs are one calculation ([the
-canvas](../canvas/README.md)).
-
-A completed Undo or Redo command writes its name to the shared edit status.
-The command says nothing when its history stack is empty.
-
-Focus threats is a page command on T. It uses the panel's focus channel to
-open the selected element's panel when needed and focus "Add a threat". Text
-fields and open overlays keep T for their own input.
-
-Model properties is a page command on M, and runs from the Edit group of the
-root menu too. It dispatches `ShowModelProperties`, which clears the canvas
-selection and shows the model's properties in the panel location with focus in
-Title ([the panel](../panel/README.md#the-models-properties)). Where they
-already show, it closes them and focuses the canvas, as Escape does. Text
-fields and open overlays keep M for their own input, so M typed into Title is
-a letter of the title.
+canvas](../canvas/README.md#the-view)).
 
 ## Chords, and how a platform writes them
 
-`shortcuts.ts` holds the chord. A chord is a set of modifiers and one key
-from a closed list, so a binding names a key the studio decided on rather
-than any string a keyboard can produce, and two commands reaching for one
-chord is a comparison over a known alphabet. The registry's spec holds that
-no two commands share one. The five export commands have none, as issue #190
-permits.
+A chord is a set of modifiers and one key from a closed list, so a binding
+names a key the studio decided on rather than any string a keyboard can
+produce, and two commands reaching for one chord is a comparison over a known
+alphabet. The registry's spec fails a chord that collides with one already
+bound. A command may have no chord, as the export commands do.
 
 `Mod` is the platform's command modifier: Command on Apple hardware, Control
 everywhere else. The platform is read once at load, from the user agent data
-where a browser offers it and `navigator.platform` where it does not, and
-each chord is then written three ways.
-
-Undo uses Command+Z on macOS and Ctrl+Z on Linux and Windows. Redo uses
-Shift+Command+Z on macOS, and Ctrl+Shift+Z or Ctrl+Y on Linux and Windows.
-The Ctrl+Y alternative is absent from macOS matching, labels, and ARIA
-attributes. Copy, cut, paste, open, save, selection, and view commands use
-the same platform modifier. Backspace supports the Delete key on Mac
-keyboards. Enter edits selected canvas text without requiring F2.
-Zoom accepts either the equals key or the produced plus character. Shifted
-number-row commands also match their digit key code when the event reports
-punctuation, such as `!` for Shift+1.
+where a browser offers it and `navigator.platform` where it does not, and each
+chord is then written three ways:
 
 | Where                | Apple          | Elsewhere         |
 | -------------------- | -------------- | ----------------- |
 | Tooltip, menu, panel | `⇧⌘S`          | `Ctrl+Shift+S`    |
 | `aria-keyshortcuts`  | `Shift+Meta+S` | `Control+Shift+S` |
 
-The attribute is spelled as ARIA asks rather than as a person reads it: it is
-the one attribute that says which key runs a control, and assistive
-technology reads the binding from it. The spelling a person reads is the
-tooltip and the control's accessible description, which is what
-`CommandButton` renders beside the button rather than inside it: inside, the
-accessible name of Save would read "Save Ctrl+S".
+The attribute is spelled as ARIA asks, since assistive technology reads the
+binding from it. The spelling a person reads is the tooltip and the control's
+accessible description, which `CommandButton` renders beside the button rather
+than inside it: inside, the accessible name of Save would read "Save Ctrl+S".
+A menu item draws the chord beside its label, where a native menu draws it,
+and hides it from assistive technology, which reads `aria-keyshortcuts`
+instead.
 
-A control with no words on it needs more than that, so `IconCommandButton` is
-the same control drawn as a glyph. The registry's label becomes the accessible
-name, the glyph carrying none, and the label with its chord is a Radix tooltip
-rather than the `title` attribute its worded sibling holds: `title` is shown to
-a pointer alone, and an icon has to say what it is to a keyboard as well. The
-tooltip renders where it stands rather than through a portal, so it stays in
-whichever landmark the control sits in, and it leaves with the pointer that
-opened it. The zoom cluster is the first control drawn that way ([the
-canvas](../canvas/README.md)), and the toolbox (#175) is next. The burger
-menu is not: its button is a glyph, but every command inside it is worded and
-draws its chord beside the label.
+Matching allows for keyboards. Ctrl+Y is an alternative Redo off macOS only,
+absent from macOS matching, labels and ARIA attributes. Backspace stands in for
+Delete on Mac keyboards. Zoom accepts the equals key or the produced plus
+character. Shifted number-row commands also match their digit key code when the
+event reports punctuation, such as `!` for Shift+1. `+` for Add bend accepts
+either Shift state, because layouts differ in how they produce it, while Ctrl
+or Command with it keeps its zoom binding.
+
+`IconCommandButton` is the same control drawn as a glyph. The registry's label
+becomes the accessible name, and the label with its chord is a Radix tooltip
+rather than the `title` attribute its worded sibling holds, because `title` is
+shown to a pointer alone and an icon has to say what it is to a keyboard as
+well. The tooltip renders in place rather than through a portal, so it stays in
+whichever landmark the control sits in. The zoom cluster and the toolbox draw
+their commands this way. The burger menu's button is a glyph, but every command
+inside it is worded.
 
 ## Who holds the keyboard
 
@@ -108,88 +98,44 @@ wherever a person is. Three rules decide whether a press is the studio's:
 - **A press a control has already acted on is not.** It arrives with its
   default prevented, which is how one Delete removes one element while the
   canvas still binds that key itself (`../canvas/diagram-canvas.tsx`).
-  Consolidating the two into this one is a follow-up of its own, left out
-  here because #154 owned that file while this was written.
-- **A press an open overlay owns is not.** A listbox or a menu is handling
-  the same keys, Escape and every letter of its typeahead among them, so
-  nothing is taken out from under it.
+- **A press an open overlay owns is not.** A listbox or a menu is handling the
+  same keys, Escape and every letter of its typeahead among them.
 - **A press typed into a control that takes characters is not**, unless the
-  command is exempt: a text field, and a listbox trigger that is closed,
-  whose typeahead is the same thing. Saving, saving as, undo and redo are the
-  exemptions, so naming an element never deletes one, a save mid-sentence
-  still saves, and no control leaves them dead under a person's hands.
-  Escape is not among them, and it is the threat panel that takes it from
-  inside a field: the panel claims the press, closes and hands focus back to
-  the element. The second Escape runs Select and clears the selection ([the
-  panel](../panel/README.md)). A
-  refused draft outlives both, the panel holding it per element, so neither
-  press is the one that destroys what was typed.
+  command is exempt: a text field, and a closed listbox trigger, whose
+  typeahead is the same thing. Save, Save as, Undo and Redo are the exemptions,
+  so naming an element never deletes one and a save mid-sentence still saves.
+  Escape is not among them: the threat panel takes it from inside a field,
+  closes and hands focus back to the element, and the second Escape runs Select
+  and clears the selection ([the panel](../panel/README.md)). A refused draft
+  outlives both presses.
 
-A press that is the studio's is claimed from the browser, whether or not the
-command has a dispatch yet: a chord the studio advertises must not do
-something else instead. A command that says when it is available is the
-studio's only then: the diagram steps claim PageUp and PageDown while the
-model holds more than one diagram, and leave them to scroll whatever has
-focus in a model of one.
+A press that is the studio's is claimed from the browser, so a chord the
+studio advertises does nothing else instead. A command with `available` is the
+studio's only then: the diagram steps claim PageUp and PageDown while the model
+holds more than one diagram, and leave them to scroll whatever has focus in a
+model of one.
 
 ## The shortcut reference
 
-The registry includes clipboard reuse, geometry, reconnection, flow
-direction, arrangement, snapping, zoom reset, and fit selection. Their
-shortcuts appear in the reference. Copy, Cut, Paste, Reset zoom, Duplicate,
-Position and size, Change flow source, Change flow target, Toggle
-bidirectional flow, Focus threats, and Delete selection are absent from the
-burger menu. Their shortcuts remain available.
-All keep text-field key ownership.
+`shortcut-reference.tsx` renders every command from `registry.ts` and every
+contextual key from `contextual-shortcuts.ts`. Resize keys and distances come
+from the canvas package, where the resize controls use them. The panel is
+non-modal: opening it focuses its heading without trapping focus, and Escape
+closes it only while focus is inside, returning focus to the opener. Complete
+direction groups read as `Arrow Keys` or `Shift+Arrow`, and groups that accept
+only some directions list those keys.
 
-The Keyboard shortcuts item in the Help menu opens a non-modal reference
-panel. Question mark and F1 toggle it when focus is outside a text field or
-open menu. The panel overlays the left edge on a wide screen and the lower 60
-percent on a narrow screen.
+## Rules for changes
 
-The panel starts with collapsed category cards. Each card shows its name and
-entry count. Enter or Space expands it, and arrow keys move between category
-headers. Multiple categories can stay open.
-
-Alternative shortcuts appear on separate lines. Complete direction groups
-read as `Arrow Keys` or `Shift+Arrow`. Groups that accept only some directions
-list those keys individually. The shortcut column leaves room for the action
-label, and its context spans the full row below.
-
-The panel renders every command from `registry.ts`. It renders canvas keys
-from `contextual-shortcuts.ts`, which also supplies the matchers and accessible
-descriptions used where those keys act. Resize keys and distances come from
-the canvas package, where the resize controls use them.
-
-Opening the panel focuses its heading without trapping focus. Escape closes
-it only while focus is inside and returns focus to the opener. The Close
-button follows the same path.
-
-## What a later slice does
-
-Add bend (`+`) acts on one selected flow. It highlights a segment for
-Left/Right selection, then Enter starts a bend. Arrow keys position the
-preview, Enter commits, and Escape cancels. Existing focused bend handles
-accept arrows and Delete/Backspace. These local keys belong to the bend
-control, as resize keys belong to resize controls. `+` accepts either Shift
-state because keyboard layouts differ in how they produce that character.
-Ctrl or Command keeps its separate zoom binding. Text fields retain `+`.
-
-- Flip a `pending` entry to `runs` when the issue lands its surface. A pending
-  command keeps its chord reserved until then.
 - Render a command through `CommandButton`, or `IconCommandButton` where the
   control is a glyph, or read `commandById` for a surface that draws its own
-  control. Never hold a label or a chord beside a control: the menu, the
-  toolbox, the panel and the zoom cluster read both from here. The menu is the
-  worked example of the last route
-  ([`../files/menu.tsx`](../files/menu.tsx)): a menu item draws the chord
-  beside the label, where a native menu draws it, and hides it from assistive
-  technology, which reads the binding off `aria-keyshortcuts` instead.
-- Bind a new command by adding an entry, not by adding a listener. The spec
-  beside the registry fails a chord that collides with one already bound.
-- Add a contextual key to `contextual-shortcuts.ts`. Renderers, event handlers,
-  and accessible descriptions read it from there.
-- The tool commands select a mode. The toolbox reads those same entries for
+  control, as `../files/menu.tsx` does. Never hold a label or a chord beside a
+  control: the menu, the toolbox, the panel and the zoom cluster read both from
+  here.
+- Bind a new command by adding an entry, not by adding a listener.
+- Add a key that acts only inside one control to `contextual-shortcuts.ts`.
+  Renderers, event handlers and accessible descriptions read it from there.
+- The tool commands select a mode, and the toolbox reads those same entries for
   its icons, accessible names and tooltips. Space is Hand's momentary chord:
   the binding restores the prior tool on keyup, which a click has no keyup to
   answer.

@@ -1,18 +1,22 @@
 import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
-import { OperationFailure, type ParseIssue } from '@saerskriven/model';
+import {
+  issueLine,
+  OperationFailure,
+  type ParseIssue,
+} from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import { StudioFailure } from '../store/state.js';
 import { dispatch } from '../store/store.js';
+import { DetailLines } from './detail-lines.js';
 import styles from './failure-notice.module.css';
 import { LiveRegion } from './live-region.js';
 
-/** A refusal as a person reads it: one sentence, and the paths under it. */
-export type FailureDescription = {
+type FailureDescription = {
   readonly headline: string;
   readonly details: readonly string[];
 };
 
-/** Formats every failure variant and retains schema paths. */
+/** A refusal as a person reads it: one sentence, and the lines under it with any schema paths. */
 export function describeFailure(failure: StudioFailure): FailureDescription {
   return StudioFailure.$match(failure, {
     Operation: ({ failure: refusal }) => ({
@@ -35,8 +39,7 @@ export function describeFailure(failure: StudioFailure): FailureDescription {
   });
 }
 
-/** What a {@link FailureNotice} shows, and nothing while there is none. */
-export type FailureNoticeProps = {
+type FailureNoticeProps = {
   readonly failure: StudioFailure | undefined;
 };
 
@@ -55,7 +58,15 @@ export function FailureNotice({ failure }: FailureNoticeProps) {
         <>
           <p className={styles.headline}>{described.headline}</p>
           {described.details.length > 0 && (
-            <FailureDetails details={described.details} />
+            <DetailLines
+              className={styles.details}
+              lines={described.details}
+              summary={
+                described.details.length > 1 ? (
+                  <>{described.details.length} refusal details</>
+                ) : undefined
+              }
+            />
           )}
           <button
             className={styles.dismiss}
@@ -69,24 +80,6 @@ export function FailureNotice({ failure }: FailureNoticeProps) {
         </>
       )}
     </LiveRegion>
-  );
-}
-
-function FailureDetails({ details }: { readonly details: readonly string[] }) {
-  const lines = (
-    <ul className={styles.details}>
-      {details.map((detail, index) => (
-        <li key={`${String(index)} ${detail}`}>{detail}</li>
-      ))}
-    </ul>
-  );
-  return details.length > 1 ? (
-    <details>
-      <summary>{details.length} refusal details</summary>
-      {lines}
-    </details>
-  ) : (
-    lines
   );
 }
 
@@ -180,8 +173,5 @@ function describeOperation(failure: OperationFailure): string {
 }
 
 function issueLines(issues: readonly ParseIssue[]): readonly string[] {
-  return issues.map(
-    (issue) =>
-      `${issue.path.length > 0 ? issue.path.join('.') : '(root)'}: ${issue.message}`,
-  );
+  return issues.map(issueLine);
 }

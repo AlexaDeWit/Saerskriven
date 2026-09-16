@@ -82,8 +82,7 @@ const exportFiles = {
   },
 } as const satisfies Record<string, ExportFile>;
 
-/** The export commands offered by the File menu. */
-export type ExportCommands = {
+type ExportCommands = {
   diagram(diagramId?: DiagramId): void;
   register(): void;
   typst(): void;
@@ -92,10 +91,8 @@ export type ExportCommands = {
 };
 
 /**
- * A report from the last export, announced beside the File menu. `refusal`
- * decides its lifetime: a refusal is a problem and stands until the person
- * dismisses it or a later export replaces it, while an informational report
- * of an export that was written goes at the next canvas or panel change.
+ * A report from the last export. A `refusal` stands until dismissed or
+ * replaced, and any other report also goes at the next canvas or panel change.
  */
 export type ExportNotice = {
   readonly headline: string;
@@ -103,11 +100,7 @@ export type ExportNotice = {
   readonly refusal: boolean;
 };
 
-/**
- * Browser services the two exports that read WebAssembly need, replaceable by
- * a focused spec: the bytes each one runs on, and the projection that reads
- * them.
- */
+/** The asset loaders and projections the PDF and PNG exports run, which a spec replaces. */
 export type RenderExports = {
   readonly pdfAssets: () => Promise<
     Either.Either<PdfAssets, RenderAssetFailureType>
@@ -127,11 +120,7 @@ export const browserRenderExports: RenderExports = {
   draw: renderPng,
 };
 
-/**
- * One set of export commands and the report their last run produced. The
- * report stands until the person dismisses it or the next action that moves
- * canvas or panel state, never on a timer.
- */
+/** The export commands and the report their last run produced. */
 export function useExportCommands(
   bridge: FileBridge = browserFileBridge,
   renders: RenderExports = browserRenderExports,

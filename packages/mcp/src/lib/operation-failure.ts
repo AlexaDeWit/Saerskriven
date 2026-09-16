@@ -1,15 +1,19 @@
 import { quotedForTerminal } from '@saerskriven/formats';
-import { OperationFailure, type ParseIssue } from '@saerskriven/model';
+import {
+  OperationFailure,
+  issueLine,
+  type ParseIssue,
+} from '@saerskriven/model';
 
 /** What the model said about a refused edit, as one line of a result. */
 export function describeOperationFailure(failure: OperationFailure): string {
   return OperationFailure.$match(failure, {
     InvalidElementProperties: ({ issues }) =>
-      `The element properties were refused: ${issueLine(issues)}`,
+      `The element properties were refused: ${issueLines(issues)}`,
     InvalidElementRelationship: ({ issues }) =>
-      `The element has invalid boundary relationships: ${issueLine(issues)}`,
+      `The element has invalid boundary relationships: ${issueLines(issues)}`,
     InvalidFragment: ({ issues }) =>
-      `The edit does not apply to this model: ${issueLine(issues)}.`,
+      `The edit does not apply to this model: ${issueLines(issues)}.`,
     UnknownDiagram: ({ diagramId }) =>
       `The model holds no diagram ${quotedForTerminal(diagramId)}.`,
     DuplicateDiagramId: ({ diagramId }) =>
@@ -63,11 +67,6 @@ export function describeOperationFailure(failure: OperationFailure): string {
   });
 }
 
-function issueLine(issues: readonly ParseIssue[]): string {
-  return issues
-    .map(
-      (issue) =>
-        `${issue.path.length > 0 ? issue.path.join('.') : '(root)'}: ${issue.message}`,
-    )
-    .join(', ');
+function issueLines(issues: readonly ParseIssue[]): string {
+  return issues.map(issueLine).join(', ');
 }

@@ -14,10 +14,8 @@ export const emptyLayout: CanvasLayout = {
 };
 
 /**
- * Lays out the diagram on screen and caches by model identity and diagram
- * id, so a switch back to a diagram already laid out hands back the same
- * object. Stable snapshots are required by useSyncExternalStore, including
- * after undo.
+ * The layout of the diagram on screen, cached by model identity and diagram
+ * id, so a store selector reading it returns a stable snapshot.
  */
 export function currentLayout(
   state: Pick<State, 'present' | 'activeDiagram'>,

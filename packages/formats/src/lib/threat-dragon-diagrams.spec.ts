@@ -1,3 +1,4 @@
+import type { ModelInput } from '@saerskriven/model';
 import { parsedFixture } from '@saerskriven/model/fixtures';
 import type {
   ThreatDragonDiagram,
@@ -9,7 +10,6 @@ import {
   mergeDiagram,
   numberDiagrams,
 } from './threat-dragon-diagrams.js';
-import type { ModelInput } from './threat-dragon.fixtures.js';
 
 const diagram = (id: string): ModelInput['diagrams'][number] => ({
   id,

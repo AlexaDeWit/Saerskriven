@@ -1,7 +1,6 @@
 import {
   divergenceSchema,
   escapedForTerminal,
-  formatNameSchema,
   renderDivergences,
 } from '@saerskriven/formats';
 import {
@@ -9,21 +8,22 @@ import {
   assumptionSchema,
   diagramIdSchema,
   elementIdsIn,
+  elementsAcross,
   modelMetadataSchema,
   type Diagram,
   type Model,
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
-import { renderAssumption } from './threat-rows.js';
+import { candidateFiles } from './candidates.js';
 import {
-  candidateFiles,
-  readModelFile,
-  renderWorkspaceFailure,
-  withinRoot,
-  type ModelWorkspace,
-  type ReadModelFile,
-} from './workspace.js';
+  readNamed,
+  readingSchema,
+  reportedReading,
+  type ModelReading,
+} from './reading.js';
+import { renderAssumption } from './threat-rows.js';
+import type { ModelWorkspace } from './workspace.js';
 
 /** What `saer_inspect` tells a client it is for. */
 export const inspectDescription = [
@@ -34,9 +34,8 @@ export const inspectDescription = [
 ].join(' ');
 
 /**
- * The `file` argument every tool of this server takes, optional because
- * `--file` can name the model the server works over. Later tools extend this
- * schema rather than restating the field.
+ * The `file` argument every tool of this server takes, which each tool's own
+ * argument schema extends.
  */
 export const fileArgumentSchema = z.object({
   file: z
@@ -65,19 +64,18 @@ const totalsSchema = z.object({
   assumptions: z.int().nonnegative(),
 });
 
-const inspectedSchema = z.object({
-  kind: z.literal('inspected'),
-  file: z.string(),
-  format: formatNameSchema,
-  revision: z.string(),
-  metadata: modelMetadataSchema,
-  assumptions: z
-    .array(assumptionSchema)
-    .describe('The assumptions that apply to the model, in model order.'),
-  diagrams: z.array(diagramSummarySchema),
-  totals: totalsSchema,
-  divergences: z.array(divergenceSchema),
-});
+const inspectedSchema = z
+  .object({ kind: z.literal('inspected') })
+  .extend(readingSchema.shape)
+  .extend({
+    metadata: modelMetadataSchema,
+    assumptions: z
+      .array(assumptionSchema)
+      .describe('The assumptions that apply to the model, in model order.'),
+    diagrams: z.array(diagramSummarySchema),
+    totals: totalsSchema,
+    divergences: z.array(divergenceSchema),
+  });
 
 const candidatesSchema = z.object({
   kind: z.literal('candidates'),
@@ -86,11 +84,10 @@ const candidatesSchema = z.object({
 });
 
 /**
- * What `saer_inspect` answers with: the root it is confined to, and either
- * the model it read or the candidate files it found when the call named none.
- * The union is nested inside an object so the advertised JSON Schema has an
- * object at its root, which is what the protocol's structured content is
- * projected against.
+ * What `saer_inspect` answers with: the root, and the model it read or the
+ * candidate files where the call named none. The union is nested so the
+ * advertised JSON Schema has an object at its root, as structured content
+ * requires.
  */
 export const inspectResultSchema = z.object({
   root: z.string(),
@@ -102,23 +99,18 @@ export type InspectResult = z.infer<typeof inspectResultSchema>;
 
 /**
  * What a model file holds, or the candidates to name where the call named no
- * file and the server carries no default. A failure comes back as data for
- * the caller to render as a refused result: nothing here throws.
+ * file and the server carries no default.
  */
 export function inspect(
   workspace: ModelWorkspace,
   { file }: InspectArguments,
 ): Either.Either<InspectResult, readonly string[]> {
-  const named = file ?? workspace.defaultFile;
-  return named === undefined
+  return file === undefined && workspace.defaultFile === undefined
     ? Either.right({ root: workspace.root, result: candidates(workspace) })
-    : Either.mapBoth(readModelFile(workspace, named), {
-        onLeft: renderWorkspaceFailure,
-        onRight: (read) => ({
-          root: workspace.root,
-          result: inspected(workspace, read),
-        }),
-      });
+    : Either.map(readNamed(workspace, file), (reading) => ({
+        root: workspace.root,
+        result: inspected(reading),
+      }));
 }
 
 /** The inspection as the lines its text result carries. */
@@ -139,23 +131,18 @@ function candidates(
   };
 }
 
-function inspected(
-  workspace: ModelWorkspace,
-  read: ReadModelFile,
-): z.infer<typeof inspectedSchema> {
-  const { model } = read.read;
+function inspected(reading: ModelReading): z.infer<typeof inspectedSchema> {
+  const { model } = reading;
   return {
     kind: 'inspected',
-    file: withinRoot(workspace, read.path),
-    format: read.read.format,
-    revision: read.revision,
+    ...reportedReading(reading),
     metadata: model.metadata,
     assumptions: model.assumptions.filter(
       ({ appliesToModel }) => appliesToModel,
     ),
     diagrams: model.diagrams.map((diagram) => summaryOf(diagram, model)),
     totals: totalsOf(model),
-    divergences: [...read.read.divergences],
+    divergences: [...reading.divergences],
   };
 }
 
@@ -177,10 +164,7 @@ function summaryOf(
 function totalsOf(model: Model): z.infer<typeof totalsSchema> {
   return {
     diagrams: model.diagrams.length,
-    elements: model.diagrams.reduce(
-      (total, diagram) => total + diagram.elements.length,
-      0,
-    ),
+    elements: elementsAcross(model.diagrams).length,
     threats: model.threats.length,
     mitigations: model.mitigations.length,
     assumptions: model.assumptions.length,

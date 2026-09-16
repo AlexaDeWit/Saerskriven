@@ -61,10 +61,10 @@ export function elementsOnDiagrams(
   );
 }
 
-/** The identifying fields of one element, and its threat count. */
+/** The identifying fields of one element, and its count in `counts`. */
 export function elementRow(
   { element, diagram }: ElementOnDiagram,
-  threats: number,
+  counts: ReadonlyMap<string, number>,
 ): ElementRow {
   return {
     id: element.id,
@@ -72,20 +72,19 @@ export function elementRow(
     kind: element.kind,
     name: element.name,
     outOfScope: element.outOfScope,
-    threats,
+    threats: threatsOn(element, counts),
   };
 }
 
-/** One element with the rest of its record, the geometry of its kind included. */
+/** One element's whole record, geometry included, and its count in `counts`. */
 export function elementDetail(
-  placed: ElementOnDiagram,
-  threats: number,
+  { element, diagram }: ElementOnDiagram,
+  counts: ReadonlyMap<string, number>,
 ): ElementDetail {
-  const { element } = placed;
   return {
     ...element,
-    diagram: placed.diagram.id,
-    threats,
+    diagram: diagram.id,
+    threats: threatsOn(element, counts),
   };
 }
 
@@ -146,6 +145,13 @@ function detailLines(row: ElementDetail): readonly string[] {
       )
       .map(([key, value]) => `${key}: ${JSON.stringify(value)}`),
   ];
+}
+
+function threatsOn(
+  element: Element,
+  counts: ReadonlyMap<string, number>,
+): number {
+  return counts.get(element.id) ?? 0;
 }
 
 function renderEndpoint(endpoint: FlowEndpoint): string {

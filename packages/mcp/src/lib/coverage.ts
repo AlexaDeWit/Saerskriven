@@ -13,7 +13,6 @@ import {
   elementRowSchema,
   elementsOnDiagrams,
   renderElement,
-  type ElementOnDiagram,
 } from './element-rows.js';
 import { fileArgumentSchema } from './inspect.js';
 import {
@@ -84,15 +83,13 @@ export function coverageOf(reading: ModelReading): CoverageResult {
   const unanalyzed = new Set<string>(
     elementsWithoutThreats(model).map((element) => element.id),
   );
-  const rowOf = (one: ElementOnDiagram) =>
-    elementRow(one, counts.get(one.element.id) ?? 0);
   return {
     ...reportedReading(reading),
     unanalyzed: placed
       .filter((one) => unanalyzed.has(one.element.id))
-      .map(rowOf),
+      .map((one) => elementRow(one, counts)),
     open: openGroups(model),
-    perElement: placed.map(rowOf),
+    perElement: placed.map((one) => elementRow(one, counts)),
   };
 }
 

@@ -13,7 +13,11 @@ export { ResvgFailure } from './resvg-failures.js';
 /** Default raster size on the longer edge, in pixels. */
 export const defaultLongEdge = 1568;
 
-/** Leading face for the rasterizer fallback family. */
+/**
+ * The face a caller leads the rasterizer's faces with. A family no face
+ * carries falls back to the family of the first face offered, so the regular
+ * face leading makes the fallback Liberation Sans in every weight and style.
+ */
 export const drawingFace = 'LiberationSans-Regular.ttf';
 
 /** Orders faces with the requested fallback first, or reports its absence. */
@@ -47,7 +51,11 @@ export type PngImage = {
   readonly unplaced: readonly UnplacedEndpoint[];
 };
 
-/** Rasterizes the themed SVG with its selected background. */
+/**
+ * One diagram as a PNG: {@link renderSvg} rasterized, on its themed
+ * background, at `longEdge` pixels on the longer side, 1568 by default, the
+ * size an MCP host downscales an image block to.
+ */
 export async function renderPng(
   diagram: Diagram,
   model: Model,

@@ -1,6 +1,9 @@
 import type { ModelMetadataChange } from '@saerskriven/model';
 import { useEffect, useRef, useState } from 'react';
-import { announce, resetAnnouncements } from '../canvas/announcements.js';
+import {
+  announceRefusal,
+  resetAnnouncements,
+} from '../canvas/announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import { ProseField, TextField } from '../ui/text-field.js';
@@ -10,8 +13,7 @@ import { assumptionKind, modelTarget } from './records.js';
 import { draftIn, useRefusals, type RefusedField } from './refusals.js';
 import { RecordGroup } from './threat-records.js';
 
-/** The refused draft the overlay keeps past the panel, and the pane controls every panel takes. */
-export type ModelPropertiesPanelProps = {
+type ModelPropertiesPanelProps = {
   readonly held: RefusedField | undefined;
   readonly onHeld: (draft: RefusedField | undefined) => void;
   readonly wide: boolean;
@@ -37,15 +39,10 @@ export function ModelPropertiesPanel({
   const titleField = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<RefusedField | undefined>(held);
   const { refusals, note, refused } = useRefusals((refusal) => {
-    const alreadyHeld =
-      refusal !== undefined &&
-      draft?.field === refusal.field &&
-      draft.text === refusal.text;
+    const heldText = draft?.field === refusal?.field ? draft?.text : undefined;
     onHeld(refusal);
     setDraft(refusal);
-    if (refusal !== undefined && !alreadyHeld) {
-      announce(refusal.said);
-    }
+    announceRefusal(refusal, heldText);
   });
 
   useEffect(() => {

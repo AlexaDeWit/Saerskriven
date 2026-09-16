@@ -1,6 +1,8 @@
 # 0001: Electron for the desktop shell
 
-Status: accepted, 2026-08-29
+Status: accepted, 2026-08-29. Deferred, 2026-09-12: the desktop build waits on
+code signing for macOS and Windows, which the project does not have, so the
+offering is the web studio and the CLI (milestone M5).
 
 ## Context
 
@@ -17,5 +19,5 @@ everywhere, one language in the repository.
 
 ## Consequences
 
-Larger downloads, accepted. The shell stays thin (`apps/desktop` when it
-lands), so a future shell swap stays possible.
+Larger downloads, accepted. The shell stays thin, so a later shell swap stays
+possible.

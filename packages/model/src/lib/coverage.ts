@@ -6,8 +6,7 @@ import type { Severity, Threat } from './threats.js';
 
 /**
  * Every element of the model no threat references, across all diagrams and
- * in diagram order. These are the unanalyzed corners of a model: nothing
- * has been recorded against them, whether or not they are in scope.
+ * in diagram order.
  */
 export function elementsWithoutThreats(model: Model): Element[] {
   const linked = new Set<string>(
@@ -21,7 +20,7 @@ export function elementsWithoutThreats(model: Model): Element[] {
 /**
  * The model's open threats grouped by severity, register order kept within
  * each group. Every severity is a key, mapping to an empty array where no
- * open threat carries it; threats in any other status are absent entirely.
+ * open threat carries it. Threats in any other status are absent.
  */
 export function openThreatsBySeverity(
   model: Model,

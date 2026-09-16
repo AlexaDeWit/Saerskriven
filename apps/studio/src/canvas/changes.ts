@@ -29,9 +29,9 @@ export function applyChanges(
 }
 
 /**
- * The selection React Flow reports, folded onto the current store selection.
- * Node and edge changes arrive through separate callbacks, so each call uses
- * the selection that the prior callback left behind.
+ * The selection React Flow reports, folded onto `selection`. Node and edge
+ * changes arrive through separate callbacks, so a caller passes the store's
+ * current selection rather than the one a render saw.
  */
 export function selectionActions(
   changes: readonly DiagramChange[],
@@ -126,22 +126,12 @@ export function gestureSelection(
   return resized.size === 0 ? selection : [...resized];
 }
 
-/**
- * Whether a connection React Flow is drawing runs between two different
- * elements. It is React Flow's own test while the gesture is in flight, so a
- * drag that would end where it started is refused as it is drawn rather than
- * silently doing nothing: the layout resolves both ends of such a flow to one
- * handle and would draw no line at all.
- */
+/** React Flow's connection test: a flow runs between two different elements. */
 export function betweenTwoElements(connection: Connection | Edge): boolean {
   return connection.source !== connection.target;
 }
 
-/**
- * Draws the flow a settled connection asks for. React Flow names each end by
- * the id of the node the gesture reached, so an end naming no element of the
- * diagram, a free end's anchor among them, asks for nothing.
- */
+/** Draws the flow a settled connection asks for, where both ends name elements of the diagram. */
 export function applyConnection(
   connection: Connection,
   elements: ReadonlyMap<string, ElementId>,

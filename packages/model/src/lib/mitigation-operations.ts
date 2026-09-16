@@ -1,20 +1,23 @@
-import { Either } from 'effect';
+import type { Either } from 'effect';
 import type { MitigationId, ThreatId } from './ids.js';
 import type { Mitigation, MitigationStatus } from './mitigations.js';
-import { OperationFailure } from './operation-failures.js';
+import type { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import {
-  linkedThreats,
+  addedRecord,
   mitigationRegister,
   relinkedRecord,
+  removedRecord,
   replacedRecord,
+  withId,
+  withoutId,
   withRecordStatus,
+  type UnknownMitigationFailure,
 } from './records.js';
-import { unknownThreatIn } from './references.js';
 
-type UnknownMitigationFailure = Extract<
+type MitigationRecordFailure = Extract<
   OperationFailure,
-  { _tag: 'UnknownMitigation' }
+  { _tag: 'UnknownMitigation' | 'UnknownThreat' }
 >;
 
 /** The failures {@link addMitigation} can produce. */
@@ -24,19 +27,13 @@ export type AddMitigationFailure = Extract<
 >;
 
 /** The failures {@link replaceMitigation} can produce. */
-export type ReplaceMitigationFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownMitigation' | 'UnknownThreat' }
->;
+export type ReplaceMitigationFailure = MitigationRecordFailure;
 
 /** The failure {@link removeMitigation} can produce. */
 export type RemoveMitigationFailure = UnknownMitigationFailure;
 
 /** The failures {@link linkMitigation} and {@link unlinkMitigation} can produce. */
-export type MitigationLinkFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownMitigation' | 'UnknownThreat' }
->;
+export type MitigationLinkFailure = MitigationRecordFailure;
 
 /** The failure {@link setMitigationStatus} can produce. */
 export type SetMitigationStatusFailure = UnknownMitigationFailure;
@@ -49,28 +46,7 @@ export function addMitigation(
   model: Model,
   mitigation: Mitigation,
 ): Either.Either<Model, AddMitigationFailure> {
-  if (model.mitigations.some((candidate) => candidate.id === mitigation.id)) {
-    return Either.left(
-      OperationFailure.DuplicateMitigationId({ mitigationId: mitigation.id }),
-    );
-  }
-  if (mitigation.threats.length === 0) {
-    return Either.left(
-      OperationFailure.RecordWithoutThreat({
-        record: { kind: 'mitigation', id: mitigation.id },
-      }),
-    );
-  }
-  const unlinkable = unknownThreatIn(model.threats, mitigation.threats);
-  if (unlinkable) {
-    return Either.left(
-      OperationFailure.UnknownThreat({ threatId: unlinkable }),
-    );
-  }
-  return Either.right({
-    ...model,
-    mitigations: [...model.mitigations, mitigation],
-  });
+  return addedRecord(model, mitigationRegister, mitigation);
 }
 
 /**
@@ -93,15 +69,7 @@ export function removeMitigation(
   model: Model,
   mitigationId: MitigationId,
 ): Either.Either<Model, RemoveMitigationFailure> {
-  if (!model.mitigations.some((candidate) => candidate.id === mitigationId)) {
-    return Either.left(OperationFailure.UnknownMitigation({ mitigationId }));
-  }
-  return Either.right({
-    ...model,
-    mitigations: model.mitigations.filter(
-      (candidate) => candidate.id !== mitigationId,
-    ),
-  });
+  return removedRecord(model, mitigationRegister, mitigationId);
 }
 
 /**
@@ -118,7 +86,7 @@ export function linkMitigation(
     mitigationRegister,
     mitigationId,
     threatId,
-    (threats) => linkedThreats(threats, threatId),
+    withId,
   );
 }
 
@@ -137,7 +105,7 @@ export function unlinkMitigation(
     mitigationRegister,
     mitigationId,
     threatId,
-    (threats) => threats.filter((id) => id !== threatId),
+    withoutId,
   );
 }
 

@@ -21,6 +21,9 @@ export const modelMetadataSchema = z.object({
 /** Model metadata. */
 export type ModelMetadata = z.infer<typeof modelMetadataSchema>;
 
+/** Model metadata as {@link modelMetadataSchema} accepts it. */
+export type ModelMetadataInput = z.input<typeof modelMetadataSchema>;
+
 /** A change to model metadata: the fields it names replace the held ones. */
 export const modelMetadataChangeSchema = modelMetadataSchema.partial();
 
@@ -30,7 +33,7 @@ export type ModelMetadataChange = z.infer<typeof modelMetadataChangeSchema>;
 /**
  * One diagram: a titled canvas that owns its elements, geometry inline on
  * each element. Element ids and diagram ids must each be unique across the
- * whole model; parseModel enforces both, so this schema alone accepts
+ * whole model. parseModel enforces both, so this schema alone accepts
  * duplicates.
  */
 export const diagramSchema = z.object({
@@ -41,6 +44,9 @@ export const diagramSchema = z.object({
 
 /** One diagram of a model. */
 export type Diagram = z.infer<typeof diagramSchema>;
+
+/** One diagram as {@link diagramSchema} accepts it. */
+export type DiagramInput = z.input<typeof diagramSchema>;
 
 /**
  * The structural shape of a threat model root: metadata, diagrams, threats,
@@ -63,3 +69,6 @@ export const modelSchema = z.object({
   mitigations: z.array(mitigationSchema),
   assumptions: z.array(assumptionSchema),
 });
+
+/** A whole model as `parseModel` takes it, before its cross-record checks. */
+export type ModelInput = z.input<typeof modelSchema>;

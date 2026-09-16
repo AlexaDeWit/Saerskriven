@@ -50,10 +50,8 @@ export function diagramUri(id: string): string {
 }
 
 /**
- * Why a resource read has nothing to answer with: no model to read, no
- * diagram of the name the URI carries, a name that does not percent-decode, or
- * a rasterizer that drew nothing. None of them carries text, so nothing out of
- * a model file reaches the error a client receives.
+ * Why a resource read has nothing to answer with. No variant carries text, so
+ * nothing out of a model file reaches the error a client receives.
  */
 export type ResourceFailure = Data.TaggedEnum<{
   NoModel: {};
@@ -130,10 +128,8 @@ export async function readDiagramResource(
 }
 
 /**
- * One resource per diagram of the default model, and none where there is no
- * default or it cannot be read: the refusal belongs to a read of the URI. A
- * diagram whose id is `.` or `..` is left out, since a URL parser removes that
- * segment and the URI would name no diagram.
+ * One resource per diagram of the default model, and none where it cannot be
+ * read. Ids `.` and `..` are left out, since a URL parser drops that segment.
  */
 export function diagramResources(
   workspace: ModelWorkspace,

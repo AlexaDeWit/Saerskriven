@@ -1,18 +1,16 @@
+import type {
+  MitigationInput,
+  MitigationStatus,
+  ThreatInput,
+  ThreatStatus,
+} from '@saerskriven/model';
 import type { OtmDocument } from '@saerskriven/wire-otm';
-import {
-  unlinkedMitigationLine,
-  type ImportContext,
-  type ImportMitigation,
-  type ImportThreat,
-} from './import-model.js';
-type Component = NonNullable<OtmDocument['components']>[number];
-type Occurrence = NonNullable<Component['threats']>[number];
-type Definition = NonNullable<OtmDocument['threats']>[number];
+import { unlinkedMitigationLine, type ImportContext } from './import-model.js';
 
 /**
- * Preserves independently treated occurrences as separate native threat
- * records. A mitigation definition no occurrence names becomes a model
- * description line.
+ * The OTM threats and mitigations as native records, one threat record per
+ * occurrence so each keeps its own treatment. A mitigation definition no
+ * occurrence names becomes a line of the model description.
  */
 export function otmRegister(document: OtmDocument, context: ImportContext) {
   const { fields, report } = context;
@@ -26,8 +24,8 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     (item) => item.id,
     'mitigations',
   );
-  const threats: ImportThreat[] = [];
-  const mitigations: ImportMitigation[] = [];
+  const threats: ThreatInput[] = [];
+  const mitigations: MitigationInput[] = [];
   const referencedThreats = new Set<string>();
   const referencedMitigations = new Set<string>();
   const addThreat = (
@@ -36,13 +34,16 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     owner: string,
     attached: readonly string[],
   ): void => {
-    if (context.failure !== undefined) return;
+    if (context.failure !== undefined) {
+      return;
+    }
     fields(definition, ['id', 'name', 'description']);
-    if (referencedThreats.has(definition.id))
+    if (referencedThreats.has(definition.id)) {
       report(
         `Threat ${JSON.stringify(definition.id)} becomes separate records for its occurrences.`,
         'split',
       );
+    }
     referencedThreats.add(definition.id);
     const id = context.id(
       'otm-threat',
@@ -51,8 +52,9 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
       String(threats.length),
     );
     const state = occurrence?.state;
-    if (occurrence !== undefined)
+    if (occurrence !== undefined) {
       fields(occurrence, ['threat', 'state', 'mitigations']);
+    }
     const status = otmThreatStatus(state, context);
     threats.push({
       id,
@@ -74,48 +76,14 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     report(
       `Threat ${JSON.stringify(definition.id)} imports with undecided severity and an unspecified category.`,
     );
-    for (const [index, given] of (occurrence?.mitigations ?? []).entries()) {
-      if (given === null || given.mitigation === null) continue;
-      const mitigation = mitigationDefinitions.get(given.mitigation);
-      if (mitigation === undefined) {
-        context.problem(
-          ['mitigations', index],
-          `Unknown mitigation ${JSON.stringify(given.mitigation)}`,
-        );
-        continue;
-      }
-      fields(given, ['mitigation', 'state']);
-      fields(mitigation, ['id', 'name', 'description']);
-      if (referencedMitigations.has(mitigation.id))
-        report(
-          `Mitigation ${JSON.stringify(mitigation.id)} becomes separate records for its occurrences.`,
-          'split',
-        );
-      referencedMitigations.add(mitigation.id);
-      const mitigationStatus =
-        given.state === 'implemented'
-          ? 'implemented'
-          : given.state === 'verified'
-            ? 'verified'
-            : 'proposed';
-      if (
-        mitigationStatus === 'proposed' &&
-        given.state !== 'required' &&
-        given.state !== 'proposed'
-      )
-        report(
-          `Mitigation ${JSON.stringify(mitigation.id)} has source status ${JSON.stringify(given.state)}, retained in its description and imported as proposed.`,
-        );
-      mitigations.push({
-        id: context.id('otm-mitigation', mitigation.id, id, String(index)),
-        title: context.text([mitigation.name]),
-        prose: context.text([
-          mitigation.description ?? '',
-          given.state == null ? '' : `Source status: ${given.state}`,
-        ]),
-        status: mitigationStatus,
-        threats: [id],
-      });
+    for (const mitigation of otmMitigations(
+      occurrence,
+      id,
+      mitigationDefinitions,
+      referencedMitigations,
+      context,
+    )) {
+      mitigations.push(mitigation);
     }
   };
   const occurrences = (
@@ -125,12 +93,14 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
   ): void => {
     for (const occurrence of items) {
       const definition = definitions.get(occurrence.threat);
-      if (definition === undefined)
+      if (definition === undefined) {
         context.problem(
           ['threats'],
           `Unknown threat ${JSON.stringify(occurrence.threat)}`,
         );
-      else addThreat(definition, occurrence, owner, attached);
+      } else {
+        addThreat(definition, occurrence, owner, attached);
+      }
     }
   };
   for (const component of document.components ?? []) {
@@ -142,12 +112,15 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     occurrences(flow.threats ?? [], id, [id]);
   }
   for (const definition of definitions.values()) {
-    if (!referencedThreats.has(definition.id))
+    if (!referencedThreats.has(definition.id)) {
       addThreat(definition, undefined, 'unattached', []);
+    }
   }
   const descriptionLines = [...mitigationDefinitions.values()].flatMap(
     (definition) => {
-      if (referencedMitigations.has(definition.id)) return [];
+      if (referencedMitigations.has(definition.id)) {
+        return [];
+      }
       fields(definition, ['id', 'name', 'description']);
       const description = definition.description ?? '';
       return [
@@ -166,10 +139,72 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
   return { threats, mitigations, descriptionLines };
 }
 
+type Component = NonNullable<OtmDocument['components']>[number];
+
+type Occurrence = NonNullable<Component['threats']>[number];
+
+type Definition = NonNullable<OtmDocument['threats']>[number];
+
+type MitigationDefinition = NonNullable<OtmDocument['mitigations']>[number];
+
+function otmMitigations(
+  occurrence: Occurrence | undefined,
+  threatId: string,
+  definitions: ReadonlyMap<string, MitigationDefinition>,
+  referenced: Set<string>,
+  context: ImportContext,
+): MitigationInput[] {
+  const { fields, report } = context;
+  const mitigations: MitigationInput[] = [];
+  for (const [index, given] of (occurrence?.mitigations ?? []).entries()) {
+    if (given === null || given.mitigation === null) {
+      continue;
+    }
+    const mitigation = definitions.get(given.mitigation);
+    if (mitigation === undefined) {
+      context.problem(
+        ['mitigations', index],
+        `Unknown mitigation ${JSON.stringify(given.mitigation)}`,
+      );
+      continue;
+    }
+    fields(given, ['mitigation', 'state']);
+    fields(mitigation, ['id', 'name', 'description']);
+    if (referenced.has(mitigation.id)) {
+      report(
+        `Mitigation ${JSON.stringify(mitigation.id)} becomes separate records for its occurrences.`,
+        'split',
+      );
+    }
+    referenced.add(mitigation.id);
+    const status = otmMitigationStatus(given.state);
+    if (
+      status === 'proposed' &&
+      given.state !== 'required' &&
+      given.state !== 'proposed'
+    ) {
+      report(
+        `Mitigation ${JSON.stringify(mitigation.id)} has source status ${JSON.stringify(given.state)}, retained in its description and imported as proposed.`,
+      );
+    }
+    mitigations.push({
+      id: context.id('otm-mitigation', mitigation.id, threatId, String(index)),
+      title: context.text([mitigation.name]),
+      prose: context.text([
+        mitigation.description ?? '',
+        given.state == null ? '' : `Source status: ${given.state}`,
+      ]),
+      status,
+      threats: [threatId],
+    });
+  }
+  return mitigations;
+}
+
 function otmThreatStatus(
   state: string | undefined,
   context: ImportContext,
-): ImportThreat['status'] {
+): ThreatStatus {
   switch (state) {
     case 'exposed':
     case 'open':
@@ -194,4 +229,10 @@ function otmThreatStatus(
       );
       return 'open';
   }
+}
+
+function otmMitigationStatus(
+  state: string | null | undefined,
+): MitigationStatus {
+  return state === 'implemented' || state === 'verified' ? state : 'proposed';
 }

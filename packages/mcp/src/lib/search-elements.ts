@@ -120,7 +120,7 @@ function found(
         counts: limited.counts,
         response_format: args.response_format,
         elements: limited.rows.map((one) =>
-          rowOf(one, counts.get(one.element.id) ?? 0, args.response_format),
+          rowOf(one, counts, args.response_format),
         ),
       };
     },
@@ -179,10 +179,10 @@ function keeps(
 
 function rowOf(
   placed: ElementOnDiagram,
-  threats: number,
+  counts: ReadonlyMap<string, number>,
   format: ResponseFormat,
 ): z.infer<typeof elementResultSchema> {
   return format === 'detailed'
-    ? elementDetail(placed, threats)
-    : elementRow(placed, threats);
+    ? elementDetail(placed, counts)
+    : elementRow(placed, counts);
 }

@@ -4,16 +4,11 @@ import { acceptedTextSchema } from './text.js';
 const minimumIdLength = 2;
 
 /**
- * Identifier of one element in a model. Any {@link acceptedTextSchema} of
- * two or more characters parses: ids from foreign files (Threat Dragon cell
- * ids, for example) pass through unchanged, and UUIDs appear only in
- * generation, never as a parse constraint. Two is the bound Threat
- * Dragon's own schema puts on a cell id, and an id is a reference that
- * every threat and flow repeats, so padding a shorter one on write would
- * rename it everywhere: refusing it here keeps the codecs free of the case.
- * Element ids must be unique across the whole model, not just one diagram;
- * parseModel enforces that refinement. The brand exists at compile time
- * only; at runtime the value is a plain string.
+ * Identifier of one element in a model: any {@link acceptedTextSchema} of two
+ * or more characters, the bound Threat Dragon puts on a cell id, so ids from
+ * foreign files pass through unchanged. Element ids are unique across the
+ * whole model, which parseModel enforces. The brand exists at compile time
+ * only.
  */
 export const elementIdSchema = acceptedTextSchema
   .min(minimumIdLength)
@@ -35,8 +30,8 @@ export type DiagramId = z.infer<typeof diagramIdSchema>;
 
 /**
  * Identifier of one threat in a model. Same contract as
- * {@link elementIdSchema}; uniqueness among threats is parseModel's
- * refinement.
+ * {@link elementIdSchema}, and parseModel checks uniqueness among
+ * threats.
  */
 export const threatIdSchema = acceptedTextSchema
   .min(minimumIdLength)
@@ -47,8 +42,8 @@ export type ThreatId = z.infer<typeof threatIdSchema>;
 
 /**
  * Identifier of one mitigation in a model. Same contract as
- * {@link elementIdSchema}; uniqueness among mitigations is parseModel's
- * refinement.
+ * {@link elementIdSchema}, and parseModel checks uniqueness among
+ * mitigations.
  */
 export const mitigationIdSchema = acceptedTextSchema
   .min(minimumIdLength)
@@ -59,8 +54,8 @@ export type MitigationId = z.infer<typeof mitigationIdSchema>;
 
 /**
  * Identifier of one assumption in a model. Same contract as
- * {@link elementIdSchema}; uniqueness among assumptions is parseModel's
- * refinement.
+ * {@link elementIdSchema}, and parseModel checks uniqueness among
+ * assumptions.
  */
 export const assumptionIdSchema = acceptedTextSchema
   .min(minimumIdLength)
@@ -73,8 +68,8 @@ const fresh = <Schema extends z.ZodType>(schema: Schema): z.infer<Schema> =>
   schema.parse(crypto.randomUUID());
 
 /**
- * Generates a fresh element id as a UUID. Generation strategy only; parsing
- * accepts any id the schema does. Requires a secure context:
+ * Generates a fresh element id as a UUID. Parsing accepts any id the schema
+ * does. Requires a secure context:
  * crypto.randomUUID is undefined on plain-http browser pages.
  */
 export function generateElementId(): ElementId {

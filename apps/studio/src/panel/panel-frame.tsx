@@ -12,8 +12,7 @@ import { useMeasured } from '../ui/measure.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import styles from './threat-panel.module.css';
 
-/** What one pane in the panel location is called, how it closes, and what it holds. */
-export type PanelFrameProps = {
+type PanelFrameProps = {
   readonly label: string;
   readonly heading: string;
   readonly closeLabel: string;

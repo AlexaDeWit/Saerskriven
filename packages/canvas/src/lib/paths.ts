@@ -1,6 +1,7 @@
 import type { Point } from '@saerskriven/model';
 import { svgNumber } from './numbers.js';
 import { arrowhead } from './tokens.js';
+import { unitDirection } from './vectors.js';
 
 const curveSamples = 64;
 
@@ -30,14 +31,8 @@ export type CubicSegment = {
  * The cubic segments {@link smoothPath} draws a curve through the given
  * points as. The control points are Catmull-Rom's, with the run's own ends
  * repeated where a neighbour is missing, so the curve is a function of the
- * points and of nothing else. Fewer than two points leave nothing to smooth
- * and come back as no segments.
- *
- * A caller bounding the drawn curve takes these rather than the points
- * alone. A cubic lies inside the convex hull of its own four control points,
- * and a sharp turn throws those outside the box the points span, so the
- * points alone bound the curve too tightly and the hull bounds it a little
- * loosely.
+ * points alone. Fewer than two points give no segments. A caller bounding
+ * the curve measures {@link controlPolygon} rather than the points.
  */
 export function smoothSegments(points: readonly Point[]): CubicSegment[] {
   if (points.length < 2) {
@@ -59,10 +54,9 @@ export function smoothSegments(points: readonly Point[]): CubicSegment[] {
  * The polygon the control points of {@link smoothSegments} trace, starting
  * at the first of the given points: each cubic's two control points and its
  * end, in order. A cubic lies inside the convex hull of its own four control
- * points, so a caller bounding the drawn curve or keeping a label clear of
- * it measures this rather than the points alone, which a sharp turn throws
- * the ink outside of. Fewer than two points leave nothing to smooth and come
- * back as the points themselves.
+ * points, so this bounds the drawn curve where the points alone do not: a
+ * sharp turn throws the ink outside the box the points span. Fewer than two
+ * points come back as the points themselves.
  */
 export function controlPolygon(points: readonly Point[]): readonly Point[] {
   const drawn = smoothSegments(points);
@@ -80,17 +74,13 @@ export function controlPolygon(points: readonly Point[]): readonly Point[] {
 }
 
 /**
- * The drawn curve as a polyline through points on the ink itself: the first
- * of the given points, then each cubic of {@link smoothSegments} at 64 evenly
- * spaced parameters up to and including its own end. The count is fixed per
- * cubic, so the work is linear in the number of points.
- *
- * A caller holding a box clear of the ink measures this rather than
- * {@link controlPolygon}, whose polyline can pass outside a box the curve
- * runs through. A caller bounding the curve measures the polygon instead,
- * since the hull holds every point of the curve and a sample set holds only
- * itself. Fewer than two points leave nothing to smooth and come back as the
- * points themselves.
+ * The drawn curve as a polyline through points on the ink: the first of the
+ * given points, then each cubic of {@link smoothSegments} at 64 evenly spaced
+ * parameters up to and including its end. A caller holding a box clear of
+ * the ink measures this, since the polyline of {@link controlPolygon} can
+ * miss a box the curve runs through, and a caller bounding the curve
+ * measures the polygon. Fewer than two points come back as the points
+ * themselves.
  */
 export function sampledCurve(points: readonly Point[]): readonly Point[] {
   const drawn = smoothSegments(points);
@@ -131,15 +121,11 @@ export function smoothPath(points: readonly Point[]): string {
 /**
  * The three corners of the triangle that marks where a flow ends: its tip at
  * `tip`, pointing away from `from`. A segment of no length points to the
- * right, so the marker has corners whatever geometry the model carries.
- * A caller sizing a picture bounds these rather than the tip alone, since
- * the wings reach across the line the flow arrives on.
+ * right. The wings reach across the line, so a caller sizing a picture
+ * bounds all three corners.
  */
 export function arrowheadPoints(tip: Point, from: Point): readonly Point[] {
-  const run = { x: tip.x - from.x, y: tip.y - from.y };
-  const length = Math.hypot(run.x, run.y);
-  const unit =
-    length === 0 ? { x: 1, y: 0 } : { x: run.x / length, y: run.y / length };
+  const unit = unitDirection(from, tip);
   const base = {
     x: tip.x - unit.x * arrowhead.length,
     y: tip.y - unit.y * arrowhead.length,

@@ -176,13 +176,8 @@ Markdown filter, so check the rendered links when changing the integration.
 
 ## Renderer API
 
-`readThemeOverrides(value)` returns `{ theme, diagnostics }` from a parsed mapping.
-`defaultRenderTheme` contains every resolved default. The CLI reads YAML with the
-bounded `parseYaml` function from `@saerskriven/formats` before resolving overrides.
-
-Pass the resolved theme to `renderSvg(diagram, model, theme)`,
-`renderTypst(model, theme)`, or `renderPng(diagram, model, { assets, theme })`.
-Use `renderRegister(model, { theme, styled: true, title: false, headingLevel: 3 })`
-for an embedded website register. Set `stylesheet: false` to use the site's CSS.
-The CLI uses `withBundledFonts(theme)` before PDF and PNG rendering.
-API consumers can use it for the same substitution diagnostics.
+Code reaches the same controls through `@saerskriven/render`, whose
+[README](../packages/render/README.md) names each entry point. The CLI parses a
+theme file with the bounded `parseYaml` from `@saerskriven/formats` before
+`readThemeOverrides`, and applies `withBundledFonts` before PDF and PNG
+rendering, and a caller doing the same gets the same diagnostics.

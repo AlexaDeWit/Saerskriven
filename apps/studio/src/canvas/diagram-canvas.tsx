@@ -1,28 +1,21 @@
 import {
-  flowLabelFollows,
   gridSpacing,
-  layoutAtReactFlowNodes,
   themedCanvasStylesheet,
-  type CanvasEdge,
   type CanvasFlowEdge,
 } from '@saerskriven/canvas';
 import {
-  applyNodeChanges,
   Background,
   BackgroundVariant,
   ConnectionMode,
   ReactFlow,
   SelectionMode,
   type Connection,
-  type EdgeChange,
   type EdgeMouseHandler,
-  type NodeChange,
   type ReactFlowInstance,
 } from '@xyflow/react';
 import type { ElementId } from '@saerskriven/model';
 import {
   useCallback,
-  useEffect,
   useId,
   useMemo,
   useRef,
@@ -42,27 +35,21 @@ import {
 import { commandFor, describeCommandShortcuts } from '../commands/registry.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { selectedElement, selectedElements } from '../store/selectors.js';
-import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { dispatch, useModelStore } from '../store/store.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
-import {
-  applyChanges,
-  applyConnection,
-  betweenTwoElements,
-  gestureSelection,
-} from './changes.js';
+import { useBoxSelection } from './box-selection.js';
+import { applyConnection, betweenTwoElements } from './changes.js';
 import { beginEditingText, drawnElement, removeSelected } from './edits.js';
 import { useFlowBends } from './flow-bends.js';
 import { FlowBendControls } from './flow-bend-controls.js';
+import { useLiveEdges } from './live-edges.js';
 import {
-  canvasEdgesById,
   diagramGraph,
   elementIds,
   nodesById,
-  withMeasurements,
-  withLiveEdges,
   type DiagramNode,
 } from './nodes.js';
-import { editingEdgeTypes, editingNodeTypes } from './rename-field.js';
+import { editingEdgeTypes, editingNodeTypes } from './inline-editing.js';
 import { PlacementPreview } from './placement-preview.js';
 import { usePlacement } from './placement.js';
 import { currentTool } from './tools.js';
@@ -77,7 +64,6 @@ import { useSnap } from './snap.js';
 import { useBackgroundSelection } from './background-selection.js';
 import styles from './diagram-canvas.module.css';
 
-const exactLabelDelay = 50;
 const panMouseButtons: number[] = [1];
 const canvasCommandDescription = describeCommandShortcuts(
   ['hand-tool', 'focus-threats', 'delete', 'select-tool'],
@@ -101,36 +87,12 @@ const canvasA11y = {
   'node.a11yDescription.keyboardDisabled': `${canvasItemDescription} ${canvasCommandDescription}`,
   'edge.a11yDescription.default': `${flowDescription} ${canvasCommandDescription}`,
 };
-
-type ScreenPoint = { readonly x: number; readonly y: number };
-
-function containedFlows(
-  root: HTMLDivElement | null,
-  from: ScreenPoint,
-  to: ScreenPoint,
-  elements: ReadonlyMap<string, ElementId>,
-): ElementId[] {
-  if (root === null) {
-    return [];
-  }
-  const bounds = {
-    left: Math.min(from.x, to.x),
-    top: Math.min(from.y, to.y),
-    right: Math.max(from.x, to.x),
-    bottom: Math.max(from.y, to.y),
-  };
-  return [...root.querySelectorAll('.react-flow__edge')].flatMap((flow) => {
-    const drawn = flow.getBoundingClientRect();
-    const id = elements.get(flow.getAttribute('data-id') ?? '');
-    return id !== undefined &&
-      drawn.left >= bounds.left &&
-      drawn.top >= bounds.top &&
-      drawn.right <= bounds.right &&
-      drawn.bottom <= bounds.bottom
-      ? [id]
-      : [];
-  });
-}
+const keyboardDescription = describeContextualShortcuts(
+  contextualShortcuts
+    .filter((entry) => entry.group !== 'Panels')
+    .map((entry) => entry.id),
+  hostPlatform,
+);
 
 /** The controlled diagram canvas and its floating editing controls. */
 export function DiagramCanvas({
@@ -152,22 +114,8 @@ export function DiagramCanvas({
   );
   const elements = useMemo(() => elementIds(layout), [layout]);
   const positions = useMemo(() => nodesById(layout), [layout]);
-  const keyboardDescription = describeContextualShortcuts(
-    contextualShortcuts
-      .filter((entry) => entry.group !== 'Panels')
-      .map((entry) => entry.id),
-    hostPlatform,
-  );
-  const [onScreen, setOnScreen] = useState<DiagramNode[]>(graph.nodes);
-  const [folded, setFolded] = useState<DiagramNode[]>(graph.nodes);
-  const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
-  const [moving, setMoving] = useState(false);
-  const edgeBases = useRef<ReadonlyMap<string, CanvasEdge>>(new Map());
-  const pause = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const movingElements = useRef<readonly ElementId[]>(selection);
   const surface = useRef<HTMLDivElement>(null);
-  const boxSelecting = useRef(false);
-  const boxStart = useRef<ScreenPoint | undefined>(undefined);
+  const boxSelection = useBoxSelection(surface, elements, positions);
   const view = useRef<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>(
     null,
   );
@@ -176,77 +124,7 @@ export function DiagramCanvas({
   const placement = usePlacement(surface, view, layout);
   const { mode } = placement;
 
-  if (folded !== graph.nodes) {
-    setFolded(graph.nodes);
-    setOnScreen(withMeasurements(graph.nodes, onScreen));
-    setExactEdges(undefined);
-  }
-
-  useEffect(() => {
-    if (!moving) {
-      return undefined;
-    }
-    const timer = globalThis.setTimeout(() => {
-      const paused = layoutAtReactFlowNodes(
-        layout,
-        onScreen,
-        movingElements.current,
-        false,
-        edgeBases.current,
-      );
-      setExactEdges(withLiveEdges(graph.edges, paused));
-      edgeBases.current = canvasEdgesById(paused);
-    }, exactLabelDelay);
-    pause.current = timer;
-    return () => {
-      globalThis.clearTimeout(timer);
-    };
-  }, [graph.edges, layout, moving, onScreen]);
-
-  const onNodesChange = (changes: NodeChange<DiagramNode>[]): void => {
-    const next = applyNodeChanges(changes, onScreen);
-    setOnScreen(next);
-    const active = changes.some(
-      (change) =>
-        (change.type === 'position' && change.dragging === true) ||
-        (change.type === 'dimensions' && change.resizing === true),
-    );
-    const finished = changes.some(
-      (change) =>
-        (change.type === 'position' && change.dragging === false) ||
-        (change.type === 'dimensions' && change.resizing === false),
-    );
-    if (active || finished) {
-      globalThis.clearTimeout(pause.current);
-      movingElements.current = gestureSelection(changes, positions, selection);
-      setMoving(active);
-      const live = layoutAtReactFlowNodes(
-        layout,
-        next,
-        movingElements.current,
-        finished,
-        edgeBases.current,
-      );
-      const candidateChanged = live.edges.some((edge) => {
-        const base = edgeBases.current.get(edge.id);
-        return (
-          base === undefined || (base !== edge && !flowLabelFollows(base, edge))
-        );
-      });
-      if (finished || candidateChanged) {
-        setExactEdges(withLiveEdges(graph.edges, live));
-        edgeBases.current = canvasEdgesById(live);
-      }
-    }
-    applyChanges(changes, elements, positions);
-  };
-
-  const onEdgesChange = (changes: EdgeChange<CanvasFlowEdge>[]): void => {
-    const accepted = boxSelecting.current
-      ? changes.filter((change) => change.type !== 'select' || !change.selected)
-      : changes;
-    applyChanges(accepted, elements, positions);
-  };
+  const liveEdges = useLiveEdges(layout, graph, selection, elements, positions);
 
   const onConnect = (connection: Connection): void => {
     applyConnection(connection, elements);
@@ -254,33 +132,9 @@ export function DiagramCanvas({
 
   const onPointerDownCapture = (event: PointerEvent<HTMLDivElement>): void => {
     backgroundSelection.down(event);
-    edgeBases.current = canvasEdgesById(layout);
-    if (
-      mode.active === 'select' &&
-      event.pointerType !== 'touch' &&
-      event.button === 0 &&
-      event.target instanceof Element &&
-      event.target.matches('.react-flow__pane')
-    ) {
-      boxStart.current = { x: event.clientX, y: event.clientY };
-    }
+    liveEdges.rebase();
+    boxSelection.pointerDown(event, mode.active);
     placement.pointerDown(event);
-  };
-
-  const finishBoxSelection = (at: ScreenPoint): void => {
-    boxSelecting.current = false;
-    const from = boxStart.current;
-    boxStart.current = undefined;
-    if (from === undefined) {
-      return;
-    }
-    const flowIds = containedFlows(surface.current, from, at, elements);
-    if (flowIds.length > 0) {
-      const currentSelection = selectedElements(modelStore.getState());
-      dispatch(
-        Action.Select({ elementIds: [...currentSelection, ...flowIds] }),
-      );
-    }
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -397,8 +251,7 @@ export function DiagramCanvas({
       onKeyDownCapture={onKeyDownCapture}
       onPointerCancelCapture={(event) => {
         backgroundSelection.cancel();
-        boxSelecting.current = false;
-        boxStart.current = undefined;
+        boxSelection.cancel();
         placement.pointerCancel(event);
       }}
       onPointerDownCapture={onPointerDownCapture}
@@ -424,31 +277,27 @@ export function DiagramCanvas({
         autoPanOnSelection={false}
         connectionMode={ConnectionMode.Loose}
         deleteKeyCode={null}
-        edges={exactEdges ?? graph.edges}
+        edges={liveEdges.edges}
         edgeTypes={editingEdgeTypes}
         elementsSelectable={mode.active === 'select'}
         isValidConnection={betweenTwoElements}
         maxZoom={zoomLimits.maximum}
         minZoom={zoomLimits.minimum}
         multiSelectionKeyCode="Shift"
-        nodes={onScreen}
+        nodes={liveEdges.nodes}
         nodesConnectable={mode.active === 'select'}
         nodesDraggable={mode.active === 'select'}
         nodeTypes={editingNodeTypes}
         onConnect={onConnect}
         onEdgeDoubleClick={onEdgeDoubleClick}
-        onEdgesChange={onEdgesChange}
+        onEdgesChange={boxSelection.onEdgesChange}
         onInit={(instance) => {
           view.current = instance;
         }}
         onKeyDown={onKeyDown}
-        onNodesChange={onNodesChange}
-        onSelectionEnd={(event) => {
-          finishBoxSelection({ x: event.clientX, y: event.clientY });
-        }}
-        onSelectionStart={() => {
-          boxSelecting.current = true;
-        }}
+        onNodesChange={liveEdges.onNodesChange}
+        onSelectionEnd={boxSelection.onSelectionEnd}
+        onSelectionStart={boxSelection.onSelectionStart}
         panActivationKeyCode={null}
         panOnDrag={
           mode.active === 'hand'

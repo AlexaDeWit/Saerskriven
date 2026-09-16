@@ -1,12 +1,9 @@
 import {
   inNumberOrder,
-  type mitigationSchema,
+  type MitigationInput,
   type MitigationStatus,
   type ThreatStatus,
 } from '@saerskriven/model';
-import type { z } from 'zod';
-
-type MitigationInput = z.input<typeof mitigationSchema>;
 
 /** One threat of a format that holds one mitigation text per threat. */
 export type ThreatWithText = {
@@ -29,18 +26,15 @@ export function inferredMitigationStatus(
 
 /**
  * One mitigation record for each threat with a non-empty text, in threat
- * number order whatever order `threats` holds, so every format that holds one
- * text per threat makes the same records in the same order: an empty title,
+ * number order whatever order `threats` holds, so the Threat Dragon read and
+ * the v1 to v2 migration make the same records of one model: an empty title,
  * the text as its prose, the status {@link inferredMitigationStatus} gives,
  * and a link to that threat alone.
  *
- * A record's id is `<threat id>-mitigation`, or that with the first of `-2`,
- * `-3` and on that is free, where `taken` holds every id the model already
- * has and each id chosen joins it before the next threat. So no chosen id
- * repeats one in `taken` or another chosen here. Where `taken` holds no id
- * ending in `-mitigation`, no suffix is ever needed, since distinct threat
- * ids give distinct ids, and a record's id then depends on its threat's id
- * alone.
+ * A record's id is `<threat id>-mitigation`, or that with the first free
+ * suffix of `-2`, `-3` and on, where `taken` holds every id the model already
+ * has and each chosen id joins it before the next threat. Where no taken id
+ * ends in `-mitigation`, no suffix is needed.
  */
 export function mitigationsFromText(
   threats: readonly ThreatWithText[],
@@ -64,8 +58,6 @@ export function mitigationsFromText(
     ];
   });
 }
-
-type Identified = { readonly id: string };
 
 /**
  * The records of a model, or of a document mapped to one, whose ids a
@@ -92,6 +84,8 @@ export function idsHeld(holder: IdHolder): string[] {
     ...holder.assumptions.map((assumption) => assumption.id),
   ];
 }
+
+type Identified = { readonly id: string };
 
 function freeId(base: string, held: ReadonlySet<string>): string {
   let candidate = base;

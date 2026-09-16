@@ -1,15 +1,13 @@
 import type { Diagram, DiagramId } from '@saerskriven/model';
+import { announce } from '../canvas/announcements.js';
+import { arrangeSelected } from '../canvas/arrangement.js';
+import { startBendInsertion } from '../canvas/bend-insertion.js';
 import {
   copySelected,
   duplicateSelected,
   pasteSelected,
 } from '../canvas/clipboard.js';
-import { arrangeSelected } from '../canvas/arrangement.js';
-import { openSelectionControl } from '../canvas/selection-control.js';
-import { toggleSnap } from '../canvas/snap.js';
-import { announce } from '../canvas/announcements.js';
 import { startFlow } from '../canvas/connecting.js';
-import { startBendInsertion } from '../canvas/bend-insertion.js';
 import {
   beginRenamingDiagram,
   createDiagram,
@@ -21,6 +19,8 @@ import {
   selectAll,
   toggleFlowDirection,
 } from '../canvas/edits.js';
+import { openSelectionControl } from '../canvas/selection-control.js';
+import { toggleSnap } from '../canvas/snap.js';
 import { selectTool, type Tool } from '../canvas/tools.js';
 import {
   focusThreatPanel,
@@ -39,9 +39,9 @@ import {
   firedBy,
   mod,
   modShift,
-  type Chord,
   type ChordEvent,
   type Platform,
+  type ShortcutEntry,
 } from './shortcuts.js';
 
 /** File operations whose session guards unsaved changes before replacing the model. */
@@ -79,30 +79,6 @@ export type CommandSurface = {
   readonly view: ViewCommands;
 };
 
-/** A runnable command or a reserved shortcut waiting for its issue. */
-export type CommandDispatch =
-  | { readonly kind: 'runs'; readonly run: (surface: CommandSurface) => void }
-  | { readonly kind: 'pending'; readonly issue: number };
-
-/**
- * One command, before its id is bound to the table's own keys. A command
- * with `available` claims its chord from the browser only while that holds
- * of the store, so a key the studio has no use for in the current model
- * keeps doing what the browser does with it. Only the key binding reads it:
- * a menu item or button for such a command is drawn only where the command
- * is available, rather than disabled by it.
- */
-export type CommandEntry = {
-  readonly id: string;
-  readonly label: string;
-  readonly group: CommandGroup;
-  readonly shortcuts: readonly Chord[];
-  readonly when: string;
-  readonly inTextFields: boolean;
-  readonly available?: (state: State) => boolean;
-  readonly dispatch: CommandDispatch;
-};
-
 /** The headings used to group commands in the shortcut reference. */
 export const commandGroups = [
   'File',
@@ -113,49 +89,166 @@ export const commandGroups = [
   'Help',
 ] as const;
 
-/** One command heading in the shortcut reference. */
-export type CommandGroup = (typeof commandGroups)[number];
+type CommandGroup = (typeof commandGroups)[number];
 
-const runs = (run: (surface: CommandSurface) => void): CommandDispatch => ({
-  kind: 'runs',
-  run,
-});
+type CommandEntry = ShortcutEntry & {
+  readonly group: CommandGroup;
+  readonly inTextFields: boolean;
+  readonly available?: (state: State) => boolean;
+  readonly run: (surface: CommandSurface) => void;
+};
 
-const activates = (tool: Tool): CommandDispatch =>
-  runs(() => {
-    selectTool(tool);
+type Built<Id extends string> = CommandEntry & { readonly id: Id };
+
+const command = <const Id extends string>({
+  inTextFields = false,
+  ...entry
+}: Omit<Built<Id>, 'inTextFields'> & {
+  readonly inTextFields?: boolean;
+}): Built<Id> => ({ ...entry, inTextFields });
+
+const editCommand = <const Id extends string>(
+  entry: Pick<Built<Id>, 'id' | 'label' | 'shortcuts'> & {
+    readonly run: () => void;
+  },
+): Built<Id> =>
+  command({
+    ...entry,
+    group: 'Edit',
+    when: 'With a canvas selection, outside text fields and open overlays',
   });
 
-const history = (action: Action, message: string): CommandDispatch =>
-  runs(() => {
-    const before = modelStore.getState().present;
-    stepHistory(() => {
-      dispatch(action);
-    });
-    if (modelStore.getState().present !== before) {
-      announce(message);
-    }
+const fileCommand = <const Id extends string>({
+  operation,
+  ...entry
+}: Pick<Built<Id>, 'id' | 'label' | 'shortcuts' | 'when'> & {
+  readonly inTextFields?: boolean;
+  readonly operation: keyof FileCommands;
+}): Built<Id> =>
+  command({
+    ...entry,
+    group: 'File',
+    run: (surface) => {
+      surface.files[operation]();
+    },
   });
 
-const editCommand = <const Id extends string>({
-  id,
-  label,
-  run,
-  shortcuts,
-}: Pick<CommandEntry, 'label' | 'shortcuts'> & {
-  readonly id: Id;
-  readonly run: () => void;
-}): CommandEntry & { readonly id: Id } => ({
-  id,
-  label,
-  group: 'Edit',
-  shortcuts,
-  when: 'With a canvas selection, outside text fields and open overlays',
-  inTextFields: false,
-  dispatch: runs(run),
-});
+const viewCommand = <const Id extends string>({
+  operation,
+  ...entry
+}: Pick<Built<Id>, 'id' | 'label' | 'shortcuts' | 'when'> & {
+  readonly operation: keyof ViewCommands;
+}): Built<Id> =>
+  command({
+    ...entry,
+    group: 'View',
+    run: (surface) => {
+      surface.view[operation]();
+    },
+  });
+
+const toolCommand = <const Id extends string>({
+  tool,
+  ...entry
+}: Pick<Built<Id>, 'id' | 'label' | 'shortcuts' | 'when'> & {
+  readonly tool: Tool;
+}): Built<Id> =>
+  command({
+    ...entry,
+    group: 'Tools',
+    run: () => {
+      selectTool(tool);
+    },
+  });
+
+const history = (action: Action, message: string) => (): void => {
+  const before = modelStore.getState().present;
+  stepHistory(() => {
+    dispatch(action);
+  });
+  if (modelStore.getState().present !== before) {
+    announce(message);
+  }
+};
+
+const outsideMenus = 'Focus is outside a text field or open menu';
+
+const severalDiagramsWhen =
+  'The model holds more than one diagram and focus is outside a text field';
 
 const table = {
+  open: fileCommand({
+    id: 'open',
+    label: 'Open',
+    shortcuts: [mod('o')],
+    when: 'Outside text fields',
+    operation: 'open',
+  }),
+  import: fileCommand({
+    id: 'import',
+    label: 'Import',
+    shortcuts: [],
+    when: 'Convert an OTM or TM-BOM file into a new native model',
+    operation: 'import',
+  }),
+  save: fileCommand({
+    id: 'save',
+    label: 'Save',
+    shortcuts: [mod('s')],
+    when: 'Anywhere in the studio',
+    inTextFields: true,
+    operation: 'save',
+  }),
+  'save-as': fileCommand({
+    id: 'save-as',
+    label: 'Save as',
+    shortcuts: [modShift('s')],
+    when: 'Anywhere in the studio',
+    inTextFields: true,
+    operation: 'saveAs',
+  }),
+  'export-diagram': fileCommand({
+    id: 'export-diagram',
+    label: 'Diagram as SVG',
+    shortcuts: [],
+    when: 'From the File menu',
+    operation: 'exportDiagram',
+  }),
+  'export-register': fileCommand({
+    id: 'export-register',
+    label: 'Register as Markdown',
+    shortcuts: [],
+    when: 'From the File menu',
+    operation: 'exportRegister',
+  }),
+  'export-typst': fileCommand({
+    id: 'export-typst',
+    label: 'Model as Typst',
+    shortcuts: [],
+    when: 'From the File menu',
+    operation: 'exportTypst',
+  }),
+  'export-pdf': fileCommand({
+    id: 'export-pdf',
+    label: 'Model as PDF',
+    shortcuts: [],
+    when: 'From the File menu',
+    operation: 'exportPdf',
+  }),
+  'export-png': fileCommand({
+    id: 'export-png',
+    label: 'Diagram as PNG',
+    shortcuts: [],
+    when: 'From the File menu',
+    operation: 'exportPng',
+  }),
+  'close-file': fileCommand({
+    id: 'close-file',
+    label: 'New model',
+    shortcuts: [modShift('x')],
+    when: 'Outside text fields',
+    operation: 'close',
+  }),
   copy: editCommand({
     id: 'copy',
     label: 'Copy',
@@ -184,9 +277,7 @@ const table = {
     id: 'duplicate',
     label: 'Duplicate',
     shortcuts: [mod('d')],
-    run: () => {
-      duplicateSelected();
-    },
+    run: duplicateSelected,
   }),
   'edit-geometry': editCommand({
     id: 'edit-geometry',
@@ -282,412 +373,272 @@ const table = {
       arrangeSelected('vertical');
     },
   }),
-  'snap-to-grid': {
-    id: 'snap-to-grid',
-    label: 'Snap to grid',
-    group: 'View',
-    shortcuts: [modShift('g')],
-    when: 'From the View menu',
-    inTextFields: false,
-    dispatch: runs(toggleSnap),
-  },
-  'reset-zoom': {
-    id: 'reset-zoom',
-    label: 'Reset zoom to 100%',
-    group: 'View',
-    shortcuts: [mod('1')],
-    when: 'Outside text fields',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.view.resetZoom();
-    }),
-  },
-  'fit-selection': {
-    id: 'fit-selection',
-    label: 'Fit selection',
-    group: 'View',
-    shortcuts: [modShift('0')],
-    when: 'With a canvas selection, outside text fields',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.view.fitSelection();
-    }),
-  },
-  'next-diagram': {
-    id: 'next-diagram',
-    label: 'Next diagram',
-    group: 'Diagram',
-    shortcuts: [bare('PageDown')],
-    when: 'The model holds more than one diagram and focus is outside a text field',
-    inTextFields: false,
-    available: severalDiagrams,
-    dispatch: runs(() => {
-      stepDiagram('next');
-    }),
-  },
-  'previous-diagram': {
-    id: 'previous-diagram',
-    label: 'Previous diagram',
-    group: 'Diagram',
-    shortcuts: [bare('PageUp')],
-    when: 'The model holds more than one diagram and focus is outside a text field',
-    inTextFields: false,
-    available: severalDiagrams,
-    dispatch: runs(() => {
-      stepDiagram('previous');
-    }),
-  },
-  'new-diagram': {
-    id: 'new-diagram',
-    label: 'New diagram',
-    group: 'Diagram',
-    shortcuts: [],
-    when: 'From the diagram switcher',
-    inTextFields: false,
-    dispatch: runs(() => {
-      createDiagram();
-    }),
-  },
-  'rename-diagram': {
-    id: 'rename-diagram',
-    label: 'Rename diagram',
-    group: 'Diagram',
-    shortcuts: [],
-    when: 'From the diagram switcher, while the model holds a diagram',
-    inTextFields: false,
-    dispatch: runs(beginRenamingDiagram),
-  },
-  open: {
-    id: 'open',
-    label: 'Open',
-    group: 'File',
-    shortcuts: [mod('o')],
-    when: 'Outside text fields',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.files.open();
-    }),
-  },
-  import: {
-    id: 'import',
-    label: 'Import',
-    group: 'File',
-    shortcuts: [],
-    when: 'Convert an OTM or TM-BOM file into a new native model',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.files.import();
-    }),
-  },
-  save: {
-    id: 'save',
-    label: 'Save',
-    group: 'File',
-    shortcuts: [mod('s')],
-    when: 'Anywhere in the studio',
-    inTextFields: true,
-    dispatch: runs((surface) => {
-      surface.files.save();
-    }),
-  },
-  'save-as': {
-    id: 'save-as',
-    label: 'Save as',
-    group: 'File',
-    shortcuts: [modShift('s')],
-    when: 'Anywhere in the studio',
-    inTextFields: true,
-    dispatch: runs((surface) => {
-      surface.files.saveAs();
-    }),
-  },
-  'export-diagram': {
-    id: 'export-diagram',
-    label: 'Diagram as SVG',
-    group: 'File',
-    shortcuts: [],
-    when: 'From the File menu',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.files.exportDiagram();
-    }),
-  },
-  'export-register': {
-    id: 'export-register',
-    label: 'Register as Markdown',
-    group: 'File',
-    shortcuts: [],
-    when: 'From the File menu',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.files.exportRegister();
-    }),
-  },
-  'export-typst': {
-    id: 'export-typst',
-    label: 'Model as Typst',
-    group: 'File',
-    shortcuts: [],
-    when: 'From the File menu',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.files.exportTypst();
-    }),
-  },
-  'export-pdf': {
-    id: 'export-pdf',
-    label: 'Model as PDF',
-    group: 'File',
-    shortcuts: [],
-    when: 'From the File menu',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.files.exportPdf();
-    }),
-  },
-  'export-png': {
-    id: 'export-png',
-    label: 'Diagram as PNG',
-    group: 'File',
-    shortcuts: [],
-    when: 'From the File menu',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.files.exportPng();
-    }),
-  },
-  'close-file': {
-    id: 'close-file',
-    label: 'New model',
-    group: 'File',
-    shortcuts: [modShift('x')],
-    when: 'Outside text fields',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.files.close();
-    }),
-  },
-  undo: {
+  undo: command({
     id: 'undo',
     label: 'Undo',
     group: 'Edit',
     shortcuts: [mod('z')],
     when: 'Anywhere in the studio',
     inTextFields: true,
-    dispatch: history(Action.Undo(), 'Undo completed.'),
-  },
-  redo: {
+    run: history(Action.Undo(), 'Undo completed.'),
+  }),
+  redo: command({
     id: 'redo',
     label: 'Redo',
     group: 'Edit',
     shortcuts: [modShift('z'), mod('y', 'other')],
     when: 'Anywhere in the studio',
     inTextFields: true,
-    dispatch: history(Action.Redo(), 'Redo completed.'),
-  },
-  delete: {
+    run: history(Action.Redo(), 'Redo completed.'),
+  }),
+  delete: command({
     id: 'delete',
     label: 'Delete selection',
     group: 'Edit',
     shortcuts: [bare('Delete'), bare('Backspace')],
     when: 'A canvas selection exists and focus is outside a text field',
-    inTextFields: false,
-    dispatch: runs(() => {
-      removeSelected();
-    }),
-  },
-  rename: {
+    run: removeSelected,
+  }),
+  rename: command({
     id: 'rename',
     label: 'Rename selection',
     group: 'Edit',
     shortcuts: [bare('F2')],
     when: 'One renameable canvas item is selected',
-    inTextFields: false,
-    dispatch: runs(() => {
-      renameSelected();
-    }),
-  },
-  'model-properties': {
+    run: renameSelected,
+  }),
+  'model-properties': command({
     id: 'model-properties',
     label: 'Model properties',
     group: 'Edit',
     shortcuts: [bare('m')],
     when: 'Focus is outside a text field or open menu. Opens with focus in Title and clears the canvas selection, or closes where already shown',
-    inTextFields: false,
-    dispatch: runs(toggleModelProperties),
-  },
-  'focus-threats': {
+    run: toggleModelProperties,
+  }),
+  'focus-threats': command({
     id: 'focus-threats',
     label: 'Focus threats',
     group: 'Edit',
     shortcuts: [bare('t')],
     when: 'One canvas item is selected and focus is outside a text field',
-    inTextFields: false,
-    dispatch: runs(() => {
-      focusThreatPanel();
-    }),
-  },
-  'select-all': {
+    run: focusThreatPanel,
+  }),
+  'select-all': command({
     id: 'select-all',
     label: 'Select all',
     group: 'Edit',
     shortcuts: [mod('a')],
     when: 'Focus is outside a text field',
-    inTextFields: false,
-    dispatch: runs(() => {
-      selectAll();
-    }),
-  },
-  'fit-to-view': {
-    id: 'fit-to-view',
-    label: 'Fit to view',
-    group: 'View',
-    shortcuts: [mod('0')],
-    when: 'Focus is outside a text field',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.view.fitToView();
-    }),
-  },
-  'zoom-in': {
-    id: 'zoom-in',
-    label: 'Zoom in',
-    group: 'View',
-    shortcuts: [mod('='), character('+', ['Mod'])],
-    when: 'Focus is outside a text field',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.view.zoomIn();
-    }),
-  },
-  'zoom-out': {
-    id: 'zoom-out',
-    label: 'Zoom out',
-    group: 'View',
-    shortcuts: [mod('-')],
-    when: 'Focus is outside a text field',
-    inTextFields: false,
-    dispatch: runs((surface) => {
-      surface.view.zoomOut();
-    }),
-  },
-  'add-bend': {
+    run: selectAll,
+  }),
+  'add-bend': command({
     id: 'add-bend',
     label: 'Add bend',
     group: 'Edit',
     shortcuts: [character('+')],
     when: 'One flow is selected',
-    inTextFields: false,
-    dispatch: runs(startBendInsertion),
-  },
-  'start-flow': {
+    run: startBendInsertion,
+  }),
+  'start-flow': command({
     id: 'start-flow',
     label: 'Start a flow',
     group: 'Edit',
     shortcuts: [bare('f')],
     when: 'One canvas item is selected',
-    inTextFields: false,
-    dispatch: runs(() => {
-      startFlow();
-    }),
-  },
-  'select-tool': {
+    run: startFlow,
+  }),
+  'snap-to-grid': command({
+    id: 'snap-to-grid',
+    label: 'Snap to grid',
+    group: 'View',
+    shortcuts: [modShift('g')],
+    when: 'From the View menu',
+    run: toggleSnap,
+  }),
+  'reset-zoom': viewCommand({
+    id: 'reset-zoom',
+    label: 'Reset zoom to 100%',
+    shortcuts: [mod('1')],
+    when: 'Outside text fields',
+    operation: 'resetZoom',
+  }),
+  'fit-selection': viewCommand({
+    id: 'fit-selection',
+    label: 'Fit selection',
+    shortcuts: [modShift('0')],
+    when: 'With a canvas selection, outside text fields',
+    operation: 'fitSelection',
+  }),
+  'fit-to-view': viewCommand({
+    id: 'fit-to-view',
+    label: 'Fit to view',
+    shortcuts: [mod('0')],
+    when: 'Focus is outside a text field',
+    operation: 'fitToView',
+  }),
+  'zoom-in': viewCommand({
+    id: 'zoom-in',
+    label: 'Zoom in',
+    shortcuts: [mod('='), character('+', ['Mod'])],
+    when: 'Focus is outside a text field',
+    operation: 'zoomIn',
+  }),
+  'zoom-out': viewCommand({
+    id: 'zoom-out',
+    label: 'Zoom out',
+    shortcuts: [mod('-')],
+    when: 'Focus is outside a text field',
+    operation: 'zoomOut',
+  }),
+  'next-diagram': command({
+    id: 'next-diagram',
+    label: 'Next diagram',
+    group: 'Diagram',
+    shortcuts: [bare('PageDown')],
+    when: severalDiagramsWhen,
+    available: severalDiagrams,
+    run: () => {
+      stepDiagram('next');
+    },
+  }),
+  'previous-diagram': command({
+    id: 'previous-diagram',
+    label: 'Previous diagram',
+    group: 'Diagram',
+    shortcuts: [bare('PageUp')],
+    when: severalDiagramsWhen,
+    available: severalDiagrams,
+    run: () => {
+      stepDiagram('previous');
+    },
+  }),
+  'new-diagram': command({
+    id: 'new-diagram',
+    label: 'New diagram',
+    group: 'Diagram',
+    shortcuts: [],
+    when: 'From the diagram switcher',
+    run: createDiagram,
+  }),
+  'rename-diagram': command({
+    id: 'rename-diagram',
+    label: 'Rename diagram',
+    group: 'Diagram',
+    shortcuts: [],
+    when: 'From the diagram switcher, while the model holds a diagram',
+    run: beginRenamingDiagram,
+  }),
+  'select-tool': toolCommand({
     id: 'select-tool',
     label: 'Select',
-    group: 'Tools',
     shortcuts: [bare('v'), escapeChord, bare('1')],
     when: 'Outside text fields. Escape cancels placement and clears selection',
-    inTextFields: false,
-    dispatch: activates('select'),
-  },
-  'hand-tool': {
+    tool: 'select',
+  }),
+  'hand-tool': toolCommand({
     id: 'hand-tool',
     label: 'Hand',
-    group: 'Tools',
     shortcuts: [bare('h'), bare(' ')],
     when: 'Hold Space for a temporary Hand tool outside text fields',
-    inTextFields: false,
-    dispatch: activates('hand'),
-  },
-  'actor-tool': {
+    tool: 'hand',
+  }),
+  'actor-tool': toolCommand({
     id: 'actor-tool',
     label: 'Actor',
-    group: 'Tools',
     shortcuts: [bare('a'), bare('2')],
-    when: 'Focus is outside a text field or open menu',
-    inTextFields: false,
-    dispatch: activates('actor'),
-  },
-  'process-tool': {
+    when: outsideMenus,
+    tool: 'actor',
+  }),
+  'process-tool': toolCommand({
     id: 'process-tool',
     label: 'Process',
-    group: 'Tools',
     shortcuts: [bare('p'), bare('3')],
-    when: 'Focus is outside a text field or open menu',
-    inTextFields: false,
-    dispatch: activates('process'),
-  },
-  'store-tool': {
+    when: outsideMenus,
+    tool: 'process',
+  }),
+  'store-tool': toolCommand({
     id: 'store-tool',
     label: 'Store',
-    group: 'Tools',
     shortcuts: [bare('s'), bare('4')],
-    when: 'Focus is outside a text field or open menu',
-    inTextFields: false,
-    dispatch: activates('store'),
-  },
-  'note-tool': {
+    when: outsideMenus,
+    tool: 'store',
+  }),
+  'note-tool': toolCommand({
     id: 'note-tool',
     label: 'Note',
-    group: 'Tools',
     shortcuts: [bare('n'), bare('7')],
-    when: 'Focus is outside a text field or open menu',
-    inTextFields: false,
-    dispatch: activates('note'),
-  },
-  'boundary-box-tool': {
+    when: outsideMenus,
+    tool: 'note',
+  }),
+  'boundary-box-tool': toolCommand({
     id: 'boundary-box-tool',
     label: 'Trust boundary',
-    group: 'Tools',
     shortcuts: [bare('b'), bare('5')],
-    when: 'Focus is outside a text field or open menu',
-    inTextFields: false,
-    dispatch: activates('boundary-box'),
-  },
-  'boundary-curve-tool': {
+    when: outsideMenus,
+    tool: 'boundary-box',
+  }),
+  'boundary-curve-tool': toolCommand({
     id: 'boundary-curve-tool',
     label: 'Trust boundary curve',
-    group: 'Tools',
     shortcuts: [bare('c'), bare('6')],
-    when: 'Focus is outside a text field or open menu',
-    inTextFields: false,
-    dispatch: activates('boundary-curve'),
-  },
-  'shortcut-reference': {
+    when: outsideMenus,
+    tool: 'boundary-curve',
+  }),
+  'shortcut-reference': command({
     id: 'shortcut-reference',
     label: 'Keyboard shortcuts',
     group: 'Help',
     shortcuts: [character('?'), bare('F1')],
-    when: 'Focus is outside a text field or open menu',
-    inTextFields: false,
-    dispatch: runs((surface) => {
+    when: outsideMenus,
+    run: (surface) => {
       surface.reference.toggle();
-    }),
-  },
+    },
+  }),
 } as const satisfies Record<string, CommandEntry>;
 
 /** Every command the studio offers, named once. */
 export type CommandId = keyof typeof table;
 
-/** One command: what it is called, what presses it, and what it then does. */
+/**
+ * One command: what it is called, what presses it, and what it then does.
+ * `available` gates only the key binding: while it is false the chord is left
+ * to the browser.
+ */
 export type Command = CommandEntry & { readonly id: CommandId };
 
-/** Every command, in the order the registry declares them. */
+/** Every command, grouped in {@link commandGroups} order. */
 export const commands: readonly Command[] = Object.values(table);
+
+/** The registered command for each toolbox mode. */
+export const toolCommands = {
+  select: 'select-tool',
+  actor: 'actor-tool',
+  process: 'process-tool',
+  store: 'store-tool',
+  note: 'note-tool',
+  'boundary-box': 'boundary-box-tool',
+  'boundary-curve': 'boundary-curve-tool',
+  hand: 'hand-tool',
+} as const satisfies Record<Tool, CommandId>;
 
 /** The command `id` names. */
 export function commandById(id: CommandId): Command {
   return table[id];
+}
+
+/** The first command whose shortcut matches the event, in table order. */
+export function commandFor(
+  event: ChordEvent,
+  platform: Platform,
+): Command | undefined {
+  return commands.find((entry) =>
+    entry.shortcuts.some((chord) => firedBy(event, chord, platform)),
+  );
+}
+
+/** Runs a command against the mounted surface. */
+export function runCommand(entry: Command, surface: CommandSurface): void {
+  entry.run(surface);
 }
 
 /** The spoken description of the selected registered commands. */
@@ -706,41 +657,12 @@ export function diagramExportCommand(
   diagram: Diagram,
   several: boolean,
 ): Command {
-  const command = commandById('export-diagram');
+  const exported = commandById('export-diagram');
   return {
-    ...command,
-    label: several ? `${command.label}: ${diagram.title}` : command.label,
-    dispatch: runs((surface) => {
+    ...exported,
+    label: several ? `${exported.label}: ${diagram.title}` : exported.label,
+    run: (surface) => {
       surface.files.exportDiagram(diagram.id);
-    }),
+    },
   };
-}
-
-/** The registered command for each toolbox mode. */
-export const toolCommands = {
-  select: 'select-tool',
-  actor: 'actor-tool',
-  process: 'process-tool',
-  store: 'store-tool',
-  note: 'note-tool',
-  'boundary-box': 'boundary-box-tool',
-  'boundary-curve': 'boundary-curve-tool',
-  hand: 'hand-tool',
-} as const satisfies Record<Tool, CommandId>;
-
-/** Returns the first command whose shortcut matches the event. */
-export function commandFor(
-  event: ChordEvent,
-  platform: Platform,
-): Command | undefined {
-  return commands.find((command) =>
-    command.shortcuts.some((chord) => firedBy(event, chord, platform)),
-  );
-}
-
-/** Runs a command against the mounted surface when its dispatch is available. */
-export function runCommand(command: Command, surface: CommandSurface): void {
-  if (command.dispatch.kind === 'runs') {
-    command.dispatch.run(surface);
-  }
 }

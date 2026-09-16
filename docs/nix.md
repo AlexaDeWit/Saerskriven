@@ -1,23 +1,24 @@
 # Using the released CLI from Nix
 
 `packages.${system}.saerskriven` installs `bin/saer` and the compatibility link
-`bin/saerskriven -> saer` from the release
-pinned in [`nix/release.json`](../nix/release.json). Each asset has a versioned
-URL and a committed SHA-256 hash. The pin records the published binary name,
-so older releases still use their original asset URLs. Evaluation reads only local Nix and JSON
-files. Building fetches the selected asset if the Nix store does not hold it.
-Shell entry never resolves Latest or downloads a checksum file.
+`bin/saerskriven -> saer` from the release pinned in
+[`nix/release.json`](../nix/release.json). Each asset has a versioned URL and a
+committed SHA-256 hash. The pin records the published binary name, so older
+releases still use their original asset URLs. Evaluation reads only local Nix
+and JSON files. Building fetches the selected asset if the Nix store does not
+hold it. Shell entry never resolves Latest or downloads a checksum file.
 
 The package carries the CLI runtime, PDF compiler, and fonts. It needs no
 Saerskriven checkout or separate Node, Deno, browser, or Typst installation.
 The CLI version follows the release pin, not the source checkout's workspace
 version.
 
-## Downstream shells
+## Downstream flakes
 
-This minimal Écluse example uses Écluse's nixpkgs for both shells and the CLI.
-Add the same package to the existing shell definitions during integration.
-That integration remains a separate change in Écluse.
+A downstream flake adds Saerskriven as an input and puts `pkgs.saerskriven` in
+its shells through the overlay. This minimal example is the shape
+[Écluse](https://github.com/AlexaDeWit/Ecluse) uses, with the downstream
+project's nixpkgs for both its shells and the CLI:
 
 ```nix
 {
@@ -43,8 +44,8 @@ That integration remains a separate change in Écluse.
 ```
 
 Run `nix flake lock` once and commit `flake.lock`. It locks the Saerskriven
-source revision as well as nixpkgs. The first pin must contain this package
-support. The `v0.1.0` source tag predates it.
+source revision as well as nixpkgs. Lock a revision that carries the package:
+the `v0.1.0` tag predates it.
 
 ```sh
 nix build .#saerskriven
@@ -59,6 +60,17 @@ The direct `saerskriven.packages.${system}.saerskriven` output uses the flake's
 nixpkgs input, including any downstream `follows` relationship.
 Unsupported systems fail with the supported systems listed.
 
+To move to a later release, update the input lock in its own reviewed change:
+
+```sh
+nix flake update saerskriven
+nix develop --command saer --version
+nix develop .#ci --command saer validate threat-model.yaml
+```
+
+Review the lock diff and exercise the rendering commands the project uses
+before merging that update.
+
 ## Linux compatibility and execution coverage
 
 The Linux binaries require glibc's loader and `libdl`, `librt`, `libpthread`,
@@ -66,8 +78,8 @@ The Linux binaries require glibc's loader and `libdl`, `librt`, `libpthread`,
 library search paths from the caller's nixpkgs. It does not rely on NixOS's
 `nix-ld`, `/lib64`, or host library paths.
 
-The v0.1.0 runtime uses Deno 2.8.3 and
-[libsui 0.12.6](https://docs.rs/crate/libsui/0.12.6/source/lib.rs).
+The package's Linux adaptation follows the payload format of the Deno 2.8.3
+runtime and [libsui 0.12.6](https://docs.rs/crate/libsui/0.12.6/source/lib.rs).
 Its ELF payload ends with a 16-byte trailer: little-endian magic `0x501e`,
 the name hash `0x2a7` for `d3n0l4nd`, and the payload size including the
 trailer. The runtime locates that data relative to EOF.
@@ -112,7 +124,7 @@ can be pinned. Keep the previous pin during version preparation and tag CI.
 After publication, run this command from a Saerskriven checkout:
 
 ```sh
-RELEASE_VERSION=v0.1.0 nix develop --command pnpm nx run release-tools:update-nix
+RELEASE_VERSION=v<version> nix develop --command pnpm nx run release-tools:update-nix
 ```
 
 Set `RELEASE_VERSION` to the explicit stable version. Authenticate the GitHub CLI
@@ -131,14 +143,3 @@ executed, and keep untested targets marked as such.
 Do not move the signed release tag. The later packaging commit references
 already published assets, so its CI has no dependency on an unpublished
 release. No automated step commits, pushes, or merges the update.
-
-After that PR merges, update Écluse's input lock in its own reviewed change:
-
-```sh
-nix flake update saerskriven
-nix develop --command saer --version
-nix develop .#ci --command saer validate threat-model.yaml
-```
-
-Review the downstream lock diff and exercise the rendering commands the
-project uses before merging that update.

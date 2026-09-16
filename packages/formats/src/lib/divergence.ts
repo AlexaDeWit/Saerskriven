@@ -34,14 +34,7 @@ const assumptionSubjectSchema = z.object({
   id: assumptionIdSchema,
 });
 
-/**
- * Which entity a divergence is about. `model` names the model as a whole,
- * for a divergence in metadata or in something no single record owns; every
- * other variant names one record by its id. A record the model no longer
- * carries still names itself here: on the preservation path an entry
- * reports what a source document held for an entity an edit removed.
- */
-export const divergenceSubjectSchema = z.discriminatedUnion('kind', [
+const divergenceSubjectSchema = z.discriminatedUnion('kind', [
   modelSubjectSchema,
   diagramSubjectSchema,
   elementSubjectSchema,
@@ -50,30 +43,7 @@ export const divergenceSubjectSchema = z.discriminatedUnion('kind', [
   assumptionSubjectSchema,
 ]);
 
-/** What a divergence is about. */
-export type DivergenceSubject = z.infer<typeof divergenceSubjectSchema>;
-
-/**
- * Why a file does not correspond to the model, or to the source it was read
- * from. `unrepresentable`: the
- * model held something the format cannot express. `undeclared`: the file
- * held something the wire schema does not declare, so the read dropped it
- * and neither the model nor the retained document has it. `narrowed`: a
- * value was reduced to fit what the format holds. `split`: one record
- * became several, as Threat Dragon nests each threat under one cell, so a
- * threat attached to several elements is written once per cell and its
- * single identity is gone. `overridden`: the codec wrote a value the source
- * disagreed with, not because the source value was too much to carry but
- * because the codec will not repeat a claim it cannot stand behind, as a
- * write stamping the format release it produces over the one the file
- * arrived with. `discarded-by-edit`: an edit removed something the source
- * document had, so the merge did not carry it forward. A read reports on
- * the file it was given, and has two of these to report it with:
- * `undeclared` for what it dropped, and `narrowed` for what the model holds
- * less exactly than the file stated it. The rest are a write reporting on
- * the file it produced.
- */
-export const divergenceReasonSchema = z.enum([
+const divergenceReasonSchema = z.enum([
   'unrepresentable',
   'undeclared',
   'narrowed',
@@ -82,16 +52,28 @@ export const divergenceReasonSchema = z.enum([
   'discarded-by-edit',
 ]);
 
-/** Why a file does not correspond to the model, or to its source. */
+/**
+ * The entity a divergence is about: the model as a whole, or one record by
+ * id, including a record an edit removed from the source document.
+ */
+export type DivergenceSubject = z.infer<typeof divergenceSubjectSchema>;
+
+/**
+ * Why a file does not correspond to the model, or to its source.
+ * `unrepresentable`: the format cannot express what the model holds.
+ * `undeclared`: the wire schema does not declare a key, so the read dropped
+ * it. `narrowed`: a value reached the file or the model holding less.
+ * `split`: one record became several. `overridden`: the codec wrote over a
+ * source value it will not repeat, such as a release stamp.
+ * `discarded-by-edit`: an edit removed what the source document held. A read
+ * reports only `undeclared` and `narrowed`.
+ */
 export type DivergenceReason = z.infer<typeof divergenceReasonSchema>;
 
 /**
- * One divergence: the entity it concerns, what did not correspond, and why.
- * `detail` is prose in the entity's own terms rather than a path into the
- * file, because only the codec knows the format's vocabulary, and the
- * projecting and merging paths word the same reason differently. Nothing parses a
- * divergence, so the non-empty bound on `detail` records the intent rather
- * than enforcing it at any boundary.
+ * One divergence. `detail` is prose in the entity's own terms rather than a
+ * path into the file. Nothing parses a divergence, so the non-empty bound on
+ * `detail` is not enforced at any boundary.
  */
 export const divergenceSchema = z.object({
   subject: divergenceSubjectSchema,
@@ -101,21 +83,46 @@ export const divergenceSchema = z.object({
 
 /**
  * One place a file and the model do not correspond exactly, or a written
- * file and the source it was merged onto. A read or a write returns these
- * in the order it recorded them, and an empty list is the aligned case.
+ * file and the source it was merged onto, in the order the codec recorded it.
  */
 export type Divergence = z.infer<typeof divergenceSchema>;
-
-/**
- * The aligned case, for a read or a write with nothing to report. Frozen,
- * so a caller that treats it as a starting point cannot append to the
- * shared value.
- */
-export const noDivergence: readonly Divergence[] = Object.freeze([]);
 
 /** Whether anything diverged. */
 export function hasDiverged(divergences: readonly Divergence[]): boolean {
   return divergences.length > 0;
+}
+
+/**
+ * The divergences as lines for a person, one per entry, or a line saying
+ * there are none. `detail` is escaped as {@link escapedForTerminal} escapes,
+ * and an id as {@link quotedForTerminal} quotes. What that leaves in an id is
+ * the format characters the model accepts, which
+ * [`SCHEMA.md`](../../../model/SCHEMA.md) lists, some of them invisible.
+ */
+export function renderDivergences(divergences: readonly Divergence[]): string {
+  return hasDiverged(divergences)
+    ? divergences.map(renderDivergence).join('\n')
+    : 'No divergence recorded.';
+}
+
+/**
+ * A text with every `Cc` control character written as `\uXXXX` and every
+ * backslash doubled, so an escape a file carries cannot move a terminal's
+ * cursor. The whole category is covered, C1 included, rather than the subset
+ * `JSON.stringify` escapes. Bidirectional and zero-width formatting is left
+ * alone.
+ */
+export function escapedForTerminal(text: string): string {
+  return text.replace(escapableText, escapeCharacter);
+}
+
+/**
+ * A foreign text in double quotes, escaped as {@link escapedForTerminal}
+ * escapes and with each quote escaped too, so it cannot close its own
+ * quoting.
+ */
+export function quotedForTerminal(text: string): string {
+  return `"${text.replace(escapableQuoted, escapeCharacter)}"`;
 }
 
 const reasonPhrases: Record<DivergenceReason, string> = {
@@ -127,27 +134,9 @@ const reasonPhrases: Record<DivergenceReason, string> = {
   'discarded-by-edit': 'removed by an edit',
 };
 
-/**
- * The divergences as lines for a person, one per entry and in the order the
- * codec recorded them. An empty list renders as a line saying so, so the
- * rendering is never blank. An id reaches this rendering as the foreign
- * file wrote it and `detail` can quote what the file said, so both are
- * escaped the way `escapedForTerminal` escapes a text, and an id, which is
- * rendered in quotes, escapes a quote on top of that: a newline cannot split
- * one entry into two lines, and no id can render as another. Of what that
- * escaping leaves alone an id carries less than a `detail` can, the model
- * refusing every control character but tab, line feed and carriage return:
- * what is left to an id is the zero width joiner and non-joiner, the format
- * characters a script owns and the three Arabic marks the model accepts by
- * name, some of them invisible and some drawn as an ornament over the text
- * that follows, and the Arabic letter mark U+061C, which is a bidirectional
- * control the model accepts.
- */
-export function renderDivergences(divergences: readonly Divergence[]): string {
-  return hasDiverged(divergences)
-    ? divergences.map(renderDivergence).join('\n')
-    : 'No divergence recorded.';
-}
+const escapableText = /\\|\p{Cc}/gu;
+
+const escapableQuoted = /["\\]|\p{Cc}/gu;
 
 function renderDivergence(divergence: Divergence): string {
   return `${renderSubject(divergence.subject)}: ${escapedForTerminal(
@@ -159,36 +148,6 @@ function renderSubject(subject: DivergenceSubject): string {
   return subject.kind === 'model'
     ? 'model'
     : `${subject.kind} ${quotedForTerminal(subject.id)}`;
-}
-
-const escapableText = /\\|\p{Cc}/gu;
-
-/**
- * A text with every control character written as `\uXXXX` and every
- * backslash doubled. Text out of a model file reaches a terminal through
- * standard error, and an escape it carries would otherwise move the cursor
- * or set the colours rather than being read. The whole `Cc` category is
- * covered, not the subset `JSON.stringify` escapes, so the C1 range is
- * closed too, and doubling the backslash is what keeps a file spelling an
- * escape out of literal characters distinguishable from one carrying the
- * escape itself. Nothing else is escaped, so bidirectional or zero-width
- * formatting the text quotes from a file still displays as something other
- * than what it says.
- */
-export function escapedForTerminal(text: string): string {
-  return text.replace(escapableText, escapeCharacter);
-}
-
-const escapableQuoted = /["\\]|\p{Cc}/gu;
-
-/**
- * A foreign text inside double quotes, with every control character written
- * as `\uXXXX` and every quote and backslash escaped on top of that. What an
- * id or a path out of a file renders as is then one line that cannot close
- * its own quoting, and no text renders as another.
- */
-export function quotedForTerminal(text: string): string {
-  return `"${text.replace(escapableQuoted, escapeCharacter)}"`;
 }
 
 function escapeCharacter(character: string): string {

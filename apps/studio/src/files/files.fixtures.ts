@@ -123,8 +123,7 @@ export type Recorded = {
   readonly elsewhere: boolean;
 };
 
-/** How many times a bridge was told to forget the file it was holding. */
-export type Releases = { count: number };
+type Releases = { count: number };
 
 /** A bridge recording writes, picker offers in order, and releases. */
 export type SpecBridge = FileBridge & {
@@ -133,15 +132,17 @@ export type SpecBridge = FileBridge & {
   readonly releases: Releases;
 };
 
-/** Defaults cancel opening and write to the proposed name. */
-export type SpecBridgeOptions = {
+type SpecBridgeOptions = {
   readonly offers?: ChosenFile;
   readonly chooses?: string;
   readonly picker?: boolean;
   readonly save?: SaveOutcome;
 };
 
-/** Reads through the production size bound and records the requested writes. */
+/**
+ * A bridge reading through the size bound it is handed and recording the
+ * writes. By default an open is cancelled and a save writes the proposed name.
+ */
 export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
   const ownership = fileOwnership<never>();
   const writes: Recorded[] = [];

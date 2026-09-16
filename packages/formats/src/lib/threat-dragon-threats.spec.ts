@@ -1,3 +1,4 @@
+import type { ModelInput } from '@saerskriven/model';
 import { parsedFixture } from '@saerskriven/model/fixtures';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
@@ -8,7 +9,6 @@ import {
   complementFixture,
   ecluseText,
   richerThanFormatFixture,
-  type ModelInput,
 } from './threat-dragon.fixtures.js';
 
 const readOrThrow = (text: string) =>

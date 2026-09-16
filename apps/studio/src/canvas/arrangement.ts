@@ -15,8 +15,7 @@ const arrangementSchema = z.enum([
   'horizontal',
   'vertical',
 ]);
-/** Alignment and distribution operations offered by the registry. */
-export type Arrangement = z.infer<typeof arrangementSchema>;
+type Arrangement = z.infer<typeof arrangementSchema>;
 
 /** Computes node offsets against selection bounds or equal gaps between fixed outer nodes. */
 export function arrangementMoves(

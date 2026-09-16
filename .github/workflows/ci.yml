@@ -172,7 +172,7 @@ jobs:
       # The test target depends on the `resvg-wasm` build, so the module is
       # built here rather than by a step of this job's own, and a green suite
       # can no longer be a skipped one, so no step checks for the file first
-      # (README.md, The SVG rasterizer).
+      # (docs/build.md, The SVG rasterizer).
       - name: Rasterize a fixture through the module
         run: >-
           nix develop .#ci --command

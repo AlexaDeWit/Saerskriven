@@ -23,5 +23,7 @@ response. Confirm the issue is real first.
 
 ## Supported versions
 
-The project is pre-1.0 and under active development. I support only the
-latest `main` branch.
+The project is pre-1.0 and under active development. I support only the latest
+release, the one the
+[releases page](https://github.com/AlexaDeWit/Saerskriven/releases/latest)
+marks Latest.

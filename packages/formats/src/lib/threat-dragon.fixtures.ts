@@ -1,10 +1,4 @@
-import {
-  assumptionSchema,
-  diagramSchema,
-  mitigationSchema,
-  modelMetadataSchema,
-  threatSchema,
-} from '@saerskriven/model';
+import type { ModelInput } from '@saerskriven/model';
 import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
@@ -13,6 +7,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { vendoredTexts } from './corpus.fixtures.js';
+import { allCells, threatsOf } from './threat-dragon-document.js';
 
 const linkability: ThreatDragonThreat = {
   id: 'threat-linkability',
@@ -402,22 +397,6 @@ export const unmodelledFixture: ThreatDragonDocument = {
 };
 
 /**
- * A whole model as `parseModel` takes it, typed from the schemas the model
- * package exports rather than from the model schema itself, which stays
- * internal to that package. A fixture literal carries this annotation where
- * it is written: the shared `parsedFixture` takes `unknown`, so nothing else
- * checks the literal before the parse.
- */
-export type ModelInput = {
-  metadata: z.input<typeof modelMetadataSchema>;
-  diagrams: z.input<typeof diagramSchema>[];
-  threats: z.input<typeof threatSchema>[];
-  lastIssuedThreatNumber: number;
-  mitigations: z.input<typeof mitigationSchema>[];
-  assumptions: z.input<typeof assumptionSchema>[];
-};
-
-/**
  * A model holding what Threat Dragon has no place for, so that a write of
  * it reports every reason a write can report: threats attached to two
  * elements at once, to a trust boundary, and to nothing at all, a PLOT4ai
@@ -695,3 +674,10 @@ export const richerThanFormatSource: ThreatDragonDocument = {
     ],
   },
 };
+
+/** Every threat of a document, in the order its cells nest them. */
+export function allThreats(
+  document: ThreatDragonDocument,
+): readonly ThreatDragonThreat[] {
+  return allCells(document).flatMap(threatsOf);
+}

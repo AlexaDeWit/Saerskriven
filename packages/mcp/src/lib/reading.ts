@@ -29,10 +29,8 @@ export type ModelReading = {
 };
 
 /**
- * What every read tool reports about the file it read. Each tool extends this
- * rather than restating the fields, so `revision` is on every result and a
- * write that follows a read in the same turn has its handle without a second
- * read.
+ * What every read and write tool reports about the file, `revision` being the
+ * handle a write quotes back.
  */
 export const readingSchema = z.object({
   file: z.string(),
@@ -40,15 +38,12 @@ export const readingSchema = z.object({
   revision: z.string(),
 });
 
-/** What every read tool reports about the file it read. */
+/** What every read and write tool reports about the file. */
 export type Reading = z.infer<typeof readingSchema>;
 
 /**
- * The model a call names, or the default the server carries, read on the
- * bounds {@link readModelFile} applies. A call naming neither is refused
- * rather than answered with a listing: `saer_inspect` is the tool that lists
- * what is under the root, and a query tool that listed instead would answer
- * something other than what it was asked.
+ * The model a call names, or the default the server carries. A call naming
+ * neither is refused, since `saer_inspect` is the tool that lists.
  */
 export function readNamed(
   workspace: ModelWorkspace,

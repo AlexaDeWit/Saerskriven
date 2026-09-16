@@ -15,10 +15,6 @@ import { mergeCell, withNeededPorts } from './threat-dragon-cells.js';
 import { cellsOf, indexById, portSides } from './threat-dragon-document.js';
 import type { HighWaterMark } from './threat-dragon-threats.js';
 
-const genericDiagramType = 'Generic';
-
-const genericThumbnail = './public/content/images/thumbnail.jpg';
-
 /** A diagram as a merge produced it, and what producing it cost. */
 export type MergedDiagram = {
   readonly diagram: ThreatDragonDiagram;
@@ -46,18 +42,11 @@ export function diagramsById(
 
 /**
  * A Threat Dragon number for every diagram of the model. A diagram the
- * source document holds keeps the number that document gave it, and a
- * diagram whose own id reads as a free non-negative integer takes it, so a
- * projection of a model that came from this format numbers the diagrams as
- * the file did. Anything else the format cannot hold: it numbers a diagram
- * where the model names one, so the name is dropped for a number from the
- * mark upward and reported.
- *
- * `diagramTop` follows the rule `threat-dragon-threats.ts` sets for the
- * threat mark. A file that declared one keeps it as its floor, and a file
- * that declared none is given one covering every number it holds, since
- * writing 0 onto a file whose diagrams are numbered 0 and 3 would have
- * Threat Dragon hand those numbers out again.
+ * source holds keeps its number, and one whose id reads as a free
+ * non-negative integer takes it, so a projection numbers diagrams as the file
+ * did. Any other diagram's name is replaced by the next free number and
+ * reported. `diagramTop` follows the floor `planThreats` sets for
+ * `threatTop`.
  */
 export function numberDiagrams(
   model: Model,
@@ -105,33 +94,12 @@ export function numberDiagrams(
   };
 }
 
-function claimNumber(
-  id: string,
-  held: ReadonlyMap<string, ThreatDragonDiagram>,
-  taken: Set<number>,
-): number | undefined {
-  const kept = held.get(id);
-  if (kept !== undefined) {
-    return kept.id;
-  }
-  const own = Number(id);
-  if (!/^\d+$/.test(id) || !Number.isSafeInteger(own) || taken.has(own)) {
-    return undefined;
-  }
-  taken.add(own);
-  return own;
-}
-
 /**
  * One diagram of the model as Threat Dragon draws it. `diagramType` and
- * `thumbnail` are Threat Dragon's own and no part of the model, so a
- * diagram the source holds keeps what it said and one an edit added takes
- * what Threat Dragon writes for a diagram of no methodology, read off the
- * Generic diagram of the corpus vendored under `test-data`. A diagram that
- * draws nothing and declared no cell list keeps declaring none. A node cell
- * gains a port for each side a pinned flow end asks for and it does not
- * declare. The release stamp is the document's rather than the diagram's
- * own decision, so `writeThreatDragon` writes it.
+ * `thumbnail` keep what the source said, or take Threat Dragon's values for a
+ * diagram of no methodology. A diagram that draws nothing and declared no
+ * cell list keeps declaring none, and a node cell gains a port for each side
+ * a pinned flow end asks for. `writeThreatDragon` writes the release stamp.
  */
 export function mergeDiagram(
   diagram: Diagram,
@@ -175,6 +143,27 @@ export function mergeDiagram(
     ],
   };
 }
+
+function claimNumber(
+  id: string,
+  held: ReadonlyMap<string, ThreatDragonDiagram>,
+  taken: Set<number>,
+): number | undefined {
+  const kept = held.get(id);
+  if (kept !== undefined) {
+    return kept.id;
+  }
+  const own = Number(id);
+  if (!/^\d+$/.test(id) || !Number.isSafeInteger(own) || taken.has(own)) {
+    return undefined;
+  }
+  taken.add(own);
+  return own;
+}
+
+const genericDiagramType = 'Generic';
+
+const genericThumbnail = './public/content/images/thumbnail.jpg';
 
 function unnamedDiagram(id: DiagramId, number: number): Divergence {
   return {

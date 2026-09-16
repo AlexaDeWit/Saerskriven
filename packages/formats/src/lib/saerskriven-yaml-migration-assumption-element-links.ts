@@ -2,7 +2,10 @@ import { assumptionIdSchema } from '@saerskriven/model';
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
 import type { Divergence } from './divergence.js';
 
-/** A version 1 document with the `elements` list of every assumption emptied, since an assumption links threats only. */
+/**
+ * A version 1 document with every assumption's `elements` list emptied, since
+ * an assumption links threats only.
+ */
 export function withoutAssumptionElementLinks(
   document: SaerskrivenYamlDocument,
 ): SaerskrivenYamlDocument {

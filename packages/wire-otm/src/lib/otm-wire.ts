@@ -1,18 +1,26 @@
 import { z } from 'zod';
 
+const nullable = <Schema extends z.ZodType>(schema: Schema) =>
+  z.union([schema, z.null()]);
+
+const attributesSchema = nullable(z.record(z.string(), z.unknown())).optional();
+
+const nullableTextListSchema = nullable(
+  z.array(nullable(z.string())),
+).optional();
+
 const namedSchema = z.object({
   name: z.string(),
   id: z.string(),
-  description: z.union([z.string(), z.null()]).optional(),
+  description: nullable(z.string()).optional(),
 });
 
-const sizeSchema = z.union([
+const sizeSchema = nullable(
   z.object({
     width: z.number(),
     height: z.number(),
   }),
-  z.null(),
-]);
+);
 
 const parentSchema = z
   .object({
@@ -25,50 +33,43 @@ const parentSchema = z
     { message: 'A parent names exactly one trust zone or component' },
   );
 
-const positionSchema = z.union([
+const positionSchema = nullable(
   z.object({
     x: z.number(),
     y: z.number(),
   }),
-  z.null(),
-]);
+);
 
 const representationElementSchema = z.object({
   representation: z.string(),
-  name: z.union([z.string(), z.null()]).optional(),
+  name: nullable(z.string()).optional(),
   id: z.string(),
   position: positionSchema.optional(),
   size: sizeSchema.optional(),
-  file: z.union([z.string(), z.null()]).optional(),
-  line: z.union([z.number(), z.null()]).optional(),
-  codeSnippet: z.union([z.string(), z.null()]).optional(),
-  attributes: z.union([z.record(z.string(), z.unknown()), z.null()]).optional(),
+  file: nullable(z.string()).optional(),
+  line: nullable(z.number()).optional(),
+  codeSnippet: nullable(z.string()).optional(),
+  attributes: attributesSchema,
 });
 
-const assetInstanceSchema = z.union([
+const assetInstanceSchema = nullable(
   z.object({
-    processed: z
-      .union([z.array(z.union([z.string(), z.null()])), z.null()])
-      .optional(),
-    stored: z
-      .union([z.array(z.union([z.string(), z.null()])), z.null()])
-      .optional(),
+    processed: nullableTextListSchema,
+    stored: nullableTextListSchema,
   }),
-  z.null(),
-]);
+);
 
 const threatSchema = z.object({
   threat: z.string(),
   state: z.string(),
   mitigations: z
     .array(
-      z.union([
+      nullable(
         z.object({
-          mitigation: z.union([z.string(), z.null()]),
-          state: z.union([z.string(), z.null()]),
+          mitigation: nullable(z.string()),
+          state: nullable(z.string()),
         }),
-        z.null(),
-      ]),
+      ),
     )
     .optional(),
 });
@@ -77,154 +78,108 @@ const threatSchema = z.object({
 export const otmWireSchema = z.object({
   otmVersion: z.literal('0.2.0'),
   project: namedSchema.extend({
-    owner: z.union([z.string(), z.null()]).optional(),
-    ownerContact: z.union([z.string(), z.null()]).optional(),
-    tags: z.union([z.array(z.string()), z.null()]).optional(),
-    attributes: z
-      .union([z.record(z.string(), z.unknown()), z.null()])
-      .optional(),
+    owner: nullable(z.string()).optional(),
+    ownerContact: nullable(z.string()).optional(),
+    tags: nullable(z.array(z.string())).optional(),
+    attributes: attributesSchema,
   }),
-  representations: z
-    .union([
-      z.array(
-        namedSchema.extend({
-          type: z.string(),
-          size: sizeSchema.optional(),
-          repository: z
-            .union([
-              z.object({
-                url: z.union([z.string(), z.null()]),
-              }),
-              z.null(),
-            ])
-            .optional(),
-          attributes: z
-            .union([z.record(z.string(), z.unknown()), z.null()])
-            .optional(),
-        }),
-      ),
-      z.null(),
-    ])
-    .optional(),
-  assets: z
-    .union([
-      z.array(
-        namedSchema.extend({
-          risk: z.object({
-            confidentiality: z.number(),
-            integrity: z.number(),
-            availability: z.number(),
-            comment: z.union([z.string(), z.null()]).optional(),
+  representations: nullable(
+    z.array(
+      namedSchema.extend({
+        type: z.string(),
+        size: sizeSchema.optional(),
+        repository: nullable(
+          z.object({
+            url: nullable(z.string()),
           }),
-          attributes: z
-            .union([z.record(z.string(), z.unknown()), z.null()])
-            .optional(),
+        ).optional(),
+        attributes: attributesSchema,
+      }),
+    ),
+  ).optional(),
+  assets: nullable(
+    z.array(
+      namedSchema.extend({
+        risk: z.object({
+          confidentiality: z.number(),
+          integrity: z.number(),
+          availability: z.number(),
+          comment: nullable(z.string()).optional(),
         }),
-      ),
-      z.null(),
-    ])
-    .optional(),
+        attributes: attributesSchema,
+      }),
+    ),
+  ).optional(),
   trustZones: z
     .array(
       z.object({
         id: z.string(),
         name: z.string(),
         type: z.string().optional(),
-        description: z.union([z.string(), z.null()]).optional(),
+        description: nullable(z.string()).optional(),
         risk: z.object({
           trustRating: z.number(),
         }),
         parent: parentSchema.optional(),
-        representations: z
-          .union([z.array(representationElementSchema), z.null()])
-          .optional(),
-        attributes: z
-          .union([z.record(z.string(), z.unknown()), z.null()])
-          .optional(),
+        representations: nullable(
+          z.array(representationElementSchema),
+        ).optional(),
+        attributes: attributesSchema,
       }),
     )
     .optional(),
-  components: z
-    .union([
-      z.array(
-        namedSchema.extend({
-          type: z.string(),
-          parent: parentSchema,
-          representations: z
-            .union([z.array(representationElementSchema), z.null()])
-            .optional(),
-          assets: assetInstanceSchema.optional(),
-          threats: z.union([z.array(threatSchema), z.null()]).optional(),
-          tags: z
-            .union([z.array(z.union([z.string(), z.null()])), z.null()])
-            .optional(),
-          attributes: z
-            .union([z.record(z.string(), z.unknown()), z.null()])
-            .optional(),
-        }),
-      ),
-      z.null(),
-    ])
-    .optional(),
+  components: nullable(
+    z.array(
+      namedSchema.extend({
+        type: z.string(),
+        parent: parentSchema,
+        representations: nullable(
+          z.array(representationElementSchema),
+        ).optional(),
+        assets: assetInstanceSchema.optional(),
+        threats: nullable(z.array(threatSchema)).optional(),
+        tags: nullableTextListSchema,
+        attributes: attributesSchema,
+      }),
+    ),
+  ).optional(),
   dataflows: z
     .array(
       namedSchema.extend({
-        bidirectional: z.union([z.boolean(), z.null()]).optional(),
+        bidirectional: nullable(z.boolean()).optional(),
         source: z.string(),
         destination: z.string(),
-        assets: z
-          .union([z.array(z.union([z.string(), z.null()])), z.null()])
-          .optional(),
-        threats: z.union([z.array(threatSchema), z.null()]).optional(),
-        tags: z
-          .union([z.array(z.union([z.string(), z.null()])), z.null()])
-          .optional(),
-        attributes: z
-          .union([z.record(z.string(), z.unknown()), z.null()])
-          .optional(),
+        assets: nullableTextListSchema,
+        threats: nullable(z.array(threatSchema)).optional(),
+        tags: nullableTextListSchema,
+        attributes: attributesSchema,
       }),
     )
     .optional(),
-  threats: z
-    .union([
-      z.array(
-        namedSchema.extend({
-          categories: z
-            .union([z.array(z.union([z.string(), z.null()])), z.null()])
-            .optional(),
-          cwes: z
-            .union([z.array(z.union([z.string(), z.null()])), z.null()])
-            .optional(),
-          risk: z.object({
-            likelihood: z.union([z.number(), z.null()]),
-            likelihoodComment: z.union([z.string(), z.null()]).optional(),
-            impact: z.number(),
-            impactComment: z.string().optional(),
-          }),
-          tags: z
-            .union([z.array(z.union([z.string(), z.null()])), z.null()])
-            .optional(),
-          attributes: z
-            .union([z.record(z.string(), z.unknown()), z.null()])
-            .optional(),
+  threats: nullable(
+    z.array(
+      namedSchema.extend({
+        categories: nullableTextListSchema,
+        cwes: nullableTextListSchema,
+        risk: z.object({
+          likelihood: nullable(z.number()),
+          likelihoodComment: nullable(z.string()).optional(),
+          impact: z.number(),
+          impactComment: z.string().optional(),
         }),
-      ),
-      z.null(),
-    ])
-    .optional(),
-  mitigations: z
-    .union([
-      z.array(
-        namedSchema.extend({
-          riskReduction: z.number(),
-          attributes: z
-            .union([z.record(z.string(), z.unknown()), z.null()])
-            .optional(),
-        }),
-      ),
-      z.null(),
-    ])
-    .optional(),
+        tags: nullableTextListSchema,
+        attributes: attributesSchema,
+      }),
+    ),
+  ).optional(),
+  mitigations: nullable(
+    z.array(
+      namedSchema.extend({
+        riskReduction: z.number(),
+        attributes: attributesSchema,
+      }),
+    ),
+  ).optional(),
 });
 
 /** An OTM document before conversion to the core model. */

@@ -2,20 +2,15 @@ import { z } from 'zod';
 import { fileArgumentSchema } from './inspect.js';
 
 /**
- * How much of each match a search carries back. `concise` is the fields that
- * identify a record and let a caller choose the next call. `detailed` adds
- * the rest of the record, which costs a caller its context, so a search that
- * asks for it takes fewer matches before it is cut.
+ * How much of each match a search carries back: the identifying fields, or
+ * the whole record with fewer matches before the cut.
  */
 export const responseFormatSchema = z.enum(['concise', 'detailed']);
 
 /** How much of each match a search carries back. */
 export type ResponseFormat = z.infer<typeof responseFormatSchema>;
 
-/**
- * The arguments every search of this server takes, beside the `file` every
- * tool takes. Each search extends this with the filters of its own record.
- */
+/** The arguments every search takes, extended with each search's own filters. */
 export const searchArgumentsSchema = fileArgumentSchema.extend({
   query: z
     .string()
@@ -50,10 +45,8 @@ export type LimitedRows<Row> = {
 };
 
 /**
- * The matches cut to {@link searchLimits} for the response format asked for,
- * beside the count of everything that matched. A result carries the count
- * whether or not it was cut, so a caller can tell a listing of nine from the
- * first nine of ninety.
+ * The matches cut to {@link searchLimits} for the response format, beside
+ * the count of everything that matched, cut or not.
  */
 export function limitedRows<Row>(
   matched: readonly Row[],
@@ -71,11 +64,9 @@ export function limitedRows<Row>(
 }
 
 /**
- * What a search matched, as the lines its text result states it in. A cut
- * listing says so and names the arguments that narrow this search, since a
- * caller reading the first twenty of two hundred as the whole answer is what
- * the line is against. The concise form is offered only to a detailed search,
- * which is the only one that has it left to ask for.
+ * What a search matched, as the lines of its text result. A cut listing
+ * names the `narrowing` arguments, and the concise form where the search was
+ * detailed.
  */
 export function renderCounts(
   counts: SearchCounts,
@@ -91,9 +82,8 @@ export function renderCounts(
 }
 
 /**
- * Whether the query occurs in any of the texts, compared without case
- * through `toLowerCase`. An absent query matches every record, which is what
- * makes a search with no query the whole listing.
+ * Whether the query occurs in any of the texts, compared without case. An
+ * absent query matches every record.
  */
 export function matchesQuery(
   query: string | undefined,

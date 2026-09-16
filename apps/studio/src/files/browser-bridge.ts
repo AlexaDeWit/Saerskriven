@@ -3,7 +3,6 @@ import {
   SaveOutcome,
   fileOwnership,
   readWithin,
-  reasonOf,
   type ChosenFile,
   type FileContent,
   type FileBridge,
@@ -11,6 +10,7 @@ import {
   type SaveFileType,
   type SaveText,
 } from './bridge.js';
+import { reasonOf } from '../reason.js';
 
 type OpenPicker = (options: {
   readonly multiple: false;

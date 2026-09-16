@@ -7,11 +7,9 @@ import {
 
 /**
  * A version 1 document with each threat's `mitigation` text moved into a
- * mitigation record, on the terms of {@link mitigationsFromText}, and every
- * threat's text left empty. The records follow the document's own
- * mitigations, and every id the document holds is taken, so a record the
- * file already has keeps its id. A document whose threats hold
- * no text comes back with the same content.
+ * record on the terms of {@link mitigationsFromText}, after the document's
+ * own mitigations, with every id the document holds taken, and each threat's
+ * text left empty.
  */
 export function withMitigationTextAsRecords(
   document: SaerskrivenYamlDocument,

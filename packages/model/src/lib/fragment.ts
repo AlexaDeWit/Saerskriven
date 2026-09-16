@@ -1,15 +1,46 @@
-import { restrictRelationships } from './relationships.js';
 import { Either } from 'effect';
 import { linkAssumption } from './assumption-operations.js';
 import type { Assumption } from './assumptions.js';
+import {
+  diagramIndexOf,
+  locatedDiagram,
+  type UnknownElementFailure,
+} from './diagram-edits.js';
+import { translatedElement } from './element-geometry.js';
 import type { Element } from './elements.js';
+import type { Point } from './geometry.js';
 import type { DiagramId, ElementId, ThreatId } from './ids.js';
 import { linkMitigation } from './mitigation-operations.js';
 import type { Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
-import { translatedElement } from './operations.js';
-import type { Point } from './geometry.js';
+import { elementsAcross, elementsById } from './references.js';
+import { restrictRelationships } from './relationships.js';
+
+/** The failures {@link selectionFragment} can produce. */
+export type SelectionFragmentFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownDiagram' | 'UnknownElement' | 'InvalidFragment' }
+>;
+
+/** The failure {@link remapFragment} can produce. */
+export type RemapFragmentFailure = Extract<
+  OperationFailure,
+  { _tag: 'InvalidFragment' }
+>;
+
+/** The failures {@link insertFragment} can produce. */
+export type InsertFragmentFailure = Extract<
+  OperationFailure,
+  {
+    _tag:
+      | 'UnknownDiagram'
+      | 'InvalidFragment'
+      | 'UnknownMitigation'
+      | 'UnknownAssumption'
+      | 'UnknownThreat';
+  }
+>;
 
 /**
  * Copies a selection and its flow endpoints, with related records restricted
@@ -20,16 +51,9 @@ export function selectionFragment(
   model: Model,
   diagramId: DiagramId,
   selection: readonly ElementId[],
-): Either.Either<Model, OperationFailure> {
-  const diagram = model.diagrams.find(
-    (candidate) => candidate.id === diagramId,
-  );
-  if (diagram === undefined) {
-    return Either.left(OperationFailure.UnknownDiagram({ diagramId }));
-  }
-  return Either.flatMap(
-    closedSelection(diagram.elements, selection),
-    (included) => {
+): Either.Either<Model, SelectionFragmentFailure> {
+  return Either.flatMap(locatedDiagram(model, diagramId), (diagram) =>
+    Either.flatMap(closedSelection(diagram.elements, selection), (included) => {
       const elements = diagram.elements
         .filter((element) => included.has(element.id))
         .map((element) => restrictRelationships(element, included));
@@ -44,55 +68,13 @@ export function selectionFragment(
         ...model,
         diagrams: [{ ...diagram, elements }],
         threats,
-        mitigations: model.mitigations
-          .filter((item) => item.threats.some((id) => threatIds.has(id)))
-          .map((item) => ({
-            ...item,
-            threats: item.threats.filter((id) => threatIds.has(id)),
-          })),
-        assumptions: model.assumptions
-          .filter((item) => item.threats.some((id) => threatIds.has(id)))
-          .map((item) => ({
-            ...item,
-            threats: item.threats.filter((id) => threatIds.has(id)),
-            appliesToModel: false,
-          })),
+        mitigations: restrictedLinks(model.mitigations, threatIds),
+        assumptions: restrictedLinks(model.assumptions, threatIds).map(
+          (item) => ({ ...item, appliesToModel: false }),
+        ),
       });
-    },
+    }),
   );
-}
-
-function closedSelection(
-  elements: readonly Element[],
-  selection: readonly ElementId[],
-): Either.Either<Set<ElementId>, OperationFailure> {
-  const known = new Map(elements.map((element) => [element.id, element]));
-  const included = new Set(selection);
-  for (const id of included) {
-    const element = known.get(id);
-    if (element === undefined) {
-      return Either.left(OperationFailure.UnknownElement({ elementId: id }));
-    }
-    if (element.kind === 'flow') {
-      for (const end of [element.source, element.target]) {
-        if (end.kind === 'attached') {
-          included.add(end.element);
-        }
-      }
-    }
-  }
-  for (const element of elements) {
-    if (
-      element.kind === 'flow' &&
-      element.source.kind === 'attached' &&
-      element.target.kind === 'attached' &&
-      included.has(element.source.element) &&
-      included.has(element.target.element)
-    ) {
-      included.add(element.id);
-    }
-  }
-  return Either.right(included);
 }
 
 /**
@@ -105,7 +87,7 @@ export function remapFragment(
   prefix: string,
   offset: Point,
   target: Model,
-): Either.Either<Model, OperationFailure> {
+): Either.Either<Model, RemapFragmentFailure> {
   const renamed = (id: string) => prefix + ':' + id;
   const heldMitigation = identicalIn(target.mitigations, sameMitigation);
   const heldAssumption = identicalIn(target.assumptions, sameAssumption);
@@ -134,6 +116,138 @@ export function remapFragment(
       threats: item.threats.map(renamed),
     })),
   });
+}
+
+/**
+ * Inserts one copied graph atomically and issues new threat numbers. A
+ * copied record identical to one the model holds adds its pasted threat
+ * links to that record, which keeps its own `appliesToModel`. Every other
+ * copied record linked to a pasted threat is added as a clone, an
+ * assumption with no model link. An element, threat or record ID the model
+ * holds, other than an identical record's, refuses the insertion.
+ */
+export function insertFragment(
+  model: Model,
+  diagramId: DiagramId,
+  fragment: Model,
+): Either.Either<Model, InsertFragmentFailure> {
+  const target = diagramIndexOf(model, diagramId);
+  if (Either.isLeft(target)) {
+    return Either.left(target.left);
+  }
+  const elements = elementsAcross(fragment.diagrams);
+  if (elements.length === 0) {
+    return Either.right(model);
+  }
+  const { mitigations, assumptions } = pastedRecords(model, fragment);
+  const graph: Model = {
+    ...model,
+    diagrams: model.diagrams.map((diagram) =>
+      diagram.id === diagramId
+        ? { ...diagram, elements: [...diagram.elements, ...elements] }
+        : diagram,
+    ),
+    threats: [
+      ...model.threats,
+      ...fragment.threats.map((threat, index) => ({
+        ...threat,
+        number: model.lastIssuedThreatNumber + index + 1,
+      })),
+    ],
+    lastIssuedThreatNumber:
+      model.lastIssuedThreatNumber + fragment.threats.length,
+  };
+  const links: ((
+    current: Model,
+  ) => Either.Either<Model, InsertFragmentFailure>)[] = [
+    ...mitigations.linked.flatMap(({ id, threats }) =>
+      threats.map(
+        (threatId) => (current: Model) => linkMitigation(current, id, threatId),
+      ),
+    ),
+    ...assumptions.linked.flatMap(({ id, threats }) =>
+      threats.map(
+        (threatId) => (current: Model) => linkAssumption(current, id, threatId),
+      ),
+    ),
+  ];
+  const linked = links.reduce<Either.Either<Model, InsertFragmentFailure>>(
+    (result, link) => Either.flatMap(result, link),
+    Either.right(graph),
+  );
+  return Either.flatMap(linked, (withLinks) =>
+    checkedFragment({
+      ...withLinks,
+      mitigations: [...withLinks.mitigations, ...mitigations.cloned],
+      assumptions: [
+        ...withLinks.assumptions,
+        ...assumptions.cloned.map((item) => ({
+          ...item,
+          appliesToModel: false,
+        })),
+      ],
+    }),
+  );
+}
+
+/**
+ * How many of a remapped fragment's records {@link insertFragment} links to
+ * an identical record `model` holds, and how many it adds as clones.
+ */
+export function fragmentRecordCounts(
+  model: Model,
+  fragment: Model,
+): { readonly linked: number; readonly cloned: number } {
+  const { mitigations, assumptions } = pastedRecords(model, fragment);
+  return {
+    linked: mitigations.linked.length + assumptions.linked.length,
+    cloned: mitigations.cloned.length + assumptions.cloned.length,
+  };
+}
+
+function closedSelection(
+  elements: readonly Element[],
+  selection: readonly ElementId[],
+): Either.Either<Set<ElementId>, UnknownElementFailure> {
+  const known = elementsById(elements);
+  const included = new Set(selection);
+  for (const id of included) {
+    const element = known.get(id);
+    if (element === undefined) {
+      return Either.left(OperationFailure.UnknownElement({ elementId: id }));
+    }
+    if (element.kind === 'flow') {
+      for (const end of [element.source, element.target]) {
+        if (end.kind === 'attached') {
+          included.add(end.element);
+        }
+      }
+    }
+  }
+  for (const element of elements) {
+    if (
+      element.kind === 'flow' &&
+      element.source.kind === 'attached' &&
+      element.target.kind === 'attached' &&
+      included.has(element.source.element) &&
+      included.has(element.target.element)
+    ) {
+      included.add(element.id);
+    }
+  }
+  return Either.right(included);
+}
+
+function restrictedLinks<Linked extends { readonly threats: ThreatId[] }>(
+  records: readonly Linked[],
+  threatIds: ReadonlySet<string>,
+): Linked[] {
+  return records
+    .filter((item) => item.threats.some((id) => threatIds.has(id)))
+    .map((item) => ({
+      ...item,
+      threats: item.threats.filter((id) => threatIds.has(id)),
+    }));
 }
 
 function renamedElement(element: Element, renamed: (id: string) => string) {
@@ -167,93 +281,6 @@ function renamedElement(element: Element, renamed: (id: string) => string) {
     };
   }
   return { ...element, id: renamed(element.id) };
-}
-
-/**
- * Inserts one copied graph atomically and issues new threat numbers. A
- * copied record identical to one the model holds adds its pasted threat
- * links to that record, which keeps its own `appliesToModel`. Every other
- * copied record linked to a pasted threat is added as a clone, an
- * assumption with no model link. An element, threat or record ID the model
- * holds, other than an identical record's, refuses the insertion.
- */
-export function insertFragment(
-  model: Model,
-  diagramId: DiagramId,
-  fragment: Model,
-): Either.Either<Model, OperationFailure> {
-  if (!model.diagrams.some((diagram) => diagram.id === diagramId)) {
-    return Either.left(OperationFailure.UnknownDiagram({ diagramId }));
-  }
-  const elements = fragment.diagrams.flatMap((diagram) => diagram.elements);
-  if (elements.length === 0) {
-    return Either.right(model);
-  }
-  const { mitigations, assumptions } = pastedRecords(model, fragment);
-  const graph: Model = {
-    ...model,
-    diagrams: model.diagrams.map((diagram) =>
-      diagram.id === diagramId
-        ? { ...diagram, elements: [...diagram.elements, ...elements] }
-        : diagram,
-    ),
-    threats: [
-      ...model.threats,
-      ...fragment.threats.map((threat, index) => ({
-        ...threat,
-        number: model.lastIssuedThreatNumber + index + 1,
-      })),
-    ],
-    lastIssuedThreatNumber:
-      model.lastIssuedThreatNumber + fragment.threats.length,
-  };
-  const links: ((current: Model) => Either.Either<Model, OperationFailure>)[] =
-    [
-      ...mitigations.linked.flatMap(({ id, threats }) =>
-        threats.map(
-          (threatId) => (current: Model) =>
-            linkMitigation(current, id, threatId),
-        ),
-      ),
-      ...assumptions.linked.flatMap(({ id, threats }) =>
-        threats.map(
-          (threatId) => (current: Model) =>
-            linkAssumption(current, id, threatId),
-        ),
-      ),
-    ];
-  const linked = links.reduce<Either.Either<Model, OperationFailure>>(
-    (result, link) => Either.flatMap(result, link),
-    Either.right(graph),
-  );
-  return Either.flatMap(linked, (withLinks) =>
-    checkedFragment({
-      ...withLinks,
-      mitigations: [...withLinks.mitigations, ...mitigations.cloned],
-      assumptions: [
-        ...withLinks.assumptions,
-        ...assumptions.cloned.map((item) => ({
-          ...item,
-          appliesToModel: false,
-        })),
-      ],
-    }),
-  );
-}
-
-/**
- * How many of a remapped fragment's records {@link insertFragment} links to
- * an identical record `model` holds, and how many it adds as clones.
- */
-export function fragmentRecordCounts(
-  model: Model,
-  fragment: Model,
-): { readonly linked: number; readonly cloned: number } {
-  const { mitigations, assumptions } = pastedRecords(model, fragment);
-  return {
-    linked: mitigations.linked.length + assumptions.linked.length,
-    cloned: mitigations.cloned.length + assumptions.cloned.length,
-  };
 }
 
 type Split<Held> = { readonly linked: Held[]; readonly cloned: Held[] };
@@ -313,7 +340,7 @@ function sameAssumption(held: Assumption, copy: Assumption): boolean {
 
 function checkedFragment(
   input: unknown,
-): Either.Either<Model, OperationFailure> {
+): Either.Either<Model, RemapFragmentFailure> {
   return Either.mapLeft(parseModel(input), ({ issues }) =>
     OperationFailure.InvalidFragment({ issues }),
   );

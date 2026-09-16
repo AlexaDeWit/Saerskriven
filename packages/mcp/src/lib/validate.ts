@@ -34,12 +34,7 @@ export const validateDescription = [
   'A file no format claims, or one a format claims and refuses, comes back as an error result: it names the formats that were tried, or the path inside the document of every issue the schema raised, down to the field. A file that reads is not a file that corresponds exactly, so read the divergences of a successful result too. This tool never writes.',
 ].join(' ');
 
-/**
- * Whether the file reads and what it lost on the way, or the lines saying
- * why it did not read. The refusal is the codec's own, path-precise where a
- * schema refused a field, which is what {@link readNamed} already words for
- * every read tool.
- */
+/** Whether the file reads and what it lost on the way, or why it did not read. */
 export function validate(
   workspace: ModelWorkspace,
   args: ValidateArguments,

@@ -1,4 +1,4 @@
-import { defaultRenderTheme } from '@saerskriven/render';
+import { defaultRenderTheme } from '@saerskriven/canvas';
 import { readLimits } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { mkdtempSync, rmSync } from 'node:fs';

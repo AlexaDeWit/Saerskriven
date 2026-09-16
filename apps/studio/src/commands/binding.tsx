@@ -35,11 +35,7 @@ export const unmountedSurface: CommandSurface = {
   },
 };
 
-/** Who a key press belongs to. */
-export const keyboardOwners = ['page', 'typing', 'overlay'] as const;
-
-/** Who the key press in front of the studio belongs to. */
-export type KeyboardOwner = (typeof keyboardOwners)[number];
+type KeyboardOwner = 'page' | 'typing' | 'overlay';
 
 const overlaySelector =
   '[role="combobox"][aria-expanded="true"], [role="listbox"], [role="menu"], [role="dialog"]';
@@ -58,10 +54,9 @@ export function nativeActivationTarget(target: EventTarget | null): boolean {
 }
 
 /**
- * Which of {@link keyboardOwners} holds the keyboard while `target` has it.
- * A listbox trigger stands in the page whether it is open or not and says
- * which it is, so the closed one is asked for typing alone; the roles that
- * are in the page only while they are open are read by their presence.
+ * Who holds the keyboard while `target` has focus. A listbox trigger counts
+ * as an overlay only while `aria-expanded` says it is open, and as typing
+ * while closed.
  */
 export function keyboardOwner(target: EventTarget | null): KeyboardOwner {
   if (!(target instanceof Element)) {
@@ -129,8 +124,7 @@ export function useCommandKeys(surface: CommandSurface): void {
 
 const surfaceContext = createContext<CommandSurface>(unmountedSurface);
 
-/** The surface and the tree the commands bound to it are pressed from. */
-export type CommandSurfaceProviderProps = {
+type CommandSurfaceProviderProps = {
   readonly surface: CommandSurface;
   readonly children: ReactNode;
 };

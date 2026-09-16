@@ -275,6 +275,9 @@ importers:
       '@modelcontextprotocol/server':
         specifier: 'catalog:'
         version: 2.0.0
+      '@saerskriven/canvas':
+        specifier: workspace:*
+        version: link:../../packages/canvas
       '@saerskriven/formats':
         specifier: workspace:*
         version: link:../../packages/formats

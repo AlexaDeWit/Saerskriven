@@ -125,6 +125,8 @@ export type SaerskrivenServerOptions = {
   readonly rasterizer: RasterizerAssets;
 };
 
+const uncached: CacheHint = { ttlMs: 0, cacheScope: 'private' };
+
 const reads = {
   readOnlyHint: true,
   openWorldHint: false,
@@ -137,11 +139,9 @@ const writes = {
 } as const;
 
 /**
- * The MCP server object, with no transport of its own. It holds no model and
- * no session, so every call reads the file it names from disk again. Any
- * process can change that file between two calls, so every cacheable result
- * tells a 2026-07-28 client to keep it for no time and to share it with no
- * other client.
+ * The MCP server object, with no transport of its own. It holds no model, so
+ * every call reads its file from disk again, and every cacheable result tells
+ * a 2026-07-28 client to keep it for no time and share it with no other client.
  */
 export function createSaerskrivenServer(
   options: SaerskrivenServerOptions,
@@ -168,8 +168,6 @@ export function createSaerskrivenServer(
   prompts(server, options);
   return server;
 }
-
-const uncached: CacheHint = { ttlMs: 0, cacheScope: 'private' };
 
 function readTools(server: McpServer, options: SaerskrivenServerOptions): void {
   server.registerTool(

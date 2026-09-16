@@ -1,5 +1,6 @@
 import {
   createdFile,
+  reasonOf,
   replacedFile,
   revisionOf,
   WriteFailure,
@@ -15,7 +16,7 @@ import {
 } from 'node:fs';
 import { dirname } from 'node:path';
 import { z } from 'zod';
-import { reasonOf, withinReadBound } from './files.js';
+import { withinReadBound } from './files.js';
 import {
   InstallFailure,
   entryText,
@@ -73,56 +74,13 @@ export const installOptionsSchema = z
 /** The options an `mcp install` invocation was given. */
 export type InstallOptions = z.infer<typeof installOptionsSchema>;
 
-/** What became of a registration: written, already there, or only shown. */
-export type InstallStatus = 'written' | 'unchanged' | 'shown';
-
-/**
- * What the command reports: the host and scope it was asked for, the file a
- * registration belongs in, what became of it, and the entry itself. The
- * entry block is the text a host file holds for this server and nothing
- * else, which is the snippet to quote wherever registration is documented.
- */
-export type InstallReport = {
-  readonly host: HostName;
-  readonly scope: HostScope;
-  readonly file: string;
-  readonly status: InstallStatus;
-  readonly entry: string;
-};
-
-/** The report as the lines the command puts on standard output. */
-export function renderInstallReport(report: InstallReport): readonly string[] {
-  return [
-    `host: ${report.host}`,
-    `scope: ${report.scope}`,
-    `file: ${report.file}`,
-    `status: ${report.status}`,
-    'entry:',
-    report.entry.trimEnd(),
-  ];
-}
-
 /**
  * `saer mcp install`: the host's registration for `saer mcp`, written once
- * and a no-op on every run after that. What the file already holds is
- * carried over, a file this command cannot parse or cannot read inside the
- * shared read bound is refused with its path rather than replaced, and
- * `--print` writes nothing at all.
- *
- * A target that is a symbolic link is resolved before it is written, so a
- * configuration file linked into a dotfiles repository keeps its link and
- * the write lands on the file it points at. A file this creates is written
- * `0600`, since a host's configuration can hold a sign-in session or a
- * token in an entry's environment, and a file that is already there keeps
- * the mode it carried.
- *
- * A file that is not there is created by a link, which refuses the path
- * another process took while this one was working rather than replacing it.
- * A file that is there is replaced against the handle over the bytes this
- * call read, so a second `saer mcp install` landing inside the same window
- * is reported rather than overwritten. A symbolic link pointing at nothing
- * is refused by the same link: the path reads as free and is not, which is
- * reported as the link it is rather than replaced with a regular file.
+ * and a no-op after that, keeping what the file already holds. A file past
+ * the read bound or one that does not parse is refused rather than replaced,
+ * and `--print` writes nothing. A symbolic link target is resolved first, a
+ * created file is `0600` since host configuration can hold credentials, and
+ * an existing file keeps its mode and is replaced against the revision read.
  */
 export function installMcp(
   options: InstallOptions,
@@ -134,6 +92,16 @@ export function installMcp(
   });
 }
 
+type InstallStatus = 'written' | 'unchanged' | 'shown';
+
+type InstallReport = {
+  readonly host: HostName;
+  readonly scope: HostScope;
+  readonly file: string;
+  readonly status: InstallStatus;
+  readonly entry: string;
+};
+
 type Requested = {
   readonly options: InstallOptions;
   readonly registration: HostRegistration;
@@ -142,6 +110,17 @@ type Requested = {
   readonly entry: HostEntry;
   readonly snippet: string;
 };
+
+function renderInstallReport(report: InstallReport): readonly string[] {
+  return [
+    `host: ${report.host}`,
+    `scope: ${report.scope}`,
+    `file: ${report.file}`,
+    `status: ${report.status}`,
+    'entry:',
+    report.entry.trimEnd(),
+  ];
+}
 
 function reported(
   options: InstallOptions,
