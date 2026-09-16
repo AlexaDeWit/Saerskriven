@@ -11,9 +11,9 @@ import {
   firedBy,
   mod,
   shift,
-  type Chord,
   type ChordEvent,
   type Platform,
+  type ShortcutEntry,
 } from './shortcuts.js';
 
 /** The headings used to group contextual keys in the shortcut reference. */
@@ -27,15 +27,8 @@ export const contextualGroups = [
   'Panels',
 ] as const;
 
-/** One contextual-key heading in the shortcut reference. */
-export type ContextualGroup = (typeof contextualGroups)[number];
-
-type ContextualShortcutEntry = {
-  readonly id: string;
-  readonly label: string;
-  readonly group: ContextualGroup;
-  readonly shortcuts: readonly Chord[];
-  readonly when: string;
+type ContextualShortcutEntry = ShortcutEntry & {
+  readonly group: (typeof contextualGroups)[number];
 };
 
 const arrowKeys = resizeKeys.map(bare);
@@ -235,24 +228,13 @@ const table = {
   },
 } as const satisfies Record<string, ContextualShortcutEntry>;
 
-/** One contextual shortcut and the situation in which it applies. */
-export type ContextualShortcut = ContextualShortcutEntry & {
-  readonly id: ContextualShortcutId;
-};
-
-/** Every contextual shortcut, in declaration order. */
-export const contextualShortcuts: readonly ContextualShortcut[] =
-  Object.values(table);
-
 /** The known identifier of one contextual shortcut. */
 export type ContextualShortcutId = keyof typeof table;
 
-/** The contextual shortcut named by `id`. */
-export function contextualShortcutById(
-  id: ContextualShortcutId,
-): ContextualShortcut {
-  return table[id];
-}
+/** Every contextual shortcut, in declaration order. */
+export const contextualShortcuts: readonly (ContextualShortcutEntry & {
+  readonly id: ContextualShortcutId;
+})[] = Object.values(table);
 
 /** Whether `event` presses the contextual shortcut named by `id`. */
 export function pressesContextualShortcut(

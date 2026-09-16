@@ -4,8 +4,7 @@ declare global {
   }
 }
 
-/** The closed set of keys the studio binds. */
-export const chordKeys = [
+const chordKeys = [
   'a',
   'b',
   'c',
@@ -51,16 +50,17 @@ export const chordKeys = [
   '?',
 ] as const;
 
-/** One key a chord ends on, written as a `KeyboardEvent.key` reports it. */
-export type ChordKey = (typeof chordKeys)[number];
+type ChordKey = (typeof chordKeys)[number];
 
-/** Mod means Command on Apple platforms and Control elsewhere. */
-export const chordModifiers = ['Mod', 'Shift'] as const;
+const chordModifiers = ['Mod', 'Shift'] as const;
 
-/** One modifier held down through a chord. */
-export type ChordModifier = (typeof chordModifiers)[number];
+type ChordModifier = (typeof chordModifiers)[number];
 
-/** One key press a command answers to. */
+/**
+ * One key press a command answers to. `Mod` is Command on Apple platforms and
+ * Control elsewhere. A `character` chord ignores Shift, which the keyboard
+ * layout decides for that character.
+ */
 export type Chord = {
   readonly modifiers: readonly ChordModifier[];
   readonly key: ChordKey;
@@ -71,7 +71,7 @@ export type Chord = {
 /** A key with no command modifier. */
 export const bare = (key: ChordKey): Chord => ({ modifiers: [], key });
 
-/** A character whose Shift state is part of producing the character. */
+/** A character, pressed with or without Shift. */
 export const character = (
   key: ChordKey,
   modifiers: readonly ChordModifier[] = [],
@@ -106,14 +106,27 @@ export const enterChord = bare('Enter');
 /** The unmodified Escape chord shared by commands and contextual actions. */
 export const escapeChord = bare('Escape');
 
+/** A registered or contextual shortcut as the reference lists it. */
+export type ShortcutEntry = {
+  readonly id: string;
+  readonly label: string;
+  readonly shortcuts: readonly Chord[];
+  readonly when: string;
+};
+
+/** A shortcut spelled for a person and for assistive technology. */
+export type ShortcutText = {
+  readonly chord: string;
+  readonly keyShortcuts: string;
+};
+
 /** The platform conventions used for modifier matching and display. */
 export const platforms = ['apple', 'other'] as const;
 
 /** Which convention a chord is written and pressed under. */
 export type Platform = (typeof platforms)[number];
 
-/** What a browser says about the machine it is running on. */
-export type PlatformHints = {
+type PlatformHints = {
   readonly platform?: string;
   readonly userAgent?: string;
 };
@@ -190,13 +203,20 @@ export function spellShortcuts(
     .join(' or ');
 }
 
+/** The chord a person reads and the `aria-keyshortcuts` value for the same shortcuts. */
+export function shortcutText(
+  shortcuts: readonly Chord[],
+  platform: Platform,
+): ShortcutText {
+  return {
+    chord: spellShortcuts(shortcuts, platform),
+    keyShortcuts: keyShortcutsAttribute(shortcuts, platform),
+  };
+}
+
 /** The spoken description of shortcut entries and their contexts. */
 export function describeShortcutEntries(
-  entries: readonly {
-    readonly label: string;
-    readonly shortcuts: readonly Chord[];
-    readonly when: string;
-  }[],
+  entries: readonly ShortcutEntry[],
   platform: Platform,
 ): string {
   return entries

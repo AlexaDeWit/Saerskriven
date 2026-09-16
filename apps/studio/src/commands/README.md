@@ -17,13 +17,7 @@ that key rather than a search. Each entry carries:
   reference;
 - **the shortcuts**, zero or more chords, in the order they are offered;
 - **`inTextFields`**, whether the chord still fires while a person is typing;
-- **the dispatch**, either a `run` against the `CommandSurface` or `pending`
-  naming the issue that will give the command one.
-
-`pending` is a command whose surface has not landed. The chord is registered,
-shown and claimed from the browser now, so the shortcut a person learns does
-not move when the surface arrives, and the entry flips from `pending` to
-`runs` in the issue that builds it. Nothing else about the command changes.
+- **the run**, which it calls with the `CommandSurface`.
 
 `CommandSurface` is what a command reaches that is not a module-level
 function: the file session, which holds the fallback picker only a component
@@ -125,9 +119,8 @@ wherever a person is. Three rules decide whether a press is the studio's:
   refused draft outlives both, the panel holding it per element, so neither
   press is the one that destroys what was typed.
 
-A press that is the studio's is claimed from the browser, whether or not the
-command has a dispatch yet: a chord the studio advertises must not do
-something else instead. A command that says when it is available is the
+A press that is the studio's is claimed from the browser: a chord the studio
+advertises must not do something else instead. A command that says when it is available is the
 studio's only then: the diagram steps claim PageUp and PageDown while the
 model holds more than one diagram, and leave them to scroll whatever has
 focus in a model of one.
@@ -175,8 +168,6 @@ control, as resize keys belong to resize controls. `+` accepts either Shift
 state because keyboard layouts differ in how they produce that character.
 Ctrl or Command keeps its separate zoom binding. Text fields retain `+`.
 
-- Flip a `pending` entry to `runs` when the issue lands its surface. A pending
-  command keeps its chord reserved until then.
 - Render a command through `CommandButton`, or `IconCommandButton` where the
   control is a glyph, or read `commandById` for a surface that draws its own
   control. Never hold a label or a chord beside a control: the menu, the

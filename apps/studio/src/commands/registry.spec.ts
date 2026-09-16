@@ -11,7 +11,7 @@ import {
   currentAnnouncement,
   resetAnnouncements,
 } from '../canvas/announcements.js';
-import { currentTool, resetTools, tools } from '../canvas/tools.js';
+import { currentTool, resetTools } from '../canvas/tools.js';
 import { panelFocusHandler } from '../panel/panel-focus.js';
 import { recordingSurface } from './commands.fixtures.js';
 import {
@@ -39,14 +39,14 @@ describe('the command registry', () => {
         .filter((command) => command.shortcuts.length === 0)
         .map((command) => command.id),
     ).toEqual([
-      'new-diagram',
-      'rename-diagram',
       'import',
       'export-diagram',
       'export-register',
       'export-typst',
       'export-pdf',
       'export-png',
+      'new-diagram',
+      'rename-diagram',
     ]);
   });
 
@@ -99,24 +99,9 @@ describe('the command registry', () => {
     expect(commandById('select-tool').inTextFields).toBe(false);
   });
 
-  it('names the issue for any command still without a dispatch', () => {
-    const waiting = commands.filter(
-      (command) => command.dispatch.kind === 'pending',
-    );
-    expect(
-      waiting.map((command) => [
-        command.id,
-        command.dispatch.kind === 'pending' ? command.dispatch.issue : 0,
-      ]),
-    ).toEqual([]);
-  });
-
   it('binds every toolbox mode to a command of its own', () => {
     const bound = Object.values(toolCommands);
     expect(new Set(bound).size).toBe(bound.length);
-    for (const tool of tools) {
-      expect(commandById(toolCommands[tool]).dispatch.kind).toBe('runs');
-    }
   });
 });
 
