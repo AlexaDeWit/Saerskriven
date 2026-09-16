@@ -217,24 +217,6 @@ export function CanvasFreeEndBody(): ReactElement {
 }
 
 /**
- * The React Flow node type of every element kind a diagram places as a box,
- * plus the anchor a flow's free end rides on.
- */
-export const canvasNodeTypes = {
-  actor: CanvasNodeBody,
-  process: CanvasNodeBody,
-  store: CanvasNodeBody,
-  text: CanvasNodeBody,
-  'boundary-box': CanvasNodeBody,
-  'boundary-curve': CanvasNodeBody,
-  [freeEndNodeKind]: CanvasFreeEndBody,
-} as const satisfies Record<CanvasNodeKind, typeof CanvasNodeBody> &
-  Record<typeof freeEndNodeKind, typeof CanvasFreeEndBody>;
-
-/** The React Flow edge type of a flow. */
-export const canvasEdgeTypes = { flow: CanvasEdgeBody } as const;
-
-/**
  * The laid-out nodes as React Flow's own, each carrying the model's position
  * and extent so React Flow measures nothing. A boundary curve rides as a node
  * sized to the box its waypoints span, so it drags and selects as one thing.

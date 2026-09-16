@@ -188,9 +188,6 @@ const sheetFrom = (
 }
 `;
 
-/** The studio-independent canvas stylesheet with resolved light colours. */
-export const canvasStylesheet = sheetFrom((role) => lightPalette[role]);
-
 /** The canvas stylesheet with colours read from the studio root properties. */
 export const themedCanvasStylesheet = sheetFrom(paletteProperty);
 

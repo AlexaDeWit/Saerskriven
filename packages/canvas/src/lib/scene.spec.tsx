@@ -8,9 +8,18 @@ import {
 import { layoutDiagram } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { DiagramGlyphs } from './scene.js';
-import { canvasStylesheet } from './stylesheet.js';
+import { themedCanvasStylesheet } from './stylesheet.js';
+import { lightPalette, paletteProperty, type Palette } from './tokens.js';
 
 const margin = 24;
+
+const isRole = (role: string): role is keyof Palette => role in lightPalette;
+
+const lightStylesheet = Object.entries(lightPalette).reduce(
+  (sheet, [role, colour]) =>
+    isRole(role) ? sheet.replaceAll(paletteProperty(role), colour) : sheet,
+  themedCanvasStylesheet,
+);
 
 const scenes: readonly {
   readonly name: string;
@@ -61,7 +70,7 @@ const documentOf = (model: Model, diagram: number): string => {
     .join(' ');
   return renderToStaticMarkup(
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={box}>
-      <style>{canvasStylesheet}</style>
+      <style>{lightStylesheet}</style>
       <DiagramGlyphs layout={layout} />
     </svg>,
   );

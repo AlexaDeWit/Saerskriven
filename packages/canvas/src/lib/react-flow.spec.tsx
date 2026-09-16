@@ -6,8 +6,6 @@ import { handleSides } from './handles.js';
 import { canvasClassNames } from './stylesheet.js';
 import type { CanvasNode } from './layout.js';
 import {
-  canvasEdgeTypes,
-  canvasNodeTypes,
   CanvasEdgeBody,
   CanvasFreeEndBody,
   CanvasNodeBody,
@@ -103,23 +101,6 @@ const nodesWith = (moved: string, by: number): CanvasFlowNode[] =>
 const curveNode = everyGlyphLayout.nodes.find(
   (node) => node.kind === 'boundary-curve',
 );
-
-describe('canvasNodeTypes', () => {
-  it('names one node type for every kind the layout produces, and the free-end anchor', () => {
-    expect(new Set(Object.keys(canvasNodeTypes))).toEqual(
-      new Set<string>([
-        ...everyGlyphLayout.nodes.map((node) => node.kind),
-        freeEndNodeKind,
-      ]),
-    );
-  });
-});
-
-describe('canvasEdgeTypes', () => {
-  it('names one edge type, for a flow', () => {
-    expect(Object.keys(canvasEdgeTypes)).toEqual(['flow']);
-  });
-});
 
 describe('CanvasNodeBody', () => {
   it('sizes its surface from the model and measures nothing', () => {

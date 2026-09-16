@@ -17,9 +17,17 @@ import {
 import { handlePositions } from './handles.js';
 import { reanchoredFlow } from './layout-move.js';
 import { layoutOf, twoBoxDiagram } from './layout.fixtures.js';
-import type { CanvasNode } from './layout.js';
-import { canvasNodeTypes, freeEndNodeKind } from './react-flow.js';
+import type { CanvasNode, CanvasNodeKind } from './layout.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
+
+const boxKinds = {
+  actor: true,
+  process: true,
+  store: true,
+  text: true,
+  'boundary-box': true,
+  'boundary-curve': true,
+} as const satisfies Record<CanvasNodeKind, true>;
 
 const curveLayout = (waypoints: readonly Point[]) =>
   layoutOf(modelWith({ elements: [curveBoundary('el-curve', waypoints)] }));
@@ -30,9 +38,7 @@ const curveNode = (waypoints: readonly Point[]): CanvasNode =>
 describe('layoutDiagram', () => {
   it('lays out a node of every kind the canvas draws as a box', () => {
     expect(new Set(everyGlyphLayout.nodes.map((node) => node.kind))).toEqual(
-      new Set<string>(
-        Object.keys(canvasNodeTypes).filter((kind) => kind !== freeEndNodeKind),
-      ),
+      new Set<string>(Object.keys(boxKinds)),
     );
     expect(everyGlyphLayout.edges).toHaveLength(3);
   });
