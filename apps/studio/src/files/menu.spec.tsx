@@ -31,6 +31,7 @@ import { SaveOutcome } from './bridge.js';
 import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
+  brokenThreatDragonText,
   chosenFile,
   edit,
   pngSignature,
@@ -623,10 +624,7 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(
       specBridge({
-        offers: chosenFile(
-          'broken.json',
-          '{"version":"2.0","summary":{"title":"Broken"},"detail":{"diagrams":[{"id":0}]}}',
-        ),
+        offers: chosenFile('broken.json', brokenThreatDragonText),
       }),
     );
 

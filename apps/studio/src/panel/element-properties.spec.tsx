@@ -1,6 +1,7 @@
 import {
   elementId,
   parsedFixture,
+  softHyphen,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
 import { act, render, screen, within, waitFor } from '@testing-library/react';
@@ -113,7 +114,7 @@ describe('element security controls', () => {
     await chooseFrom('Privilege level recording', 'Recorded');
     await user.type(
       screen.getByRole('textbox', { name: 'Privilege level' }),
-      'bad\u00ad{Enter}',
+      `bad${softHyphen}{Enter}`,
     );
     expect(
       screen
@@ -134,7 +135,7 @@ describe('element security controls', () => {
       screen
         .getByRole('textbox', { name: 'Privilege level' })
         .getAttribute('value'),
-    ).toBe('bad\u00ad');
+    ).toBe(`bad${softHyphen}`);
     await user.clear(screen.getByRole('textbox', { name: 'Privilege level' }));
     await user.type(
       screen.getByRole('textbox', { name: 'Privilege level' }),
@@ -353,7 +354,7 @@ describe('element security controls', () => {
     await chooseFrom('Privilege level recording', 'Recorded');
     await user.type(
       screen.getByRole('textbox', { name: 'Privilege level' }),
-      'bad\u00ad',
+      `bad${softHyphen}`,
     );
     await user.click(
       screen.getByRole('button', { name: 'Security properties' }),
@@ -369,7 +370,7 @@ describe('element security controls', () => {
       screen
         .getByRole('textbox', { name: 'Privilege level' })
         .getAttribute('value'),
-    ).toBe('bad\u00ad');
+    ).toBe(`bad${softHyphen}`);
     expect(
       screen
         .getByRole('textbox', { name: 'Privilege level' })

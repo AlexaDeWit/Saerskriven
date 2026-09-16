@@ -324,6 +324,10 @@ describe('threat operations', () => {
       input: registerModel,
       run: (model) => attachThreat(model, floodCheckout, ledger),
     },
+    nextThreatNumber: {
+      input: registerModel,
+      run: nextThreatNumber,
+    },
     detachThreat: {
       input: registerModel,
       run: (model) => detachThreat(model, spoofShopper, shopper),

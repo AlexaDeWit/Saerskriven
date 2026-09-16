@@ -23,11 +23,6 @@ export type SessionOpener = {
   ) => Promise<McpSession>;
 };
 
-/**
- * A client connected to `saer mcp` over a spawned process's stdio. `era`
- * decides the opening: `legacy` is the 2025 `initialize` handshake and
- * `modern` probes with `server/discover` first.
- */
 async function stdioSession(
   runner: Runner,
   args: readonly string[],
@@ -42,7 +37,6 @@ async function stdioSession(
   return connectedClient(transport, era, () => Promise.resolve());
 }
 
-/** A spawned `saer mcp --http`, once it has announced its address. */
 type HttpProcess = {
   readonly url: URL;
   readonly tokenFile: string;
@@ -88,10 +82,6 @@ export async function httpProcess(
   };
 }
 
-/**
- * A client connected to `saer mcp --http` over Streamable HTTP, carrying the
- * token read from the file the server wrote.
- */
 async function httpSession(
   runner: Runner,
   args: readonly string[],
@@ -107,7 +97,12 @@ async function httpSession(
   });
 }
 
-/** Both transports a release serves the protocol over. */
+/**
+ * Both transports a release serves the protocol over: a spawned process's
+ * stdio, and Streamable HTTP carrying the token the server wrote. `era`
+ * decides the opening: `legacy` is the 2025 `initialize` handshake and
+ * `modern` probes with `server/discover` first.
+ */
 export const sessionOpeners: readonly SessionOpener[] = [
   { name: 'stdio', open: stdioSession },
   { name: 'Streamable HTTP', open: httpSession },

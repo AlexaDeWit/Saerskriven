@@ -200,6 +200,10 @@ describe('diagram operations', () => {
       input: validModel,
       run: (model) => renameDiagram(model, mainDiagram, 'Retitled'),
     },
+    'removeDiagram of the diagram the model holds': {
+      input: validModel,
+      run: (model) => removeDiagram(model, mainDiagram),
+    },
     removeDiagram: {
       input: modelOf(
         addDiagram(validModel, {

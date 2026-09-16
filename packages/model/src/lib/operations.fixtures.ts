@@ -21,27 +21,28 @@ export const errorOf = (
 ): OperationFailure | undefined =>
   Either.isLeft(result) ? result.left : undefined;
 
-/** One operation call the purity and re-parse contract runs: its input model and the call over it. */
-export interface OperationCase {
+type OperationCase = {
   readonly input: Model;
-  readonly run: (input: Model) => OperationOutcome;
-}
+  readonly run: (input: Model) => unknown;
+};
 
 /**
- * Registers one test per named case. Each runs its call inside the test, then
- * asserts that the input is unchanged and that `parseModel` accepts the model
- * returned.
+ * Registers one test per named case. Each runs its call inside the test and
+ * asserts that the input is unchanged, whatever the call returned. Where it
+ * returned a success holding a model, `parseModel` must accept that model.
  */
 export function operationContract(
   cases: Readonly<Record<string, OperationCase>>,
 ): void {
   it.each(Object.entries(cases))(
-    '%s leaves its input untouched and returns a model parseModel accepts',
+    '%s leaves its input untouched, and any model it returns parses',
     (_, { input, run }) => {
       const pristine = structuredClone(input);
-      const output = modelOf(run(input));
+      const result = run(input);
       expect(input).toEqual(pristine);
-      expect(Either.isRight(parseModel(output))).toBe(true);
+      if (Either.isEither(result) && Either.isRight(result)) {
+        expect(Either.isRight(parseModel(result.right))).toBe(true);
+      }
     },
   );
 }

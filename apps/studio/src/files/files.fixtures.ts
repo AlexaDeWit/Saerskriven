@@ -71,6 +71,16 @@ export const unreadableFile = (name: string, size: number): ChosenFile => ({
   text: () => Promise.reject(new Error('The file was moved.')),
 });
 
+/**
+ * A Threat Dragon document whose one diagram lacks what the wire schema
+ * requires, so the codec claims it and refuses it with a path.
+ */
+export const brokenThreatDragonText = JSON.stringify({
+  version: '2.0',
+  summary: { title: 'Broken' },
+  detail: { diagrams: [{ id: 0 }] },
+});
+
 /** The store's sample model as the native format writes it. */
 export const sampleNativeText = saerskrivenYamlCodec.write(sampleModel).output;
 

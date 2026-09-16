@@ -1,7 +1,9 @@
-import { typstFontFiles } from '@saerskriven/render/build-assets';
+import {
+  resvgWasmFile as builtResvgWasmFile,
+  typstFontFiles,
+} from '@saerskriven/render/build-assets';
 import { drawingFace } from '@saerskriven/render/png';
 import { Either } from 'effect';
-import { resvgWasmFile as builtResvgWasmFile } from '@saerskriven/render/build-assets';
 import { fakeAssets, scratchDirectory } from './cli.fixtures.js';
 import { pngAssets, resvgWasmFile } from './png.js';
 

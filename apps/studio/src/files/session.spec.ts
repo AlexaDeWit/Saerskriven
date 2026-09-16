@@ -25,7 +25,7 @@ import {
   savedBy,
   writeThrough,
 } from './session.js';
-import { sampleNativeText } from './files.fixtures.js';
+import { brokenThreatDragonText, sampleNativeText } from './files.fixtures.js';
 
 type OutcomesByTag<Outcome extends { readonly _tag: string }> = {
   readonly [Tag in Outcome['_tag']]: Extract<Outcome, { readonly _tag: Tag }>;
@@ -111,14 +111,8 @@ describe('openedBy', () => {
   });
 
   it('reports where a claimed file broke, with the path into it', () => {
-    const broken = JSON.stringify({
-      version: '2.0',
-      summary: { title: 'Broken' },
-      detail: { diagrams: [{ id: 0 }] },
-    });
-
     const action = openedBy(
-      OpenOutcome.Chosen({ name: 'broken.json', text: broken }),
+      OpenOutcome.Chosen({ name: 'broken.json', text: brokenThreatDragonText }),
     );
 
     expect(action).toMatchObject({

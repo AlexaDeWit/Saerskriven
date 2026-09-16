@@ -1,4 +1,9 @@
-import { severitySchema, type Severity, type Threat } from '@saerskriven/model';
+import {
+  severitySchema,
+  type Severity,
+  type Threat,
+  type ThreatStatus,
+} from '@saerskriven/model';
 import {
   assumptionOf,
   boxAt,
@@ -24,6 +29,13 @@ import { badgeRadius, canvasType, strokeWidths } from './tokens.js';
 import { textExtent } from './typography.js';
 
 const badges = badgesByElement(everyGlyphModel);
+
+const threat = (
+  number: number,
+  severity: Severity,
+  status: ThreatStatus,
+  elements: string[],
+) => threatOf({ number, severity, status, elements });
 
 const counted = (
   count: number,
@@ -110,24 +122,9 @@ describe('badgesByElement', () => {
   it('colours the badge by the worst severity assessed among the open threats', () => {
     expect(
       badgeOfOne([
-        threatOf({
-          number: 1,
-          severity: 'low',
-          status: 'open',
-          elements: ['el-one'],
-        }),
-        threatOf({
-          number: 2,
-          severity: 'critical',
-          status: 'open',
-          elements: ['el-one'],
-        }),
-        threatOf({
-          number: 3,
-          severity: 'medium',
-          status: 'open',
-          elements: ['el-one'],
-        }),
+        threat(1, 'low', 'open', ['el-one']),
+        threat(2, 'critical', 'open', ['el-one']),
+        threat(3, 'medium', 'open', ['el-one']),
       ]),
     ).toEqual(counted(3, 'critical', 0));
   });
@@ -135,24 +132,9 @@ describe('badgesByElement', () => {
   it('counts the undecided threats in a second badge beside the assessed', () => {
     expect(
       badgeOfOne([
-        threatOf({
-          number: 1,
-          severity: 'high',
-          status: 'open',
-          elements: ['el-one'],
-        }),
-        threatOf({
-          number: 2,
-          severity: 'undecided',
-          status: 'open',
-          elements: ['el-one'],
-        }),
-        threatOf({
-          number: 3,
-          severity: 'undecided',
-          status: 'open',
-          elements: ['el-one'],
-        }),
+        threat(1, 'high', 'open', ['el-one']),
+        threat(2, 'undecided', 'open', ['el-one']),
+        threat(3, 'undecided', 'open', ['el-one']),
       ]),
     ).toEqual(counted(3, 'high', 2));
   });
@@ -160,18 +142,8 @@ describe('badgesByElement', () => {
   it('shows the neutral badge alone where every open threat is undecided', () => {
     expect(
       badgeOfOne([
-        threatOf({
-          number: 1,
-          severity: 'undecided',
-          status: 'open',
-          elements: ['el-one'],
-        }),
-        threatOf({
-          number: 2,
-          severity: 'undecided',
-          status: 'open',
-          elements: ['el-one'],
-        }),
+        threat(1, 'undecided', 'open', ['el-one']),
+        threat(2, 'undecided', 'open', ['el-one']),
       ]),
     ).toEqual(counted(2, 'undecided', 0));
   });
@@ -179,51 +151,22 @@ describe('badgesByElement', () => {
   it('counts a threat in any status but open not at all', () => {
     expect(
       badgeOfOne([
-        threatOf({
-          number: 1,
-          severity: 'critical',
-          status: 'transferred',
-          elements: ['el-one'],
-        }),
-        threatOf({
-          number: 2,
-          severity: 'high',
-          status: 'accepted-risk',
-          elements: ['el-one'],
-        }),
-        threatOf({
-          number: 3,
-          severity: 'medium',
-          status: 'open',
-          elements: ['el-one'],
-        }),
+        threat(1, 'critical', 'transferred', ['el-one']),
+        threat(2, 'high', 'accepted-risk', ['el-one']),
+        threat(3, 'medium', 'open', ['el-one']),
       ]),
     ).toEqual(counted(1, 'medium', 0));
   });
 
   it('gives an element with no open threat no badge at all', () => {
     expect(
-      badgeOfOne([
-        threatOf({
-          number: 1,
-          severity: 'critical',
-          status: 'accepted-risk',
-          elements: ['el-one'],
-        }),
-      ]),
+      badgeOfOne([threat(1, 'critical', 'accepted-risk', ['el-one'])]),
     ).toBeUndefined();
   });
 
   it('counts a threat that names one element twice once', () => {
     expect(
-      badgeOfOne([
-        threatOf({
-          number: 1,
-          severity: 'low',
-          status: 'open',
-          elements: ['el-one', 'el-one'],
-        }),
-      ]),
+      badgeOfOne([threat(1, 'low', 'open', ['el-one', 'el-one'])]),
     ).toEqual(counted(1, 'low', 0));
   });
 
@@ -235,69 +178,35 @@ describe('badgesByElement', () => {
 describe('the flag on a badge', () => {
   it('flags the counted badge of an element an open flagged threat names', () => {
     expect(
-      badgeOfOne(
-        [
-          threatOf({
-            number: 1,
-            severity: 'high',
-            status: 'open',
-            elements: ['el-one'],
+      badgeOfOne([threat(1, 'high', 'open', ['el-one'])], {
+        assumptions: [
+          assumptionOf({
+            id: 'as-invalidated',
+            status: 'invalidated',
+            threats: ['threat-1'],
           }),
         ],
-        {
-          assumptions: [
-            assumptionOf({
-              id: 'as-invalidated',
-              status: 'invalidated',
-              threats: ['threat-1'],
-            }),
-          ],
-        },
-      ),
+      }),
     ).toEqual(counted(1, 'high', 0, true));
   });
 
   it('leaves the same element unflagged where no threat on it is flagged', () => {
-    expect(
-      badgeOfOne([
-        threatOf({
-          number: 1,
-          severity: 'high',
-          status: 'open',
-          elements: ['el-one'],
-        }),
-      ]),
-    ).toEqual(counted(1, 'high', 0));
+    expect(badgeOfOne([threat(1, 'high', 'open', ['el-one'])])).toEqual(
+      counted(1, 'high', 0),
+    );
   });
 
   it('flags the count of open threats for a flagged threat in another status', () => {
     expect(
       badgeOfOne([
-        threatOf({
-          number: 1,
-          severity: 'high',
-          status: 'open',
-          elements: ['el-one'],
-        }),
-        threatOf({
-          number: 2,
-          severity: 'low',
-          status: 'mitigated',
-          elements: ['el-one'],
-        }),
+        threat(1, 'high', 'open', ['el-one']),
+        threat(2, 'low', 'mitigated', ['el-one']),
       ]),
     ).toEqual(counted(1, 'high', 0, true));
   });
 
   it('gives a mitigated threat with no implemented work a flag-only badge', () => {
-    const mitigated = [
-      threatOf({
-        number: 1,
-        severity: 'high',
-        status: 'mitigated',
-        elements: ['el-one'],
-      }),
-    ];
+    const mitigated = [threat(1, 'high', 'mitigated', ['el-one'])];
     expect(
       badgeOfOne(mitigated, {
         mitigations: [
@@ -333,18 +242,8 @@ describe('the flag on a badge', () => {
       expect(
         badgeOfOne(
           [
-            threatOf({
-              number: 1,
-              severity: 'high',
-              status: 'open',
-              elements: ['el-one'],
-            }),
-            threatOf({
-              number: 2,
-              severity: 'low',
-              status: 'accepted-risk',
-              elements: ['el-one'],
-            }),
+            threat(1, 'high', 'open', ['el-one']),
+            threat(2, 'low', 'accepted-risk', ['el-one']),
           ],
           {
             assumptions: [
@@ -362,26 +261,16 @@ describe('the flag on a badge', () => {
 
   it('raises no flag from an invalidated assumption that links no threat on the element', () => {
     expect(
-      badgeOfOne(
-        [
-          threatOf({
-            number: 1,
-            severity: 'high',
-            status: 'open',
-            elements: ['el-one'],
+      badgeOfOne([threat(1, 'high', 'open', ['el-one'])], {
+        assumptions: [
+          assumptionOf({
+            id: 'as-invalidated',
+            status: 'invalidated',
+            threats: [],
+            appliesToModel: true,
           }),
         ],
-        {
-          assumptions: [
-            assumptionOf({
-              id: 'as-invalidated',
-              status: 'invalidated',
-              threats: [],
-              appliesToModel: true,
-            }),
-          ],
-        },
-      ),
+      }),
     ).toEqual(counted(1, 'high', 0));
   });
 

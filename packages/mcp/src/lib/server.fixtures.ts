@@ -6,13 +6,6 @@ import type { RasterizerAssets } from './render-diagram.js';
 import { createSaerskrivenServer } from './server.js';
 import { openWorkspace, renderWorkspaceFailure } from './workspace.js';
 
-/**
- * What a session is over: its root, its default model, the era it opens in,
- * and where a render finds its rasterizer. The rasterizer defaults to
- * {@link noRasterizer}, since the module is built from Rust and no dev shell
- * exports it, so a session that does not mean to draw gets the refusal rather
- * than a skipped suite.
- */
 type SessionRequest = {
   readonly root: string;
   readonly file?: string;
@@ -30,7 +23,10 @@ export const noRasterizer: RasterizerAssets = () =>
 /**
  * A session over a linked in-memory pair against a server confined to
  * `root`. The server is served through `serveStdio` so it answers
- * `server/discover`, which a bare `McpServer.connect` does not.
+ * `server/discover`, which a bare `McpServer.connect` does not. The
+ * rasterizer defaults to {@link noRasterizer}, since the module is built from
+ * Rust and no dev shell exports it, so a session that does not mean to draw
+ * gets the refusal rather than a skipped suite.
  */
 export async function session(request: SessionRequest): Promise<McpSession> {
   const workspace = openWorkspace({ root: request.root, file: request.file });

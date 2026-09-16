@@ -455,6 +455,10 @@ describe('element operations', () => {
       input: validModel,
       run: (model) => addElement(model, mainDiagram, writeFlow),
     },
+    'addElement of a node': {
+      input: validModel,
+      run: (model) => addElement(model, mainDiagram, cache),
+    },
     removeElement: {
       input: validModel,
       run: (model) => removeElement(model, elementId('element-customer')),
@@ -464,12 +468,25 @@ describe('element operations', () => {
       run: (model) =>
         moveElement(model, elementId('element-order-flow'), { x: 10, y: 5 }),
     },
+    'moveElement of a box': {
+      input: validModel,
+      run: (model) =>
+        moveElement(model, elementId('element-api'), { x: 1, y: 1 }),
+    },
     resizeElement: {
       input: validModel,
       run: (model) =>
         resizeElement(model, elementId('element-api'), {
           width: 200,
           height: 100,
+        }),
+    },
+    'resizeElement to a 5 by 5 box': {
+      input: validModel,
+      run: (model) =>
+        resizeElement(model, elementId('element-api'), {
+          width: 5,
+          height: 5,
         }),
     },
     renameElement: {
