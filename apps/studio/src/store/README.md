@@ -14,18 +14,18 @@ host provides.
 
 ## Modules
 
-| Module                 | What it holds                                                                      |
-| ---------------------- | ---------------------------------------------------------------------------------- |
-| `state.ts`             | `State`, its enums, the initial state and the placeholder model                    |
-| `actions.ts`           | The `Action` union                                                                 |
-| `reducer.ts`           | `reduce`, the one pure function                                                    |
-| `store.ts`             | The store, `dispatch`, `useModelStore` and the canvas-or-panel change subscription |
-| `selectors.ts`         | What views derive from the state                                                   |
-| `selection.ts`         | `sameSelection`, which keeps an unchanged selection's array identity               |
-| `recovery-storage.ts`  | The recovery snapshot                                                              |
-| `sync.ts`              | The tab sync channel                                                               |
-| `development-model.ts` | The model a development session injects, read in development builds only           |
-| `../reason.ts`         | A thrown or rejected value as text, shared with the file bridge                    |
+| Module                 | What it holds                                                                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `state.ts`             | `State`, its enums, the initial state and the placeholder model                                                                           |
+| `actions.ts`           | The `Action` union                                                                                                                        |
+| `reducer.ts`           | `reduce`, the one pure function                                                                                                           |
+| `store.ts`             | The store, `dispatch`, `useModelStore` and the canvas-or-panel change subscription                                                        |
+| `selectors.ts`         | What views derive from the state                                                                                                          |
+| `selection.ts`         | `sameSelection`, the comparison the reducer uses to keep an unchanged selection's array identity                                          |
+| `recovery-storage.ts`  | The recovery snapshot                                                                                                                     |
+| `sync.ts`              | The tab sync channel                                                                                                                      |
+| `development-model.ts` | The model a development session injects, read in development builds only                                                                  |
+| `../reason.ts`         | A thrown or rejected value as text, shared by the store, the file modules and the error boundary, so the store imports nothing from files |
 
 ## The shape
 

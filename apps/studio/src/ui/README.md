@@ -10,16 +10,16 @@ stylesheet.
 
 ## Modules
 
-| Module                                                         | What it holds                                                                |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `enum-field.tsx`                                               | `EnumField`, the listbox control                                             |
-| `severity-field.tsx`, `status-field.tsx`, `category-field.tsx` | `EnumField` bound to a model schema                                          |
-| `text-field.tsx`, `grow-to-content.ts`                         | `TextField` and `ProseField` with their draft state, and textarea growth     |
-| `live-region.tsx`, `failure-notice.tsx`, `detail-lines.tsx`    | Announcements, the refusal notice, and notice lines folded into a disclosure |
-| `error-boundary.tsx`                                           | The last stop for a throw                                                    |
-| `visually-hidden.tsx`                                          | Text for assistive technology that is not drawn                              |
-| `external-store.ts`                                            | The subscription helper every module-level store in the studio shares        |
-| `close-focus.ts`, `measure.ts`                                 | Keeping a closed dropdown from taking focus back, and measuring an element   |
+| Module                                                         | What it holds                                                                                           |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `enum-field.tsx`                                               | `EnumField`, the listbox control                                                                        |
+| `severity-field.tsx`, `status-field.tsx`, `category-field.tsx` | `EnumField` bound to a model schema                                                                     |
+| `text-field.tsx`, `grow-to-content.ts`                         | `TextField` and `ProseField` with their draft state, and textarea growth                                |
+| `live-region.tsx`, `failure-notice.tsx`, `detail-lines.tsx`    | Announcements, the refusal notice, and notice lines as a list, folded under a summary when one is given |
+| `error-boundary.tsx`                                           | The last stop for a throw                                                                               |
+| `visually-hidden.tsx`                                          | Text for assistive technology that is not drawn                                                         |
+| `external-store.ts`                                            | The subscription helper every module-level store in the studio shares                                   |
+| `close-focus.ts`, `measure.ts`                                 | Keeping a closed dropdown from taking focus back, and measuring an element                              |
 
 ## Tokens
 

@@ -115,7 +115,8 @@ that stops being representable fails a named assertion or the type-check. The
 suite holds `ecluseFixture` against
 [`test-data/ecluse.model.json`](../../test-data/ecluse.model.json) as a file
 snapshot, which `packages/formats` compares its own read of
-[`test-data/ecluse.json`](../../test-data/ecluse.json) against ([test-data](../../test-data/README.md)).
+[`test-data/ecluse.json`](../../test-data/ecluse.json) against
+([test-data](../../test-data/README.md)).
 
 `@saerskriven/model/fixtures` is the one home for the fixture helpers every
 suite in the workspace shares: the id parsers (`elementId`, `diagramId`,

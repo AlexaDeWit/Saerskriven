@@ -16,8 +16,7 @@ Every status is true to the tree:
 - A threat is **mitigated** where a mechanism is on `main` and a mitigation
   record names that mechanism.
 - A threat is **open** where the surface is designed and its issue is named
-  but nothing is built, and it carries an undecided severity where there is
-  nothing built to assess.
+  but nothing is built.
 - A threat is **partly held** where a mechanism is on `main` and does not cover
   the whole surface. It stays open, and its mitigation record names the
   mechanism and what the mechanism leaves behind rather than an issue.

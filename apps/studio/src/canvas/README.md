@@ -95,8 +95,8 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
 - **The announcement speaks only where the next focus does not show the
   result.** An action whose result the focused control or React Flow's own
   message already reports, such as a placement, a rename or a keyboard move,
-  announces nothing. A name a person wrote is quoted
-  through `quoted` in `announcements.ts`, on one line and cut past
+  announces nothing. A name a person wrote is quoted through `quoted` in
+  `announcements.ts`, on one line and cut past
   `nameQuoteLength` (40 grapheme clusters) or `recordQuoteLength` (24). While a
   pane or a selection editor is open the announcement stops at two lines on
   screen, and the accessible names stay whole.

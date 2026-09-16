@@ -131,11 +131,13 @@ connection handles, then drag from a handle to a handle on another element.
 Releasing anywhere else draws nothing. A flow cannot start and end on one
 element, and cannot attach to a trust boundary, a Note or another flow.
 
-From the keyboard, select an element and run Start a flow: a list of
-targets opens under the card. The arrow keys and typing choose, Enter draws the
+From the keyboard, select an element and run Start a flow: a list of targets
+opens under the card. The arrow keys and typing choose, Enter draws the
 flow, and Escape cancels.
 
-Select one flow to edit its route:
+Select one flow to edit its route. While one flow is selected, the **Flow
+route** toolbar at the bottom centre of the canvas holds Add bend and says what
+the current gesture expects.
 
 - Drag any segment to make a bend, and drag a bend to move it. Click a bend for
   Remove bend or Move bend, which takes a destination click.
@@ -150,10 +152,12 @@ Select one flow to edit its route:
   and Delete or Backspace returns it to following the route. A pinned side is
   saved, and a Threat Dragon file carries it as a port.
 
-The buttons beside a selected flow, **Change flow source** and **Change flow
-target**, choose another actor, process or store for one end, with a side to
-pin it to or Automatic. **Toggle bidirectional flow** draws an arrowhead at both
-ends or one again. The flow keeps its source and target either way.
+While one flow is selected with the Select tool and no name field is open, the
+**Reconnect flow** card pinned at the top left, under the chrome card, holds
+**Change flow source**, **Change flow target** and **Toggle bidirectional
+flow**. The first two choose another actor, process or store for one end, with
+a side to pin it to or Automatic. The third draws an arrowhead at both ends or
+one again, and the flow keeps its source and target either way.
 
 ## Names and Note text
 
@@ -287,48 +291,49 @@ between card headers, and several cards can stay open. Escape closes it while
 focus is inside.
 
 Every edit has a keyboard path. Below, Mod is Command on macOS and Control
-elsewhere. A text field keeps the keys typed into it, so these chords apply
-outside text fields and open menus, except Save, Save as, Undo and Redo, which
-work from inside one.
+elsewhere. These chords apply outside text fields and open menus. Save, Save
+as, Undo and Redo also work inside a text field, and no chord works while a
+menu or listbox is open.
 
-| Command                                | Keys                                         | Also on               |
-| -------------------------------------- | -------------------------------------------- | --------------------- |
-| Open, Save, Save as                    | Mod+O, Mod+S, Mod+Shift+S                    | Menu                  |
-| New model                              | Mod+Shift+X                                  | Menu                  |
-| Undo                                   | Mod+Z                                        | Menu                  |
-| Redo                                   | Mod+Shift+Z, or Control+Y off macOS          | Menu                  |
-| Copy, Cut, Paste, Duplicate            | Mod+C, Mod+X, Mod+V, Mod+D                   | Keyboard only         |
-| Select all                             | Mod+A                                        | Keyboard only         |
-| Delete selection                       | Delete or Backspace                          | Keyboard only         |
-| Rename selection                       | F2, or Enter with one selected               | Menu                  |
-| Position and size                      | Mod+Shift+P                                  | Keyboard only         |
-| Change flow source, Change flow target | Mod+Shift+1, Mod+Shift+2                     | Buttons beside a flow |
-| Toggle bidirectional flow              | Mod+Shift+3                                  | Buttons beside a flow |
-| Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange         |
-| Align centres, Align middles           | Mod+Shift+H, Mod+Shift+V                     | Menu, Arrange         |
-| Distribute horizontally, vertically    | Mod+Shift+D, Mod+Shift+B                     | Menu, Arrange         |
-| Model properties                       | M                                            | Menu                  |
-| Focus threats                          | T                                            | Keyboard only         |
-| Start a flow                           | F                                            | Keyboard only         |
-| Add bend                               | `+`                                          | Button beside a flow  |
-| Snap to grid                           | Mod+Shift+G                                  | Menu                  |
-| Fit selection                          | Mod+Shift+0                                  | Menu, zoom controls   |
-| Fit to view                            | Mod+0                                        | Zoom controls         |
-| Zoom in, Zoom out                      | Mod+= or Mod++, Mod+-                        | Zoom controls         |
-| Reset zoom to 100%                     | Mod+1                                        | Zoom controls         |
-| Next diagram, Previous diagram         | PageDown, PageUp, with more than one diagram | Keyboard only         |
-| Select                                 | V, 1 or Escape                               | Toolbox               |
-| Actor, Process, Store                  | A or 2, P or 3, S or 4                       | Toolbox               |
-| Trust boundary, Trust boundary curve   | B or 5, C or 6                               | Toolbox               |
-| Note                                   | N or 7                                       | Toolbox               |
-| Hand                                   | H, or hold Space                             | Toolbox               |
-| Keyboard shortcuts                     | ? or F1                                      | Menu                  |
+| Command                                | Keys                                         | Also on             |
+| -------------------------------------- | -------------------------------------------- | ------------------- |
+| Open, Save, Save as                    | Mod+O, Mod+S, Mod+Shift+S                    | Menu                |
+| New model                              | Mod+Shift+X                                  | Menu                |
+| Undo                                   | Mod+Z                                        | Menu                |
+| Redo                                   | Mod+Shift+Z, or Control+Y off macOS          | Menu                |
+| Copy, Cut, Paste, Duplicate            | Mod+C, Mod+X, Mod+V, Mod+D                   | Keyboard only       |
+| Select all                             | Mod+A                                        | Keyboard only       |
+| Delete selection                       | Delete or Backspace                          | Keyboard only       |
+| Rename selection                       | F2, or Enter with one selected               | Menu                |
+| Position and size                      | Mod+Shift+P                                  | Keyboard only       |
+| Change flow source, Change flow target | Mod+Shift+1, Mod+Shift+2                     | Reconnect flow card |
+| Toggle bidirectional flow              | Mod+Shift+3                                  | Reconnect flow card |
+| Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange       |
+| Align centres, Align middles           | Mod+Shift+H, Mod+Shift+V                     | Menu, Arrange       |
+| Distribute horizontally, vertically    | Mod+Shift+D, Mod+Shift+B                     | Menu, Arrange       |
+| Model properties                       | M                                            | Menu                |
+| Focus threats                          | T                                            | Keyboard only       |
+| Start a flow                           | F                                            | Keyboard only       |
+| Add bend                               | `+`                                          | Flow route toolbar  |
+| Snap to grid                           | Mod+Shift+G                                  | Menu                |
+| Fit selection                          | Mod+Shift+0                                  | Menu, zoom controls |
+| Fit to view                            | Mod+0                                        | Zoom controls       |
+| Zoom in, Zoom out                      | Mod+= or Mod++, Mod+-                        | Zoom controls       |
+| Reset zoom to 100%                     | Mod+1                                        | Zoom controls       |
+| Next diagram, Previous diagram         | PageDown, PageUp, with more than one diagram | Keyboard only       |
+| Select                                 | V, 1 or Escape                               | Toolbox             |
+| Actor, Process, Store                  | A or 2, P or 3, S or 4                       | Toolbox             |
+| Trust boundary, Trust boundary curve   | B or 5, C or 6                               | Toolbox             |
+| Note                                   | N or 7                                       | Toolbox             |
+| Hand                                   | H, or hold Space                             | Toolbox             |
+| Keyboard shortcuts                     | ? or F1                                      | Menu                |
 
-Tab reaches the card, then the diagram's flows and elements, every flow before
-every element, then the panel. Enter on a focused element selects it, and a
-second Enter edits its name.
+Enter on a focused element selects it, and a second Enter edits its name.
 
 ## Accessibility
+
+Tab reaches the card, then the diagram's flows and elements, every flow before
+every element, then the panel.
 
 Every element and flow is a tab stop whose accessible name comes from the
 model: its name, its kind, what its badge says, and each flag its threats
@@ -338,8 +343,8 @@ heavier line, and focus is a separate ring, so neither depends on colour and
 both survive forced colours. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
 
-The Position and size and flow end editors
-return focus to the selected element when they close. Deleting the focused
+The Position and size and flow end editors return focus to the selected
+element when they close. Deleting the focused
 element from the canvas moves focus to the canvas.
 
 React Flow gives the canvas `role="application"`, which turns off a screen

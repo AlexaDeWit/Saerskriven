@@ -71,7 +71,7 @@ export default defineConfig({
     // collapsed threat with its counts and both flag marks must fit the panel
     // there. So does the badge clearance spec, because the gap it holds between
     // a corner handle and a threat badge is measured on screen, and has to hold
-    // on the phone preset as well as at desktop width (#458). The preset
+    // on the phone preset as well as at desktop width (#447). The preset
     // carries the viewport, the touch flags and the device pixel ratio
     // together, so a change of preset changes all three at once.
     // The set is small on purpose: the rest of the suite is about behaviour
