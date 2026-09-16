@@ -1,22 +1,12 @@
-import {
-  coverageResultSchema,
-  dataNotInstructions,
-  getThreatResultSchema,
-  registerResultSchema,
-  renderDiagramResultSchema,
-  renderWriteFailure,
-  revisionOf,
-  searchElementsResultSchema,
-  searchThreatsResultSchema,
-  validateResultSchema,
-  WriteFailure,
-  writeReportSchema,
-} from '@saerskriven/mcp';
+import { renderWriteFailure, revisionOf, WriteFailure } from '@saerskriven/mcp';
 import {
   blobsOf,
+  coverageResultSchema,
+  dataNotInstructions,
   editOf,
   eras,
   type Era,
+  getThreatResultSchema,
   imagesOf,
   mediaTypesOf,
   promptProseOf,
@@ -24,11 +14,17 @@ import {
   readingOf,
   registeredPrompts,
   registeredTools,
+  registerResultSchema,
+  renderDiagramResultSchema,
   resourceLinksOf,
   resourceProseOf,
+  searchElementsResultSchema,
+  searchThreatsResultSchema,
   structuredOf,
   textOf,
   type McpSession,
+  validateResultSchema,
+  writeReportSchema,
 } from '@saerskriven/mcp/fixtures';
 import { testDataPath } from '@saerskriven/model/fixtures';
 import {
