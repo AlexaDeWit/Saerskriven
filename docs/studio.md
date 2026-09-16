@@ -193,8 +193,9 @@ Threat Dragon file's extra keys, are not copied, and the status line says so.
 ## Deleting and undoing
 
 Delete or Backspace removes the selection from anywhere in the studio outside a
-text field. A flow attached to a removed element loses that end and keeps the
-other, and a threat keeps its record and loses the link.
+form field (a text box or a drop-down list). A flow attached to a removed
+element loses that end and keeps the other, and a threat keeps its record and
+loses the link.
 
 Every edit is one undo step: a placement, a drag, a resize, a committed field,
 a paste. Selecting, panning, zooming and switching diagrams add no undo step
@@ -283,7 +284,7 @@ edit them, and Not recorded removes the list itself. The fields' meaning is in
 
 ## Keyboard
 
-**Keyboard shortcuts**, in the Help menu, or ? or F1 outside a text field,
+**Keyboard shortcuts**, in the Help menu, or ? or F1 outside a form field,
 toggles the shortcut reference: every command and every key that acts inside a
 control. It overlays the left edge on a wide screen and the lower part of a
 narrow one, and does not trap focus. It starts as collapsed category cards
@@ -292,9 +293,9 @@ between card headers, and several cards can stay open. Escape closes it while
 focus is inside.
 
 Every edit has a keyboard path. Below, Mod is Command on macOS and Control
-elsewhere. The chords act where keyboard focus is: Save, Save as, Undo and Redo
-also work while focus is in a text field, the rest only outside one, and none
-works while focus is inside an open menu or list.
+elsewhere. Whether a chord acts depends on where keyboard focus is: Save, Save
+as, Undo and Redo also work while focus is in a form field, the rest only
+outside one, and none works while focus is inside an open menu or list.
 
 | Command                                | Keys                                         | Also on             |
 | -------------------------------------- | -------------------------------------------- | ------------------- |
