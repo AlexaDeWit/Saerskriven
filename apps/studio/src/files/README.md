@@ -54,7 +54,7 @@ Import sits beside Export in the File menu and creates an unsaved native
 model. Its successful read releases the source handle and proposes a YAML
 name. A cancelled or refused import preserves the previous file association.
 Import shares operation ownership and unsaved-work guards with Open.
-[Format conversion rules](../../../../packages/formats/IMPORT.md) describe
+[Format conversion rules](../../../../docs/import.md) describe
 what each importer carries over and reports.
 
 `export-commands.ts` projects the current model through `@saerskriven/render`.

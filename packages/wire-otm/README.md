@@ -9,5 +9,5 @@ attributes remain declared maps of unknown values. Callers must bound input
 before validation, including any values inside those maps.
 
 [Fixture provenance](../../test-data/otm/README.md) records the source and
-licences. [Import behaviour](../formats/IMPORT.md) belongs to the mapping
+licences. [Import behaviour](../../docs/import.md) belongs to the mapping
 package.

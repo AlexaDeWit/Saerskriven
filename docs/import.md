@@ -1,27 +1,29 @@
-# Import a foreign model
+# Importing a foreign model
 
-In the studio, choose **Import** beside **Export** in the File menu. Select
-an OTM or TM-BOM file. Import replaces the current sketch after the usual
-unsaved-changes confirmation. The result is an unsaved native model. Save
-writes YAML under the source file's stem and never writes back to the
-imported file. A refused import leaves the current model and file available.
+Saerskriven imports OTM and TM-BOM files into new native models, and writes
+neither format.
+
+In the studio, choose **Import** beside **Export** in the File menu and select
+an OTM or TM-BOM file. Import replaces the current model after the usual
+unsaved-changes confirmation. The result is an unsaved native model: Save
+writes YAML under the source file's stem and never writes back to the imported
+file. A refused import leaves the current model and file available. Over MCP,
+`saer_import` writes the converted model to a new file ([the MCP
+server](mcp.md)).
 
 The conversion report names generated values, changed representations, and
 omitted source fields. Expand its details before dismissing it. Import does
-not retain a source document for later merging. Keep the original file when
+not retain a source document for later merging, so keep the original file when
 its omitted information matters.
 
-`importModel(text)` provides the same conversion to application code. It
-returns Effect's `Either`, with `ReadFailure` on refusal. Content determines
-the format. Both JSON and YAML pass through the existing size, depth, and
-alias bounds. Reference expansion and generated identifiers share a budget
-of 16,777,216 UTF-16 units, exposed as `readLimits.maxImportTextUnits`.
-Concatenation charges its complete result before joining. Identifier
-creation charges six units per input unit as an upper bound on hex escaping. Imported identifiers use an ASCII
-alphabet that the canvas can address.
-Intermediate strings and escaped diagnostic paths also consume this budget. A conversion over the budget
-returns `ExceededReadLimit` before constructing the expanded text. Each wire package declares its foreign document independently
-of the core. The mapping validates references it uses before parsing the
+`importModel(text)` in `@saerskriven/formats` provides the same conversion to
+application code. It returns Effect's `Either`, with `ReadFailure` on refusal.
+Content determines the format. JSON and YAML alike pass the size, depth and
+alias bounds every read has, and the text a conversion expands and the
+identifiers it generates share one budget, `readLimits.maxImportTextUnits`,
+charged before the text is built. A conversion over it returns
+`ExceededReadLimit`. Imported identifiers use an ASCII alphabet the canvas can
+address. The mapping validates the references it uses and then parses the
 result through `parseModel`.
 
 ## OTM 0.2.0

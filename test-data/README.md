@@ -40,7 +40,7 @@ The producers are `@saerskriven/model`, `@saerskriven/formats`, and
 | `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                                           |
 
 The `.snapshot.png` rasters are written only where the rasterizer module
-[`SAERSKRIVEN_RESVG_WASM`](../README.md#the-svg-rasterizer) names has been
+[`SAERSKRIVEN_RESVG_WASM`](../docs/build.md#the-svg-rasterizer) names has been
 built, which that section describes.
 
 The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`

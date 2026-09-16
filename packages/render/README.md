@@ -83,7 +83,7 @@ and the name it is carried under beside a bundle. Its spec skips where that
 variable is unset, which is what running outside the flake shell looks like:
 inside it the `resvg-wasm` build every carrying target depends on is what
 writes the module the variable names, as
-[the repository README](../../README.md#the-svg-rasterizer) describes.
+[Building the executables](../../docs/build.md#the-svg-rasterizer) describes.
 
 ## A diagram as a PNG
 
@@ -124,7 +124,7 @@ snapshot, so a missing golden fails. Regenerate them with
 `pnpm snapshots:update @saerskriven/render` in the commit that moved them, and
 read the diff. That command runs Vitest directly rather than through nx, so
 the raster goldens need the rasterizer module built first, at the path
-[`SAERSKRIVEN_RESVG_WASM`](../../README.md#the-svg-rasterizer) names. Whether
+[`SAERSKRIVEN_RESVG_WASM`](../../docs/build.md#the-svg-rasterizer) names. Whether
 a missing module skips that suite or fails it turns on the variable rather
 than the file, which that section describes.
 

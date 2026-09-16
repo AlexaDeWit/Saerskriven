@@ -55,7 +55,7 @@ in [`yaml-alias-cost.ts`](src/lib/yaml-alias-cost.ts).
 
 ## Import
 
-[Import](IMPORT.md) converts OTM and TM-BOM into a native model through
+[Import](../../docs/import.md) converts OTM and TM-BOM into a native model through
 `importModel` ([`import.ts`](src/lib/import.ts)). No codec writes those
 formats.
 

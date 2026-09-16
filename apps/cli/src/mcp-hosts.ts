@@ -103,8 +103,8 @@ export type HostRegistration = {
 
 /**
  * Where each host keeps a registration and under which key, read off each
- * host's own published documentation on 2026-09-12. The README tabulates the
- * same files for a reader.
+ * host's own published documentation on 2026-09-12. `docs/mcp.md` tabulates
+ * the same files for a reader.
  */
 export const hostRegistrations: Record<HostName, HostRegistration> = {
   'claude-code': {
