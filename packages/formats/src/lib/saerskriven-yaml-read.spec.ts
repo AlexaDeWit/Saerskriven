@@ -1,7 +1,7 @@
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import { parse } from 'yaml';
-import { readFailureIssues } from './codec.js';
+import { readFailureIssues } from './codec.fixtures.js';
 import { writeSaerskrivenYaml } from './saerskriven-yaml-write.js';
 import {
   readSaerskrivenYaml,

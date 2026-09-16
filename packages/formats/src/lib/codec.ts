@@ -81,16 +81,6 @@ export type ReadFailure = Data.TaggedEnum<{
 /** Constructors and matchers for {@link ReadFailure}. */
 export const ReadFailure = Data.taggedEnum<ReadFailure>();
 
-/** The issues a failure carries, none for a bound or a syntax error. */
-export function readFailureIssues(failure: ReadFailure): readonly ParseIssue[] {
-  return ReadFailure.$match(failure, {
-    ExceededReadLimit: () => [],
-    MalformedText: () => [],
-    InvalidWireDocument: ({ issues }) => issues,
-    InvalidModel: ({ issues }) => issues,
-  });
-}
-
 /** A wire schema's refusal as the read failure a codec returns. */
 export function refusedWireDocument(
   issues: readonly SchemaIssue[],

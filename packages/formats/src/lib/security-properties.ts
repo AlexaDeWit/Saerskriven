@@ -7,15 +7,17 @@ import type {
 } from '@saerskriven/model';
 
 /**
- * Actor facts shared by the native and Threat Dragon mappings. Every function
- * here copies only the facts present, so an absent fact stays unknown
- * while an explicit `false` or empty value is kept.
+ * The actor facts `source` holds, for the native and Threat Dragon mappings.
+ * An absent fact stays absent, and an explicit `false` or empty value is kept.
  */
 export function actorProperties(source: Pick<Actor, 'providesAuthentication'>) {
   return presentProperties(source, ['providesAuthentication']);
 }
 
-/** Process facts shared by the native and Threat Dragon mappings. */
+/**
+ * The process facts `source` holds, for the native and Threat Dragon mappings.
+ * An absent fact stays absent, and an explicit `false` or empty value is kept.
+ */
 export function processProperties(
   source: Pick<
     Process,
@@ -33,7 +35,10 @@ export function processProperties(
   ]);
 }
 
-/** Store facts shared by the native and Threat Dragon mappings. */
+/**
+ * The store facts `source` holds, for the native and Threat Dragon mappings.
+ * An absent fact stays absent, and an explicit `false` or empty value is kept.
+ */
 export function storeProperties(
   source: Pick<
     Store,
@@ -53,7 +58,10 @@ export function storeProperties(
   ]);
 }
 
-/** Flow facts shared by the native and Threat Dragon mappings. */
+/**
+ * The flow facts `source` holds, for the native and Threat Dragon mappings.
+ * An absent fact stays absent, and an explicit `false` or empty value is kept.
+ */
 export function flowProperties(
   source: Pick<
     FlowInput,
@@ -68,7 +76,10 @@ export function flowProperties(
   ]);
 }
 
-/** Boundary assertions shared by the native and Threat Dragon mappings. */
+/**
+ * The boundary assertions `source` holds, for the native and Threat Dragon
+ * mappings. An absent assertion stays absent, and an empty list is kept.
+ */
 export function boundaryProperties(
   source: Pick<TrustBoundaryInput, 'containedElements' | 'crossingFlows'>,
 ) {

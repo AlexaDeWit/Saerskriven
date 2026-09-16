@@ -87,9 +87,6 @@ export const divergenceSchema = z.object({
  */
 export type Divergence = z.infer<typeof divergenceSchema>;
 
-/** The aligned case, frozen so no caller appends to the shared value. */
-export const noDivergence: readonly Divergence[] = Object.freeze([]);
-
 /** Whether anything diverged. */
 export function hasDiverged(divergences: readonly Divergence[]): boolean {
   return divergences.length > 0;

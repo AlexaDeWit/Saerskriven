@@ -6,8 +6,8 @@ import {
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
+import { noDivergence, readFailureIssues } from './codec.fixtures.js';
 import {
-  readFailureIssues,
   ReadFailure,
   type Codec,
   type ReadResult,
@@ -15,7 +15,6 @@ import {
 } from './codec.js';
 import {
   hasDiverged,
-  noDivergence,
   renderDivergences,
   type Divergence,
 } from './divergence.js';

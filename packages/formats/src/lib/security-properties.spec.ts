@@ -34,7 +34,7 @@ import { writeThreatDragon } from './threat-dragon-write.js';
 import { allCells, threatsOf } from './threat-dragon-document.js';
 import { ecluseSecurityText } from './threat-dragon.fixtures.js';
 import { isRecord } from './records.js';
-import { readFailureIssues } from './codec.js';
+import { readFailureIssues } from './codec.fixtures.js';
 
 const secured = parsedFixture(securityModelFixture);
 

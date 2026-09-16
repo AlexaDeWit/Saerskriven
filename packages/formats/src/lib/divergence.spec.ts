@@ -5,10 +5,10 @@ import {
   mitigationIdSchema,
   threatIdSchema,
 } from '@saerskriven/model';
+import { noDivergence } from './codec.fixtures.js';
 import {
   escapedForTerminal,
   hasDiverged,
-  noDivergence,
   renderDivergences,
   type Divergence,
   type DivergenceReason,

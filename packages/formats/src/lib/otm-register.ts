@@ -76,15 +76,15 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     report(
       `Threat ${JSON.stringify(definition.id)} imports with undecided severity and an unspecified category.`,
     );
-    mitigations.push(
-      ...otmMitigations(
-        occurrence,
-        id,
-        mitigationDefinitions,
-        referencedMitigations,
-        context,
-      ),
-    );
+    for (const mitigation of otmMitigations(
+      occurrence,
+      id,
+      mitigationDefinitions,
+      referencedMitigations,
+      context,
+    )) {
+      mitigations.push(mitigation);
+    }
   };
   const occurrences = (
     items: readonly Occurrence[],
