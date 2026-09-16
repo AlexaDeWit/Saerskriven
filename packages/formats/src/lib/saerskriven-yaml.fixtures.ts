@@ -3,6 +3,8 @@ import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+const featureCompletePath = testDataPath('saerskriven/feature-complete.yaml');
+
 /**
  * `test-data/saerskriven/feature-complete.yaml`, a version 2 file written by
  * hand to use every construct the wire schema declares, in the writer's
@@ -11,11 +13,6 @@ import { join } from 'node:path';
  * in every status, severity and category, a mitigation in every status, and
  * an assumption in every status, one of them applying to the model.
  */
-export const featureCompletePath: string = testDataPath(
-  'saerskriven/feature-complete.yaml',
-);
-
-/** The committed bytes at {@link featureCompletePath}. */
 export const featureCompleteYaml: string = readFileSync(
   featureCompletePath,
   'utf8',
