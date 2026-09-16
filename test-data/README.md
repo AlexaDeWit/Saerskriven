@@ -19,34 +19,38 @@ input. Fixture changes do not invalidate lint or build targets.
 
 Cached tests only read committed snapshots, and
 [`CODING.md`](../CODING.md#build-targets) says how to update them. The
-producers are `@saerskriven/model`, `@saerskriven/formats`, and
-`@saerskriven/render`. Review and commit the snapshot diff with the source change.
+producers are `@saerskriven/formats` and `@saerskriven/render`. Review and
+commit the snapshot diff with the source change.
 
-| File                                                | Written by         | Read by                                                                     |
-| --------------------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
-| `ecluse.model.json`                                 | `packages/model`   | `packages/formats`, `packages/canvas`, `packages/render`, `apps/studio-e2e` |
-| `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`, `apps/studio-e2e`                     |
-| `saerskriven/ecluse.yaml`                           | `packages/formats` | `packages/mcp`, `apps/cli`, `apps/studio-e2e`                               |
-| `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
-| `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
-| `render/saerskriven-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                                                  |
-| `render/saerskriven-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                                                  |
-| `render/saerskriven.register.snapshot.md`           | `packages/render`  | no other suite                                                              |
-| `render/ecluse.snapshot.png`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
-| `render/saerskriven-read-and-render.snapshot.png`   | `packages/render`  | `apps/cli`                                                                  |
-| `render/saerskriven-agent-and-desktop.snapshot.png` | `packages/render`  | no other suite                                                              |
-| `render/every-glyph.snapshot.png`                   | `packages/render`  | no other suite                                                              |
-| `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                                              |
-| `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                                           |
+| File                                                | Written by         | Read by                                                 |
+| --------------------------------------------------- | ------------------ | ------------------------------------------------------- |
+| `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`, `apps/studio-e2e` |
+| `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`, `apps/studio-e2e`                           |
+| `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                           |
+| `render/saerskriven-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                              |
+| `render/saerskriven-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                              |
+| `render/saerskriven.register.snapshot.md`           | `packages/render`  | no other suite                                          |
+| `render/ecluse.snapshot.png`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                           |
+| `render/saerskriven-read-and-render.snapshot.png`   | `packages/render`  | `apps/cli`                                              |
+| `render/saerskriven-agent-and-desktop.snapshot.png` | `packages/render`  | no other suite                                          |
+| `render/every-glyph.snapshot.png`                   | `packages/render`  | no other suite                                          |
+| `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                          |
+| `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                       |
 
 The `.snapshot.png` rasters are written only where the rasterizer module
 [`SAERSKRIVEN_RESVG_WASM`](../docs/build.md#the-svg-rasterizer) names has been
 built.
 
 The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
-is the expected PDF digest for the CLI and studio browser suites, and
+is the expected PDF digest for the CLI and studio browser suites,
 `every-glyph.model.json` is read by `packages/canvas`, `packages/render` and
-`apps/studio-e2e`.
+`apps/studio-e2e`, and the two feature-complete files and the frozen release
+files are read by `packages/formats`.
+
+Two files are no longer written by any target and wait for their last readers
+to move off them: `ecluse.model.json`, read by `packages/canvas`,
+`packages/render` and `apps/studio-e2e`, and `saerskriven/ecluse.yaml`, read by
+`packages/mcp`, `apps/cli` and `apps/studio-e2e`. Neither is regenerated.
 
 ## `ecluse.json`
 
@@ -61,47 +65,52 @@ supply-chain policy proxy for package registries. Vendored with the author's con
 | Licence        | MIT, Copyright 2026 Alexandra de Wit                     |
 | MD5            | `9b61b49c0945298b8c2f1f86d2c4136e`                       |
 
-`packages/model` transcribes it as `ecluseFixture` in
-`src/lib/ecluse.fixtures.ts`. `packages/formats` compares its Threat Dragon
-read against that transcription through `ecluse.model.json`. Both preserve
-the source cell and threat IDs, and both hold each threat's mitigation text as
-the one mitigation record the Threat Dragon read makes of it.
+`packages/mcp`, `apps/cli`, `apps/studio` and `apps/studio-e2e` open it.
 
-The file's `threatTop` is 28, but it contains threats numbered 101 and 102.
-The import uses `lastIssuedThreatNumber = max(threatTop, highest threat number in the file)`.
-The maximum preserves both existing numbers and the gap from a deleted highest-numbered threat.
+## `threat-dragon/feature-complete.json`
 
-## `ecluse-security.json`
+A Threat Dragon 2.6.2 file written by hand to use every field, enum value and
+union variant `@saerskriven/wire-threat-dragon` declares: every cell shape,
+both curve spellings, a port on each side, a free flow end, every security
+fact, a threat in each status, severity and enumerated category, a threat
+nested under two cells, an Elevation of Privilege card, a box boundary named
+by its label alone, and a threat number gap. Its `threatTop` is 30 and its
+highest threat number 40, and the read issues up to
+`max(threatTop, highest threat number in the file)`, 40. `packages/formats`
+compares its read with a model written out by hand, writes it back onto
+itself with no scalar moved, and runs the write through Threat Dragon's JSON
+Schema.
 
-The current Écluse migration fixture, copied without changes from
-`AlexaDeWit/Ecluse`, `threat-modelling/ecluse.json`, on 2026-09-12.
-The source commit is `5d7a1072833149119a5a809931511f6dcefd1a62` (2026-09-09).
-It retains the same MIT licence and author as `ecluse.json`.
-The formats security-property spec compares all declared facts and relationships,
-threat attachments, threat numbers, and issuance bookkeeping across both codecs.
-This maintained input supplements the older rendering fixtures.
+## `saerskriven/feature-complete.yaml`
+
+A version 2 Saerskriven YAML file written by hand in the writer's canonical
+form, using every field, enum value and union variant
+`@saerskriven/wire-saerskriven-yaml-v2` declares. `packages/formats` reads it
+as the model it states and writes it back to the byte.
 
 ## `saerskriven/ecluse.yaml`
 
-The native YAML encoding of `ecluse.json`, produced through both codecs.
-The formats suite compares the write against this snapshot and reads it back
-to check model equality.
+The native YAML encoding of `ecluse.json`. No target writes it. `packages/mcp`,
+`apps/cli` and `apps/studio-e2e` read it.
 
-## `saerskriven/ecluse-v0.2.1.yaml`
+## `saerskriven/v0.2.1.yaml`
 
-The same model in the document shape v0.2.1 wrote, before version 1 of the
-format gained a flow's `bidirectional` and an attached endpoint's `side`. It
-is committed data rather than a snapshot: no target writes it, and it is never
-regenerated from the current writer, because what it holds the format to is
-that a file an earlier release wrote still reads. The formats suite reads it
-and checks that the mapping supplies a one-way flow and an unpinned side.
+A cut-down of a model in the document shape v0.2.1 wrote, before version 1 of
+the format gained a flow's `bidirectional` and an attached endpoint's `side`:
+elements, threats and text were deleted from the real output by hand and
+nothing was added. It is committed data rather than a snapshot: no target
+writes it, and it is never regenerated from the current writer, because what
+it holds the format to is that a file an earlier release wrote still reads.
+The formats suite reads it against a model written out by hand, with every
+flow one-way and every end unpinned. The installed-package check in
+[`nix/check.nix`](../nix/check.nix) validates and renders it.
 
 ## `saerskriven/saerskriven-v0.3.0.yaml`
 
 [`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) as the
 v0.3.0 tag holds it, in version 1 of the format: each threat's mitigation as
 text, assumption element links, and an assumption that links no threat. It is
-committed data under the same terms as `ecluse-v0.2.1.yaml`, never regenerated.
+committed data under the same terms as `v0.2.1.yaml`, never regenerated.
 The formats suite reads it through the v1 to v2 migration and checks the
 records made of the text, the dropped element links, the model link, and a
 write and read back of the result.
@@ -119,10 +128,8 @@ migration.
 
 ## `ecluse.model.json`
 
-The internal model serialized from `ecluseFixture` by `packages/model`.
-The formats suite compares its full Threat Dragon read and write/read result
-against this file. This catches differences that matching counts and
-vocabularies alone would miss. Canvas and render tests consume it as data.
+The internal model of `ecluse.json`. No target writes it. Canvas, render and
+studio-e2e tests consume it as data.
 
 ## `saerskriven.model.json`
 
@@ -130,9 +137,7 @@ The internal model decoded from
 [`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md).
 `packages/formats` produces it for the canvas and render suites, which the
 layer matrix keeps from importing a codec. Its `nativeFixtures` entry in
-`saerskriven-yaml.fixtures.ts` names the output path. Écluse's entry names
-none, since `packages/model` writes `ecluse.model.json` from its own
-transcription.
+`saerskriven-yaml.fixtures.ts` names the output path.
 
 ## `render/ecluse.register.snapshot.md`
 
@@ -178,7 +183,9 @@ as a picture so a reviewer can open it.
 ## `threat-dragon/`
 
 The nine v2 models from Threat Dragon's demo menu and three models from its
-repository. The formats suite reads them through the Threat Dragon codec.
+repository, under `demo/` and `models/`. The formats suite reads them through
+the Threat Dragon codec. `feature-complete.json` beside them is this
+project's own, described above.
 
 | Fact           | Value                                                       |
 | -------------- | ----------------------------------------------------------- |

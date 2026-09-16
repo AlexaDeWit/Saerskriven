@@ -61,14 +61,37 @@ formats.
 
 ## Fixtures
 
-Two native files are committed and compared byte for byte:
-`test-data/saerskriven/ecluse.yaml` and
-[`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md).
+Each format this package reads keeps one feature-complete fixture, hand
+written to use every field, enum value and union variant its wire schema
+declares, with the model or register the read makes of it written out by hand
+beside it:
+
+- Threat Dragon:
+  [`test-data/threat-dragon/feature-complete.json`](../../test-data/threat-dragon/feature-complete.json),
+  with `featureCompleteModel` in
+  [`threat-dragon.fixtures.ts`](src/lib/threat-dragon.fixtures.ts).
+- Saerskriven YAML version 2:
+  [`test-data/saerskriven/feature-complete.yaml`](../../test-data/saerskriven/feature-complete.yaml),
+  which states its own model.
+- OTM and TM-BOM: `otmFeatureComplete`, `tmbomFeatureComplete` and
+  `tmbomScopeVariants` in [`import.fixtures.ts`](src/lib/import.fixtures.ts).
+  A TM-BOM scope holds one value of each of its enums, so the variants carry
+  the others and the 1.0.1 release.
+
+`unusedConstructs` in
+[`wire-coverage.fixtures.ts`](src/lib/wire-coverage.fixtures.ts) walks a wire
+schema and names what no fixture uses, so a construct added to a wire package
+fails a test until a fixture carries it. Version 1 of Saerskriven YAML is held
+by the frozen files a release wrote, `test-data/saerskriven/v0.2.1.yaml` and
+`saerskriven-v0.3.0.yaml`, which are never extended.
+
 `nativeFixtures` in
 [`saerskriven-yaml.fixtures.ts`](src/lib/saerskriven-yaml.fixtures.ts) lists
-them, [`test-data/README.md`](../../test-data/README.md#saerskrivenmodeljson)
+the native files committed in the writer's canonical form, the feature-complete
+file and [`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md),
+and each is compared byte for byte with a write of its read.
+[`test-data/README.md`](../../test-data/README.md#saerskrivenmodeljson)
 describes the model JSON this suite derives for the packages that cannot import
-a codec, and the [threat model's README](../../threat-modelling/README.md) says
-how a further native file joins.
+a codec.
 
 Unit tests: `pnpm nx test @saerskriven/formats`.
