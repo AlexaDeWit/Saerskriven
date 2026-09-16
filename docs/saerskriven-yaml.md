@@ -268,4 +268,4 @@ Two production-scale examples are committed.
 own threat model, the file to read first, because it was authored in this
 format rather than converted into it. `test-data/saerskriven/ecluse.yaml` is the
 Écluse threat model converted from its Threat Dragon file, committed data that
-the MCP, CLI and browser suites read.
+the browser suites read.

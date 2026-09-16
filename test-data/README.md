@@ -26,41 +26,45 @@ source change.
 | --------------------------------------------- | ----------------- | -------------- |
 | `render/every-glyph.snapshot.svg`             | `packages/render` | no other suite |
 | `render/every-glyph.snapshot.png`             | `packages/render` | no other suite |
-| `render/two-diagrams-storefront.snapshot.svg` | `packages/render` | no other suite |
-| `render/two-diagrams-storefront.snapshot.png` | `packages/render` | no other suite |
-| `render/two-diagrams-fulfilment.snapshot.svg` | `packages/render` | no other suite |
-| `render/two-diagrams-fulfilment.snapshot.png` | `packages/render` | no other suite |
+| `render/two-diagrams-storefront.snapshot.svg` | `packages/render` | `apps/cli`     |
+| `render/two-diagrams-storefront.snapshot.png` | `packages/render` | `apps/cli`     |
+| `render/two-diagrams-fulfilment.snapshot.svg` | `packages/render` | `apps/cli`     |
+| `render/two-diagrams-fulfilment.snapshot.png` | `packages/render` | `apps/cli`     |
 | `render/two-diagrams.snapshot.typ`            | `packages/render` | no other suite |
-| `render/two-diagrams.register.snapshot.md`    | `packages/render` | no other suite |
+| `render/two-diagrams.register.snapshot.md`    | `packages/render` | `apps/cli`     |
 
 The `.snapshot.png` rasters are written only where the rasterizer module
 [`SAERSKRIVEN_RESVG_WASM`](../docs/build.md#the-svg-rasterizer) names has been
 built.
 
-The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
-is the expected PDF digest for the CLI and studio browser suites,
-`render/two-diagrams.snapshot.pdf.sha256` is the one for the CLI's compile of
-`saerskriven/two-diagrams.yaml`, `every-glyph.model.json` is read by `packages/canvas`, `packages/render` and
-`apps/studio-e2e`, `two-diagrams.model.json` by `packages/canvas` and
-`packages/render`, and the two feature-complete files,
-`saerskriven/two-diagrams.yaml` and the frozen release files by
-`packages/formats`.
+The remaining files are maintained inputs, read as follows:
+
+| File                                      | Read by                                                  |
+| ----------------------------------------- | -------------------------------------------------------- |
+| `every-glyph.model.json`                  | `packages/canvas`, `packages/render`, `apps/studio-e2e`  |
+| `two-diagrams.model.json`                 | `packages/canvas`, `packages/render`, `packages/formats` |
+| `saerskriven/two-diagrams.yaml`           | `packages/formats`, `packages/mcp`, `apps/cli`           |
+| `render/two-diagrams.snapshot.pdf.sha256` | `apps/cli`                                               |
+| `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`           |
+| `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`                           |
+| `render/ecluse.snapshot.pdf.sha256`       | `apps/studio-e2e`                                        |
+
+The frozen release files `saerskriven/v0.2.1.yaml` and
+`saerskriven/saerskriven-v0.3.0.yaml` are read by `packages/formats`, and
+`studio/recovery-v0.4.0.json` by `apps/studio`.
 
 These files are no longer written by any target and wait for their last
 readers to move off them. None is regenerated.
 
-| File                                                | Read by                                       |
-| --------------------------------------------------- | --------------------------------------------- |
-| `ecluse.model.json`                                 | `apps/studio-e2e`                             |
-| `saerskriven.model.json`                            | `apps/studio-e2e`                             |
-| `saerskriven/ecluse.yaml`                           | `packages/mcp`, `apps/cli`, `apps/studio-e2e` |
-| `render/ecluse.snapshot.svg`                        | `apps/cli`, `apps/studio-e2e`                 |
-| `render/ecluse.snapshot.png`                        | `apps/cli`, `apps/studio-e2e`                 |
-| `render/ecluse.snapshot.typ`                        | `apps/studio-e2e`                             |
-| `render/ecluse.register.snapshot.md`                | `apps/cli`, `apps/studio-e2e`                 |
-| `render/saerskriven-read-and-render.snapshot.svg`   | `apps/cli`                                    |
-| `render/saerskriven-read-and-render.snapshot.png`   | `apps/cli`                                    |
-| `render/saerskriven-agent-and-desktop.snapshot.svg` | `apps/cli`                                    |
+| File                                 | Read by           |
+| ------------------------------------ | ----------------- |
+| `ecluse.model.json`                  | `apps/studio-e2e` |
+| `saerskriven.model.json`             | `apps/studio-e2e` |
+| `saerskriven/ecluse.yaml`            | `apps/studio-e2e` |
+| `render/ecluse.snapshot.svg`         | `apps/studio-e2e` |
+| `render/ecluse.snapshot.png`         | `apps/studio-e2e` |
+| `render/ecluse.snapshot.typ`         | `apps/studio-e2e` |
+| `render/ecluse.register.snapshot.md` | `apps/studio-e2e` |
 
 ## `ecluse.json`
 
@@ -75,7 +79,7 @@ supply-chain policy proxy for package registries. Vendored with the author's con
 | Licence        | MIT, Copyright 2026 Alexandra de Wit                     |
 | MD5            | `9b61b49c0945298b8c2f1f86d2c4136e`                       |
 
-`packages/mcp`, `apps/cli`, `apps/studio` and `apps/studio-e2e` open it.
+`apps/studio` and `apps/studio-e2e` open it.
 
 ## `threat-dragon/feature-complete.json`
 
@@ -89,25 +93,27 @@ highest threat number 40, and the read issues up to
 `max(threatTop, highest threat number in the file)`, 40. `packages/formats`
 compares its read with a model written out by hand, writes it back onto
 itself with no scalar moved, and runs the write through Threat Dragon's JSON
-Schema.
+Schema. `packages/mcp` and `apps/cli` open it as a Threat Dragon file.
 
 ## `saerskriven/feature-complete.yaml`
 
 A version 2 Saerskriven YAML file written by hand in the writer's canonical
 form, using every field, enum value and union variant
 `@saerskriven/wire-saerskriven-yaml-v2` declares. `packages/formats` reads it
-as the model it states and writes it back to the byte.
+as the model it states and writes it back to the byte, and `apps/cli`
+validates it.
 
 ## `saerskriven/two-diagrams.yaml`
 
 The native encoding of `two-diagrams.model.json`, so a suite that opens a file
 from disk renders the model the render goldens were drawn from. It was written
 once through the Saerskriven YAML codec's write of that model, and
-`packages/formats` holds it to both: its read equals the JSON model, and a
-write of that read gives back the committed bytes. To reproduce it after a
-change to the model file, write `committedModel('two-diagrams.model.json')`
-through `saerskrivenYamlCodec.write` from a spec run in `packages/formats`
-and commit the output.
+`packages/formats` holds it to both: its read equals the JSON model, and a write
+of that read gives back the committed bytes. `packages/mcp` and `apps/cli` open
+it, and the CLI compares its renders with the render goldens. To reproduce it
+after a change to the model file, write
+`committedModel('two-diagrams.model.json')` through `saerskrivenYamlCodec.write`
+from a spec run in `packages/formats` and commit the output.
 
 ## `render/two-diagrams.snapshot.pdf.sha256`
 
@@ -128,8 +134,8 @@ digest, so reproduce it in the commit that changed them.
 
 ## `saerskriven/ecluse.yaml`
 
-The native YAML encoding of `ecluse.json`. No target writes it. `packages/mcp`,
-`apps/cli` and `apps/studio-e2e` read it.
+The native YAML encoding of `ecluse.json`. No target writes it.
+`apps/studio-e2e` reads it.
 
 ## `saerskriven/v0.2.1.yaml`
 
@@ -219,9 +225,8 @@ Standalone SVG documents from `packages/render`, one per entry of
 Each has a `.snapshot.png` beside it, the same drawing rasterized, committed
 as a picture so a reviewer can open it.
 
-The `ecluse` and `saerskriven-*` renders beside them are the leftovers listed
-above, drawn by an earlier render suite from `ecluse.model.json` and
-`saerskriven.model.json`.
+The `ecluse` renders beside them are the leftovers listed above, drawn by an
+earlier render suite from `ecluse.model.json`.
 
 ## `threat-dragon/`
 
