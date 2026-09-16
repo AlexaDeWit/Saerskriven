@@ -35,16 +35,9 @@ export const noRasterizer: RasterizerAssets = () =>
   Either.left('this fixture carries no rasterizer module');
 
 /**
- * A session against a server confined to `root`, with `file` as its default
- * model where one is given. The transport is a linked in-memory pair, so
- * nothing here spawns a process: what this exercises is the server object and
- * the protocol rather than the CLI's argument handling.
- *
- * The server side is served through `serveStdio`, which takes the transport
- * it is handed and is the entry that owns the era decision. A bare
- * `McpServer.connect` answers no `server/discover`, so a client probing for
- * the 2026-07-28 revision would fall back to the 2025 handshake and the two
- * eras this suite runs over would be one era twice.
+ * A session over a linked in-memory pair against a server confined to
+ * `root`. The server is served through `serveStdio` so it answers
+ * `server/discover`, which a bare `McpServer.connect` does not.
  */
 export async function session(request: SessionRequest): Promise<Session> {
   const workspace = openWorkspace({ root: request.root, file: request.file });

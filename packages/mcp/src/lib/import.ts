@@ -2,25 +2,19 @@ import {
   importFormatSchema,
   importModel,
   quotedForTerminal,
-  readLimits,
   renderReadFailure,
-  saerskrivenYamlCodec,
-  type ImportResult as ConvertedModel,
 } from '@saerskriven/formats';
 import { Either, pipe } from 'effect';
 import { z } from 'zod';
 import {
-  createdFile,
-  renderWriteFailure,
+  createdModel,
+  readBoundPhrase,
   renderWriteReport,
-  serialized,
   writeReportSchema,
 } from './write.js';
 import {
-  confined,
   readTextFile,
   renderWorkspaceFailure,
-  withinRoot,
   type ModelWorkspace,
 } from './workspace.js';
 
@@ -55,15 +49,13 @@ export const importDescription = [
   'Both formats are read only: Saerskriven maps them onto its own model and never writes them back, so the conversion is a one-way step and the file it produces is what later edits go to. Pass `file` as the source and `target` as the path to write, both relative to the server root. A target already holding a file is refused rather than replaced.',
   'Every TM-BOM assumption becomes an assumption that applies to the model. A mitigation that would link no threat (a TM-BOM control naming none, an OTM mitigation no threat occurrence names) becomes a line of the model description instead of a record.',
   'What the conversion could not carry over comes back in the divergences of the result: a key the wire schema does not declare, a value reduced to fit, a mitigation kept as description prose, and geometry generated for a record whose source file states none. Read them before you rely on the converted model.',
-  `A converted model past ${String(readLimits.maxTextBytes / 1_048_576)} MiB, the size this server reads, is refused and not written, since the server could not open it again.`,
+  `A converted model past ${readBoundPhrase}, is refused and not written, since the server could not open it again.`,
   'To read a Threat Dragon or Saerskriven file, call saer_inspect instead: those formats are read and written in place and need no conversion.',
 ].join(' ');
 
 /**
  * The converted model as a new file, or the lines saying why there is none.
- * The source is read through the same bounds every other read of this server
- * goes through, and the target is written only after the conversion produced
- * a model.
+ * The target is written only after the conversion produced a model.
  */
 export function importIntoModel(
   workspace: ModelWorkspace,
@@ -78,7 +70,20 @@ export function importIntoModel(
         ...renderReadFailure(failure),
       ]),
     ),
-    Either.flatMap((imported) => converted(workspace, args, imported)),
+    Either.flatMap((imported) =>
+      Either.map(
+        createdModel(
+          workspace,
+          args.target,
+          imported.model,
+          imported.divergences,
+        ),
+        (report): ImportResult => ({
+          ...report,
+          source: { file: args.file, format: imported.format },
+        }),
+      ),
+    ),
   );
 }
 
@@ -88,41 +93,4 @@ export function renderImport(result: ImportResult): readonly string[] {
     `converted: ${result.source.file} (${result.source.format})`,
     ...renderWriteReport(result),
   ];
-}
-
-function converted(
-  workspace: ModelWorkspace,
-  args: ImportArguments,
-  imported: ConvertedModel,
-): Either.Either<ImportResult, readonly string[]> {
-  return pipe(
-    confined(workspace, args.target),
-    Either.mapLeft(renderWorkspaceFailure),
-    Either.flatMap((path) => targeted(workspace, path, args, imported)),
-  );
-}
-
-function targeted(
-  workspace: ModelWorkspace,
-  path: string,
-  args: ImportArguments,
-  imported: ConvertedModel,
-): Either.Either<ImportResult, readonly string[]> {
-  const file = withinRoot(workspace, path);
-  return pipe(
-    serialized(file, () => saerskrivenYamlCodec.write(imported.model)),
-    Either.flatMap((written) =>
-      Either.map(
-        createdFile({ file, path }, written.output),
-        (revision): ImportResult => ({
-          file,
-          format: 'saerskriven-yaml',
-          revision,
-          divergences: [...imported.divergences, ...written.divergences],
-          source: { file: args.file, format: imported.format },
-        }),
-      ),
-    ),
-    Either.mapLeft(renderWriteFailure),
-  );
 }

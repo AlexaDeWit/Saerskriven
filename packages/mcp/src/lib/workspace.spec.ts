@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { namedPipeIn, workspaceTree } from './workspace.fixtures.js';
 import {
   WorkspaceFailure,
-  candidateFiles,
   openWorkspace,
   readModelFile,
   renderWorkspaceFailure,
@@ -128,14 +127,5 @@ describe('a path a tool call names', () => {
       'The file "unclaimed.yaml" was not read.',
       'No format claimed the file. Saerskriven tried threat-dragon, saerskriven-yaml.',
     ]);
-  });
-});
-
-describe('the candidate files under a root', () => {
-  it('lists model extensions from the root and below, and no link', () => {
-    expect(candidateFiles(workspace)).toEqual({
-      files: [join('nested', 'deeper.yaml'), 'small.yaml', 'unclaimed.yaml'],
-      truncated: false,
-    });
   });
 });

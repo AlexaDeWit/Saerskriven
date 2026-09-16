@@ -1,16 +1,17 @@
 import {
   divergenceSchema,
   escapedForTerminal,
-  formatNameSchema,
   quotedForTerminal,
   readLimits,
   renderDivergences,
+  saerskrivenYamlCodec,
   withinTextBytes,
   type DetectedRead,
+  type Divergence,
   type WriteResult,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
-import { Data, Either } from 'effect';
+import { Data, Either, pipe } from 'effect';
 import { randomUUID } from 'node:crypto';
 import {
   chmodSync,
@@ -24,25 +25,22 @@ import {
 import { basename, dirname, join } from 'node:path';
 import { z } from 'zod';
 import { fileArgumentSchema } from './inspect.js';
+import { readingSchema, renderReading } from './reading.js';
 import { revisionOf } from './revision.js';
 import {
+  confined,
   reasonOf,
+  renderWorkspaceFailure,
+  withinRoot,
   type ModelWorkspace,
   type ReadModelFile,
 } from './workspace.js';
 
 /**
  * Why a write produced no file, in the order a tool reaches the checks.
- * `NoFile` is a call naming no file against a server carrying no default.
- * `StaleRevision` is the file having changed since the read whose handle the
- * call quoted, which is the case an agent answers by reading again rather
- * than by retrying, and which a write that replaces a file checks twice.
- * `Occupied` is a tool that creates a file finding a path already taken.
- * `PastReadBound` is the text a write would produce being past the size this
- * server reads, refused so a file the server wrote is one it can open again.
- * `Unwritten` is the write not happening for a reason outside this server's
- * reach: the system refusing it, the file on disk past the read bound, or the
- * codec throwing on the model it was handed, each with its own sentence.
+ * `StaleRevision` is answered by reading the file again rather than by
+ * retrying. `PastReadBound` keeps every file this server writes one it can
+ * read again.
  */
 export type WriteFailure = Data.TaggedEnum<{
   NoFile: { readonly root: string };
@@ -81,24 +79,58 @@ export const revisionArgumentSchema = fileArgumentSchema.extend({
 });
 
 /** What every write tool reports about the file it produced. */
-export const writeReportSchema = z.object({
-  file: z.string(),
-  format: formatNameSchema,
-  revision: z.string(),
+export const writeReportSchema = readingSchema.extend({
   divergences: z.array(divergenceSchema),
 });
 
+/** What every write tool reports about the file it produced. */
+export type WriteReport = z.infer<typeof writeReportSchema>;
+
+/** The size bound a write tool's description names, in MiB. */
+export const readBoundPhrase = `${String(readLimits.maxTextBytes / 1_048_576)} MiB, the size this server reads`;
+
 /** The file a write produced, as the lines its text result carries. */
-export function renderWriteReport(
-  report: z.infer<typeof writeReportSchema>,
-): readonly string[] {
+export function renderWriteReport(report: WriteReport): readonly string[] {
   return [
-    `file: ${escapedForTerminal(report.file)}`,
-    `format: ${report.format}`,
-    `revision: ${report.revision}`,
+    ...renderReading(report),
     'divergences:',
     renderDivergences(report.divergences),
   ];
+}
+
+/**
+ * `model` as a new native YAML file at the path a call names, refused where
+ * the path is outside the root or taken. `carried` divergences come before
+ * the codec's own.
+ */
+export function createdModel(
+  workspace: ModelWorkspace,
+  requested: string,
+  model: Model,
+  carried: readonly Divergence[],
+): Either.Either<WriteReport, readonly string[]> {
+  return pipe(
+    confined(workspace, requested),
+    Either.mapLeft(renderWorkspaceFailure),
+    Either.flatMap((path) => {
+      const file = withinRoot(workspace, path);
+      return pipe(
+        serialized(file, () => saerskrivenYamlCodec.write(model)),
+        Either.flatMap((written) =>
+          Either.map(
+            createdFile({ file, path }, written.output),
+            (revision): WriteReport => ({
+              file,
+              format: 'saerskriven-yaml',
+              revision,
+              divergences: [...carried, ...written.divergences],
+            }),
+          ),
+        ),
+        Either.mapLeft(renderWriteFailure),
+      );
+    }),
+  );
 }
 
 /** Why nothing was written, as the lines a refused tool result carries. */
@@ -138,12 +170,9 @@ export function namedFile(
 }
 
 /**
- * The read a write may go on from, refused where the file no longer hashes
- * to the revision the call quoted. This is the first of the two places the
- * handle is checked, over the bytes this call read, so what it refuses is an
- * agent editing a model it has moved past. A save landing after this read is
- * the other check's to catch, in {@link replacedFile}. Neither is a lock on
- * the file.
+ * The read a write may go on from, refused where the bytes this call read no
+ * longer hash to the revision it quoted. {@link replacedFile} checks the
+ * handle a second time.
  */
 export function unchangedSince(
   file: string,
@@ -154,25 +183,12 @@ export function unchangedSince(
 }
 
 /**
- * `text` in place of whatever `target` holds, through a temporary file in
- * the target's own directory and a rename onto it, so a reader of the target
- * sees the file it had or the file this wrote and nothing between them. The
- * mode the target carried is put on the temporary first, since the rename
- * replaces the file's permissions along with its content. The handle over
- * the bytes written comes back, which is the revision the next write quotes.
- * `created` names the mode for a target that is not there, which is the
- * caller's to pass where a rename onto a free path is what it wants. A text
- * past the read bound refuses as `PastReadBound` before anything is written.
- *
- * `quoted` is the handle over the bytes the caller read, and the target is
- * hashed again immediately before the rename: one that no longer matches
- * refuses as `StaleRevision` and renames nothing, which is how a save that
- * landed while this call was working is reported rather than replaced. The
- * unguarded interval left runs from that hash to the rename rather than from
- * the caller's read to it, and a save landing inside it is still replaced
- * with neither writer told. A target that cannot be hashed refuses as
- * `Unwritten` instead, gone or grown past the bound this server reads, since
- * what the path holds then is not known.
+ * `text` in place of what `target` holds, through a temporary file renamed
+ * onto it, carrying the target's mode (or `created` where there is none) and
+ * answering with the new revision. The target is hashed again just before the
+ * rename and refused as `StaleRevision` where it no longer matches `quoted`,
+ * or as `Unwritten` where it cannot be hashed. That check is not a lock: a
+ * save landing between it and the rename is still replaced.
  */
 export function replacedFile(
   target: WriteTarget,
@@ -213,19 +229,10 @@ export function createdFile(
 }
 
 /**
- * `bytes` as a file at `target`, refused where the path is taken. The
- * temporary file is linked onto the target rather than renamed onto it,
- * which is what makes the refusal and the write one step: a rename replaces
- * whatever the path holds, where a link fails on a path that holds anything.
- *
- * That is also why it needs no second hash of the target where
- * {@link replacedFile} does, since there is no interval between a check and
- * the write for another writer to land in.
- *
- * A projection is bytes rather than text, and a picture written over a model
- * would be a loss nothing reports, so the path has to be free here as well.
- * `created` is the mode the file is given, since a path that is free carries
- * none of its own.
+ * `bytes` as a new file at `target` with the mode `created`, refused as
+ * `Occupied` where the path is taken. The temporary file is linked rather
+ * than renamed onto the target, so the refusal and the write are one atomic
+ * step.
  */
 export function createdBytes(
   target: WriteTarget,
@@ -247,11 +254,9 @@ export function createdBytes(
 }
 
 /**
- * What a serializer produced, or the refusal where it threw. A codec answers
- * with its text rather than with a result union, and so does a third-party
- * writer, so the throw neither promises is contained here: an exception
- * reaching the transport would lose the tool result, and with it the line
- * that says the text is data.
+ * What a serializer produced, or `Unwritten` where it threw. Codecs and
+ * third-party writers answer with text rather than a result union, and a
+ * throw reaching the transport would lose the tool result.
  */
 export function serialized<Value>(
   file: string,
@@ -265,11 +270,8 @@ export function serialized<Value>(
 
 /**
  * The model through the codec that read the file, merged onto the document
- * that read produced, so what the format carries and Saerskriven does not
- * model stays in the file. The branches differ in the codec each narrows to:
- * the detected read pairs a source document with the codec that produced it,
- * and writing one format's document through another format's codec is what
- * the union exists to rule out.
+ * that read produced. The two identical branches narrow the detected read so
+ * each codec receives its own format's source document.
  */
 export function writtenThrough(read: DetectedRead, model: Model): WriteResult {
   return read.format === 'threat-dragon'

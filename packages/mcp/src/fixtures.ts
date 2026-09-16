@@ -12,11 +12,8 @@ import {
 } from './lib/render-diagram.js';
 
 /**
- * The tools a release registers, in the order the server registers them: the
- * reads, then the queries, then the drawing, then the writes. Both the suite
- * over the server object and the one over the packaged executable hold
- * `tools/list` to this, so a tool added without a place in the order fails
- * them rather than appearing unannounced.
+ * The tools a release registers, in registration order: the reads, the
+ * queries, the drawing, then the writes.
  */
 export const registeredTools: readonly string[] = [
   'saer_inspect',
@@ -55,21 +52,9 @@ export function textOf(result: CallToolResult): string {
 }
 
 /**
- * What a tool result says, and what this reader could not read: `prose` is
- * every string a client would show a model as the body of a result, `links`
- * is the free text a resource link carries beside the file it points at, and
- * `unread` names the type of every content block this does not know how to
- * look inside.
- *
- * The last two fields are what keep the first honest. A reader that passed
- * over a block type it did not recognize would report no prose for it and a
- * caller checking the prose would see nothing wrong, so a block type added to
- * the protocol, or reached for the first time by a new tool, comes back named
- * in `unread` rather than going unchecked. A resource link is recognized, and
- * its `name` and `description` are free text a model reads, so they come back
- * in `links` rather than being skipped: they are not the body of a result and
- * do not open with the data-not-instructions line, so a caller checks instead
- * that nothing out of a model file reaches them.
+ * What a tool result says to a model. `prose` is the body text, `links` the
+ * free text of resource links, which carry no data-not-instructions line, and
+ * `unread` the block types or media types the reader could not look inside.
  */
 export type ResultProse = {
   readonly prose: readonly string[];
@@ -78,12 +63,8 @@ export type ResultProse = {
 };
 
 /**
- * Every string a tool result would put in front of a model, from each block
- * type this reader knows: a `text` block's own text, a `resource` block's
- * embedded document as {@link resourceProseOf} reads it, and the `name` and
- * `description` of a `resource_link`, which come back under `links`. An
- * `image` block is recognized and carries no text of its own. Any other block
- * type is named in `unread` rather than skipped.
+ * Every string a tool result would put in front of a model. A block type the
+ * reader does not know is named in `unread`.
  */
 export function proseOf(result: CallToolResult): ResultProse {
   const prose: string[] = [];
@@ -106,10 +87,8 @@ export function proseOf(result: CallToolResult): ResultProse {
 }
 
 /**
- * Every string a resource read would put in front of a model: the text of a
- * text entry. A blob is recognized where its media type is an image, and any
- * other blob is named in `unread` by its media type, so a textual blob fails a
- * caller's check rather than passing with its content unread.
+ * Every text a resource read would put in front of a model. A blob that is
+ * not an image is named in `unread`.
  */
 export function resourceProseOf(result: ReadResourceResult): ResultProse {
   const prose: string[] = [];
@@ -201,13 +180,8 @@ export function mediaTypesOf(result: CallToolResult): readonly string[] {
 
 /**
  * The only text a resource link of this server may carry for one result: the
- * path the call asked to write, and the description built out of the image's
- * own numbers. It is the check {@link proseOf} leaves to a caller, since a
- * link is not the body of a result and carries no data-not-instructions line
- * of its own.
- *
- * A result that is no render answers empty, so a tool that attaches a link of
- * its own fails a comparison against this rather than passing unchecked.
+ * written path and the image description. A result that is no render with
+ * `out` answers empty.
  */
 export function ownLinkTextOf(result: CallToolResult): readonly string[] {
   const drawn = renderDiagramResultSchema.safeParse(result.structuredContent);
