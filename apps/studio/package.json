@@ -27,8 +27,7 @@
     "@testing-library/user-event": "catalog:",
     "@playwright/test": "catalog:",
     "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "ajv": "catalog:"
+    "@types/react-dom": "catalog:"
   },
   "nx": {
     "tags": [

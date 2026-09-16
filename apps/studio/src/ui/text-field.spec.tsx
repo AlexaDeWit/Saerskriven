@@ -16,7 +16,7 @@ const refusals = () => vi.fn<(refused: RefusedDraft | undefined) => void>();
 
 describe('refusedText', () => {
   it('accepts text of the character set the model defines', () => {
-    expect(refusedText('Title', 'Threats, écluse, 脅威')).toBeUndefined();
+    expect(refusedText('Title', 'Threats, Særskriven, 脅威')).toBeUndefined();
   });
 
   it('says where the first character the model refuses sits', () => {

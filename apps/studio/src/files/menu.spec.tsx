@@ -125,7 +125,7 @@ const asked = (): boolean =>
   !globalThis.dispatchEvent(new Event('beforeunload', { cancelable: true }));
 
 const withUndeclaredKeys = async (): Promise<string> =>
-  (await vendoredFile('test-data/ecluse.json').text())
+  (await vendoredFile('threat-dragon/feature-complete.json').text())
     .replace(
       '"version"',
       '"unknownRoot": "nothing declares this",\n  "version"',
@@ -657,7 +657,7 @@ describe('opening', () => {
   it('says what the read dropped, which no later save can report', async () => {
     const user = userEvent.setup();
     const bridge = specBridge({
-      offers: chosenFile('ecluse.json', await withUndeclaredKeys()),
+      offers: chosenFile('feature-complete.json', await withUndeclaredKeys()),
     });
     mounted(bridge);
 
@@ -669,6 +669,7 @@ describe('opening', () => {
     expect(reportEntries().map((entry) => entry.textContent)).toEqual([
       'model: the key unknownRoot (not declared by the wire schema)',
       'model: the key detail.unknownDetail (not declared by the wire schema)',
+      'threat "threat-card": the Elevation of Privilege card, of which the model holds the suit alone (reduced to fit the format)',
     ]);
 
     await choose(user, 'Save');
@@ -696,7 +697,7 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(
       specBridge({
-        offers: chosenFile('ecluse.json', await withUndeclaredKeys()),
+        offers: chosenFile('feature-complete.json', await withUndeclaredKeys()),
       }),
     );
     await choose(user, 'Open');

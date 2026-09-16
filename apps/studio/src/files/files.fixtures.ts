@@ -1,10 +1,9 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
-import { repositoryRoot } from '@saerskriven/model/fixtures';
+import { committedText, testDataPath } from '@saerskriven/model/fixtures';
 import { renderSvg } from '@saerskriven/render';
 import { act } from '@testing-library/react';
 import { Either } from 'effect';
-import { readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { statSync } from 'node:fs';
 import { addedProcess, sampleModel } from '../store/store.fixtures.js';
 import { dispatch } from '../store/store.js';
 import {
@@ -168,17 +167,12 @@ export async function settled<Outcome extends OpenOutcome | SaveOutcome>(
   return result.outcome;
 }
 
-/** The text of a committed file, addressed from the repository root. */
-export const vendoredText = (path: string): string =>
-  readFileSync(join(repositoryRoot, path), 'utf8');
-
-/** A committed file with its on-disk byte count, addressed from the repository root. */
+/** A committed file under `test-data` with its on-disk byte count. */
 export function vendoredFile(path: string): ChosenFile {
-  const full = join(repositoryRoot, path);
-  const text = vendoredText(path);
+  const text = committedText(path);
   return {
     name: path.split('/').at(-1) ?? path,
-    size: statSync(full).size,
+    size: statSync(testDataPath(path)).size,
     text: () => Promise.resolve(text),
   };
 }

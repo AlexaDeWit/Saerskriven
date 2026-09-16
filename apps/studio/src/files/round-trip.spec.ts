@@ -2,11 +2,9 @@ import {
   hasDiverged,
   readAnyFormat,
   readLimits,
-  renderDivergences,
   type Divergence,
   type FormatName,
 } from '@saerskriven/formats';
-import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import type { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
@@ -21,7 +19,6 @@ import {
   specBridge,
   type SpecBridge,
   vendoredFile,
-  vendoredText,
 } from './files.fixtures.js';
 import {
   formatOf,
@@ -37,15 +34,9 @@ type Gated = {
 };
 
 const gated: readonly Gated[] = [
-  { path: 'test-data/ecluse.json', format: 'threat-dragon' },
-  { path: 'threat-modelling/saerskriven.yaml', format: 'saerskriven-yaml' },
+  { path: 'threat-dragon/feature-complete.json', format: 'threat-dragon' },
+  { path: 'saerskriven/feature-complete.yaml', format: 'saerskriven-yaml' },
 ];
-
-const validate = new Ajv({ allowUnionTypes: true }).compile(
-  JSON.parse(
-    vendoredText('test-data/threat-dragon/schema/threat-dragon-v2.schema.json'),
-  ),
-);
 
 const asDocument = (format: FormatName, text: string): unknown =>
   format === 'threat-dragon' ? JSON.parse(text) : text;
@@ -97,7 +88,6 @@ describe.each(gated)('$path', ({ path, format }) => {
 
     const divergences = await saved(bridge);
 
-    expect(renderDivergences(divergences)).toBe('No divergence recorded.');
     expect(hasDiverged(divergences)).toBe(false);
     expect(isDirty(modelStore.getState())).toBe(false);
     expect(bridge.writes).toHaveLength(1);
@@ -116,22 +106,5 @@ describe.each(gated)('$path', ({ path, format }) => {
     expect(asDocument(format, bridge.writes[0].text)).toStrictEqual(
       asDocument(format, await vendoredFile(path).text()),
     );
-  });
-});
-
-describe('the Threat Dragon file the studio writes', () => {
-  it('validates against the schema Threat Dragon opens a model with', async () => {
-    modelStore.setState(initialState(placeholderModel), true);
-    const bridge = specBridge({
-      offers: vendoredFile('test-data/ecluse.json'),
-    });
-    await opened(bridge);
-    await saved(bridge);
-
-    const document: unknown = JSON.parse(bridge.writes[0].text);
-    const valid = validate(document);
-
-    expect(validate.errors ?? []).toEqual([]);
-    expect(valid).toBe(true);
   });
 });

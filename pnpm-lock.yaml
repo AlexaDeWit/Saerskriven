@@ -364,9 +364,6 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.7(@types/react@19.2.18)
-      ajv:
-        specifier: 'catalog:'
-        version: 8.20.0
 
   apps/studio-e2e:
     devDependencies:

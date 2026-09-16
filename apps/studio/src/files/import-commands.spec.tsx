@@ -40,9 +40,7 @@ it('imports through the fallback picker and saves a dirty native model', async (
   await waitFor(() => {
     expect(click).toHaveBeenCalledOnce();
   });
-  await act(() =>
-    result.current.receive(vendoredFile('test-data/otm/example.json')),
-  );
+  await act(() => result.current.receive(vendoredFile('otm/example.json')));
   expect(isDirty(modelStore.getState())).toBe(true);
   expect(modelStore.getState().file).toMatchObject({
     name: 'example.yaml',
@@ -64,7 +62,7 @@ it('imports through the fallback picker and saves a dirty native model', async (
 
 it('asks before replacing edited work and allows cancellation', async () => {
   const bridge = specBridge({
-    offers: vendoredFile('test-data/otm/example.json'),
+    offers: vendoredFile('otm/example.json'),
   });
   const open = vi.spyOn(bridge, 'open');
   const { result } = renderHook(() => useFileSession(bridge));
@@ -103,7 +101,7 @@ it('releases the imported source handle and keeps the existing handle after a fa
     .mockResolvedValueOnce([
       handleFor(
         'source.otm',
-        await vendoredFile('test-data/otm/example.json').text(),
+        await vendoredFile('otm/example.json').text(),
         source,
       ),
     ]);
@@ -158,7 +156,7 @@ it('ignores a late import when a newer open already owns the session', async () 
     result.current.receive(chosenFile('new.yaml', sampleNativeText)),
   );
   await act(async () => {
-    pending.resolve(await vendoredFile('test-data/otm/example.json').text());
+    pending.resolve(await vendoredFile('otm/example.json').text());
   });
   expect(modelStore.getState().file).toMatchObject({ name: 'new.yaml' });
   expect(result.current.report).toBeUndefined();
