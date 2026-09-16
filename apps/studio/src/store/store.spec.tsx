@@ -10,15 +10,11 @@ import {
   nativeSource,
   restorableSnapshot,
   sampleModel,
+  elementCount,
   secondDiagram,
   twoDiagramModel,
 } from './store.fixtures.js';
-import {
-  activeDiagramId,
-  elementCount,
-  isDirty,
-  needsCloseGuard,
-} from './selectors.js';
+import { activeDiagramId, isDirty, needsCloseGuard } from './selectors.js';
 import {
   RecoveryStorageFailure,
   type RecoverySnapshot,

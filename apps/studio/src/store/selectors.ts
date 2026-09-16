@@ -35,11 +35,6 @@ export function canRedo(state: State): boolean {
   return state.future.length > 0;
 }
 
-/** How many elements the model holds, across all of its diagrams. */
-export function elementCount(state: State): number {
-  return elementsAcross(state.present.diagrams).length;
-}
-
 /**
  * The diagram on screen: the one `activeDiagram` names while the model holds
  * it, and the model's first diagram otherwise.

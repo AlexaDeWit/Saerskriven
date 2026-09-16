@@ -1,10 +1,11 @@
 import { threatDragonCodec } from '@saerskriven/formats';
-import type {
-  DiagramId,
-  Element,
-  ElementId,
-  Model,
-  Threat,
+import {
+  elementsAcross,
+  type DiagramId,
+  type Element,
+  type ElementId,
+  type Model,
+  type Threat,
 } from '@saerskriven/model';
 import {
   assumptionId,
@@ -21,8 +22,7 @@ import {
   type RecoverySnapshot,
 } from './recovery-storage.js';
 import { Action } from './actions.js';
-import { elementCount } from './selectors.js';
-import type { FileLifecycle, RetainedSource } from './state.js';
+import type { FileLifecycle, RetainedSource, State } from './state.js';
 import { modelStore } from './store.js';
 
 /**
@@ -307,6 +307,10 @@ export const present = (): Model => modelStore.getState().present;
 
 /** How many edits the store can undo. */
 export const undoable = (): number => modelStore.getState().past.length;
+
+/** How many elements a state's model holds, across all of its diagrams. */
+export const elementCount = (state: State): number =>
+  elementsAcross(state.present.diagrams).length;
 
 /** How many elements the store's model holds, across its diagrams. */
 export const heldElements = (): number => elementCount(modelStore.getState());
