@@ -78,8 +78,10 @@ of that value, because its schema does not declare it. An assumption's
 `unconfirmed` status arrived this way in version 1.
 
 Version 1 grew by additive changes: every key its first release declared is
-required, and a flow's `bidirectional` and an attached endpoint's `side` are
-optional because a later release added them.
+required, and the keys later releases added are optional. Those are a flow's
+`bidirectional`, an attached endpoint's `side`, the security facts on actors,
+processes, stores and flows, and the relationship lists (`trustBoundaryIds`,
+`containedElements` and `crossingFlows`).
 
 Everything else is breaking: a rename, a type change, a removal, or a new key
 whose absence means nothing. That takes a new `formatVersion`, and a new

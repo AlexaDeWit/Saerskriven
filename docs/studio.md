@@ -135,9 +135,9 @@ From the keyboard, select an element and run Start a flow: a list of targets
 opens under the card. The arrow keys and typing choose, Enter draws the
 flow, and Escape cancels.
 
-Select one flow to edit its route. While one flow is selected, the **Flow
-route** toolbar at the bottom centre of the canvas holds Add bend and says what
-the current gesture expects.
+Select one flow to edit its route. While one flow is selected with the Select
+tool and no name field is open, the **Flow route** toolbar at the bottom centre
+of the canvas holds Add bend and says what the current gesture expects.
 
 - Drag any segment to make a bend, and drag a bend to move it. Click a bend for
   Remove bend or Move bend, which takes a destination click.
@@ -293,7 +293,7 @@ focus is inside.
 Every edit has a keyboard path. Below, Mod is Command on macOS and Control
 elsewhere. These chords apply outside text fields and open menus. Save, Save
 as, Undo and Redo also work inside a text field, and no chord works while a
-menu or listbox is open.
+menu, listbox or dialog is open.
 
 | Command                                | Keys                                         | Also on             |
 | -------------------------------------- | -------------------------------------------- | ------------------- |
@@ -344,8 +344,8 @@ both survive forced colours. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
 
 The Position and size and flow end editors return focus to the selected
-element when they close. Deleting the focused
-element from the canvas moves focus to the canvas.
+element when they close. Deleting the focused element from the canvas moves
+focus to the canvas.
 
 React Flow gives the canvas `role="application"`, which turns off a screen
 reader's browse mode there: Tab reaches every element, but the reader's own

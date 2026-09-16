@@ -310,5 +310,5 @@ back out of the PDF, where each one is text a reader sees. Threat 2's
 mitigation is a Markdown heading whose content is a raw HTML tag, and its
 untitled mitigation's prose has the same shape: a heading becomes a PDF outline
 entry, a PDF string rather than glyphs, so a spec reads it back without a font
-or a content stream.
-It is committed rather than built in a spec so a reviewer can read it.
+or a content stream. It is committed rather than built in a spec so a reviewer
+can read it.
