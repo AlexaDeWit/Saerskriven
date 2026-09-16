@@ -112,13 +112,7 @@ export function refusedName(
     : refusedText(label, text);
 }
 
-/**
- * A controlled value, an optional refused draft, and callbacks for changes
- * and commits. `label` is the accessible name and names the field in a
- * refusal. `shownLabel` replaces the label drawn above the field, and an
- * empty one draws none.
- */
-export type TextFieldProps = {
+type TextFieldProps = {
   readonly label: string;
   readonly shownLabel?: string;
   readonly value: string;
@@ -176,7 +170,12 @@ function controlProps(
   };
 }
 
-/** Commits a single line on blur or Enter, keeping each edit as one undo step. */
+/**
+ * Commits a single line on blur or Enter, as one undo step. `label` is the
+ * accessible name and names the field in a refusal, and `shownLabel` replaces
+ * the drawn label, an empty one drawing none. `held` opens the field on a
+ * refused draft instead of `value`.
+ */
 export function TextField({
   label,
   shownLabel,
@@ -227,12 +226,15 @@ export function TextField({
   );
 }
 
-/** A {@link TextFieldProps} for prose, which starts at two lines rather than eight when `compact`. */
-export type ProseFieldProps = Omit<TextFieldProps, 'ref'> & {
+type ProseFieldProps = Omit<TextFieldProps, 'ref'> & {
   readonly compact?: boolean;
 };
 
-/** Edits Markdown source and commits on blur. The textarea grows with content to a bound, scrolls past it, and supports vertical resizing. */
+/**
+ * Edits Markdown source and commits on blur, taking {@link TextField}'s
+ * labels. The textarea starts at eight lines, or two when `compact`, grows
+ * with its content to a bound and scrolls past it.
+ */
 export function ProseField({
   label,
   shownLabel,

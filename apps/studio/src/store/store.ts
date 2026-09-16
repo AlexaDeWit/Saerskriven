@@ -20,8 +20,7 @@ import {
 } from './state.js';
 import { browserStoreSync, type StoreSync, type SyncedState } from './sync.js';
 
-/** A store and its persistence-aware dispatcher. */
-export type ModelStoreRuntime = {
+type ModelStoreRuntime = {
   readonly modelStore: StoreApi<State>;
   readonly dispatch: (
     action: Action,

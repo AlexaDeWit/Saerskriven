@@ -71,11 +71,9 @@ export type FileSession = {
 };
 
 /**
- * Settles handle ownership before synchronously dispatching the matching
- * store action for an open or a save. The session is also what follows other
- * tabs, since a model another tab wrote is one the held handle does not
- * describe: a follow releases the handle and puts away the report and every
- * question.
+ * The file session: it settles handle ownership before synchronously
+ * dispatching an open or a save, and following another tab's result releases
+ * the handle and puts away the report and every question.
  */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
@@ -129,7 +127,9 @@ export function useFileSession(
       const opened = Action.$is('Opened')(action);
       const disposition =
         intent === 'import' ? (imported ? false : 'unchanged') : opened;
-      if (!result.settle(disposition)) return;
+      if (!result.settle(disposition)) {
+        return;
+      }
       dispatch(action);
       if (Action.$is('Opened')(action) || Action.$is('Imported')(action)) {
         setReport(openReport(action.divergences, intent));

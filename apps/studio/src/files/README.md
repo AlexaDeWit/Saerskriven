@@ -171,8 +171,8 @@ write is unconfirmed. Open and New model still ask before they replace or
 clear a dirty recovered session. New model releases the native handle only
 after the recovery snapshot clears.
 
-`FileReports` is the report of the last crossing, an export report, and the
-failure notice, which the shell hangs under the chrome card
+`file-reports.tsx` holds `FileReports`: the report of the last crossing, an
+export report, and the failure notice, which the shell hangs under the chrome card
 ([`../app/chrome.tsx`](../app/chrome.tsx)): each is empty until something has
 been refused or has cost the model a key, and each can run to several lines,
 which is why they are under the card rather than in it. The crossing report and

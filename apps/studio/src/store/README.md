@@ -67,7 +67,7 @@ and no immutable snapshot to push onto a stack.
 - `selectors.ts` derives what views show. Unsaved work is `present !== saved`
   by identity, so undoing back to the saved point clears it with no
   bookkeeping. `windowTitle` is what the browser tab is named: the model's
-  name as the file session's `nameOf` gives it, ahead of the product name, so
+  name as `nameOf` in `state.ts` gives it, ahead of the product name, so
   the tab and the menu cannot disagree on what the model is called.
   `showingPlaceholder` identifies that opening state for the document title.
 

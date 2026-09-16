@@ -70,13 +70,7 @@ const foreignText = JSON.stringify({
   },
 });
 
-/**
- * A file in the format the studio reads Threat Dragon's files as, carrying
- * the document a real read produced rather than none. The purity spec clones
- * the state it is in, which is what holds the store README's rule that
- * nothing but plain data goes there, so the field this document sits in is
- * covered by the clone rather than only by its type.
- */
+/** A Threat Dragon source carrying the document a real read retained. */
 export const foreignSource: RetainedSource = {
   format: 'threat-dragon',
   document: Either.getOrThrowWith(
@@ -168,11 +162,7 @@ const document = {
   assumptions: [],
 };
 
-/**
- * The model the store specs edit: one diagram of three elements and a
- * register of one threat, small enough that a spec names every id it
- * touches.
- */
+/** The model the store specs edit: one diagram of three elements and one threat. */
 export const sampleModel: Model = parsedFixture(document);
 
 /** The fixture threat, as the register holds it. */
@@ -252,12 +242,7 @@ export const twoDiagramModel: Model = parsedFixture({
   ],
 });
 
-/**
- * One fixture element as the model holds it, for a spec that has the id and
- * needs the record. An id the diagram does not hold gives a process of that
- * id, so a spec naming the wrong one fails on what it asserts rather than on
- * a missing value.
- */
+/** The sample model's element of `id`, or a process of that id where it holds none. */
 export function sampleElement(id: ElementId): Element {
   return (
     sampleModel.diagrams[0].elements.find((element) => element.id === id) ??
@@ -294,11 +279,7 @@ export function newNote(id: string, text: string): Element {
   };
 }
 
-/**
- * A snapshot as recovery storage hands one back, which is what a store spec
- * loads from its storage double: what the studio writes, mapped through the
- * schema the load path parses it with.
- */
+/** A snapshot as recovery storage hands one back, parsed through the load path's schema. */
 export function restorableSnapshot(
   present: Model,
   dirty: boolean,

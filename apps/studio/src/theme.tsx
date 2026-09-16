@@ -1,12 +1,12 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect } from 'react';
 import {
   readColourMode,
   writeColourMode,
   type ColourMode,
 } from './theme-preference.js';
+import { externalStore } from './ui/external-store.js';
 
 let selectedMode: ColourMode | undefined;
-const subscribers = new Set<() => void>();
 
 const currentMode = (): ColourMode =>
   (selectedMode ??= readColourMode(readStorage()));
@@ -31,6 +31,8 @@ const applyColourMode = (mode: ColourMode): void => {
   }
 };
 
+const colourMode = externalStore(currentMode, (): ColourMode => 'system');
+
 applyColourMode(currentMode());
 
 /** Applies the selected colour mode to the document root. */
@@ -44,27 +46,17 @@ export function Theme() {
   return null;
 }
 
+/** The chosen colour mode, and the function that chooses and stores another. */
 export function useColourMode(): readonly [
   ColourMode,
   (mode: ColourMode) => void,
 ] {
-  const mode = useSyncExternalStore(
-    (subscribe) => {
-      subscribers.add(subscribe);
-      return () => {
-        subscribers.delete(subscribe);
-      };
-    },
-    currentMode,
-    (): ColourMode => 'system',
-  );
+  const mode = colourMode.use();
 
   const choose = (next: ColourMode): void => {
     selectedMode = next;
     writeColourMode(readStorage(), next);
-    subscribers.forEach((subscriber) => {
-      subscriber();
-    });
+    colourMode.notify();
   };
 
   return [mode, choose];

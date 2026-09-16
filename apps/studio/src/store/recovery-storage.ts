@@ -15,7 +15,7 @@ import {
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
 import { z } from 'zod';
-import { reasonOf } from '../files/bridge.js';
+import { reasonOf } from '../reason.js';
 import { studioVersion } from '../version.js';
 import { holdsDiagram } from './selectors.js';
 import {
@@ -76,19 +76,8 @@ const fileLifecycleSchema = z
   );
 
 /**
- * The versioned value stored for recovery. The model is held as a
- * Saerskriven YAML document rather than as itself, so a session written by
- * one release opens in the next wherever a file written by that release
- * would: the format's own compatibility contract carries it, a document of
- * an earlier format version restores through the format's migration, and an
- * additive change to the model costs the snapshot nothing. A retained
- * Saerskriven YAML source is migrated the same way.
- *
- * The stored shape and the parsed shape differ, and this is where they
- * meet. `document` goes in as the wire document and comes out as the model
- * under the name the store uses for it. The active diagram is optional
- * within the version: a snapshot written before it was stored still loads,
- * on the first diagram.
+ * The versioned value stored for recovery. `document` is stored as a
+ * Saerskriven YAML wire document and parses to the model as `present`.
  */
 export const recoverySnapshotSchema = z
   .object({
@@ -125,10 +114,8 @@ export function recoverySnapshot(
 }
 
 /**
- * The state a snapshot restores: the model, the file, the dirty status and
- * the active diagram where the model still holds it, with empty history and
- * transient state. Dirty status is identity, so a dirty snapshot gets a
- * distinct saved value.
+ * The state a snapshot restores, with empty history and transient state. A
+ * dirty snapshot gets a copy as its saved model, since dirty is identity.
  */
 export function restoredState(snapshot: RecoverySnapshot): State {
   const present = snapshot.present;

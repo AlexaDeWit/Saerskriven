@@ -2,14 +2,14 @@ import type { ReactNode } from 'react';
 
 import styles from './live-region.module.css';
 
-/** What a {@link LiveRegion} is called, what it says, and how it looks. */
-export type LiveRegionProps = {
+type LiveRegionProps = {
   readonly label?: string;
   readonly testId: string;
   readonly className?: string;
   readonly children?: ReactNode;
 };
 
+/** A polite live region: an atomic status while unlabelled, a named section otherwise. */
 export function LiveRegion({
   label,
   testId,

@@ -22,6 +22,7 @@ import {
   attachThreat,
   detachThreat,
   editNote,
+  elementIdsAcross,
   moveElement,
   removeElement,
   removeThreat,
@@ -78,7 +79,7 @@ export function reduce(state: State, action: Action): State {
       ),
     AddElement: ({ diagramId, element }) =>
       edited(state, addElement(state.present, diagramId, element)),
-    RemoveElement: ({ elementId }) => removedElement(state, elementId),
+    RemoveElement: ({ elementId }) => removedElements(state, [elementId]),
     RemoveElements: ({ elementIds }) => removedElements(state, elementIds),
     MoveElement: ({ elementId, offset }) =>
       edited(state, moveElement(state.present, elementId, offset)),
@@ -249,22 +250,6 @@ function withSelection(state: State, elementIds: readonly ElementId[]): State {
     : { ...state, selection, modelProperties };
 }
 
-function removedElement(state: State, elementId: ElementId): State {
-  const outcome = removeElement(state.present, elementId);
-  const next = edited(state, outcome);
-  if (Either.isLeft(outcome)) {
-    return next;
-  }
-  return {
-    ...next,
-    selection: next.selection.filter((selected) => selected !== elementId),
-    inlineEditor:
-      next.inlineEditor?.elementId === elementId
-        ? undefined
-        : next.inlineEditor,
-  };
-}
-
 function removedElements(
   state: State,
   elementIds: readonly ElementId[],
@@ -308,11 +293,7 @@ function editElements(
 
 function followed(state: State, synced: SyncedState): State {
   const { present, past, future, saved, file, recoveryCurrent } = synced;
-  const drawn = new Set(
-    present.diagrams.flatMap((diagram) =>
-      diagram.elements.map((element) => element.id),
-    ),
-  );
+  const drawn = elementIdsAcross(present.diagrams);
   const selection = state.selection.filter((selected) => drawn.has(selected));
   return {
     ...state,

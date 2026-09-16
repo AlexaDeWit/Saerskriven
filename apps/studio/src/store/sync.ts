@@ -4,8 +4,7 @@ import type { State } from './state.js';
 
 const syncVersion = 1;
 
-/** The channel every studio tab of one origin shares. */
-export const syncChannelName = 'saerskriven:studio:sync';
+const syncChannelName = 'saerskriven:studio:sync';
 
 /**
  * The result of a change, which is what one tab shows the others: the model,
@@ -32,20 +31,16 @@ type Channel = Pick<
   'postMessage' | 'addEventListener' | 'removeEventListener'
 >;
 
-/**
- * A message is trusted on its build alone: it comes from this origin's own
- * code by structured clone, which keeps the references the stacks and the
- * saved point share, and a tab left open across a deploy is the one case
- * the build guards, since two tabs share a build exactly when they run the
- * same code.
- */
 const envelopeSchema = z.object({
   version: z.literal(syncVersion),
   build: z.literal(studioBuildId),
   state: z.custom<SyncedState>(() => true),
 });
 
-/** Syncs through one channel the tab opens on first use. */
+/**
+ * Syncs through one channel the tab opens on first use. A message is trusted
+ * on its build id alone, so tabs on different builds ignore each other.
+ */
 export function channelStoreSync(open: () => Channel | undefined): StoreSync {
   let channel: Channel | undefined;
   const opened = (): Channel | undefined => (channel ??= open());

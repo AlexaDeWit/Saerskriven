@@ -4,11 +4,8 @@ import {
   FlowTargetChooser,
   Toolbox,
 } from '../canvas/toolbox.js';
-import {
-  FileReports,
-  StudioMenu,
-  type StudioMenuProps,
-} from '../files/menu.js';
+import { FileReports } from '../files/file-reports.js';
+import { StudioMenu, type StudioMenuProps } from '../files/menu.js';
 import { useMeasured } from '../ui/measure.js';
 import styles from './chrome.module.css';
 
@@ -17,15 +14,12 @@ const cardHeight = '--pn-chrome-block-size';
 const reportsHeight = '--pn-chrome-reports-block-size';
 
 /**
- * The one floating card of shell chrome: the menu button and the diagram
- * control on row one, the tool modes on row two, and under it the failure
- * notice, the file reports, the flow chooser and last the canvas
- * announcement. The card's height goes back to the document root as
- * `--pn-chrome-block-size`, and the height of what hangs above the
- * announcement as `--pn-chrome-reports-block-size`, both measured: the tools
- * row wraps on a narrow viewport, and a notice is as tall as its details. The
- * announcement is left out, and an open pane reserves a fixed slot for it
- * instead, so the pane does not move each time an edit is announced.
+ * The chrome card, with the menu and diagram control on row one and the
+ * toolbox on row two, and under it the file reports, the flow chooser and the
+ * canvas announcement. The measured heights of the card and of the reports
+ * go to the document root as `--pn-chrome-block-size` and
+ * `--pn-chrome-reports-block-size`. The announcement is not measured, since
+ * an open pane reserves a fixed slot for it.
  */
 export function StudioChrome({
   colourMode,

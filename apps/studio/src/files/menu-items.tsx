@@ -9,32 +9,30 @@ import {
 } from '../commands/registry.js';
 import {
   hostPlatform,
-  keyShortcutsAttribute,
-  spellShortcuts,
+  shortcutText,
+  type ShortcutText,
 } from '../commands/shortcuts.js';
 import styles from './menu.module.css';
 
 type MenuItemProps = {
-  readonly chord?: string;
+  readonly shortcut?: ShortcutText;
   readonly children: ReactNode;
   readonly disabled?: boolean;
   readonly keepOpen?: boolean;
-  readonly keyShortcuts?: string;
   readonly onChoose: () => void;
 };
 
 /** One item of the menu, its chord drawn beside it and declared for assistive technology. */
 export function MenuItem({
-  chord,
+  shortcut,
   children,
   disabled,
   keepOpen,
-  keyShortcuts,
   onChoose,
 }: MenuItemProps) {
   return (
     <DropdownMenu.Item
-      aria-keyshortcuts={keyShortcuts}
+      aria-keyshortcuts={shortcut?.keyShortcuts}
       className={styles.item}
       disabled={disabled}
       onSelect={(event) => {
@@ -45,9 +43,9 @@ export function MenuItem({
       }}
     >
       <span>{children}</span>
-      {chord !== undefined && (
+      {shortcut !== undefined && (
         <span aria-hidden="true" className={styles.chord}>
-          {chord}
+          {shortcut.chord}
         </span>
       )}
     </DropdownMenu.Item>
@@ -69,35 +67,61 @@ export function MenuCommand({ command, children, disabled }: MenuCommandProps) {
   );
 }
 
+type MenuQuestion = {
+  readonly question: string;
+  readonly answer: () => void;
+};
+
 type RegisteredMenuCommandProps = {
   readonly entry: Command;
   readonly children?: ReactNode;
   readonly disabled?: boolean;
+  readonly keepOpen?: boolean;
+  readonly onChoose?: () => void;
+  readonly asking?: MenuQuestion;
 };
 
-/** A command bound at render time, such as one export item per diagram. */
+/**
+ * A command bound at render time, such as one export item per diagram.
+ * `onChoose` replaces running the command through the surface. While `asking`,
+ * the item shows the question without the chord and choosing it answers.
+ */
 export function RegisteredMenuCommand({
   entry,
   children,
   disabled,
+  keepOpen,
+  onChoose,
+  asking,
 }: RegisteredMenuCommandProps) {
   const surface = useCommandSurface();
-  const hasShortcut = entry.shortcuts.length > 0;
 
+  if (asking !== undefined) {
+    return (
+      <MenuItem
+        disabled={disabled}
+        keepOpen={keepOpen}
+        onChoose={asking.answer}
+      >
+        {asking.question}
+      </MenuItem>
+    );
+  }
   return (
     <MenuItem
-      chord={
-        hasShortcut ? spellShortcuts(entry.shortcuts, hostPlatform) : undefined
-      }
       disabled={disabled}
-      keyShortcuts={
-        hasShortcut
-          ? keyShortcutsAttribute(entry.shortcuts, hostPlatform)
-          : undefined
+      keepOpen={keepOpen}
+      onChoose={
+        onChoose ??
+        (() => {
+          runCommand(entry, surface);
+        })
       }
-      onChoose={() => {
-        runCommand(entry, surface);
-      }}
+      shortcut={
+        entry.shortcuts.length === 0
+          ? undefined
+          : shortcutText(entry.shortcuts, hostPlatform)
+      }
     >
       {children ?? entry.label}
     </MenuItem>

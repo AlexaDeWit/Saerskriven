@@ -28,14 +28,10 @@ import { RadioChoices } from './radio-choices.js';
 const noDiagram = 'No diagram';
 
 /**
- * The diagram control joined to the menu button: the title of the diagram on
- * screen, and under it every diagram of the model to switch to, a New
- * diagram command, and Rename diagram, which turns the title into a field.
- * The field is drawn only while it is open on the diagram shown, so a
- * change of diagram under it closes it and clears the stale id. Enter and
- * Escape hand focus back to the button; a blur commits what it can, closes
- * either way, and leaves focus where the click put it, as the canvas name
- * field does.
+ * The title of the diagram on screen, opening a list of diagrams to switch
+ * to with New diagram and Rename diagram. The title field closes when the
+ * diagram on screen changes under it. Enter and Escape return focus to the
+ * button, and a blur commits and leaves focus where it went.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);

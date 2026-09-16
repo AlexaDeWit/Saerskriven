@@ -19,7 +19,7 @@ import {
 } from '../commands/binding.js';
 import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
-import { initialState, placeholderModel } from '../store/state.js';
+import { initialState, nameOf, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   actorElement,
@@ -32,7 +32,6 @@ import {
 import { SaveOutcome } from './bridge.js';
 import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
-import { nameOf } from './session.js';
 import {
   chosenFile,
   pngSignature,
@@ -43,7 +42,8 @@ import {
 } from './files.fixtures.js';
 import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
-import { FileReports, StudioMenu } from './menu.js';
+import { FileReports } from './file-reports.js';
+import { StudioMenu } from './menu.js';
 
 const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 

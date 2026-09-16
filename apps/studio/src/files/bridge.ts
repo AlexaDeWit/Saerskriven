@@ -1,4 +1,5 @@
 import { Data } from 'effect';
+import { reasonOf } from '../reason.js';
 
 /** The browser File fields needed for a bounded read. */
 export type ChosenFile = {
@@ -70,7 +71,9 @@ export function fileOwnership<Handle>() {
             return false;
           }
           owner = undefined;
-          if (retain !== 'unchanged') held = retain ? candidate : undefined;
+          if (retain !== 'unchanged') {
+            held = retain ? candidate : undefined;
+          }
           return true;
         },
       });
@@ -121,9 +124,4 @@ export async function readWithin(
   } catch (cause) {
     return OpenOutcome.Unreadable({ reason: reasonOf(cause) });
   }
-}
-
-/** Preserves an Error message and converts other rejection values to text. */
-export function reasonOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
 }

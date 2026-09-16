@@ -2,9 +2,9 @@ import {
   OpenOutcome,
   fileOwnership,
   readWithin,
-  reasonOf,
   type ChosenFile,
 } from './bridge.js';
+import { reasonOf } from '../reason.js';
 import { chosenFile } from './files.fixtures.js';
 
 const unreadable = (size: number): ChosenFile => ({

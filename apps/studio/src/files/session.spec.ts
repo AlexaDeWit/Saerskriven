@@ -8,6 +8,7 @@ import {
 import { Action } from '../store/actions.js';
 import {
   FileLifecycle,
+  nameOf,
   untitledModel,
   type RetainedSource,
 } from '../store/state.js';
@@ -21,7 +22,6 @@ import {
   formatOf,
   formatOfName,
   formatsFrom,
-  nameOf,
   openedBy,
   proposedName,
   proposedExportName,

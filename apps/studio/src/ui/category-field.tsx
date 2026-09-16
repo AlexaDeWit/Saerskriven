@@ -50,10 +50,9 @@ function categoryFromKey(key: string): ThreatCategory | undefined {
 }
 
 /**
- * A category as the one string a listbox can carry: the methodology, a space,
- * and the category it names. A custom category keeps the word the union files
- * it under in front, which no enumerated methodology is named, so its key
- * cannot collide with an enumerated pair however the methodology was named.
+ * A category as one listbox string: the methodology, a space and the
+ * category. A custom category's key starts with `custom`, so it cannot
+ * collide with an enumerated pair.
  */
 export function categoryKey(category: ThreatCategory): string {
   return category.methodology === 'custom'
@@ -61,22 +60,15 @@ export function categoryKey(category: ThreatCategory): string {
     : `${category.methodology} ${category.category}`;
 }
 
-/**
- * Every methodology and category the model enumerates, paired, in the order
- * the union declares them. The custom variant contributes none: its
- * methodology name is free text, so it stands for no fixed set of pairs.
- */
+/** The key of every enumerated methodology and category pair, in the union's order. */
 export const enumeratedCategoryKeys: readonly string[] = enumerated.flatMap(
   ({ methodology, categories }) =>
     categories.map((category) => `${methodology} ${category}`),
 );
 
 /**
- * The listbox's value handler, bound to one `onCommit`. The category schema
- * is the only authority on which pairs are categories, so a chosen key
- * becomes a category here or commits nothing. A custom category's own key
- * takes the second path: it is offered so the field can show the category a
- * file carried, and choosing it again leaves the threat as it is.
+ * The listbox's value handler, bound to one `onCommit`. A key the category
+ * schema does not parse, a custom category's among them, commits nothing.
  */
 export function categoryCommitter(
   onCommit: (category: ThreatCategory) => void,
@@ -89,25 +81,15 @@ export function categoryCommitter(
   };
 }
 
-/** What a {@link CategoryField} shows and where an edit goes. */
-export type CategoryFieldProps = {
+type CategoryFieldProps = {
   readonly value: ThreatCategory;
   readonly onCommit: (category: ThreatCategory) => void;
 };
 
 /**
- * What the threat is a case of, as a listbox over every methodology the model
- * enumerates at once. One choice settles both halves of the category, so a
- * methodology never stands over a category that does not belong to it.
- *
- * The options are grouped under the methodology they belong to, thirty pairs
- * being more than a person scans as one list.
- *
- * A threat that arrived carrying a custom category shows it, as an option of
- * its own, and can be moved onto an enumerated pair. Naming a new custom
- * methodology is not offered here: it is two free-text fields and a decision
- * about which methodology the model is being read under, which the panel's
- * README records as deferred.
+ * A threat's category as one listbox of methodology and category pairs,
+ * grouped by methodology. A custom category is offered as an option of its
+ * own ahead of the enumerated pairs.
  */
 export function CategoryField({ value, onCommit }: CategoryFieldProps) {
   const key = categoryKey(value);

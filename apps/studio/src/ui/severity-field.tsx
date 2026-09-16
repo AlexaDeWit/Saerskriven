@@ -2,8 +2,7 @@ import { severitySchema, type Severity } from '@saerskriven/model';
 
 import { EnumField } from './enum-field.js';
 
-/** What a {@link SeverityField} shows and where an edit goes. */
-export type SeverityFieldProps = {
+type SeverityFieldProps = {
   readonly value: Severity;
   readonly onCommit: (severity: Severity) => void;
 };
