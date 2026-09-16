@@ -1,28 +1,15 @@
-import type { ElementId } from '@saerskriven/model';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import { currentAnnouncement } from './announcements.js';
 import { Action } from '../store/actions.js';
-import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import {
-  canvasModel,
-  noteElement,
-  readerElement,
-  requestFlow,
-  studioElement,
-} from './canvas.fixtures.js';
+import { noteElement, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { currentLayout } from './layout.js';
-import { resetTools } from './tools.js';
-
-const opened = (selection: readonly ElementId[] = []): void => {
-  modelStore.setState({ ...initialState(canvasModel), selection }, true);
-  resetAnnouncements();
-  resetTools();
-};
-
-const elementCount = (): number =>
-  modelStore.getState().present.diagrams[0].elements.length;
+import {
+  actorElement,
+  heldElements,
+  processElement,
+} from '../store/store.fixtures.js';
 
 const reader = (): HTMLElement =>
   screen.getByRole('group', { name: /^Reader, actor/u });
@@ -32,7 +19,7 @@ const note = (): HTMLElement =>
 
 const readerBox = () => {
   const node = currentLayout(modelStore.getState()).nodes.find(
-    (candidate) => candidate.id === readerElement,
+    (candidate) => candidate.id === actorElement,
   );
   expect(node).toBeDefined();
   return node === undefined
@@ -45,7 +32,7 @@ const resizeControl = (from: string): HTMLElement =>
 
 describe('DiagramCanvas', () => {
   beforeEach(() => {
-    opened();
+    openCanvas();
   });
 
   it('mounts one node per element, each named from the model', () => {
@@ -71,7 +58,7 @@ describe('DiagramCanvas', () => {
   });
 
   it('draws the selection the store holds', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
     render(<DiagramCanvas />);
 
     expect(reader().classList.contains('selected')).toBe(true);
@@ -82,7 +69,7 @@ describe('DiagramCanvas', () => {
 
     fireEvent.click(reader());
 
-    expect(modelStore.getState().selection).toEqual([readerElement]);
+    expect(modelStore.getState().selection).toEqual([actorElement]);
     expect(reader().classList.contains('selected')).toBe(true);
   });
 
@@ -90,30 +77,30 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
 
     act(() => {
-      dispatch(Action.Select({ elementIds: [readerElement] }));
+      dispatch(Action.Select({ elementIds: [actorElement] }));
     });
 
     expect(reader().classList.contains('selected')).toBe(true);
   });
 
   it('removes the selected element on the delete key, and says what went with it', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(reader(), { key: 'Delete' });
 
-    expect(elementCount()).toBe(5);
+    expect(heldElements()).toBe(5);
     expect(currentAnnouncement().message).toContain('Reader');
     expect(currentAnnouncement().message).toContain('1');
   });
 
   it('removes the selected flow on the backspace key', () => {
-    opened([requestFlow]);
+    openCanvas([requestFlow]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(screen.getByTestId('rf__wrapper'), { key: 'Backspace' });
 
-    expect(elementCount()).toBe(5);
+    expect(heldElements()).toBe(5);
   });
 
   it('leaves the model alone on the delete key while nothing is selected', () => {
@@ -121,7 +108,7 @@ describe('DiagramCanvas', () => {
 
     fireEvent.keyDown(reader(), { key: 'Delete' });
 
-    expect(elementCount()).toBe(6);
+    expect(heldElements()).toBe(6);
     expect(currentAnnouncement().message).toBe('');
   });
 
@@ -130,7 +117,7 @@ describe('DiagramCanvas', () => {
     expect(screen.queryByRole('region', { name: 'Threats' })).toBeNull();
 
     act(() => {
-      dispatch(Action.Select({ elementIds: [readerElement] }));
+      dispatch(Action.Select({ elementIds: [actorElement] }));
     });
 
     expect(screen.getByRole('region', { name: 'Threats' })).toBeDefined();
@@ -142,14 +129,14 @@ describe('DiagramCanvas', () => {
   });
 
   it('opens the selected element name on Enter', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(reader(), { key: 'Enter' });
 
     expect(modelStore.getState().inlineEditor).toEqual({
       kind: 'name',
-      elementId: readerElement,
+      elementId: actorElement,
     });
     expect(screen.getByRole('textbox', { name: 'Name of Reader' })).toBe(
       document.activeElement,
@@ -157,7 +144,7 @@ describe('DiagramCanvas', () => {
   });
 
   it('opens the selected Note prose on Enter', () => {
-    opened([noteElement]);
+    openCanvas([noteElement]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(note(), { key: 'Enter' });
@@ -177,7 +164,7 @@ describe('DiagramCanvas', () => {
 
     fireEvent.keyDown(reader(), { key: 'Enter' });
 
-    expect(modelStore.getState().selection).toEqual([readerElement]);
+    expect(modelStore.getState().selection).toEqual([actorElement]);
     expect(document.activeElement).toBe(reader());
   });
 
@@ -187,7 +174,7 @@ describe('DiagramCanvas', () => {
 
     fireEvent.keyDown(reader(), { key: ' ' });
 
-    expect(modelStore.getState().selection).toEqual([readerElement]);
+    expect(modelStore.getState().selection).toEqual([actorElement]);
     expect(modelStore.getState().inlineEditor).toBeUndefined();
 
     fireEvent.keyDown(reader(), { key: ' ' });
@@ -196,35 +183,35 @@ describe('DiagramCanvas', () => {
   });
 
   it('reduces a group to the element clicked or activated with Enter', () => {
-    opened([readerElement, studioElement]);
+    openCanvas([actorElement, processElement]);
     render(<DiagramCanvas />);
 
     fireEvent.click(reader());
-    expect(modelStore.getState().selection).toEqual([readerElement]);
+    expect(modelStore.getState().selection).toEqual([actorElement]);
 
     act(() => {
-      dispatch(Action.Select({ elementIds: [readerElement, studioElement] }));
+      dispatch(Action.Select({ elementIds: [actorElement, processElement] }));
     });
     fireEvent.keyDown(reader(), { key: 'Enter' });
-    expect(modelStore.getState().selection).toEqual([readerElement]);
+    expect(modelStore.getState().selection).toEqual([actorElement]);
   });
 
   it('toggles a focused element with Shift+Enter', () => {
-    opened([readerElement, studioElement]);
+    openCanvas([actorElement, processElement]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(reader(), { key: 'Enter', shiftKey: true });
-    expect(modelStore.getState().selection).toEqual([studioElement]);
+    expect(modelStore.getState().selection).toEqual([processElement]);
 
     fireEvent.keyDown(reader(), { key: 'Enter', shiftKey: true });
     expect(modelStore.getState().selection).toEqual([
-      studioElement,
-      readerElement,
+      processElement,
+      actorElement,
     ]);
   });
 
   it('settles a keyboard move through the transient edge path', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
     render(<DiagramCanvas />);
 
     fireEvent.keyDown(reader(), { key: 'ArrowRight' });
@@ -256,7 +243,7 @@ describe('DiagramCanvas', () => {
   ] as const)(
     'resizes from the %s by keyboard with the opposite side fixed',
     (from, key, expected) => {
-      opened([readerElement]);
+      openCanvas([actorElement]);
       render(<DiagramCanvas />);
 
       fireEvent.keyDown(resizeControl(from), { key });
@@ -267,7 +254,7 @@ describe('DiagramCanvas', () => {
   );
 
   it('shrinks in the reverse direction and undo restores the full box', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
     render(<DiagramCanvas />);
     const before = readerBox();
 
@@ -284,7 +271,7 @@ describe('DiagramCanvas', () => {
   });
 
   it('clears a selected flow when the pointer lands on nothing', () => {
-    opened([requestFlow]);
+    openCanvas([requestFlow]);
     render(<DiagramCanvas />);
     const pane = document.querySelector('.react-flow__pane');
     expect(pane).not.toBeNull();
@@ -311,7 +298,7 @@ describe('DiagramCanvas', () => {
 
     expect(modelStore.getState().inlineEditor).toEqual({
       kind: 'name',
-      elementId: readerElement,
+      elementId: actorElement,
     });
   });
 

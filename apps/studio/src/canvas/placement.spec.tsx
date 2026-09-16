@@ -5,11 +5,12 @@ import { act, renderHook } from '@testing-library/react';
 import type { RefObject } from 'react';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
-import { canvasModel } from './canvas.fixtures.js';
+import { canvasModel, primaryPointer } from './canvas.fixtures.js';
 import { currentLayout } from './layout.js';
 import type { DiagramNode } from './nodes.js';
 import { usePlacement, type PlacementControls } from './placement.js';
 import { resetTools, selectTool } from './tools.js';
+import { heldElements } from '../store/store.fixtures.js';
 
 type ViewTransform = {
   readonly pan: Point;
@@ -35,17 +36,7 @@ const viewAt = (
   }),
 });
 
-const pointer = (at: Point, pointerId = 1) => ({
-  button: 0,
-  clientX: at.x,
-  clientY: at.y,
-  currentTarget: surface,
-  isPrimary: true,
-  pointerId,
-  preventDefault: vi.fn<() => void>(),
-  stopPropagation: vi.fn<() => void>(),
-  target: pane,
-});
+const onPane = { currentTarget: surface, target: pane };
 
 const renderPlacement = (
   transform: ViewTransform = { pan: { x: 0, y: 0 }, zoom: 1 },
@@ -66,9 +57,6 @@ const boxPreview = (controls: PlacementControls) => {
   return controls.preview?.kind === 'box' ? controls.preview : undefined;
 };
 
-const elementCount = (): number =>
-  modelStore.getState().present.diagrams[0].elements.length;
-
 describe('box placement gestures', () => {
   beforeEach(() => {
     modelStore.setState(initialState(canvasModel), true);
@@ -80,7 +68,7 @@ describe('box placement gestures', () => {
     const { result } = renderPlacement();
 
     act(() => {
-      result.current.pointerDown(pointer({ x: 100, y: 80 }));
+      result.current.pointerDown(primaryPointer({ x: 100, y: 80 }, onPane));
     });
     expect(boxPreview(result.current)).toMatchObject({
       position: { x: 40, y: 50 },
@@ -88,7 +76,7 @@ describe('box placement gestures', () => {
     });
 
     act(() => {
-      result.current.pointerMove(pointer({ x: 180, y: 140 }));
+      result.current.pointerMove(primaryPointer({ x: 180, y: 140 }, onPane));
     });
     const shown = boxPreview(result.current);
     expect(shown).toMatchObject({
@@ -97,7 +85,7 @@ describe('box placement gestures', () => {
     });
 
     act(() => {
-      result.current.pointerUp(pointer({ x: 999, y: 999 }));
+      result.current.pointerUp(primaryPointer({ x: 999, y: 999 }, onPane));
     });
 
     expect(result.current.preview).toBeUndefined();
@@ -113,27 +101,27 @@ describe('box placement gestures', () => {
 
   it('drops a cancelled gesture without an element or undo step', () => {
     const { result } = renderPlacement();
-    const before = elementCount();
+    const before = heldElements();
 
     act(() => {
-      result.current.pointerDown(pointer({ x: 100, y: 80 }));
-      result.current.pointerMove(pointer({ x: 180, y: 140 }));
-      result.current.pointerCancel(pointer({ x: 180, y: 140 }));
-      result.current.pointerUp(pointer({ x: 180, y: 140 }));
+      result.current.pointerDown(primaryPointer({ x: 100, y: 80 }, onPane));
+      result.current.pointerMove(primaryPointer({ x: 180, y: 140 }, onPane));
+      result.current.pointerCancel(primaryPointer({ x: 180, y: 140 }, onPane));
+      result.current.pointerUp(primaryPointer({ x: 180, y: 140 }, onPane));
     });
 
     expect(result.current.preview).toBeUndefined();
-    expect(elementCount()).toBe(before);
+    expect(heldElements()).toBe(before);
     expect(modelStore.getState().past).toHaveLength(0);
   });
 
   it('drops a gesture when Escape changes the tool', () => {
     const { result } = renderPlacement();
-    const before = elementCount();
+    const before = heldElements();
 
     act(() => {
-      result.current.pointerDown(pointer({ x: 100, y: 80 }));
-      result.current.pointerMove(pointer({ x: 180, y: 140 }));
+      result.current.pointerDown(primaryPointer({ x: 100, y: 80 }, onPane));
+      result.current.pointerMove(primaryPointer({ x: 180, y: 140 }, onPane));
     });
     act(() => {
       selectTool('select');
@@ -141,20 +129,20 @@ describe('box placement gestures', () => {
     expect(result.current.preview).toBeUndefined();
 
     act(() => {
-      result.current.pointerUp(pointer({ x: 180, y: 140 }));
+      result.current.pointerUp(primaryPointer({ x: 180, y: 140 }, onPane));
     });
-    expect(elementCount()).toBe(before);
+    expect(heldElements()).toBe(before);
     expect(modelStore.getState().past).toHaveLength(0);
   });
 
   it('drops a gesture when another model replaces its layout', () => {
     const firstLayout = currentLayout(modelStore.getState());
     const { result, rerender } = renderPlacement(undefined, firstLayout);
-    const before = elementCount();
+    const before = heldElements();
 
     act(() => {
-      result.current.pointerDown(pointer({ x: 100, y: 80 }));
-      result.current.pointerMove(pointer({ x: 180, y: 140 }));
+      result.current.pointerDown(primaryPointer({ x: 100, y: 80 }, onPane));
+      result.current.pointerMove(primaryPointer({ x: 180, y: 140 }, onPane));
     });
     modelStore.setState(initialState(placeholderModel), true);
     rerender({ current: currentLayout(modelStore.getState()) });
@@ -162,9 +150,9 @@ describe('box placement gestures', () => {
 
     expect(result.current.preview).toBeUndefined();
     act(() => {
-      result.current.pointerUp(pointer({ x: 180, y: 140 }));
+      result.current.pointerUp(primaryPointer({ x: 180, y: 140 }, onPane));
     });
-    expect(elementCount()).toBe(3);
+    expect(heldElements()).toBe(3);
     expect(modelStore.getState().past).toHaveLength(0);
     expect(before).toBe(6);
   });
@@ -173,9 +161,15 @@ describe('box placement gestures', () => {
     const { result } = renderPlacement();
 
     act(() => {
-      result.current.pointerDown(pointer({ x: 100, y: 80 }, 1));
-      result.current.pointerDown(pointer({ x: 300, y: 280 }, 2));
-      result.current.pointerMove(pointer({ x: 180, y: 140 }, 1));
+      result.current.pointerDown(
+        primaryPointer({ x: 100, y: 80 }, { ...onPane, pointerId: 1 }),
+      );
+      result.current.pointerDown(
+        primaryPointer({ x: 300, y: 280 }, { ...onPane, pointerId: 2 }),
+      );
+      result.current.pointerMove(
+        primaryPointer({ x: 180, y: 140 }, { ...onPane, pointerId: 1 }),
+      );
     });
     expect(boxPreview(result.current)).toMatchObject({
       position: { x: 101, y: 81 },
@@ -183,12 +177,16 @@ describe('box placement gestures', () => {
     });
 
     act(() => {
-      result.current.pointerCancel(pointer({ x: 300, y: 280 }, 2));
+      result.current.pointerCancel(
+        primaryPointer({ x: 300, y: 280 }, { ...onPane, pointerId: 2 }),
+      );
     });
     expect(result.current.preview).toBeDefined();
 
     act(() => {
-      result.current.pointerCancel(pointer({ x: 180, y: 140 }, 1));
+      result.current.pointerCancel(
+        primaryPointer({ x: 180, y: 140 }, { ...onPane, pointerId: 1 }),
+      );
     });
     expect(result.current.preview).toBeUndefined();
     expect(modelStore.getState().past).toHaveLength(0);
@@ -204,12 +202,16 @@ describe('box placement gestures', () => {
       });
       const rendered = renderPlacement(transform);
       act(() => {
-        rendered.result.current.pointerDown(pointer(screen(from)));
-        rendered.result.current.pointerMove(pointer(screen(to)));
+        rendered.result.current.pointerDown(
+          primaryPointer(screen(from), onPane),
+        );
+        rendered.result.current.pointerMove(primaryPointer(screen(to), onPane));
       });
       const preview = boxPreview(rendered.result.current);
       act(() => {
-        rendered.result.current.pointerCancel(pointer(screen(to)));
+        rendered.result.current.pointerCancel(
+          primaryPointer(screen(to), onPane),
+        );
       });
       rendered.unmount();
       return preview === undefined

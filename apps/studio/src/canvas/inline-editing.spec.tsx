@@ -7,13 +7,9 @@ import { elementById } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
-import {
-  canvasModel,
-  noteElement,
-  readerElement,
-  studioElement,
-} from './canvas.fixtures.js';
+import { canvasModel, noteElement } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
+import { actorElement, processElement } from '../store/store.fixtures.js';
 
 const softHyphen = '­';
 
@@ -50,7 +46,7 @@ const drawnText = (elementId: ElementId, run: string): Element | null =>
 
 describe('the inline editor', () => {
   it('labels a name field with what it renames', () => {
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
     expect(field('Name of Reader')).toHaveProperty('value', 'Reader');
@@ -58,48 +54,48 @@ describe('the inline editor', () => {
 
   it('commits a name on Enter as one undo step', async () => {
     const user = userEvent.setup();
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
     await user.type(field('Name of Reader'), 'Auditor{Enter}');
 
-    expect(nameOf(readerElement)).toBe('Auditor');
+    expect(nameOf(actorElement)).toBe('Auditor');
     expect(state().past).toHaveLength(1);
     expect(state().inlineEditor).toBeUndefined();
   });
 
   it('commits a name when it is left', async () => {
     const user = userEvent.setup();
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
     await user.type(field('Name of Reader'), 'Auditor');
     await user.tab();
 
-    expect(nameOf(readerElement)).toBe('Auditor');
+    expect(nameOf(actorElement)).toBe('Auditor');
     expect(document.activeElement?.getAttribute('data-id')).not.toBe(
-      readerElement,
+      actorElement,
     );
   });
 
   it('leaves the name alone on Escape', async () => {
     const user = userEvent.setup();
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
     await user.type(field('Name of Reader'), 'Auditor{Escape}');
 
-    expect(nameOf(readerElement)).toBe('Reader');
+    expect(nameOf(actorElement)).toBe('Reader');
     expect(state().past).toEqual([]);
     expect(state().inlineEditor).toBeUndefined();
   });
 
   it('dispatches nothing for a name the model already holds', async () => {
     const user = userEvent.setup();
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
     await user.type(field('Name of Reader'), '{Enter}');
@@ -111,16 +107,16 @@ describe('the inline editor', () => {
 
   it('keeps a refused character on screen and announces its position', async () => {
     const user = userEvent.setup();
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
     await user.type(field('Name of Reader'), `Soft${softHyphen}hyphen{Enter}`);
 
-    expect(nameOf(readerElement)).toBe('Reader');
+    expect(nameOf(actorElement)).toBe('Reader');
     expect(state().inlineEditor).toEqual({
       kind: 'name',
-      elementId: readerElement,
+      elementId: actorElement,
     });
     expect(field('Name of Reader')).toHaveProperty('value', 'Soft­hyphen');
     expect(currentAnnouncement().message).toContain('Reader');
@@ -129,16 +125,16 @@ describe('the inline editor', () => {
 
   it.each(['   ', ''])('refuses an empty name', async (name) => {
     const user = userEvent.setup();
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));
     await user.type(field('Name of Reader'), `${name}{Enter}`);
 
-    expect(nameOf(readerElement)).toBe('Reader');
+    expect(nameOf(actorElement)).toBe('Reader');
     expect(state().inlineEditor).toEqual({
       kind: 'name',
-      elementId: readerElement,
+      elementId: actorElement,
     });
     expect(currentAnnouncement().message.trim()).not.toBe('');
   });
@@ -190,14 +186,14 @@ describe('the inline editor', () => {
 describe('the field standing where the text is drawn', () => {
   it('takes the place of a name while it is open, and hands it back', async () => {
     const user = userEvent.setup();
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
-    expect(drawnText(readerElement, canvasClassNames.label)).toBeNull();
+    expect(drawnText(actorElement, canvasClassNames.label)).toBeNull();
 
     await user.type(field('Name of Reader'), '{Escape}');
 
-    expect(drawnText(readerElement, canvasClassNames.label)).not.toBeNull();
+    expect(drawnText(actorElement, canvasClassNames.label)).not.toBeNull();
   });
 
   it('is set in the type the text is drawn in', () => {
@@ -210,7 +206,7 @@ describe('the field standing where the text is drawn', () => {
   });
 
   it('stays inside the box of the element it names', () => {
-    editing(studioElement);
+    editing(processElement);
     render(<DiagramCanvas />);
 
     expect(field('Name of Studio').style.maxHeight).toBe('60px');
@@ -218,7 +214,7 @@ describe('the field standing where the text is drawn', () => {
 
   it('keeps a name on one line when pasted text carries a line break', async () => {
     const user = userEvent.setup();
-    editing(readerElement);
+    editing(actorElement);
     render(<DiagramCanvas />);
 
     await user.clear(field('Name of Reader'));

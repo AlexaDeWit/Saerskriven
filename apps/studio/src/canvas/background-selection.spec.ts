@@ -4,18 +4,12 @@ import { modelStore } from '../store/store.js';
 import { useBackgroundSelection } from './background-selection.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { resetTools, selectTool } from './tools.js';
+import { primaryPointer } from './canvas.fixtures.js';
 
 const actor = placeholderModel.diagrams[0].elements[0].id;
 const pane = document.createElement('div');
 pane.className = 'react-flow__pane';
-const event = {
-  pointerId: 1,
-  isPrimary: true,
-  button: 0,
-  clientX: 10,
-  clientY: 10,
-  target: pane,
-};
+const event = primaryPointer({ x: 10, y: 10 }, { target: pane });
 
 beforeEach(() => {
   resetTools();

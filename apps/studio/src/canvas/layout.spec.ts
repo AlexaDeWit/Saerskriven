@@ -3,18 +3,19 @@ import { Action } from '../store/actions.js';
 import { reduce } from '../store/reducer.js';
 import { initialState } from '../store/state.js';
 import {
+  actorElement,
   otherElement,
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
-import { canvasModel, readerElement } from './canvas.fixtures.js';
+import { canvasModel } from './canvas.fixtures.js';
 import { currentLayout, emptyLayout } from './layout.js';
 
 const start = initialState(canvasModel);
 
 const moved = reduce(
   start,
-  Action.MoveElement({ elementId: readerElement, offset: { x: 10, y: 0 } }),
+  Action.MoveElement({ elementId: actorElement, offset: { x: 10, y: 0 } }),
 );
 
 describe('currentLayout', () => {
@@ -31,7 +32,7 @@ describe('currentLayout', () => {
   it('lays the diagram out again once the model has moved', () => {
     expect(currentLayout(moved)).not.toBe(currentLayout(start));
     expect(
-      currentLayout(moved).nodes.find((node) => node.id === readerElement)
+      currentLayout(moved).nodes.find((node) => node.id === actorElement)
         ?.position.x,
     ).toBe(10);
   });

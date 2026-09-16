@@ -1,18 +1,14 @@
 import { act, renderHook } from '@testing-library/react';
 import { Action } from '../store/actions.js';
-import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { canvasModel, requestFlow, readerElement } from './canvas.fixtures.js';
+import { openCanvas, requestFlow } from './canvas.fixtures.js';
 import { useFlowBends } from './flow-bends.js';
 import { currentLayout } from './layout.js';
-import { resetTools, selectTool } from './tools.js';
+import { selectTool } from './tools.js';
+import { actorElement } from '../store/store.fixtures.js';
 
 beforeEach(() => {
-  resetTools();
-  modelStore.setState(
-    { ...initialState(canvasModel), selection: [requestFlow] },
-    true,
-  );
+  openCanvas([requestFlow]);
 });
 
 it('previews an insertion without changing saved state, then commits one undoable edit', () => {
@@ -77,7 +73,7 @@ it('cancels previews and ignores a stale commit after selection or tool changes'
   });
   const stale = result.current.commit;
   act(() => {
-    dispatch(Action.Select({ elementIds: [readerElement] }));
+    dispatch(Action.Select({ elementIds: [actorElement] }));
     stale(target);
   });
   expect(result.current.flow).toBeUndefined();

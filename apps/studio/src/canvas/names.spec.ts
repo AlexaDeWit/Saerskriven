@@ -4,11 +4,10 @@ import {
   canvasModel,
   flaggedCanvasModel,
   probeFlow,
-  readerElement,
   requestFlow,
-  studioElement,
 } from './canvas.fixtures.js';
 import { accessibleNames } from './names.js';
+import { actorElement, processElement } from '../store/store.fixtures.js';
 
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
@@ -24,11 +23,11 @@ const namedIn = (model: Model, id: string): string | undefined =>
 
 describe('accessibleNames', () => {
   it('names an element by what it is called and what kind it is', () => {
-    expect(names.get(studioElement)).toBe('Studio, process');
+    expect(names.get(processElement)).toBe('Studio, process');
   });
 
   it('says what an element badge shows, which no glyph says to a reader', () => {
-    expect(names.get(readerElement)).toBe(
+    expect(names.get(actorElement)).toBe(
       'Reader, actor, 1 open threat, highest severity medium',
     );
   });
@@ -39,21 +38,21 @@ describe('accessibleNames', () => {
 
   it('counts threats in the plural, so a badge of one is not read as many', () => {
     expect(names.get(requestFlow)).toContain('2 open threats');
-    expect(names.get(readerElement)).toContain('1 open threat,');
+    expect(names.get(actorElement)).toContain('1 open threat,');
   });
 
   it('names the flag raised on an open threat after the count it joins', () => {
     const model = flaggedCanvasModel({
       'threat-tampering': { invalidated: true },
     });
-    expect(namedIn(model, readerElement)).toBe(
+    expect(namedIn(model, actorElement)).toBe(
       'Reader, actor, 1 open threat, highest severity medium, Rests on an invalidated assumption',
     );
   });
 
   it('names each flag once, in flag order, whichever threat raises it', () => {
     const model = flaggedCanvasModel({
-      'threat-disclosure': { invalidated: true },
+      'threat-path-disclosure': { invalidated: true },
       'threat-repudiation': { status: 'mitigated' },
       'threat-tampering': { elements: [requestFlow], invalidated: true },
     });
@@ -66,14 +65,16 @@ describe('accessibleNames', () => {
     const model = flaggedCanvasModel({
       'threat-tampering': {
         status: 'mitigated',
-        elements: [studioElement, probeFlow],
+        elements: [processElement, probeFlow],
         invalidated: true,
       },
     });
-    expect([namedIn(model, studioElement), namedIn(model, probeFlow)]).toEqual([
-      'Studio, process, Mitigated without implemented work, Rests on an invalidated assumption',
-      'Reads a file, flow, from Studio to a free point, Mitigated without implemented work, Rests on an invalidated assumption',
-    ]);
+    expect([namedIn(model, processElement), namedIn(model, probeFlow)]).toEqual(
+      [
+        'Studio, process, Mitigated without implemented work, Rests on an invalidated assumption',
+        'Reads a file, flow, from Studio to a free point, Mitigated without implemented work, Rests on an invalidated assumption',
+      ],
+    );
   });
 
   it('names a flow by the elements its ends attach to', () => {
@@ -106,7 +107,7 @@ describe('accessibleNames', () => {
   it('falls back to the id of an end the layout drew no node for', () => {
     expect(
       accessibleNames(withoutNodes(layout), canvasModel).get(requestFlow),
-    ).toContain(`from ${readerElement} to ${studioElement}`);
+    ).toContain(`from ${actorElement} to ${processElement}`);
   });
 
   it('names an unnamed element by its kind, so a flow end still reads', () => {
@@ -115,7 +116,7 @@ describe('accessibleNames', () => {
       nodes: layout.nodes.map((node) => ({ ...node, name: '' })),
     };
     const spoken = accessibleNames(unnamed, canvasModel);
-    expect(spoken.get(studioElement)).toBe('process');
+    expect(spoken.get(processElement)).toBe('process');
     expect(spoken.get(requestFlow)).toContain('from actor to process');
   });
 

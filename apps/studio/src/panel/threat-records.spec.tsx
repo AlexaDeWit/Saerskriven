@@ -18,12 +18,11 @@ import {
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { present, undoable } from '../store/store.fixtures.js';
 import {
   chooseFrom,
   describedNumbers,
   editorTimeout,
-  present,
-  undoable,
 } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 import { ThreatEditor } from './threat-editor.js';

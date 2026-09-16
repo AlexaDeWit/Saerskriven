@@ -8,12 +8,10 @@ import type { ElementId, Flow } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
   canvasModel,
+  openCanvas,
   probeFlow,
-  readerElement,
   requestFlow,
-  studioElement,
 } from './canvas.fixtures.js';
-import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import {
   applyChanges,
@@ -25,6 +23,7 @@ import {
   type DiagramChange,
 } from './changes.js';
 import { elementIds, nodesById } from './nodes.js';
+import { actorElement, processElement } from '../store/store.fixtures.js';
 
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
@@ -52,10 +51,6 @@ const sizing = (
 
 const anchor = flowEndNodeId(probeFlow, 'target');
 
-const opened = (selection: readonly ElementId[] = []): void => {
-  modelStore.setState({ ...initialState(canvasModel), selection }, true);
-};
-
 const selectionHeld = (): readonly ElementId[] =>
   modelStore.getState().selection;
 
@@ -67,29 +62,29 @@ const flowDrawn = (): Flow | undefined => {
 describe('selectionActions', () => {
   it('selects the element the changes chose', () => {
     expect(
-      selectionActions([selecting(readerElement, true)], elements, []),
-    ).toEqual([Action.Select({ elementIds: [readerElement] })]);
+      selectionActions([selecting(actorElement, true)], elements, []),
+    ).toEqual([Action.Select({ elementIds: [actorElement] })]);
   });
 
   it('asks for nothing where the chosen element is the one already selected', () => {
     expect(
-      selectionActions([selecting(readerElement, true)], elements, [
-        readerElement,
+      selectionActions([selecting(actorElement, true)], elements, [
+        actorElement,
       ]),
     ).toEqual([]);
   });
 
   it('clears the selection where the element holding it was dropped', () => {
     expect(
-      selectionActions([selecting(readerElement, false)], elements, [
-        readerElement,
+      selectionActions([selecting(actorElement, false)], elements, [
+        actorElement,
       ]),
     ).toEqual([Action.Select({ elementIds: [] })]);
   });
 
   it('leaves a selection alone where another element was dropped', () => {
     expect(
-      selectionActions([selecting(studioElement, false)], elements, [
+      selectionActions([selecting(processElement, false)], elements, [
         requestFlow,
       ]),
     ).toEqual([]);
@@ -98,9 +93,9 @@ describe('selectionActions', () => {
   it('takes the selection over the deselection that comes with it', () => {
     expect(
       selectionActions(
-        [selecting(readerElement, false), selecting(requestFlow, true)],
+        [selecting(actorElement, false), selecting(requestFlow, true)],
         elements,
-        [readerElement],
+        [actorElement],
       ),
     ).toEqual([Action.Select({ elementIds: [requestFlow] })]);
   });
@@ -115,10 +110,10 @@ describe('selectionActions', () => {
 describe('moveActions', () => {
   it('moves an element by the offset from where the model has it', () => {
     expect(
-      moveActions([moving(readerElement, { x: 40, y: 25 }, false)], nodes, []),
+      moveActions([moving(actorElement, { x: 40, y: 25 }, false)], nodes, []),
     ).toEqual([
       Action.MoveElement({
-        elementId: readerElement,
+        elementId: actorElement,
         offset: { x: 40, y: 25 },
       }),
     ]);
@@ -126,8 +121,8 @@ describe('moveActions', () => {
 
   it('leaves a gesture still in flight to the canvas', () => {
     expect(
-      moveActions([moving(readerElement, { x: 40, y: 25 }, true)], nodes, [
-        readerElement,
+      moveActions([moving(actorElement, { x: 40, y: 25 }, true)], nodes, [
+        actorElement,
       ]),
     ).toEqual([]);
   });
@@ -136,19 +131,19 @@ describe('moveActions', () => {
     expect(
       moveActions(
         [
-          sizing(readerElement, { width: 110, height: 60 }, true),
-          moving(readerElement, { x: 10, y: 0 }, undefined),
+          sizing(actorElement, { width: 110, height: 60 }, true),
+          moving(actorElement, { x: 10, y: 0 }, undefined),
         ],
         nodes,
-        [readerElement],
+        [actorElement],
       ),
     ).toEqual([]);
   });
 
   it('asks for nothing where the element ended up where it started', () => {
     expect(
-      moveActions([moving(readerElement, { x: 0, y: 0 }, false)], nodes, [
-        readerElement,
+      moveActions([moving(actorElement, { x: 0, y: 0 }, false)], nodes, [
+        actorElement,
       ]),
     ).toEqual([]);
   });
@@ -161,14 +156,14 @@ describe('moveActions', () => {
 
   it('moves a multi-selection through one plural action', () => {
     expect(
-      moveActions([moving(readerElement, { x: 40, y: 25 }, false)], nodes, [
-        readerElement,
-        studioElement,
+      moveActions([moving(actorElement, { x: 40, y: 25 }, false)], nodes, [
+        actorElement,
+        processElement,
         requestFlow,
       ]),
     ).toEqual([
       Action.MoveElements({
-        elementIds: [readerElement, studioElement, requestFlow],
+        elementIds: [actorElement, processElement, requestFlow],
         offset: { x: 40, y: 25 },
       }),
     ]);
@@ -176,12 +171,12 @@ describe('moveActions', () => {
 });
 
 describe('gestureSelection', () => {
-  const selection = [readerElement, studioElement, requestFlow];
+  const selection = [actorElement, processElement, requestFlow];
 
   it('keeps the full selection for a group move', () => {
     expect(
       gestureSelection(
-        [moving(readerElement, { x: 40, y: 25 }, true)],
+        [moving(actorElement, { x: 40, y: 25 }, true)],
         nodes,
         selection,
       ),
@@ -191,18 +186,18 @@ describe('gestureSelection', () => {
   it('keeps only the resized node during a multi-selection resize', () => {
     expect(
       gestureSelection(
-        [sizing(readerElement, { width: 120, height: 80 }, true)],
+        [sizing(actorElement, { width: 120, height: 80 }, true)],
         nodes,
         selection,
       ),
-    ).toEqual([readerElement]);
+    ).toEqual([actorElement]);
   });
 
   it('keeps flows on untouched nodes fixed during a multi-selection resize', () => {
-    const group = [readerElement, studioElement, requestFlow];
-    const changes = [sizing(readerElement, { width: 120, height: 80 }, true)];
+    const group = [actorElement, processElement, requestFlow];
+    const changes = [sizing(actorElement, { width: 120, height: 80 }, true)];
     const onScreen = toReactFlowNodes(layout).map((node) =>
-      node.id === readerElement
+      node.id === actorElement
         ? {
             ...node,
             position: { x: node.position.x, y: node.position.y - 20 },
@@ -218,8 +213,8 @@ describe('gestureSelection', () => {
     );
 
     expect(
-      transient.nodes.find((node) => node.id === studioElement)?.position,
-    ).toEqual(nodes.get(studioElement)?.position);
+      transient.nodes.find((node) => node.id === processElement)?.position,
+    ).toEqual(nodes.get(processElement)?.position);
     expect(
       transient.edges.find((edge) => edge.id === requestFlow)?.target,
     ).toEqual(layout.edges.find((edge) => edge.id === requestFlow)?.target);
@@ -230,8 +225,8 @@ describe('betweenTwoElements', () => {
   it('allows a connection between two elements', () => {
     expect(
       betweenTwoElements({
-        source: readerElement,
-        target: studioElement,
+        source: actorElement,
+        target: processElement,
         sourceHandle: 'right',
         targetHandle: 'left',
       }),
@@ -241,8 +236,8 @@ describe('betweenTwoElements', () => {
   it('refuses one that ends where it started, which draws no line', () => {
     expect(
       betweenTwoElements({
-        source: readerElement,
-        target: readerElement,
+        source: actorElement,
+        target: actorElement,
         sourceHandle: 'right',
         targetHandle: 'left',
       }),
@@ -252,12 +247,12 @@ describe('betweenTwoElements', () => {
 
 describe('applyConnection', () => {
   it('draws the flow a settled connection asks for', () => {
-    opened();
+    openCanvas();
 
     applyConnection(
       {
-        source: readerElement,
-        target: studioElement,
+        source: actorElement,
+        target: processElement,
         sourceHandle: 'right',
         targetHandle: 'left',
       },
@@ -267,20 +262,20 @@ describe('applyConnection', () => {
     expect(modelStore.getState().past).toHaveLength(1);
     expect(flowDrawn()?.source).toEqual({
       kind: 'attached',
-      element: readerElement,
+      element: actorElement,
     });
     expect(flowDrawn()?.target).toEqual({
       kind: 'attached',
-      element: studioElement,
+      element: processElement,
     });
   });
 
   it('draws nothing for an end that names no element of the diagram', () => {
-    opened();
+    openCanvas();
 
     applyConnection(
       {
-        source: readerElement,
+        source: actorElement,
         target: anchor,
         sourceHandle: 'right',
         targetHandle: null,
@@ -294,44 +289,44 @@ describe('applyConnection', () => {
 
 describe('applyChanges', () => {
   it('selects the element a click chose', () => {
-    opened();
+    openCanvas();
 
-    applyChanges([selecting(readerElement, true)], elements, nodes);
+    applyChanges([selecting(actorElement, true)], elements, nodes);
 
-    expect(selectionHeld()).toEqual([readerElement]);
+    expect(selectionHeld()).toEqual([actorElement]);
   });
 
   it('moves the selection from an element to a flow, deselection last', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
 
     applyChanges([selecting(requestFlow, true)], elements, nodes);
-    applyChanges([selecting(readerElement, false)], elements, nodes);
+    applyChanges([selecting(actorElement, false)], elements, nodes);
 
     expect(selectionHeld()).toEqual([requestFlow]);
   });
 
   it('moves the selection from a flow to an element, deselection last', () => {
-    opened([requestFlow]);
+    openCanvas([requestFlow]);
 
-    applyChanges([selecting(readerElement, true)], elements, nodes);
+    applyChanges([selecting(actorElement, true)], elements, nodes);
     applyChanges([selecting(requestFlow, false)], elements, nodes);
 
-    expect(selectionHeld()).toEqual([readerElement]);
+    expect(selectionHeld()).toEqual([actorElement]);
   });
 
   it('clears the selection where nothing was chosen in its place', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
 
-    applyChanges([selecting(readerElement, false)], elements, nodes);
+    applyChanges([selecting(actorElement, false)], elements, nodes);
 
     expect(selectionHeld()).toEqual([]);
   });
 
   it('moves an element the model holds, so undo has something to take back', () => {
-    opened();
+    openCanvas();
 
     applyChanges(
-      [moving(readerElement, { x: 40, y: 25 }, false)],
+      [moving(actorElement, { x: 40, y: 25 }, false)],
       elements,
       nodes,
     );
@@ -341,7 +336,7 @@ describe('applyChanges', () => {
       modelStore
         .getState()
         .present.diagrams[0].elements.find(
-          (element) => element.id === readerElement,
+          (element) => element.id === actorElement,
         ),
     ).toMatchObject({ position: { x: 40, y: 25 } });
   });

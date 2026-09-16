@@ -14,11 +14,12 @@ import { Action } from '../store/actions.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
+  actorElement,
   nativeSource,
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
-import { canvasModel, readerElement } from './canvas.fixtures.js';
+import { canvasModel } from './canvas.fixtures.js';
 import { FitOnOpen, useViewCommands } from './view-commands.js';
 
 const unfitted = 'transform: translate(0px, 0px) scale(1)';
@@ -91,7 +92,7 @@ describe('FitOnOpen', () => {
     act(() => {
       dispatch(
         Action.MoveElement({
-          elementId: readerElement,
+          elementId: actorElement,
           offset: { x: 400, y: 400 },
         }),
       );

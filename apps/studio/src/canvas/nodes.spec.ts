@@ -5,9 +5,7 @@ import {
   flaggedCanvasModel,
   noteElement,
   probeFlow,
-  readerElement,
   requestFlow,
-  studioElement,
 } from './canvas.fixtures.js';
 import { accessibleNames } from './names.js';
 import {
@@ -17,6 +15,7 @@ import {
   withMeasurements,
   withLiveEdges,
 } from './nodes.js';
+import { actorElement, processElement } from '../store/store.fixtures.js';
 
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
@@ -30,12 +29,12 @@ describe('diagramGraph', () => {
   });
 
   it('names each element node and marks the one the store has selected', () => {
-    const { nodes } = diagramGraph(layout, canvasModel, [readerElement]);
-    const reader = nodes.find((node) => node.id === readerElement);
+    const { nodes } = diagramGraph(layout, canvasModel, [actorElement]);
+    const reader = nodes.find((node) => node.id === actorElement);
     expect(reader?.selected).toBe(true);
     expect(reader?.zIndex).toBe(1);
-    expect(reader?.ariaLabel).toBe(names.get(readerElement));
-    expect(nodes.find((node) => node.id === studioElement)?.selected).toBe(
+    expect(reader?.ariaLabel).toBe(names.get(actorElement));
+    expect(nodes.find((node) => node.id === processElement)?.selected).toBe(
       false,
     );
   });
@@ -49,15 +48,15 @@ describe('diagramGraph', () => {
       flagged,
       [],
     );
-    expect(
-      nodes.find((node) => node.id === readerElement)?.ariaLabel,
-    ).toContain('Rests on an invalidated assumption');
+    expect(nodes.find((node) => node.id === actorElement)?.ariaLabel).toContain(
+      'Rests on an invalidated assumption',
+    );
   });
 
   it('keeps a selected boundary below unselected nodes', () => {
     const { nodes } = diagramGraph(layout, canvasModel, [boundaryElement]);
     expect(nodes.find((node) => node.id === boundaryElement)?.zIndex).toBe(-1);
-    expect(nodes.find((node) => node.id === readerElement)?.zIndex).toBe(0);
+    expect(nodes.find((node) => node.id === actorElement)?.zIndex).toBe(0);
   });
 
   it('marks a node a flow can end on connectable, and no other', () => {
@@ -65,8 +64,8 @@ describe('diagramGraph', () => {
     const connectable = (id: string): boolean | undefined =>
       nodes.find((node) => node.id === id)?.connectable;
 
-    expect(connectable(readerElement)).toBe(true);
-    expect(connectable(studioElement)).toBe(true);
+    expect(connectable(actorElement)).toBe(true);
+    expect(connectable(processElement)).toBe(true);
     expect(connectable(boundaryElement)).toBe(false);
     expect(connectable(noteElement)).toBe(false);
   });
@@ -89,14 +88,14 @@ describe('elementIds', () => {
   it('holds every element the layout drew and no anchor', () => {
     const ids = elementIds(layout);
     expect(ids.get(requestFlow)).toBe(requestFlow);
-    expect(ids.get(readerElement)).toBe(readerElement);
+    expect(ids.get(actorElement)).toBe(actorElement);
     expect(ids.get(flowEndNodeId(probeFlow, 'target'))).toBeUndefined();
   });
 });
 
 describe('nodesById', () => {
   it('holds the drawn nodes, so a reported position has a model one to answer', () => {
-    expect(nodesById(layout).get(readerElement)?.position).toEqual({
+    expect(nodesById(layout).get(actorElement)?.position).toEqual({
       x: 0,
       y: 0,
     });

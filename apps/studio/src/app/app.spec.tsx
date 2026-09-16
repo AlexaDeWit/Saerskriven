@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetTools } from '../canvas/tools.js';
-import { elementCount } from '../store/selectors.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { appTimeout } from './app.fixtures.js';
 import { App } from './app.js';
+import { heldElements } from '../store/store.fixtures.js';
 
 const build = vi.hoisted(() => ({ version: '1.2.3', tag: '' }));
 vi.mock('../version.js', () => ({
@@ -17,8 +17,6 @@ vi.mock('../version.js', () => ({
   },
   studioBuildId: 'spec',
 }));
-
-const elementsHeld = (): number => elementCount(modelStore.getState());
 
 const processTool = (): HTMLElement =>
   screen.getByRole('button', { name: 'Process' });
@@ -80,7 +78,7 @@ describe(
     it('shows an edit placed with the toolbox and takes it back through the menu', async () => {
       const user = userEvent.setup();
       render(<App />);
-      expect(elementsHeld()).toBe(3);
+      expect(heldElements()).toBe(3);
 
       await user.click(processTool());
       const canvas = screen.getByTestId('rf__wrapper');
@@ -98,7 +96,7 @@ describe(
         isPrimary: false,
         pointerId: 2,
       });
-      expect(elementsHeld()).toBe(3);
+      expect(heldElements()).toBe(3);
       fireEvent.pointerUp(canvas, {
         button: 0,
         clientX: 100,
@@ -106,10 +104,10 @@ describe(
         isPrimary: true,
         pointerId: 1,
       });
-      expect(elementsHeld()).toBe(4);
+      expect(heldElements()).toBe(4);
 
       await undoThroughMenu(user);
-      expect(elementsHeld()).toBe(3);
+      expect(heldElements()).toBe(3);
     });
   },
   appTimeout,

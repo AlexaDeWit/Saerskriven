@@ -1,11 +1,10 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Action } from '../store/actions.js';
-import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { canvasModel, requestFlow, readerElement } from './canvas.fixtures.js';
+import { openCanvas, requestFlow } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { currentLayout } from './layout.js';
-import { resetTools } from './tools.js';
+import { actorElement } from '../store/store.fixtures.js';
 
 const press = (key: string, shiftKey = false): void => {
   fireEvent.keyDown(document.activeElement ?? document.body, { key, shiftKey });
@@ -41,11 +40,7 @@ const source = () => {
 };
 
 beforeEach(() => {
-  resetTools();
-  modelStore.setState(
-    { ...initialState(canvasModel), selection: [requestFlow] },
-    true,
-  );
+  openCanvas([requestFlow]);
 });
 
 it('keeps insertion keys and clicks separate from typing and unrelated controls', () => {
@@ -214,7 +209,7 @@ it('places and moves with clicks, and drops previews on another selection', () =
   press('Enter');
   press('ArrowUp');
   act(() => {
-    dispatch(Action.Select({ elementIds: [readerElement] }));
+    dispatch(Action.Select({ elementIds: [actorElement] }));
   });
   expect(screen.queryByRole('button', { name: 'Add bend' })).toBeNull();
   expect(modelStore.getState().present).toBe(committed);
@@ -248,7 +243,7 @@ it('pins a flow end to a side by arrow key, by its actions, and by dragging, and
   press('ArrowDown');
   expect(source()).toEqual({
     kind: 'attached',
-    element: readerElement,
+    element: actorElement,
     side: 'bottom',
   });
   expect(modelStore.getState().past).toHaveLength(1);
@@ -256,7 +251,7 @@ it('pins a flow end to a side by arrow key, by its actions, and by dragging, and
   expect(modelStore.getState().past).toHaveLength(1);
   sourceEnd().focus();
   press('Delete');
-  expect(source()).toEqual({ kind: 'attached', element: readerElement });
+  expect(source()).toEqual({ kind: 'attached', element: actorElement });
   fireEvent.click(sourceEnd());
   expect(
     screen.getByRole('group', { name: 'Flow end actions' }),
@@ -273,7 +268,7 @@ it('pins a flow end to a side by arrow key, by its actions, and by dragging, and
   expect(screen.queryByRole('group', { name: 'Flow end actions' })).toBeNull();
   const before = modelStore.getState().present;
   const reader = currentLayout(modelStore.getState()).nodes.find(
-    (node) => node.id === readerElement,
+    (node) => node.id === actorElement,
   );
   if (reader === undefined) {
     throw new Error('The reader is laid out');

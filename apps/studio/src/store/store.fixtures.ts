@@ -20,7 +20,9 @@ import {
   recoverySnapshotSchema,
   type RecoverySnapshot,
 } from './recovery-storage.js';
+import { elementCount } from './selectors.js';
 import type { FileLifecycle, RetainedSource } from './state.js';
+import { modelStore } from './store.js';
 
 /**
  * A file in the native format that retained no document, which is what a
@@ -298,3 +300,12 @@ export function restorableSnapshot(
   }
   return parsed.data;
 }
+
+/** The model the store holds now. */
+export const present = (): Model => modelStore.getState().present;
+
+/** How many edits the store can undo. */
+export const undoable = (): number => modelStore.getState().past.length;
+
+/** How many elements the store's model holds, across its diagrams. */
+export const heldElements = (): number => elementCount(modelStore.getState());

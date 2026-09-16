@@ -15,12 +15,11 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { ModelPropertiesPanel } from './model-properties.js';
 import { sectionLabel } from '@saerskriven/render';
+import { present, undoable } from '../store/store.fixtures.js';
 import {
   chooseFrom,
   describedNumbers,
   editorTimeout,
-  present,
-  undoable,
 } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 

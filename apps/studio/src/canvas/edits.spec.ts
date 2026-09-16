@@ -1,14 +1,11 @@
-import {
-  emptyModel,
-  type ElementId,
-  type Flow,
-  type Model,
-} from '@saerskriven/model';
+import { emptyModel, type Flow, type Model } from '@saerskriven/model';
 import { elementId } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
+  actorElement,
   otherElement,
+  processElement,
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
@@ -22,10 +19,9 @@ import { currentLayout } from './layout.js';
 import {
   boundaryElement,
   canvasModel,
+  openCanvas,
   probeFlow,
-  readerElement,
   requestFlow,
-  studioElement,
 } from './canvas.fixtures.js';
 import {
   connectElements,
@@ -40,11 +36,6 @@ import {
 } from './edits.js';
 import { freshElement } from './elements.js';
 
-const opened = (selection: readonly ElementId[] = []): void => {
-  modelStore.setState({ ...initialState(canvasModel), selection }, true);
-  resetAnnouncements();
-};
-
 const said = (): string => currentAnnouncement().message;
 
 const emptied = (): void => {
@@ -56,10 +47,10 @@ describe('focusElement', () => {
   const drawn = document.createElement('button');
   const field = document.createElement('input');
   drawn.className = 'react-flow__node';
-  drawn.dataset['id'] = readerElement;
+  drawn.dataset['id'] = actorElement;
 
   beforeEach(() => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
     vi.useFakeTimers();
     document.body.append(drawn, field);
   });
@@ -73,7 +64,7 @@ describe('focusElement', () => {
 
   it('waits for an element that has not rendered yet', () => {
     drawn.remove();
-    focusElement(readerElement);
+    focusElement(actorElement);
     document.body.append(drawn);
 
     vi.advanceTimersByTime(50);
@@ -82,7 +73,7 @@ describe('focusElement', () => {
   });
 
   it('retries when rendering removes the focused element', () => {
-    focusElement(readerElement);
+    focusElement(actorElement);
     drawn.remove();
     document.body.append(drawn);
 
@@ -92,7 +83,7 @@ describe('focusElement', () => {
   });
 
   it('leaves a field focused when the user moves there before a retry', () => {
-    focusElement(readerElement);
+    focusElement(actorElement);
     field.focus();
 
     vi.advanceTimersByTime(50);
@@ -102,8 +93,8 @@ describe('focusElement', () => {
 
   it('abandons a pending render retry after selection changes', () => {
     drawn.remove();
-    focusElement(readerElement);
-    modelStore.setState({ selection: [studioElement] });
+    focusElement(actorElement);
+    modelStore.setState({ selection: [processElement] });
     document.body.append(drawn);
 
     vi.advanceTimersByTime(50);
@@ -114,7 +105,7 @@ describe('focusElement', () => {
 
 describe('removalCascade', () => {
   it('counts the flows an element holds and the threats that name it', () => {
-    expect(removalCascade(canvasModel, readerElement)).toEqual({
+    expect(removalCascade(canvasModel, actorElement)).toEqual({
       flows: 1,
       threats: 1,
     });
@@ -153,7 +144,7 @@ describe('describeRemoval', () => {
 
 describe('placing an element', () => {
   beforeEach(() => {
-    opened();
+    openCanvas();
   });
 
   it('adds the element, selects it and opens its name without repeating it', () => {
@@ -233,25 +224,25 @@ describe('placing an element', () => {
 
 describe('connectElements', () => {
   beforeEach(() => {
-    opened();
+    openCanvas();
   });
 
   it('adds one flow between the two elements without repeating its focused name', () => {
-    connectElements(readerElement, studioElement);
+    connectElements(actorElement, processElement);
 
     expect(said()).toBe('');
     expect(modelStore.getState().past).toHaveLength(1);
   });
 
   it('refuses a flow as an end, which the layout could place nowhere', () => {
-    connectElements(readerElement, requestFlow);
+    connectElements(actorElement, requestFlow);
 
     expect(modelStore.getState().past).toHaveLength(0);
     expect(said()).toBe('');
   });
 
   it('refuses a trust boundary as an end, which a flow crosses rather than ends on', () => {
-    connectElements(boundaryElement, studioElement);
+    connectElements(boundaryElement, processElement);
 
     expect(modelStore.getState().past).toHaveLength(0);
     expect(said()).toBe('');
@@ -260,7 +251,7 @@ describe('connectElements', () => {
   it('draws nothing while the model holds no diagram to draw on', () => {
     emptied();
 
-    connectElements(readerElement, studioElement);
+    connectElements(actorElement, processElement);
 
     expect(modelStore.getState().past).toHaveLength(0);
     expect(said()).toBe('');
@@ -269,7 +260,7 @@ describe('connectElements', () => {
 
 describe('removeSelected', () => {
   it('does nothing at all while nothing is selected', () => {
-    opened();
+    openCanvas();
 
     expect(removeSelected()).toBe(false);
     expect(modelStore.getState().past).toHaveLength(0);
@@ -277,7 +268,7 @@ describe('removeSelected', () => {
   });
 
   it('says nothing where the model refuses the removal', () => {
-    opened([elementId('ghost-element')]);
+    openCanvas([elementId('ghost-element')]);
 
     expect(removeSelected()).toBe(false);
     expect(modelStore.getState().past).toHaveLength(0);
@@ -285,7 +276,7 @@ describe('removeSelected', () => {
   });
 
   it('removes the selection and says what the cascade took with it', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
 
     expect(removeSelected()).toBe(true);
     expect(said()).toContain('Reader');
@@ -294,8 +285,8 @@ describe('removeSelected', () => {
 
   it('names an element with a long name by a bounded prefix', () => {
     const long = 'Reader of every shared model '.repeat(10).trim();
-    opened([readerElement]);
-    dispatch(Action.RenameElement({ elementId: readerElement, name: long }));
+    openCanvas([actorElement]);
+    dispatch(Action.RenameElement({ elementId: actorElement, name: long }));
 
     removeSelected();
 
@@ -304,13 +295,13 @@ describe('removeSelected', () => {
   });
 
   it('leaves the removed element out of the model and its flow attached to nothing', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
 
     removeSelected();
 
     const elements = modelStore.getState().present.diagrams[0].elements;
     expect(
-      elements.find((element) => element.id === readerElement),
+      elements.find((element) => element.id === actorElement),
     ).toBeUndefined();
     expect(
       elements.find((element) => element.id === requestFlow),
@@ -318,7 +309,7 @@ describe('removeSelected', () => {
   });
 
   it('removes several selected elements in one undo step', () => {
-    opened([readerElement, studioElement]);
+    openCanvas([actorElement, processElement]);
 
     expect(removeSelected()).toBe(true);
 
@@ -330,12 +321,12 @@ describe('removeSelected', () => {
 
 describe('resizeNode', () => {
   beforeEach(() => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
   });
 
   it('commits position and size as one undo step', () => {
     const node = currentLayout(modelStore.getState()).nodes.find(
-      (candidate) => candidate.id === readerElement,
+      (candidate) => candidate.id === actorElement,
     );
     expect(node).toBeDefined();
     if (node === undefined) {
@@ -351,7 +342,7 @@ describe('resizeNode', () => {
     expect(state.past).toHaveLength(1);
     expect(
       state.present.diagrams[0].elements.find(
-        (element) => element.id === readerElement,
+        (element) => element.id === actorElement,
       ),
     ).toMatchObject({
       position: { x: -20, y: -10 },
@@ -361,7 +352,7 @@ describe('resizeNode', () => {
 
   it('does not commit unchanged geometry', () => {
     const node = currentLayout(modelStore.getState()).nodes.find(
-      (candidate) => candidate.id === readerElement,
+      (candidate) => candidate.id === actorElement,
     );
     expect(node).toBeDefined();
     if (node !== undefined) {
@@ -404,7 +395,7 @@ describe('on the diagram switched to', () => {
 
 describe('selectAll', () => {
   it('selects every element in the diagram on screen', () => {
-    opened([readerElement]);
+    openCanvas([actorElement]);
 
     selectAll();
 
@@ -423,7 +414,7 @@ describe('selectAll', () => {
       outOfScope: false,
       reasonOutOfScope: '',
       source: { kind: 'attached', element: requestFlow },
-      target: { kind: 'attached', element: readerElement },
+      target: { kind: 'attached', element: actorElement },
       waypoints: [],
       bidirectional: false,
     };

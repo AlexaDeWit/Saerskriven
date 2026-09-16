@@ -1,6 +1,5 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { modelStore } from '../store/store.js';
 
 /**
  * How long a spec that drives the threat editor is given, past the root
@@ -34,9 +33,3 @@ export const describedNumbers = (control: HTMLElement): readonly number[] =>
     document.getElementById(control.getAttribute('aria-describedby') ?? '')
       ?.textContent,
   );
-
-/** The model the store holds now. */
-export const present = () => modelStore.getState().present;
-
-/** How many edits the store can undo. */
-export const undoable = (): number => modelStore.getState().past.length;
