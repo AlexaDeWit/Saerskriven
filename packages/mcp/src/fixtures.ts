@@ -16,7 +16,7 @@ export { coverageResultSchema } from './lib/coverage.js';
 export { getThreatResultSchema } from './lib/get-threat.js';
 export { dataNotInstructions } from './lib/preface.js';
 export { registerResultSchema } from './lib/register.js';
-export { renderDiagramResultSchema } from './lib/render-diagram.js';
+export { renderDiagramResultSchema };
 export { searchElementsResultSchema } from './lib/search-elements.js';
 export { searchThreatsResultSchema } from './lib/search-threats.js';
 export { validateResultSchema } from './lib/validate.js';

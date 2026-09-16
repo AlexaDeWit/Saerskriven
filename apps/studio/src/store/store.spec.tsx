@@ -5,12 +5,12 @@ import { Action } from './actions.js';
 import {
   actorElement,
   addedProcess,
+  elementCount,
   foreignSource,
   mainDiagram,
   nativeSource,
   restorableSnapshot,
   sampleModel,
-  elementCount,
   secondDiagram,
   twoDiagramModel,
 } from './store.fixtures.js';
