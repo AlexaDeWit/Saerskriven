@@ -1,21 +1,28 @@
 import { Either } from 'effect';
 import type { Assumption, AssumptionStatus } from './assumptions.js';
 import type { AssumptionId, ThreatId } from './ids.js';
-import { OperationFailure } from './operation-failures.js';
+import type { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import {
+  addedRecord,
   assumptionRegister,
   editedRecord,
-  linkedThreats,
   relinkedRecord,
+  removedRecord,
   replacedRecord,
+  withId,
+  withoutId,
   withRecordStatus,
 } from './records.js';
-import { unknownThreatIn } from './references.js';
 
 type UnknownAssumptionFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownAssumption' }
+>;
+
+type AssumptionRecordFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownAssumption' | 'UnknownThreat' }
 >;
 
 /** The failures {@link addAssumption} can produce. */
@@ -30,19 +37,13 @@ export type AddAssumptionFailure = Extract<
 >;
 
 /** The failures {@link replaceAssumption} can produce. */
-export type ReplaceAssumptionFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownAssumption' | 'UnknownThreat' }
->;
+export type ReplaceAssumptionFailure = AssumptionRecordFailure;
 
 /** The failure {@link removeAssumption} can produce. */
 export type RemoveAssumptionFailure = UnknownAssumptionFailure;
 
 /** The failures {@link linkAssumption} and {@link unlinkAssumption} can produce. */
-export type AssumptionLinkFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownAssumption' | 'UnknownThreat' }
->;
+export type AssumptionLinkFailure = AssumptionRecordFailure;
 
 /** The failure {@link setAssumptionStatus} can produce. */
 export type SetAssumptionStatusFailure = UnknownAssumptionFailure;
@@ -59,28 +60,7 @@ export function addAssumption(
   model: Model,
   assumption: Assumption,
 ): Either.Either<Model, AddAssumptionFailure> {
-  if (model.assumptions.some((candidate) => candidate.id === assumption.id)) {
-    return Either.left(
-      OperationFailure.DuplicateAssumptionId({ assumptionId: assumption.id }),
-    );
-  }
-  if (!assumptionRegister.referenced(assumption)) {
-    return Either.left(
-      OperationFailure.AssumptionWithoutReference({
-        assumptionId: assumption.id,
-      }),
-    );
-  }
-  const unlinkable = unknownThreatIn(model.threats, assumption.threats);
-  if (unlinkable) {
-    return Either.left(
-      OperationFailure.UnknownThreat({ threatId: unlinkable }),
-    );
-  }
-  return Either.right({
-    ...model,
-    assumptions: [...model.assumptions, assumption],
-  });
+  return addedRecord(model, assumptionRegister, assumption);
 }
 
 /**
@@ -103,15 +83,7 @@ export function removeAssumption(
   model: Model,
   assumptionId: AssumptionId,
 ): Either.Either<Model, RemoveAssumptionFailure> {
-  if (!model.assumptions.some((candidate) => candidate.id === assumptionId)) {
-    return Either.left(OperationFailure.UnknownAssumption({ assumptionId }));
-  }
-  return Either.right({
-    ...model,
-    assumptions: model.assumptions.filter(
-      (candidate) => candidate.id !== assumptionId,
-    ),
-  });
+  return removedRecord(model, assumptionRegister, assumptionId);
 }
 
 /**
@@ -128,7 +100,7 @@ export function linkAssumption(
     assumptionRegister,
     assumptionId,
     threatId,
-    (threats) => linkedThreats(threats, threatId),
+    withId,
   );
 }
 
@@ -147,7 +119,7 @@ export function unlinkAssumption(
     assumptionRegister,
     assumptionId,
     threatId,
-    (threats) => threats.filter((id) => id !== threatId),
+    withoutId,
   );
 }
 

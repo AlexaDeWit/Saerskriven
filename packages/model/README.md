@@ -14,26 +14,16 @@ issued, so a removed threat leaves a permanent gap and `nextThreatNumber`
 never hands its number back. Coverage queries read a model without changing
 it: elements no threat references, open threats by severity, and the threat
 count of every element. Fallible exports return Effect's `Either`, carrying a
-package-owned `_tag`-discriminated failure on the error channel; an
+package-owned `_tag`-discriminated failure on the error channel, and an
 infallible operation returns its result bare. No export throws to report a
 failure, and zod stays behind the parse boundary on the terms
 [`CODING.md`](../../CODING.md) sets. Imports no internal package.
 
-Every string the model holds is text of a defined character set: every
-letter, mark, number, punctuation, symbol and space separator Unicode
-defines, plus tab, line feed and carriage return, plus the format characters
-a script owns. That last part is a rule rather than a list, Unicode saying
-which script a format character belongs to: the Arabic number signs and
-letter mark, the Syriac abbreviation mark, the Mongolian vowel separator,
-the Kaithi and Egyptian hieroglyph format controls and their kin all pass,
-and so do the zero width non-joiner and joiner and the Arabic marks U+0605,
-U+06DD and U+08E2, which Arabic writes although Unicode files them as
-belonging to no script. What no script owns is refused: the bidirectional
-controls, the zero width space, the word joiner, the byte order mark, the
-invisible operators and the tag characters, so a subdivision flag built from
-tags is refused where every other emoji sequence is not. It is an allowlist
-rather than a list of what to block, which is what keeps every living script
-readable, and [`SCHEMA.md`](SCHEMA.md) states it in full.
+Every string the model holds is text of a defined character set: an allowlist
+of the letters, marks, numbers, punctuation, symbols and space separators
+Unicode defines, tab, line feed and carriage return, and the format characters
+a script owns. What it does not name, the bidirectional controls among them, is
+refused. [`SCHEMA.md`](SCHEMA.md) states the set in full.
 
 Which format characters that rule reaches depends on the Unicode data the
 runtime carries, so

@@ -9,8 +9,7 @@ import { acceptedTextSchema } from './text.js';
  * (`mitigated`), move it to someone else such as an insurer or a supplier
  * (`transferred`), remove the feature or path that creates it (`avoided`),
  * or carry it knowingly (`accepted-risk`). `eliminated` is the threat a
- * change has made impossible rather than merely unlikely, which is a
- * stronger claim than mitigation and worth recording as one.
+ * change has made impossible rather than merely unlikely.
  * `not-applicable` is the threat that never applied to this system, which
  * is a judgement about the analysis rather than about the risk.
  */
@@ -29,9 +28,7 @@ export type ThreatStatus = z.infer<typeof threatStatusSchema>;
 
 /**
  * How bad the threat is if realized. `undecided` is a state of its own
- * rather than a missing value: a threat recorded while the system is still
- * being designed often has no defensible severity yet, and saying so is
- * more use than guessing one.
+ * rather than a missing value, for a threat with no defensible severity yet.
  */
 export const severitySchema = z.enum([
   'low',
@@ -45,12 +42,11 @@ export const severitySchema = z.enum([
 export type Severity = z.infer<typeof severitySchema>;
 
 /**
- * One threat, a record of the model in its own right rather than a child of
- * one diagram cell: Threat Dragon nests threats per cell, and this record
- * attaches to any number of elements by id instead. `description` is markdown
- * prose, and a threat's mitigations are records that link it. Threat numbers
- * must be unique across the model and element ids must resolve. parseModel
- * enforces both, so this schema alone accepts duplicates and dangling ids.
+ * One threat, attached to any number of elements by id. `description` is
+ * markdown prose, and a threat's mitigations are records that link it.
+ * Threat numbers must be unique across the model and element ids must
+ * resolve. parseModel enforces both, so this schema alone accepts duplicates
+ * and dangling ids.
  */
 export const threatSchema = z.object({
   id: threatIdSchema,
@@ -65,6 +61,9 @@ export const threatSchema = z.object({
 
 /** Threat record. */
 export type Threat = z.infer<typeof threatSchema>;
+
+/** Threat record as {@link threatSchema} accepts it. */
+export type ThreatInput = z.input<typeof threatSchema>;
 
 /**
  * A copy of `threats` ordered by threat number. A number is unique across a

@@ -64,26 +64,21 @@ export const textSchema = nodeBaseSchema.extend({
 /** Canvas text element. */
 export type TextElement = z.infer<typeof textSchema>;
 
-/** An attached endpoint uses the renderer's choice when no side is set. */
-export const attachedEndpointSchema = z.object({
+const attachedEndpointSchema = z.object({
   kind: z.literal('attached'),
   element: elementIdSchema,
   side: sideSchema.optional(),
 });
 
-/** Attached flow endpoint. */
-export type AttachedEndpoint = z.infer<typeof attachedEndpointSchema>;
-
-/** A flow endpoint at a free canvas position. */
-export const freeEndpointSchema = z.object({
+const freeEndpointSchema = z.object({
   kind: z.literal('free'),
   position: pointSchema,
 });
 
-/** Free flow endpoint. */
-export type FreeEndpoint = z.infer<typeof freeEndpointSchema>;
-
-/** An attached or free flow endpoint. */
+/**
+ * An endpoint attached to an element, where an absent `side` leaves the side
+ * to the renderer, or free at a canvas position.
+ */
 export const flowEndpointSchema = z.discriminatedUnion('kind', [
   attachedEndpointSchema,
   freeEndpointSchema,
@@ -91,6 +86,9 @@ export const flowEndpointSchema = z.discriminatedUnion('kind', [
 
 /** Flow endpoint. */
 export type FlowEndpoint = z.infer<typeof flowEndpointSchema>;
+
+/** Flow endpoint as {@link flowEndpointSchema} accepts it. */
+export type FlowEndpointInput = z.input<typeof flowEndpointSchema>;
 
 /** Flow direction is required. Absent security facts and relationship lists remain unknown. */
 export const flowSchema = elementBaseSchema.extend({
@@ -108,8 +106,10 @@ export const flowSchema = elementBaseSchema.extend({
 /** Flow element. */
 export type Flow = z.infer<typeof flowSchema>;
 
-/** Rectangular trust boundary with positive extents. */
-export const boxBoundaryShapeSchema = z.object({
+/** Flow element as {@link flowSchema} accepts it. */
+export type FlowInput = z.input<typeof flowSchema>;
+
+const boxBoundaryShapeSchema = z.object({
   kind: z.literal('box'),
   position: pointSchema,
   size: sizeSchema,
@@ -118,8 +118,7 @@ export const boxBoundaryShapeSchema = z.object({
 /** Box boundary shape. */
 export type BoxBoundaryShape = z.infer<typeof boxBoundaryShapeSchema>;
 
-/** Open boundary curve through at least two points. */
-export const curveBoundaryShapeSchema = z.object({
+const curveBoundaryShapeSchema = z.object({
   kind: z.literal('curve'),
   waypoints: waypointsSchema.min(2),
 });
@@ -127,7 +126,7 @@ export const curveBoundaryShapeSchema = z.object({
 /** Curve boundary shape. */
 export type CurveBoundaryShape = z.infer<typeof curveBoundaryShapeSchema>;
 
-/** Trust boundary geometry. */
+/** Trust boundary geometry: a box, or an open curve through at least two points. */
 export const boundaryShapeSchema = z.discriminatedUnion('kind', [
   boxBoundaryShapeSchema,
   curveBoundaryShapeSchema,
@@ -135,6 +134,9 @@ export const boundaryShapeSchema = z.discriminatedUnion('kind', [
 
 /** Trust boundary shape. */
 export type BoundaryShape = z.infer<typeof boundaryShapeSchema>;
+
+/** Trust boundary shape as {@link boundaryShapeSchema} accepts it. */
+export type BoundaryShapeInput = z.input<typeof boundaryShapeSchema>;
 
 /** Declared relationships are independent of geometry and remain unknown when absent. */
 export const trustBoundarySchema = elementBaseSchema.extend({
@@ -146,6 +148,9 @@ export const trustBoundarySchema = elementBaseSchema.extend({
 
 /** Trust boundary element. */
 export type TrustBoundary = z.infer<typeof trustBoundarySchema>;
+
+/** Trust boundary element as {@link trustBoundarySchema} accepts it. */
+export type TrustBoundaryInput = z.input<typeof trustBoundarySchema>;
 
 /** Element-specific security facts are optional. A canvas note carries no threats. */
 export const elementSchema = z.discriminatedUnion('kind', [
@@ -160,12 +165,10 @@ export const elementSchema = z.discriminatedUnion('kind', [
 /** Any diagram element. */
 export type Element = z.infer<typeof elementSchema>;
 
-/**
- * The `kind` an element carries, as the value a filter or a picker takes.
- * The names are {@link elementSchema}'s own discriminators, and a spec holds
- * the two lists equal, so a kind added to that union without being named here
- * fails rather than becoming a kind nothing can select.
- */
+/** Any diagram element as {@link elementSchema} accepts it. */
+export type ElementInput = z.input<typeof elementSchema>;
+
+/** The `kind` an element carries: {@link elementSchema}'s own discriminators. */
 export const elementKindSchema = z.enum([
   'actor',
   'process',

@@ -1,7 +1,11 @@
 import { Either } from 'effect';
 import { validModelFixture } from './fixtures.js';
 import { parseModel, type Model } from './parse.js';
-import { diagramsNamed } from './references.js';
+import {
+  chosenDiagram,
+  DiagramChoiceFailure,
+  diagramsNamed,
+} from './references.js';
 
 const model: Model = Either.getOrThrowWith(
   parseModel({
@@ -49,5 +53,44 @@ describe('diagramsNamed', () => {
 
   it('selects nothing out of a model holding no diagram', () => {
     expect(diagramsNamed([], 'diagram-main')).toEqual([]);
+  });
+});
+
+describe('chosenDiagram', () => {
+  const [main, second] = model.diagrams;
+
+  it('chooses the only diagram when no name is given', () => {
+    expect(chosenDiagram([main], undefined)).toEqual(Either.right(main));
+  });
+
+  it('refuses to choose without a name among no diagram or several', () => {
+    expect(chosenDiagram([], undefined)).toEqual(
+      Either.left(DiagramChoiceFailure.NoDiagram()),
+    );
+    expect(chosenDiagram(model.diagrams, undefined)).toEqual(
+      Either.left(
+        DiagramChoiceFailure.SeveralDiagrams({ diagrams: model.diagrams }),
+      ),
+    );
+  });
+
+  it('chooses the first diagram a name selects', () => {
+    expect(chosenDiagram(model.diagrams, 'diagram-second')).toEqual(
+      Either.right(second),
+    );
+    expect(chosenDiagram(model.diagrams, 'Main data flow')).toEqual(
+      Either.right(main),
+    );
+  });
+
+  it('refuses a name that selects no diagram, carrying the diagrams', () => {
+    expect(chosenDiagram(model.diagrams, 'Main data')).toEqual(
+      Either.left(
+        DiagramChoiceFailure.NoDiagramNamed({
+          name: 'Main data',
+          diagrams: model.diagrams,
+        }),
+      ),
+    );
   });
 });

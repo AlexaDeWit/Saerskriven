@@ -1,140 +1,32 @@
 import { Either } from 'effect';
 import { diagramId, elementId, parsedFixture } from '../fixtures.js';
-import { elementSchema, type Element, type Flow } from './elements.js';
-import { validModelFixture } from './fixtures.js';
-import { OperationFailure } from './operation-failures.js';
 import {
-  addDiagram,
   addElement,
   editNote,
-  renameDiagram,
   moveElement,
-  removeDiagram,
   removeElement,
   renameElement,
   resizeElement,
-  setFlowDirection,
-  setFlowWaypoints,
-  reconnectFlow,
-} from './operations.js';
-import { parseModel, type Model } from './parse.js';
-
-const base = parsedFixture(validModelFixture);
-const mainDiagram = diagramId('diagram-main');
-
-type OperationOutcome = Either.Either<Model, OperationFailure>;
-
-const modelOf = (result: OperationOutcome): Model => {
-  if (Either.isLeft(result)) {
-    throw new Error(`Expected the operation to succeed: ${result.left._tag}`);
-  }
-  return result.right;
-};
-
-const errorOf = (result: OperationOutcome): OperationFailure | undefined =>
-  Either.isLeft(result) ? result.left : undefined;
-
-const elementIds = (model: Model): string[] =>
-  model.diagrams.flatMap((diagram) =>
-    diagram.elements.map((element) => element.id),
-  );
-
-const elementIn = (model: Model, id: string): Element => {
-  const element = model.diagrams
-    .flatMap((diagram) => diagram.elements)
-    .find((candidate) => candidate.id === id);
-  if (!element) {
-    throw new Error(`Element ${id} is missing from the model.`);
-  }
-  return element;
-};
-
-const flowIn = (model: Model, id: string): Flow => {
-  const element = elementIn(model, id);
-  if (element.kind !== 'flow') {
-    throw new Error(`Element ${id} is not a flow.`);
-  }
-  return element;
-};
-
-const storeInput = {
-  kind: 'store',
-  id: 'element-cache',
-  name: 'Session cache',
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  position: { x: 600, y: 320 },
-  size: { width: 160, height: 80 },
-};
-
-const flowInput = {
-  kind: 'flow',
-  id: 'element-write-flow',
-  name: 'Write order',
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  source: { kind: 'attached', element: 'element-api' },
-  target: { kind: 'attached', element: 'element-db' },
-  waypoints: [],
-  bidirectional: false,
-};
-
-const noteInput = {
-  kind: 'text',
-  id: 'element-note',
-  name: 'Note',
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  text: 'Draft note',
-  position: { x: 600, y: 440 },
-  size: { width: 200, height: 80 },
-};
-
-const cache = elementSchema.parse(storeInput);
-const writeFlow = elementSchema.parse(flowInput);
-const note = elementSchema.parse(noteInput);
-const withNote = modelOf(addElement(base, mainDiagram, note));
-
-describe('setFlowWaypoints', () => {
-  const before = modelOf(addElement(base, mainDiagram, writeFlow));
-  it('preserves the flow metadata and model while changing ordered route points', () => {
-    const snapshot = structuredClone(before);
-    const waypoints = [
-      { x: -10.5, y: 30 },
-      { x: 400, y: 100 },
-    ];
-    const next = modelOf(setFlowWaypoints(before, writeFlow.id, waypoints));
-    expect(flowIn(next, writeFlow.id)).toEqual({ ...writeFlow, waypoints });
-    expect(before).toEqual(snapshot);
-    expect(next.threats).toBe(before.threats);
-    waypoints[0].x = 999;
-    expect(flowIn(next, writeFlow.id).waypoints[0].x).toBe(-10.5);
-    expect(
-      modelOf(
-        setFlowWaypoints(
-          next,
-          writeFlow.id,
-          flowIn(next, writeFlow.id).waypoints,
-        ),
-      ),
-    ).toBe(next);
-    expect(
-      flowIn(modelOf(setFlowWaypoints(next, writeFlow.id, [])), writeFlow.id)
-        .waypoints,
-    ).toEqual([]);
-  });
-  it('refuses missing elements and other element kinds', () => {
-    expect(errorOf(setFlowWaypoints(before, elementId('missing'), []))).toEqual(
-      OperationFailure.UnknownElement({ elementId: elementId('missing') }),
-    );
-    expect(errorOf(setFlowWaypoints(withNote, note.id, []))).toEqual(
-      OperationFailure.NotFlowElement({ elementId: note.id }),
-    );
-  });
-});
+} from './element-operations.js';
+import { elementSchema } from './elements.js';
+import { validModelFixture } from './fixtures.js';
+import { OperationFailure } from './operation-failures.js';
+import {
+  base,
+  cache,
+  elementIds,
+  elementIn,
+  errorOf,
+  flowIn,
+  flowInput,
+  mainDiagram,
+  modelOf,
+  storeInput,
+  withNote,
+  writeFlow,
+  type OperationOutcome,
+} from './operations.fixtures.js';
+import { parseModel } from './parse.js';
 
 describe('addElement', () => {
   it('adds a node to the named diagram', () => {
@@ -522,173 +414,6 @@ describe('editNote', () => {
   });
 });
 
-const secondDiagram = diagramId('diagram-second');
-
-const secondOfElements = {
-  id: secondDiagram,
-  title: 'Second',
-  elements: [
-    { ...cache, id: elementId('element-second-store') },
-    elementSchema.parse({
-      ...flowInput,
-      id: 'element-second-flow',
-      source: { kind: 'attached', element: 'element-second-store' },
-      target: { kind: 'free', position: { x: 0, y: 0 } },
-    }),
-  ],
-};
-
-describe('addDiagram', () => {
-  it('appends a diagram after the ones the model holds', () => {
-    const next = modelOf(
-      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
-    );
-    expect(next.diagrams.map((diagram) => diagram.id)).toEqual([
-      mainDiagram,
-      secondDiagram,
-    ]);
-    expect(next.diagrams[0]).toBe(base.diagrams[0]);
-  });
-
-  it('accepts a diagram of elements whose flows stay inside it', () => {
-    const next = modelOf(addDiagram(base, secondOfElements));
-    expect(next.diagrams[1].elements).toHaveLength(2);
-  });
-
-  it('refuses the id of a diagram the model holds', () => {
-    expect(
-      errorOf(
-        addDiagram(base, { id: mainDiagram, title: 'Again', elements: [] }),
-      ),
-    ).toEqual(OperationFailure.DuplicateDiagramId({ diagramId: mainDiagram }));
-  });
-
-  it('refuses an empty title and a refused character in one', () => {
-    expect(
-      errorOf(
-        addDiagram(base, { id: secondDiagram, title: ' ', elements: [] }),
-      ),
-    ).toEqual(OperationFailure.EmptyTitle({ diagramId: secondDiagram }));
-    expect(
-      errorOf(
-        addDiagram(base, {
-          id: secondDiagram,
-          title: 'Sec\u00adond',
-          elements: [],
-        }),
-      ),
-    ).toEqual(
-      OperationFailure.RefusedTitleCharacter({
-        diagramId: secondDiagram,
-        at: 3,
-      }),
-    );
-  });
-
-  it('refuses an element id the model holds already, or one the diagram repeats', () => {
-    expect(
-      errorOf(
-        addDiagram(base, {
-          id: secondDiagram,
-          title: 'Second',
-          elements: [elementIn(base, 'element-api')],
-        }),
-      ),
-    ).toEqual(
-      OperationFailure.DuplicateElementId({
-        elementId: elementId('element-api'),
-      }),
-    );
-    expect(
-      errorOf(
-        addDiagram(base, {
-          id: secondDiagram,
-          title: 'Second',
-          elements: [cache, cache],
-        }),
-      ),
-    ).toEqual(OperationFailure.DuplicateElementId({ elementId: cache.id }));
-  });
-
-  it('refuses a flow anchored outside the diagram', () => {
-    expect(
-      errorOf(
-        addDiagram(base, {
-          id: secondDiagram,
-          title: 'Second',
-          elements: [writeFlow],
-        }),
-      )?._tag,
-    ).toBe('InvalidFlowEndpoint');
-  });
-});
-
-describe('renameDiagram', () => {
-  it('retitles the diagram and leaves its elements as they were', () => {
-    const next = modelOf(renameDiagram(base, mainDiagram, 'Retitled'));
-    expect(next.diagrams[0].title).toBe('Retitled');
-    expect(next.diagrams[0].elements).toBe(base.diagrams[0].elements);
-  });
-
-  it('refuses an empty title, a whitespace title, and a refused character', () => {
-    expect(errorOf(renameDiagram(base, mainDiagram, ''))).toEqual(
-      OperationFailure.EmptyTitle({ diagramId: mainDiagram }),
-    );
-    expect(errorOf(renameDiagram(base, mainDiagram, '  '))).toEqual(
-      OperationFailure.EmptyTitle({ diagramId: mainDiagram }),
-    );
-    expect(errorOf(renameDiagram(base, mainDiagram, 'Ma\u00adin'))).toEqual(
-      OperationFailure.RefusedTitleCharacter({ diagramId: mainDiagram, at: 2 }),
-    );
-  });
-
-  it('fails on an unknown diagram', () => {
-    expect(errorOf(renameDiagram(base, secondDiagram, 'Ghost'))).toEqual(
-      OperationFailure.UnknownDiagram({ diagramId: secondDiagram }),
-    );
-  });
-});
-
-describe('removeDiagram', () => {
-  it('drops a diagram that owns no element', () => {
-    const withSecond = modelOf(
-      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
-    );
-    expect(
-      modelOf(removeDiagram(withSecond, secondDiagram)).diagrams.map(
-        (diagram) => diagram.id,
-      ),
-    ).toEqual([mainDiagram]);
-  });
-
-  it('refuses a diagram that still owns elements, counting them', () => {
-    expect(errorOf(removeDiagram(base, mainDiagram))).toEqual(
-      OperationFailure.DiagramNotEmpty({
-        diagramId: mainDiagram,
-        elements: base.diagrams[0].elements.length,
-      }),
-    );
-  });
-
-  it('fails on an unknown diagram', () => {
-    expect(errorOf(removeDiagram(base, secondDiagram))).toEqual(
-      OperationFailure.UnknownDiagram({ diagramId: secondDiagram }),
-    );
-  });
-
-  it('goes through once the caller has emptied it with removeElement', () => {
-    const emptied = elementIds(base).reduce(
-      (model, id) => modelOf(removeElement(model, elementId(id))),
-      base,
-    );
-    const next = modelOf(removeDiagram(emptied, mainDiagram));
-    expect(next.diagrams).toEqual([]);
-    expect(next.threats.map((threat) => threat.elements)).toEqual([[]]);
-    expect(next.assumptions).toEqual(base.assumptions);
-    expect(Either.isRight(parseModel(next))).toBe(true);
-  });
-});
-
 describe('operation purity', () => {
   it('leaves the input model untouched', () => {
     const pristine = structuredClone(base);
@@ -699,9 +424,6 @@ describe('operation purity', () => {
     resizeElement(base, elementId('element-api'), { width: 5, height: 5 });
     renameElement(base, elementId('element-api'), 'Renamed');
     editNote(withNote, elementId('element-note'), 'Edited');
-    addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] });
-    renameDiagram(base, mainDiagram, 'Retitled');
-    removeDiagram(base, mainDiagram);
     expect(base).toEqual(pristine);
     expect(withNote).toEqual(notePristine);
   });
@@ -727,19 +449,6 @@ describe('operation outputs re-parse through parseModel', () => {
       renameElement(base, elementId('element-api'), 'Orders API'),
     ],
     ['editNote', editNote(withNote, elementId('element-note'), 'Edited')],
-    [
-      'addDiagram',
-      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
-    ],
-    ['addDiagram of elements', addDiagram(base, secondOfElements)],
-    ['renameDiagram', renameDiagram(base, mainDiagram, 'Retitled')],
-    [
-      'removeDiagram',
-      Either.flatMap(
-        addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
-        (model) => removeDiagram(model, secondDiagram),
-      ),
-    ],
   ];
 
   for (const [operation, result] of outputs) {
@@ -747,101 +456,4 @@ describe('operation outputs re-parse through parseModel', () => {
       expect(Either.isRight(parseModel(modelOf(result)))).toBe(true);
     });
   }
-});
-
-describe('reconnectFlow', () => {
-  it('changes one endpoint and retains identity, metadata, bends, and threat links', () => {
-    const id = elementId('element-order-flow');
-    const before = flowIn(base, id);
-    const after = modelOf(
-      reconnectFlow(base, id, 'target', elementId('element-db')),
-    );
-    expect(flowIn(after, id)).toEqual({
-      ...before,
-      target: { kind: 'attached', element: elementId('element-db') },
-    });
-    expect(after.threats).toBe(base.threats);
-    expect(reconnectFlow(after, id, 'target', elementId('element-db'))).toEqual(
-      Either.right(after),
-    );
-    expect(
-      errorOf(reconnectFlow(base, id, 'target', elementId('element-customer')))
-        ?._tag,
-    ).toBe('InvalidFlowEndpoint');
-    expect(
-      errorOf(reconnectFlow(base, id, 'target', elementId('missing')))?._tag,
-    ).toBe('InvalidFlowEndpoint');
-    expect(
-      errorOf(
-        reconnectFlow(
-          base,
-          elementId('element-api'),
-          'source',
-          elementId('element-db'),
-        ),
-      )?._tag,
-    ).toBe('NotFlowElement');
-    expect(
-      errorOf(
-        reconnectFlow(
-          base,
-          elementId('missing'),
-          'source',
-          elementId('element-db'),
-        ),
-      )?._tag,
-    ).toBe('UnknownElement');
-  });
-
-  it('pins an end to a side of the element it already names, and releases it', () => {
-    const id = elementId('element-order-flow');
-    const before = flowIn(base, id);
-    const element =
-      before.source.kind === 'attached' ? before.source.element : undefined;
-    if (element === undefined) {
-      throw new Error('The fixture flow starts attached');
-    }
-    const pinned = modelOf(
-      reconnectFlow(base, id, 'source', element, 'bottom'),
-    );
-    expect(flowIn(pinned, id)).toEqual({
-      ...before,
-      source: { kind: 'attached', element, side: 'bottom' },
-    });
-    expect(
-      modelOf(reconnectFlow(pinned, id, 'source', element, 'bottom')),
-    ).toBe(pinned);
-    const released = modelOf(reconnectFlow(pinned, id, 'source', element));
-    expect(flowIn(released, id).source).toEqual({ kind: 'attached', element });
-    expect(
-      modelOf(
-        reconnectFlow(pinned, id, 'source', elementId('element-db')),
-      ).diagrams[0].elements.find((candidate) => candidate.id === id),
-    ).toMatchObject({
-      source: { kind: 'attached', element: elementId('element-db') },
-    });
-  });
-});
-
-describe('setFlowDirection', () => {
-  it('makes a flow bidirectional and one-way again, keeping the model where nothing changes', () => {
-    const id = elementId('element-order-flow');
-    const before = flowIn(base, id);
-    expect(before.bidirectional).toBe(false);
-    expect(modelOf(setFlowDirection(base, id, false))).toBe(base);
-    const both = modelOf(setFlowDirection(base, id, true));
-    expect(flowIn(both, id)).toEqual({ ...before, bidirectional: true });
-    expect(flowIn(modelOf(setFlowDirection(both, id, false)), id)).toEqual(
-      before,
-    );
-  });
-
-  it('refuses missing elements and other element kinds', () => {
-    expect(
-      errorOf(setFlowDirection(base, elementId('element-api'), true))?._tag,
-    ).toBe('NotFlowElement');
-    expect(
-      errorOf(setFlowDirection(base, elementId('missing'), true))?._tag,
-    ).toBe('UnknownElement');
-  });
 });

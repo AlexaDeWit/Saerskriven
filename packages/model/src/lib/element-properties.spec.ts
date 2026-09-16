@@ -1,7 +1,7 @@
 import { Either } from 'effect';
 import { elementId, parsedFixture, validModelFixture } from '../fixtures.js';
 import type { ElementProperties } from './element-properties.js';
-import { setElementProperties } from './operations.js';
+import { setElementProperties } from './element-operations.js';
 import { parseModel } from './parse.js';
 
 const model = parsedFixture(validModelFixture);

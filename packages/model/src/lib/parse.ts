@@ -1,12 +1,12 @@
-import { relationshipIssues } from './relationships.js';
 import { Data, Either } from 'effect';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { modelSchema } from './model.js';
 import {
   elementIdsAcross,
   elementIdsIn,
   endpointViolationsOf,
 } from './references.js';
+import { relationshipIssues } from './relationships.js';
 
 type StructuralModel = z.infer<typeof modelSchema>;
 
@@ -34,6 +34,12 @@ export type ParseIssue = {
   readonly code: string;
 };
 
+/** One issue as a line of text: its dotted path, `(root)` for an empty one, then its message. */
+export function issueLine(issue: ParseIssue): string {
+  const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
+  return `${path}: ${issue.message}`;
+}
+
 /**
  * One issue as a schema reports it. Declared structurally rather than as a
  * zod type, so a caller behind its own parse boundary can hand its schema's
@@ -48,9 +54,7 @@ export type SchemaIssue = {
 /**
  * Schema issues as the plain {@link ParseIssue} data this package reports.
  * A symbol path segment, which a key of that kind produces and JSON has no
- * spelling for, becomes its string form. The format codecs map their own
- * wire-schema issues through this, so issues read the same way whichever
- * schema produced them.
+ * spelling for, becomes its string form.
  */
 export function toParseIssues(
   issues: readonly SchemaIssue[],
@@ -72,11 +76,7 @@ export type ParseFailure = Data.TaggedEnum<{
   InvalidModel: { readonly issues: readonly ParseIssue[] };
 }>;
 
-/**
- * Constructor for {@link ParseFailure}: the single InvalidModel variant,
- * plus Effect's `$is` and `$match` helpers. Values compare structurally
- * under Effect's Equal and serialize to their plain tagged shape.
- */
+/** Constructors for {@link ParseFailure}, with Effect's `$is` and `$match`. */
 export const ParseFailure = Data.taggedEnum<ParseFailure>();
 
 /** Parses model structure, unique identities, issuance bookkeeping and diagram-local references. */

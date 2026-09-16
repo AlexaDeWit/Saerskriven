@@ -6,6 +6,8 @@ import {
   assumptionRegister,
   culledAfter,
   mitigationRegister,
+  withId,
+  withoutId,
 } from './records.js';
 import { elementIdsAcross, unknownElementIn } from './references.js';
 import type { Threat } from './threats.js';
@@ -90,7 +92,7 @@ export function removeThreat(
     record: Linked,
   ): Linked => ({
     ...record,
-    threats: record.threats.filter((id) => id !== threatId),
+    threats: withoutId(record.threats, threatId),
   });
   return Either.right({
     ...model,
@@ -150,9 +152,7 @@ export function attachThreat(
   threatId: ThreatId,
   elementId: ElementId,
 ): Either.Either<Model, AttachThreatFailure> {
-  return withRelinkedThreat(model, threatId, elementId, (elements) =>
-    elements.includes(elementId) ? [...elements] : [...elements, elementId],
-  );
+  return withRelinkedThreat(model, threatId, elementId, withId);
 }
 
 /**
@@ -164,9 +164,7 @@ export function detachThreat(
   threatId: ThreatId,
   elementId: ElementId,
 ): Either.Either<Model, DetachThreatFailure> {
-  return withRelinkedThreat(model, threatId, elementId, (elements) =>
-    elements.filter((id) => id !== elementId),
-  );
+  return withRelinkedThreat(model, threatId, elementId, withoutId);
 }
 
 /**
@@ -190,7 +188,7 @@ function withRelinkedThreat(
   model: Model,
   threatId: ThreatId,
   elementId: ElementId,
-  relink: (elements: readonly ElementId[]) => ElementId[],
+  relink: (elements: readonly ElementId[], elementId: ElementId) => ElementId[],
 ): Either.Either<Model, ThreatLinkFailure> {
   const threat = model.threats.find((candidate) => candidate.id === threatId);
   if (!threat) {
@@ -200,6 +198,9 @@ function withRelinkedThreat(
     return Either.left(OperationFailure.UnknownElement({ elementId }));
   }
   return Either.right(
-    withThreat(model, { ...threat, elements: relink(threat.elements) }),
+    withThreat(model, {
+      ...threat,
+      elements: relink(threat.elements, elementId),
+    }),
   );
 }

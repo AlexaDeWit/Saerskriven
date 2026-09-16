@@ -33,3 +33,6 @@ export const assumptionSchema = z.object({
 
 /** Assumption record. */
 export type Assumption = z.infer<typeof assumptionSchema>;
+
+/** Assumption record as {@link assumptionSchema} accepts it. */
+export type AssumptionInput = z.input<typeof assumptionSchema>;

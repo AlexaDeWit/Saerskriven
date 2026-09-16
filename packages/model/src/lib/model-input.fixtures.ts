@@ -1,22 +1,22 @@
 import * as fc from 'fast-check';
-import type { z } from 'zod';
-import { assumptionSchema, assumptionStatusSchema } from './assumptions.js';
+import { assumptionStatusSchema, type AssumptionInput } from './assumptions.js';
 import { threatCategorySchema, type ThreatCategory } from './categories.js';
-import { elementSchema, flowEndpointSchema } from './elements.js';
+import {
+  elementSchema,
+  type ElementInput,
+  type FlowEndpointInput,
+} from './elements.js';
 import { sides } from './geometry.js';
-import { mitigationSchema, mitigationStatusSchema } from './mitigations.js';
-import { diagramSchema, modelMetadataSchema } from './model.js';
-import { severitySchema, threatSchema, threatStatusSchema } from './threats.js';
+import { mitigationStatusSchema, type MitigationInput } from './mitigations.js';
+import type { DiagramInput, ModelMetadataInput } from './model.js';
+import {
+  severitySchema,
+  threatStatusSchema,
+  type ThreatInput,
+} from './threats.js';
 import { acceptedTextSchema } from './text.js';
 
-type ElementInput = z.input<typeof elementSchema>;
 type ElementKind = ElementInput['kind'];
-type EndpointInput = z.input<typeof flowEndpointSchema>;
-type ThreatInput = z.input<typeof threatSchema>;
-type DiagramInput = z.input<typeof diagramSchema>;
-type MitigationInput = z.input<typeof mitigationSchema>;
-type AssumptionInput = z.input<typeof assumptionSchema>;
-type MetadataInput = z.input<typeof modelMetadataSchema>;
 
 const elementKinds: readonly ElementKind[] = elementSchema.options.map(
   (option) => option.shape.kind.value,
@@ -94,7 +94,7 @@ function categoryCandidatesOf(
       });
 }
 
-const metadataArbitrary: fc.Arbitrary<MetadataInput> = fc.record({
+const metadataArbitrary: fc.Arbitrary<ModelMetadataInput> = fc.record({
   title: textArbitrary,
   owner: textArbitrary,
   description: textArbitrary,
@@ -106,25 +106,13 @@ const threatNumbersArbitrary = fc
   .filter((numbers) => numbers.length < 2 || !isAscending(numbers));
 
 /**
- * Models covering every record kind the internal model has, as `parseModel`
- * input rather than as models: a spec parses them, so a generator that
- * strays outside what the model accepts fails the run that produced it
- * rather than passing quietly. Text is drawn through the model's own
- * character rule for that reason, the grapheme unit reaching a private use
- * or format character now and again.
- *
- * Categories are read from the union rather than listed, so a methodology
- * added there is generated without an edit here, and each candidate is
- * built loosely and handed back through the schema, which is what pairs a
- * methodology with its own categories again. Threat numbers are distinct
- * and never already ascending where there is more than one, so a model
- * reaches the write in an order the write has to change rather than one it
- * can leave alone.
- *
- * Ids are positional, so uniqueness across the model comes free and the
- * references, which are drawn from the ids already laid out, always resolve.
- * A flow's endpoints are drawn from its own diagram, minus the flow, which
- * is what `parseModel` demands of them.
+ * `parseModel` input covering every record kind the model has. Text is drawn
+ * through the model's own character rule. Category candidates are built
+ * loosely and re-parsed through the union, which pairs each methodology with
+ * its own categories. Threat numbers are distinct and never already
+ * ascending, so a write has to reorder them. Ids are positional, references
+ * are drawn from ids already laid out, and a flow's endpoints come from its
+ * own diagram, minus the flow.
  */
 export const modelInputArbitrary = fc
   .record({
@@ -249,7 +237,7 @@ function commonArbitrary(id: string) {
 
 function endpointArbitrary(
   siblings: readonly string[],
-): fc.Arbitrary<EndpointInput> {
+): fc.Arbitrary<FlowEndpointInput> {
   const free = fc.record({
     kind: fc.constant('free' as const),
     position: pointArbitrary,
