@@ -967,25 +967,11 @@ const saerskrivenModelPath = join(
   'threat-modelling/saerskriven.yaml',
 );
 
-const saerskrivenModelJsonPath = testDataPath('saerskriven.model.json');
-
-/**
- * A Saerskriven YAML file this repository commits, with its committed bytes and,
- * where this suite is the producer of one, the path it writes the file's
- * internal model out to.
- */
+/** A Saerskriven YAML file this repository commits, with its committed bytes. */
 export type NativeFixture = {
   readonly name: string;
   readonly path: string;
   readonly text: string;
-  readonly modelJsonPath: string | undefined;
-};
-
-/** A {@link NativeFixture} whose internal model this suite writes out. */
-export type EmittedModel = {
-  readonly name: string;
-  readonly text: string;
-  readonly modelJsonPath: string;
 };
 
 /**
@@ -995,39 +981,19 @@ export type EmittedModel = {
  * a path, so a third file joins all of them by being added here. The frozen
  * fixtures at {@link frozenV021Path} and {@link frozenV030Path} are not among
  * them, because a write of their models is a later shape.
- *
- * `modelJsonPath` is where a file's internal model is written out for
- * `packages/render` and `packages/canvas`, which gate on a model and cannot
- * import a codec.
  */
 export const nativeFixtures: readonly NativeFixture[] = [
   {
     name: 'feature-complete file',
     path: featureCompletePath,
     text: featureCompleteYaml,
-    modelJsonPath: undefined,
   },
   {
     name: 'Saerskriven model',
     path: saerskrivenModelPath,
     text: readFileSync(saerskrivenModelPath, 'utf8'),
-    modelJsonPath: saerskrivenModelJsonPath,
   },
 ];
-
-/** The fixtures of {@link nativeFixtures} this suite writes a model out for. */
-export const emittedModels: readonly EmittedModel[] = nativeFixtures.flatMap(
-  (fixture) =>
-    fixture.modelJsonPath === undefined
-      ? []
-      : [
-          {
-            name: fixture.name,
-            text: fixture.text,
-            modelJsonPath: fixture.modelJsonPath,
-          },
-        ],
-);
 
 /**
  * How long a property over `modelInputArbitrary` is given, past the root

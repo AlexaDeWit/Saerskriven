@@ -94,8 +94,5 @@ release wrote, `test-data/saerskriven/v0.2.1.yaml` and
 the native files committed in the writer's canonical form, the feature-complete
 file and [`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md),
 and each is compared byte for byte with a write of its read.
-[`test-data/README.md`](../../test-data/README.md#saerskrivenmodeljson)
-describes the model JSON this suite derives for the packages that cannot import
-a codec.
 
 Unit tests: `pnpm nx test @saerskriven/formats`.

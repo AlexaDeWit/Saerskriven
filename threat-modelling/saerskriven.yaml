@@ -2,7 +2,7 @@ formatVersion: 2
 metadata:
   title: Saerskriven
   owner: Alexandra de Wit
-  description: "The threat model of Saerskriven itself, in Saerskriven's own format. Two diagrams: the path a model file takes from disk through the codecs into a register or a diagram, and the path an agent or the desktop shell takes to the same core. Every status is true to the tree at the time of writing. Mitigated means a mechanism is on main and a mitigation record names it. Open means the surface is designed and its issue is named, with nothing built yet, or that the threat is partly held: a mechanism is on main, and its mitigation record names what the mechanism leaves behind. An undecided severity means there is nothing built to assess. The model is also a fixture: the codec round trip, the format detection, the read-limit corpus, the markdown register, the standalone SVG documents and the canvas scenes all gate on it."
+  description: "The threat model of Saerskriven itself, in Saerskriven's own format. Two diagrams: the path a model file takes from disk through the codecs into a register or a diagram, and the path an agent or the desktop shell takes to the same core. Every status is true to the tree at the time of writing. Mitigated means a mechanism is on main and a mitigation record names it. Open means the surface is designed and its issue is named, with nothing built yet, or that the threat is partly held: a mechanism is on main, and its mitigation record names what the mechanism leaves behind. An undecided severity means there is nothing built to assess. The model is also a fixture: the formats suite reads it through the codec round trip, the format detection and the read-limit corpus, validates it, and holds it to the writer's canonical form."
   contributors:
     - Alexandra de Wit
 assumptions:
@@ -28,7 +28,7 @@ assumptions:
       - th-path
     appliesToModel: false
   - id: as-hand-written
-    prose: This model is kept true by hand. CI proves that it parses, that it stays in the writer's canonical form, and that every projection of it still matches its golden. Nothing proves that its content still describes the tool, so it is read again whenever a milestone closes.
+    prose: This model is kept true by hand. CI proves that it parses, that it validates, and that it stays in the writer's canonical form. Nothing proves that its content still describes the tool, so it is read again whenever a milestone closes.
     status: valid
     threats: []
     appliesToModel: true

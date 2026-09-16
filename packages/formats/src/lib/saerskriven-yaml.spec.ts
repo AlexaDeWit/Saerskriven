@@ -20,7 +20,6 @@ import { parse } from 'yaml';
 import { inferredMitigationStatus } from './mitigation-text.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
-  emittedModels,
   featureCompleteYaml,
   featureCompleteYamlModel,
   frozenV021Model,
@@ -297,17 +296,6 @@ describe.each(nativeFixtures)('the committed $name', ({ text }) => {
     expect(saerskrivenYamlCodec.write(reading.model).output).toBe(text);
   });
 });
-
-describe.each(emittedModels)(
-  'the internal model of the $name',
-  ({ text, modelJsonPath }) => {
-    it('is written out for the render and canvas suites to read', async () => {
-      await expect(
-        `${JSON.stringify(readOrThrow(text).model, null, 2)}\n`,
-      ).toMatchFileSnapshot(modelJsonPath);
-    });
-  },
-);
 
 describe(
   'any model at all',
