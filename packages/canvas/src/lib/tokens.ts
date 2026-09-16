@@ -150,16 +150,7 @@ export const strokeWidths = {
   labelHalo: 3,
 } as const;
 
-/**
- * How heavily the studio marks what is selected and what the pointer is
- * over, in the units of {@link strokeWidths}. Each is a step above the
- * outline weight, so a selection reads without colour, and no more than one
- * step past the heaviest stroke, or a flow swells past its arrowhead. A
- * selected flow stays heavier than a hovered one, its line carrying both
- * cues. {@link tokenStylesheet} writes each as a pixel length, which serves a
- * CSS border and an SVG stroke alike. The headless render draws none.
- */
-export const cueWidths = {
+const cueWidths = {
   selection: 3,
   flowHover: 3,
   flowSelection: 4,
@@ -234,20 +225,9 @@ export const focusRing = {
 /** Default threat pane coverage with its outer inset, in screen pixels. */
 export const panelCover = 472;
 
-/**
- * What the controls below the studio's chrome card offset by until the card
- * has measured itself onto the document root. The card writes its own height
- * back over this, its tool row being able to wrap.
- */
-export const chromeCard = '5rem';
+const chromeCard = '5rem';
 
-/**
- * The room a pane leaves under the chrome card and its notices for the canvas
- * announcement: two lines, with the announcement's gap, border and padding.
- * The `lh` resolves where a pane reads the property, on a box with the body's
- * line height, not on the root.
- */
-export const announcementSlot = 'calc(var(--pn-space-2) * 3 + 2px + 2lh)';
+const announcementSlot = 'calc(var(--pn-space-2) * 3 + 2px + 2lh)';
 
 const colourProperties = {
   surfaceApp: '--pn-colour-surface',
@@ -293,6 +273,14 @@ const colourBlock = (palette: Palette, indent: string): string => {
  * under the system's dark preference, and each forced by
  * `data-pn-colour-mode`. `color-scheme` rides along, so scrollbars and native
  * controls follow the same preference. The headless render reads none of it.
+ *
+ * The `--pn-cue-*` widths sit a step above the outline weight and at most one
+ * past the heaviest stroke, a selected flow heavier than a hovered one, and
+ * each is a pixel length that a CSS border and an SVG stroke read alike.
+ * `--pn-chrome-block-size` is a placeholder the studio's chrome card
+ * overwrites with its measured height, since its tool row can wrap.
+ * `--pn-announcement-slot` holds two lines of the canvas announcement with
+ * its gap, border and padding, its `lh` resolving on the pane that reads it.
  */
 export const tokenStylesheet = `:root {
   color-scheme: light dark;

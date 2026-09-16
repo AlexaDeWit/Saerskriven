@@ -29,84 +29,70 @@ layout and in `unplaced`. `canvasNodeOf` converts a single element and
 the layout paints except stroke widths, which a caller sizing a viewBox pads
 for. Nothing else needs padding.
 
-[`layout-move.ts`](src/lib/layout-move.ts): `reanchoredFlow`,
-`flowLabelFollows` and `flowWithFollowedLabel` move a settled flow while the
-studio drags or resizes, without the diagram-wide label search.
+[`layout-move.ts`](src/lib/layout-move.ts): `flowLabelFollows` and
+`flowWithFollowedLabel` carry a settled flow label along a path the studio
+changes, without the diagram-wide label search.
 
-[`text-placement.ts`](src/lib/text-placement.ts) and
-[`flow-labels.ts`](src/lib/flow-labels.ts): `nodeTextPlacement` and
+[`text-placement.ts`](src/lib/text-placement.ts): `nodeTextPlacement` and
 `textPlacementCorners` say where an element's text hangs and what box it
-fills. A curve boundary's name settles on the first clear bend of its curve.
-`flowLabelPlacements` puts every flow's name and badge where nothing else is
-drawn, deterministically, so the studio and the headless render agree.
+fills. [`flow-labels.ts`](src/lib/flow-labels.ts) puts every flow's name and
+badge where nothing else is drawn, deterministically, so the studio and the
+headless render agree.
 
 ## Drawing
 
 [`glyphs.tsx`](src/lib/glyphs.tsx): `ElementGlyph` draws an element in its own
-coordinates, `PlacedElementGlyph` translates it to its model position, and
-`FlowGlyph` draws a flow in diagram coordinates. Glyphs are the ones Threat
-Dragon draws, since the corpus round-trips through that tool.
-`boxElementStrokeInsets` says how far an outline's stroke reaches past its
-box. [`scene.tsx`](src/lib/scene.tsx): `DiagramGlyphs` draws a whole layout in
-painting order with no root element, so the `<svg>`, its viewBox and its
-`<style>` belong to whoever composes the document.
-[`labels.tsx`](src/lib/labels.tsx): `WrappedText` draws a run of wrapped text.
+coordinates, and `boxElementStrokeInsets` says how far an outline's stroke
+reaches past its box. Glyphs are the ones Threat Dragon draws, since the
+corpus round-trips through that tool. [`scene.tsx`](src/lib/scene.tsx):
+`DiagramGlyphs` draws a whole layout in painting order with no root element,
+so the `<svg>`, its viewBox and its `<style>` belong to whoever composes the
+document.
 
-[`badges.tsx`](src/lib/badges.tsx): `badgesByElement` counts open threats on
-the model's own definition of open and marks any flagged threat, so a badge,
-the register and the CLI count one set. `ThreatBadgeGlyph` draws the stack,
-with `severityMark` lettering the severity so the badge reads with colour
-ignored and `severityRank` ordering severities. `badgeAnchor`, `badgeExtent`
-and `badgeBox` measure it.
+[`badges.tsx`](src/lib/badges.tsx) counts open threats on the model's own
+definition of open and marks any flagged threat, so a badge, the register and
+the CLI count one set.
 
 [`handles.ts`](src/lib/handles.ts): every box element exposes four handles at
-its side midpoints, `handleSides`, `handlePositions`, `centreOf`. An attached
-flow end takes its pinned side, or else `nearestHandleSide` to its next point.
-An unpinned end can change sides as a waypoint moves, and several flows can
-meet at one midpoint.
+its side midpoints. An attached flow end takes its pinned side, or else
+`nearestHandleSide` to its next point. An unpinned end can change sides as a
+waypoint moves, and several flows can meet at one midpoint.
 
-[`paths.ts`](src/lib/paths.ts): `translate`, `polylinePath`, `smoothPath`,
-`smoothSegments`, `controlPolygon`, `arrowheadPath` and `arrowheadPoints`.
-[`geometry.ts`](src/lib/geometry.ts): `boxOfPoints`, `boxesOverlap`,
-`cornersOfBox`, `shiftedBy`, `segmentsOfBox`, `segmentsOfPolyline` and
-`segmentMeetsBox`.
+[`paths.ts`](src/lib/paths.ts): `polylinePath` and `smoothPath` write SVG
+paths, and [`geometry.ts`](src/lib/geometry.ts): `boxOfPoints` and
+`boxesOverlap` measure boxes.
 
 ## The visual system
 
 [`stylesheet.ts`](src/lib/stylesheet.ts): primitives carry class names from
 `canvasClassNames` and never inline styles, and one stylesheet styles them.
-The headless render embeds `canvasStylesheet`, or `renderCanvasStylesheet`
-for a theme, and the studio injects `themedCanvasStylesheet`, the same sheet
-with every colour read from a custom property. `wrappedTextStyles` pairs each
-run of text with its class and font size, `severityToneClass` names each
-severity's tone, and `boundaryStrokeWidth` is the one weight a boundary is
-drawn and bounded with. [`render-theme.ts`](src/lib/render-theme.ts):
-`renderThemeSchema` and `defaultRenderTheme` are the theme headless output is
-drawn with, and `badgeTextColour` resolves a badge's lettering under it.
+The headless render embeds `renderCanvasStylesheet` for a theme, and the
+studio injects `themedCanvasStylesheet`, the same sheet with every colour
+read from a custom property. `wrappedTextStyles` pairs each run of text with
+its class and font size, and `severityToneClass` names each severity's tone.
+[`render-theme.ts`](src/lib/render-theme.ts): `renderThemeSchema` and
+`defaultRenderTheme` are the theme headless output is drawn with, and
+`badgeTextColour` resolves a badge's lettering under it.
 [Render themes](../../docs/render-themes.md) describes overriding it.
 
 [`tokens.ts`](src/lib/tokens.ts) decides every colour, size and step of
 spacing, for the diagram and the studio's chrome: `lightPalette`,
-`darkPalette`, `uiType`, `canvasType`, `strokeWidths`, `interactionWidths`,
-`resizeHandle`, `arrowhead`, `badgeRadius`, `gridSpacing`, `spacingScale`,
-`radius` and `focusRing`. `tokens.spec.ts` holds every text and mark pair of
-both palettes to its WCAG floor through `contrastRatio`, and
-`channelDistance` keeps the tones apart. `rgbColour` writes a token the way a
-browser serializes a computed style, for a browser spec to compare against.
-`tokenStylesheet` is the table as the `--pn-*` custom properties the studio's
-CSS modules read, imported through `@saerskriven/canvas/tokens`, and
-`paletteProperty` names one of them.
+`darkPalette`, `canvasType`, `gridSpacing` and `panelCover` among them.
+`tokens.spec.ts` holds every text and mark pair of both palettes to its WCAG
+floor through `contrastRatio`. `rgbColour` writes a token the way a browser
+serializes a computed style, for a browser spec to compare against.
+`tokenStylesheet`, on the `@saerskriven/canvas/tokens` subpath, is the table
+as the `--pn-*` custom properties the studio's CSS modules read.
 
 ## Measuring nothing, and the same bytes every time
 
 Nothing reads a glyph's extent back out of a layout engine, and a spec walks
 the package to check it. [`typography.ts`](src/lib/typography.ts) wraps text
 by one ratio of glyph width to font size (`wrapText`, `textExtent`,
-`innerWidth`, `lineHeight`, `averageGlyphWidthRatio`, `lineHeightRatio`,
-`textPadding`, `looseLabelWidth`, `flowLabelClearance`), so headless and
-interactive output wrap alike. `xmlSafeText` replaces characters XML 1.0
-forbids, and a document composed around these glyphs applies it to its own
-text. Every number reaching an SVG attribute goes through `svgNumber`
+`lineHeight`, `lineHeightRatio`), so headless and interactive output wrap
+alike. `xmlSafeText` replaces characters XML 1.0 forbids, and a document
+composed around these glyphs applies it to its own text. Every number
+reaching an SVG attribute goes through `svgNumber`
 ([`numbers.ts`](src/lib/numbers.ts)), so one model gives one set of bytes on
 every run and platform.
 
@@ -119,14 +105,16 @@ exports.
 
 ## React Flow
 
-[`react-flow.tsx`](src/lib/react-flow.tsx): `canvasNodeTypes` and
-`canvasEdgeTypes` register `CanvasNodeBody` and `CanvasEdgeBody`.
-`toReactFlowNodes`, `toReactFlowEdges` and `freeEndNodes` carry a layout over
-with every position and extent explicit, so React Flow measures nothing. A
-flow end at a free position rides on an anchor node named by `flowEndNodeId`,
-of type `freeEndNodeKind`, drawn by `CanvasFreeEndBody`.
-`layoutAtReactFlowNodes` lays the diagram out at the node positions React
-Flow holds during a gesture.
+[`react-flow.tsx`](src/lib/react-flow.tsx): `CanvasNodeBody`,
+`CanvasEdgeBody` and `CanvasFreeEndBody` are the node, edge and free-end
+components. `toReactFlowNodes`, `toReactFlowEdges` and `freeEndNodes` carry a
+layout over with every position and extent explicit, so React Flow measures
+nothing. A flow end at a free position rides on an anchor node named by
+`flowEndNodeId`, of type `freeEndNodeKind`. `layoutAtReactFlowNodes` lays the
+diagram out at the node positions React Flow holds during a gesture.
+[`resizing.ts`](src/lib/resizing.ts): `resizeKeys`, `keyboardResizeStep` and
+`shiftedKeyboardResizeStep` are the keyboard resize the node body's controls
+use.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
 each node its accessible name, and loads `@xyflow/react/dist/style.css`
