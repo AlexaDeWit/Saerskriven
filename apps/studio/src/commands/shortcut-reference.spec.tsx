@@ -33,50 +33,48 @@ describe('ShortcutReference', () => {
     resetTools();
   });
 
-  it(
-    'renders every metadata entry exactly once with platform spelling',
-    () => {
-      render(<ShortcutReference onClose={() => undefined} platform="apple" />);
+  it('renders every metadata entry exactly once with platform spelling', () => {
+    render(<ShortcutReference onClose={() => undefined} platform="apple" />);
 
-      for (const group of [...commandGroups, ...contextualGroups]) {
-        const trigger = screen.getByRole('button', { name: group });
-        expect(trigger.getAttribute('aria-expanded')).toBe('false');
-        fireEvent.click(trigger);
-        expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      }
+    const triggers = [...commandGroups, ...contextualGroups].map((group) =>
+      screen.getByRole('button', { name: group }),
+    );
+    for (const trigger of triggers) {
+      expect(trigger.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.click(trigger);
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    }
 
-      const commandIds = idsOf('data-command-id');
-      const contextualIds = idsOf('data-contextual-id');
-      expect(commandIds).toHaveLength(commands.length);
-      expect(new Set(commandIds)).toEqual(
-        new Set(commands.map((command) => command.id)),
-      );
-      expect(contextualIds).toHaveLength(contextualShortcuts.length);
-      expect(new Set(contextualIds)).toEqual(
-        new Set(contextualShortcuts.map((entry) => entry.id)),
-      );
-      expect(within(commandRow('save')).getByText('⌘S')).toBeTruthy();
-      expect(keysIn(commandRow('shortcut-reference'))).toEqual(['?', 'F1']);
-      expect(keysIn(commandRow('model-properties'))).toEqual(['M']);
-      expect(
-        within(commandRow('export-pdf')).getByText('No shortcut'),
-      ).toBeTruthy();
-      expect(keysIn(contextualRow('select-canvas-item'))).toEqual([
-        'Enter',
-        'Space',
-      ]);
-      expect(within(commandRow('add-bend')).getByText('+')).toBeTruthy();
-      expect(keysIn(contextualRow('choose-bend-segment'))).toEqual([
-        'ArrowLeft',
-        'ArrowRight',
-      ]);
-      expect(keysIn(contextualRow('remove-bend'))).toEqual([
-        'Delete',
-        'Backspace',
-      ]);
-    },
-    appTimeout,
-  );
+    const commandIds = idsOf('data-command-id');
+    const contextualIds = idsOf('data-contextual-id');
+    expect(commandIds).toHaveLength(commands.length);
+    expect(new Set(commandIds)).toEqual(
+      new Set(commands.map((command) => command.id)),
+    );
+    expect(contextualIds).toHaveLength(contextualShortcuts.length);
+    expect(new Set(contextualIds)).toEqual(
+      new Set(contextualShortcuts.map((entry) => entry.id)),
+    );
+    expect(within(commandRow('save')).getByText('⌘S')).toBeTruthy();
+    expect(keysIn(commandRow('shortcut-reference'))).toEqual(['?', 'F1']);
+    expect(keysIn(commandRow('model-properties'))).toEqual(['M']);
+    expect(
+      within(commandRow('export-pdf')).getByText('No shortcut'),
+    ).toBeTruthy();
+    expect(keysIn(contextualRow('select-canvas-item'))).toEqual([
+      'Enter',
+      'Space',
+    ]);
+    expect(within(commandRow('add-bend')).getByText('+')).toBeTruthy();
+    expect(keysIn(contextualRow('choose-bend-segment'))).toEqual([
+      'ArrowLeft',
+      'ArrowRight',
+    ]);
+    expect(keysIn(contextualRow('remove-bend'))).toEqual([
+      'Delete',
+      'Backspace',
+    ]);
+  });
 
   it.each(platforms)(
     'compacts complete arrow groups and retains %s alternatives',
