@@ -16,7 +16,11 @@ import { dispatch, modelStore } from '../store/store.js';
 import { ModelPropertiesPanel } from './model-properties.js';
 import { sectionLabel } from '@saerskriven/render';
 import { present, undoable } from '../store/store.fixtures.js';
-import { describedNumbers, editorTimeout } from './panel.fixtures.js';
+import {
+  chooseFrom,
+  describedNumbers,
+  editorTimeout,
+} from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 import { noop, textbox } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
@@ -195,7 +199,7 @@ describe(
       expect(present()).toBe(before);
     });
 
-    it('edits the text of an assumption that applies to the model in place as one undo step, and it still applies to the model', async () => {
+    it('edits the text and the status of an assumption that applies to the model in place as one undo step each, and it still applies to the model', async () => {
       const user = userEvent.setup();
       applyToModel();
       const before = present();
@@ -212,6 +216,17 @@ describe(
         },
       ]);
       expect(undoable()).toBe(2);
+      const edited = present();
+
+      await chooseFrom('Assumption 1 status', 'invalidated');
+
+      expect(present().assumptions).toEqual([
+        { ...edited.assumptions[0], status: 'invalidated' },
+      ]);
+      expect(present().threats).toBe(before.threats);
+      expect(undoable()).toBe(3);
+      undo();
+      expect(present()).toBe(edited);
       undo();
       expect(present()).toBe(before);
     });

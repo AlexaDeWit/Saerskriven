@@ -538,7 +538,15 @@ for (const era of eras) {
         it('names only the path and the picture of what was drawn', async () => {
           const called = await overEveryCall();
           const linked = called.filter((one) => one.read.links.length > 0);
-          expect(linked.map((one) => one.read.links[0])).toContain('drawn.png');
+          expect(
+            called
+              .filter(
+                (one) =>
+                  one.name === 'saer_render_diagram' &&
+                  one.result.isError !== true,
+              )
+              .map((one) => one.read.links[0]),
+          ).toEqual(['drawn.png']);
           expect(linked.map((one) => one.read.links)).toEqual(
             linked.map((one) => ownLinkTextOf(one.result)),
           );
