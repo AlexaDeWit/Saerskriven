@@ -47,7 +47,8 @@ type Counted<P extends ParameterShape, C extends string> = P & {
 
 /**
  * A message whose form follows the plural category of the number parameter
- * `count` names. Its forms may leave out any parameter, the count included.
+ * `count` names. Each form names every other parameter and may leave out the
+ * count.
  */
 export function plural<const C extends string>(
   count: C,
