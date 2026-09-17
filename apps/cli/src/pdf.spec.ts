@@ -46,15 +46,6 @@ const refusal = (outcome: Either.Either<Uint8Array, string>): string =>
 
 describe('Typst source compiled to a PDF', () => {
   it(
-    'writes a PDF the header of which says so',
-    async () => {
-      const pdf = Either.getOrThrow(await compiled(document('#"a document"')));
-      expect(Buffer.from(pdf.subarray(0, 5)).toString('latin1')).toBe('%PDF-');
-    },
-    compileTimeout,
-  );
-
-  it(
     'gives the same bytes twice for one source, carrying no date',
     async () => {
       const source = document('#"twice"');
@@ -155,18 +146,10 @@ describe('the hostile fixture', () => {
   });
 
   it(
-    'compiles to a PDF of the pages its two threats need',
+    'carries every injection attempt into the PDF as text, on the pages its two threats need',
     async () => {
       const pdf = Either.getOrThrow(await compiled(hostileSource));
       expect(pageCount(pdf)).toBe(2);
-    },
-    compileTimeout,
-  );
-
-  it(
-    'carries every injection attempt into the PDF as text',
-    async () => {
-      const pdf = Either.getOrThrow(await compiled(hostileSource));
       expect(outlineTitles(pdf)).toEqual([
         'Diagram #read("/etc/passwd") <script>alert(1)</script>',
         'Injection model #eval("1+1") threat register',

@@ -292,7 +292,6 @@ describe('render', () => {
       expect(outcome.err).toContain('error: cannot compile the PDF');
       expect(outcome.err).toContain('typst_ts_web_compiler_bg.wasm');
     },
-    compileTimeout,
   );
 
   it(
@@ -314,7 +313,6 @@ describe('render', () => {
         err: `error: cannot compile the PDF: ${bareAssets} holds no .ttf font face\n`,
       });
     },
-    compileTimeout,
   );
 
   it('reports an out it cannot write as the invocation being wrong', async () => {
