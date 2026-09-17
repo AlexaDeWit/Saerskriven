@@ -89,6 +89,8 @@ void test('publication waits for the gate, prepared website, and attestation', (
     'installer-smoke',
     'static-checks',
     'e2e-smoke',
+    'e2e-pages-floor',
+    'e2e-report',
     'dependency-changes',
     'provenance',
     'checks',
@@ -323,6 +325,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
     INSTALLER_SMOKE: 'success',
     STATIC_CHECKS: 'success',
     E2E_SMOKE: 'success',
+    E2E_PAGES_FLOOR: 'success',
     DEPENDENCY_CHANGES: 'success',
     LOCKFILE_CHANGED: 'false',
     PROVENANCE: 'skipped',
@@ -333,6 +336,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
     'INSTALLER_SMOKE',
     'STATIC_CHECKS',
     'E2E_SMOKE',
+    'E2E_PAGES_FLOOR',
     'DEPENDENCY_CHANGES',
   ]) {
     assert.notEqual(
