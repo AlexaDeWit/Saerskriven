@@ -279,41 +279,35 @@ describe('render', () => {
     compileTimeout,
   );
 
-  it(
-    'reports an install missing the files it typesets with, and exits 2',
-    async () => {
-      const outcome = await render(
-        twoDiagrams,
-        options({ format: 'pdf', out: '-' }),
-        join(repositoryRoot, 'apps/cli/dist/absent'),
-      );
-      expect(outcome.code).toBe(2);
-      expect(outcome.out).toBe('');
-      expect(outcome.err).toContain('error: cannot compile the PDF');
-      expect(outcome.err).toContain('typst_ts_web_compiler_bg.wasm');
-    },
-  );
+  it('reports an install missing the files it typesets with, and exits 2', async () => {
+    const outcome = await render(
+      twoDiagrams,
+      options({ format: 'pdf', out: '-' }),
+      join(repositoryRoot, 'apps/cli/dist/absent'),
+    );
+    expect(outcome.code).toBe(2);
+    expect(outcome.out).toBe('');
+    expect(outcome.err).toContain('error: cannot compile the PDF');
+    expect(outcome.err).toContain('typst_ts_web_compiler_bg.wasm');
+  });
 
-  it(
-    'refuses an install with the module and no font face, and writes nothing',
-    async () => {
-      const bareAssets = scratchDirectory('render-no-font');
-      copyFileSync(
-        join(assets, 'typst_ts_web_compiler_bg.wasm'),
-        join(bareAssets, 'typst_ts_web_compiler_bg.wasm'),
-      );
-      const outcome = await render(
-        twoDiagrams,
-        options({ format: 'pdf', out: '-' }),
-        bareAssets,
-      );
-      expect(outcome).toEqual({
-        code: 2,
-        out: '',
-        err: `error: cannot compile the PDF: ${bareAssets} holds no .ttf font face\n`,
-      });
-    },
-  );
+  it('refuses an install with the module and no font face, and writes nothing', async () => {
+    const bareAssets = scratchDirectory('render-no-font');
+    copyFileSync(
+      join(assets, 'typst_ts_web_compiler_bg.wasm'),
+      join(bareAssets, 'typst_ts_web_compiler_bg.wasm'),
+    );
+    const outcome = await render(
+      twoDiagrams,
+      options({ format: 'pdf', out: '-' }),
+      bareAssets,
+    );
+    expect(outcome).toEqual({
+      code: 2,
+      out: '',
+      err: `error: cannot compile the PDF: ${bareAssets} holds no .ttf font face\n`,
+    });
+  });
 
   it('reports an out it cannot write as the invocation being wrong', async () => {
     const out = join(directory, 'absent', 'storefront.svg');

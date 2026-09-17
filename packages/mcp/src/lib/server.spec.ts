@@ -686,9 +686,7 @@ describe('a modern client of the server object, over what no era changes', () =>
       await run.end();
       expect(
         outcomes.flatMap((outcome) =>
-          outcome.refusal === undefined
-            ? []
-            : [[outcome.op, outcome.refusal]],
+          outcome.refusal === undefined ? [] : [[outcome.op, outcome.refusal]],
         ),
       ).toEqual([]);
       expect(
