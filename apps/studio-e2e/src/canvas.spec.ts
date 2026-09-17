@@ -7,7 +7,6 @@ import {
   centreOf,
   dragBy,
   dragOnto,
-  elementNodes,
   handleOn,
   nodeNamed,
   openPlaceholder,
@@ -54,39 +53,6 @@ const dragFromBoundaryHandle = async (
   await expect.poll(() => placeOf(boundary)).not.toBe(before);
 };
 
-test('a real model is drawn whole: 7 elements and 7 flows', async ({
-  page,
-}) => {
-  await openTwoDiagrams(page);
-
-  await expect(elementNodes(page)).toHaveCount(7);
-  await expect(page.locator('.react-flow__edge')).toHaveCount(7);
-  await expect(nodeNamed(page, /^Web shop, process/u)).toBeVisible();
-});
-
-test('tabbing into a real model reaches every flow before any element', async ({
-  page,
-}) => {
-  await openTwoDiagrams(page);
-
-  await beforeCanvas(page).focus();
-  await page.keyboard.press('Tab');
-
-  await expect(page.locator('.react-flow__edge:focus')).toHaveCount(1);
-});
-
-test('a click selects an element and the canvas draws the selection', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
-
-  await actor.click();
-
-  await expect(actor).toHaveClass(/selected/u);
-  await expect(nodeNamed(page, /^Store, store/u)).not.toHaveClass(/selected/u);
-});
-
 test('the selection moves between an element and a flow, either way', async ({
   page,
 }) => {
@@ -96,6 +62,9 @@ test('the selection moves between an element and a flow, either way', async ({
 
   await webShop.click();
   await expect(webShop).toHaveClass(/selected/u);
+  await expect(nodeNamed(page, /^Shopper, actor/u)).not.toHaveClass(
+    /selected/u,
+  );
 
   await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');

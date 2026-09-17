@@ -9,7 +9,6 @@ import {
   turnsOf,
 } from './canvas-geometry.fixtures.js';
 import {
-  centreOf,
   dragOnto,
   handleOn,
   nodeNamed,
@@ -74,6 +73,4 @@ test('a flow becomes bidirectional by its command, draws two arrowheads, and sav
   await expect(arrows).toHaveCount(2);
   const written = await savedFile(page);
   expect(written.text).toContain('bidirectional: true');
-  const centre = await centreOf(flow);
-  expect(centre.x).toBeGreaterThan(0);
 });

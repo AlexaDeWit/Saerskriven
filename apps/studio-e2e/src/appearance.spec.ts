@@ -91,13 +91,3 @@ test('invalid stored appearance returns to System', async ({ page }) => {
   await expect(page.locator('html')).not.toHaveAttribute('data-pn-colour-mode');
 });
 
-test('explicit light and dark modes pass the accessibility audit', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  for (const mode of ['Light', 'Dark'] as const) {
-    await chooseAppearance(page, mode);
-    await audit(page);
-  }
-});

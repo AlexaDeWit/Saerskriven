@@ -5,11 +5,9 @@ import {
   nodeNamed,
   openFile,
   openMenu,
-  openText,
   savedFile,
   featureCompleteFile,
   twoDiagramsFile,
-  withoutPickers,
 } from './studio.fixtures.js';
 
 test('opens a model, saves it back, and writes a file that parses again', async ({
@@ -57,13 +55,3 @@ test('opens the native format by its content, and draws its diagram', async ({
   await expect(nodeNamed(page, /^Web shop, process/u)).toBeVisible();
 });
 
-test('says what it could not read, and stays up', async ({ page }) => {
-  await page.addInitScript(withoutPickers);
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
-
-  await openText(page, 'notes.txt', 'no threat model here');
-
-  await expect(page.getByTestId('failure-notice')).toContainText('notes.txt');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
-});

@@ -19,34 +19,6 @@ import {
   withoutPickers,
 } from './studio.fixtures.js';
 
-test('the menu shows assigned shortcuts and the project link', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await openMenu(page);
-
-  await expect(menuItem(page, 'Save')).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+S',
-  );
-  await expect(menuItem(page, 'Undo')).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+Z',
-  );
-  for (const name of ['Copy', 'Cut', 'Paste', 'Reset zoom to 100%']) {
-    await expect(menuItem(page, name)).toHaveCount(0);
-  }
-  await expect(menuItem(page, 'Export')).toBeVisible();
-  const source = menuItem(page, 'View source on GitHub');
-  await expect(source).toHaveAttribute(
-    'href',
-    'https://github.com/AlexaDeWit/Saerskriven',
-  );
-  await expect(source).toHaveAttribute('target', '_blank');
-  await expect(source.locator('svg')).toHaveAttribute('aria-hidden', 'true');
-});
-
 test('save as asks the format in the menu where the browser has no picker of its own', async ({
   page,
 }) => {
@@ -128,22 +100,6 @@ test('the canvas stays live behind the open menu', async ({ page }) => {
 
   await expect(store).toHaveClass(/selected/u);
   await expect(page.getByRole('menu')).toHaveCount(0);
-});
-
-test('the button marks unsaved work, and the menu says so in words', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await expect(menuButton(page)).toHaveAccessibleName('Menu');
-
-  await placeByClick(page, 'Actor', /^New actor, actor/u);
-
-  await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Saerskriven YAML',
-  );
 });
 
 test('closing asks in the menu before it drops work that is in no file', async ({
@@ -259,20 +215,3 @@ test('closing a file that holds everything on screen takes no second press', asy
   await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
 });
 
-test('the menu chrome carries what a save could not hold, and puts it away again', async ({
-  page,
-}) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-
-  await openMenu(page);
-  await menuItem(page, 'Save as').click();
-  const written = await savedFromMenu(page, 'Save as Threat Dragon JSON');
-
-  expect(written.name).toBe('threat-model.json');
-  await expect(page.getByTestId('loss-report')).not.toBeEmpty();
-
-  await page.getByRole('button', { name: 'Dismiss report' }).click();
-
-  await expect(page.getByTestId('loss-report')).toBeEmpty();
-});

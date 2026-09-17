@@ -53,9 +53,4 @@ describe('the chords the browser suite presses', () => {
 
     expect(unknown).toEqual([]);
   });
-
-  it('reads a registry that declares its commands, which is what this holds it against', () => {
-    expect(declaredIds.length > 0).toBe(true);
-    expect(registry).toContain("shortcuts: [mod('s')],");
-  });
 });

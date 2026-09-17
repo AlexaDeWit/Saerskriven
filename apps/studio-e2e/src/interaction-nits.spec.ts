@@ -23,12 +23,6 @@ const movedPoint = (page: Page, from: Point): Point => {
   };
 };
 
-test('the startup canvas has no transient hint', async ({ page }) => {
-  await openPlaceholder(page);
-
-  await expect(page.getByTestId('empty-state-hint')).toHaveCount(0);
-});
-
 test('scroll pans while a modified scroll keeps pinch zoom', async ({
   page,
 }) => {

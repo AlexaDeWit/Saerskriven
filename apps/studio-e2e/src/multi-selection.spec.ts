@@ -71,6 +71,10 @@ test('Shift-click and Shift+Enter extend and trim the selection', async ({
   await expect(store).toHaveClass(/selected/u);
 
   await page.keyboard.press('ControlOrMeta+a');
+  await expect(elementNodes(page)).toHaveCount(2);
+  await expect(page.locator('.react-flow__node.selected')).toHaveCount(2);
+  await expect(page.locator('.react-flow__edge.selected')).toHaveCount(1);
+  await expect(threatPanel(page)).toContainText('3 elements selected');
   await flow.focus();
   await page.keyboard.press('Shift+Enter');
   await expect(flow).not.toHaveClass(/selected/u);

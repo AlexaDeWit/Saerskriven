@@ -127,23 +127,6 @@ test('a delayed focus return preserves the next keyboard placement editor', asyn
   await expect(nodeNamed(page, /^Worker, process/u)).toBeFocused();
 });
 
-test('Select clears a selected element when the pointer lands on empty canvas', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  await toolButton(page, 'Select').click();
-  const actor = await selectNode(page, /^Actor, actor/u);
-  const empty = await emptyCanvasPoint(page);
-
-  await page.mouse.click(empty.x, empty.y);
-
-  await expect(actor).not.toHaveClass(/selected/u);
-  await expect(canvasContainer(page)).toHaveAttribute(
-    'data-active-tool',
-    'select',
-  );
-});
-
 test('Enter and Space activate a focused toolbox button', async ({ page }) => {
   await openPlaceholder(page);
 

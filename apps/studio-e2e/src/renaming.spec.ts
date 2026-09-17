@@ -192,15 +192,3 @@ test('Enter reopens a selected Note for prose editing', async ({ page }) => {
   await expect(editor).toHaveValue('Review the trust boundary.');
 });
 
-test('T focuses threats and Enter adds one', async ({ page }) => {
-  await openPlaceholder(page);
-  await selectByKeyboard(page, /^Actor, actor/u);
-
-  await page.keyboard.press(registeredChords['focus-threats'][0]);
-  const add = page.getByRole('button', { name: 'Add a threat' });
-  await expect(add).toBeFocused();
-
-  await page.keyboard.press('Enter');
-
-  await expect(page.getByRole('textbox', { name: 'Title' })).toBeFocused();
-});

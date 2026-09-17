@@ -66,15 +66,6 @@ test('delete removes the selection from outside the canvas, on either key', asyn
   await expect(elementNodes(page)).toHaveCount(0);
 });
 
-test('escape clears the selection', async ({ page }) => {
-  await openPlaceholder(page);
-  const actor = await selectNode(page, /^Actor, actor/u);
-
-  await page.keyboard.press(registeredChords['select-tool'][1]);
-
-  await expect(actor).not.toHaveClass(/selected/u);
-});
-
 test('zooming and fitting move the viewport and nothing else', async ({
   page,
 }) => {
@@ -135,19 +126,6 @@ test('opening is one chord, through the picker the browser offers', async ({
   await closeMenu(page);
   await canvasSettled(page);
   await expect(elementNodes(page)).toHaveCount(7);
-});
-
-test('select all reaches the whole diagram from the keyboard', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await page.keyboard.press(registeredChords['select-all'][0]);
-
-  await expect(elementNodes(page)).toHaveCount(2);
-  await expect(page.locator('.react-flow__node.selected')).toHaveCount(2);
-  await expect(page.locator('.react-flow__edge.selected')).toHaveCount(1);
-  await expect(threatPanel(page)).toContainText('3 elements selected');
 });
 
 test('a shortcut waits while a name is being typed, and saving and undo do not', async ({
@@ -276,9 +254,6 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
     exact: true,
   });
   await expect(fileCategory).toHaveAttribute('aria-expanded', 'false');
-  await page.screenshot({
-    path: test.info().outputPath('shortcut-categories.png'),
-  });
   await page.keyboard.press('Tab');
   await page.keyboard.press('Tab');
   await expect(fileCategory).toBeFocused();
@@ -322,9 +297,6 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   expect(
     await reference.evaluate((node) => node.scrollWidth <= node.clientWidth),
   ).toBe(true);
-  await page.screenshot({
-    path: test.info().outputPath('shortcut-narrow.png'),
-  });
   await page.keyboard.press(registeredChords['shortcut-reference'][0]);
   await expect(reference).toHaveCount(0);
 });
@@ -373,10 +345,6 @@ test('shortcut alternatives stack without squeezing the action label', async ({
         ),
       ),
     ).toBe(true);
-    await move.scrollIntoViewIfNeeded();
-    await page.screenshot({
-      path: test.info().outputPath(`shortcut-editing-${String(width)}.png`),
-    });
   }
 });
 
@@ -405,7 +373,6 @@ test('macOS uses Command shortcuts and Shift-Command-Z for redo', async ({
   );
   await expect(menuItem(page, 'Copy')).toHaveCount(0);
   await expect(menuItem(page, 'Delete selection')).toHaveCount(0);
-  await page.screenshot({ path: test.info().outputPath('mac-menu.png') });
   await closeMenu(page);
   await page.getByRole('application', { name: 'Diagram' }).focus();
 

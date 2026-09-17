@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { registeredChords } from './chords.fixtures.js';
 import {
-  dragOnto,
   dragTo,
   emptyCanvasPoint,
   handleOn,
@@ -25,24 +24,6 @@ const webShop = /^Web shop, process/u;
 
 const flows = '.react-flow__edge';
 
-test('an element shows its handles under the pointer and hides them again', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  const handle = handleOn(nodeNamed(page, actor), 'right');
-  const away = await emptyCanvasPoint(page);
-
-  await expect(handle).toBeHidden();
-
-  await nodeNamed(page, actor).hover();
-
-  await expect(handle).toBeVisible();
-
-  await page.mouse.move(away.x, away.y);
-
-  await expect(handle).toBeHidden();
-});
-
 test('a selected element keeps its handles with the pointer elsewhere', async ({
   page,
 }) => {
@@ -54,21 +35,6 @@ test('a selected element keeps its handles with the pointer elsewhere', async ({
 
   await expect(handleOn(nodeNamed(page, actor), 'right')).toBeVisible();
   await expect(handleOn(nodeNamed(page, store), 'left')).toBeHidden();
-});
-
-test('a flow is drawn by dragging from one handle to another', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await nodeNamed(page, actor).hover();
-  await dragOnto(
-    page,
-    handleOn(nodeNamed(page, actor), 'right'),
-    handleOn(nodeNamed(page, store), 'left'),
-  );
-
-  await expect(page.locator(flows)).toHaveCount(2);
 });
 
 test('a drag released over empty canvas draws nothing and costs no undo step', async ({

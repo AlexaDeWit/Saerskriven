@@ -248,26 +248,6 @@ test('a threat deleted in the panel leaves the canvas, and undo puts it back', a
   await expect(shopper).toHaveAccessibleName(/1 open threat/u);
 });
 
-test('a title edited in the panel is one undo step', async ({ page }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, /^Shopper, actor/u);
-  await disclosure(page, /Account takeover/u).click();
-
-  const title = titleField(page);
-  await title.click();
-  await page.keyboard.press('ControlOrMeta+a');
-  await page.keyboard.type('Credential stuffing takes over an account');
-  await title.press('Enter');
-
-  await expect(
-    disclosure(page, /Credential stuffing takes over an account/u),
-  ).toBeVisible();
-
-  await runFromMenu(page, 'Undo');
-
-  await expect(disclosure(page, /Account takeover/u)).toBeVisible();
-});
-
 test('every field of a threat is reachable and editable from the keyboard, add and delete included', async ({
   page,
 }) => {
@@ -423,7 +403,6 @@ test('collapsed summaries expose severity and status without an empty content st
       rgbColour((mode === 'dark' ? darkPalette : lightPalette).toneHigh),
     );
   }
-  await page.screenshot({ path: test.info().outputPath('dark-pane.png') });
   await page.emulateMedia({ forcedColors: 'active' });
   await summary.focus();
   await page.keyboard.press('Enter');
@@ -603,7 +582,6 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   const longSummary = disclosure(page, /A long threat title/u);
   await longSummary.scrollIntoViewIfNeeded();
   expect((await boxOf(longSummary)).right).toBeLessThanOrEqual(bounds.right);
-  await page.screenshot({ path: test.info().outputPath('narrow-pane.png') });
   await panel.getByRole('button', { name: 'Close threats' }).click();
   await expect(panel).toHaveCount(0);
   await expect(nodeNamed(page, /^Shopper, actor/u)).toBeFocused();

@@ -159,7 +159,7 @@ test('edits every element kind and preserves security facts through save, undo, 
 
 test('shows recorded and absent states at wide and narrow widths with accessible keyboard controls', async ({
   page,
-}, testInfo) => {
+}) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
   await openFile(page, twoDiagramsFile);
   await properties(page, /^browse the catalogue and fill a basket, flow/u);
@@ -183,7 +183,6 @@ test('shows recorded and absent states at wide and narrow widths with accessible
         .analyze()
     ).violations,
   ).toEqual([]);
-  await page.screenshot({ path: testInfo.outputPath('security-wide.png') });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await properties(page, /^Shop network, trust boundary/u);
@@ -218,7 +217,6 @@ test('shows recorded and absent states at wide and narrow widths with accessible
       (element) => element.scrollWidth <= element.clientWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: testInfo.outputPath('security-narrow.png') });
 });
 
 test('deletion and copying update declared relationships through the editor', async ({
