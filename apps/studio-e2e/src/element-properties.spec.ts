@@ -1,14 +1,13 @@
-import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { readAnyFormat } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { audit } from './accessibility.fixtures.js';
+import { canvasSettled } from './canvas.fixtures.js';
 import {
-  canvasSettled,
   chooseByKeyboard,
   chooseInPanel,
   openFile,
-  savedFile,
+  savedModel,
   selectByKeyboard,
+  storefront,
   threatPanel,
   twoDiagramsFile,
 } from './studio.fixtures.js';
@@ -30,7 +29,7 @@ test('edits every element kind and preserves security facts through save, undo, 
       'This scenario commits all 16 properties across five element kinds, then saves and reloads.',
   });
   await openFile(page, twoDiagramsFile);
-  await properties(page, /^Shopper, actor/u);
+  await properties(page, storefront.shopper);
   const authentication = threatPanel(page).getByRole('combobox', {
     name: 'Provides authentication',
   });
@@ -40,7 +39,7 @@ test('edits every element kind and preserves security facts through save, undo, 
   await expect(authentication).toContainText('Yes');
   await chooseInPanel(page, 'Provides authentication', 'No');
 
-  await properties(page, /^Web shop, process/u);
+  await properties(page, storefront.webShop);
   await chooseInPanel(page, 'Handles card payments', 'No');
   await chooseInPanel(page, 'Handles goods or services', 'Yes');
   await chooseInPanel(page, 'Web application', 'No');
@@ -58,7 +57,7 @@ test('edits every element kind and preserves security facts through save, undo, 
   await chooseInPanel(page, 'Privilege level recording', 'Recorded');
   await expect(privilege).toHaveValue('');
 
-  await properties(page, /^Catalogue, store/u);
+  await properties(page, storefront.catalogue);
   for (const label of [
     'Log store',
     'Encrypted storage',
@@ -87,7 +86,7 @@ test('edits every element kind and preserves security facts through save, undo, 
     .getByRole('button', { name: 'Add relationship' })
     .click();
 
-  await properties(page, /^Shop network, trust boundary/u);
+  await properties(page, storefront.shopNetwork);
   await chooseInPanel(page, 'Contained elements recording', 'Recorded');
   await chooseInPanel(page, 'Add to contained elements', 'Catalogue');
   await threatPanel(page)
@@ -105,9 +104,7 @@ test('edits every element kind and preserves security facts through save, undo, 
     .getByRole('button', { name: 'Add relationship' })
     .click();
 
-  const saved = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const saved = await savedModel(page);
   const elements = saved.diagrams[0].elements;
   expect(elements.find((element) => element.id === 'el-shopper')).toMatchObject(
     {
@@ -176,16 +173,14 @@ test('shows recorded and absent states at wide and narrow widths with accessible
   await expect(
     threatPanel(page).getByRole('textbox', { name: 'Protocol' }),
   ).toHaveValue('');
-  expect(
-    (
-      await new AxeBuilder({ page })
-        .include('[data-testid="threat-panel"]')
-        .analyze()
-    ).violations,
-  ).toEqual([]);
+  await audit(
+    page,
+    'showing security properties at desktop width',
+    '[data-testid="threat-panel"]',
+  );
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await properties(page, /^Shop network, trust boundary/u);
+  await properties(page, storefront.shopNetwork);
   await chooseInPanel(page, 'Contained elements recording', 'Recorded');
   await expect(
     threatPanel(page).getByRole('combobox', {
@@ -203,10 +198,11 @@ test('shows recorded and absent states at wide and narrow widths with accessible
   await expect(
     page.getByRole('option', { name: 'Dispatch', exact: true }),
   ).toHaveCount(0);
-  expect(
-    (await new AxeBuilder({ page }).include('[role="listbox"]').analyze())
-      .violations,
-  ).toEqual([]);
+  await audit(
+    page,
+    'showing a relationship listbox at phone width',
+    '[role="listbox"]',
+  );
   await page.keyboard.press('Escape');
   await expect(target).toBeFocused();
   const bounds = await threatPanel(page).boundingBox();
@@ -229,7 +225,7 @@ test('deletion and copying update declared relationships through the editor', as
   await threatPanel(page)
     .getByRole('button', { name: 'Add relationship' })
     .click();
-  await properties(page, /^Shop network, trust boundary/u);
+  await properties(page, storefront.shopNetwork);
   await chooseInPanel(page, 'Contained elements recording', 'Recorded');
   await chooseInPanel(page, 'Add to contained elements', 'Catalogue');
   await threatPanel(page)
@@ -247,9 +243,9 @@ test('deletion and copying update declared relationships through the editor', as
     .getByRole('button', { name: 'Add relationship' })
     .click();
 
-  await selectByKeyboard(page, /^Catalogue, store/u);
+  await selectByKeyboard(page, storefront.catalogue);
   await page.keyboard.press('Delete');
-  await properties(page, /^Shop network, trust boundary/u);
+  await properties(page, storefront.shopNetwork);
   const contained = threatPanel(page).getByRole('combobox', {
     name: 'Contained elements 1',
     exact: true,
@@ -263,8 +259,7 @@ test('deletion and copying update declared relationships through the editor', as
   const boundary = page.locator('.react-flow__node[data-id="el-shop-network"]');
   await boundary.focus();
   await page.keyboard.press('ControlOrMeta+d');
-  const copied = Either.getOrThrow(readAnyFormat((await savedFile(page)).text))
-    .model.diagrams[0].elements;
+  const copied = (await savedModel(page)).diagrams[0].elements;
   const boundaries = copied.filter(
     (element) =>
       element.kind === 'trust-boundary' && element.name === 'Shop network',
@@ -280,9 +275,7 @@ test('deletion and copying update declared relationships through the editor', as
   await boundary.focus();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Delete');
-  const removed = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const removed = await savedModel(page);
   expect(
     removed.diagrams[0].elements.find((element) => element.id === 'el-browse'),
   ).toMatchObject({ trustBoundaryIds: [] });

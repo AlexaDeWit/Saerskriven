@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { registeredChords } from './chords.fixtures.js';
 import {
   editAnnouncement,
+  nameField,
   nodeNamed,
   openPlaceholder,
   placeByClick,
@@ -13,9 +14,7 @@ test('edit status follows focus and lasts until the next edit', async ({
   await openPlaceholder(page);
   await placeByClick(page, 'Actor', /^New actor, actor/u);
 
-  await expect(
-    page.getByRole('textbox', { name: 'Name of New actor' }),
-  ).toBeFocused();
+  await expect(nameField(page, 'New actor')).toBeFocused();
   await expect(editAnnouncement(page)).toBeEmpty();
 
   await page.keyboard.press('Enter');

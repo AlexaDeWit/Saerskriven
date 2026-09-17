@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { committedText } from '@saerskriven/model/fixtures';
+import { canvasContainer, canvasSettled } from './canvas.fixtures.js';
 import {
-  canvasContainer,
-  canvasSettled,
   featureCompleteFile,
+  nameField,
   nodeNamed,
   openPlaceholder,
+  placeholder,
   runFromMenu,
   savedFile,
 } from './studio.fixtures.js';
@@ -44,7 +45,7 @@ test('reload restores the last completed edit', async ({ page }) => {
   await canvasSettled(page);
 
   await nodeNamed(page, /^Booking service, process/u).dblclick();
-  const name = page.getByRole('textbox', { name: 'Name of Booking service' });
+  const name = nameField(page, 'Booking service');
   await name.fill('Recovered booking');
   await name.press('Enter');
 
@@ -71,23 +72,23 @@ test('two tabs follow each other, so the one in view is the one that is right', 
   await openPlaceholder(page);
   await openPlaceholder(other);
 
-  await nodeNamed(page, /^Store, store/u).dblclick();
-  await page.getByRole('textbox', { name: 'Name of Store' }).fill('Ledger');
-  await page.getByRole('textbox', { name: 'Name of Store' }).press('Enter');
+  await nodeNamed(page, placeholder.store).dblclick();
+  await nameField(page, 'Store').fill('Ledger');
+  await nameField(page, 'Store').press('Enter');
 
   await expect(nodeNamed(other, /^Ledger, store/u)).toHaveCount(1);
 
-  await nodeNamed(other, /^Actor, actor/u).dblclick();
-  await other.getByRole('textbox', { name: 'Name of Actor' }).fill('Clerk');
-  await other.getByRole('textbox', { name: 'Name of Actor' }).press('Enter');
+  await nodeNamed(other, placeholder.actor).dblclick();
+  await nameField(other, 'Actor').fill('Clerk');
+  await nameField(other, 'Actor').press('Enter');
 
   await expect(nodeNamed(page, /^Clerk, actor/u)).toHaveCount(1);
   await expect(nodeNamed(page, /^Ledger, store/u)).toHaveCount(1);
 
   await runFromMenu(page, 'Undo');
-  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
-  await expect(nodeNamed(other, /^Actor, actor/u)).toHaveCount(1);
+  await expect(nodeNamed(page, placeholder.actor)).toHaveCount(1);
+  await expect(nodeNamed(other, placeholder.actor)).toHaveCount(1);
   await runFromMenu(other, 'Undo');
-  await expect(nodeNamed(other, /^Store, store/u)).toHaveCount(1);
-  await expect(nodeNamed(page, /^Store, store/u)).toHaveCount(1);
+  await expect(nodeNamed(other, placeholder.store)).toHaveCount(1);
+  await expect(nodeNamed(page, placeholder.store)).toHaveCount(1);
 });

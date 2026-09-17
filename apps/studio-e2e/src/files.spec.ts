@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { elementNodes } from './canvas.fixtures.js';
 import {
-  closeMenu,
-  elementNodes,
+  expectFileShown,
+  featureCompleteFile,
   nodeNamed,
   openFile,
-  openMenu,
   savedFile,
-  featureCompleteFile,
+  storefront,
   twoDiagramsFile,
 } from './studio.fixtures.js';
 
@@ -15,14 +15,7 @@ test('opens a model, saves it back, and writes a file that parses again', async 
 }) => {
   await openFile(page, featureCompleteFile);
 
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'feature-complete.json',
-  );
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Threat Dragon JSON',
-  );
-  await closeMenu(page);
+  await expectFileShown(page, 'feature-complete.json', 'Threat Dragon JSON');
   await expect(elementNodes(page)).toHaveCount(6);
   await expect(page.locator('.react-flow__edge')).toHaveCount(3);
 
@@ -41,17 +34,9 @@ test('opens the native format by its content, and draws its diagram', async ({
 }) => {
   await openFile(page, twoDiagramsFile);
 
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'two-diagrams.yaml',
-  );
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Saerskriven YAML',
-  );
-  await closeMenu(page);
+  await expectFileShown(page, 'two-diagrams.yaml', 'Saerskriven YAML');
   await expect(elementNodes(page)).toHaveCount(7);
   await expect(page.locator('.react-flow__edge')).toHaveCount(7);
-  await expect(nodeNamed(page, /^Shop network, trust boundary/u)).toBeVisible();
-  await expect(nodeNamed(page, /^Web shop, process/u)).toBeVisible();
+  await expect(nodeNamed(page, storefront.shopNetwork)).toBeVisible();
+  await expect(nodeNamed(page, storefront.webShop)).toBeVisible();
 });
-

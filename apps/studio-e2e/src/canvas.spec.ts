@@ -1,19 +1,24 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { halfwayAlong, lineOf } from './canvas-geometry.fixtures.js';
 import {
-  beforeCanvas,
   canvasSettled,
-  canvasSurface,
   centreOf,
   dragBy,
   dragOnto,
+  halfwayAlong,
+  lineOf,
+  placeOf,
+} from './canvas.fixtures.js';
+import {
+  beforeCanvas,
+  canvasSurface,
   handleOn,
   nodeNamed,
   openPlaceholder,
   openTwoDiagrams,
-  placeOf,
+  placeholder,
   runFromMenu,
   selectNode,
+  storefront,
   toolButton,
 } from './studio.fixtures.js';
 
@@ -57,12 +62,12 @@ test('the selection moves between an element and a flow, either way', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
-  const webShop = nodeNamed(page, /^Web shop, process/u);
+  const webShop = nodeNamed(page, storefront.webShop);
   const selectedFlow = page.locator('.react-flow__edge.selected');
 
   await webShop.click();
   await expect(webShop).toHaveClass(/selected/u);
-  await expect(nodeNamed(page, /^Shopper, actor/u)).not.toHaveClass(
+  await expect(nodeNamed(page, storefront.shopper)).not.toHaveClass(
     /selected/u,
   );
 
@@ -81,7 +86,7 @@ test('a flow under a selected trust boundary takes a line or label click', async
   page,
 }) => {
   await openTwoDiagrams(page);
-  const boundary = nodeNamed(page, /^Shop network, trust boundary/u);
+  const boundary = nodeNamed(page, storefront.shopNetwork);
   const flowName = /^read the product listings, flow/u;
   const flow = nodeNamed(page, flowName);
 
@@ -104,7 +109,7 @@ test('a flow under a selected trust boundary takes a line or label click', async
 
 test('a trust boundary selects from its drawn name', async ({ page }) => {
   await openTwoDiagrams(page);
-  const boundary = nodeNamed(page, /^Shop network, trust boundary/u);
+  const boundary = nodeNamed(page, storefront.shopNetwork);
 
   await boundary.locator('.pn-label').click();
 
@@ -115,7 +120,7 @@ test('a trust boundary selects and drags from its outline', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
-  const boundary = nodeNamed(page, /^Shop network, trust boundary/u);
+  const boundary = nodeNamed(page, storefront.shopNetwork);
 
   const onOutline = await boundaryHandlePoint(boundary, 'bottom');
   await expectBoundaryHitTarget(page, onOutline);
@@ -142,9 +147,9 @@ test('a selected regular node stays above a later overlapping node', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = await selectNode(page, /^Actor, actor/u);
+  const actor = await selectNode(page, placeholder.actor);
   await page.getByRole('button', { name: 'Fit to view' }).click();
-  const store = nodeNamed(page, /^Store, store/u);
+  const store = nodeNamed(page, placeholder.store);
   await dragOnto(page, actor, store);
   const actorBox = await actor.boundingBox();
   const storeBox = await store.boundingBox();
@@ -184,7 +189,7 @@ test('a drag moves the element through the store, and undo puts it back', async 
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
+  const actor = nodeNamed(page, placeholder.actor);
   const before = await placeOf(actor);
 
   await dragBy(page, actor, 60);
@@ -200,15 +205,15 @@ test('an element is reachable, selectable and movable by keyboard alone', async 
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
+  const actor = nodeNamed(page, placeholder.actor);
 
   await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
-  await expect(nodeNamed(page, /^Records, flow/u)).toBeFocused();
+  await expect(nodeNamed(page, placeholder.records)).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(actor).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(nodeNamed(page, /^Store, store/u)).toBeFocused();
+  await expect(nodeNamed(page, placeholder.store)).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(actor).toBeFocused();
 

@@ -1,40 +1,44 @@
 import { expect, test } from '@playwright/test';
-import { testDataPath } from '@saerskriven/model/fixtures';
-import { inkBoxOf } from './canvas-geometry.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
-import { viewportTransform } from './commands.fixtures.js';
 import {
-  beforeCanvas,
   canvasContainer,
-  canvasSettled,
-  canvasSurface,
-  cardControlsClear,
   dragOnto,
-  editAnnouncement,
   elementNodes,
   emptyCanvasPoint,
+  inkBoxOf,
+  viewportTransform,
+} from './canvas.fixtures.js';
+import {
+  beforeCanvas,
+  canvasSurface,
+  cardControlsClear,
+  chooseFile,
+  editAnnouncement,
   menuItem,
+  nameField,
   nodeNamed,
+  openFallback,
   openMenu,
   openPlaceholder,
   openTwoDiagrams,
   placeByClick,
+  placeholder,
   runFromMenu,
   selectNode,
+  storefront,
   threatPanel,
   toolButton,
   twoDiagramsFile,
-  withoutPickers,
 } from './studio.fixtures.js';
+import { registeredChords } from './chords.fixtures.js';
 
 const boxTools = [
-  ['Actor', /^New actor, actor/u, 'Name of New actor'],
-  ['Process', /^New process, process/u, 'Name of New process'],
-  ['Store', /^New store, store/u, 'Name of New store'],
+  ['Actor', /^New actor, actor/u, 'New actor'],
+  ['Process', /^New process, process/u, 'New process'],
+  ['Store', /^New store, store/u, 'New store'],
   [
     'Trust boundary',
     /^New trust boundary, trust boundary/u,
-    'Name of New trust boundary',
+    'New trust boundary',
   ],
 ] as const;
 
@@ -74,12 +78,12 @@ test('each box tool places its element by pointer with its name open', async ({
 }) => {
   await openPlaceholder(page);
 
-  for (const [tool, drawn, nameField] of boxTools) {
+  for (const [tool, drawn, placedName] of boxTools) {
     await test.step(tool, async () => {
       const placed = await placeByClick(page, tool, drawn);
 
       await expect(placed).toHaveClass(/selected/u);
-      const name = page.getByRole('textbox', { name: nameField, exact: true });
+      const name = nameField(page, placedName);
       await expect(name).toBeFocused();
       await expect(threatPanel(page)).toBeVisible();
 
@@ -98,10 +102,10 @@ test('each element tool key selects its mode and Enter places it', async ({
     await page.keyboard.press(chord);
     await page.keyboard.press('Enter');
     await expect(nodeNamed(page, named)).toHaveCount(1);
-    const nameField = page.getByRole('textbox', { name: /^Name of New/u });
-    await expect(nameField).toBeFocused();
-    await nameField.press('Enter');
-    await expect(nameField).toHaveCount(0);
+    const opened = page.getByRole('textbox', { name: /^Name of New/u });
+    await expect(opened).toBeFocused();
+    await opened.press('Enter');
+    await expect(opened).toHaveCount(0);
   }
   await expect(elementNodes(page)).toHaveCount(7);
 });
@@ -116,15 +120,13 @@ test('a delayed focus return preserves the next keyboard placement editor', asyn
 
   await page.keyboard.press(registeredChords['actor-tool'][0]);
   await page.keyboard.press('Enter');
-  const actorName = page.getByRole('textbox', { name: 'Name of New actor' });
+  const actorName = nameField(page, 'New actor');
   await expect(actorName).toBeFocused();
   await actorName.press('Enter');
 
   await page.keyboard.press(registeredChords['process-tool'][0]);
   await page.keyboard.press('Enter');
-  const processName = page.getByRole('textbox', {
-    name: 'Name of New process',
-  });
+  const processName = nameField(page, 'New process');
   await expect(processName).toBeFocused();
   await page.clock.runFor(50);
 
@@ -244,8 +246,8 @@ test('a flow is drawn by dragging from one handle to another', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
-  const store = nodeNamed(page, /^Store, store/u);
+  const actor = nodeNamed(page, placeholder.actor);
+  const store = nodeNamed(page, placeholder.store);
 
   await actor.hover();
   await dragOnto(
@@ -263,7 +265,7 @@ test('a flow is drawn by keyboard alone, from the selected element', async ({
 }) => {
   await openPlaceholder(page);
 
-  await selectNode(page, /^Actor, actor/u);
+  await selectNode(page, placeholder.actor);
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await page.getByRole('option', { name: 'Store' }).press('Enter');
 
@@ -400,7 +402,7 @@ test('Escape discards a boundary curve without an undo step', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = await nodeNamed(page, /^Actor, actor/u).boundingBox();
+  const actor = await nodeNamed(page, placeholder.actor).boundingBox();
   expect(actor).not.toBeNull();
   const at = {
     x: (actor?.x ?? 0) + (actor?.width ?? 0) / 2,
@@ -430,16 +432,14 @@ test('Escape discards a boundary curve without an undo step', async ({
 test('opening another model clears a boundary curve draft', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
   const at = await emptyCanvasPoint(page);
 
   await toolButton(page, 'Trust boundary curve').click();
   await page.mouse.click(at.x, at.y);
   await expect(page.getByTestId('curve-draft')).toBeVisible();
 
-  await page.getByTestId('file-input').setInputFiles(testDataPath(twoDiagramsFile));
-  await canvasSettled(page);
+  await chooseFile(page, twoDiagramsFile);
 
   await expect(page.getByTestId('curve-draft')).toHaveCount(0);
 });
@@ -449,9 +449,7 @@ test('a boundary curve draft stays discarded across undo and redo', async ({
 }) => {
   await openPlaceholder(page);
   await placeByClick(page, 'Actor', /^New actor, actor/u);
-  await expect(
-    page.getByRole('textbox', { name: 'Name of New actor' }),
-  ).toBeFocused();
+  await expect(nameField(page, 'New actor')).toBeFocused();
   await page.keyboard.press('Enter');
   const at = await emptyCanvasPoint(page);
   await toolButton(page, 'Trust boundary curve').click();
@@ -469,7 +467,7 @@ test('Hand pans from anywhere and Space restores the previous tool', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = await nodeNamed(page, /^Actor, actor/u).boundingBox();
+  const actor = await nodeNamed(page, placeholder.actor).boundingBox();
   expect(actor).not.toBeNull();
   const at = {
     x: (actor?.x ?? 0) + (actor?.width ?? 0) / 2,
@@ -524,7 +522,7 @@ test('the delete key removes the element, the flows it held lose an end, and one
   page,
 }) => {
   await openTwoDiagrams(page);
-  const shopper = nodeNamed(page, /^Shopper, actor/u);
+  const shopper = nodeNamed(page, storefront.shopper);
   const returned = nodeNamed(page, /^return the rendered page, flow/u);
 
   await shopper.click();

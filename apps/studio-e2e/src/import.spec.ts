@@ -2,23 +2,21 @@ import { expect, test } from '@playwright/test';
 import { testDataPath } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { Either } from 'effect';
+import { dragOnto } from './canvas.fixtures.js';
 import {
-  dragOnto,
   handleOn,
-  nodeNamed,
   menuButton,
+  nodeNamed,
+  openFallback,
   openMenu,
-  openPlaceholder,
   runFromMenu,
   savedFile,
-  withoutPickers,
 } from './studio.fixtures.js';
 
 test('imports beside Export, draws the converted model, and saves native YAML', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
   await openMenu(page);
   const entries = await page.getByRole('menuitem').allTextContents();
   expect(entries.findIndex((entry) => entry.startsWith('Import')) + 1).toBe(

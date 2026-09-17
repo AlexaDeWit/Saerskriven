@@ -1,29 +1,29 @@
 import { expect, test } from '@playwright/test';
 import { testDataPath } from '@saerskriven/model/fixtures';
 import { registeredChords } from './chords.fixtures.js';
-import { savedFromMenu } from './commands.fixtures.js';
+import { canvasSettled, elementNodes } from './canvas.fixtures.js';
 import {
-  canvasSettled,
-  elementNodes,
+  expectFileShown,
   featureCompleteFile,
   focusSettled,
   menuButton,
   menuItem,
   nodeNamed,
+  openFallback,
   openFile,
   openMenu,
   openPlaceholder,
   placeByClick,
+  placeholder,
   runFromMenu,
+  savedFromMenu,
   twoDiagramsFile,
-  withoutPickers,
 } from './studio.fixtures.js';
 
 test('save as asks the format in the menu where the browser has no picker of its own', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
 
   await openMenu(page);
   await menuItem(page, 'Save as').click();
@@ -36,11 +36,7 @@ test('save as asks the format in the menu where the browser has no picker of its
   const written = await savedFromMenu(page, 'Save as Saerskriven YAML');
 
   expect(written.name).toBe('threat-model.yaml');
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(written.name);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Saerskriven YAML',
-  );
+  await expectFileShown(page, written.name, 'Saerskriven YAML');
 });
 
 test('every item is reached, run and left by the keyboard alone', async ({
@@ -95,7 +91,7 @@ test('the canvas stays live behind the open menu', async ({ page }) => {
   await openMenu(page);
 
   await expect(page.getByRole('main')).not.toHaveAttribute('aria-hidden');
-  const store = nodeNamed(page, /^Store, store/u);
+  const store = nodeNamed(page, placeholder.store);
   await store.click();
 
   await expect(store).toHaveClass(/selected/u);
@@ -138,7 +134,7 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await discard.click();
 
   await canvasSettled(page);
-  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
+  await expect(nodeNamed(page, placeholder.actor)).toHaveCount(1);
   await openMenu(page);
   await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
 });
@@ -212,4 +208,3 @@ test('closing a file that holds everything on screen takes no second press', asy
   await openMenu(page);
   await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
 });
-

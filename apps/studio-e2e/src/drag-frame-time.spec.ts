@@ -10,19 +10,20 @@ import {
   elementId,
   threatId,
 } from '@saerskriven/model/fixtures';
-import { type Point, pressOn } from './canvas-geometry.fixtures.js';
+import {
+  canvasSettled,
+  elementNodes,
+  placeOf,
+  type Point,
+  pressOn,
+} from './canvas.fixtures.js';
+import { openModelDocument } from './studio.fixtures.js';
 import {
   displayPeriod,
   gapsRecorded,
   nextFrame,
   recordGaps,
 } from './frame-time.fixtures.js';
-import {
-  canvasSettled,
-  elementNodes,
-  openModelDocument,
-  placeOf,
-} from './studio.fixtures.js';
 
 type Direction = 1 | -1;
 
@@ -43,10 +44,10 @@ const copyOf = (element: Element, copy: number): Element => {
       : { ...endpoint, position: lowered(endpoint.position, by) };
   if (element.kind === 'flow') {
     return {
-        ...element,
-        id: renamed(element.id),
-        source: end(element.source),
-        target: end(element.target),
+      ...element,
+      id: renamed(element.id),
+      source: end(element.source),
+      target: end(element.target),
       waypoints: element.waypoints.map((point) => lowered(point, by)),
     };
   }
@@ -80,7 +81,10 @@ const crowdedStorefront = (): Model => {
     ({ elements }) =>
       elements.length > 0 && elements.every((id) => drawn.has(id)),
   );
-  const added = Array.from({ length: copies - 1 }, (unused, index) => index + 1);
+  const added = Array.from(
+    { length: copies - 1 },
+    (unused, index) => index + 1,
+  );
   const threats = added.flatMap((copy, copyIndex) =>
     threatened.map((threat, threatIndex) => ({
       ...threat,

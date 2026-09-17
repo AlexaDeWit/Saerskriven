@@ -1,22 +1,23 @@
-import { readAnyFormat } from '@saerskriven/formats';
 import { expect, test } from '@playwright/test';
-import { Either } from 'effect';
 import { registeredChords } from './chords.fixtures.js';
 import {
   canvasContainer,
   canvasSettled,
+  elementNodes,
+} from './canvas.fixtures.js';
+import {
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
-  elementNodes,
   menuItem,
   nodeNamed,
+  openFallback,
   openMenu,
   openPlaceholder,
   openSwitcher,
   openTwoDiagrams,
   placeByClick,
-  savedFile,
+  savedModel,
   twoDiagrams,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -26,12 +27,6 @@ const firstTitle = first.title;
 const secondTitle = second.title;
 const onFirst = first.drawn;
 const onSecond = second.drawn;
-
-const titlesIn = (text: string): readonly string[] => {
-  const read = readAnyFormat(text);
-  expect(Either.isRight(read)).toBe(true);
-  return Either.getOrThrow(read).model.diagrams.map((diagram) => diagram.title);
-};
 
 test('the switcher names the one diagram of the placeholder, and the menu holds no diagram group', async ({
   page,
@@ -128,8 +123,7 @@ test('switching clears the selection and adds no history, so undo has nothing to
 test('a new diagram is named as it is made, drawn empty, and saved with its title', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
   await expect(elementNodes(page)).toHaveCount(2);
 
   await openSwitcher(page);
@@ -148,8 +142,8 @@ test('a new diagram is named as it is made, drawn empty, and saved with its titl
   await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
 
-  const written = await savedFile(page);
-  expect(titlesIn(written.text)).toEqual([
+  const written = await savedModel(page);
+  expect(written.diagrams.map((diagram) => diagram.title)).toEqual([
     'Untitled diagram',
     'Request forgery',
   ]);
@@ -230,10 +224,7 @@ test('an edit lands on the diagram on screen, the saved file holds it there, and
   await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
 
-  const written = await savedFile(page);
-  const read = readAnyFormat(written.text);
-  expect(Either.isRight(read)).toBe(true);
-  const model = Either.getOrThrow(read).model;
+  const model = await savedModel(page);
   const named = (id: string): readonly string[] =>
     model.diagrams
       .find((diagram) => diagram.id === id)

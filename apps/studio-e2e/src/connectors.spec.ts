@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { registeredChords } from './chords.fixtures.js';
+import { dragTo, emptyCanvasPoint } from './canvas.fixtures.js';
 import {
-  dragTo,
-  emptyCanvasPoint,
   handleOn,
   menuItem,
   nodeNamed,
@@ -10,17 +9,13 @@ import {
   openPlaceholder,
   openTwoDiagrams,
   placeByClick,
+  placeholder,
   runFromMenu,
   selectByKeyboard,
   selectNode,
   stepThroughOptions,
+  storefront,
 } from './studio.fixtures.js';
-
-const actor = /^Actor, actor/u;
-
-const store = /^Store, store/u;
-
-const webShop = /^Web shop, process/u;
 
 const flows = '.react-flow__edge';
 
@@ -30,11 +25,15 @@ test('a selected element keeps its handles with the pointer elsewhere', async ({
   await openPlaceholder(page);
   const away = await emptyCanvasPoint(page);
 
-  await selectNode(page, actor);
+  await selectNode(page, placeholder.actor);
   await page.mouse.move(away.x, away.y);
 
-  await expect(handleOn(nodeNamed(page, actor), 'right')).toBeVisible();
-  await expect(handleOn(nodeNamed(page, store), 'left')).toBeHidden();
+  await expect(
+    handleOn(nodeNamed(page, placeholder.actor), 'right'),
+  ).toBeVisible();
+  await expect(
+    handleOn(nodeNamed(page, placeholder.store), 'left'),
+  ).toBeHidden();
 });
 
 test('a drag released over empty canvas draws nothing and costs no undo step', async ({
@@ -45,10 +44,10 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
   await page.keyboard.press('Enter');
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(1);
 
-  await nodeNamed(page, actor).hover();
+  await nodeNamed(page, placeholder.actor).hover();
   await dragTo(
     page,
-    handleOn(nodeNamed(page, actor), 'right'),
+    handleOn(nodeNamed(page, placeholder.actor), 'right'),
     await emptyCanvasPoint(page),
   );
 
@@ -65,7 +64,7 @@ test('the start-flow chord draws a flow from the selected element', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
-  await selectByKeyboard(page, webShop);
+  await selectByKeyboard(page, storefront.webShop);
 
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
@@ -79,7 +78,7 @@ test('escape cancels a flow the chord started and leaves the selection', async (
   page,
 }) => {
   await openTwoDiagrams(page);
-  const selected = await selectByKeyboard(page, webShop);
+  const selected = await selectByKeyboard(page, storefront.webShop);
 
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();

@@ -1,32 +1,38 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import type { Box } from './canvas-geometry.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import {
+  type Box,
+  centreOf,
+  onScreen,
+  screenBoxOf,
+  scrolledAbove,
+} from './canvas.fixtures.js';
 import {
   cardControlsClear,
-  centreOf,
   chromeCard,
   closeMenu,
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
+  downloaded,
   exportedFile,
   menuButton,
   menuItem,
   nodeNamed,
-  onScreen,
+  openFallback,
   openFile,
   openMenu,
   openPlaceholder,
   openSwitcher,
+  openText,
   openTwoDiagrams,
-  screenBoxOf,
-  scrolledAbove,
+  placeholder,
+  savedFromMenu,
   selectByKeyboard,
   threatPanel,
   twoDiagrams,
   twoDiagramsFile,
-  withoutPickers,
 } from './studio.fixtures.js';
+import { registeredChords } from './chords.fixtures.js';
 
 const { first, second } = twoDiagrams;
 
@@ -35,116 +41,115 @@ const below = async (target: Locator, card: Box): Promise<void> => {
   expect(box.y).toBeGreaterThanOrEqual(card.y + card.height);
 };
 
-test('the card holds the chrome, and the switcher still switches diagrams', { tag: '@phone' }, async ({
-  page,
-}) => {
-  await openTwoDiagrams(page);
+test(
+  'the card holds the chrome, and the switcher still switches diagrams',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
 
-  const card = await screenBoxOf(chromeCard(page));
-  const viewport = page.viewportSize();
-  expect(card.x).toBeGreaterThanOrEqual(0);
-  expect(card.x + card.width).toBeLessThanOrEqual(viewport?.width ?? 0);
-  await cardControlsClear(page);
-  await expect(diagramSwitcher(page)).toHaveAccessibleName(
-    `Diagram: ${first.title}`,
-  );
+    const card = await screenBoxOf(chromeCard(page));
+    const viewport = page.viewportSize();
+    expect(card.x).toBeGreaterThanOrEqual(0);
+    expect(card.x + card.width).toBeLessThanOrEqual(viewport?.width ?? 0);
+    await cardControlsClear(page);
+    await expect(diagramSwitcher(page)).toHaveAccessibleName(
+      `Diagram: ${first.title}`,
+    );
 
-  await openSwitcher(page);
-  await diagramChoice(page, second.title).click();
+    await openSwitcher(page);
+    await diagramChoice(page, second.title).click();
 
-  await expect(nodeNamed(page, second.drawn)).toHaveCount(1);
-  await expect(diagramSwitcher(page)).toHaveAccessibleName(
-    `Diagram: ${second.title}`,
-  );
-});
+    await expect(nodeNamed(page, second.drawn)).toHaveCount(1);
+    await expect(diagramSwitcher(page)).toHaveAccessibleName(
+      `Diagram: ${second.title}`,
+    );
+  },
+);
 
-test('the rename field opens in the title place and the card keeps its width', { tag: '@phone' }, async ({
-  page,
-}) => {
-  await openTwoDiagrams(page);
-  const before = await screenBoxOf(chromeCard(page));
-  const title = await screenBoxOf(diagramSwitcher(page));
+test(
+  'the rename field opens in the title place and the card keeps its width',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    const before = await screenBoxOf(chromeCard(page));
+    const title = await screenBoxOf(diagramSwitcher(page));
 
-  await openSwitcher(page);
-  await menuItem(page, 'Rename diagram').click();
+    await openSwitcher(page);
+    await menuItem(page, 'Rename diagram').click();
 
-  const field = await screenBoxOf(diagramTitleField(page));
-  expect(field.x).toBeCloseTo(title.x, 0);
-  expect(field.y).toBeCloseTo(title.y, 0);
-  const after = await screenBoxOf(chromeCard(page));
-  expect(after.width).toBeCloseTo(before.width, 0);
-});
+    const field = await screenBoxOf(diagramTitleField(page));
+    expect(field.x).toBeCloseTo(title.x, 0);
+    expect(field.y).toBeCloseTo(title.y, 0);
+    const after = await screenBoxOf(chromeCard(page));
+    expect(after.width).toBeCloseTo(before.width, 0);
+  },
+);
 
-test('a selection leaves the card uncovered', { tag: '@phone' }, async ({ page }) => {
-  await openPlaceholder(page);
+test(
+  'a selection leaves the card uncovered',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openPlaceholder(page);
 
-  await selectByKeyboard(page, /^Actor, actor/u);
-  await page.keyboard.press(registeredChords['edit-geometry'][0]);
+    await selectByKeyboard(page, placeholder.actor);
+    await page.keyboard.press(registeredChords['edit-geometry'][0]);
 
-  const card = await screenBoxOf(chromeCard(page));
-  await below(page.getByRole('region', { name: 'Position and size' }), card);
-  await below(threatPanel(page), card);
-  await cardControlsClear(page);
-});
+    const card = await screenBoxOf(chromeCard(page));
+    await below(page.getByRole('region', { name: 'Position and size' }), card);
+    await below(threatPanel(page), card);
+    await cardControlsClear(page);
+  },
+);
 
-test('a refused read and a loss report hang under the card', { tag: '@phone' }, async ({
-  page,
-}) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-  const card = await screenBoxOf(chromeCard(page));
-  const viewport = page.viewportSize();
+test(
+  'a refused read and a loss report hang under the card',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openFallback(page);
+    const card = await screenBoxOf(chromeCard(page));
+    const viewport = page.viewportSize();
 
-  await page.getByTestId('file-input').setInputFiles({
-    name: 'notes.txt',
-    mimeType: 'text/plain',
-    buffer: Buffer.from('no threat model here'),
-  });
+    await openText(page, 'notes.txt', 'no threat model here');
 
-  const notice = page.getByTestId('failure-notice');
-  await expect(notice).toContainText('notes.txt');
-  await below(notice, card);
-  const drawn = await screenBoxOf(notice);
-  expect(drawn.x).toBeGreaterThanOrEqual(0);
-  expect(drawn.x + drawn.width).toBeLessThanOrEqual(viewport?.width ?? 0);
+    const notice = page.getByTestId('failure-notice');
+    await expect(notice).toContainText('notes.txt');
+    await below(notice, card);
+    const drawn = await screenBoxOf(notice);
+    expect(drawn.x).toBeGreaterThanOrEqual(0);
+    expect(drawn.x + drawn.width).toBeLessThanOrEqual(viewport?.width ?? 0);
 
-  await openMenu(page);
-  await menuItem(page, 'Save as').click();
-  await Promise.all([
-    page.waitForEvent('download'),
-    menuItem(page, 'Save as Threat Dragon JSON').click(),
-  ]);
+    await openMenu(page);
+    await menuItem(page, 'Save as').click();
+    await savedFromMenu(page, 'Save as Threat Dragon JSON');
 
-  const report = page.getByTestId('loss-report');
-  await expect(report).not.toBeEmpty();
-  await below(report, card);
-  await cardControlsClear(page);
-});
+    const report = page.getByTestId('loss-report');
+    await expect(report).not.toBeEmpty();
+    await below(report, card);
+    await cardControlsClear(page);
+  },
+);
 
-test('a notice under the card leaves an open pane header uncovered', { tag: '@phone' }, async ({
-  page,
-}) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-  await selectByKeyboard(page, /^Actor, actor/u);
-  await expect(threatPanel(page)).toBeVisible();
+test(
+  'a notice under the card leaves an open pane header uncovered',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openFallback(page);
+    await selectByKeyboard(page, placeholder.actor);
+    await expect(threatPanel(page)).toBeVisible();
 
-  await page.getByTestId('file-input').setInputFiles({
-    name: 'notes.txt',
-    mimeType: 'text/plain',
-    buffer: Buffer.from('no threat model here'),
-  });
-  const notice = page.getByTestId('failure-notice');
-  await expect(notice).toContainText('notes.txt');
+    await openText(page, 'notes.txt', 'no threat model here');
+    const notice = page.getByTestId('failure-notice');
+    await expect(notice).toContainText('notes.txt');
 
-  await below(threatPanel(page), await screenBoxOf(notice));
-  await onScreen(
-    threatPanel(page).getByRole('button', {
-      name: 'Close threats',
-      exact: true,
-    }),
-  );
-});
+    await below(threatPanel(page), await screenBoxOf(notice));
+    await onScreen(
+      threatPanel(page).getByRole('button', {
+        name: 'Close threats',
+        exact: true,
+      }),
+    );
+  },
+);
 
 type OpenedSubmenu = {
   readonly row: Box;
@@ -201,42 +206,47 @@ const openLowInShortViewport = async (
   return opensOnScreen(page, 'Arrange');
 };
 
-test('every submenu opens whole at the card edge, and an export downloads from one', { tag: '@phone' }, async ({
-  page,
-}) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+test(
+  'every submenu opens whole at the card edge, and an export downloads from one',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openFallback(page);
 
-  for (const name of ['Export', 'Arrange', /^Appearance /u]) {
-    await openMenu(page);
-    const { scrolls } = await opensOnScreen(page, name);
+    for (const name of ['Export', 'Arrange', /^Appearance /u]) {
+      await openMenu(page);
+      const { scrolls } = await opensOnScreen(page, name);
+      expect(scrolls).toBe(false);
+      await closeMenu(page);
+    }
+
+    const output = await exportedFile(page, 'Diagram as SVG');
+    expect(output.name).toBe('Untitled.svg');
+    expect(output.bytes.length).toBeGreaterThan(0);
+  },
+);
+
+test(
+  'a submenu with no room under its row opens whole over it',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const { row, drawn, scrolls } = await openLowInShortViewport(page, 480);
+
     expect(scrolls).toBe(false);
-    await closeMenu(page);
-  }
+    expect(Math.round(drawn.y + drawn.height)).toBeLessThanOrEqual(
+      Math.round(row.y),
+    );
+  },
+);
 
-  const output = await exportedFile(page, 'Diagram as SVG');
-  expect(output.name).toBe('Untitled.svg');
-  expect(output.bytes.length).toBeGreaterThan(0);
-});
+test(
+  'a submenu with room on neither side of its row scrolls on screen',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const { scrolls } = await openLowInShortViewport(page, 300);
 
-test('a submenu with no room under its row opens whole over it', { tag: '@phone' }, async ({
-  page,
-}) => {
-  const { row, drawn, scrolls } = await openLowInShortViewport(page, 480);
-
-  expect(scrolls).toBe(false);
-  expect(Math.round(drawn.y + drawn.height)).toBeLessThanOrEqual(
-    Math.round(row.y),
-  );
-});
-
-test('a submenu with room on neither side of its row scrolls on screen', { tag: '@phone' }, async ({
-  page,
-}) => {
-  const { scrolls } = await openLowInShortViewport(page, 300);
-
-  expect(scrolls).toBe(true);
-});
+    expect(scrolls).toBe(true);
+  },
+);
 
 test('a pointer heading down and left from Export into its submenu reaches an export', async ({
   page,
@@ -254,11 +264,10 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
   await page.mouse.move(target.x, target.y, { steps: 10 });
   await expect(page.getByRole('menu', { name: 'Export' })).toBeVisible();
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
+  const output = await downloaded(page, () =>
     page.mouse.click(target.x, target.y),
-  ]);
-  expect(download.suggestedFilename()).toBe('two-diagrams.svg');
+  );
+  expect(output.name).toBe('two-diagrams.svg');
 });
 
 const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
@@ -276,23 +285,25 @@ const openInShortViewport = async (page: Page): Promise<Box> => {
 
 const rootMenu = (page: Page): Locator => page.getByRole('menu').first();
 
-test('the menu ends inside a 720 px tall viewport and scrolls itself to its last row', { tag: '@phone' }, async ({
-  page,
-}) => {
-  const burger = await openInShortViewport(page);
-  const panel = await screenBoxOf(rootMenu(page));
-  expect(Math.round(panel.y + panel.height)).toBeLessThanOrEqual(720);
+test(
+  'the menu ends inside a 720 px tall viewport and scrolls itself to its last row',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const burger = await openInShortViewport(page);
+    const panel = await screenBoxOf(rootMenu(page));
+    expect(Math.round(panel.y + panel.height)).toBeLessThanOrEqual(720);
 
-  await rootMenu(page).evaluate((menu) => {
-    menu.scrollTop = menu.scrollHeight;
-  });
+    await rootMenu(page).evaluate((menu) => {
+      menu.scrollTop = menu.scrollHeight;
+    });
 
-  const last = await screenBoxOf(rootMenu(page).getByRole('menuitem').last());
-  expect(Math.round(last.y + last.height)).toBeLessThanOrEqual(
-    Math.round(panel.y + panel.height),
-  );
-  await staysInPlace(page, burger);
-});
+    const last = await screenBoxOf(rootMenu(page).getByRole('menuitem').last());
+    expect(Math.round(last.y + last.height)).toBeLessThanOrEqual(
+      Math.round(panel.y + panel.height),
+    );
+    await staysInPlace(page, burger);
+  },
+);
 
 test('opening and closing each submenu by pointer leaves the chrome in place', async ({
   page,
@@ -364,10 +375,7 @@ test.describe('at a device pixel ratio of 2', () => {
     });
     await expect(page.getByRole('menu', { name: 'Export' })).toBeVisible();
 
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.mouse.click(start.x, end),
-    ]);
-    expect(download.suggestedFilename()).toBe('two-diagrams.svg');
+    const output = await downloaded(page, () => page.mouse.click(start.x, end));
+    expect(output.name).toBe('two-diagrams.svg');
   });
 });

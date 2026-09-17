@@ -1,22 +1,24 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { boxesOverlap } from './canvas-geometry.fixtures.js';
-import { viewportTransform, viewportZoom } from './commands.fixtures.js';
 import {
+  boxesOverlap,
   canvasContainer,
   canvasSettled,
+  screenBoxOf,
+  viewportTransform,
+  viewportZoom,
+} from './canvas.fixtures.js';
+import {
   nodeNamed,
   openFile,
   openPlaceholder,
   openTwoDiagrams,
-  screenBoxOf,
+  placeholder,
   twoDiagramsFile,
 } from './studio.fixtures.js';
 
 const furthestAcross = /^Payment\sgateway, process/u;
 
 const furthestDown = /^Card note, text/u;
-
-const placeholderCorner = /^Store, store/u;
 
 const clearanceOf = async (
   page: Page,
@@ -66,15 +68,15 @@ test('a real model opens fitted, so the elements at its far corners are drawn in
 test('the placeholder opens fitted as well', async ({ page }) => {
   await openPlaceholder(page);
 
-  await drawnInside(page, placeholderCorner);
+  await drawnInside(page, placeholder.store);
   expect(
     await viewportZoom(page),
     'the placeholder is drawn larger than life, which only a fit does',
   ).toBeGreaterThan(1);
   const cluster = await screenBoxOf(clusterRegion(page), 'the zoom cluster');
   for (const [name, called] of [
-    [/^Actor, actor/u, 'the actor'],
-    [/^Store, store/u, 'the store'],
+    [placeholder.actor, 'the actor'],
+    [placeholder.store, 'the store'],
   ] as const) {
     expect(
       boxesOverlap(cluster, await screenBoxOf(nodeNamed(page, name), called)),

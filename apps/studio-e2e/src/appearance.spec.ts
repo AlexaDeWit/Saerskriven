@@ -1,6 +1,6 @@
-import { AxeBuilder } from '@axe-core/playwright';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
 import { expect, test, type Page } from '@playwright/test';
+import { audit } from './accessibility.fixtures.js';
 import { openMenu, openPlaceholder } from './studio.fixtures.js';
 
 const appearance = (page: Page) =>
@@ -13,11 +13,6 @@ const chooseAppearance = async (
   await openMenu(page);
   await appearance(page).press('ArrowRight');
   await page.getByRole('menuitemradio', { name: mode }).click();
-};
-
-const audit = async (page: Page): Promise<void> => {
-  const { violations } = await new AxeBuilder({ page }).analyze();
-  expect(violations.map(({ id }) => id)).toEqual([]);
 };
 
 for (const [mode, palette, systemMode] of [
@@ -77,7 +72,7 @@ test('selects each appearance mode and persists explicit choices', async ({
   await expect(page.locator('html')).toHaveCSS('color-scheme', 'dark');
   await openMenu(page);
   await expect(appearance(page)).toHaveText('AppearanceDark');
-  await audit(page);
+  await audit(page, 'in the dark appearance chosen from the menu');
 });
 
 test('invalid stored appearance returns to System', async ({ page }) => {
@@ -90,4 +85,3 @@ test('invalid stored appearance returns to System', async ({ page }) => {
   await expect(appearance(page)).toHaveText('AppearanceSystem');
   await expect(page.locator('html')).not.toHaveAttribute('data-pn-colour-mode');
 });
-

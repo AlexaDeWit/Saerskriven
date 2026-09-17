@@ -1,25 +1,27 @@
 import { expect, test, type Page } from '@playwright/test';
-import { boxOf, drawnBy, lineOf } from './canvas-geometry.fixtures.js';
 import {
+  boxOf,
   boxSelect,
   canvasSettled,
   dragBy,
-  editAnnouncement,
+  drawnBy,
   elementNodes,
+  lineOf,
+} from './canvas.fixtures.js';
+import {
+  editAnnouncement,
   nodeNamed,
   openPlaceholder,
   openTwoDiagrams,
+  placeholder,
   runFromMenu,
   selectNode,
   threatPanel,
 } from './studio.fixtures.js';
 
-const actorName = /^Actor, actor/u;
-const storeName = /^Store, store/u;
-
 const placeholderNodes = (page: Page) => [
-  nodeNamed(page, actorName),
-  nodeNamed(page, storeName),
+  nodeNamed(page, placeholder.actor),
+  nodeNamed(page, placeholder.store),
 ];
 
 test('a background drag selects every element wholly inside its box', async ({
@@ -55,7 +57,7 @@ test('Shift-click and Shift+Enter extend and trim the selection', async ({
 }) => {
   await openPlaceholder(page);
   const [actor, store] = placeholderNodes(page);
-  const flow = nodeNamed(page, /^Records, flow/u);
+  const flow = nodeNamed(page, placeholder.records);
 
   await actor.click();
   await store.click({ modifiers: ['Shift'] });
@@ -96,7 +98,7 @@ test('a plain click or Enter reduces a group to that element', async ({
   await expect(threatPanel(page)).toContainText('Threats on Actor');
 
   await page.keyboard.press('ControlOrMeta+a');
-  const flow = nodeNamed(page, /^Records, flow/u);
+  const flow = nodeNamed(page, placeholder.records);
   await flow.focus();
   await page.keyboard.press('Enter');
 
@@ -111,7 +113,7 @@ test('dragging a multi-selection moves it by one offset and undo restores it', a
 }) => {
   await openPlaceholder(page);
   const [actor, store] = placeholderNodes(page);
-  const flow = lineOf(page, /^Records, flow/u);
+  const flow = lineOf(page, placeholder.records);
   await page.keyboard.press('ControlOrMeta+a');
   const actorBefore = await boxOf(actor);
   const storeBefore = await boxOf(store);

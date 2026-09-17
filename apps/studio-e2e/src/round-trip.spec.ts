@@ -1,19 +1,18 @@
-import { readAnyFormat, type DetectedRead } from '@saerskriven/formats';
+import { type DetectedRead } from '@saerskriven/formats';
 import { expect, test } from '@playwright/test';
 import { committedText } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
 import { registeredChords } from './chords.fixtures.js';
 import { differingPaths, identified } from './differing-paths.fixtures.js';
+import { dragBy, placeOf } from './canvas.fixtures.js';
 import {
   chooseInPanel,
-  closeMenu,
-  dragBy,
+  expectFileShown,
   featureCompleteFile,
   menuButton,
   openFile,
   openMenu,
-  placeOf,
   placeByClick,
+  readBack,
   runFromMenu,
   savedFile,
   selectByKeyboard,
@@ -21,15 +20,6 @@ import {
 } from './studio.fixtures.js';
 
 const addedTitle = 'Paper archive holds records nobody filed';
-
-const readBack = (text: string): DetectedRead => {
-  const read = readAnyFormat(text);
-  expect(
-    Either.isRight(read),
-    `no format claimed the written file: ${text.slice(0, 200)}`,
-  ).toBe(true);
-  return Either.getOrThrow(read);
-};
 
 const idNamed = (model: DetectedRead['model'], name: string): string => {
   const element = model.diagrams[0].elements.find((one) => one.name === name);
@@ -55,15 +45,8 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
   const placed = await placeOf(booking);
   await dragBy(page, booking, 60);
   await expect.poll(() => placeOf(booking)).not.toBe(placed);
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'feature-complete.json',
-  );
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Threat Dragon JSON',
-  );
+  await expectFileShown(page, 'feature-complete.json', 'Threat Dragon JSON');
   await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
-  await closeMenu(page);
 
   await placeByClick(page, 'Store', /^New store, store/u);
   await page.keyboard.press('Enter');

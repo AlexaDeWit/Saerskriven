@@ -5,11 +5,11 @@ import {
   endsOn,
   handlesOf,
   lineOf,
+  placeOf,
   pressOn,
-} from './canvas-geometry.fixtures.js';
-import { nodeNamed, openTwoDiagrams, placeOf } from './studio.fixtures.js';
+} from './canvas.fixtures.js';
+import { nodeNamed, openTwoDiagrams, storefront } from './studio.fixtures.js';
 
-const webShop = /^Web shop, process/u;
 const outward = /^read the product listings, flow/u;
 const inward = /^confirm the authorisation, flow/u;
 const elsewhere = /^card network callback, flow/u;
@@ -19,7 +19,7 @@ test('a flow follows the element it attaches to through a drag, at either end', 
   page,
 }) => {
   await openTwoDiagrams(page);
-  const dragged = nodeNamed(page, webShop);
+  const dragged = nodeNamed(page, storefront.webShop);
   const attached = [lineOf(page, outward), lineOf(page, inward)];
   const detached = lineOf(page, elsewhere);
   const badgedFlow = nodeNamed(page, badged);
@@ -73,8 +73,8 @@ test('a group drag carries an attached flow, its label and its badge before poin
   page,
 }) => {
   await openTwoDiagrams(page);
-  const source = nodeNamed(page, webShop);
-  const target = nodeNamed(page, /^Catalogue, store/u);
+  const source = nodeNamed(page, storefront.webShop);
+  const target = nodeNamed(page, storefront.catalogue);
   const flow = nodeNamed(page, outward);
   const line = lineOf(page, outward);
   const label = flow.locator('.pn-flow-label');
@@ -146,7 +146,7 @@ test('a quick release keeps the last live label placement', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
-  const dragged = nodeNamed(page, webShop);
+  const dragged = nodeNamed(page, storefront.webShop);
   const label = nodeNamed(page, outward).locator('.pn-flow-label');
 
   const at = await pressOn(page, dragged);
@@ -162,7 +162,7 @@ test('a one-endpoint move settles its attached label before release', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
-  const store = nodeNamed(page, /^Catalogue, store/u);
+  const store = nodeNamed(page, storefront.catalogue);
   const label = nodeNamed(page, /^read the product listings, flow/u).locator(
     '.pn-flow-label',
   );

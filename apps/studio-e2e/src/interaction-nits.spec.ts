@@ -1,19 +1,20 @@
 import { expect, test, type Page } from '@playwright/test';
-import { touchDrag, touchSession } from './touch.fixtures.js';
-import { viewportTransform } from './commands.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import {
+  emptyCanvasPoint,
+  type Point,
+  touchDrag,
+  touchSession,
+  viewportTransform,
+  viewportZoom,
+} from './canvas.fixtures.js';
 import {
   canvasSurface,
-  emptyCanvasPoint,
   nodeNamed,
   openPlaceholder,
+  placeholder,
   toolButton,
 } from './studio.fixtures.js';
-
-type Point = { readonly x: number; readonly y: number };
-
-const scaleOf = (transform: string): number =>
-  Number(/scale\(([\d.]+)\)/u.exec(transform)?.[1]);
+import { registeredChords } from './chords.fixtures.js';
 
 const movedPoint = (page: Page, from: Point): Point => {
   const width = page.viewportSize()?.width ?? 0;
@@ -27,37 +28,36 @@ test('scroll pans while a modified scroll keeps pinch zoom', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
+  const actor = nodeNamed(page, placeholder.actor);
   await actor.click();
   const at = await emptyCanvasPoint(page);
   await page.mouse.move(at.x, at.y);
   const beforePan = await viewportTransform(page);
+  const zoom = await viewportZoom(page);
 
   await page.mouse.wheel(80, 50);
 
   await expect.poll(() => viewportTransform(page)).not.toBe(beforePan);
-  const afterPan = await viewportTransform(page);
-  expect(scaleOf(afterPan)).toBe(scaleOf(beforePan));
+  expect(await viewportZoom(page)).toBe(zoom);
   await expect(actor).toHaveClass(/selected/u);
 
   await page.keyboard.down('Control');
   await page.mouse.wheel(0, 100);
   await page.keyboard.up('Control');
 
-  await expect
-    .poll(async () => scaleOf(await viewportTransform(page)))
-    .not.toBe(scaleOf(afterPan));
+  await expect.poll(() => viewportZoom(page)).not.toBe(zoom);
 });
 
 test('middle-button dragging pans without zooming or clearing selection', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
+  const actor = nodeNamed(page, placeholder.actor);
   await actor.click();
   const from = await emptyCanvasPoint(page);
   const to = movedPoint(page, from);
   const before = await viewportTransform(page);
+  const zoom = await viewportZoom(page);
 
   await page.mouse.move(from.x, from.y);
   await page.mouse.down({ button: 'middle' });
@@ -65,7 +65,7 @@ test('middle-button dragging pans without zooming or clearing selection', async 
   await page.mouse.up({ button: 'middle' });
 
   await expect.poll(() => viewportTransform(page)).not.toBe(before);
-  expect(scaleOf(await viewportTransform(page))).toBe(scaleOf(before));
+  expect(await viewportZoom(page)).toBe(zoom);
   await expect(actor).toHaveClass(/selected/u);
 });
 
@@ -74,7 +74,7 @@ test('a touch drag pans without becoming a selection click', async ({
 }) => {
   const session = await touchSession(page);
   await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
+  const actor = nodeNamed(page, placeholder.actor);
   await actor.click();
   const from = await emptyCanvasPoint(page);
   const before = await viewportTransform(page);

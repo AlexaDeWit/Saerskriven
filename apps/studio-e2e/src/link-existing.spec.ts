@@ -8,15 +8,8 @@ import {
   runFromMenu,
   selectByKeyboard,
   selectNode,
+  storefront,
 } from './studio.fixtures.js';
-
-const shopper = /^Shopper, actor/u;
-
-const takeover = /Account takeover/u;
-
-const webShop = /^Web shop, process/u;
-
-const basketPrice = /Basket price changed/u;
 
 const offered = {
   first: {
@@ -35,38 +28,40 @@ const offered = {
 
 const openPicker = async (page: Page) => {
   await openTwoDiagrams(page);
-  await selectNode(page, shopper);
-  await expandThreat(page, takeover);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
   const trigger = panelField(page, 'combobox', 'Existing mitigation');
   await trigger.scrollIntoViewIfNeeded();
   await expect(trigger).toBeInViewport({ ratio: 1 });
   return trigger;
 };
 
-test('a pointer links the first, middle and last mitigation offered, picked by name', { tag: '@phone' }, async ({
-  page,
-}) => {
-  const trigger = await openPicker(page);
-  const linked = panelField(page, 'textbox', 'Mitigation 2 description');
+test(
+  'a pointer links the first, middle and last mitigation offered, picked by name',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const trigger = await openPicker(page);
+    const linked = panelField(page, 'textbox', 'Mitigation 2 description');
 
-  for (const [place, { name, description }] of Object.entries(offered)) {
-    await test.step(place, async () => {
-      await trigger.scrollIntoViewIfNeeded();
-      await trigger.click();
-      const listbox = page.getByRole('listbox');
-      await expect(listbox).toBeInViewport({ ratio: 1 });
+    for (const [place, { name, description }] of Object.entries(offered)) {
+      await test.step(place, async () => {
+        await trigger.scrollIntoViewIfNeeded();
+        await trigger.click();
+        const listbox = page.getByRole('listbox');
+        await expect(listbox).toBeInViewport({ ratio: 1 });
 
-      await listbox.getByRole('option', { name }).click();
-      await expect(listbox).toHaveCount(0);
-      await panelControl(page, 'Link existing mitigation').click();
+        await listbox.getByRole('option', { name }).click();
+        await expect(listbox).toHaveCount(0);
+        await panelControl(page, 'Link existing mitigation').click();
 
-      await expect(linked).toHaveValue(description);
+        await expect(linked).toHaveValue(description);
 
-      await runFromMenu(page, 'Undo');
-      await expect(linked).toHaveCount(0);
-    });
-  }
-});
+        await runFromMenu(page, 'Undo');
+        await expect(linked).toHaveCount(0);
+      });
+    }
+  },
+);
 
 test('the keyboard links the last mitigation offered', async ({ page }) => {
   const trigger = await openPicker(page);
@@ -111,8 +106,8 @@ test('two mitigations whose first lines match past the cut stay told apart in th
   const shared =
     'Callers forward a bearer token that the proxy holds in memory for the life of the request, and the proxy never writes it to a log, a span or a cache.';
   await openTwoDiagrams(page);
-  await selectNode(page, shopper);
-  await expandThreat(page, takeover);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
   for (const row of [2, 3]) {
     await panelControl(page, 'Add mitigation').click();
     await page.keyboard.insertText(shared);
@@ -122,8 +117,8 @@ test('two mitigations whose first lines match past the cut stay told apart in th
     ).toBeFocused();
   }
 
-  await selectByKeyboard(page, webShop);
-  await expandThreat(page, basketPrice);
+  await selectByKeyboard(page, storefront.webShop);
+  await expandThreat(page, storefront.basketPrice);
   const trigger = panelField(page, 'combobox', 'Existing mitigation');
   await trigger.scrollIntoViewIfNeeded();
   await trigger.click();

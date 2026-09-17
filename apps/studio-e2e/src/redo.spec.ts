@@ -5,6 +5,7 @@ import {
   placeByClick,
   runFromMenu,
   selectNode,
+  storefront,
   threatPanel,
 } from './studio.fixtures.js';
 
@@ -25,9 +26,9 @@ test('redo puts back an edit undone on the canvas and one undone in the panel', 
   await runFromMenu(page, 'Redo');
   await expect(added).toHaveCount(1);
 
-  await selectNode(page, /^Shopper, actor/u);
+  await selectNode(page, storefront.shopper);
   const disclosure = threatPanel(page).getByRole('button', {
-    name: /Account takeover/u,
+    name: storefront.takeover,
   });
   await disclosure.click();
   const title = threatPanel(page).getByRole('textbox', {

@@ -1,27 +1,29 @@
-import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { testDataPath } from '@saerskriven/model/fixtures';
+import { audit } from './accessibility.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
-  savedByKey,
-  savedFromMenu,
+  canvasSettled,
+  elementNodes,
   viewportTransform,
-} from './commands.fixtures.js';
+} from './canvas.fixtures.js';
 import {
   beforeCanvas,
-  canvasSettled,
   closeMenu,
-  elementNodes,
+  expectFileShown,
   menuButton,
   menuItem,
   nodeNamed,
+  openFallback,
   openMenu,
   openPlaceholder,
   openTwoDiagrams,
+  placeholder,
+  savedByKey,
+  savedFromMenu,
   selectNode,
   threatPanel,
   twoDiagramsFile,
-  withoutPickers,
 } from './studio.fixtures.js';
 
 test('undo and redo move the history from the keyboard, on either redo chord', async ({
@@ -53,13 +55,13 @@ test('delete removes the selection from outside the canvas, on either key', asyn
 }) => {
   await openPlaceholder(page);
 
-  await selectNode(page, /^Actor, actor/u);
+  await selectNode(page, placeholder.actor);
   await beforeCanvas(page).focus();
   await page.keyboard.press(registeredChords.delete[0]);
 
-  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(0);
+  await expect(nodeNamed(page, placeholder.actor)).toHaveCount(0);
 
-  await selectNode(page, /^Store, store/u);
+  await selectNode(page, placeholder.store);
   await beforeCanvas(page).focus();
   await page.keyboard.press(registeredChords.delete[1]);
 
@@ -88,8 +90,7 @@ test('zooming and fitting move the viewport and nothing else', async ({
 test('saving is one chord, and saving as asks the format the browser cannot', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
 
   const native = await savedByKey(page, registeredChords.save[0]);
 
@@ -107,8 +108,7 @@ test('saving is one chord, and saving as asks the format the browser cannot', as
 test('opening is one chord, through the picker the browser offers', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
 
   const chooser = page.waitForEvent('filechooser');
   await expect(page.getByTestId('file-input')).toHaveCount(1);
@@ -116,14 +116,7 @@ test('opening is one chord, through the picker the browser offers', async ({
   await (await chooser).setFiles(testDataPath(twoDiagramsFile));
 
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'two-diagrams.yaml',
-  );
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Saerskriven YAML',
-  );
-  await closeMenu(page);
+  await expectFileShown(page, 'two-diagrams.yaml', 'Saerskriven YAML');
   await canvasSettled(page);
   await expect(elementNodes(page)).toHaveCount(7);
 });
@@ -131,9 +124,8 @@ test('opening is one chord, through the picker the browser offers', async ({
 test('a shortcut waits while a name is being typed, and saving and undo do not', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-  await selectNode(page, /^Actor, actor/u);
+  await openFallback(page);
+  await selectNode(page, placeholder.actor);
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
   await expect(title).toBeFocused();
@@ -160,15 +152,8 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
   await title.focus();
   await page.keyboard.press(registeredChords.undo[0]);
 
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'threat-model.yaml',
-  );
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Saerskriven YAML',
-  );
+  await expectFileShown(page, 'threat-model.yaml', 'Saerskriven YAML');
   await expect(menuButton(page)).toHaveAccessibleName(/unsaved changes/u);
-  await closeMenu(page);
   await expect(
     threatPanel(page).getByRole('textbox', { name: 'Title' }),
   ).toHaveCount(0);
@@ -253,10 +238,11 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   }
   expect(await categoryBoxes()).toEqual(initialCategoryBoxes);
 
-  const audit = await new AxeBuilder({ page })
-    .include('[data-testid="shortcut-reference"]')
-    .analyze();
-  expect(audit.violations).toEqual([]);
+  await audit(
+    page,
+    'showing the shortcut reference',
+    '[data-testid="shortcut-reference"]',
+  );
   await page.keyboard.press('Escape');
   await expect(reference).toHaveCount(0);
   await expect(menuButton(page)).toBeFocused();
@@ -376,7 +362,7 @@ test('macOS uses Command shortcuts and Shift-Command-Z for redo', async ({
   const zoomedOut = await viewportTransform(page);
   await page.keyboard.press('Meta+Shift++');
   await expect.poll(() => viewportTransform(page)).not.toBe(zoomedOut);
-  const flow = nodeNamed(page, /^Records, flow/u);
+  const flow = nodeNamed(page, placeholder.records);
   await flow.focus();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Meta+Shift+!');

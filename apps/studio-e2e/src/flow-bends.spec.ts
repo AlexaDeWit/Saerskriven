@@ -1,37 +1,37 @@
-import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { readAnyFormat } from '@saerskriven/formats';
 import { committedText } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { audit } from './accessibility.fixtures.js';
 import {
+  canvasSettled,
   drawnBy,
   halfwayAlong,
   lineOf,
   pressOn,
   turnsOf,
-} from './canvas-geometry.fixtures.js';
+} from './canvas.fixtures.js';
 import {
-  canvasSettled,
   exportedFile,
+  featureCompleteFile,
+  nameField,
   nodeNamed,
   openFile,
   openPlaceholder,
   openText,
-  featureCompleteFile,
+  placeholder,
+  readBack,
   savedFile,
   selectByKeyboard,
   twoDiagramsFile,
 } from './studio.fixtures.js';
 
-const records = /^Records, flow/u;
 const recoveryKey = 'saerskriven:studio:recovery';
 
 test('Shift-click still deselects a flow through its line hit target', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const flow = await selectByKeyboard(page, records);
-  const at = await halfwayAlong(lineOf(page, records));
+  const flow = await selectByKeyboard(page, placeholder.records);
+  const at = await halfwayAlong(lineOf(page, placeholder.records));
   const recovery = await page.evaluate(
     (key) => localStorage.getItem(key),
     recoveryKey,
@@ -50,7 +50,7 @@ test('Shift-click still deselects a flow through its line hit target', async ({
 
 test('clicking a preview bend confirms its insertion', async ({ page }) => {
   await openPlaceholder(page);
-  await selectByKeyboard(page, records);
+  await selectByKeyboard(page, placeholder.records);
   await page.keyboard.press('+');
   await page.keyboard.press('Enter');
   await page.keyboard.press('ArrowDown');
@@ -69,8 +69,8 @@ test('keyboard insertion chooses a segment, previews, cancels, and commits one u
   page,
 }) => {
   await openPlaceholder(page);
-  const flow = await selectByKeyboard(page, records);
-  const line = lineOf(page, records);
+  const flow = await selectByKeyboard(page, placeholder.records);
+  const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
   const recovery = await page.evaluate(
     (key) => localStorage.getItem(key),
@@ -133,13 +133,13 @@ test('pulling the line and its bends previews after zoom and pan, with cancellat
   page,
 }) => {
   await openPlaceholder(page);
-  await selectByKeyboard(page, records);
+  await selectByKeyboard(page, placeholder.records);
   await page.keyboard.press('ControlOrMeta+-');
   await canvasSettled(page);
   await page.mouse.move(550, 240);
   await page.mouse.wheel(65, 40);
   await canvasSettled(page);
-  const line = lineOf(page, records);
+  const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
   const at = await halfwayAlong(line);
   const recovery = await page.evaluate(
@@ -192,8 +192,8 @@ test('click-only insertion, movement, and removal keep the flow and expose acces
   page,
 }) => {
   await openPlaceholder(page);
-  await selectByKeyboard(page, records);
-  const line = lineOf(page, records);
+  await selectByKeyboard(page, placeholder.records);
+  const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
   const at = await halfwayAlong(line);
   await page.getByRole('button', { name: 'Add bend', exact: true }).click();
@@ -205,23 +205,22 @@ test('click-only insertion, movement, and removal keep the flow and expose acces
   await expect(
     page.getByRole('button', { name: 'Remove bend', exact: true }),
   ).toBeFocused();
-  const audit = await new AxeBuilder({ page }).analyze();
-  expect(audit.violations).toEqual([]);
+  await audit(page, 'showing the controls of a chosen bend');
   await page.getByRole('button', { name: 'Move bend', exact: true }).click();
   await page.mouse.click(at.x + 50, at.y + 100);
   expect(await drawnBy(line)).not.toBe(inserted);
   await page.getByRole('button', { name: 'Bend 1', exact: true }).click();
   await page.getByRole('button', { name: 'Remove bend', exact: true }).click();
   await expect(line).toHaveAttribute('d', original);
-  await expect(nodeNamed(page, records)).toBeFocused();
+  await expect(nodeNamed(page, placeholder.records)).toBeFocused();
 });
 
 test('a selected flow still renames and a cancelled or returned drag creates no edit', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectByKeyboard(page, records);
-  const line = lineOf(page, records);
+  await selectByKeyboard(page, placeholder.records);
+  const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
   const at = await halfwayAlong(line);
   const recovery = await page.evaluate(
@@ -238,10 +237,7 @@ test('a selected flow still renames and a cancelled or returned drag creates no 
     await page.evaluate((key) => localStorage.getItem(key), recoveryKey),
   ).toBe(recovery);
   await page.mouse.dblclick(at.x, at.y);
-  const name = page.getByRole('textbox', {
-    name: 'Name of Records',
-    exact: true,
-  });
+  const name = nameField(page, 'Records');
   await expect(name).toBeFocused();
   await name.fill('Records + metadata');
   await name.press('Enter');
@@ -266,9 +262,7 @@ for (const { fixture, bent, bentId, svgItem } of [
   test(`route edits preserve metadata and survive save/reopen in ${fixture}`, async ({
     page,
   }) => {
-    const before = Either.getOrThrow(
-      readAnyFormat(committedText(fixture)),
-    ).model;
+    const before = readBack(committedText(fixture)).model;
     await openFile(page, fixture);
     await selectByKeyboard(page, bent);
     const line = lineOf(page, bent);
@@ -280,7 +274,7 @@ for (const { fixture, bent, bentId, svgItem } of [
     await page.keyboard.press('Enter');
     const points = turnsOf(await drawnBy(line)).slice(1, -1);
     const written = await savedFile(page);
-    const after = Either.getOrThrow(readAnyFormat(written.text)).model;
+    const after = readBack(written.text).model;
     const expected = {
       ...before,
       diagrams: before.diagrams.map((diagram) => ({

@@ -5,11 +5,8 @@ import {
   type Palette,
 } from '@saerskriven/canvas';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import {
-  canvasContainer,
-  nodeNamed,
-  openTwoDiagrams,
-} from './studio.fixtures.js';
+import { canvasContainer } from './canvas.fixtures.js';
+import { nodeNamed, openTwoDiagrams, storefront } from './studio.fixtures.js';
 
 /**
  * One element's outline, which the canvas package's stylesheet colours. It is
@@ -17,7 +14,7 @@ import {
  * element where a store's pair of lines would give two.
  */
 const outline = (page: Page): Locator =>
-  nodeNamed(page, /^Web shop, process/u).locator('.pn-shape');
+  nodeNamed(page, storefront.webShop).locator('.pn-shape');
 
 /**
  * The chrome and the diagram are read together because they are coloured by
