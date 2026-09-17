@@ -193,7 +193,7 @@ const openLowInShortViewport = async (
   height: number,
 ): Promise<OpenedSubmenu> => {
   await shortenViewport(page, height);
-  await openFile(page, twoDiagramsFile);
+  await openPlaceholder(page);
   await openMenu(page);
   await menuItem(page, 'Arrange').evaluate((element) => {
     element.scrollIntoView({ block: 'end' });
@@ -204,7 +204,8 @@ const openLowInShortViewport = async (
 test('every submenu opens whole at the card edge, and an export downloads from one', async ({
   page,
 }) => {
-  await openFile(page, twoDiagramsFile);
+  await page.addInitScript(withoutPickers);
+  await openPlaceholder(page);
 
   for (const name of ['Export', 'Arrange', /^Appearance /u]) {
     await openMenu(page);
@@ -213,8 +214,8 @@ test('every submenu opens whole at the card edge, and an export downloads from o
     await closeMenu(page);
   }
 
-  const output = await exportedFile(page, 'Diagram as SVG: Taking an order');
-  expect(output.name).toBe('two-diagrams.svg');
+  const output = await exportedFile(page, 'Diagram as SVG');
+  expect(output.name).toBe('Untitled.svg');
   expect(output.bytes.length).toBeGreaterThan(0);
 });
 
