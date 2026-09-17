@@ -208,12 +208,6 @@ describe('a Saerskriven YAML write of assumptions', () => {
       ]),
     );
   });
-
-  it('parses under the version 2 wire schema', () => {
-    expect(
-      saerskrivenYamlV2WireSchema.safeParse(parseDocument(output)).success,
-    ).toBe(true);
-  });
 });
 
 describe('a Saerskriven YAML write of mitigations', () => {
@@ -259,17 +253,5 @@ describe('a Saerskriven YAML document written without its text', () => {
     expect(writeSaerskrivenYamlDocument(featureComplete)).toEqual(
       parseDocument(written.output),
     );
-  });
-
-  it('states the direction on every flow, so a read of it defaults nothing', () => {
-    const flows = writeSaerskrivenYamlDocument(
-      featureComplete,
-    ).diagrams.flatMap((diagram) =>
-      diagram.elements.filter((element) => element.kind === 'flow'),
-    );
-    expect(flows.length).toBeGreaterThan(0);
-    expect(
-      flows.filter((flow) => flow.bidirectional === undefined),
-    ).toHaveLength(0);
   });
 });

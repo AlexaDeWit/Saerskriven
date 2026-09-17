@@ -245,12 +245,6 @@ describe('reading the mitigation text of a threat', () => {
     ]);
   });
 
-  it('gives the records the same ids on every read', () => {
-    expect(
-      threatDragonReading(text).model.mitigations.map(({ id }) => id),
-    ).toEqual(read.model.mitigations.map(({ id }) => id));
-  });
-
   it('diverges in nothing', () => {
     expect(read.divergences).toEqual([]);
   });

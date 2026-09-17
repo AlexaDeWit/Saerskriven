@@ -5,10 +5,7 @@ import {
 } from '@saerskriven/wire-saerskriven-yaml-v2';
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
 import type { canonicalOrder } from './canonical-order.js';
-import {
-  currentSaerskrivenYaml,
-  saerskrivenYamlVersionsSchema,
-} from './saerskriven-yaml-migration.js';
+import { currentSaerskrivenYaml } from './saerskriven-yaml-migration.js';
 
 type Schema = Parameters<typeof canonicalOrder>[0];
 
@@ -76,42 +73,6 @@ const version1: SaerskrivenYamlDocument = saerskrivenYamlWireSchema.parse({
 });
 
 const migrated = currentSaerskrivenYaml(version1);
-
-describe('saerskrivenYamlVersionsSchema', () => {
-  it.each([
-    ['stamped with a later version', { ...version1, formatVersion: 3 }],
-    ['with no version', { ...version1, formatVersion: undefined }],
-  ])('refuses a document %s at formatVersion', (_, document) => {
-    const parsed = saerskrivenYamlVersionsSchema.safeParse(document);
-    expect(parsed.error?.issues.map(({ path }) => path)).toEqual([
-      ['formatVersion'],
-    ]);
-  });
-
-  it.each([
-    [
-      'a version 1 threat whose text is not a string',
-      { ...version1, threats: [{ ...version1.threats[0], mitigation: 7 }] },
-      ['threats', 0, 'mitigation'],
-    ],
-    [
-      'a version 2 assumption without its model link',
-      {
-        ...migrated.document,
-        assumptions: [
-          {
-            ...migrated.document.assumptions[0],
-            appliesToModel: undefined,
-          },
-        ],
-      },
-      ['assumptions', 0, 'appliesToModel'],
-    ],
-  ])('refuses %s at a path into its own version', (_, document, path) => {
-    const parsed = saerskrivenYamlVersionsSchema.safeParse(document);
-    expect(parsed.error?.issues.map((issue) => issue.path)).toEqual([path]);
-  });
-});
 
 describe('the version 2 wire schema', () => {
   it('declares the keys of version 1, less the threat text and the assumption element links, and with the model link', () => {

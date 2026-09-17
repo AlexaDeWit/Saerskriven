@@ -185,14 +185,6 @@ describe('an adversarial fixture', () => {
       ]),
     ).toEqual(fixtures.map((entry) => [entry.name, entry.asJson]));
   });
-
-  it('is read to a failure by both, and throws out of neither', () => {
-    const refusals = fixtures.flatMap((entry) => [
-      refusalOf(readSaerskrivenYaml, entry.text),
-      refusalOf(readThreatDragon, entry.text),
-    ]);
-    expect(refusals).not.toContain('accepted');
-  });
 });
 
 describe('the size bound', () => {

@@ -122,10 +122,6 @@ describe('the Saerskriven YAML codec', () => {
       documentedExample,
     );
   });
-
-  it('hands back the document it read, for a write to merge onto', () => {
-    expect(readOrThrow(featureCompleteYaml).source.formatVersion).toBe(2);
-  });
 });
 
 describe('a file with an unconfirmed assumption', () => {

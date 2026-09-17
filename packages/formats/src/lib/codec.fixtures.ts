@@ -1,6 +1,5 @@
 import type { ParseIssue } from '@saerskriven/model';
 import { ReadFailure } from './codec.js';
-import type { Divergence } from './divergence.js';
 
 /** The issues a failure carries, none for a bound or a syntax error. */
 export function readFailureIssues(failure: ReadFailure): readonly ParseIssue[] {
@@ -11,6 +10,3 @@ export function readFailureIssues(failure: ReadFailure): readonly ParseIssue[] {
     InvalidModel: ({ issues }) => issues,
   });
 }
-
-/** The aligned case, frozen so no spec appends to the shared value. */
-export const noDivergence: readonly Divergence[] = Object.freeze([]);

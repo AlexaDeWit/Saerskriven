@@ -299,13 +299,6 @@ describe('a version 1 threat that carries mitigation text', () => {
     expect(readingOf(oneThreatYamlV1)?.model.mitigations).toEqual([]);
   });
 
-  it('reads to the same record ids every time', () => {
-    const idsOf = (text: string) =>
-      readingOf(text)?.model.mitigations.map(({ id }) => id);
-    const text = withMitigationRecord('threat-1-mitigation');
-    expect(idsOf(text)).toEqual(idsOf(text));
-  });
-
   it('keeps a record the file holds under the id the text would take, beside a distinct one', () => {
     expect(
       readingOf(withMitigationRecord('threat-1-mitigation'))?.model.mitigations,

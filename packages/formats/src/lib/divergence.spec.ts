@@ -5,7 +5,6 @@ import {
   mitigationIdSchema,
   threatIdSchema,
 } from '@saerskriven/model';
-import { noDivergence } from './codec.fixtures.js';
 import {
   escapedForTerminal,
   hasDiverged,
@@ -38,12 +37,7 @@ const splitThreat = entry(
 
 describe('divergences', () => {
   it('are empty where the file and the model correspond', () => {
-    expect(noDivergence).toEqual([]);
-    expect(hasDiverged(noDivergence)).toBe(false);
-  });
-
-  it('share the aligned value without letting a caller append to it', () => {
-    expect(Object.isFrozen(noDivergence)).toBe(true);
+    expect(hasDiverged([])).toBe(false);
   });
 
   it('count as diverged once one is recorded', () => {
@@ -53,7 +47,7 @@ describe('divergences', () => {
 
 describe('renderDivergences', () => {
   it('says so where nothing diverged', () => {
-    expect(renderDivergences(noDivergence)).toBe('No divergence recorded.');
+    expect(renderDivergences([])).toBe('No divergence recorded.');
   });
 
   it('renders one line per entry, in the recorded order', () => {
