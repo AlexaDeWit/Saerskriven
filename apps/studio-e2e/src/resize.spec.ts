@@ -59,24 +59,32 @@ const expectOtherAxisFixed = (side: string, before: Box, after: Box): void => {
   }
 };
 
-for (const [side, offset, changed] of sideCases) {
-  test(`dragging the ${side} control changes only its axis and fixes the opposite side`, async ({
-    page,
-  }) => {
-    await openPlaceholder(page);
-    const node = await selectNode(page, actor);
-    const before = await boxOf(node);
+test('each side control changes only its axis and fixes the opposite side', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const node = await selectNode(page, actor);
+  const before = await boxOf(node);
 
-    await dragBy(page, sideControl(node, side), offset);
-    await expect
-      .poll(async () => (await boxOf(node))[changed])
-      .not.toBe(before[changed]);
-    const after = await boxOf(node);
+  for (const [side, offset, changed] of sideCases) {
+    await test.step(side, async () => {
+      const control = sideControl(node, side);
+      await expect(control).toBeVisible();
 
-    expectFixedOpposite(side, before, after);
-    expectOtherAxisFixed(side, before, after);
-  });
-}
+      await dragBy(page, control, offset);
+      await expect
+        .poll(async () => (await boxOf(node))[changed])
+        .not.toBe(before[changed]);
+      const after = await boxOf(node);
+
+      expectFixedOpposite(side, before, after);
+      expectOtherAxisFixed(side, before, after);
+
+      await runFromMenu(page, 'Undo');
+      await expect.poll(() => boxOf(node)).toEqual(before);
+    });
+  }
+});
 
 test('the glyph follows the selection bounds during a resize drag', async ({
   page,
@@ -98,18 +106,26 @@ test('the glyph follows the selection bounds during a resize drag', async ({
   await page.mouse.up();
 });
 
-for (const [side, offset, changed] of shrinkingCases) {
-  test(`the ${side} control stops at the minimum size`, async ({ page }) => {
-    await openPlaceholder(page);
-    const node = await selectNode(page, actor);
-    const before = await boxOf(node);
+test('each side control stops at the minimum size', async ({ page }) => {
+  await openPlaceholder(page);
+  const node = await selectNode(page, actor);
+  const before = await boxOf(node);
 
-    await dragBy(page, sideControl(node, side), offset);
-    await expect.poll(async () => (await boxOf(node))[changed]).toBe(10);
+  for (const [side, offset, changed] of shrinkingCases) {
+    await test.step(side, async () => {
+      const control = sideControl(node, side);
+      await expect(control).toBeVisible();
 
-    expectFixedOpposite(side, before, await boxOf(node));
-  });
-}
+      await dragBy(page, control, offset);
+      await expect.poll(async () => (await boxOf(node))[changed]).toBe(10);
+
+      expectFixedOpposite(side, before, await boxOf(node));
+
+      await runFromMenu(page, 'Undo');
+      await expect.poll(() => boxOf(node)).toEqual(before);
+    });
+  }
+});
 
 test('a no-op resize at the minimum leaves later geometry settled', async ({
   page,

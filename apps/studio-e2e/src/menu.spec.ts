@@ -168,37 +168,35 @@ test('opening asks from its chord and discards on the second step', async ({
   );
 });
 
-test('opening keeps the file when asked', async ({ page }) => {
+test('opening keeps the file when the question is cancelled or dismissed', async ({
+  page,
+}) => {
   await openFile(page, twoDiagramsFile);
   await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
   await expect(elementNodes(page)).toHaveCount(8);
 
-  await openMenu(page);
-  await menuItem(page, 'Open').click();
-  await menuItem(page, 'Cancel').click();
+  await test.step('Cancel', async () => {
+    await openMenu(page);
+    await menuItem(page, 'Open').click();
+    await menuItem(page, 'Cancel').click();
 
-  await expect(page.getByRole('menu')).toHaveCount(0);
-  await expect(elementNodes(page)).toHaveCount(8);
-  await openMenu(page);
-  await expect(menuItem(page, 'Open')).toBeVisible();
-});
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(elementNodes(page)).toHaveCount(8);
+    await openMenu(page);
+    await expect(menuItem(page, 'Open')).toBeVisible();
+  });
 
-test('Escape cancels the open question', async ({ page }) => {
-  await openFile(page, twoDiagramsFile);
-  await placeByClick(page, 'Actor', /^New actor, actor/u);
-  await page.keyboard.press('Enter');
-  await expect(elementNodes(page)).toHaveCount(8);
+  await test.step('Escape', async () => {
+    await menuItem(page, 'Open').click();
+    await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
+    await page.keyboard.press('Escape');
 
-  await openMenu(page);
-  await menuItem(page, 'Open').click();
-  await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
-  await page.keyboard.press('Escape');
-
-  await expect(page.getByRole('menu')).toHaveCount(0);
-  await expect(elementNodes(page)).toHaveCount(8);
-  await openMenu(page);
-  await expect(menuItem(page, 'Open')).toBeVisible();
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(elementNodes(page)).toHaveCount(8);
+    await openMenu(page);
+    await expect(menuItem(page, 'Open')).toBeVisible();
+  });
 });
 
 test('closing a file that holds everything on screen takes no second press', async ({

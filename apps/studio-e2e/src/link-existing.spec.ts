@@ -5,6 +5,7 @@ import {
   openTwoDiagrams,
   panelControl,
   panelField,
+  runFromMenu,
   selectByKeyboard,
   selectNode,
 } from './studio.fixtures.js';
@@ -42,24 +43,30 @@ const openPicker = async (page: Page) => {
   return trigger;
 };
 
-for (const [place, { name, description }] of Object.entries(offered)) {
-  test(`a pointer links the ${place} mitigation offered, picked by name`, async ({
-    page,
-  }) => {
-    const trigger = await openPicker(page);
-    await trigger.click();
-    const listbox = page.getByRole('listbox');
-    await expect(listbox).toBeInViewport({ ratio: 1 });
+test('a pointer links the first, middle and last mitigation offered, picked by name', async ({
+  page,
+}) => {
+  const trigger = await openPicker(page);
+  const linked = panelField(page, 'textbox', 'Mitigation 2 description');
 
-    await listbox.getByRole('option', { name }).click();
-    await expect(listbox).toHaveCount(0);
-    await panelControl(page, 'Link existing mitigation').click();
+  for (const [place, { name, description }] of Object.entries(offered)) {
+    await test.step(place, async () => {
+      await trigger.scrollIntoViewIfNeeded();
+      await trigger.click();
+      const listbox = page.getByRole('listbox');
+      await expect(listbox).toBeInViewport({ ratio: 1 });
 
-    await expect(
-      panelField(page, 'textbox', 'Mitigation 2 description'),
-    ).toHaveValue(description);
-  });
-}
+      await listbox.getByRole('option', { name }).click();
+      await expect(listbox).toHaveCount(0);
+      await panelControl(page, 'Link existing mitigation').click();
+
+      await expect(linked).toHaveValue(description);
+
+      await runFromMenu(page, 'Undo');
+      await expect(linked).toHaveCount(0);
+    });
+  }
+});
 
 test('the keyboard links the last mitigation offered', async ({ page }) => {
   const trigger = await openPicker(page);

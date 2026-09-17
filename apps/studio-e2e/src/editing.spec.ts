@@ -21,16 +21,21 @@ import {
   placeByClick,
   runFromMenu,
   selectNode,
+  threatPanel,
   toolButton,
   twoDiagramsFile,
   withoutPickers,
 } from './studio.fixtures.js';
 
 const boxTools = [
-  ['Actor', /^New actor, actor/u],
-  ['Process', /^New process, process/u],
-  ['Store', /^New store, store/u],
-  ['Trust boundary', /^New trust boundary, trust boundary/u],
+  ['Actor', /^New actor, actor/u, 'Name of New actor'],
+  ['Process', /^New process, process/u, 'Name of New process'],
+  ['Store', /^New store, store/u, 'Name of New store'],
+  [
+    'Trust boundary',
+    /^New trust boundary, trust boundary/u,
+    'Name of New trust boundary',
+  ],
 ] as const;
 
 const previewedBoxTools = [
@@ -64,23 +69,25 @@ const expectInside = (
   expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height);
 };
 
-for (const [tool, drawn] of boxTools) {
-  test(`the ${tool} tool places its element by pointer`, async ({ page }) => {
-    await openPlaceholder(page);
+test('each box tool places its element by pointer with its name open', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
 
-    const placed = await placeByClick(page, tool, drawn);
+  for (const [tool, drawn, nameField] of boxTools) {
+    await test.step(tool, async () => {
+      const placed = await placeByClick(page, tool, drawn);
 
-    await expect(placed).toHaveClass(/selected/u);
-    await expect(
-      page.getByRole('textbox', {
-        name: new RegExp(
-          `^Name of ${tool === 'Trust boundary' ? 'New trust boundary' : `New ${tool.toLowerCase()}`}$`,
-          'u',
-        ),
-      }),
-    ).toBeFocused();
-  });
-}
+      await expect(placed).toHaveClass(/selected/u);
+      const name = page.getByRole('textbox', { name: nameField, exact: true });
+      await expect(name).toBeFocused();
+      await expect(threatPanel(page)).toBeVisible();
+
+      await name.press('Enter');
+      await expect(name).toHaveCount(0);
+    });
+  }
+});
 
 test('each element tool key selects its mode and Enter places it', async ({
   page,
@@ -231,25 +238,6 @@ test('Enter finishes a boundary curve after two waypoint clicks', async ({
   await expect(
     nodeNamed(page, /^New trust boundary curve, trust boundary/u),
   ).toHaveCount(1);
-});
-
-test('a placed element opens its name without a second message, and undo takes it back as one step', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await placeByClick(page, 'Actor', /^New actor, actor/u);
-
-  await expect(
-    page.getByRole('textbox', { name: 'Name of New actor' }),
-  ).toBeFocused();
-  await expect(page.getByRole('region', { name: 'Threats' })).toBeVisible();
-  await expect(editAnnouncement(page)).toBeEmpty();
-  await page.keyboard.press('Enter');
-
-  await runFromMenu(page, 'Undo');
-
-  await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
 });
 
 test('a flow is drawn by dragging from one handle to another', async ({
@@ -532,7 +520,7 @@ test('the canvas owns the full viewport beneath its floating chrome', async ({
   await cardControlsClear(page);
 });
 
-test('the delete key removes the element, and the flows it held lose an end', async ({
+test('the delete key removes the element, the flows it held lose an end, and one undo puts all of it back', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -550,6 +538,11 @@ test('the delete key removes the element, and the flows it held lose an end', as
   await expect(editAnnouncement(page)).toContainText('1');
   await expect(returned).toHaveAttribute('aria-label', /to a free point/u);
   await expect(canvasSurface(page)).toBeFocused();
+
+  await runFromMenu(page, 'Undo');
+
+  await expect(elementNodes(page)).toHaveCount(7);
+  await expect(returned).toHaveAttribute('aria-label', /to Shopper/u);
 });
 
 test('the delete key removes a selected flow, and undo puts it back', async ({
@@ -572,21 +565,4 @@ test('the delete key removes a selected flow, and undo puts it back', async ({
   await runFromMenu(page, 'Undo');
 
   await expect(flows).toHaveCount(7);
-});
-
-test('a deletion is one step, so undo puts the element and its flows back', async ({
-  page,
-}) => {
-  await openTwoDiagrams(page);
-
-  await nodeNamed(page, /^Shopper, actor/u).click();
-  await page.keyboard.press('Delete');
-  await expect(elementNodes(page)).toHaveCount(6);
-
-  await runFromMenu(page, 'Undo');
-
-  await expect(elementNodes(page)).toHaveCount(7);
-  await expect(
-    nodeNamed(page, /^return the rendered page, flow/u),
-  ).toHaveAttribute('aria-label', /to Shopper/u);
 });

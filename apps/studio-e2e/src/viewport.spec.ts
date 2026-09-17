@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { boxesOverlap } from './canvas-geometry.fixtures.js';
 import { viewportTransform, viewportZoom } from './commands.fixtures.js';
 import {
   canvasContainer,
@@ -70,6 +71,16 @@ test('the placeholder opens fitted as well', async ({ page }) => {
     await viewportZoom(page),
     'the placeholder is drawn larger than life, which only a fit does',
   ).toBeGreaterThan(1);
+  const cluster = await screenBoxOf(clusterRegion(page), 'the zoom cluster');
+  for (const [name, called] of [
+    [/^Actor, actor/u, 'the actor'],
+    [/^Store, store/u, 'the store'],
+  ] as const) {
+    expect(
+      boxesOverlap(cluster, await screenBoxOf(nodeNamed(page, name), called)),
+      `the zoom cluster covers ${called}`,
+    ).toBe(false);
+  }
 });
 
 test('selecting an element at the edge does not snap the viewport to centre it', async ({

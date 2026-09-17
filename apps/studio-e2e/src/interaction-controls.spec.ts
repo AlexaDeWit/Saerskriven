@@ -27,40 +27,46 @@ const actorName = /^Actor, actor/u;
 const flowName = /^Records, flow/u;
 
 for (const mode of ['select', 'hand', 'space'] as const) {
-  for (const selection of ['node', 'flow', 'several'] as const) {
-    test(`a stationary background click clears ${selection} in ${mode}`, async ({
-      page,
-    }) => {
-      await openPlaceholder(page);
-      if (selection === 'several') {
-        await page.keyboard.press('ControlOrMeta+a');
-      } else {
-        await selectByKeyboard(
-          page,
-          selection === 'node' ? actorName : flowName,
-        );
-      }
-      await canvasSettled(page);
-      if (mode === 'hand') {
-        await page.keyboard.press('h');
-      }
-      if (mode === 'space') {
-        await page.keyboard.down('Space');
-      }
-      const at = await emptyCanvasPoint(page);
-      await page.mouse.click(at.x, at.y);
-      if (mode === 'space') {
-        await page.keyboard.up('Space');
-      }
-      await expect(
-        page.locator('.react-flow__node.selected, .react-flow__edge.selected'),
-      ).toHaveCount(0);
-      await expect(page.locator('.react-flow')).toBeFocused();
-      await expect(
-        page.getByRole('button', { name: /^Menu/u }),
-      ).toHaveAccessibleName('Menu');
-    });
-  }
+  test(`a stationary background click clears a node, a flow and a group in ${mode}`, async ({
+    page,
+  }) => {
+    await openPlaceholder(page);
+
+    for (const selection of ['node', 'flow', 'several'] as const) {
+      await test.step(selection, async () => {
+        await page.keyboard.press(registeredChords['select-tool'][0]);
+        if (selection === 'several') {
+          await page.keyboard.press('ControlOrMeta+a');
+        } else {
+          await selectByKeyboard(
+            page,
+            selection === 'node' ? actorName : flowName,
+          );
+        }
+        await canvasSettled(page);
+        if (mode === 'hand') {
+          await page.keyboard.press('h');
+        }
+        if (mode === 'space') {
+          await page.keyboard.down('Space');
+        }
+        const at = await emptyCanvasPoint(page);
+        await page.mouse.click(at.x, at.y);
+        if (mode === 'space') {
+          await page.keyboard.up('Space');
+        }
+        await expect(
+          page.locator(
+            '.react-flow__node.selected, .react-flow__edge.selected',
+          ),
+        ).toHaveCount(0);
+        await expect(page.locator('.react-flow')).toBeFocused();
+        await expect(
+          page.getByRole('button', { name: /^Menu/u }),
+        ).toHaveAccessibleName('Menu');
+      });
+    }
+  });
 }
 
 test('pans retain selection, while touch taps clear it', async ({ page }) => {
@@ -181,12 +187,26 @@ test('geometry fields support movement and resizing, cancellation, and one undo 
     position: { x: 40, y: 40 },
     size: { width: 100, height: 50 },
   });
-  await actor.focus();
-  await page.keyboard.press('ControlOrMeta+Shift+p');
-  await panel.getByRole('spinbutton', { name: 'X', exact: true }).fill('900');
-  await page.keyboard.press('Escape');
-  await expect(panel).toHaveCount(0);
-  await expect(actor).toBeFocused();
+  await test.step('Escape from a field cancels the edit', async () => {
+    await actor.focus();
+    await page.keyboard.press('ControlOrMeta+Shift+p');
+    await panel.getByRole('spinbutton', { name: 'X', exact: true }).fill('900');
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    await expect(actor).toBeFocused();
+  });
+
+  await test.step('Escape from a geometry button keeps the selection and returns focus', async () => {
+    await page.keyboard.press('ControlOrMeta+Shift+p');
+    await expect(
+      panel.getByRole('spinbutton', { name: 'X', exact: true }),
+    ).toBeFocused();
+    await panel.getByRole('button', { name: 'Cancel' }).focus();
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    await expect(actor).toHaveClass(/selected/u);
+    await expect(actor).toBeFocused();
+  });
 });
 
 test('reconnection uses keyboard controls and preserves flow identity, bends, and threats', async ({
@@ -347,23 +367,6 @@ test('endpoint typeahead keeps its keyboard ownership', async ({ page }) => {
     'data-active-tool',
     'select',
   );
-});
-
-test('Escape on a geometry button retains selection and returns focus', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  const actor = await selectByKeyboard(page, actorName);
-  await page.keyboard.press('ControlOrMeta+Shift+p');
-  const panel = page.getByRole('region', { name: 'Position and size' });
-  await expect(
-    panel.getByRole('spinbutton', { name: 'X', exact: true }),
-  ).toBeFocused();
-  await panel.getByRole('button', { name: 'Cancel' }).focus();
-  await page.keyboard.press('Escape');
-  await expect(panel).toHaveCount(0);
-  await expect(actor).toHaveClass(/selected/u);
-  await expect(actor).toBeFocused();
 });
 
 test('the reset control exposes the current scale to assistive technology', async ({

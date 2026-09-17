@@ -162,22 +162,37 @@ test('a node just inside the panel edge stays where it is when selected', async 
   expect((await boxOf(actor)).right).toBeGreaterThan(panel.left);
 });
 
-test('a draft the model refused comes back when its element is selected again', async ({
+test('a draft the model refused comes back when its element is selected again, or when T reopens the panel', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Actor, actor/u);
+  const actor = await selectNode(page, /^Actor, actor/u);
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   await titleField(page).fill(`Soft${softHyphen}hyphen`);
   await titleField(page).press('Enter');
   await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
 
-  await selectByKeyboard(page, /^Store, store/u);
-  await expect(titleField(page)).toHaveCount(0);
-  await selectByKeyboard(page, /^Actor, actor/u);
+  await test.step('selected again', async () => {
+    await selectByKeyboard(page, /^Store, store/u);
+    await expect(titleField(page)).toHaveCount(0);
+    await selectByKeyboard(page, /^Actor, actor/u);
 
-  await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
-  await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+    await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
+    await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  await test.step('Escape from the field closes the panel over the draft, and T reopens it', async () => {
+    await titleField(page).press(registeredChords['select-tool'][1]);
+
+    await expect(threatPanel(page)).toHaveCount(0);
+    await expect(actor).toHaveClass(/selected/u);
+    await expect(actor).toBeFocused();
+
+    await page.keyboard.press(registeredChords['focus-threats'][0]);
+
+    await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
+    await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+  });
 });
 
 test('a threat added in the panel reaches the canvas as a badge, and its severity colours it', async ({

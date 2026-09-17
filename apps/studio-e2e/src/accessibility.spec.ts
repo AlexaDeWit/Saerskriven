@@ -51,8 +51,7 @@ const audit = async (
 test('the studio page carries no axe-core accessibility violation', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await audit(page, 'at rest');
 });
@@ -66,8 +65,7 @@ test('the studio carries no violation under the system dark preference', async (
   page,
 }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await audit(page, 'at rest in the dark scheme');
 });
@@ -80,8 +78,7 @@ test('the studio carries no violation under the system dark preference', async (
 test('the studio carries no violation with the threat panel open on a selected element', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await page.getByRole('group', { name: /^Actor, actor/u }).click();
   const summary = page.getByRole('button', { name: /sends records/u });
@@ -104,8 +101,7 @@ test('the studio carries no violation with the threat panel open on a selected e
 test('the studio carries no violation with the panel open mid-drag', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   const actor = page.getByRole('group', { name: /^Actor, actor/u });
   await actor.click();
@@ -132,8 +128,7 @@ test('the studio carries no violation with the panel open mid-drag', async ({
 test('the studio carries no violation while it shows a refusal', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await expect(page.getByTestId('failure-notice')).toHaveCSS(
     'display',
@@ -146,27 +141,13 @@ test('the studio carries no violation while it shows a refusal', async ({
   await audit(page, 'showing a refusal');
 });
 
-test('the studio carries no violation with an element selected and its handles showing', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
-
-  const actor = nodeNamed(page, /^Actor, actor/u);
-  await actor.click();
-  await expect(handleOn(actor, 'right')).toBeVisible();
-
-  await audit(page, 'showing a selected element and its handles');
-});
-
 // The toolbox is on the page at rest, so the audit above covers its controls
 // as it covers the rest. What it cannot see there is either notice region
 // with something in it, or the flow chooser, which is mounted on demand.
 test('the studio carries no violation while it says what an edit did', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await placeByClick(page, 'Actor', /^New actor, actor/u);
   await expect(page.getByTestId('canvas-announcement')).toBeEmpty();
@@ -189,8 +170,7 @@ test('the studio carries no violation while it says what an edit did', async ({
 // costs something, which the save below is what gives it.
 test('the studio carries no violation with the menu open', async ({ page }) => {
   await page.addInitScript(withoutPickers);
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await openMenu(page);
 
@@ -264,41 +244,22 @@ test('the studio carries no violation with the diagram switcher open, or its tit
   await audit(page, 'editing the diagram title');
 });
 
-test('the studio carries no violation with a name open in a field', async ({
+test('the studio carries no violation with an element selected, its connect listbox open, or a flow selected', async ({
   page,
 }) => {
   await openPlaceholder(page);
 
-  await page.getByRole('group', { name: /^Actor, actor/u }).dblclick();
-  await expect(
-    page.getByRole('textbox', { name: 'Name of Actor' }),
-  ).toBeVisible();
+  const actor = nodeNamed(page, /^Actor, actor/u);
+  await actor.click();
+  await expect(handleOn(actor, 'right')).toBeVisible();
 
-  await audit(page, 'renaming an element');
-});
+  await audit(page, 'showing a selected element and its handles');
 
-test('the open connect listbox carries no violation', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
-
-  await selectNode(page, /^Actor, actor/u);
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
 
   await audit(page, 'showing the open connect listbox', '[role="listbox"]');
-});
 
-test('the studio carries no violation with an element selected, or with a flow selected', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
-
-  await page.getByRole('group', { name: /^Actor, actor/u }).click();
-
-  await audit(page, 'showing a selected element');
-
-  await page.keyboard.press(registeredChords['start-flow'][0]);
   await page.getByRole('option', { name: 'Store' }).press('Enter');
   await expect(
     page.getByRole('group', {

@@ -8,6 +8,7 @@ import {
   onScreen,
   openModelDocument,
   reachesAt,
+  runFromMenu,
   screenBoxOf,
   selectNode,
   threatPanel,
@@ -48,94 +49,91 @@ const badgeInk = (node: Locator) =>
   inkBoxOf(node.locator('.pn-badge circle, .pn-badge path'));
 
 for (const [badge, element, name, counts] of cases) {
-  test(`no corner handle of a selected element covers ${badge}`, async ({
+  test(`a selected element with ${badge} keeps its handles, controls and badge clear of each other, at low zoom as well`, async ({
     page,
   }) => {
     const node = await selectClear(page, name);
-    await expect(node.locator('.pn-badge-primary')).toHaveCount(counts);
-    const ink = await badgeInk(node);
-    const handles = node.locator('.react-flow__resize-control.handle');
-    await expect(handles).toHaveCount(4);
 
-    for (const handle of await handles.all()) {
-      expect(boxesOverlap(await screenBoxOf(handle), ink)).toBe(false);
-    }
-  });
-
-  test(`${badge} draws above the selection frame and the side lines`, async ({
-    page,
-  }) => {
-    const node = await selectClear(page, name);
-    await page.addStyleTag({
-      content:
-        '.react-flow__node.selected::after, .react-flow__resize-control.line { pointer-events: auto !important; }',
+    await test.step('no corner handle covers the badge', async () => {
+      await expect(node.locator('.pn-badge-primary')).toHaveCount(counts);
+      const ink = await badgeInk(node);
+      const handles = node.locator('.react-flow__resize-control.handle');
+      await expect(handles).toHaveCount(4);
+      for (const handle of await handles.all()) {
+        expect(boxesOverlap(await screenBoxOf(handle), ink)).toBe(false);
+      }
     });
-    const corner = await screenBoxOf(node);
-    const ink = await badgeInk(node);
-    const inside = {
-      x: corner.x + corner.width - ink.width * 0.1,
-      y: corner.y + ink.width * 0.17,
-    };
 
-    expect(await reachesAt(node.locator('.pn-badge'), inside)).toBe(true);
+    await test.step('every resize control is under the pointer', async () => {
+      const controls = node.locator('.react-flow__resize-control > button');
+      await expect(controls).toHaveCount(8);
+      for (const control of await controls.all()) {
+        await onScreen(control);
+      }
+    });
+
+    await test.step('the badge draws above the selection frame and the side lines', async () => {
+      await page.addStyleTag({
+        content:
+          '.react-flow__node.selected::after, .react-flow__resize-control.line { pointer-events: auto !important; }',
+      });
+      const corner = await screenBoxOf(node);
+      const ink = await badgeInk(node);
+      const inside = {
+        x: corner.x + corner.width - ink.width * 0.1,
+        y: corner.y + ink.width * 0.17,
+      };
+      expect(await reachesAt(node.locator('.pn-badge'), inside)).toBe(true);
+    });
+
+    await test.step('the top right handle keeps a gap from the badge on screen at low zoom', async () => {
+      const zoomOut = page.getByRole('button', {
+        name: 'Zoom out',
+        exact: true,
+      });
+      for (
+        let step = 0;
+        step < 10 && (await viewportZoom(page)) > lowZoom;
+        step++
+      ) {
+        await zoomOut.click();
+        await canvasSettled(page);
+      }
+      expect(await viewportZoom(page)).toBeLessThanOrEqual(lowZoom);
+      const handle = await screenBoxOf(
+        node.locator('.react-flow__resize-control.handle.top.right'),
+      );
+      const ink = await badgeInk(node);
+      expect(ink.x - (handle.x + handle.width)).toBeGreaterThanOrEqual(
+        onScreenGap,
+      );
+    });
   });
 
-  test(`${badge} leaves every resize control of a selected element under the pointer`, async ({
+  test(`the corner and side controls still resize an element with ${badge}`, async ({
     page,
   }) => {
     const node = await selectClear(page, name);
-    const controls = node.locator('.react-flow__resize-control > button');
-    await expect(controls).toHaveCount(8);
+    const original = await boxOf(node);
 
-    for (const control of await controls.all()) {
-      await onScreen(control);
-    }
-  });
-
-  test(`the top right handle keeps a gap from ${badge} on screen at low zoom`, async ({
-    page,
-  }) => {
-    const node = await selectClear(page, name);
-    const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
-    for (
-      let step = 0;
-      step < 10 && (await viewportZoom(page)) > lowZoom;
-      step++
-    ) {
-      await zoomOut.click();
-      await canvasSettled(page);
-    }
-    expect(await viewportZoom(page)).toBeLessThanOrEqual(lowZoom);
-    const handle = await screenBoxOf(
-      node.locator('.react-flow__resize-control.handle.top.right'),
-    );
-    const ink = await badgeInk(node);
-
-    expect(ink.x - (handle.x + handle.width)).toBeGreaterThanOrEqual(
-      onScreenGap,
-    );
-  });
-
-  for (const [control, offset, growsHeight] of resizeDrags) {
-    test(`the ${control} control still resizes an element with ${badge}`, async ({
-      page,
-    }) => {
-      const node = await selectClear(page, name);
-      const before = await boxOf(node);
-
-      await dragBy(
-        page,
-        node.getByRole('button', {
+    for (const [control, offset, growsHeight] of resizeDrags) {
+      await test.step(`the ${control} control`, async () => {
+        const resize = node.getByRole('button', {
           name: `Resize ${element} from ${control}`,
           exact: true,
-        }),
-        offset,
-      );
+        });
+        await expect(resize).toBeVisible();
 
-      await expect
-        .poll(async () => (await boxOf(node)).width)
-        .toBeGreaterThan(before.width);
-      expect((await boxOf(node)).height > before.height).toBe(growsHeight);
-    });
-  }
+        await dragBy(page, resize, offset);
+
+        await expect
+          .poll(async () => (await boxOf(node)).width)
+          .toBeGreaterThan(original.width);
+        expect((await boxOf(node)).height > original.height).toBe(growsHeight);
+
+        await runFromMenu(page, 'Undo');
+        await expect.poll(() => boxOf(node)).toEqual(original);
+      });
+    }
+  });
 }

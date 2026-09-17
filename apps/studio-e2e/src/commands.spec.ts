@@ -1,6 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { softHyphen, testDataPath } from '@saerskriven/model/fixtures';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { registeredChords } from './chords.fixtures.js';
 import {
   savedByKey,
@@ -172,30 +172,6 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
   await expect(
     threatPanel(page).getByRole('textbox', { name: 'Title' }),
   ).toHaveCount(0);
-});
-
-test('escape from a field closes the panel over the draft rather than clearing the selection', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  const actor = await selectNode(page, /^Actor, actor/u);
-  await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
-  const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
-  await title.fill(`Soft${softHyphen}hyphen`);
-  await title.press('Enter');
-  await expect(title).toHaveAttribute('aria-invalid', 'true');
-
-  await title.press(registeredChords['select-tool'][1]);
-
-  await expect(threatPanel(page)).toHaveCount(0);
-  await expect(actor).toHaveClass(/selected/u);
-  await expect(actor).toBeFocused();
-
-  await page.keyboard.press(registeredChords['focus-threats'][0]);
-  const held = threatPanel(page).getByRole('textbox', { name: 'Title' });
-
-  await expect(held).toHaveValue(`Soft${softHyphen}hyphen`);
-  await expect(held).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('every control says which key runs it: beside a menu item, and as a note beside a bare button', async ({
