@@ -19,13 +19,12 @@ import { dispatch, modelStore } from '../store/store.js';
 import { present, undoable } from '../store/store.fixtures.js';
 import {
   chooseFrom,
-  describedNumbers,
   editorTimeout,
   recordedThreat,
   showThreatEditor,
 } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-import { textbox } from '../ui/ui.fixtures.js';
+import { describedNumbers, textbox } from '../ui/ui.fixtures.js';
 
 const button = (name: string): HTMLElement =>
   screen.getByRole('button', { name });

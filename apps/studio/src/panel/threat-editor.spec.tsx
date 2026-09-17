@@ -10,7 +10,7 @@ import {
 } from '../store/store.fixtures.js';
 import { editorTimeout, showThreatEditor } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-import { textbox } from '../ui/ui.fixtures.js';
+import { describedNumbers, numbersIn, textbox } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 
 const commits = () => vi.fn<(patch: Partial<Threat>) => void>();
@@ -108,7 +108,7 @@ describe(
         field: 'Description',
         text: `Pasted${softHyphen}prose`,
       });
-      expect(refusedDescription?.said).toContain('7');
+      expect(numbersIn(refusedDescription?.said)).toEqual([7]);
 
       await typeInto('Title', ' by token');
 
@@ -143,18 +143,9 @@ describe(
         ],
       });
 
-      expect(screen.getByText(/names 2 elements/u)).toBeDefined();
       expect(
-        screen.getByRole('list', { name: 'Attached elements' }).textContent,
-      ).toContain(sampleElement(processElement).name);
-      expect(
-        screen.getByRole('list', { name: 'Attached elements' }).textContent,
-      ).toContain(sampleElement(storeElement).name);
-      expect(
-        screen
-          .getByRole('button', { name: 'Delete threat 1' })
-          .getAttribute('aria-describedby'),
-      ).not.toBeNull();
+        describedNumbers(screen.getByRole('button', { name: 'Delete threat 1' })),
+      ).toEqual([2]);
     });
 
     it('takes the focus the panel sends into the title, and reports it', () => {

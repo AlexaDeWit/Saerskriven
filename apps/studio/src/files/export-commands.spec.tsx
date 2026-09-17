@@ -26,6 +26,26 @@ import { RenderAssetFailure } from './render-assets.js';
 const session = (bridge: SpecBridge, renders = specRenders()) =>
   renderHook(() => useExportCommands(bridge, renders)).result;
 
+const unavailable = () =>
+  Promise.resolve(
+    Either.left(RenderAssetFailure.Unavailable({ reason: 'offline' })),
+  );
+
+const headlineOf = async (
+  run: (commands: ReturnType<typeof useExportCommands>['commands']) => void,
+  renders: RenderExports,
+  bridge: SpecBridge = specBridge(),
+): Promise<string | undefined> => {
+  const result = session(bridge, renders);
+  act(() => {
+    run(result.current.commands);
+  });
+  await waitFor(() => {
+    expect(result.current.notice?.refusal).toBe(true);
+  });
+  return result.current.notice?.headline;
+};
+
 const openedState = (model: Model = sampleModel) => ({
   ...initialState(model),
   file: FileLifecycle.Opened({ name: 'model.json', source: foreignSource }),
@@ -260,8 +280,7 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice).toEqual({
-        headline: 'Saerskriven could not compile the PDF.',
+      expect(result.current.notice).toMatchObject({
         details: ['unknown function: nope'],
         refusal: true,
       });
@@ -288,8 +307,7 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice).toEqual({
-        headline: 'Saerskriven could not load the PDF compiler.',
+      expect(result.current.notice).toMatchObject({
         details: ['offline'],
         refusal: true,
       });
@@ -312,11 +330,63 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice?.headline).toBe(
-        'The Typst compiler produced no PDF.',
-      );
+      expect(result.current.notice).toMatchObject({
+        details: [],
+        refusal: true,
+      });
     });
     expect(bridge.writes).toEqual([]);
+  });
+
+  it('heads each refusal apart, whatever the details it carries', async () => {
+    const headlines = [
+      await headlineOf(
+        (commands) => {
+          commands.pdf();
+        },
+        specRenders({
+          compile: () =>
+            Promise.resolve(
+              Either.left(PdfFailure.Refused({ sentences: ['offline'] })),
+            ),
+        }),
+      ),
+      await headlineOf(
+        (commands) => {
+          commands.pdf();
+        },
+        specRenders({
+          compile: () => Promise.resolve(Either.left(PdfFailure.NoDocument())),
+        }),
+      ),
+      await headlineOf((commands) => {
+        commands.pdf();
+      }, specRenders({ pdfAssets: unavailable })),
+      await headlineOf((commands) => {
+        commands.png();
+      }, specRenders({ pngAssets: unavailable })),
+      await headlineOf(
+        (commands) => {
+          commands.png();
+        },
+        specRenders({
+          draw: () =>
+            Promise.resolve(
+              Either.left(ResvgFailure.Refused({ sentence: 'offline' })),
+            ),
+        }),
+      ),
+      await headlineOf(
+        (commands) => {
+          commands.register();
+        },
+        specRenders(),
+        specBridge({ save: SaveOutcome.Refused({ reason: 'offline' }) }),
+      ),
+    ];
+
+    expect(headlines).not.toContain('');
+    expect(new Set(headlines).size).toBe(headlines.length);
   });
 
   it('reports a refused write and lets the report be dismissed', async () => {
@@ -330,9 +400,10 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice?.headline).toBe(
-        'Saerskriven could not write the export.',
-      );
+      expect(result.current.notice).toMatchObject({
+        details: ['NotAllowedError'],
+        refusal: true,
+      });
     });
     act(() => {
       result.current.dismissNotice();

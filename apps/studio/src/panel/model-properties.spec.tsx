@@ -18,11 +18,10 @@ import { sectionLabel } from '@saerskriven/render';
 import { present, undoable } from '../store/store.fixtures.js';
 import {
   chooseFrom,
-  describedNumbers,
   editorTimeout,
 } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-import { noop, textbox } from '../ui/ui.fixtures.js';
+import { describedNumbers, noop, textbox } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 
 const showPanel = ({

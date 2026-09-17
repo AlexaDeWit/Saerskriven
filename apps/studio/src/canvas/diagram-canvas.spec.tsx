@@ -1,4 +1,14 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  contextualShortcuts,
+  type ContextualShortcutId,
+} from '../commands/contextual-shortcuts.js';
+import { commandById } from '../commands/registry.js';
+import {
+  hostPlatform,
+  spellShortcuts,
+  type ShortcutEntry,
+} from '../commands/shortcuts.js';
 import { currentAnnouncement } from './announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -15,6 +25,17 @@ import {
   heldElements,
   processElement,
 } from '../store/store.fixtures.js';
+
+const contextualEntry = (id: ContextualShortcutId): ShortcutEntry => {
+  const entry = contextualShortcuts.find((candidate) => candidate.id === id);
+  if (entry === undefined) {
+    throw new Error(`${id} is no contextual shortcut`);
+  }
+  return entry;
+};
+
+const spelled = ({ label, shortcuts }: ShortcutEntry): string =>
+  `${label}: ${spellShortcuts(shortcuts, hostPlatform)}`;
 
 const reader = (): HTMLElement =>
   screen.getByRole('group', { name: /^Reader, actor/u });
@@ -327,14 +348,16 @@ describe('DiagramCanvas', () => {
       '[id^="react-flow__edge-desc"]',
     );
 
-    expect(nodeDescription?.textContent).toContain('Enter or Space');
-    expect(nodeDescription?.textContent).toContain(
-      'Edit the selected canvas text: Enter',
-    );
-    expect(nodeDescription?.textContent).toContain('Hand: H or Space');
-    expect(nodeDescription?.textContent).toContain('Focus threats: T');
+    for (const entry of [
+      contextualEntry('select-canvas-item'),
+      contextualEntry('edit-canvas-text'),
+      commandById('hand-tool'),
+      commandById('focus-threats'),
+    ]) {
+      expect(nodeDescription?.textContent).toContain(spelled(entry));
+    }
     expect(flowDescription?.textContent).toContain(
-      'Edit the selected canvas text: Enter',
+      spelled(contextualEntry('edit-canvas-text')),
     );
   });
 

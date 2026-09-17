@@ -29,17 +29,6 @@ export const chooseFrom = async (
   await user.click(screen.getByRole('option', { name: option }));
 };
 
-/** The numbers a text says, in the order it says them. */
-export const numbersIn = (text: string | null | undefined): readonly number[] =>
-  (text?.match(/\d+/gu) ?? []).map(Number);
-
-/** The numbers in the text that describes a control, in the order they are said. */
-export const describedNumbers = (control: HTMLElement): readonly number[] =>
-  numbersIn(
-    document.getElementById(control.getAttribute('aria-describedby') ?? '')
-      ?.textContent,
-  );
-
 /**
  * A threat {@link recordedModel} holds, the first where it holds no such id,
  * with its status replaced where one is given.

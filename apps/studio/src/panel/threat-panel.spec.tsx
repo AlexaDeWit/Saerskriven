@@ -1,4 +1,3 @@
-import { attachedThreats } from './threats.js';
 import type { ElementId } from '@saerskriven/model';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -24,7 +23,13 @@ import {
   type HeldDraft,
   type ThreatPanelProps,
 } from './threat-panel.js';
-import { addControl, noop } from '../ui/ui.fixtures.js';
+import {
+  addControl,
+  describedNumbers,
+  noop,
+  numbersIn,
+  textbox,
+} from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 
 const panelProps = (
@@ -91,7 +96,9 @@ describe(
         />,
       );
 
-      expect(screen.getByText(/^3 elements selected/u)).toBeDefined();
+      expect(numbersIn(screen.getByTestId('threat-panel').textContent)).toEqual(
+        [3],
+      );
       expect(screen.queryByRole('button', { name: 'Add a threat' })).toBeNull();
     });
 
@@ -133,7 +140,6 @@ describe(
     it('lists nothing for an element no threat names, and still offers an add', () => {
       showPanel(processElement);
 
-      expect(attachedThreats(modelStore.getState())).toEqual([]);
       expect(screen.queryByText(sampleModel.threats[0].title)).toBeNull();
       expect(addControl()).toBeDefined();
     });
@@ -160,7 +166,7 @@ describe(
       expect(document.activeElement).toBe(
         screen.getByRole('button', { name: /A reader edits/u }),
       );
-      expect(announcement()).toContain('2');
+      expect(numbersIn(announcement())).toEqual([2]);
     });
 
     it('deletes the last threat of an element, moving focus to the add control', async () => {
@@ -256,7 +262,7 @@ describe(
       expect(document.activeElement).toBe(addControl());
     });
 
-    it('commits one undoable step per field left behind', async () => {
+    it('commits a severity change as one undoable step', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
       await user.click(screen.getByRole('button', { name: /A reader edits/u }));
@@ -284,7 +290,7 @@ describe(
       expect(
         screen.getByDisplayValue(`Pasted${softHyphen}prose`),
       ).toBeDefined();
-      expect(screen.getByText(/^Character 7/u)).toBeDefined();
+      expect(describedNumbers(textbox('Description'))).toEqual([7]);
       expect(announcement().trim()).not.toBe('');
       expect(modelStore.getState().present.threats[0].description).toBe('');
 

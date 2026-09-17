@@ -35,6 +35,7 @@ import {
   selectAll,
 } from './edits.js';
 import { freshElement } from './elements.js';
+import { numbersIn } from '../ui/ui.fixtures.js';
 
 const said = (): string => currentAnnouncement().message;
 
@@ -127,8 +128,7 @@ describe('describeRemoval', () => {
     });
 
     expect(description).toContain('Reader');
-    expect(description).toContain('2');
-    expect(description).toContain('1');
+    expect(numbersIn(description)).toEqual([2, 1]);
   });
 
   it('says a count of none rather than leaving it out', () => {
@@ -280,7 +280,7 @@ describe('removeSelected', () => {
 
     expect(removeSelected()).toBe(true);
     expect(said()).toContain('Reader');
-    expect(said()).toContain('1');
+    expect(numbersIn(said())).toEqual([1, 1]);
   });
 
   it('names an element with a long name by a bounded prefix', () => {
@@ -315,7 +315,7 @@ describe('removeSelected', () => {
 
     expect(modelStore.getState().past).toHaveLength(1);
     expect(modelStore.getState().selection).toEqual([]);
-    expect(said()).toContain('2 elements');
+    expect(numbersIn(said())).toEqual([2, 2, 1]);
   });
 });
 

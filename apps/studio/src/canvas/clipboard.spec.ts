@@ -26,6 +26,7 @@ import {
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import { numbersIn } from '../ui/ui.fixtures.js';
 import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { copySelected, duplicateSelected, pasteSelected } from './clipboard.js';
 
@@ -103,12 +104,21 @@ const recordedModelWide = parsedFixture({
   })),
 });
 
-function announcedCounts(): { linked: number; cloned: number } {
-  const { message } = currentAnnouncement();
-  return {
-    linked: Number(/linked: (\d+)/u.exec(message)?.[1]),
-    cloned: Number(/cloned: (\d+)/u.exec(message)?.[1]),
-  };
+function announcedCounts(): {
+  linked: number | undefined;
+  cloned: number | undefined;
+} {
+  const [linked, cloned] = numbersIn(currentAnnouncement().message).slice(-2);
+  return { linked, cloned };
+}
+
+async function announcedBy(run: () => Promise<void>): Promise<string> {
+  const before = currentAnnouncement().sequence;
+  await run();
+  const after = currentAnnouncement();
+  expect(after.sequence).toBeGreaterThan(before);
+  expect(after.message).not.toBe('');
+  return after.message;
 }
 
 beforeEach(() => {
@@ -120,10 +130,10 @@ describe('copySelected', () => {
     const clipboard = recordingClipboard();
     clipboard.writeText.mockRejectedValueOnce(new Error('denied'));
     const before = modelStore.getState();
-    await copySelected(true);
+    const refused = await announcedBy(() => copySelected(true));
     expect(modelStore.getState()).toBe(before);
     expect(clipboard.text()).toBe('existing clipboard');
-    expect(currentAnnouncement().message).toContain('failed');
+    expect(await announcedBy(() => copySelected(true))).not.toBe(refused);
   });
 
   it('reports excluded links in related records and source-only format fields', async () => {
@@ -177,23 +187,34 @@ describe('copySelected', () => {
     expect(copy.threats[0].elements).toEqual([actorElement]);
     expect(copy.mitigations[0].threats).toEqual([firstThreat]);
     expect(copy.assumptions[0].threats).toEqual([firstThreat]);
-    expect(currentAnnouncement().message).toContain(
-      '4 external links excluded',
-    );
-    expect(currentAnnouncement().message).toContain('Source-format fields');
+    const fromThreatDragon = currentAnnouncement().message;
+    expect(numbersIn(fromThreatDragon)).toEqual([
+      copy.diagrams[0].elements.length,
+      copy.threats.length,
+      4,
+    ]);
     expect(modelStore.getState().present).toBe(model);
+    modelStore.setState({ file: FileLifecycle.NoFile() });
+    const fromNative = await announcedBy(() => copySelected());
+    expect(numbersIn(fromNative)).toEqual(numbersIn(fromThreatDragon));
+    expect(fromNative).not.toBe(fromThreatDragon);
   });
 
   it('does not cut a selection that changes while clipboard writing is pending', async () => {
     const clipboard = recordingClipboard();
+    const copied = await announcedBy(() => copySelected());
     const written = deferred<void>();
     clipboard.writeText.mockReturnValueOnce(written.promise);
-    const pending = copySelected(true);
-    dispatch(Action.Select({ elementIds: [processElement] }));
-    written.resolve(undefined);
-    await pending;
+    const kept = await announcedBy(async () => {
+      const pending = copySelected(true);
+      dispatch(Action.Select({ elementIds: [processElement] }));
+      written.resolve(undefined);
+      await pending;
+    });
     expect(modelStore.getState().present).toBe(canvasModel);
-    expect(currentAnnouncement().message).toContain('Nothing was cut');
+    expect(kept).not.toBe(copied);
+    dispatch(Action.Select({ elementIds: [actorElement] }));
+    expect(await announcedBy(() => copySelected(true))).not.toBe(kept);
   });
 
   it('keeps the clipboard when no selection exists or its IDs no longer resolve', async () => {
@@ -218,10 +239,11 @@ describe('copySelected', () => {
       },
     };
     openCanvas([actorElement], model);
-    await copySelected();
+    const refused = await announcedBy(() => copySelected());
     expect(clipboard.writeText).not.toHaveBeenCalled();
     expect(clipboard.text()).toBe('existing clipboard');
-    expect(currentAnnouncement().message).toContain('size limit');
+    dispatch(Action.Select({ elementIds: [] }));
+    expect(await announcedBy(() => copySelected())).not.toBe(refused);
   });
 });
 
@@ -280,10 +302,14 @@ describe('pasteSelected', () => {
       Action.MoveElement({ elementId: actorElement, offset: { x: 1, y: 0 } }),
     );
     const changed = modelStore.getState().present;
-    read.resolve(marker + saerskrivenYamlCodec.write(canvasModel).output);
-    await pending;
+    const text = marker + saerskrivenYamlCodec.write(canvasModel).output;
+    const refused = await announcedBy(async () => {
+      read.resolve(text);
+      await pending;
+    });
     expect(modelStore.getState().present).toBe(changed);
-    expect(currentAnnouncement().message).toContain('document changed');
+    clipboard.readText.mockResolvedValueOnce(text);
+    expect(await announcedBy(() => pasteSelected())).not.toBe(refused);
   });
 
   it.each([
@@ -381,15 +407,14 @@ describe('pasteSelected', () => {
   it('reports clipboard read refusal and a missing destination diagram', async () => {
     const clipboard = recordingClipboard();
     clipboard.readText.mockRejectedValueOnce(new Error('denied'));
-    await pasteSelected();
-    expect(currentAnnouncement().message).toContain('read failed');
+    const unread = await announcedBy(() => pasteSelected());
     modelStore.setState(initialState(emptyModel), true);
     clipboard.readText.mockResolvedValueOnce(
       marker + saerskrivenYamlCodec.write(canvasModel).output,
     );
-    await pasteSelected();
+    const nowhere = await announcedBy(() => pasteSelected());
     expect(modelStore.getState().present).toBe(emptyModel);
-    expect(currentAnnouncement().message).toContain('no diagram');
+    expect(nowhere).not.toBe(unread);
   });
 
   it('pastes a link to an unchanged record and a clone of an edited one as one undo step', async () => {

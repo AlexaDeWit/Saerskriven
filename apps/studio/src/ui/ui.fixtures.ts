@@ -22,3 +22,14 @@ export const textbox = (name: string): HTMLElement =>
 /** The panel's control that starts a new threat. */
 export const addControl = (): HTMLElement =>
   screen.getByRole('button', { name: 'Add a threat' });
+
+/** The numbers a text says, in the order it says them. */
+export const numbersIn = (text: string | null | undefined): readonly number[] =>
+  (text?.match(/\d+/gu) ?? []).map(Number);
+
+/** The numbers in the text that describes a control, in the order they are said. */
+export const describedNumbers = (control: HTMLElement): readonly number[] =>
+  numbersIn(
+    document.getElementById(control.getAttribute('aria-describedby') ?? '')
+      ?.textContent,
+  );
