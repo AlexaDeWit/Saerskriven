@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { halfwayAlong, lineOf } from './canvas-geometry.fixtures.js';
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
 import { nodeNamed, openPlaceholder, selectNode } from './studio.fixtures.js';
 
 const actor = /^Actor, actor/u;

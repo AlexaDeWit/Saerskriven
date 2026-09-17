@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { inkBoxOf } from './canvas-geometry.fixtures.js';
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
 import { viewportTransform } from './commands.fixtures.js';
 import {
   beforeCanvas,

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { touchDrag, touchSession } from './touch.fixtures.js';
 import { viewportTransform } from './commands.fixtures.js';
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
 import {
   canvasSurface,
   emptyCanvasPoint,

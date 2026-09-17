@@ -2,8 +2,8 @@ import { readAnyFormat, type DetectedRead } from '@saerskriven/formats';
 import { expect, test } from '@playwright/test';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
-import { registeredChords } from './chords.js';
-import { differingPaths, identified } from './differing-paths.js';
+import { registeredChords } from './chords.fixtures.js';
+import { differingPaths, identified } from './differing-paths.fixtures.js';
 import {
   chooseInPanel,
   closeMenu,

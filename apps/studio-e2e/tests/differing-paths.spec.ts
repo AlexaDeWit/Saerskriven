@@ -1,4 +1,4 @@
-import { differingPaths, identified } from '../src/differing-paths.js';
+import { differingPaths, identified } from '../src/differing-paths.fixtures.js';
 
 const cells = [
   { id: 'a', name: 'Web shop' },

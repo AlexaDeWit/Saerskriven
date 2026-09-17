@@ -1,7 +1,7 @@
 import { readAnyFormat } from '@saerskriven/formats';
 import { expect, test } from '@playwright/test';
 import { Either } from 'effect';
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
 import {
   canvasContainer,
   canvasSettled,

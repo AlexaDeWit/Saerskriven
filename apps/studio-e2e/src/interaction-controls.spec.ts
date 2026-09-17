@@ -1,4 +1,4 @@
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { readAnyFormat } from '@saerskriven/formats';

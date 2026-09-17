@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
 import {
   canvasSurface,
   chooseInPanel,

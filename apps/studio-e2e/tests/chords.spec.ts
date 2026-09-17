@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { registeredChords } from '../src/chords.js';
+import { registeredChords } from '../src/chords.fixtures.js';
 
 const registry = readFileSync(
   join(import.meta.dirname, '../../../apps/studio/src/commands/registry.ts'),

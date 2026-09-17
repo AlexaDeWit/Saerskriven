@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
 import { viewportTransform } from './commands.fixtures.js';
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
 import {
   beforeCanvas,
   canvasSettled,

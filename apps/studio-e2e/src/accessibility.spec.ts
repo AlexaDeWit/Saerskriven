@@ -1,6 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
 import { savedFromMenu } from './commands.fixtures.js';
 import {
   chooseInPanel,
