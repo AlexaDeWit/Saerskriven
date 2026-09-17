@@ -3,6 +3,7 @@ import { parsedFixture } from '@saerskriven/model/fixtures';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { renderDivergences } from './divergence.js';
+import { threatDragonJsonSchema } from './corpus.fixtures.js';
 import { threatsOf } from './threat-dragon-document.js';
 import {
   allThreats,
@@ -11,7 +12,6 @@ import {
   featureCompleteText,
   richerThanFormatFixture,
   richerThanFormatSource,
-  threatDragonJsonSchema,
   threatDragonReading,
   unmodelledFixture,
 } from './threat-dragon.fixtures.js';

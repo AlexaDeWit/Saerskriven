@@ -1,4 +1,5 @@
 import type { ModelInput } from '@saerskriven/model';
+import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
 import {
   committedText,
   repositoryRoot,
@@ -1087,3 +1088,21 @@ export const oneThreatYamlV1 = [
   'assumptions: []',
   '',
 ].join('\n');
+
+/**
+ * A version 1 wire document with an untitled metadata block and every list
+ * empty, with the lists and the last issued number a spec passes in their
+ * place.
+ */
+export const version1Document = (
+  overrides: Partial<Omit<SaerskrivenYamlDocument, 'formatVersion'>>,
+): SaerskrivenYamlDocument => ({
+  formatVersion: 1,
+  metadata: { title: 'Earlier', owner: '', description: '', contributors: [] },
+  diagrams: [],
+  threats: [],
+  lastIssuedThreatNumber: 0,
+  mitigations: [],
+  assumptions: [],
+  ...overrides,
+});

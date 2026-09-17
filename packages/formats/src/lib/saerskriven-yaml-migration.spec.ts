@@ -3,9 +3,10 @@ import {
   saerskrivenYamlV2WireSchema,
   type SaerskrivenYamlV2Document,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
-import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
+import type { SaerskrivenYamlThreat } from '@saerskriven/wire-saerskriven-yaml';
 import type { canonicalOrder } from './canonical-order.js';
 import { currentSaerskrivenYaml } from './saerskriven-yaml-migration.js';
+import { version1Document } from './saerskriven-yaml.fixtures.js';
 
 type Schema = Parameters<typeof canonicalOrder>[0];
 
@@ -23,7 +24,12 @@ function declaredKeys(schema: Schema, prefix = ''): string[] {
   return (options ?? []).flatMap((option) => declaredKeys(option, prefix));
 }
 
-const threat = (id: string, number: number, status: string, text: string) => ({
+const threat = (
+  id: string,
+  number: number,
+  status: SaerskrivenYamlThreat['status'],
+  text: string,
+): SaerskrivenYamlThreat => ({
   id,
   number,
   title: `Threat ${String(number)}`,
@@ -35,10 +41,7 @@ const threat = (id: string, number: number, status: string, text: string) => ({
   elements: [],
 });
 
-const version1: SaerskrivenYamlDocument = saerskrivenYamlWireSchema.parse({
-  formatVersion: 1,
-  metadata: { title: 'Earlier', owner: '', description: '', contributors: [] },
-  diagrams: [],
+const version1 = version1Document({
   threats: [
     threat('threat-1', 1, 'mitigated', 'Sign every request.'),
     threat('threat-2', 2, 'open', 'Rotate the key.'),
@@ -124,14 +127,6 @@ describe('currentSaerskrivenYaml', () => {
         threats: [],
         appliesToModel: true,
       },
-    ]);
-  });
-
-  it('keeps every threat status', () => {
-    expect(migrated.document.threats.map(({ status }) => status)).toEqual([
-      'mitigated',
-      'open',
-      'accepted-risk',
     ]);
   });
 

@@ -246,15 +246,6 @@ describe('a version 1 assumption that links elements', () => {
   it('reports nothing when its element list is empty', () => {
     expect(readingOf(elementLinkedAssumption([]))?.divergences).toEqual([]);
   });
-
-  it('maps without its element links from the document alone', () => {
-    const document = saerskrivenYamlWireSchema.parse(
-      parse(elementLinkedAssumption(['element-1', 'element-2'])),
-    );
-    expect(
-      Either.getOrUndefined(readSaerskrivenYamlDocument(document))?.assumptions,
-    ).toEqual(readingOf(elementLinkedAssumption([]))?.model.assumptions);
-  });
 });
 
 describe('a version 1 assumption that links no threat', () => {
@@ -264,12 +255,6 @@ describe('a version 1 assumption that links no threat', () => {
       expect.objectContaining({ threats: [], appliesToModel: true }),
     ]);
     expect(reading?.divergences).toEqual([]);
-  });
-
-  it('maps the same from the document alone', () => {
-    expect(modelOfDocumentIn(threatlessAssumption)).toEqual(
-      readingOf(threatlessAssumption)?.model,
-    );
   });
 });
 
@@ -326,17 +311,6 @@ describe('a version 1 threat that carries mitigation text', () => {
     ]);
   });
 
-  it('maps the same from the document alone', () => {
-    const text = withMitigationRecord('threat-1-mitigation');
-    expect(
-      Either.getOrUndefined(
-        readSaerskrivenYamlDocument(
-          saerskrivenYamlWireSchema.parse(parse(text)),
-        ),
-      ),
-    ).toEqual(readingOf(text)?.model);
-  });
-
   it('writes back onto its source reporting nothing, and reads back as the same model', () => {
     const reading = readingOf(withMitigationText('mitigated'));
     const written =
@@ -349,11 +323,42 @@ describe('a version 1 threat that carries mitigation text', () => {
 });
 
 describe('a Saerskriven YAML document mapped without its text', () => {
-  it('gives the model its own text read gave', () => {
-    expect(modelOfDocumentIn(oneFlowDocument)).toEqual(
-      readingOf(oneFlowDocument)?.model,
-    );
-  });
+  it.each([
+    {
+      named: 'an assumption that links elements, dropping the links',
+      text: elementLinkedAssumption(['element-1', 'element-2']),
+      readAs: elementLinkedAssumption([]),
+    },
+    {
+      named: 'a threat whose text meets a record holding its id',
+      text: withMitigationRecord('threat-1-mitigation'),
+      readAs: withMitigationRecord('threat-1-mitigation'),
+    },
+  ])(
+    'maps $named from its version 1 wire document alone to the model its text reads as',
+    ({ text, readAs }) => {
+      expect(
+        Either.getOrUndefined(
+          readSaerskrivenYamlDocument(
+            saerskrivenYamlWireSchema.parse(parse(text)),
+          ),
+        ),
+      ).toEqual(readingOf(readAs)?.model);
+    },
+  );
+
+  it.each([
+    { named: 'a version 1 flow', text: oneFlowDocument },
+    {
+      named: 'an assumption that links no threat',
+      text: threatlessAssumption,
+    },
+  ])(
+    'maps $named from the version 2 source a read hands back to the model its text reads as',
+    ({ text }) => {
+      expect(modelOfDocumentIn(text)).toEqual(readingOf(text)?.model);
+    },
+  );
 
   it('defaults a key the document was written before the format declared', () => {
     expect(

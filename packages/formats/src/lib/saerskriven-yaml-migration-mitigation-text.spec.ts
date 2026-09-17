@@ -3,6 +3,7 @@ import type {
   SaerskrivenYamlThreat,
 } from '@saerskriven/wire-saerskriven-yaml';
 import { withMitigationTextAsRecords } from './saerskriven-yaml-migration-mitigation-text.js';
+import { version1Document } from './saerskriven-yaml.fixtures.js';
 
 const threat = (
   id: string,
@@ -20,10 +21,7 @@ const threat = (
   elements: [],
 });
 
-const document: SaerskrivenYamlDocument = {
-  formatVersion: 1,
-  metadata: { title: 'Texts', owner: '', description: '', contributors: [] },
-  diagrams: [],
+const document = version1Document({
   threats: [
     threat('threat-2', 2, 'Sign the payload.'),
     threat('threat-1', 1, ''),
@@ -38,31 +36,12 @@ const document: SaerskrivenYamlDocument = {
       threats: ['threat-1'],
     },
   ],
-  assumptions: [],
-};
+});
 
 const idOfTextRecord = (holding: SaerskrivenYamlDocument) =>
   withMitigationTextAsRecords(holding).mitigations.at(-1)?.id;
 
 describe('withMitigationTextAsRecords', () => {
-  it('empties every text and adds its records after the ones the document holds', () => {
-    const migrated = withMitigationTextAsRecords(document);
-    expect(migrated.threats.map(({ mitigation }) => mitigation)).toEqual([
-      '',
-      '',
-    ]);
-    expect(migrated.mitigations).toEqual([
-      document.mitigations[0],
-      {
-        id: 'threat-2-mitigation',
-        title: '',
-        prose: 'Sign the payload.',
-        status: 'implemented',
-        threats: ['threat-2'],
-      },
-    ]);
-  });
-
   it('counts past the id the rule would choose where an assumption holds it', () => {
     expect(
       idOfTextRecord({

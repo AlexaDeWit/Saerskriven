@@ -1,9 +1,9 @@
 import { assumptionId } from '@saerskriven/model/fixtures';
-import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
 import {
   droppedAssumptionElementLinks,
   withoutAssumptionElementLinks,
 } from './saerskriven-yaml-migration-assumption-element-links.js';
+import { version1Document } from './saerskriven-yaml.fixtures.js';
 
 const assumption = (id: string, elements: string[]) => ({
   id,
@@ -13,19 +13,13 @@ const assumption = (id: string, elements: string[]) => ({
   threats: ['threat-1'],
 });
 
-const document: SaerskrivenYamlDocument = {
-  formatVersion: 1,
-  metadata: { title: 'Linked', owner: '', description: '', contributors: [] },
-  diagrams: [],
-  threats: [],
-  lastIssuedThreatNumber: 0,
-  mitigations: [],
+const document = version1Document({
   assumptions: [
     assumption('assumption-linked', ['element-1', 'element-2']),
     assumption('assumption-unlinked', []),
     assumption('a', ['element-1']),
   ],
-};
+});
 
 describe('droppedAssumptionElementLinks', () => {
   it('names each assumption that held element links, from the document alone, and skips one whose id the model refuses', () => {

@@ -1,6 +1,6 @@
 import { Either } from 'effect';
 import { ReadFailure } from './codec.js';
-import { adversarialText } from './corpus.fixtures.js';
+import { adversarialText, corpusTexts } from './corpus.fixtures.js';
 import {
   DetectionFailure,
   formatNameSchema,
@@ -16,7 +16,7 @@ import {
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { readLimits } from './read-limits.js';
-import { corpusTexts, featureCompleteText } from './threat-dragon.fixtures.js';
+import { featureCompleteText } from './threat-dragon.fixtures.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
 const branchingCycle = adversarialText('branching-cycle.yaml');

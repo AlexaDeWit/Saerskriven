@@ -6,12 +6,8 @@ import type { Divergence } from './divergence.js';
 import { indexById } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
-import {
-  allThreats,
-  corpusTexts,
-  featureCompleteText,
-  threatDragonJsonSchema,
-} from './threat-dragon.fixtures.js';
+import { corpusTexts, threatDragonJsonSchema } from './corpus.fixtures.js';
+import { allThreats, featureCompleteText } from './threat-dragon.fixtures.js';
 
 const writtenVersion = '2.6.2';
 
