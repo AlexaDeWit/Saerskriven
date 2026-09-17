@@ -23,7 +23,7 @@ const converted = (root: string, file: string, target: string) =>
   );
 
 describe('converting a foreign model', () => {
-  it('writes the native format and names the format it read', () => {
+  it('writes the native format, names the format it read, carries what it could not take over, and reads as text lines', () => {
     const tree = editableTree();
     const answer = converted(tree.root, otmFile, 'converted.yaml');
     const written = readAnyFormat(
@@ -40,31 +40,21 @@ describe('converting a foreign model', () => {
       source: { file: otmFile, format: 'otm' },
       written: 'saerskriven-yaml',
     });
-  });
-
-  it('carries what the conversion could not take over', () => {
-    const tree = editableTree();
-    const answer = converted(tree.root, otmFile, 'converted.yaml');
     expect(Either.getOrUndefined(answer)?.divergences.length).toBeGreaterThan(
       0,
     );
-  });
-
-  it('reads TM-BOM as well, and says which it read', () => {
-    const tree = editableTree();
-    const answer = converted(tree.root, tmbomFile, 'converted.yaml');
-    expect(Either.getOrUndefined(answer)?.source.format).toEqual('tmbom');
-  });
-
-  it('reads as the lines a text result carries', () => {
-    const tree = editableTree();
-    const answer = converted(tree.root, otmFile, 'converted.yaml');
     expect(
       Either.match(answer, {
         onLeft: (lines) => lines,
         onRight: renderImport,
       })[0],
     ).toEqual(`converted: ${otmFile} (otm)`);
+  });
+
+  it('reads TM-BOM as well, and says which it read', () => {
+    const tree = editableTree();
+    const answer = converted(tree.root, tmbomFile, 'converted.yaml');
+    expect(Either.getOrUndefined(answer)?.source.format).toEqual('tmbom');
   });
 
   it('refuses a target already holding a file, leaving its bytes alone', () => {

@@ -78,16 +78,6 @@ describe('render', () => {
     });
   });
 
-  it('draws to standard output for an out of -', async () => {
-    await expect(
-      render(twoDiagrams, options({ format: 'svg', out: '-', ...storefront })),
-    ).resolves.toEqual({
-      code: 0,
-      out: golden('two-diagrams-storefront.snapshot.svg'),
-      err: '',
-    });
-  });
-
   it('rasterizes the diagram a model of several names by id', async () => {
     const run = await written('fulfilment.png', twoDiagrams, {
       format: 'png',
@@ -162,32 +152,38 @@ describe('render', () => {
     expect(outcome.err).toContain('error: cannot draw the PNG');
   });
 
-  it('draws the diagram a model of several names by title', async () => {
+  it.each([
+    {
+      named:
+        'a diagram of the two-diagram model to standard output for an out of -',
+      file: () => twoDiagrams,
+      diagram: 'storefront',
+      golden: 'two-diagrams-storefront.snapshot.svg',
+    },
+    {
+      named: 'the diagram a model of several names by title',
+      file: () => twoDiagrams,
+      diagram: 'Shipping an order',
+      golden: 'two-diagrams-fulfilment.snapshot.svg',
+    },
+    {
+      named: 'the diagram whose id a name is before one titled with it',
+      file: () =>
+        fixtureFile(
+          directory,
+          'colliding.yaml',
+          committedText('saerskriven/two-diagrams.yaml').replace(
+            'title: Taking an order',
+            'title: fulfilment',
+          ),
+        ),
+      diagram: 'fulfilment',
+      golden: 'two-diagrams-fulfilment.snapshot.svg',
+    },
+  ])('draws $named', async ({ file, diagram, golden: goldenName }) => {
     await expect(
-      render(twoDiagrams, options({ diagram: 'Shipping an order' })),
-    ).resolves.toEqual({
-      code: 0,
-      out: golden('two-diagrams-fulfilment.snapshot.svg'),
-      err: '',
-    });
-  });
-
-  it('draws the diagram whose id a name is before one titled with it', async () => {
-    const colliding = fixtureFile(
-      directory,
-      'colliding.yaml',
-      committedText('saerskriven/two-diagrams.yaml').replace(
-        'title: Taking an order',
-        'title: fulfilment',
-      ),
-    );
-    await expect(
-      render(colliding, options({ diagram: 'fulfilment' })),
-    ).resolves.toEqual({
-      code: 0,
-      out: golden('two-diagrams-fulfilment.snapshot.svg'),
-      err: '',
-    });
+      render(file(), options({ format: 'svg', out: '-', diagram })),
+    ).resolves.toEqual({ code: 0, out: golden(goldenName), err: '' });
   });
 
   it('lists the diagrams where a model of several names none', async () => {

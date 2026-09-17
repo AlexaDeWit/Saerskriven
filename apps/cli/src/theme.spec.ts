@@ -139,18 +139,22 @@ describe('best-effort theme files', () => {
     expect(outcome.err).toContain('fonts');
   });
 
-  it('retains parser size, depth and alias limits', () => {
-    const entries = [
-      ' '.repeat(readLimits.maxTextBytes + 1),
-      '['.repeat(readLimits.maxNestingDepth + 1) +
+  it.each([
+    { limit: 'size', text: ' '.repeat(readLimits.maxTextBytes + 1) },
+    {
+      limit: 'depth',
+      text:
+        '['.repeat(readLimits.maxNestingDepth + 1) +
         ']'.repeat(readLimits.maxNestingDepth + 1),
-      `a: &a []\nb: [${Array.from({ length: readLimits.maxAliasCount + 1 }, () => '*a').join(',')}]`,
-    ];
-    for (const text of entries) {
-      const read = commandTheme(file(text), 'svg', false);
-      expect(read.theme).toEqual(defaultRenderTheme);
-      expect(read.diagnostics).not.toHaveLength(0);
-    }
+    },
+    {
+      limit: 'alias',
+      text: `a: &a []\nb: [${Array.from({ length: readLimits.maxAliasCount + 1 }, () => '*a').join(',')}]`,
+    },
+  ])('retains the parser $limit limit', ({ text }) => {
+    const read = commandTheme(file(text), 'svg', false);
+    expect(read.theme).toEqual(defaultRenderTheme);
+    expect(read.diagnostics).not.toHaveLength(0);
   });
 
   it('reports unsupported output settings without failing', async () => {

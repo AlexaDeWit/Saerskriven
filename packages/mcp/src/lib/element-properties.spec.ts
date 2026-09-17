@@ -9,10 +9,16 @@ import {
   securityModelFixture,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { editOf, readingOf, structuredOf, textOf } from '../fixtures.js';
-import { editableTree } from './edit.fixtures.js';
 import { getThreatResultSchema } from './get-threat.js';
 import { searchElementsResultSchema } from './search-elements.js';
 import type { McpSession } from '../fixtures.js';
@@ -56,7 +62,9 @@ for (const { format, codec } of [
     };
 
     beforeEach(async () => {
-      root = editableTree().root;
+      root = realpathSync(
+        mkdtempSync(join(tmpdir(), 'saerskriven-mcp-security-')),
+      );
       writeFileSync(join(root, file), codec.write(model).output);
       connected = await session({ root, file, era: 'legacy' });
       revision = readingOf(

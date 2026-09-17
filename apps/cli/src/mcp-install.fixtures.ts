@@ -1,4 +1,9 @@
-import type { HostPlatform, InstallEnvironment } from './mcp-hosts.js';
+import { parse as parseToml } from 'smol-toml';
+import type {
+  HostPlatform,
+  HostSyntax,
+  InstallEnvironment,
+} from './mcp-hosts.js';
 
 /**
  * An environment whose project directory and home directory are both the one
@@ -11,6 +16,24 @@ export function installedIn(
 ): InstallEnvironment {
   return { directory, home: directory, platform, appData: undefined };
 }
+
+/**
+ * An environment that names no home directory and no application data
+ * directory, so no user-level file can be placed.
+ */
+export function homelessIn(directory: string): InstallEnvironment {
+  return { directory, home: undefined, platform: 'other', appData: undefined };
+}
+
+/** A host file's text read back in the syntax the host keeps it in. */
+export const parsedAs = (syntax: HostSyntax, text: string): unknown =>
+  syntax === 'json' ? JSON.parse(text) : parseToml(text);
+
+/** The entry a host that infers the transport holds for the server. */
+export const stdio = { command: 'saer', args: ['mcp'] };
+
+/** The entry a host that asks for the transport holds for the server. */
+export const declared = { type: 'stdio', command: 'saer', args: ['mcp'] };
 
 /**
  * A host file already holding another server under the key given, beside a

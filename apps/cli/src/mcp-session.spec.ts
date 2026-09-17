@@ -377,27 +377,18 @@ for (const runner of runners) {
           spawnTimeout,
         );
 
-        it('completes discovery on the revision the split SDK negotiates', async () => {
-          const session = await opener.open(runner, dragon, 'modern');
-          const listed = await session.client.listTools();
-          const era = session.client.getProtocolEra();
-          await session.end();
-          expect(era).toEqual('modern');
-          expect(listed.tools.map((tool) => tool.name)).toEqual(
-            registeredTools,
-          );
-        });
-
-        it('serves a 2025-era client the same tool list', async () => {
-          const session = await opener.open(runner, dragon, 'legacy');
-          const listed = await session.client.listTools();
-          const era = session.client.getProtocolEra();
-          await session.end();
-          expect(era).toEqual('legacy');
-          expect(listed.tools.map((tool) => tool.name)).toEqual(
-            registeredTools,
-          );
-        });
+        for (const era of eras) {
+          it(`completes discovery and lists the registered tools in the ${era} era`, async () => {
+            const session = await opener.open(runner, dragon, era);
+            const listed = await session.client.listTools();
+            const negotiated = session.client.getProtocolEra();
+            await session.end();
+            expect(negotiated).toEqual(era);
+            expect(listed.tools.map((tool) => tool.name)).toEqual(
+              registeredTools,
+            );
+          });
+        }
 
         it('refuses to draw over a file the root already holds', async () => {
           const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-taken-'));

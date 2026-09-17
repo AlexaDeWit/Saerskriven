@@ -64,60 +64,55 @@ const revisionIn = (
 ): string => revisionOf(attempted.bytes(file));
 
 describe('what a refused edit leaves on disk', () => {
-  it('writes nothing when the model refuses one edit of the batch', () => {
-    const attempted = attempt();
-    const before = attempted.bytes(modelFile);
-    const refused = attempted.edit(
-      modelFile,
-      revisionIn(attempted, modelFile),
-      [renaming, { op: 'remove_element', element: 'element-absent' }],
-    );
-    expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(Either.isLeft(refused) ? refused.left : []).toEqual([
-      'The edit at index 1 was refused, so none of the batch was applied and the file is as it was.',
-      'The model holds no element "element-absent".',
-    ]);
-  });
-
-  it('writes nothing when the revision no longer matches the file', () => {
-    const attempted = attempt();
-    const before = attempted.bytes(modelFile);
-    const refused = attempted.edit(modelFile, staleRevision, [renaming]);
-    expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(refusalOf(refused).join('\n')).toContain(
-      'changed since the read this call quoted',
-    );
-  });
-
-  it('writes nothing when no codec claims the file', () => {
-    const attempted = attempt();
-    const before = attempted.bytes(unclaimedFile);
-    const refused = attempted.edit(
-      unclaimedFile,
-      revisionIn(attempted, unclaimedFile),
-      [renaming],
-    );
-    expect(attempted.bytes(unclaimedFile)).toEqual(before);
-    expect(refusalOf(refused).join('\n')).toContain('was not read');
-  });
-
-  it('writes nothing when the edited model would be past the size this server reads', () => {
-    const attempted = attempt();
-    const before = attempted.bytes(modelFile);
-    const refused = attempted.edit(
-      modelFile,
-      revisionIn(attempted, modelFile),
-      [
+  it.each<{
+    readonly name: string;
+    readonly file: string;
+    readonly revision: (attempted: ReturnType<typeof attempt>) => string;
+    readonly edits: readonly EditInput[];
+    readonly phrase: string;
+  }>([
+    {
+      name: 'the model refuses one edit of the batch',
+      file: modelFile,
+      revision: (attempted) => revisionIn(attempted, modelFile),
+      edits: [renaming, { op: 'remove_element', element: 'element-absent' }],
+      phrase: [
+        'The edit at index 1 was refused, so none of the batch was applied and the file is as it was.',
+        'The model holds no element "element-absent".',
+      ].join('\n'),
+    },
+    {
+      name: 'the revision no longer matches the file',
+      file: modelFile,
+      revision: () => staleRevision,
+      edits: [renaming],
+      phrase: 'changed since the read this call quoted',
+    },
+    {
+      name: 'no codec claims the file',
+      file: unclaimedFile,
+      revision: (attempted) => revisionIn(attempted, unclaimedFile),
+      edits: [renaming],
+      phrase: 'was not read',
+    },
+    {
+      name: 'the edited model would be past the size this server reads',
+      file: modelFile,
+      revision: (attempted) => revisionIn(attempted, modelFile),
+      edits: [
         addedMitigation(
           'threat-tamper-order',
           'x'.repeat(readLimits.maxTextBytes),
         ),
       ],
-    );
-    expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(refusalOf(refused).join('\n')).toContain(
-      'past the size this server reads',
-    );
+      phrase: 'past the size this server reads',
+    },
+  ])('writes nothing when $name', ({ file, revision, edits, phrase }) => {
+    const attempted = attempt();
+    const before = attempted.bytes(file);
+    const refused = attempted.edit(file, revision(attempted), edits);
+    expect(attempted.bytes(file)).toEqual(before);
+    expect(refusalOf(refused).join('\n')).toContain(phrase);
   });
 });
 

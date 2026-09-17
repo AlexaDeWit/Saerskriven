@@ -58,17 +58,6 @@ describe('replacing a file', () => {
     );
   });
 
-  it('keeps the permissions the file carried', () => {
-    const tree = editableTree();
-    chmodSync(join(tree.root, modelFile), 0o640);
-    replacedFile(
-      target(tree.root, modelFile),
-      'replaced\n',
-      revisionIn(tree.root, modelFile),
-    );
-    expect(statSync(join(tree.root, modelFile)).mode & 0o777).toEqual(0o640);
-  });
-
   it('prefers the mode the target carries to the one for a new file', () => {
     const tree = editableTree();
     const path = join(tree.root, modelFile);
@@ -237,8 +226,10 @@ describe('creating a file', () => {
   it('refuses a path already holding a file, leaving its bytes alone', () => {
     const tree = editableTree();
     const before = readFileSync(join(tree.root, modelFile));
+    const listed = new Set(readdirSync(tree.root));
     const refused = createdFile(target(tree.root, modelFile), 'replaced\n');
     expect(readFileSync(join(tree.root, modelFile))).toEqual(before);
+    expect(new Set(readdirSync(tree.root))).toEqual(listed);
     expect(renderWriteFailure(failureOf(refused))).toEqual([
       `The file "${modelFile}" is already there, and this tool writes only a path that is free.`,
     ]);
@@ -259,13 +250,6 @@ describe('creating a file', () => {
     const tree = editableTree();
     createdFile(target(tree.root, 'plain.yaml'), 'formatVersion: 1\n');
     expect(statSync(join(tree.root, 'plain.yaml')).mode & 0o200).toEqual(0o200);
-  });
-
-  it('leaves no temporary file behind when it refuses', () => {
-    const tree = editableTree();
-    const before = new Set(readdirSync(tree.root));
-    createdFile(target(tree.root, modelFile), 'replaced\n');
-    expect(new Set(readdirSync(tree.root))).toEqual(before);
   });
 });
 
