@@ -1,8 +1,8 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { readAnyFormat } from '@saerskriven/formats';
+import { committedText } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
 import {
   drawnBy,
   halfwayAlong,
@@ -21,7 +21,6 @@ import {
   savedFile,
   selectByKeyboard,
   twoDiagramsFile,
-  vendored,
 } from './studio.fixtures.js';
 
 const records = /^Records, flow/u;
@@ -268,7 +267,7 @@ for (const { fixture, bent, bentId, svgItem } of [
     page,
   }) => {
     const before = Either.getOrThrow(
-      readAnyFormat(readFileSync(vendored(fixture), 'utf8')),
+      readAnyFormat(committedText(fixture)),
     ).model;
     await openFile(page, fixture);
     await selectByKeyboard(page, bent);

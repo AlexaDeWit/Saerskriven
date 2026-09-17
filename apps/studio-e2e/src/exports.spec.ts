@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { digestOf, exportGolden } from './exports.fixtures.js';
+import { sha256Of } from '@saerskriven/model/fixtures';
+import { exportGolden } from './exports.fixtures.js';
 import { exportedFile, openFile, twoDiagramsFile } from './studio.fixtures.js';
 
 test.beforeEach(async ({ page }) => {
@@ -19,8 +20,8 @@ test('exports the CLI picture byte for byte', async ({ page }) => {
   const output = await exportedFile(page, 'Diagram as PNG');
 
   expect(output.name).toBe('two-diagrams.png');
-  expect(digestOf(output.bytes)).toBe(
-    digestOf(exportGolden('two-diagrams-storefront.snapshot.png')),
+  expect(sha256Of(output.bytes)).toBe(
+    sha256Of(exportGolden('two-diagrams-storefront.snapshot.png')),
   );
 });
 

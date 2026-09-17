@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
+import { softHyphen } from '@saerskriven/model/fixtures';
 import { viewportTransform } from './commands.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
@@ -19,8 +20,6 @@ import {
   selectNode,
   threatPanel,
 } from './studio.fixtures.js';
-
-const softHyphen = '\u00ad';
 
 const disclosure = (page: Page, title: string | RegExp): Locator =>
   threatPanel(page).getByRole('button', { name: title });

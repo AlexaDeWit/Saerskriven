@@ -1,25 +1,13 @@
-import { createHash } from 'node:crypto';
+import { committedText, testDataPath } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
-import { vendored } from './studio.fixtures.js';
 
 /** A committed render output as bytes. */
 export const exportGolden = (name: string): Buffer =>
-  readFileSync(vendored(`test-data/render/${name}`));
+  readFileSync(testDataPath('render', name));
 
-/** The digest shared by the CLI and browser PDF checks. */
-export const expectedPdfDigest = readFileSync(
-  vendored('test-data/render/two-diagrams.snapshot.pdf.sha256'),
-  'utf8',
-).trim();
-
-/**
- * The SHA-256 digest of exported bytes, which is how a binary golden is
- * compared: a failed comparison of the buffers themselves is pretty-printed
- * and diffed element by element, which takes minutes on a picture and
- * reports nothing while it runs.
- */
-export const digestOf = (bytes: Uint8Array): string =>
-  createHash('sha256').update(bytes).digest('hex');
+/** The digest shared by the CLI and browser PDF checks, read at the call. */
+export const expectedPdfDigest = (): string =>
+  committedText('render', 'two-diagrams.snapshot.pdf.sha256').trim();
 
 const pageTree = /\/Type\s*\/Pages[\s\S]*?\/Count\s+(\d+)/u;
 

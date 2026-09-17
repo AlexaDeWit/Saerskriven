@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { committedText } from '@saerskriven/model/fixtures';
 import {
   canvasContainer,
   canvasSettled,
@@ -8,13 +8,12 @@ import {
   openPlaceholder,
   runFromMenu,
   savedFile,
-  vendored,
 } from './studio.fixtures.js';
 
-const sourceText = readFileSync(vendored(featureCompleteFile), 'utf8');
 const handleWriteKey = 'saerskrivenRecoveryTestHandleWrite';
 
 test('reload restores the last completed edit', async ({ page }) => {
+  const sourceText = committedText(featureCompleteFile);
   await page.addInitScript(
     ({ handleWriteKey: recoveryHandleWriteKey, sourceText: openedText }) => {
       Object.defineProperty(globalThis, 'showOpenFilePicker', {

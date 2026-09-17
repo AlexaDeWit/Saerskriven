@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { inkBoxOf } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import { viewportTransform } from './commands.fixtures.js';
@@ -22,7 +23,6 @@ import {
   selectNode,
   toolButton,
   twoDiagramsFile,
-  vendored,
   withoutPickers,
 } from './studio.fixtures.js';
 
@@ -467,7 +467,7 @@ test('opening another model clears a boundary curve draft', async ({
   await page.mouse.click(at.x, at.y);
   await expect(page.getByTestId('curve-draft')).toBeVisible();
 
-  await page.getByTestId('file-input').setInputFiles(vendored(twoDiagramsFile));
+  await page.getByTestId('file-input').setInputFiles(testDataPath(twoDiagramsFile));
   await canvasSettled(page);
 
   await expect(page.getByTestId('curve-draft')).toHaveCount(0);

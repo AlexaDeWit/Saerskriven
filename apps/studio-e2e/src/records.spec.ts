@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { softHyphen } from '@saerskriven/model/fixtures';
 import type { Box } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
@@ -441,7 +442,7 @@ test('a message longer than two lines stops above the open pane at phone width',
 
   await page.keyboard.press('Enter');
   await page.keyboard.press('End');
-  await page.keyboard.insertText('\u00AD');
+  await page.keyboard.insertText(softHyphen);
   await page.keyboard.press('Enter');
   const said = editAnnouncement(page);
   await expect(said).toContainText('Catalogue');

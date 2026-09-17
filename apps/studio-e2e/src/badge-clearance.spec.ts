@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { committedText } from '@saerskriven/model/fixtures';
 import { boxesOverlap, boxOf, inkBoxOf } from './canvas-geometry.fixtures.js';
 import { viewportZoom } from './commands.fixtures.js';
 import {
@@ -11,10 +11,7 @@ import {
   screenBoxOf,
   selectNode,
   threatPanel,
-  vendored,
 } from './studio.fixtures.js';
-
-const everyGlyph = 'test-data/every-glyph.model.json';
 
 const cases = [
   ['a counted badge', 'Order API', /^Order API, process/u, 1],
@@ -27,7 +24,7 @@ const resizeDrags = [
 ] as const;
 
 const openWithFlagOnlyStore = async (page: Page): Promise<void> => {
-  const text = readFileSync(vendored(everyGlyph), 'utf8')
+  const text = committedText('every-glyph.model.json')
     .replace('"elements": ["el-db"]', '"elements": ["el-api"]')
     .replace('"elements": ["el-edge-zone"]', '"elements": ["el-db"]');
   await openModelDocument(page, JSON.parse(text));

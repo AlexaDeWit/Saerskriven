@@ -1,9 +1,10 @@
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { registeredChords } from '../src/chords.fixtures.js';
 
 const registry = readFileSync(
-  join(import.meta.dirname, '../../../apps/studio/src/commands/registry.ts'),
+  join(repositoryRoot, 'apps/studio/src/commands/registry.ts'),
   'utf8',
 );
 

@@ -1,7 +1,7 @@
 import { readAnyFormat, type DetectedRead } from '@saerskriven/formats';
 import { expect, test } from '@playwright/test';
+import { committedText } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
 import { registeredChords } from './chords.fixtures.js';
 import { differingPaths, identified } from './differing-paths.fixtures.js';
 import {
@@ -18,7 +18,6 @@ import {
   savedFile,
   selectByKeyboard,
   threatPanel,
-  vendored,
 } from './studio.fixtures.js';
 
 const addedTitle = 'Paper archive holds records nobody filed';
@@ -100,7 +99,7 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
 
   const written = await savedFile(page);
 
-  const source = readFileSync(vendored(featureCompleteFile), 'utf8');
+  const source = committedText(featureCompleteFile);
   const before = readBack(source);
   const after = readBack(written.text);
   const addedNumber = before.model.lastIssuedThreatNumber + 1;

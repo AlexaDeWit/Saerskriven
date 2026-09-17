@@ -379,6 +379,9 @@ importers:
       '@saerskriven/formats':
         specifier: workspace:*
         version: link:../../packages/formats
+      '@saerskriven/model':
+        specifier: workspace:*
+        version: link:../../packages/model
       effect:
         specifier: 'catalog:'
         version: 3.22.1

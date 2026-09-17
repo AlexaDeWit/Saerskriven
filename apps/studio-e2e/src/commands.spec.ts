@@ -1,5 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { softHyphen, testDataPath } from '@saerskriven/model/fixtures';
 import { registeredChords } from './chords.fixtures.js';
 import {
   savedByKey,
@@ -20,7 +21,6 @@ import {
   selectNode,
   threatPanel,
   twoDiagramsFile,
-  vendored,
   withoutPickers,
 } from './studio.fixtures.js';
 
@@ -122,7 +122,7 @@ test('opening is one chord, through the picker the browser offers', async ({
   const chooser = page.waitForEvent('filechooser');
   await expect(page.getByTestId('file-input')).toHaveCount(1);
   await page.keyboard.press(registeredChords.open[0]);
-  await (await chooser).setFiles(vendored(twoDiagramsFile));
+  await (await chooser).setFiles(testDataPath(twoDiagramsFile));
 
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
   await openMenu(page);
@@ -203,7 +203,7 @@ test('escape from a field closes the panel over the draft rather than clearing t
   const actor = await selectNode(page, /^Actor, actor/u);
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
-  await title.fill('Soft\u00adhyphen');
+  await title.fill(`Soft${softHyphen}hyphen`);
   await title.press('Enter');
   await expect(title).toHaveAttribute('aria-invalid', 'true');
 
@@ -216,7 +216,7 @@ test('escape from a field closes the panel over the draft rather than clearing t
   await page.keyboard.press(registeredChords['focus-threats'][0]);
   const held = threatPanel(page).getByRole('textbox', { name: 'Title' });
 
-  await expect(held).toHaveValue('Soft\u00adhyphen');
+  await expect(held).toHaveValue(`Soft${softHyphen}hyphen`);
   await expect(held).toHaveAttribute('aria-invalid', 'true');
 });
 

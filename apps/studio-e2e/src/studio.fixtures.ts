@@ -1,13 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { committedText, testDataPath } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { Box, Point } from './canvas-geometry.fixtures.js';
 
 const developmentModelKey = 'saerskrivenDevelopmentModel';
-
-/** A file of the repository, named from the root, as a path on disk. */
-export const vendored = (path: string): string =>
-  join(__dirname, '../../..', path);
 
 /** The box the diagram is drawn in, chrome and graph paper included. */
 export const canvasContainer = (page: Page): Locator =>
@@ -57,12 +53,11 @@ export const openModelDocument = async (
   await canvasSettled(page);
 };
 
-/** The native file of the two-diagram model, for a spec that opens it through the picker. */
-export const twoDiagramsFile = 'test-data/saerskriven/two-diagrams.yaml';
+/** The native file of the two-diagram model under `test-data`, for a spec that opens it through the picker. */
+export const twoDiagramsFile = 'saerskriven/two-diagrams.yaml';
 
-/** A Threat Dragon file that uses every construct the format carries, for a spec that opens one through the picker. */
-export const featureCompleteFile =
-  'test-data/threat-dragon/feature-complete.json';
+/** A Threat Dragon file under `test-data` that uses every construct the format carries, for a spec that opens one through the picker. */
+export const featureCompleteFile = 'threat-dragon/feature-complete.json';
 
 /**
  * Opens the studio on `test-data/two-diagrams.model.json` through
@@ -72,9 +67,7 @@ export const featureCompleteFile =
 export const openTwoDiagrams = async (page: Page): Promise<void> => {
   await openModelDocument(
     page,
-    JSON.parse(
-      readFileSync(vendored('test-data/two-diagrams.model.json'), 'utf8'),
-    ),
+    JSON.parse(committedText('two-diagrams.model.json')),
   );
 };
 
@@ -124,7 +117,7 @@ export const withoutPickers = (): void => {
   Reflect.deleteProperty(globalThis, 'showSaveFilePicker');
 };
 
-/** Opens a vendored file through the fallback picker and waits for its canvas. */
+/** Opens a file under `test-data` through the fallback picker and waits for its canvas. */
 export const openFile = async (
   page: Page,
   path: string,
@@ -133,7 +126,7 @@ export const openFile = async (
   await page.addInitScript(withoutPickers);
   await page.goto(entry);
   await expect(canvasContainer(page)).toBeVisible();
-  await page.getByTestId('file-input').setInputFiles(vendored(path));
+  await page.getByTestId('file-input').setInputFiles(testDataPath(path));
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
   await canvasSettled(page);
 };

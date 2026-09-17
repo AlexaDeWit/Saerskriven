@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { registeredChords } from './chords.fixtures.js';
 import { savedFromMenu } from './commands.fixtures.js';
 import {
@@ -15,7 +16,6 @@ import {
   placeByClick,
   runFromMenu,
   twoDiagramsFile,
-  vendored,
   withoutPickers,
 } from './studio.fixtures.js';
 
@@ -202,7 +202,7 @@ test('opening asks from its chord and discards on the second step', async ({
 
   const chooser = page.waitForEvent('filechooser');
   await discard.click();
-  await (await chooser).setFiles(vendored(featureCompleteFile));
+  await (await chooser).setFiles(testDataPath(featureCompleteFile));
 
   await canvasSettled(page);
   await expect(elementNodes(page)).toHaveCount(6);
