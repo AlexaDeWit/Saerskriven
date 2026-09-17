@@ -1,6 +1,7 @@
 import { Either } from 'effect';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pngMagic } from '../fixtures.js';
 import {
   brokenRasterizer,
   builtRasterizer,
@@ -22,8 +23,6 @@ import {
   renderDrawing,
 } from './render-diagram.js';
 import { noRasterizer } from './server.fixtures.js';
-
-const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 const drawable = drawableTree();
 

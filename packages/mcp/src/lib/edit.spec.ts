@@ -9,6 +9,8 @@ import {
   dragonFile,
   editableTree,
   modelFile,
+  renaming,
+  staleRevision,
   type EditInput,
 } from './edit.fixtures.js';
 import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
@@ -18,14 +20,6 @@ import { revisionOf } from './revision.js';
 import { searchThreats } from './search-threats.js';
 import { openWorkspace } from './workspace.js';
 import { refusalOf } from './read-tools.fixtures.js';
-
-const staleRevision = `sha256:${'0'.repeat(64)}`;
-
-const renaming: EditInput = {
-  op: 'rename_element',
-  element: 'element-db',
-  name: 'Order store',
-};
 
 const addedMitigation = (
   threat: string,

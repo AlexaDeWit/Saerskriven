@@ -29,6 +29,8 @@ import {
   editableTree,
   modelFile,
   otmFile,
+  renaming,
+  staleRevision,
   type EditInput,
 } from './edit.fixtures.js';
 import { editOps } from './edits.js';
@@ -71,19 +73,11 @@ const rejectionOf = async (call: Promise<unknown>, named: string) => {
   }
 };
 
-const staleRevision = `sha256:${'0'.repeat(64)}`;
-
 /** One call of the table, and what a client would read back from it. */
 type CalledTool = {
   readonly name: string;
   readonly read: ResultProse;
   readonly result: CallToolResult;
-};
-
-const renaming: EditInput = {
-  op: 'rename_element',
-  element: 'element-db',
-  name: 'Order store',
 };
 
 /**

@@ -8,6 +8,7 @@ import {
   getThreatResultSchema,
   imagesOf,
   mediaTypesOf,
+  pngMagic,
   promptProseOf,
   proseOf,
   readingOf,
@@ -55,8 +56,6 @@ const dragon = ['mcp', '--file', dragonFile];
 const dragonBytes = readFileSync(
   testDataPath('threat-dragon/feature-complete.json'),
 );
-
-const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 const retitled = 'A title written through saer_edit';
 

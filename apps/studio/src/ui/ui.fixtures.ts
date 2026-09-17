@@ -15,6 +15,10 @@ export const listboxTimeout = 30_000;
 /** A handler a spec passes where the component needs one and the test reads nothing from it. */
 export const noop = (): void => undefined;
 
+/** The button of an accessible name. */
+export const button = (name: string): HTMLElement =>
+  screen.getByRole('button', { name });
+
 /** The text box of an accessible name. */
 export const textbox = (name: string): HTMLElement =>
   screen.getByRole('textbox', { name });

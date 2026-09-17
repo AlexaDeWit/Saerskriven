@@ -60,8 +60,6 @@ const showPanel = (
   );
 };
 
-const announcement = (): string => currentAnnouncement().message;
-
 const titleField = (): HTMLElement =>
   screen.getByRole('textbox', { name: 'Title' });
 
@@ -152,7 +150,7 @@ describe(
 
       expect(threatsInStore()).toBe(2);
       expect(document.activeElement).toBe(titleField());
-      expect(announcement()).toBe('');
+      expect(currentAnnouncement().message).toBe('');
     });
 
     it('deletes a threat, moving focus to the one that takes its place', async () => {
@@ -166,7 +164,7 @@ describe(
       expect(document.activeElement).toBe(
         screen.getByRole('button', { name: /A reader edits/u }),
       );
-      expect(numbersIn(announcement())).toEqual([2]);
+      expect(numbersIn(currentAnnouncement().message)).toEqual([2]);
     });
 
     it('deletes the last threat of an element, moving focus to the add control', async () => {
@@ -291,13 +289,13 @@ describe(
         screen.getByDisplayValue(`Pasted${softHyphen}prose`),
       ).toBeDefined();
       expect(describedNumbers(textbox('Description'))).toEqual([7]);
-      expect(announcement().trim()).not.toBe('');
+      expect(currentAnnouncement().message.trim()).not.toBe('');
       expect(modelStore.getState().present.threats[0].description).toBe('');
 
       await user.click(screen.getByRole('textbox', { name: 'Description' }));
       await user.keyboard('x');
 
-      expect(announcement()).toBe('');
+      expect(currentAnnouncement().message).toBe('');
       expect(
         screen
           .getByRole('textbox', { name: 'Description' })
@@ -340,7 +338,7 @@ describe(
       expect(
         screen.getByDisplayValue(`Pasted${softHyphen}prose`),
       ).toBeDefined();
-      expect(announcement()).toBe('');
+      expect(currentAnnouncement().message).toBe('');
     });
 
     it('drops a refusal an undo settled, and lets the threat collapse again', async () => {
@@ -354,13 +352,13 @@ describe(
       await user.click(screen.getByRole('textbox', { name: 'Description' }));
       await user.keyboard(softHyphen);
       await user.click(screen.getByRole('button', { name: /A reader edits/u }));
-      expect(announcement().trim()).not.toBe('');
+      expect(currentAnnouncement().message.trim()).not.toBe('');
 
       act(() => {
         dispatch(Action.Undo());
       });
 
-      expect(announcement()).toBe('');
+      expect(currentAnnouncement().message).toBe('');
 
       await user.click(screen.getByRole('button', { name: /A reader edits/u }));
 

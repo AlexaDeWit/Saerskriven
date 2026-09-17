@@ -5,11 +5,13 @@ import {
   type Palette,
 } from '@saerskriven/canvas';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { nodeNamed, openTwoDiagrams } from './studio.fixtures.js';
+import {
+  canvasContainer,
+  nodeNamed,
+  openTwoDiagrams,
+} from './studio.fixtures.js';
 
 /** What the diagram is drawn on, which the studio's own CSS module colours. */
-const ground = (page: Page): Locator => page.getByTestId('canvas-container');
-
 /**
  * One element's outline, which the canvas package's stylesheet colours. It is
  * a process, whose glyph is a single shape, so the locator resolves to one
@@ -24,7 +26,7 @@ const outline = (page: Page): Locator =>
  * root declares, and the canvas sheet the studio injects reads the same ones.
  */
 const drawnFrom = async (page: Page, palette: Palette): Promise<void> => {
-  await expect(ground(page)).toHaveCSS(
+  await expect(canvasContainer(page)).toHaveCSS(
     'background-color',
     rgbColour(palette.surfaceCanvas),
   );

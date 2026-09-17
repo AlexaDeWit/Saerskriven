@@ -1,13 +1,16 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { halfwayAlong, lineOf } from './canvas-geometry.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
-import { nodeNamed, openPlaceholder, selectNode } from './studio.fixtures.js';
+import {
+  canvasContainer,
+  nodeNamed,
+  openPlaceholder,
+  selectNode,
+} from './studio.fixtures.js';
 
 const actor = /^Actor, actor/u;
 
 const drawnFlow = /^New flow, flow, from Actor to Store/u;
-
-const canvas = (page: Page): Locator => page.getByTestId('canvas-container');
 
 const pane = (page: Page): Locator => page.locator('.react-flow__pane');
 
@@ -124,7 +127,7 @@ test('the tool the toolbox has active says it over the whole canvas', async ({
   await openPlaceholder(page);
   const node = nodeNamed(page, actor);
   const tool = async (active: string): Promise<void> => {
-    await canvas(page).evaluate((element, name) => {
+    await canvasContainer(page).evaluate((element, name) => {
       element.setAttribute('data-tool', name);
     }, active);
   };

@@ -37,8 +37,6 @@ import {
 import { freshElement } from './elements.js';
 import { numbersIn } from '../ui/ui.fixtures.js';
 
-const said = (): string => currentAnnouncement().message;
-
 const emptied = (): void => {
   modelStore.setState(initialState(emptyModel), true);
   resetAnnouncements();
@@ -159,7 +157,7 @@ describe('placing an element', () => {
       kind: 'name',
       elementId: state.selection.at(0),
     });
-    expect(said()).toBe('');
+    expect(currentAnnouncement().message).toBe('');
   });
 
   it('costs one step of the undo stack, the selection beside it costing none', () => {
@@ -218,7 +216,7 @@ describe('placing an element', () => {
     );
 
     expect(modelStore.getState().past).toHaveLength(0);
-    expect(said()).toBe('');
+    expect(currentAnnouncement().message).toBe('');
   });
 });
 
@@ -230,7 +228,7 @@ describe('connectElements', () => {
   it('adds one flow between the two elements without repeating its focused name', () => {
     connectElements(actorElement, processElement);
 
-    expect(said()).toBe('');
+    expect(currentAnnouncement().message).toBe('');
     expect(modelStore.getState().past).toHaveLength(1);
   });
 
@@ -238,14 +236,14 @@ describe('connectElements', () => {
     connectElements(actorElement, requestFlow);
 
     expect(modelStore.getState().past).toHaveLength(0);
-    expect(said()).toBe('');
+    expect(currentAnnouncement().message).toBe('');
   });
 
   it('refuses a trust boundary as an end, which a flow crosses rather than ends on', () => {
     connectElements(boundaryElement, processElement);
 
     expect(modelStore.getState().past).toHaveLength(0);
-    expect(said()).toBe('');
+    expect(currentAnnouncement().message).toBe('');
   });
 
   it('draws nothing while the model holds no diagram to draw on', () => {
@@ -254,7 +252,7 @@ describe('connectElements', () => {
     connectElements(actorElement, processElement);
 
     expect(modelStore.getState().past).toHaveLength(0);
-    expect(said()).toBe('');
+    expect(currentAnnouncement().message).toBe('');
   });
 });
 
@@ -264,7 +262,7 @@ describe('removeSelected', () => {
 
     expect(removeSelected()).toBe(false);
     expect(modelStore.getState().past).toHaveLength(0);
-    expect(said()).toBe('');
+    expect(currentAnnouncement().message).toBe('');
   });
 
   it('says nothing where the model refuses the removal', () => {
@@ -272,15 +270,15 @@ describe('removeSelected', () => {
 
     expect(removeSelected()).toBe(false);
     expect(modelStore.getState().past).toHaveLength(0);
-    expect(said()).toBe('');
+    expect(currentAnnouncement().message).toBe('');
   });
 
   it('removes the selection and says what the cascade took with it', () => {
     openCanvas([actorElement]);
 
     expect(removeSelected()).toBe(true);
-    expect(said()).toContain('Reader');
-    expect(numbersIn(said())).toEqual([1, 1]);
+    expect(currentAnnouncement().message).toContain('Reader');
+    expect(numbersIn(currentAnnouncement().message)).toEqual([1, 1]);
   });
 
   it('names an element with a long name by a bounded prefix', () => {
@@ -290,8 +288,10 @@ describe('removeSelected', () => {
 
     removeSelected();
 
-    expect(said()).toContain(long.slice(0, nameQuoteLength / 2));
-    expect(said()).not.toContain(long);
+    expect(currentAnnouncement().message).toContain(
+      long.slice(0, nameQuoteLength / 2),
+    );
+    expect(currentAnnouncement().message).not.toContain(long);
   });
 
   it('leaves the removed element out of the model and its flow attached to nothing', () => {
@@ -315,7 +315,7 @@ describe('removeSelected', () => {
 
     expect(modelStore.getState().past).toHaveLength(1);
     expect(modelStore.getState().selection).toEqual([]);
-    expect(numbersIn(said())).toEqual([2, 2, 1]);
+    expect(numbersIn(currentAnnouncement().message)).toEqual([2, 2, 1]);
   });
 });
 

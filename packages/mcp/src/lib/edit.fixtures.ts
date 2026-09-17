@@ -20,6 +20,16 @@ import { unclaimedFile, unclaimedYaml } from '../fixtures.js';
 /** One edit as a client sends it, before the schema fills its defaults in. */
 export type EditInput = z.input<typeof modelEditSchema>;
 
+/** A revision no file on disk holds, so a write that quotes it is refused. */
+export const staleRevision = `sha256:${'0'.repeat(64)}`;
+
+/** A rename of the valid model's store, which every tree's model holds. */
+export const renaming: EditInput = {
+  op: 'rename_element',
+  element: 'element-db',
+  name: 'Order store',
+};
+
 /** The native model a tree holds, named by the spec that edits it. */
 export const modelFile = 'model.yaml';
 

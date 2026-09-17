@@ -1,5 +1,6 @@
 import { Either } from 'effect';
-import { ReadFailure } from './codec.js';
+import type { ReadFailure } from './codec.js';
+import { readFailureIssues } from './codec.fixtures.js';
 import { adversarialText, corpusTexts } from './corpus.fixtures.js';
 import {
   DetectionFailure,
@@ -72,11 +73,16 @@ const opened = (text: string): DetectedRead =>
 
 const outcome = (text: string) => Either.merge(readAnyFormat(text));
 
-const issuePaths = (given: unknown): readonly string[] =>
-  ReadFailure.$is('InvalidWireDocument')(given) ||
-  ReadFailure.$is('InvalidModel')(given)
-    ? given.issues.map((issue) => issue.path.join('.'))
-    : [];
+const refusalOf = (text: string): ReadFailure => {
+  const failure = Either.getOrThrow(Either.flip(readAnyFormat(text)));
+  if (DetectionFailure.$is('NoFormatClaimed')(failure)) {
+    throw new Error(`No format claimed the text: ${failure.tried.join(', ')}`);
+  }
+  return failure;
+};
+
+const issuePaths = (failure: ReadFailure): readonly string[] =>
+  readFailureIssues(failure).map((issue) => issue.path.join('.'));
 
 function writtenAsSaerskrivenYaml(answer: DetectedRead): string {
   if (answer.format === 'threat-dragon') {
@@ -142,14 +148,16 @@ describe('a file of one format offered to the other codec', () => {
   });
 
   it('is JSON all the same, so the Threat Dragon codec refuses it by key', () => {
-    const refused = Either.merge(threatDragonCodec.read(nativeAsJson));
+    const refused = Either.getOrThrow(
+      Either.flip(threatDragonCodec.read(nativeAsJson)),
+    );
     expect(refused).toMatchObject({ _tag: 'InvalidWireDocument' });
     expect(issuePaths(refused)).toEqual(['version', 'summary', 'detail']);
   });
 
   it('is YAML, so the Saerskriven codec refuses a Threat Dragon file at its stamp', () => {
-    const refused = Either.merge(
-      saerskrivenYamlCodec.read(featureCompleteText),
+    const refused = Either.getOrThrow(
+      Either.flip(saerskrivenYamlCodec.read(featureCompleteText)),
     );
     expect(refused).toMatchObject({ _tag: 'InvalidWireDocument' });
     expect(issuePaths(refused)).toContain('formatVersion');
@@ -200,20 +208,20 @@ describe('a file a codec claimed and then refused', () => {
   ])(
     'refuses a Saerskriven $name file broken below formatVersion with a path into the file',
     ({ text, path }) => {
-      const failure = outcome(text);
+      const failure = refusalOf(text);
       expect(failure).toMatchObject({ _tag: 'InvalidWireDocument' });
       expect(issuePaths(failure)).toContain(path);
     },
   );
 
   it('reports a dangling reference as the Saerskriven mapping refusing it', () => {
-    const failure = outcome(danglingReference);
+    const failure = refusalOf(danglingReference);
     expect(failure).toMatchObject({ _tag: 'InvalidModel' });
     expect(issuePaths(failure)).toContain('threats.0.elements.0');
   });
 
   it('reports a cell the wire schema refuses with a path into the file', () => {
-    const failure = outcome(refusedCell);
+    const failure = refusalOf(refusedCell);
     expect(failure).toMatchObject({ _tag: 'InvalidWireDocument' });
     expect(issuePaths(failure)).toContain('detail.diagrams.0.cells.0.id');
   });

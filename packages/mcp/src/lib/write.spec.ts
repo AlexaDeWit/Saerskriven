@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { editableTree, modelFile } from './edit.fixtures.js';
+import { editableTree, modelFile, staleRevision } from './edit.fixtures.js';
 import { revisionOf } from './revision.js';
 import {
   WriteFailure,
@@ -28,8 +28,6 @@ const target = (root: string, file: string) => ({
 
 const revisionIn = (root: string, file: string): string =>
   revisionOf(readFileSync(join(root, file)));
-
-const staleRevision = `sha256:${'0'.repeat(64)}`;
 
 const paddedTo = (root: string, bytes: number): string => {
   const model = readFileSync(join(root, modelFile), 'utf8');

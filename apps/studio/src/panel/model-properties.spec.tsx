@@ -18,7 +18,7 @@ import { sectionLabel } from '@saerskriven/render';
 import { present, undoable } from '../store/store.fixtures.js';
 import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-import { describedNumbers, noop, textbox } from '../ui/ui.fixtures.js';
+import { button, describedNumbers, noop, textbox } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 
 const showPanel = ({
@@ -40,9 +40,6 @@ const showPanel = ({
     />,
   );
 };
-
-const button = (name: string): HTMLElement =>
-  screen.getByRole('button', { name });
 
 const undo = (): void => {
   act(() => {

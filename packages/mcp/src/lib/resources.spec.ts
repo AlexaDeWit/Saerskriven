@@ -1,5 +1,5 @@
 import { Either } from 'effect';
-import { blobsOf, resourceProseOf } from '../fixtures.js';
+import { blobsOf, pngMagic, resourceProseOf } from '../fixtures.js';
 import { dataNotInstructions, prefaced } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
 import {
@@ -22,8 +22,6 @@ import {
   ResourceFailure,
 } from './resources.js';
 import { noRasterizer } from './server.fixtures.js';
-
-const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 const drawable = drawableTree();
 

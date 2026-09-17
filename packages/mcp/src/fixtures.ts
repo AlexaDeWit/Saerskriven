@@ -29,6 +29,9 @@ export {
   unplacedFlowYaml,
 } from './lib/native-yaml.fixtures.js';
 
+/** The first four bytes of every PNG file. */
+export const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
 /**
  * The tools a release registers, in registration order: the reads, the
  * queries, the drawing, then the writes.

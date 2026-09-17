@@ -24,10 +24,7 @@ import {
   showThreatEditor,
 } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-import { describedNumbers, textbox } from '../ui/ui.fixtures.js';
-
-const button = (name: string): HTMLElement =>
-  screen.getByRole('button', { name });
+import { button, describedNumbers, textbox } from '../ui/ui.fixtures.js';
 
 const linkFirstOffered = async (noun: string): Promise<void> => {
   const user = userEvent.setup();

@@ -1,6 +1,6 @@
 import { canvasClassNames, wrappedTextStyles } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { elementById } from '../store/selectors.js';
@@ -11,6 +11,7 @@ import { canvasModel, noteElement } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { actorElement, processElement } from '../store/store.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
+import { textbox } from '../ui/ui.fixtures.js';
 
 const editing = (
   elementId: ElementId,
@@ -26,9 +27,6 @@ const editing = (
   );
   resetAnnouncements();
 };
-
-const field = (name: string): HTMLElement =>
-  screen.getByRole('textbox', { name });
 
 const nameOf = (elementId: ElementId): string | undefined =>
   elementById(modelStore.getState(), elementId)?.name;
@@ -48,7 +46,7 @@ describe('the inline editor', () => {
     editing(actorElement);
     render(<DiagramCanvas />);
 
-    expect(field('Name of Reader')).toHaveProperty('value', 'Reader');
+    expect(textbox('Name of Reader')).toHaveProperty('value', 'Reader');
   });
 
   it('commits a name on Enter as one undo step', async () => {
@@ -56,8 +54,8 @@ describe('the inline editor', () => {
     editing(actorElement);
     render(<DiagramCanvas />);
 
-    await user.clear(field('Name of Reader'));
-    await user.type(field('Name of Reader'), 'Auditor{Enter}');
+    await user.clear(textbox('Name of Reader'));
+    await user.type(textbox('Name of Reader'), 'Auditor{Enter}');
 
     expect(nameOf(actorElement)).toBe('Auditor');
     expect(state().past).toHaveLength(1);
@@ -69,8 +67,8 @@ describe('the inline editor', () => {
     editing(actorElement);
     render(<DiagramCanvas />);
 
-    await user.clear(field('Name of Reader'));
-    await user.type(field('Name of Reader'), 'Auditor');
+    await user.clear(textbox('Name of Reader'));
+    await user.type(textbox('Name of Reader'), 'Auditor');
     await user.tab();
 
     expect(nameOf(actorElement)).toBe('Auditor');
@@ -84,8 +82,8 @@ describe('the inline editor', () => {
     editing(actorElement);
     render(<DiagramCanvas />);
 
-    await user.clear(field('Name of Reader'));
-    await user.type(field('Name of Reader'), 'Auditor{Escape}');
+    await user.clear(textbox('Name of Reader'));
+    await user.type(textbox('Name of Reader'), 'Auditor{Escape}');
 
     expect(nameOf(actorElement)).toBe('Reader');
     expect(state().past).toEqual([]);
@@ -97,7 +95,7 @@ describe('the inline editor', () => {
     editing(actorElement);
     render(<DiagramCanvas />);
 
-    await user.type(field('Name of Reader'), '{Enter}');
+    await user.type(textbox('Name of Reader'), '{Enter}');
 
     expect(state().present).toBe(canvasModel);
     expect(state().past).toEqual([]);
@@ -109,15 +107,18 @@ describe('the inline editor', () => {
     editing(actorElement);
     render(<DiagramCanvas />);
 
-    await user.clear(field('Name of Reader'));
-    await user.type(field('Name of Reader'), `Soft${softHyphen}hyphen{Enter}`);
+    await user.clear(textbox('Name of Reader'));
+    await user.type(
+      textbox('Name of Reader'),
+      `Soft${softHyphen}hyphen{Enter}`,
+    );
 
     expect(nameOf(actorElement)).toBe('Reader');
     expect(state().inlineEditor).toEqual({
       kind: 'name',
       elementId: actorElement,
     });
-    expect(field('Name of Reader')).toHaveProperty(
+    expect(textbox('Name of Reader')).toHaveProperty(
       'value',
       `Soft${softHyphen}hyphen`,
     );
@@ -130,8 +131,8 @@ describe('the inline editor', () => {
     editing(actorElement);
     render(<DiagramCanvas />);
 
-    await user.clear(field('Name of Reader'));
-    await user.type(field('Name of Reader'), `${name}{Enter}`);
+    await user.clear(textbox('Name of Reader'));
+    await user.type(textbox('Name of Reader'), `${name}{Enter}`);
 
     expect(nameOf(actorElement)).toBe('Reader');
     expect(state().inlineEditor).toEqual({
@@ -145,7 +146,7 @@ describe('the inline editor', () => {
     const user = userEvent.setup();
     editing(noteElement, 'note');
     render(<DiagramCanvas />);
-    const note = field('Note text');
+    const note = textbox('Note text');
 
     await user.clear(note);
     await user.type(note, 'First line{Enter}Second line');
@@ -160,7 +161,7 @@ describe('the inline editor', () => {
     const user = userEvent.setup();
     editing(noteElement, 'note');
     render(<DiagramCanvas />);
-    const note = field('Note text');
+    const note = textbox('Note text');
 
     await user.clear(note);
     await user.type(note, 'Changed');
@@ -193,7 +194,7 @@ describe('the field standing where the text is drawn', () => {
 
     expect(drawnText(actorElement, canvasClassNames.label)).toBeNull();
 
-    await user.type(field('Name of Reader'), '{Escape}');
+    await user.type(textbox('Name of Reader'), '{Escape}');
 
     expect(drawnText(actorElement, canvasClassNames.label)).not.toBeNull();
   });
@@ -202,7 +203,7 @@ describe('the field standing where the text is drawn', () => {
     editing(noteElement, 'note');
     render(<DiagramCanvas />);
 
-    expect(field('Note text').style.fontSize).toBe(
+    expect(textbox('Note text').style.fontSize).toBe(
       `${String(wrappedTextStyles.note.fontSize)}px`,
     );
   });
@@ -211,7 +212,7 @@ describe('the field standing where the text is drawn', () => {
     editing(processElement);
     render(<DiagramCanvas />);
 
-    expect(field('Name of Studio').style.maxHeight).toBe('60px');
+    expect(textbox('Name of Studio').style.maxHeight).toBe('60px');
   });
 
   it('keeps a name on one line when pasted text carries a line break', async () => {
@@ -219,9 +220,9 @@ describe('the field standing where the text is drawn', () => {
     editing(actorElement);
     render(<DiagramCanvas />);
 
-    await user.clear(field('Name of Reader'));
+    await user.clear(textbox('Name of Reader'));
     await user.paste('Audit\nor');
 
-    expect(field('Name of Reader')).toHaveProperty('value', 'Auditor');
+    expect(textbox('Name of Reader')).toHaveProperty('value', 'Auditor');
   });
 });
