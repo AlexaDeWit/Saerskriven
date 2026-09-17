@@ -1,5 +1,5 @@
 import { Either } from 'effect';
-import { diagramId, elementId, validModel } from '../fixtures.js';
+import { diagramId, validModel } from '../fixtures.js';
 import { addElement } from './element-operations.js';
 import { elementSchema } from './elements.js';
 import type { OperationFailure } from './operation-failures.js';
@@ -108,18 +108,3 @@ export const withNote = modelOf(addElement(validModel, mainDiagram, note));
 
 /** A diagram id the valid model does not hold. */
 export const secondDiagram = diagramId('diagram-second');
-
-/** A second diagram whose flow stays inside it. */
-export const secondOfElements = {
-  id: secondDiagram,
-  title: 'Second',
-  elements: [
-    { ...cache, id: elementId('element-second-store') },
-    elementSchema.parse({
-      ...flowInput,
-      id: 'element-second-flow',
-      source: { kind: 'attached', element: 'element-second-store' },
-      target: { kind: 'free', position: { x: 0, y: 0 } },
-    }),
-  ],
-};

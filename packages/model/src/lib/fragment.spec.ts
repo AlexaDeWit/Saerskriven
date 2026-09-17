@@ -4,6 +4,7 @@ import {
   elementId,
   flowIn,
   parsedFixture,
+  securityModelFixture,
   validModel,
 } from '../fixtures.js';
 import { validModelFixture } from './model.fixtures.js';
@@ -204,6 +205,44 @@ describe('remapFragment and insertFragment', () => {
     expect(Either.getOrThrow(insertFragment(validModel, diagram, empty))).toBe(
       validModel,
     );
+  });
+  it('restricts copied lists to selected targets and remaps every retained relationship', () => {
+    const secured = parsedFixture(securityModelFixture);
+    const partial = Either.getOrThrow(
+      selectionFragment(secured, diagram, [
+        elementId('element-perimeter'),
+        elementId('element-api'),
+      ]),
+    );
+    expect(
+      partial.diagrams[0].elements.find(
+        (element) => element.kind === 'trust-boundary',
+      ),
+    ).toMatchObject({ containedElements: ['element-api'], crossingFlows: [] });
+    const full = Either.getOrThrow(
+      selectionFragment(
+        secured,
+        diagram,
+        secured.diagrams[0].elements.map((element) => element.id),
+      ),
+    );
+    const remapped = Either.getOrThrow(
+      remapFragment(full, 'copy', { x: 20, y: 30 }, secured),
+    );
+    expect(remapped.diagrams[0].elements[3]).toMatchObject({
+      trustBoundaryIds: ['copy:element-perimeter'],
+    });
+    expect(remapped.diagrams[0].elements[4]).toMatchObject({
+      containedElements: ['copy:element-api', 'copy:element-db'],
+      crossingFlows: ['copy:element-order-flow'],
+    });
+    const inserted = Either.getOrThrow(
+      insertFragment(secured, diagram, remapped),
+    );
+    expect(Either.isRight(parseModel(inserted))).toBe(true);
+    expect(
+      inserted.diagrams[0].elements.slice(0, secured.diagrams[0].elements.length),
+    ).toStrictEqual(secured.diagrams[0].elements);
   });
 });
 

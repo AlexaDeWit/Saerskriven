@@ -6,19 +6,34 @@ import {
   renameDiagram,
 } from './diagram-operations.js';
 import { removeElement } from './element-operations.js';
+import { elementSchema } from './elements.js';
 import { OperationFailure } from './operation-failures.js';
 import {
   cache,
   elementIds,
   errorOf,
+  flowInput,
   mainDiagram,
   modelOf,
   operationContract,
   secondDiagram,
-  secondOfElements,
   writeFlow,
 } from './operations.fixtures.js';
 import { parseModel } from './parse.js';
+
+const secondOfElements = {
+  id: secondDiagram,
+  title: 'Second',
+  elements: [
+    { ...cache, id: elementId('element-second-store') },
+    elementSchema.parse({
+      ...flowInput,
+      id: 'element-second-flow',
+      source: { kind: 'attached', element: 'element-second-store' },
+      target: { kind: 'free', position: { x: 0, y: 0 } },
+    }),
+  ],
+};
 
 describe('addDiagram', () => {
   it('appends a diagram after the ones the model holds', () => {

@@ -5,9 +5,11 @@ import {
   elementIn,
   flowIn,
   parsedFixture,
+  securityModelFixture,
   softHyphen,
   validModel,
 } from '../fixtures.js';
+import { addDiagram } from './diagram-operations.js';
 import {
   addElement,
   editNote,
@@ -32,6 +34,8 @@ import {
   writeFlow,
 } from './operations.fixtures.js';
 import { parseModel } from './parse.js';
+
+const secured = parsedFixture(securityModelFixture);
 
 describe('addElement', () => {
   it('adds a node to the named diagram', () => {
@@ -123,6 +127,42 @@ describe('addElement', () => {
       }),
     );
   });
+  it('refuses cross-diagram references and checks new elements and diagrams', () => {
+    const boundary = secured.diagrams[0].elements[4];
+    const outside = parsedFixture({
+      ...secured,
+      threats: [],
+      mitigations: [],
+      assumptions: [],
+      diagrams: [
+        {
+          ...secured.diagrams[0],
+          elements: secured.diagrams[0].elements.slice(0, 3),
+        },
+        { id: 'other', title: 'Other', elements: [] },
+      ],
+    });
+    expect(
+      Either.isLeft(addElement(outside, diagramId('other'), boundary)),
+    ).toBe(true);
+    expect(
+      Either.isLeft(
+        addDiagram(outside, {
+          id: diagramId('new'),
+          title: 'New',
+          elements: [boundary],
+        }),
+      ),
+    ).toBe(true);
+    const invalid = {
+      ...outside,
+      diagrams: [
+        ...outside.diagrams,
+        { id: 'third', title: 'Third', elements: [boundary] },
+      ],
+    };
+    expect(Either.isLeft(parseModel(invalid))).toBe(true);
+  });
 });
 
 describe('removeElement', () => {
@@ -170,6 +210,36 @@ describe('removeElement', () => {
       removeElement(validModel, elementId('element-billing-zone')),
     );
     expect(elementIds(curve)).not.toContain('element-billing-zone');
+  });
+
+  it('removes only references to the explicitly deleted element, keeping absence distinct from empty', () => {
+    const withoutStore = modelOf(removeElement(secured, elementId('element-db')));
+    expect(elementIn(withoutStore, 'element-perimeter')).toMatchObject({
+      containedElements: ['element-api'],
+      crossingFlows: ['element-order-flow'],
+    });
+    const withoutFlow = modelOf(
+      removeElement(withoutStore, elementId('element-order-flow')),
+    );
+    expect(elementIn(withoutFlow, 'element-perimeter')).toMatchObject({
+      containedElements: ['element-api'],
+      crossingFlows: [],
+    });
+    const withoutBoundary = modelOf(
+      removeElement(secured, elementId('element-perimeter')),
+    );
+    expect(flowIn(withoutBoundary, 'element-order-flow')).toMatchObject({
+      trustBoundaryIds: [],
+    });
+    expect(Either.isRight(parseModel(withoutBoundary))).toBe(true);
+    const legacy = modelOf(
+      removeElement(validModel, elementId('element-perimeter')),
+    );
+    expect(legacy.diagrams[0].elements).toStrictEqual(
+      validModel.diagrams[0].elements.filter(
+        (element) => element.id !== 'element-perimeter',
+      ),
+    );
   });
 
   it("frees an endpoint at the removed flow's own free endpoint", () => {
