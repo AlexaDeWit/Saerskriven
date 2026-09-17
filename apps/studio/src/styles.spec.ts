@@ -56,7 +56,7 @@ describe('the studio and the canvas, coloured from one table', () => {
     expect(carrying.map((source) => source.path)).toEqual([]);
   });
 
-  it('reads the production files of both trees and no spec beside them, which is what this task declares as its inputs', () => {
+  it('walks the production files of both trees and no spec', () => {
     const walked = sources.map((source) => source.path);
     expect(walked).toContain('apps/studio/src/styles.css');
     expect(walked).toContain('packages/canvas/src/lib/stylesheet.ts');

@@ -1,3 +1,4 @@
+import type { CanvasNode } from '@saerskriven/canvas';
 import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
 import {
   assumptionId,
@@ -14,6 +15,7 @@ import {
 import { modelStore } from '../store/store.js';
 import { resetAnnouncements } from './announcements.js';
 import { resetConnecting } from './connecting.js';
+import { currentLayout } from './layout.js';
 import { resetTools } from './tools.js';
 
 /** The flow from the store fixture's actor to its process, which two threats name. */
@@ -195,6 +197,18 @@ export const openCanvas = (
   resetAnnouncements();
   resetTools();
   resetConnecting();
+};
+
+/**
+ * The node the store's current layout draws for an element, failing the test
+ * where the layout draws none.
+ */
+export const laidOutNode = (id: ElementId): CanvasNode => {
+  const node = currentLayout(modelStore.getState()).nodes.find(
+    (candidate) => candidate.id === id,
+  );
+  assert.isDefined(node, `the layout draws ${id}`);
+  return node;
 };
 
 /**

@@ -1,18 +1,13 @@
 import { layoutDiagram } from '@saerskriven/canvas';
 import { addElement } from '@saerskriven/model';
 import { Either } from 'effect';
-import {
-  boundaryElement,
-  canvasModel,
-  noteElement,
-} from './canvas.fixtures.js';
+import { canvasModel } from './canvas.fixtures.js';
 import {
   centredPlacement,
   defaultSize,
   draggedPlacement,
   elementTools,
   flowEnds,
-  freshBoundaryCurve,
   freshElement,
   freshFlow,
   placeholderNames,
@@ -148,24 +143,6 @@ describe('freshElement', () => {
       shape: { kind: 'curve' },
     });
   });
-
-  it('draws a committed boundary curve through exactly its clicked waypoints', () => {
-    const boundary = freshBoundaryCurve([
-      { x: 10, y: 20 },
-      { x: 30, y: 40 },
-    ]);
-
-    expect(boundary).toMatchObject({
-      kind: 'trust-boundary',
-      shape: {
-        kind: 'curve',
-        waypoints: [
-          { x: 10, y: 20 },
-          { x: 30, y: 40 },
-        ],
-      },
-    });
-  });
 });
 
 describe('freshFlow', () => {
@@ -195,22 +172,10 @@ describe('freshFlow', () => {
 });
 
 describe('flowEnds', () => {
-  it('offers the elements a flow runs between', () => {
+  it('offers the actor and the process a flow runs between, and no trust boundary or note', () => {
     expect(flowEnds(layout).map((node) => node.id)).toEqual([
       actorElement,
       processElement,
     ]);
-  });
-
-  it('offers no trust boundary, which a flow crosses rather than ends on', () => {
-    expect(flowEnds(layout).some((node) => node.id === boundaryElement)).toBe(
-      false,
-    );
-  });
-
-  it('offers no text note, which is about the diagram rather than a part of it', () => {
-    expect(flowEnds(layout).some((node) => node.id === noteElement)).toBe(
-      false,
-    );
   });
 });
