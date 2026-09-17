@@ -47,39 +47,10 @@ The remaining files are maintained inputs, read as follows:
 | `render/two-diagrams.snapshot.pdf.sha256` | `apps/cli`                                               |
 | `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`           |
 | `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`                           |
-| `render/ecluse.snapshot.pdf.sha256`       | `apps/studio-e2e`                                        |
 
 The frozen release files `saerskriven/v0.2.1.yaml` and
 `saerskriven/saerskriven-v0.3.0.yaml` are read by `packages/formats`, and
 `studio/recovery-v0.4.0.json` by `apps/studio`.
-
-These files are no longer written by any target and wait for their last
-readers to move off them. None is regenerated.
-
-| File                                 | Read by           |
-| ------------------------------------ | ----------------- |
-| `ecluse.model.json`                  | `apps/studio-e2e` |
-| `saerskriven.model.json`             | `apps/studio-e2e` |
-| `saerskriven/ecluse.yaml`            | `apps/studio-e2e` |
-| `render/ecluse.snapshot.svg`         | `apps/studio-e2e` |
-| `render/ecluse.snapshot.png`         | `apps/studio-e2e` |
-| `render/ecluse.snapshot.typ`         | `apps/studio-e2e` |
-| `render/ecluse.register.snapshot.md` | `apps/studio-e2e` |
-
-## `ecluse.json`
-
-The threat model of [Écluse](https://github.com/AlexaDeWit/Ecluse), a
-supply-chain policy proxy for package registries. Vendored with the author's consent.
-
-| Fact           | Value                                                    |
-| -------------- | -------------------------------------------------------- |
-| Source project | `AlexaDeWit/Ecluse`, path `threat-modelling/ecluse.json` |
-| Source commit  | `673afcde81558143479c2d8c454839110ba9ca07`, 2026-08-29   |
-| Written by     | OWASP Threat Dragon 2.6.2                                |
-| Licence        | MIT, Copyright 2026 Alexandra de Wit                     |
-| MD5            | `9b61b49c0945298b8c2f1f86d2c4136e`                       |
-
-`apps/studio` and `apps/studio-e2e` open it.
 
 ## `threat-dragon/feature-complete.json`
 
@@ -132,11 +103,6 @@ node apps/cli/dist/saer.js render test-data/saerskriven/two-diagrams.yaml \
 A change to the drawing, the Typst document or the bundled fonts changes the
 digest, so reproduce it in the commit that changed them.
 
-## `saerskriven/ecluse.yaml`
-
-The native YAML encoding of `ecluse.json`. No target writes it.
-`apps/studio-e2e` reads it.
-
 ## `saerskriven/v0.2.1.yaml`
 
 A cut-down of a model in the document shape v0.2.1 wrote, before version 1 of
@@ -169,13 +135,6 @@ document is what the v0.4.0 writer produced, through its `saer_edit`, and the
 envelope is the shape v0.4.0's `recoverySnapshot` stores. It is committed data,
 never regenerated. The studio recovery spec restores it through the v1 to v2
 migration.
-
-## `saerskriven.model.json`
-
-The internal model of
-[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) as
-`packages/formats` last wrote it. No target writes it now, and it is not kept
-in step with the YAML.
 
 ## `every-glyph.model.json`
 
@@ -224,9 +183,6 @@ Standalone SVG documents from `packages/render`, one per entry of
 
 Each has a `.snapshot.png` beside it, the same drawing rasterized, committed
 as a picture so a reviewer can open it.
-
-The `ecluse` renders beside them are the leftovers listed above, drawn by an
-earlier render suite from `ecluse.model.json`.
 
 ## `threat-dragon/`
 
