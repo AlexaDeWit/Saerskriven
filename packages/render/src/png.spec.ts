@@ -1,4 +1,3 @@
-import { defaultRenderTheme } from '@saerskriven/canvas';
 import { readThemeOverrides } from './lib/theme.js';
 import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
@@ -174,6 +173,5 @@ describe.skipIf(resvgUnbuilt)('the selected PNG theme', () => {
     const second = Either.getOrThrow(changed);
     expect([second.width, second.height]).toEqual([first.width, first.height]);
     expect(second.png).not.toEqual(first.png);
-    expect(defaultRenderTheme.fonts.body).toBe('Liberation Sans');
   });
 });

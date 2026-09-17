@@ -783,7 +783,6 @@ describe('threat prose', () => {
         ],
       }),
     );
-    expect(typeof rendered).toBe('string');
     expect(rendered).toContain('too deep');
   });
 

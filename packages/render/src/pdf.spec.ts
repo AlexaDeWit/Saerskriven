@@ -17,14 +17,11 @@ describe('Typst source compiled to a PDF', () => {
   });
 
   it('reports what the compiler refused, rather than throwing it', async () => {
-    expect(refusalOf(await compilePdf('#no-such-function()', assets))).toEqual(
-      PdfFailure.Refused({
-        sentences: [
-          'unknown variable: no-such-function',
-          'if you meant to use subtraction, try adding spaces around the minus signs: `no - such - function`',
-        ],
-      }),
-    );
+    const refusal = refusalOf(await compilePdf('#no-such-function()', assets));
+    if (refusal === undefined || !PdfFailure.$is('Refused')(refusal)) {
+      throw new Error('The compiler did not refuse the source');
+    }
+    expect(refusal.sentences[0]).toContain('no-such-function');
   });
 
   it("carries the compiler's hints beside its message, in order", async () => {

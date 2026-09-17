@@ -7,7 +7,10 @@ import { Either } from 'effect';
 import { compilePdf } from '../pdf.js';
 import { badgedModel, typstAssets } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
-import { registerStylesheet } from './register-stylesheet.js';
+import {
+  registerClassNames,
+  registerStylesheet,
+} from './register-stylesheet.js';
 import { renderSvg } from './svg-document.js';
 import { renderTypst } from './typst-document.js';
 import { readThemeOverrides, withBundledFonts } from './theme.js';
@@ -77,16 +80,18 @@ describe('consumer themes', () => {
     const typst = renderTypst(badgedModel, theme).typst;
     expect(svg).toContain(`.${severityToneClass.high} { fill: #b45309;`);
     expect(markdown).toContain('--saer-severity-high: #b45309');
-    expect(markdown).toContain('saer-severity-high');
+    expect(markdown).toContain(
+      `class="${registerClassNames.badge} saer-severity saer-severity-high"`,
+    );
     expect(markdown).toContain('saer-status-accepted-risk');
     expect(typst).toContain('#saer-badge("High", rgb("#b45309"))');
     expect(typst).toContain('#saer-badge("Accepted risk", rgb("#223344"))');
-    expect(svg).toContain('class="pn-tone-high"');
+    expect(svg).toContain(`class="${severityToneClass.high}"`);
     const embedded = typst.slice(
       typst.indexOf('#image(bytes('),
       typst.indexOf('format: "svg"'),
     );
-    expect(embedded).toContain('.pn-tone-high { fill: #b45309;');
+    expect(embedded).toContain(`.${severityToneClass.high} { fill: #b45309;`);
   });
 
   it('loads a theme written before record and flag badges with no warning', () => {
