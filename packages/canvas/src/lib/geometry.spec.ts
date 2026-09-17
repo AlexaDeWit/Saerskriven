@@ -59,7 +59,12 @@ describe('segmentsOfBox', () => {
 
 describe('cornersOfBox and shiftedBy', () => {
   it('names the four corners and moves a point by an offset', () => {
-    expect(cornersOfBox(unitBox)).toHaveLength(4);
+    expect(cornersOfBox(unitBox)).toEqual([
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 100 },
+      { x: 0, y: 100 },
+    ]);
     expect(shiftedBy({ x: 1, y: 2 }, { x: 10, y: 20 })).toEqual({
       x: 11,
       y: 22,

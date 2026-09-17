@@ -281,10 +281,10 @@ const labelBoxOf = (markup: string): Box => {
 };
 
 const badgeBoxOf = (markup: string, badge: ThreatBadge): Box => {
-  const found =
-    /class="pn-badge" transform="translate\(([-\d.]+), ([-\d.]+)\)"/u.exec(
-      markup,
-    );
+  const found = new RegExp(
+    `class="${canvasClassNames.badge}" transform="translate\\(([-\\d.]+), ([-\\d.]+)\\)"`,
+    'u',
+  ).exec(markup);
   if (found === null) {
     throw new Error('The flow drew no badge to measure');
   }

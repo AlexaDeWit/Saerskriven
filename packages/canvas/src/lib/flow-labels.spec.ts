@@ -465,7 +465,7 @@ describe('the placement as a function of the model alone', () => {
     expect(layout.edges[0].label.name.at.y).toBeGreaterThan(300);
   });
 
-  it('keeps the label of a flow it cannot place clear inside a crowd', () => {
+  it('still places a label it cannot clear inside a crowd', () => {
     const layout = layoutOf(
       modelWith({
         elements: [

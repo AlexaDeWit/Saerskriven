@@ -41,7 +41,7 @@ describe('WrappedText', () => {
     expect(markupOf('one two', 36, 'top')).toContain('y="50"');
   });
 
-  it('takes the class and the font size from one style, never a pair', () => {
+  it('takes its class from the text style it is given', () => {
     expect(markupOf('one', 400)).toContain(
       `class="${wrappedTextStyles.label.className}"`,
     );

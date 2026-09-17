@@ -285,18 +285,21 @@ describe('layoutDiagram, choosing a side', () => {
 
 describe('layoutDiagram, a bidirectional flow', () => {
   it('carries the direction and bounds the arrowhead at the source too', () => {
-    const oneWay = layoutOf(
-      twoBoxDiagram(flowBetween(attached('el-left'), attached('el-right'), [])),
-    );
-    const bothWays = layoutOf(
-      twoBoxDiagram({
-        ...flowBetween(attached('el-left'), attached('el-right'), []),
-        bidirectional: true,
-      }),
-    );
+    const flow = {
+      ...flowBetween(
+        { kind: 'free', position: { x: 1000, y: 900 } },
+        attached('el-right'),
+        [{ x: 1000, y: 50 }],
+      ),
+      name: '',
+    };
+    const oneWay = layoutOf(twoBoxDiagram(flow));
+    const bothWays = layoutOf(twoBoxDiagram({ ...flow, bidirectional: true }));
     expect(oneWay.edges[0].bidirectional).toBe(false);
     expect(bothWays.edges[0].bidirectional).toBe(true);
     expect(bothWays.edges[0].source).toEqual(oneWay.edges[0].source);
+    expect(oneWay.bounds.x + oneWay.bounds.width).toBe(1000);
+    expect(bothWays.bounds.x + bothWays.bounds.width).toBeGreaterThan(1000);
   });
 });
 

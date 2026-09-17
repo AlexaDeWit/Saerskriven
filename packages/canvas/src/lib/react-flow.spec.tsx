@@ -125,7 +125,7 @@ describe('CanvasNodeBody', () => {
     );
     expect(markup).toContain('<svg width="200" height="90"');
     expect(markup).toContain(
-      '<rect class="pn-shape pn-actor" width="200" height="90"',
+      `<rect class="${canvasClassNames.shape} ${canvasClassNames.actor}" width="200" height="90"`,
     );
   });
 
