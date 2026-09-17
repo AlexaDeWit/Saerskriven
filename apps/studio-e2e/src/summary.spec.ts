@@ -65,7 +65,6 @@ const namesItsParts = async (summary: Locator): Promise<void> => {
 
 const raiseBothFlags = async (page: Page): Promise<void> => {
   await expandThreat(page, orderDenied);
-  await chooseInPanel(page, 'Mitigation 1 status', 'proposed');
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
   await chooseInPanel(page, 'Assumption 1 status', 'invalidated');
 };
