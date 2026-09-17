@@ -2,9 +2,10 @@ import { generateDiagramId, type DiagramId } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { untitledDiagram } from '../store/state.js';
+import { activeTranslator } from '../messages/locale.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
-import { announce, nameQuoteLength, quoted } from './announcements.js';
+import { announce, excerpt, nameQuoteLength, quoted } from './announcements.js';
 
 /** Puts the diagram `diagramId` names on screen and says so, where it was not already. */
 export function showDiagram(diagramId: DiagramId): boolean {
@@ -14,7 +15,11 @@ export function showDiagram(diagramId: DiagramId): boolean {
   if (shown === undefined || shown.id === before) {
     return false;
   }
-  announce(`Showing ${quoted(shown.title, nameQuoteLength)}.`);
+  announce(
+    activeTranslator().t('canvas.diagram-shown', {
+      title: excerpt(shown.title, nameQuoteLength),
+    }),
+  );
   return true;
 }
 
