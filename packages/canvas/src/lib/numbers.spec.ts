@@ -49,14 +49,10 @@ describe('svgNumber', () => {
   });
 
   it('writes no exponent and no separator at any magnitude', () => {
+    expect([magnitudes[0], magnitudes.at(-1)]).toEqual([1e-8, 1e60]);
     const written = magnitudes.flatMap((magnitude) =>
       [1, 1.5, -3.25, 7].map((factor) => svgNumber(factor * magnitude)),
     );
     expect(written.filter((value) => !plainNumber.test(value))).toEqual([]);
-  });
-
-  it('had a range of magnitudes to probe', () => {
-    expect(magnitudes[0]).toBe(1e-8);
-    expect(magnitudes.at(-1)).toBe(1e60);
   });
 });

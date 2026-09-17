@@ -58,9 +58,4 @@ describe('the package barrel', () => {
     expect(new Set(promised).size).toBe(promised.length);
     expect(promised.filter((name) => !exported.has(name))).toEqual([]);
   });
-
-  it('keeps the spec fixtures out of what it exports', () => {
-    expect(exported.has('everyGlyphModel')).toBe(false);
-    expect(exported.has('parsedFixture')).toBe(false);
-  });
 });

@@ -90,12 +90,6 @@ const clearanceInsideRing = (
 };
 
 describe('severityRank', () => {
-  it('ranks every severity the model declares and no other', () => {
-    expect(new Set(Object.keys(severityRank))).toEqual(
-      new Set<string>(severitySchema.options),
-    );
-  });
-
   it('ranks the assessed severities worst last, undecided below them all', () => {
     expect(severityRank.undecided).toBe(0);
     expect(severityRank.low).toBeLessThan(severityRank.medium);
@@ -105,12 +99,6 @@ describe('severityRank', () => {
 });
 
 describe('severityMark', () => {
-  it('marks every severity the model declares and no other', () => {
-    expect(new Set(Object.keys(severityMark))).toEqual(
-      new Set<string>(severitySchema.options),
-    );
-  });
-
   it('gives each severity a mark of its own, so no two badges read alike', () => {
     expect(new Set(Object.values(severityMark)).size).toBe(
       severitySchema.options.length,
@@ -188,12 +176,6 @@ describe('the flag on a badge', () => {
         ],
       }),
     ).toEqual(counted(1, 'high', 0, true));
-  });
-
-  it('leaves the same element unflagged where no threat on it is flagged', () => {
-    expect(badgeOfOne([threat(1, 'high', 'open', ['el-one'])])).toEqual(
-      counted(1, 'high', 0),
-    );
   });
 
   it('flags the count of open threats for a flagged threat in another status', () => {

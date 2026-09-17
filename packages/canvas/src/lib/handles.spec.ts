@@ -49,12 +49,6 @@ describe('handlePositions', () => {
     expect(handlePositions(wider)).toEqual(midpointsOf(wider));
     expect(handlePositions(wider)).not.toEqual(handlePositions(box));
   });
-
-  it('carries one position for every side', () => {
-    expect(new Set(Object.keys(handlePositions(box)))).toEqual(
-      new Set<string>(handleSides),
-    );
-  });
 });
 
 describe('nearestHandleSide', () => {

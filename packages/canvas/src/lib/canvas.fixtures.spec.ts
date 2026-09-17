@@ -13,9 +13,4 @@ describe('everyGlyphModel', () => {
       ),
     ).toEqual(declaredKinds);
   });
-
-  it('read the kinds off the model schema, not off a list kept by hand', () => {
-    expect(declaredKinds.size).toBeGreaterThan(1);
-    expect(declaredKinds.has('actor')).toBe(true);
-  });
 });

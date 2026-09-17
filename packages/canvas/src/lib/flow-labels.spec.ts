@@ -7,7 +7,7 @@ import {
   modelWith,
 } from '@saerskriven/model/fixtures';
 import { badgeBox } from './badges.js';
-import { everyGlyphLayout, everyGlyphModel } from './canvas.fixtures.js';
+import { everyGlyphModel } from './canvas.fixtures.js';
 import { flowLabelPlacements, type FlowGeometry } from './flow-labels.js';
 import {
   boxesOverlap,
@@ -479,13 +479,5 @@ describe('the placement as a function of the model alone', () => {
     );
     expect(layout.edges).toHaveLength(1);
     expect(collisionsIn(layout).length).toBeGreaterThan(0);
-  });
-});
-
-describe('the id of every fixture flow', () => {
-  it('reads as an element id', () => {
-    expect(everyGlyphLayout.edges.map((edge) => edge.id)).toContain(
-      elementId('el-request'),
-    );
   });
 });

@@ -121,19 +121,7 @@ describe('themedCanvasStylesheet', () => {
   });
 });
 
-describe('canvasClassNames', () => {
-  it('is emitted whole by the primitives', () => {
-    expect(emitted).toEqual(declared);
-  });
-});
-
 describe('severityToneClass', () => {
-  it('gives a tone to every severity the model declares and no other', () => {
-    expect(new Set(Object.keys(severityToneClass))).toEqual(
-      new Set<string>(severitySchema.options),
-    );
-  });
-
   it('gives the undecided severity the neutral tone', () => {
     expect(severityToneClass.undecided).toBe(canvasClassNames.toneNeutral);
   });

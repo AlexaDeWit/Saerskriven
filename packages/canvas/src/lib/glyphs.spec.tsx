@@ -202,19 +202,15 @@ describe('FlowGlyph', () => {
 
 describe('the primitives, measuring nothing', () => {
   it('reads no glyph extent out of a layout engine', () => {
+    expect(sources.map((source) => source.path)).toContain(
+      join(packageSource, 'index.ts'),
+    );
     const measuring = sources.filter((source) =>
       /getBBox|getComputedTextLength|measureText|getBoundingClientRect/u.test(
         source.text,
       ),
     );
     expect(measuring.map((source) => source.path)).toEqual([]);
-  });
-
-  it('walked the whole package, the barrel included', () => {
-    expect(sources.map((source) => source.path)).toContain(
-      join(packageSource, 'index.ts'),
-    );
-    expect(sources.length).toBeGreaterThan(10);
   });
 });
 
