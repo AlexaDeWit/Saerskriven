@@ -25,10 +25,11 @@ The projects run in order:
   `playwright.config.ts` says why the project exists.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
-- `frame-time` measures a drag of the two-diagram model's `Web shop`, a
-  process with flows at both ends, with one worker and one retry. Earlier
-  project failures skip it. Other browser work must not compete with this
-  measurement.
+- `frame-time` measures a drag of `Web shop`, a process with flows at both
+  ends, in a scene the spec builds from three offset copies of the
+  two-diagram model's storefront diagram, with one worker and one retry.
+  Earlier project failures skip it. Other browser work must not compete with
+  this measurement.
 
 The Pages build uses a separate Vite cache to avoid reloading the development
 page during tests. Its output and the Playwright reports stay under this
