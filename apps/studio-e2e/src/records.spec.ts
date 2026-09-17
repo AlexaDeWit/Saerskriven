@@ -7,8 +7,9 @@ import {
   editAnnouncement,
   expandThreat,
   nodeNamed,
+  offeredToLink,
   onScreen,
-  openEcluse,
+  openTwoDiagrams,
   panelControl,
   panelField,
   runFromMenu,
@@ -20,15 +21,17 @@ import {
   undoOffered,
 } from './studio.fixtures.js';
 
-const proxy = /^Écluse proxy, process/u;
+const shopper = /^Shopper, actor/u;
 
-const dredger = /^Écluse Dredger, process/u;
+const takeover = /Account takeover/u;
 
-const purge = /Dredger inappropriately purges/u;
+const webShop = /^Web shop, process/u;
 
-const forwarded = /Forwarded caller credentials/u;
+const basketPrice = /Basket price changed/u;
 
-const chokepoint = /Chokepoint exhaustion/u;
+const ledger = /^Order ledger, store/u;
+
+const orderDenied = /Shopper denies placing an order/u;
 
 const describedNumbers = (control: Locator): Promise<readonly number[]> =>
   control.evaluate((element) =>
@@ -39,27 +42,19 @@ const describedNumbers = (control: Locator): Promise<readonly number[]> =>
     ).map(Number),
   );
 
-const offeredToLink = async (page: Page, label: string): Promise<boolean> => {
-  const existing = panelField(page, 'combobox', 'Existing mitigation');
-  if ((await existing.count()) === 0) {
-    return false;
-  }
-  await existing.click();
-  await expect(page.getByRole('listbox')).toBeVisible();
-  const found = await page
-    .getByRole('option', { name: label, exact: true })
-    .count();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('listbox')).toHaveCount(0);
-  return found > 0;
-};
+const mitigationOffered = (page: Page, label: string): Promise<boolean> =>
+  offeredToLink(
+    page,
+    panelField(page, 'combobox', 'Existing mitigation'),
+    label,
+  );
 
 test('a mitigation added from the empty row is one undo step, and its status changes in place', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, dredger);
-  await expandThreat(page, purge);
+  await openTwoDiagrams(page);
+  await selectNode(page, ledger);
+  await expandThreat(page, orderDenied);
   const threatStatus = panelField(page, 'combobox', 'Status');
   const before = await threatStatus.textContent();
 
@@ -70,7 +65,7 @@ test('a mitigation added from the empty row is one undo step, and its status cha
   const title = panelField(page, 'textbox', 'Mitigation 2 title');
   await expect(title).toBeFocused();
   await onScreen(title);
-  await page.keyboard.type('Keep a restorable copy of every purge');
+  await page.keyboard.type('Sign every ledger entry');
   await page.keyboard.press('Tab');
   await expect(
     panelField(page, 'textbox', 'Mitigation 2 description'),
@@ -93,15 +88,15 @@ test('a mitigation added from the empty row is one undo step, and its status cha
   await runFromMenu(page, 'Undo');
   await expect(title).toHaveCount(0);
   await runFromMenu(page, 'Redo');
-  await expect(title).toHaveValue('Keep a restorable copy of every purge');
+  await expect(title).toHaveValue('Sign every ledger entry');
 });
 
 test('Tab out of a new record reaches its status, and undoing the record keeps focus in its group', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
 
   await panelControl(page, 'Add assumption').click();
   await page.keyboard.type('Callers rotate their tokens.');
@@ -119,9 +114,9 @@ test('Tab out of a new record reaches its status, and undoing the record keeps f
 test('a click on Add right after typing in a new row keeps the record and opens the next row', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
 
   const add = panelControl(page, 'Add mitigation');
   await add.click();
@@ -137,20 +132,21 @@ test('a click on Add right after typing in a new row keeps the record and opens 
 test('Shift+Tab from Existing reaches Add after a new row became a record', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
   await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Bound every upstream response');
   await page.keyboard.press('Tab');
 
-  await expandThreat(page, chokepoint);
+  await selectByKeyboard(page, webShop);
+  await expandThreat(page, basketPrice);
   await panelControl(page, 'Add mitigation').click();
-  await page.keyboard.type('Shed load at the chokepoint');
+  await page.keyboard.type('Price the basket on the server');
   const existing = panelField(page, 'combobox', 'Existing mitigation');
   await existing.focus();
-  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
-    'Shed load at the chokepoint',
+  await expect(panelField(page, 'textbox', 'Mitigation 3 title')).toHaveValue(
+    'Price the basket on the server',
   );
   await page.keyboard.press('Shift+Tab');
 
@@ -161,9 +157,9 @@ test('Discard on a new row with typed text leaves no record and nothing to undo'
   page,
   isMobile,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
 
   const add = panelControl(page, 'Add mitigation');
   await add.click();
@@ -181,9 +177,9 @@ test('Discard on a new row with typed text leaves no record and nothing to undo'
 test('leaving the empty row leaves no record and nothing to undo', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
 
   const add = panelControl(page, 'Add assumption');
   await add.click();
@@ -205,9 +201,9 @@ test('leaving the empty row leaves no record and nothing to undo', async ({
 test('a linked record names the other threats that hold it by number, and unlinking culls it only from its last threat', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
 
   const bound = 'Bound every upstream response';
   await panelControl(page, 'Add mitigation').click();
@@ -216,26 +212,28 @@ test('a linked record names the other threats that hold it by number, and unlink
   await expect(
     panelField(page, 'textbox', 'Mitigation 2 description'),
   ).toBeFocused();
-  expect(await offeredToLink(page, bound)).toBe(false);
+  expect(await mitigationOffered(page, bound)).toBe(false);
 
-  await expandThreat(page, chokepoint);
-  expect(await offeredToLink(page, bound)).toBe(true);
+  await selectByKeyboard(page, webShop);
+  await expandThreat(page, basketPrice);
+  expect(await mitigationOffered(page, bound)).toBe(true);
   await chooseInPanel(page, 'Existing mitigation', bound);
   await panelControl(page, 'Link existing mitigation').click();
 
-  const linked = panelField(page, 'textbox', 'Mitigation 2 title');
+  const linked = panelField(page, 'textbox', 'Mitigation 3 title');
   await expect(linked).toHaveValue(bound);
   await expect(linked).toBeFocused();
-  expect(await offeredToLink(page, bound)).toBe(false);
+  expect(await mitigationOffered(page, bound)).toBe(false);
   await expect
-    .poll(() => describedNumbers(panelControl(page, 'Unlink mitigation 2')))
+    .poll(() => describedNumbers(panelControl(page, 'Unlink mitigation 3')))
     .toEqual([1]);
 
-  await panelControl(page, 'Unlink mitigation 2').click();
+  await panelControl(page, 'Unlink mitigation 3').click();
   await expect(linked).toHaveCount(0);
-  expect(await offeredToLink(page, bound)).toBe(true);
+  expect(await mitigationOffered(page, bound)).toBe(true);
 
-  await expandThreat(page, forwarded);
+  await selectByKeyboard(page, shopper);
+  await expandThreat(page, takeover);
   const kept = panelField(page, 'textbox', 'Mitigation 2 title');
   await expect(kept).toHaveValue(bound);
   await expect
@@ -244,7 +242,7 @@ test('a linked record names the other threats that hold it by number, and unlink
 
   await panelControl(page, 'Unlink mitigation 2').click();
   await expect(kept).toHaveCount(0);
-  expect(await offeredToLink(page, bound)).toBe(false);
+  expect(await mitigationOffered(page, bound)).toBe(false);
 
   await runFromMenu(page, 'Undo');
   await expect(kept).toHaveValue(bound);
@@ -253,15 +251,20 @@ test('a linked record names the other threats that hold it by number, and unlink
 test('unlinking a record with a long first line announces a bounded name, and the pane header stays usable under it', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
-  const unlink = panelControl(page, 'Unlink mitigation 1');
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
+  await panelControl(page, 'Add mitigation').click();
+  await page.keyboard.insertText(
+    'The shop signs every basket token with a key that it rotates each day, and it refuses a basket whose token was signed with a key it has retired.',
+  );
+  await page.keyboard.press('Tab');
+  const unlink = panelControl(page, 'Unlink mitigation 2');
   await onScreen(unlink);
   await unlink.click();
 
   const said = editAnnouncement(page);
-  await expect(said).toContainText('Écluse carries a token');
+  await expect(said).toContainText('The shop signs every');
   expect((await said.textContent())?.length ?? 0).toBeLessThan(160);
 
   const widen = panelControl(page, 'Widen pane');
@@ -279,9 +282,9 @@ test('unlinking a record with a long first line announces a bounded name, and th
 test('the pane and its record fields stay where they are when an unlink is announced and when the next keystroke clears it', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
   await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Strip caller tokens at the edge');
   await page.keyboard.press('Tab');
@@ -348,9 +351,9 @@ const settledBox = async (target: Locator): Promise<Box> => {
 test('an unlink keeps the pane scrolled where it was while the next Unlink is on screen', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
   await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
   await addRecord(page, 'mitigation', 'Rotate the upstream token hourly');
 
@@ -371,9 +374,9 @@ test('an unlink keeps the pane scrolled where it was while the next Unlink is on
 test('an unlink scrolls the pane only as far as the next Unlink needs to be seen', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
   await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
   await addRecord(
     page,
@@ -406,10 +409,10 @@ test('a record arriving from another tab above the rows in view leaves those row
   page,
 }) => {
   const other = await context.newPage();
-  await openEcluse(page);
-  await openEcluse(other);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await openTwoDiagrams(other);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
   await addRecord(page, 'assumption', 'The edge strips unknown headers.');
   await addRecord(page, 'assumption', 'Upstream logs never hold tokens.');
@@ -417,8 +420,8 @@ test('a record arriving from another tab above the rows in view leaves those row
   expect(await scrollPaneTo(addMitigation, 'top')).toBe(true);
   const drawn = await settledBox(addMitigation);
 
-  await selectNode(other, proxy);
-  await expandThreat(other, forwarded);
+  await selectNode(other, shopper);
+  await expandThreat(other, takeover);
   await addRecord(other, 'mitigation', 'Strip caller tokens at the edge');
 
   await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
@@ -432,8 +435,8 @@ test('a message longer than two lines stops above the open pane at phone width',
   isMobile,
 }) => {
   test.skip(!isMobile, 'Only a phone-width message runs past two lines');
-  await openEcluse(page);
-  await selectByKeyboard(page, /^Registry B/u);
+  await openTwoDiagrams(page);
+  await selectByKeyboard(page, /^Catalogue, store/u);
   await expect(threatPanel(page)).toBeVisible();
 
   await page.keyboard.press('Enter');
@@ -441,7 +444,7 @@ test('a message longer than two lines stops above the open pane at phone width',
   await page.keyboard.insertText('\u00AD');
   await page.keyboard.press('Enter');
   const said = editAnnouncement(page);
-  await expect(said).toContainText('Registry B');
+  await expect(said).toContainText('Catalogue');
 
   const message = await screenBoxOf(said);
   const pane = await screenBoxOf(threatPanel(page));
@@ -454,12 +457,12 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
   page,
 }) => {
   const other = await context.newPage();
-  await openEcluse(page);
-  await openEcluse(other);
-  const worker = await selectNode(other, /^Mirror worker, process/u);
+  await openTwoDiagrams(page);
+  await openTwoDiagrams(other);
+  const catalogue = await selectNode(other, /^Catalogue, store/u);
 
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await selectNode(page, shopper);
+  await expandThreat(page, takeover);
   await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Strip caller tokens at the edge');
   await page.keyboard.press('Tab');
@@ -468,13 +471,13 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
   ).toBeVisible();
 
   await expect.poll(() => undoOffered(other)).toBe(true);
-  await expect(worker).toHaveClass(/selected/u);
+  await expect(catalogue).toHaveClass(/selected/u);
   await expect(
-    threatPanel(other).getByRole('heading', { name: /Mirror worker/u }),
+    threatPanel(other).getByRole('heading', { name: /Catalogue/u }),
   ).toBeVisible();
 
-  await selectNode(other, proxy);
-  await expandThreat(other, forwarded);
+  await selectByKeyboard(other, shopper);
+  await expandThreat(other, takeover);
   await expect(panelField(other, 'textbox', 'Mitigation 2 title')).toHaveValue(
     'Strip caller tokens at the edge',
   );
@@ -483,5 +486,5 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
   await expect(
     panelField(page, 'combobox', 'Mitigation 2 status'),
   ).toContainText(/verified/iu);
-  await expect(nodeNamed(page, proxy)).toHaveClass(/selected/u);
+  await expect(nodeNamed(page, shopper)).toHaveClass(/selected/u);
 });

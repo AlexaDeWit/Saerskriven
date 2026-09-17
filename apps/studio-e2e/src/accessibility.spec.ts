@@ -13,14 +13,12 @@ import {
   menuButton,
   menuItem,
   nodeNamed,
-  openEcluse,
   openMenu,
-  openModel,
   openPlaceholder,
   openText,
+  openTwoDiagrams,
   panelField,
   placeByClick,
-  saerskrivenModel,
   selectNode,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -238,9 +236,9 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 test('the open Link existing listbox carries no violation with long record labels', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, /^Écluse proxy, process/u);
-  await expandThreat(page, /Forwarded caller credentials/u);
+  await openTwoDiagrams(page);
+  await selectNode(page, /^Shopper, actor/u);
+  await expandThreat(page, /Account takeover/u);
   await panelField(page, 'combobox', 'Existing mitigation').click();
   await expect(page.getByRole('listbox')).toBeVisible();
 
@@ -254,13 +252,11 @@ test('the open Link existing listbox carries no violation with long record label
 test('the studio carries no violation with the diagram switcher open, or its title field', async ({
   page,
 }) => {
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
   await audit(page, 'naming the diagram on screen');
 
   await diagramSwitcher(page).click();
-  await expect(
-    diagramChoice(page, 'Agents and the desktop shell'),
-  ).toBeVisible();
+  await expect(diagramChoice(page, 'Shipping an order')).toBeVisible();
   await audit(page, 'showing the open diagram switcher');
 
   await menuItem(page, 'Rename diagram').click();

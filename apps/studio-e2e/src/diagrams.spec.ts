@@ -12,17 +12,16 @@ import {
   menuItem,
   nodeNamed,
   openMenu,
-  openModel,
   openPlaceholder,
   openSwitcher,
+  openTwoDiagrams,
   placeByClick,
-  saerskrivenDiagrams,
-  saerskrivenModel,
   savedFile,
+  twoDiagrams,
   withoutPickers,
 } from './studio.fixtures.js';
 
-const { first, second } = saerskrivenDiagrams;
+const { first, second } = twoDiagrams;
 const firstTitle = first.title;
 const secondTitle = second.title;
 const onFirst = first.drawn;
@@ -59,7 +58,7 @@ test('the switcher names the one diagram of the placeholder, and the menu holds 
 test('the switcher lists the diagrams by title, and a choice draws the one chosen', async ({
   page,
 }) => {
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
   await expect(nodeNamed(page, onFirst)).toHaveCount(1);
   await expect(nodeNamed(page, onSecond)).toHaveCount(0);
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
@@ -91,7 +90,7 @@ test('the switcher lists the diagrams by title, and a choice draws the one chose
 test('the next and previous chords step through the diagrams and wrap', async ({
   page,
 }) => {
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
   const switcher = diagramSwitcher(page);
 
   await page.keyboard.press(registeredChords['next-diagram'][0]);
@@ -108,7 +107,7 @@ test('the next and previous chords step through the diagrams and wrap', async ({
 test('switching clears the selection and adds no history, so undo has nothing to do', async ({
   page,
 }) => {
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
   const process = nodeNamed(page, onFirst);
   await process.click();
   await expect(process).toHaveClass(/selected/u);
@@ -162,7 +161,7 @@ test('a new diagram is named as it is made, drawn empty, and saved with its titl
 test('a diagram is renamed in place, Escape keeps the old title, and undo takes the new one back', async ({
   page,
 }) => {
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
 
   await openSwitcher(page);
   await menuItem(page, 'Rename diagram').click();
@@ -188,14 +187,14 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
 
   await openSwitcher(page);
   await menuItem(page, 'Rename diagram').click();
-  await page.keyboard.type('Reading and rendering');
+  await page.keyboard.type('Taking payment');
   await page.keyboard.press('Enter');
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
-    'Diagram: Reading and rendering',
+    'Diagram: Taking payment',
   );
   await expect(diagramSwitcher(page)).toBeFocused();
   await openSwitcher(page);
-  await expect(diagramChoice(page, 'Reading and rendering')).toHaveAttribute(
+  await expect(diagramChoice(page, 'Taking payment')).toHaveAttribute(
     'aria-checked',
     'true',
   );
@@ -223,7 +222,7 @@ test('an edit lands on the diagram on screen, the saved file holds it there, and
   page,
 }) => {
   await page.addInitScript(withoutPickers);
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
   await page.keyboard.press(registeredChords['next-diagram'][0]);
   await expect(nodeNamed(page, onSecond)).toHaveCount(1);
   await canvasSettled(page);
@@ -239,8 +238,8 @@ test('an edit lands on the diagram on screen, the saved file holds it there, and
     model.diagrams
       .find((diagram) => diagram.id === id)
       ?.elements.map((element) => element.name) ?? [];
-  expect(named('agent-and-desktop')).toContain('New actor');
-  expect(named('read-and-render')).not.toContain('New actor');
+  expect(named('fulfilment')).toContain('New actor');
+  expect(named('storefront')).not.toContain('New actor');
 
   await page.reload();
   await expect(canvasContainer(page)).toBeVisible();

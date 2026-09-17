@@ -8,7 +8,7 @@ export const exportGolden = (name: string): Buffer =>
 
 /** The digest shared by the CLI and browser PDF checks. */
 export const expectedPdfDigest = readFileSync(
-  vendored('test-data/render/ecluse.snapshot.pdf.sha256'),
+  vendored('test-data/render/two-diagrams.snapshot.pdf.sha256'),
   'utf8',
 ).trim();
 

@@ -1,8 +1,8 @@
 import { differingPaths, identified } from '../src/differing-paths.js';
 
 const cells = [
-  { id: 'a', name: 'Écluse proxy' },
-  { id: 'b', name: 'Mirror worker' },
+  { id: 'a', name: 'Web shop' },
+  { id: 'b', name: 'Order ledger' },
 ];
 
 describe('differingPaths', () => {
@@ -69,8 +69,8 @@ describe('identified', () => {
 
   it('keeps one entry for a duplicated id, the last of them, so the record before it is never compared', () => {
     const twice = [
-      { id: 'a', name: 'Écluse proxy' },
-      { id: 'a', name: 'Mirror worker' },
+      { id: 'a', name: 'Web shop' },
+      { id: 'a', name: 'Order ledger' },
     ];
     expect(identified(twice)).toStrictEqual({ a: twice[1] });
     expect(

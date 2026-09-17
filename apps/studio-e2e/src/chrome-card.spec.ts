@@ -16,19 +16,19 @@ import {
   onScreen,
   openFile,
   openMenu,
-  openModel,
   openPlaceholder,
   openSwitcher,
-  saerskrivenDiagrams,
-  saerskrivenModel,
+  openTwoDiagrams,
   screenBoxOf,
   scrolledAbove,
   selectByKeyboard,
   threatPanel,
+  twoDiagrams,
+  twoDiagramsFile,
   withoutPickers,
 } from './studio.fixtures.js';
 
-const { first, second } = saerskrivenDiagrams;
+const { first, second } = twoDiagrams;
 
 const below = async (target: Locator, card: Box): Promise<void> => {
   const box = await screenBoxOf(target);
@@ -38,7 +38,7 @@ const below = async (target: Locator, card: Box): Promise<void> => {
 test('the card holds the chrome, and the switcher still switches diagrams', async ({
   page,
 }) => {
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
 
   const card = await screenBoxOf(chromeCard(page));
   const viewport = page.viewportSize();
@@ -61,7 +61,7 @@ test('the card holds the chrome, and the switcher still switches diagrams', asyn
 test('the rename field opens in the title place and the card keeps its width', async ({
   page,
 }) => {
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
   const before = await screenBoxOf(chromeCard(page));
   const title = await screenBoxOf(diagramSwitcher(page));
 
@@ -193,7 +193,7 @@ const openLowInShortViewport = async (
   height: number,
 ): Promise<OpenedSubmenu> => {
   await shortenViewport(page, height);
-  await openFile(page, 'test-data/ecluse.json');
+  await openFile(page, twoDiagramsFile);
   await openMenu(page);
   await menuItem(page, 'Arrange').evaluate((element) => {
     element.scrollIntoView({ block: 'end' });
@@ -204,7 +204,7 @@ const openLowInShortViewport = async (
 test('every submenu opens whole at the card edge, and an export downloads from one', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/ecluse.json');
+  await openFile(page, twoDiagramsFile);
 
   for (const name of ['Export', 'Arrange', /^Appearance /u]) {
     await openMenu(page);
@@ -213,8 +213,8 @@ test('every submenu opens whole at the card edge, and an export downloads from o
     await closeMenu(page);
   }
 
-  const output = await exportedFile(page, 'Diagram as SVG');
-  expect(output.name).toBe('ecluse.svg');
+  const output = await exportedFile(page, 'Diagram as SVG: Taking an order');
+  expect(output.name).toBe('two-diagrams.svg');
   expect(output.bytes.length).toBeGreaterThan(0);
 });
 
@@ -240,12 +240,12 @@ test('a submenu with room on neither side of its row scrolls on screen', async (
 test('a pointer heading down and left from Export into its submenu reaches an export', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/ecluse.json');
+  await openFile(page, twoDiagramsFile);
   await openMenu(page);
   const start = await centreOf(menuItem(page, 'Export'));
   await page.mouse.move(start.x - 60, start.y);
   await page.mouse.move(start.x, start.y, { steps: 5 });
-  const svg = menuItem(page, 'Diagram as SVG');
+  const svg = menuItem(page, 'Diagram as SVG: Taking an order');
   await expect(svg).toBeVisible();
 
   const target = await centreOf(svg);
@@ -257,7 +257,7 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
     page.waitForEvent('download'),
     page.mouse.click(target.x, target.y),
   ]);
-  expect(download.suggestedFilename()).toBe('ecluse.svg');
+  expect(download.suggestedFilename()).toBe('two-diagrams.svg');
 });
 
 const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
@@ -267,7 +267,7 @@ const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
 
 const openInShortViewport = async (page: Page): Promise<Box> => {
   await shortenViewport(page, 720);
-  await openFile(page, 'test-data/ecluse.json');
+  await openFile(page, twoDiagramsFile);
   const burger = await screenBoxOf(menuButton(page));
   await openMenu(page);
   return burger;
@@ -317,7 +317,7 @@ test('walking the menu by keyboard from the burger, opening and closing each sub
   page,
 }) => {
   await shortenViewport(page, 720);
-  await openFile(page, 'test-data/ecluse.json');
+  await openFile(page, twoDiagramsFile);
   const burger = await screenBoxOf(menuButton(page));
   await menuButton(page).press('Enter');
   const rows = rootMenu(page).getByRole('menuitem', { disabled: false });
@@ -346,13 +346,15 @@ test.describe('at a device pixel ratio of 2', () => {
   test('a pointer moving straight down a device pixel at a time from Export reaches an export', async ({
     page,
   }) => {
-    await openFile(page, 'test-data/ecluse.json');
+    await openFile(page, twoDiagramsFile);
     await openMenu(page);
     const trigger = menuItem(page, 'Export');
     const start = await centreOf(trigger);
     await page.mouse.move(start.x - 60, start.y);
     await page.mouse.move(start.x, start.y, { steps: 5 });
-    await expect(menuItem(page, 'Diagram as SVG')).toBeVisible();
+    await expect(
+      menuItem(page, 'Diagram as SVG: Taking an order'),
+    ).toBeVisible();
 
     const row = await screenBoxOf(trigger);
     const end = row.y + row.height + 18;
@@ -365,6 +367,6 @@ test.describe('at a device pixel ratio of 2', () => {
       page.waitForEvent('download'),
       page.mouse.click(start.x, end),
     ]);
-    expect(download.suggestedFilename()).toBe('ecluse.svg');
+    expect(download.suggestedFilename()).toBe('two-diagrams.svg');
   });
 });

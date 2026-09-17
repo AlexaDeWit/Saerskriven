@@ -57,31 +57,36 @@ export const openModelDocument = async (
   await canvasSettled(page);
 };
 
-/** Opens a vendored model through {@link openModelDocument}. */
-export const openModel = async (page: Page, path: string): Promise<void> => {
+/** The native file of the two-diagram model, for a spec that opens it through the picker. */
+export const twoDiagramsFile = 'test-data/saerskriven/two-diagrams.yaml';
+
+/** A Threat Dragon file that uses every construct the format carries, for a spec that opens one through the picker. */
+export const featureCompleteFile =
+  'test-data/threat-dragon/feature-complete.json';
+
+/**
+ * Opens the studio on `test-data/two-diagrams.model.json` through
+ * {@link openModelDocument}, with its first diagram, `Taking an order`, on
+ * screen.
+ */
+export const openTwoDiagrams = async (page: Page): Promise<void> => {
   await openModelDocument(
     page,
-    JSON.parse(readFileSync(vendored(path), 'utf8')),
+    JSON.parse(
+      readFileSync(vendored('test-data/two-diagrams.model.json'), 'utf8'),
+    ),
   );
 };
 
-/** Opens the studio on Écluse's model, through {@link openModel}. */
-export const openEcluse = async (page: Page): Promise<void> => {
-  await openModel(page, 'test-data/ecluse.model.json');
-};
-
-/** The two-diagram model of Saerskriven's own threat model. */
-export const saerskrivenModel = 'test-data/saerskriven.model.json';
-
-/** What its two diagrams are called, and an element drawn on each. */
-export const saerskrivenDiagrams = {
+/** What the two-diagram model's diagrams are called, and an element drawn on each. */
+export const twoDiagrams = {
   first: {
-    title: 'Reading a file and rendering it',
-    drawn: /^Codec read, process/u,
+    title: 'Taking an order',
+    drawn: /^Web shop, process/u,
   },
   second: {
-    title: 'Agents and the desktop shell',
-    drawn: /^Agent and its harness, actor/u,
+    title: 'Shipping an order',
+    drawn: /^Dispatch, process/u,
   },
 } as const;
 
@@ -337,6 +342,29 @@ export const chooseInPanel = async (
   await region.getByRole('combobox', { name: field, exact: true }).click();
   await page.getByRole('option', { name: option, exact: true }).click();
   await expect(page.getByRole('listbox')).toHaveCount(0);
+};
+
+/**
+ * Whether an "Existing" combobox offers a record under `label`, read by
+ * opening its listbox and putting it away again. A combobox the panel does
+ * not draw offers nothing.
+ */
+export const offeredToLink = async (
+  page: Page,
+  existing: Locator,
+  label: string,
+): Promise<boolean> => {
+  if ((await existing.count()) === 0) {
+    return false;
+  }
+  await existing.click();
+  await expect(page.getByRole('listbox')).toBeVisible();
+  const found = await page
+    .getByRole('option', { name: label, exact: true })
+    .count();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  return found > 0;
 };
 
 /** Scrolls a control into view and fails where it is off screen or something else covers its centre. */

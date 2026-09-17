@@ -10,8 +10,8 @@ import {
   elementNodes,
   handleOn,
   nodeNamed,
-  openEcluse,
   openPlaceholder,
+  openTwoDiagrams,
   placeOf,
   runFromMenu,
   selectNode,
@@ -54,20 +54,20 @@ const dragFromBoundaryHandle = async (
   await expect.poll(() => placeOf(boundary)).not.toBe(before);
 };
 
-test('a real model is drawn whole: 18 elements and 20 flows', async ({
+test('a real model is drawn whole: 7 elements and 7 flows', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
 
-  await expect(elementNodes(page)).toHaveCount(18);
-  await expect(page.locator('.react-flow__edge')).toHaveCount(20);
-  await expect(nodeNamed(page, /^Écluse proxy, process/u)).toBeVisible();
+  await expect(elementNodes(page)).toHaveCount(7);
+  await expect(page.locator('.react-flow__edge')).toHaveCount(7);
+  await expect(nodeNamed(page, /^Web shop, process/u)).toBeVisible();
 });
 
 test('tabbing into a real model reaches every flow before any element', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
 
   await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
@@ -90,30 +90,30 @@ test('a click selects an element and the canvas draws the selection', async ({
 test('the selection moves between an element and a flow, either way', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const proxy = nodeNamed(page, /^Écluse proxy, process/u);
+  await openTwoDiagrams(page);
+  const webShop = nodeNamed(page, /^Web shop, process/u);
   const selectedFlow = page.locator('.react-flow__edge.selected');
 
-  await proxy.click();
-  await expect(proxy).toHaveClass(/selected/u);
+  await webShop.click();
+  await expect(webShop).toHaveClass(/selected/u);
 
   await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await expect(selectedFlow).toHaveCount(1);
-  await expect(proxy).not.toHaveClass(/selected/u);
+  await expect(webShop).not.toHaveClass(/selected/u);
 
-  await proxy.click();
-  await expect(proxy).toHaveClass(/selected/u);
+  await webShop.click();
+  await expect(webShop).toHaveClass(/selected/u);
   await expect(selectedFlow).toHaveCount(0);
 });
 
 test('a flow under a selected trust boundary takes a line or label click', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const boundary = nodeNamed(page, /^Operator trust zone/u);
-  const flowName = /^npm read \/ publish/u;
+  await openTwoDiagrams(page);
+  const boundary = nodeNamed(page, /^Shop network, trust boundary/u);
+  const flowName = /^read the product listings, flow/u;
   const flow = nodeNamed(page, flowName);
 
   const onOutline = await boundaryHandlePoint(boundary, 'bottom');
@@ -134,8 +134,8 @@ test('a flow under a selected trust boundary takes a line or label click', async
 });
 
 test('a trust boundary selects from its drawn name', async ({ page }) => {
-  await openEcluse(page);
-  const boundary = nodeNamed(page, /^Public internet \(untrusted\)/u).first();
+  await openTwoDiagrams(page);
+  const boundary = nodeNamed(page, /^Shop network, trust boundary/u);
 
   await boundary.locator('.pn-label').click();
 
@@ -145,8 +145,8 @@ test('a trust boundary selects from its drawn name', async ({ page }) => {
 test('a trust boundary selects and drags from its outline', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const boundary = nodeNamed(page, /^Operator trust zone/u);
+  await openTwoDiagrams(page);
+  const boundary = nodeNamed(page, /^Shop network, trust boundary/u);
 
   const onOutline = await boundaryHandlePoint(boundary, 'bottom');
   await expectBoundaryHitTarget(page, onOutline);

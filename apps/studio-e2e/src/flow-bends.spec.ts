@@ -17,13 +17,14 @@ import {
   openFile,
   openPlaceholder,
   openText,
+  featureCompleteFile,
   savedFile,
   selectByKeyboard,
+  twoDiagramsFile,
   vendored,
 } from './studio.fixtures.js';
 
 const records = /^Records, flow/u;
-const mirrored = /^publish mirrored artifact \(minted write token\), flow/u;
 const recoveryKey = 'saerskriven:studio:recovery';
 
 test('Shift-click still deselects a flow through its line hit target', async ({
@@ -249,9 +250,19 @@ test('a selected flow still renames and a cancelled or returned drag creates no 
   await expect(page.locator('[data-bend-index]')).toHaveCount(0);
 });
 
-for (const fixture of [
-  'test-data/ecluse.json',
-  'test-data/saerskriven/ecluse.yaml',
+for (const { fixture, bent, bentId, svgItem } of [
+  {
+    fixture: featureCompleteFile,
+    bent: /^Book appointment, flow/u,
+    bentId: 'flow-request',
+    svgItem: 'Diagram as SVG: Booking',
+  },
+  {
+    fixture: twoDiagramsFile,
+    bent: /^record the paid order, flow/u,
+    bentId: 'el-record',
+    svgItem: 'Diagram as SVG: Taking an order',
+  },
 ]) {
   test(`route edits preserve metadata and survive save/reopen in ${fixture}`, async ({
     page,
@@ -260,8 +271,8 @@ for (const fixture of [
       readAnyFormat(readFileSync(vendored(fixture), 'utf8')),
     ).model;
     await openFile(page, fixture);
-    await selectByKeyboard(page, mirrored);
-    const line = lineOf(page, mirrored);
+    await selectByKeyboard(page, bent);
+    const line = lineOf(page, bent);
     await page.getByRole('button', { name: 'Bend 1', exact: true }).focus();
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('+');
@@ -276,18 +287,16 @@ for (const fixture of [
       diagrams: before.diagrams.map((diagram) => ({
         ...diagram,
         elements: diagram.elements.map((element) =>
-          element.id === '0ec10e5e-0000-4000-8000-00000000004a'
-            ? { ...element, waypoints: points }
-            : element,
+          element.id === bentId ? { ...element, waypoints: points } : element,
         ),
       })),
     };
     expect(after).toEqual(expected);
     await openText(page, written.name, written.text);
     await canvasSettled(page);
-    await selectByKeyboard(page, mirrored);
+    await selectByKeyboard(page, bent);
     expect(turnsOf(await drawnBy(line)).slice(1, -1)).toEqual(points);
-    const output = await exportedFile(page, 'Diagram as SVG');
+    const output = await exportedFile(page, svgItem);
     const svg = output.bytes.toString('utf8');
     expect(svg).toContain(await drawnBy(line));
     expect(svg).not.toContain('data-bend-index');

@@ -1,8 +1,4 @@
-import {
-  readAnyFormat,
-  renderDivergences,
-  type DetectedRead,
-} from '@saerskriven/formats';
+import { readAnyFormat, type DetectedRead } from '@saerskriven/formats';
 import { expect, test } from '@playwright/test';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
@@ -12,6 +8,7 @@ import {
   chooseInPanel,
   closeMenu,
   dragBy,
+  featureCompleteFile,
   menuButton,
   openFile,
   openMenu,
@@ -24,9 +21,7 @@ import {
   vendored,
 } from './studio.fixtures.js';
 
-const fixture = 'test-data/ecluse.json';
-
-const addedTitle = 'Mirror queue accepts a job nobody enqueued';
+const addedTitle = 'Paper archive holds records nobody filed';
 
 const readBack = (text: string): DetectedRead => {
   const read = readAnyFormat(text);
@@ -52,17 +47,19 @@ const byIdentity = (model: DetectedRead['model']): unknown => ({
   threats: identified(model.threats),
 });
 
-test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file that parses to the source with the edits and nothing else', async ({
+test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, lossless file that parses to the source with the edits and nothing else', async ({
   page,
 }) => {
-  await openFile(page, fixture);
+  await openFile(page, featureCompleteFile);
 
-  const proxy = await selectByKeyboard(page, /^Écluse proxy, process/u);
-  const placed = await placeOf(proxy);
-  await dragBy(page, proxy, 60);
-  await expect.poll(() => placeOf(proxy)).not.toBe(placed);
+  const booking = await selectByKeyboard(page, /^Booking service, process/u);
+  const placed = await placeOf(booking);
+  await dragBy(page, booking, 60);
+  await expect.poll(() => placeOf(booking)).not.toBe(placed);
   await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText('ecluse.json');
+  await expect(page.getByTestId('file-state')).toContainText(
+    'feature-complete.json',
+  );
   await expect(page.getByTestId('file-state')).toContainText(
     'Threat Dragon JSON',
   );
@@ -72,10 +69,12 @@ test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file
   await placeByClick(page, 'Store', /^New store, store/u);
   await page.keyboard.press('Enter');
   await page.keyboard.press(registeredChords['start-flow'][0]);
-  await page.getByRole('option', { name: 'Écluse proxy', exact: true }).click();
-  await expect(page.locator('.react-flow__edge')).toHaveCount(21);
+  await page
+    .getByRole('option', { name: 'Booking service', exact: true })
+    .click();
+  await expect(page.locator('.react-flow__edge')).toHaveCount(4);
 
-  const worker = await selectByKeyboard(page, /^Mirror worker, process/u);
+  const archive = await selectByKeyboard(page, /^Paper archive, store/u);
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
   await expect(title).toBeFocused();
@@ -84,47 +83,50 @@ test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file
   await title.press('Enter');
   await chooseInPanel(page, 'Severity', 'critical');
 
-  await expect(worker).toHaveAccessibleName(
-    'Mirror worker, process, 1 open threat, highest severity critical',
+  await expect(archive).toHaveAccessibleName(
+    'Paper archive, store, 1 open threat, highest severity critical',
   );
-  await expect(worker.locator('.pn-badge-mark')).toHaveText('C');
+  await expect(archive.locator('.pn-badge-mark')).toHaveText('C');
 
   await runFromMenu(page, 'Undo');
 
   await expect(
     threatPanel(page).getByRole('combobox', { name: 'Severity' }),
   ).toContainText('undecided');
-  await expect(worker).toHaveAccessibleName(
-    'Mirror worker, process, 1 open threat, severity not assessed',
+  await expect(archive).toHaveAccessibleName(
+    'Paper archive, store, 1 open threat, severity not assessed',
   );
-  await expect(worker.locator('.pn-badge-mark')).toHaveText('?');
+  await expect(archive.locator('.pn-badge-mark')).toHaveText('?');
 
   const written = await savedFile(page);
 
-  await openMenu(page);
-  await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
-  await expect(page.getByTestId('loss-report')).toContainText('103');
-
-  const source = readFileSync(vendored(fixture), 'utf8');
+  const source = readFileSync(vendored(featureCompleteFile), 'utf8');
   const before = readBack(source);
   const after = readBack(written.text);
+  const addedNumber = before.model.lastIssuedThreatNumber + 1;
 
-  expect(written.name).toBe('ecluse.json');
+  await openMenu(page);
+  await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
+  await expect(page.getByTestId('loss-report')).toContainText(
+    String(addedNumber),
+  );
+
+  expect(written.name).toBe('feature-complete.json');
   expect(after.format).toBe('threat-dragon');
-  expect(renderDivergences(after.divergences)).toBe('No divergence recorded.');
+  expect(after.divergences).toStrictEqual(before.divergences);
 
   const held = before.model.diagrams[0].elements;
-  const proxyId = idNamed(before.model, 'Écluse proxy');
-  const workerId = idNamed(before.model, 'Mirror worker');
+  const bookingId = idNamed(before.model, 'Booking service');
+  const archiveId = idNamed(before.model, 'Paper archive');
   const cellOf = (id: string): number => held.findIndex((one) => one.id === id);
 
   expect(
     differingPaths(JSON.parse(source), JSON.parse(written.text)),
     'the parsed documents are compared, never the bytes',
   ).toStrictEqual([
-    `detail.diagrams[0].cells[${cellOf(proxyId)}].position.x`,
-    `detail.diagrams[0].cells[${cellOf(proxyId)}].position.y`,
-    `detail.diagrams[0].cells[${cellOf(workerId)}].data.threats[0]`,
+    `detail.diagrams[0].cells[${cellOf(bookingId)}].position.x`,
+    `detail.diagrams[0].cells[${cellOf(bookingId)}].position.y`,
+    `detail.diagrams[0].cells[${cellOf(archiveId)}].data.threats[0]`,
     `detail.diagrams[0].cells[${held.length}]`,
     `detail.diagrams[0].cells[${held.length + 1}]`,
     'detail.threatTop',
@@ -144,22 +146,22 @@ test('opens Écluse, edits it on both surfaces, and saves a valid, lossless file
       kind: 'flow',
       name: 'New flow',
       source: { kind: 'attached', element: store?.id },
-      target: { kind: 'attached', element: proxyId },
+      target: { kind: 'attached', element: bookingId },
     },
   ]);
   expect(threat).toMatchObject({
-    number: 103,
+    number: addedNumber,
     title: addedTitle,
     severity: 'undecided',
     status: 'open',
-    elements: [workerId],
+    elements: [archiveId],
   });
 
   expect(
     differingPaths(byIdentity(before.model), byIdentity(after.model)),
   ).toStrictEqual([
-    `diagrams[0].elements.${proxyId}.position.x`,
-    `diagrams[0].elements.${proxyId}.position.y`,
+    `diagrams[0].elements.${bookingId}.position.x`,
+    `diagrams[0].elements.${bookingId}.position.y`,
     `diagrams[0].elements.${store?.id ?? ''}`,
     `diagrams[0].elements.${flow?.id ?? ''}`,
     `threats.${threat?.id ?? ''}`,

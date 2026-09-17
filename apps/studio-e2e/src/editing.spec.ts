@@ -14,13 +14,14 @@ import {
   emptyCanvasPoint,
   menuItem,
   nodeNamed,
-  openEcluse,
   openMenu,
   openPlaceholder,
+  openTwoDiagrams,
   placeByClick,
   runFromMenu,
   selectNode,
   toolButton,
+  twoDiagramsFile,
   vendored,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -466,9 +467,7 @@ test('opening another model clears a boundary curve draft', async ({
   await page.mouse.click(at.x, at.y);
   await expect(page.getByTestId('curve-draft')).toBeVisible();
 
-  await page
-    .getByTestId('file-input')
-    .setInputFiles(vendored('test-data/saerskriven/ecluse.yaml'));
+  await page.getByTestId('file-input').setInputFiles(vendored(twoDiagramsFile));
   await canvasSettled(page);
 
   await expect(page.getByTestId('curve-draft')).toHaveCount(0);
@@ -553,30 +552,27 @@ test('the canvas owns the full viewport beneath its floating chrome', async ({
 test('the delete key removes the element, and the flows it held lose an end', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const registry = nodeNamed(page, /^Public npm registry, actor/u);
-  const fetched = nodeNamed(page, /^anonymous packument/u);
+  await openTwoDiagrams(page);
+  const shopper = nodeNamed(page, /^Shopper, actor/u);
+  const returned = nodeNamed(page, /^return the rendered page, flow/u);
 
-  await registry.click();
-  await expect(fetched).toHaveAttribute(
-    'aria-label',
-    /to Public npm registry/u,
-  );
+  await shopper.click();
+  await expect(returned).toHaveAttribute('aria-label', /to Shopper/u);
 
   await page.keyboard.press('Delete');
 
-  await expect(elementNodes(page)).toHaveCount(17);
-  await expect(editAnnouncement(page)).toContainText('Public npm registry');
+  await expect(elementNodes(page)).toHaveCount(6);
+  await expect(editAnnouncement(page)).toContainText('Shopper');
   await expect(editAnnouncement(page)).toContainText('2');
   await expect(editAnnouncement(page)).toContainText('1');
-  await expect(fetched).toHaveAttribute('aria-label', /to a free point/u);
+  await expect(returned).toHaveAttribute('aria-label', /to a free point/u);
   await expect(canvasSurface(page)).toBeFocused();
 });
 
 test('the delete key removes a selected flow, and undo puts it back', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
   const flows = page.locator('.react-flow__edge');
 
   await beforeCanvas(page).focus();
@@ -586,29 +582,28 @@ test('the delete key removes a selected flow, and undo puts it back', async ({
 
   await page.keyboard.press('Delete');
 
-  await expect(flows).toHaveCount(19);
-  await expect(editAnnouncement(page)).toContainText('npm read');
+  await expect(flows).toHaveCount(6);
+  await expect(editAnnouncement(page)).toContainText('browse the catalogue');
   await expect(canvasSurface(page)).toBeFocused();
 
   await runFromMenu(page, 'Undo');
 
-  await expect(flows).toHaveCount(20);
+  await expect(flows).toHaveCount(7);
 });
 
 test('a deletion is one step, so undo puts the element and its flows back', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
 
-  await nodeNamed(page, /^Public npm registry, actor/u).click();
+  await nodeNamed(page, /^Shopper, actor/u).click();
   await page.keyboard.press('Delete');
-  await expect(elementNodes(page)).toHaveCount(17);
+  await expect(elementNodes(page)).toHaveCount(6);
 
   await runFromMenu(page, 'Undo');
 
-  await expect(elementNodes(page)).toHaveCount(18);
-  await expect(nodeNamed(page, /^anonymous packument/u)).toHaveAttribute(
-    'aria-label',
-    /to Public npm registry/u,
-  );
+  await expect(elementNodes(page)).toHaveCount(7);
+  await expect(
+    nodeNamed(page, /^return the rendered page, flow/u),
+  ).toHaveAttribute('aria-label', /to Shopper/u);
 });

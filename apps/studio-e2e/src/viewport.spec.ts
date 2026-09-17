@@ -4,15 +4,16 @@ import {
   canvasContainer,
   canvasSettled,
   nodeNamed,
-  openEcluse,
   openFile,
   openPlaceholder,
+  openTwoDiagrams,
   screenBoxOf,
+  twoDiagramsFile,
 } from './studio.fixtures.js';
 
-const furthestAcross = /^OSV\.dev, actor/u;
+const furthestAcross = /^Payment\sgateway, process/u;
 
-const furthestDown = /^Écluse Dredger, process/u;
+const furthestDown = /^Card note, text/u;
 
 const placeholderCorner = /^Store, store/u;
 
@@ -54,7 +55,7 @@ const clearOfTheCluster = async (page: Page, name: RegExp): Promise<void> => {
 test('a real model opens fitted, so the elements at its far corners are drawn inside the canvas', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
 
   await drawnInside(page, furthestAcross);
   await drawnInside(page, furthestDown);
@@ -74,7 +75,7 @@ test('the placeholder opens fitted as well', async ({ page }) => {
 test('selecting an element at the edge does not snap the viewport to centre it', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
   const node = nodeNamed(page, furthestAcross);
   const before = await viewportTransform(page);
 
@@ -86,7 +87,7 @@ test('selecting an element at the edge does not snap the viewport to centre it',
 test('focusing an off-screen element does not pan the viewport', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
   const node = nodeNamed(page, furthestAcross);
   const canvas = await canvasContainer(page).boundingBox();
   expect(canvas).not.toBeNull();
@@ -116,7 +117,7 @@ test('focusing an off-screen element does not pan the viewport', async ({
 test('a file opened over the model on screen is fitted again', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/ecluse.json');
+  await openFile(page, twoDiagramsFile);
 
   await drawnInside(page, furthestAcross);
   await drawnInside(page, furthestDown);
@@ -143,7 +144,7 @@ test('the cluster floats over the bottom right corner of the canvas', async ({
 test('the cluster zooms and fits by pointer, and says which chord does the same', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
   const fitted = await viewportTransform(page);
 
   await page.getByRole('button', { name: 'Zoom in' }).click();

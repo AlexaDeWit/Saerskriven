@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import {
   canvasContainer,
   canvasSettled,
+  featureCompleteFile,
   nodeNamed,
   openPlaceholder,
   runFromMenu,
@@ -10,7 +11,7 @@ import {
   vendored,
 } from './studio.fixtures.js';
 
-const sourceText = readFileSync(vendored('test-data/ecluse.json'), 'utf8');
+const sourceText = readFileSync(vendored(featureCompleteFile), 'utf8');
 const handleWriteKey = 'saerskrivenRecoveryTestHandleWrite';
 
 test('reload restores the last completed edit', async ({ page }) => {
@@ -20,9 +21,11 @@ test('reload restores the last completed edit', async ({ page }) => {
         value: () =>
           Promise.resolve([
             {
-              name: 'ecluse.json',
+              name: 'feature-complete.json',
               getFile: () =>
-                Promise.resolve(new File([openedText], 'ecluse.json')),
+                Promise.resolve(
+                  new File([openedText], 'feature-complete.json'),
+                ),
               createWritable: () =>
                 Promise.resolve({
                   write: () => {
@@ -38,22 +41,22 @@ test('reload restores the last completed edit', async ({ page }) => {
   );
   await openPlaceholder(page);
   await runFromMenu(page, 'Open');
-  await expect(nodeNamed(page, /^Écluse proxy, process/u)).toBeVisible();
+  await expect(nodeNamed(page, /^Booking service, process/u)).toBeVisible();
   await canvasSettled(page);
 
-  await nodeNamed(page, /^Écluse proxy, process/u).dblclick();
-  const name = page.getByRole('textbox', { name: 'Name of Écluse proxy' });
-  await name.fill('Recovered proxy');
+  await nodeNamed(page, /^Booking service, process/u).dblclick();
+  const name = page.getByRole('textbox', { name: 'Name of Booking service' });
+  await name.fill('Recovered booking');
   await name.press('Enter');
 
   await page.reload();
   await expect(canvasContainer(page)).toBeVisible();
   await canvasSettled(page);
 
-  await expect(nodeNamed(page, /^Recovered proxy, process/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Recovered booking, process/u)).toHaveCount(1);
 
   const written = await savedFile(page);
-  expect(written.name).toBe('ecluse.json');
+  expect(written.name).toBe('feature-complete.json');
   expect(sourceText).toContain('"containedElements"');
   expect(written.text).toContain('"containedElements"');
   expect(

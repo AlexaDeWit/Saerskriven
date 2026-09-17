@@ -1,32 +1,36 @@
 import { expect, test } from '@playwright/test';
 import { digestOf, exportGolden } from './exports.fixtures.js';
-import { exportedFile, openFile } from './studio.fixtures.js';
+import { exportedFile, openFile, twoDiagramsFile } from './studio.fixtures.js';
 
 test.beforeEach(async ({ page }) => {
-  await openFile(page, 'test-data/ecluse.json');
+  await openFile(page, twoDiagramsFile);
 });
 
 test('exports the CLI drawing byte for byte', async ({ page }) => {
-  const output = await exportedFile(page, 'Diagram as SVG');
+  const output = await exportedFile(page, 'Diagram as SVG: Taking an order');
 
-  expect(output.name).toBe('ecluse.svg');
-  expect(output.bytes).toEqual(exportGolden('ecluse.snapshot.svg'));
+  expect(output.name).toBe('two-diagrams.svg');
+  expect(output.bytes).toEqual(
+    exportGolden('two-diagrams-storefront.snapshot.svg'),
+  );
 });
 
 test('exports the CLI picture byte for byte', async ({ page }) => {
   const output = await exportedFile(page, 'Diagram as PNG');
 
-  expect(output.name).toBe('ecluse.png');
+  expect(output.name).toBe('two-diagrams.png');
   expect(digestOf(output.bytes)).toBe(
-    digestOf(exportGolden('ecluse.snapshot.png')),
+    digestOf(exportGolden('two-diagrams-storefront.snapshot.png')),
   );
 });
 
 test('exports the CLI register byte for byte', async ({ page }) => {
   const output = await exportedFile(page, 'Register as Markdown');
 
-  expect(output.name).toBe('ecluse.md');
-  expect(output.bytes).toEqual(exportGolden('ecluse.register.snapshot.md'));
+  expect(output.name).toBe('two-diagrams.md');
+  expect(output.bytes).toEqual(
+    exportGolden('two-diagrams.register.snapshot.md'),
+  );
 });
 
 test('exports the Typst source used by the CLI byte for byte', async ({
@@ -34,6 +38,6 @@ test('exports the Typst source used by the CLI byte for byte', async ({
 }) => {
   const output = await exportedFile(page, 'Model as Typst');
 
-  expect(output.name).toBe('ecluse.typ');
-  expect(output.bytes).toEqual(exportGolden('ecluse.snapshot.typ'));
+  expect(output.name).toBe('two-diagrams.typ');
+  expect(output.bytes).toEqual(exportGolden('two-diagrams.snapshot.typ'));
 });

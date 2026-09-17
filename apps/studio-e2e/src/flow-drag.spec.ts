@@ -7,19 +7,19 @@ import {
   lineOf,
   pressOn,
 } from './canvas-geometry.fixtures.js';
-import { nodeNamed, openEcluse, placeOf } from './studio.fixtures.js';
+import { nodeNamed, openTwoDiagrams, placeOf } from './studio.fixtures.js';
 
-const proxy = /^Écluse proxy, process/u;
-const outward = /^cache public-gated metadata, flow/u;
-const inward = /^Download osv\.db, flow/u;
-const elsewhere = /^poll jobs, flow/u;
-const badged = /^npm read \/ publish \(passthrough CodeArtifact token\), flow/u;
+const webShop = /^Web shop, process/u;
+const outward = /^read the product listings, flow/u;
+const inward = /^confirm the authorisation, flow/u;
+const elsewhere = /^card network callback, flow/u;
+const badged = /^browse the catalogue and fill a basket, flow/u;
 
 test('a flow follows the element it attaches to through a drag, at either end', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const dragged = nodeNamed(page, proxy);
+  await openTwoDiagrams(page);
+  const dragged = nodeNamed(page, webShop);
   const attached = [lineOf(page, outward), lineOf(page, inward)];
   const detached = lineOf(page, elsewhere);
   const badgedFlow = nodeNamed(page, badged);
@@ -72,22 +72,13 @@ test('a flow follows the element it attaches to through a drag, at either end', 
 test('a group drag carries an attached flow, its label and its badge before pointer-up', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const source = nodeNamed(page, /^Mirror worker, process/u);
-  const target = nodeNamed(
-    page,
-    /^Registry B: mirror store \(public-derived\), store/u,
-  );
-  const flow = nodeNamed(
-    page,
-    /^publish mirrored artifact \(minted write token\), flow/u,
-  );
-  const line = lineOf(
-    page,
-    /^publish mirrored artifact \(minted write token\), flow/u,
-  );
+  await openTwoDiagrams(page);
+  const source = nodeNamed(page, webShop);
+  const target = nodeNamed(page, /^Catalogue, store/u);
+  const flow = nodeNamed(page, outward);
+  const line = lineOf(page, outward);
   const label = flow.locator('.pn-flow-label');
-  const badge = nodeNamed(page, badged).locator('.pn-badge');
+  const badge = nodeNamed(page, elsewhere).locator('.pn-badge');
 
   await page.keyboard.press('ControlOrMeta+a');
 
@@ -154,9 +145,9 @@ test('a group drag carries an attached flow, its label and its badge before poin
 test('a quick release keeps the last live label placement', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const dragged = nodeNamed(page, proxy);
-  const label = nodeNamed(page, inward).locator('.pn-flow-label');
+  await openTwoDiagrams(page);
+  const dragged = nodeNamed(page, webShop);
+  const label = nodeNamed(page, outward).locator('.pn-flow-label');
 
   const at = await pressOn(page, dragged);
   await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
@@ -170,9 +161,9 @@ test('a quick release keeps the last live label placement', async ({
 test('a one-endpoint move settles its attached label before release', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const store = nodeNamed(page, /^S3 \(OSV Datasets\), store/u);
-  const label = nodeNamed(page, /^Push osv\.db \(SQLite\), flow/u).locator(
+  await openTwoDiagrams(page);
+  const store = nodeNamed(page, /^Catalogue, store/u);
+  const label = nodeNamed(page, /^read the product listings, flow/u).locator(
     '.pn-flow-label',
   );
 

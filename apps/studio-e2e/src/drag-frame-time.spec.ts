@@ -9,13 +9,13 @@ import {
 import {
   canvasSettled,
   nodeNamed,
-  openEcluse,
+  openTwoDiagrams,
   placeOf,
 } from './studio.fixtures.js';
 
 type Direction = 1 | -1;
 
-const proxy = /^Écluse proxy, process/u;
+const webShop = /^Web shop, process/u;
 
 const longGapPeriods = 1.5;
 const longGapShare = 0.05;
@@ -37,8 +37,8 @@ test('a drag of an element with flows at both ends drops no frames, after a warm
   page,
 }) => {
   test.setTimeout(warmUpWithin + dragWithin + roomForTheRest);
-  await openEcluse(page);
-  const dragged = nodeNamed(page, proxy);
+  await openTwoDiagrams(page);
+  const dragged = nodeNamed(page, webShop);
   const period = await displayPeriod(page, periodFrames);
   const longEnough = longGapPeriods * period;
   const worstAllowed = longestPeriods * period;

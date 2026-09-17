@@ -5,8 +5,8 @@ import {
   dragOnto,
   menuButton,
   nodeNamed,
-  openEcluse,
   openPlaceholder,
+  openTwoDiagrams,
   runFromMenu,
   selectByKeyboard,
   selectNode,
@@ -157,20 +157,22 @@ test('a flow is renamed by double-clicking the label it draws', async ({
 test('a flow of a real model is renamed from the keyboard', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectByKeyboard(page, /^poll jobs, flow/u);
+  await openTwoDiagrams(page);
+  await selectByKeyboard(page, /^read the product listings, flow/u);
 
   await page.keyboard.press('Enter');
-  await rename(page, 'poll jobs').fill('Polling');
-  await rename(page, 'poll jobs').press('Enter');
+  await rename(page, 'read the product listings').fill('Listings');
+  await rename(page, 'read the product listings').press('Enter');
 
-  const renamed = nodeNamed(page, /^Polling, flow/u);
+  const renamed = nodeNamed(page, /^Listings, flow/u);
   await expect(renamed).toHaveCount(1);
-  await expect(drawnName(renamed, 'pn-flow-label')).toHaveText('Polling');
+  await expect(drawnName(renamed, 'pn-flow-label')).toHaveText('Listings');
 
   await runFromMenu(page, 'Undo');
 
-  await expect(nodeNamed(page, /^poll jobs, flow/u)).toHaveCount(1);
+  await expect(
+    nodeNamed(page, /^read the product listings, flow/u),
+  ).toHaveCount(1);
 });
 
 test('Enter reopens a selected Note for prose editing', async ({ page }) => {

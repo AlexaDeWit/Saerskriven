@@ -10,8 +10,8 @@ import {
   editAnnouncement,
   nodeNamed,
   onScreen,
-  openEcluse,
   openPlaceholder,
+  openTwoDiagrams,
   panelField,
   runFromMenu,
   screenBoxOf,
@@ -184,10 +184,10 @@ test('a draft the model refused comes back when its element is selected again', 
 test('a threat added in the panel reaches the canvas as a badge, and its severity colours it', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const worker = await selectNode(page, /^Mirror worker, process/u);
+  await openTwoDiagrams(page);
+  const webShop = await selectNode(page, /^Web shop, process/u);
   await expect(
-    page.getByRole('heading', { name: 'Threats on Mirror worker' }),
+    page.getByRole('heading', { name: 'Threats on Web shop' }),
   ).toBeVisible();
 
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
@@ -195,91 +195,87 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
   await expect(titleField(page)).toBeFocused();
   await expect(editAnnouncement(page)).toBeEmpty();
   await expect(
-    nodeNamed(
-      page,
-      'Mirror worker, process, 1 open threat, severity not assessed',
-    ),
+    nodeNamed(page, 'Web shop, process, 1 open threat, severity not assessed'),
   ).toBeVisible();
-  await expect(worker.locator('.pn-badge-mark')).toHaveText('?');
-  await expect(badgeTone(worker)).toHaveClass('pn-tone-neutral');
+  await expect(webShop.locator('.pn-badge-mark')).toHaveText('?');
+  await expect(badgeTone(webShop)).toHaveClass('pn-tone-neutral');
 
   await chooseInPanel(page, 'Severity', 'critical');
 
   await expect(
     nodeNamed(
       page,
-      'Mirror worker, process, 1 open threat, highest severity critical',
+      'Web shop, process, 1 open threat, highest severity critical',
     ),
   ).toBeVisible();
-  await expect(worker.locator('.pn-badge-mark')).toHaveText('C');
-  await expect(badgeTone(worker)).toHaveClass('pn-tone-critical');
+  await expect(webShop.locator('.pn-badge-mark')).toHaveText('C');
+  await expect(badgeTone(webShop)).toHaveClass('pn-tone-critical');
 });
 
 test('a status chosen in the panel takes the threat out of the count the canvas draws', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const dredger = await selectNode(page, /^Écluse Dredger, process/u);
-  await expect(dredger).toHaveAccessibleName(/5 open threats/u);
+  await openTwoDiagrams(page);
+  const shopper = await selectNode(page, /^Shopper, actor/u);
+  await expect(shopper).toHaveAccessibleName(
+    /1 open threat, highest severity high/u,
+  );
 
-  await disclosure(page, /Accidental permanent deletion/u).click();
+  await disclosure(page, /Account takeover/u).click();
   await chooseInPanel(page, 'Status', 'mitigated');
 
-  await expect(
-    nodeNamed(
-      page,
-      /^Écluse Dredger, process, 4 open threats, highest severity high/u,
-    ),
-  ).toBeVisible();
+  await expect(shopper).not.toHaveAccessibleName(/open threat/u);
 });
 
 test('a threat deleted in the panel leaves the canvas, and undo puts it back', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const dredger = await selectNode(page, /^Écluse Dredger, process/u);
-  await expect(dredger).toHaveAccessibleName(/5 open threats/u);
+  await openTwoDiagrams(page);
+  const shopper = await selectNode(page, /^Shopper, actor/u);
+  await expect(shopper).toHaveAccessibleName(/1 open threat/u);
 
-  await disclosure(page, /Massive Purge DoS/u).click();
+  await disclosure(page, /Account takeover/u).click();
   await threatPanel(page)
-    .getByRole('button', { name: 'Delete threat 21' })
+    .getByRole('button', { name: 'Delete threat 1', exact: true })
     .click();
 
-  await expect(editAnnouncement(page)).toContainText('21');
-  await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(0);
-  await expect(dredger).toHaveAccessibleName(/4 open threats/u);
+  await expect(editAnnouncement(page)).toContainText('1');
+  await expect(disclosure(page, /Account takeover/u)).toHaveCount(0);
+  await expect(shopper).not.toHaveAccessibleName(/open threat/u);
 
   await runFromMenu(page, 'Undo');
 
-  await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(1);
-  await expect(dredger).toHaveAccessibleName(/5 open threats/u);
+  await expect(disclosure(page, /Account takeover/u)).toHaveCount(1);
+  await expect(shopper).toHaveAccessibleName(/1 open threat/u);
 });
 
 test('a title edited in the panel is one undo step', async ({ page }) => {
-  await openEcluse(page);
-  await selectNode(page, /^Écluse Dredger, process/u);
-  await disclosure(page, /Massive Purge DoS/u).click();
+  await openTwoDiagrams(page);
+  await selectNode(page, /^Shopper, actor/u);
+  await disclosure(page, /Account takeover/u).click();
 
   const title = titleField(page);
   await title.click();
   await page.keyboard.press('ControlOrMeta+a');
-  await page.keyboard.type('Massive purge denial of service');
+  await page.keyboard.type('Credential stuffing takes over an account');
   await title.press('Enter');
 
   await expect(
-    disclosure(page, /Massive purge denial of service/u),
+    disclosure(page, /Credential stuffing takes over an account/u),
   ).toBeVisible();
 
   await runFromMenu(page, 'Undo');
 
-  await expect(disclosure(page, /Massive Purge DoS/u)).toBeVisible();
+  await expect(disclosure(page, /Account takeover/u)).toBeVisible();
 });
 
 test('every field of a threat is reachable and editable from the keyboard, add and delete included', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const worker = await selectNode(page, /^Mirror worker, process/u);
+  await openTwoDiagrams(page);
+  await page.keyboard.press(registeredChords['next-diagram'][0]);
+  await canvasSettled(page);
+  const printer = await selectNode(page, /^Label printer, process/u);
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
 
   await add.focus();
@@ -344,6 +340,8 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     ['Mitigations', 'combobox', 'Existing mitigation'],
     ['Mitigations', 'button', 'Link existing mitigation'],
     ['Assumptions', 'button', 'Add assumption'],
+    ['Assumptions', 'combobox', 'Existing assumption'],
+    ['Assumptions', 'button', 'Link existing assumption'],
   ] as const) {
     await page.keyboard.press('Tab');
     await expect(
@@ -355,12 +353,12 @@ test('every field of a threat is reachable and editable from the keyboard, add a
 
   await page.keyboard.press('Tab');
   const remove = threatPanel(page).getByRole('button', {
-    name: 'Delete threat 103',
+    name: 'Delete threat 12',
   });
   await expect(remove).toBeFocused();
 
   await expect(disclosure(page, /Queue poisoning/u)).toBeVisible();
-  await expect(worker).toHaveAccessibleName(
+  await expect(printer).toHaveAccessibleName(
     /1 open threat, highest severity critical/u,
   );
 
@@ -376,23 +374,25 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   await page.keyboard.press('Enter');
 
   await expect(add).toBeFocused();
-  await expect(worker).toHaveAccessibleName('Mirror worker, process');
+  await expect(printer).toHaveAccessibleName('Label printer, process');
 });
 
 test('a flow selected on the canvas opens its own threats in the panel', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
 
   await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
 
   await expect(
-    threatPanel(page).getByRole('heading', { name: /^Threats on npm read/u }),
+    threatPanel(page).getByRole('heading', {
+      name: /^Threats on browse the catalogue/u,
+    }),
   ).toBeVisible();
-  await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(0);
-  await expect(disclosure(page, /Package-name typosquatting/u)).toBeVisible();
+  await expect(disclosure(page, /Basket price changed/u)).toHaveCount(0);
+  await expect(disclosure(page, /Account takeover/u)).toBeVisible();
 });
 
 test('collapsed summaries expose severity and status without an empty content strip', async ({
@@ -566,10 +566,10 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
 test('long titles and fields remain usable in a narrow viewport', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectByKeyboard(page, /^Écluse Dredger, process/u);
+  await openTwoDiagrams(page);
+  await selectByKeyboard(page, /^Shopper, actor/u);
   const panel = threatPanel(page);
-  await disclosure(page, /Massive Purge DoS/u).click();
+  await disclosure(page, /Account takeover/u).click();
   const severityField = panelField(page, 'combobox', 'Severity');
   const statusField = panelField(page, 'combobox', 'Status');
   const desktopSeverity = await boxOf(severityField);
@@ -607,7 +607,7 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   await page.screenshot({ path: test.info().outputPath('narrow-pane.png') });
   await panel.getByRole('button', { name: 'Close threats' }).click();
   await expect(panel).toHaveCount(0);
-  await expect(nodeNamed(page, /^Écluse Dredger, process/u)).toBeFocused();
+  await expect(nodeNamed(page, /^Shopper, actor/u)).toBeFocused();
 });
 
 test('a long element name leaves the pane heading and editor reachable', async ({

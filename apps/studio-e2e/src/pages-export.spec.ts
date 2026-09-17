@@ -6,7 +6,12 @@ import {
   expectedPdfDigest,
   pdfPageCount,
 } from './exports.fixtures.js';
-import { exportedFile, openFile, vendored } from './studio.fixtures.js';
+import {
+  exportedFile,
+  openFile,
+  twoDiagramsFile,
+  vendored,
+} from './studio.fixtures.js';
 
 const compilerDownloadAndTypesetTimeout = 60_000;
 
@@ -18,12 +23,12 @@ test('the Pages build loads its hashed PDF assets below the site base', async ({
   page,
 }) => {
   test.setTimeout(compilerDownloadAndTypesetTimeout);
-  await openFile(page, 'test-data/ecluse.json', './');
+  await openFile(page, twoDiagramsFile, './');
 
   const output = await exportedFile(page, 'Model as PDF');
 
-  expect(output.name).toBe('ecluse.pdf');
-  expect(pdfPageCount(output.bytes)).toBe(17);
+  expect(output.name).toBe('two-diagrams.pdf');
+  expect(pdfPageCount(output.bytes)).toBe(6);
   expect(digestOf(output.bytes)).toBe(expectedPdfDigest);
 });
 

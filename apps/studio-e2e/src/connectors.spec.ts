@@ -7,9 +7,9 @@ import {
   handleOn,
   menuItem,
   nodeNamed,
-  openEcluse,
   openMenu,
   openPlaceholder,
+  openTwoDiagrams,
   placeByClick,
   runFromMenu,
   selectByKeyboard,
@@ -21,7 +21,7 @@ const actor = /^Actor, actor/u;
 
 const store = /^Store, store/u;
 
-const proxy = /^Écluse proxy, process/u;
+const webShop = /^Web shop, process/u;
 
 const flows = '.react-flow__edge';
 
@@ -98,28 +98,28 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
 test('the start-flow chord draws a flow from the selected element', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectByKeyboard(page, proxy);
+  await openTwoDiagrams(page);
+  await selectByKeyboard(page, webShop);
 
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
   await stepThroughOptions(page, 'ArrowDown');
   await page.keyboard.press('Enter');
 
-  await expect(page.locator(flows)).toHaveCount(21);
+  await expect(page.locator(flows)).toHaveCount(8);
 });
 
 test('escape cancels a flow the chord started and leaves the selection', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const selected = await selectByKeyboard(page, proxy);
+  await openTwoDiagrams(page);
+  const selected = await selectByKeyboard(page, webShop);
 
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
   await page.keyboard.press(registeredChords['select-tool'][1]);
 
   await expect(page.getByRole('listbox')).toHaveCount(0);
-  await expect(page.locator(flows)).toHaveCount(20);
+  await expect(page.locator(flows)).toHaveCount(7);
   await expect(selected).toHaveClass(/selected/u);
 });

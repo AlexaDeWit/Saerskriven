@@ -9,6 +9,7 @@ import {
   canvasSettled,
   dragBy,
   emptyCanvasPoint,
+  featureCompleteFile,
   menuItem,
   nodeNamed,
   openFile,
@@ -17,6 +18,7 @@ import {
   openText,
   savedFile,
   selectByKeyboard,
+  twoDiagramsFile,
   withoutPickers,
 } from './studio.fixtures.js';
 import { touchDrag, touchSession } from './touch.fixtures.js';
@@ -269,15 +271,23 @@ test('arrangement and view controls use the registry without view edits entering
   await expect(menuItem(page, 'Snap to grid: on')).toBeVisible();
 });
 
-for (const fixture of [
-  'test-data/ecluse.json',
-  'test-data/saerskriven/ecluse.yaml',
+for (const { fixture, duplicated, retargeted } of [
+  {
+    fixture: featureCompleteFile,
+    duplicated: /^Booking service, process/u,
+    retargeted: /^Book appointment, flow/u,
+  },
+  {
+    fixture: twoDiagramsFile,
+    duplicated: /^Web shop, process/u,
+    retargeted: /^record the paid order, flow/u,
+  },
 ]) {
   test(`document edits survive save and reopen in ${fixture}`, async ({
     page,
   }) => {
     await openFile(page, fixture);
-    await selectByKeyboard(page, /^Écluse Pilot/u);
+    await selectByKeyboard(page, duplicated);
     await page.keyboard.press('ControlOrMeta+d');
     await expect(page.getByTestId('canvas-announcement')).toContainText(
       'Duplicated',
@@ -291,10 +301,7 @@ for (const fixture of [
       .getByRole('button', { name: 'Increase Width', exact: true })
       .click();
     await geometry.getByRole('button', { name: 'Apply geometry' }).click();
-    await selectByKeyboard(
-      page,
-      /^publish mirrored artifact \(minted write token\), flow/u,
-    );
+    await selectByKeyboard(page, retargeted);
     await page.keyboard.press('ControlOrMeta+Shift+2');
     const endpoint = page.getByRole('region', { name: 'Flow endpoint' });
     const target = endpoint.getByRole('combobox', { name: 'Target' });

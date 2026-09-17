@@ -5,7 +5,7 @@ import {
   type Palette,
 } from '@saerskriven/canvas';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { nodeNamed, openEcluse } from './studio.fixtures.js';
+import { nodeNamed, openTwoDiagrams } from './studio.fixtures.js';
 
 /** What the diagram is drawn on, which the studio's own CSS module colours. */
 const ground = (page: Page): Locator => page.getByTestId('canvas-container');
@@ -16,7 +16,7 @@ const ground = (page: Page): Locator => page.getByTestId('canvas-container');
  * element where a store's pair of lines would give two.
  */
 const outline = (page: Page): Locator =>
-  nodeNamed(page, /^Écluse proxy, process/u).locator('.pn-shape');
+  nodeNamed(page, /^Web shop, process/u).locator('.pn-shape');
 
 /**
  * The chrome and the diagram are read together because they are coloured by
@@ -37,7 +37,7 @@ const drawnFrom = async (page: Page, palette: Palette): Promise<void> => {
 test('the studio takes the dark table when the scheme changes under it', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
   await drawnFrom(page, lightPalette);
 
   await page.emulateMedia({ colorScheme: 'dark' });
@@ -49,7 +49,7 @@ test('a studio opened under the dark preference draws from that table', async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
-  await openEcluse(page);
+  await openTwoDiagrams(page);
 
   await drawnFrom(page, darkPalette);
 });

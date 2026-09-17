@@ -14,11 +14,12 @@ import {
   menuButton,
   menuItem,
   nodeNamed,
-  openEcluse,
   openMenu,
   openPlaceholder,
+  openTwoDiagrams,
   selectNode,
   threatPanel,
+  twoDiagramsFile,
   vendored,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -77,7 +78,7 @@ test('escape clears the selection', async ({ page }) => {
 test('zooming and fitting move the viewport and nothing else', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
   const fitted = await viewportTransform(page);
 
   await page.keyboard.press(registeredChords['zoom-in'][0]);
@@ -90,7 +91,7 @@ test('zooming and fitting move the viewport and nothing else', async ({
   await page.keyboard.press(registeredChords['fit-to-view'][0]);
   await expect.poll(async () => viewportTransform(page)).toBe(fitted);
 
-  await expect(elementNodes(page)).toHaveCount(18);
+  await expect(elementNodes(page)).toHaveCount(7);
 });
 
 test('saving is one chord, and saving as asks the format the browser cannot', async ({
@@ -121,17 +122,19 @@ test('opening is one chord, through the picker the browser offers', async ({
   const chooser = page.waitForEvent('filechooser');
   await expect(page.getByTestId('file-input')).toHaveCount(1);
   await page.keyboard.press(registeredChords.open[0]);
-  await (await chooser).setFiles(vendored('test-data/saerskriven/ecluse.yaml'));
+  await (await chooser).setFiles(vendored(twoDiagramsFile));
 
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
   await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText('ecluse.yaml');
+  await expect(page.getByTestId('file-state')).toContainText(
+    'two-diagrams.yaml',
+  );
   await expect(page.getByTestId('file-state')).toContainText(
     'Saerskriven YAML',
   );
   await closeMenu(page);
   await canvasSettled(page);
-  await expect(elementNodes(page)).toHaveCount(18);
+  await expect(elementNodes(page)).toHaveCount(7);
 });
 
 test('select all reaches the whole diagram from the keyboard', async ({

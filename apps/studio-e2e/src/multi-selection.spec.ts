@@ -7,8 +7,8 @@ import {
   editAnnouncement,
   elementNodes,
   nodeNamed,
-  openEcluse,
   openPlaceholder,
+  openTwoDiagrams,
   runFromMenu,
   selectNode,
   threatPanel,
@@ -133,39 +133,39 @@ test('dragging a multi-selection moves it by one offset and undo restores it', a
 test('a selected free flow moves by the group offset and undo restores it', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const pilot = await selectNode(page, /^Écluse Pilot/u);
-  const probe = nodeNamed(page, /^OSV Dataset for Supported Registries, flow/u);
-  const line = lineOf(page, /^OSV Dataset for Supported Registries, flow/u);
-  await probe.focus();
+  await openTwoDiagrams(page);
+  const gateway = await selectNode(page, /^Payment\sgateway, process/u);
+  const callback = nodeNamed(page, /^card network callback, flow/u);
+  const line = lineOf(page, /^card network callback, flow/u);
+  await callback.focus();
   await page.keyboard.press('Shift+Enter');
-  await expect(probe).toHaveClass(/selected/u);
+  await expect(callback).toHaveClass(/selected/u);
   await canvasSettled(page);
-  const pilotBefore = await pilot.boundingBox();
+  const gatewayBefore = await gateway.boundingBox();
   const lineBefore = await line.boundingBox();
   const drawnBefore = await drawnBy(line);
-  expect(pilotBefore).not.toBeNull();
+  expect(gatewayBefore).not.toBeNull();
   expect(lineBefore).not.toBeNull();
 
-  await dragBy(page, pilot, 60);
+  await dragBy(page, gateway, 60);
 
-  await expect.poll(async () => (await boxOf(pilot)).x).not.toBe(920);
-  const pilotAfter = await pilot.boundingBox();
+  await expect.poll(async () => (await boxOf(gateway)).x).not.toBe(1040);
+  const gatewayAfter = await gateway.boundingBox();
   const lineAfter = await line.boundingBox();
-  expect(pilotAfter).not.toBeNull();
+  expect(gatewayAfter).not.toBeNull();
   expect(lineAfter).not.toBeNull();
   expect((lineAfter?.width ?? 0) - (lineBefore?.width ?? 0)).toBeCloseTo(0);
   expect((lineAfter?.height ?? 0) - (lineBefore?.height ?? 0)).toBeCloseTo(0);
   expect((lineAfter?.x ?? 0) - (lineBefore?.x ?? 0)).toBeCloseTo(
-    (pilotAfter?.x ?? 0) - (pilotBefore?.x ?? 0),
+    (gatewayAfter?.x ?? 0) - (gatewayBefore?.x ?? 0),
   );
   expect((lineAfter?.y ?? 0) - (lineBefore?.y ?? 0)).toBeCloseTo(
-    (pilotAfter?.y ?? 0) - (pilotBefore?.y ?? 0),
+    (gatewayAfter?.y ?? 0) - (gatewayBefore?.y ?? 0),
   );
 
   await runFromMenu(page, 'Undo');
 
-  expect(await pilot.boundingBox()).toEqual(pilotBefore);
+  expect(await gateway.boundingBox()).toEqual(gatewayBefore);
   expect(await drawnBy(line)).toBe(drawnBefore);
 });
 
