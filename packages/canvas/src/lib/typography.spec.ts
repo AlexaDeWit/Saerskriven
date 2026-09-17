@@ -149,13 +149,10 @@ describe('innerWidth', () => {
     expect(innerWidth(100)).toBe(100 - textPadding * 2);
   });
 
-  it('keeps a box too narrow for the padding at its own width', () => {
+  it('keeps a box too narrow for the padding at its own width, never below zero', () => {
     expect(innerWidth(textPadding * 2)).toBe(textPadding * 2);
     expect(innerWidth(4)).toBe(4);
-  });
-
-  it('never hands wrapText a negative width', () => {
-    expect(innerWidth(1)).toBeGreaterThan(0);
+    expect(innerWidth(1)).toBe(1);
   });
 });
 

@@ -1,12 +1,12 @@
 import { attached, elementId, flowBetween } from '@saerskriven/model/fixtures';
 import { flowLabelPlacements } from './flow-labels.js';
-import type { NodeBox } from './handles.js';
+import { handlePositions, type NodeBox } from './handles.js';
 import {
   flowLabelFollows,
   layoutDuringMove,
   reanchoredFlow,
 } from './layout-move.js';
-import { layoutOf, twoBoxDiagram } from './layout.fixtures.js';
+import { layoutOf, twoBoxDiagram } from './canvas.fixtures.js';
 
 const nodeBoxAt = (x: number, y: number): NodeBox => ({
   position: { x, y },
@@ -150,6 +150,21 @@ describe('reanchoredFlow', () => {
     const moved = reanchoredFlow(loose, nodeBoxAt(0, 200), undefined);
     expect(moved.target).toEqual({ x: 50, y: 400 });
     expect(moved.source).toEqual({ x: 50, y: 300 });
+  });
+
+  it('keeps a pinned end on its side through a move', () => {
+    const pinned = layoutOf(
+      twoBoxDiagram(
+        flowBetween(
+          { ...attached('el-left'), side: 'bottom' },
+          attached('el-right'),
+          [{ x: 50, y: -300 }],
+        ),
+      ),
+    ).edges[0];
+    const moved = reanchoredFlow(pinned, nodeBoxAt(0, -900), undefined);
+    expect(moved.sourceSide).toBe('bottom');
+    expect(moved.source).toEqual(handlePositions(nodeBoxAt(0, -900)).bottom);
   });
 
   it('keeps both settled anchors where no box reaches it', () => {

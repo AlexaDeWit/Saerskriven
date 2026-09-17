@@ -12,12 +12,12 @@ import {
   edgeNamed,
   everyGlyphLayout,
   everyGlyphModel,
+  layoutOf,
   nodeNamed,
+  scenes,
+  twoBoxDiagram,
 } from './canvas.fixtures.js';
 import { handlePositions } from './handles.js';
-import { scenes } from './label-placement.fixtures.js';
-import { reanchoredFlow } from './layout-move.js';
-import { layoutOf, twoBoxDiagram } from './layout.fixtures.js';
 import type { CanvasNode, CanvasNodeKind } from './layout.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 
@@ -267,33 +267,19 @@ describe('layoutDiagram, choosing a side', () => {
     expect(layoutOf(model).edges[0].sourceSide).toBe('bottom');
   });
 
-  it('keeps a pinned end on its side whatever the route, and keeps the pin through a move', () => {
-    const model = twoBoxDiagram(
-      flowBetween(
-        { ...attached('el-left'), side: 'bottom' },
-        attached('el-right'),
-        [{ x: 50, y: -300 }],
+  it('keeps a pinned end on its side whatever the route', () => {
+    const edge = layoutOf(
+      twoBoxDiagram(
+        flowBetween(
+          { ...attached('el-left'), side: 'bottom' },
+          attached('el-right'),
+          [{ x: 50, y: -300 }],
+        ),
       ),
-    );
-    const laid = layoutOf(model);
-    const edge = laid.edges[0];
+    ).edges[0];
     expect(edge.sourceSide).toBe('bottom');
     expect(edge.sourcePin).toBe('bottom');
     expect(edge.targetPin).toBeUndefined();
-    const leftBox = laid.nodes.find((node) => node.id === elementId('el-left'));
-    if (leftBox === undefined) {
-      throw new Error('No left box');
-    }
-    const moved = reanchoredFlow(
-      edge,
-      { position: { x: 0, y: -900 }, size: leftBox.size },
-      undefined,
-    );
-    expect(moved.sourceSide).toBe('bottom');
-    expect(moved.source).toEqual(
-      handlePositions({ position: { x: 0, y: -900 }, size: leftBox.size })
-        .bottom,
-    );
   });
 });
 

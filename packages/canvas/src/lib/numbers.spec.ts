@@ -5,32 +5,40 @@ const magnitudes = Array.from({ length: 69 }, (_, step) => 10 ** (step - 8));
 const plainNumber = /^-?\d+(\.\d{1,3})?$/u;
 
 describe('svgNumber', () => {
-  it('writes a whole coordinate without a decimal part', () => {
-    expect(svgNumber(120)).toBe('120');
-  });
-
-  it('keeps the decimals a coordinate carries', () => {
-    expect(svgNumber(12.5)).toBe('12.5');
-  });
-
-  it('rounds off what binary arithmetic leaves behind', () => {
-    expect(svgNumber(0.1 + 0.2)).toBe('0.3');
-  });
-
-  it('keeps a negative coordinate negative', () => {
-    expect(svgNumber(-40.25)).toBe('-40.25');
-  });
-
-  it('writes a value that rounds to negative zero as zero', () => {
-    expect(svgNumber(-0.0001)).toBe('0');
-  });
-
-  it('writes zero as zero', () => {
-    expect(svgNumber(0)).toBe('0');
-  });
-
-  it('keeps the trailing zeros of a whole hundred', () => {
-    expect(svgNumber(1200)).toBe('1200');
+  it.each([
+    {
+      named: 'a whole coordinate without a decimal part',
+      value: 120,
+      written: '120',
+    },
+    {
+      named: 'the decimals a coordinate carries',
+      value: 12.5,
+      written: '12.5',
+    },
+    {
+      named: 'what binary arithmetic leaves behind rounded off',
+      value: 0.1 + 0.2,
+      written: '0.3',
+    },
+    {
+      named: 'a negative coordinate as negative',
+      value: -40.25,
+      written: '-40.25',
+    },
+    {
+      named: 'a value that rounds to negative zero as zero',
+      value: -0.0001,
+      written: '0',
+    },
+    { named: 'zero as zero', value: 0, written: '0' },
+    {
+      named: 'the trailing zeros of a whole hundred',
+      value: 1200,
+      written: '1200',
+    },
+  ])('writes $named ($value as $written)', ({ value, written }) => {
+    expect(svgNumber(value)).toBe(written);
   });
 
   it('writes out the magnitude where toFixed turns exponential', () => {

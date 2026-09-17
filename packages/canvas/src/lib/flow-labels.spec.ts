@@ -7,7 +7,6 @@ import {
   modelWith,
 } from '@saerskriven/model/fixtures';
 import { badgeBox } from './badges.js';
-import { everyGlyphModel } from './canvas.fixtures.js';
 import { flowLabelPlacements, type FlowGeometry } from './flow-labels.js';
 import {
   boxesOverlap,
@@ -25,15 +24,16 @@ import {
   circleOf,
   drawnSolids,
   elementBadges,
+  everyGlyphModel,
   isEnclosure,
+  layoutOf,
   openThreatOn,
   scenes,
   textBoxOf,
   type Drawn,
   type Solid,
-} from './label-placement.fixtures.js';
+} from './canvas.fixtures.js';
 import { nodeBox } from './handles.js';
-import { layoutOf } from './layout.fixtures.js';
 import type { CanvasLayout, CanvasNode } from './layout.js';
 import { controlPolygon } from './paths.js';
 import { textPlacementCorners } from './text-placement.js';
