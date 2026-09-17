@@ -28,7 +28,8 @@ suggestions.
   depends on zod alone; `formats` imports `model` and the wire packages, and
   is the only layer that knows more than one of them; `canvas` imports only
   `model`; `render` imports `model` and `canvas`; apps import anything below
-  them. `eslint.config.mjs` holds the matrix and the `boundaries` target
+  them. `i18n` imports no internal package and no React, and only apps import
+  it. `eslint.config.mjs` holds the matrix and the `boundaries` target
   enforces it.
 - **The flake is the toolchain authority.** Work inside `nix develop`. No
   global installs.

@@ -55,6 +55,16 @@ export default [
               onlyDependOnLibsWithTags: [],
             },
             {
+              // Language machinery for the studio's catalogues: locales,
+              // plural rules, catalogue checks and negotiation over Intl. It
+              // stays framework-free so any caller can resolve a message, and
+              // only an app imports it, so model data and file formats never
+              // depend on a language.
+              sourceTag: 'layer:i18n',
+              onlyDependOnLibsWithTags: [],
+              bannedExternalImports: ['react', 'react-dom'],
+            },
+            {
               sourceTag: 'layer:formats',
               onlyDependOnLibsWithTags: ['layer:model', 'layer:wire'],
             },
@@ -82,6 +92,7 @@ export default [
             {
               sourceTag: 'layer:app',
               onlyDependOnLibsWithTags: [
+                'layer:i18n',
                 'layer:model',
                 'layer:formats',
                 'layer:canvas',

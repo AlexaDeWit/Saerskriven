@@ -36,6 +36,9 @@
       "path": "../../packages/model/tsconfig.lib.json"
     },
     {
+      "path": "../../packages/i18n/tsconfig.lib.json"
+    },
+    {
       "path": "../../packages/formats/tsconfig.lib.json"
     },
     {

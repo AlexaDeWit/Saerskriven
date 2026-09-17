@@ -4,6 +4,8 @@ import {
   OperationFailure,
   type ParseIssue,
 } from '@saerskriven/model';
+import { useTranslator } from '../messages/locale.js';
+import { Message } from '../messages/message.js';
 import { Action } from '../store/actions.js';
 import { StudioFailure } from '../store/state.js';
 import { dispatch } from '../store/store.js';
@@ -45,6 +47,7 @@ type FailureNoticeProps = {
 
 /** Announces the last failure in a live region until dismissal or resolution. */
 export function FailureNotice({ failure }: FailureNoticeProps) {
+  const { t } = useTranslator();
   const described =
     failure === undefined ? undefined : describeFailure(failure);
 
@@ -63,7 +66,10 @@ export function FailureNotice({ failure }: FailureNoticeProps) {
               lines={described.details}
               summary={
                 described.details.length > 1 ? (
-                  <>{described.details.length} refusal details</>
+                  <Message
+                    id="notice.refusal-details"
+                    params={{ count: described.details.length }}
+                  />
                 ) : undefined
               }
             />
@@ -75,7 +81,7 @@ export function FailureNotice({ failure }: FailureNoticeProps) {
             }}
             type="button"
           >
-            Dismiss problem
+            {t('notice.dismiss')}
           </button>
         </>
       )}

@@ -40,20 +40,26 @@ export function announceRefusal(
 }
 
 /**
- * A person's own text as an announcement names it: on one line, in quotation
- * marks, and cut to `bound` grapheme clusters ending in an ellipsis.
+ * A person's own text as an announcement quotes it: on one line, and cut to
+ * `bound` grapheme clusters ending in an ellipsis. The quotation marks
+ * belong to the message.
  */
-export function quoted(text: string, bound: number): string {
+export function excerpt(text: string, bound: number): string {
   const clusters = Array.from(
     graphemes.segment(text.replace(/\s+/gu, ' ').trim()),
     ({ segment }) => segment,
   );
   return clusters.length > bound
-    ? `“${clusters
+    ? `${clusters
         .slice(0, bound - 1)
         .join('')
-        .trimEnd()}…”`
-    : `“${clusters.join('')}”`;
+        .trimEnd()}…`
+    : clusters.join('');
+}
+
+/** {@link excerpt} in English quotation marks. */
+export function quoted(text: string, bound: number): string {
+  return `“${excerpt(text, bound)}”`;
 }
 
 /** An element's own name quoted to {@link nameQuoteLength}, or `unnamed` while it has none. */

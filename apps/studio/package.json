@@ -11,6 +11,7 @@
     "@radix-ui/react-icons": "catalog:",
     "@saerskriven/canvas": "workspace:*",
     "@saerskriven/formats": "workspace:*",
+    "@saerskriven/i18n": "workspace:*",
     "@saerskriven/model": "workspace:*",
     "@saerskriven/render": "workspace:*",
     "@xyflow/react": "catalog:",
