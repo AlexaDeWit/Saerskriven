@@ -65,17 +65,13 @@ describe('id generators', () => {
 });
 
 describe('id brands', () => {
-  it('keeps element and diagram ids apart at compile time', () => {
+  it('keeps branded ids apart at compile time', () => {
     const elementId: ElementId = generateElementId();
     // @ts-expect-error an ElementId is not assignable to a DiagramId
-    const misfiled: DiagramId = elementId;
-    expect(misfiled).toBe(elementId);
-  });
-
-  it('keeps element and threat ids apart at compile time', () => {
-    const elementId: ElementId = generateElementId();
+    const asDiagram: DiagramId = elementId;
     // @ts-expect-error an ElementId is not assignable to a ThreatId
-    const misfiled: ThreatId = elementId;
-    expect(misfiled).toBe(elementId);
+    const asThreat: ThreatId = elementId;
+    expectTypeOf(asDiagram).toEqualTypeOf<DiagramId>();
+    expectTypeOf(asThreat).toEqualTypeOf<ThreatId>();
   });
 });

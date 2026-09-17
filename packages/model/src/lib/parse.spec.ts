@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Either, Option } from 'effect';
 import { issuesOf, seededModel, validModelFixture } from './fixtures.js';
 import { issueLine, parseModel, toParseIssues } from './parse.js';
 
@@ -16,6 +16,13 @@ const plantEverywhere = (value: unknown): unknown =>
           undeclared: 'dropped',
         }
       : value;
+
+type Rejection = {
+  readonly named: string;
+  readonly mutate: (draft: typeof validModelFixture) => void;
+  readonly path: readonly (string | number)[];
+  readonly message: string;
+};
 
 describe('parseModel', () => {
   it('parses the committed valid fixture', () => {
@@ -51,210 +58,166 @@ describe('parseModel', () => {
     ).toEqual(validModelFixture);
   });
 
-  it('reports violations through the same Either as plain tagged data', () => {
-    const result = parseModel({
-      ...validModelFixture,
-      metadata: 'Saerskriven',
-    });
-    expect(Either.isLeft(result) && result.left._tag).toBe('InvalidModel');
-    expect(issuesOf(result)).toContainEqual(
+  it('reports violations as plain tagged data that survives a JSON round trip', () => {
+    const failure = Option.getOrUndefined(
+      Either.getLeft(
+        parseModel({
+          ...validModelFixture,
+          metadata: 'Saerskriven',
+        }),
+      ),
+    );
+    expect(failure?._tag).toBe('InvalidModel');
+    expect(failure?.issues).toContainEqual(
       expect.objectContaining({ code: 'invalid_type', path: ['metadata'] }),
     );
-  });
-
-  it('serializes a failure to its plain tagged shape', () => {
-    const result = parseModel({
-      ...validModelFixture,
-      metadata: 'Saerskriven',
-    });
-    if (Either.isRight(result)) {
-      throw new Error('The invalid input must fail to parse.');
-    }
-    expect(JSON.parse(JSON.stringify(result.left))).toEqual({
+    expect(JSON.parse(JSON.stringify(failure))).toEqual({
       _tag: 'InvalidModel',
-      issues: result.left.issues,
+      issues: failure?.issues,
     });
   });
 
-  it('rejects a duplicate element id across diagrams', () => {
-    const result = seededModel((draft) => {
-      draft.diagrams.push({
-        id: 'diagram-second',
-        title: 'Second',
-        elements: [structuredClone(draft.diagrams[0].elements[0])],
-      });
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['diagrams', 1, 'elements', 0, 'id'],
-        message:
-          'Duplicate element id "element-customer": element ids must be unique across the model.',
-      }),
-    );
-  });
-
-  it('rejects a duplicate diagram id', () => {
-    const result = seededModel((draft) => {
-      draft.diagrams.push({ id: 'diagram-main', title: 'Copy', elements: [] });
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['diagrams', 1, 'id'],
-        message:
-          'Duplicate diagram id "diagram-main": diagram ids must be unique across the model.',
-      }),
-    );
-  });
-
-  it('rejects a duplicate threat number', () => {
-    const result = seededModel((draft) => {
-      draft.threats.push({
-        ...structuredClone(draft.threats[0]),
-        id: 'threat-second',
-      });
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['threats', 1, 'number'],
-        message:
-          'Duplicate threat number 1: threat numbers must be unique across the model.',
-      }),
-    );
-  });
-
-  it('rejects a threat number above the last issued', () => {
-    const result = seededModel((draft) => {
-      draft.lastIssuedThreatNumber = 0;
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['lastIssuedThreatNumber'],
-        message:
-          'Threat number 1 exceeds lastIssuedThreatNumber 0: no threat carries a number above the last issued.',
-      }),
-    );
-  });
-
-  it('rejects a duplicate threat id', () => {
-    const result = seededModel((draft) => {
-      draft.threats.push({ ...structuredClone(draft.threats[0]), number: 2 });
-      draft.lastIssuedThreatNumber = 2;
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['threats', 1, 'id'],
-        message:
-          'Duplicate threat id "threat-tamper-order": threat ids must be unique among threats.',
-      }),
-    );
-  });
-
-  it('rejects a duplicate mitigation id', () => {
-    const result = seededModel((draft) => {
-      draft.mitigations.push(structuredClone(draft.mitigations[0]));
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['mitigations', 1, 'id'],
-        message:
-          'Duplicate mitigation id "mitigation-tls": mitigation ids must be unique among mitigations.',
-      }),
-    );
-  });
-
-  it('rejects a duplicate assumption id', () => {
-    const result = seededModel((draft) => {
-      draft.assumptions.push(structuredClone(draft.assumptions[0]));
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['assumptions', 1, 'id'],
-        message:
-          'Duplicate assumption id "assumption-managed-db": assumption ids must be unique among assumptions.',
-      }),
-    );
-  });
-
-  it('rejects a flow anchored outside its own diagram', () => {
-    const result = seededModel((draft) => {
-      draft.diagrams.push({
-        id: 'diagram-second',
-        title: 'Second',
-        elements: [
-          {
-            ...structuredClone(draft.diagrams[0].elements[1]),
-            id: 'element-remote',
-          },
-        ],
-      });
-      for (const element of draft.diagrams[0].elements) {
-        if (element.kind === 'flow') {
-          element.source = { kind: 'attached', element: 'element-remote' };
+  it.each<Rejection>([
+    {
+      named: 'a duplicate element id across diagrams',
+      mutate: (draft) => {
+        draft.diagrams.push({
+          id: 'diagram-second',
+          title: 'Second',
+          elements: [structuredClone(draft.diagrams[0].elements[0])],
+        });
+      },
+      path: ['diagrams', 1, 'elements', 0, 'id'],
+      message:
+        'Duplicate element id "element-customer": element ids must be unique across the model.',
+    },
+    {
+      named: 'a duplicate diagram id',
+      mutate: (draft) => {
+        draft.diagrams.push({
+          id: 'diagram-main',
+          title: 'Copy',
+          elements: [],
+        });
+      },
+      path: ['diagrams', 1, 'id'],
+      message:
+        'Duplicate diagram id "diagram-main": diagram ids must be unique across the model.',
+    },
+    {
+      named: 'a duplicate threat number',
+      mutate: (draft) => {
+        draft.threats.push({
+          ...structuredClone(draft.threats[0]),
+          id: 'threat-second',
+        });
+      },
+      path: ['threats', 1, 'number'],
+      message:
+        'Duplicate threat number 1: threat numbers must be unique across the model.',
+    },
+    {
+      named: 'a threat number above the last issued',
+      mutate: (draft) => {
+        draft.lastIssuedThreatNumber = 0;
+      },
+      path: ['lastIssuedThreatNumber'],
+      message:
+        'Threat number 1 exceeds lastIssuedThreatNumber 0: no threat carries a number above the last issued.',
+    },
+    {
+      named: 'a duplicate threat id',
+      mutate: (draft) => {
+        draft.threats.push({ ...structuredClone(draft.threats[0]), number: 2 });
+        draft.lastIssuedThreatNumber = 2;
+      },
+      path: ['threats', 1, 'id'],
+      message:
+        'Duplicate threat id "threat-tamper-order": threat ids must be unique among threats.',
+    },
+    {
+      named: 'a duplicate mitigation id',
+      mutate: (draft) => {
+        draft.mitigations.push(structuredClone(draft.mitigations[0]));
+      },
+      path: ['mitigations', 1, 'id'],
+      message:
+        'Duplicate mitigation id "mitigation-tls": mitigation ids must be unique among mitigations.',
+    },
+    {
+      named: 'a duplicate assumption id',
+      mutate: (draft) => {
+        draft.assumptions.push(structuredClone(draft.assumptions[0]));
+      },
+      path: ['assumptions', 1, 'id'],
+      message:
+        'Duplicate assumption id "assumption-managed-db": assumption ids must be unique among assumptions.',
+    },
+    {
+      named: 'a flow anchored outside its own diagram',
+      mutate: (draft) => {
+        draft.diagrams.push({
+          id: 'diagram-second',
+          title: 'Second',
+          elements: [
+            {
+              ...structuredClone(draft.diagrams[0].elements[1]),
+              id: 'element-remote',
+            },
+          ],
+        });
+        for (const element of draft.diagrams[0].elements) {
+          if (element.kind === 'flow') {
+            element.source = { kind: 'attached', element: 'element-remote' };
+          }
         }
-      }
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['diagrams', 0, 'elements', 3, 'source', 'element'],
-        message:
-          'Flow source references element id "element-remote", which is not in the flow\'s own diagram.',
-      }),
-    );
-  });
-
-  it('rejects a flow anchored to itself', () => {
-    const result = seededModel((draft) => {
-      for (const element of draft.diagrams[0].elements) {
-        if (element.kind === 'flow') {
-          element.target = { kind: 'attached', element: element.id };
+      },
+      path: ['diagrams', 0, 'elements', 3, 'source', 'element'],
+      message:
+        'Flow source references element id "element-remote", which is not in the flow\'s own diagram.',
+    },
+    {
+      named: 'a flow anchored to itself',
+      mutate: (draft) => {
+        for (const element of draft.diagrams[0].elements) {
+          if (element.kind === 'flow') {
+            element.target = { kind: 'attached', element: element.id };
+          }
         }
-      }
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['diagrams', 0, 'elements', 3, 'target', 'element'],
-        message:
-          'Flow target references the flow\'s own id "element-order-flow": a flow cannot anchor to itself.',
-      }),
-    );
-  });
-
-  it('rejects a threat attachment naming an unknown element', () => {
-    const result = seededModel((draft) => {
-      draft.threats[0].elements.push('element-ghost');
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['threats', 0, 'elements', 2],
-        message:
-          'Threat elements references unknown element id "element-ghost".',
-      }),
-    );
-  });
-
-  it('rejects a mitigation naming an unknown threat', () => {
-    const result = seededModel((draft) => {
-      draft.mitigations[0].threats.push('threat-ghost');
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['mitigations', 0, 'threats', 1],
-        message:
-          'Mitigation threats references unknown threat id "threat-ghost".',
-      }),
-    );
-  });
-
-  it('rejects an assumption naming an unknown threat', () => {
-    const result = seededModel((draft) => {
-      draft.assumptions[0].threats.push('threat-ghost');
-    });
-    expect(issuesOf(result)).toContainEqual(
-      expect.objectContaining({
-        path: ['assumptions', 0, 'threats', 1],
-        message:
-          'Assumption threats references unknown threat id "threat-ghost".',
-      }),
+      },
+      path: ['diagrams', 0, 'elements', 3, 'target', 'element'],
+      message:
+        'Flow target references the flow\'s own id "element-order-flow": a flow cannot anchor to itself.',
+    },
+    {
+      named: 'a threat attachment naming an unknown element',
+      mutate: (draft) => {
+        draft.threats[0].elements.push('element-ghost');
+      },
+      path: ['threats', 0, 'elements', 2],
+      message: 'Threat elements references unknown element id "element-ghost".',
+    },
+    {
+      named: 'a mitigation naming an unknown threat',
+      mutate: (draft) => {
+        draft.mitigations[0].threats.push('threat-ghost');
+      },
+      path: ['mitigations', 0, 'threats', 1],
+      message:
+        'Mitigation threats references unknown threat id "threat-ghost".',
+    },
+    {
+      named: 'an assumption naming an unknown threat',
+      mutate: (draft) => {
+        draft.assumptions[0].threats.push('threat-ghost');
+      },
+      path: ['assumptions', 0, 'threats', 1],
+      message:
+        'Assumption threats references unknown threat id "threat-ghost".',
+    },
+  ])('rejects $named', ({ mutate, path, message }) => {
+    expect(issuesOf(seededModel(mutate))).toContainEqual(
+      expect.objectContaining({ path, message }),
     );
   });
 

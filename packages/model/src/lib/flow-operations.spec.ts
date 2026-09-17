@@ -69,36 +69,23 @@ describe('reconnectFlow', () => {
     expect(reconnectFlow(after, id, 'target', elementId('element-db'))).toEqual(
       Either.right(after),
     );
-    expect(
-      errorOf(
-        reconnectFlow(validModel, id, 'target', elementId('element-customer')),
-      )?._tag,
-    ).toBe('InvalidFlowEndpoint');
-    expect(
-      errorOf(reconnectFlow(validModel, id, 'target', elementId('missing')))
-        ?._tag,
-    ).toBe('InvalidFlowEndpoint');
-    expect(
-      errorOf(
-        reconnectFlow(
-          validModel,
-          elementId('element-api'),
-          'source',
-          elementId('element-db'),
-        ),
-      )?._tag,
-    ).toBe('NotFlowElement');
-    expect(
-      errorOf(
-        reconnectFlow(
-          validModel,
-          elementId('missing'),
-          'source',
-          elementId('element-db'),
-        ),
-      )?._tag,
-    ).toBe('UnknownElement');
   });
+
+  it.each([
+    ['element-order-flow', 'target', 'element-customer', 'InvalidFlowEndpoint'],
+    ['element-order-flow', 'target', 'missing', 'InvalidFlowEndpoint'],
+    ['element-api', 'source', 'element-db', 'NotFlowElement'],
+    ['missing', 'source', 'element-db', 'UnknownElement'],
+  ] as const)(
+    'refuses to reconnect %s at its %s to %s with %s',
+    (id, side, reference, tag) => {
+      expect(
+        errorOf(
+          reconnectFlow(validModel, elementId(id), side, elementId(reference)),
+        )?._tag,
+      ).toBe(tag);
+    },
+  );
 
   it('pins an end to a side of the element it already names, and releases it', () => {
     const id = elementId('element-order-flow');

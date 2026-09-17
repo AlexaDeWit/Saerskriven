@@ -1,8 +1,10 @@
 import {
   elementId,
+  elementIn,
   emptyRegisterModel,
   parsedFixture,
   registerModel,
+  threatIn,
 } from '../fixtures.js';
 import {
   elementsWithoutThreats,
@@ -21,16 +23,9 @@ const idsOfThreats = (threats: Threat[]): string[] =>
 
 describe('elementsWithoutThreats', () => {
   it('returns the elements no threat references, across every diagram', () => {
-    expect(idsOfElements(elementsWithoutThreats(registerModel))).toEqual([
-      'element-ledger',
+    expect(elementsWithoutThreats(registerModel)).toEqual([
+      elementIn(registerModel, 'element-ledger'),
     ]);
-  });
-
-  it('returns whole element records', () => {
-    expect(elementsWithoutThreats(registerModel)[0]).toMatchObject({
-      kind: 'process',
-      name: 'Ledger',
-    });
   });
 
   it('returns every element when the register is empty', () => {
@@ -49,17 +44,11 @@ describe('openThreatsBySeverity', () => {
     const grouped = openThreatsBySeverity(registerModel);
     expect(idsOfThreats(grouped.low)).toEqual(['threat-flood-checkout']);
     expect(idsOfThreats(grouped.medium)).toEqual([]);
-    expect(idsOfThreats(grouped.high)).toEqual(['threat-spoof-shopper']);
+    expect(grouped.high).toEqual([
+      threatIn(registerModel, 'threat-spoof-shopper'),
+    ]);
     expect(idsOfThreats(grouped.critical)).toEqual(['threat-tamper-payment']);
     expect(idsOfThreats(grouped.undecided)).toEqual([]);
-  });
-
-  it('returns whole threat records', () => {
-    expect(openThreatsBySeverity(registerModel).high[0]).toMatchObject({
-      number: 2,
-      title: 'Shopper impersonation',
-      status: 'open',
-    });
   });
 });
 
