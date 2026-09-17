@@ -309,5 +309,11 @@ describe('the file a call names', () => {
     expect(failureOf(namedFile(workspace, undefined))).toEqual(
       WriteFailure.NoFile({ root: workspace.root }),
     );
+    const lines = renderWriteFailure(
+      WriteFailure.NoFile({ root: workspace.root }),
+    );
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain(workspace.root);
+    expect(lines[1]).toContain('`file`');
   });
 });
