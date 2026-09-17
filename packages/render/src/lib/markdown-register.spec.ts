@@ -9,7 +9,6 @@ import {
   threatFlagSchema,
   threatStatusSchema,
   type Diagram,
-  type Model,
   type ThreatCategory,
 } from '@saerskriven/model';
 import {
@@ -20,14 +19,23 @@ import {
   repositoryRoot,
   threatOf,
 } from '@saerskriven/model/fixtures';
-import type { ListItem, Root, RootContent, Strong } from 'mdast';
+import type { ListItem, Strong } from 'mdast';
 import { join } from 'node:path';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import { twoDiagramsModel } from '../render.fixtures.js';
+import { badgedModel, twoDiagramsModel } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
-import type { RegisterBadge } from './register-badges.js';
+import {
+  badgesIn,
+  badgeTextsIn,
+  modelSectionIn,
+  recordItems,
+  scopedAssumptionsModel,
+  sectionItems,
+  textOf,
+  threatSectionsIn,
+} from './register-tree.fixtures.js';
 import { registerDocument } from './register-tree.js';
 
 const labelsPath = join(
@@ -110,24 +118,6 @@ function diagramOf(
   });
 }
 
-function isLabel(node: RootContent | undefined, label: string): boolean {
-  return (
-    node?.type === 'paragraph' &&
-    node.children.length === 1 &&
-    node.children[0].type === 'strong' &&
-    textOf(node.children[0].children) === label
-  );
-}
-
-function recordItems(
-  section: readonly RootContent[],
-  label: string,
-): readonly ListItem[] {
-  const following =
-    section[section.findIndex((node) => isLabel(node, label)) + 1];
-  return following?.type === 'list' ? following.children : [];
-}
-
 function titleLine(item: ListItem): Strong[] {
   const [lead] = item.children;
   return lead.type === 'paragraph'
@@ -147,51 +137,6 @@ const everyRecordLabel = modelFrom({
     assumptionOf({ id: `assumption-${status}`, threats: ['threat-1'], status }),
   ),
 });
-
-function isThreatAnchor(node: RootContent): boolean {
-  const anchor = node.type === 'paragraph' ? node.children[0] : node;
-  return anchor?.type === 'html' && anchor.value.startsWith('<a name="threat-');
-}
-
-function modelSectionIn(tree: Root): RootContent[] {
-  const firstThreat = tree.children.findIndex(isThreatAnchor);
-  return tree.children.slice(
-    2,
-    firstThreat === -1 ? tree.children.length : firstThreat,
-  );
-}
-
-function sectionItems(section: readonly RootContent[]): readonly ListItem[] {
-  return section[1]?.type === 'list' ? section[1].children : [];
-}
-
-function badgeTextsIn(
-  nodes: readonly RootContent[],
-): { readonly badge: RegisterBadge; readonly label: string }[] {
-  return nodes.flatMap((node) => {
-    if (node.type === 'text') {
-      const badge = node.data?.registerBadge;
-      return badge === undefined ? [] : [{ badge, label: node.value }];
-    }
-    return 'children' in node ? badgeTextsIn(node.children) : [];
-  });
-}
-
-function badgesIn(nodes: readonly RootContent[]): RegisterBadge[] {
-  return badgeTextsIn(nodes).map((entry) => entry.badge);
-}
-
-function textOf(nodes: readonly RootContent[]): string {
-  return nodes
-    .map((node) =>
-      node.type === 'text'
-        ? node.value
-        : 'children' in node
-          ? textOf(node.children)
-          : '',
-    )
-    .join('');
-}
 
 function headingsOf(
   document: string,
@@ -242,21 +187,6 @@ function sectionsOf(document: string): string[] {
   return document
     .split(/^(?=<a name="threat-\d+"><\/a>\n\n## Threat )/m)
     .slice(1);
-}
-
-function threatSectionsIn(tree: Root): RootContent[][] {
-  return tree.children.reduce<RootContent[][]>(
-    (sections, node) =>
-      isThreatAnchor(node)
-        ? [...sections, []]
-        : sections.length === 0
-          ? sections
-          : [
-              ...sections.slice(0, -1),
-              [...sections[sections.length - 1], node],
-            ],
-    [],
-  );
 }
 
 describe('the two-diagram register', () => {
@@ -349,6 +279,55 @@ describe('the register document', () => {
     expect(rendered).toContain('This model records no threats.');
     expect(tableRowsOf(rendered)).toEqual([]);
   });
+
+  it('keeps appearance out of portable output and permits the host stylesheet', () => {
+    const plain = renderRegister(badgedModel);
+    const styled = renderRegister(badgedModel, {
+      styled: true,
+      stylesheet: false,
+    });
+    expect(plain).toContain('High');
+    expect(plain).toContain('Accepted risk');
+    expect(plain).not.toContain('saer-badge');
+    expect(styled).toContain('<span class="saer-badge-label">High</span>');
+    expect(styled).not.toContain('<style>');
+    expect(styled).not.toContain('style=');
+    expect(styled).toContain('<div class="saer-register">');
+  });
+});
+
+describe.each([false, true])('register embedding, styled %s', (styled) => {
+  it('starts threats at H3 below an existing H2 without another title', () => {
+    const options = { styled, title: false, headingLevel: 3 as const };
+    const markdown = renderRegister(badgedModel, options);
+    expect(markdown).toContain('### Threat 7:');
+    expect(markdown).not.toMatch(/^# /mu);
+    expect(markdown).toContain('#### First');
+    expect(markdown).toContain('###### Last');
+    expect(markdown).toContain('<a name="threat-7"></a>');
+    expect(markdown).toContain('[7](#threat-7)');
+  });
+
+  it.each([1, 2, 3, 4, 5, 6] as const)(
+    'keeps anchors when the first heading is H%s',
+    (headingLevel) => {
+      for (const title of [false, true]) {
+        const markdown = renderRegister(badgedModel, {
+          styled,
+          title,
+          headingLevel,
+        });
+        expect(markdown).toContain('<a name="threat-7"></a>');
+        expect(markdown).toContain('[7](#threat-7)');
+        const headings = registerDocument(badgedModel, {
+          title,
+          headingLevel,
+        }).children.filter((node) => node.type === 'heading');
+        expect(headings[0].depth).toBe(headingLevel);
+        expect(headings.every((node) => node.depth <= 6)).toBe(true);
+      }
+    },
+  );
 });
 
 describe('a threat section', () => {
@@ -362,22 +341,12 @@ describe('a threat section', () => {
     });
   });
 
-  it('keeps its heading where the title ends in a line break', () => {
+  it.each([
+    { named: 'ends in', title: 'Token replay\n' },
+    { named: 'opens on', title: '\nToken replay' },
+  ])('keeps its heading where the title $named a line break', ({ title }) => {
     const rendered = renderRegister(
-      modelFrom({
-        threats: [threatOf({ number: 1, title: 'Token replay\n' })],
-      }),
-    );
-    expect(headingsOf(rendered).filter((entry) => entry.depth === 2)).toEqual([
-      { depth: 2, text: 'Threat 1: Token replay' },
-    ]);
-  });
-
-  it('keeps its heading where the title opens on a line break', () => {
-    const rendered = renderRegister(
-      modelFrom({
-        threats: [threatOf({ number: 1, title: '\nToken replay' })],
-      }),
+      modelFrom({ threats: [threatOf({ number: 1, title })] }),
     );
     expect(headingsOf(rendered).filter((entry) => entry.depth === 2)).toEqual([
       { depth: 2, text: 'Threat 1: Token replay' },
@@ -683,31 +652,7 @@ describe("a threat's records", () => {
 });
 
 describe('the assumptions that apply to the model', () => {
-  const model = modelFrom({
-    threats: [threatOf({ number: 1 }), threatOf({ number: 2 })],
-    mitigations: [],
-    assumptions: [
-      assumptionOf({
-        id: 'assumption-a',
-        threats: [],
-        appliesToModel: true,
-        status: 'invalidated',
-        prose: 'model only',
-      }),
-      assumptionOf({
-        id: 'assumption-b',
-        threats: ['threat-1'],
-        status: 'valid',
-        prose: 'threat only',
-      }),
-      assumptionOf({
-        id: 'assumption-c',
-        threats: ['threat-1'],
-        appliesToModel: true,
-        prose: 'model and threat',
-      }),
-    ],
-  });
+  const model = scopedAssumptionsModel;
 
   it('sit in one section between the overview and the first threat, with their status badges in model order', () => {
     const tree = registerDocument(model);
@@ -726,32 +671,6 @@ describe('the assumptions that apply to the model', () => {
     expect(
       sectionItems(written).map((item) => textOf(item.children.slice(1))),
     ).toEqual(['model only', 'model and threat']);
-  });
-
-  it('also list under a threat they link, and leave out an assumption that does not apply to the model', () => {
-    const tree = registerDocument(model);
-    expect(
-      sectionItems(modelSectionIn(tree)).map((item) =>
-        textOf(item.children.slice(1)),
-      ),
-    ).toEqual(['model only', 'model and threat']);
-    expect(
-      threatSectionsIn(tree).map((section) =>
-        recordItems(section, 'Assumptions').map((item) =>
-          textOf(item.children.slice(1)),
-        ),
-      ),
-    ).toEqual([['threat only', 'model and threat'], []]);
-  });
-
-  it('carry no flag, and raise none on a threat', () => {
-    const tree = registerDocument(model);
-    expect(
-      badgesIn(modelSectionIn(tree)).filter((badge) => badge.kind === 'flag'),
-    ).toEqual([]);
-    expect(
-      badgesIn(tree.children).filter((badge) => badge.kind === 'flag'),
-    ).toEqual([]);
   });
 
   it('have no section where no assumption applies to the model', () => {
@@ -819,45 +738,6 @@ describe('the assumptions that apply to the model', () => {
     ]);
     expect(item.children[1]).toMatchObject({ type: 'heading', depth: 3 });
     expect(rendered).toContain('<b>bold</b>');
-  });
-});
-
-describe("a threat's flags", () => {
-  const flagsBySection = (model: Model) =>
-    threatSectionsIn(registerDocument(model)).map((section) =>
-      badgesIn(section).filter((badge) => badge.kind === 'flag'),
-    );
-
-  it('carries a badge for each flag the model derives, and none where there is none', () => {
-    const model = modelFrom({
-      threats: [
-        threatOf({ number: 1, status: 'mitigated' }),
-        threatOf({ number: 2 }),
-        threatOf({ number: 3, status: 'mitigated' }),
-      ],
-      mitigations: [
-        mitigationOf({
-          id: 'mitigation-a',
-          threats: ['threat-3'],
-          status: 'implemented',
-        }),
-      ],
-      assumptions: [
-        assumptionOf({
-          id: 'assumption-a',
-          threats: ['threat-1', 'threat-3'],
-          status: 'invalidated',
-        }),
-      ],
-    });
-    expect(flagsBySection(model)).toEqual([
-      [
-        { kind: 'flag', value: 'mitigated-without-implemented-work' },
-        { kind: 'flag', value: 'rests-on-invalidated-assumption' },
-      ],
-      [],
-      [{ kind: 'flag', value: 'rests-on-invalidated-assumption' }],
-    ]);
   });
 });
 

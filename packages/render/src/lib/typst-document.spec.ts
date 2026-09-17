@@ -287,17 +287,6 @@ describe("a threat's records", () => {
     expect(source).toContain('#"<b onclick=\\"x()\\">"');
     expect(withoutLiterals(source)).not.toContain('<b');
   });
-
-  it('writes record prose past the depth bound, counted from the register root, as the bytes the author wrote', () => {
-    const admitted = sourceOf(
-      recordsModel([{ prose: nested(deepestProse - 4) }]),
-    );
-    const refused = sourceOf(
-      recordsModel([{ prose: nested(deepestProse - 3) }]),
-    );
-    expect(quotesIn(admitted)).toBe(deepestProse - 4);
-    expect(quotesIn(refused)).toBe(0);
-  });
 });
 
 describe("a threat's flags", () => {
@@ -402,25 +391,31 @@ describe('the assumptions that apply to the model', () => {
     expect(modelSectionOf(hostile)).toContain('#read(\\"/etc/passwd\\")');
     expect(callsOutsideLiterals(hostile)).toEqual(callsOutsideLiterals(benign));
   });
-
-  it('write prose past the depth bound, counted from the register root, as the bytes the author wrote', () => {
-    const admitted = modelSectionOf(
-      sourceOf(
-        recordsModel([], [{ ...modelScoped, prose: nested(deepestProse - 4) }]),
-      ),
-    );
-    const refused = modelSectionOf(
-      sourceOf(
-        recordsModel([], [{ ...modelScoped, prose: nested(deepestProse - 3) }]),
-      ),
-    );
-    expect(quotesIn(admitted)).toBe(deepestProse - 4);
-    expect(quotesIn(refused)).toBe(0);
-    expect(refused).toContain('bottom');
-  });
 });
 
 describe('the prose depth bound', () => {
+  it.each([
+    {
+      named: 'a record under a threat',
+      modelOf: (prose: string) => recordsModel([{ prose }]),
+      section: (source: string) => source,
+    },
+    {
+      named: 'an assumption that applies to the model',
+      modelOf: (prose: string) => recordsModel([], [{ ...modelScoped, prose }]),
+      section: modelSectionOf,
+    },
+  ])(
+    'writes the prose of $named past it, counted from the register root, as the bytes the author wrote',
+    ({ modelOf, section }) => {
+      const admitted = section(sourceOf(modelOf(nested(deepestProse - 4))));
+      const refused = section(sourceOf(modelOf(nested(deepestProse - 3))));
+      expect(quotesIn(admitted)).toBe(deepestProse - 4);
+      expect(quotesIn(refused)).toBe(0);
+      expect(refused).toContain('bottom');
+    },
+  );
+
   it('is the depth both writers survive, counted from the root', () => {
     expect(deepestProse).toBe(16);
   });

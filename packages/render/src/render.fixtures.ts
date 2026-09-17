@@ -1,4 +1,10 @@
-import type { Diagram, Model } from '@saerskriven/model';
+import {
+  assumptionSchema,
+  mitigationSchema,
+  threatSchema,
+  type Diagram,
+  type Model,
+} from '@saerskriven/model';
 import { committedDiagrams, committedModel } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import {
@@ -24,6 +30,50 @@ export const everyGlyphModel: Model = committedModel('every-glyph.model.json');
 export const twoDiagramsModel: Model = committedModel(
   'two-diagrams.model.json',
 );
+
+/**
+ * The two-diagram model with two threats in its register: threat 7, open and
+ * high, whose description holds a level-one and a level-six heading, and
+ * threat 8, at accepted risk, with a proposed mitigation and an invalidated
+ * assumption linked to it, so the register draws a severity, a status, a
+ * record status and a flag badge.
+ */
+export const badgedModel: Model = {
+  ...twoDiagramsModel,
+  threats: [
+    threatSchema.parse({
+      ...twoDiagramsModel.threats[0],
+      number: 7,
+      severity: 'high',
+      status: 'open',
+      description: '# First\n\n###### Last',
+    }),
+    threatSchema.parse({
+      ...twoDiagramsModel.threats[0],
+      id: 'accepted-example',
+      number: 8,
+      status: 'accepted-risk',
+    }),
+  ],
+  mitigations: [
+    mitigationSchema.parse({
+      id: 'mitigation-example',
+      title: '',
+      prose: '',
+      status: 'proposed',
+      threats: ['accepted-example'],
+    }),
+  ],
+  assumptions: [
+    assumptionSchema.parse({
+      id: 'assumption-example',
+      prose: '',
+      status: 'invalidated',
+      threats: ['accepted-example'],
+      appliesToModel: false,
+    }),
+  ],
+};
 
 /**
  * One diagram this package commits goldens for: `svg` is the drawing as a

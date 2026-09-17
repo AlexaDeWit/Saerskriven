@@ -405,17 +405,6 @@ describe('a diagram as a standalone SVG document', () => {
     expect(svgOfEntry(entry).endsWith('</svg>\n')).toBe(true);
   });
 
-  it.each(goldenDocuments)(
-    'reports the size $name states on its own root',
-    (entry) => {
-      const drawn = renderSvg(diagramOf(entry), entry.model);
-      const root = documentOf(drawn.svg).documentElement;
-      expect([root.getAttribute('width'), root.getAttribute('height')]).toEqual(
-        [svgNumber(drawn.width), svgNumber(drawn.height)],
-      );
-    },
-  );
-
   it('renders each diagram of a model as a document of its own', () => {
     const [front, back] = twoDiagramModel.diagrams.map(
       (diagram) => renderSvg(diagram, twoDiagramModel).svg,
@@ -504,10 +493,18 @@ describe('free text carrying what XML forbids, never parsed', () => {
 describe.each([
   ...goldenDocuments.map((entry) => ({
     name: entry.name,
-    svg: svgOfEntry(entry),
+    drawn: renderSvg(diagramOf(entry), entry.model),
   })),
-  { name: 'text XML forbids', svg: forbiddenCharacterSvg },
-])('$name as a document a reader can open', ({ svg }) => {
+  {
+    name: 'text XML forbids',
+    drawn: renderSvg(
+      firstDiagram(forbiddenCharacterModel),
+      forbiddenCharacterModel,
+    ),
+  },
+])('$name as a document a reader can open', ({ drawn }) => {
+  const { svg } = drawn;
+
   it('parses as well-formed XML with one svg root in the SVG namespace', () => {
     const parsed = documentOf(svg);
     expect(parsed.getElementsByTagName('parsererror')).toHaveLength(0);
@@ -515,12 +512,18 @@ describe.each([
     expect(parsed.documentElement.namespaceURI).toBe(svgNamespace);
   });
 
-  it('sizes the document as the viewBox it declares', () => {
+  it('sizes the document as the viewBox it declares and the size the render reports', () => {
     const root = documentOf(svg).documentElement;
     const box = (root.getAttribute('viewBox') ?? '').split(' ');
     expect(box).toHaveLength(4);
-    expect(root.getAttribute('width')).toBe(box[2]);
-    expect(root.getAttribute('height')).toBe(box[3]);
+    expect([root.getAttribute('width'), root.getAttribute('height')]).toEqual([
+      box[2],
+      box[3],
+    ]);
+    expect([box[2], box[3]]).toEqual([
+      svgNumber(drawn.width),
+      svgNumber(drawn.height),
+    ]);
   });
 
   it('carries the stylesheet in a style element, verbatim', () => {
