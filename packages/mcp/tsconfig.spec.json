@@ -11,7 +11,13 @@
     ],
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/**/*.d.ts"],
+  "include": [
+    "src/fixtures.ts",
+    "src/**/*.fixtures.ts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts"
+  ],
   "references": [
     {
       "path": "./tsconfig.lib.json"

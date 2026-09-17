@@ -11,7 +11,6 @@
   "exclude": [
     "out-tsc",
     "dist",
-    "src/lib/*.fixtures.ts",
     "**/*.spec.ts",
     "**/*.test.ts",
     "**/*.spec.tsx",
@@ -24,6 +23,9 @@
     "vite.config.mts",
     "vitest.config.ts",
     "vitest.config.mts",
+    "src/fixtures.ts",
+    "src/**/*.fixtures.ts",
+    "src/**/*.fixtures.tsx",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/**/*.test.tsx",
