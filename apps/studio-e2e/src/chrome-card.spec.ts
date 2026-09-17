@@ -305,52 +305,56 @@ test(
   },
 );
 
-test('opening and closing each submenu by pointer leaves the chrome in place', async ({
-  page,
-}) => {
-  const burger = await openInShortViewport(page);
-  const panel = await screenBoxOf(rootMenu(page));
-  const beside = panel.x + panel.width - 8;
+test(
+  'opening and closing each submenu by pointer leaves the chrome in place',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const burger = await openInShortViewport(page);
+    const panel = await screenBoxOf(rootMenu(page));
+    const beside = panel.x + panel.width - 8;
 
-  for (const name of ['Export', /^Appearance /u, 'Arrange']) {
-    const row = await screenBoxOf(page.getByRole('menuitem', { name }));
-    const middle = row.y + row.height / 2;
-    await page.mouse.move(row.x + row.width / 2, middle);
-    await expect(page.getByRole('menu', { name })).toBeVisible();
-    await staysInPlace(page, burger);
-    await page.mouse.move(beside, middle, { steps: 5 });
-    await page.mouse.move(beside, row.y - row.height, { steps: 5 });
-    await expect(page.getByRole('menu', { name })).toHaveCount(0);
-    await staysInPlace(page, burger);
-  }
-});
-
-test('walking the menu by keyboard from the burger, opening and closing each submenu, leaves the chrome in place', async ({
-  page,
-}) => {
-  await shortenViewport(page, 720);
-  await openFile(page, twoDiagramsFile);
-  const burger = await screenBoxOf(menuButton(page));
-  await menuButton(page).press('Enter');
-  const rows = rootMenu(page).getByRole('menuitem', { disabled: false });
-  const count = await rows.count();
-
-  for (let index = 0; index < count; index += 1) {
-    const row = rows.nth(index);
-    await expect(row).toBeFocused();
-    await staysInPlace(page, burger);
-    if ((await row.getAttribute('aria-haspopup')) === 'menu') {
-      await page.keyboard.press('ArrowRight');
-      await expect(row).toHaveAttribute('aria-expanded', 'true');
+    for (const name of ['Export', /^Appearance /u, 'Arrange']) {
+      const row = await screenBoxOf(page.getByRole('menuitem', { name }));
+      const middle = row.y + row.height / 2;
+      await page.mouse.move(row.x + row.width / 2, middle);
+      await expect(page.getByRole('menu', { name })).toBeVisible();
       await staysInPlace(page, burger);
-      await page.keyboard.press('ArrowLeft');
-      await expect(row).toHaveAttribute('aria-expanded', 'false');
-      await expect(row).toBeFocused();
+      await page.mouse.move(beside, middle, { steps: 5 });
+      await page.mouse.move(beside, row.y - row.height, { steps: 5 });
+      await expect(page.getByRole('menu', { name })).toHaveCount(0);
       await staysInPlace(page, burger);
     }
-    await page.keyboard.press('ArrowDown');
-  }
-});
+  },
+);
+
+test(
+  'walking the menu by keyboard from the burger, opening and closing each submenu, leaves the chrome in place',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await shortenViewport(page, 720);
+    await openFile(page, twoDiagramsFile);
+    const burger = await screenBoxOf(menuButton(page));
+    await menuButton(page).press('Enter');
+    const rows = rootMenu(page).getByRole('menuitem', { disabled: false });
+    const count = await rows.count();
+
+    for (let index = 0; index < count; index += 1) {
+      const row = rows.nth(index);
+      await expect(row).toBeFocused();
+      await staysInPlace(page, burger);
+      if ((await row.getAttribute('aria-haspopup')) === 'menu') {
+        await page.keyboard.press('ArrowRight');
+        await expect(row).toHaveAttribute('aria-expanded', 'true');
+        await staysInPlace(page, burger);
+        await page.keyboard.press('ArrowLeft');
+        await expect(row).toHaveAttribute('aria-expanded', 'false');
+        await expect(row).toBeFocused();
+        await staysInPlace(page, burger);
+      }
+      await page.keyboard.press('ArrowDown');
+    }
+  },
+);
 
 test.describe('at a device pixel ratio of 2', () => {
   test.use({ deviceScaleFactor: 2 });
