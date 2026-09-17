@@ -4,7 +4,7 @@ import {
   registerModel,
   threatId,
 } from '../fixtures.js';
-import { threatRegisterFixture } from './fixtures.js';
+import { threatRegisterFixture } from './model.fixtures.js';
 import {
   addMitigation,
   linkMitigation,

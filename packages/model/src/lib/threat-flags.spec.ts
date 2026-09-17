@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 import { modelInputArbitrary, parsedFixture } from '../fixtures.js';
-import { threatRegisterFixture } from './fixtures.js';
+import { threatRegisterFixture } from './model.fixtures.js';
 import type { MitigationStatus } from './mitigations.js';
 import type { AssumptionStatus } from './assumptions.js';
 import type { Model } from './parse.js';

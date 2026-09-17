@@ -6,7 +6,7 @@ import {
   parsedFixture,
   validModel,
 } from '../fixtures.js';
-import { validModelFixture } from './fixtures.js';
+import { validModelFixture } from './model.fixtures.js';
 import {
   fragmentRecordCounts,
   insertFragment,

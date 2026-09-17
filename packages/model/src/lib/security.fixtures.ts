@@ -1,4 +1,4 @@
-import { validModelFixture } from './fixtures.js';
+import { validModelFixture } from './model.fixtures.js';
 
 /** Security fields aligned with the element order in validModelFixture. */
 export const securityPropertyFixtures = [

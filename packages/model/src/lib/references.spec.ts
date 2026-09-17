@@ -1,6 +1,6 @@
 import { Either } from 'effect';
 import { parsedFixture } from '../fixtures.js';
-import { validModelFixture } from './fixtures.js';
+import { validModelFixture } from './model.fixtures.js';
 import type { Model } from './parse.js';
 import {
   chosenDiagram,

@@ -17,7 +17,7 @@ import {
   resizeElement,
 } from './element-operations.js';
 import { elementSchema } from './elements.js';
-import { validModelFixture } from './fixtures.js';
+import { validModelFixture } from './model.fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
   cache,

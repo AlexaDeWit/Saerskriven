@@ -1,5 +1,5 @@
 import { Either, Option } from 'effect';
-import { issuesOf, seededModel, validModelFixture } from './fixtures.js';
+import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
 import { issueLine, parseModel, toParseIssues } from './parse.js';
 
 const plantEverywhere = (value: unknown): unknown =>

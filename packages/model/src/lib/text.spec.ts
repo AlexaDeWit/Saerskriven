@@ -1,6 +1,6 @@
 import { Either } from 'effect';
 import { softHyphen } from '../fixtures.js';
-import { issuesOf, seededModel, validModelFixture } from './fixtures.js';
+import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
 import { firstRefusedCharacter } from './text.js';
 
 const zeroWidthNonJoiner = '\u200C';

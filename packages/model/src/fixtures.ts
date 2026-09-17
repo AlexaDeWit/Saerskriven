@@ -8,7 +8,7 @@ import {
   emptyRegisterFixture,
   threatRegisterFixture,
   validModelFixture,
-} from './lib/fixtures.js';
+} from './lib/model.fixtures.js';
 import {
   assumptionIdSchema,
   diagramIdSchema,
@@ -36,7 +36,7 @@ export {
   modelWith,
   threatOf,
 } from './lib/builders.fixtures.js';
-export { validModelFixture } from './lib/fixtures.js';
+export { validModelFixture } from './lib/model.fixtures.js';
 export { modelInputArbitrary } from './lib/model-input.fixtures.js';
 export {
   securityModelFixture,

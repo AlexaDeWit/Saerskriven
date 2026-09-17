@@ -12,7 +12,7 @@ import {
   threatCountByElement,
 } from './coverage.js';
 import type { Element } from './elements.js';
-import { threatRegisterFixture } from './fixtures.js';
+import { threatRegisterFixture } from './model.fixtures.js';
 import type { Threat } from './threats.js';
 
 const idsOfElements = (elements: Element[]): string[] =>

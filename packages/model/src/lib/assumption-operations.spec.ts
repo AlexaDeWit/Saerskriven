@@ -16,7 +16,7 @@ import {
   unlinkAssumptionFromModel,
 } from './assumption-operations.js';
 import { assumptionSchema, type Assumption } from './assumptions.js';
-import { threatRegisterFixture } from './fixtures.js';
+import { threatRegisterFixture } from './model.fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import { errorOf, modelOf, operationContract } from './operations.fixtures.js';
 import type { Model } from './parse.js';
