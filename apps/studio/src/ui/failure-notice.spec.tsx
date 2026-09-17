@@ -219,9 +219,19 @@ describe('describeFailure', () => {
   });
 
   it('distinguishes rejected recovery data from unavailable storage', () => {
-    expect(
-      describeFailure(studioFailures.StoredRecoveryRejected).headline,
-    ).not.toBe(describeFailure(studioFailures.RecoveryUnavailable).headline);
+    const rejected = describeFailure(
+      studioFailures.StoredRecoveryRejected,
+    ).headline;
+    const unavailable = describeFailure(
+      studioFailures.RecoveryUnavailable,
+    ).headline;
+
+    for (const headline of [rejected, unavailable]) {
+      expect(headline.trim()).not.toBe('');
+      expect(headline).not.toContain('StoredRecoveryRejected');
+      expect(headline).not.toContain('RecoveryUnavailable');
+    }
+    expect(rejected).not.toBe(unavailable);
   });
 
   it('renders a path into the document a codec refused', () => {

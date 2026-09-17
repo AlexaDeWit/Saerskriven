@@ -30,6 +30,21 @@ import { numbersIn } from '../ui/ui.fixtures.js';
 import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { copySelected, duplicateSelected, pasteSelected } from './clipboard.js';
 
+const pastePrefix = vi.hoisted(() => ({
+  fixed: undefined as string | undefined,
+}));
+
+vi.mock('@saerskriven/model', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@saerskriven/model')>();
+  return {
+    ...actual,
+    generateElementId: () =>
+      pastePrefix.fixed === undefined
+        ? actual.generateElementId()
+        : actual.elementIdSchema.parse(pastePrefix.fixed),
+  };
+});
+
 const canvasElements = canvasModel.diagrams[0].elements.length;
 
 const marker = '# Saerskriven selection v1\n';
@@ -504,6 +519,97 @@ describe('duplicateSelected', () => {
       },
     ]);
     expect(announcedCounts()).toEqual({ linked: 2, cloned: 0 });
+  });
+});
+
+describe('the clipboard refusals', () => {
+  afterEach(() => {
+    pastePrefix.fixed = undefined;
+  });
+
+  it('words every copy refusal apart', async () => {
+    const clipboard = recordingClipboard();
+    const said: string[] = [];
+    dispatch(Action.Select({ elementIds: [] }));
+    said.push(await announcedBy(() => copySelected()));
+    dispatch(Action.Select({ elementIds: [elementId('missing-element')] }));
+    said.push(await announcedBy(() => copySelected()));
+    openCanvas([actorElement]);
+    clipboard.writeText.mockRejectedValueOnce(new Error('denied'));
+    said.push(await announcedBy(() => copySelected()));
+    openCanvas([actorElement], {
+      ...canvasModel,
+      metadata: {
+        ...canvasModel.metadata,
+        description: 'x'.repeat(readLimits.maxTextBytes + 1),
+      },
+    });
+    said.push(await announcedBy(() => copySelected()));
+
+    expect(clipboard.writeText).toHaveBeenCalledTimes(1);
+    expect(new Set(said).size).toBe(said.length);
+  });
+
+  it('words every paste refusal apart', async () => {
+    const clipboard = recordingClipboard();
+    const text = marker + saerskrivenYamlCodec.write(canvasModel).output;
+    const heldMitigation = {
+      id: 'pinned:mitigation-held',
+      title: 'Held',
+      prose: 'Held by the target.',
+      status: 'proposed',
+      threats: [firstThreat],
+    };
+    const colliding =
+      marker +
+      saerskrivenYamlCodec.write(
+        parsedFixture({
+          ...canvasModel,
+          mitigations: [
+            heldMitigation,
+            {
+              ...heldMitigation,
+              id: 'mitigation-held',
+              prose: 'Renamed onto the held id.',
+            },
+          ],
+        }),
+      ).output;
+    const said: string[] = [];
+    clipboard.readText.mockRejectedValueOnce(new Error('denied'));
+    said.push(await announcedBy(() => pasteSelected()));
+    const read = deferred<string>();
+    clipboard.readText.mockReturnValueOnce(read.promise);
+    said.push(
+      await announcedBy(async () => {
+        const pending = pasteSelected();
+        dispatch(
+          Action.MoveElement({
+            elementId: actorElement,
+            offset: { x: 1, y: 0 },
+          }),
+        );
+        read.resolve(text);
+        await pending;
+      }),
+    );
+    clipboard.readText.mockResolvedValueOnce('ordinary text');
+    said.push(await announcedBy(() => pasteSelected()));
+    clipboard.readText.mockResolvedValueOnce(marker + 'invalid: [');
+    said.push(await announcedBy(() => pasteSelected()));
+    openCanvas(
+      [actorElement],
+      parsedFixture({ ...canvasModel, mitigations: [heldMitigation] }),
+    );
+    pastePrefix.fixed = 'pinned';
+    clipboard.readText.mockResolvedValueOnce(colliding);
+    said.push(await announcedBy(() => pasteSelected()));
+    modelStore.setState(initialState(emptyModel), true);
+    clipboard.readText.mockResolvedValueOnce(text);
+    said.push(await announcedBy(() => pasteSelected()));
+
+    expect(modelStore.getState().present).toBe(emptyModel);
+    expect(new Set(said).size).toBe(said.length);
   });
 });
 

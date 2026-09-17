@@ -306,8 +306,8 @@ describe('the file a call names', () => {
   it('refuses a call naming none against a server carrying no default', () => {
     const tree = editableTree();
     const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
-    expect(
-      renderWriteFailure(failureOf(namedFile(workspace, undefined)))[0],
-    ).toContain('No file was named and this server carries no default');
+    expect(failureOf(namedFile(workspace, undefined))).toEqual(
+      WriteFailure.NoFile({ root: workspace.root }),
+    );
   });
 });

@@ -48,8 +48,10 @@ describe('what saer_validate reports', () => {
   });
 
   it('refuses a call naming no file where the server carries no default', () => {
-    expect(refusalOf(validate(rootWorkspace(), {}))[0]).toContain(
-      'No file was named and this server carries no default',
-    );
+    const unnamed = rootWorkspace();
+    const refused = refusalOf(validate(unnamed, {}));
+    expect(refused).toHaveLength(2);
+    expect(refused[0]).toContain(unnamed.root);
+    expect(refused[1]).toContain('saer_inspect');
   });
 });
