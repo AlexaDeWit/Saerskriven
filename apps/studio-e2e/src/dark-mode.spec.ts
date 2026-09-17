@@ -11,7 +11,6 @@ import {
   openTwoDiagrams,
 } from './studio.fixtures.js';
 
-/** What the diagram is drawn on, which the studio's own CSS module colours. */
 /**
  * One element's outline, which the canvas package's stylesheet colours. It is
  * a process, whose glyph is a single shape, so the locator resolves to one
