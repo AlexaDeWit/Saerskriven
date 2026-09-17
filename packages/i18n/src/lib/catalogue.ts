@@ -35,19 +35,23 @@ type CheckedTemplate<
           : T & PlaceholderMismatch<Allowed, Placeholders<T>>
   : never;
 
-/**
- * Each entry of `T` as written where the contract accepts it, and a type it
- * cannot satisfy, naming the problem, where not. A text message names
- * exactly its parameters, a plural form names a subset of them, and a
- * message or plural form `T` lacks is a missing property. An id outside the
- * contract and a form outside the locale's plural categories are `never`.
- */
+type NamesEveryParameter<T, Required extends string, Declared> = [
+  Required,
+] extends [Placeholders<T & string>]
+  ? unknown
+  : PlaceholderMismatch<Declared, Placeholders<T & string>>;
+
 type Checked<L extends Locale, C extends Contract, T> = {
   readonly [Id in keyof T]: Id extends keyof C
-    ? C[Id] extends { readonly kind: 'plural' }
+    ? C[Id] extends { readonly kind: 'plural'; readonly count: infer Count }
       ? {
           readonly [F in keyof T[Id]]: F extends PluralCategory<L>
-            ? CheckedTemplate<T[Id][F], ParameterName<C[Id]>, false>
+            ? CheckedTemplate<T[Id][F], ParameterName<C[Id]>, false> &
+                NamesEveryParameter<
+                  T[Id][F],
+                  Exclude<ParameterName<C[Id]>, Count>,
+                  ParameterName<C[Id]>
+                >
             : never;
         } & {
           readonly [F in Exclude<PluralCategory<L>, keyof T[Id]>]: string;
@@ -56,13 +60,23 @@ type Checked<L extends Locale, C extends Contract, T> = {
     : never;
 } & { readonly [Id in Exclude<keyof C, keyof T>]: Entry<L, C[Id]> };
 
+const checked: unique symbol = Symbol('catalogue');
+
+/** What {@link catalogue} returns: the messages as written, marked as checked. */
+export type DeclaredCatalogue<L extends Locale, T> = {
+  readonly locale: L;
+  readonly messages: T;
+  readonly [checked]: true;
+};
+
 /**
- * One locale's complete catalogue for one section's contract, as
- * {@link catalogue} declares it.
+ * One locale's complete catalogue for one section's contract. Only
+ * {@link catalogue} makes one, so every template in it has been checked.
  */
 export type Catalogue<L extends Locale, C extends Contract> = {
   readonly locale: L;
   readonly messages: { readonly [Id in keyof C]: Entry<L, C[Id]> };
+  readonly [checked]: true;
 };
 
 /** Every locale's catalogue for every section. */
@@ -76,16 +90,18 @@ type Draft = {
 
 /**
  * Declares `locale`'s catalogue for `contract`. The typecheck refuses a
- * missing message, an id outside the contract, a missing or extra plural
- * form, a template whose placeholders differ from the parameters, a
- * malformed brace, and a template that is not a string literal.
+ * missing message, an id outside the contract, and a missing or extra plural
+ * form. A text template names exactly the declared parameters. A plural form
+ * names every declared parameter except the count, which it may leave out.
+ * A brace outside a `{name}` placeholder and a template that is not a string
+ * literal are refused too.
  */
 export const catalogue =
   <C extends Contract>(_contract: C) =>
   <L extends Locale>(locale: L) =>
   <const T extends Draft>(
     messages: T & Checked<L, C, T>,
-  ): { readonly locale: L; readonly messages: T } => ({ locale, messages });
+  ): DeclaredCatalogue<L, T> => ({ locale, messages, [checked]: true });
 
 /** One template a catalogue holds, `form` naming the plural form it is. */
 export type CatalogueTemplate = {

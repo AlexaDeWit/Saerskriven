@@ -24,15 +24,15 @@ export const canvasMessages = {
 A parameter is `text` (inserted as given), `number` (`Intl.NumberFormat`),
 `list` (a conjunction through `Intl.ListFormat`) or `node` (a value the
 caller renders, such as a React element). An app groups its contracts into
-sections, and a message is addressed as `section.id`. A section name holds
-no dot.
+sections, and a message is addressed as `section.id`. The typecheck refuses
+a section name holding a dot.
 
 Each locale declares its catalogue against a contract with string literals:
 
 ```ts
 export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'snap-on': 'Alignement sur la grille activé.',
-  'diagram-shown': 'Affichage de « {title} ».',
+  'diagram-shown': 'Affichage de « {title} ».',
   'threat-count': {
     one: '{name} a {count} menace',
     many: '{name} a {count} de menaces',
@@ -46,19 +46,22 @@ The typecheck refuses:
 - a message the contract declares and the catalogue lacks
 - a message the contract does not declare
 - a text template whose `{name}` placeholders differ from the declared
-  parameters, or a plural form naming a parameter the message does not declare
+  parameters
+- a plural form naming a parameter the message does not declare, or leaving
+  out one it does. Only the count may be left out, as in `One threat`
 - a plural form missing from the locale's categories, or one the locale does
   not have: fr-CA has `one`, `many` and `other`, and en-CA and sv have `one`
   and `other`
 - a brace outside a placeholder, and a template that is not a string literal
+- a catalogue object written by hand instead of through `catalogue()`
+- a section name holding a dot
 - a wrong parameter name or type, or a missing parameter record, at a call
 
 `src/lib/catalogue.spec.ts` keeps each refusal as an `@ts-expect-error` line,
-so a change that stops refusing one fails the typecheck. A catalogue must go
-through `catalogue()` for its templates to be checked.
+so a change that stops refusing one fails the typecheck.
 
-French `one` covers 0 as well as 1, so a French `one` form reads correctly for
-zero. `locales.spec.ts` pins the declared categories to `Intl.PluralRules`.
+French `one` covers 0 as well as 1, so a French `one` form also serves as the
+zero form. `locales.spec.ts` pins the declared categories to `Intl.PluralRules`.
 
 ## Translating
 

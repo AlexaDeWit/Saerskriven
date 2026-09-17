@@ -84,12 +84,18 @@ type Values = Readonly<Record<string, unknown>>;
 
 const isText = (value: unknown): value is string => typeof value === 'string';
 
+type DotFree<S> = {
+  readonly [K in keyof S]: K extends `${string}.${string}`
+    ? { readonly 'a section name holds no dot': never }
+    : S[K];
+};
+
 /**
  * The translator for `locale` over complete catalogues. Parameter values are
  * inserted as they are and never read as template syntax.
  */
 export function translator<S extends Sections>(
-  sections: S,
+  sections: S & DotFree<S>,
   catalogues: Catalogues<S>,
   locale: Locale,
 ): Translator<S> {

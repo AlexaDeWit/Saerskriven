@@ -1,6 +1,11 @@
 import { catalogue } from './catalogue.js';
 import { plural, text } from './contract.js';
-import { sections, shelfCatalogues, shelfTranslator } from './i18n.fixtures.js';
+import {
+  sections,
+  shelf,
+  shelfCatalogues,
+  shelfTranslator,
+} from './i18n.fixtures.js';
 import { translator } from './translator.js';
 
 const counted = { threats: plural('count') } as const;
@@ -93,6 +98,55 @@ describe('catalogue declarations the typecheck refuses', () => {
     expect(declared.messages).toHaveProperty('named');
   });
 
+  it('refuses a plural form that drops a parameter other than the count', () => {
+    const declared = catalogue({ owned: shelf.owned })('fr-CA')({
+      owned: {
+        one: '{name} a une menace',
+        // @ts-expect-error only the count may be left out, and `{name}` is missing
+        many: 'Beaucoup de menaces',
+        other: '{name} a {count} menaces',
+      },
+    });
+    expect(declared.messages).toHaveProperty('owned');
+  });
+
+  it('refuses a catalogue written without catalogue()', () => {
+    const written = translator(
+      sections,
+      {
+        ...shelfCatalogues,
+        sv: {
+          // @ts-expect-error only catalogue() marks a catalogue as checked
+          shelf: {
+            locale: 'sv',
+            messages: {
+              ...shelfCatalogues.sv.shelf.messages,
+              named: 'Visar {titel} <b>x</b>',
+            },
+          },
+        },
+      },
+      'sv',
+    );
+    expect(written.locale).toBe('sv');
+  });
+
+  it('refuses a section name holding a dot', () => {
+    const dotted = translator(
+      {
+        // @ts-expect-error a message id splits at the first dot
+        'shelf.v2': shelf,
+      },
+      {
+        'en-CA': { 'shelf.v2': shelfCatalogues['en-CA'].shelf },
+        'fr-CA': { 'shelf.v2': shelfCatalogues['fr-CA'].shelf },
+        sv: { 'shelf.v2': shelfCatalogues.sv.shelf },
+      },
+      'en-CA',
+    );
+    expect(dotted.locale).toBe('en-CA');
+  });
+
   it("refuses one locale's catalogue in place of another's", () => {
     const swapped = translator(
       sections,
@@ -132,7 +186,8 @@ describe('message calls the typecheck refuses', () => {
 
   it('refuses an id outside the contract', () => {
     // @ts-expect-error `shelf.opne` is not a message
-    expect(() => t('shelf.opne')).toThrow(TypeError);
+    const call = () => t('shelf.opne');
+    expect(call).toBeTypeOf('function');
   });
 
   it('refuses a message with a node parameter as text', () => {

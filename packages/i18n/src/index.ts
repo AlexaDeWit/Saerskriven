@@ -28,6 +28,7 @@ export {
   type Catalogue,
   type CatalogueTemplate,
   type Catalogues,
+  type DeclaredCatalogue,
   type ParameterName,
 } from './lib/catalogue.js';
 export {
