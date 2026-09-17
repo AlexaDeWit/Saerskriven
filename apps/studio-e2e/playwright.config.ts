@@ -13,13 +13,18 @@ const pagesPort = 4300;
 export default defineConfig({
   testDir: './src',
   outputDir: './test-output/playwright/output',
-  reporter: [
-    ['list'],
-    [
-      'html',
-      { outputFolder: './test-output/playwright/report', open: 'never' },
-    ],
-  ],
+  // CI runs the suite as several jobs, so each one writes a blob report and a
+  // failure merges them into the one HTML report. A local run has the whole
+  // suite in one process and writes that report itself.
+  reporter: process.env['CI']
+    ? [['list'], ['blob', { outputDir: './test-output/playwright/blob' }]]
+    : [
+        ['list'],
+        [
+          'html',
+          { outputFolder: './test-output/playwright/report', open: 'never' },
+        ],
+      ],
   forbidOnly: !!process.env['CI'],
   // Playwright's own default, stated as the root ceiling: it covers a cold
   // development server page load with two workers on a shared runner. A spec
@@ -60,11 +65,16 @@ export default defineConfig({
     },
   ],
   projects: [
+    // CI splits `chromium` and `phone` across a shard matrix. Each of the two
+    // runs every test as its own shard group, so the split follows the test
+    // count rather than the file sizes. The projects below keep the default,
+    // one group per file, because each runs on one worker anyway.
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       testIgnore: [frameTimeFloor, pagesExport],
       grepInvert: phoneOnly,
+      fullyParallel: true,
     },
     // A phone viewport is the one the shell chrome has least room in, so a
     // test whose layout turns on the width carries the `@phone` tag and runs
@@ -84,6 +94,7 @@ export default defineConfig({
       use: { ...devices['Pixel 7'] },
       grep: phoneWidth,
       dependencies: ['chromium'],
+      fullyParallel: true,
     },
     {
       name: 'pages',
@@ -99,18 +110,21 @@ export default defineConfig({
     // only where no other browser shares the host: copies of this spec run at
     // the same time all fail, where the same spec alone reads not one frame
     // late. Hence one worker, and a dependency on the project carrying the
-    // rest of the suite, so this one runs alone once the others are done
-    // rather than beside them, while they keep their own parallelism.
-    // Playwright skips a project whose dependency failed, so a red anywhere
-    // else in the smoke leaves the floor unreported rather than reported
-    // green. A burst of activity elsewhere on the host can still land inside
-    // the drag, so a single noisy run is retried once and a second failure is
-    // the reading. The retry records no trace: tracing paces the drag with
-    // screenshots and snapshots, and a retry under more load than the first
-    // attempt is no second reading. Both ceilings in the spec are regression
-    // signals. The share ceiling does not move. The single-longest-frame
-    // ceiling sits above the band a GitHub-hosted runner produces on its own
-    // (#309) and moves only with a new reading of that band.
+    // rest of the suite, so a plain local run reaches this one once the
+    // others are done rather than beside them, while they keep their own
+    // parallelism. CI reaches the same isolation another way: it runs `pages`
+    // and `frame-time` together in a job of their own, with `--no-deps` and
+    // one worker for the pair, on a runner the shard matrix never shares. The
+    // gate requires that job, so a red elsewhere leaves the floor reported on
+    // its own rather than reported green. A burst of activity elsewhere on
+    // the host can still land inside the drag, so a single noisy run is
+    // retried once and a second failure is the reading. The retry records no
+    // trace: tracing paces the drag with screenshots and snapshots, and a
+    // retry under more load than the first attempt is no second reading.
+    // Both ceilings in the spec are regression signals. The share ceiling
+    // does not move. The single-longest-frame ceiling sits above the band a
+    // GitHub-hosted runner produces on its own (#309) and moves only with a
+    // new reading of that band.
     {
       name: 'frame-time',
       use: { ...devices['Desktop Chrome'], trace: 'off' },

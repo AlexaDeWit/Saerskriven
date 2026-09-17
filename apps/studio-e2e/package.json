@@ -40,6 +40,7 @@
         "outputs": [
           "{projectRoot}/test-output/playwright/output",
           "{projectRoot}/test-output/playwright/report",
+          "{projectRoot}/test-output/playwright/blob",
           "{projectRoot}/test-output/pages-site"
         ]
       },
