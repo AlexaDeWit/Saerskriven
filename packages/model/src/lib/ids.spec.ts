@@ -68,10 +68,8 @@ describe('id brands', () => {
   it('keeps branded ids apart at compile time', () => {
     const elementId: ElementId = generateElementId();
     // @ts-expect-error an ElementId is not assignable to a DiagramId
-    const asDiagram: DiagramId = elementId;
+    expectTypeOf(elementId).toExtend<DiagramId>();
     // @ts-expect-error an ElementId is not assignable to a ThreatId
-    const asThreat: ThreatId = elementId;
-    expectTypeOf(asDiagram).toEqualTypeOf<DiagramId>();
-    expectTypeOf(asThreat).toEqualTypeOf<ThreatId>();
+    expectTypeOf(elementId).toExtend<ThreatId>();
   });
 });

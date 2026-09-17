@@ -119,20 +119,25 @@ describe('the command registry', () => {
 
 describe('commandFor', () => {
   it.each([
-    ['z', { ctrlKey: true }, 'undo'],
-    ['z', { ctrlKey: true, shiftKey: true }, 'redo'],
-    ['q', { ctrlKey: true }, undefined],
-    ['1', {}, 'select-tool'],
-    ['2', {}, 'actor-tool'],
-    ['3', {}, 'process-tool'],
-    ['4', {}, 'store-tool'],
-    ['5', {}, 'boundary-box-tool'],
-    ['6', {}, 'boundary-curve-tool'],
-    ['7', {}, 'note-tool'],
-    ['t', {}, 'focus-threats'],
-  ] as const)('maps %s with modifiers %o to %s', (key, modifiers, command) => {
-    expect(commandFor(press(key, modifiers), 'other')?.id).toBe(command);
-  });
+    { key: 'z', modifiers: { ctrlKey: true }, command: 'undo' },
+    { key: 'z', modifiers: { ctrlKey: true, shiftKey: true }, command: 'redo' },
+    { key: 'q', modifiers: { ctrlKey: true }, command: 'no command' },
+    { key: '1', modifiers: {}, command: 'select-tool' },
+    { key: '2', modifiers: {}, command: 'actor-tool' },
+    { key: '3', modifiers: {}, command: 'process-tool' },
+    { key: '4', modifiers: {}, command: 'store-tool' },
+    { key: '5', modifiers: {}, command: 'boundary-box-tool' },
+    { key: '6', modifiers: {}, command: 'boundary-curve-tool' },
+    { key: '7', modifiers: {}, command: 'note-tool' },
+    { key: 't', modifiers: {}, command: 'focus-threats' },
+  ] as const)(
+    'maps $key with modifiers $modifiers to $command',
+    ({ key, modifiers, command }) => {
+      expect(
+        commandFor(press(key, modifiers), 'other')?.id ?? 'no command',
+      ).toBe(command);
+    },
+  );
 
   it('gives M to Model properties alone, unshifted and unmodified, on either platform', () => {
     const unmodified = press('m');
