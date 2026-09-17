@@ -28,8 +28,9 @@ The projects run in order:
 - `frame-time` measures a drag of `Web shop`, a process with flows at both
   ends, in a scene the spec builds from three offset copies of the
   two-diagram model's storefront diagram, with one worker and one retry.
-  Earlier project failures skip it. Other browser work must not compete with
-  this measurement.
+  Earlier project failures skip it locally, where CI runs it in a job of its
+  own whatever the rest of the suite did. Other browser work must not compete
+  with this measurement.
 
 That order is what a plain local run follows. CI splits the suite across two
 gating jobs that run beside each other, each passing `--no-deps` so a job runs

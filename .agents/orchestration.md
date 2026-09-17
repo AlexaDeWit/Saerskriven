@@ -18,7 +18,8 @@ Edit here when the process changes, in the same PR as the change.
   **e2e-pages-floor** runs the `pages` and `frame-time` projects on one worker
   on a runner of its own, so the frame-time floor shares its host with no
   other browser. Both are in the source checks' `needs` and verdict. A third
-  job, **e2e-report**, merges the shard blob reports into one HTML report when
+  job, **e2e-report**, merges every browser job's blob report into one HTML
+  report when
   a browser job goes red. It reports nothing about the code and stays out of
   the gate.
 - Every PR rehearses the release builds and, where its token can sign, the

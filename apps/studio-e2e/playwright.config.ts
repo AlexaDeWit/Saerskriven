@@ -121,7 +121,11 @@ export default defineConfig({
     // retried once and a second failure is the reading. The retry records no
     // trace: tracing paces the drag with screenshots and snapshots, and a
     // retry under more load than the first attempt is no second reading.
-    // Both ceilings in the spec are regression signals. The share ceiling
+    // Both ceilings in the spec are regression signals, of a gross
+    // regression rather than of correctness: a reading taken on #481's head
+    // put a fivefold blow-up in per-frame live layout work over the share
+    // ceiling and a twofold blow-up under it, and a live layout frozen
+    // altogether reads clean. The share ceiling
     // does not move. The single-longest-frame ceiling sits above the band a
     // GitHub-hosted runner produces on its own (#309) and moves only with a
     // new reading of that band.
