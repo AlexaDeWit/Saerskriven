@@ -92,7 +92,8 @@ release wrote, `test-data/saerskriven/v0.2.1.yaml` and
 `nativeFixtures` in
 [`saerskriven-yaml.fixtures.ts`](src/lib/saerskriven-yaml.fixtures.ts) lists
 the native files committed in the writer's canonical form, the feature-complete
-file and [`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md),
-and each is compared byte for byte with a write of its read.
+file, `test-data/saerskriven/two-diagrams.yaml` and
+[`threat-modelling/saerskriven.yaml`](../../threat-modelling/README.md), and
+each is compared byte for byte with a write of its read.
 
 Unit tests: `pnpm nx test @saerskriven/formats`.

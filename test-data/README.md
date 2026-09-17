@@ -22,35 +22,47 @@ Cached tests only read committed snapshots, and
 producer is `@saerskriven/render`. Review and commit the snapshot diff with the
 source change.
 
-| File                                          | Written by        | Read by        |
-| --------------------------------------------- | ----------------- | -------------- |
-| `render/every-glyph.snapshot.svg`             | `packages/render` | no other suite |
-| `render/every-glyph.snapshot.png`             | `packages/render` | no other suite |
-| `render/two-diagrams-storefront.snapshot.svg` | `packages/render` | `apps/cli`     |
-| `render/two-diagrams-storefront.snapshot.png` | `packages/render` | `apps/cli`     |
-| `render/two-diagrams-fulfilment.snapshot.svg` | `packages/render` | `apps/cli`     |
-| `render/two-diagrams-fulfilment.snapshot.png` | `packages/render` | `apps/cli`     |
-| `render/two-diagrams.snapshot.typ`            | `packages/render` | no other suite |
-| `render/two-diagrams.register.snapshot.md`    | `packages/render` | `apps/cli`     |
+| File                                          | Written by        | Read by                       |
+| --------------------------------------------- | ----------------- | ----------------------------- |
+| `render/every-glyph.snapshot.svg`             | `packages/render` | no other suite                |
+| `render/every-glyph.snapshot.png`             | `packages/render` | no other suite                |
+| `render/two-diagrams-storefront.snapshot.svg` | `packages/render` | `apps/cli`, `apps/studio-e2e` |
+| `render/two-diagrams-storefront.snapshot.png` | `packages/render` | `apps/cli`, `apps/studio-e2e` |
+| `render/two-diagrams-fulfilment.snapshot.svg` | `packages/render` | `apps/cli`                    |
+| `render/two-diagrams-fulfilment.snapshot.png` | `packages/render` | `apps/cli`                    |
+| `render/two-diagrams.snapshot.typ`            | `packages/render` | `apps/studio-e2e`             |
+| `render/two-diagrams.register.snapshot.md`    | `packages/render` | `apps/cli`, `apps/studio-e2e` |
 
 The `.snapshot.png` rasters are written only where the rasterizer module
 [`SAERSKRIVEN_RESVG_WASM`](../docs/build.md#the-svg-rasterizer) names has been
 built.
 
-The remaining files are maintained inputs, read as follows:
+The remaining files are maintained inputs, written by hand or vendored, and
+no target writes them. They are read as follows:
 
-| File                                      | Read by                                                  |
-| ----------------------------------------- | -------------------------------------------------------- |
-| `every-glyph.model.json`                  | `packages/canvas`, `packages/render`, `apps/studio-e2e`  |
-| `two-diagrams.model.json`                 | `packages/canvas`, `packages/render`, `packages/formats` |
-| `saerskriven/two-diagrams.yaml`           | `packages/formats`, `packages/mcp`, `apps/cli`           |
-| `render/two-diagrams.snapshot.pdf.sha256` | `apps/cli`                                               |
-| `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`           |
-| `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`                           |
+| File                                      | Read by                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `every-glyph.model.json`                  | `packages/canvas`, `packages/render`, `apps/studio-e2e`                                     |
+| `two-diagrams.model.json`                 | `packages/canvas`, `packages/render`, `packages/formats`, `apps/studio-e2e`                 |
+| `saerskriven/two-diagrams.yaml`           | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio-e2e`, `scripts/package-cli.sh` |
+| `render/two-diagrams.snapshot.pdf.sha256` | `apps/cli`, `apps/studio-e2e`                                                               |
+| `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio`, `apps/studio-e2e`            |
+| `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`, `apps/studio`                                               |
+| `saerskriven/v0.2.1.yaml`                 | `packages/formats`, `nix/check.nix`                                                         |
+| `saerskriven/saerskriven-v0.3.0.yaml`     | `packages/formats`                                                                          |
+| `studio/recovery-v0.4.0.json`             | `apps/studio`                                                                               |
+| `threat-dragon/demo/*.json`               | `packages/formats`                                                                          |
+| `threat-dragon/models/*.json`             | `packages/formats`                                                                          |
+| `threat-dragon/schema/*.json`             | `packages/formats`                                                                          |
+| `threat-dragon/i18n/*.json`               | `packages/formats`                                                                          |
+| `otm/example.json`                        | `packages/wire-otm`, `packages/formats`, `packages/mcp`, `apps/studio`, `apps/studio-e2e`   |
+| `tmbom/example.json`                      | `packages/wire-tmbom`, `packages/formats`, `packages/mcp`                                   |
+| `tmbom/vault-invalid-zones.json`          | `packages/formats`                                                                          |
+| `adversarial/deep-nesting.json`           | `packages/formats`, `apps/cli`                                                              |
+| `adversarial/typst-injection.yaml`        | `apps/cli`                                                                                  |
+| every other `adversarial/` payload        | `packages/formats`                                                                          |
 
-The frozen release files `saerskriven/v0.2.1.yaml` and
-`saerskriven/saerskriven-v0.3.0.yaml` are read by `packages/formats`, and
-`studio/recovery-v0.4.0.json` by `apps/studio`.
+The provenance of the `otm/` and `tmbom/` files is in their own READMEs.
 
 ## `threat-dragon/feature-complete.json`
 
@@ -64,15 +76,16 @@ highest threat number 40, and the read issues up to
 `max(threatTop, highest threat number in the file)`, 40. `packages/formats`
 compares its read with a model written out by hand, writes it back onto
 itself with no scalar moved, and runs the write through Threat Dragon's JSON
-Schema. `packages/mcp` and `apps/cli` open it as a Threat Dragon file.
+Schema. `packages/mcp`, `apps/cli`, `apps/studio` and `apps/studio-e2e` open
+it as a Threat Dragon file.
 
 ## `saerskriven/feature-complete.yaml`
 
 A version 2 Saerskriven YAML file written by hand in the writer's canonical
 form, using every field, enum value and union variant
 `@saerskriven/wire-saerskriven-yaml-v2` declares. `packages/formats` reads it
-as the model it states and writes it back to the byte, and `apps/cli`
-validates it.
+as the model it states and writes it back to the byte, `apps/cli` validates
+it, and `apps/studio` opens and saves it.
 
 ## `saerskriven/two-diagrams.yaml`
 
@@ -80,9 +93,9 @@ The native encoding of `two-diagrams.model.json`, so a suite that opens a file
 from disk renders the model the render goldens were drawn from. It was written
 once through the Saerskriven YAML codec's write of that model, and
 `packages/formats` holds it to both: its read equals the JSON model, and a write
-of that read gives back the committed bytes. `packages/mcp` and `apps/cli` open
-it, and the CLI compares its renders with the render goldens. To reproduce it
-after a change to the model file, write
+of that read gives back the committed bytes. `packages/mcp`, `apps/cli` and
+`apps/studio-e2e` open it, and the CLI compares its renders with the render
+goldens. To reproduce it after a change to the model file, write
 `committedModel('two-diagrams.model.json')` through `saerskrivenYamlCodec.write`
 from a spec run in `packages/formats` and commit the output.
 
@@ -144,7 +157,8 @@ naming another flow. Its open threats exercise paired badges and a neutral
 badge. A flow's open threat resting on an invalidated assumption draws the
 flag mark under a count, and a boundary curve named only by a `mitigated`
 threat with a proposed mitigation draws the flag-only mark. Canvas and render
-tests parse it, and render draws its goldens.
+tests parse it, render draws its goldens, and `apps/studio-e2e` measures badge
+clearance on it.
 
 ## `two-diagrams.model.json`
 
@@ -155,7 +169,8 @@ one process, and flow names long enough to crowd, so the canvas label
 placement checks have something to place. Its register has threats over four
 methodologies, one custom, a threat on no element, mitigations and assumptions
 in every status, assumptions that apply to the model, and both flags. The
-canvas suite lays both diagrams out, and render draws its goldens from it.
+canvas suite lays both diagrams out, render draws its goldens from it, and
+`apps/studio-e2e` opens it.
 `committedDiagrams` on `@saerskriven/model/fixtures` lists the diagrams both
 suites draw.
 
@@ -288,10 +303,11 @@ Hostile inputs, none of them vendored. Most are small payloads built to break
 one of the read bounds `@saerskriven/formats` exports as `readLimits`, so each
 bound is pinned by an input rather than by its own definition. An oversized
 text is generated in the spec instead of committed. `read-limits.spec.ts`
-hands every payload to both the Saerskriven YAML read and the Threat Dragon
-read, because YAML is a superset of JSON and a hostile file arrives with
-whatever extension its author chose. The bounds and the alias accounting are
-described in the TSDoc of `read-limits.ts` and `yaml-alias-cost.ts`.
+hands every payload in the table below to both the Saerskriven YAML read and
+the Threat Dragon read, because YAML is a superset of JSON and a hostile file
+arrives with whatever extension its author chose. The bounds and the alias
+accounting are described in the TSDoc of `read-limits.ts` and
+`yaml-alias-cost.ts`.
 
 | File                   | Bytes | What it is                                                                                           | What it pins                                                                                                 |
 | ---------------------- | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
