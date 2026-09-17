@@ -62,7 +62,8 @@ no target writes them. They are read as follows:
 | `adversarial/typst-injection.yaml`        | `apps/cli`                                                                                  |
 | every other `adversarial/` payload        | `packages/formats`                                                                          |
 
-The provenance of the `otm/` and `tmbom/` files is in their own READMEs.
+`otm/` and `tmbom/` each also hold a `README.md` and a `LICENSE` recording the
+provenance of the files beside them. No suite reads either.
 
 ## `threat-dragon/feature-complete.json`
 
@@ -94,8 +95,9 @@ from disk renders the model the render goldens were drawn from. It was written
 once through the Saerskriven YAML codec's write of that model, and
 `packages/formats` holds it to both: its read equals the JSON model, and a write
 of that read gives back the committed bytes. `packages/mcp`, `apps/cli` and
-`apps/studio-e2e` open it, and the CLI compares its renders with the render
-goldens. To reproduce it after a change to the model file, write
+`apps/studio-e2e` open it, the CLI compares its renders with the render
+goldens, and `scripts/package-cli.sh` validates and renders it with the
+packaged CLI. To reproduce it after a change to the model file, write
 `committedModel('two-diagrams.model.json')` through `saerskrivenYamlCodec.write`
 from a spec run in `packages/formats` and commit the output.
 
