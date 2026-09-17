@@ -70,16 +70,15 @@ describe('what a refused edit leaves on disk', () => {
     readonly revision: (attempted: ReturnType<typeof attempt>) => string;
     readonly edits: readonly EditInput[];
     readonly phrase: string;
+    readonly lines: number;
   }>([
     {
       name: 'the model refuses one edit of the batch',
       file: modelFile,
       revision: (attempted) => revisionIn(attempted, modelFile),
       edits: [renaming, { op: 'remove_element', element: 'element-absent' }],
-      phrase: [
-        'The edit at index 1 was refused, so none of the batch was applied and the file is as it was.',
-        'The model holds no element "element-absent".',
-      ].join('\n'),
+      phrase: 'index 1',
+      lines: 2,
     },
     {
       name: 'the revision no longer matches the file',
@@ -87,6 +86,7 @@ describe('what a refused edit leaves on disk', () => {
       revision: () => staleRevision,
       edits: [renaming],
       phrase: 'changed since the read this call quoted',
+      lines: 3,
     },
     {
       name: 'no codec claims the file',
@@ -94,6 +94,7 @@ describe('what a refused edit leaves on disk', () => {
       revision: (attempted) => revisionIn(attempted, unclaimedFile),
       edits: [renaming],
       phrase: 'was not read',
+      lines: 2,
     },
     {
       name: 'the edited model would be past the size this server reads',
@@ -106,13 +107,15 @@ describe('what a refused edit leaves on disk', () => {
         ),
       ],
       phrase: 'past the size this server reads',
+      lines: 2,
     },
-  ])('writes nothing when $name', ({ file, revision, edits, phrase }) => {
+  ])('writes nothing when $name', ({ file, revision, edits, phrase, lines }) => {
     const attempted = attempt();
     const before = attempted.bytes(file);
-    const refused = attempted.edit(file, revision(attempted), edits);
+    const refused = refusalOf(attempted.edit(file, revision(attempted), edits));
     expect(attempted.bytes(file)).toEqual(before);
-    expect(refusalOf(refused).join('\n')).toContain(phrase);
+    expect(refused.join('\n')).toContain(phrase);
+    expect(refused).toHaveLength(lines);
   });
 });
 

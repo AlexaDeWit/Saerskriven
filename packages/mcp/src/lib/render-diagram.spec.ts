@@ -1,3 +1,4 @@
+import { Either } from 'effect';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -52,34 +53,32 @@ describe('what saer_render_diagram refuses', () => {
   });
 
   it('words what the rasterizer refused where the module will not start', async () => {
-    expect(
-      refusalOf(await renderDiagram(drawable, brokenRasterizer, {}))[0],
-    ).toContain('cannot draw a PNG');
+    const missing = Either.getOrThrow(Either.flip(noRasterizer()));
+    const refused = refusalOf(
+      await renderDiagram(drawable, brokenRasterizer, {}),
+    ).join('\n');
+    expect(refused).toContain('cannot draw a PNG');
+    expect(refused).not.toContain(missing);
+    expect(refused).toContain('WebAssembly');
   });
 
-  it('refuses an out path that names anything but a PNG', async () => {
-    const refused = await Promise.all(
-      ['diagram', 'diagram.', 'diagram.png.yaml', 'model.yaml', '.png'].map(
-        async (out) =>
-          refusalOf(await renderDiagram(drawable, noRasterizer, { out }))[0],
-      ),
-    );
-    expect(
-      refused.filter((line) => line?.includes('does not end in .png')).length,
-    ).toBe(refused.length);
-  });
+  it.each(['diagram', 'diagram.', 'diagram.png.yaml', 'model.yaml', '.png'])(
+    'refuses the out path %s, which names anything but a PNG',
+    async (out) => {
+      expect(
+        refusalOf(await renderDiagram(drawable, noRasterizer, { out }))[0],
+      ).toContain('does not end in .png');
+    },
+  );
 
-  it('takes a PNG extension in any case, and past another extension', async () => {
-    const drawn = await Promise.all(
-      ['diagram.PNG', 'diagram.Png', 'diagram.yaml.png'].map(
-        async (out) =>
-          refusalOf(await renderDiagram(drawable, noRasterizer, { out }))[0],
-      ),
-    );
-    expect(
-      drawn.filter((line) => line?.includes('cannot draw a PNG')).length,
-    ).toBe(drawn.length);
-  });
+  it.each(['diagram.PNG', 'diagram.Png', 'diagram.yaml.png'])(
+    'takes the out path %s as a PNG',
+    async (out) => {
+      expect(
+        refusalOf(await renderDiagram(drawable, noRasterizer, { out }))[0],
+      ).toContain('cannot draw a PNG');
+    },
+  );
 
   it('refuses an out path that leaves the root before it draws', async () => {
     expect(

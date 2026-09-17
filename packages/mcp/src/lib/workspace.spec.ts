@@ -1,3 +1,4 @@
+import { DetectionFailure, renderReadFailure } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -124,9 +125,15 @@ describe('a path a tool call names', () => {
   });
 
   it('carries the codec wording for a text no format claimed', () => {
+    const unclaimed = DetectionFailure.NoFormatClaimed({
+      tried: ['threat-dragon', 'saerskriven-yaml'],
+    });
+    expect(failureOf('unclaimed.yaml')).toEqual(
+      WorkspaceFailure.Unread({ path: 'unclaimed.yaml', failure: unclaimed }),
+    );
     expect(renderWorkspaceFailure(failureOf('unclaimed.yaml'))).toEqual([
       'The file "unclaimed.yaml" was not read.',
-      'No format claimed the file. Saerskriven tried threat-dragon, saerskriven-yaml.',
+      ...renderReadFailure(unclaimed),
     ]);
   });
 });

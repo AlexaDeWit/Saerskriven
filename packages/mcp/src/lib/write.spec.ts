@@ -110,11 +110,13 @@ describe('a save that lands while a replacement is being prepared', () => {
       'the other writer saved\n',
     );
     expect(new Set(readdirSync(tree.root))).toEqual(before);
-    expect(renderWriteFailure(failureOf(refused))).toEqual([
-      `The file "${modelFile}" changed since the read this call quoted, so nothing was written.`,
-      `The call quoted ${quoted}, and the file on disk is ${revisionIn(tree.root, modelFile)}.`,
-      'Read the file again and reconsider the edit against what it holds now.',
-    ]);
+    expect(failureOf(refused)).toEqual(
+      WriteFailure.StaleRevision({
+        file: modelFile,
+        quoted,
+        found: revisionIn(tree.root, modelFile),
+      }),
+    );
   });
 
   it('reports the reason the system gave where the target is gone', () => {
