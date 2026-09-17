@@ -19,6 +19,7 @@ import {
   resourceProseOf,
   structuredOf,
   textOf,
+  type Era,
   type McpSession,
   type ResultProse,
 } from '../fixtures.js';
@@ -164,24 +165,35 @@ const callArguments = (
     ],
   ]);
 
+const featureCompleteSession = (era: Era): Pick<McpSession, 'client'> => {
+  let opened: McpSession | undefined;
+
+  beforeAll(async () => {
+    opened = await session({
+      root: repositoryRoot,
+      file: featureCompleteFile,
+      era,
+      rasterizer,
+    });
+  });
+
+  afterAll(async () => {
+    await opened?.end();
+  });
+
+  return {
+    get client() {
+      if (opened === undefined) {
+        throw new Error('The session opens before the first test');
+      }
+      return opened.client;
+    },
+  };
+};
+
 for (const era of eras) {
   describe(`a ${era} client of the server object`, () => {
-    let fixture: McpSession;
-
-    beforeAll(async () => {
-      fixture = await session({
-        root: repositoryRoot,
-        file: featureCompleteFile,
-        era,
-        rasterizer,
-      });
-    });
-
-    afterAll(async () => {
-      await fixture.end();
-    });
-
-    const inspecting = () => fixture.client.callTool({ name: 'saer_inspect' });
+    const fixture = featureCompleteSession(era);
 
     const everyTool = async () => (await fixture.client.listTools()).tools;
 
@@ -506,6 +518,12 @@ for (const era of eras) {
         return called;
       };
 
+      let called: readonly CalledTool[];
+
+      beforeAll(async () => {
+        called = await overEveryCall();
+      });
+
       it('gives every tool the server offers a row in the call table', async () => {
         const tools = await everyTool();
         const rows = callArguments(staleRevision);
@@ -514,16 +532,14 @@ for (const era of eras) {
         ).toEqual([]);
       });
 
-      it('opens every prose block of every call, default model or none', async () => {
-        const called = await overEveryCall();
+      it('opens every prose block of every call, default model or none', () => {
         const prose = called.flatMap((one) => one.read.prose);
         expect(called.flatMap((one) => one.read.unread)).toEqual([]);
         expect(prose.length).toBeGreaterThan(0);
         expect(prose).toEqual(prose.map(() => dataNotInstructions));
       });
 
-      it('attaches a resource link from no tool but the one that draws', async () => {
-        const called = await overEveryCall();
+      it('attaches a resource link from no tool but the one that draws', () => {
         expect(
           called
             .filter(
@@ -535,8 +551,7 @@ for (const era of eras) {
       });
 
       describe.skipIf(rasterizerUnbuilt)('the link a call does attach', () => {
-        it('names only the path and the picture of what was drawn', async () => {
-          const called = await overEveryCall();
+        it('names only the path and the picture of what was drawn', () => {
           const linked = called.filter((one) => one.read.links.length > 0);
           expect(
             called
@@ -569,54 +584,6 @@ for (const era of eras) {
           proseOf(result).prose.map((text) => text.split('\n')[0]),
         ).toEqual([dataNotInstructions]);
         expect(drawn.image.mimeType).toEqual('image/png');
-      });
-    });
-
-    describe('every edit variant through a client', () => {
-      it('applies each op the schema declares and writes a changed file', async () => {
-        const writable = editableTree();
-        const quoted = revisionOf(readFileSync(join(writable.root, modelFile)));
-        const run = await session({ root: writable.root, era });
-        const outcomes = await Promise.all(
-          editVariants.map(async ({ op, edits }) => {
-            const file = writable.copy(`${op}.yaml`);
-            const result = await run.client.callTool({
-              name: 'saer_edit',
-              arguments: { file, revision: quoted, edits },
-            });
-            return {
-              op,
-              refusal: result.isError === true ? textOf(result) : undefined,
-              applied: result.isError === true ? 0 : editOf(result).applied,
-              changed:
-                revisionOf(readFileSync(join(writable.root, file))) !== quoted,
-            };
-          }),
-        );
-        await run.end();
-        expect(
-          outcomes.flatMap((outcome) =>
-            outcome.refusal === undefined
-              ? []
-              : [[outcome.op, outcome.refusal]],
-          ),
-        ).toEqual([]);
-        expect(
-          outcomes.map(({ op, applied, changed }) => ({
-            op,
-            applied,
-            changed,
-          })),
-        ).toEqual(
-          editVariants.map(({ op, edits }) => ({
-            op,
-            applied: edits.length,
-            changed: true,
-          })),
-        );
-        expect(new Set(outcomes.map((outcome) => outcome.op))).toEqual(
-          new Set(editOps),
-        );
       });
     });
 
@@ -668,96 +635,6 @@ for (const era of eras) {
       });
     });
 
-    describe('saer_inspect against a Threat Dragon file', () => {
-      it('reports the format, the counts and the revision of the file', async () => {
-        const reading = readingOf(await inspecting());
-        expect({
-          file: reading.file,
-          format: reading.format,
-          revision: reading.revision,
-          diagrams: reading.diagrams,
-          totals: reading.totals,
-          divergences: reading.divergences,
-        }).toEqual({
-          file: featureCompleteFile,
-          format: 'threat-dragon',
-          revision: revisionOf(
-            readFileSync(join(repositoryRoot, featureCompleteFile)),
-          ),
-          diagrams: [
-            { id: '0', title: 'Booking', elements: 9, threats: 15 },
-            { id: '1', title: 'Records', elements: 4, threats: 9 },
-          ],
-          totals: {
-            diagrams: 2,
-            elements: 13,
-            threats: 24,
-            mitigations: 13,
-            assumptions: 0,
-          },
-          divergences: [
-            expect.objectContaining({
-              subject: { kind: 'threat', id: 'threat-card' },
-              reason: 'narrowed',
-            }),
-          ],
-        });
-      });
-
-      it('carries the metadata the file states, and the root it may read', async () => {
-        const result = await inspecting();
-        const reading = readingOf(result);
-        expect({
-          root: inspectionOf(result).root,
-          title: reading.metadata.title,
-          owner: reading.metadata.owner,
-          contributors: reading.metadata.contributors,
-        }).toEqual({
-          root: repositoryRoot,
-          title: 'Clinic booking',
-          owner: 'Alexandra de Wit',
-          contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
-        });
-      });
-
-      it('answers a named file and the default file alike', async () => {
-        const named = await fixture.client.callTool({
-          name: 'saer_inspect',
-          arguments: { file: featureCompleteFile },
-        });
-        expect(readingOf(named)).toEqual(readingOf(await inspecting()));
-      });
-
-      it('reads a native file as that format', async () => {
-        const reading = readingOf(
-          await fixture.client.callTool({
-            name: 'saer_inspect',
-            arguments: { file: twoDiagramsFile },
-          }),
-        );
-        expect(reading.format).toEqual('saerskriven-yaml');
-      });
-    });
-
-    describe('a file outside the root', () => {
-      const outside = (file: string) =>
-        fixture.client.callTool({ name: 'saer_inspect', arguments: { file } });
-
-      it('is refused as a tool result rather than as a protocol error', async () => {
-        const result = await outside('../outside.yaml');
-        expect(result.isError).toBe(true);
-        expect(textOf(result)).toContain(
-          'is outside the root this server may read',
-        );
-      });
-
-      it('names where the path resolved to', async () => {
-        expect(textOf(await outside('/etc/passwd'))).toContain(
-          'It resolves to "/etc/passwd"',
-        );
-      });
-    });
-
     describe('a server started with no default file', () => {
       it('lists the candidate models under its root', async () => {
         const listing = await session({ root: tree.root, era });
@@ -779,3 +656,147 @@ for (const era of eras) {
     });
   });
 }
+
+describe('a modern client of the server object, over what no era changes', () => {
+  const fixture = featureCompleteSession('modern');
+
+  const inspecting = () => fixture.client.callTool({ name: 'saer_inspect' });
+
+  describe('every edit variant through a client', () => {
+    it('applies each op the schema declares and writes a changed file', async () => {
+      const writable = editableTree();
+      const quoted = revisionOf(readFileSync(join(writable.root, modelFile)));
+      const run = await session({ root: writable.root, era: 'modern' });
+      const outcomes = await Promise.all(
+        editVariants.map(async ({ op, edits }) => {
+          const file = writable.copy(`${op}.yaml`);
+          const result = await run.client.callTool({
+            name: 'saer_edit',
+            arguments: { file, revision: quoted, edits },
+          });
+          return {
+            op,
+            refusal: result.isError === true ? textOf(result) : undefined,
+            applied: result.isError === true ? 0 : editOf(result).applied,
+            changed:
+              revisionOf(readFileSync(join(writable.root, file))) !== quoted,
+          };
+        }),
+      );
+      await run.end();
+      expect(
+        outcomes.flatMap((outcome) =>
+          outcome.refusal === undefined
+            ? []
+            : [[outcome.op, outcome.refusal]],
+        ),
+      ).toEqual([]);
+      expect(
+        outcomes.map(({ op, applied, changed }) => ({
+          op,
+          applied,
+          changed,
+        })),
+      ).toEqual(
+        editVariants.map(({ op, edits }) => ({
+          op,
+          applied: edits.length,
+          changed: true,
+        })),
+      );
+      expect(new Set(outcomes.map((outcome) => outcome.op))).toEqual(
+        new Set(editOps),
+      );
+    });
+  });
+
+  describe('saer_inspect against a Threat Dragon file', () => {
+    it('reports the format, the counts and the revision of the file', async () => {
+      const reading = readingOf(await inspecting());
+      expect({
+        file: reading.file,
+        format: reading.format,
+        revision: reading.revision,
+        diagrams: reading.diagrams,
+        totals: reading.totals,
+        divergences: reading.divergences,
+      }).toEqual({
+        file: featureCompleteFile,
+        format: 'threat-dragon',
+        revision: revisionOf(
+          readFileSync(join(repositoryRoot, featureCompleteFile)),
+        ),
+        diagrams: [
+          { id: '0', title: 'Booking', elements: 9, threats: 15 },
+          { id: '1', title: 'Records', elements: 4, threats: 9 },
+        ],
+        totals: {
+          diagrams: 2,
+          elements: 13,
+          threats: 24,
+          mitigations: 13,
+          assumptions: 0,
+        },
+        divergences: [
+          expect.objectContaining({
+            subject: { kind: 'threat', id: 'threat-card' },
+            reason: 'narrowed',
+          }),
+        ],
+      });
+    });
+
+    it('carries the metadata the file states, and the root it may read', async () => {
+      const result = await inspecting();
+      const reading = readingOf(result);
+      expect({
+        root: inspectionOf(result).root,
+        title: reading.metadata.title,
+        owner: reading.metadata.owner,
+        contributors: reading.metadata.contributors,
+      }).toEqual({
+        root: repositoryRoot,
+        title: 'Clinic booking',
+        owner: 'Alexandra de Wit',
+        contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
+      });
+    });
+
+    it('answers a named file and the default file alike', async () => {
+      const named = await fixture.client.callTool({
+        name: 'saer_inspect',
+        arguments: { file: featureCompleteFile },
+      });
+      expect(readingOf(named)).toEqual(readingOf(await inspecting()));
+    });
+
+    it('reads a native file as that format', async () => {
+      const reading = readingOf(
+        await fixture.client.callTool({
+          name: 'saer_inspect',
+          arguments: { file: twoDiagramsFile },
+        }),
+      );
+      expect(reading.format).toEqual('saerskriven-yaml');
+    });
+  });
+
+  describe('a file outside the root', () => {
+    const outside = (file: string) =>
+      fixture.client.callTool({ name: 'saer_inspect', arguments: { file } });
+
+    it('is refused as a tool result rather than as a protocol error', async () => {
+      const result = await outside('../outside.yaml');
+      expect(result.isError).toBe(true);
+      expect(textOf(result)).toContain(
+        'is outside the root this server may read',
+      );
+    });
+
+    it('names where the path resolved to', async () => {
+      expect(textOf(await outside('/etc/passwd'))).toContain(
+        'It resolves to "/etc/passwd"',
+      );
+    });
+  });
+});
