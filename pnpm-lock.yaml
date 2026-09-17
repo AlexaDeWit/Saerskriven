@@ -448,6 +448,8 @@ importers:
         specifier: 'catalog:'
         version: 4.9.0
 
+  packages/i18n: {}
+
   packages/mcp:
     dependencies:
       '@modelcontextprotocol/server':
