@@ -16,10 +16,7 @@ import { dispatch, modelStore } from '../store/store.js';
 import { ModelPropertiesPanel } from './model-properties.js';
 import { sectionLabel } from '@saerskriven/render';
 import { present, undoable } from '../store/store.fixtures.js';
-import {
-  chooseFrom,
-  editorTimeout,
-} from './panel.fixtures.js';
+import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 import { describedNumbers, noop, textbox } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';

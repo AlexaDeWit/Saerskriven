@@ -144,7 +144,9 @@ describe(
       });
 
       expect(
-        describedNumbers(screen.getByRole('button', { name: 'Delete threat 1' })),
+        describedNumbers(
+          screen.getByRole('button', { name: 'Delete threat 1' }),
+        ),
       ).toEqual([2]);
     });
 

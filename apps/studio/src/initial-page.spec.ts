@@ -7,10 +7,7 @@ import {
 } from '../initial-page.mjs';
 import { colourModeStorageKey } from './theme-preference.js';
 
-const source = readFileSync(
-  join(import.meta.dirname, '../index.html'),
-  'utf8',
-);
+const source = readFileSync(join(import.meta.dirname, '../index.html'), 'utf8');
 const page = new DOMParser().parseFromString(source, 'text/html');
 const root = page.querySelector('#root');
 const publicDirectory = join(import.meta.dirname, '../public');

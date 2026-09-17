@@ -109,14 +109,19 @@ describe('what a refused edit leaves on disk', () => {
       phrase: 'past the size this server reads',
       lines: 2,
     },
-  ])('writes nothing when $name', ({ file, revision, edits, phrase, lines }) => {
-    const attempted = attempt();
-    const before = attempted.bytes(file);
-    const refused = refusalOf(attempted.edit(file, revision(attempted), edits));
-    expect(attempted.bytes(file)).toEqual(before);
-    expect(refused.join('\n')).toContain(phrase);
-    expect(refused).toHaveLength(lines);
-  });
+  ])(
+    'writes nothing when $name',
+    ({ file, revision, edits, phrase, lines }) => {
+      const attempted = attempt();
+      const before = attempted.bytes(file);
+      const refused = refusalOf(
+        attempted.edit(file, revision(attempted), edits),
+      );
+      expect(attempted.bytes(file)).toEqual(before);
+      expect(refused.join('\n')).toContain(phrase);
+      expect(refused).toHaveLength(lines);
+    },
+  );
 });
 
 describe('what an applied edit writes', () => {

@@ -359,12 +359,18 @@ describe('the studio exports', () => {
           compile: () => Promise.resolve(Either.left(PdfFailure.NoDocument())),
         }),
       ),
-      await headlineOf((commands) => {
-        commands.pdf();
-      }, specRenders({ pdfAssets: unavailable })),
-      await headlineOf((commands) => {
-        commands.png();
-      }, specRenders({ pngAssets: unavailable })),
+      await headlineOf(
+        (commands) => {
+          commands.pdf();
+        },
+        specRenders({ pdfAssets: unavailable }),
+      ),
+      await headlineOf(
+        (commands) => {
+          commands.png();
+        },
+        specRenders({ pngAssets: unavailable }),
+      ),
       await headlineOf(
         (commands) => {
           commands.png();

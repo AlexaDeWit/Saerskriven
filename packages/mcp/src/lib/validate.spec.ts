@@ -35,9 +35,9 @@ describe('what saer_validate reports', () => {
   });
 
   it('names every format tried where no codec claims the file', () => {
-    const refused = refusalOf(validate(unreadable, { file: unclaimedFile })).join(
-      '\n',
-    );
+    const refused = refusalOf(
+      validate(unreadable, { file: unclaimedFile }),
+    ).join('\n');
     expect(refused).toContain('threat-dragon');
     expect(refused).toContain('saerskriven-yaml');
   });
