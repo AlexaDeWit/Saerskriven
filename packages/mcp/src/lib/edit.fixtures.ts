@@ -59,11 +59,9 @@ draft.diagrams.push({
  */
 export const editableModel: Model = parsedFixture(draft);
 
-/** {@link editableModel} as the native YAML a tree writes. */
-export const editableYaml = saerskrivenYamlCodec.write(editableModel).output;
+const editableYaml = saerskrivenYamlCodec.write(editableModel).output;
 
-/** A root holding the files the write tools read, one temporary tree per call. */
-export type EditableTree = {
+type EditableTree = {
   readonly root: string;
   readonly copy: (name: string) => string;
 };

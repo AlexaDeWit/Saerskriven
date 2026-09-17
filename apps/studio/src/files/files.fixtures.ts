@@ -177,8 +177,7 @@ export function vendoredFile(path: string): ChosenFile {
   };
 }
 
-/** One text a bridge was asked to write, and whether it was asked where. */
-export type Recorded = {
+type Recorded = {
   readonly name: string;
   readonly text: string;
   readonly bytes?: Uint8Array;

@@ -187,8 +187,7 @@ export const runFromMenu = async (page: Page, name: string): Promise<void> => {
   await expect(page.getByRole('menu')).toHaveCount(0);
 };
 
-/** A file the studio wrote through the download path. */
-export type SavedFile = {
+type SavedFile = {
   readonly name: string;
   readonly text: string;
 };
@@ -206,8 +205,7 @@ export const savedFile = async (page: Page): Promise<SavedFile> => {
   };
 };
 
-/** An export downloaded from the menu, as its name and bytes. */
-export type ExportedFile = {
+type ExportedFile = {
   readonly name: string;
   readonly bytes: Buffer;
 };
@@ -261,8 +259,7 @@ export const toolButton = (page: Page, name: string): Locator =>
 export const chromeCard = (page: Page): Locator =>
   page.getByTestId('chrome-card');
 
-/** Every tool the card offers, in the order the row draws them. */
-export const toolNames = [
+const toolNames = [
   'Select',
   'Actor',
   'Process',
@@ -387,12 +384,6 @@ export const undoOffered = async (page: Page): Promise<boolean> => {
 export const placeOf = async (node: Locator): Promise<string> => {
   const style = (await node.getAttribute('style')) ?? '';
   return /translate\([^)]*\)/u.exec(style)?.[0] ?? style;
-};
-
-/** How wide React Flow is drawing a node, read off the same attribute. */
-export const widthOf = async (node: Locator): Promise<string> => {
-  const style = (await node.getAttribute('style')) ?? '';
-  return /width:\s*[^;]*/u.exec(style)?.[0] ?? style;
 };
 
 /** Whether the topmost element at a screen point is `target` or inside it. */

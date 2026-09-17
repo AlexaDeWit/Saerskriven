@@ -26,15 +26,13 @@ const hostTarget = (): string | undefined => {
   return probe.status === 0 ? probe.stdout.trim() : undefined;
 };
 
-/** Where the packaging script writes the executable for this host. */
-export const executablePath = join(
+const executablePath = join(
   repositoryRoot,
   'dist/cli',
   `saer-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
 );
 
-/** The bundle the esbuild target writes, run under node. */
-export const bundleRunner: Runner = {
+const bundleRunner: Runner = {
   name: 'the bundle under node',
   command: process.execPath,
   leading: [bundlePath],

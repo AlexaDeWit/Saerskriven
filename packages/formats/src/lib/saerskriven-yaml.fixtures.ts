@@ -982,8 +982,7 @@ const saerskrivenModelPath = join(
   'threat-modelling/saerskriven.yaml',
 );
 
-/** A Saerskriven YAML file this repository commits, with its committed bytes. */
-export type NativeFixture = {
+type NativeFixture = {
   readonly name: string;
   readonly path: string;
   readonly text: string;

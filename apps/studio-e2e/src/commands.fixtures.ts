@@ -1,9 +1,4 @@
-import {
-  expect,
-  type Download,
-  type Locator,
-  type Page,
-} from '@playwright/test';
+import { expect, type Download, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 
 /**
@@ -18,8 +13,7 @@ export const viewportTransform = async (page: Page): Promise<string> =>
 export const viewportZoom = async (page: Page): Promise<number> =>
   Number(/scale\(([\d.]+)\)/u.exec(await viewportTransform(page))?.[1]);
 
-/** The file a chord asked the browser to download, and what it holds. */
-export type SavedByKey = {
+type SavedByKey = {
   readonly name: string;
   readonly text: string;
 };
@@ -58,19 +52,4 @@ export const savedFromMenu = async (
     chosen.click(),
   ]);
   return downloaded(download);
-};
-
-/** What a control says its shortcut is, to a pointer and to a reader alike. */
-export const shortcutShown = async (
-  page: Page,
-  control: Locator,
-): Promise<{ tooltip: string; keyShortcuts: string; description: string }> => {
-  const described = (await control.getAttribute('aria-describedby')) ?? '';
-  const note = page.locator(`[id="${described}"]`);
-  await expect(note).toHaveCount(1);
-  return {
-    tooltip: (await control.getAttribute('title')) ?? '',
-    keyShortcuts: (await control.getAttribute('aria-keyshortcuts')) ?? '',
-    description: (await note.textContent()) ?? '',
-  };
 };
