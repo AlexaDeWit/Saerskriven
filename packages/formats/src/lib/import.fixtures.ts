@@ -5,13 +5,10 @@ import { vendoredTexts } from './corpus.fixtures.js';
 
 /**
  * Every OTM and TM-BOM document the repository vendors, named by its path
- * under `test-data`. The vendored JSON Schemas are not documents.
+ * under `test-data`.
  */
 export const importCorpus: readonly { name: string; text: string }[] =
-  vendoredTexts(
-    ['otm', 'tmbom'],
-    (name) => name.endsWith('.json') && !name.startsWith('schema'),
-  );
+  vendoredTexts(['otm', 'tmbom'], (name) => name.endsWith('.json'));
 
 /** The upstream examples retain unknown fields to exercise import reports. */
 export const importTexts = {
