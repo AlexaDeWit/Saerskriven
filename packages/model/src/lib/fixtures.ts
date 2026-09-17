@@ -29,10 +29,10 @@ export function issuesOf(
 }
 
 /**
- * Hand-authored valid model exercising every record kind: the five element
- * kinds (the flow anchored at its source and free at its target, trust
- * boundaries in both shapes), a threat attached to two elements, a
- * mitigation, and an assumption. Typed as the schema's input, not as a
+ * Hand-authored valid model of one diagram: an actor, a process, an
+ * out-of-scope store, a flow anchored at its source and free at its target,
+ * a box and a curve trust boundary, one threat attached to two elements, one
+ * mitigation, and one assumption. Typed as the schema's input, not as a
  * Model: specs feed it through parseModel.
  */
 export const validModelFixture: z.input<typeof modelSchema> = {
