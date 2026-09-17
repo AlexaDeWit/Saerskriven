@@ -23,7 +23,8 @@ The projects run in order:
   preset. `playwright.config.ts` lists them and says why each is there.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
-- `frame-time` measures an Écluse drag with one worker and one retry. Earlier
+- `frame-time` measures a drag of the two-diagram model's `Web shop`, a
+  process with flows at both ends, with one worker and one retry. Earlier
   project failures skip it. Other browser work must not compete with this
   measurement.
 
