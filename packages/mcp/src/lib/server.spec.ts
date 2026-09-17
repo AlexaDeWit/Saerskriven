@@ -191,16 +191,9 @@ for (const era of eras) {
       });
 
       it('offers the tools this release registers', async () => {
-        expect((await everyTool()).map((tool) => tool.name)).toEqual(
-          registeredTools,
-        );
-      });
-
-      it('prefixes every tool name with saer_', async () => {
-        const tools = await everyTool();
-        expect(tools.filter((tool) => !tool.name.startsWith('saer_'))).toEqual(
-          [],
-        );
+        const names = (await everyTool()).map((tool) => tool.name);
+        expect(names).toEqual(registeredTools);
+        expect(names.filter((name) => !name.startsWith('saer_'))).toEqual([]);
       });
 
       it('advertises an object input and an object output for every tool', async () => {
@@ -545,7 +538,7 @@ for (const era of eras) {
         it('names only the path and the picture of what was drawn', async () => {
           const called = await overEveryCall();
           const linked = called.filter((one) => one.read.links.length > 0);
-          expect(linked.length).toBeGreaterThan(0);
+          expect(linked.map((one) => one.read.links[0])).toContain('drawn.png');
           expect(linked.map((one) => one.read.links)).toEqual(
             linked.map((one) => ownLinkTextOf(one.result)),
           );
@@ -568,22 +561,6 @@ for (const era of eras) {
           proseOf(result).prose.map((text) => text.split('\n')[0]),
         ).toEqual([dataNotInstructions]);
         expect(drawn.image.mimeType).toEqual('image/png');
-      });
-
-      it('names only the path and the picture in the text of a link', async () => {
-        const writable = editableTree();
-        const run = await session({ root: writable.root, era, rasterizer });
-        const result = await run.client.callTool({
-          name: 'saer_render_diagram',
-          arguments: {
-            file: modelFile,
-            diagram: 'diagram-main',
-            out: 'drawn.png',
-          },
-        });
-        await run.end();
-        expect(proseOf(result).links[0]).toEqual('drawn.png');
-        expect(proseOf(result).links).toEqual(ownLinkTextOf(result));
       });
     });
 

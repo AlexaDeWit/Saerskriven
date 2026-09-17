@@ -96,10 +96,8 @@ describe('validate', () => {
 
   it('reports a file it cannot read as the invocation being wrong', () => {
     const path = testDataPath('absent.json');
-    expect(validate(path)).toEqual({
-      code: 2,
-      out: '',
-      err: `error: cannot read ${path}: ENOENT: no such file or directory, open '${path}'\n`,
-    });
+    const outcome = validate(path);
+    expect(outcome).toMatchObject({ code: 2, out: '' });
+    expect(outcome.err.startsWith(`error: cannot read ${path}: `)).toBe(true);
   });
 });

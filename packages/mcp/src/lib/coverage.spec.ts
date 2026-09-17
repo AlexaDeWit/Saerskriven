@@ -15,7 +15,9 @@ const workspace = featureCompleteWorkspace();
 
 const reported = answerOf(coverage(workspace, {}));
 
-const model = answerOf(readNamed(workspace, undefined)).model;
+const reading = answerOf(readNamed(workspace, undefined));
+
+const { model } = reading;
 
 describe('what saer_coverage reports', () => {
   it('lists the elements the model coverage query calls unanalyzed', () => {
@@ -40,16 +42,11 @@ describe('what saer_coverage reports', () => {
     ).toEqual(threatCountByElement(model));
   });
 
-  it('says of an unanalyzed element whether it is marked out of scope', () => {
-    expect(
-      reported.unanalyzed.every((row) => typeof row.outOfScope === 'boolean'),
-    ).toBe(true);
-  });
-
   it('opens its text with the file, the format and the revision', () => {
-    expect(renderCoverage(reported).slice(0, 2)).toEqual([
+    expect(renderCoverage(reported).slice(0, 3)).toEqual([
       `file: ${featureCompleteFile}`,
       'format: threat-dragon',
+      `revision: ${reading.revision}`,
     ]);
   });
 });

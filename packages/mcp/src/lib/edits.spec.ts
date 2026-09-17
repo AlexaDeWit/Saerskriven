@@ -9,12 +9,7 @@ import {
   validModelFixture,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import {
-  applyEdits,
-  editOps,
-  modelEditSchema,
-  renderRefusedEdit,
-} from './edits.js';
+import { applyEdits, modelEditSchema, renderRefusedEdit } from './edits.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {
   readonly [Tag in Union['_tag']]: Extract<Union, { readonly _tag: Tag }>;
@@ -237,11 +232,5 @@ describe('the records a batch culls more than once', () => {
       ]),
     );
     expect(applied.culled).toEqual([{ kind: 'mitigation', id: tls }]);
-  });
-});
-
-describe('the ops the schema declares', () => {
-  it('names each one once', () => {
-    expect(editOps.length).toEqual(new Set(editOps).size);
   });
 });

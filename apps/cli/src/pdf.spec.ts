@@ -79,18 +79,6 @@ describe('Typst source compiled to a PDF', () => {
   );
 
   it(
-    'reports assets it cannot read as a reason to show a user',
-    async () => {
-      const outcome = await compilePdf(
-        document('#"a document"'),
-        join(repositoryRoot, 'apps/cli/dist/absent'),
-      );
-      expect(refusal(outcome)).toContain('typst_ts_web_compiler_bg.wasm');
-    },
-    compileTimeout,
-  );
-
-  it(
     'compiles the deepest prose the register admits',
     async () => {
       const source = renderTypst(

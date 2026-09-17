@@ -294,6 +294,7 @@ describe('render', () => {
       expect(outcome.code).toBe(2);
       expect(outcome.out).toBe('');
       expect(outcome.err).toContain('error: cannot compile the PDF');
+      expect(outcome.err).toContain('typst_ts_web_compiler_bg.wasm');
     },
     compileTimeout,
   );
