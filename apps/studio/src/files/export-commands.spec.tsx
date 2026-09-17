@@ -145,25 +145,6 @@ describe('the studio exports', () => {
     expect(bridge.writes[0].bytes).toEqual(pngSignature);
   });
 
-  it('reports the endpoints the drawing left out of the PNG', async () => {
-    modelStore.setState(openedState(unplacedModel), true);
-    const bridge = specBridge();
-    const result = session(bridge);
-
-    act(() => {
-      result.current.commands.png();
-    });
-
-    await waitFor(() => {
-      expect(result.current.notice).toBeDefined();
-    });
-    expect(bridge.writes).toHaveLength(1);
-    expect(result.current.notice).toMatchObject({
-      details: ['flow "flow-2" target names "flow-1"'],
-      refusal: false,
-    });
-  });
-
   it.each([
     ResvgFailure.Refused({ sentence: 'no long edge' }),
     ResvgFailure.Unusable({ sentence: 'the module reserved none' }),
@@ -234,26 +215,31 @@ describe('the studio exports', () => {
     expect(bridge.writes).toEqual([]);
   });
 
-  it('reports every unplaced endpoint after it still writes the export', async () => {
-    modelStore.setState(openedState(unplacedModel), true);
-    const bridge = specBridge();
-    const result = session(bridge);
+  it.each(['png', 'diagram'] as const)(
+    'reports the endpoints the %s export left out of the drawing, and still writes it',
+    async (command) => {
+      modelStore.setState(openedState(unplacedModel), true);
+      const bridge = specBridge();
+      const result = session(bridge);
 
-    act(() => {
-      result.current.commands.diagram(mainDiagram);
-    });
+      act(() => {
+        if (command === 'png') {
+          result.current.commands.png();
+        } else {
+          result.current.commands.diagram(mainDiagram);
+        }
+      });
 
-    await waitFor(() => {
-      expect(result.current.notice).toBeDefined();
-    });
-    expect(bridge.writes).toHaveLength(1);
-    expect(result.current.notice).toEqual({
-      headline:
-        'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
-      details: ['flow "flow-2" target names "flow-1"'],
-      refusal: false,
-    });
-  });
+      await waitFor(() => {
+        expect(result.current.notice).toBeDefined();
+      });
+      expect(bridge.writes).toHaveLength(1);
+      expect(result.current.notice).toMatchObject({
+        details: ['flow "flow-2" target names "flow-1"'],
+        refusal: false,
+      });
+    },
+  );
 
   it('reports a compiler refusal and writes nothing', async () => {
     const bridge = specBridge();

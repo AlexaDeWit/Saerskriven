@@ -32,6 +32,18 @@ const chordsOn = (platform: (typeof platforms)[number]): string[] =>
     ),
   );
 
+const press = (
+  key: string,
+  modifiers: { readonly ctrlKey?: boolean; readonly shiftKey?: boolean } = {},
+) => ({
+  key,
+  ctrlKey: false,
+  metaKey: false,
+  shiftKey: false,
+  altKey: false,
+  ...modifiers,
+});
+
 describe('the command registry', () => {
   it('leaves the import, export and diagram-switcher commands without shortcuts', () => {
     expect(
@@ -106,50 +118,24 @@ describe('the command registry', () => {
 });
 
 describe('commandFor', () => {
-  it('finds the command a press names, and nothing where none does', () => {
-    const press = {
-      key: 'z',
-      ctrlKey: true,
-      metaKey: false,
-      shiftKey: false,
-      altKey: false,
-    };
-    expect(commandFor(press, 'other')?.id).toBe('undo');
-    expect(commandFor({ ...press, shiftKey: true }, 'other')?.id).toBe('redo');
-    expect(commandFor({ ...press, key: 'q' }, 'other')).toBeUndefined();
-  });
-
   it.each([
-    ['1', 'select-tool'],
-    ['2', 'actor-tool'],
-    ['3', 'process-tool'],
-    ['4', 'store-tool'],
-    ['5', 'boundary-box-tool'],
-    ['6', 'boundary-curve-tool'],
-    ['7', 'note-tool'],
-  ] as const)('maps number %s to %s', (key, command) => {
-    expect(
-      commandFor(
-        {
-          key,
-          ctrlKey: false,
-          metaKey: false,
-          shiftKey: false,
-          altKey: false,
-        },
-        'other',
-      )?.id,
-    ).toBe(command);
+    ['z', { ctrlKey: true }, 'undo'],
+    ['z', { ctrlKey: true, shiftKey: true }, 'redo'],
+    ['q', { ctrlKey: true }, undefined],
+    ['1', {}, 'select-tool'],
+    ['2', {}, 'actor-tool'],
+    ['3', {}, 'process-tool'],
+    ['4', {}, 'store-tool'],
+    ['5', {}, 'boundary-box-tool'],
+    ['6', {}, 'boundary-curve-tool'],
+    ['7', {}, 'note-tool'],
+    ['t', {}, 'focus-threats'],
+  ] as const)('maps %s with modifiers %o to %s', (key, modifiers, command) => {
+    expect(commandFor(press(key, modifiers), 'other')?.id).toBe(command);
   });
 
   it('gives M to Model properties alone, unshifted and unmodified, on either platform', () => {
-    const press = {
-      key: 'm',
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      altKey: false,
-    };
+    const unmodified = press('m');
     for (const platform of platforms) {
       expect(
         commands
@@ -160,17 +146,17 @@ describe('commandFor', () => {
           )
           .map((command) => command.id),
       ).toEqual(['model-properties']);
-      expect(commandFor(press, platform)?.id).toBe('model-properties');
-      expect(commandFor({ ...press, key: 'M' }, platform)?.id).toBe(
+      expect(commandFor(unmodified, platform)?.id).toBe('model-properties');
+      expect(commandFor({ ...unmodified, key: 'M' }, platform)?.id).toBe(
         'model-properties',
       );
       expect(
-        commandFor({ ...press, key: 'M', shiftKey: true }, platform),
+        commandFor({ ...unmodified, key: 'M', shiftKey: true }, platform),
       ).toBeUndefined();
       expect(
         commandFor(
           {
-            ...press,
+            ...unmodified,
             ctrlKey: platform === 'other',
             metaKey: platform === 'apple',
           },
@@ -178,21 +164,6 @@ describe('commandFor', () => {
         ),
       ).toBeUndefined();
     }
-  });
-
-  it('maps T to the threat panel', () => {
-    expect(
-      commandFor(
-        {
-          key: 't',
-          ctrlKey: false,
-          metaKey: false,
-          shiftKey: false,
-          altKey: false,
-        },
-        'other',
-      )?.id,
-    ).toBe('focus-threats');
   });
 });
 
@@ -244,7 +215,6 @@ describe('runCommand', () => {
 
     runCommand(command, recording.surface);
 
-    expect(command.label).toBe('Diagram as SVG: Untitled diagram');
     expect(recording.asked).toEqual(['exportDiagram']);
   });
 

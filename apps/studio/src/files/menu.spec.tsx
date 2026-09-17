@@ -244,25 +244,18 @@ describe('what the menu offers', () => {
     expect(item('Diagram as SVG: Other diagram')).toBeDefined();
   });
 
-  it('disables the SVG export when the model holds no diagram', async () => {
-    const user = userEvent.setup();
-    modelStore.setState(initialState(emptyModel), true);
-    mounted(specBridge());
+  it.each(['Diagram as SVG', 'Diagram as PNG'])(
+    'disables %s when the model holds no diagram',
+    async (name) => {
+      const user = userEvent.setup();
+      modelStore.setState(initialState(emptyModel), true);
+      mounted(specBridge());
 
-    await openExportMenu(user);
+      await openExportMenu(user);
 
-    expect(item('Diagram as SVG').getAttribute('data-disabled')).not.toBeNull();
-  });
-
-  it('disables the PNG export when the model holds no diagram', async () => {
-    const user = userEvent.setup();
-    modelStore.setState(initialState(emptyModel), true);
-    mounted(specBridge());
-
-    await openExportMenu(user);
-
-    expect(item('Diagram as PNG').getAttribute('data-disabled')).not.toBeNull();
-  });
+      expect(item(name).getAttribute('data-disabled')).not.toBeNull();
+    },
+  );
 
   it('announces a PDF compile refusal and writes no file', async () => {
     const user = userEvent.setup();

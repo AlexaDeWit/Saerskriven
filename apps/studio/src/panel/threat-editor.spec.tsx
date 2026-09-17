@@ -78,34 +78,25 @@ describe(
       });
     });
 
-    it('commits a severity chosen as a patch of that field alone', async () => {
-      const onCommit = commits();
-      showThreatEditor({ onCommit });
+    it.each([
+      ['Severity', 'critical', { severity: 'critical' }],
+      ['Status', 'mitigated', { status: 'mitigated' }],
+      [
+        'Category',
+        'STRIDE spoofing',
+        { category: { methodology: 'STRIDE', category: 'spoofing' } },
+      ],
+    ] as const)(
+      'commits a %s chosen as a patch of that field alone',
+      async (field, option, patch) => {
+        const onCommit = commits();
+        showThreatEditor({ onCommit });
 
-      await chooseFrom('Severity', 'critical');
+        await chooseFrom(field, option);
 
-      expect(onCommit).toHaveBeenCalledWith({ severity: 'critical' });
-    });
-
-    it('commits a status chosen as a patch of that field alone', async () => {
-      const onCommit = commits();
-      showThreatEditor({ onCommit });
-
-      await chooseFrom('Status', 'mitigated');
-
-      expect(onCommit).toHaveBeenCalledWith({ status: 'mitigated' });
-    });
-
-    it('commits a category chosen as a patch of that field alone', async () => {
-      const onCommit = commits();
-      showThreatEditor({ onCommit });
-
-      await chooseFrom('Category', 'STRIDE spoofing');
-
-      expect(onCommit).toHaveBeenCalledWith({
-        category: { methodology: 'STRIDE', category: 'spoofing' },
-      });
-    });
+        expect(onCommit).toHaveBeenCalledWith(patch);
+      },
+    );
 
     it('reports a refused draft, and keeps reporting it while a clean field commits beside it', async () => {
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();

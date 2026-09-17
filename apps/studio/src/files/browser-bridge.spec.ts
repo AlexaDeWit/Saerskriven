@@ -114,13 +114,6 @@ describe('opening', () => {
     );
   });
 
-  it('says nothing where the picker was dismissed', async () => {
-    vi.stubGlobal('showOpenFilePicker', () => Promise.reject(dismissal()));
-    const bridge = await freshBridge();
-
-    expect(await settled(bridge.open(1024))).toEqual(OpenOutcome.Cancelled());
-  });
-
   it('reports what the picker refused with', async () => {
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.reject(new Error('NotAllowedError')),
@@ -132,8 +125,11 @@ describe('opening', () => {
     );
   });
 
-  it('says nothing where the picker handed nothing over', async () => {
-    vi.stubGlobal('showOpenFilePicker', () => Promise.resolve([]));
+  it.each([
+    { named: 'was dismissed', picked: () => Promise.reject(dismissal()) },
+    { named: 'handed nothing over', picked: () => Promise.resolve([]) },
+  ])('says nothing where the picker $named', async ({ picked }) => {
+    vi.stubGlobal('showOpenFilePicker', picked);
     const bridge = await freshBridge();
 
     expect(await settled(bridge.open(1024))).toEqual(OpenOutcome.Cancelled());

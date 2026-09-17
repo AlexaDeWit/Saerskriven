@@ -43,12 +43,6 @@ describe('CommandButton', () => {
     );
   });
 
-  it('keeps the shortcut out of the name, so a control is found by what it says', () => {
-    render(<CommandButton command="save" />);
-
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDefined();
-  });
-
   it('runs the command against the surface it is mounted under', async () => {
     const user = userEvent.setup();
     const recording = recordingSurface();

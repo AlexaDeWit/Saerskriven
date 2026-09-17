@@ -14,17 +14,6 @@ const save: Chord = { modifiers: ['Mod'], key: 's' };
 const saveAs: Chord = { modifiers: ['Mod', 'Shift'], key: 's' };
 const clear: Chord = { modifiers: [], key: 'Escape' };
 
-it('accepts plus from the main keyboard or keypad without taking modified zoom chords', () => {
-  const plus = character('+');
-  for (const shiftKey of [false, true]) {
-    expect(firedBy(press({ key: '+', shiftKey }), plus, 'other')).toBe(true);
-    expect(
-      firedBy(press({ key: '+', shiftKey, ctrlKey: true }), plus, 'other'),
-    ).toBe(false);
-  }
-  expect(keyShortcutsAttribute([plus], 'other')).toBe('Plus');
-});
-
 const press = (over: Partial<Parameters<typeof firedBy>[0]> = {}) => ({
   key: 's',
   ctrlKey: false,
@@ -82,20 +71,6 @@ describe('spelling a chord', () => {
   });
 });
 
-it('limits platform-specific alternatives in matching, labels and ARIA', () => {
-  const redoAlternative = mod('y', 'other');
-  expect(spellShortcuts([redoAlternative], 'apple')).toBe('');
-  expect(keyShortcutsAttribute([redoAlternative], 'apple')).toBe('');
-  expect(
-    firedBy(press({ key: 'y', metaKey: true }), redoAlternative, 'apple'),
-  ).toBe(false);
-  expect(spellShortcuts([redoAlternative], 'other')).toBe('Ctrl+Y');
-  expect(keyShortcutsAttribute([redoAlternative], 'other')).toBe('Control+Y');
-  expect(
-    firedBy(press({ key: 'y', ctrlKey: true }), redoAlternative, 'other'),
-  ).toBe(true);
-});
-
 describe('firedBy', () => {
   it('takes the platform command modifier and not the other one', () => {
     expect(firedBy(press({ ctrlKey: true }), save, 'other')).toBe(true);
@@ -149,60 +124,89 @@ describe('firedBy', () => {
       ),
     ).toBe(false);
   });
-});
 
-it.each(['apple', 'other'] as const)(
-  'matches shifted number-row shortcuts on %s',
-  (platform) => {
-    const modifiers = {
-      ctrlKey: platform === 'other',
-      metaKey: platform === 'apple',
-      shiftKey: true,
-    };
+  it('limits platform-specific alternatives in matching, labels and ARIA', () => {
+    const redoAlternative = mod('y', 'other');
+    expect(spellShortcuts([redoAlternative], 'apple')).toBe('');
+    expect(keyShortcutsAttribute([redoAlternative], 'apple')).toBe('');
     expect(
-      firedBy(
-        press({ key: '!', code: 'Digit1', ...modifiers }),
-        modShift('1'),
-        platform,
-      ),
-    ).toBe(true);
-    expect(
-      firedBy(
-        press({ key: '@', code: 'Digit2', ...modifiers }),
-        modShift('2'),
-        platform,
-      ),
-    ).toBe(true);
-    expect(
-      firedBy(
-        press({ key: '@', code: 'Digit2', ...modifiers }),
-        modShift('1'),
-        platform,
-      ),
+      firedBy(press({ key: 'y', metaKey: true }), redoAlternative, 'apple'),
     ).toBe(false);
-  },
-);
+    expect(spellShortcuts([redoAlternative], 'other')).toBe('Ctrl+Y');
+    expect(keyShortcutsAttribute([redoAlternative], 'other')).toBe('Control+Y');
+    expect(
+      firedBy(press({ key: 'y', ctrlKey: true }), redoAlternative, 'other'),
+    ).toBe(true);
+  });
 
-it.each(['apple', 'other'] as const)(
-  'accepts the produced plus character for zoom on %s',
-  (platform) => {
-    const zoom = character('+', ['Mod']);
-    for (const shiftKey of [false, true]) {
+  it.each(['apple', 'other'] as const)(
+    'matches shifted number-row shortcuts on %s',
+    (platform) => {
+      const modifiers = {
+        ctrlKey: platform === 'other',
+        metaKey: platform === 'apple',
+        shiftKey: true,
+      };
       expect(
         firedBy(
-          press({
-            key: '+',
-            ctrlKey: platform === 'other',
-            metaKey: platform === 'apple',
-            shiftKey,
-          }),
-          zoom,
+          press({ key: '!', code: 'Digit1', ...modifiers }),
+          modShift('1'),
           platform,
         ),
       ).toBe(true);
-    }
-    expect(firedBy(press({ key: '+', shiftKey: true }), zoom, platform)).toBe(
-      false,
+      expect(
+        firedBy(
+          press({ key: '@', code: 'Digit2', ...modifiers }),
+          modShift('2'),
+          platform,
+        ),
+      ).toBe(true);
+      expect(
+        firedBy(
+          press({ key: '@', code: 'Digit2', ...modifiers }),
+          modShift('1'),
+          platform,
+        ),
+      ).toBe(false);
+    },
+  );
+
+  describe('a plus', () => {
+    it('accepts plus from the main keyboard or keypad without taking modified zoom chords', () => {
+      const plus = character('+');
+      for (const shiftKey of [false, true]) {
+        expect(firedBy(press({ key: '+', shiftKey }), plus, 'other')).toBe(
+          true,
+        );
+        expect(
+          firedBy(press({ key: '+', shiftKey, ctrlKey: true }), plus, 'other'),
+        ).toBe(false);
+      }
+      expect(keyShortcutsAttribute([plus], 'other')).toBe('Plus');
+    });
+
+    it.each(['apple', 'other'] as const)(
+      'accepts the produced plus character for zoom on %s',
+      (platform) => {
+        const zoom = character('+', ['Mod']);
+        for (const shiftKey of [false, true]) {
+          expect(
+            firedBy(
+              press({
+                key: '+',
+                ctrlKey: platform === 'other',
+                metaKey: platform === 'apple',
+                shiftKey,
+              }),
+              zoom,
+              platform,
+            ),
+          ).toBe(true);
+        }
+        expect(
+          firedBy(press({ key: '+', shiftKey: true }), zoom, platform),
+        ).toBe(false);
+      },
     );
-  },
-);
+  });
+});

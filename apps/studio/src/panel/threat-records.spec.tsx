@@ -379,21 +379,31 @@ describe(
       expect(reported?.field.startsWith('new-assumption/prose/')).toBe(true);
     });
 
-    it('puts a held draft back in the empty row it was typed in', () => {
-      showThreatEditor({
-        threat: recordedThreat(secondThreat),
-        held: {
-          field: 'new-assumption/prose/assumption-drafted',
-          text: `Pasted${softHyphen}prose`,
-          said: 'A refusal',
-        },
-      });
+    it.each([
+      {
+        named: 'an assumption prose',
+        field: 'new-assumption/prose/assumption-drafted',
+        text: `Pasted${softHyphen}prose`,
+        row: 'Assumption 1',
+      },
+      {
+        named: 'a mitigation title',
+        field: 'new-mitigation/title/mitigation-drafted',
+        text: `Pasted${softHyphen}title`,
+        row: 'Mitigation 1 title',
+      },
+    ] as const)(
+      'puts a held draft of $named back in the empty row it was typed in',
+      ({ field, text, row }) => {
+        showThreatEditor({
+          threat: recordedThreat(secondThreat),
+          held: { field, text, said: 'A refusal' },
+        });
 
-      expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBe(
-        textbox('Assumption 1'),
-      );
-      expect(present()).toBe(recordedModel);
-    });
+        expect(screen.getByDisplayValue(text)).toBe(textbox(row));
+        expect(present()).toBe(recordedModel);
+      },
+    );
 
     it('drops a refusal whose row another edit took away', async () => {
       const user = userEvent.setup();
@@ -549,21 +559,6 @@ describe(
 
       expect(assumptionRows()).toEqual([firstAssumption, added]);
       expect(document.activeElement).toBe(textbox('Assumption 1'));
-    });
-
-    it('puts a held mitigation draft back in its empty row', () => {
-      showThreatEditor({
-        threat: recordedThreat(secondThreat),
-        held: {
-          field: 'new-mitigation/title/mitigation-drafted',
-          text: `Pasted${softHyphen}title`,
-          said: 'A refusal',
-        },
-      });
-
-      expect(screen.getByDisplayValue(`Pasted${softHyphen}title`)).toBe(
-        textbox('Mitigation 1 title'),
-      );
     });
 
     it('drops a held draft for a record no longer on the threat, rather than reopening it', () => {
