@@ -81,6 +81,9 @@
           "{workspaceRoot}/test-data/render/every-glyph.*",
           "{workspaceRoot}/test-data/render/two-diagrams*",
           {
+            "env": "SAERSKRIVEN_RESVG_WASM"
+          },
+          {
             "env": "SAERSKRIVEN_FONTS_DIR"
           }
         ]
