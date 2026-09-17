@@ -49,6 +49,10 @@ describe('ThreatOverlay', () => {
     modelStore.setState(initialState(sampleModel), true);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('draws no panel while nothing is selected, and one on the element selected', () => {
     render(<ThreatOverlay />);
     expect(panel()).toBeNull();
@@ -340,6 +344,5 @@ describe('ThreatOverlay', () => {
       screen.getByRole('combobox', { name: 'Web application' }).textContent,
     ).toContain('Yes');
     expect(labels).toHaveBeenCalled();
-    labels.mockRestore();
   });
 });

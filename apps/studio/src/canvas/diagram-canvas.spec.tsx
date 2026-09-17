@@ -361,6 +361,17 @@ describe('DiagramCanvas', () => {
     );
   });
 
+  it('describes the canvas keys to the application it labels', () => {
+    render(<DiagramCanvas />);
+
+    const canvas = screen.getByRole('application', { name: 'Diagram' });
+    const description = canvas.getAttribute('aria-describedby') ?? '';
+
+    expect(document.getElementById(description)?.textContent).toContain(
+      spelled(contextualEntry('edit-canvas-text')),
+    );
+  });
+
   it('leaves a click on a canvas control out of the rename gesture', () => {
     render(<DiagramCanvas />);
 
