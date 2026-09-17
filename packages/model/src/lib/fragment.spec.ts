@@ -241,7 +241,10 @@ describe('remapFragment and insertFragment', () => {
     );
     expect(Either.isRight(parseModel(inserted))).toBe(true);
     expect(
-      inserted.diagrams[0].elements.slice(0, secured.diagrams[0].elements.length),
+      inserted.diagrams[0].elements.slice(
+        0,
+        secured.diagrams[0].elements.length,
+      ),
     ).toStrictEqual(secured.diagrams[0].elements);
   });
 });

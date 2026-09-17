@@ -213,7 +213,9 @@ describe('removeElement', () => {
   });
 
   it('removes only references to the explicitly deleted element, keeping absence distinct from empty', () => {
-    const withoutStore = modelOf(removeElement(secured, elementId('element-db')));
+    const withoutStore = modelOf(
+      removeElement(secured, elementId('element-db')),
+    );
     expect(elementIn(withoutStore, 'element-perimeter')).toMatchObject({
       containedElements: ['element-api'],
       crossingFlows: ['element-order-flow'],
