@@ -2,8 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
 const pagesExport = /pages-export\.spec\.ts$/u;
-const phoneSmoke =
-  /(?:badge-clearance|chrome-card|link-existing|model-properties|notices|records|summary)\.spec\.ts$/u;
+const phoneWidth = /@phone/u;
+const phoneOnly = /@phone-only/u;
 const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 
@@ -21,6 +21,11 @@ export default defineConfig({
     ],
   ],
   forbidOnly: !!process.env['CI'],
+  // Playwright's own default, stated as the root ceiling: it covers a cold
+  // development server page load with two workers on a shared runner. A spec
+  // that needs longer sets its own at the narrowest scope, with the reason
+  // beside it.
+  timeout: 30_000,
   use: {
     baseURL: 'http://localhost:4200',
     trace: 'retain-on-failure',
@@ -59,27 +64,25 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       testIgnore: [frameTimeFloor, pagesExport],
+      grepInvert: phoneOnly,
     },
-    // A phone viewport is the one the shell chrome has least room in, so the
-    // card spec and the notice spec run here as well as under `chromium`,
-    // which is what holds the ruling that the layout is the same at every
-    // width and that a dismissed refusal leaves the chrome clear. The records
-    // spec runs here too, because a threat's record rows must be usable at
-    // phone width, and so does the model properties spec, for the same
-    // reason. So does the Link existing spec, because its listbox must open
-    // clear of the chrome card there, and so does the summary spec, because a
-    // collapsed threat with its counts and both flag marks must fit the panel
-    // there. So does the badge clearance spec, because the gap it holds between
-    // a corner handle and a threat badge is measured on screen, and has to hold
-    // on the phone preset as well as at desktop width (#447). The preset
-    // carries the viewport, the touch flags and the device pixel ratio
-    // together, so a change of preset changes all three at once.
-    // The set is small on purpose: the rest of the suite is about behaviour
-    // that does not turn on the viewport.
+    // A phone viewport is the one the shell chrome has least room in, so a
+    // test whose layout turns on the width carries the `@phone` tag and runs
+    // under `phone` as well as under `chromium`, which holds the ruling that
+    // the layout is the same at every width. The chrome card and its
+    // submenus, a notice under the card, record and model properties rows,
+    // the Link existing listbox, a collapsed summary with its marks, and the
+    // gap between a corner handle and a threat badge measured on screen
+    // (#447) carry it. A test tagged `@phone-only` reads what only a phone
+    // width reaches, so `chromium` leaves it out. The preset carries the
+    // viewport, the touch flags and the device pixel ratio together, so a
+    // change of preset changes all three at once. An untagged test is about
+    // behaviour that does not turn on the viewport, and runs under `chromium`
+    // alone.
     {
       name: 'phone',
       use: { ...devices['Pixel 7'] },
-      testMatch: phoneSmoke,
+      grep: phoneWidth,
       dependencies: ['chromium'],
     },
     {

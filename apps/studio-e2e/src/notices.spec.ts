@@ -9,7 +9,7 @@ const refusedYaml = [
   'diagrams: none',
 ].join('\n');
 
-test('folds several refusal lines, and lists them when the disclosure opens', async ({
+test('folds several refusal lines, and lists them when the disclosure opens', { tag: '@phone' }, async ({
   page,
 }) => {
   await page.addInitScript(withoutPickers);
@@ -30,7 +30,7 @@ test('folds several refusal lines, and lists them when the disclosure opens', as
   expect(await notice.getByRole('listitem').count()).toBeGreaterThan(1);
 });
 
-test('a dismissed refusal leaves the canvas chrome clear, and a later one shows', async ({
+test('a dismissed refusal leaves the canvas chrome clear, and a later one shows', { tag: '@phone' }, async ({
   page,
 }) => {
   await page.addInitScript(withoutPickers);

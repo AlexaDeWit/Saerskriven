@@ -35,7 +35,7 @@ const below = async (target: Locator, card: Box): Promise<void> => {
   expect(box.y).toBeGreaterThanOrEqual(card.y + card.height);
 };
 
-test('the card holds the chrome, and the switcher still switches diagrams', async ({
+test('the card holds the chrome, and the switcher still switches diagrams', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -58,7 +58,7 @@ test('the card holds the chrome, and the switcher still switches diagrams', asyn
   );
 });
 
-test('the rename field opens in the title place and the card keeps its width', async ({
+test('the rename field opens in the title place and the card keeps its width', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -75,7 +75,7 @@ test('the rename field opens in the title place and the card keeps its width', a
   expect(after.width).toBeCloseTo(before.width, 0);
 });
 
-test('a selection leaves the card uncovered', async ({ page }) => {
+test('a selection leaves the card uncovered', { tag: '@phone' }, async ({ page }) => {
   await openPlaceholder(page);
 
   await selectByKeyboard(page, /^Actor, actor/u);
@@ -87,7 +87,7 @@ test('a selection leaves the card uncovered', async ({ page }) => {
   await cardControlsClear(page);
 });
 
-test('a refused read and a loss report hang under the card', async ({
+test('a refused read and a loss report hang under the card', { tag: '@phone' }, async ({
   page,
 }) => {
   await page.addInitScript(withoutPickers);
@@ -121,7 +121,7 @@ test('a refused read and a loss report hang under the card', async ({
   await cardControlsClear(page);
 });
 
-test('a notice under the card leaves an open pane header uncovered', async ({
+test('a notice under the card leaves an open pane header uncovered', { tag: '@phone' }, async ({
   page,
 }) => {
   await page.addInitScript(withoutPickers);
@@ -201,7 +201,7 @@ const openLowInShortViewport = async (
   return opensOnScreen(page, 'Arrange');
 };
 
-test('every submenu opens whole at the card edge, and an export downloads from one', async ({
+test('every submenu opens whole at the card edge, and an export downloads from one', { tag: '@phone' }, async ({
   page,
 }) => {
   await page.addInitScript(withoutPickers);
@@ -219,7 +219,7 @@ test('every submenu opens whole at the card edge, and an export downloads from o
   expect(output.bytes.length).toBeGreaterThan(0);
 });
 
-test('a submenu with no room under its row opens whole over it', async ({
+test('a submenu with no room under its row opens whole over it', { tag: '@phone' }, async ({
   page,
 }) => {
   const { row, drawn, scrolls } = await openLowInShortViewport(page, 480);
@@ -230,7 +230,7 @@ test('a submenu with no room under its row opens whole over it', async ({
   );
 });
 
-test('a submenu with room on neither side of its row scrolls on screen', async ({
+test('a submenu with room on neither side of its row scrolls on screen', { tag: '@phone' }, async ({
   page,
 }) => {
   const { scrolls } = await openLowInShortViewport(page, 300);
@@ -276,7 +276,7 @@ const openInShortViewport = async (page: Page): Promise<Box> => {
 
 const rootMenu = (page: Page): Locator => page.getByRole('menu').first();
 
-test('the menu ends inside a 720 px tall viewport and scrolls itself to its last row', async ({
+test('the menu ends inside a 720 px tall viewport and scrolls itself to its last row', { tag: '@phone' }, async ({
   page,
 }) => {
   const burger = await openInShortViewport(page);

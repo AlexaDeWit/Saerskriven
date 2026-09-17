@@ -19,8 +19,10 @@ catalog's `@playwright/test` version matches the flake's driver.
 The projects run in order:
 
 - `chromium` runs the main browser specs.
-- `phone` re-runs the specs whose layout turns on the viewport on a `Pixel 7`
-  preset. `playwright.config.ts` lists them and says why each is there.
+- `phone` re-runs the tests tagged `@phone`, whose layout turns on the
+  viewport, on a `Pixel 7` preset, and runs the tests tagged `@phone-only`.
+  Tag a test `@phone` when its layout depends on the width.
+  `playwright.config.ts` says why the project exists.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
   assets, the social card, its text alternative, and the release version.
 - `frame-time` measures a drag of the two-diagram model's `Web shop`, a

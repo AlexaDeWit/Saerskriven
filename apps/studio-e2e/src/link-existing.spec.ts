@@ -43,7 +43,7 @@ const openPicker = async (page: Page) => {
   return trigger;
 };
 
-test('a pointer links the first, middle and last mitigation offered, picked by name', async ({
+test('a pointer links the first, middle and last mitigation offered, picked by name', { tag: '@phone' }, async ({
   page,
 }) => {
   const trigger = await openPicker(page);

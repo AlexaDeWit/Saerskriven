@@ -174,7 +174,7 @@ test('each flag mark keeps its glyph and outline in forced colours', async ({
   expect(new Set(drawn.map(({ text }) => text)).size).toBe(2);
 });
 
-test('a summary with counts and both flags fits the panel without scrolling sideways', async ({
+test('a summary with counts and both flags fits the panel without scrolling sideways', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);

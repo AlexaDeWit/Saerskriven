@@ -49,7 +49,7 @@ const badgeInk = (node: Locator) =>
   inkBoxOf(node.locator('.pn-badge circle, .pn-badge path'));
 
 for (const [badge, element, name, counts] of cases) {
-  test(`a selected element with ${badge} keeps its handles, controls and badge clear of each other, at low zoom as well`, async ({
+  test(`a selected element with ${badge} keeps its handles, controls and badge clear of each other, at low zoom as well`, { tag: '@phone' }, async ({
     page,
   }) => {
     const node = await selectClear(page, name);

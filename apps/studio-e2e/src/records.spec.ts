@@ -50,7 +50,7 @@ const mitigationOffered = (page: Page, label: string): Promise<boolean> =>
     label,
   );
 
-test('a mitigation added from the empty row is one undo step, and its status changes in place', async ({
+test('a mitigation added from the empty row is one undo step, and its status changes in place', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -154,7 +154,7 @@ test('Shift+Tab from Existing reaches Add after a new row became a record', asyn
   await expect(panelControl(page, 'Add mitigation')).toBeFocused();
 });
 
-test('Discard on a new row with typed text leaves no record and nothing to undo', async ({
+test('Discard on a new row with typed text leaves no record and nothing to undo', { tag: '@phone' }, async ({
   page,
   isMobile,
 }) => {
@@ -249,7 +249,7 @@ test('a linked record names the other threats that hold it by number, and unlink
   await expect(kept).toHaveValue(bound);
 });
 
-test('unlinking a record with a long first line announces a bounded name, and the pane header stays usable under it', async ({
+test('unlinking a record with a long first line announces a bounded name, and the pane header stays usable under it', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -280,7 +280,7 @@ test('unlinking a record with a long first line announces a bounded name, and th
   await expect(threatPanel(page)).toHaveCount(0);
 });
 
-test('the pane and its record fields stay where they are when an unlink is announced and when the next keystroke clears it', async ({
+test('the pane and its record fields stay where they are when an unlink is announced and when the next keystroke clears it', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -349,7 +349,7 @@ const settledBox = async (target: Locator): Promise<Box> => {
   return box;
 };
 
-test('an unlink keeps the pane scrolled where it was while the next Unlink is on screen', async ({
+test('an unlink keeps the pane scrolled where it was while the next Unlink is on screen', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -372,7 +372,7 @@ test('an unlink keeps the pane scrolled where it was while the next Unlink is on
   expect(await scrolledAbove(add)).toBe(scrolled);
 });
 
-test('an unlink scrolls the pane only as far as the next Unlink needs to be seen', async ({
+test('an unlink scrolls the pane only as far as the next Unlink needs to be seen', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -431,11 +431,9 @@ test('a record arriving from another tab above the rows in view leaves those row
   expect(await settledBox(addMitigation)).toEqual(drawn);
 });
 
-test('a message longer than two lines stops above the open pane at phone width', async ({
+test('a message longer than two lines stops above the open pane at phone width', { tag: '@phone-only' }, async ({
   page,
-  isMobile,
 }) => {
-  test.skip(!isMobile, 'Only a phone-width message runs past two lines');
   await openTwoDiagrams(page);
   await selectByKeyboard(page, /^Catalogue, store/u);
   await expect(threatPanel(page)).toBeVisible();

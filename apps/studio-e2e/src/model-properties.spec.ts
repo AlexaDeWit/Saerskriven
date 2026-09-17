@@ -180,7 +180,7 @@ test('the title and the description commit as one undo step each, and Tab runs f
   expect(await undoOffered(page)).toBe(false);
 });
 
-test('an assumption added from the empty row applies to the model, its status changes in place, and one undo takes each back', async ({
+test('an assumption added from the empty row applies to the model, its status changes in place, and one undo takes each back', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -361,7 +361,7 @@ test('model properties edited in one tab reach another, which keeps its own sele
   await expect(nodeNamed(page, shopper)).not.toHaveClass(/selected/u);
 });
 
-test('the Model properties header stays usable while an unlink announcement shows', async ({
+test('the Model properties header stays usable while an unlink announcement shows', { tag: '@phone' }, async ({
   page,
 }) => {
   await openTwoDiagrams(page);
