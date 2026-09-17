@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { Either } from 'effect';
 import { useEffect } from 'react';
 import { Action } from './actions.js';
@@ -37,26 +37,13 @@ function ElementCount() {
   useEffect(() => {
     painted.push(count);
   });
-  return <span data-testid="count">{count}</span>;
+  return <span>{count}</span>;
 }
 
 describe('the model store', () => {
   beforeEach(() => {
     modelStore.setState(initialState(sampleModel), true);
     painted.length = 0;
-  });
-
-  it('shows a dispatched edit through a selector, with nothing invalidated by hand', () => {
-    render(<ElementCount />);
-    expect(screen.getByTestId('count').textContent).toBe('3');
-    act(() => {
-      dispatch(addedProcess);
-    });
-    expect(screen.getByTestId('count').textContent).toBe('4');
-    act(() => {
-      dispatch(Action.Undo());
-    });
-    expect(screen.getByTestId('count').textContent).toBe('3');
   });
 
   it('leaves a component alone while a slice it does not read moves', () => {

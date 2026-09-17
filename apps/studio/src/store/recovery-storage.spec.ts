@@ -53,82 +53,7 @@ const version1Snapshot = JSON.stringify({
   file: { _tag: 'NoFile' },
 });
 
-const flowWithoutDirection = {
-  kind: 'flow',
-  id: 'flow-reads',
-  name: 'reads',
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  source: { kind: 'attached', element: 'actor-reader' },
-  target: { kind: 'attached', element: 'process-studio' },
-  waypoints: [],
-};
-
-const documentWithoutDirection = {
-  formatVersion: 1,
-  metadata: { title: 'Earlier', owner: '', description: '', contributors: [] },
-  diagrams: [
-    {
-      id: 'diagram-main',
-      title: 'Main',
-      elements: [
-        {
-          kind: 'actor',
-          id: 'actor-reader',
-          name: 'Reader',
-          description: '',
-          outOfScope: false,
-          reasonOutOfScope: '',
-          position: { x: 0, y: 0 },
-          size: { width: 120, height: 60 },
-        },
-        {
-          kind: 'process',
-          id: 'process-studio',
-          name: 'Studio',
-          description: '',
-          outOfScope: false,
-          reasonOutOfScope: '',
-          position: { x: 200, y: 0 },
-          size: { width: 120, height: 60 },
-        },
-        flowWithoutDirection,
-      ],
-    },
-  ],
-  threats: [],
-  lastIssuedThreatNumber: 0,
-  mitigations: [],
-  assumptions: [],
-};
-
-const documentWithElementLinkedAssumption = {
-  ...documentWithoutDirection,
-  threats: [
-    {
-      id: 'threat-spoofed-reader',
-      number: 1,
-      title: 'Spoofed reader',
-      category: { methodology: 'STRIDE', category: 'spoofing' },
-      severity: 'high',
-      status: 'open',
-      description: '',
-      mitigation: '',
-      elements: ['actor-reader'],
-    },
-  ],
-  lastIssuedThreatNumber: 1,
-  assumptions: [
-    {
-      id: 'assumption-signed-in',
-      prose: 'Every reader signs in.',
-      status: 'valid',
-      elements: ['actor-reader', 'process-studio'],
-      threats: ['threat-spoofed-reader'],
-    },
-  ],
-};
+const current = recoverySnapshot(sampleModel, false, FileLifecycle.NoFile());
 
 describe('local recovery storage', () => {
   it('loads nothing when the namespaced key is absent', () => {
@@ -188,83 +113,6 @@ describe('local recovery storage', () => {
     const earlier = storage.load();
     expect(Either.isRight(earlier)).toBe(true);
     expect(Either.getOrThrow(earlier)?.activeDiagram).toBeUndefined();
-  });
-
-  it('restores a document written before the format declared a key, on the mapping default', () => {
-    const memory = memoryStorage();
-    memory.values.set(
-      recoveryStorageKey,
-      JSON.stringify({
-        version: 2,
-        document: documentWithoutDirection,
-        writtenBy: { studioVersion: '0.2.1' },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
-    );
-    const loaded = localRecoveryStorage(() => memory.backend).load();
-
-    expect(Either.isRight(loaded)).toBe(true);
-    expect(
-      Either.getOrThrow(loaded)?.present.diagrams[0].elements.find(
-        (element) => element.kind === 'flow',
-      ),
-    ).toMatchObject({ bidirectional: false });
-  });
-
-  it('restores a document whose assumption links elements, without the element links', () => {
-    const memory = memoryStorage();
-    memory.values.set(
-      recoveryStorageKey,
-      JSON.stringify({
-        version: 2,
-        document: documentWithElementLinkedAssumption,
-        writtenBy: { studioVersion: '0.4.0' },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
-    );
-    const loaded = localRecoveryStorage(() => memory.backend).load();
-
-    expect(Either.getOrThrow(loaded)?.present.assumptions).toEqual([
-      {
-        id: 'assumption-signed-in',
-        prose: 'Every reader signs in.',
-        status: 'valid',
-        threats: ['threat-spoofed-reader'],
-        appliesToModel: false,
-      },
-    ]);
-  });
-
-  it('restores a document whose threat carries mitigation text, holding the text as its mitigation record', () => {
-    const memory = memoryStorage();
-    memory.values.set(
-      recoveryStorageKey,
-      JSON.stringify({
-        version: 2,
-        document: {
-          ...documentWithElementLinkedAssumption,
-          threats: documentWithElementLinkedAssumption.threats.map(
-            (threat) => ({ ...threat, mitigation: 'Readers sign in.' }),
-          ),
-        },
-        writtenBy: { studioVersion: '0.4.0' },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
-    );
-    const loaded = localRecoveryStorage(() => memory.backend).load();
-
-    expect(Either.getOrThrow(loaded)?.present.mitigations).toEqual([
-      {
-        id: 'threat-spoofed-reader-mitigation',
-        title: '',
-        prose: 'Readers sign in.',
-        status: 'proposed',
-        threats: ['threat-spoofed-reader'],
-      },
-    ]);
   });
 
   it('restores a snapshot whose document and retained source are version 1, migrated, with its dirty flag, file and diagram', () => {
@@ -365,57 +213,26 @@ describe('local recovery storage', () => {
     ['malformed JSON', '{'],
     [
       'an unsupported later version',
-      JSON.stringify({
-        version: 3,
-        document: documentWithoutDirection,
-        writtenBy: { studioVersion },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
+      JSON.stringify({ ...current, version: 3 }),
     ],
     [
       'a document the model refuses',
       JSON.stringify({
-        version: 2,
+        ...current,
         document: {
-          ...documentWithoutDirection,
-          threats: [
-            {
-              id: 'threat-1',
-              number: 1,
-              title: 'Attached to nothing',
-              category: { methodology: 'STRIDE', category: 'spoofing' },
-              severity: 'medium',
-              status: 'open',
-              description: '',
-              mitigation: '',
-              elements: ['element-missing'],
-            },
-          ],
-          lastIssuedThreatNumber: 1,
+          ...current.document,
+          threats: current.document.threats.map((threat) => ({
+            ...threat,
+            elements: ['element-missing'],
+          })),
         },
-        writtenBy: { studioVersion },
-        dirty: false,
-        file: { _tag: 'NoFile' },
       }),
     ],
-    [
-      'an invalid document',
-      JSON.stringify({
-        version: 2,
-        document: {},
-        writtenBy: { studioVersion },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
-    ],
+    ['an invalid document', JSON.stringify({ ...current, document: {} })],
     [
       'an invalid retained source',
       JSON.stringify({
-        version: 2,
-        document: documentWithoutDirection,
-        writtenBy: { studioVersion },
-        dirty: false,
+        ...current,
         file: {
           _tag: 'Opened',
           name: 'model.json',

@@ -1,7 +1,6 @@
 import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { PdfFailure } from '@saerskriven/render/pdf';
-import { ResvgFailure } from '@saerskriven/render/png';
 import {
   act,
   fireEvent,
@@ -34,7 +33,6 @@ import {
   brokenThreatDragonText,
   chosenFile,
   edit,
-  pngSignature,
   sampleNativeText,
   specBridge,
   type SpecBridge,
@@ -89,16 +87,13 @@ function Menu({
   renders,
 }: {
   readonly bridge: SpecBridge;
-  readonly runs?: 'pdf' | 'png';
+  readonly runs?: 'pdf';
   readonly renders?: RenderExports;
 }) {
   const session = useFileSession(bridge, renders);
   useEffect(() => {
     if (runs === 'pdf') {
       session.commands.exportPdf();
-    }
-    if (runs === 'png') {
-      session.commands.exportPng();
     }
   }, [runs, session.commands]);
   const surface = useMemo(
@@ -116,7 +111,7 @@ function Menu({
 const mounted = (
   bridge: SpecBridge,
   renders?: RenderExports,
-  runs?: 'pdf' | 'png',
+  runs?: 'pdf',
 ): void => {
   render(<Menu bridge={bridge} renders={renders} runs={runs} />);
 };
@@ -267,40 +262,6 @@ describe('what the menu offers', () => {
     await openExportMenu(user);
 
     expect(item('Diagram as PNG').getAttribute('data-disabled')).not.toBeNull();
-  });
-
-  it('writes the PNG the rasterizer drew through the same bridge', async () => {
-    const bridge = specBridge();
-    mounted(bridge, specRenders(), 'png');
-
-    await waitFor(() => {
-      expect(bridge.writes).toHaveLength(1);
-    });
-    expect(bridge.writes[0].name).toBe('Untitled.png');
-    expect(bridge.writes[0].bytes).toEqual(pngSignature);
-  });
-
-  it('announces a rasterizer refusal and writes no file', async () => {
-    const bridge = specBridge();
-    mounted(
-      bridge,
-      specRenders({
-        draw: () =>
-          Promise.resolve(
-            Either.left(
-              ResvgFailure.Unusable({ sentence: 'the module reserved none' }),
-            ),
-          ),
-      }),
-      'png',
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('export-report').textContent).toContain(
-        'the module reserved none',
-      );
-    });
-    expect(bridge.writes).toEqual([]);
   });
 
   it('announces a PDF compile refusal and writes no file', async () => {
@@ -498,14 +459,6 @@ describe('what the studio says about the file', () => {
     });
 
     expect(document.activeElement).toBe(title);
-  });
-
-  it('names the file, its format, and whether it holds everything on screen', async () => {
-    const user = userEvent.setup();
-    mounted(specBridge());
-
-    expect(await shown(user)).toContain('Saerskriven YAML');
-    expect(burger().getAttribute('aria-label')).toBe('Menu');
   });
 
   it('guards the tab only after the latest recovery write fails', () => {

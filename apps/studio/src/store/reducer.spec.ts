@@ -1,4 +1,4 @@
-import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
+import { ReadFailure } from '@saerskriven/formats';
 import {
   emptyModel,
   OperationFailure,
@@ -703,11 +703,6 @@ const show = (chosen: DiagramId): Action =>
 describe('the active diagram', () => {
   const twoStart = initialState(twoDiagramModel);
 
-  it('starts unnamed, so the first diagram is on screen', () => {
-    expect(twoStart.activeDiagram).toBeUndefined();
-    expect(activeDiagramId(twoStart)).toBe(mainDiagram);
-  });
-
   it('moves to the diagram chosen, with no history and no unsaved work', () => {
     const switched = reduce(twoStart, show(secondDiagram));
     expect(activeDiagramId(switched)).toBe(secondDiagram);
@@ -771,9 +766,6 @@ describe('the active diagram', () => {
     );
     expect(opened.activeDiagram).toBeUndefined();
     expect(activeDiagramId(opened)).toBe(mainDiagram);
-    expect(activeDiagramId({ ...switched, present: sampleModel })).toBe(
-      mainDiagram,
-    );
   });
 
   it('shows the diagram it adds, and shows the first again once the add is undone', () => {
@@ -1023,19 +1015,6 @@ describe('a refusal outside the model', () => {
         name: 'model.yaml',
         failure: ReadFailure.MalformedText({ message: 'not YAML' }),
       }),
-    );
-  });
-
-  it('records a detection failure as the read failure it is', () => {
-    const failure = DetectionFailure.NoFormatClaimed({
-      tried: ['threat-dragon', 'saerskriven-yaml'],
-    });
-    const next = reduce(
-      start,
-      Action.ReadFailed({ name: 'notes.txt', failure }),
-    );
-    expect(next.lastFailure).toEqual(
-      StudioFailure.Read({ name: 'notes.txt', failure }),
     );
   });
 

@@ -164,28 +164,29 @@ describe('the studio exports', () => {
     });
   });
 
-  it('reports a rasterizer refusal and writes nothing', async () => {
-    const bridge = specBridge();
-    const result = session(
-      bridge,
-      specRenders({
-        draw: () =>
-          Promise.resolve(
-            Either.left(ResvgFailure.Refused({ sentence: 'no long edge' })),
-          ),
-      }),
-    );
+  it.each([
+    ResvgFailure.Refused({ sentence: 'no long edge' }),
+    ResvgFailure.Unusable({ sentence: 'the module reserved none' }),
+  ])(
+    'reports a rasterizer refusal and writes nothing, $_tag',
+    async (failure) => {
+      const bridge = specBridge();
+      const result = session(
+        bridge,
+        specRenders({ draw: () => Promise.resolve(Either.left(failure)) }),
+      );
 
-    act(() => {
-      result.current.commands.png();
-    });
+      act(() => {
+        result.current.commands.png();
+      });
 
-    await waitFor(() => {
-      expect(result.current.notice?.refusal).toBe(true);
-    });
-    expect(result.current.notice?.details).toEqual(['no long edge']);
-    expect(bridge.writes).toEqual([]);
-  });
+      await waitFor(() => {
+        expect(result.current.notice?.refusal).toBe(true);
+      });
+      expect(result.current.notice?.details).toEqual([failure.sentence]);
+      expect(bridge.writes).toEqual([]);
+    },
+  );
 
   it('reports a build holding no face to letter the drawing in, and writes nothing', async () => {
     const bridge = specBridge();

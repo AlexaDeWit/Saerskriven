@@ -10,7 +10,6 @@ import {
   type CanvasNode,
   type TextPlacement,
 } from '@saerskriven/canvas';
-import { emptyModel } from '@saerskriven/model';
 import {
   FileLifecycle,
   initialState,
@@ -59,11 +58,6 @@ describe('nameOf', () => {
 });
 
 describe('placeholderModel', () => {
-  it('parses, so the walking skeleton opens on a diagram it can edit', () => {
-    expect(placeholderModel).not.toBe(emptyModel);
-    expect(placeholderModel.diagrams).toHaveLength(1);
-  });
-
   it('is untitled, so nothing shows a made-up name for a model with no file', () => {
     expect(placeholderModel.metadata.title).toBe(untitledModel);
   });

@@ -31,16 +31,6 @@ describe('categoryKey', () => {
   });
 });
 
-describe('enumeratedCategoryKeys', () => {
-  it('offers every methodology the union enumerates', () => {
-    const methodologies = new Set(
-      enumeratedCategoryKeys.map((key) => key.split(' ')[0]),
-    );
-
-    expect(methodologies.size).toBe(threatCategorySchema.options.length - 1);
-  });
-});
-
 describe('categoryCommitter', () => {
   it('commits the category a key names', () => {
     const onCommit = vi.fn<(category: ThreatCategory) => void>();

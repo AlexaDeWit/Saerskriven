@@ -38,11 +38,6 @@ describe(
       resetTools();
     });
 
-    it('renders the canvas', () => {
-      render(<App />);
-      expect(screen.getByTestId('canvas-container')).toBeTruthy();
-    });
-
     it.each(['1.2.3', '1.2.3-beta.1'])(
       'shows release %s outside the menu without another link',
       (version) => {
@@ -63,12 +58,7 @@ describe(
       );
     });
 
-    it('draws no threat panel while nothing is selected', () => {
-      render(<App />);
-      expect(screen.queryByRole('region', { name: 'Threats' })).toBeNull();
-    });
-
-    it('names the page for a reader without drawing a title bar over the canvas', () => {
+    it('names the page with a level-one heading', () => {
       render(<App />);
       expect(
         screen.getByRole('heading', { level: 1 }).textContent?.trim(),

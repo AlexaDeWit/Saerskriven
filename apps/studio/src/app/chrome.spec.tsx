@@ -86,7 +86,7 @@ describe('StudioChrome', () => {
       announce('An edit completed.');
     });
 
-    const region = screen.getByTestId('canvas-announcement');
+    const region = screen.getByRole('status');
     expect(region.textContent).toContain('completed');
     expect(held.contains(region)).toBe(false);
   });

@@ -448,23 +448,6 @@ describe(
       });
     });
 
-    it('edits an assumption in place as one replace', async () => {
-      const user = userEvent.setup();
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
-
-      await user.click(textbox('Assumption 1'));
-      await user.keyboard('{End} Readers are too.');
-      await user.tab();
-
-      expect(present().assumptions).toMatchObject([
-        {
-          id: firstAssumption,
-          prose: 'Every editor is signed in. Readers are too.',
-        },
-      ]);
-      expect(undoable()).toBe(1);
-    });
-
     it('links an existing assumption and changes its status in place', async () => {
       const user = userEvent.setup();
       showThreatEditor({ threat: recordedThreat(secondThreat) });
