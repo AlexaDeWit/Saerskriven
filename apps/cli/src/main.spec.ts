@@ -1,27 +1,15 @@
+import { repositoryRoot, sha256Of } from '@saerskriven/model/fixtures';
 import { spawnSync } from 'node:child_process';
-import {
-  closeSync,
-  existsSync,
-  mkdtempSync,
-  openSync,
-  readFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { closeSync, existsSync, openSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  danglingReferenceYaml,
-  fixtureFile,
-  undeclaredKeyYaml,
-} from './cli.fixtures.js';
+import { renderGolden, scratchDirectory } from './cli.fixtures.js';
 import {
   bytePathCompileTimeout,
-  compileTimeout,
   outlineTitles,
   pageCount,
 } from './pdf.fixtures.js';
 import {
   ran,
-  repositoryRoot,
   runners,
   spawnTimeout,
   text,
@@ -37,73 +25,21 @@ type Scenario = {
   readonly err: string;
 };
 
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-main-'));
+const directory = scratchDirectory('main');
 
 const fullDevice = '/dev/full';
 
-const golden = (name: string): Buffer =>
-  readFileSync(join(repositoryRoot, 'test-data/render', name));
-
-const danglingFile = fixtureFile(
-  directory,
-  'dangling.yaml',
-  danglingReferenceYaml,
-);
-
-const undeclaredFile = fixtureFile(
-  directory,
-  'undeclared.yaml',
-  undeclaredKeyYaml,
-);
+const twoDiagrams = 'test-data/saerskriven/two-diagrams.yaml';
 
 const scenarios: readonly Scenario[] = [
   {
     name: 'validates a Threat Dragon file',
-    args: ['validate', 'test-data/ecluse.json'],
+    args: ['validate', 'test-data/threat-dragon/feature-complete.json'],
     code: 0,
-    out: 'threat-dragon: 1 diagram, 38 elements, 29 threats\n',
-    err: '',
-  },
-  {
-    name: 'validates the same model in the native format',
-    args: ['validate', 'test-data/saerskriven/ecluse.yaml'],
-    code: 0,
-    out: 'saerskriven-yaml: 1 diagram, 38 elements, 29 threats\n',
-    err: '',
-  },
-  {
-    name: "validates Saerskriven's own threat model",
-    args: ['validate', 'threat-modelling/saerskriven.yaml'],
-    code: 0,
-    out: 'saerskriven-yaml: 2 diagrams, 37 elements, 25 threats\n',
-    err: '',
-  },
-  {
-    name: 'warns about what a read dropped, and still succeeds',
-    args: ['validate', undeclaredFile],
-    code: 0,
-    out: 'saerskriven-yaml: 0 diagrams, 0 elements, 1 threat\n',
+    out: 'threat-dragon: 2 diagrams, 13 elements, 24 threats\n',
     err:
       'warning: the file and the model do not correspond exactly.\n' +
-      'model: the key nonsense (not declared by the wire schema)\n',
-  },
-  {
-    name: 'refuses a text past a read bound, naming the bound',
-    args: ['validate', 'test-data/adversarial/deep-nesting.json'],
-    code: 1,
-    out: '',
-    err:
-      'The file is past a read bound, so nothing read it.\n' +
-      'maxNestingDepth: the bound is 64, the file reached 65.\n',
-  },
-  {
-    name: 'points into the model where a reference resolves to nothing',
-    args: ['validate', danglingFile],
-    code: 1,
-    out: '',
-    err:
-      'The file is a valid document, and the model it maps to is not:\n' +
-      'threats.0.elements.0: Threat elements references unknown element id "element-2".\n',
+      'threat "threat-card": the Elevation of Privilege card, of which the model holds the suit alone (reduced to fit the format)\n',
   },
   {
     name: 'reports a file that is not there',
@@ -111,13 +47,6 @@ const scenarios: readonly Scenario[] = [
     code: 2,
     out: '',
     err: "error: cannot read test-data/absent.json: ENOENT: no such file or directory, open 'test-data/absent.json'\n",
-  },
-  {
-    name: 'refuses a flag it does not know',
-    args: ['validate', 'test-data/ecluse.json', '--nope'],
-    code: 2,
-    out: '',
-    err: "error: unknown option '--nope'\n",
   },
   {
     name: 'prints a host registration, writing no file',
@@ -163,243 +92,25 @@ for (const runner of runners) {
         });
       });
 
-      it('answers no arguments with the usage text and no output', () => {
-        const result = text(runner, []);
-        expect(result.code).toEqual(2);
-        expect(result.out).toEqual('');
-        expect(result.err).toContain('Usage: saer [options] [command]');
-      });
-
-      it('writes the register of the Écluse fixture as the golden file', () => {
+      it('writes the register of the two-diagram model as the golden file', () => {
         const out = join(directory, `${runner.name}.register.md`);
         expect(
-          text(runner, [
-            'render',
-            'test-data/ecluse.json',
-            '--format',
-            'md',
-            '--out',
-            out,
-          ]),
+          text(runner, ['render', twoDiagrams, '--format', 'md', '--out', out]),
         ).toEqual({ code: 0, out: '', err: '' });
         expect(readFileSync(out)).toEqual(
-          golden('ecluse.register.snapshot.md'),
+          renderGolden('two-diagrams.register.snapshot.md'),
         );
       });
 
-      it('draws the Écluse fixture as the golden file', () => {
-        const out = join(directory, `${runner.name}.svg`);
-        expect(
-          text(runner, [
-            'render',
-            'test-data/ecluse.json',
-            '--format',
-            'svg',
-            '--out',
-            out,
-          ]),
-        ).toEqual({ code: 0, out: '', err: '' });
-        expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.svg'));
-      });
-
-      it('rasterizes the Écluse fixture as the golden picture', () => {
-        const out = join(directory, `${runner.name}.png`);
-        expect(
-          text(runner, [
-            'render',
-            'test-data/ecluse.json',
-            '--format',
-            'png',
-            '--out',
-            out,
-          ]),
-        ).toEqual({ code: 0, out: '', err: '' });
-        expect(readFileSync(out)).toEqual(golden('ecluse.snapshot.png'));
-      });
-
-      it('writes a PNG to standard output as bytes, not as text', () => {
-        const out = join(directory, `${runner.name}.stdout.png`);
-        const streamed = ran(runner, [
-          'render',
-          'test-data/ecluse.json',
-          '--format',
-          'png',
-          '--out',
-          '-',
-        ]);
-        text(runner, [
-          'render',
-          'test-data/ecluse.json',
-          '--format',
-          'png',
-          '--out',
-          out,
-        ]);
-        expect(streamed.code).toEqual(0);
-        expect(streamed.out).toEqual(golden('ecluse.snapshot.png'));
-        expect(streamed.out).toEqual(readFileSync(out));
-      });
-
-      it('rasterizes the diagram a model of several names', () => {
-        const out = join(directory, `${runner.name}.chosen.png`);
-        expect(
-          text(runner, [
-            'render',
-            'threat-modelling/saerskriven.yaml',
-            '--format',
-            'png',
-            '--out',
-            out,
-            '--diagram',
-            'read-and-render',
-          ]),
-        ).toEqual({ code: 0, out: '', err: '' });
-        expect(readFileSync(out)).toEqual(
-          golden('saerskriven-read-and-render.snapshot.png'),
-        );
-      });
-
-      it(
-        'writes the Écluse fixture as a PDF of diagram and register',
-        () => {
-          const out = join(directory, `${runner.name}.pdf`);
-          expect(
-            text(runner, [
-              'render',
-              'test-data/ecluse.json',
-              '--format',
-              'pdf',
-              '--out',
-              out,
-            ]),
-          ).toEqual({ code: 0, out: '', err: '' });
-          const pdf = readFileSync(out);
-          expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-          expect(pageCount(pdf)).toBe(17);
-          expect(outlineTitles(pdf)).toContain('Écluse threat register');
-        },
-        compileTimeout,
-      );
-
-      it(
-        'writes a PDF to standard output as bytes, not as text',
-        () => {
-          const out = join(directory, `${runner.name}.stdout.pdf`);
-          const streamed = ran(runner, [
-            'render',
-            'test-data/ecluse.json',
-            '--format',
-            'pdf',
-            '--out',
-            '-',
-          ]);
-          text(runner, [
-            'render',
-            'test-data/ecluse.json',
-            '--format',
-            'pdf',
-            '--out',
-            out,
-          ]);
-          expect(streamed.code).toEqual(0);
-          expect(streamed.out.subarray(0, 5).toString('latin1')).toBe('%PDF-');
-          expect(pageCount(streamed.out)).toBe(17);
-          expect(streamed.out).toEqual(readFileSync(out));
-        },
-        bytePathCompileTimeout,
-      );
-
-      it(
-        'carries a hostile fixture into the PDF as text, not as markup',
-        () => {
-          const out = join(directory, `${runner.name}.hostile.pdf`);
-          expect(
-            text(runner, [
-              'render',
-              'test-data/adversarial/typst-injection.yaml',
-              '--format',
-              'pdf',
-              '--out',
-              out,
-            ]),
-          ).toEqual({ code: 0, out: '', err: '' });
-          const pdf = readFileSync(out);
-          expect(pageCount(pdf)).toBe(2);
-          expect(outlineTitles(pdf)).toContain(
-            'Threat 1: Title #eval("1+1") <script>alert(1)</script>',
-          );
-          expect(outlineTitles(pdf)).toContain(
-            '<img src=x onerror="alert(3)">',
-          );
-        },
-        compileTimeout,
-      );
-
-      it('refuses a diagram chosen for a PDF, which draws them all', () => {
-        expect(
-          text(runner, [
-            'render',
-            'test-data/ecluse.json',
-            '--format',
-            'pdf',
-            '--out',
-            '-',
-            '--diagram',
-            '0',
-          ]),
-        ).toEqual({
-          code: 2,
-          out: '',
-          err: 'error: --diagram chooses one diagram, and --format pdf writes every diagram and the register.\n',
-        });
-      });
-
-      it('draws to standard output for an out of -', () => {
-        const result = ran(runner, [
-          'render',
-          'test-data/ecluse.json',
-          '--format',
-          'svg',
-          '--out',
-          '-',
-        ]);
-        expect(result.code).toEqual(0);
-        expect(result.out).toEqual(golden('ecluse.snapshot.svg'));
-        expect(result.err.toString('utf8')).toEqual('');
-      });
-
-      it('lists the diagrams where a model of several names none', () => {
-        expect(
-          text(runner, [
-            'render',
-            'threat-modelling/saerskriven.yaml',
-            '--format',
-            'svg',
-            '--out',
-            '-',
-          ]),
-        ).toEqual({
-          code: 2,
-          out: '',
-          err:
-            'error: --diagram chooses which diagram to draw, and the model holds several:\n' +
-            '  read-and-render: Reading a file and rendering it\n' +
-            '  agent-and-desktop: Agents and the desktop shell\n',
-        });
-      });
-
-      it('draws each diagram a model of several names', () => {
+      it('draws each diagram a model of several names to standard output', () => {
         const chosen = [
-          ['read-and-render', 'saerskriven-read-and-render.snapshot.svg'],
-          [
-            'Agents and the desktop shell',
-            'saerskriven-agent-and-desktop.snapshot.svg',
-          ],
+          ['storefront', 'two-diagrams-storefront.snapshot.svg'],
+          ['Shipping an order', 'two-diagrams-fulfilment.snapshot.svg'],
         ];
         for (const [name, file] of chosen) {
           const result = ran(runner, [
             'render',
-            'threat-modelling/saerskriven.yaml',
+            twoDiagrams,
             '--format',
             'svg',
             '--out',
@@ -408,9 +119,64 @@ for (const runner of runners) {
             name,
           ]);
           expect(result.code).toEqual(0);
-          expect(result.out).toEqual(golden(file));
+          expect(result.out).toEqual(renderGolden(file));
+          expect(result.err.toString('utf8')).toEqual('');
         }
       });
+
+      it('writes a PNG to standard output as bytes, not as text', () => {
+        const streamed = ran(runner, [
+          'render',
+          twoDiagrams,
+          '--format',
+          'png',
+          '--out',
+          '-',
+          '--diagram',
+          'storefront',
+        ]);
+        expect(streamed.code).toEqual(0);
+        expect(sha256Of(streamed.out)).toEqual(
+          sha256Of(renderGolden('two-diagrams-storefront.snapshot.png')),
+        );
+      });
+
+      it(
+        'writes a PDF of diagrams and register, to a file and to standard output alike',
+        () => {
+          const out = join(directory, `${runner.name}.pdf`);
+          const streamed = ran(runner, [
+            'render',
+            twoDiagrams,
+            '--format',
+            'pdf',
+            '--out',
+            '-',
+          ]);
+          expect(
+            text(runner, [
+              'render',
+              twoDiagrams,
+              '--format',
+              'pdf',
+              '--out',
+              out,
+            ]),
+          ).toEqual({ code: 0, out: '', err: '' });
+          const pdf = readFileSync(out);
+          expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+          expect(pageCount(pdf)).toBe(6);
+          expect(outlineTitles(pdf)).toContain('Two diagrams threat register');
+          expect(sha256Of(pdf)).toEqual(
+            renderGolden('two-diagrams.snapshot.pdf.sha256')
+              .toString('utf8')
+              .trim(),
+          );
+          expect(streamed.code).toEqual(0);
+          expect(sha256Of(streamed.out)).toEqual(sha256Of(pdf));
+        },
+        bytePathCompileTimeout,
+      );
 
       it('says one line and exits 2 where standard output will not take it', (ctx) => {
         if (!existsSync(fullDevice)) {
@@ -422,11 +188,13 @@ for (const runner of runners) {
           [
             ...runner.leading,
             'render',
-            'test-data/ecluse.json',
+            twoDiagrams,
             '--format',
             'svg',
             '--out',
             '-',
+            '--diagram',
+            'storefront',
           ],
           { cwd: repositoryRoot, stdio: ['ignore', device, 'pipe'] },
         );

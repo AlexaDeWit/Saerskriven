@@ -1,24 +1,22 @@
 import { expect, test } from '@playwright/test';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { Either } from 'effect';
+import { dragOnto } from './canvas.fixtures.js';
 import {
-  dragOnto,
   handleOn,
-  nodeNamed,
   menuButton,
+  nodeNamed,
+  openFallback,
   openMenu,
-  openPlaceholder,
   runFromMenu,
   savedFile,
-  vendored,
-  withoutPickers,
 } from './studio.fixtures.js';
 
 test('imports beside Export, draws the converted model, and saves native YAML', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
   await openMenu(page);
   const entries = await page.getByRole('menuitem').allTextContents();
   expect(entries.findIndex((entry) => entry.startsWith('Import')) + 1).toBe(
@@ -26,7 +24,7 @@ test('imports beside Export, draws the converted model, and saves native YAML', 
   );
   const chooser = page.waitForEvent('filechooser');
   await runFromMenu(page, 'Import');
-  await (await chooser).setFiles(vendored('test-data/otm/example.json'));
+  await (await chooser).setFiles(testDataPath('otm', 'example.json'));
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
   await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');

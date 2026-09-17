@@ -8,6 +8,7 @@ import {
   threatCategorySchema,
   threatStatusSchema,
 } from '@saerskriven/model';
+import { enumeratedCategories } from '@saerskriven/model/fixtures';
 import type { ThreatDragonThreat } from '@saerskriven/wire-threat-dragon';
 import { equivalent } from './equivalence.js';
 import {
@@ -32,13 +33,6 @@ const threat = (part: Partial<ThreatDragonThreat>): ThreatDragonThreat => ({
   ...base,
   ...part,
 });
-
-const enumeratedCategories = threatCategorySchema.options.flatMap(
-  (option): [string, readonly string[]][] =>
-    'options' in option.shape.category
-      ? [[option.shape.methodology.value, option.shape.category.options]]
-      : [],
-);
 
 const written = (methodology: string, category: string) => {
   const held = threatCategorySchema.parse({ methodology, category });
@@ -158,59 +152,64 @@ describe('toSeverity', () => {
 });
 
 describe('toThreatCategory', () => {
-  it('maps every STRIDE category', () => {
-    const types = [
-      'Spoofing',
-      'Tampering',
-      'Repudiation',
-      'Information disclosure',
-      'Denial of service',
-      'Elevation of privilege',
-    ];
-    expect(methodologiesUnder('STRIDE', types)).toEqual(new Set(['STRIDE']));
-    expect(categoriesUnder('STRIDE', types)).toEqual(
-      strideCategorySchema.shape.category.options,
-    );
-  });
-
-  it('maps every LINDDUN category, under the names Threat Dragon kept', () => {
-    const types = [
-      'Linkability',
-      'Identifiability',
-      'Non-repudiation',
-      'Detectability',
-      'Disclosure of information',
-      'Unawareness',
-      'Non-compliance',
-    ];
-    expect(methodologiesUnder('LINDDUN', types)).toEqual(new Set(['LINDDUN']));
-    expect(categoriesUnder('LINDDUN', types)).toEqual(
-      linddunCategorySchema.shape.category.options,
-    );
-  });
-
-  it('maps every CIA category', () => {
-    const types = ['Confidentiality', 'Integrity', 'Availability'];
-    expect(methodologiesUnder('CIA', types)).toEqual(new Set(['CIA']));
-    expect(categoriesUnder('CIA', types)).toEqual(
-      ciaCategorySchema.shape.category.options,
-    );
-  });
-
-  it('maps every CIA-DIE category', () => {
-    const types = [
-      'Confidentiality',
-      'Integrity',
-      'Availability',
-      'Distributed',
-      'Immutable',
-      'Ephemeral',
-    ];
-    expect(methodologiesUnder('CIADIE', types)).toEqual(new Set(['CIA-DIE']));
-    expect(categoriesUnder('CIADIE', types)).toEqual(
-      ciaDieCategorySchema.shape.category.options,
-    );
-  });
+  it.each([
+    {
+      modelType: 'STRIDE',
+      methodology: 'STRIDE',
+      types: [
+        'Spoofing',
+        'Tampering',
+        'Repudiation',
+        'Information disclosure',
+        'Denial of service',
+        'Elevation of privilege',
+      ],
+      schema: strideCategorySchema,
+    },
+    {
+      modelType: 'LINDDUN',
+      methodology: 'LINDDUN',
+      types: [
+        'Linkability',
+        'Identifiability',
+        'Non-repudiation',
+        'Detectability',
+        'Disclosure of information',
+        'Unawareness',
+        'Non-compliance',
+      ],
+      schema: linddunCategorySchema,
+    },
+    {
+      modelType: 'CIA',
+      methodology: 'CIA',
+      types: ['Confidentiality', 'Integrity', 'Availability'],
+      schema: ciaCategorySchema,
+    },
+    {
+      modelType: 'CIADIE',
+      methodology: 'CIA-DIE',
+      types: [
+        'Confidentiality',
+        'Integrity',
+        'Availability',
+        'Distributed',
+        'Immutable',
+        'Ephemeral',
+      ],
+      schema: ciaDieCategorySchema,
+    },
+  ])(
+    'maps every $methodology category Threat Dragon writes under $modelType',
+    ({ modelType, methodology, types, schema }) => {
+      expect(methodologiesUnder(modelType, types)).toEqual(
+        new Set([methodology]),
+      );
+      expect(categoriesUnder(modelType, types)).toEqual(
+        schema.shape.category.options,
+      );
+    },
+  );
 
   it('maps DIE onto CIA-DIE, the set Threat Dragon aliases it to', () => {
     const types = ['Distributed', 'Immutable', 'Ephemeral'];

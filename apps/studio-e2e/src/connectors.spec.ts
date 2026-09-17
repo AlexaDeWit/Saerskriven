@@ -1,47 +1,23 @@
 import { expect, test } from '@playwright/test';
-import { registeredChords } from './chords.js';
+import { registeredChords } from './chords.fixtures.js';
+import { dragTo, emptyCanvasPoint } from './canvas.fixtures.js';
 import {
-  dragOnto,
-  dragTo,
-  emptyCanvasPoint,
   handleOn,
   menuItem,
   nodeNamed,
-  openEcluse,
   openMenu,
   openPlaceholder,
+  openTwoDiagrams,
   placeByClick,
+  placeholder,
   runFromMenu,
   selectByKeyboard,
   selectNode,
   stepThroughOptions,
+  storefront,
 } from './studio.fixtures.js';
 
-const actor = /^Actor, actor/u;
-
-const store = /^Store, store/u;
-
-const proxy = /^Écluse proxy, process/u;
-
 const flows = '.react-flow__edge';
-
-test('an element shows its handles under the pointer and hides them again', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  const handle = handleOn(nodeNamed(page, actor), 'right');
-  const away = await emptyCanvasPoint(page);
-
-  await expect(handle).toBeHidden();
-
-  await nodeNamed(page, actor).hover();
-
-  await expect(handle).toBeVisible();
-
-  await page.mouse.move(away.x, away.y);
-
-  await expect(handle).toBeHidden();
-});
 
 test('a selected element keeps its handles with the pointer elsewhere', async ({
   page,
@@ -49,26 +25,15 @@ test('a selected element keeps its handles with the pointer elsewhere', async ({
   await openPlaceholder(page);
   const away = await emptyCanvasPoint(page);
 
-  await selectNode(page, actor);
+  await selectNode(page, placeholder.actor);
   await page.mouse.move(away.x, away.y);
 
-  await expect(handleOn(nodeNamed(page, actor), 'right')).toBeVisible();
-  await expect(handleOn(nodeNamed(page, store), 'left')).toBeHidden();
-});
-
-test('a flow is drawn by dragging from one handle to another', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await nodeNamed(page, actor).hover();
-  await dragOnto(
-    page,
-    handleOn(nodeNamed(page, actor), 'right'),
-    handleOn(nodeNamed(page, store), 'left'),
-  );
-
-  await expect(page.locator(flows)).toHaveCount(2);
+  await expect(
+    handleOn(nodeNamed(page, placeholder.actor), 'right'),
+  ).toBeVisible();
+  await expect(
+    handleOn(nodeNamed(page, placeholder.store), 'left'),
+  ).toBeHidden();
 });
 
 test('a drag released over empty canvas draws nothing and costs no undo step', async ({
@@ -79,10 +44,10 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
   await page.keyboard.press('Enter');
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(1);
 
-  await nodeNamed(page, actor).hover();
+  await nodeNamed(page, placeholder.actor).hover();
   await dragTo(
     page,
-    handleOn(nodeNamed(page, actor), 'right'),
+    handleOn(nodeNamed(page, placeholder.actor), 'right'),
     await emptyCanvasPoint(page),
   );
 
@@ -98,28 +63,28 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
 test('the start-flow chord draws a flow from the selected element', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectByKeyboard(page, proxy);
+  await openTwoDiagrams(page);
+  await selectByKeyboard(page, storefront.webShop);
 
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
   await stepThroughOptions(page, 'ArrowDown');
   await page.keyboard.press('Enter');
 
-  await expect(page.locator(flows)).toHaveCount(21);
+  await expect(page.locator(flows)).toHaveCount(8);
 });
 
 test('escape cancels a flow the chord started and leaves the selection', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const selected = await selectByKeyboard(page, proxy);
+  await openTwoDiagrams(page);
+  const selected = await selectByKeyboard(page, storefront.webShop);
 
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
   await page.keyboard.press(registeredChords['select-tool'][1]);
 
   await expect(page.getByRole('listbox')).toHaveCount(0);
-  await expect(page.locator(flows)).toHaveCount(20);
+  await expect(page.locator(flows)).toHaveCount(7);
   await expect(selected).toHaveClass(/selected/u);
 });

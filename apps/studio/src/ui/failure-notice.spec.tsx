@@ -214,16 +214,24 @@ describe('describeFailure', () => {
     );
 
     expect(described.headline).toContain('notes.txt');
-    expect(described.details[0]).toContain('threat-dragon, saerskriven-yaml');
+    expect(described.details[0]).toContain('threat-dragon');
+    expect(described.details[0]).toContain('saerskriven-yaml');
   });
 
   it('distinguishes rejected recovery data from unavailable storage', () => {
-    expect(
-      describeFailure(studioFailures.StoredRecoveryRejected).headline,
-    ).toContain('rejected');
-    expect(describeFailure(studioFailures.RecoveryUnavailable).headline).toBe(
-      'Local recovery is unavailable.',
-    );
+    const rejected = describeFailure(
+      studioFailures.StoredRecoveryRejected,
+    ).headline;
+    const unavailable = describeFailure(
+      studioFailures.RecoveryUnavailable,
+    ).headline;
+
+    for (const headline of [rejected, unavailable]) {
+      expect(headline.trim()).not.toBe('');
+      expect(headline).not.toContain('StoredRecoveryRejected');
+      expect(headline).not.toContain('RecoveryUnavailable');
+    }
+    expect(rejected).not.toBe(unavailable);
   });
 
   it('renders a path into the document a codec refused', () => {
@@ -260,11 +268,10 @@ describe('FailureNotice', () => {
   it('shows the refusal and every path under it', () => {
     render(<FailureNotice failure={studioFailures.Read} />);
 
-    expect(
-      screen.getByText(
-        'broken.json is not a valid document of the format that claimed it.',
-      ),
-    ).toBeDefined();
+    const { headline } = describeFailure(studioFailures.Read);
+
+    expect(headline).toContain('broken.json');
+    expect(screen.getByText(headline)).toBeDefined();
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
 

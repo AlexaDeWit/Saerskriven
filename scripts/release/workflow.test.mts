@@ -11,13 +11,10 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { parse } from 'yaml';
 import { z } from 'zod';
-import { temporaryWorkspace } from './release.fixtures.mts';
-
-const root = fileURLToPath(new URL('../../', import.meta.url));
+import { temporaryWorkspace, workspaceRoot } from './release.fixtures.mts';
 
 const concurrencySchema = z.object({
   group: z.string(),
@@ -52,7 +49,7 @@ const workflowSchema = z.object({
 });
 const workflow = (name: string) =>
   workflowSchema.parse(
-    parse(readFileSync(join(root, '.github/workflows', name), 'utf8')),
+    parse(readFileSync(join(workspaceRoot, '.github/workflows', name), 'utf8')),
   );
 
 void test('Codecov upload is bounded and advisory outside pull requests', () => {
@@ -82,13 +79,18 @@ void test('publication waits for the gate, prepared website, and attestation', (
     ci.jobs['publish']?.if?.trim().replace(/\s+/gu, ' '),
     "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')",
   );
-  assert.equal(existsSync(join(root, '.github/workflows/pages.yml')), false);
+  assert.equal(
+    existsSync(join(workspaceRoot, '.github/workflows/pages.yml')),
+    false,
+  );
   assert.ok('workflow_dispatch' in ci.on);
   for (const job of [
     'build-test',
     'installer-smoke',
     'static-checks',
     'e2e-smoke',
+    'e2e-pages-floor',
+    'e2e-report',
     'dependency-changes',
     'provenance',
     'checks',
@@ -222,7 +224,7 @@ void test('release notes include pinned installation commands with changelog or 
     mkdirSync(join(directory, 'tools'));
     writeFileSync(
       join(directory, 'scripts/release/install-notes.md'),
-      readFileSync(join(root, 'scripts/release/install-notes.md')),
+      readFileSync(join(workspaceRoot, 'scripts/release/install-notes.md')),
     );
     writeFileSync(
       join(directory, 'tools/gh'),
@@ -323,6 +325,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
     INSTALLER_SMOKE: 'success',
     STATIC_CHECKS: 'success',
     E2E_SMOKE: 'success',
+    E2E_PAGES_FLOOR: 'success',
     DEPENDENCY_CHANGES: 'success',
     LOCKFILE_CHANGED: 'false',
     PROVENANCE: 'skipped',
@@ -333,6 +336,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
     'INSTALLER_SMOKE',
     'STATIC_CHECKS',
     'E2E_SMOKE',
+    'E2E_PAGES_FLOOR',
     'DEPENDENCY_CHANGES',
   ]) {
     assert.notEqual(

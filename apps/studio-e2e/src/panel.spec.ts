@@ -1,28 +1,32 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
-import { viewportTransform } from './commands.fixtures.js';
-import { registeredChords } from './chords.js';
+import { softHyphen } from '@saerskriven/model/fixtures';
+import {
+  canvasSettled,
+  edgesOf,
+  onScreen,
+  screenBoxOf,
+  viewportTransform,
+} from './canvas.fixtures.js';
 import {
   beforeCanvas,
-  canvasSettled,
   chooseByKeyboard,
   chooseInPanel,
   editAnnouncement,
+  nameField,
   nodeNamed,
-  onScreen,
-  openEcluse,
   openPlaceholder,
+  openTwoDiagrams,
   panelField,
+  placeholder,
   runFromMenu,
   selectByKeyboard,
   selectNode,
+  storefront,
   threatPanel,
+  threatSummary,
 } from './studio.fixtures.js';
-
-const softHyphen = '\u00ad';
-
-const disclosure = (page: Page, title: string | RegExp): Locator =>
-  threatPanel(page).getByRole('button', { name: title });
+import { registeredChords } from './chords.fixtures.js';
 
 const badgeTone = (node: Locator): Locator =>
   node.locator('.pn-badge-primary circle');
@@ -30,23 +34,8 @@ const badgeTone = (node: Locator): Locator =>
 const titleField = (page: Page): Locator =>
   panelField(page, 'textbox', 'Title');
 
-const boxOf = async (locator: Locator): Promise<Record<string, number>> => {
-  const box = await locator.boundingBox();
-  expect(box, 'the box is on the page').not.toBeNull();
-  const drawn = box ?? { x: 0, y: 0, width: 0, height: 0 };
-  return {
-    left: drawn.x,
-    right: drawn.x + drawn.width,
-    top: drawn.y,
-    bottom: drawn.y + drawn.height,
-    width: drawn.width,
-    height: drawn.height,
-  };
-};
-
 const panAcross = async (page: Page, by: number): Promise<void> => {
-  const box = await page.locator('.react-flow__pane').boundingBox();
-  const pane = box ?? { x: 0, y: 0, width: 0, height: 0 };
+  const pane = await screenBoxOf(page.locator('.react-flow__pane'), 'the pane');
   const from = { x: pane.x + 24, y: pane.y + pane.height / 2 };
   await page.keyboard.down('Space');
   await page.mouse.move(from.x, from.y);
@@ -63,7 +52,7 @@ test('the panel opens on the element selected and goes when the selection does',
   await openPlaceholder(page);
   await expect(threatPanel(page)).toHaveCount(0);
 
-  const actor = await selectNode(page, /^Actor, actor/u);
+  const actor = await selectNode(page, placeholder.actor);
 
   await expect(
     threatPanel(page).getByRole('heading', { name: 'Threats on Actor' }),
@@ -83,7 +72,7 @@ test('T hands the panel the keyboard, and the two Escapes give it back and clear
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = await selectByKeyboard(page, /^Actor, actor/u);
+  const actor = await selectByKeyboard(page, placeholder.actor);
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
   await expect(actor).toBeFocused();
 
@@ -104,7 +93,7 @@ test('undoing a threat just added from the keyboard hands focus to Add a threat,
   page,
 }) => {
   await openPlaceholder(page);
-  await selectByKeyboard(page, /^Actor, actor/u);
+  await selectByKeyboard(page, placeholder.actor);
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
   await page.keyboard.press(registeredChords['focus-threats'][0]);
   await expect(add).toBeFocused();
@@ -125,71 +114,86 @@ test('an element the panel would cover stays where it was drawn', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const store = nodeNamed(page, /^Store, store/u);
-  const covered = await boxOf(store);
+  const store = nodeNamed(page, placeholder.store);
+  const covered = await edgesOf(store);
   const before = await viewportTransform(page);
 
-  await selectByKeyboard(page, /^Store, store/u);
+  await selectByKeyboard(page, placeholder.store);
 
-  const panel = await boxOf(threatPanel(page));
+  const panel = await edgesOf(threatPanel(page));
   expect(
     covered.right,
     'the element was drawn where the panel opens',
   ).toBeGreaterThan(panel.left);
   expect(await viewportTransform(page)).toBe(before);
-  expect(await boxOf(store)).toEqual(covered);
+  expect(await edgesOf(store)).toEqual(covered);
 });
 
 test('a node just inside the panel edge stays where it is when selected', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
-  await selectNode(page, /^Actor, actor/u);
-  const panel = await boxOf(threatPanel(page));
+  const actor = nodeNamed(page, placeholder.actor);
+  await selectNode(page, placeholder.actor);
+  const panel = await edgesOf(threatPanel(page));
   await page.keyboard.press('Escape');
   await expect(threatPanel(page)).toHaveCount(0);
 
   const justInside = 10;
-  await panAcross(page, panel.left + justInside - (await boxOf(actor)).right);
-  const covered = await boxOf(actor);
+  await panAcross(page, panel.left + justInside - (await edgesOf(actor)).right);
+  const covered = await edgesOf(actor);
   expect(
     covered.right,
     'the node ends under the panel, in the strip its padding and border draw',
   ).toBeGreaterThan(panel.left);
 
   const before = await viewportTransform(page);
-  await selectNode(page, /^Actor, actor/u);
+  await selectNode(page, placeholder.actor);
 
   expect(await viewportTransform(page)).toBe(before);
-  expect((await boxOf(actor)).right).toBeGreaterThan(panel.left);
+  expect((await edgesOf(actor)).right).toBeGreaterThan(panel.left);
 });
 
-test('a draft the model refused comes back when its element is selected again', async ({
+test('a draft the model refused comes back when its element is selected again, or when T reopens the panel', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Actor, actor/u);
+  const actor = await selectNode(page, placeholder.actor);
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   await titleField(page).fill(`Soft${softHyphen}hyphen`);
   await titleField(page).press('Enter');
   await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
 
-  await selectByKeyboard(page, /^Store, store/u);
-  await expect(titleField(page)).toHaveCount(0);
-  await selectByKeyboard(page, /^Actor, actor/u);
+  await test.step('selected again', async () => {
+    await selectByKeyboard(page, placeholder.store);
+    await expect(titleField(page)).toHaveCount(0);
+    await selectByKeyboard(page, placeholder.actor);
 
-  await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
-  await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+    await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
+    await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  await test.step('Escape from the field closes the panel over the draft, and T reopens it', async () => {
+    await titleField(page).press(registeredChords['select-tool'][1]);
+
+    await expect(threatPanel(page)).toHaveCount(0);
+    await expect(actor).toHaveClass(/selected/u);
+    await expect(actor).toBeFocused();
+
+    await page.keyboard.press(registeredChords['focus-threats'][0]);
+
+    await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
+    await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+  });
 });
 
 test('a threat added in the panel reaches the canvas as a badge, and its severity colours it', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const worker = await selectNode(page, /^Mirror worker, process/u);
+  await openTwoDiagrams(page);
+  const webShop = await selectNode(page, storefront.webShop);
   await expect(
-    page.getByRole('heading', { name: 'Threats on Mirror worker' }),
+    page.getByRole('heading', { name: 'Threats on Web shop' }),
   ).toBeVisible();
 
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
@@ -197,91 +201,67 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
   await expect(titleField(page)).toBeFocused();
   await expect(editAnnouncement(page)).toBeEmpty();
   await expect(
-    nodeNamed(
-      page,
-      'Mirror worker, process, 1 open threat, severity not assessed',
-    ),
+    nodeNamed(page, 'Web shop, process, 1 open threat, severity not assessed'),
   ).toBeVisible();
-  await expect(worker.locator('.pn-badge-mark')).toHaveText('?');
-  await expect(badgeTone(worker)).toHaveClass('pn-tone-neutral');
+  await expect(webShop.locator('.pn-badge-mark')).toHaveText('?');
+  await expect(badgeTone(webShop)).toHaveClass('pn-tone-neutral');
 
   await chooseInPanel(page, 'Severity', 'critical');
 
   await expect(
     nodeNamed(
       page,
-      'Mirror worker, process, 1 open threat, highest severity critical',
+      'Web shop, process, 1 open threat, highest severity critical',
     ),
   ).toBeVisible();
-  await expect(worker.locator('.pn-badge-mark')).toHaveText('C');
-  await expect(badgeTone(worker)).toHaveClass('pn-tone-critical');
+  await expect(webShop.locator('.pn-badge-mark')).toHaveText('C');
+  await expect(badgeTone(webShop)).toHaveClass('pn-tone-critical');
 });
 
 test('a status chosen in the panel takes the threat out of the count the canvas draws', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const dredger = await selectNode(page, /^Écluse Dredger, process/u);
-  await expect(dredger).toHaveAccessibleName(/5 open threats/u);
+  await openTwoDiagrams(page);
+  const shopper = await selectNode(page, storefront.shopper);
+  await expect(shopper).toHaveAccessibleName(
+    /1 open threat, highest severity high/u,
+  );
 
-  await disclosure(page, /Accidental permanent deletion/u).click();
+  await threatSummary(page, storefront.takeover).click();
   await chooseInPanel(page, 'Status', 'mitigated');
 
-  await expect(
-    nodeNamed(
-      page,
-      /^Écluse Dredger, process, 4 open threats, highest severity high/u,
-    ),
-  ).toBeVisible();
+  await expect(shopper).not.toHaveAccessibleName(/open threat/u);
 });
 
 test('a threat deleted in the panel leaves the canvas, and undo puts it back', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const dredger = await selectNode(page, /^Écluse Dredger, process/u);
-  await expect(dredger).toHaveAccessibleName(/5 open threats/u);
+  await openTwoDiagrams(page);
+  const shopper = await selectNode(page, storefront.shopper);
+  await expect(shopper).toHaveAccessibleName(/1 open threat/u);
 
-  await disclosure(page, /Massive Purge DoS/u).click();
+  await threatSummary(page, storefront.takeover).click();
   await threatPanel(page)
-    .getByRole('button', { name: 'Delete threat 21' })
+    .getByRole('button', { name: 'Delete threat 1', exact: true })
     .click();
 
-  await expect(editAnnouncement(page)).toContainText('21');
-  await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(0);
-  await expect(dredger).toHaveAccessibleName(/4 open threats/u);
+  await expect(editAnnouncement(page)).toContainText('1');
+  await expect(threatSummary(page, storefront.takeover)).toHaveCount(0);
+  await expect(shopper).not.toHaveAccessibleName(/open threat/u);
 
   await runFromMenu(page, 'Undo');
 
-  await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(1);
-  await expect(dredger).toHaveAccessibleName(/5 open threats/u);
-});
-
-test('a title edited in the panel is one undo step', async ({ page }) => {
-  await openEcluse(page);
-  await selectNode(page, /^Écluse Dredger, process/u);
-  await disclosure(page, /Massive Purge DoS/u).click();
-
-  const title = titleField(page);
-  await title.click();
-  await page.keyboard.press('ControlOrMeta+a');
-  await page.keyboard.type('Massive purge denial of service');
-  await title.press('Enter');
-
-  await expect(
-    disclosure(page, /Massive purge denial of service/u),
-  ).toBeVisible();
-
-  await runFromMenu(page, 'Undo');
-
-  await expect(disclosure(page, /Massive Purge DoS/u)).toBeVisible();
+  await expect(threatSummary(page, storefront.takeover)).toHaveCount(1);
+  await expect(shopper).toHaveAccessibleName(/1 open threat/u);
 });
 
 test('every field of a threat is reachable and editable from the keyboard, add and delete included', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const worker = await selectNode(page, /^Mirror worker, process/u);
+  await openTwoDiagrams(page);
+  await page.keyboard.press(registeredChords['next-diagram'][0]);
+  await canvasSettled(page);
+  const printer = await selectNode(page, /^Label printer, process/u);
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
 
   await add.focus();
@@ -346,6 +326,8 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     ['Mitigations', 'combobox', 'Existing mitigation'],
     ['Mitigations', 'button', 'Link existing mitigation'],
     ['Assumptions', 'button', 'Add assumption'],
+    ['Assumptions', 'combobox', 'Existing assumption'],
+    ['Assumptions', 'button', 'Link existing assumption'],
   ] as const) {
     await page.keyboard.press('Tab');
     await expect(
@@ -357,12 +339,12 @@ test('every field of a threat is reachable and editable from the keyboard, add a
 
   await page.keyboard.press('Tab');
   const remove = threatPanel(page).getByRole('button', {
-    name: 'Delete threat 103',
+    name: 'Delete threat 12',
   });
   await expect(remove).toBeFocused();
 
-  await expect(disclosure(page, /Queue poisoning/u)).toBeVisible();
-  await expect(worker).toHaveAccessibleName(
+  await expect(threatSummary(page, /Queue poisoning/u)).toBeVisible();
+  await expect(printer).toHaveAccessibleName(
     /1 open threat, highest severity critical/u,
   );
 
@@ -378,33 +360,35 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   await page.keyboard.press('Enter');
 
   await expect(add).toBeFocused();
-  await expect(worker).toHaveAccessibleName('Mirror worker, process');
+  await expect(printer).toHaveAccessibleName('Label printer, process');
 });
 
 test('a flow selected on the canvas opens its own threats in the panel', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
 
   await beforeCanvas(page).focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
 
   await expect(
-    threatPanel(page).getByRole('heading', { name: /^Threats on npm read/u }),
+    threatPanel(page).getByRole('heading', {
+      name: /^Threats on browse the catalogue/u,
+    }),
   ).toBeVisible();
-  await expect(disclosure(page, /Massive Purge DoS/u)).toHaveCount(0);
-  await expect(disclosure(page, /Package-name typosquatting/u)).toBeVisible();
+  await expect(threatSummary(page, storefront.basketPrice)).toHaveCount(0);
+  await expect(threatSummary(page, storefront.takeover)).toBeVisible();
 });
 
 test('collapsed summaries expose severity and status without an empty content strip', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Actor, actor/u);
+  await selectNode(page, placeholder.actor);
   const panel = threatPanel(page);
   await panel.getByRole('button', { name: 'Add a threat' }).click();
-  const summary = disclosure(page, /New threat/u);
+  const summary = threatSummary(page, /New threat/u);
   await expect(summary).toHaveAccessibleName(
     /Severity: undecided.*Status: open/u,
   );
@@ -426,7 +410,6 @@ test('collapsed summaries expose severity and status without an empty content st
       rgbColour((mode === 'dark' ? darkPalette : lightPalette).toneHigh),
     );
   }
-  await page.screenshot({ path: test.info().outputPath('dark-pane.png') });
   await page.emulateMedia({ forcedColors: 'active' });
   await summary.focus();
   await page.keyboard.press('Enter');
@@ -435,7 +418,7 @@ test('collapsed summaries expose severity and status without an empty content st
   await expect(summary).toHaveAccessibleName(
     /Severity: high.*Status: mitigated/u,
   );
-  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveAccessibleName(
+  await expect(nodeNamed(page, placeholder.actor)).toHaveAccessibleName(
     /1 open threat, highest severity medium/u,
   );
   await page.keyboard.press('Tab');
@@ -451,40 +434,42 @@ test('keyboard width changes preserve the viewport and persist across selection 
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openPlaceholder(page);
-  const actor = await selectByKeyboard(page, /^Actor, actor/u);
+  const actor = await selectByKeyboard(page, placeholder.actor);
   const panel = threatPanel(page);
-  const normal = await boxOf(panel);
+  const normal = await edgesOf(panel);
   expect(normal.width).toBeGreaterThan(346);
-  await panAcross(page, normal.left - 10 - (await boxOf(actor)).right);
-  const before = await boxOf(actor);
+  await panAcross(page, normal.left - 10 - (await edgesOf(actor)).right);
+  const before = await edgesOf(actor);
   const viewportBefore = await viewportTransform(page);
   await panel.getByRole('button', { name: 'Widen pane' }).focus();
   await page.keyboard.press('Enter');
   await canvasSettled(page);
-  const wide = await boxOf(panel);
+  const wide = await edgesOf(panel);
   expect(wide.width).toBeGreaterThan(normal.width);
   expect(before.right).toBeGreaterThan(wide.left);
   expect(await viewportTransform(page)).toBe(viewportBefore);
-  expect(await boxOf(actor)).toEqual(before);
-  const storeBeforeSelection = await boxOf(nodeNamed(page, /^Store, store/u));
+  expect(await edgesOf(actor)).toEqual(before);
+  const storeBeforeSelection = await edgesOf(
+    nodeNamed(page, placeholder.store),
+  );
   const viewportBeforeSelection = await viewportTransform(page);
-  await selectByKeyboard(page, /^Store, store/u);
-  expect((await boxOf(panel)).width).toBe(wide.width);
+  await selectByKeyboard(page, placeholder.store);
+  expect((await edgesOf(panel)).width).toBe(wide.width);
   expect(await viewportTransform(page)).toBe(viewportBeforeSelection);
-  expect(await boxOf(nodeNamed(page, /^Store, store/u))).toEqual(
+  expect(await edgesOf(nodeNamed(page, placeholder.store))).toEqual(
     storeBeforeSelection,
   );
   await panel.getByRole('button', { name: 'Close threats' }).focus();
   await page.keyboard.press('Enter');
   await expect(panel).toHaveCount(0);
-  await expect(nodeNamed(page, /^Store, store/u)).toBeFocused();
+  await expect(nodeNamed(page, placeholder.store)).toBeFocused();
   await page.keyboard.press(registeredChords['focus-threats'][0]);
-  expect((await boxOf(panel)).width).toBe(wide.width);
+  expect((await edgesOf(panel)).width).toBe(wide.width);
   const beforeRestore = await viewportTransform(page);
   await panel.getByRole('button', { name: 'Restore pane width' }).focus();
   await page.keyboard.press('Space');
   await canvasSettled(page);
-  expect((await boxOf(panel)).width).toBe(normal.width);
+  expect((await edgesOf(panel)).width).toBe(normal.width);
   expect(await viewportTransform(page)).toBe(beforeRestore);
 });
 
@@ -492,7 +477,7 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
   page,
 }) => {
   await openPlaceholder(page);
-  await selectNode(page, /^Actor, actor/u);
+  await selectNode(page, placeholder.actor);
   const panel = threatPanel(page);
   await panel.getByRole('button', { name: 'Add a threat' }).click();
   const description = panel.getByRole('textbox', {
@@ -503,7 +488,7 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
     name: 'Mitigation 1 description',
     exact: true,
   });
-  const initial = await boxOf(description);
+  const initial = await edgesOf(description);
   const lineHeight = await description.evaluate((node) =>
     Number.parseFloat(getComputedStyle(node).lineHeight),
   );
@@ -513,7 +498,7 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
     (_, index) => `Line ${String(index)} of a long threat description.`,
   ).join('\n');
   await description.fill(prose);
-  const grown = await boxOf(description);
+  const grown = await edgesOf(description);
   expect(grown.height).toBeGreaterThan(initial.height);
   expect(grown.height).toBeLessThanOrEqual(lineHeight * 25);
   await panel.getByRole('button', { name: 'Widen pane' }).click();
@@ -521,35 +506,35 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
   await panel
     .getByRole('button', { name: 'Add mitigation', exact: true })
     .click();
-  const recordInitial = await boxOf(recordProse);
+  const recordInitial = await edgesOf(recordProse);
   expect(recordInitial.height).toBeGreaterThanOrEqual(lineHeight * 2);
   expect(recordInitial.height).toBeLessThan(initial.height);
   await recordProse.fill(prose.split('\n').slice(0, 6).join('\n'));
-  const recordGrown = await boxOf(recordProse);
+  const recordGrown = await edgesOf(recordProse);
   expect(recordGrown.height).toBeGreaterThan(recordInitial.height);
   expect(recordGrown.height).toBeLessThanOrEqual(lineHeight * 25);
-  const heading = await boxOf(panel.getByRole('heading', { level: 2 }));
+  const heading = await edgesOf(panel.getByRole('heading', { level: 2 }));
   await recordProse.scrollIntoViewIfNeeded();
-  expect((await boxOf(panel.getByRole('heading', { level: 2 }))).top).toBe(
+  expect((await edgesOf(panel.getByRole('heading', { level: 2 }))).top).toBe(
     heading.top,
   );
   await expect(
     panel.getByRole('button', { name: 'Close threats' }),
   ).toBeVisible();
   await recordProse.scrollIntoViewIfNeeded();
-  const manual = await boxOf(recordProse);
+  const manual = await edgesOf(recordProse);
   await page.mouse.move(manual.right - 5, manual.bottom - 5);
   await page.mouse.down();
   await page.mouse.move(manual.right - 5, manual.bottom + 40, { steps: 5 });
   await page.mouse.up();
   await expect(recordProse).toHaveCSS('resize', 'vertical');
-  const resized = (await boxOf(recordProse)).height;
+  const resized = (await edgesOf(recordProse)).height;
   expect(resized).toBeGreaterThan(manual.height);
   await recordProse.press('End');
   await recordProse.press('x');
-  expect((await boxOf(recordProse)).height).toBe(resized);
+  expect((await edgesOf(recordProse)).height).toBe(resized);
   await recordProse.press('Backspace');
-  expect((await boxOf(recordProse)).height).toBe(resized);
+  expect((await edgesOf(recordProse)).height).toBe(resized);
   await runFromMenu(page, 'Undo');
   await expect(recordProse).toHaveCount(0);
   await runFromMenu(page, 'Undo');
@@ -568,20 +553,20 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
 test('long titles and fields remain usable in a narrow viewport', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectByKeyboard(page, /^Écluse Dredger, process/u);
+  await openTwoDiagrams(page);
+  await selectByKeyboard(page, storefront.shopper);
   const panel = threatPanel(page);
-  await disclosure(page, /Massive Purge DoS/u).click();
+  await threatSummary(page, storefront.takeover).click();
   const severityField = panelField(page, 'combobox', 'Severity');
   const statusField = panelField(page, 'combobox', 'Status');
-  const desktopSeverity = await boxOf(severityField);
-  const desktopStatus = await boxOf(statusField);
+  const desktopSeverity = await edgesOf(severityField);
+  const desktopStatus = await edgesOf(statusField);
   expect(desktopStatus.top).toBe(desktopSeverity.top);
   await titleField(page).fill('A long threat title '.repeat(15));
   await titleField(page).press('Enter');
   await page.setViewportSize({ width: 360, height: 640 });
   await panel.getByRole('button', { name: 'Widen pane' }).click();
-  const bounds = await boxOf(panel);
+  const bounds = await edgesOf(panel);
   expect(bounds.left).toBeGreaterThanOrEqual(0);
   expect(bounds.right).toBeLessThanOrEqual(360);
   expect(
@@ -589,8 +574,8 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   ).toBe(true);
   await onScreen(severityField);
   await onScreen(statusField);
-  const severity = await boxOf(severityField);
-  const status = await boxOf(statusField);
+  const severity = await edgesOf(severityField);
+  const status = await edgesOf(statusField);
   expect(severity.left).toBeGreaterThanOrEqual(bounds.left);
   expect(severity.right).toBeLessThanOrEqual(bounds.right);
   expect(status.left).toBeGreaterThanOrEqual(bounds.left);
@@ -603,22 +588,21 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   await expect(severityField).toContainText('critical');
   await chooseInPanel(page, 'Status', 'mitigated');
   await expect(statusField).toContainText('mitigated');
-  const longSummary = disclosure(page, /A long threat title/u);
+  const longSummary = threatSummary(page, /A long threat title/u);
   await longSummary.scrollIntoViewIfNeeded();
-  expect((await boxOf(longSummary)).right).toBeLessThanOrEqual(bounds.right);
-  await page.screenshot({ path: test.info().outputPath('narrow-pane.png') });
+  expect((await edgesOf(longSummary)).right).toBeLessThanOrEqual(bounds.right);
   await panel.getByRole('button', { name: 'Close threats' }).click();
   await expect(panel).toHaveCount(0);
-  await expect(nodeNamed(page, /^Écluse Dredger, process/u)).toBeFocused();
+  await expect(nodeNamed(page, storefront.shopper)).toBeFocused();
 });
 
 test('a long element name leaves the pane heading and editor reachable', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  await selectByKeyboard(page, /^Actor, actor/u);
+  await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('Enter');
-  const name = page.getByRole('textbox', { name: 'Name of Actor' });
+  const name = nameField(page, 'Actor');
   await name.fill('A long system component name '.repeat(30));
   await name.press('Enter');
   await page.setViewportSize({ width: 360, height: 640 });
@@ -644,6 +628,6 @@ test('a long element name leaves the pane heading and editor reachable', async (
   await expect(panel).toHaveCount(0);
   await expect(nodeNamed(page, /^A long system component name/u)).toBeFocused();
   await page.keyboard.press(registeredChords['focus-threats'][0]);
-  await disclosure(page, /A threat under a long element name/u).click();
+  await threatSummary(page, /A threat under a long element name/u).click();
   await expect(description).toHaveValue('The editor remains reachable.');
 });

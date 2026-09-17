@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { renderModelSchema, renderSchema } from './schema-report.js';
+import { renderModelSchema, renderSchema } from './schema-report.fixtures.js';
 import { acceptedTextSchema } from './text.js';
 
 const malformed = {

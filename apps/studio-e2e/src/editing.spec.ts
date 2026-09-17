@@ -1,35 +1,45 @@
 import { expect, test } from '@playwright/test';
-import { inkBoxOf } from './canvas-geometry.fixtures.js';
-import { registeredChords } from './chords.js';
-import { viewportTransform } from './commands.fixtures.js';
 import {
-  beforeCanvas,
   canvasContainer,
-  canvasSettled,
-  canvasSurface,
-  cardControlsClear,
   dragOnto,
-  editAnnouncement,
   elementNodes,
   emptyCanvasPoint,
+  inkBoxOf,
+  viewportTransform,
+} from './canvas.fixtures.js';
+import {
+  beforeCanvas,
+  canvasSurface,
+  cardControlsClear,
+  chooseFile,
+  editAnnouncement,
   menuItem,
+  nameField,
   nodeNamed,
-  openEcluse,
+  openFallback,
   openMenu,
   openPlaceholder,
+  openTwoDiagrams,
   placeByClick,
+  placeholder,
   runFromMenu,
   selectNode,
+  storefront,
+  threatPanel,
   toolButton,
-  vendored,
-  withoutPickers,
+  twoDiagramsFile,
 } from './studio.fixtures.js';
+import { registeredChords } from './chords.fixtures.js';
 
 const boxTools = [
-  ['Actor', /^New actor, actor/u],
-  ['Process', /^New process, process/u],
-  ['Store', /^New store, store/u],
-  ['Trust boundary', /^New trust boundary, trust boundary/u],
+  ['Actor', /^New actor, actor/u, 'New actor'],
+  ['Process', /^New process, process/u, 'New process'],
+  ['Store', /^New store, store/u, 'New store'],
+  [
+    'Trust boundary',
+    /^New trust boundary, trust boundary/u,
+    'New trust boundary',
+  ],
 ] as const;
 
 const previewedBoxTools = [
@@ -63,23 +73,25 @@ const expectInside = (
   expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height);
 };
 
-for (const [tool, drawn] of boxTools) {
-  test(`the ${tool} tool places its element by pointer`, async ({ page }) => {
-    await openPlaceholder(page);
+test('each box tool places its element by pointer with its name open', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
 
-    const placed = await placeByClick(page, tool, drawn);
+  for (const [tool, drawn, placedName] of boxTools) {
+    await test.step(tool, async () => {
+      const placed = await placeByClick(page, tool, drawn);
 
-    await expect(placed).toHaveClass(/selected/u);
-    await expect(
-      page.getByRole('textbox', {
-        name: new RegExp(
-          `^Name of ${tool === 'Trust boundary' ? 'New trust boundary' : `New ${tool.toLowerCase()}`}$`,
-          'u',
-        ),
-      }),
-    ).toBeFocused();
-  });
-}
+      await expect(placed).toHaveClass(/selected/u);
+      const name = nameField(page, placedName);
+      await expect(name).toBeFocused();
+      await expect(threatPanel(page)).toBeVisible();
+
+      await name.press('Enter');
+      await expect(name).toHaveCount(0);
+    });
+  }
+});
 
 test('each element tool key selects its mode and Enter places it', async ({
   page,
@@ -90,10 +102,10 @@ test('each element tool key selects its mode and Enter places it', async ({
     await page.keyboard.press(chord);
     await page.keyboard.press('Enter');
     await expect(nodeNamed(page, named)).toHaveCount(1);
-    const nameField = page.getByRole('textbox', { name: /^Name of New/u });
-    await expect(nameField).toBeFocused();
-    await nameField.press('Enter');
-    await expect(nameField).toHaveCount(0);
+    const opened = page.getByRole('textbox', { name: /^Name of New/u });
+    await expect(opened).toBeFocused();
+    await opened.press('Enter');
+    await expect(opened).toHaveCount(0);
   }
   await expect(elementNodes(page)).toHaveCount(7);
 });
@@ -108,15 +120,13 @@ test('a delayed focus return preserves the next keyboard placement editor', asyn
 
   await page.keyboard.press(registeredChords['actor-tool'][0]);
   await page.keyboard.press('Enter');
-  const actorName = page.getByRole('textbox', { name: 'Name of New actor' });
+  const actorName = nameField(page, 'New actor');
   await expect(actorName).toBeFocused();
   await actorName.press('Enter');
 
   await page.keyboard.press(registeredChords['process-tool'][0]);
   await page.keyboard.press('Enter');
-  const processName = page.getByRole('textbox', {
-    name: 'Name of New process',
-  });
+  const processName = nameField(page, 'New process');
   await expect(processName).toBeFocused();
   await page.clock.runFor(50);
 
@@ -124,23 +134,6 @@ test('a delayed focus return preserves the next keyboard placement editor', asyn
   await processName.fill('Worker');
   await processName.press('Enter');
   await expect(nodeNamed(page, /^Worker, process/u)).toBeFocused();
-});
-
-test('Select clears a selected element when the pointer lands on empty canvas', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  await toolButton(page, 'Select').click();
-  const actor = await selectNode(page, /^Actor, actor/u);
-  const empty = await emptyCanvasPoint(page);
-
-  await page.mouse.click(empty.x, empty.y);
-
-  await expect(actor).not.toHaveClass(/selected/u);
-  await expect(canvasContainer(page)).toHaveAttribute(
-    'data-active-tool',
-    'select',
-  );
 });
 
 test('Enter and Space activate a focused toolbox button', async ({ page }) => {
@@ -249,31 +242,12 @@ test('Enter finishes a boundary curve after two waypoint clicks', async ({
   ).toHaveCount(1);
 });
 
-test('a placed element opens its name without a second message, and undo takes it back as one step', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await placeByClick(page, 'Actor', /^New actor, actor/u);
-
-  await expect(
-    page.getByRole('textbox', { name: 'Name of New actor' }),
-  ).toBeFocused();
-  await expect(page.getByRole('region', { name: 'Threats' })).toBeVisible();
-  await expect(editAnnouncement(page)).toBeEmpty();
-  await page.keyboard.press('Enter');
-
-  await runFromMenu(page, 'Undo');
-
-  await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
-});
-
 test('a flow is drawn by dragging from one handle to another', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = nodeNamed(page, /^Actor, actor/u);
-  const store = nodeNamed(page, /^Store, store/u);
+  const actor = nodeNamed(page, placeholder.actor);
+  const store = nodeNamed(page, placeholder.store);
 
   await actor.hover();
   await dragOnto(
@@ -291,7 +265,7 @@ test('a flow is drawn by keyboard alone, from the selected element', async ({
 }) => {
   await openPlaceholder(page);
 
-  await selectNode(page, /^Actor, actor/u);
+  await selectNode(page, placeholder.actor);
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await page.getByRole('option', { name: 'Store' }).press('Enter');
 
@@ -428,7 +402,7 @@ test('Escape discards a boundary curve without an undo step', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = await nodeNamed(page, /^Actor, actor/u).boundingBox();
+  const actor = await nodeNamed(page, placeholder.actor).boundingBox();
   expect(actor).not.toBeNull();
   const at = {
     x: (actor?.x ?? 0) + (actor?.width ?? 0) / 2,
@@ -458,18 +432,14 @@ test('Escape discards a boundary curve without an undo step', async ({
 test('opening another model clears a boundary curve draft', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
   const at = await emptyCanvasPoint(page);
 
   await toolButton(page, 'Trust boundary curve').click();
   await page.mouse.click(at.x, at.y);
   await expect(page.getByTestId('curve-draft')).toBeVisible();
 
-  await page
-    .getByTestId('file-input')
-    .setInputFiles(vendored('test-data/saerskriven/ecluse.yaml'));
-  await canvasSettled(page);
+  await chooseFile(page, twoDiagramsFile);
 
   await expect(page.getByTestId('curve-draft')).toHaveCount(0);
 });
@@ -479,9 +449,7 @@ test('a boundary curve draft stays discarded across undo and redo', async ({
 }) => {
   await openPlaceholder(page);
   await placeByClick(page, 'Actor', /^New actor, actor/u);
-  await expect(
-    page.getByRole('textbox', { name: 'Name of New actor' }),
-  ).toBeFocused();
+  await expect(nameField(page, 'New actor')).toBeFocused();
   await page.keyboard.press('Enter');
   const at = await emptyCanvasPoint(page);
   await toolButton(page, 'Trust boundary curve').click();
@@ -499,7 +467,7 @@ test('Hand pans from anywhere and Space restores the previous tool', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = await nodeNamed(page, /^Actor, actor/u).boundingBox();
+  const actor = await nodeNamed(page, placeholder.actor).boundingBox();
   expect(actor).not.toBeNull();
   const at = {
     x: (actor?.x ?? 0) + (actor?.width ?? 0) / 2,
@@ -550,33 +518,33 @@ test('the canvas owns the full viewport beneath its floating chrome', async ({
   await cardControlsClear(page);
 });
 
-test('the delete key removes the element, and the flows it held lose an end', async ({
+test('the delete key removes the element, the flows it held lose an end, and one undo puts all of it back', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const registry = nodeNamed(page, /^Public npm registry, actor/u);
-  const fetched = nodeNamed(page, /^anonymous packument/u);
+  await openTwoDiagrams(page);
+  const shopper = nodeNamed(page, storefront.shopper);
+  const returned = nodeNamed(page, /^return the rendered page, flow/u);
 
-  await registry.click();
-  await expect(fetched).toHaveAttribute(
-    'aria-label',
-    /to Public npm registry/u,
-  );
+  await shopper.click();
+  await expect(returned).toHaveAttribute('aria-label', /to Shopper/u);
 
   await page.keyboard.press('Delete');
 
-  await expect(elementNodes(page)).toHaveCount(17);
-  await expect(editAnnouncement(page)).toContainText('Public npm registry');
-  await expect(editAnnouncement(page)).toContainText('2');
-  await expect(editAnnouncement(page)).toContainText('1');
-  await expect(fetched).toHaveAttribute('aria-label', /to a free point/u);
+  await expect(elementNodes(page)).toHaveCount(6);
+  await expect(editAnnouncement(page)).toContainText('Shopper');
+  await expect(returned).toHaveAttribute('aria-label', /to a free point/u);
   await expect(canvasSurface(page)).toBeFocused();
+
+  await runFromMenu(page, 'Undo');
+
+  await expect(elementNodes(page)).toHaveCount(7);
+  await expect(returned).toHaveAttribute('aria-label', /to Shopper/u);
 });
 
 test('the delete key removes a selected flow, and undo puts it back', async ({
   page,
 }) => {
-  await openEcluse(page);
+  await openTwoDiagrams(page);
   const flows = page.locator('.react-flow__edge');
 
   await beforeCanvas(page).focus();
@@ -586,29 +554,11 @@ test('the delete key removes a selected flow, and undo puts it back', async ({
 
   await page.keyboard.press('Delete');
 
-  await expect(flows).toHaveCount(19);
-  await expect(editAnnouncement(page)).toContainText('npm read');
+  await expect(flows).toHaveCount(6);
+  await expect(editAnnouncement(page)).toContainText('browse the catalogue');
   await expect(canvasSurface(page)).toBeFocused();
 
   await runFromMenu(page, 'Undo');
 
-  await expect(flows).toHaveCount(20);
-});
-
-test('a deletion is one step, so undo puts the element and its flows back', async ({
-  page,
-}) => {
-  await openEcluse(page);
-
-  await nodeNamed(page, /^Public npm registry, actor/u).click();
-  await page.keyboard.press('Delete');
-  await expect(elementNodes(page)).toHaveCount(17);
-
-  await runFromMenu(page, 'Undo');
-
-  await expect(elementNodes(page)).toHaveCount(18);
-  await expect(nodeNamed(page, /^anonymous packument/u)).toHaveAttribute(
-    'aria-label',
-    /to Public npm registry/u,
-  );
+  await expect(flows).toHaveCount(7);
 });

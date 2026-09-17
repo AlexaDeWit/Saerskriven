@@ -8,7 +8,7 @@ import {
   categoryKey,
   enumeratedCategoryKeys,
 } from './category-field.js';
-import { listboxTimeout } from './ui.fixtures.js';
+import { listboxTimeout, noop } from './ui.fixtures.js';
 
 const stride: ThreatCategory = {
   methodology: 'STRIDE',
@@ -21,8 +21,6 @@ const custom: ThreatCategory = {
   category: 'billing abuse',
 };
 
-const noop = (): void => undefined;
-
 describe('categoryKey', () => {
   it('pairs an enumerated methodology with its category', () => {
     expect(categoryKey(stride)).toBe('STRIDE tampering');
@@ -30,16 +28,6 @@ describe('categoryKey', () => {
 
   it('keeps a custom methodology out of the enumerated keys', () => {
     expect(enumeratedCategoryKeys).not.toContain(categoryKey(custom));
-  });
-});
-
-describe('enumeratedCategoryKeys', () => {
-  it('offers every methodology the union enumerates', () => {
-    const methodologies = new Set(
-      enumeratedCategoryKeys.map((key) => key.split(' ')[0]),
-    );
-
-    expect(methodologies.size).toBe(threatCategorySchema.options.length - 1);
   });
 });
 

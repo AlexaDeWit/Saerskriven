@@ -4,23 +4,24 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   statSync,
   symlinkSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parse as parseToml } from 'smol-toml';
-import { fixtureFile } from './cli.fixtures.js';
+import { fixtureFile, scratchDirectory } from './cli.fixtures.js';
 import type { HostPlatform, HostSyntax } from './mcp-hosts.js';
 import {
+  declared,
+  homelessIn,
   installedIn,
   malformedJson,
   malformedToml,
   misshapenJson,
   occupiedJson,
   occupiedToml,
+  parsedAs,
+  stdio,
 } from './mcp-install.fixtures.js';
 import {
   installMcp,
@@ -28,15 +29,7 @@ import {
   type InstallOptions,
 } from './mcp-install.js';
 
-const directory = (): string =>
-  mkdtempSync(join(tmpdir(), 'saerskriven-cli-install-'));
-
-const parsedAs = (syntax: HostSyntax, text: string): unknown =>
-  syntax === 'json' ? JSON.parse(text) : parseToml(text);
-
-const stdio = { command: 'saer', args: ['mcp'] };
-
-const declared = { type: 'stdio', command: 'saer', args: ['mcp'] };
+const directory = (): string => scratchDirectory('install');
 
 const otherServer = { command: 'other', args: ['serve'] };
 
@@ -151,12 +144,7 @@ ${claudeCodeEntry}
   it('shows the project entry where no home directory is named at all', () => {
     const outcome = installMcp(
       { host: 'claude-code', print: true },
-      {
-        directory: directory(),
-        home: undefined,
-        platform: 'other',
-        appData: undefined,
-      },
+      homelessIn(directory()),
     );
     expect(outcome.code).toEqual(0);
     expect(outcome.out).toContain('status: shown\n');
@@ -372,12 +360,7 @@ describe('a host file the command will not write', () => {
   it('refuses a user-level file where no home directory is named', () => {
     const outcome = installMcp(
       { host: 'cursor', user: true },
-      {
-        directory: directory(),
-        home: undefined,
-        platform: 'other',
-        appData: undefined,
-      },
+      homelessIn(directory()),
     );
     expect(outcome.code).toEqual(2);
     expect(outcome.err).toContain(

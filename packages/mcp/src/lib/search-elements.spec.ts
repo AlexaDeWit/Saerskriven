@@ -1,21 +1,25 @@
+import { threatCountByElement } from '@saerskriven/model';
 import {
   answerOf,
-  ecluseWorkspace,
   everyRecordTree,
   refusalOf,
+  twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
+import { readNamed } from './reading.js';
 import { renderElementSearch, searchElements } from './search-elements.js';
 import { searchLimits } from './search.js';
 
-const ecluse = ecluseWorkspace();
+const workspace = twoDiagramsWorkspace();
+
+const model = answerOf(readNamed(workspace, undefined)).model;
 
 const search = (args: Parameters<typeof searchElements>[1]) =>
-  answerOf(searchElements(ecluse, args));
+  answerOf(searchElements(workspace, args));
 
 describe('what saer_search_elements finds', () => {
   it('matches every element of the fixture where nothing narrows it', () => {
     const found = search({ response_format: 'concise' });
-    expect(found.counts.matched).toBe(38);
+    expect(found.counts.matched).toBe(25);
   });
 
   it('keeps only the kind a call names', () => {
@@ -27,10 +31,9 @@ describe('what saer_search_elements finds', () => {
 
   it('counts the threats recorded against each element', () => {
     const found = search({ response_format: 'concise' });
-    expect(
-      found.elements.some((row) => row.threats > 0) &&
-        found.elements.every((row) => row.threats >= 0),
-    ).toBe(true);
+    expect(new Map(found.elements.map((row) => [row.id, row.threats]))).toEqual(
+      threatCountByElement(model),
+    );
   });
 
   it('adds the geometry of each kind where detail is asked for', () => {
@@ -51,8 +54,15 @@ describe('what saer_search_elements finds', () => {
   });
 
   it('matches a query without case against the name', () => {
-    const found = search({ query: 'PROXY', response_format: 'concise' });
-    expect(found.counts.matched).toBeGreaterThan(0);
+    const upper = search({ query: 'ORDER', response_format: 'concise' });
+    const lower = search({ query: 'order', response_format: 'concise' });
+    expect(upper.elements.map((row) => row.id)).toEqual(
+      lower.elements.map((row) => row.id),
+    );
+    expect(
+      upper.elements.filter((row) => !row.name.toLowerCase().includes('order')),
+    ).toEqual([]);
+    expect(upper.counts.matched).toBeGreaterThan(0);
   });
 
   it('cuts a detailed listing at its limit and says the count it matched', () => {
@@ -63,7 +73,7 @@ describe('what saer_search_elements finds', () => {
       truncated: found.counts.truncated,
     }).toEqual({
       returned: searchLimits.detailed,
-      matched: 38,
+      matched: 25,
       truncated: true,
     });
   });
@@ -78,7 +88,7 @@ describe('what saer_search_elements finds', () => {
   it('refuses a diagram the model does not hold', () => {
     expect(
       refusalOf(
-        searchElements(ecluse, {
+        searchElements(workspace, {
           diagram: 'Nothing',
           response_format: 'concise',
         }),

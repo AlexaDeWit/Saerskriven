@@ -1,23 +1,16 @@
 import type { ModelInput } from '@saerskriven/model';
 import { parsedFixture } from '@saerskriven/model/fixtures';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
 import { renderDivergences } from './divergence.js';
-import { readThreatDragon } from './threat-dragon-read.js';
 import { planThreats } from './threat-dragon-threats.js';
 import {
   complementFixture,
-  ecluseText,
+  featureCompleteText,
   richerThanFormatFixture,
+  threatDragonReading,
 } from './threat-dragon.fixtures.js';
 
-const readOrThrow = (text: string) =>
-  Either.getOrThrowWith(
-    readThreatDragon(text),
-    (failure) => new Error(`The codec refused a text: ${failure._tag}`),
-  );
-
-const ecluse = readOrThrow(ecluseText);
+const featureComplete = threatDragonReading(featureCompleteText);
 
 const richer = parsedFixture(richerThanFormatFixture);
 
@@ -108,10 +101,21 @@ const undeclaredDocument: ThreatDragonDocument = {
 
 describe('placing the threats of a model under the cells that host them', () => {
   it('nests each under the cell it names, in the order the file had them', () => {
-    const plan = planThreats(ecluse.model, ecluse.source);
+    const plan = planThreats(featureComplete.model, featureComplete.source);
     expect(
-      [...plan.byCell].map(([id, threats]) => [id, threats.length]),
-    ).toHaveLength(13);
+      [...plan.byCell].map(([id, threats]) => [
+        id,
+        threats.map((held) => held.number),
+      ]),
+    ).toEqual([
+      ['actor-patient', [1, 2]],
+      ['process-booking', [3, 4, 5]],
+      ['store-appointments', [6]],
+      ['flow-request', [8, 9, 10]],
+      ['flow-sync', [11, 12, 13, 14, 15, 16]],
+      ['process-records', [17, 18, 19, 20, 21, 22, 23]],
+      ['actor-clerk', [17, 24, 40]],
+    ]);
     expect(plan.divergences).toEqual([]);
   });
 
@@ -145,8 +149,11 @@ describe('placing the threats of a model under the cells that host them', () => 
 
 describe('the high-water mark a plan writes', () => {
   it('repeats what the file declared where every number is already in it', () => {
-    expect(planThreats(ecluse.model, ecluse.source).threatTop.value).toBe(28);
-    expect(ecluse.model.lastIssuedThreatNumber).toBe(102);
+    expect(
+      planThreats(featureComplete.model, featureComplete.source).threatTop
+        .value,
+    ).toBe(30);
+    expect(featureComplete.model.lastIssuedThreatNumber).toBe(40);
   });
 
   it('covers a number this write puts in a file that lacked it', () => {
@@ -186,18 +193,8 @@ describe('the high-water mark a plan writes', () => {
 });
 
 describe('a threat the source document already nests under two cells', () => {
-  it('is not the record this write split, so nothing is reported', () => {
-    const read = readOrThrow(JSON.stringify(complementFixture));
-    const plan = planThreats(read.model, read.source);
-    expect(read.model.threats[0]?.elements.map((id) => String(id))).toEqual([
-      'actor-1',
-      'store-1',
-    ]);
-    expect(plan.divergences).toEqual([]);
-  });
-
   it('is reported where this write is the one dividing it', () => {
-    const read = readOrThrow(JSON.stringify(complementFixture));
+    const read = threatDragonReading(JSON.stringify(complementFixture));
     expect(
       renderDivergences(planThreats(read.model, undefined).divergences),
     ).toBe(

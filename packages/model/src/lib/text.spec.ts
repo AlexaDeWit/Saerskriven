@@ -1,5 +1,6 @@
 import { Either } from 'effect';
-import { issuesOf, seededModel, validModelFixture } from './fixtures.js';
+import { softHyphen } from '../fixtures.js';
+import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
 import { firstRefusedCharacter } from './text.js';
 
 const zeroWidthNonJoiner = '\u200C';
@@ -47,8 +48,6 @@ const scripts = [
 const nullCharacter = '\u0000';
 
 const bell = '\u0007';
-
-const softHyphen = '\u00AD';
 
 const rightToLeftOverride = '\u202E';
 

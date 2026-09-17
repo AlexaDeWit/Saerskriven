@@ -1,7 +1,12 @@
 import { Either } from 'effect';
 import { join } from 'node:path';
-import { parse as parseToml } from 'smol-toml';
-import { installedIn } from './mcp-install.fixtures.js';
+import {
+  declared,
+  homelessIn,
+  installedIn,
+  parsedAs,
+  stdio,
+} from './mcp-install.fixtures.js';
 import {
   InstallFailure,
   entryText,
@@ -25,18 +30,12 @@ const entryOf = (host: HostName, file?: string): string =>
   );
 
 const parsedEntry = (host: HostName, text: string): unknown =>
-  hostRegistrations[host].syntax === 'json'
-    ? JSON.parse(text)
-    : parseToml(text);
+  parsedAs(hostRegistrations[host].syntax, text);
 
 const fileOf = (host: HostName, platform: HostPlatform = 'other') =>
   Either.getOrThrow(
     hostFile(host, 'user', installedIn('/home/alexa', platform)),
   );
-
-const stdio = { command: 'saer', args: ['mcp'] };
-
-const declared = { type: 'stdio', command: 'saer', args: ['mcp'] };
 
 const documented: Record<HostName, { key: string; entry: unknown }> = {
   'claude-code': { key: 'mcpServers', entry: stdio },
@@ -56,39 +55,6 @@ describe('the entry a host file holds', () => {
       });
     },
   );
-
-  it('writes the claude-code entry as the form a project commits', () => {
-    expect(entryOf('claude-code')).toEqual(
-      `{
-  "mcpServers": {
-    "saerskriven": {
-      "command": "saer",
-      "args": [
-        "mcp"
-      ]
-    }
-  }
-}
-`,
-    );
-  });
-
-  it('declares the transport where the host asks for it', () => {
-    expect(entryOf('vscode')).toEqual(
-      `{
-  "servers": {
-    "saerskriven": {
-      "type": "stdio",
-      "command": "saer",
-      "args": [
-        "mcp"
-      ]
-    }
-  }
-}
-`,
-    );
-  });
 
   it('writes the codex entry as a TOML table', () => {
     expect(entryOf('codex')).toEqual(
@@ -167,13 +133,7 @@ describe('where a host reads its registration', () => {
   });
 
   it('refuses a user-level file where no home directory is named', () => {
-    const nowhere = {
-      directory: '/work',
-      home: undefined,
-      platform: 'other' as HostPlatform,
-      appData: undefined,
-    };
-    expect(hostFile('cursor', 'user', nowhere)).toEqual(
+    expect(hostFile('cursor', 'user', homelessIn('/work'))).toEqual(
       Either.left(InstallFailure.NoHome({ host: 'cursor' })),
     );
     expect(
@@ -201,20 +161,20 @@ describe('where a host reads its registration', () => {
 });
 
 describe('a write the host file would not take', () => {
-  it('says a path taken while the run worked can be tried again', () => {
-    expect(
-      renderInstallFailure(InstallFailure.Occupied({ path: '.mcp.json' })),
-    ).toEqual([
-      'The file ".mcp.json" was taken while this run was working, so nothing was written.',
-      'Run this again to add the entry to what the file holds now.',
-    ]);
-  });
-
-  it('says the same of a file that changed under the run', () => {
-    expect(
-      renderInstallFailure(InstallFailure.Changed({ path: '.mcp.json' })),
-    ).toEqual([
-      'The file ".mcp.json" changed while this run was working, so nothing was written.',
+  it.each([
+    {
+      named: 'a path taken while the run worked',
+      failure: InstallFailure.Occupied({ path: '.mcp.json' }),
+      happened: 'was taken',
+    },
+    {
+      named: 'a file that changed under the run',
+      failure: InstallFailure.Changed({ path: '.mcp.json' }),
+      happened: 'changed',
+    },
+  ])('says $named can be tried again', ({ failure, happened }) => {
+    expect(renderInstallFailure(failure)).toEqual([
+      `The file ".mcp.json" ${happened} while this run was working, so nothing was written.`,
       'Run this again to add the entry to what the file holds now.',
     ]);
   });

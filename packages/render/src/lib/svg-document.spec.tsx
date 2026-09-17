@@ -7,106 +7,69 @@ import {
   type TextStyleRule,
 } from '@saerskriven/canvas';
 import {
-  parseModel,
   type Diagram,
   type Element as DiagramElement,
   type Model,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import {
+  boxAt,
+  curveBoundary,
+  flowFrom,
+  modelWith,
+  repositoryRoot,
+} from '@saerskriven/model/fixtures';
 import { JSDOM } from 'jsdom';
 import { join } from 'node:path';
 import {
   diagramOf,
   everyGlyphModel,
   goldenDocuments,
-  repositoryRoot,
   type GoldenDocument,
-} from '../goldens.fixtures.js';
+} from '../render.fixtures.js';
 import { renderSvg } from './svg-document.js';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
 const { DOMParser } = new JSDOM().window;
 
-const modelOf = (elements: unknown[], title = 'Diagram'): Model =>
-  Either.getOrThrow(
-    parseModel({
-      metadata: { title, owner: '', description: '', contributors: [] },
-      diagrams: [{ id: 'd', title, elements }],
-      threats: [],
-      lastIssuedThreatNumber: 0,
-      mitigations: [],
-      assumptions: [],
-    }),
-  );
-
-const boxAt = (
-  id: string,
-  name: string,
-  x: number,
-  size = { width: 100, height: 100 },
-) => ({
-  kind: 'actor',
-  id,
-  name,
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  position: { x, y: 0 },
-  size,
-});
-
-const flowNamed = (name: string) => ({
-  kind: 'flow',
-  id: 'el-flow',
-  name,
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  source: { kind: 'attached', element: 'el-left' },
-  target: { kind: 'attached', element: 'el-right' },
-  waypoints: [],
-  bidirectional: false,
-});
+const square = { width: 100, height: 100 };
 
 const shortBoxHeight = 40;
 
 const shortBox = { width: 100, height: shortBoxHeight };
 
-const bottomEdgeModel = modelOf([
-  boxAt('el-left', 'Left', 0, shortBox),
-  boxAt('el-right', 'Right', 400, shortBox),
-  flowNamed(
-    'publish the mirrored artifact to the registry under a minted write token',
-  ),
-]);
+const bottomEdgeModel = modelWith({
+  elements: [
+    boxAt('el-left', 0, 0, 'actor', shortBox, 'Left'),
+    boxAt('el-right', 400, 0, 'actor', shortBox, 'Right'),
+    flowFrom(
+      'el-flow',
+      'el-left',
+      'el-right',
+      'publish the mirrored artifact to the registry under a minted write token',
+    ),
+  ],
+});
 
 const padlock = '\u{1F510}';
 
 const brokenWordName = `payments-gateway-edge${padlock}authentication-service`;
 
-const surrogatePairModel = modelOf([
-  boxAt('el-wide', brokenWordName, 0, { width: 160, height: 80 }),
-]);
+const surrogatePairModel = modelWith({
+  elements: [
+    boxAt('el-wide', 0, 0, 'actor', { width: 160, height: 80 }, brokenWordName),
+  ],
+});
 
-const sharpCurveModel = modelOf([
-  {
-    kind: 'trust-boundary',
-    id: 'el-turn',
-    name: '',
-    description: '',
-    outOfScope: false,
-    reasonOutOfScope: '',
-    shape: {
-      kind: 'curve',
-      waypoints: [
-        { x: 0, y: 0 },
-        { x: 400, y: 0 },
-        { x: 400, y: 400 },
-      ],
-    },
-  },
-]);
+const sharpCurveModel = modelWith({
+  elements: [
+    curveBoundary('el-turn', [
+      { x: 0, y: 0 },
+      { x: 400, y: 0 },
+      { x: 400, y: 400 },
+    ]),
+  ],
+});
 
 const forbiddenCharacters = ['\u0000', '\u000B', '\u001B', '\uD800', '\uFFFF'];
 
@@ -114,25 +77,31 @@ const forbidden = forbiddenCharacters.join('');
 
 const replaced = '\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD';
 
-const cleanCharacterModel = modelOf(
-  [
-    boxAt('el-left', 'name', 0),
-    boxAt('el-right', 'Right', 400),
-    flowNamed('flow'),
+const cleanCharacterModel = modelWith({
+  title: 'title',
+  diagrams: [
     {
-      kind: 'text',
-      id: 'el-note',
-      name: 'Note',
-      description: '',
-      outOfScope: false,
-      reasonOutOfScope: '',
-      position: { x: 0, y: 200 },
-      size: { width: 200, height: 90 },
-      text: 'note',
+      id: 'd',
+      title: 'title',
+      elements: [
+        boxAt('el-left', 0, 0, 'actor', square, 'name'),
+        boxAt('el-right', 400, 0, 'actor', square, 'Right'),
+        flowFrom('el-flow', 'el-left', 'el-right', 'flow'),
+        {
+          kind: 'text',
+          id: 'el-note',
+          name: 'Note',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          position: { x: 0, y: 200 },
+          size: { width: 200, height: 90 },
+          text: 'note',
+        },
+      ],
     },
   ],
-  'title',
-);
+});
 
 const carryingForbidden = (element: DiagramElement): DiagramElement =>
   element.kind === 'text'
@@ -154,32 +123,21 @@ const forbiddenCharacterModel: Model = {
   })),
 };
 
-const twoDiagramModel = Either.getOrThrow(
-  parseModel({
-    metadata: {
-      title: 'Two diagrams',
-      owner: '',
-      description: '',
-      contributors: [],
+const twoDiagramModel = modelWith({
+  title: 'Two diagrams',
+  diagrams: [
+    {
+      id: 'diagram-front',
+      title: 'Front of house',
+      elements: [boxAt('el-guest', 0, 0, 'actor', square, 'Guest')],
     },
-    diagrams: [
-      {
-        id: 'diagram-front',
-        title: 'Front of house',
-        elements: [boxAt('el-guest', 'Guest', 0)],
-      },
-      {
-        id: 'diagram-back',
-        title: 'Back of house',
-        elements: [boxAt('el-ledger', 'Ledger', 0)],
-      },
-    ],
-    threats: [],
-    lastIssuedThreatNumber: 0,
-    mitigations: [],
-    assumptions: [],
-  }),
-);
+    {
+      id: 'diagram-back',
+      title: 'Back of house',
+      elements: [boxAt('el-ledger', 0, 0, 'actor', square, 'Ledger')],
+    },
+  ],
+});
 
 function firstDiagram(model: Model): Diagram {
   return model.diagrams[0];
@@ -434,35 +392,18 @@ const forbiddenCharacterSvg = svgOf(forbiddenCharacterModel);
 
 describe('a diagram as a standalone SVG document', () => {
   it.each(goldenDocuments)(
-    'writes $name as the committed golden file',
+    'writes $name as the committed golden file, on a second run too',
     async (entry) => {
-      await expect(svgOfEntry(entry)).toMatchFileSnapshot(
-        join(repositoryRoot, entry.svg),
-      );
-    },
-  );
-
-  it.each(goldenDocuments)(
-    'writes $name the same bytes on a second run',
-    (entry) => {
-      expect(svgOfEntry(entry)).toBe(svgOfEntry(entry));
+      const first = svgOfEntry(entry);
+      const second = svgOfEntry(entry);
+      expect(second).toBe(first);
+      await expect(second).toMatchFileSnapshot(join(repositoryRoot, entry.svg));
     },
   );
 
   it.each(goldenDocuments)('ends $name with a newline', (entry) => {
     expect(svgOfEntry(entry).endsWith('</svg>\n')).toBe(true);
   });
-
-  it.each(goldenDocuments)(
-    'reports the size $name states on its own root',
-    (entry) => {
-      const drawn = renderSvg(diagramOf(entry), entry.model);
-      const root = documentOf(drawn.svg).documentElement;
-      expect([root.getAttribute('width'), root.getAttribute('height')]).toEqual(
-        [svgNumber(drawn.width), svgNumber(drawn.height)],
-      );
-    },
-  );
 
   it('renders each diagram of a model as a document of its own', () => {
     const [front, back] = twoDiagramModel.diagrams.map(
@@ -552,10 +493,18 @@ describe('free text carrying what XML forbids, never parsed', () => {
 describe.each([
   ...goldenDocuments.map((entry) => ({
     name: entry.name,
-    svg: svgOfEntry(entry),
+    drawn: renderSvg(diagramOf(entry), entry.model),
   })),
-  { name: 'text XML forbids', svg: forbiddenCharacterSvg },
-])('$name as a document a reader can open', ({ svg }) => {
+  {
+    name: 'text XML forbids',
+    drawn: renderSvg(
+      firstDiagram(forbiddenCharacterModel),
+      forbiddenCharacterModel,
+    ),
+  },
+])('$name as a document a reader can open', ({ drawn }) => {
+  const { svg } = drawn;
+
   it('parses as well-formed XML with one svg root in the SVG namespace', () => {
     const parsed = documentOf(svg);
     expect(parsed.getElementsByTagName('parsererror')).toHaveLength(0);
@@ -563,12 +512,18 @@ describe.each([
     expect(parsed.documentElement.namespaceURI).toBe(svgNamespace);
   });
 
-  it('sizes the document as the viewBox it declares', () => {
+  it('sizes the document as the viewBox it declares and the size the render reports', () => {
     const root = documentOf(svg).documentElement;
     const box = (root.getAttribute('viewBox') ?? '').split(' ');
     expect(box).toHaveLength(4);
-    expect(root.getAttribute('width')).toBe(box[2]);
-    expect(root.getAttribute('height')).toBe(box[3]);
+    expect([root.getAttribute('width'), root.getAttribute('height')]).toEqual([
+      box[2],
+      box[3],
+    ]);
+    expect([box[2], box[3]]).toEqual([
+      svgNumber(drawn.width),
+      svgNumber(drawn.height),
+    ]);
   });
 
   it('carries the stylesheet in a style element, verbatim', () => {

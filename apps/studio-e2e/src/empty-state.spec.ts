@@ -1,26 +1,18 @@
-import { expect, test, type Locator } from '@playwright/test';
-import { boxesOverlap, type Box } from './canvas-geometry.fixtures.js';
+import { expect, test } from '@playwright/test';
+import { elementNodes } from './canvas.fixtures.js';
 import {
-  elementNodes,
   nodeNamed,
+  openFallback,
   openPlaceholder,
+  placeholder,
   savedFile,
-  withoutPickers,
 } from './studio.fixtures.js';
 
-const nowhere: Box = { x: 0, y: 0, width: 0, height: 0 };
-
 const drawnNames = [
-  { of: /^Actor, actor/u, className: 'pn-label', says: 'Actor' },
-  { of: /^Store, store/u, className: 'pn-label', says: 'Store' },
-  { of: /^Records, flow/u, className: 'pn-flow-label', says: 'Records' },
+  { of: placeholder.actor, className: 'pn-label', says: 'Actor' },
+  { of: placeholder.store, className: 'pn-label', says: 'Store' },
+  { of: placeholder.records, className: 'pn-flow-label', says: 'Records' },
 ] as const;
-
-const boxOf = async (locator: Locator, called: string): Promise<Box> => {
-  const measured = await locator.boundingBox();
-  expect(measured, `${called} is on the page`).not.toBeNull();
-  return measured ?? nowhere;
-};
 
 test('the studio opens on an actor, the records it sends, and the store they land in', async ({
   page,
@@ -37,37 +29,8 @@ test('the studio opens on an actor, the records it sends, and the store they lan
   }
 });
 
-test('the chrome floating over the canvas covers no part of the diagram', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  const floating = [
-    {
-      locator: page.getByRole('region', { name: 'Zoom and fit' }),
-      called: 'the zoom cluster',
-    },
-  ];
-  const drawn = [
-    { locator: nodeNamed(page, /^Actor, actor/u), called: 'the actor' },
-    { locator: nodeNamed(page, /^Store, store/u), called: 'the store' },
-  ];
-
-  for (const over of floating) {
-    for (const under of drawn) {
-      expect(
-        boxesOverlap(
-          await boxOf(over.locator, over.called),
-          await boxOf(under.locator, under.called),
-        ),
-        `${over.called} covers ${under.called}`,
-      ).toBe(false);
-    }
-  }
-});
-
 test('the tab follows the file after the first save', async ({ page }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
   const landingTitle = await page.title();
   expect(landingTitle.trim()).not.toBe('');
 

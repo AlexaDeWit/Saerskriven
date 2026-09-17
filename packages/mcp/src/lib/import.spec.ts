@@ -14,6 +14,7 @@ import {
   renderImport,
 } from './import.js';
 import { openWorkspace } from './workspace.js';
+import { refusalOf } from './read-tools.fixtures.js';
 
 const converted = (root: string, file: string, target: string) =>
   importIntoModel(
@@ -22,7 +23,7 @@ const converted = (root: string, file: string, target: string) =>
   );
 
 describe('converting a foreign model', () => {
-  it('writes the native format and names the format it read', () => {
+  it('writes the native format, names the format it read, carries what it could not take over, and reads as text lines', () => {
     const tree = editableTree();
     const answer = converted(tree.root, otmFile, 'converted.yaml');
     const written = readAnyFormat(
@@ -39,25 +40,9 @@ describe('converting a foreign model', () => {
       source: { file: otmFile, format: 'otm' },
       written: 'saerskriven-yaml',
     });
-  });
-
-  it('carries what the conversion could not take over', () => {
-    const tree = editableTree();
-    const answer = converted(tree.root, otmFile, 'converted.yaml');
     expect(Either.getOrUndefined(answer)?.divergences.length).toBeGreaterThan(
       0,
     );
-  });
-
-  it('reads TM-BOM as well, and says which it read', () => {
-    const tree = editableTree();
-    const answer = converted(tree.root, tmbomFile, 'converted.yaml');
-    expect(Either.getOrUndefined(answer)?.source.format).toEqual('tmbom');
-  });
-
-  it('reads as the lines a text result carries', () => {
-    const tree = editableTree();
-    const answer = converted(tree.root, otmFile, 'converted.yaml');
     expect(
       Either.match(answer, {
         onLeft: (lines) => lines,
@@ -66,21 +51,23 @@ describe('converting a foreign model', () => {
     ).toEqual(`converted: ${otmFile} (otm)`);
   });
 
+  it('reads TM-BOM as well, and says which it read', () => {
+    const tree = editableTree();
+    const answer = converted(tree.root, tmbomFile, 'converted.yaml');
+    expect(Either.getOrUndefined(answer)?.source.format).toEqual('tmbom');
+  });
+
   it('refuses a target already holding a file, leaving its bytes alone', () => {
     const tree = editableTree();
     const before = readFileSync(join(tree.root, modelFile));
     const refused = converted(tree.root, otmFile, modelFile);
     expect(readFileSync(join(tree.root, modelFile))).toEqual(before);
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the file was written',
-    ).toContain('is already there');
+    expect(refusalOf(refused).join('\n')).toContain('is already there');
   });
 
   it('refuses a file that is neither OTM nor TM-BOM, writing nothing', () => {
     const tree = editableTree();
     const refused = converted(tree.root, modelFile, 'converted.yaml');
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the file was written',
-    ).toContain('was not converted');
+    expect(refusalOf(refused).join('\n')).toContain('was not converted');
   });
 });

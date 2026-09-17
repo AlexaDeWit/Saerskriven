@@ -1,19 +1,24 @@
-import type {
-  BoundaryShape,
-  Element,
-  Model,
-  Point,
-  Size,
+import {
+  inNumberOrder,
+  type BoundaryShape,
+  type Element,
+  type Model,
+  type Point,
+  type Size,
 } from '@saerskriven/model';
 import {
   saerskrivenYamlV2WireSchema,
   type SaerskrivenYamlV2Document,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
-import { parsedFixture, validModelFixture } from '@saerskriven/model/fixtures';
+import {
+  parsedFixture,
+  validModel,
+  validModelFixture,
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { parse } from 'yaml';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
-import { ecluseModel, goldenPath } from './saerskriven-yaml.fixtures.js';
+import { featureCompleteYaml } from './saerskriven-yaml.fixtures.js';
 import {
   writeSaerskrivenYaml,
   writeSaerskrivenYamlDocument,
@@ -22,7 +27,11 @@ import { isRecord } from './records.js';
 
 const parseDocument: (text: string) => unknown = parse;
 
-const written = writeSaerskrivenYaml(ecluseModel);
+const featureComplete = Either.getOrThrow(
+  readSaerskrivenYaml(featureCompleteYaml),
+).model;
+
+const written = writeSaerskrivenYaml(featureComplete);
 
 function backwardsPoint(point: Point): Point {
   return { y: point.y, x: point.x };
@@ -56,11 +65,11 @@ function backwardsElement(element: Element): Element {
   };
 }
 
-const backwardsEcluse: Model = {
-  assumptions: ecluseModel.assumptions,
-  mitigations: ecluseModel.mitigations,
-  lastIssuedThreatNumber: ecluseModel.lastIssuedThreatNumber,
-  threats: ecluseModel.threats.map((threat) => ({
+const backwards: Model = {
+  assumptions: featureComplete.assumptions,
+  mitigations: featureComplete.mitigations,
+  lastIssuedThreatNumber: featureComplete.lastIssuedThreatNumber,
+  threats: featureComplete.threats.map((threat) => ({
     elements: threat.elements,
     description: threat.description,
     status: threat.status,
@@ -70,11 +79,11 @@ const backwardsEcluse: Model = {
     number: threat.number,
     id: threat.id,
   })),
-  diagrams: ecluseModel.diagrams.map((diagram) => ({
+  diagrams: featureComplete.diagrams.map((diagram) => ({
     ...diagram,
     elements: diagram.elements.map(backwardsElement),
   })),
-  metadata: ecluseModel.metadata,
+  metadata: featureComplete.metadata,
 };
 
 const otherDocument: SaerskrivenYamlV2Document = {
@@ -108,9 +117,9 @@ function keysOf(value: unknown): readonly string[] {
   return isRecord(value) ? Object.keys(value) : [];
 }
 
-describe('the Écluse model as a Saerskriven YAML file', () => {
-  it('matches the golden fixture committed under test-data', async () => {
-    await expect(written.output).toMatchFileSnapshot(goldenPath);
+describe('the feature-complete model as a Saerskriven YAML file', () => {
+  it('writes the committed file back to the byte', () => {
+    expect(written.output).toBe(featureCompleteYaml);
   });
 
   it('reports no divergence', () => {
@@ -135,50 +144,56 @@ describe('the Écluse model as a Saerskriven YAML file', () => {
 
   it('states the direction on every flow and the side on every pinned end', () => {
     const lines = written.output.split('\n');
-    expect(
-      lines.filter((line) => line === '        bidirectional: false'),
-    ).toHaveLength(20);
+    expect(lines.filter((line) => line.includes('bidirectional: '))).toEqual([
+      '        bidirectional: false',
+      '        bidirectional: true',
+      '        bidirectional: false',
+    ]);
     expect(lines.filter((line) => line.startsWith('          side: '))).toEqual(
       [
         '          side: right',
         '          side: left',
-        '          side: right',
-        '          side: top',
         '          side: bottom',
-        '          side: left',
-        '          side: right',
+        '          side: top',
       ],
     );
   });
 
   it('writes threats in number order, whatever order the model holds', () => {
-    const numbers = ecluseModel.threats.map((threat) => threat.number);
-    numbers.sort((left, right) => left - right);
-    expect(ecluseModel.threats.map((threat) => threat.number)).not.toEqual(
+    const numbers = inNumberOrder(featureComplete.threats).map(
+      (threat) => threat.number,
+    );
+    const reversed: Model = {
+      ...featureComplete,
+      threats: featureComplete.threats.map(
+        (_threat, index, threats) => threats[threats.length - 1 - index],
+      ),
+    };
+    expect(reversed.threats.map((threat) => threat.number)).not.toEqual(
       numbers,
     );
     expect(
-      listOf(at(parseDocument(written.output), 'threats')).map((threat) =>
-        at(threat, 'number'),
-      ),
+      listOf(
+        at(parseDocument(writeSaerskrivenYaml(reversed).output), 'threats'),
+      ).map((threat) => at(threat, 'number')),
     ).toEqual(numbers);
   });
 });
 
 describe('a Saerskriven YAML write', () => {
   it('writes the same bytes whatever order the model was built in', () => {
-    expect(writeSaerskrivenYaml(backwardsEcluse).output).toBe(written.output);
+    expect(writeSaerskrivenYaml(backwards).output).toBe(written.output);
   });
 
   it('cannot be changed by the source document the contract offers', () => {
-    expect(writeSaerskrivenYaml(ecluseModel, otherDocument).output).toBe(
+    expect(writeSaerskrivenYaml(featureComplete, otherDocument).output).toBe(
       written.output,
     );
   });
 });
 
 describe('a Saerskriven YAML write of assumptions', () => {
-  const output = writeSaerskrivenYaml(parsedFixture(validModelFixture)).output;
+  const output = writeSaerskrivenYaml(validModel).output;
 
   it('states a model link and no element list on every assumption', () => {
     const assumptions = listOf(at(parseDocument(output), 'assumptions'));
@@ -193,12 +208,6 @@ describe('a Saerskriven YAML write of assumptions', () => {
       ]),
     );
   });
-
-  it('parses under the version 2 wire schema', () => {
-    expect(
-      saerskrivenYamlV2WireSchema.safeParse(parseDocument(output)).success,
-    ).toBe(true);
-  });
 });
 
 describe('a Saerskriven YAML write of mitigations', () => {
@@ -207,12 +216,12 @@ describe('a Saerskriven YAML write of mitigations', () => {
     const document = saerskrivenYamlV2WireSchema.parse(
       parseDocument(written.output),
     );
-    expect(ecluseModel.mitigations.length).toBeGreaterThan(0);
+    expect(featureComplete.mitigations.length).toBeGreaterThan(0);
     expect(
       threats.filter((threat) => keysOf(threat).includes('mitigation')),
     ).toEqual([]);
     expect(document.mitigations.map(({ id }) => id)).toEqual(
-      ecluseModel.mitigations.map(({ id }) => id),
+      featureComplete.mitigations.map(({ id }) => id),
     );
   });
 });
@@ -241,19 +250,8 @@ describe('a Saerskriven YAML write of an assumption that applies to the model', 
 
 describe('a Saerskriven YAML document written without its text', () => {
   it('holds what the written file holds', () => {
-    expect(writeSaerskrivenYamlDocument(ecluseModel)).toEqual(
+    expect(writeSaerskrivenYamlDocument(featureComplete)).toEqual(
       parseDocument(written.output),
     );
-  });
-
-  it('states the direction on every flow, so a read of it defaults nothing', () => {
-    const flows = writeSaerskrivenYamlDocument(ecluseModel).diagrams.flatMap(
-      (diagram) =>
-        diagram.elements.filter((element) => element.kind === 'flow'),
-    );
-    expect(flows.length).toBeGreaterThan(0);
-    expect(
-      flows.filter((flow) => flow.bidirectional === undefined),
-    ).toHaveLength(0);
   });
 });

@@ -13,8 +13,7 @@ export const compileTimeout = 60_000;
  * past even `compileTimeout`. It spawns the whole CLI twice, once for the
  * stream and once for the file it compares the stream against, so it pays
  * for two runtime initialisations and two compiles where every other PDF
- * spec pays for one. The same ten runs measured it at 59 seconds, close
- * enough to a minute that it needs its own number rather than the class's.
+ * spec pays for one.
  */
 export const bytePathCompileTimeout = 120_000;
 

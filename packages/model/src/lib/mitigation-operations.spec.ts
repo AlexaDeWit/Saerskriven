@@ -1,6 +1,10 @@
-import { Either } from 'effect';
-import { mitigationId, parsedFixture, threatId } from '../fixtures.js';
-import { threatRegisterFixture } from './fixtures.js';
+import {
+  mitigationId,
+  parsedFixture,
+  registerModel,
+  threatId,
+} from '../fixtures.js';
+import { threatRegisterFixture } from './model.fixtures.js';
 import {
   addMitigation,
   linkMitigation,
@@ -11,9 +15,8 @@ import {
 } from './mitigation-operations.js';
 import { mitigationSchema, type Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
-import { parseModel, type Model } from './parse.js';
-
-const base = parsedFixture(threatRegisterFixture);
+import { errorOf, modelOf, operationContract } from './operations.fixtures.js';
+import type { Model } from './parse.js';
 
 const bindSession = mitigationId('mitigation-bind-session');
 const spoofShopper = threatId('threat-spoof-shopper');
@@ -34,18 +37,6 @@ const unlinkedFromFile = parsedFixture({
     },
   ],
 });
-
-type Outcome = Either.Either<Model, OperationFailure>;
-
-const modelOf = (result: Outcome): Model => {
-  if (Either.isLeft(result)) {
-    throw new Error(`Expected the operation to succeed: ${result.left._tag}`);
-  }
-  return result.right;
-};
-
-const errorOf = (result: Outcome): OperationFailure | undefined =>
-  Either.isLeft(result) ? result.left : undefined;
 
 const mitigationIds = (model: Model): string[] =>
   model.mitigations.map((mitigation) => mitigation.id);
@@ -70,19 +61,22 @@ const editedBinding: Mitigation = mitigationSchema.parse({
 
 describe('addMitigation', () => {
   it('appends the mitigation to the register', () => {
-    const next = modelOf(addMitigation(base, rateLimit));
-    expect(mitigationIds(next)).toEqual([...mitigationIds(base), rateLimit.id]);
+    const next = modelOf(addMitigation(registerModel, rateLimit));
+    expect(mitigationIds(next)).toEqual([
+      ...mitigationIds(registerModel),
+      rateLimit.id,
+    ]);
   });
 
   it('refuses a mitigation linked to no threat and leaves the model alone', () => {
-    const pristine = structuredClone(base);
+    const pristine = structuredClone(registerModel);
     const unlinked = mitigationSchema.parse({ ...rateLimitInput, threats: [] });
-    expect(errorOf(addMitigation(base, unlinked))).toEqual(
+    expect(errorOf(addMitigation(registerModel, unlinked))).toEqual(
       OperationFailure.RecordWithoutThreat({
         record: { kind: 'mitigation', id: unlinked.id },
       }),
     );
-    expect(base).toEqual(pristine);
+    expect(registerModel).toEqual(pristine);
   });
 
   it('fails on an id the register already holds', () => {
@@ -90,7 +84,7 @@ describe('addMitigation', () => {
       ...rateLimitInput,
       id: 'mitigation-bind-session',
     });
-    expect(errorOf(addMitigation(base, clash))).toEqual(
+    expect(errorOf(addMitigation(registerModel, clash))).toEqual(
       OperationFailure.DuplicateMitigationId({ mitigationId: bindSession }),
     );
   });
@@ -100,7 +94,7 @@ describe('addMitigation', () => {
       ...rateLimitInput,
       threats: ['threat-ghost'],
     });
-    expect(errorOf(addMitigation(base, dangling))).toEqual(
+    expect(errorOf(addMitigation(registerModel, dangling))).toEqual(
       OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
     );
   });
@@ -108,17 +102,19 @@ describe('addMitigation', () => {
 
 describe('replaceMitigation', () => {
   it('swaps the whole record in, keeping its place in the register', () => {
-    const next = modelOf(replaceMitigation(base, editedBinding));
+    const next = modelOf(replaceMitigation(registerModel, editedBinding));
     expect(next.mitigations[0]).toEqual(editedBinding);
-    expect(mitigationIds(next)).toEqual(mitigationIds(base));
+    expect(mitigationIds(next)).toEqual(mitigationIds(registerModel));
   });
 
   it('returns the model it was given for the record it already holds', () => {
-    expect(modelOf(replaceMitigation(base, base.mitigations[0]))).toBe(base);
+    expect(
+      modelOf(replaceMitigation(registerModel, registerModel.mitigations[0])),
+    ).toBe(registerModel);
   });
 
   it('fails on an id the register does not hold', () => {
-    expect(errorOf(replaceMitigation(base, rateLimit))).toEqual(
+    expect(errorOf(replaceMitigation(registerModel, rateLimit))).toEqual(
       OperationFailure.UnknownMitigation({
         mitigationId: mitigationId('mitigation-rate-limit'),
       }),
@@ -130,7 +126,7 @@ describe('replaceMitigation', () => {
       ...editedBinding,
       threats: ['threat-ghost'],
     });
-    expect(errorOf(replaceMitigation(base, dangling))).toEqual(
+    expect(errorOf(replaceMitigation(registerModel, dangling))).toEqual(
       OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
     );
   });
@@ -139,9 +135,9 @@ describe('replaceMitigation', () => {
 describe('replaceMitigation and the last threat link', () => {
   it('culls a mitigation the replacement takes to no threat link', () => {
     const unlinked = mitigationSchema.parse({ ...editedBinding, threats: [] });
-    expect(mitigationIds(modelOf(replaceMitigation(base, unlinked)))).toEqual(
-      [],
-    );
+    expect(
+      mitigationIds(modelOf(replaceMitigation(registerModel, unlinked))),
+    ).toEqual([]);
   });
 
   it('keeps a mitigation that had no threat link before the replacement', () => {
@@ -157,20 +153,22 @@ describe('replaceMitigation and the last threat link', () => {
 
 describe('removeMitigation', () => {
   it('drops the mitigation from the register', () => {
-    expect(mitigationIds(modelOf(removeMitigation(base, bindSession)))).toEqual(
-      [],
-    );
+    expect(
+      mitigationIds(modelOf(removeMitigation(registerModel, bindSession))),
+    ).toEqual([]);
   });
 
   it('leaves the threats it addressed untouched', () => {
-    const next = modelOf(removeMitigation(base, bindSession));
-    expect(next.threats).toEqual(base.threats);
-    expect(next.lastIssuedThreatNumber).toBe(base.lastIssuedThreatNumber);
+    const next = modelOf(removeMitigation(registerModel, bindSession));
+    expect(next.threats).toEqual(registerModel.threats);
+    expect(next.lastIssuedThreatNumber).toBe(
+      registerModel.lastIssuedThreatNumber,
+    );
   });
 
   it('fails on a mitigation the register does not hold', () => {
     const ghost = mitigationId('mitigation-ghost');
-    expect(errorOf(removeMitigation(base, ghost))).toEqual(
+    expect(errorOf(removeMitigation(registerModel, ghost))).toEqual(
       OperationFailure.UnknownMitigation({ mitigationId: ghost }),
     );
   });
@@ -178,7 +176,9 @@ describe('removeMitigation', () => {
 
 describe('linkMitigation', () => {
   it('adds the threat to the mitigation links', () => {
-    const next = modelOf(linkMitigation(base, bindSession, floodCheckout));
+    const next = modelOf(
+      linkMitigation(registerModel, bindSession, floodCheckout),
+    );
     expect(next.mitigations[0].threats).toEqual([
       spoofShopper,
       tamperPayment,
@@ -187,15 +187,17 @@ describe('linkMitigation', () => {
   });
 
   it('returns the model it was given for a threat already linked', () => {
-    expect(modelOf(linkMitigation(base, bindSession, spoofShopper))).toBe(base);
+    expect(
+      modelOf(linkMitigation(registerModel, bindSession, spoofShopper)),
+    ).toBe(registerModel);
   });
 
   it('refuses an unknown threat or an unknown mitigation', () => {
-    expect(errorOf(linkMitigation(base, bindSession, ghostThreat))).toEqual(
-      OperationFailure.UnknownThreat({ threatId: ghostThreat }),
-    );
     expect(
-      errorOf(linkMitigation(base, ghostMitigation, spoofShopper)),
+      errorOf(linkMitigation(registerModel, bindSession, ghostThreat)),
+    ).toEqual(OperationFailure.UnknownThreat({ threatId: ghostThreat }));
+    expect(
+      errorOf(linkMitigation(registerModel, ghostMitigation, spoofShopper)),
     ).toEqual(
       OperationFailure.UnknownMitigation({ mitigationId: ghostMitigation }),
     );
@@ -204,12 +206,16 @@ describe('linkMitigation', () => {
 
 describe('unlinkMitigation', () => {
   it('keeps a mitigation that still links another threat', () => {
-    const next = modelOf(unlinkMitigation(base, bindSession, spoofShopper));
+    const next = modelOf(
+      unlinkMitigation(registerModel, bindSession, spoofShopper),
+    );
     expect(next.mitigations[0].threats).toEqual([tamperPayment]);
   });
 
   it('culls the mitigation from the model when the threat was its last link', () => {
-    const once = modelOf(unlinkMitigation(base, bindSession, spoofShopper));
+    const once = modelOf(
+      unlinkMitigation(registerModel, bindSession, spoofShopper),
+    );
     expect(
       mitigationIds(
         modelOf(unlinkMitigation(once, bindSession, tamperPayment)),
@@ -218,17 +224,17 @@ describe('unlinkMitigation', () => {
   });
 
   it('returns the model it was given for a threat not linked', () => {
-    expect(modelOf(unlinkMitigation(base, bindSession, floodCheckout))).toBe(
-      base,
-    );
+    expect(
+      modelOf(unlinkMitigation(registerModel, bindSession, floodCheckout)),
+    ).toBe(registerModel);
   });
 
   it('refuses an unknown threat or an unknown mitigation', () => {
-    expect(errorOf(unlinkMitigation(base, bindSession, ghostThreat))).toEqual(
-      OperationFailure.UnknownThreat({ threatId: ghostThreat }),
-    );
     expect(
-      errorOf(unlinkMitigation(base, ghostMitigation, spoofShopper)),
+      errorOf(unlinkMitigation(registerModel, bindSession, ghostThreat)),
+    ).toEqual(OperationFailure.UnknownThreat({ threatId: ghostThreat }));
+    expect(
+      errorOf(unlinkMitigation(registerModel, ghostMitigation, spoofShopper)),
     ).toEqual(
       OperationFailure.UnknownMitigation({ mitigationId: ghostMitigation }),
     );
@@ -237,10 +243,12 @@ describe('unlinkMitigation', () => {
 
 describe('setMitigationStatus', () => {
   it('changes only the status of that mitigation', () => {
-    const next = modelOf(setMitigationStatus(base, bindSession, 'verified'));
+    const next = modelOf(
+      setMitigationStatus(registerModel, bindSession, 'verified'),
+    );
     expect(next).toEqual({
-      ...base,
-      mitigations: [{ ...base.mitigations[0], status: 'verified' }],
+      ...registerModel,
+      mitigations: [{ ...registerModel.mitigations[0], status: 'verified' }],
     });
   });
 
@@ -255,48 +263,38 @@ describe('setMitigationStatus', () => {
 
   it('refuses an unknown mitigation', () => {
     expect(
-      errorOf(setMitigationStatus(base, ghostMitigation, 'verified')),
+      errorOf(setMitigationStatus(registerModel, ghostMitigation, 'verified')),
     ).toEqual(
       OperationFailure.UnknownMitigation({ mitigationId: ghostMitigation }),
     );
   });
 });
 
-describe('mitigation operation purity', () => {
-  it('leaves the input model untouched', () => {
-    const pristine = structuredClone(base);
-    addMitigation(base, rateLimit);
-    replaceMitigation(base, editedBinding);
-    removeMitigation(base, bindSession);
-    linkMitigation(base, bindSession, floodCheckout);
-    unlinkMitigation(base, bindSession, spoofShopper);
-    setMitigationStatus(base, bindSession, 'verified');
-    expect(base).toEqual(pristine);
+describe('mitigation operations', () => {
+  operationContract({
+    addMitigation: {
+      input: registerModel,
+      run: (model) => addMitigation(model, rateLimit),
+    },
+    replaceMitigation: {
+      input: registerModel,
+      run: (model) => replaceMitigation(model, editedBinding),
+    },
+    removeMitigation: {
+      input: registerModel,
+      run: (model) => removeMitigation(model, bindSession),
+    },
+    linkMitigation: {
+      input: registerModel,
+      run: (model) => linkMitigation(model, bindSession, floodCheckout),
+    },
+    unlinkMitigation: {
+      input: registerModel,
+      run: (model) => unlinkMitigation(model, bindSession, spoofShopper),
+    },
+    setMitigationStatus: {
+      input: registerModel,
+      run: (model) => setMitigationStatus(model, bindSession, 'verified'),
+    },
   });
-});
-
-describe('mitigation operation outputs re-parse through parseModel', () => {
-  const outputs: [string, Model][] = [
-    ['addMitigation', modelOf(addMitigation(base, rateLimit))],
-    ['replaceMitigation', modelOf(replaceMitigation(base, editedBinding))],
-    ['removeMitigation', modelOf(removeMitigation(base, bindSession))],
-    [
-      'linkMitigation',
-      modelOf(linkMitigation(base, bindSession, floodCheckout)),
-    ],
-    [
-      'unlinkMitigation',
-      modelOf(unlinkMitigation(base, bindSession, spoofShopper)),
-    ],
-    [
-      'setMitigationStatus',
-      modelOf(setMitigationStatus(base, bindSession, 'verified')),
-    ],
-  ];
-
-  for (const [operation, model] of outputs) {
-    it(`${operation} returns a model parseModel accepts`, () => {
-      expect(Either.isRight(parseModel(model))).toBe(true);
-    });
-  }
 });

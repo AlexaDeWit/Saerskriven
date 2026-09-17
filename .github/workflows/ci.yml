@@ -229,11 +229,17 @@ jobs:
 
   e2e-smoke:
     if: ${{ !inputs.deploy_pages }}
-    name: Playwright smoke
+    name: Playwright smoke (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions:
       contents: read
+    strategy:
+      # A red leg says nothing about the others, and the merged report wants
+      # every leg's blob.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -249,18 +255,134 @@ jobs:
       # The suite reaches the studio's development server and the Pages
       # preview, both of which carry the module, through the `resvg-wasm`
       # build the studio's serve target depends on.
+      #
+      # `--no-deps` holds each leg to the two projects named. The config keeps
+      # its dependency chain for a plain local run, where it is what puts the
+      # frame-time floor on the host alone, and only CI opts out of it.
       - name: Run the smoke suite
-        run: nix develop .#ci --command pnpm nx e2e @saerskriven/studio-e2e
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: >-
+          nix develop .#ci --command
+          pnpm nx e2e @saerskriven/studio-e2e --
+          --project=chromium --project=phone --no-deps --shard="$SHARD"/4
 
-      # The traces, error context and HTML report of a red smoke, kept for
-      # two weeks so a flake on main can still be read after its rerun. A job
-      # stopped by its timeout counts as cancelled, not failed.
-      - name: Keep the Playwright output of a failed smoke
+      # The traces and error context of a red leg, kept for two weeks so a
+      # flake on main can still be read after its rerun. A job stopped by its
+      # timeout counts as cancelled, not failed, and writes no blob report, so
+      # this upload is the only record it leaves.
+      - name: Keep the Playwright output of a failed shard
         if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-output
-          path: apps/studio-e2e/test-output/playwright/
+          name: playwright-output-shard-${{ matrix.shard }}
+          path: apps/studio-e2e/test-output/playwright/output/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # The blob report only feeds e2e-report, which runs in the same CI run.
+      - name: Keep the blob report of this shard
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-blob-shard-${{ matrix.shard }}
+          path: apps/studio-e2e/test-output/playwright/blob/
+          if-no-files-found: ignore
+          retention-days: 1
+
+  e2e-pages-floor:
+    if: ${{ !inputs.deploy_pages }}
+    name: Playwright Pages and frame-time floor
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          install-dependencies: 'true'
+          save-nix-store: 'false'
+
+      # One worker for the pair, so the frame-time drag never shares its
+      # runner with another browser. The job declares no `needs`, so it runs
+      # beside the shard matrix on a runner of its own.
+      - name: Run the Pages and frame-time projects
+        run: >-
+          nix develop .#ci --command
+          pnpm nx e2e @saerskriven/studio-e2e --
+          --project=pages --project=frame-time --no-deps --workers=1
+
+      - name: Keep the Playwright output of a failed floor run
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-output-pages-floor
+          path: apps/studio-e2e/test-output/playwright/output/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Keep the blob report of the floor run
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-blob-pages-floor
+          path: apps/studio-e2e/test-output/playwright/blob/
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # One HTML report over every leg of a red browser run. The gate does not
+  # require this job: it reports nothing about the code, and it runs only
+  # where the run is already red.
+  e2e-report:
+    name: Merged Playwright report
+    needs: [e2e-smoke, e2e-pages-floor]
+    if: >-
+      !cancelled() && !inputs.deploy_pages
+      && (needs.e2e-smoke.result == 'failure'
+      || needs.e2e-pages-floor.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          install-dependencies: 'true'
+          save-nix-store: 'false'
+
+      - name: Take the blob reports from every leg
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: playwright-blob-*
+          path: apps/studio-e2e/test-output/playwright/blob
+          merge-multiple: true
+
+      - name: Merge the blob reports into one report
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: test-output/playwright/report
+        run: >-
+          nix develop .#ci --command
+          pnpm --filter @saerskriven/studio-e2e exec
+          playwright merge-reports --reporter html
+          test-output/playwright/blob
+
+      - name: Keep the merged report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: apps/studio-e2e/test-output/playwright/report/
           if-no-files-found: ignore
           retention-days: 14
 
@@ -338,6 +460,7 @@ jobs:
         installer-smoke,
         static-checks,
         e2e-smoke,
+        e2e-pages-floor,
         dependency-changes,
         provenance,
       ]
@@ -352,6 +475,7 @@ jobs:
           INSTALLER_SMOKE: ${{ needs.installer-smoke.result }}
           STATIC_CHECKS: ${{ needs.static-checks.result }}
           E2E_SMOKE: ${{ needs.e2e-smoke.result }}
+          E2E_PAGES_FLOOR: ${{ needs.e2e-pages-floor.result }}
           DEPENDENCY_CHANGES: ${{ needs.dependency-changes.result }}
           LOCKFILE_CHANGED: ${{ needs.dependency-changes.outputs.lockfile }}
           PROVENANCE: ${{ needs.provenance.result }}
@@ -379,6 +503,12 @@ jobs:
             echo "ok      e2e-smoke"
           else
             echo "FAILED  e2e-smoke: $E2E_SMOKE"
+            verdict=1
+          fi
+          if [ "$E2E_PAGES_FLOOR" = "success" ]; then
+            echo "ok      e2e-pages-floor"
+          else
+            echo "FAILED  e2e-pages-floor: $E2E_PAGES_FLOOR"
             verdict=1
           fi
           if [ "$DEPENDENCY_CHANGES" = "success" ]; then

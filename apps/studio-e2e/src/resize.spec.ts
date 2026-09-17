@@ -1,20 +1,20 @@
 import { expect, test, type Locator } from '@playwright/test';
 import {
-  boxOf,
-  pressOn,
   type Box,
-  type Point,
-} from './canvas-geometry.fixtures.js';
-import { viewportZoom } from './commands.fixtures.js';
-import {
+  boxOf,
   dragBy,
+  type Point,
+  pressOn,
+  viewportZoom,
+} from './canvas.fixtures.js';
+import {
   openPlaceholder,
+  placeholder,
   runFromMenu,
   selectNode,
   toolButton,
 } from './studio.fixtures.js';
 
-const actor = /^Actor, actor/u;
 const pointerTolerance = 1;
 
 const sideCases = [
@@ -59,30 +59,38 @@ const expectOtherAxisFixed = (side: string, before: Box, after: Box): void => {
   }
 };
 
-for (const [side, offset, changed] of sideCases) {
-  test(`dragging the ${side} control changes only its axis and fixes the opposite side`, async ({
-    page,
-  }) => {
-    await openPlaceholder(page);
-    const node = await selectNode(page, actor);
-    const before = await boxOf(node);
+test('each side control changes only its axis and fixes the opposite side', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const node = await selectNode(page, placeholder.actor);
+  const before = await boxOf(node);
 
-    await dragBy(page, sideControl(node, side), offset);
-    await expect
-      .poll(async () => (await boxOf(node))[changed])
-      .not.toBe(before[changed]);
-    const after = await boxOf(node);
+  for (const [side, offset, changed] of sideCases) {
+    await test.step(side, async () => {
+      const control = sideControl(node, side);
+      await expect(control).toBeVisible();
 
-    expectFixedOpposite(side, before, after);
-    expectOtherAxisFixed(side, before, after);
-  });
-}
+      await dragBy(page, control, offset);
+      await expect
+        .poll(async () => (await boxOf(node))[changed])
+        .not.toBe(before[changed]);
+      const after = await boxOf(node);
+
+      expectFixedOpposite(side, before, after);
+      expectOtherAxisFixed(side, before, after);
+
+      await runFromMenu(page, 'Undo');
+      await expect.poll(() => boxOf(node)).toEqual(before);
+    });
+  }
+});
 
 test('the glyph follows the selection bounds during a resize drag', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const node = await selectNode(page, actor);
+  const node = await selectNode(page, placeholder.actor);
   const glyph = node.locator('svg').first();
   const before = Number(await glyph.getAttribute('width'));
   const from = await pressOn(page, sideControl(node, 'right'));
@@ -98,24 +106,32 @@ test('the glyph follows the selection bounds during a resize drag', async ({
   await page.mouse.up();
 });
 
-for (const [side, offset, changed] of shrinkingCases) {
-  test(`the ${side} control stops at the minimum size`, async ({ page }) => {
-    await openPlaceholder(page);
-    const node = await selectNode(page, actor);
-    const before = await boxOf(node);
+test('each side control stops at the minimum size', async ({ page }) => {
+  await openPlaceholder(page);
+  const node = await selectNode(page, placeholder.actor);
+  const before = await boxOf(node);
 
-    await dragBy(page, sideControl(node, side), offset);
-    await expect.poll(async () => (await boxOf(node))[changed]).toBe(10);
+  for (const [side, offset, changed] of shrinkingCases) {
+    await test.step(side, async () => {
+      const control = sideControl(node, side);
+      await expect(control).toBeVisible();
 
-    expectFixedOpposite(side, before, await boxOf(node));
-  });
-}
+      await dragBy(page, control, offset);
+      await expect.poll(async () => (await boxOf(node))[changed]).toBe(10);
+
+      expectFixedOpposite(side, before, await boxOf(node));
+
+      await runFromMenu(page, 'Undo');
+      await expect.poll(() => boxOf(node)).toEqual(before);
+    });
+  }
+});
 
 test('a no-op resize at the minimum leaves later geometry settled', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const node = await selectNode(page, actor);
+  const node = await selectNode(page, placeholder.actor);
   const right = sideControl(node, 'right');
 
   await dragBy(page, right, { x: -400, y: 0 });
@@ -132,7 +148,7 @@ test('a no-op resize at the minimum leaves later geometry settled', async ({
 
 test('a corner resizes both axes in one undo step', async ({ page }) => {
   await openPlaceholder(page);
-  const node = await selectNode(page, actor);
+  const node = await selectNode(page, placeholder.actor);
   const before = await boxOf(node);
   const corner = node
     .getByRole('button', {
@@ -156,7 +172,7 @@ test('pan and zoom preserve the model-space resize result', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  let node = await selectNode(page, actor);
+  let node = await selectNode(page, placeholder.actor);
   const original = await boxOf(node);
   const modelOffset = 20;
   await dragBy(page, sideControl(node, 'right'), {
@@ -174,7 +190,7 @@ test('pan and zoom preserve the model-space resize result', async ({
   await dragBy(page, page.locator('.react-flow__pane'), { x: 80, y: 40 });
   await toolButton(page, 'Select').click();
 
-  node = await selectNode(page, actor);
+  node = await selectNode(page, placeholder.actor);
   const before = await boxOf(node);
   const offset: Point = { x: modelOffset * (await viewportZoom(page)), y: 0 };
 
@@ -192,7 +208,7 @@ test('pan and zoom preserve the model-space resize result', async ({
 
 test('arrow keys resize from a focused side control', async ({ page }) => {
   await openPlaceholder(page);
-  const node = await selectNode(page, actor);
+  const node = await selectNode(page, placeholder.actor);
   const before = await boxOf(node);
   const top = node.getByRole('button', {
     name: 'Resize Actor from top',

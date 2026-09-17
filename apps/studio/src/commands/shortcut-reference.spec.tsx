@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../app/app.js';
+import { appTimeout } from '../app/app.fixtures.js';
 import { resetTools } from '../canvas/tools.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
@@ -35,8 +36,10 @@ describe('ShortcutReference', () => {
   it('renders every metadata entry exactly once with platform spelling', () => {
     render(<ShortcutReference onClose={() => undefined} platform="apple" />);
 
-    for (const group of [...commandGroups, ...contextualGroups]) {
-      const trigger = screen.getByRole('button', { name: group });
+    const triggers = [...commandGroups, ...contextualGroups].map((group) =>
+      screen.getByRole('button', { name: group }),
+    );
+    for (const trigger of triggers) {
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
       fireEvent.click(trigger);
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
@@ -116,78 +119,85 @@ describe('ShortcutReference', () => {
     expect(close).toHaveBeenCalledOnce();
   });
 
-  it('opens from the menu and returns focus to its trigger', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    const menu = screen.getByRole('button', { name: 'Menu' });
+  it(
+    'opens from the menu and returns focus to its trigger',
+    async () => {
+      const user = userEvent.setup();
+      render(<App />);
+      const menu = screen.getByRole('button', { name: 'Menu' });
 
-    await user.click(menu);
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Keyboard shortcuts' }),
-    );
+      await user.click(menu);
+      await user.click(
+        await screen.findByRole('menuitem', { name: 'Keyboard shortcuts' }),
+      );
 
-    expect(
-      screen.getByRole('region', { name: 'Keyboard shortcuts' }),
-    ).toBeTruthy();
-    expect(document.activeElement).toBe(
-      screen.getByRole('heading', { level: 2, name: 'Keyboard shortcuts' }),
-    );
+      expect(
+        screen.getByRole('region', { name: 'Keyboard shortcuts' }),
+      ).toBeTruthy();
+      expect(document.activeElement).toBe(
+        screen.getByRole('heading', { level: 2, name: 'Keyboard shortcuts' }),
+      );
 
-    await user.click(
-      screen.getByRole('button', { name: 'Close keyboard shortcuts' }),
-    );
+      await user.click(
+        screen.getByRole('button', { name: 'Close keyboard shortcuts' }),
+      );
 
-    expect(
-      screen.queryByRole('region', { name: 'Keyboard shortcuts' }),
-    ).toBeNull();
-    expect(document.activeElement).toBe(menu);
-  });
+      expect(
+        screen.queryByRole('region', { name: 'Keyboard shortcuts' }),
+      ).toBeNull();
+      expect(document.activeElement).toBe(menu);
+    },
+    appTimeout,
+  );
 
-  it('toggles from either registered key outside text fields', async () => {
-    render(<App />);
-    const menu = screen.getByRole('button', { name: 'Menu' });
-    const canvas = screen.getByRole('application', { name: 'Diagram' });
-    const description = canvas.getAttribute('aria-describedby') ?? '';
-    expect(document.getElementById(description)?.textContent).toContain(
-      'Edit the selected canvas text: Enter',
-    );
-    menu.focus();
+  it(
+    'toggles from either registered key outside text fields',
+    async () => {
+      render(<App />);
+      const menu = screen.getByRole('button', { name: 'Menu' });
+      menu.focus();
 
-    fireEvent.keyDown(menu, { key: '?', shiftKey: true });
-    expect(
-      await screen.findByRole('region', { name: 'Keyboard shortcuts' }),
-    ).toBeTruthy();
+      fireEvent.keyDown(menu, { key: '?', shiftKey: true });
+      expect(
+        await screen.findByRole('region', { name: 'Keyboard shortcuts' }),
+      ).toBeTruthy();
 
-    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'F1' });
-    expect(
-      screen.queryByRole('region', { name: 'Keyboard shortcuts' }),
-    ).toBeNull();
+      fireEvent.keyDown(document.activeElement ?? document.body, { key: 'F1' });
+      expect(
+        screen.queryByRole('region', { name: 'Keyboard shortcuts' }),
+      ).toBeNull();
 
-    fireEvent.keyDown(menu, { key: 'F1' });
-    expect(
-      await screen.findByRole('region', { name: 'Keyboard shortcuts' }),
-    ).toBeTruthy();
+      fireEvent.keyDown(menu, { key: 'F1' });
+      expect(
+        await screen.findByRole('region', { name: 'Keyboard shortcuts' }),
+      ).toBeTruthy();
 
-    fireEvent.keyDown(document.activeElement ?? document.body, {
-      key: '?',
-      shiftKey: true,
-    });
-    expect(
-      screen.queryByRole('region', { name: 'Keyboard shortcuts' }),
-    ).toBeNull();
-  });
+      fireEvent.keyDown(document.activeElement ?? document.body, {
+        key: '?',
+        shiftKey: true,
+      });
+      expect(
+        screen.queryByRole('region', { name: 'Keyboard shortcuts' }),
+      ).toBeNull();
+    },
+    appTimeout,
+  );
 
-  it('leaves Escape outside the panel to the canvas command', async () => {
-    render(<App />);
-    const menu = screen.getByRole('button', { name: 'Menu' });
+  it(
+    'leaves Escape outside the panel to the canvas command',
+    async () => {
+      render(<App />);
+      const menu = screen.getByRole('button', { name: 'Menu' });
 
-    fireEvent.keyDown(menu, { key: 'F1' });
-    await screen.findByRole('region', { name: 'Keyboard shortcuts' });
-    menu.focus();
-    fireEvent.keyDown(menu, { key: 'Escape' });
+      fireEvent.keyDown(menu, { key: 'F1' });
+      await screen.findByRole('region', { name: 'Keyboard shortcuts' });
+      menu.focus();
+      fireEvent.keyDown(menu, { key: 'Escape' });
 
-    expect(
-      screen.getByRole('region', { name: 'Keyboard shortcuts' }),
-    ).toBeTruthy();
-  });
+      expect(
+        screen.getByRole('region', { name: 'Keyboard shortcuts' }),
+      ).toBeTruthy();
+    },
+    appTimeout,
+  );
 });

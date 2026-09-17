@@ -2,12 +2,11 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { EnumField, enumCommitter } from './enum-field.js';
+import { noop } from './ui.fixtures.js';
 
 const options = ['first', 'second', 'third'] as const;
 
 type Option = (typeof options)[number];
-
-const noop = (): void => undefined;
 
 const commits = () => vi.fn<(chosen: Option) => void>();
 

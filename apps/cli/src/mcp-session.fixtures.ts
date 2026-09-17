@@ -1,22 +1,17 @@
-import {
-  Client,
-  StreamableHTTPClientTransport,
-  type Transport,
-} from '@modelcontextprotocol/client';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
-import type { Era } from '@saerskriven/mcp/fixtures';
+import {
+  connectedClient,
+  type Era,
+  type McpSession,
+} from '@saerskriven/mcp/fixtures';
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { repositoryRoot, type Runner } from './runners.fixtures.js';
-
-/** A client joined to one runner's `saer mcp`, and how to end the session. */
-export type McpSession = {
-  readonly client: Client;
-  readonly end: () => Promise<void>;
-};
+import type { Runner } from './runners.fixtures.js';
 
 /** A way of opening a session against a runner, named for a suite title. */
 export type SessionOpener = {
@@ -24,19 +19,14 @@ export type SessionOpener = {
   readonly open: (
     runner: Runner,
     args: readonly string[],
-    era?: Era,
+    era: Era,
   ) => Promise<McpSession>;
 };
 
-/**
- * A client connected to `saer mcp` over a spawned process's stdio. `era`
- * decides the opening: `legacy` is the 2025 `initialize` handshake and
- * `modern` probes with `server/discover` first.
- */
-export async function stdioSession(
+async function stdioSession(
   runner: Runner,
   args: readonly string[],
-  era: Era = 'modern',
+  era: Era,
 ): Promise<McpSession> {
   const transport = new StdioClientTransport({
     command: runner.command,
@@ -44,11 +34,10 @@ export async function stdioSession(
     cwd: repositoryRoot,
     stderr: 'inherit',
   });
-  return connected(transport, era, () => Promise.resolve());
+  return connectedClient(transport, era, () => Promise.resolve());
 }
 
-/** A spawned `saer mcp --http`, once it has announced its address. */
-export type HttpProcess = {
+type HttpProcess = {
   readonly url: URL;
   readonly tokenFile: string;
   readonly stop: () => Promise<{
@@ -93,26 +82,27 @@ export async function httpProcess(
   };
 }
 
-/**
- * A client connected to `saer mcp --http` over Streamable HTTP, carrying the
- * token read from the file the server wrote.
- */
-export async function httpSession(
+async function httpSession(
   runner: Runner,
   args: readonly string[],
-  era: Era = 'modern',
+  era: Era,
 ): Promise<McpSession> {
   const server = await httpProcess(runner, args);
   const token = readFileSync(server.tokenFile, 'utf8');
   const transport = new StreamableHTTPClientTransport(server.url, {
     requestInit: { headers: { Authorization: `Bearer ${token}` } },
   });
-  return connected(transport, era, async () => {
+  return connectedClient(transport, era, async () => {
     await server.stop();
   });
 }
 
-/** Both transports a release serves the protocol over. */
+/**
+ * Both transports a release serves the protocol over: a spawned process's
+ * stdio, and Streamable HTTP carrying the token the server wrote. `era`
+ * decides the opening: `legacy` is the 2025 `initialize` handshake and
+ * `modern` probes with `server/discover` first.
+ */
 export const sessionOpeners: readonly SessionOpener[] = [
   { name: 'stdio', open: stdioSession },
   { name: 'Streamable HTTP', open: httpSession },
@@ -138,23 +128,4 @@ function announcedUrl(
       );
     });
   });
-}
-
-async function connected(
-  transport: Transport,
-  era: Era,
-  after: () => Promise<void>,
-): Promise<McpSession> {
-  const client = new Client(
-    { name: 'saerskriven-harness', version: '0.0.0-spec' },
-    { versionNegotiation: { mode: era === 'modern' ? 'auto' : 'legacy' } },
-  );
-  await client.connect(transport);
-  return {
-    client,
-    end: async () => {
-      await client.close();
-      await after();
-    },
-  };
 }

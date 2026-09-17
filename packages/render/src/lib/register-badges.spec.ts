@@ -1,4 +1,6 @@
 import {
+  badgeTextColour,
+  contrastRatio,
   defaultRenderTheme,
   renderThemeSchema,
   type RenderTheme,
@@ -39,4 +41,23 @@ describe('badgeColour', () => {
       ).toBe(distinctColour(index + 1));
     },
   );
+});
+
+describe('the default badge theme', () => {
+  it('keeps every default badge label above the text contrast floor', () => {
+    for (const style of ['filled', 'outline'] as const) {
+      const theme = {
+        ...defaultRenderTheme,
+        badges: { ...defaultRenderTheme.badges, style },
+      };
+      for (const tone of registerBadgeKinds.flatMap((kind) =>
+        Object.values(theme[kind]),
+      )) {
+        const background = style === 'filled' ? tone : theme.colours.background;
+        expect(
+          contrastRatio(badgeTextColour(theme, tone), background),
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
 });

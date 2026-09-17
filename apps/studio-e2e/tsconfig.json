@@ -9,6 +9,9 @@
       "path": "../../packages/formats"
     },
     {
+      "path": "../../packages/model"
+    },
+    {
       "path": "./tsconfig.e2e.json"
     },
     {

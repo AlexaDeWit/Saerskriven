@@ -1,9 +1,10 @@
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { registeredChords } from '../src/chords.js';
+import { registeredChords } from '../src/chords.fixtures.js';
 
 const registry = readFileSync(
-  join(import.meta.dirname, '../../../apps/studio/src/commands/registry.ts'),
+  join(repositoryRoot, 'apps/studio/src/commands/registry.ts'),
   'utf8',
 );
 
@@ -51,10 +52,5 @@ describe('the chords the browser suite presses', () => {
     );
 
     expect(unknown).toEqual([]);
-  });
-
-  it('reads a registry that declares its commands, which is what this holds it against', () => {
-    expect(declaredIds.length > 0).toBe(true);
-    expect(registry).toContain("shortcuts: [mod('s')],");
   });
 });

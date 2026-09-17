@@ -26,6 +26,26 @@ import { RenderAssetFailure } from './render-assets.js';
 const session = (bridge: SpecBridge, renders = specRenders()) =>
   renderHook(() => useExportCommands(bridge, renders)).result;
 
+const unavailable = () =>
+  Promise.resolve(
+    Either.left(RenderAssetFailure.Unavailable({ reason: 'offline' })),
+  );
+
+const headlineOf = async (
+  run: (commands: ReturnType<typeof useExportCommands>['commands']) => void,
+  renders: RenderExports,
+  bridge: SpecBridge = specBridge(),
+): Promise<string | undefined> => {
+  const result = session(bridge, renders);
+  act(() => {
+    run(result.current.commands);
+  });
+  await waitFor(() => {
+    expect(result.current.notice?.refusal).toBe(true);
+  });
+  return result.current.notice?.headline;
+};
+
 const openedState = (model: Model = sampleModel) => ({
   ...initialState(model),
   file: FileLifecycle.Opened({ name: 'model.json', source: foreignSource }),
@@ -145,47 +165,29 @@ describe('the studio exports', () => {
     expect(bridge.writes[0].bytes).toEqual(pngSignature);
   });
 
-  it('reports the endpoints the drawing left out of the PNG', async () => {
-    modelStore.setState(openedState(unplacedModel), true);
-    const bridge = specBridge();
-    const result = session(bridge);
+  it.each([
+    ResvgFailure.Refused({ sentence: 'no long edge' }),
+    ResvgFailure.Unusable({ sentence: 'the module reserved none' }),
+  ])(
+    'reports a rasterizer refusal and writes nothing, $_tag',
+    async (failure) => {
+      const bridge = specBridge();
+      const result = session(
+        bridge,
+        specRenders({ draw: () => Promise.resolve(Either.left(failure)) }),
+      );
 
-    act(() => {
-      result.current.commands.png();
-    });
+      act(() => {
+        result.current.commands.png();
+      });
 
-    await waitFor(() => {
-      expect(result.current.notice).toBeDefined();
-    });
-    expect(bridge.writes).toHaveLength(1);
-    expect(result.current.notice).toMatchObject({
-      details: ['flow "flow-2" target names "flow-1"'],
-      refusal: false,
-    });
-  });
-
-  it('reports a rasterizer refusal and writes nothing', async () => {
-    const bridge = specBridge();
-    const result = session(
-      bridge,
-      specRenders({
-        draw: () =>
-          Promise.resolve(
-            Either.left(ResvgFailure.Refused({ sentence: 'no long edge' })),
-          ),
-      }),
-    );
-
-    act(() => {
-      result.current.commands.png();
-    });
-
-    await waitFor(() => {
-      expect(result.current.notice?.refusal).toBe(true);
-    });
-    expect(result.current.notice?.details).toEqual(['no long edge']);
-    expect(bridge.writes).toEqual([]);
-  });
+      await waitFor(() => {
+        expect(result.current.notice?.refusal).toBe(true);
+      });
+      expect(result.current.notice?.details).toEqual([failure.sentence]);
+      expect(bridge.writes).toEqual([]);
+    },
+  );
 
   it('reports a build holding no face to letter the drawing in, and writes nothing', async () => {
     const bridge = specBridge();
@@ -233,26 +235,31 @@ describe('the studio exports', () => {
     expect(bridge.writes).toEqual([]);
   });
 
-  it('reports every unplaced endpoint after it still writes the export', async () => {
-    modelStore.setState(openedState(unplacedModel), true);
-    const bridge = specBridge();
-    const result = session(bridge);
+  it.each(['png', 'diagram'] as const)(
+    'reports the endpoints the %s export left out of the drawing, and still writes it',
+    async (command) => {
+      modelStore.setState(openedState(unplacedModel), true);
+      const bridge = specBridge();
+      const result = session(bridge);
 
-    act(() => {
-      result.current.commands.diagram(mainDiagram);
-    });
+      act(() => {
+        if (command === 'png') {
+          result.current.commands.png();
+        } else {
+          result.current.commands.diagram(mainDiagram);
+        }
+      });
 
-    await waitFor(() => {
-      expect(result.current.notice).toBeDefined();
-    });
-    expect(bridge.writes).toHaveLength(1);
-    expect(result.current.notice).toEqual({
-      headline:
-        'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
-      details: ['flow "flow-2" target names "flow-1"'],
-      refusal: false,
-    });
-  });
+      await waitFor(() => {
+        expect(result.current.notice).toBeDefined();
+      });
+      expect(bridge.writes).toHaveLength(1);
+      expect(result.current.notice).toMatchObject({
+        details: ['flow "flow-2" target names "flow-1"'],
+        refusal: false,
+      });
+    },
+  );
 
   it('reports a compiler refusal and writes nothing', async () => {
     const bridge = specBridge();
@@ -273,8 +280,7 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice).toEqual({
-        headline: 'Saerskriven could not compile the PDF.',
+      expect(result.current.notice).toMatchObject({
         details: ['unknown function: nope'],
         refusal: true,
       });
@@ -301,8 +307,7 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice).toEqual({
-        headline: 'Saerskriven could not load the PDF compiler.',
+      expect(result.current.notice).toMatchObject({
         details: ['offline'],
         refusal: true,
       });
@@ -325,11 +330,69 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice?.headline).toBe(
-        'The Typst compiler produced no PDF.',
-      );
+      expect(result.current.notice).toMatchObject({
+        details: [],
+        refusal: true,
+      });
     });
     expect(bridge.writes).toEqual([]);
+  });
+
+  it('heads each refusal apart, whatever the details it carries', async () => {
+    const headlines = [
+      await headlineOf(
+        (commands) => {
+          commands.pdf();
+        },
+        specRenders({
+          compile: () =>
+            Promise.resolve(
+              Either.left(PdfFailure.Refused({ sentences: ['offline'] })),
+            ),
+        }),
+      ),
+      await headlineOf(
+        (commands) => {
+          commands.pdf();
+        },
+        specRenders({
+          compile: () => Promise.resolve(Either.left(PdfFailure.NoDocument())),
+        }),
+      ),
+      await headlineOf(
+        (commands) => {
+          commands.pdf();
+        },
+        specRenders({ pdfAssets: unavailable }),
+      ),
+      await headlineOf(
+        (commands) => {
+          commands.png();
+        },
+        specRenders({ pngAssets: unavailable }),
+      ),
+      await headlineOf(
+        (commands) => {
+          commands.png();
+        },
+        specRenders({
+          draw: () =>
+            Promise.resolve(
+              Either.left(ResvgFailure.Refused({ sentence: 'offline' })),
+            ),
+        }),
+      ),
+      await headlineOf(
+        (commands) => {
+          commands.register();
+        },
+        specRenders(),
+        specBridge({ save: SaveOutcome.Refused({ reason: 'offline' }) }),
+      ),
+    ];
+
+    expect(headlines).not.toContain('');
+    expect(new Set(headlines).size).toBe(headlines.length);
   });
 
   it('reports a refused write and lets the report be dismissed', async () => {
@@ -343,9 +406,10 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice?.headline).toBe(
-        'Saerskriven could not write the export.',
-      );
+      expect(result.current.notice).toMatchObject({
+        details: ['NotAllowedError'],
+        refusal: true,
+      });
     });
     act(() => {
       result.current.dismissNotice();

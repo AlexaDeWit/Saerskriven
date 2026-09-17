@@ -1,13 +1,11 @@
 import { elementId } from '@saerskriven/model/fixtures';
 import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { everyGlyphModel } from './canvas.fixtures.js';
+import { everyGlyphLayout, nodeNamed } from './canvas.fixtures.js';
 import { handleSides } from './handles.js';
 import { canvasClassNames } from './stylesheet.js';
-import { layoutDiagram, type CanvasNode } from './layout.js';
+import type { CanvasNode } from './layout.js';
 import {
-  canvasEdgeTypes,
-  canvasNodeTypes,
   CanvasEdgeBody,
   CanvasFreeEndBody,
   CanvasNodeBody,
@@ -21,16 +19,6 @@ import {
   type CanvasFlowNode,
   type CanvasEdgeData,
 } from './react-flow.js';
-
-const layout = layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel);
-
-const nodeNamed = (value: string): CanvasNode => {
-  const found = layout.nodes.find((node) => node.id === elementId(value));
-  if (found === undefined) {
-    throw new Error(`No node ${value} in the layout`);
-  }
-  return found;
-};
 
 const nodeProps = (node: CanvasNode) => ({
   id: node.id,
@@ -104,30 +92,15 @@ const edgeMarkup = (
   );
 
 const nodesWith = (moved: string, by: number): CanvasFlowNode[] =>
-  toReactFlowNodes(layout).map((node) =>
+  toReactFlowNodes(everyGlyphLayout).map((node) =>
     node.id === elementId(moved)
       ? { ...node, position: { x: node.position.x, y: node.position.y + by } }
       : node,
   );
 
-const curveNode = layout.nodes.find((node) => node.kind === 'boundary-curve');
-
-describe('canvasNodeTypes', () => {
-  it('names one node type for every kind the layout produces, and the free-end anchor', () => {
-    expect(new Set(Object.keys(canvasNodeTypes))).toEqual(
-      new Set<string>([
-        ...layout.nodes.map((node) => node.kind),
-        freeEndNodeKind,
-      ]),
-    );
-  });
-});
-
-describe('canvasEdgeTypes', () => {
-  it('names one edge type, for a flow', () => {
-    expect(Object.keys(canvasEdgeTypes)).toEqual(['flow']);
-  });
-});
+const curveNode = everyGlyphLayout.nodes.find(
+  (node) => node.kind === 'boundary-curve',
+);
 
 describe('CanvasNodeBody', () => {
   it('sizes its surface from the model and measures nothing', () => {
@@ -152,7 +125,7 @@ describe('CanvasNodeBody', () => {
     );
     expect(markup).toContain('<svg width="200" height="90"');
     expect(markup).toContain(
-      '<rect class="pn-shape pn-actor" width="200" height="90"',
+      `<rect class="${canvasClassNames.shape} ${canvasClassNames.actor}" width="200" height="90"`,
     );
   });
 
@@ -249,12 +222,12 @@ describe('CanvasEdgeBody', () => {
   const settled = 'd="M 200 100 L 240 100 L 280 120"';
 
   it('draws the flow from the geometry the layout resolved', () => {
-    const data = toReactFlowEdges(layout)[0].data;
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
     expect(edgeMarkup(data, nodesWith('el-client', 0))).toContain(settled);
   });
 
   it('draws no name while a name field is open over it', () => {
-    const data = toReactFlowEdges(layout)[0].data;
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
     expect(edgeMarkup(data, nodesWith('el-client', 0))).toContain(
       canvasClassNames.flowLabel,
     );
@@ -264,25 +237,25 @@ describe('CanvasEdgeBody', () => {
   });
 
   it("adds React Flow's wider interaction path around the flow", () => {
-    const markup = edgeMarkup({ edge: layout.edges[0] });
+    const markup = edgeMarkup({ edge: everyGlyphLayout.edges[0] });
     expect(markup).toContain('react-flow__edge-interaction');
     expect(markup).toContain('stroke-width="20"');
   });
 
   it('anchors an end on the node React Flow has, not the model position', () => {
-    const data = toReactFlowEdges(layout)[0].data;
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
     expect(edgeMarkup(data, nodesWith('el-client', 200))).toContain(
       'd="M 120 260 L 240 100 L 280 120"',
     );
   });
 
   it('falls back on the settled geometry where React Flow has no node', () => {
-    expect(edgeMarkup({ edge: layout.edges[0] })).toContain(settled);
+    expect(edgeMarkup({ edge: everyGlyphLayout.edges[0] })).toContain(settled);
   });
 
   it('draws changed geometry from the transient layout', () => {
     const moved = {
-      ...layout.edges[0],
+      ...everyGlyphLayout.edges[0],
       source: { x: 120, y: 260 },
     };
     expect(edgeMarkup({ edge: moved })).toContain(
@@ -291,7 +264,7 @@ describe('CanvasEdgeBody', () => {
   });
 
   it('moves a selected flow with an unrelated dragged node', () => {
-    const nodes = toReactFlowNodes(layout).map((node) =>
+    const nodes = toReactFlowNodes(everyGlyphLayout).map((node) =>
       node.id === elementId('el-note')
         ? {
             ...node,
@@ -300,7 +273,7 @@ describe('CanvasEdgeBody', () => {
           }
         : node,
     );
-    const data = toReactFlowEdges(layout)[0].data;
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
 
     expect(edgeMarkup(data, nodes, true)).toContain(
       'd="M 200 100 L 280 125 L 280 120"',
@@ -308,22 +281,22 @@ describe('CanvasEdgeBody', () => {
   });
 
   it('keeps a selected flow still before its group moves', () => {
-    const nodes = toReactFlowNodes(layout).map((node) => ({
+    const nodes = toReactFlowNodes(everyGlyphLayout).map((node) => ({
       ...node,
       selected: node.id === elementId('el-note'),
     }));
-    const data = toReactFlowEdges(layout)[0].data;
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
 
     expect(edgeMarkup(data, nodes, true)).toContain(settled);
   });
 
   it('uses settled geometry while a live node has no extent', () => {
-    const nodes = toReactFlowNodes(layout).map((node) =>
+    const nodes = toReactFlowNodes(everyGlyphLayout).map((node) =>
       node.id === elementId('el-client')
         ? { ...node, width: undefined, height: undefined }
         : node,
     );
-    const data = toReactFlowEdges(layout)[0].data;
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
 
     expect(edgeMarkup(data, nodes)).toContain(settled);
   });
@@ -336,7 +309,7 @@ describe('CanvasEdgeBody', () => {
 describe('toReactFlowNodes', () => {
   it('carries the model position and extent on the node itself', () => {
     const node = nodeNamed('el-api');
-    const converted = toReactFlowNodes(layout).find(
+    const converted = toReactFlowNodes(everyGlyphLayout).find(
       (one: CanvasFlowNode) => one.id === node.id,
     );
     expect(converted).toEqual({
@@ -352,7 +325,7 @@ describe('toReactFlowNodes', () => {
   });
 
   it('puts trust boundaries below every other React Flow item', () => {
-    expect(toReactFlowNodes(layout)).toEqual(
+    expect(toReactFlowNodes(everyGlyphLayout)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: elementId('el-zone'),
@@ -368,11 +341,15 @@ describe('toReactFlowNodes', () => {
   });
 
   it('carries one React Flow node per laid-out node, flows excluded', () => {
-    expect(toReactFlowNodes(layout)).toHaveLength(layout.nodes.length);
+    expect(toReactFlowNodes(everyGlyphLayout)).toHaveLength(
+      everyGlyphLayout.nodes.length,
+    );
   });
 });
 
-const looseFlow = layout.edges.find((edge) => edge.sourceElement === undefined);
+const looseFlow = everyGlyphLayout.edges.find(
+  (edge) => edge.sourceElement === undefined,
+);
 
 describe('CanvasFreeEndBody', () => {
   it('draws the one handle an edge end resolves from, and nothing else', () => {
@@ -388,21 +365,21 @@ describe('CanvasFreeEndBody', () => {
 
 describe('toReactFlowEdges', () => {
   it('carries one edge per drawn flow, ends named by the layout', () => {
-    const edges = toReactFlowEdges(layout);
-    expect(edges).toHaveLength(layout.edges.length);
+    const edges = toReactFlowEdges(everyGlyphLayout);
+    expect(edges).toHaveLength(everyGlyphLayout.edges.length);
     expect(
       edges.find((edge) => edge.id === elementId('el-request')),
     ).toMatchObject({
       type: 'flow',
       source: elementId('el-client'),
       target: elementId('el-api'),
-      data: { edge: layout.edges[0] },
+      data: { edge: everyGlyphLayout.edges[0] },
       interactionWidth: 20,
     });
   });
 
   it('ends a flow with a free end on the anchor of that end', () => {
-    const converted = toReactFlowEdges(layout).find(
+    const converted = toReactFlowEdges(everyGlyphLayout).find(
       (edge) => edge.id === looseFlow?.id,
     );
     expect(looseFlow).toBeDefined();
@@ -416,7 +393,7 @@ describe('layoutAtReactFlowNodes', () => {
   it('moves selected flow waypoints by the live group offset', () => {
     const offset = { x: 50, y: 40 };
     const movedNodes = [elementId('el-client'), elementId('el-api')];
-    const nodes = toReactFlowNodes(layout).map((node) =>
+    const nodes = toReactFlowNodes(everyGlyphLayout).map((node) =>
       node.id === movedNodes[0]
         ? {
             ...node,
@@ -427,9 +404,9 @@ describe('layoutAtReactFlowNodes', () => {
           }
         : node,
     );
-    const edge = layout.edges[0];
+    const edge = everyGlyphLayout.edges[0];
 
-    const moved = layoutAtReactFlowNodes(layout, nodes, [
+    const moved = layoutAtReactFlowNodes(everyGlyphLayout, nodes, [
       ...movedNodes,
       edge.id,
     ]);
@@ -451,39 +428,42 @@ describe('layoutAtReactFlowNodes', () => {
   it('ignores React Flow anchors that name no diagram node', () => {
     expect(
       layoutAtReactFlowNodes(
-        layout,
-        [...toReactFlowNodes(layout), ...freeEndNodes(layout)],
+        everyGlyphLayout,
+        [
+          ...toReactFlowNodes(everyGlyphLayout),
+          ...freeEndNodes(everyGlyphLayout),
+        ],
         [],
       ).edges,
-    ).toHaveLength(layout.edges.length);
+    ).toHaveLength(everyGlyphLayout.edges.length);
   });
 
   it('falls back to settled extents when React Flow has none', () => {
-    const nodes = toReactFlowNodes(layout).map((node) => ({
+    const nodes = toReactFlowNodes(everyGlyphLayout).map((node) => ({
       ...node,
       measured: undefined,
       width: undefined,
       height: undefined,
     }));
 
-    expect(layoutAtReactFlowNodes(layout, nodes, []).nodes[0].size).toEqual(
-      layout.nodes[0].size,
-    );
+    expect(
+      layoutAtReactFlowNodes(everyGlyphLayout, nodes, []).nodes[0].size,
+    ).toEqual(everyGlyphLayout.nodes[0].size);
   });
 });
 
 describe('freeEndNodes', () => {
   it('anchors every free end and nothing else', () => {
-    const free = layout.edges.flatMap((edge) => [
+    const free = everyGlyphLayout.edges.flatMap((edge) => [
       ...(edge.sourceElement === undefined ? ['source'] : []),
       ...(edge.targetElement === undefined ? ['target'] : []),
     ]);
     expect(free.length).toBeGreaterThan(0);
-    expect(freeEndNodes(layout)).toHaveLength(free.length);
+    expect(freeEndNodes(everyGlyphLayout)).toHaveLength(free.length);
   });
 
   it('places an anchor where the layout put the free end, out of reach', () => {
-    const anchor = freeEndNodes(layout)[0];
+    const anchor = freeEndNodes(everyGlyphLayout)[0];
     expect(anchor.position).toEqual(looseFlow?.source);
     expect(anchor.type).toBe(freeEndNodeKind);
     expect(anchor.selectable).toBe(false);

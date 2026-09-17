@@ -103,8 +103,7 @@ export const assumptionStatusesToWire = {
   SaerskrivenYamlV2AssumptionStatus
 >;
 
-/** The file's STRIDE categories as the model holds them. */
-export const strideCategoriesToModel = {
+const strideCategoriesToModel = {
   spoofing: 'spoofing',
   tampering: 'tampering',
   repudiation: 'repudiation',
@@ -116,8 +115,7 @@ export const strideCategoriesToModel = {
   StrideCategory['category']
 >;
 
-/** The model's STRIDE categories as the file states them. */
-export const strideCategoriesToWire = {
+const strideCategoriesToWire = {
   spoofing: 'spoofing',
   tampering: 'tampering',
   repudiation: 'repudiation',
@@ -129,8 +127,7 @@ export const strideCategoriesToWire = {
   SaerskrivenYamlV2StrideCategory['category']
 >;
 
-/** The file's LINDDUN categories as the model holds them. */
-export const linddunCategoriesToModel = {
+const linddunCategoriesToModel = {
   linking: 'linking',
   identifying: 'identifying',
   'non-repudiation': 'non-repudiation',
@@ -143,8 +140,7 @@ export const linddunCategoriesToModel = {
   LinddunCategory['category']
 >;
 
-/** The model's LINDDUN categories as the file states them. */
-export const linddunCategoriesToWire = {
+const linddunCategoriesToWire = {
   linking: 'linking',
   identifying: 'identifying',
   'non-repudiation': 'non-repudiation',
@@ -157,8 +153,7 @@ export const linddunCategoriesToWire = {
   SaerskrivenYamlV2LinddunCategory['category']
 >;
 
-/** The file's CIA categories as the model holds them. */
-export const ciaCategoriesToModel = {
+const ciaCategoriesToModel = {
   confidentiality: 'confidentiality',
   integrity: 'integrity',
   availability: 'availability',
@@ -167,8 +162,7 @@ export const ciaCategoriesToModel = {
   CiaCategory['category']
 >;
 
-/** The model's CIA categories as the file states them. */
-export const ciaCategoriesToWire = {
+const ciaCategoriesToWire = {
   confidentiality: 'confidentiality',
   integrity: 'integrity',
   availability: 'availability',
@@ -177,8 +171,7 @@ export const ciaCategoriesToWire = {
   SaerskrivenYamlV2CiaCategory['category']
 >;
 
-/** The file's CIA-DIE categories as the model holds them. */
-export const ciaDieCategoriesToModel = {
+const ciaDieCategoriesToModel = {
   confidentiality: 'confidentiality',
   integrity: 'integrity',
   availability: 'availability',
@@ -190,8 +183,7 @@ export const ciaDieCategoriesToModel = {
   CiaDieCategory['category']
 >;
 
-/** The model's CIA-DIE categories as the file states them. */
-export const ciaDieCategoriesToWire = {
+const ciaDieCategoriesToWire = {
   confidentiality: 'confidentiality',
   integrity: 'integrity',
   availability: 'availability',
@@ -203,8 +195,7 @@ export const ciaDieCategoriesToWire = {
   SaerskrivenYamlV2CiaDieCategory['category']
 >;
 
-/** The file's PLOT4ai categories as the model holds them. */
-export const plot4aiCategoriesToModel = {
+const plot4aiCategoriesToModel = {
   'accountability-and-human-oversight': 'accountability-and-human-oversight',
   'bias-fairness-and-discrimination': 'bias-fairness-and-discrimination',
   cybersecurity: 'cybersecurity',
@@ -218,8 +209,7 @@ export const plot4aiCategoriesToModel = {
   Plot4aiCategory['category']
 >;
 
-/** The model's PLOT4ai categories as the file states them. */
-export const plot4aiCategoriesToWire = {
+const plot4aiCategoriesToWire = {
   'accountability-and-human-oversight': 'accountability-and-human-oversight',
   'bias-fairness-and-discrimination': 'bias-fairness-and-discrimination',
   cybersecurity: 'cybersecurity',

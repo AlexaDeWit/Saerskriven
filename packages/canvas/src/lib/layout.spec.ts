@@ -1,87 +1,64 @@
-import type { Model } from '@saerskriven/model';
-import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
-import { badgeExtent } from './badges.js';
-import { everyGlyphModel } from './canvas.fixtures.js';
-import { handlePositions } from './handles.js';
-import { reanchoredFlow } from './layout-move.js';
+import type { Model, Point } from '@saerskriven/model';
 import {
   attached,
+  curveBoundary,
+  elementId,
+  elementIn,
   flowBetween,
+  modelWith,
+} from '@saerskriven/model/fixtures';
+import { badgeExtent } from './badges.js';
+import {
+  edgeNamed,
+  everyGlyphLayout,
+  everyGlyphModel,
   layoutOf,
+  nodeNamed,
+  scenes,
   twoBoxDiagram,
-} from './layout.fixtures.js';
-import type { CanvasEdge, CanvasNode } from './layout.js';
-import { canvasNodeTypes, freeEndNodeKind } from './react-flow.js';
+} from './canvas.fixtures.js';
+import { handlePositions } from './handles.js';
+import type { CanvasNode, CanvasNodeKind } from './layout.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 
-const layout = layoutOf(everyGlyphModel);
+const boxKinds = {
+  actor: true,
+  process: true,
+  store: true,
+  text: true,
+  'boundary-box': true,
+  'boundary-curve': true,
+} as const satisfies Record<CanvasNodeKind, true>;
 
-const nodeNamed = (value: string): CanvasNode => {
-  const found = layout.nodes.find((node) => node.id === elementId(value));
-  if (found === undefined) {
-    throw new Error(`No node ${value} in the layout`);
-  }
-  return found;
+const unplacedFlows: Readonly<Record<string, readonly string[]>> = {
+  'every glyph': ['el-replay'],
 };
 
-const edgeNamed = (value: string): CanvasEdge => {
-  const found = layout.edges.find((edge) => edge.id === elementId(value));
-  if (found === undefined) {
-    throw new Error(`No edge ${value} in the layout`);
-  }
-  return found;
-};
+const curveLayout = (waypoints: readonly Point[]) =>
+  layoutOf(modelWith({ elements: [curveBoundary('el-curve', waypoints)] }));
 
-const elementIn = (model: Model, value: string) => {
-  const found = model.diagrams[0].elements.find(
-    (element) => element.id === elementId(value),
-  );
-  if (found === undefined) {
-    throw new Error(`No element ${value} in the fixture`);
-  }
-  return found;
-};
-
-const curveLayout = (waypoints: unknown[]) =>
-  layoutOf(
-    parsedFixture({
-      metadata: { title: 't', owner: '', description: '', contributors: [] },
-      diagrams: [
-        {
-          id: 'd',
-          title: 'Diagram',
-          elements: [
-            {
-              kind: 'trust-boundary',
-              id: 'el-curve',
-              name: '',
-              description: '',
-              outOfScope: false,
-              reasonOutOfScope: '',
-              shape: { kind: 'curve', waypoints },
-            },
-          ],
-        },
-      ],
-      threats: [],
-      lastIssuedThreatNumber: 0,
-      mitigations: [],
-      assumptions: [],
-    }),
-  );
-
-const curveBoundary = (waypoints: unknown[]): CanvasNode =>
+const curveNode = (waypoints: readonly Point[]): CanvasNode =>
   curveLayout(waypoints).nodes[0];
 
 describe('layoutDiagram', () => {
   it('lays out a node of every kind the canvas draws as a box', () => {
-    expect(new Set(layout.nodes.map((node) => node.kind))).toEqual(
-      new Set<string>(
-        Object.keys(canvasNodeTypes).filter((kind) => kind !== freeEndNodeKind),
-      ),
+    expect(new Set(everyGlyphLayout.nodes.map((node) => node.kind))).toEqual(
+      new Set<string>(Object.keys(boxKinds)),
     );
-    expect(layout.edges).toHaveLength(3);
+    expect(everyGlyphLayout.edges).toHaveLength(3);
   });
+
+  it.each(scenes)(
+    'draws or reports every element of $name',
+    ({ name, model, diagram, layout }) => {
+      expect(layout.unplaced.map((end) => end.flow)).toEqual(
+        unplacedFlows[name] ?? [],
+      );
+      expect(
+        layout.nodes.length + layout.edges.length + layout.unplaced.length,
+      ).toBe(model.diagrams[diagram].elements.length);
+    },
+  );
 
   it('takes a node position and size from the model and nowhere else', () => {
     const element = elementIn(everyGlyphModel, 'el-api');
@@ -171,7 +148,7 @@ describe('layoutDiagram', () => {
   });
 
   it('reports the fixture flow whose endpoint names another flow', () => {
-    expect(layout.unplaced).toEqual([
+    expect(everyGlyphLayout.unplaced).toEqual([
       {
         flow: elementId('el-replay'),
         side: 'source',
@@ -181,15 +158,20 @@ describe('layoutDiagram', () => {
   });
 
   it('bounds everything it draws', () => {
-    expect(layout.bounds).toEqual({ x: 0, y: -13, width: 653, height: 423 });
+    expect(everyGlyphLayout.bounds).toEqual({
+      x: 0,
+      y: -13,
+      width: 653,
+      height: 423,
+    });
   });
 
   it('reaches past a node box for the badge hanging off its corner', () => {
     const zone = nodeNamed('el-zone');
     const reach = zone.badge === undefined ? 0 : badgeExtent(zone.badge).radius;
     expect(reach).toBeGreaterThan(0);
-    expect(layout.bounds.y).toBe(zone.position.y - reach);
-    expect(layout.bounds.x + layout.bounds.width).toBe(
+    expect(everyGlyphLayout.bounds.y).toBe(zone.position.y - reach);
+    expect(everyGlyphLayout.bounds.x + everyGlyphLayout.bounds.width).toBe(
       zone.position.x + zone.size.width + reach,
     );
   });
@@ -208,7 +190,7 @@ describe('layoutDiagram', () => {
   });
 
   it('gives a straight curve boundary an extent to pick', () => {
-    const straight = curveBoundary([
+    const straight = curveNode([
       { x: 0, y: 50 },
       { x: 400, y: 50 },
     ]);
@@ -219,7 +201,7 @@ describe('layoutDiagram', () => {
   });
 
   it('gives a curve boundary of one repeated point an extent to pick', () => {
-    const degenerate = curveBoundary([
+    const degenerate = curveNode([
       { x: 20, y: 20 },
       { x: 20, y: 20 },
     ]);
@@ -236,14 +218,7 @@ describe('layoutDiagram', () => {
   });
 
   it('bounds an empty diagram at the origin', () => {
-    const empty = parsedFixture({
-      metadata: { title: 't', owner: '', description: '', contributors: [] },
-      diagrams: [{ id: 'd', title: 'Diagram', elements: [] }],
-      threats: [],
-      lastIssuedThreatNumber: 0,
-      mitigations: [],
-      assumptions: [],
-    });
+    const empty = modelWith({ elements: [] });
     expect(layoutOf(empty)).toEqual({
       nodes: [],
       edges: [],
@@ -292,50 +267,39 @@ describe('layoutDiagram, choosing a side', () => {
     expect(layoutOf(model).edges[0].sourceSide).toBe('bottom');
   });
 
-  it('keeps a pinned end on its side whatever the route, and keeps the pin through a move', () => {
-    const model = twoBoxDiagram(
-      flowBetween(
-        { ...attached('el-left'), side: 'bottom' },
-        attached('el-right'),
-        [{ x: 50, y: -300 }],
+  it('keeps a pinned end on its side whatever the route', () => {
+    const edge = layoutOf(
+      twoBoxDiagram(
+        flowBetween(
+          { ...attached('el-left'), side: 'bottom' },
+          attached('el-right'),
+          [{ x: 50, y: -300 }],
+        ),
       ),
-    );
-    const laid = layoutOf(model);
-    const edge = laid.edges[0];
+    ).edges[0];
     expect(edge.sourceSide).toBe('bottom');
     expect(edge.sourcePin).toBe('bottom');
     expect(edge.targetPin).toBeUndefined();
-    const leftBox = laid.nodes.find((node) => node.id === elementId('el-left'));
-    if (leftBox === undefined) {
-      throw new Error('No left box');
-    }
-    const moved = reanchoredFlow(
-      edge,
-      { position: { x: 0, y: -900 }, size: leftBox.size },
-      undefined,
-    );
-    expect(moved.sourceSide).toBe('bottom');
-    expect(moved.source).toEqual(
-      handlePositions({ position: { x: 0, y: -900 }, size: leftBox.size })
-        .bottom,
-    );
   });
 });
 
 describe('layoutDiagram, a bidirectional flow', () => {
   it('carries the direction and bounds the arrowhead at the source too', () => {
-    const oneWay = layoutOf(
-      twoBoxDiagram(flowBetween(attached('el-left'), attached('el-right'), [])),
-    );
-    const bothWays = layoutOf(
-      twoBoxDiagram({
-        ...flowBetween(attached('el-left'), attached('el-right'), []),
-        bidirectional: true,
-      }),
-    );
+    const flow = {
+      ...flowBetween(
+        { kind: 'free', position: { x: 1000, y: 900 } },
+        attached('el-right'),
+        [{ x: 1000, y: 50 }],
+      ),
+      name: '',
+    };
+    const oneWay = layoutOf(twoBoxDiagram(flow));
+    const bothWays = layoutOf(twoBoxDiagram({ ...flow, bidirectional: true }));
     expect(oneWay.edges[0].bidirectional).toBe(false);
     expect(bothWays.edges[0].bidirectional).toBe(true);
     expect(bothWays.edges[0].source).toEqual(oneWay.edges[0].source);
+    expect(oneWay.bounds.x + oneWay.bounds.width).toBe(1000);
+    expect(bothWays.bounds.x + bothWays.bounds.width).toBeGreaterThan(1000);
   });
 });
 

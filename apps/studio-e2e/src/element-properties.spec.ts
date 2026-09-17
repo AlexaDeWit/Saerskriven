@@ -1,18 +1,16 @@
-import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { readAnyFormat } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { audit } from './accessibility.fixtures.js';
+import { canvasSettled } from './canvas.fixtures.js';
 import {
-  canvasSettled,
   chooseByKeyboard,
   chooseInPanel,
   openFile,
-  savedFile,
+  savedModel,
   selectByKeyboard,
+  storefront,
   threatPanel,
+  twoDiagramsFile,
 } from './studio.fixtures.js';
-
-const fixture = 'threat-modelling/saerskriven.yaml';
 
 async function properties(page: Page, name: RegExp) {
   await selectByKeyboard(page, name);
@@ -30,8 +28,8 @@ test('edits every element kind and preserves security facts through save, undo, 
     description:
       'This scenario commits all 16 properties across five element kinds, then saves and reloads.',
   });
-  await openFile(page, fixture);
-  await properties(page, /^Model author or upstream tool, actor/u);
+  await openFile(page, twoDiagramsFile);
+  await properties(page, storefront.shopper);
   const authentication = threatPanel(page).getByRole('combobox', {
     name: 'Provides authentication',
   });
@@ -41,7 +39,7 @@ test('edits every element kind and preserves security facts through save, undo, 
   await expect(authentication).toContainText('Yes');
   await chooseInPanel(page, 'Provides authentication', 'No');
 
-  await properties(page, /^Codec read, process/u);
+  await properties(page, storefront.webShop);
   await chooseInPanel(page, 'Handles card payments', 'No');
   await chooseInPanel(page, 'Handles goods or services', 'Yes');
   await chooseInPanel(page, 'Web application', 'No');
@@ -59,7 +57,7 @@ test('edits every element kind and preserves security facts through save, undo, 
   await chooseInPanel(page, 'Privilege level recording', 'Recorded');
   await expect(privilege).toHaveValue('');
 
-  await properties(page, /^Threat model file, store/u);
+  await properties(page, storefront.catalogue);
   for (const label of [
     'Log store',
     'Encrypted storage',
@@ -71,7 +69,7 @@ test('edits every element kind and preserves security facts through save, undo, 
   }
   await chooseInPanel(page, 'Encrypted storage', 'Yes');
 
-  await properties(page, /^A text of unknown format, flow/u);
+  await properties(page, /^browse the catalogue and fill a basket, flow/u);
   await chooseInPanel(page, 'Encrypted flow', 'Yes');
   await chooseInPanel(page, 'Public network', 'No');
   await chooseInPanel(page, 'Protocol recording', 'Recorded');
@@ -82,15 +80,15 @@ test('edits every element kind and preserves security facts through save, undo, 
     .getByRole('textbox', { name: 'Protocol' })
     .press('Enter');
   await chooseInPanel(page, 'Crossed trust boundaries recording', 'Recorded');
-  await chooseInPanel(page, 'Add to crossed trust boundaries', 'Foreign input');
+  await chooseInPanel(page, 'Add to crossed trust boundaries', 'Shop network');
   await threatPanel(page)
     .getByRole('group', { name: 'Crossed trust boundaries', exact: true })
     .getByRole('button', { name: 'Add relationship' })
     .click();
 
-  await properties(page, /^Foreign input, trust boundary/u);
+  await properties(page, storefront.shopNetwork);
   await chooseInPanel(page, 'Contained elements recording', 'Recorded');
-  await chooseInPanel(page, 'Add to contained elements', 'Threat model file');
+  await chooseInPanel(page, 'Add to contained elements', 'Catalogue');
   await threatPanel(page)
     .getByRole('group', { name: 'Contained elements', exact: true })
     .getByRole('button', { name: 'Add relationship' })
@@ -99,28 +97,30 @@ test('edits every element kind and preserves security facts through save, undo, 
   await chooseInPanel(
     page,
     'Add to crossing flows',
-    'A text of unknown format',
+    'browse the catalogue and fill a basket',
   );
   await threatPanel(page)
     .getByRole('group', { name: 'Crossing flows', exact: true })
     .getByRole('button', { name: 'Add relationship' })
     .click();
 
-  const saved = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const saved = await savedModel(page);
   const elements = saved.diagrams[0].elements;
-  expect(elements.find((element) => element.id === 'el-author')).toMatchObject({
-    providesAuthentication: false,
-  });
-  expect(elements.find((element) => element.id === 'el-read')).toMatchObject({
+  expect(elements.find((element) => element.id === 'el-shopper')).toMatchObject(
+    {
+      providesAuthentication: false,
+    },
+  );
+  expect(
+    elements.find((element) => element.id === 'el-web-shop'),
+  ).toMatchObject({
     handlesCardPayment: false,
     handlesGoodsOrServices: true,
     isWebApplication: false,
     privilegeLevel: '',
   });
   expect(
-    elements.find((element) => element.id === 'el-model-file'),
+    elements.find((element) => element.id === 'el-catalogue'),
   ).toMatchObject({
     isALog: false,
     isEncrypted: true,
@@ -128,18 +128,21 @@ test('edits every element kind and preserves security facts through save, undo, 
     storesCredentials: false,
     storesInventory: false,
   });
-  expect(elements.find((element) => element.id === 'fl-open')).toMatchObject({
+  expect(elements.find((element) => element.id === 'el-browse')).toMatchObject({
     protocol: 'HTTPS',
     isEncrypted: true,
     isPublicNetwork: false,
-    trustBoundaryIds: ['tb-foreign'],
+    trustBoundaryIds: ['el-shop-network'],
   });
-  expect(elements.find((element) => element.id === 'tb-foreign')).toMatchObject(
-    { containedElements: ['el-model-file'], crossingFlows: ['fl-open'] },
-  );
+  expect(
+    elements.find((element) => element.id === 'el-shop-network'),
+  ).toMatchObject({
+    containedElements: ['el-catalogue'],
+    crossingFlows: ['el-browse'],
+  });
   await page.reload();
   await canvasSettled(page);
-  await properties(page, /^A text of unknown format, flow/u);
+  await properties(page, /^browse the catalogue and fill a basket, flow/u);
   await expect(
     threatPanel(page).getByRole('textbox', { name: 'Protocol' }),
   ).toHaveValue('HTTPS');
@@ -148,19 +151,19 @@ test('edits every element kind and preserves security facts through save, undo, 
       name: 'Crossed trust boundaries 1',
       exact: true,
     }),
-  ).toContainText('Foreign input');
+  ).toContainText('Shop network');
 });
 
 test('shows recorded and absent states at wide and narrow widths with accessible keyboard controls', async ({
   page,
-}, testInfo) => {
+}) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
-  await openFile(page, fixture);
-  await properties(page, /^A text of unknown format, flow/u);
+  await openFile(page, twoDiagramsFile);
+  await properties(page, /^browse the catalogue and fill a basket, flow/u);
   await chooseInPanel(page, 'Encrypted flow', 'No');
   await chooseInPanel(page, 'Protocol recording', 'Recorded');
   await chooseInPanel(page, 'Crossed trust boundaries recording', 'Recorded');
-  await chooseInPanel(page, 'Add to crossed trust boundaries', 'Foreign input');
+  await chooseInPanel(page, 'Add to crossed trust boundaries', 'Shop network');
   await threatPanel(page)
     .getByRole('button', { name: 'Add relationship' })
     .click();
@@ -170,17 +173,14 @@ test('shows recorded and absent states at wide and narrow widths with accessible
   await expect(
     threatPanel(page).getByRole('textbox', { name: 'Protocol' }),
   ).toHaveValue('');
-  expect(
-    (
-      await new AxeBuilder({ page })
-        .include('[data-testid="threat-panel"]')
-        .analyze()
-    ).violations,
-  ).toEqual([]);
-  await page.screenshot({ path: testInfo.outputPath('security-wide.png') });
+  await audit(
+    page,
+    'showing security properties at desktop width',
+    '[data-testid="threat-panel"]',
+  );
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await properties(page, /^Foreign input, trust boundary/u);
+  await properties(page, storefront.shopNetwork);
   await chooseInPanel(page, 'Contained elements recording', 'Recorded');
   await expect(
     threatPanel(page).getByRole('combobox', {
@@ -193,15 +193,16 @@ test('shows recorded and absent states at wide and narrow widths with accessible
   await target.focus();
   await page.keyboard.press('Enter');
   await expect(
-    page.getByRole('option', { name: 'Foreign input', exact: true }),
+    page.getByRole('option', { name: 'Shop network', exact: true }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole('option', { name: 'Agent and its harness', exact: true }),
+    page.getByRole('option', { name: 'Dispatch', exact: true }),
   ).toHaveCount(0);
-  expect(
-    (await new AxeBuilder({ page }).include('[role="listbox"]').analyze())
-      .violations,
-  ).toEqual([]);
+  await audit(
+    page,
+    'showing a relationship listbox at phone width',
+    '[role="listbox"]',
+  );
   await page.keyboard.press('Escape');
   await expect(target).toBeFocused();
   const bounds = await threatPanel(page).boundingBox();
@@ -212,22 +213,21 @@ test('shows recorded and absent states at wide and narrow widths with accessible
       (element) => element.scrollWidth <= element.clientWidth,
     ),
   ).toBe(true);
-  await page.screenshot({ path: testInfo.outputPath('security-narrow.png') });
 });
 
 test('deletion and copying update declared relationships through the editor', async ({
   page,
 }) => {
-  await openFile(page, fixture);
-  await properties(page, /^A text of unknown format, flow/u);
+  await openFile(page, twoDiagramsFile);
+  await properties(page, /^browse the catalogue and fill a basket, flow/u);
   await chooseInPanel(page, 'Crossed trust boundaries recording', 'Recorded');
-  await chooseInPanel(page, 'Add to crossed trust boundaries', 'Foreign input');
+  await chooseInPanel(page, 'Add to crossed trust boundaries', 'Shop network');
   await threatPanel(page)
     .getByRole('button', { name: 'Add relationship' })
     .click();
-  await properties(page, /^Foreign input, trust boundary/u);
+  await properties(page, storefront.shopNetwork);
   await chooseInPanel(page, 'Contained elements recording', 'Recorded');
-  await chooseInPanel(page, 'Add to contained elements', 'Threat model file');
+  await chooseInPanel(page, 'Add to contained elements', 'Catalogue');
   await threatPanel(page)
     .getByRole('group', { name: 'Contained elements', exact: true })
     .getByRole('button', { name: 'Add relationship' })
@@ -236,50 +236,47 @@ test('deletion and copying update declared relationships through the editor', as
   await chooseInPanel(
     page,
     'Add to crossing flows',
-    'A text of unknown format',
+    'browse the catalogue and fill a basket',
   );
   await threatPanel(page)
     .getByRole('group', { name: 'Crossing flows', exact: true })
     .getByRole('button', { name: 'Add relationship' })
     .click();
 
-  await selectByKeyboard(page, /^Threat model file, store/u);
+  await selectByKeyboard(page, storefront.catalogue);
   await page.keyboard.press('Delete');
-  await properties(page, /^Foreign input, trust boundary/u);
+  await properties(page, storefront.shopNetwork);
   const contained = threatPanel(page).getByRole('combobox', {
     name: 'Contained elements 1',
     exact: true,
   });
   await expect(contained).toHaveCount(0);
   await page.keyboard.press('ControlOrMeta+z');
-  await expect(contained).toContainText('Threat model file');
+  await expect(contained).toContainText('Catalogue');
   await page.keyboard.press('ControlOrMeta+Shift+z');
   await expect(contained).toHaveCount(0);
 
-  const boundary = page.locator('.react-flow__node[data-id="tb-foreign"]');
+  const boundary = page.locator('.react-flow__node[data-id="el-shop-network"]');
   await boundary.focus();
   await page.keyboard.press('ControlOrMeta+d');
-  const copied = Either.getOrThrow(readAnyFormat((await savedFile(page)).text))
-    .model.diagrams[0].elements;
+  const copied = (await savedModel(page)).diagrams[0].elements;
   const boundaries = copied.filter(
     (element) =>
-      element.kind === 'trust-boundary' && element.name === 'Foreign input',
+      element.kind === 'trust-boundary' && element.name === 'Shop network',
   );
   expect(boundaries).toHaveLength(2);
   expect(
-    boundaries.find((element) => element.id === 'tb-foreign'),
-  ).toMatchObject({ containedElements: [], crossingFlows: ['fl-open'] });
+    boundaries.find((element) => element.id === 'el-shop-network'),
+  ).toMatchObject({ containedElements: [], crossingFlows: ['el-browse'] });
   expect(
-    boundaries.find((element) => element.id !== 'tb-foreign'),
+    boundaries.find((element) => element.id !== 'el-shop-network'),
   ).toMatchObject({ containedElements: [], crossingFlows: [] });
 
   await boundary.focus();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Delete');
-  const removed = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const removed = await savedModel(page);
   expect(
-    removed.diagrams[0].elements.find((element) => element.id === 'fl-open'),
+    removed.diagrams[0].elements.find((element) => element.id === 'el-browse'),
   ).toMatchObject({ trustBoundaryIds: [] });
 });

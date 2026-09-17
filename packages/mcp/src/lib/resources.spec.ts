@@ -1,14 +1,14 @@
 import { Either } from 'effect';
-import { blobsOf, resourceProseOf } from '../fixtures.js';
+import { blobsOf, pngMagic, resourceProseOf } from '../fixtures.js';
 import { dataNotInstructions, prefaced } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
 import {
   answerOf,
-  ecluseWorkspace,
+  drawableTree,
   rootWorkspace,
-  saerskrivenWorkspace,
-  saerskrivenYaml,
   treeHolding,
+  twoDiagramsWorkspace,
+  twoDiagramsYaml,
 } from './read-tools.fixtures.js';
 import { register, renderRegisterResult } from './register.js';
 import {
@@ -23,19 +23,17 @@ import {
 } from './resources.js';
 import { noRasterizer } from './server.fixtures.js';
 
-const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
-
-const ecluse = ecluseWorkspace();
+const drawable = drawableTree();
 
 const opening = (text: string | undefined) => text?.split('\n')[0];
 
 describe('the register resource', () => {
   it('carries the text saer_register answers with', () => {
-    expect(Either.getOrThrow(readRegisterResource(ecluse)).contents).toEqual([
+    expect(Either.getOrThrow(readRegisterResource(drawable)).contents).toEqual([
       {
         uri: 'saer://register',
         mimeType: 'text/markdown',
-        text: prefaced(renderRegisterResult(answerOf(register(ecluse, {})))),
+        text: prefaced(renderRegisterResult(answerOf(register(drawable, {})))),
       },
     ]);
   });
@@ -48,16 +46,16 @@ describe('the register resource', () => {
 });
 
 describe('the diagram resources', () => {
-  it("lists every diagram of the repository's own model by position", () => {
-    expect(diagramResources(saerskrivenWorkspace()).resources).toEqual([
+  it('lists every diagram of a model by position', () => {
+    expect(diagramResources(twoDiagramsWorkspace()).resources).toEqual([
       {
-        uri: 'saer://diagram/read-and-render',
+        uri: 'saer://diagram/storefront',
         name: diagramResourceName(1),
         mimeType: 'image/png',
         description: diagramResourceDescription,
       },
       {
-        uri: 'saer://diagram/agent-and-desktop',
+        uri: 'saer://diagram/fulfilment',
         name: diagramResourceName(2),
         mimeType: 'image/png',
         description: diagramResourceDescription,
@@ -67,7 +65,7 @@ describe('the diagram resources', () => {
 
   it('leaves out a diagram whose id a URL parser would remove', () => {
     const dotted = treeHolding(
-      saerskrivenYaml().replace('id: read-and-render', "id: '.'"),
+      twoDiagramsYaml().replace('id: storefront', "id: '.'"),
     );
     expect({
       listed: diagramResources(dotted).resources.map(
@@ -75,8 +73,8 @@ describe('the diagram resources', () => {
       ),
       completed: completedDiagrams(dotted, ''),
     }).toEqual({
-      listed: ['saer://diagram/agent-and-desktop'],
-      completed: ['agent-and-desktop'],
+      listed: ['saer://diagram/fulfilment'],
+      completed: ['fulfilment'],
     });
   });
 
@@ -91,15 +89,15 @@ describe('the diagram resources', () => {
   });
 
   it('completes the diagram argument with the ids that start with what was typed', () => {
-    expect(completedDiagrams(saerskrivenWorkspace(), 'agent')).toEqual([
-      'agent-and-desktop',
+    expect(completedDiagrams(twoDiagramsWorkspace(), 'ful')).toEqual([
+      'fulfilment',
     ]);
     expect(completedDiagrams(rootWorkspace(), '')).toEqual([]);
   });
 
   it('looks a decoded name up among the diagrams and reaches no path', async () => {
     const read = await readDiagramResource(
-      ecluse,
+      drawable,
       noRasterizer,
       new URL('saer://diagram/..%2F..%2Fetc%2Fpasswd'),
       { diagram: '..%2F..%2Fetc%2Fpasswd' },
@@ -109,7 +107,7 @@ describe('the diagram resources', () => {
 
   it('fails on a name that is not percent-encoded text', async () => {
     const read = await readDiagramResource(
-      ecluse,
+      drawable,
       noRasterizer,
       new URL('saer://diagram/%E0'),
       { diagram: '%E0' },
@@ -119,10 +117,10 @@ describe('the diagram resources', () => {
 
   it('fails apart from a missing diagram where the rasterizer draws nothing', async () => {
     const read = await readDiagramResource(
-      ecluse,
+      drawable,
       noRasterizer,
-      new URL('saer://diagram/0'),
-      { diagram: '0' },
+      new URL('saer://diagram/only'),
+      { diagram: 'only' },
     );
     expect(read).toEqual(Either.left(ResourceFailure.RasterizerFailed()));
   });
@@ -131,8 +129,8 @@ describe('the diagram resources', () => {
     const read = await readDiagramResource(
       rootWorkspace(),
       noRasterizer,
-      new URL('saer://diagram/0'),
-      { diagram: '0' },
+      new URL('saer://diagram/only'),
+      { diagram: 'only' },
     );
     expect(read).toEqual(Either.left(ResourceFailure.NoModel()));
   });
@@ -141,10 +139,10 @@ describe('the diagram resources', () => {
     it('carries the PNG blob and the text of the render', async () => {
       const read = Either.getOrThrow(
         await readDiagramResource(
-          ecluse,
+          drawable,
           builtRasterizer,
-          new URL('saer://diagram/0'),
-          { diagram: '0' },
+          new URL('saer://diagram/only'),
+          { diagram: 'only' },
         ),
       );
       const [image] = blobsOf(read);

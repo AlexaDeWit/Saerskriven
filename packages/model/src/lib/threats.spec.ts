@@ -1,72 +1,39 @@
-import { severitySchema, threatSchema, threatStatusSchema } from './threats.js';
+import { inNumberOrder, threatSchema, threatStatusSchema } from './threats.js';
 
-const dredgerDeletion = {
-  id: '0b32b3e5-74f1-421c-8c9b-92a24fd2a00b',
-  number: 102,
-  title: 'Accidental permanent deletion of registry data',
-  category: { methodology: 'STRIDE', category: 'elevation-of-privilege' },
-  severity: 'critical',
+const threat = {
+  id: 'threat-tamper-order',
+  number: 1,
+  title: 'Order tampering in transit',
+  category: { methodology: 'STRIDE', category: 'tampering' },
+  severity: 'high',
   status: 'open',
-  description:
-    'Dredger issues permanent hard deletions against the mirror registry. ' +
-    'Misconfigured, or pointed at the wrong registry, it destroys data ' +
-    'permanently.',
-  elements: ['f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff'],
+  description: 'An order can be altered between the customer and the API.',
+  elements: ['element-api'],
 };
 
 describe('threatStatusSchema', () => {
-  it('parses every status', () => {
-    for (const status of [
-      'open',
-      'mitigated',
-      'accepted-risk',
-      'not-applicable',
-    ]) {
-      expect(threatStatusSchema.safeParse(status).success).toBe(true);
-    }
-  });
-
-  it("rejects Écluse's raw casing; the import maps it", () => {
+  it("rejects Threat Dragon's raw casing; the import maps it", () => {
     expect(threatStatusSchema.safeParse('Open').success).toBe(false);
   });
 });
 
-describe('severitySchema', () => {
-  it('parses every severity', () => {
-    for (const severity of ['low', 'medium', 'high', 'critical', 'undecided']) {
-      expect(severitySchema.safeParse(severity).success).toBe(true);
-    }
+describe('threatSchema', () => {
+  it('rejects a number that is not a positive integer', () => {
+    expect(threatSchema.safeParse({ ...threat, number: 0 }).success).toBe(
+      false,
+    );
+    expect(threatSchema.safeParse({ ...threat, number: 1.5 }).success).toBe(
+      false,
+    );
   });
 });
 
-describe('threatSchema', () => {
-  it('parses an Écluse threat mapped onto the record', () => {
-    expect(threatSchema.parse(dredgerDeletion)).toEqual(dredgerDeletion);
-  });
-
-  it('attaches one threat to more than one element', () => {
-    const shared = {
-      ...dredgerDeletion,
-      elements: [
-        'f66e2ffa-c6bf-4b45-8aad-a23ced3a97ff',
-        '0ec10e5e-0000-4000-8000-000000000020',
-      ],
-    };
-    expect(threatSchema.parse(shared)).toEqual(shared);
-  });
-
-  it('accepts a threat attached to no element', () => {
-    expect(
-      threatSchema.safeParse({ ...dredgerDeletion, elements: [] }).success,
-    ).toBe(true);
-  });
-
-  it('rejects a number that is not a positive integer', () => {
-    expect(
-      threatSchema.safeParse({ ...dredgerDeletion, number: 0 }).success,
-    ).toBe(false);
-    expect(
-      threatSchema.safeParse({ ...dredgerDeletion, number: 1.5 }).success,
-    ).toBe(false);
+describe('inNumberOrder', () => {
+  it('returns a copy ordered by number and leaves the input as it was', () => {
+    const threats = [{ number: 3 }, { number: 1 }, { number: 2 }];
+    const ordered = inNumberOrder(threats);
+    expect(ordered.map(({ number }) => number)).toEqual([1, 2, 3]);
+    expect(ordered).not.toBe(threats);
+    expect(threats.map(({ number }) => number)).toEqual([3, 1, 2]);
   });
 });

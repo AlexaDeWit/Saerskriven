@@ -1,56 +1,41 @@
-import type { ElementId } from '@saerskriven/model';
-import { initialState } from '../store/state.js';
-import { modelStore } from '../store/store.js';
 import {
   boundaryElement,
-  canvasModel,
   noteElement,
-  readerElement,
+  openCanvas,
   requestFlow,
-  studioElement,
 } from './canvas.fixtures.js';
 import {
   chooserOpened,
   commitFlowTarget,
   currentConnecting,
-  resetConnecting,
   startFlow,
 } from './connecting.js';
-
-const opened = (selection?: ElementId): void => {
-  modelStore.setState(
-    {
-      ...initialState(canvasModel),
-      selection: selection === undefined ? [] : [selection],
-    },
-    true,
-  );
-  resetConnecting();
-};
-
-const elementCount = (): number =>
-  modelStore.getState().present.diagrams[0].elements.length;
+import {
+  actorElement,
+  heldElements,
+  processElement,
+} from '../store/store.fixtures.js';
 
 describe('startFlow', () => {
   it('opens the chooser on the selected element', () => {
-    opened(readerElement);
+    openCanvas([actorElement]);
 
     startFlow();
 
     expect(currentConnecting()).toEqual({
       open: true,
-      from: readerElement,
+      from: actorElement,
     });
   });
 
   it('starts nothing from a selection no flow can run from', () => {
     for (const selection of [
-      undefined,
-      boundaryElement,
-      noteElement,
-      requestFlow,
+      [],
+      [boundaryElement],
+      [noteElement],
+      [requestFlow],
     ]) {
-      opened(selection);
+      openCanvas(selection);
 
       startFlow();
 
@@ -61,35 +46,35 @@ describe('startFlow', () => {
 
 describe('commitFlowTarget', () => {
   it('draws the flow from the element the command started at', () => {
-    opened(readerElement);
+    openCanvas([actorElement]);
     startFlow();
 
-    const drew = commitFlowTarget(studioElement);
+    const drew = commitFlowTarget(processElement);
 
     expect(drew).toBe(true);
-    expect(elementCount()).toBe(7);
+    expect(heldElements()).toBe(7);
     expect(currentConnecting()).toEqual({ open: false, from: undefined });
   });
 
   it('leaves a choice made outside a flow to the Connect control', () => {
-    opened(readerElement);
+    openCanvas([actorElement]);
     chooserOpened(true);
 
-    const drew = commitFlowTarget(studioElement);
+    const drew = commitFlowTarget(processElement);
 
     expect(drew).toBe(false);
-    expect(elementCount()).toBe(6);
+    expect(heldElements()).toBe(6);
   });
 });
 
 describe('chooserOpened', () => {
   it('cancels a flow in progress when the chooser closes, drawing nothing', () => {
-    opened(readerElement);
+    openCanvas([actorElement]);
     startFlow();
 
     chooserOpened(false);
 
     expect(currentConnecting()).toEqual({ open: false, from: undefined });
-    expect(elementCount()).toBe(6);
+    expect(heldElements()).toBe(6);
   });
 });

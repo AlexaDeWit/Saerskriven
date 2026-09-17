@@ -1,55 +1,29 @@
 import { expect, test } from '@playwright/test';
-import { registeredChords } from './chords.js';
-import { savedFromMenu } from './commands.fixtures.js';
+import { testDataPath } from '@saerskriven/model/fixtures';
+import { registeredChords } from './chords.fixtures.js';
+import { canvasSettled, elementNodes } from './canvas.fixtures.js';
 import {
-  canvasSettled,
-  elementNodes,
+  expectFileShown,
+  featureCompleteFile,
   focusSettled,
   menuButton,
   menuItem,
   nodeNamed,
+  openFallback,
   openFile,
   openMenu,
   openPlaceholder,
   placeByClick,
+  placeholder,
   runFromMenu,
-  vendored,
-  withoutPickers,
+  savedFromMenu,
+  twoDiagramsFile,
 } from './studio.fixtures.js';
-
-test('the menu shows assigned shortcuts and the project link', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await openMenu(page);
-
-  await expect(menuItem(page, 'Save')).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+S',
-  );
-  await expect(menuItem(page, 'Undo')).toHaveAttribute(
-    'aria-keyshortcuts',
-    'Control+Z',
-  );
-  for (const name of ['Copy', 'Cut', 'Paste', 'Reset zoom to 100%']) {
-    await expect(menuItem(page, name)).toHaveCount(0);
-  }
-  await expect(menuItem(page, 'Export')).toBeVisible();
-  const source = menuItem(page, 'View source on GitHub');
-  await expect(source).toHaveAttribute(
-    'href',
-    'https://github.com/AlexaDeWit/Saerskriven',
-  );
-  await expect(source).toHaveAttribute('target', '_blank');
-  await expect(source.locator('svg')).toHaveAttribute('aria-hidden', 'true');
-});
 
 test('save as asks the format in the menu where the browser has no picker of its own', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
 
   await openMenu(page);
   await menuItem(page, 'Save as').click();
@@ -62,11 +36,7 @@ test('save as asks the format in the menu where the browser has no picker of its
   const written = await savedFromMenu(page, 'Save as Saerskriven YAML');
 
   expect(written.name).toBe('threat-model.yaml');
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(written.name);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Saerskriven YAML',
-  );
+  await expectFileShown(page, written.name, 'Saerskriven YAML');
 });
 
 test('every item is reached, run and left by the keyboard alone', async ({
@@ -121,37 +91,21 @@ test('the canvas stays live behind the open menu', async ({ page }) => {
   await openMenu(page);
 
   await expect(page.getByRole('main')).not.toHaveAttribute('aria-hidden');
-  const store = nodeNamed(page, /^Store, store/u);
+  const store = nodeNamed(page, placeholder.store);
   await store.click();
 
   await expect(store).toHaveClass(/selected/u);
   await expect(page.getByRole('menu')).toHaveCount(0);
 });
 
-test('the button marks unsaved work, and the menu says so in words', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-
-  await expect(menuButton(page)).toHaveAccessibleName('Menu');
-
-  await placeByClick(page, 'Actor', /^New actor, actor/u);
-
-  await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
-  await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText(
-    'Saerskriven YAML',
-  );
-});
-
 test('closing asks in the menu before it drops work that is in no file', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
-  await expect(elementNodes(page)).toHaveCount(18);
+  await openFile(page, twoDiagramsFile);
+  await expect(elementNodes(page)).toHaveCount(7);
   const added = await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
-  await expect(elementNodes(page)).toHaveCount(19);
+  await expect(elementNodes(page)).toHaveCount(8);
   await focusSettled(added);
 
   await menuButton(page).press('Enter');
@@ -165,7 +119,7 @@ test('closing asks in the menu before it drops work that is in no file', async (
 
   const discard = menuItem(page, 'Discard changes and create new model');
   await expect(discard).toBeFocused();
-  await expect(elementNodes(page)).toHaveCount(19);
+  await expect(elementNodes(page)).toHaveCount(8);
 
   await page.keyboard.press('ArrowDown');
   await expect(menuItem(page, 'Cancel')).toBeFocused();
@@ -173,14 +127,14 @@ test('closing asks in the menu before it drops work that is in no file', async (
 
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(menuButton(page)).toBeFocused();
-  await expect(elementNodes(page)).toHaveCount(19);
+  await expect(elementNodes(page)).toHaveCount(8);
 
   await page.keyboard.press(registeredChords['close-file'][0]);
   await expect(discard).toBeVisible();
   await discard.click();
 
   await canvasSettled(page);
-  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
+  await expect(nodeNamed(page, placeholder.actor)).toHaveCount(1);
   await openMenu(page);
   await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
 });
@@ -188,10 +142,10 @@ test('closing asks in the menu before it drops work that is in no file', async (
 test('opening asks from its chord and discards on the second step', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
+  await openFile(page, twoDiagramsFile);
   const added = await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
-  await expect(elementNodes(page)).toHaveCount(19);
+  await expect(elementNodes(page)).toHaveCount(8);
   await focusSettled(added);
 
   await page.keyboard.press(registeredChords.open[0]);
@@ -200,52 +154,52 @@ test('opening asks from its chord and discards on the second step', async ({
 
   const chooser = page.waitForEvent('filechooser');
   await discard.click();
-  await (await chooser).setFiles(vendored('test-data/ecluse.json'));
+  await (await chooser).setFiles(testDataPath(featureCompleteFile));
 
   await canvasSettled(page);
-  await expect(elementNodes(page)).toHaveCount(18);
+  await expect(elementNodes(page)).toHaveCount(6);
   await openMenu(page);
-  await expect(page.getByTestId('file-state')).toContainText('ecluse.json');
+  await expect(page.getByTestId('file-state')).toContainText(
+    'feature-complete.json',
+  );
 });
 
-test('opening keeps the file when asked', async ({ page }) => {
-  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
+test('opening keeps the file when the question is cancelled or dismissed', async ({
+  page,
+}) => {
+  await openFile(page, twoDiagramsFile);
   await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
-  await expect(elementNodes(page)).toHaveCount(19);
+  await expect(elementNodes(page)).toHaveCount(8);
 
-  await openMenu(page);
-  await menuItem(page, 'Open').click();
-  await menuItem(page, 'Cancel').click();
+  await test.step('Cancel', async () => {
+    await openMenu(page);
+    await menuItem(page, 'Open').click();
+    await menuItem(page, 'Cancel').click();
 
-  await expect(page.getByRole('menu')).toHaveCount(0);
-  await expect(elementNodes(page)).toHaveCount(19);
-  await openMenu(page);
-  await expect(menuItem(page, 'Open')).toBeVisible();
-});
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(elementNodes(page)).toHaveCount(8);
+    await openMenu(page);
+    await expect(menuItem(page, 'Open')).toBeVisible();
+  });
 
-test('Escape cancels the open question', async ({ page }) => {
-  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
-  await placeByClick(page, 'Actor', /^New actor, actor/u);
-  await page.keyboard.press('Enter');
-  await expect(elementNodes(page)).toHaveCount(19);
+  await test.step('Escape', async () => {
+    await menuItem(page, 'Open').click();
+    await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
+    await page.keyboard.press('Escape');
 
-  await openMenu(page);
-  await menuItem(page, 'Open').click();
-  await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
-  await page.keyboard.press('Escape');
-
-  await expect(page.getByRole('menu')).toHaveCount(0);
-  await expect(elementNodes(page)).toHaveCount(19);
-  await openMenu(page);
-  await expect(menuItem(page, 'Open')).toBeVisible();
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(elementNodes(page)).toHaveCount(8);
+    await openMenu(page);
+    await expect(menuItem(page, 'Open')).toBeVisible();
+  });
 });
 
 test('closing a file that holds everything on screen takes no second press', async ({
   page,
 }) => {
-  await openFile(page, 'test-data/saerskriven/ecluse.yaml');
-  await expect(elementNodes(page)).toHaveCount(18);
+  await openFile(page, twoDiagramsFile);
+  await expect(elementNodes(page)).toHaveCount(7);
 
   await runFromMenu(page, 'New model');
 
@@ -253,22 +207,4 @@ test('closing a file that holds everything on screen takes no second press', asy
   await expect(elementNodes(page)).toHaveCount(2);
   await openMenu(page);
   await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
-});
-
-test('the menu chrome carries what a save could not hold, and puts it away again', async ({
-  page,
-}) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-
-  await openMenu(page);
-  await menuItem(page, 'Save as').click();
-  const written = await savedFromMenu(page, 'Save as Threat Dragon JSON');
-
-  expect(written.name).toBe('threat-model.json');
-  await expect(page.getByTestId('loss-report')).not.toBeEmpty();
-
-  await page.getByRole('button', { name: 'Dismiss report' }).click();
-
-  await expect(page.getByTestId('loss-report')).toBeEmpty();
 });

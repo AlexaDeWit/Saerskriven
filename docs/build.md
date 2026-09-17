@@ -13,9 +13,10 @@ dependency and carries the version from the root manifest.
 
 The `compile` target runs [`scripts/package-cli.sh`](../scripts/package-cli.sh),
 which uses `deno compile` and can cross-compile every target from one Linux
-machine. It runs the host executable three times: once for its version, once
-to validate a vendored model, and once to render that model to PDF. Deno is a
-packaging tool only. Node stays the development and test runtime.
+machine. It runs the host executable four times: once for its version, once
+to validate `test-data/saerskriven/two-diagrams.yaml`, and once each to render
+that model to PDF and to PNG. Deno is a packaging tool only. Node stays the
+development and test runtime.
 
 The `test-compiled` target puts the CLI's scenario table through that
 executable. It hashes the `compile` output, and Nx stores and restores

@@ -1,3 +1,4 @@
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,9 +16,6 @@ export type Runner = {
   readonly absence: string | undefined;
 };
 
-/** The checkout, which every runner is spawned with as its working directory. */
-export const repositoryRoot = join(import.meta.dirname, '../../..');
-
 /** Where the esbuild target writes the bundle a runner runs under node. */
 export const bundlePath = join(repositoryRoot, 'apps/cli/dist/saer.js');
 
@@ -28,15 +26,13 @@ const hostTarget = (): string | undefined => {
   return probe.status === 0 ? probe.stdout.trim() : undefined;
 };
 
-/** Where the packaging script writes the executable for this host. */
-export const executablePath = join(
+const executablePath = join(
   repositoryRoot,
   'dist/cli',
   `saer-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
 );
 
-/** The bundle the esbuild target writes, run under node. */
-export const bundleRunner: Runner = {
+const bundleRunner: Runner = {
   name: 'the bundle under node',
   command: process.execPath,
   leading: [bundlePath],

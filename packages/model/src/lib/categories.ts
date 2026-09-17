@@ -3,7 +3,7 @@ import { acceptedTextSchema } from './text.js';
 
 /**
  * A STRIDE category: one of the six threat classes of Microsoft's STRIDE
- * methodology. Écluse's threats all use this variant.
+ * methodology.
  */
 export const strideCategorySchema = z.object({
   methodology: z.literal('STRIDE'),

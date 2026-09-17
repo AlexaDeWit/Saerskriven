@@ -1,17 +1,24 @@
-import type { Model, ThreatStatus } from '@saerskriven/model';
+import type { CanvasNode } from '@saerskriven/canvas';
+import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
 import {
   assumptionId,
   elementId,
   parsedFixture,
 } from '@saerskriven/model/fixtures';
+import { initialState } from '../store/state.js';
+import {
+  actorElement,
+  mainDiagram,
+  processElement,
+  sampleThreat,
+} from '../store/store.fixtures.js';
+import { modelStore } from '../store/store.js';
+import { resetAnnouncements } from './announcements.js';
+import { resetConnecting } from './connecting.js';
+import { currentLayout } from './layout.js';
+import { resetTools } from './tools.js';
 
-/** The actor the fixture threat is attached to. */
-export const readerElement = elementId('actor-reader');
-
-/** The process the reader's flow points at. */
-export const studioElement = elementId('process-studio');
-
-/** The flow between the two, which the fixture threat also names. */
+/** The flow from the store fixture's actor to its process, which two threats name. */
 export const requestFlow = elementId('flow-request');
 
 /** The flow whose target belongs to no element. */
@@ -32,7 +39,7 @@ const document = {
   },
   diagrams: [
     {
-      id: 'diagram-main',
+      id: mainDiagram,
       title: 'Main',
       elements: [
         {
@@ -50,7 +57,7 @@ const document = {
         },
         {
           kind: 'actor',
-          id: readerElement,
+          id: actorElement,
           name: 'Reader',
           description: '',
           outOfScope: false,
@@ -60,7 +67,7 @@ const document = {
         },
         {
           kind: 'process',
-          id: studioElement,
+          id: processElement,
           name: 'Studio',
           description: '',
           outOfScope: false,
@@ -86,8 +93,8 @@ const document = {
           description: '',
           outOfScope: false,
           reasonOutOfScope: '',
-          source: { kind: 'attached', element: readerElement },
-          target: { kind: 'attached', element: studioElement },
+          source: { kind: 'attached', element: actorElement },
+          target: { kind: 'attached', element: processElement },
           waypoints: [],
           bidirectional: false,
         },
@@ -98,7 +105,7 @@ const document = {
           description: '',
           outOfScope: false,
           reasonOutOfScope: '',
-          source: { kind: 'attached', element: studioElement },
+          source: { kind: 'attached', element: processElement },
           target: { kind: 'free', position: { x: 500, y: 200 } },
           waypoints: [],
           bidirectional: false,
@@ -107,18 +114,9 @@ const document = {
     },
   ],
   threats: [
+    sampleThreat,
     {
-      id: 'threat-tampering',
-      number: 1,
-      title: 'A reader edits a model they may only read',
-      category: { methodology: 'STRIDE', category: 'tampering' },
-      severity: 'medium',
-      status: 'open',
-      description: '',
-      elements: [readerElement],
-    },
-    {
-      id: 'threat-disclosure',
+      id: 'threat-path-disclosure',
       number: 2,
       title: 'A model is read from a path the studio should not reach',
       category: { methodology: 'STRIDE', category: 'information-disclosure' },
@@ -185,3 +183,55 @@ export const flaggedCanvasModel = (
       })),
   };
 };
+
+/**
+ * Opens {@link canvasModel}, or the model given, with the selection given, and
+ * resets the announcements, the tool and the flow chooser a previous spec may
+ * have left behind.
+ */
+export const openCanvas = (
+  selection: readonly ElementId[] = [],
+  model: Model = canvasModel,
+): void => {
+  modelStore.setState({ ...initialState(model), selection }, true);
+  resetAnnouncements();
+  resetTools();
+  resetConnecting();
+};
+
+/**
+ * The node the store's current layout draws for an element, failing the test
+ * where the layout draws none.
+ */
+export const laidOutNode = (id: ElementId): CanvasNode => {
+  const node = currentLayout(modelStore.getState()).nodes.find(
+    (candidate) => candidate.id === id,
+  );
+  assert.isDefined(node, `the layout draws ${id}`);
+  return node;
+};
+
+/**
+ * A primary pointer event at a screen point, as a canvas hook reads one. The
+ * spec names the targets its hook reads, and another pointer where it needs
+ * one.
+ */
+export const primaryPointer = <
+  Targets extends {
+    readonly pointerId?: number;
+    readonly currentTarget?: EventTarget;
+    readonly target?: EventTarget;
+  },
+>(
+  at: Point,
+  targets: Targets,
+) => ({
+  button: 0,
+  clientX: at.x,
+  clientY: at.y,
+  isPrimary: true,
+  pointerId: 1,
+  preventDefault: vi.fn<() => void>(),
+  stopPropagation: vi.fn<() => void>(),
+  ...targets,
+});

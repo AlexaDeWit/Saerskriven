@@ -45,11 +45,10 @@
           {
             "env": "SAERSKRIVEN_FONTS_DIR"
           },
-          "{workspaceRoot}/test-data/ecluse.json",
-          "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",
+          "{workspaceRoot}/test-data/threat-dragon/feature-complete.json",
+          "{workspaceRoot}/test-data/saerskriven/two-diagrams.yaml",
           "{workspaceRoot}/test-data/otm/**/*",
-          "{workspaceRoot}/test-data/tmbom/**/*",
-          "{workspaceRoot}/threat-modelling/saerskriven.yaml"
+          "{workspaceRoot}/test-data/tmbom/**/*"
         ]
       }
     }

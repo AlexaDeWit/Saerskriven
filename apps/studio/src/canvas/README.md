@@ -143,7 +143,7 @@ rather than a shadow, so forced-colours mode keeps them.
 
 `fitViewport` in `viewport.ts` fits a box into the canvas extent with padding
 for the floating controls, within `zoomLimits`. React Flow's default minimum
-zoom of 0.5 cannot fit the full Écluse model. `FitOnOpen` fits from inside
+zoom of 0.5 cannot fit a large model. `FitOnOpen` fits from inside
 React Flow, which holds the canvas extent, whenever `modelAsOpened` returns a
 new model or the diagram on screen changes. That selector returns the present
 model only while both history stacks are empty, so an open, a close or another

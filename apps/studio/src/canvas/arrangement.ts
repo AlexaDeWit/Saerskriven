@@ -17,8 +17,7 @@ const arrangementSchema = z.enum([
 ]);
 type Arrangement = z.infer<typeof arrangementSchema>;
 
-/** Computes node offsets against selection bounds or equal gaps between fixed outer nodes. */
-export function arrangementMoves(
+function arrangementMoves(
   nodes: readonly CanvasNode[],
   operation: Arrangement,
 ): Extract<Action, { _tag: 'ArrangeElements' }>['moves'] {

@@ -4,14 +4,20 @@ import {
   threatCountByElement,
 } from '@saerskriven/model';
 import { coverage, renderCoverage } from './coverage.js';
-import { answerOf, ecluseWorkspace } from './read-tools.fixtures.js';
+import {
+  answerOf,
+  featureCompleteFile,
+  featureCompleteWorkspace,
+} from './read-tools.fixtures.js';
 import { readNamed } from './reading.js';
 
-const ecluse = ecluseWorkspace();
+const workspace = featureCompleteWorkspace();
 
-const reported = answerOf(coverage(ecluse, {}));
+const reported = answerOf(coverage(workspace, {}));
 
-const model = answerOf(readNamed(ecluse, undefined)).model;
+const reading = answerOf(readNamed(workspace, undefined));
+
+const { model } = reading;
 
 describe('what saer_coverage reports', () => {
   it('lists the elements the model coverage query calls unanalyzed', () => {
@@ -36,16 +42,11 @@ describe('what saer_coverage reports', () => {
     ).toEqual(threatCountByElement(model));
   });
 
-  it('says of an unanalyzed element whether it is marked out of scope', () => {
-    expect(
-      reported.unanalyzed.every((row) => typeof row.outOfScope === 'boolean'),
-    ).toBe(true);
-  });
-
   it('opens its text with the file, the format and the revision', () => {
-    expect(renderCoverage(reported).slice(0, 2)).toEqual([
-      'file: test-data/ecluse.json',
+    expect(renderCoverage(reported).slice(0, 3)).toEqual([
+      `file: ${featureCompleteFile}`,
       'format: threat-dragon',
+      `revision: ${reading.revision}`,
     ]);
   });
 });

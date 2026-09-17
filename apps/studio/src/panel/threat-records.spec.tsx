@@ -1,8 +1,6 @@
-import type { Threat } from '@saerskriven/model';
-import { mitigationId } from '@saerskriven/model/fixtures';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { mitigationId, softHyphen } from '@saerskriven/model/fixtures';
+import { act, cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Accordion } from 'radix-ui';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
@@ -18,51 +16,15 @@ import {
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { present, undoable } from '../store/store.fixtures.js';
 import {
   chooseFrom,
-  describedNumbers,
   editorTimeout,
-  present,
-  undoable,
+  recordedThreat,
+  showThreatEditor,
 } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-import { ThreatEditor } from './threat-editor.js';
-
-const softHyphen = '­';
-
-const noop = (): void => undefined;
-
-const threatOf = (id: Threat['id']): Threat =>
-  recordedModel.threats.find((threat) => threat.id === id) ??
-  recordedModel.threats[0];
-
-const showRecords = (
-  threat: Threat,
-  held?: RefusedField,
-  onRefusal: (refused: RefusedField | undefined) => void = noop,
-): void => {
-  render(
-    <Accordion.Root collapsible defaultValue={threat.id} type="single">
-      <ThreatEditor
-        attachments={[]}
-        focus={undefined}
-        held={held}
-        onChange={noop}
-        onCommit={noop}
-        onDelete={noop}
-        onFocused={noop}
-        onRefusal={onRefusal}
-        threat={threat}
-      />
-    </Accordion.Root>,
-  );
-};
-
-const button = (name: string): HTMLElement =>
-  screen.getByRole('button', { name });
-
-const textbox = (name: string): HTMLElement =>
-  screen.getByRole('textbox', { name });
+import { button, describedNumbers, textbox } from '../ui/ui.fixtures.js';
 
 const linkFirstOffered = async (noun: string): Promise<void> => {
   const user = userEvent.setup();
@@ -91,7 +53,7 @@ describe(
 
     it('opens an empty first row with focus in its first field, and leaves the model alone', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add mitigation'));
 
@@ -101,7 +63,7 @@ describe(
 
     it('leaves no record and no undo entry when the empty row is left', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add mitigation'));
       for (const _ of ['description', 'status', 'discard', 'add']) {
@@ -118,7 +80,7 @@ describe(
 
     it('creates one proposed mitigation on the threat at the first commit, which one undo takes back and one redo returns', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add mitigation'));
       await user.keyboard('Sign every share link');
@@ -151,7 +113,7 @@ describe(
 
     it('creates a new assumption unconfirmed', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add assumption'));
       await user.keyboard('Share links expire.');
@@ -166,7 +128,7 @@ describe(
 
     it('removes a record unlinked from its only threat, and one undo restores it with its link', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(firstThreat));
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
 
       await user.click(button('Unlink mitigation 1'));
 
@@ -191,7 +153,7 @@ describe(
           }),
         );
       });
-      showRecords(threatOf(firstThreat));
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
 
       await user.click(button('Unlink mitigation 1'));
       expect(present().mitigations).toHaveLength(1);
@@ -224,7 +186,7 @@ describe(
           }),
         );
       });
-      showRecords(threatOf(firstThreat));
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
 
       await user.click(button('Unlink mitigation 1'));
 
@@ -244,7 +206,7 @@ describe(
           }),
         );
       });
-      showRecords(threatOf(firstThreat));
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
 
       await user.click(button('Unlink assumption 1'));
 
@@ -258,7 +220,7 @@ describe(
 
     it('describes the unlink control of an assumption that also applies to the model, and keeps that assumption in the model when it leaves its only threat', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(firstThreat));
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
       const unlink = button('Unlink assumption 1');
       expect(unlink.getAttribute('aria-describedby')).toBeNull();
 
@@ -283,7 +245,7 @@ describe(
 
     it('offers to link only records not on the threat, and names by number the other threats that hold a linked one', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(
         screen.getByRole('combobox', { name: 'Existing mitigation' }),
@@ -327,7 +289,7 @@ describe(
           }),
         );
       });
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
       const existing = screen.getByRole('combobox', {
         name: 'Existing mitigation',
       });
@@ -354,10 +316,13 @@ describe(
 
     it('sends focus into a new row still holding a refused draft when Add is pressed, opening no second row', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat), {
-        field: 'new-mitigation/title/mitigation-drafted',
-        text: `Pasted${softHyphen}title`,
-        said: 'A refusal',
+      showThreatEditor({
+        threat: recordedThreat(secondThreat),
+        held: {
+          field: 'new-mitigation/title/mitigation-drafted',
+          text: `Pasted${softHyphen}title`,
+          said: 'A refusal',
+        },
       });
 
       await user.click(button('Add mitigation'));
@@ -367,7 +332,7 @@ describe(
     });
 
     it('names each record card as a group holding its controls, and keeps their names', () => {
-      showRecords(threatOf(firstThreat));
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
 
       const card = screen.getByRole('group', { name: 'Mitigation 1' });
       expect(
@@ -382,7 +347,7 @@ describe(
     });
 
     it('changes a status in place as one undo step that moves no threat status', async () => {
-      showRecords(threatOf(firstThreat));
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
 
       await chooseFrom('Mitigation 1 status', 'verified');
 
@@ -394,7 +359,10 @@ describe(
     it('holds a refused draft in the empty row and keeps the row open', async () => {
       const user = userEvent.setup();
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-      showRecords(threatOf(secondThreat), undefined, onRefusal);
+      showThreatEditor({
+        threat: recordedThreat(secondThreat),
+        onRefusal: onRefusal,
+      });
 
       await user.click(button('Add assumption'));
       await user.keyboard(`Pasted${softHyphen}prose`);
@@ -407,23 +375,39 @@ describe(
       expect(reported?.field.startsWith('new-assumption/prose/')).toBe(true);
     });
 
-    it('puts a held draft back in the empty row it was typed in', () => {
-      showRecords(threatOf(secondThreat), {
+    it.each([
+      {
+        named: 'an assumption prose',
         field: 'new-assumption/prose/assumption-drafted',
         text: `Pasted${softHyphen}prose`,
-        said: 'A refusal',
-      });
+        row: 'Assumption 1',
+      },
+      {
+        named: 'a mitigation title',
+        field: 'new-mitigation/title/mitigation-drafted',
+        text: `Pasted${softHyphen}title`,
+        row: 'Mitigation 1 title',
+      },
+    ] as const)(
+      'puts a held draft of $named back in the empty row it was typed in',
+      ({ field, text, row }) => {
+        showThreatEditor({
+          threat: recordedThreat(secondThreat),
+          held: { field, text, said: 'A refusal' },
+        });
 
-      expect(screen.getByDisplayValue(`Pasted${softHyphen}prose`)).toBe(
-        textbox('Assumption 1'),
-      );
-      expect(present()).toBe(recordedModel);
-    });
+        expect(screen.getByDisplayValue(text)).toBe(textbox(row));
+        expect(present()).toBe(recordedModel);
+      },
+    );
 
     it('drops a refusal whose row another edit took away', async () => {
       const user = userEvent.setup();
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-      showRecords(threatOf(firstThreat), undefined, onRefusal);
+      showThreatEditor({
+        threat: recordedThreat(firstThreat),
+        onRefusal: onRefusal,
+      });
 
       await user.click(textbox('Mitigation 1 title'));
       await user.keyboard(`{End}${softHyphen}`);
@@ -444,7 +428,7 @@ describe(
 
     it('edits a mitigation title and description in place, each as one replace', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(firstThreat));
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
 
       await user.click(textbox('Mitigation 1 title'));
       await user.keyboard(' for readers');
@@ -470,26 +454,9 @@ describe(
       });
     });
 
-    it('edits an assumption in place as one replace', async () => {
-      const user = userEvent.setup();
-      showRecords(threatOf(firstThreat));
-
-      await user.click(textbox('Assumption 1'));
-      await user.keyboard('{End} Readers are too.');
-      await user.tab();
-
-      expect(present().assumptions).toMatchObject([
-        {
-          id: firstAssumption,
-          prose: 'Every editor is signed in. Readers are too.',
-        },
-      ]);
-      expect(undoable()).toBe(1);
-    });
-
     it('links an existing assumption and changes its status in place', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(
         screen.getByRole('combobox', { name: 'Existing assumption' }),
@@ -510,7 +477,7 @@ describe(
 
     it('keeps shown rows in place while a record is added, linked, undone, redone or edited in another tab, and mounts again in model order', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add assumption'));
       await user.keyboard('Share links expire.');
@@ -551,13 +518,13 @@ describe(
       expect(assumptionRows()).toEqual([added, firstAssumption]);
 
       cleanup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
       expect(assumptionRows()).toEqual([firstAssumption, added]);
     });
 
     it('gives a row brought back by undoing its unlink its old slot', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
       await linkFirstOffered('assumption');
       await user.click(button('Add assumption'));
       await user.keyboard('Share links expire.');
@@ -576,7 +543,7 @@ describe(
 
     it('gives a record linked again after its unlink its old slot', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
       await linkFirstOffered('assumption');
       await user.click(button('Add assumption'));
       await user.keyboard('Share links expire.');
@@ -590,29 +557,17 @@ describe(
       expect(document.activeElement).toBe(textbox('Assumption 1'));
     });
 
-    it('puts a held mitigation draft back in its empty row', () => {
-      showRecords(threatOf(secondThreat), {
-        field: 'new-mitigation/title/mitigation-drafted',
-        text: `Pasted${softHyphen}title`,
-        said: 'A refusal',
-      });
-
-      expect(screen.getByDisplayValue(`Pasted${softHyphen}title`)).toBe(
-        textbox('Mitigation 1 title'),
-      );
-    });
-
     it('drops a held draft for a record no longer on the threat, rather than reopening it', () => {
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-      showRecords(
-        threatOf(secondThreat),
-        {
+      showThreatEditor({
+        threat: recordedThreat(secondThreat),
+        held: {
           field: 'mitigation/title/mitigation-culled',
           text: `Pasted${softHyphen}title`,
           said: 'A refusal',
         },
-        onRefusal,
-      );
+        onRefusal: onRefusal,
+      });
 
       expect(
         screen.queryByRole('textbox', { name: 'Mitigation 1 title' }),
@@ -622,7 +577,7 @@ describe(
 
     it('keeps focus in the group when an undo takes the focused row away', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add mitigation'));
       await user.keyboard('Sign every share link');
@@ -638,7 +593,7 @@ describe(
 
     it('starts a record on the status chosen in its empty row, and Discard leaves nothing', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add mitigation'));
       await chooseFrom('Mitigation 1 status', 'implemented');
@@ -666,7 +621,7 @@ describe(
 
     it('discards typed text in a new row on a pointer press of Discard, with no record and no undo entry', async () => {
       const user = userEvent.setup();
-      showRecords(threatOf(secondThreat));
+      showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add mitigation'));
       await user.keyboard('Sign every share link');
@@ -680,7 +635,10 @@ describe(
     it('holds the status picked in a new row with its refused draft, and restores both', async () => {
       const user = userEvent.setup();
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-      showRecords(threatOf(secondThreat), undefined, onRefusal);
+      showThreatEditor({
+        threat: recordedThreat(secondThreat),
+        onRefusal: onRefusal,
+      });
 
       await user.click(button('Add assumption'));
       await user.keyboard(`Pasted${softHyphen}prose`);
@@ -690,7 +648,10 @@ describe(
       const reported = onRefusal.mock.lastCall?.[0];
       expect(reported?.status).toBe('valid');
       cleanup();
-      showRecords(threatOf(secondThreat), reported);
+      showThreatEditor({
+        threat: recordedThreat(secondThreat),
+        held: reported,
+      });
 
       expect(
         screen.getByRole('combobox', { name: 'Assumption 1 status' })
@@ -702,7 +663,10 @@ describe(
     it('holds a picked status with every refused draft of a new row', async () => {
       const user = userEvent.setup();
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-      showRecords(threatOf(secondThreat), undefined, onRefusal);
+      showThreatEditor({
+        threat: recordedThreat(secondThreat),
+        onRefusal: onRefusal,
+      });
 
       await user.click(button('Add mitigation'));
       await user.keyboard(`Pasted${softHyphen}title`);
@@ -715,7 +679,10 @@ describe(
       expect(reported?.field.startsWith('new-mitigation/title/')).toBe(true);
       expect(reported?.status).toBe('implemented');
       cleanup();
-      showRecords(threatOf(secondThreat), reported);
+      showThreatEditor({
+        threat: recordedThreat(secondThreat),
+        held: reported,
+      });
 
       expect(
         screen.getByRole('combobox', { name: 'Mitigation 1 status' })

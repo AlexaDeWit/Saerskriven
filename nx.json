@@ -25,28 +25,34 @@
       "{workspaceRoot}/threat-modelling/**/*"
     ],
     "cliTestFixtures": [
-      "{workspaceRoot}/test-data/ecluse.json",
-      "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",
+      "{workspaceRoot}/test-data/threat-dragon/feature-complete.json",
+      "{workspaceRoot}/test-data/saerskriven/feature-complete.yaml",
+      "{workspaceRoot}/test-data/saerskriven/two-diagrams.yaml",
       "{workspaceRoot}/test-data/adversarial/deep-nesting.json",
       "{workspaceRoot}/test-data/adversarial/typst-injection.yaml",
       "{workspaceRoot}/test-data/absent.json",
-      "{workspaceRoot}/test-data/render/**/*",
-      "{workspaceRoot}/threat-modelling/saerskriven.yaml"
+      "{workspaceRoot}/test-data/render/two-diagrams-*.snapshot.svg",
+      "{workspaceRoot}/test-data/render/two-diagrams-*.snapshot.png",
+      "{workspaceRoot}/test-data/render/two-diagrams.register.snapshot.md",
+      "{workspaceRoot}/test-data/render/two-diagrams.snapshot.pdf.sha256"
     ],
     "studioTestFixtures": [
       "{workspaceRoot}/test-data/otm/**/*",
-      "{workspaceRoot}/test-data/ecluse.json",
-      "{workspaceRoot}/test-data/studio/recovery-v0.4.0.json",
-      "{workspaceRoot}/test-data/threat-dragon/schema/threat-dragon-v2.schema.json",
-      "{workspaceRoot}/threat-modelling/saerskriven.yaml"
+      "{workspaceRoot}/test-data/threat-dragon/feature-complete.json",
+      "{workspaceRoot}/test-data/saerskriven/feature-complete.yaml",
+      "{workspaceRoot}/test-data/studio/recovery-v0.4.0.json"
     ],
     "studioE2eFixtures": [
       "{workspaceRoot}/test-data/otm/**/*",
-      "{workspaceRoot}/test-data/ecluse.json",
-      "{workspaceRoot}/test-data/ecluse.model.json",
-      "{workspaceRoot}/test-data/saerskriven.model.json",
-      "{workspaceRoot}/test-data/saerskriven/ecluse.yaml",
-      "{workspaceRoot}/test-data/render/**/*"
+      "{workspaceRoot}/test-data/every-glyph.model.json",
+      "{workspaceRoot}/test-data/two-diagrams.model.json",
+      "{workspaceRoot}/test-data/saerskriven/two-diagrams.yaml",
+      "{workspaceRoot}/test-data/threat-dragon/feature-complete.json",
+      "{workspaceRoot}/test-data/render/two-diagrams-storefront.snapshot.svg",
+      "{workspaceRoot}/test-data/render/two-diagrams-storefront.snapshot.png",
+      "{workspaceRoot}/test-data/render/two-diagrams.register.snapshot.md",
+      "{workspaceRoot}/test-data/render/two-diagrams.snapshot.typ",
+      "{workspaceRoot}/test-data/render/two-diagrams.snapshot.pdf.sha256"
     ],
     // Root configuration imported by the studio's Vite configuration.
     "viteGlobals": ["testConfiguration", "{workspaceRoot}/vite.shared.mts"]

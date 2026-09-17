@@ -105,25 +105,21 @@ never change a threat's status.
 
 ## Tests
 
-The suite carries a representability gate over the whole model vocabulary.
-`ecluseFixture` transcribes Écluse's real Threat Dragon model into the internal
-form, and `vocabularyComplementFixture` covers what that model never reaches.
-Together they must span every element kind, boundary shape, endpoint kind,
-threat status, severity, mitigation status, and assumption status the schemas
-declare, and every category of every enumerated methodology, so a construct
-that stops being representable fails a named assertion or the type-check. The
-suite holds `ecluseFixture` against
-[`test-data/ecluse.model.json`](../../test-data/ecluse.model.json) as a file
-snapshot, which `packages/formats` compares its own read of
-[`test-data/ecluse.json`](../../test-data/ecluse.json) against
-([test-data](../../test-data/README.md)).
+The suite pins the decisions the schemas and `parseModel` make over small
+hand-written models: the refusals a schema holds, each model-wide rule
+`parseModel` adds, and the operations, each of which leaves its input
+untouched and returns a model that parses. Spread across the whole
+vocabulary is the job of `modelInputArbitrary`, which the formats suite
+writes and reads back ([`packages/formats`](../formats/README.md)).
 
 `@saerskriven/model/fixtures` is the one home for the fixture helpers every
 suite in the workspace shares: the id parsers (`elementId`, `diagramId`,
 `threatId`, `mitigationId`, `assumptionId`), `modelInputArbitrary`, the
-fast-check generator of `parseModel` input, and `parsedFixture`, which throws
+fast-check generator of `parseModel` input, `parsedFixture`, which throws
 where a fixture document stops parsing, since that is a broken suite rather
-than a case under test. The subpath resolves to source and stays out of the
+than a case under test, `committedModel`, which reads a model under
+`test-data`, and `committedDiagrams`, the diagrams the canvas and render suites
+draw from those files. The subpath resolves to source and stays out of the
 library build. Who may import it is a workspace rule, stated in
 [`CODING.md`](../../CODING.md#tests).
 

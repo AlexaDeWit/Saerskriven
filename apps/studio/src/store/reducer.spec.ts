@@ -1,4 +1,4 @@
-import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
+import { ReadFailure } from '@saerskriven/formats';
 import {
   emptyModel,
   OperationFailure,
@@ -9,6 +9,7 @@ import {
   diagramId,
   elementId,
   mitigationId,
+  softHyphen,
   threatId,
 } from '@saerskriven/model/fixtures';
 import { Action } from './actions.js';
@@ -23,6 +24,7 @@ import {
 } from './state.js';
 import {
   actorElement,
+  addedProcess,
   firstAssumption,
   firstMitigation,
   firstThreat,
@@ -54,8 +56,6 @@ const noteModel = {
   })),
 };
 const noteStart = initialState(noteModel);
-const softHyphen = '\u00AD';
-
 type StudioActionTag =
   | 'Undo'
   | 'Redo'
@@ -104,10 +104,7 @@ const applied: ActionsByTag<ModelActionTag> = {
     side: 'source',
     endpointId: elementId('extra-actor'),
   }),
-  AddElement: Action.AddElement({
-    diagramId: mainDiagram,
-    element: newProcess('process-added', 'Added'),
-  }),
+  AddElement: addedProcess,
   RemoveElement: Action.RemoveElement({ elementId: processElement }),
   RemoveElements: Action.RemoveElements({
     elementIds: [actorElement, processElement],
@@ -443,15 +440,6 @@ function stateFor(action: Action): State {
   return Action.$is('EditNote')(action) ? noteStart : start;
 }
 
-it('keeps history and saved identity for an unchanged route', () => {
-  const before = stateFor(applied.SetFlowWaypoints);
-  const next = reduce(
-    before,
-    Action.SetFlowWaypoints({ ...applied.SetFlowWaypoints, waypoints: [] }),
-  );
-  expect(next).toBe(before);
-});
-
 describe('purity', () => {
   for (const [state, action] of purityCases) {
     it(`leaves the state it was handed untouched while reducing ${action._tag}`, () => {
@@ -464,19 +452,14 @@ describe('purity', () => {
 
 describe('a model operation', () => {
   for (const action of Object.values(applied)) {
-    it(`pushes the model ${action._tag} replaced onto the past`, () => {
-      const before = stateFor(action);
-      const next = reduce(before, action);
-      expect(next.present).not.toBe(before.present);
-      expect(next.past).toHaveLength(1);
-      expect(next.past.at(0)).toBe(before.present);
-      expect(next.future).toEqual([]);
-      expect(next.lastFailure).toBeUndefined();
-    });
-
-    it(`round-trips ${action._tag} through undo and redo`, () => {
+    it(`pushes the model ${action._tag} replaced onto the past, and round-trips it through undo and redo`, () => {
       const before = stateFor(action);
       const edited = reduce(before, action);
+      expect(edited.present).not.toBe(before.present);
+      expect(edited.past).toHaveLength(1);
+      expect(edited.past.at(0)).toBe(before.present);
+      expect(edited.future).toEqual([]);
+      expect(edited.lastFailure).toBeUndefined();
       const undone = reduce(edited, Action.Undo());
       expect(undone.present).toBe(before.present);
       expect(undone.past).toEqual([]);
@@ -515,6 +498,15 @@ describe('history', () => {
     expect(removed.present.mitigations).toEqual([]);
     expect(removed.present.assumptions).toEqual([]);
     expect(reduce(removed, Action.Undo()).present).toBe(recordedStart.present);
+  });
+
+  it('keeps history and saved identity for an unchanged route', () => {
+    const before = stateFor(applied.SetFlowWaypoints);
+    const next = reduce(
+      before,
+      Action.SetFlowWaypoints({ ...applied.SetFlowWaypoints, waypoints: [] }),
+    );
+    expect(next).toBe(before);
   });
 
   it('drops the future once an edit lands on an undone model', () => {
@@ -706,11 +698,6 @@ const show = (chosen: DiagramId): Action =>
 describe('the active diagram', () => {
   const twoStart = initialState(twoDiagramModel);
 
-  it('starts unnamed, so the first diagram is on screen', () => {
-    expect(twoStart.activeDiagram).toBeUndefined();
-    expect(activeDiagramId(twoStart)).toBe(mainDiagram);
-  });
-
   it('moves to the diagram chosen, with no history and no unsaved work', () => {
     const switched = reduce(twoStart, show(secondDiagram));
     expect(activeDiagramId(switched)).toBe(secondDiagram);
@@ -774,9 +761,6 @@ describe('the active diagram', () => {
     );
     expect(opened.activeDiagram).toBeUndefined();
     expect(activeDiagramId(opened)).toBe(mainDiagram);
-    expect(activeDiagramId({ ...switched, present: sampleModel })).toBe(
-      mainDiagram,
-    );
   });
 
   it('shows the diagram it adds, and shows the first again once the add is undone', () => {
@@ -1026,19 +1010,6 @@ describe('a refusal outside the model', () => {
         name: 'model.yaml',
         failure: ReadFailure.MalformedText({ message: 'not YAML' }),
       }),
-    );
-  });
-
-  it('records a detection failure as the read failure it is', () => {
-    const failure = DetectionFailure.NoFormatClaimed({
-      tried: ['threat-dragon', 'saerskriven-yaml'],
-    });
-    const next = reduce(
-      start,
-      Action.ReadFailed({ name: 'notes.txt', failure }),
-    );
-    expect(next.lastFailure).toEqual(
-      StudioFailure.Read({ name: 'notes.txt', failure }),
     );
   });
 

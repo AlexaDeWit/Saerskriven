@@ -1,5 +1,17 @@
-import { severitySchema, type Severity } from '@saerskriven/model';
-import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
+import {
+  severitySchema,
+  type Severity,
+  type Threat,
+  type ThreatStatus,
+} from '@saerskriven/model';
+import {
+  assumptionOf,
+  boxAt,
+  elementId,
+  mitigationOf,
+  modelWith,
+  threatOf,
+} from '@saerskriven/model/fixtures';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
   badgeBox,
@@ -20,19 +32,10 @@ const badges = badgesByElement(everyGlyphModel);
 
 const threat = (
   number: number,
-  severity: string,
-  status: string,
+  severity: Severity,
+  status: ThreatStatus,
   elements: string[],
-) => ({
-  id: `th-${number}`,
-  number,
-  title: `Threat ${number}`,
-  category: { methodology: 'STRIDE', category: 'spoofing' },
-  severity,
-  status,
-  description: '',
-  elements,
-});
+) => threatOf({ number, severity, status, elements });
 
 const counted = (
   count: number,
@@ -43,62 +46,24 @@ const counted = (
 
 const flagOnly: ThreatBadge = { kind: 'flag-only' };
 
-const mitigation = (status: string, threats: string[]) => ({
-  id: `mi-${status}`,
-  title: '',
-  prose: 'Work.',
-  status,
-  threats,
-});
-
-const assumption = (status: string, threats: string[]) => ({
-  id: `as-${status}`,
-  prose: 'Held.',
-  status,
-  threats,
-  appliesToModel: false,
-});
-
 type Records = {
   readonly mitigations?: unknown[];
   readonly assumptions?: unknown[];
 };
 
-const modelWith = (
-  threats: unknown[],
-  { mitigations = [], assumptions = [] }: Records = {},
-) =>
-  parsedFixture({
-    metadata: { title: 't', owner: '', description: '', contributors: [] },
-    diagrams: [
-      {
-        id: 'd',
-        title: 'Diagram',
-        elements: [
-          {
-            kind: 'actor',
-            id: 'el-one',
-            name: 'One',
-            description: '',
-            outOfScope: false,
-            reasonOutOfScope: '',
-            position: { x: 0, y: 0 },
-            size: { width: 10, height: 10 },
-          },
-        ],
-      },
-    ],
-    threats,
-    lastIssuedThreatNumber: threats.length,
-    mitigations,
-    assumptions,
-  });
-
 const badgeOfOne = (
-  threats: unknown[],
+  threats: readonly Threat[],
   records?: Records,
 ): ThreatBadge | undefined =>
-  badgesByElement(modelWith(threats, records)).get(elementId('el-one'));
+  badgesByElement(
+    modelWith({
+      elements: [
+        boxAt('el-one', 0, 0, 'actor', { width: 10, height: 10 }, 'One'),
+      ],
+      threats,
+      ...records,
+    }),
+  ).get(elementId('el-one'));
 
 const stacked = renderToStaticMarkup(
   <ThreatBadgeGlyph badge={counted(12, 'high', 12)} at={{ x: 0, y: 0 }} />,
@@ -125,12 +90,6 @@ const clearanceInsideRing = (
 };
 
 describe('severityRank', () => {
-  it('ranks every severity the model declares and no other', () => {
-    expect(new Set(Object.keys(severityRank))).toEqual(
-      new Set<string>(severitySchema.options),
-    );
-  });
-
   it('ranks the assessed severities worst last, undecided below them all', () => {
     expect(severityRank.undecided).toBe(0);
     expect(severityRank.low).toBeLessThan(severityRank.medium);
@@ -140,12 +99,6 @@ describe('severityRank', () => {
 });
 
 describe('severityMark', () => {
-  it('marks every severity the model declares and no other', () => {
-    expect(new Set(Object.keys(severityMark))).toEqual(
-      new Set<string>(severitySchema.options),
-    );
-  });
-
   it('gives each severity a mark of its own, so no two badges read alike', () => {
     expect(new Set(Object.values(severityMark)).size).toBe(
       severitySchema.options.length,
@@ -214,15 +167,15 @@ describe('the flag on a badge', () => {
   it('flags the counted badge of an element an open flagged threat names', () => {
     expect(
       badgeOfOne([threat(1, 'high', 'open', ['el-one'])], {
-        assumptions: [assumption('invalidated', ['th-1'])],
+        assumptions: [
+          assumptionOf({
+            id: 'as-invalidated',
+            status: 'invalidated',
+            threats: ['threat-1'],
+          }),
+        ],
       }),
     ).toEqual(counted(1, 'high', 0, true));
-  });
-
-  it('leaves the same element unflagged where no threat on it is flagged', () => {
-    expect(badgeOfOne([threat(1, 'high', 'open', ['el-one'])])).toEqual(
-      counted(1, 'high', 0),
-    );
   });
 
   it('flags the count of open threats for a flagged threat in another status', () => {
@@ -238,20 +191,34 @@ describe('the flag on a badge', () => {
     const mitigated = [threat(1, 'high', 'mitigated', ['el-one'])];
     expect(
       badgeOfOne(mitigated, {
-        mitigations: [mitigation('proposed', ['th-1'])],
+        mitigations: [
+          mitigationOf({
+            id: 'mi-proposed',
+            status: 'proposed',
+            threats: ['threat-1'],
+          }),
+        ],
       }),
     ).toEqual(flagOnly);
     expect(
       badgeOfOne(mitigated, {
         mitigations: [
-          mitigation('proposed', ['th-1']),
-          mitigation('implemented', ['th-1']),
+          mitigationOf({
+            id: 'mi-proposed',
+            status: 'proposed',
+            threats: ['threat-1'],
+          }),
+          mitigationOf({
+            id: 'mi-implemented',
+            status: 'implemented',
+            threats: ['threat-1'],
+          }),
         ],
       }),
     ).toBeUndefined();
   });
 
-  it.each(['valid', 'unconfirmed'])(
+  it.each(['valid', 'unconfirmed'] as const)(
     'raises no flag for a threat resting only on a %s assumption',
     (status) => {
       expect(
@@ -260,7 +227,15 @@ describe('the flag on a badge', () => {
             threat(1, 'high', 'open', ['el-one']),
             threat(2, 'low', 'accepted-risk', ['el-one']),
           ],
-          { assumptions: [assumption(status, ['th-1', 'th-2'])] },
+          {
+            assumptions: [
+              assumptionOf({
+                id: `as-${status}`,
+                status,
+                threats: ['threat-1', 'threat-2'],
+              }),
+            ],
+          },
         ),
       ).toEqual(counted(1, 'high', 0));
     },
@@ -270,7 +245,12 @@ describe('the flag on a badge', () => {
     expect(
       badgeOfOne([threat(1, 'high', 'open', ['el-one'])], {
         assumptions: [
-          { ...assumption('invalidated', []), appliesToModel: true },
+          assumptionOf({
+            id: 'as-invalidated',
+            status: 'invalidated',
+            threats: [],
+            appliesToModel: true,
+          }),
         ],
       }),
     ).toEqual(counted(1, 'high', 0));

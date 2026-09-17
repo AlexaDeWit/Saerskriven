@@ -1,61 +1,22 @@
+import type { Assumption, Model } from '@saerskriven/model';
 import {
-  assumptionSchema,
-  mitigationSchema,
-  parseModel,
-  threatSchema,
-  type Assumption,
-  type Model,
-  type Threat,
-} from '@saerskriven/model';
-import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
+  assumptionOf,
+  mitigationOf,
+  modelFrom,
+  repositoryRoot,
+  threatOf,
+} from '@saerskriven/model/fixtures';
 import { join } from 'node:path';
+import { everyGlyphModel, twoDiagramsModel } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import { badgeLabel } from './register-labels.js';
 import { deepestProse } from './register-tree.js';
 import { renderTypst } from './typst-document.js';
 
-const repositoryRoot = join(import.meta.dirname, '../../../..');
-
-const goldenPath = join(repositoryRoot, 'test-data/render/ecluse.snapshot.typ');
-
-const committedModel = (name: string): Model =>
-  Either.getOrThrow(
-    parseModel(JSON.parse(readFileSync(join(repositoryRoot, name), 'utf8'))),
-  );
-
-const ecluseModel = committedModel('test-data/ecluse.model.json');
-
-const saerskrivenModel = committedModel('test-data/saerskriven.model.json');
-
-const threatOf = (fields: {
-  readonly number: number;
-  readonly title?: string;
-  readonly description?: string;
-  readonly status?: Threat['status'];
-}): Threat =>
-  threatSchema.parse({
-    id: `threat-${String(fields.number)}`,
-    title: `Threat ${String(fields.number)}`,
-    category: { methodology: 'STRIDE', category: 'tampering' },
-    severity: 'medium',
-    status: 'open',
-    description: '',
-    elements: [],
-    ...fields,
-  });
-
-const modelOf = (threats: readonly Threat[], title = 'Sample'): Model => ({
-  metadata: { title, owner: '', description: '', contributors: [] },
-  diagrams: [],
-  threats: [...threats],
-  lastIssuedThreatNumber: Math.max(
-    0,
-    ...threats.map((threat) => threat.number),
-  ),
-  mitigations: [],
-  assumptions: [],
-});
+const goldenPath = join(
+  repositoryRoot,
+  'test-data/render/two-diagrams.snapshot.typ',
+);
 
 const sourceOf = (model: Model): string => renderTypst(model).typst;
 
@@ -71,22 +32,19 @@ const recordsModel = (
     readonly appliesToModel?: boolean;
   }[] = [],
 ): Model => ({
-  ...modelOf([threatOf({ number: 1 }), threatOf({ number: 2 })]),
+  ...modelFrom({ threats: [threatOf({ number: 1 }), threatOf({ number: 2 })] }),
   mitigations: mitigations.map((fields, index) =>
-    mitigationSchema.parse({
+    mitigationOf({
       id: `mitigation-${String(index)}`,
-      title: '',
-      status: 'proposed',
       threats: ['threat-1'],
       ...fields,
     }),
   ),
   assumptions: assumptions.map((fields, index) =>
-    assumptionSchema.parse({
+    assumptionOf({
       id: `assumption-${String(index)}`,
       status: 'valid',
       threats: ['threat-1'],
-      appliesToModel: false,
       ...fields,
     }),
   ),
@@ -110,7 +68,9 @@ const between = (source: string, from: string, to: string): string =>
   source.slice(source.indexOf(from), source.indexOf(to, source.indexOf(from)));
 
 const proseOf = (written: string): string =>
-  sourceOf(modelOf([threatOf({ number: 1, description: written })]));
+  sourceOf(
+    modelFrom({ threats: [threatOf({ number: 1, description: written })] }),
+  );
 
 const nested = (levels: number): string => `${'> '.repeat(levels)}bottom`;
 
@@ -121,31 +81,32 @@ const withoutLiterals = (source: string): string =>
   source.replace(/"(?:[^"\\]|\\[\s\S])*"/gu, '""');
 
 describe('the Typst document', () => {
-  it('matches the golden file committed under test-data', async () => {
-    await expect(sourceOf(ecluseModel)).toMatchFileSnapshot(goldenPath);
+  it('matches the golden file committed under test-data, on a second run too', async () => {
+    const first = sourceOf(twoDiagramsModel);
+    const second = sourceOf(twoDiagramsModel);
+    expect(second).toBe(first);
+    await expect(second).toMatchFileSnapshot(goldenPath);
   });
 
   it('keeps Markdown navigation out of the PDF text', () => {
-    const source = sourceOf(modelOf([threatOf({ number: 7 })]));
+    const source = sourceOf(modelFrom({ threats: [threatOf({ number: 7 })] }));
     expect(source).not.toContain('<a name="threat-7">');
     expect(source).not.toContain('(#threat-7)');
   });
 
   it('draws every diagram of the model, ahead of the register', () => {
-    const source = sourceOf(saerskrivenModel);
+    const source = sourceOf(twoDiagramsModel);
     const images = source.split('#image(bytes(').length - 1;
-    expect(images).toBe(saerskrivenModel.diagrams.length);
+    expect(images).toBe(twoDiagramsModel.diagrams.length);
     expect(source.indexOf('#image(bytes(')).toBeLessThan(
       source.indexOf('threat register'),
     );
   });
 
   it('reports a flow endpoint no diagram could draw', () => {
-    expect(renderTypst(ecluseModel).unplaced).toEqual([]);
-  });
-
-  it('writes the same source twice for the same model', () => {
-    expect(sourceOf(ecluseModel)).toBe(sourceOf(ecluseModel));
+    expect(renderTypst(everyGlyphModel).unplaced).toEqual([
+      { flow: 'el-replay', side: 'source', element: 'el-request' },
+    ]);
   });
 });
 
@@ -179,7 +140,9 @@ describe('a value out of the model', () => {
 
   it('writes a control character as a Typst escape', () => {
     const title = `bell${String.fromCodePoint(7)}end`;
-    expect(sourceOf(modelOf([], title))).toContain('bell\\u{7}end');
+    expect(sourceOf(modelFrom({ threats: [], title: title }))).toContain(
+      'bell\\u{7}end',
+    );
   });
 });
 
@@ -324,17 +287,6 @@ describe("a threat's records", () => {
     expect(source).toContain('#"<b onclick=\\"x()\\">"');
     expect(withoutLiterals(source)).not.toContain('<b');
   });
-
-  it('writes record prose past the depth bound, counted from the register root, as the bytes the author wrote', () => {
-    const admitted = sourceOf(
-      recordsModel([{ prose: nested(deepestProse - 4) }]),
-    );
-    const refused = sourceOf(
-      recordsModel([{ prose: nested(deepestProse - 3) }]),
-    );
-    expect(quotesIn(admitted)).toBe(deepestProse - 4);
-    expect(quotesIn(refused)).toBe(0);
-  });
 });
 
 describe("a threat's flags", () => {
@@ -439,25 +391,31 @@ describe('the assumptions that apply to the model', () => {
     expect(modelSectionOf(hostile)).toContain('#read(\\"/etc/passwd\\")');
     expect(callsOutsideLiterals(hostile)).toEqual(callsOutsideLiterals(benign));
   });
-
-  it('write prose past the depth bound, counted from the register root, as the bytes the author wrote', () => {
-    const admitted = modelSectionOf(
-      sourceOf(
-        recordsModel([], [{ ...modelScoped, prose: nested(deepestProse - 4) }]),
-      ),
-    );
-    const refused = modelSectionOf(
-      sourceOf(
-        recordsModel([], [{ ...modelScoped, prose: nested(deepestProse - 3) }]),
-      ),
-    );
-    expect(quotesIn(admitted)).toBe(deepestProse - 4);
-    expect(quotesIn(refused)).toBe(0);
-    expect(refused).toContain('bottom');
-  });
 });
 
 describe('the prose depth bound', () => {
+  it.each([
+    {
+      named: 'a record under a threat',
+      modelOf: (prose: string) => recordsModel([{ prose }]),
+      section: (source: string) => source,
+    },
+    {
+      named: 'an assumption that applies to the model',
+      modelOf: (prose: string) => recordsModel([], [{ ...modelScoped, prose }]),
+      section: modelSectionOf,
+    },
+  ])(
+    'writes the prose of $named past it, counted from the register root, as the bytes the author wrote',
+    ({ modelOf, section }) => {
+      const admitted = section(sourceOf(modelOf(nested(deepestProse - 4))));
+      const refused = section(sourceOf(modelOf(nested(deepestProse - 3))));
+      expect(quotesIn(admitted)).toBe(deepestProse - 4);
+      expect(quotesIn(refused)).toBe(0);
+      expect(refused).toContain('bottom');
+    },
+  );
+
   it('is the depth both writers survive, counted from the root', () => {
     expect(deepestProse).toBe(16);
   });
@@ -468,7 +426,9 @@ describe('the prose depth bound', () => {
     expect(quotesIn(source)).toBe(admitted);
     expect(
       renderRegister(
-        modelOf([threatOf({ number: 1, description: nested(admitted) })]),
+        modelFrom({
+          threats: [threatOf({ number: 1, description: nested(admitted) })],
+        }),
       ),
     ).toContain('bottom');
   });

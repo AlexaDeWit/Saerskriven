@@ -1,13 +1,14 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { halfwayAlong, lineOf } from './canvas-geometry.fixtures.js';
-import { registeredChords } from './chords.js';
-import { nodeNamed, openPlaceholder, selectNode } from './studio.fixtures.js';
-
-const actor = /^Actor, actor/u;
+import { canvasContainer, halfwayAlong, lineOf } from './canvas.fixtures.js';
+import {
+  nodeNamed,
+  openPlaceholder,
+  placeholder,
+  selectNode,
+} from './studio.fixtures.js';
+import { registeredChords } from './chords.fixtures.js';
 
 const drawnFlow = /^New flow, flow, from Actor to Store/u;
-
-const canvas = (page: Page): Locator => page.getByTestId('canvas-container');
 
 const pane = (page: Page): Locator => page.locator('.react-flow__pane');
 
@@ -38,7 +39,7 @@ const weightOf = async (line: Locator): Promise<number> =>
   lengthOf(await line.evaluate((path) => getComputedStyle(path).strokeWidth));
 
 const drawFlow = async (page: Page): Promise<Locator> => {
-  await selectNode(page, actor);
+  await selectNode(page, placeholder.actor);
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await page.getByRole('option', { name: 'Store' }).press('Enter');
   const flow = nodeNamed(page, drawnFlow);
@@ -50,12 +51,12 @@ test('a selected element is framed heavier than the line it is drawn with, and s
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, actor);
+  const node = nodeNamed(page, placeholder.actor);
 
   expect(await frameAround(node)).toBe(0);
   await expect(handlesOn(node).first()).toBeHidden();
 
-  await selectNode(page, actor);
+  await selectNode(page, placeholder.actor);
 
   expect(await frameAround(node)).toBeGreaterThan(await outlineOf(node));
   await expect(handlesOn(node).first()).toBeVisible();
@@ -70,7 +71,7 @@ test('an element under the pointer shows those same handles, and hides them once
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, actor);
+  const node = nodeNamed(page, placeholder.actor);
   const handle = handlesOn(node).first();
 
   await expect(handle).toBeHidden();
@@ -92,7 +93,7 @@ test('a flow reads heavier under the pointer, and heavier again once it is selec
   const line = lineOf(page, drawnFlow);
   const selected = await weightOf(line);
 
-  await selectNode(page, actor);
+  await selectNode(page, placeholder.actor);
   await expect(flow).not.toHaveClass(/selected/u);
   const drawn = await weightOf(line);
 
@@ -107,7 +108,7 @@ test('Select rests on the arrow while handles and flows keep their own cursors',
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, actor);
+  const node = nodeNamed(page, placeholder.actor);
 
   await expect(node).toHaveCSS('cursor', 'default');
   await expect(handlesOn(node).first()).toHaveCSS('cursor', 'crosshair');
@@ -122,9 +123,9 @@ test('the tool the toolbox has active says it over the whole canvas', async ({
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, actor);
+  const node = nodeNamed(page, placeholder.actor);
   const tool = async (active: string): Promise<void> => {
-    await canvas(page).evaluate((element, name) => {
+    await canvasContainer(page).evaluate((element, name) => {
       element.setAttribute('data-tool', name);
     }, active);
   };
@@ -148,11 +149,11 @@ test('only the selected element carries side and corner resize controls with dir
   page,
 }) => {
   await openPlaceholder(page);
-  const node = nodeNamed(page, actor);
+  const node = nodeNamed(page, placeholder.actor);
 
   await expect(resizeControlOn(node)).toHaveCount(0);
 
-  await selectNode(page, actor);
+  await selectNode(page, placeholder.actor);
 
   await expect(resizeControlOn(node)).toHaveCount(8);
   await expect(page.locator('.react-flow__resize-control')).toHaveCount(8);
@@ -192,7 +193,7 @@ test('only the selected element carries side and corner resize controls with dir
 
 test('resize controls show pointer and keyboard focus', async ({ page }) => {
   await openPlaceholder(page);
-  const node = await selectNode(page, actor);
+  const node = await selectNode(page, placeholder.actor);
   const top = node.getByRole('button', {
     name: 'Resize Actor from top',
     exact: true,

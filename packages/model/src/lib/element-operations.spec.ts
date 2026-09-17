@@ -1,5 +1,15 @@
 import { Either } from 'effect';
-import { diagramId, elementId, parsedFixture } from '../fixtures.js';
+import {
+  diagramId,
+  elementId,
+  elementIn,
+  flowIn,
+  parsedFixture,
+  securityModelFixture,
+  softHyphen,
+  validModel,
+} from '../fixtures.js';
+import { addDiagram } from './diagram-operations.js';
 import {
   addElement,
   editNote,
@@ -9,33 +19,32 @@ import {
   resizeElement,
 } from './element-operations.js';
 import { elementSchema } from './elements.js';
-import { validModelFixture } from './fixtures.js';
+import { validModelFixture } from './model.fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
-  base,
   cache,
   elementIds,
-  elementIn,
   errorOf,
-  flowIn,
   flowInput,
   mainDiagram,
   modelOf,
+  operationContract,
   storeInput,
   withNote,
   writeFlow,
-  type OperationOutcome,
 } from './operations.fixtures.js';
 import { parseModel } from './parse.js';
 
+const secured = parsedFixture(securityModelFixture);
+
 describe('addElement', () => {
   it('adds a node to the named diagram', () => {
-    const next = modelOf(addElement(base, mainDiagram, cache));
+    const next = modelOf(addElement(validModel, mainDiagram, cache));
     expect(elementIds(next)).toContain('element-cache');
   });
 
   it('adds a flow anchored to elements of the target diagram', () => {
-    const next = modelOf(addElement(base, mainDiagram, writeFlow));
+    const next = modelOf(addElement(validModel, mainDiagram, writeFlow));
     expect(flowIn(next, 'element-write-flow').source).toEqual({
       kind: 'attached',
       element: 'element-api',
@@ -68,13 +77,13 @@ describe('addElement', () => {
         size: { width: 300, height: 140 },
       },
     });
-    const next = modelOf(addElement(base, mainDiagram, zone));
+    const next = modelOf(addElement(validModel, mainDiagram, zone));
     expect(elementIn(next, 'element-dmz').kind).toBe('trust-boundary');
   });
 
   it('fails on an unknown diagram', () => {
     expect(
-      errorOf(addElement(base, diagramId('diagram-ghost'), cache)),
+      errorOf(addElement(validModel, diagramId('diagram-ghost'), cache)),
     ).toEqual(
       OperationFailure.UnknownDiagram({
         diagramId: diagramId('diagram-ghost'),
@@ -84,7 +93,7 @@ describe('addElement', () => {
 
   it('fails on a duplicate element id', () => {
     const clash = elementSchema.parse({ ...storeInput, id: 'element-api' });
-    expect(errorOf(addElement(base, mainDiagram, clash))).toEqual(
+    expect(errorOf(addElement(validModel, mainDiagram, clash))).toEqual(
       OperationFailure.DuplicateElementId({
         elementId: elementId('element-api'),
       }),
@@ -97,7 +106,7 @@ describe('addElement', () => {
       id: 'element-dangling-flow',
       target: { kind: 'attached', element: 'element-ghost' },
     });
-    expect(errorOf(addElement(base, mainDiagram, dangling))).toEqual(
+    expect(errorOf(addElement(validModel, mainDiagram, dangling))).toEqual(
       OperationFailure.InvalidFlowEndpoint({
         side: 'target',
         reference: elementId('element-ghost'),
@@ -111,23 +120,61 @@ describe('addElement', () => {
       id: 'element-loop-flow',
       source: { kind: 'attached', element: 'element-loop-flow' },
     });
-    expect(errorOf(addElement(base, mainDiagram, selfAnchored))).toEqual(
+    expect(errorOf(addElement(validModel, mainDiagram, selfAnchored))).toEqual(
       OperationFailure.InvalidFlowEndpoint({
         side: 'source',
         reference: elementId('element-loop-flow'),
       }),
     );
   });
+  it('refuses cross-diagram references and checks new elements and diagrams', () => {
+    const boundary = secured.diagrams[0].elements[4];
+    const outside = parsedFixture({
+      ...secured,
+      threats: [],
+      mitigations: [],
+      assumptions: [],
+      diagrams: [
+        {
+          ...secured.diagrams[0],
+          elements: secured.diagrams[0].elements.slice(0, 3),
+        },
+        { id: 'other', title: 'Other', elements: [] },
+      ],
+    });
+    expect(
+      Either.isLeft(addElement(outside, diagramId('other'), boundary)),
+    ).toBe(true);
+    expect(
+      Either.isLeft(
+        addDiagram(outside, {
+          id: diagramId('new'),
+          title: 'New',
+          elements: [boundary],
+        }),
+      ),
+    ).toBe(true);
+    const invalid = {
+      ...outside,
+      diagrams: [
+        ...outside.diagrams,
+        { id: 'third', title: 'Third', elements: [boundary] },
+      ],
+    };
+    expect(Either.isLeft(parseModel(invalid))).toBe(true);
+  });
 });
 
 describe('removeElement', () => {
   it('removes the element from its diagram', () => {
-    const next = modelOf(removeElement(base, elementId('element-db')));
+    const next = modelOf(removeElement(validModel, elementId('element-db')));
     expect(elementIds(next)).not.toContain('element-db');
   });
 
   it('frees the endpoints of flows anchored to the removed element', () => {
-    const next = modelOf(removeElement(base, elementId('element-customer')));
+    const next = modelOf(
+      removeElement(validModel, elementId('element-customer')),
+    );
     expect(flowIn(next, 'element-order-flow').source).toEqual({
       kind: 'free',
       position: { x: 120, y: 160 },
@@ -136,29 +183,65 @@ describe('removeElement', () => {
   });
 
   it('detaches the removed element from threat links', () => {
-    const next = modelOf(removeElement(base, elementId('element-api')));
+    const next = modelOf(removeElement(validModel, elementId('element-api')));
     expect(next.threats).toHaveLength(1);
     expect(next.threats[0].elements).toEqual(['element-order-flow']);
   });
 
   it('leaves every assumption record unchanged', () => {
-    const next = modelOf(removeElement(base, elementId('element-db')));
-    expect(next.assumptions).toEqual(base.assumptions);
+    const next = modelOf(removeElement(validModel, elementId('element-db')));
+    expect(next.assumptions).toEqual(validModel.assumptions);
   });
 
   it('removes a flow and detaches its threat links', () => {
-    const next = modelOf(removeElement(base, elementId('element-order-flow')));
+    const next = modelOf(
+      removeElement(validModel, elementId('element-order-flow')),
+    );
     expect(elementIds(next)).not.toContain('element-order-flow');
     expect(next.threats[0].elements).toEqual(['element-api']);
   });
 
   it('removes a trust boundary of either shape', () => {
-    const box = modelOf(removeElement(base, elementId('element-perimeter')));
+    const box = modelOf(
+      removeElement(validModel, elementId('element-perimeter')),
+    );
     expect(elementIds(box)).not.toContain('element-perimeter');
     const curve = modelOf(
-      removeElement(base, elementId('element-billing-zone')),
+      removeElement(validModel, elementId('element-billing-zone')),
     );
     expect(elementIds(curve)).not.toContain('element-billing-zone');
+  });
+
+  it('removes only references to the explicitly deleted element, keeping absence distinct from empty', () => {
+    const withoutStore = modelOf(
+      removeElement(secured, elementId('element-db')),
+    );
+    expect(elementIn(withoutStore, 'element-perimeter')).toMatchObject({
+      containedElements: ['element-api'],
+      crossingFlows: ['element-order-flow'],
+    });
+    const withoutFlow = modelOf(
+      removeElement(withoutStore, elementId('element-order-flow')),
+    );
+    expect(elementIn(withoutFlow, 'element-perimeter')).toMatchObject({
+      containedElements: ['element-api'],
+      crossingFlows: [],
+    });
+    const withoutBoundary = modelOf(
+      removeElement(secured, elementId('element-perimeter')),
+    );
+    expect(flowIn(withoutBoundary, 'element-order-flow')).toMatchObject({
+      trustBoundaryIds: [],
+    });
+    expect(Either.isRight(parseModel(withoutBoundary))).toBe(true);
+    const legacy = modelOf(
+      removeElement(validModel, elementId('element-perimeter')),
+    );
+    expect(legacy.diagrams[0].elements).toStrictEqual(
+      validModel.diagrams[0].elements.filter(
+        (element) => element.id !== 'element-perimeter',
+      ),
+    );
   });
 
   it("frees an endpoint at the removed flow's own free endpoint", () => {
@@ -176,7 +259,7 @@ describe('removeElement', () => {
     });
     const seeded = [spur, tap].reduce(
       (model, flow) => modelOf(addElement(model, mainDiagram, flow)),
-      base,
+      validModel,
     );
     const next = modelOf(removeElement(seeded, elementId('element-spur-flow')));
     expect(flowIn(next, 'element-tap-flow').source).toEqual({
@@ -194,7 +277,7 @@ describe('removeElement', () => {
     });
     const seeded = [writeFlow, meter].reduce(
       (model, flow) => modelOf(addElement(model, mainDiagram, flow)),
-      base,
+      validModel,
     );
     const next = modelOf(
       removeElement(seeded, elementId('element-write-flow')),
@@ -207,7 +290,9 @@ describe('removeElement', () => {
   });
 
   it('fails on an unknown element', () => {
-    expect(errorOf(removeElement(base, elementId('element-ghost')))).toEqual(
+    expect(
+      errorOf(removeElement(validModel, elementId('element-ghost'))),
+    ).toEqual(
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
       }),
@@ -218,7 +303,7 @@ describe('removeElement', () => {
 describe('moveElement', () => {
   it('moves a node by the offset', () => {
     const next = modelOf(
-      moveElement(base, elementId('element-customer'), { x: 30, y: -20 }),
+      moveElement(validModel, elementId('element-customer'), { x: 30, y: -20 }),
     );
     expect(elementIn(next, 'element-customer')).toMatchObject({
       position: { x: 70, y: 100 },
@@ -227,7 +312,7 @@ describe('moveElement', () => {
 
   it('moves the waypoints and free endpoints of a flow, not its anchors', () => {
     const next = modelOf(
-      moveElement(base, elementId('element-order-flow'), { x: 10, y: 5 }),
+      moveElement(validModel, elementId('element-order-flow'), { x: 10, y: 5 }),
     );
     expect(flowIn(next, 'element-order-flow')).toMatchObject({
       source: { kind: 'attached', element: 'element-customer' },
@@ -238,13 +323,19 @@ describe('moveElement', () => {
 
   it('moves a trust boundary in either shape', () => {
     const box = modelOf(
-      moveElement(base, elementId('element-perimeter'), { x: -10, y: 10 }),
+      moveElement(validModel, elementId('element-perimeter'), {
+        x: -10,
+        y: 10,
+      }),
     );
     expect(elementIn(box, 'element-perimeter')).toMatchObject({
       shape: { kind: 'box', position: { x: 270, y: 70 } },
     });
     const curve = modelOf(
-      moveElement(base, elementId('element-billing-zone'), { x: 5, y: 5 }),
+      moveElement(validModel, elementId('element-billing-zone'), {
+        x: 5,
+        y: 5,
+      }),
     );
     expect(elementIn(curve, 'element-billing-zone')).toMatchObject({
       shape: {
@@ -260,7 +351,9 @@ describe('moveElement', () => {
 
   it('fails on an unknown element', () => {
     expect(
-      errorOf(moveElement(base, elementId('element-ghost'), { x: 1, y: 1 })),
+      errorOf(
+        moveElement(validModel, elementId('element-ghost'), { x: 1, y: 1 }),
+      ),
     ).toEqual(
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
@@ -272,7 +365,7 @@ describe('moveElement', () => {
 describe('resizeElement', () => {
   it('resizes a node', () => {
     const next = modelOf(
-      resizeElement(base, elementId('element-api'), {
+      resizeElement(validModel, elementId('element-api'), {
         width: 200,
         height: 100,
       }),
@@ -284,7 +377,7 @@ describe('resizeElement', () => {
 
   it('resizes a box trust boundary', () => {
     const next = modelOf(
-      resizeElement(base, elementId('element-perimeter'), {
+      resizeElement(validModel, elementId('element-perimeter'), {
         width: 600,
         height: 240,
       }),
@@ -297,14 +390,16 @@ describe('resizeElement', () => {
   it('refuses a flow and a curve trust boundary', () => {
     const size = { width: 10, height: 10 };
     expect(
-      errorOf(resizeElement(base, elementId('element-order-flow'), size)),
+      errorOf(resizeElement(validModel, elementId('element-order-flow'), size)),
     ).toEqual(
       OperationFailure.NotResizable({
         elementId: elementId('element-order-flow'),
       }),
     );
     expect(
-      errorOf(resizeElement(base, elementId('element-billing-zone'), size)),
+      errorOf(
+        resizeElement(validModel, elementId('element-billing-zone'), size),
+      ),
     ).toEqual(
       OperationFailure.NotResizable({
         elementId: elementId('element-billing-zone'),
@@ -315,7 +410,7 @@ describe('resizeElement', () => {
   it('fails on an unknown element', () => {
     expect(
       errorOf(
-        resizeElement(base, elementId('element-ghost'), {
+        resizeElement(validModel, elementId('element-ghost'), {
           width: 10,
           height: 10,
         }),
@@ -331,27 +426,29 @@ describe('resizeElement', () => {
 describe('renameElement', () => {
   it('renames a node', () => {
     const next = modelOf(
-      renameElement(base, elementId('element-customer'), 'Buyer'),
+      renameElement(validModel, elementId('element-customer'), 'Buyer'),
     );
     expect(elementIn(next, 'element-customer').name).toBe('Buyer');
   });
 
   it('renames a flow, which is what the canvas draws as its label', () => {
     const next = modelOf(
-      renameElement(base, elementId('element-order-flow'), 'Place order'),
+      renameElement(validModel, elementId('element-order-flow'), 'Place order'),
     );
     expect(flowIn(next, 'element-order-flow').name).toBe('Place order');
   });
 
   it('refuses an empty name', () => {
-    expect(errorOf(renameElement(base, elementId('element-api'), ''))).toEqual(
+    expect(
+      errorOf(renameElement(validModel, elementId('element-api'), '')),
+    ).toEqual(
       OperationFailure.EmptyName({ elementId: elementId('element-api') }),
     );
   });
 
   it('refuses a name of whitespace, which draws as no name at all', () => {
     expect(
-      errorOf(renameElement(base, elementId('element-api'), '   ')),
+      errorOf(renameElement(validModel, elementId('element-api'), '   ')),
     ).toEqual(
       OperationFailure.EmptyName({ elementId: elementId('element-api') }),
     );
@@ -359,7 +456,13 @@ describe('renameElement', () => {
 
   it('refuses a character the parse boundary refuses, saying where it sits', () => {
     expect(
-      errorOf(renameElement(base, elementId('element-api'), 'Order\u00adAPI')),
+      errorOf(
+        renameElement(
+          validModel,
+          elementId('element-api'),
+          `Order${softHyphen}API`,
+        ),
+      ),
     ).toEqual(
       OperationFailure.RefusedCharacter({
         elementId: elementId('element-api'),
@@ -370,7 +473,7 @@ describe('renameElement', () => {
 
   it('fails on an unknown element', () => {
     expect(
-      errorOf(renameElement(base, elementId('element-ghost'), 'Ghost')),
+      errorOf(renameElement(validModel, elementId('element-ghost'), 'Ghost')),
     ).toEqual(
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
@@ -392,7 +495,7 @@ describe('editNote', () => {
 
   it('refuses an element that is not a note', () => {
     expect(
-      errorOf(editNote(base, elementId('element-api'), 'Not a note')),
+      errorOf(editNote(validModel, elementId('element-api'), 'Not a note')),
     ).toEqual(
       OperationFailure.NotTextElement({
         elementId: elementId('element-api'),
@@ -403,7 +506,11 @@ describe('editNote', () => {
   it('refuses a character the parse boundary refuses', () => {
     expect(
       errorOf(
-        editNote(withNote, elementId('element-note'), 'Soft\u00adhyphen'),
+        editNote(
+          withNote,
+          elementId('element-note'),
+          `Soft${softHyphen}hyphen`,
+        ),
       ),
     ).toEqual(
       OperationFailure.RefusedCharacter({
@@ -414,46 +521,54 @@ describe('editNote', () => {
   });
 });
 
-describe('operation purity', () => {
-  it('leaves the input model untouched', () => {
-    const pristine = structuredClone(base);
-    const notePristine = structuredClone(withNote);
-    addElement(base, mainDiagram, cache);
-    removeElement(base, elementId('element-customer'));
-    moveElement(base, elementId('element-api'), { x: 1, y: 1 });
-    resizeElement(base, elementId('element-api'), { width: 5, height: 5 });
-    renameElement(base, elementId('element-api'), 'Renamed');
-    editNote(withNote, elementId('element-note'), 'Edited');
-    expect(base).toEqual(pristine);
-    expect(withNote).toEqual(notePristine);
+describe('element operations', () => {
+  operationContract({
+    addElement: {
+      input: validModel,
+      run: (model) => addElement(model, mainDiagram, writeFlow),
+    },
+    'addElement of a node': {
+      input: validModel,
+      run: (model) => addElement(model, mainDiagram, cache),
+    },
+    removeElement: {
+      input: validModel,
+      run: (model) => removeElement(model, elementId('element-customer')),
+    },
+    moveElement: {
+      input: validModel,
+      run: (model) =>
+        moveElement(model, elementId('element-order-flow'), { x: 10, y: 5 }),
+    },
+    'moveElement of a box': {
+      input: validModel,
+      run: (model) =>
+        moveElement(model, elementId('element-api'), { x: 1, y: 1 }),
+    },
+    resizeElement: {
+      input: validModel,
+      run: (model) =>
+        resizeElement(model, elementId('element-api'), {
+          width: 200,
+          height: 100,
+        }),
+    },
+    'resizeElement to a 5 by 5 box': {
+      input: validModel,
+      run: (model) =>
+        resizeElement(model, elementId('element-api'), {
+          width: 5,
+          height: 5,
+        }),
+    },
+    renameElement: {
+      input: validModel,
+      run: (model) =>
+        renameElement(model, elementId('element-api'), 'Orders API'),
+    },
+    editNote: {
+      input: withNote,
+      run: (model) => editNote(model, elementId('element-note'), 'Edited'),
+    },
   });
-});
-
-describe('operation outputs re-parse through parseModel', () => {
-  const outputs: [string, OperationOutcome][] = [
-    ['addElement', addElement(base, mainDiagram, writeFlow)],
-    ['removeElement', removeElement(base, elementId('element-customer'))],
-    [
-      'moveElement',
-      moveElement(base, elementId('element-order-flow'), { x: 10, y: 5 }),
-    ],
-    [
-      'resizeElement',
-      resizeElement(base, elementId('element-api'), {
-        width: 200,
-        height: 100,
-      }),
-    ],
-    [
-      'renameElement',
-      renameElement(base, elementId('element-api'), 'Orders API'),
-    ],
-    ['editNote', editNote(withNote, elementId('element-note'), 'Edited')],
-  ];
-
-  for (const [operation, result] of outputs) {
-    it(`${operation} returns a model parseModel accepts`, () => {
-      expect(Either.isRight(parseModel(modelOf(result)))).toBe(true);
-    });
-  }
 });

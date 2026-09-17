@@ -18,90 +18,124 @@ input. Fixture changes do not invalidate lint or build targets.
 ## Who writes each file, and who reads it
 
 Cached tests only read committed snapshots, and
-[`CODING.md`](../CODING.md#build-targets) says how to update them. The
-producers are `@saerskriven/model`, `@saerskriven/formats`, and
-`@saerskriven/render`. Review and commit the snapshot diff with the source change.
+[`CODING.md`](../CODING.md#build-targets) says how to update them. The one
+producer is `@saerskriven/render`. Review and commit the snapshot diff with the
+source change.
 
-| File                                                | Written by         | Read by                                                                     |
-| --------------------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
-| `ecluse.model.json`                                 | `packages/model`   | `packages/formats`, `packages/canvas`, `packages/render`, `apps/studio-e2e` |
-| `saerskriven.model.json`                            | `packages/formats` | `packages/canvas`, `packages/render`, `apps/studio-e2e`                     |
-| `saerskriven/ecluse.yaml`                           | `packages/formats` | `packages/mcp`, `apps/cli`, `apps/studio-e2e`                               |
-| `render/ecluse.register.snapshot.md`                | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
-| `render/ecluse.snapshot.svg`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
-| `render/saerskriven-read-and-render.snapshot.svg`   | `packages/render`  | `apps/cli`                                                                  |
-| `render/saerskriven-agent-and-desktop.snapshot.svg` | `packages/render`  | `apps/cli`                                                                  |
-| `render/saerskriven.register.snapshot.md`           | `packages/render`  | no other suite                                                              |
-| `render/ecluse.snapshot.png`                        | `packages/render`  | `apps/cli`, `apps/studio-e2e`                                               |
-| `render/saerskriven-read-and-render.snapshot.png`   | `packages/render`  | `apps/cli`                                                                  |
-| `render/saerskriven-agent-and-desktop.snapshot.png` | `packages/render`  | no other suite                                                              |
-| `render/every-glyph.snapshot.png`                   | `packages/render`  | no other suite                                                              |
-| `render/every-glyph.snapshot.svg`                   | `packages/render`  | no other suite                                                              |
-| `render/ecluse.snapshot.typ`                        | `packages/render`  | `apps/studio-e2e`                                                           |
+| File                                          | Written by        | Read by                       |
+| --------------------------------------------- | ----------------- | ----------------------------- |
+| `render/every-glyph.snapshot.svg`             | `packages/render` | no other suite                |
+| `render/every-glyph.snapshot.png`             | `packages/render` | no other suite                |
+| `render/two-diagrams-storefront.snapshot.svg` | `packages/render` | `apps/cli`, `apps/studio-e2e` |
+| `render/two-diagrams-storefront.snapshot.png` | `packages/render` | `apps/cli`, `apps/studio-e2e` |
+| `render/two-diagrams-fulfilment.snapshot.svg` | `packages/render` | `apps/cli`                    |
+| `render/two-diagrams-fulfilment.snapshot.png` | `packages/render` | `apps/cli`                    |
+| `render/two-diagrams.snapshot.typ`            | `packages/render` | `apps/studio-e2e`             |
+| `render/two-diagrams.register.snapshot.md`    | `packages/render` | `apps/cli`, `apps/studio-e2e` |
 
 The `.snapshot.png` rasters are written only where the rasterizer module
 [`SAERSKRIVEN_RESVG_WASM`](../docs/build.md#the-svg-rasterizer) names has been
 built.
 
-The remaining files are maintained inputs. `render/ecluse.snapshot.pdf.sha256`
-is the expected PDF digest for the CLI and studio browser suites, and
-`every-glyph.model.json` is read by `packages/canvas`, `packages/render` and
-`apps/studio-e2e`.
+The remaining files are maintained inputs, written by hand or vendored, and
+no target writes them. They are read as follows:
 
-## `ecluse.json`
+| File                                      | Read by                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `every-glyph.model.json`                  | `packages/canvas`, `packages/render`, `apps/studio-e2e`                                     |
+| `two-diagrams.model.json`                 | `packages/canvas`, `packages/render`, `packages/formats`, `apps/studio-e2e`                 |
+| `saerskriven/two-diagrams.yaml`           | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio-e2e`, `scripts/package-cli.sh` |
+| `render/two-diagrams.snapshot.pdf.sha256` | `apps/cli`, `apps/studio-e2e`                                                               |
+| `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio`, `apps/studio-e2e`            |
+| `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`, `apps/studio`                                               |
+| `saerskriven/v0.2.1.yaml`                 | `packages/formats`, `nix/check.nix`                                                         |
+| `saerskriven/saerskriven-v0.3.0.yaml`     | `packages/formats`                                                                          |
+| `studio/recovery-v0.4.0.json`             | `apps/studio`                                                                               |
+| `threat-dragon/demo/*.json`               | `packages/formats`                                                                          |
+| `threat-dragon/models/*.json`             | `packages/formats`                                                                          |
+| `threat-dragon/schema/*.json`             | `packages/formats`                                                                          |
+| `threat-dragon/i18n/*.json`               | `packages/formats`                                                                          |
+| `otm/example.json`                        | `packages/wire-otm`, `packages/formats`, `packages/mcp`, `apps/studio`, `apps/studio-e2e`   |
+| `tmbom/example.json`                      | `packages/wire-tmbom`, `packages/formats`, `packages/mcp`                                   |
+| `tmbom/vault-invalid-zones.json`          | `packages/formats`                                                                          |
+| `adversarial/deep-nesting.json`           | `packages/formats`, `apps/cli`                                                              |
+| `adversarial/typst-injection.yaml`        | `apps/cli`                                                                                  |
+| every other `adversarial/` payload        | `packages/formats`                                                                          |
 
-The threat model of [Écluse](https://github.com/AlexaDeWit/Ecluse), a
-supply-chain policy proxy for package registries. Vendored with the author's consent.
+`otm/` and `tmbom/` each also hold a `README.md` and a `LICENSE` recording the
+provenance of the files beside them. No suite reads either.
 
-| Fact           | Value                                                    |
-| -------------- | -------------------------------------------------------- |
-| Source project | `AlexaDeWit/Ecluse`, path `threat-modelling/ecluse.json` |
-| Source commit  | `673afcde81558143479c2d8c454839110ba9ca07`, 2026-08-29   |
-| Written by     | OWASP Threat Dragon 2.6.2                                |
-| Licence        | MIT, Copyright 2026 Alexandra de Wit                     |
-| MD5            | `9b61b49c0945298b8c2f1f86d2c4136e`                       |
+## `threat-dragon/feature-complete.json`
 
-`packages/model` transcribes it as `ecluseFixture` in
-`src/lib/ecluse.fixtures.ts`. `packages/formats` compares its Threat Dragon
-read against that transcription through `ecluse.model.json`. Both preserve
-the source cell and threat IDs, and both hold each threat's mitigation text as
-the one mitigation record the Threat Dragon read makes of it.
+A Threat Dragon 2.6.2 file written by hand to use every field, enum value and
+union variant `@saerskriven/wire-threat-dragon` declares: every cell shape,
+both curve spellings, a port on each side, a free flow end, every security
+fact, a threat in each status, severity and enumerated category, a threat
+nested under two cells, an Elevation of Privilege card, a box boundary named
+by its label alone, and a threat number gap. Its `threatTop` is 30 and its
+highest threat number 40, and the read issues up to
+`max(threatTop, highest threat number in the file)`, 40. `packages/formats`
+compares its read with a model written out by hand, writes it back onto
+itself with no scalar moved, and runs the write through Threat Dragon's JSON
+Schema. `packages/mcp`, `apps/cli`, `apps/studio` and `apps/studio-e2e` open
+it as a Threat Dragon file.
 
-The file's `threatTop` is 28, but it contains threats numbered 101 and 102.
-The import uses `lastIssuedThreatNumber = max(threatTop, highest threat number in the file)`.
-The maximum preserves both existing numbers and the gap from a deleted highest-numbered threat.
+## `saerskriven/feature-complete.yaml`
 
-## `ecluse-security.json`
+A version 2 Saerskriven YAML file written by hand in the writer's canonical
+form, using every field, enum value and union variant
+`@saerskriven/wire-saerskriven-yaml-v2` declares. `packages/formats` reads it
+as the model it states and writes it back to the byte, `apps/cli` validates
+it, and `apps/studio` opens and saves it.
 
-The current Écluse migration fixture, copied without changes from
-`AlexaDeWit/Ecluse`, `threat-modelling/ecluse.json`, on 2026-09-12.
-The source commit is `5d7a1072833149119a5a809931511f6dcefd1a62` (2026-09-09).
-It retains the same MIT licence and author as `ecluse.json`.
-The formats security-property spec compares all declared facts and relationships,
-threat attachments, threat numbers, and issuance bookkeeping across both codecs.
-This maintained input supplements the older rendering fixtures.
+## `saerskriven/two-diagrams.yaml`
 
-## `saerskriven/ecluse.yaml`
+The native encoding of `two-diagrams.model.json`, so a suite that opens a file
+from disk renders the model the render goldens were drawn from. It was written
+once through the Saerskriven YAML codec's write of that model, and
+`packages/formats` holds it to both: its read equals the JSON model, and a write
+of that read gives back the committed bytes. `packages/mcp`, `apps/cli` and
+`apps/studio-e2e` open it, the CLI compares its renders with the render
+goldens, and `scripts/package-cli.sh` validates and renders it with the
+packaged CLI. To reproduce it after a change to the model file, write
+`committedModel('two-diagrams.model.json')` through `saerskrivenYamlCodec.write`
+from a spec run in `packages/formats` and commit the output.
 
-The native YAML encoding of `ecluse.json`, produced through both codecs.
-The formats suite compares the write against this snapshot and reads it back
-to check model equality.
+## `render/two-diagrams.snapshot.pdf.sha256`
 
-## `saerskriven/ecluse-v0.2.1.yaml`
+The SHA-256 digest of the PDF the CLI compiles from
+`saerskriven/two-diagrams.yaml`, one lowercase hex line. The PDF itself is
+not committed. The digest was produced by the CLI bundle, and is reproduced
+the same way inside `nix develop` with the rasterizer module built:
 
-The same model in the document shape v0.2.1 wrote, before version 1 of the
-format gained a flow's `bidirectional` and an attached endpoint's `side`. It
-is committed data rather than a snapshot: no target writes it, and it is never
-regenerated from the current writer, because what it holds the format to is
-that a file an earlier release wrote still reads. The formats suite reads it
-and checks that the mapping supplies a one-way flow and an unpinned side.
+```sh
+pnpm nx build @saerskriven/cli
+node apps/cli/dist/saer.js render test-data/saerskriven/two-diagrams.yaml \
+  --format pdf --out - | sha256sum | cut -d' ' -f1 \
+  > test-data/render/two-diagrams.snapshot.pdf.sha256
+```
+
+A change to the drawing, the Typst document or the bundled fonts changes the
+digest, so reproduce it in the commit that changed them.
+
+## `saerskriven/v0.2.1.yaml`
+
+A cut-down of a model in the document shape v0.2.1 wrote, before version 1 of
+the format gained a flow's `bidirectional` and an attached endpoint's `side`:
+elements, threats and text were deleted from the real output by hand and
+nothing was added. It is committed data rather than a snapshot: no target
+writes it, and it is never regenerated from the current writer, because what
+it holds the format to is that a file an earlier release wrote still reads.
+The formats suite reads it against a model written out by hand, with every
+flow one-way and every end unpinned. The installed-package check in
+[`nix/check.nix`](../nix/check.nix) validates and renders it.
 
 ## `saerskriven/saerskriven-v0.3.0.yaml`
 
 [`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md) as the
 v0.3.0 tag holds it, in version 1 of the format: each threat's mitigation as
 text, assumption element links, and an assumption that links no threat. It is
-committed data under the same terms as `ecluse-v0.2.1.yaml`, never regenerated.
+committed data under the same terms as `v0.2.1.yaml`, never regenerated.
 The formats suite reads it through the v1 to v2 migration and checks the
 records made of the text, the dropped element links, the model link, and a
 write and read back of the result.
@@ -117,35 +151,6 @@ envelope is the shape v0.4.0's `recoverySnapshot` stores. It is committed data,
 never regenerated. The studio recovery spec restores it through the v1 to v2
 migration.
 
-## `ecluse.model.json`
-
-The internal model serialized from `ecluseFixture` by `packages/model`.
-The formats suite compares its full Threat Dragon read and write/read result
-against this file. This catches differences that matching counts and
-vocabularies alone would miss. Canvas and render tests consume it as data.
-
-## `saerskriven.model.json`
-
-The internal model decoded from
-[`threat-modelling/saerskriven.yaml`](../threat-modelling/README.md).
-`packages/formats` produces it for the canvas and render suites, which the
-layer matrix keeps from importing a codec. Its `nativeFixtures` entry in
-`saerskriven-yaml.fixtures.ts` names the output path. Écluse's entry names
-none, since `packages/model` writes `ecluse.model.json` from its own
-transcription.
-
-## `render/ecluse.register.snapshot.md`
-
-The Markdown register from `ecluse.model.json`: an overview of 29 threats,
-followed by a section for each. It covers the full register structure,
-escaping, and prose handling.
-
-## `render/saerskriven.register.snapshot.md`
-
-The register from `saerskriven.model.json`. It adds a custom methodology, a
-CIA category, two unattached threats, and a mitigation record whose prose holds a
-Markdown list to the cases covered by Écluse.
-
 ## `every-glyph.model.json`
 
 A hand-written model with every element kind, both boundary shapes, an
@@ -154,23 +159,44 @@ naming another flow. Its open threats exercise paired badges and a neutral
 badge. A flow's open threat resting on an invalidated assumption draws the
 flag mark under a count, and a boundary curve named only by a `mitigated`
 threat with a proposed mitigation draws the flag-only mark. Canvas and render
-tests parse it and keep separate drawing snapshots.
+tests parse it, render draws its goldens, and `apps/studio-e2e` measures badge
+clearance on it.
 
-## `render/ecluse.snapshot.typ`
+## `two-diagrams.model.json`
 
-The Typst document from `ecluse.model.json`: every diagram on a landscape
-page, followed by the register on portrait pages. It embeds
-`ecluse.snapshot.svg` verbatim, so a drawing change updates both snapshots.
+A hand-written model of a small shop on two diagrams, `storefront` and
+`fulfilment`, built for drawing. Between them it has every element kind, a
+box and a curve boundary, pairs of flows sharing one line, flows converging on
+one process, and flow names long enough to crowd, so the canvas label
+placement checks have something to place. Its register has threats over four
+methodologies, one custom, a threat on no element, mitigations and assumptions
+in every status, assumptions that apply to the model, and both flags. The
+canvas suite lays both diagrams out, render draws its goldens from it, and
+`apps/studio-e2e` opens it.
+`committedDiagrams` on `@saerskriven/model/fixtures` lists the diagrams both
+suites draw.
+
+## `render/two-diagrams.register.snapshot.md`
+
+The Markdown register from `two-diagrams.model.json`: the overview table, the
+section for the assumptions that apply to the model, and a section per threat.
+
+## `render/two-diagrams.snapshot.typ`
+
+The Typst document from `two-diagrams.model.json`: each diagram on a landscape
+page, followed by the register on portrait pages. It embeds the SVG drawings
+verbatim, so a drawing change updates both snapshots.
 
 ## `render/*.snapshot.svg`
 
-Standalone SVG documents from `packages/render`:
+Standalone SVG documents from `packages/render`, one per entry of
+`committedDiagrams`:
 
-- `ecluse.snapshot.svg`: the `High Level` diagram of `ecluse.model.json`.
 - `every-glyph.snapshot.svg`: the diagram in `every-glyph.model.json`.
-- `saerskriven-read-and-render.snapshot.svg` and
-  `saerskriven-agent-and-desktop.snapshot.svg`: the two diagrams of
-  `saerskriven.model.json`, covering a model with multiple diagrams.
+- `two-diagrams-storefront.snapshot.svg` and
+  `two-diagrams-fulfilment.snapshot.svg`: the two diagrams of
+  `two-diagrams.model.json`. A model of more than one diagram names each
+  golden with the diagram id after the file's stem.
 
 Each has a `.snapshot.png` beside it, the same drawing rasterized, committed
 as a picture so a reviewer can open it.
@@ -178,7 +204,9 @@ as a picture so a reviewer can open it.
 ## `threat-dragon/`
 
 The nine v2 models from Threat Dragon's demo menu and three models from its
-repository. The formats suite reads them through the Threat Dragon codec.
+repository, under `demo/` and `models/`. The formats suite reads them through
+the Threat Dragon codec. `feature-complete.json` beside them is this
+project's own, described above.
 
 | Fact           | Value                                                       |
 | -------------- | ----------------------------------------------------------- |
@@ -277,10 +305,11 @@ Hostile inputs, none of them vendored. Most are small payloads built to break
 one of the read bounds `@saerskriven/formats` exports as `readLimits`, so each
 bound is pinned by an input rather than by its own definition. An oversized
 text is generated in the spec instead of committed. `read-limits.spec.ts`
-hands every payload to both the Saerskriven YAML read and the Threat Dragon
-read, because YAML is a superset of JSON and a hostile file arrives with
-whatever extension its author chose. The bounds and the alias accounting are
-described in the TSDoc of `read-limits.ts` and `yaml-alias-cost.ts`.
+hands every payload in the table below to both the Saerskriven YAML read and
+the Threat Dragon read, because YAML is a superset of JSON and a hostile file
+arrives with whatever extension its author chose. The bounds and the alias
+accounting are described in the TSDoc of `read-limits.ts` and
+`yaml-alias-cost.ts`.
 
 | File                   | Bytes | What it is                                                                                           | What it pins                                                                                                 |
 | ---------------------- | ----- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |

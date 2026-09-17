@@ -54,7 +54,11 @@ export const sharedTest = (
     // A fixture is a spec's input rather than code under test: a model
     // literal no assertion reads is not a coverage hole, and the parse it
     // goes through is exercised by every spec that reads the fixture.
-    exclude: [...coverageConfigDefaults.exclude, '**/*.fixtures.ts'],
+    exclude: [
+      ...coverageConfigDefaults.exclude,
+      '**/fixtures.{ts,tsx,mts}',
+      '**/*.fixtures.{ts,tsx,mts}',
+    ],
   },
 });
 

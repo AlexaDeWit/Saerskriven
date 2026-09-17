@@ -15,18 +15,11 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { ModelPropertiesPanel } from './model-properties.js';
 import { sectionLabel } from '@saerskriven/render';
-import {
-  chooseFrom,
-  describedNumbers,
-  editorTimeout,
-  present,
-  undoable,
-} from './panel.fixtures.js';
+import { present, undoable } from '../store/store.fixtures.js';
+import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-
-const softHyphen = '­';
-
-const noop = (): void => undefined;
+import { button, describedNumbers, noop, textbox } from '../ui/ui.fixtures.js';
+import { softHyphen } from '@saerskriven/model/fixtures';
 
 const showPanel = ({
   held,
@@ -47,12 +40,6 @@ const showPanel = ({
     />,
   );
 };
-
-const button = (name: string): HTMLElement =>
-  screen.getByRole('button', { name });
-
-const textbox = (name: string): HTMLElement =>
-  screen.getByRole('textbox', { name });
 
 const undo = (): void => {
   act(() => {
@@ -205,7 +192,7 @@ describe(
       expect(present()).toBe(before);
     });
 
-    it('edits the text of an assumption that applies to the model in place as one undo step, and it still applies to the model', async () => {
+    it('edits the text and the status of an assumption that applies to the model in place as one undo step each, and it still applies to the model', async () => {
       const user = userEvent.setup();
       applyToModel();
       const before = present();
@@ -222,20 +209,19 @@ describe(
         },
       ]);
       expect(undoable()).toBe(2);
-      undo();
-      expect(present()).toBe(before);
-    });
-
-    it('changes a status in place as one undo step that moves no threat status', async () => {
-      applyToModel();
-      const before = present();
-      showPanel();
+      const edited = present();
 
       await chooseFrom('Assumption 1 status', 'invalidated');
 
-      expect(present().assumptions[0].status).toBe('invalidated');
+      expect(present().assumptions).toEqual([
+        { ...edited.assumptions[0], status: 'invalidated' },
+      ]);
       expect(present().threats).toBe(before.threats);
-      expect(undoable()).toBe(2);
+      expect(undoable()).toBe(3);
+      undo();
+      expect(present()).toBe(edited);
+      undo();
+      expect(present()).toBe(before);
     });
 
     it('holds a refused description in the draft it keeps, and puts it back when the panel opens again', async () => {

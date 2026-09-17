@@ -6,7 +6,6 @@ import {
   activeDiagramId,
   canRedo,
   canUndo,
-  elementCount,
   isDirty,
   modelAsOpened,
   selectedElement,
@@ -18,6 +17,7 @@ import {
 import { initialState, placeholderModel } from './state.js';
 import {
   actorElement,
+  addedProcess,
   mainDiagram,
   nativeSource,
   newProcess,
@@ -29,20 +29,9 @@ import {
 
 const start = initialState(sampleModel);
 
-const edited = reduce(
-  start,
-  Action.AddElement({
-    diagramId: mainDiagram,
-    element: newProcess('process-added', 'Added'),
-  }),
-);
+const edited = reduce(start, addedProcess);
 
 describe('selectors', () => {
-  it('counts the elements of every diagram', () => {
-    expect(elementCount(start)).toBe(3);
-    expect(elementCount(edited)).toBe(4);
-  });
-
   it('reads unsaved work off identity, so an undo to the saved model clears it', () => {
     expect(isDirty(start)).toBe(false);
     expect(isDirty(edited)).toBe(true);

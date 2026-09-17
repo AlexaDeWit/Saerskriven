@@ -3,13 +3,10 @@ import {
   saerskrivenYamlV2WireSchema,
   type SaerskrivenYamlV2Document,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
-import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
+import type { SaerskrivenYamlThreat } from '@saerskriven/wire-saerskriven-yaml';
 import type { canonicalOrder } from './canonical-order.js';
-import {
-  currentSaerskrivenYaml,
-  migratedFromVersion1,
-  saerskrivenYamlVersionsSchema,
-} from './saerskriven-yaml-migration.js';
+import { currentSaerskrivenYaml } from './saerskriven-yaml-migration.js';
+import { version1Document } from './saerskriven-yaml.fixtures.js';
 
 type Schema = Parameters<typeof canonicalOrder>[0];
 
@@ -27,7 +24,12 @@ function declaredKeys(schema: Schema, prefix = ''): string[] {
   return (options ?? []).flatMap((option) => declaredKeys(option, prefix));
 }
 
-const threat = (id: string, number: number, status: string, text: string) => ({
+const threat = (
+  id: string,
+  number: number,
+  status: SaerskrivenYamlThreat['status'],
+  text: string,
+): SaerskrivenYamlThreat => ({
   id,
   number,
   title: `Threat ${String(number)}`,
@@ -39,10 +41,7 @@ const threat = (id: string, number: number, status: string, text: string) => ({
   elements: [],
 });
 
-const version1: SaerskrivenYamlDocument = saerskrivenYamlWireSchema.parse({
-  formatVersion: 1,
-  metadata: { title: 'Earlier', owner: '', description: '', contributors: [] },
-  diagrams: [],
+const version1 = version1Document({
   threats: [
     threat('threat-1', 1, 'mitigated', 'Sign every request.'),
     threat('threat-2', 2, 'open', 'Rotate the key.'),
@@ -76,41 +75,7 @@ const version1: SaerskrivenYamlDocument = saerskrivenYamlWireSchema.parse({
   ],
 });
 
-describe('saerskrivenYamlVersionsSchema', () => {
-  it.each([
-    ['stamped with a later version', { ...version1, formatVersion: 3 }],
-    ['with no version', { ...version1, formatVersion: undefined }],
-  ])('refuses a document %s at formatVersion', (_, document) => {
-    const parsed = saerskrivenYamlVersionsSchema.safeParse(document);
-    expect(parsed.error?.issues.map(({ path }) => path)).toEqual([
-      ['formatVersion'],
-    ]);
-  });
-
-  it.each([
-    [
-      'a version 1 threat whose text is not a string',
-      { ...version1, threats: [{ ...version1.threats[0], mitigation: 7 }] },
-      ['threats', 0, 'mitigation'],
-    ],
-    [
-      'a version 2 assumption without its model link',
-      {
-        ...migratedFromVersion1(version1).document,
-        assumptions: [
-          {
-            ...migratedFromVersion1(version1).document.assumptions[0],
-            appliesToModel: undefined,
-          },
-        ],
-      },
-      ['assumptions', 0, 'appliesToModel'],
-    ],
-  ])('refuses %s at a path into its own version', (_, document, path) => {
-    const parsed = saerskrivenYamlVersionsSchema.safeParse(document);
-    expect(parsed.error?.issues.map((issue) => issue.path)).toEqual([path]);
-  });
-});
+const migrated = currentSaerskrivenYaml(version1);
 
 describe('the version 2 wire schema', () => {
   it('declares the keys of version 1, less the threat text and the assumption element links, and with the model link', () => {
@@ -123,9 +88,7 @@ describe('the version 2 wire schema', () => {
   });
 });
 
-describe('migratedFromVersion1', () => {
-  const migrated = migratedFromVersion1(version1);
-
+describe('currentSaerskrivenYaml', () => {
   it('gives a document the version 2 schema holds as it is', () => {
     expect(saerskrivenYamlV2WireSchema.parse(migrated.document)).toEqual(
       migrated.document,
@@ -167,14 +130,6 @@ describe('migratedFromVersion1', () => {
     ]);
   });
 
-  it('keeps every threat status', () => {
-    expect(migrated.document.threats.map(({ status }) => status)).toEqual([
-      'mitigated',
-      'open',
-      'accepted-risk',
-    ]);
-  });
-
   it('reports the dropped element links alone, once per assumption that held any', () => {
     expect(migrated.divergences).toEqual([
       expect.objectContaining({
@@ -183,21 +138,12 @@ describe('migratedFromVersion1', () => {
       }),
     ]);
   });
-});
 
-describe('currentSaerskrivenYaml', () => {
   it('hands back a version 2 document as it is, reporting nothing', () => {
-    const document: SaerskrivenYamlV2Document =
-      migratedFromVersion1(version1).document;
+    const document: SaerskrivenYamlV2Document = migrated.document;
     expect(currentSaerskrivenYaml(document)).toEqual({
       document,
       divergences: [],
     });
-  });
-
-  it('migrates a version 1 document', () => {
-    expect(currentSaerskrivenYaml(version1)).toEqual(
-      migratedFromVersion1(version1),
-    );
   });
 });

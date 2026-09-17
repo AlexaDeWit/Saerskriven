@@ -1,3 +1,4 @@
+import { Client, type Transport } from '@modelcontextprotocol/client';
 import type {
   CallToolResult,
   GetPromptResult,
@@ -10,6 +11,22 @@ import {
   imageLinkDescription,
   renderDiagramResultSchema,
 } from './lib/render-diagram.js';
+
+export { getThreatResultSchema } from './lib/get-threat.js';
+export { dataNotInstructions } from './lib/preface.js';
+export { renderDiagramResultSchema };
+export { searchElementsResultSchema } from './lib/search-elements.js';
+export { searchThreatsResultSchema } from './lib/search-threats.js';
+export {
+  referencingYaml,
+  smallYaml,
+  unclaimedFile,
+  unclaimedYaml,
+  unplacedFlowYaml,
+} from './lib/native-yaml.fixtures.js';
+
+/** The first four bytes of every PNG file. */
+export const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 /**
  * The tools a release registers, in registration order: the reads, the
@@ -44,6 +61,35 @@ export type Era = 'legacy' | 'modern';
 
 /** Both eras a release has to serve, for a suite that runs over each. */
 export const eras: readonly Era[] = ['legacy', 'modern'];
+
+/** A client joined to a server, and how to end the session. */
+export type McpSession = {
+  readonly client: Client;
+  readonly end: () => Promise<void>;
+};
+
+/**
+ * A client connected over the transport in the given era, whose end closes
+ * the client and then runs `after` to stop what serves it.
+ */
+export async function connectedClient(
+  transport: Transport,
+  era: Era,
+  after: () => Promise<void>,
+): Promise<McpSession> {
+  const client = new Client(
+    { name: 'saerskriven-spec', version: '0.0.0-spec' },
+    { versionNegotiation: { mode: era === 'modern' ? 'auto' : 'legacy' } },
+  );
+  await client.connect(transport);
+  return {
+    client,
+    end: async () => {
+      await client.close();
+      await after();
+    },
+  };
+}
 
 /** The text of a tool result's first text block, and nothing where it has none. */
 export function textOf(result: CallToolResult): string {

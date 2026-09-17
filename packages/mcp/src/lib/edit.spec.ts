@@ -4,11 +4,13 @@ import { assumptionId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { unclaimedFile } from '../fixtures.js';
 import {
   dragonFile,
   editableTree,
   modelFile,
-  unclaimedFile,
+  renaming,
+  staleRevision,
   type EditInput,
 } from './edit.fixtures.js';
 import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
@@ -17,14 +19,7 @@ import { describeOperationFailure } from './operation-failure.js';
 import { revisionOf } from './revision.js';
 import { searchThreats } from './search-threats.js';
 import { openWorkspace } from './workspace.js';
-
-const staleRevision = `sha256:${'0'.repeat(64)}`;
-
-const renaming: EditInput = {
-  op: 'rename_element',
-  element: 'element-db',
-  name: 'Order store',
-};
+import { refusalOf } from './read-tools.fixtures.js';
 
 const addedMitigation = (
   threat: string,
@@ -40,7 +35,7 @@ const addedMitigation = (
   },
 });
 
-const ecluseThreat = '0ec10e5e-0000-4000-8000-00000000010c';
+const dragonThreat = 'threat-tampering';
 
 const attempt = () => {
   const tree = editableTree();
@@ -63,63 +58,64 @@ const revisionIn = (
 ): string => revisionOf(attempted.bytes(file));
 
 describe('what a refused edit leaves on disk', () => {
-  it('writes nothing when the model refuses one edit of the batch', () => {
-    const attempted = attempt();
-    const before = attempted.bytes(modelFile);
-    const refused = attempted.edit(
-      modelFile,
-      revisionIn(attempted, modelFile),
-      [renaming, { op: 'remove_element', element: 'element-absent' }],
-    );
-    expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(Either.isLeft(refused) ? refused.left : []).toEqual([
-      'The edit at index 1 was refused, so none of the batch was applied and the file is as it was.',
-      'The model holds no element "element-absent".',
-    ]);
-  });
-
-  it('writes nothing when the revision no longer matches the file', () => {
-    const attempted = attempt();
-    const before = attempted.bytes(modelFile);
-    const refused = attempted.edit(modelFile, staleRevision, [renaming]);
-    expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the edit was applied',
-    ).toContain('changed since the read this call quoted');
-  });
-
-  it('writes nothing when no codec claims the file', () => {
-    const attempted = attempt();
-    const before = attempted.bytes(unclaimedFile);
-    const refused = attempted.edit(
-      unclaimedFile,
-      revisionIn(attempted, unclaimedFile),
-      [renaming],
-    );
-    expect(attempted.bytes(unclaimedFile)).toEqual(before);
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the edit was applied',
-    ).toContain('was not read');
-  });
-
-  it('writes nothing when the edited model would be past the size this server reads', () => {
-    const attempted = attempt();
-    const before = attempted.bytes(modelFile);
-    const refused = attempted.edit(
-      modelFile,
-      revisionIn(attempted, modelFile),
-      [
+  it.each<{
+    readonly name: string;
+    readonly file: string;
+    readonly revision: (attempted: ReturnType<typeof attempt>) => string;
+    readonly edits: readonly EditInput[];
+    readonly phrase: string;
+    readonly lines: number;
+  }>([
+    {
+      name: 'the model refuses one edit of the batch',
+      file: modelFile,
+      revision: (attempted) => revisionIn(attempted, modelFile),
+      edits: [renaming, { op: 'remove_element', element: 'element-absent' }],
+      phrase: 'index 1',
+      lines: 2,
+    },
+    {
+      name: 'the revision no longer matches the file',
+      file: modelFile,
+      revision: () => staleRevision,
+      edits: [renaming],
+      phrase: 'changed since the read this call quoted',
+      lines: 3,
+    },
+    {
+      name: 'no codec claims the file',
+      file: unclaimedFile,
+      revision: (attempted) => revisionIn(attempted, unclaimedFile),
+      edits: [renaming],
+      phrase: 'was not read',
+      lines: 2,
+    },
+    {
+      name: 'the edited model would be past the size this server reads',
+      file: modelFile,
+      revision: (attempted) => revisionIn(attempted, modelFile),
+      edits: [
         addedMitigation(
           'threat-tamper-order',
           'x'.repeat(readLimits.maxTextBytes),
         ),
       ],
-    );
-    expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(
-      Either.isLeft(refused) ? refused.left.join('\n') : 'the edit was applied',
-    ).toContain('past the size this server reads');
-  });
+      phrase: 'past the size this server reads',
+      lines: 2,
+    },
+  ])(
+    'writes nothing when $name',
+    ({ file, revision, edits, phrase, lines }) => {
+      const attempted = attempt();
+      const before = attempted.bytes(file);
+      const refused = refusalOf(
+        attempted.edit(file, revision(attempted), edits),
+      );
+      expect(attempted.bytes(file)).toEqual(before);
+      expect(refused.join('\n')).toContain(phrase);
+      expect(refused).toHaveLength(lines);
+    },
+  );
 });
 
 describe('what an applied edit writes', () => {
@@ -165,7 +161,7 @@ describe('what an applied edit writes', () => {
     const applied = attempted.edit(
       dragonFile,
       revisionIn(attempted, dragonFile),
-      [addedMitigation(ecluseThreat)],
+      [addedMitigation(dragonThreat)],
     );
     const reread = readAnyFormat(attempted.bytes(dragonFile).toString('utf8'));
     expect(Either.getOrUndefined(applied)?.format).toEqual('threat-dragon');
@@ -174,7 +170,7 @@ describe('what an applied edit writes', () => {
         ({ subject, reason }) => ({ subject, reason }),
       ),
     ).toEqual([
-      { subject: { kind: 'threat', id: ecluseThreat }, reason: 'narrowed' },
+      { subject: { kind: 'threat', id: dragonThreat }, reason: 'narrowed' },
     ]);
     expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
   });
@@ -539,7 +535,7 @@ describe('what the flow direction and metadata ops write', () => {
   });
 
   const metadata = {
-    title: 'Écluse, second pass',
+    title: 'Clinic booking, second pass',
     owner: 'Jonas Lindqvist',
     description: 'Reviewed with the platform team.\nSecond line.',
     contributors: ['Alexandra de Wit', 'Jonas Lindqvist', ''],

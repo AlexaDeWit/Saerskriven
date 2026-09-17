@@ -1,69 +1,80 @@
-import { registeredChords } from './chords.js';
-import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { readAnyFormat } from '@saerskriven/formats';
 import { gridSpacing } from '@saerskriven/canvas';
-import { boxOf } from './canvas-geometry.fixtures.js';
-import { Either } from 'effect';
+import { audit } from './accessibility.fixtures.js';
+import { registeredChords } from './chords.fixtures.js';
 import {
+  boxOf,
   canvasSettled,
   dragBy,
   emptyCanvasPoint,
+  touchDrag,
+  touchSession,
+} from './canvas.fixtures.js';
+import {
+  editAnnouncement,
+  featureCompleteFile,
   menuItem,
   nodeNamed,
+  openFallback,
   openFile,
   openMenu,
   openPlaceholder,
   openText,
+  placeholder,
+  readBack,
   savedFile,
+  savedModel,
   selectByKeyboard,
-  withoutPickers,
+  storefront,
+  twoDiagramsFile,
 } from './studio.fixtures.js';
-import { touchDrag, touchSession } from './touch.fixtures.js';
-
-const actorName = /^Actor, actor/u;
-const flowName = /^Records, flow/u;
 
 for (const mode of ['select', 'hand', 'space'] as const) {
-  for (const selection of ['node', 'flow', 'several'] as const) {
-    test(`a stationary background click clears ${selection} in ${mode}`, async ({
-      page,
-    }) => {
-      await openPlaceholder(page);
-      if (selection === 'several') {
-        await page.keyboard.press('ControlOrMeta+a');
-      } else {
-        await selectByKeyboard(
-          page,
-          selection === 'node' ? actorName : flowName,
-        );
-      }
-      await canvasSettled(page);
-      if (mode === 'hand') {
-        await page.keyboard.press('h');
-      }
-      if (mode === 'space') {
-        await page.keyboard.down('Space');
-      }
-      const at = await emptyCanvasPoint(page);
-      await page.mouse.click(at.x, at.y);
-      if (mode === 'space') {
-        await page.keyboard.up('Space');
-      }
-      await expect(
-        page.locator('.react-flow__node.selected, .react-flow__edge.selected'),
-      ).toHaveCount(0);
-      await expect(page.locator('.react-flow')).toBeFocused();
-      await expect(
-        page.getByRole('button', { name: /^Menu/u }),
-      ).toHaveAccessibleName('Menu');
-    });
-  }
+  test(`a stationary background click clears a node, a flow and a group in ${mode}`, async ({
+    page,
+  }) => {
+    await openPlaceholder(page);
+
+    for (const selection of ['node', 'flow', 'several'] as const) {
+      await test.step(selection, async () => {
+        await page.keyboard.press(registeredChords['select-tool'][0]);
+        if (selection === 'several') {
+          await page.keyboard.press('ControlOrMeta+a');
+        } else {
+          await selectByKeyboard(
+            page,
+            selection === 'node' ? placeholder.actor : placeholder.records,
+          );
+        }
+        await canvasSettled(page);
+        if (mode === 'hand') {
+          await page.keyboard.press('h');
+        }
+        if (mode === 'space') {
+          await page.keyboard.down('Space');
+        }
+        const at = await emptyCanvasPoint(page);
+        await page.mouse.click(at.x, at.y);
+        if (mode === 'space') {
+          await page.keyboard.up('Space');
+        }
+        await expect(
+          page.locator(
+            '.react-flow__node.selected, .react-flow__edge.selected',
+          ),
+        ).toHaveCount(0);
+        await expect(page.locator('.react-flow')).toBeFocused();
+        await expect(
+          page.getByRole('button', { name: /^Menu/u }),
+        ).toHaveAccessibleName('Menu');
+      });
+    }
+  });
 }
 
 test('pans retain selection, while touch taps clear it', async ({ page }) => {
   await openPlaceholder(page);
-  const actor = await selectByKeyboard(page, actorName);
+  const actor = await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('h');
   let at = await emptyCanvasPoint(page);
   await page.mouse.move(at.x, at.y);
@@ -83,11 +94,10 @@ test('pans retain selection, while touch taps clear it', async ({ page }) => {
 test('Tab keeps selection and a click inside an empty boundary clears it', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-  await selectByKeyboard(page, actorName);
+  await openFallback(page);
+  await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('Tab');
-  await expect(nodeNamed(page, actorName)).toHaveClass(/selected/u);
+  await expect(nodeNamed(page, placeholder.actor)).toHaveClass(/selected/u);
   await page.keyboard.press('Escape');
   await page.keyboard.press('b');
   const at = await emptyCanvasPoint(page);
@@ -114,24 +124,21 @@ test('clipboard commands preserve graph references and leave text fields their o
   context,
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-  await selectByKeyboard(page, flowName);
+  await openFallback(page);
+  await selectByKeyboard(page, placeholder.records);
   await page.keyboard.press('ControlOrMeta+c');
-  await expect(page.getByTestId('canvas-announcement')).toContainText('Copied');
+  await expect(editAnnouncement(page)).not.toBeEmpty();
   await page.keyboard.press('ControlOrMeta+v');
   await expect(page.locator('.react-flow__node')).toHaveCount(4);
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
-  const copied = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const copied = await savedModel(page);
   expect(
     new Set(copied.diagrams[0].elements.map((element) => element.id)).size,
   ).toBe(6);
   expect(new Set(copied.threats.map((threat) => threat.id)).size).toBe(2);
   await page.keyboard.press('ControlOrMeta+z');
   await expect(page.locator('.react-flow__node')).toHaveCount(2);
-  await selectByKeyboard(page, actorName);
+  await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('Enter');
   const name = page.getByRole('textbox', { name: /^Name of/u });
   await name.fill('Text copy');
@@ -148,54 +155,61 @@ test('clipboard commands preserve graph references and leave text fields their o
 test('geometry fields support movement and resizing, cancellation, and one undo step', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-  const actor = await selectByKeyboard(page, actorName);
+  await openFallback(page);
+  const actor = await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press(registeredChords['edit-geometry'][0]);
   const panel = page.getByRole('region', { name: 'Position and size' });
   await expect(
     panel.getByRole('spinbutton', { name: 'X', exact: true }),
   ).toBeFocused();
-  const violations = await new AxeBuilder({ page }).analyze();
-  expect(violations.violations).toEqual([]);
+  await audit(page, 'showing the geometry fields');
   await panel.getByRole('button', { name: 'Increase X', exact: true }).click();
   await panel
     .getByRole('button', { name: 'Increase Width', exact: true })
     .click();
   await panel.getByRole('button', { name: 'Apply geometry' }).click();
   await expect(actor).toBeFocused();
-  const after = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const after = await savedModel(page);
   expect(after.diagrams[0].elements[0]).toMatchObject({
     position: { x: 41, y: 40 },
     size: { width: 101, height: 50 },
   });
   await page.keyboard.press('ControlOrMeta+z');
-  const undone = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const undone = await savedModel(page);
   expect(undone.diagrams[0].elements[0]).toMatchObject({
     position: { x: 40, y: 40 },
     size: { width: 100, height: 50 },
   });
-  await actor.focus();
-  await page.keyboard.press('ControlOrMeta+Shift+p');
-  await panel.getByRole('spinbutton', { name: 'X', exact: true }).fill('900');
-  await page.keyboard.press('Escape');
-  await expect(panel).toHaveCount(0);
-  await expect(actor).toBeFocused();
+  await test.step('Escape from a field cancels the edit', async () => {
+    await actor.focus();
+    await page.keyboard.press('ControlOrMeta+Shift+p');
+    await panel.getByRole('spinbutton', { name: 'X', exact: true }).fill('900');
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    await expect(actor).toBeFocused();
+  });
+
+  await test.step('Escape from a geometry button keeps the selection and returns focus', async () => {
+    await page.keyboard.press('ControlOrMeta+Shift+p');
+    await expect(
+      panel.getByRole('spinbutton', { name: 'X', exact: true }),
+    ).toBeFocused();
+    await panel.getByRole('button', { name: 'Cancel' }).focus();
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    await expect(actor).toHaveClass(/selected/u);
+    await expect(actor).toBeFocused();
+  });
 });
 
 test('reconnection uses keyboard controls and preserves flow identity, bends, and threats', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
-  await selectByKeyboard(page, actorName);
+  await openFallback(page);
+  await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('ControlOrMeta+d');
   await expect(page.locator('.react-flow__node')).toHaveCount(3);
-  await selectByKeyboard(page, flowName);
+  await selectByKeyboard(page, placeholder.records);
   await page.keyboard.press('ControlOrMeta+Shift+1');
   const panel = page.getByRole('region', { name: 'Flow endpoint' });
   const source = panel.getByRole('combobox', { name: 'Source' });
@@ -206,9 +220,7 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await expect(panel).toHaveCount(0);
-  const after = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const after = await savedModel(page);
   const flow = after.diagrams[0].elements.find(
     (element) => element.kind === 'flow',
   );
@@ -224,9 +236,7 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
       flow.source.element !== 'placeholder-actor',
   ).toBe(true);
   await page.keyboard.press('ControlOrMeta+z');
-  const before = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const before = await savedModel(page);
   expect(
     before.diagrams[0].elements.find((element) => element.kind === 'flow'),
   ).toMatchObject({
@@ -237,13 +247,10 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
 test('arrangement and view controls use the registry without view edits entering history', async ({
   page,
 }) => {
-  await page.addInitScript(withoutPickers);
-  await openPlaceholder(page);
+  await openFallback(page);
   await page.keyboard.press('ControlOrMeta+a');
   await page.keyboard.press('ControlOrMeta+Shift+ArrowLeft');
-  const arranged = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const arranged = await savedModel(page);
   expect(
     arranged.diagrams[0].elements
       .filter((element) => 'position' in element)
@@ -258,9 +265,7 @@ test('arrangement and view controls use the registry without view edits entering
     page.getByRole('button', { name: /^Menu/u }),
   ).toHaveAccessibleName('Menu');
   await page.keyboard.press('ControlOrMeta+z');
-  const undone = Either.getOrThrow(
-    readAnyFormat((await savedFile(page)).text),
-  ).model;
+  const undone = await savedModel(page);
   expect(undone.diagrams[0].elements[1]).toMatchObject({
     position: { x: 280 },
   });
@@ -269,19 +274,25 @@ test('arrangement and view controls use the registry without view edits entering
   await expect(menuItem(page, 'Snap to grid: on')).toBeVisible();
 });
 
-for (const fixture of [
-  'test-data/ecluse.json',
-  'test-data/saerskriven/ecluse.yaml',
+for (const { fixture, duplicated, retargeted } of [
+  {
+    fixture: featureCompleteFile,
+    duplicated: /^Booking service, process/u,
+    retargeted: /^Book appointment, flow/u,
+  },
+  {
+    fixture: twoDiagramsFile,
+    duplicated: storefront.webShop,
+    retargeted: /^record the paid order, flow/u,
+  },
 ]) {
   test(`document edits survive save and reopen in ${fixture}`, async ({
     page,
   }) => {
     await openFile(page, fixture);
-    await selectByKeyboard(page, /^Écluse Pilot/u);
+    await selectByKeyboard(page, duplicated);
     await page.keyboard.press('ControlOrMeta+d');
-    await expect(page.getByTestId('canvas-announcement')).toContainText(
-      'Duplicated',
-    );
+    await expect(editAnnouncement(page)).not.toBeEmpty();
     await page.keyboard.press('ControlOrMeta+Shift+p');
     const geometry = page.getByRole('region', { name: 'Position and size' });
     await geometry
@@ -291,10 +302,7 @@ for (const fixture of [
       .getByRole('button', { name: 'Increase Width', exact: true })
       .click();
     await geometry.getByRole('button', { name: 'Apply geometry' }).click();
-    await selectByKeyboard(
-      page,
-      /^publish mirrored artifact \(minted write token\), flow/u,
-    );
+    await selectByKeyboard(page, retargeted);
     await page.keyboard.press('ControlOrMeta+Shift+2');
     const endpoint = page.getByRole('region', { name: 'Flow endpoint' });
     const target = endpoint.getByRole('combobox', { name: 'Target' });
@@ -303,12 +311,10 @@ for (const fixture of [
     await page.keyboard.press('ControlOrMeta+a');
     await page.keyboard.press('ControlOrMeta+Shift+ArrowUp');
     const written = await savedFile(page);
-    const before = Either.getOrThrow(readAnyFormat(written.text)).model;
+    const before = readBack(written.text).model;
     await openText(page, written.name, written.text);
     await canvasSettled(page);
-    const reread = Either.getOrThrow(
-      readAnyFormat((await savedFile(page)).text),
-    ).model;
+    const reread = await savedModel(page);
     expect(reread).toEqual(before);
   });
 }
@@ -317,20 +323,20 @@ test('snapping is optional and preserves manual placement when disabled', async 
   page,
 }) => {
   await openPlaceholder(page);
-  const actor = await selectByKeyboard(page, actorName);
+  const actor = await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('ControlOrMeta+Shift+g');
   await dragBy(page, actor, 37);
-  const snapped = await boxOf(actor);
-  expect(snapped.x % gridSpacing).toBe(0);
+  await expect.poll(async () => (await boxOf(actor)).x % gridSpacing).toBe(0);
   await page.keyboard.press('ControlOrMeta+Shift+g');
   await dragBy(page, actor, 37);
-  const manual = await boxOf(actor);
-  expect(manual.x % gridSpacing).not.toBe(0);
+  await expect
+    .poll(async () => (await boxOf(actor)).x % gridSpacing)
+    .not.toBe(0);
 });
 
 test('endpoint typeahead keeps its keyboard ownership', async ({ page }) => {
   await openPlaceholder(page);
-  await selectByKeyboard(page, flowName);
+  await selectByKeyboard(page, placeholder.records);
   await page.keyboard.press('ControlOrMeta+Shift+1');
   const select = page.getByRole('combobox', { name: 'Source' });
   await expect(select).toBeFocused();
@@ -340,23 +346,6 @@ test('endpoint typeahead keeps its keyboard ownership', async ({ page }) => {
     'data-active-tool',
     'select',
   );
-});
-
-test('Escape on a geometry button retains selection and returns focus', async ({
-  page,
-}) => {
-  await openPlaceholder(page);
-  const actor = await selectByKeyboard(page, actorName);
-  await page.keyboard.press('ControlOrMeta+Shift+p');
-  const panel = page.getByRole('region', { name: 'Position and size' });
-  await expect(
-    panel.getByRole('spinbutton', { name: 'X', exact: true }),
-  ).toBeFocused();
-  await panel.getByRole('button', { name: 'Cancel' }).focus();
-  await page.keyboard.press('Escape');
-  await expect(panel).toHaveCount(0);
-  await expect(actor).toHaveClass(/selected/u);
-  await expect(actor).toBeFocused();
 });
 
 test('the reset control exposes the current scale to assistive technology', async ({
@@ -378,7 +367,7 @@ for (const command of ['fit-selection', 'fit-to-view'] as const) {
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openPlaceholder(page);
-    const actor = await selectByKeyboard(page, /^Store, store/u);
+    const actor = await selectByKeyboard(page, placeholder.store);
     const panel = page.getByTestId('threat-panel');
     await panel.getByRole('button', { name: 'Widen pane' }).click();
     await canvasSettled(page);

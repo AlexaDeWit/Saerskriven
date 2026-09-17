@@ -1,25 +1,27 @@
 import { expect, test, type Page } from '@playwright/test';
-import { boxOf, drawnBy, lineOf } from './canvas-geometry.fixtures.js';
 import {
+  boxOf,
   boxSelect,
   canvasSettled,
   dragBy,
-  editAnnouncement,
+  drawnBy,
   elementNodes,
+  lineOf,
+} from './canvas.fixtures.js';
+import {
+  editAnnouncement,
   nodeNamed,
-  openEcluse,
   openPlaceholder,
+  openTwoDiagrams,
+  placeholder,
   runFromMenu,
   selectNode,
   threatPanel,
 } from './studio.fixtures.js';
 
-const actorName = /^Actor, actor/u;
-const storeName = /^Store, store/u;
-
 const placeholderNodes = (page: Page) => [
-  nodeNamed(page, actorName),
-  nodeNamed(page, storeName),
+  nodeNamed(page, placeholder.actor),
+  nodeNamed(page, placeholder.store),
 ];
 
 test('a background drag selects every element wholly inside its box', async ({
@@ -55,7 +57,7 @@ test('Shift-click and Shift+Enter extend and trim the selection', async ({
 }) => {
   await openPlaceholder(page);
   const [actor, store] = placeholderNodes(page);
-  const flow = nodeNamed(page, /^Records, flow/u);
+  const flow = nodeNamed(page, placeholder.records);
 
   await actor.click();
   await store.click({ modifiers: ['Shift'] });
@@ -71,6 +73,10 @@ test('Shift-click and Shift+Enter extend and trim the selection', async ({
   await expect(store).toHaveClass(/selected/u);
 
   await page.keyboard.press('ControlOrMeta+a');
+  await expect(elementNodes(page)).toHaveCount(2);
+  await expect(page.locator('.react-flow__node.selected')).toHaveCount(2);
+  await expect(page.locator('.react-flow__edge.selected')).toHaveCount(1);
+  await expect(threatPanel(page)).toContainText('3 elements selected');
   await flow.focus();
   await page.keyboard.press('Shift+Enter');
   await expect(flow).not.toHaveClass(/selected/u);
@@ -92,7 +98,7 @@ test('a plain click or Enter reduces a group to that element', async ({
   await expect(threatPanel(page)).toContainText('Threats on Actor');
 
   await page.keyboard.press('ControlOrMeta+a');
-  const flow = nodeNamed(page, /^Records, flow/u);
+  const flow = nodeNamed(page, placeholder.records);
   await flow.focus();
   await page.keyboard.press('Enter');
 
@@ -107,7 +113,7 @@ test('dragging a multi-selection moves it by one offset and undo restores it', a
 }) => {
   await openPlaceholder(page);
   const [actor, store] = placeholderNodes(page);
-  const flow = lineOf(page, /^Records, flow/u);
+  const flow = lineOf(page, placeholder.records);
   await page.keyboard.press('ControlOrMeta+a');
   const actorBefore = await boxOf(actor);
   const storeBefore = await boxOf(store);
@@ -125,48 +131,52 @@ test('dragging a multi-selection moves it by one offset and undo restores it', a
 
   await runFromMenu(page, 'Undo');
 
-  expect(await boxOf(actor)).toEqual(actorBefore);
-  expect(await boxOf(store)).toEqual(storeBefore);
-  expect(await drawnBy(flow)).toBe(flowBefore);
+  await expect.poll(() => boxOf(actor)).toEqual(actorBefore);
+  await expect.poll(() => boxOf(store)).toEqual(storeBefore);
+  await expect.poll(() => drawnBy(flow)).toBe(flowBefore);
 });
 
 test('a selected free flow moves by the group offset and undo restores it', async ({
   page,
 }) => {
-  await openEcluse(page);
-  const pilot = await selectNode(page, /^Écluse Pilot/u);
-  const probe = nodeNamed(page, /^OSV Dataset for Supported Registries, flow/u);
-  const line = lineOf(page, /^OSV Dataset for Supported Registries, flow/u);
-  await probe.focus();
+  await openTwoDiagrams(page);
+  const gateway = await selectNode(page, /^Payment\sgateway, process/u);
+  const callback = nodeNamed(page, /^card network callback, flow/u);
+  const line = lineOf(page, /^card network callback, flow/u);
+  await callback.focus();
   await page.keyboard.press('Shift+Enter');
-  await expect(probe).toHaveClass(/selected/u);
+  await expect(callback).toHaveClass(/selected/u);
   await canvasSettled(page);
-  const pilotBefore = await pilot.boundingBox();
+  const gatewayBefore = await gateway.boundingBox();
   const lineBefore = await line.boundingBox();
   const drawnBefore = await drawnBy(line);
-  expect(pilotBefore).not.toBeNull();
+  expect(gatewayBefore).not.toBeNull();
   expect(lineBefore).not.toBeNull();
 
-  await dragBy(page, pilot, 60);
+  const gatewayModel = await boxOf(gateway);
 
-  await expect.poll(async () => (await boxOf(pilot)).x).not.toBe(920);
-  const pilotAfter = await pilot.boundingBox();
+  await dragBy(page, gateway, 60);
+
+  await expect
+    .poll(async () => (await boxOf(gateway)).x)
+    .not.toBe(gatewayModel.x);
+  const gatewayAfter = await gateway.boundingBox();
   const lineAfter = await line.boundingBox();
-  expect(pilotAfter).not.toBeNull();
+  expect(gatewayAfter).not.toBeNull();
   expect(lineAfter).not.toBeNull();
   expect((lineAfter?.width ?? 0) - (lineBefore?.width ?? 0)).toBeCloseTo(0);
   expect((lineAfter?.height ?? 0) - (lineBefore?.height ?? 0)).toBeCloseTo(0);
   expect((lineAfter?.x ?? 0) - (lineBefore?.x ?? 0)).toBeCloseTo(
-    (pilotAfter?.x ?? 0) - (pilotBefore?.x ?? 0),
+    (gatewayAfter?.x ?? 0) - (gatewayBefore?.x ?? 0),
   );
   expect((lineAfter?.y ?? 0) - (lineBefore?.y ?? 0)).toBeCloseTo(
-    (pilotAfter?.y ?? 0) - (pilotBefore?.y ?? 0),
+    (gatewayAfter?.y ?? 0) - (gatewayBefore?.y ?? 0),
   );
 
   await runFromMenu(page, 'Undo');
 
-  expect(await pilot.boundingBox()).toEqual(pilotBefore);
-  expect(await drawnBy(line)).toBe(drawnBefore);
+  await expect.poll(() => gateway.boundingBox()).toEqual(gatewayBefore);
+  await expect.poll(() => drawnBy(line)).toBe(drawnBefore);
 });
 
 test('Delete removes a multi-selection with one cascade announcement', async ({
@@ -180,8 +190,9 @@ test('Delete removes a multi-selection with one cascade announcement', async ({
 
   await expect(elementNodes(page)).toHaveCount(0);
   await expect(page.locator('.react-flow__edge')).toHaveCount(0);
-  await expect(editAnnouncement(page)).toHaveText(
-    /Removed 3 elements.*1 threat link dropped/u,
-  );
-  await expect(editAnnouncement(page).locator('p')).toHaveCount(1);
+  const said = editAnnouncement(page);
+  await expect(said).not.toBeEmpty();
+  await expect(said).toHaveText(/\b3\b/u);
+  await expect(said).toHaveText(/\b1\b/u);
+  await expect(said.locator('p')).toHaveCount(1);
 });

@@ -23,36 +23,21 @@ Every status is true to the tree:
 - A threat is **transferred** where its risk rests with whoever publishes a
   register.
 
-It is a draft the maintainer refines. It is also the production-scale fixture
-authored in the native format, beside the Écluse model under `test-data/` that
-was read out of Threat Dragon's, so the formats, render, canvas, MCP, CLI and
-studio suites all read it. The formats, render and canvas suites read it
-through lists (`nativeFixtures` in
-`packages/formats/src/lib/saerskriven-yaml.fixtures.ts`, the register list in
-`markdown-register.spec.ts`, `goldenDocuments` in
-`packages/render/src/goldens.fixtures.ts`, and the scene list in the canvas
-spec), so a further native model joins them by being added to each, its
-`nativeFixtures` entry naming where the derived model JSON goes
-([test-data](../test-data/README.md#saerskrivenmodeljson)).
+It is a draft the maintainer refines. The formats suite reads it, validates it
+and holds it to the writer's canonical form, through `nativeFixtures` in
+`packages/formats/src/lib/saerskriven-yaml.fixtures.ts`. The canvas and
+render goldens come from purpose-built fixtures under `test-data`, so an edit
+here regenerates none of them.
 
 ## Editing it
 
-The committed bytes are what `saerskrivenYamlCodec` writes, compared as a
-Vitest file snapshot against the file itself, so a hand edit that leaves the
-writer's canonical form fails the suite. `.oxfmtrc.json` leaves the YAML here
-alone for the same reason. Edit the file, then regenerate it and everything
-derived from it in the same commit:
-
-```sh
-pnpm snapshots:update @saerskriven/formats  # YAML and model JSON
-pnpm snapshots:update @saerskriven/render   # register, SVG and PNG
-pnpm snapshots:update @saerskriven/canvas   # canvas SVG
-```
-
-The render update needs the rasterizer module built first
-([Building the executables](../docs/build.md#the-svg-rasterizer)). Read every
-diff before committing: each of those files is an output, so a change to one is
-a change to what the format, the register, or the canvas writes.
+The committed bytes must stay what `saerskrivenYamlCodec` writes: the formats
+suite compares a write of the file's read with the file itself, and nothing
+rewrites the file, so a hand edit that leaves the writer's canonical form fails
+the suite. `.oxfmtrc.json` leaves the YAML here alone for the same reason. To
+get the canonical form, save the file from the studio or edit it through the
+MCP server's `saer_edit`, both of which write through the codec, or match the
+form by hand until the formats suite passes.
 
 Flow names are placed by `packages/canvas` against the other shapes, lines,
 names and badges of the diagram, and a name with no clear place still takes the

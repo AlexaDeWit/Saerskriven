@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { repositoryRoot } from '@saerskriven/model/fixtures';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import {
   createServer,
   request,
@@ -6,12 +7,10 @@ import {
   type OutgoingHttpHeaders,
 } from 'node:http';
 import { EventEmitter, once } from 'node:events';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { scratchDirectory } from './cli.fixtures.js';
 import { mcpOptionsSchema, serveMcp } from './mcp.js';
 import type { CommandOutcome } from './outcome.js';
-
-const repositoryRoot = join(import.meta.dirname, '../../..');
 
 type Running = {
   readonly url: URL;
@@ -23,8 +22,7 @@ type Running = {
 
 type Flags = { readonly port?: string; readonly tokenFile?: string };
 
-const freshTokenFile = (): string =>
-  join(mkdtempSync(join(tmpdir(), 'saerskriven-cli-token-')), 'token');
+const freshTokenFile = (): string => join(scratchDirectory('token'), 'token');
 
 const started = async (
   flags: Flags = {},

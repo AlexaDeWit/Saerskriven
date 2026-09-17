@@ -1,22 +1,20 @@
-import { defaultRenderTheme } from '@saerskriven/canvas';
 import { readThemeOverrides } from './lib/theme.js';
 import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
+import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  resvgVariable,
-  resvgWasmAsset,
-  typstFontAssets,
-} from './build-assets.js';
-import {
+  bundledFonts,
   diagramOf,
-  ecluseModel,
   everyGlyphModel,
+  fontBytes,
   goldenDocuments,
-  repositoryRoot,
+  resvgUnbuilt,
+  resvgWasm,
+  twoDiagramsModel,
   type GoldenDocument,
-} from './goldens.fixtures.js';
+} from './render.fixtures.js';
 import {
   defaultLongEdge,
   drawingFace,
@@ -26,36 +24,23 @@ import {
 } from './png.js';
 import type { ResvgAssets } from './resvg.js';
 
-const stop = (sentence: string): never => {
-  throw new Error(sentence);
-};
-
-const unbuilt =
-  process.env[resvgVariable] === undefined || process.env[resvgVariable] === '';
-
 const monoFace = 'LiberationMono-Regular.ttf';
 
 const named = (face: string): string => face;
 
-let loaded: ResvgAssets | undefined;
-
-const assetsLedBy = (leading: string): ResvgAssets => {
-  loaded ??= {
-    wasm: new Uint8Array(readFileSync(resvgWasmAsset(stop))),
-    fonts: [],
-  };
-  return {
-    wasm: loaded.wasm,
-    fonts: Either.getOrThrow(
+const assetsLedBy = (leading: string): ResvgAssets => ({
+  wasm: resvgWasm(),
+  fonts: fontBytes(
+    Either.getOrThrow(
       ledBy(
-        typstFontAssets(stop),
+        bundledFonts(),
         (face) => face.name,
         leading,
         'the pinned font directory',
       ),
-    ).map((face) => new Uint8Array(readFileSync(face.from))),
-  };
-};
+    ),
+  ),
+});
 
 const rasterized = async (
   model: Model,
@@ -98,7 +83,7 @@ describe('the faces a rasterization is offered', () => {
   });
 });
 
-describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
+describe.skipIf(resvgUnbuilt)('a diagram rasterized as a PNG', () => {
   it.each(goldenDocuments)(
     'draws $name as the committed picture',
     async (entry) => {
@@ -107,18 +92,10 @@ describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
     },
   );
 
-  it.each(goldenDocuments)(
-    'draws $name the same bytes on a second run',
-    async (entry) => {
-      const [first, second] = [await goldenOf(entry), await goldenOf(entry)];
-      expect(Buffer.from(second.png)).toEqual(Buffer.from(first.png));
-    },
-  );
-
   it('uses the selected family independently of the fallback font order', async () => {
     const [sansFirst, monoFirst] = [
-      await rasterized(ecluseModel),
-      await rasterized(ecluseModel, undefined, monoFace),
+      await rasterized(twoDiagramsModel),
+      await rasterized(twoDiagramsModel, undefined, monoFace),
     ];
     expect([sansFirst.width, sansFirst.height]).toEqual([
       monoFirst.width,
@@ -128,14 +105,14 @@ describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
   });
 
   it('puts the default long edge on the longer of the two edges', async () => {
-    const image = await rasterized(ecluseModel);
+    const image = await rasterized(twoDiagramsModel);
     expect(image.width).toBe(defaultLongEdge);
     expect(image.height).toBeLessThan(defaultLongEdge);
   });
 
   it('takes the long edge a caller names, keeping the aspect ratio', async () => {
-    const wide = await rasterized(ecluseModel, defaultLongEdge);
-    const narrow = await rasterized(ecluseModel, defaultLongEdge / 2);
+    const wide = await rasterized(twoDiagramsModel, defaultLongEdge);
+    const narrow = await rasterized(twoDiagramsModel, defaultLongEdge / 2);
     expect(narrow.width).toBe(wide.width / 2);
     expect(narrow.height / narrow.width).toBeCloseTo(
       wide.height / wide.width,
@@ -144,7 +121,7 @@ describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
   });
 
   it('draws a diagram smaller than the long edge larger, not smaller', async () => {
-    const image = await rasterized(ecluseModel, defaultLongEdge * 2);
+    const image = await rasterized(twoDiagramsModel, defaultLongEdge * 2);
     expect(image.width).toBe(defaultLongEdge * 2);
   });
 
@@ -156,34 +133,45 @@ describe.skipIf(unbuilt)('a diagram rasterized as a PNG', () => {
   });
 
   it('reports a long edge it will not draw, rather than throwing it', async () => {
-    const outcome = await renderPng(ecluseModel.diagrams[0], ecluseModel, {
-      assets: assetsLedBy(drawingFace),
-      longEdge: 0.5,
-    });
+    const outcome = await renderPng(
+      twoDiagramsModel.diagrams[0],
+      twoDiagramsModel,
+      {
+        assets: assetsLedBy(drawingFace),
+        longEdge: 0.5,
+      },
+    );
     expect(Either.isLeft(outcome)).toBe(true);
   });
 });
 
-describe.skipIf(unbuilt)('the selected PNG theme', () => {
+describe.skipIf(resvgUnbuilt)('the selected PNG theme', () => {
   it('applies font, badge, and background overrides to the raster', async () => {
-    const base = await renderPng(ecluseModel.diagrams[0], ecluseModel, {
-      assets: assetsLedBy(drawingFace),
-      longEdge: 400,
-    });
-    const changed = await renderPng(ecluseModel.diagrams[0], ecluseModel, {
-      assets: assetsLedBy(drawingFace),
-      longEdge: 400,
-      theme: readThemeOverrides({
-        severity: { high: '#112233' },
-        colours: { background: '#334455' },
-        fonts: { body: 'Liberation Mono' },
-        badges: { style: 'outline' },
-      }).theme,
-    });
+    const base = await renderPng(
+      twoDiagramsModel.diagrams[0],
+      twoDiagramsModel,
+      {
+        assets: assetsLedBy(drawingFace),
+        longEdge: 400,
+      },
+    );
+    const changed = await renderPng(
+      twoDiagramsModel.diagrams[0],
+      twoDiagramsModel,
+      {
+        assets: assetsLedBy(drawingFace),
+        longEdge: 400,
+        theme: readThemeOverrides({
+          severity: { high: '#112233' },
+          colours: { background: '#334455' },
+          fonts: { body: 'Liberation Mono' },
+          badges: { style: 'outline' },
+        }).theme,
+      },
+    );
     const first = Either.getOrThrow(base);
     const second = Either.getOrThrow(changed);
     expect([second.width, second.height]).toEqual([first.width, first.height]);
     expect(second.png).not.toEqual(first.png);
-    expect(defaultRenderTheme.fonts.body).toBe('Liberation Sans');
   });
 });

@@ -1,5 +1,3 @@
-import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
 import {
   allCells,
   cellsOf,
@@ -8,27 +6,23 @@ import {
   isAnchored,
   threatsOf,
 } from './threat-dragon-document.js';
-import { readThreatDragon } from './threat-dragon-read.js';
 import {
   allThreats,
   complementFixture,
-  ecluseText,
+  featureCompleteText,
+  threatDragonReading,
 } from './threat-dragon.fixtures.js';
 
-const documentOf = (text: string): ThreatDragonDocument =>
-  Either.getOrThrowWith(
-    readThreatDragon(text),
-    (failure) => new Error(`The codec refused a text: ${failure._tag}`),
-  ).source;
+const featureComplete = threatDragonReading(featureCompleteText).source;
 
-const ecluse = documentOf(ecluseText);
-
-const complement = documentOf(JSON.stringify(complementFixture));
+const complement = threatDragonReading(
+  JSON.stringify(complementFixture),
+).source;
 
 describe('walking a Threat Dragon document', () => {
   it('reaches every threat the diagrams nest under their cells', () => {
-    expect(allCells(ecluse)).toHaveLength(38);
-    expect(allThreats(ecluse)).toHaveLength(29);
+    expect(allCells(featureComplete)).toHaveLength(13);
+    expect(allThreats(featureComplete)).toHaveLength(25);
   });
 
   it('reads a diagram that draws nothing as drawing nothing', () => {

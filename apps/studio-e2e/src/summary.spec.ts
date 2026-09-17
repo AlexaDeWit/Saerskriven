@@ -3,28 +3,22 @@ import {
   addRecord,
   chooseInPanel,
   expandThreat,
-  openEcluse,
+  openTwoDiagrams,
   panelControl,
   panelField,
   selectNode,
-  threatPanel,
+  storefront,
+  threatSummary,
 } from './studio.fixtures.js';
 
-const proxy = /^Écluse proxy, process/u;
-
-const forwarded = /Forwarded caller credentials/u;
-
-const freshness = /^The freshness quarantine/u;
+const serverPricing = /^The server prices the basket/u;
 
 const unbacked = 'mitigated-without-implemented-work';
 
 const invalidated = 'rests-on-invalidated-assumption';
 
-const summaryOf = (page: Page, title: RegExp): Locator =>
-  threatPanel(page).getByRole('button', { name: title });
-
 const collapse = async (page: Page, title: RegExp): Promise<Locator> => {
-  const summary = summaryOf(page, title);
+  const summary = threatSummary(page, title);
   if ((await summary.getAttribute('aria-expanded')) === 'true') {
     await summary.click();
   }
@@ -60,8 +54,7 @@ const namesItsParts = async (summary: Locator): Promise<void> => {
 };
 
 const raiseBothFlags = async (page: Page): Promise<void> => {
-  await expandThreat(page, forwarded);
-  await chooseInPanel(page, 'Mitigation 1 status', 'proposed');
+  await expandThreat(page, storefront.orderDenied);
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
   await chooseInPanel(page, 'Assumption 1 status', 'invalidated');
 };
@@ -69,29 +62,29 @@ const raiseBothFlags = async (page: Page): Promise<void> => {
 test('collapsed counts follow records linked and unlinked from the expanded view', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.ledger);
+  await expandThreat(page, storefront.orderDenied);
   await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
 
-  const summary = await collapse(page, forwarded);
+  const summary = await collapse(page, storefront.orderDenied);
   await expect.poll(() => countOf(summary, 'mitigations')).toBe(2);
   await expect.poll(() => countOf(summary, 'assumptions')).toBe(1);
   await namesItsParts(summary);
 
-  await expandThreat(page, forwarded);
-  await chooseInPanel(page, 'Existing mitigation', freshness);
+  await expandThreat(page, storefront.orderDenied);
+  await chooseInPanel(page, 'Existing mitigation', serverPricing);
   await panelControl(page, 'Link existing mitigation').click();
   await expect(
     panelField(page, 'textbox', 'Mitigation 3 description'),
-  ).toHaveValue(freshness);
-  await collapse(page, forwarded);
+  ).toHaveValue(serverPricing);
+  await collapse(page, storefront.orderDenied);
   await expect.poll(() => countOf(summary, 'mitigations')).toBe(3);
 
-  await expandThreat(page, forwarded);
+  await expandThreat(page, storefront.orderDenied);
   await panelControl(page, 'Unlink mitigation 3').click();
-  await collapse(page, forwarded);
+  await collapse(page, storefront.orderDenied);
   await expect.poll(() => countOf(summary, 'mitigations')).toBe(2);
   await expect.poll(() => countOf(summary, 'assumptions')).toBe(1);
 });
@@ -99,41 +92,41 @@ test('collapsed counts follow records linked and unlinked from the expanded view
 test('a mitigated threat with only proposed work is marked until the work is implemented', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  const summary = summaryOf(page, forwarded);
-  await expect(markOn(summary, unbacked)).toHaveCount(0);
-
-  await expandThreat(page, forwarded);
-  await chooseInPanel(page, 'Mitigation 1 status', 'proposed');
-  await collapse(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.ledger);
+  const summary = threatSummary(page, storefront.orderDenied);
   await expect(markOn(summary, unbacked)).toBeVisible();
   await namesItsParts(summary);
 
-  await expandThreat(page, forwarded);
+  await expandThreat(page, storefront.orderDenied);
   await chooseInPanel(page, 'Mitigation 1 status', 'implemented');
-  await collapse(page, forwarded);
+  await collapse(page, storefront.orderDenied);
   await expect(markOn(summary, unbacked)).toHaveCount(0);
+
+  await expandThreat(page, storefront.orderDenied);
+  await chooseInPanel(page, 'Mitigation 1 status', 'proposed');
+  await collapse(page, storefront.orderDenied);
+  await expect(markOn(summary, unbacked)).toBeVisible();
 });
 
 test('only an invalidated assumption marks the threat it is linked to', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
-  const summary = summaryOf(page, forwarded);
+  const summary = threatSummary(page, storefront.takeover);
 
   for (const status of ['unconfirmed', 'valid']) {
     await chooseInPanel(page, 'Assumption 1 status', status);
-    await collapse(page, forwarded);
+    await collapse(page, storefront.takeover);
     await expect(summary.locator('[data-flag]')).toHaveCount(0);
-    await expandThreat(page, forwarded);
+    await expandThreat(page, storefront.takeover);
   }
 
   await chooseInPanel(page, 'Assumption 1 status', 'invalidated');
-  await collapse(page, forwarded);
+  await collapse(page, storefront.takeover);
   await expect(markOn(summary, invalidated)).toBeVisible();
   await namesItsParts(summary);
 });
@@ -141,10 +134,10 @@ test('only an invalidated assumption marks the threat it is linked to', async ({
 test('each flag mark keeps its glyph and outline in forced colours', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.ledger);
   await raiseBothFlags(page);
-  const summary = await collapse(page, forwarded);
+  const summary = await collapse(page, storefront.orderDenied);
   await page.emulateMedia({ forcedColors: 'active' });
 
   const drawn = await summary.locator('[data-flag]').evaluateAll((marks) =>
@@ -171,56 +164,58 @@ test('each flag mark keeps its glyph and outline in forced colours', async ({
   expect(new Set(drawn.map(({ text }) => text)).size).toBe(2);
 });
 
-test('a summary with counts and both flags fits the panel without scrolling sideways', async ({
-  page,
-}) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await raiseBothFlags(page);
-  const summary = await collapse(page, forwarded);
-  await expect(summary.locator('[data-flag]')).toHaveCount(2);
+test(
+  'a summary with counts and both flags fits the panel without scrolling sideways',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    await selectNode(page, storefront.ledger);
+    await raiseBothFlags(page);
+    const summary = await collapse(page, storefront.orderDenied);
+    await expect(summary.locator('[data-flag]')).toHaveCount(2);
 
-  const overflow = await summary.evaluate((node) => {
-    let scroller = node.parentElement;
-    while (
-      scroller !== null &&
-      getComputedStyle(scroller).overflowY !== 'auto'
-    ) {
-      scroller = scroller.parentElement;
-    }
-    const edge = scroller?.getBoundingClientRect().right ?? 0;
-    const outside = [
-      node,
-      ...node.querySelectorAll('[data-count], [data-flag]'),
-    ].filter((part) => part.getBoundingClientRect().right > edge + 0.5);
-    return {
-      outside: outside.length,
-      scrolls: (scroller?.scrollWidth ?? 1) > (scroller?.clientWidth ?? 0),
-    };
-  });
+    const overflow = await summary.evaluate((node) => {
+      let scroller = node.parentElement;
+      while (
+        scroller !== null &&
+        getComputedStyle(scroller).overflowY !== 'auto'
+      ) {
+        scroller = scroller.parentElement;
+      }
+      const edge = scroller?.getBoundingClientRect().right ?? 0;
+      const outside = [
+        node,
+        ...node.querySelectorAll('[data-count], [data-flag]'),
+      ].filter((part) => part.getBoundingClientRect().right > edge + 0.5);
+      return {
+        outside: outside.length,
+        scrolls: (scroller?.scrollWidth ?? 1) > (scroller?.clientWidth ?? 0),
+      };
+    });
 
-  expect(overflow).toEqual({ outside: 0, scrolls: false });
-});
+    expect(overflow).toEqual({ outside: 0, scrolls: false });
+  },
+);
 
 test('a record status changed in one tab updates the collapsed summary in another', async ({
   context,
   page,
 }) => {
   const other = await context.newPage();
-  await openEcluse(page);
-  await openEcluse(other);
-  await selectNode(other, proxy);
-  const summary = summaryOf(other, forwarded);
+  await openTwoDiagrams(page);
+  await openTwoDiagrams(other);
+  await selectNode(other, storefront.ledger);
+  const summary = threatSummary(other, storefront.orderDenied);
   await expect(summary).toHaveAttribute('aria-expanded', 'false');
-  await expect(markOn(summary, unbacked)).toHaveCount(0);
+  await expect(markOn(summary, unbacked)).toBeVisible();
 
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
-  await chooseInPanel(page, 'Mitigation 1 status', 'proposed');
+  await selectNode(page, storefront.ledger);
+  await expandThreat(page, storefront.orderDenied);
+  await chooseInPanel(page, 'Mitigation 1 status', 'implemented');
   await expect(
     panelField(page, 'combobox', 'Mitigation 1 status'),
-  ).toContainText(/proposed/iu);
+  ).toContainText(/implemented/iu);
 
-  await expect(markOn(summary, unbacked)).toBeVisible();
+  await expect(markOn(summary, unbacked)).toHaveCount(0);
   await expect(summary).toHaveAttribute('aria-expanded', 'false');
 });

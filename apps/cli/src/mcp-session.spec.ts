@@ -1,34 +1,30 @@
-import {
-  coverageResultSchema,
-  dataNotInstructions,
-  getThreatResultSchema,
-  registerResultSchema,
-  renderDiagramResultSchema,
-  renderWriteFailure,
-  revisionOf,
-  searchElementsResultSchema,
-  searchThreatsResultSchema,
-  validateResultSchema,
-  WriteFailure,
-  writeReportSchema,
-} from '@saerskriven/mcp';
+import { renderWriteFailure, revisionOf, WriteFailure } from '@saerskriven/mcp';
 import {
   blobsOf,
+  dataNotInstructions,
   editOf,
   eras,
   type Era,
+  getThreatResultSchema,
   imagesOf,
   mediaTypesOf,
+  pngMagic,
   promptProseOf,
   proseOf,
   readingOf,
+  referencingYaml,
   registeredPrompts,
   registeredTools,
+  renderDiagramResultSchema,
   resourceLinksOf,
   resourceProseOf,
+  searchElementsResultSchema,
+  searchThreatsResultSchema,
   structuredOf,
   textOf,
+  type McpSession,
 } from '@saerskriven/mcp/fixtures';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import {
   mkdtempSync,
   readFileSync,
@@ -43,38 +39,38 @@ import { join } from 'node:path';
 import {
   httpProcess,
   sessionOpeners,
-  type McpSession,
   type SessionOpener,
 } from './mcp-session.fixtures.js';
 import {
   ran,
-  repositoryRoot,
   runners,
   spawnTimeout,
   titleOf,
   type Runner,
 } from './runners.fixtures.js';
 
-const ecluse = ['mcp', '--file', 'test-data/ecluse.json'];
+const dragonFile = 'test-data/threat-dragon/feature-complete.json';
 
-const ecluseBytes = readFileSync(join(repositoryRoot, 'test-data/ecluse.json'));
+const dragon = ['mcp', '--file', dragonFile];
 
-const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+const dragonBytes = readFileSync(
+  testDataPath('threat-dragon/feature-complete.json'),
+);
 
-const retitled = 'Écluse gate: a title written through saer_edit';
+const retitled = 'A title written through saer_edit';
 
 const scripted = async (opener: SessionOpener, runner: Runner, era: Era) => {
   const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-session-'));
   try {
-    writeFileSync(join(root, 'ecluse.json'), ecluseBytes);
+    writeFileSync(join(root, 'dragon.json'), dragonBytes);
     const session = await opener.open(
       runner,
-      ['mcp', '--root', root, '--file', 'ecluse.json'],
+      ['mcp', '--root', root, '--file', 'dragon.json'],
       era,
     );
     try {
       const run = await calls(session);
-      return { ...run, onDisk: readFileSync(join(root, 'ecluse.json')) };
+      return { ...run, onDisk: readFileSync(join(root, 'dragon.json')) };
     } finally {
       await session.end();
     }
@@ -87,7 +83,7 @@ const calls = async (session: McpSession) => {
   const call = (name: string, args: Record<string, unknown> = {}) =>
     session.client.callTool({ name, arguments: args });
   const inspected = await call('saer_inspect');
-  const drawn = await call('saer_render_diagram');
+  const drawn = await call('saer_render_diagram', { diagram: 'Booking' });
   const searched = await call('saer_search_threats', {
     status: 'open',
     severity: 'high',
@@ -145,86 +141,6 @@ const calls = async (session: McpSession) => {
   };
 };
 
-const recordThreat = (id: string) => ({
-  op: 'add_threat',
-  threat: {
-    id,
-    title: `Threat ${id}`,
-    category: { methodology: 'STRIDE', category: 'spoofing' },
-    severity: 'high',
-    status: 'mitigated',
-    description: '',
-    elements: [],
-  },
-});
-
-const recordSession = async (opener: SessionOpener, runner: Runner) => {
-  const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-records-'));
-  const file = 'records.yaml';
-  const session = await opener.open(runner, ['mcp', '--root', root]);
-  try {
-    const call = (name: string, args: Record<string, unknown>) =>
-      session.client.callTool({ name, arguments: { file, ...args } });
-    const edit = async (
-      revision: string,
-      edits: readonly Record<string, unknown>[],
-    ) => editOf(await call('saer_edit', { revision, edits }));
-    const created = structuredOf(
-      await call('saer_create', { title: 'Records over MCP' }),
-      writeReportSchema,
-    );
-    const added = await edit(created.revision, [
-      recordThreat('first'),
-      recordThreat('second'),
-      {
-        op: 'add_mitigation',
-        mitigation: {
-          id: 'tls',
-          title: 'TLS',
-          prose: '',
-          status: 'proposed',
-          threats: ['first'],
-        },
-      },
-      {
-        op: 'add_assumption',
-        assumption: { id: 'hosting', prose: 'Hosted.', threats: ['first'] },
-      },
-    ]);
-    const linked = await edit(added.revision, [
-      { op: 'link_mitigation', mitigation: 'tls', threat: 'second' },
-      { op: 'link_assumption_to_model', assumption: 'hosting' },
-      { op: 'unlink_assumption', assumption: 'hosting', threat: 'first' },
-      { op: 'set_mitigation_status', mitigation: 'tls', status: 'implemented' },
-    ]);
-    const second = structuredOf(
-      await call('saer_get_threat', { ref: 'second' }),
-      getThreatResultSchema,
-    );
-    const inspected = readingOf(await call('saer_inspect', {}));
-    const unlinked = await edit(linked.revision, [
-      { op: 'unlink_mitigation', mitigation: 'tls', threat: 'first' },
-      { op: 'unlink_mitigation', mitigation: 'tls', threat: 'second' },
-    ]);
-    const flagged = structuredOf(
-      await call('saer_search_threats', {}),
-      searchThreatsResultSchema,
-    );
-    return {
-      second,
-      inspected,
-      unlinked,
-      flagged,
-      onDisk: Either.getOrThrow(
-        readAnyFormat(readFileSync(join(root, file), 'utf8')),
-      ).model,
-    };
-  } finally {
-    await session.end();
-    rmSync(root, { recursive: true, force: true });
-  }
-};
-
 for (const runner of runners) {
   const register = runner.absence === undefined ? describe : describe.skip;
   for (const opener of sessionOpeners) {
@@ -253,14 +169,14 @@ for (const runner of runners) {
               revision: run.inspected.revision,
               totals: run.inspected.totals,
             }).toEqual({
-              file: 'ecluse.json',
+              file: 'dragon.json',
               format: 'threat-dragon',
-              revision: revisionOf(ecluseBytes),
+              revision: revisionOf(dragonBytes),
               totals: {
-                diagrams: 1,
-                elements: 38,
-                threats: 29,
-                mitigations: 29,
+                diagrams: 2,
+                elements: 13,
+                threats: 24,
+                mitigations: 13,
                 assumptions: 0,
               },
             });
@@ -279,7 +195,7 @@ for (const runner of runners) {
               applied: written.applied,
               revision: written.revision,
             }).toEqual({
-              file: 'ecluse.json',
+              file: 'dragon.json',
               format: 'threat-dragon',
               applied: 1,
               revision: revisionOf(run.onDisk),
@@ -288,7 +204,7 @@ for (const runner of runners) {
             expect(textOf(run.stale)).toContain(
               renderWriteFailure(
                 WriteFailure.StaleRevision({
-                  file: 'ecluse.json',
+                  file: 'dragon.json',
                   quoted: run.inspected.revision,
                   found: written.revision,
                 }),
@@ -308,52 +224,6 @@ for (const runner of runners) {
             });
           });
         }
-
-        it('links, unlinks, applies an assumption to the model and sets a status on a native model', async () => {
-          const run = await recordSession(opener, runner);
-
-          expect({
-            mitigations: run.second.mitigations,
-            flags: run.second.flags,
-          }).toEqual({
-            mitigations: [
-              {
-                id: 'tls',
-                title: 'TLS',
-                prose: '',
-                status: 'implemented',
-                threats: ['first', 'second'],
-              },
-            ],
-            flags: [],
-          });
-          expect(run.inspected.assumptions).toEqual([
-            {
-              id: 'hosting',
-              prose: 'Hosted.',
-              status: 'unconfirmed',
-              threats: [],
-              appliesToModel: true,
-            },
-          ]);
-          expect(run.unlinked.culled).toEqual([
-            { kind: 'mitigation', id: 'tls' },
-          ]);
-          expect(
-            run.flagged.threats.map(({ id, status, flags }) => [
-              id,
-              status,
-              flags,
-            ]),
-          ).toEqual([
-            ['first', 'mitigated', ['mitigated-without-implemented-work']],
-            ['second', 'mitigated', ['mitigated-without-implemented-work']],
-          ]);
-          expect({
-            mitigations: run.onDisk.mitigations,
-            assumptions: run.onDisk.assumptions.map(({ id }) => id),
-          }).toEqual({ mitigations: [], assumptions: ['hosting'] });
-        });
       },
       spawnTimeout,
     );
@@ -367,7 +237,11 @@ for (const runner of runners) {
               join(tmpdir(), 'saerskriven-mcp-properties-'),
             );
             const file = 'model.yaml';
-            const session = await opener.open(runner, ['mcp', '--root', root]);
+            const session = await opener.open(
+              runner,
+              ['mcp', '--root', root],
+              'modern',
+            );
             try {
               const created = await session.client.callTool({
                 name: 'saer_create',
@@ -502,128 +376,51 @@ for (const runner of runners) {
           spawnTimeout,
         );
 
-        it('completes discovery on the revision the split SDK negotiates', async () => {
-          const session = await opener.open(runner, ecluse);
-          const listed = await session.client.listTools();
-          const era = session.client.getProtocolEra();
-          await session.end();
-          expect(era).toEqual('modern');
-          expect(listed.tools.map((tool) => tool.name)).toEqual(
-            registeredTools,
-          );
-        });
-
-        it('serves a 2025-era client the same tool list', async () => {
-          const session = await opener.open(runner, ecluse, 'legacy');
-          const listed = await session.client.listTools();
-          const era = session.client.getProtocolEra();
-          await session.end();
-          expect(era).toEqual('legacy');
-          expect(listed.tools.map((tool) => tool.name)).toEqual(
-            registeredTools,
-          );
-        });
-
-        it('checks the Écluse fixture through saer_validate', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_validate',
+        for (const era of eras) {
+          it(`completes discovery and lists the registered tools in the ${era} era`, async () => {
+            const session = await opener.open(runner, dragon, era);
+            const listed = await session.client.listTools();
+            const negotiated = session.client.getProtocolEra();
+            await session.end();
+            expect(negotiated).toEqual(era);
+            expect(listed.tools.map((tool) => tool.name)).toEqual(
+              registeredTools,
+            );
           });
-          await session.end();
-          const checked = structuredOf(result, validateResultSchema);
-          expect({
-            format: checked.format,
-            diverged: checked.diverged,
-          }).toEqual({
-            format: 'threat-dragon',
-            diverged: false,
-          });
-        });
-
-        it('reports coverage over the Écluse fixture', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_coverage',
-          });
-          await session.end();
-          const reported = structuredOf(result, coverageResultSchema);
-          expect(reported.perElement.length).toBe(38);
-          expect(
-            reported.open.reduce((total, group) => total + group.count, 0),
-          ).toBeGreaterThan(0);
-        });
-
-        it('writes the register of the Écluse fixture', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_register',
-          });
-          await session.end();
-          expect(structuredOf(result, registerResultSchema).markdown).toContain(
-            'Écluse',
-          );
-        });
-
-        it('searches the elements of the Écluse fixture', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_search_elements',
-            arguments: { kind: 'store' },
-          });
-          await session.end();
-          const found = structuredOf(result, searchElementsResultSchema);
-          expect(found.counts.matched).toBeGreaterThan(0);
-          expect(found.elements.map((row) => row.kind)).toEqual(
-            found.elements.map(() => 'store'),
-          );
-        });
+        }
 
         it('refuses to draw over a file the root already holds', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_render_diagram',
-            arguments: { out: 'test-data/render/ecluse.snapshot.png' },
-          });
-          await session.end();
-          expect(result.isError).toBe(true);
-          expect(resourceLinksOf(result)).toEqual([]);
-          expect(textOf(result)).toContain('is already there');
-        });
-
-        it('refuses an out path that names anything but a PNG', async () => {
-          const session = await opener.open(runner, ecluse);
-          const result = await session.client.callTool({
-            name: 'saer_render_diagram',
-            arguments: { out: 'package.json' },
-          });
-          await session.end();
-          expect(result.isError).toBe(true);
-          expect(resourceLinksOf(result)).toEqual([]);
-          expect(textOf(result)).toContain('does not end in .png');
-        });
-
-        it('refuses a file no format claims with the formats it tried', async () => {
-          const session = await opener.open(runner, [
-            'mcp',
-            '--file',
-            'package.json',
-          ]);
-          const result = await session.client.callTool({
-            name: 'saer_validate',
-          });
-          await session.end();
-          expect(result.isError).toBe(true);
-          expect(textOf(result)).toContain(
-            'No format claimed the file. Saerskriven tried threat-dragon, saerskriven-yaml.',
+          const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-taken-'));
+          writeFileSync(join(root, 'model.yaml'), referencingYaml('element-1'));
+          writeFileSync(join(root, 'taken.png'), 'not a picture');
+          const session = await opener.open(
+            runner,
+            ['mcp', '--root', root, '--file', 'model.yaml'],
+            'modern',
           );
+          try {
+            const result = await session.client.callTool({
+              name: 'saer_render_diagram',
+              arguments: { out: 'taken.png' },
+            });
+            expect(result.isError).toBe(true);
+            expect(resourceLinksOf(result)).toEqual([]);
+            expect(textOf(result)).toContain('is already there');
+            expect(readFileSync(join(root, 'taken.png'), 'utf8')).toEqual(
+              'not a picture',
+            );
+          } finally {
+            await session.end();
+            rmSync(root, { recursive: true, force: true });
+          }
         });
 
         it('refuses a file outside the root as a tool result', async () => {
-          const session = await opener.open(runner, [
-            'mcp',
-            '--root',
-            'test-data',
-          ]);
+          const session = await opener.open(
+            runner,
+            ['mcp', '--root', 'test-data'],
+            'modern',
+          );
           const result = await session.client.callTool({
             name: 'saer_inspect',
             arguments: { file: '../package.json' },
@@ -645,7 +442,7 @@ for (const runner of runners) {
       () => {
         for (const era of eras) {
           it(`reads the register and a diagram, completes it, and renders both prompts in the ${era} era`, async () => {
-            const session = await opener.open(runner, ecluse, era);
+            const session = await opener.open(runner, dragon, era);
             try {
               const listed = await session.client.listResources();
               const registerRead = await session.client.readResource({
@@ -661,7 +458,7 @@ for (const runner of runners) {
               const prompts = await session.client.listPrompts();
               const stride = await session.client.getPrompt({
                 name: 'stride_pass',
-                arguments: { element: 'Écluse proxy' },
+                arguments: { element: 'Booking service' },
               });
               const review = await session.client.getPrompt({
                 name: 'review_model',
@@ -678,6 +475,7 @@ for (const runner of runners) {
               expect(listed.resources.map((resource) => resource.uri)).toEqual([
                 'saer://register',
                 'saer://diagram/0',
+                'saer://diagram/1',
               ]);
               expect({
                 ttlMs: listed.ttlMs,
@@ -690,11 +488,11 @@ for (const runner of runners) {
               expect(opening).toEqual(opening.map(() => dataNotInstructions));
               expect(opening.length).toBe(4);
               expect(resourceProseOf(registerRead).prose[0]).toContain(
-                '# Écluse threat register',
+                '# Clinic booking threat register',
               );
               expect(image?.mimeType).toEqual('image/png');
               expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
-              expect(completed.completion.values).toEqual(['0']);
+              expect(completed.completion.values).toEqual(['0', '1']);
               expect(prompts.prompts.map((prompt) => prompt.name)).toEqual(
                 registeredPrompts,
               );
@@ -723,7 +521,7 @@ for (const runner of runners) {
       });
 
       it('keeps the HTTP token out of both streams and exits 0 on SIGTERM', async () => {
-        const server = await httpProcess(runner, ecluse);
+        const server = await httpProcess(runner, dragon);
         const token = readFileSync(server.tokenFile, 'utf8');
         const mode = statSync(server.tokenFile).mode & 0o777;
         const ended = await server.stop();

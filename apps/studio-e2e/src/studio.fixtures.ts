@@ -1,32 +1,57 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { readAnyFormat, type DetectedRead } from '@saerskriven/formats';
+import type { Model } from '@saerskriven/model';
+import { committedText, testDataPath } from '@saerskriven/model/fixtures';
+import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import type { Box, Point } from './canvas-geometry.fixtures.js';
+import {
+  canvasContainer,
+  canvasSettled,
+  centreOf,
+  emptyCanvasPoint,
+  reachesAt,
+} from './canvas.fixtures.js';
 
 const developmentModelKey = 'saerskrivenDevelopmentModel';
 
-/** A file of the repository, named from the root, as a path on disk. */
-export const vendored = (path: string): string =>
-  join(__dirname, '../../..', path);
+/** What the placeholder model draws, by the names assistive technology has for them. */
+export const placeholder = {
+  actor: /^Actor, actor/u,
+  store: /^Store, store/u,
+  records: /^Records, flow/u,
+} as const;
 
-/** The box the diagram is drawn in, chrome and graph paper included. */
-export const canvasContainer = (page: Page): Locator =>
-  page.getByTestId('canvas-container');
+/** Elements of the two-diagram model's storefront diagram by accessible name, and threats on them by title. */
+export const storefront = {
+  shopper: /^Shopper, actor/u,
+  webShop: /^Web shop, process/u,
+  catalogue: /^Catalogue, store/u,
+  ledger: /^Order ledger, store/u,
+  shopNetwork: /^Shop network, trust boundary/u,
+  takeover: /Account takeover/u,
+  basketPrice: /Basket price changed/u,
+  orderDenied: /Shopper denies placing an order/u,
+} as const;
 
-/** Waits for consecutive matching viewport transforms before a canvas gesture. */
-export const canvasSettled = async (page: Page): Promise<void> => {
-  const viewport = page.locator('.react-flow__viewport');
-  let before = '';
-  await expect
-    .poll(async () => {
-      const now = (await viewport.getAttribute('style')) ?? '';
-      const settled = now !== '' && now === before;
-      before = now;
-      return settled;
-    })
-    .toBe(true);
-};
+/** What the two-diagram model's diagrams are called, and an element drawn on each. */
+export const twoDiagrams = {
+  first: {
+    title: 'Taking an order',
+    drawn: storefront.webShop,
+  },
+  second: {
+    title: 'Shipping an order',
+    drawn: /^Dispatch, process/u,
+  },
+} as const;
 
+/** The native file of the two-diagram model under `test-data`, for a spec that opens it through the picker. */
+export const twoDiagramsFile = 'saerskriven/two-diagrams.yaml';
+
+/** A Threat Dragon file under `test-data` that uses every construct the format carries, for a spec that opens one through the picker. */
+export const featureCompleteFile = 'threat-dragon/feature-complete.json';
+
+/** Waits until `target` has held focus over two consecutive readings. */
 export const focusSettled = async (target: Locator): Promise<void> => {
   let before = false;
   await expect
@@ -41,6 +66,11 @@ export const focusSettled = async (target: Locator): Promise<void> => {
     .toBe(true);
 };
 
+const landed = async (page: Page): Promise<void> => {
+  await expect(canvasContainer(page)).toBeVisible();
+  await canvasSettled(page);
+};
+
 /** Opens a model document through the development hook. Existing recovery still takes precedence. */
 export const openModelDocument = async (
   page: Page,
@@ -53,64 +83,25 @@ export const openModelDocument = async (
     { key: developmentModelKey, model },
   );
   await page.goto('/');
-  await expect(canvasContainer(page)).toBeVisible();
-  await canvasSettled(page);
+  await landed(page);
 };
 
-/** Opens a vendored model through {@link openModelDocument}. */
-export const openModel = async (page: Page, path: string): Promise<void> => {
+/**
+ * Opens the studio on `test-data/two-diagrams.model.json` through
+ * {@link openModelDocument}, with its first diagram, `Taking an order`, on
+ * screen.
+ */
+export const openTwoDiagrams = async (page: Page): Promise<void> => {
   await openModelDocument(
     page,
-    JSON.parse(readFileSync(vendored(path), 'utf8')),
+    JSON.parse(committedText('two-diagrams.model.json')),
   );
 };
-
-/** Opens the studio on Écluse's model, through {@link openModel}. */
-export const openEcluse = async (page: Page): Promise<void> => {
-  await openModel(page, 'test-data/ecluse.model.json');
-};
-
-/** The two-diagram model of Saerskriven's own threat model. */
-export const saerskrivenModel = 'test-data/saerskriven.model.json';
-
-/** What its two diagrams are called, and an element drawn on each. */
-export const saerskrivenDiagrams = {
-  first: {
-    title: 'Reading a file and rendering it',
-    drawn: /^Codec read, process/u,
-  },
-  second: {
-    title: 'Agents and the desktop shell',
-    drawn: /^Agent and its harness, actor/u,
-  },
-} as const;
-
-/** The control joined to the menu button that names the diagram on screen. */
-export const diagramSwitcher = (page: Page): Locator =>
-  page.getByTestId('diagram-switcher');
-
-/** The field the switcher becomes while a diagram's title is being edited. */
-export const diagramTitleField = (page: Page): Locator =>
-  page.getByRole('textbox', { name: 'Diagram title' });
-
-/** Opens the switcher's list, and does nothing where it is already open. */
-export const openSwitcher = async (page: Page): Promise<void> => {
-  if (await page.getByRole('menu').isVisible()) {
-    return;
-  }
-  await diagramSwitcher(page).click();
-  await expect(page.getByRole('menu')).toBeVisible();
-};
-
-/** One diagram in the open menu or the open switcher, by its title. */
-export const diagramChoice = (page: Page, title: string): Locator =>
-  page.getByRole('menuitemradio', { name: title, exact: true });
 
 /** Opens the studio on the model it carries until a file can be opened. */
 export const openPlaceholder = async (page: Page): Promise<void> => {
   await page.goto('/');
-  await expect(canvasContainer(page)).toBeVisible();
-  await canvasSettled(page);
+  await landed(page);
 };
 
 /** Removes native picker APIs so tests use the file input and download fallback. */
@@ -119,18 +110,28 @@ export const withoutPickers = (): void => {
   Reflect.deleteProperty(globalThis, 'showSaveFilePicker');
 };
 
-/** Opens a vendored file through the fallback picker and waits for its canvas. */
+/** Opens the studio at `entry` on its placeholder model, with the picker APIs removed so files go through the input and downloads. */
+export const openFallback = async (page: Page, entry = '/'): Promise<void> => {
+  await page.addInitScript(withoutPickers);
+  await page.goto(entry);
+  await landed(page);
+};
+
+/** Hands the fallback picker a file under `test-data`, and waits for its canvas. */
+export const chooseFile = async (page: Page, path: string): Promise<void> => {
+  await page.getByTestId('file-input').setInputFiles(testDataPath(path));
+  await expect(page.getByTestId('failure-notice')).toBeEmpty();
+  await canvasSettled(page);
+};
+
+/** Opens a file under `test-data` through the fallback picker and waits for its canvas. */
 export const openFile = async (
   page: Page,
   path: string,
   entry = '/',
 ): Promise<void> => {
-  await page.addInitScript(withoutPickers);
-  await page.goto(entry);
-  await expect(canvasContainer(page)).toBeVisible();
-  await page.getByTestId('file-input').setInputFiles(vendored(path));
-  await expect(page.getByTestId('failure-notice')).toBeEmpty();
-  await canvasSettled(page);
+  await openFallback(page, entry);
+  await chooseFile(page, path);
 };
 
 /**
@@ -182,57 +183,106 @@ export const runFromMenu = async (page: Page, name: string): Promise<void> => {
   await expect(page.getByRole('menu')).toHaveCount(0);
 };
 
-/** A file the studio wrote through the download path. */
-export type SavedFile = {
+/** Whether the menu offers Undo, read by opening the menu and putting it away again. */
+export const undoOffered = async (page: Page): Promise<boolean> => {
+  await openMenu(page);
+  const disabled = await menuItem(page, 'Undo').getAttribute('aria-disabled');
+  await closeMenu(page);
+  return disabled !== 'true';
+};
+
+/** Checks, in the menu, the name and the format of the file the studio holds, and puts the menu away again. */
+export const expectFileShown = async (
+  page: Page,
+  name: string,
+  format: string,
+): Promise<void> => {
+  await openMenu(page);
+  await expect(page.getByTestId('file-state')).toContainText(name);
+  await expect(page.getByTestId('file-state')).toContainText(format);
+  await closeMenu(page);
+};
+
+type Downloaded = {
   readonly name: string;
+  readonly bytes: Buffer;
   readonly text: string;
 };
 
-/** Saves through that download path, and reads back what was written. */
-export const savedFile = async (page: Page): Promise<SavedFile> => {
-  await openMenu(page);
+/** Runs `start`, and reads back the file the download it sets off wrote. */
+export const downloaded = async (
+  page: Page,
+  start: () => Promise<void>,
+): Promise<Downloaded> => {
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    menuItem(page, 'Save').click(),
+    start(),
   ]);
+  const bytes = readFileSync(await download.path());
   return {
     name: download.suggestedFilename(),
-    text: readFileSync(await download.path(), 'utf8'),
+    bytes,
+    text: bytes.toString('utf8'),
   };
 };
 
-/** An export downloaded from the menu, as its name and bytes. */
-export type ExportedFile = {
-  readonly name: string;
-  readonly bytes: Buffer;
+/** Saves from the menu through the download path, and reads back what was written. */
+export const savedFile = async (page: Page): Promise<Downloaded> => {
+  await openMenu(page);
+  return downloaded(page, () => menuItem(page, 'Save').click());
+};
+
+/** Presses `chord` and reads back the file the studio wrote through it. */
+export const savedByKey = async (
+  page: Page,
+  chord: string,
+): Promise<Downloaded> => downloaded(page, () => page.keyboard.press(chord));
+
+/**
+ * Answers the format question the menu asks where the browser has no save
+ * picker, and reads back the file that went out. The question stands in the
+ * menu whether a chord or an item put it there, so this waits for the item
+ * rather than for the menu.
+ */
+export const savedFromMenu = async (
+  page: Page,
+  item: string,
+): Promise<Downloaded> => {
+  const chosen = menuItem(page, item);
+  await expect(chosen).toBeVisible();
+  return downloaded(page, () => chosen.click());
 };
 
 /** Opens the Export menu, chooses one item and reads its download. */
 export const exportedFile = async (
   page: Page,
   item: string,
-): Promise<ExportedFile> => {
+): Promise<Downloaded> => {
   await openMenu(page);
   await menuItem(page, 'Export').hover();
   const chosen = menuItem(page, item);
   await expect(chosen).toBeVisible();
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    chosen.click(),
-  ]);
-  return {
-    name: download.suggestedFilename(),
-    bytes: readFileSync(await download.path()),
-  };
+  return downloaded(page, () => chosen.click());
 };
 
-/** Visible box elements exclude the hidden anchors of free flow ends. */
-export const elementNodes = (page: Page): Locator =>
-  page.locator('.react-flow__nodes').getByRole('group');
+/** Reads a written or committed file in whichever format claims it, and fails the test where none does. */
+export const readBack = (text: string): DetectedRead =>
+  Either.getOrThrowWith(
+    readAnyFormat(text),
+    () => new Error(`no format claimed the file: ${text.slice(0, 200)}`),
+  );
+
+/** Saves through the download path and reads the model back out of the file. */
+export const savedModel = async (page: Page): Promise<Model> =>
+  readBack((await savedFile(page)).text).model;
 
 /** One element or flow, by the name assistive technology has for it. */
 export const nodeNamed = (page: Page, name: string | RegExp): Locator =>
   page.getByRole('group', { name });
+
+/** The in-place field that renames the element or flow called `was`. */
+export const nameField = (page: Page, was: string): Locator =>
+  page.getByRole('textbox', { name: `Name of ${was}`, exact: true });
 
 /** Finds an attachment handle by the element side used as its ID. */
 export const handleOn = (
@@ -256,8 +306,28 @@ export const toolButton = (page: Page, name: string): Locator =>
 export const chromeCard = (page: Page): Locator =>
   page.getByTestId('chrome-card');
 
-/** Every tool the card offers, in the order the row draws them. */
-export const toolNames = [
+/** The control joined to the menu button that names the diagram on screen. */
+export const diagramSwitcher = (page: Page): Locator =>
+  page.getByTestId('diagram-switcher');
+
+/** The field the switcher becomes while a diagram's title is being edited. */
+export const diagramTitleField = (page: Page): Locator =>
+  page.getByRole('textbox', { name: 'Diagram title' });
+
+/** Opens the switcher's list, and does nothing where it is already open. */
+export const openSwitcher = async (page: Page): Promise<void> => {
+  if (await page.getByRole('menu').isVisible()) {
+    return;
+  }
+  await diagramSwitcher(page).click();
+  await expect(page.getByRole('menu')).toBeVisible();
+};
+
+/** One diagram in the open menu or the open switcher, by its title. */
+export const diagramChoice = (page: Page, title: string): Locator =>
+  page.getByRole('menuitemradio', { name: title, exact: true });
+
+const toolNames = [
   'Select',
   'Actor',
   'Process',
@@ -285,232 +355,6 @@ export const cardControlsClear = async (page: Page): Promise<void> => {
 
 /** The Hand tool is the last persistent control before the canvas in the tab order. */
 export const beforeCanvas = (page: Page): Locator => toolButton(page, 'Hand');
-
-/** The panel holding the threats of whatever the canvas has selected. */
-export const threatPanel = (page: Page): Locator =>
-  page.getByRole('region', { name: 'Threats' });
-
-/** One of the panel's fields, by its exact accessible name. */
-export const panelField = (
-  page: Page,
-  role: 'textbox' | 'combobox',
-  name: string,
-): Locator => threatPanel(page).getByRole(role, { name, exact: true });
-
-/** One of the panel's buttons, by its exact accessible name. */
-export const panelControl = (page: Page, name: string): Locator =>
-  threatPanel(page).getByRole('button', { name, exact: true });
-
-/** Expands the panel's threat whose summary matches `title`. */
-export const expandThreat = async (
-  page: Page,
-  title: RegExp,
-): Promise<void> => {
-  const disclosure = threatPanel(page).getByRole('button', { name: title });
-  await disclosure.click();
-  await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
-};
-
-/** Adds a record through the panel's Add control, typing its first field and, when given, a mitigation's description, each left by Tab. */
-export const addRecord = async (
-  page: Page,
-  kind: 'mitigation' | 'assumption',
-  text: string,
-  description?: string,
-): Promise<void> => {
-  await panelControl(page, `Add ${kind}`).click();
-  await page.keyboard.type(text);
-  await page.keyboard.press('Tab');
-  if (description !== undefined) {
-    await page.keyboard.type(description);
-    await page.keyboard.press('Tab');
-  }
-};
-
-/** Chooses an option in one listbox of a panel, the threat panel unless another region is named, by pointer, and waits for the listbox to close. */
-export const chooseInPanel = async (
-  page: Page,
-  field: string,
-  option: string | RegExp,
-  region: Locator = threatPanel(page),
-): Promise<void> => {
-  await region.getByRole('combobox', { name: field, exact: true }).click();
-  await page.getByRole('option', { name: option, exact: true }).click();
-  await expect(page.getByRole('listbox')).toHaveCount(0);
-};
-
-/** Scrolls a control into view and fails where it is off screen or something else covers its centre. */
-export const onScreen = async (target: Locator): Promise<void> => {
-  await target.scrollIntoViewIfNeeded();
-  await expect(target).toBeInViewport();
-  const reached = await reachesAt(target, await centreOf(target));
-  expect(reached, 'the control is covered').toBe(true);
-};
-
-/** Whether the menu offers Undo, read by opening the menu and putting it away again. */
-export const undoOffered = async (page: Page): Promise<boolean> => {
-  await openMenu(page);
-  const disabled = await menuItem(page, 'Undo').getAttribute('aria-disabled');
-  await closeMenu(page);
-  return disabled !== 'true';
-};
-
-/** Reads a node position from its transform without including the selection-dependent stacking style. */
-export const placeOf = async (node: Locator): Promise<string> => {
-  const style = (await node.getAttribute('style')) ?? '';
-  return /translate\([^)]*\)/u.exec(style)?.[0] ?? style;
-};
-
-/** How wide React Flow is drawing a node, read off the same attribute. */
-export const widthOf = async (node: Locator): Promise<string> => {
-  const style = (await node.getAttribute('style')) ?? '';
-  return /width:\s*[^;]*/u.exec(style)?.[0] ?? style;
-};
-
-/** Whether the topmost element at a screen point is `target` or inside it. */
-export const reachesAt = (target: Locator, at: Point): Promise<boolean> =>
-  target.evaluate(
-    (node, point) => node.contains(document.elementFromPoint(point.x, point.y)),
-    at,
-  );
-
-/** How far every ancestor of `target` is scrolled, summed, so a scroll anywhere above it shows. */
-export const scrolledAbove = (target: Locator): Promise<number> =>
-  target.evaluate((element) => {
-    let scrolled = 0;
-    for (let node = element.parentElement; node; node = node.parentElement) {
-      scrolled += node.scrollTop;
-    }
-    return scrolled;
-  });
-
-/** Where a control is drawn on screen, held to be drawn at all. */
-export const screenBoxOf = async (target: Locator): Promise<Box> => {
-  const box = await target.boundingBox();
-  expect(box).not.toBeNull();
-  return box ?? { x: 0, y: 0, width: 0, height: 0 };
-};
-
-/** The centre of where a control is drawn on screen. */
-export const centreOf = async (target: Locator): Promise<Point> => {
-  const box = await screenBoxOf(target);
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-};
-
-/** Drags from the centre of `target` by the given screen-pixel offset. */
-export const dragBy = async (
-  page: Page,
-  target: Locator,
-  by: number | Point,
-): Promise<void> => {
-  const start = await centreOf(target);
-  const offset = typeof by === 'number' ? { x: by, y: by } : by;
-  await page.mouse.move(start.x, start.y);
-  await page.mouse.down();
-  await page.mouse.move(start.x + offset.x, start.y + offset.y, { steps: 8 });
-  await page.mouse.up();
-};
-
-/** Drags from the centre of a locator to a point on the page. */
-export const dragTo = async (
-  page: Page,
-  from: Locator,
-  to: Point,
-): Promise<void> => {
-  const start = await centreOf(from);
-  await page.mouse.move(start.x, start.y);
-  await page.mouse.down();
-  await page.mouse.move(to.x, to.y, { steps: 12 });
-  await page.mouse.up();
-};
-
-/** Drags from the centre of one locator to the centre of another. */
-export const dragOnto = async (
-  page: Page,
-  from: Locator,
-  onto: Locator,
-): Promise<void> => {
-  await dragTo(page, from, await centreOf(onto));
-};
-
-/** Draws one selection box around every node in `targets`. */
-export const boxSelect = async (
-  page: Page,
-  targets: readonly [Locator, ...Locator[]],
-): Promise<void> => {
-  const boxes = await Promise.all(
-    targets.map((target) => target.boundingBox()),
-  );
-  expect(boxes.every((box) => box !== null)).toBe(true);
-  const drawn = boxes.filter((box): box is Box => box !== null);
-  const margin = 16;
-  const from = {
-    x: Math.min(...drawn.map((box) => box.x)) - margin,
-    y: Math.min(...drawn.map((box) => box.y)) - margin,
-  };
-  const to = {
-    x: Math.max(...drawn.map((box) => box.x + box.width)) + margin,
-    y: Math.max(...drawn.map((box) => box.y + box.height)) + margin,
-  };
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  await page.mouse.move(to.x, to.y, { steps: 12 });
-  await expect(page.locator('.react-flow__selection')).toBeVisible();
-  await page.mouse.up();
-};
-
-const clearBy = 48;
-
-const steps = 8;
-
-const chromeFree = 0.75;
-
-const grid = Array.from({ length: steps - 1 }, (unused, step) => step + 1);
-
-const clearOf = (boxes: readonly (Box | null)[], at: Point): boolean =>
-  boxes.every(
-    (box) =>
-      box === null ||
-      at.x < box.x - clearBy ||
-      at.x > box.x + box.width + clearBy ||
-      at.y < box.y - clearBy ||
-      at.y > box.y + box.height + clearBy,
-  );
-
-/** Finds a point clear of drawn elements, connection snap distance and the lower chrome area. */
-export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
-  const canvas = await canvasContainer(page).boundingBox();
-  expect(canvas).not.toBeNull();
-  const corner = { x: canvas?.x ?? 0, y: canvas?.y ?? 0 };
-  const room = {
-    width: canvas?.width ?? 0,
-    height: (canvas?.height ?? 0) * chromeFree,
-  };
-  const drawn = await Promise.all(
-    (await elementNodes(page).all()).map(async (node) => node.boundingBox()),
-  );
-  const candidates = grid
-    .flatMap((column) =>
-      grid.map((row) => ({
-        x: corner.x + (room.width * column) / steps,
-        y: corner.y + (room.height * row) / steps,
-      })),
-    )
-    .filter((at) => clearOf(drawn, at));
-  const clear = await page.evaluate(
-    (points) =>
-      points.find(
-        (at) =>
-          document
-            .elementFromPoint(at.x, at.y)
-            ?.closest('.react-flow__pane') instanceof Element,
-      ),
-    candidates,
-  );
-
-  expect(clear, 'the canvas has no point clear of every element').toBeDefined();
-  return clear ?? corner;
-};
 
 /**
  * Selects an element tool and clicks a clear point on the canvas. The placed
@@ -555,6 +399,86 @@ export const selectByKeyboard = async (
   await expect(node).toHaveClass(/selected/u);
   await canvasSettled(page);
   return node;
+};
+
+/** The panel holding the threats of whatever the canvas has selected. */
+export const threatPanel = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Threats' });
+
+/** One of the panel's fields, by its exact accessible name. */
+export const panelField = (
+  page: Page,
+  role: 'textbox' | 'combobox',
+  name: string,
+): Locator => threatPanel(page).getByRole(role, { name, exact: true });
+
+/** One of the panel's buttons, by its exact accessible name. */
+export const panelControl = (page: Page, name: string): Locator =>
+  threatPanel(page).getByRole('button', { name, exact: true });
+
+/** The summary button of the panel's threat whose accessible name matches `title`. */
+export const threatSummary = (page: Page, title: string | RegExp): Locator =>
+  threatPanel(page).getByRole('button', { name: title });
+
+/** Expands the panel's threat whose summary matches `title`. */
+export const expandThreat = async (
+  page: Page,
+  title: RegExp,
+): Promise<void> => {
+  const summary = threatSummary(page, title);
+  await summary.click();
+  await expect(summary).toHaveAttribute('aria-expanded', 'true');
+};
+
+/** Adds a record through the panel's Add control, typing its first field and, when given, a mitigation's description, each left by Tab. */
+export const addRecord = async (
+  page: Page,
+  kind: 'mitigation' | 'assumption',
+  text: string,
+  description?: string,
+): Promise<void> => {
+  await panelControl(page, `Add ${kind}`).click();
+  await page.keyboard.type(text);
+  await page.keyboard.press('Tab');
+  if (description !== undefined) {
+    await page.keyboard.type(description);
+    await page.keyboard.press('Tab');
+  }
+};
+
+/** Chooses an option in one listbox of a panel, the threat panel unless another region is named, by pointer, and waits for the listbox to close. */
+export const chooseInPanel = async (
+  page: Page,
+  field: string,
+  option: string | RegExp,
+  region: Locator = threatPanel(page),
+): Promise<void> => {
+  await region.getByRole('combobox', { name: field, exact: true }).click();
+  await page.getByRole('option', { name: option, exact: true }).click();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+};
+
+/**
+ * Whether an "Existing" combobox offers a record under `label`, read by
+ * opening its listbox and putting it away again. A combobox the panel does
+ * not draw offers nothing.
+ */
+export const offeredToLink = async (
+  page: Page,
+  existing: Locator,
+  label: string,
+): Promise<boolean> => {
+  if ((await existing.count()) === 0) {
+    return false;
+  }
+  await existing.click();
+  await expect(page.getByRole('listbox')).toBeVisible();
+  const found = await page
+    .getByRole('option', { name: label, exact: true })
+    .count();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  return found > 0;
 };
 
 /** Follows real listbox focus because Radix marks aria-selected only for an already selected focused option. */

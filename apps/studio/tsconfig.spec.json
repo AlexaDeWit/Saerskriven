@@ -18,6 +18,7 @@
     "social-card.mts",
     "build-assets.mts",
     "src/**/*.fixtures.ts",
+    "src/**/*.fixtures.tsx",
     "src/test-setup.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",

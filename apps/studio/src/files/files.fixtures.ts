@@ -1,7 +1,11 @@
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { committedText, testDataPath } from '@saerskriven/model/fixtures';
 import { renderSvg } from '@saerskriven/render';
+import { act } from '@testing-library/react';
 import { Either } from 'effect';
-import { readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { statSync } from 'node:fs';
+import { addedProcess, sampleModel } from '../store/store.fixtures.js';
+import { dispatch } from '../store/store.js';
 import {
   OpenOutcome,
   SaveOutcome,
@@ -46,14 +50,73 @@ export function specRenders(
   };
 }
 
-/** A file a spec hands to a bridge, standing in for a browser `File`. */
-export function chosenFile(name: string, text: string): ChosenFile {
-  return {
-    name,
-    size: Buffer.byteLength(text, 'utf8'),
-    text: () => Promise.resolve(text),
-  };
+/**
+ * A file a spec hands to a bridge, standing in for a browser `File`. Its size
+ * is the text's, and a spec that controls when or how the read settles passes
+ * its own `read`.
+ */
+export function chosenFile(
+  name: string,
+  text: string,
+  read: () => Promise<string> = () => Promise.resolve(text),
+): ChosenFile {
+  return { name, size: Buffer.byteLength(text, 'utf8'), text: read };
 }
+
+/** A file of `size` bytes whose read fails, as one moved after it was chosen. */
+export const unreadableFile = (name: string, size: number): ChosenFile => ({
+  name,
+  size,
+  text: () => Promise.reject(new Error('The file was moved.')),
+});
+
+/**
+ * A Threat Dragon document whose one diagram lacks what the wire schema
+ * requires, so the codec claims it and refuses it with a path.
+ */
+export const brokenThreatDragonText = JSON.stringify({
+  version: '2.0',
+  summary: { title: 'Broken' },
+  detail: { diagrams: [{ id: 0 }] },
+});
+
+/** The store's sample model as the native format writes it. */
+export const sampleNativeText = saerskrivenYamlCodec.write(sampleModel).output;
+
+/** Adds a process to the open model, one undoable edit that dirties the file. */
+export const edit = (): void => {
+  act(() => {
+    dispatch(addedProcess);
+  });
+};
+
+/**
+ * Stubs the object URL calls and the anchor click a download goes through, and
+ * answers with the names downloaded, in order. `vi.unstubAllGlobals` and
+ * `vi.restoreAllMocks` undo it.
+ */
+export function recordDownloads(): readonly string[] {
+  const downloads: string[] = [];
+  vi.stubGlobal(
+    'URL',
+    class extends URL {
+      static override createObjectURL(): string {
+        return 'blob:model';
+      }
+      static override revokeObjectURL(): void {}
+    },
+  );
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+    function (this: HTMLAnchorElement) {
+      downloads.push(this.download);
+    },
+  );
+  return downloads;
+}
+
+/** A stand-in for the browser's open picker, answering with file handles. */
+export const openPicker = () =>
+  vi.fn<() => Promise<ReturnType<typeof handleFor>[]>>();
 
 /** A browser file handle whose writes and completion a spec controls. */
 export const handleFor = (
@@ -104,19 +167,17 @@ export async function settled<Outcome extends OpenOutcome | SaveOutcome>(
   return result.outcome;
 }
 
-/** A committed file with its on-disk byte count, addressed from the repository root. */
+/** A committed file under `test-data` with its on-disk byte count. */
 export function vendoredFile(path: string): ChosenFile {
-  const full = join(import.meta.dirname, '../../../..', path);
-  const text = readFileSync(full, 'utf8');
+  const text = committedText(path);
   return {
     name: path.split('/').at(-1) ?? path,
-    size: statSync(full).size,
+    size: statSync(testDataPath(path)).size,
     text: () => Promise.resolve(text),
   };
 }
 
-/** One text a bridge was asked to write, and whether it was asked where. */
-export type Recorded = {
+type Recorded = {
   readonly name: string;
   readonly text: string;
   readonly bytes?: Uint8Array;

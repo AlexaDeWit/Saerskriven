@@ -1,3 +1,5 @@
+import { screen } from '@testing-library/react';
+
 /**
  * How long the category field's suite is given, past the root
  * `vitest.shared.mts` sets. Its tests open a Radix select in jsdom through
@@ -9,3 +11,29 @@
  * at 5.3 s worst are too small a sample to retire.
  */
 export const listboxTimeout = 30_000;
+
+/** A handler a spec passes where the component needs one and the test reads nothing from it. */
+export const noop = (): void => undefined;
+
+/** The button of an accessible name. */
+export const button = (name: string): HTMLElement =>
+  screen.getByRole('button', { name });
+
+/** The text box of an accessible name. */
+export const textbox = (name: string): HTMLElement =>
+  screen.getByRole('textbox', { name });
+
+/** The panel's control that starts a new threat. */
+export const addControl = (): HTMLElement =>
+  screen.getByRole('button', { name: 'Add a threat' });
+
+/** The numbers a text says, in the order it says them. */
+export const numbersIn = (text: string | null | undefined): readonly number[] =>
+  (text?.match(/\d+/gu) ?? []).map(Number);
+
+/** The numbers in the text that describes a control, in the order they are said. */
+export const describedNumbers = (control: HTMLElement): readonly number[] =>
+  numbersIn(
+    document.getElementById(control.getAttribute('aria-describedby') ?? '')
+      ?.textContent,
+  );

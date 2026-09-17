@@ -3,17 +3,17 @@ import { promptProseOf } from '../fixtures.js';
 import { dataNotInstructions } from './preface.js';
 import { PromptFailure, promptMessages } from './prompt-result.js';
 import {
-  ecluseWorkspace,
+  featureCompleteWorkspace,
   rootWorkspace,
-  saerskrivenWorkspace,
-  saerskrivenYaml,
   treeHolding,
+  twoDiagramsWorkspace,
+  twoDiagramsYaml,
 } from './read-tools.fixtures.js';
 import { strideBrief, strideByKind, stridePass } from './stride-pass.js';
 
-const ecluse = ecluseWorkspace();
+const dragon = featureCompleteWorkspace();
 
-const saerskriven = saerskrivenWorkspace();
+const twoDiagrams = twoDiagramsWorkspace();
 
 const section = (data: readonly string[], heading: string) => {
   const start = data.indexOf(heading) + 1;
@@ -27,9 +27,9 @@ const section = (data: readonly string[], heading: string) => {
 };
 
 describe('what stride_pass renders', () => {
-  it('renders on the Écluse fixture for an element named by its name', () => {
+  it('renders on a Threat Dragon file for an element named by its name', () => {
     const pass = Either.getOrThrow(
-      stridePass(ecluse, { element: 'Écluse proxy' }),
+      stridePass(dragon, { element: 'Booking service' }),
     );
     const [data, brief] = promptProseOf(promptMessages(pass)).prose;
     expect(data?.split('\n')[0]).toEqual(dataNotInstructions);
@@ -37,35 +37,42 @@ describe('what stride_pass renders', () => {
     expect(section(pass.data, 'flows:').length).toBeGreaterThan(0);
   });
 
-  it("renders on the repository's own model, alike by id and by name", () => {
+  it('renders on a native file, alike by id and by name', () => {
     const byId = Either.getOrThrow(
-      stridePass(saerskriven, { element: 'el-read' }),
+      stridePass(twoDiagrams, { element: 'el-web-shop' }),
     );
     expect(
-      Either.getOrThrow(stridePass(saerskriven, { element: 'Codec read' })),
+      Either.getOrThrow(stridePass(twoDiagrams, { element: 'Web shop' })),
     ).toEqual(byId);
     expect({
       element: section(byId.data, 'element:'),
       flows: section(byId.data, 'flows:'),
       stores: section(byId.data, 'stores the flows reach:'),
     }).toEqual({
-      element: ['el-read'],
-      flows: ['fl-open', 'fl-mapped'],
-      stores: ['el-model-file', 'el-model'],
+      element: ['el-web-shop'],
+      flows: [
+        'el-browse',
+        'el-page',
+        'el-listings',
+        'el-charge',
+        'el-confirm',
+        'el-record',
+      ],
+      stores: ['el-catalogue', 'el-ledger'],
     });
   });
 
   it('asks the questions of the kind, and the brief carries nothing from the model', () => {
     const store = Either.getOrThrow(
-      stridePass(saerskriven, { element: 'el-model' }),
+      stridePass(twoDiagrams, { element: 'el-ledger' }),
     );
     const flow = Either.getOrThrow(
-      stridePass(saerskriven, { element: 'fl-open' }),
+      stridePass(twoDiagrams, { element: 'el-record' }),
     );
     expect(store.brief).toEqual(strideBrief('store'));
     expect(flow.brief).toEqual(strideBrief('flow'));
     expect(section(flow.data, 'stores the flows reach:')).toEqual([
-      'el-model-file',
+      'el-ledger',
     ]);
     expect(strideByKind.process).toHaveLength(6);
   });
@@ -73,22 +80,22 @@ describe('what stride_pass renders', () => {
 
 describe('why stride_pass has no prompt', () => {
   it('fails on an element the model does not hold', () => {
-    expect(stridePass(ecluse, { element: 'Nothing' })).toEqual(
+    expect(stridePass(dragon, { element: 'Nothing' })).toEqual(
       Either.left(PromptFailure.NoSuchElement()),
     );
   });
 
   it('fails on a name several elements share', () => {
     const shared = treeHolding(
-      saerskrivenYaml().replace('name: Codec write', 'name: Codec read'),
+      twoDiagramsYaml().replace('name: Order ledger', 'name: Web shop'),
     );
-    expect(stridePass(shared, { element: 'Codec read' })).toEqual(
+    expect(stridePass(shared, { element: 'Web shop' })).toEqual(
       Either.left(PromptFailure.SharedName()),
     );
   });
 
   it('fails on a trust boundary', () => {
-    expect(stridePass(saerskriven, { element: 'tb-foreign' })).toEqual(
+    expect(stridePass(twoDiagrams, { element: 'el-shop-network' })).toEqual(
       Either.left(PromptFailure.UncoveredKind()),
     );
   });

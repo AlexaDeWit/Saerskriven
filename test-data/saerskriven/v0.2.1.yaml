@@ -1,0 +1,151 @@
+# A cut-down of a model as Saerskriven v0.2.1 wrote it, before version 1 of
+# the format gained a flow's `bidirectional` and an attached endpoint's
+# `side`. Elements, threats and text were deleted from the real output by
+# hand and nothing was added. Frozen: never regenerate it from the current
+# writer. It is what holds the additive rule to its promise, that a file an
+# earlier release wrote still reads, and the next additive key gets a file of
+# the shape before it.
+formatVersion: 1
+metadata:
+  title: ""
+  owner: Alexandra de Wit
+  description: ""
+  contributors:
+    - Alexandra de Wit
+assumptions: []
+diagrams:
+  - id: "0"
+    title: High Level
+    elements:
+      - kind: trust-boundary
+        id: 0ec10e5e-0000-4000-8000-000000000002
+        name: Public internet (untrusted)
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        shape:
+          kind: box
+          position:
+            x: -90
+            y: 640
+          size:
+            width: 240
+            height: 200
+      - kind: actor
+        id: 0ec10e5e-0000-4000-8000-000000000012
+        name: AWS IMDS + STS
+        description: Instance-metadata and token endpoint. It sources the container-role credentials the worker exchanges for a CodeArtifact write token.
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 635
+          y: 740
+        size:
+          width: 190
+          height: 90
+      - kind: flow
+        id: c928bb63-2ec8-44ff-b34b-39d4afb19dc6
+        name: mint token (container role)
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: 0ec10e5e-0000-4000-8000-000000000012
+        target:
+          kind: attached
+          element: f1646094-9885-422a-b7e7-7888c72905ef
+        waypoints: []
+      - kind: flow
+        id: 4e565871-45cc-4987-abba-24859ee2cf60
+        name: OSV Dataset for Supported Registries
+        description: ""
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: free
+          position:
+            x: 1480
+            y: 860
+        target:
+          kind: attached
+          element: f1646094-9885-422a-b7e7-7888c72905ef
+        waypoints: []
+      - kind: flow
+        id: ec4bbc95-8582-4e22-ab64-3c87cff87239
+        name: Push osv.db (SQLite)
+        description: Pilot pushes the optimised osv.db to S3.
+        outOfScope: false
+        reasonOutOfScope: ""
+        source:
+          kind: attached
+          element: f1646094-9885-422a-b7e7-7888c72905ef
+        target:
+          kind: attached
+          element: c8455307-cef2-4843-a821-ff90db9643d2
+        waypoints: []
+      - kind: process
+        id: f1646094-9885-422a-b7e7-7888c72905ef
+        name: |-
+          Pilot
+          (Ingestion Pipeline)
+        description: Pilot is an unopinionated data ingestion pipeline. It fetches vulnerability data and delivers an optimised osv.db to S3. The proxy therefore never queries osv.dev on the critical path and never meets its rate limits. Pilot makes no security or blocking decision. The proxy's rules engine is the sole opinionated enforcement point. Only the rules engine evaluates that data, for example to block on CVE severity or an EPSS score, or to fast-lane a remediation package.
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 920
+          y: 915
+        size:
+          width: 130
+          height: 130
+      - kind: store
+        id: c8455307-cef2-4843-a821-ff90db9643d2
+        name: S3 (OSV Datasets)
+        description: Pre-compiled SQLite data files for querying against live CVEs.
+        outOfScope: false
+        reasonOutOfScope: ""
+        position:
+          x: 920
+          y: 640
+        size:
+          width: 180
+          height: 130
+mitigations: []
+threats:
+  - id: b1a6332d-8def-4df9-922e-53718c920155
+    number: 17
+    title: Pilot container-role privilege escalation
+    category:
+      methodology: STRIDE
+      category: elevation-of-privilege
+    severity: high
+    status: mitigated
+    description: An attacker who compromises Pilot could use its standing container credentials.
+    mitigation: Least-privilege IAM limits the role to s3:PutObject on the one bucket prefix. Pilot runs in its own container, separate from the proxy.
+    elements:
+      - f1646094-9885-422a-b7e7-7888c72905ef
+  - id: 4b73d786-865e-43fc-b1bd-0e0bc75cae03
+    number: 27
+    title: Poisoned OSV payload exploits parser
+    category:
+      methodology: STRIDE
+      category: denial-of-service
+    severity: medium
+    status: mitigated
+    description: A maliciously crafted or unexpectedly massive OSV payload from upstream could cause Pilot to exhaust memory or crash during JSON parsing.
+    mitigation: Pilot runs apart from the proxy. If Pilot runs out of memory or fails, it only delays updates. The proxy keeps serving traffic from the last-known-good osv.db snapshot.
+    elements:
+      - f1646094-9885-422a-b7e7-7888c72905ef
+  - id: c87367bd-fc3f-4792-94b6-8db459011823
+    number: 101
+    title: Oracle Blackout / Supply Chain DoS via OSV.dev compromise
+    category:
+      methodology: STRIDE
+      category: spoofing
+    severity: high
+    status: accepted-risk
+    description: An attacker who gains control of osv.dev can push malicious vulnerability records. Those records trigger false positives, or fast-lane a malicious remediation package. The attack is strongest when the attacker also publishes a malicious package.
+    mitigation: "Risk treatment: accepted by trust assumption. A compromised security oracle is a foundational supply-chain compromise. Pilot relies on OSV as a source of vulnerability truth. A hostile oracle defeats the defence outright. Transport, parsing, validation, and last-good-database controls mitigate tampering in transit, malformed payloads, and update outages. They cannot make a hostile source of truth trustworthy."
+    elements:
+      - f1646094-9885-422a-b7e7-7888c72905ef
+lastIssuedThreatNumber: 102

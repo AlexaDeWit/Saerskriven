@@ -1,9 +1,10 @@
+import { smallYaml } from '../fixtures.js';
 import {
   answerOf,
   crowdedThreats,
   crowdedTree,
-  ecluseWorkspace,
   everyRecordTree,
+  featureCompleteWorkspace,
   treeHolding,
 } from './read-tools.fixtures.js';
 import { dataNotInstructions } from './preface.js';
@@ -11,14 +12,14 @@ import { renderThreatSearch, searchThreats } from './search-threats.js';
 import { searchLimits } from './search.js';
 import { toolResult } from './tool-result.js';
 
-const ecluse = ecluseWorkspace();
+const workspace = featureCompleteWorkspace();
 
 const search = (args: Parameters<typeof searchThreats>[1]) =>
-  answerOf(searchThreats(ecluse, args));
+  answerOf(searchThreats(workspace, args));
 
 describe('what saer_search_threats finds', () => {
   it('matches every threat of the fixture where nothing narrows it', () => {
-    expect(search({ response_format: 'concise' }).counts.matched).toBe(29);
+    expect(search({ response_format: 'concise' }).counts.matched).toBe(24);
   });
 
   it('keeps only the severity a call names', () => {
@@ -70,7 +71,7 @@ describe('what saer_search_threats finds', () => {
       truncated: found.counts.truncated,
     }).toEqual({
       returned: searchLimits.detailed,
-      matched: 29,
+      matched: 24,
       truncated: true,
     });
   });
@@ -84,15 +85,15 @@ describe('what saer_search_threats finds', () => {
 });
 
 describe('a Threat Dragon threat found by the text of its mitigation', () => {
-  const outcome = searchThreats(ecluse, {
-    query: 'secret newtype',
+  const outcome = searchThreats(workspace, {
+    query: 'two hosts',
     response_format: 'detailed',
   });
   const found = answerOf(outcome);
   const [row] = found.threats;
 
   it('is the one threat whose text says it', () => {
-    expect(found.threats.map((threat) => threat.number)).toEqual([1]);
+    expect(found.threats.map((threat) => threat.number)).toEqual([10]);
   });
 
   it('carries that text as the mitigation record the read made of it', () => {
@@ -101,7 +102,7 @@ describe('a Threat Dragon threat found by the text of its mitigation', () => {
         id,
         status,
         threats,
-        mentions: prose.includes('Secret newtype'),
+        mentions: prose.includes('two hosts'),
       })),
     ).toEqual([
       {
@@ -124,27 +125,12 @@ describe('a Threat Dragon threat found by the text of its mitigation', () => {
 describe('a version 1 threat found by the mitigation text its file held', () => {
   const found = answerOf(
     searchThreats(
-      treeHolding(`formatVersion: 1
-metadata:
-  title: Held text
-  owner: Owner
-  description: ''
-  contributors: []
-assumptions: []
-mitigations: []
-diagrams: []
-threats:
-  - id: threat-1
-    number: 1
-    title: Spoofed caller
-    category: { methodology: STRIDE, category: spoofing }
-    severity: high
-    status: mitigated
-    description: ''
-    mitigation: Pin the certificate.
-    elements: []
-lastIssuedThreatNumber: 1
-`),
+      treeHolding(
+        smallYaml
+          .replace('title: Small', 'title: Held text')
+          .replace('status: open', 'status: mitigated')
+          .replace("mitigation: ''", 'mitigation: Pin the certificate.'),
+      ),
       { query: 'pin the certificate', response_format: 'detailed' },
     ),
   );

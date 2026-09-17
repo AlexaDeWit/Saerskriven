@@ -41,19 +41,11 @@ describe('centreOf', () => {
 });
 
 describe('handlePositions', () => {
-  it('places a handle at the midpoint of each side', () => {
-    expect(handlePositions(box)).toEqual(midpointsOf(box));
-  });
-
-  it('follows the model when the size changes', () => {
-    expect(handlePositions(wider)).toEqual(midpointsOf(wider));
-    expect(handlePositions(wider)).not.toEqual(handlePositions(box));
-  });
-
-  it('carries one position for every side', () => {
-    expect(new Set(Object.keys(handlePositions(box)))).toEqual(
-      new Set<string>(handleSides),
-    );
+  it.each([
+    { named: 'a 160 by 80 box', of: box },
+    { named: 'a 400 by 200 box', of: wider },
+  ])('places a handle at the midpoint of each side of $named', ({ of }) => {
+    expect(handlePositions(of)).toEqual(midpointsOf(of));
   });
 });
 

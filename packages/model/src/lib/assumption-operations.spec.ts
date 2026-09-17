@@ -1,5 +1,10 @@
 import { Either } from 'effect';
-import { assumptionId, parsedFixture, threatId } from '../fixtures.js';
+import {
+  assumptionId,
+  parsedFixture,
+  registerModel,
+  threatId,
+} from '../fixtures.js';
 import {
   addAssumption,
   linkAssumption,
@@ -11,12 +16,11 @@ import {
   unlinkAssumptionFromModel,
 } from './assumption-operations.js';
 import { assumptionSchema, type Assumption } from './assumptions.js';
-import { threatRegisterFixture } from './fixtures.js';
+import { threatRegisterFixture } from './model.fixtures.js';
 import { OperationFailure } from './operation-failures.js';
-import { parseModel, type Model } from './parse.js';
+import { errorOf, modelOf, operationContract } from './operations.fixtures.js';
+import type { Model } from './parse.js';
 import { droppedRecords } from './records.js';
-
-const base = parsedFixture(threatRegisterFixture);
 
 const pciScope = assumptionId('assumption-pci-scope');
 const spoofShopper = threatId('threat-spoof-shopper');
@@ -37,18 +41,6 @@ const unlinkedFromFile = parsedFixture({
   ],
 });
 
-type Outcome = Either.Either<Model, OperationFailure>;
-
-const modelOf = (result: Outcome): Model => {
-  if (Either.isLeft(result)) {
-    throw new Error(`Expected the operation to succeed: ${result.left._tag}`);
-  }
-  return result.right;
-};
-
-const errorOf = (result: Outcome): OperationFailure | undefined =>
-  Either.isLeft(result) ? result.left : undefined;
-
 const assumptionIds = (model: Model): string[] =>
   model.assumptions.map((assumption) => assumption.id);
 
@@ -62,7 +54,7 @@ const tlsInput = {
 
 const tlsEverywhere = assumptionSchema.parse(tlsInput);
 
-const modelScoped = modelOf(linkAssumptionToModel(base, pciScope));
+const modelScoped = modelOf(linkAssumptionToModel(registerModel, pciScope));
 
 const invalidatedScope: Assumption = assumptionSchema.parse({
   id: 'assumption-pci-scope',
@@ -74,16 +66,16 @@ const invalidatedScope: Assumption = assumptionSchema.parse({
 
 describe('addAssumption', () => {
   it('appends the assumption to the register', () => {
-    const next = modelOf(addAssumption(base, tlsEverywhere));
+    const next = modelOf(addAssumption(registerModel, tlsEverywhere));
     expect(assumptionIds(next)).toEqual([
-      ...assumptionIds(base),
+      ...assumptionIds(registerModel),
       tlsEverywhere.id,
     ]);
   });
 
   it('refuses an assumption that links no threat and does not apply to the model', () => {
     const unlinked = assumptionSchema.parse({ ...tlsInput, threats: [] });
-    expect(addAssumption(base, unlinked)).toEqual(
+    expect(addAssumption(registerModel, unlinked)).toEqual(
       Either.left(
         OperationFailure.AssumptionWithoutReference({
           assumptionId: unlinked.id,
@@ -98,9 +90,9 @@ describe('addAssumption', () => {
       threats: [],
       appliesToModel: true,
     });
-    expect(modelOf(addAssumption(base, modelWide)).assumptions).toContainEqual(
-      modelWide,
-    );
+    expect(
+      modelOf(addAssumption(registerModel, modelWide)).assumptions,
+    ).toContainEqual(modelWide);
   });
 
   it('fails on an id the register already holds', () => {
@@ -108,7 +100,7 @@ describe('addAssumption', () => {
       ...tlsInput,
       id: 'assumption-pci-scope',
     });
-    expect(errorOf(addAssumption(base, clash))).toEqual(
+    expect(errorOf(addAssumption(registerModel, clash))).toEqual(
       OperationFailure.DuplicateAssumptionId({ assumptionId: pciScope }),
     );
   });
@@ -118,7 +110,7 @@ describe('addAssumption', () => {
       ...tlsInput,
       threats: ['threat-ghost'],
     });
-    expect(errorOf(addAssumption(base, dangling))).toEqual(
+    expect(errorOf(addAssumption(registerModel, dangling))).toEqual(
       OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
     );
   });
@@ -126,17 +118,19 @@ describe('addAssumption', () => {
 
 describe('replaceAssumption', () => {
   it('swaps the whole record in, keeping its place in the register', () => {
-    const next = modelOf(replaceAssumption(base, invalidatedScope));
+    const next = modelOf(replaceAssumption(registerModel, invalidatedScope));
     expect(next.assumptions[0]).toEqual(invalidatedScope);
-    expect(assumptionIds(next)).toEqual(assumptionIds(base));
+    expect(assumptionIds(next)).toEqual(assumptionIds(registerModel));
   });
 
   it('returns the model it was given for the record it already holds', () => {
-    expect(modelOf(replaceAssumption(base, base.assumptions[0]))).toBe(base);
+    expect(
+      modelOf(replaceAssumption(registerModel, registerModel.assumptions[0])),
+    ).toBe(registerModel);
   });
 
   it('fails on an id the register does not hold', () => {
-    expect(errorOf(replaceAssumption(base, tlsEverywhere))).toEqual(
+    expect(errorOf(replaceAssumption(registerModel, tlsEverywhere))).toEqual(
       OperationFailure.UnknownAssumption({
         assumptionId: assumptionId('assumption-tls-everywhere'),
       }),
@@ -148,7 +142,7 @@ describe('replaceAssumption', () => {
       ...invalidatedScope,
       threats: ['threat-ghost'],
     });
-    expect(errorOf(replaceAssumption(base, dangling))).toEqual(
+    expect(errorOf(replaceAssumption(registerModel, dangling))).toEqual(
       OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
     );
   });
@@ -160,9 +154,9 @@ describe('replaceAssumption and the last reference', () => {
       ...invalidatedScope,
       threats: [],
     });
-    expect(assumptionIds(modelOf(replaceAssumption(base, unlinked)))).toEqual(
-      [],
-    );
+    expect(
+      assumptionIds(modelOf(replaceAssumption(registerModel, unlinked))),
+    ).toEqual([]);
   });
 
   it('keeps an assumption the replacement leaves applying to the model', () => {
@@ -171,9 +165,9 @@ describe('replaceAssumption and the last reference', () => {
       threats: [],
       appliesToModel: true,
     });
-    expect(modelOf(replaceAssumption(base, modelWide)).assumptions).toEqual([
-      modelWide,
-    ]);
+    expect(
+      modelOf(replaceAssumption(registerModel, modelWide)).assumptions,
+    ).toEqual([modelWide]);
   });
 
   it('culls a model-scoped assumption the replacement takes to no reference', () => {
@@ -199,20 +193,20 @@ describe('replaceAssumption and the last reference', () => {
 
 describe('removeAssumption', () => {
   it('drops the assumption from the register', () => {
-    expect(assumptionIds(modelOf(removeAssumption(base, pciScope)))).toEqual(
-      [],
-    );
+    expect(
+      assumptionIds(modelOf(removeAssumption(registerModel, pciScope))),
+    ).toEqual([]);
   });
 
   it('leaves the threats it rested on untouched', () => {
-    const next = modelOf(removeAssumption(base, pciScope));
-    expect(next.diagrams).toEqual(base.diagrams);
-    expect(next.threats).toEqual(base.threats);
+    const next = modelOf(removeAssumption(registerModel, pciScope));
+    expect(next.diagrams).toEqual(registerModel.diagrams);
+    expect(next.threats).toEqual(registerModel.threats);
   });
 
   it('fails on an assumption the register does not hold', () => {
     const ghost = assumptionId('assumption-ghost');
-    expect(errorOf(removeAssumption(base, ghost))).toEqual(
+    expect(errorOf(removeAssumption(registerModel, ghost))).toEqual(
       OperationFailure.UnknownAssumption({ assumptionId: ghost }),
     );
   });
@@ -220,20 +214,24 @@ describe('removeAssumption', () => {
 
 describe('linkAssumption', () => {
   it('adds the threat to the assumption links', () => {
-    const next = modelOf(linkAssumption(base, pciScope, tamperPayment));
+    const next = modelOf(
+      linkAssumption(registerModel, pciScope, tamperPayment),
+    );
     expect(next.assumptions[0].threats).toEqual([spoofShopper, tamperPayment]);
   });
 
   it('returns the model it was given for a threat already linked', () => {
-    expect(modelOf(linkAssumption(base, pciScope, spoofShopper))).toBe(base);
+    expect(modelOf(linkAssumption(registerModel, pciScope, spoofShopper))).toBe(
+      registerModel,
+    );
   });
 
   it('refuses an unknown threat or an unknown assumption', () => {
-    expect(errorOf(linkAssumption(base, pciScope, ghostThreat))).toEqual(
-      OperationFailure.UnknownThreat({ threatId: ghostThreat }),
-    );
     expect(
-      errorOf(linkAssumption(base, ghostAssumption, spoofShopper)),
+      errorOf(linkAssumption(registerModel, pciScope, ghostThreat)),
+    ).toEqual(OperationFailure.UnknownThreat({ threatId: ghostThreat }));
+    expect(
+      errorOf(linkAssumption(registerModel, ghostAssumption, spoofShopper)),
     ).toEqual(
       OperationFailure.UnknownAssumption({ assumptionId: ghostAssumption }),
     );
@@ -242,14 +240,18 @@ describe('linkAssumption', () => {
 
 describe('unlinkAssumption', () => {
   it('keeps an assumption that still links another threat', () => {
-    const linked = modelOf(linkAssumption(base, pciScope, tamperPayment));
+    const linked = modelOf(
+      linkAssumption(registerModel, pciScope, tamperPayment),
+    );
     const next = modelOf(unlinkAssumption(linked, pciScope, spoofShopper));
     expect(next.assumptions[0].threats).toEqual([tamperPayment]);
   });
 
   it('culls the assumption when the threat was its last link', () => {
     expect(
-      assumptionIds(modelOf(unlinkAssumption(base, pciScope, spoofShopper))),
+      assumptionIds(
+        modelOf(unlinkAssumption(registerModel, pciScope, spoofShopper)),
+      ),
     ).toEqual([]);
   });
 
@@ -261,15 +263,17 @@ describe('unlinkAssumption', () => {
   });
 
   it('returns the model it was given for a threat not linked', () => {
-    expect(modelOf(unlinkAssumption(base, pciScope, tamperPayment))).toBe(base);
+    expect(
+      modelOf(unlinkAssumption(registerModel, pciScope, tamperPayment)),
+    ).toBe(registerModel);
   });
 
   it('refuses an unknown threat or an unknown assumption', () => {
-    expect(errorOf(unlinkAssumption(base, pciScope, ghostThreat))).toEqual(
-      OperationFailure.UnknownThreat({ threatId: ghostThreat }),
-    );
     expect(
-      errorOf(unlinkAssumption(base, ghostAssumption, spoofShopper)),
+      errorOf(unlinkAssumption(registerModel, pciScope, ghostThreat)),
+    ).toEqual(OperationFailure.UnknownThreat({ threatId: ghostThreat }));
+    expect(
+      errorOf(unlinkAssumption(registerModel, ghostAssumption, spoofShopper)),
     ).toEqual(
       OperationFailure.UnknownAssumption({ assumptionId: ghostAssumption }),
     );
@@ -279,7 +283,7 @@ describe('unlinkAssumption', () => {
 describe('linkAssumptionToModel', () => {
   it('applies the assumption to the model and keeps its threat links', () => {
     expect(modelScoped.assumptions).toEqual([
-      { ...base.assumptions[0], appliesToModel: true },
+      { ...registerModel.assumptions[0], appliesToModel: true },
     ]);
   });
 
@@ -290,7 +294,9 @@ describe('linkAssumptionToModel', () => {
   });
 
   it('refuses an unknown assumption', () => {
-    expect(errorOf(linkAssumptionToModel(base, ghostAssumption))).toEqual(
+    expect(
+      errorOf(linkAssumptionToModel(registerModel, ghostAssumption)),
+    ).toEqual(
       OperationFailure.UnknownAssumption({ assumptionId: ghostAssumption }),
     );
   });
@@ -300,7 +306,7 @@ describe('unlinkAssumptionFromModel', () => {
   it('keeps an assumption that still links a threat, with that link', () => {
     expect(
       modelOf(unlinkAssumptionFromModel(modelScoped, pciScope)).assumptions,
-    ).toEqual(base.assumptions);
+    ).toEqual(registerModel.assumptions);
   });
 
   it('culls an assumption that links no threat, and droppedRecords names it', () => {
@@ -315,11 +321,15 @@ describe('unlinkAssumptionFromModel', () => {
   });
 
   it('returns the model it was given for an assumption that does not apply', () => {
-    expect(modelOf(unlinkAssumptionFromModel(base, pciScope))).toBe(base);
+    expect(modelOf(unlinkAssumptionFromModel(registerModel, pciScope))).toBe(
+      registerModel,
+    );
   });
 
   it('refuses an unknown assumption', () => {
-    expect(errorOf(unlinkAssumptionFromModel(base, ghostAssumption))).toEqual(
+    expect(
+      errorOf(unlinkAssumptionFromModel(registerModel, ghostAssumption)),
+    ).toEqual(
       OperationFailure.UnknownAssumption({ assumptionId: ghostAssumption }),
     );
   });
@@ -327,10 +337,12 @@ describe('unlinkAssumptionFromModel', () => {
 
 describe('setAssumptionStatus', () => {
   it('changes only the status of that assumption', () => {
-    const next = modelOf(setAssumptionStatus(base, pciScope, 'invalidated'));
+    const next = modelOf(
+      setAssumptionStatus(registerModel, pciScope, 'invalidated'),
+    );
     expect(next).toEqual({
-      ...base,
-      assumptions: [{ ...base.assumptions[0], status: 'invalidated' }],
+      ...registerModel,
+      assumptions: [{ ...registerModel.assumptions[0], status: 'invalidated' }],
     });
   });
 
@@ -345,52 +357,48 @@ describe('setAssumptionStatus', () => {
 
   it('refuses an unknown assumption', () => {
     expect(
-      errorOf(setAssumptionStatus(base, ghostAssumption, 'invalidated')),
+      errorOf(
+        setAssumptionStatus(registerModel, ghostAssumption, 'invalidated'),
+      ),
     ).toEqual(
       OperationFailure.UnknownAssumption({ assumptionId: ghostAssumption }),
     );
   });
 });
 
-describe('assumption operation purity', () => {
-  it('leaves the input model untouched', () => {
-    const pristine = structuredClone(base);
-    addAssumption(base, tlsEverywhere);
-    replaceAssumption(base, invalidatedScope);
-    removeAssumption(base, pciScope);
-    linkAssumption(base, pciScope, tamperPayment);
-    unlinkAssumption(base, pciScope, spoofShopper);
-    setAssumptionStatus(base, pciScope, 'invalidated');
-    linkAssumptionToModel(base, pciScope);
-    unlinkAssumptionFromModel(modelScoped, pciScope);
-    expect(base).toEqual(pristine);
+describe('assumption operations', () => {
+  operationContract({
+    addAssumption: {
+      input: registerModel,
+      run: (model) => addAssumption(model, tlsEverywhere),
+    },
+    replaceAssumption: {
+      input: registerModel,
+      run: (model) => replaceAssumption(model, invalidatedScope),
+    },
+    removeAssumption: {
+      input: registerModel,
+      run: (model) => removeAssumption(model, pciScope),
+    },
+    linkAssumption: {
+      input: registerModel,
+      run: (model) => linkAssumption(model, pciScope, tamperPayment),
+    },
+    unlinkAssumption: {
+      input: registerModel,
+      run: (model) => unlinkAssumption(model, pciScope, spoofShopper),
+    },
+    setAssumptionStatus: {
+      input: registerModel,
+      run: (model) => setAssumptionStatus(model, pciScope, 'invalidated'),
+    },
+    linkAssumptionToModel: {
+      input: registerModel,
+      run: (model) => linkAssumptionToModel(model, pciScope),
+    },
+    unlinkAssumptionFromModel: {
+      input: modelScoped,
+      run: (model) => unlinkAssumptionFromModel(model, pciScope),
+    },
   });
-});
-
-describe('assumption operation outputs re-parse through parseModel', () => {
-  const outputs: [string, Model][] = [
-    ['addAssumption', modelOf(addAssumption(base, tlsEverywhere))],
-    ['replaceAssumption', modelOf(replaceAssumption(base, invalidatedScope))],
-    ['removeAssumption', modelOf(removeAssumption(base, pciScope))],
-    ['linkAssumption', modelOf(linkAssumption(base, pciScope, tamperPayment))],
-    [
-      'unlinkAssumption',
-      modelOf(unlinkAssumption(base, pciScope, spoofShopper)),
-    ],
-    [
-      'setAssumptionStatus',
-      modelOf(setAssumptionStatus(base, pciScope, 'invalidated')),
-    ],
-    ['linkAssumptionToModel', modelScoped],
-    [
-      'unlinkAssumptionFromModel',
-      modelOf(unlinkAssumptionFromModel(modelScoped, pciScope)),
-    ],
-  ];
-
-  for (const [operation, model] of outputs) {
-    it(`${operation} returns a model parseModel accepts`, () => {
-      expect(Either.isRight(parseModel(model))).toBe(true);
-    });
-  }
 });

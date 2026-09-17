@@ -1,29 +1,24 @@
 import { layoutDiagram } from '@saerskriven/canvas';
 import { addElement } from '@saerskriven/model';
-import { diagramId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import {
-  boundaryElement,
-  canvasModel,
-  noteElement,
-  readerElement,
-  studioElement,
-} from './canvas.fixtures.js';
+import { canvasModel } from './canvas.fixtures.js';
 import {
   centredPlacement,
   defaultSize,
   draggedPlacement,
   elementTools,
   flowEnds,
-  freshBoundaryCurve,
   freshElement,
   freshFlow,
   placeholderNames,
   pointerPlacement,
 } from './elements.js';
+import {
+  actorElement,
+  mainDiagram,
+  processElement,
+} from '../store/store.fixtures.js';
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
-
-const mainDiagram = diagramId('diagram-main');
 
 describe('placement geometry', () => {
   it.each(elementTools)('centres a default-sized %s on a click', (kind) => {
@@ -148,34 +143,16 @@ describe('freshElement', () => {
       shape: { kind: 'curve' },
     });
   });
-
-  it('draws a committed boundary curve through exactly its clicked waypoints', () => {
-    const boundary = freshBoundaryCurve([
-      { x: 10, y: 20 },
-      { x: 30, y: 40 },
-    ]);
-
-    expect(boundary).toMatchObject({
-      kind: 'trust-boundary',
-      shape: {
-        kind: 'curve',
-        waypoints: [
-          { x: 10, y: 20 },
-          { x: 30, y: 40 },
-        ],
-      },
-    });
-  });
 });
 
 describe('freshFlow', () => {
   it('attaches both ends to the elements it runs between', () => {
-    const flow = freshFlow(readerElement, studioElement);
+    const flow = freshFlow(actorElement, processElement);
 
     expect(flow).toMatchObject({
       kind: 'flow',
-      source: { kind: 'attached', element: readerElement },
-      target: { kind: 'attached', element: studioElement },
+      source: { kind: 'attached', element: actorElement },
+      target: { kind: 'attached', element: processElement },
       waypoints: [],
       bidirectional: false,
     });
@@ -187,7 +164,7 @@ describe('freshFlow', () => {
         addElement(
           canvasModel,
           mainDiagram,
-          freshFlow(readerElement, studioElement),
+          freshFlow(actorElement, processElement),
         ),
       ),
     ).toBe(true);
@@ -195,22 +172,10 @@ describe('freshFlow', () => {
 });
 
 describe('flowEnds', () => {
-  it('offers the elements a flow runs between', () => {
+  it('offers the actor and the process a flow runs between, and no trust boundary or note', () => {
     expect(flowEnds(layout).map((node) => node.id)).toEqual([
-      readerElement,
-      studioElement,
+      actorElement,
+      processElement,
     ]);
-  });
-
-  it('offers no trust boundary, which a flow crosses rather than ends on', () => {
-    expect(flowEnds(layout).some((node) => node.id === boundaryElement)).toBe(
-      false,
-    );
-  });
-
-  it('offers no text note, which is about the diagram rather than a part of it', () => {
-    expect(flowEnds(layout).some((node) => node.id === noteElement)).toBe(
-      false,
-    );
   });
 });

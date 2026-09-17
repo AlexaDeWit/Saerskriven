@@ -1,7 +1,6 @@
-import { AxeBuilder } from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
-import { registeredChords } from './chords.js';
-import { savedFromMenu } from './commands.fixtures.js';
+import { expect, test } from '@playwright/test';
+import { audit } from './accessibility.fixtures.js';
+import { registeredChords } from './chords.fixtures.js';
 import {
   chooseInPanel,
   closeMenu,
@@ -12,80 +11,42 @@ import {
   handleOn,
   menuButton,
   menuItem,
+  nameField,
   nodeNamed,
-  openEcluse,
+  openFallback,
   openMenu,
-  openModel,
   openPlaceholder,
   openText,
+  openTwoDiagrams,
   panelField,
   placeByClick,
-  saerskrivenModel,
+  placeholder,
+  savedFromMenu,
   selectNode,
-  withoutPickers,
+  storefront,
 } from './studio.fixtures.js';
-
-const audit = async (
-  page: Page,
-  state: string,
-  within?: string,
-): Promise<void> => {
-  const builder = new AxeBuilder({ page });
-  const { violations, incomplete } = await (
-    within === undefined ? builder : builder.include(within)
-  ).analyze();
-  const report = violations
-    .map(
-      (violation) =>
-        `${violation.id} [${violation.impact ?? 'unrated'}] ${violation.nodes
-          .map((node) => node.target.join(' '))
-          .join(', ')}`,
-    )
-    .join('\n');
-  const undecided = incomplete.map((result) => result.id).join(', ');
-
-  expect(
-    violations.map((violation) => violation.id),
-    `axe-core reported, with the studio ${state}:\n${report}\nnot gated, axe could not settle: ${undecided || 'nothing'}`,
-  ).toEqual([]);
-};
 
 test('the studio page carries no axe-core accessibility violation', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await audit(page, 'at rest');
 });
-
-// Both colour schemes are audited, because the tokens the properties resolve
-// to are what a contrast rule reads and the dark table is a second set of
-// them. The state is the page at rest: the states below reach further into
-// the studio and do so in whichever scheme the browser is asked for by
-// default, which is the light one.
 test('the studio carries no violation under the system dark preference', async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await audit(page, 'at rest in the dark scheme');
 });
-
-// The panel is bound to the selection and holds no editable control without
-// one, so the audit of its fields needs an element selected and a threat
-// expanded. The threat is marked mitigated with no mitigation, so its summary
-// carries a flag mark. It is the studio's densest form: every composed control
-// at once, inside the panel's own landmark.
 test('the studio carries no violation with the threat panel open on a selected element', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
-  await page.getByRole('group', { name: /^Actor, actor/u }).click();
+  await page.getByRole('group', { name: placeholder.actor }).click();
   const summary = page.getByRole('button', { name: /sends records/u });
   await summary.click();
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeVisible();
@@ -93,10 +54,6 @@ test('the studio carries no violation with the threat panel open on a selected e
   await expect(summary.locator('[data-flag]')).toHaveCount(1);
 
   await audit(page, 'showing the threat panel with a flagged threat');
-
-  // The open listbox is audited on its own because Radix hides the rest of
-  // the page from assistive technology while it is open, which axe's
-  // page-level rules read as a page that has lost its main and its heading.
   await page.getByRole('combobox', { name: 'Severity' }).press('Enter');
   await expect(page.getByRole('listbox')).toBeVisible();
 
@@ -106,10 +63,9 @@ test('the studio carries no violation with the threat panel open on a selected e
 test('the studio carries no violation with the panel open mid-drag', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
-  const actor = page.getByRole('group', { name: /^Actor, actor/u });
+  const actor = page.getByRole('group', { name: placeholder.actor });
   await actor.click();
   await expect(page.getByRole('region', { name: 'Threats' })).toBeVisible();
 
@@ -126,16 +82,10 @@ test('the studio carries no violation with the panel open mid-drag', async ({
 
   await page.mouse.up();
 });
-
-// The two notice regions hold nothing at rest, so the audit above sees them
-// empty. This one gives one of them something to say. Nothing is hidden while
-// it does, so the audit stays page-wide rather than being scoped to the
-// region: a refusal that broke the page around it would show up here too.
 test('the studio carries no violation while it shows a refusal', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await expect(page.getByTestId('failure-notice')).toHaveCSS(
     'display',
@@ -147,35 +97,17 @@ test('the studio carries no violation while it shows a refusal', async ({
 
   await audit(page, 'showing a refusal');
 });
-
-test('the studio carries no violation with an element selected and its handles showing', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
-
-  const actor = nodeNamed(page, /^Actor, actor/u);
-  await actor.click();
-  await expect(handleOn(actor, 'right')).toBeVisible();
-
-  await audit(page, 'showing a selected element and its handles');
-});
-
-// The toolbox is on the page at rest, so the audit above covers its controls
-// as it covers the rest. What it cannot see there is either notice region
-// with something in it, or the flow chooser, which is mounted on demand.
 test('the studio carries no violation while it says what an edit did', async ({
   page,
 }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openPlaceholder(page);
 
   await placeByClick(page, 'Actor', /^New actor, actor/u);
   await expect(page.getByTestId('canvas-announcement')).toBeEmpty();
 
   await audit(page, 'showing an added element');
 
-  const name = page.getByRole('textbox', { name: 'Name of New actor' });
+  const name = nameField(page, 'New actor');
   await expect(name).toBeFocused();
   await name.press('Enter');
   await expect(name).toHaveCount(0);
@@ -184,15 +116,8 @@ test('the studio carries no violation while it says what an edit did', async ({
 
   await audit(page, 'showing a removed element');
 });
-
-// The menu is the studio's one command surface, and it is not modal: the
-// canvas stays in the accessibility tree behind it, so the audit stays
-// page-wide. The report region beside it holds nothing until a file crossing
-// costs something, which the save below is what gives it.
 test('the studio carries no violation with the menu open', async ({ page }) => {
-  await page.addInitScript(withoutPickers);
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
+  await openFallback(page);
 
   await openMenu(page);
 
@@ -216,7 +141,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await audit(page, 'showing a loss report');
 
   await placeByClick(page, 'Actor', /^New actor, actor/u);
-  const name = page.getByRole('textbox', { name: 'Name of New actor' });
+  const name = nameField(page, 'New actor');
   await expect(name).toBeFocused();
   await name.press('Enter');
   await expect(name).toHaveCount(0);
@@ -238,9 +163,9 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 test('the open Link existing listbox carries no violation with long record labels', async ({
   page,
 }) => {
-  await openEcluse(page);
-  await selectNode(page, /^Écluse proxy, process/u);
-  await expandThreat(page, /Forwarded caller credentials/u);
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
   await panelField(page, 'combobox', 'Existing mitigation').click();
   await expect(page.getByRole('listbox')).toBeVisible();
 
@@ -254,13 +179,11 @@ test('the open Link existing listbox carries no violation with long record label
 test('the studio carries no violation with the diagram switcher open, or its title field', async ({
   page,
 }) => {
-  await openModel(page, saerskrivenModel);
+  await openTwoDiagrams(page);
   await audit(page, 'naming the diagram on screen');
 
   await diagramSwitcher(page).click();
-  await expect(
-    diagramChoice(page, 'Agents and the desktop shell'),
-  ).toBeVisible();
+  await expect(diagramChoice(page, 'Shipping an order')).toBeVisible();
   await audit(page, 'showing the open diagram switcher');
 
   await menuItem(page, 'Rename diagram').click();
@@ -268,41 +191,22 @@ test('the studio carries no violation with the diagram switcher open, or its tit
   await audit(page, 'editing the diagram title');
 });
 
-test('the studio carries no violation with a name open in a field', async ({
+test('the studio carries no violation with an element selected, its connect listbox open, or a flow selected', async ({
   page,
 }) => {
   await openPlaceholder(page);
 
-  await page.getByRole('group', { name: /^Actor, actor/u }).dblclick();
-  await expect(
-    page.getByRole('textbox', { name: 'Name of Actor' }),
-  ).toBeVisible();
+  const actor = nodeNamed(page, placeholder.actor);
+  await actor.click();
+  await expect(handleOn(actor, 'right')).toBeVisible();
 
-  await audit(page, 'renaming an element');
-});
+  await audit(page, 'showing a selected element and its handles');
 
-test('the open connect listbox carries no violation', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
-
-  await selectNode(page, /^Actor, actor/u);
   await page.keyboard.press(registeredChords['start-flow'][0]);
   await expect(page.getByRole('listbox')).toBeVisible();
 
   await audit(page, 'showing the open connect listbox', '[role="listbox"]');
-});
 
-test('the studio carries no violation with an element selected, or with a flow selected', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await expect(page.getByTestId('canvas-container')).toBeVisible();
-
-  await page.getByRole('group', { name: /^Actor, actor/u }).click();
-
-  await audit(page, 'showing a selected element');
-
-  await page.keyboard.press(registeredChords['start-flow'][0]);
   await page.getByRole('option', { name: 'Store' }).press('Enter');
   await expect(
     page.getByRole('group', {

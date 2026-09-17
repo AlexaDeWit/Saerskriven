@@ -1,7 +1,6 @@
 import {
   ReadFailure,
   hasDiverged,
-  saerskrivenYamlCodec,
   threatDragonCodec,
   type Divergence,
 } from '@saerskriven/formats';
@@ -26,12 +25,11 @@ import {
   savedBy,
   writeThrough,
 } from './session.js';
+import { brokenThreatDragonText, sampleNativeText } from './files.fixtures.js';
 
 type OutcomesByTag<Outcome extends { readonly _tag: string }> = {
   readonly [Tag in Outcome['_tag']]: Extract<Outcome, { readonly _tag: Tag }>;
 };
-
-const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
 
 const foreignText = threatDragonCodec.write(sampleModel).output;
 
@@ -41,7 +39,7 @@ const projectedForeign: RetainedSource = {
 };
 
 const openOutcomes: OutcomesByTag<OpenOutcome> = {
-  Chosen: OpenOutcome.Chosen({ name: 'model.yaml', text: nativeText }),
+  Chosen: OpenOutcome.Chosen({ name: 'model.yaml', text: sampleNativeText }),
   TooLarge: OpenOutcome.TooLarge({
     name: 'huge.json',
     bound: 4,
@@ -79,7 +77,7 @@ describe('openedBy', () => {
     });
   });
 
-  it('opens a text the Threat Dragon codec claims as that format', () => {
+  it('opens a text the Threat Dragon codec claims as that format, retaining the document a save merges onto', () => {
     const action = openedBy(
       OpenOutcome.Chosen({ name: 'model.json', text: foreignText }),
     );
@@ -88,13 +86,6 @@ describe('openedBy', () => {
       _tag: 'Opened',
       source: { format: 'threat-dragon' },
     });
-  });
-
-  it('retains the document a read produced, so a save has something to merge onto', () => {
-    const action = openedBy(
-      OpenOutcome.Chosen({ name: 'model.json', text: foreignText }),
-    );
-
     expect(
       action?._tag === 'Opened' ? action.source.document : undefined,
     ).toBeDefined();
@@ -113,14 +104,8 @@ describe('openedBy', () => {
   });
 
   it('reports where a claimed file broke, with the path into it', () => {
-    const broken = JSON.stringify({
-      version: '2.0',
-      summary: { title: 'Broken' },
-      detail: { diagrams: [{ id: 0 }] },
-    });
-
     const action = openedBy(
-      OpenOutcome.Chosen({ name: 'broken.json', text: broken }),
+      OpenOutcome.Chosen({ name: 'broken.json', text: brokenThreatDragonText }),
     );
 
     expect(action).toMatchObject({
@@ -259,7 +244,9 @@ describe('naming', () => {
 
 describe('writeThrough', () => {
   it('writes the format the source names', () => {
-    expect(writeThrough(sampleModel, nativeSource).output).toBe(nativeText);
+    expect(writeThrough(sampleModel, nativeSource).output).toBe(
+      sampleNativeText,
+    );
     expect(writeThrough(sampleModel, projectedForeign).output).toBe(
       foreignText,
     );
@@ -286,17 +273,28 @@ describe('reportLines', () => {
     expect(reportLines([])).toEqual([]);
   });
 
-  it('renders one line an entry, naming the entity and the reason', () => {
-    const divergences: readonly Divergence[] = [
-      {
-        subject: { kind: 'model' },
-        detail: 'A mitigation has no place in the format',
-        reason: 'unrepresentable',
-      },
-    ];
+  it.each(['open', 'import'] as const)(
+    'renders one line an entry on %s, each naming its detail',
+    (occasion) => {
+      const divergences: readonly Divergence[] = [
+        {
+          subject: { kind: 'model' },
+          detail: 'A mitigation has no place in the format',
+          reason: 'unrepresentable',
+        },
+        {
+          subject: { kind: 'model' },
+          detail: 'the key notes',
+          reason: 'undeclared',
+        },
+      ];
 
-    expect(reportLines(divergences)).toEqual([
-      'model: A mitigation has no place in the format (no place in the format)',
-    ]);
-  });
+      const lines = reportLines(divergences, occasion);
+
+      expect(lines).toHaveLength(divergences.length);
+      divergences.forEach(({ detail }, index) => {
+        expect(lines[index]).toContain(detail);
+      });
+    },
+  );
 });

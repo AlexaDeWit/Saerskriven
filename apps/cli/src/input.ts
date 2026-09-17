@@ -29,10 +29,7 @@ export function readModel(
   return Either.flatMap(withinSizeBound(file), () => detected(file));
 }
 
-/** Why a read produced nothing, as the lines the CLI writes to standard error. */
-export function describeReadFailure(
-  failure: ReadFailure | DetectionFailure,
-): string {
+function describeReadFailure(failure: ReadFailure | DetectionFailure): string {
   return lines(...renderReadFailure(failure));
 }
 

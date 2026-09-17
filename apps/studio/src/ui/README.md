@@ -34,7 +34,7 @@ applies a saved Light or Dark choice before the first paint, and
 `data-pn-colour-mode` on the document root. The choice persists in
 `localStorage` under `saerskrivenColourMode`, and invalid or unavailable stored
 data selects System. A colour written into another stylesheet is a failing
-spec, `../theme.spec.tsx`, which walks the production files of this app and of
+spec, `../styles.spec.ts`, which walks the production files of this app and of
 the canvas package for one.
 
 Every colour token is declared for the light table, again under

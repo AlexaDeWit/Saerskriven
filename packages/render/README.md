@@ -98,12 +98,16 @@ leads the faces with `drawingFace`, which `ledBy` arranges or refuses.
 This package's output is committed under
 [`test-data/render/`](../../test-data/render), so a change to what it writes
 arrives as a diff on a file. [`test-data/README.md`](../../test-data/README.md)
-says what each golden holds and which other suites read it. The drawings and
-their rasters are one list in `src/goldens.fixtures.ts`, and the registers keep
-their own list in their spec, so a further model or diagram joins every check
-by being added there. Cached tests write no snapshot, so a missing golden
-fails. Regenerate them in the commit that moved them, as
+says what each golden holds and which other suites read it. The goldens come
+from purpose-built models alone, so editing a real threat model never
+regenerates one. The drawings and their rasters are `goldenDocuments` in
+`src/render.fixtures.ts`, one per entry of `committedDiagrams` on
+`@saerskriven/model/fixtures`, so a further diagram joins every check over them
+by being added there. The Typst document and the Markdown register are written
+from `test-data/two-diagrams.model.json`. Cached tests write no snapshot, so a
+missing golden fails. Regenerate them in the commit that moved them, as
 [`CODING.md`](../../CODING.md#build-targets) says, with the rasterizer module
-built first ([Building the executables](../../docs/build.md#the-svg-rasterizer)).
+built first ([Building the
+executables](../../docs/build.md#the-svg-rasterizer)).
 
 Unit tests: `pnpm nx test @saerskriven/render`.

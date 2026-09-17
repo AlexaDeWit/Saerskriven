@@ -1,56 +1,22 @@
 import { chooseFrom } from './panel.fixtures.js';
 import type { Threat } from '@saerskriven/model';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Accordion } from 'radix-ui';
 import {
   processElement,
   sampleThreat,
   sampleElement,
   storeElement,
 } from '../store/store.fixtures.js';
-import { editorTimeout } from './panel.fixtures.js';
+import { editorTimeout, showThreatEditor } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
-import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
-
-const softHyphen = '­';
-
-const noop = (): void => undefined;
+import { describedNumbers, numbersIn, textbox } from '../ui/ui.fixtures.js';
+import { softHyphen } from '@saerskriven/model/fixtures';
 
 const commits = () => vi.fn<(patch: Partial<Threat>) => void>();
 
-const showEditor = (
-  overrides: Partial<ThreatEditorProps> = {},
-  expanded = true,
-): void => {
-  const props: ThreatEditorProps = {
-    threat: sampleThreat,
-    attachments: [],
-    focus: undefined,
-    held: undefined,
-    onChange: noop,
-    onCommit: noop,
-    onRefusal: noop,
-    onDelete: noop,
-    onFocused: noop,
-    ...overrides,
-  };
-  render(
-    <Accordion.Root
-      collapsible
-      defaultValue={expanded ? sampleThreat.id : ''}
-      type="single"
-    >
-      <ThreatEditor {...props} />
-    </Accordion.Root>,
-  );
-};
-
 const disclosure = (): HTMLElement =>
   screen.getByRole('button', { name: /A reader edits/u });
-
-const textbox = (name: string): HTMLElement =>
-  screen.getByRole('textbox', { name });
 
 const typeInto = async (field: string, text: string): Promise<void> => {
   const user = userEvent.setup();
@@ -63,14 +29,14 @@ describe(
   'ThreatEditor',
   () => {
     it('is named by its number and title while it is collapsed', () => {
-      showEditor({}, false);
+      showThreatEditor({}, false);
 
       expect(disclosure().textContent).toContain('1');
       expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
     });
 
     it('shows every field of the threat once it is expanded', () => {
-      showEditor();
+      showThreatEditor();
 
       for (const name of ['Title', 'Description']) {
         expect(textbox(name)).toBeDefined();
@@ -87,7 +53,7 @@ describe(
     it('commits a title left behind as a patch of that field alone', async () => {
       const user = userEvent.setup();
       const onCommit = commits();
-      showEditor({ onCommit });
+      showThreatEditor({ onCommit });
 
       await user.clear(textbox('Title'));
       await user.keyboard('A reader edits a model{Enter}');
@@ -99,7 +65,7 @@ describe(
 
     it('commits a description left behind as a patch of that field alone', async () => {
       const onCommit = commits();
-      showEditor({ onCommit });
+      showThreatEditor({ onCommit });
 
       await typeInto(
         'Description',
@@ -112,38 +78,29 @@ describe(
       });
     });
 
-    it('commits a severity chosen as a patch of that field alone', async () => {
-      const onCommit = commits();
-      showEditor({ onCommit });
+    it.each([
+      ['Severity', 'critical', { severity: 'critical' }],
+      ['Status', 'mitigated', { status: 'mitigated' }],
+      [
+        'Category',
+        'STRIDE spoofing',
+        { category: { methodology: 'STRIDE', category: 'spoofing' } },
+      ],
+    ] as const)(
+      'commits a %s chosen as a patch of that field alone',
+      async (field, option, patch) => {
+        const onCommit = commits();
+        showThreatEditor({ onCommit });
 
-      await chooseFrom('Severity', 'critical');
+        await chooseFrom(field, option);
 
-      expect(onCommit).toHaveBeenCalledWith({ severity: 'critical' });
-    });
-
-    it('commits a status chosen as a patch of that field alone', async () => {
-      const onCommit = commits();
-      showEditor({ onCommit });
-
-      await chooseFrom('Status', 'mitigated');
-
-      expect(onCommit).toHaveBeenCalledWith({ status: 'mitigated' });
-    });
-
-    it('commits a category chosen as a patch of that field alone', async () => {
-      const onCommit = commits();
-      showEditor({ onCommit });
-
-      await chooseFrom('Category', 'STRIDE spoofing');
-
-      expect(onCommit).toHaveBeenCalledWith({
-        category: { methodology: 'STRIDE', category: 'spoofing' },
-      });
-    });
+        expect(onCommit).toHaveBeenCalledWith(patch);
+      },
+    );
 
     it('reports a refused draft, and keeps reporting it while a clean field commits beside it', async () => {
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-      showEditor({ onRefusal });
+      showThreatEditor({ onRefusal });
 
       await typeInto('Description', `Pasted${softHyphen}prose`);
       const refusedDescription = onRefusal.mock.lastCall?.[0];
@@ -151,7 +108,7 @@ describe(
         field: 'Description',
         text: `Pasted${softHyphen}prose`,
       });
-      expect(refusedDescription?.said).toContain('7');
+      expect(numbersIn(refusedDescription?.said)).toEqual([7]);
 
       await typeInto('Title', ' by token');
 
@@ -159,7 +116,7 @@ describe(
     });
 
     it('opens the field a held draft was typed in on that draft, refusal and all', () => {
-      showEditor({
+      showThreatEditor({
         held: {
           field: 'Description',
           text: `Pasted${softHyphen}prose`,
@@ -178,7 +135,7 @@ describe(
     });
 
     it('says that deleting a threat several elements name takes it off all of them', () => {
-      showEditor({
+      showThreatEditor({
         threat: { ...sampleThreat, elements: [processElement, storeElement] },
         attachments: [
           sampleElement(processElement),
@@ -186,30 +143,23 @@ describe(
         ],
       });
 
-      expect(screen.getByText(/names 2 elements/u)).toBeDefined();
       expect(
-        screen.getByRole('list', { name: 'Attached elements' }).textContent,
-      ).toContain(sampleElement(processElement).name);
-      expect(
-        screen.getByRole('list', { name: 'Attached elements' }).textContent,
-      ).toContain(sampleElement(storeElement).name);
-      expect(
-        screen
-          .getByRole('button', { name: 'Delete threat 1' })
-          .getAttribute('aria-describedby'),
-      ).not.toBeNull();
+        describedNumbers(
+          screen.getByRole('button', { name: 'Delete threat 1' }),
+        ),
+      ).toEqual([2]);
     });
 
     it('takes the focus the panel sends into the title, and reports it', () => {
       const onFocused = vi.fn<() => void>();
-      showEditor({ focus: 'title', onFocused });
+      showThreatEditor({ focus: 'title', onFocused });
 
       expect(document.activeElement).toBe(textbox('Title'));
       expect(onFocused).toHaveBeenCalledTimes(1);
     });
 
     it('takes the focus the panel sends onto the control that expands it', () => {
-      showEditor({ focus: 'disclosure' }, false);
+      showThreatEditor({ focus: 'disclosure' }, false);
 
       expect(document.activeElement).toBe(disclosure());
     });

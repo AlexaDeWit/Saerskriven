@@ -98,7 +98,7 @@ describe('quoted', () => {
   });
 
   it('cuts long text to a bounded prefix ending in an ellipsis', () => {
-    const long = 'Écluse carries a token in a redacted type. '.repeat(20);
+    const long = 'Særskriven carries a token in a redacted type. '.repeat(20);
     const said = quoted(long, bound);
 
     expect(said).toContain(long.slice(0, bound / 2));

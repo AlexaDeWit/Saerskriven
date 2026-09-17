@@ -1,4 +1,3 @@
-import { attachedThreats } from './threats.js';
 import type { ElementId } from '@saerskriven/model';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -24,10 +23,27 @@ import {
   type HeldDraft,
   type ThreatPanelProps,
 } from './threat-panel.js';
+import {
+  addControl,
+  describedNumbers,
+  noop,
+  numbersIn,
+  textbox,
+} from '../ui/ui.fixtures.js';
+import { softHyphen } from '@saerskriven/model/fixtures';
 
-const softHyphen = '­';
-
-const noop = (): void => undefined;
+const panelProps = (
+  overrides: Partial<ThreatPanelProps> = {},
+): ThreatPanelProps => ({
+  drafts: new Map(),
+  focusing: false,
+  onClose: noop,
+  wide: false,
+  onToggleWidth: noop,
+  onFocused: noop,
+  subject: { kind: 'several', count: 0 },
+  ...overrides,
+});
 
 const showPanel = (
   selection: ElementId,
@@ -36,22 +52,13 @@ const showPanel = (
   dispatch(Action.Select({ elementIds: [selection] }));
   render(
     <ThreatPanel
-      drafts={new Map()}
-      focusing={false}
-      onClose={noop}
-      wide={false}
-      onToggleWidth={noop}
-      onFocused={noop}
-      subject={{ kind: 'element', element: sampleElement(selection) }}
-      {...overrides}
+      {...panelProps({
+        subject: { kind: 'element', element: sampleElement(selection) },
+        ...overrides,
+      })}
     />,
   );
 };
-
-const addControl = (): HTMLElement =>
-  screen.getByRole('button', { name: 'Add a threat' });
-
-const announcement = (): string => currentAnnouncement().message;
 
 const titleField = (): HTMLElement =>
   screen.getByRole('textbox', { name: 'Title' });
@@ -83,17 +90,13 @@ describe(
     it('says how many are selected where more than one is, and offers no edit', () => {
       render(
         <ThreatPanel
-          drafts={new Map()}
-          focusing={false}
-          onClose={noop}
-          wide={false}
-          onToggleWidth={noop}
-          onFocused={noop}
-          subject={{ kind: 'several', count: 3 }}
+          {...panelProps({ subject: { kind: 'several', count: 3 } })}
         />,
       );
 
-      expect(screen.getByText(/^3 elements selected/u)).toBeDefined();
+      expect(numbersIn(screen.getByTestId('threat-panel').textContent)).toEqual(
+        [3],
+      );
       expect(screen.queryByRole('button', { name: 'Add a threat' })).toBeNull();
     });
 
@@ -135,7 +138,6 @@ describe(
     it('lists nothing for an element no threat names, and still offers an add', () => {
       showPanel(processElement);
 
-      expect(attachedThreats(modelStore.getState())).toEqual([]);
       expect(screen.queryByText(sampleModel.threats[0].title)).toBeNull();
       expect(addControl()).toBeDefined();
     });
@@ -148,7 +150,7 @@ describe(
 
       expect(threatsInStore()).toBe(2);
       expect(document.activeElement).toBe(titleField());
-      expect(announcement()).toBe('');
+      expect(currentAnnouncement().message).toBe('');
     });
 
     it('deletes a threat, moving focus to the one that takes its place', async () => {
@@ -162,7 +164,7 @@ describe(
       expect(document.activeElement).toBe(
         screen.getByRole('button', { name: /A reader edits/u }),
       );
-      expect(announcement()).toContain('2');
+      expect(numbersIn(currentAnnouncement().message)).toEqual([2]);
     });
 
     it('deletes the last threat of an element, moving focus to the add control', async () => {
@@ -258,7 +260,7 @@ describe(
       expect(document.activeElement).toBe(addControl());
     });
 
-    it('commits one undoable step per field left behind', async () => {
+    it('commits a severity change as one undoable step', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
       await user.click(screen.getByRole('button', { name: /A reader edits/u }));
@@ -286,14 +288,14 @@ describe(
       expect(
         screen.getByDisplayValue(`Pasted${softHyphen}prose`),
       ).toBeDefined();
-      expect(screen.getByText(/^Character 7/u)).toBeDefined();
-      expect(announcement().trim()).not.toBe('');
+      expect(describedNumbers(textbox('Description'))).toEqual([7]);
+      expect(currentAnnouncement().message.trim()).not.toBe('');
       expect(modelStore.getState().present.threats[0].description).toBe('');
 
       await user.click(screen.getByRole('textbox', { name: 'Description' }));
       await user.keyboard('x');
 
-      expect(announcement()).toBe('');
+      expect(currentAnnouncement().message).toBe('');
       expect(
         screen
           .getByRole('textbox', { name: 'Description' })
@@ -336,7 +338,7 @@ describe(
       expect(
         screen.getByDisplayValue(`Pasted${softHyphen}prose`),
       ).toBeDefined();
-      expect(announcement()).toBe('');
+      expect(currentAnnouncement().message).toBe('');
     });
 
     it('drops a refusal an undo settled, and lets the threat collapse again', async () => {
@@ -350,13 +352,13 @@ describe(
       await user.click(screen.getByRole('textbox', { name: 'Description' }));
       await user.keyboard(softHyphen);
       await user.click(screen.getByRole('button', { name: /A reader edits/u }));
-      expect(announcement().trim()).not.toBe('');
+      expect(currentAnnouncement().message.trim()).not.toBe('');
 
       act(() => {
         dispatch(Action.Undo());
       });
 
-      expect(announcement()).toBe('');
+      expect(currentAnnouncement().message).toBe('');
 
       await user.click(screen.getByRole('button', { name: /A reader edits/u }));
 
@@ -383,15 +385,10 @@ describe(
 
     it('moves focus to its first control when it is asked for, and not before', () => {
       const focused = vi.fn<() => void>();
-      const props: ThreatPanelProps = {
-        drafts: new Map(),
-        focusing: false,
-        onClose: noop,
-        wide: false,
-        onToggleWidth: noop,
+      const props = panelProps({
         onFocused: focused,
         subject: { kind: 'element', element: sampleElement(processElement) },
-      };
+      });
       dispatch(Action.Select({ elementIds: [processElement] }));
       const { rerender } = render(<ThreatPanel {...props} />);
       expect(document.activeElement).toBe(document.body);

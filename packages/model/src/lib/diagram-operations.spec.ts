@@ -1,48 +1,69 @@
 import { Either } from 'effect';
-import { elementId } from '../fixtures.js';
+import { elementId, elementIn, softHyphen, validModel } from '../fixtures.js';
 import {
   addDiagram,
   removeDiagram,
   renameDiagram,
 } from './diagram-operations.js';
 import { removeElement } from './element-operations.js';
+import { elementSchema } from './elements.js';
 import { OperationFailure } from './operation-failures.js';
 import {
-  base,
   cache,
   elementIds,
-  elementIn,
   errorOf,
+  flowInput,
   mainDiagram,
   modelOf,
+  operationContract,
   secondDiagram,
-  secondOfElements,
   writeFlow,
-  type OperationOutcome,
 } from './operations.fixtures.js';
 import { parseModel } from './parse.js';
+
+const secondOfElements = {
+  id: secondDiagram,
+  title: 'Second',
+  elements: [
+    { ...cache, id: elementId('element-second-store') },
+    elementSchema.parse({
+      ...flowInput,
+      id: 'element-second-flow',
+      source: { kind: 'attached', element: 'element-second-store' },
+      target: { kind: 'free', position: { x: 0, y: 0 } },
+    }),
+  ],
+};
 
 describe('addDiagram', () => {
   it('appends a diagram after the ones the model holds', () => {
     const next = modelOf(
-      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
+      addDiagram(validModel, {
+        id: secondDiagram,
+        title: 'Second',
+        elements: [],
+      }),
     );
     expect(next.diagrams.map((diagram) => diagram.id)).toEqual([
       mainDiagram,
       secondDiagram,
     ]);
-    expect(next.diagrams[0]).toBe(base.diagrams[0]);
+    expect(next.diagrams[0]).toBe(validModel.diagrams[0]);
   });
 
   it('accepts a diagram of elements whose flows stay inside it', () => {
-    const next = modelOf(addDiagram(base, secondOfElements));
+    const next = modelOf(addDiagram(validModel, secondOfElements));
     expect(next.diagrams[1].elements).toHaveLength(2);
   });
 
   it('refuses the id of a diagram the model holds', () => {
     expect(
       errorOf(
-        addDiagram(base, { id: mainDiagram, title: 'Again', elements: [] }),
+        addDiagram(validModel, {
+          id: mainDiagram,
+          title: 'Again',
+          elements: [],
+        }),
       ),
     ).toEqual(OperationFailure.DuplicateDiagramId({ diagramId: mainDiagram }));
   });
@@ -50,14 +71,14 @@ describe('addDiagram', () => {
   it('refuses an empty title and a refused character in one', () => {
     expect(
       errorOf(
-        addDiagram(base, { id: secondDiagram, title: ' ', elements: [] }),
+        addDiagram(validModel, { id: secondDiagram, title: ' ', elements: [] }),
       ),
     ).toEqual(OperationFailure.EmptyTitle({ diagramId: secondDiagram }));
     expect(
       errorOf(
-        addDiagram(base, {
+        addDiagram(validModel, {
           id: secondDiagram,
-          title: 'Sec\u00adond',
+          title: `Sec${softHyphen}ond`,
           elements: [],
         }),
       ),
@@ -72,10 +93,10 @@ describe('addDiagram', () => {
   it('refuses an element id the model holds already, or one the diagram repeats', () => {
     expect(
       errorOf(
-        addDiagram(base, {
+        addDiagram(validModel, {
           id: secondDiagram,
           title: 'Second',
-          elements: [elementIn(base, 'element-api')],
+          elements: [elementIn(validModel, 'element-api')],
         }),
       ),
     ).toEqual(
@@ -85,7 +106,7 @@ describe('addDiagram', () => {
     );
     expect(
       errorOf(
-        addDiagram(base, {
+        addDiagram(validModel, {
           id: secondDiagram,
           title: 'Second',
           elements: [cache, cache],
@@ -97,7 +118,7 @@ describe('addDiagram', () => {
   it('refuses a flow anchored outside the diagram', () => {
     expect(
       errorOf(
-        addDiagram(base, {
+        addDiagram(validModel, {
           id: secondDiagram,
           title: 'Second',
           elements: [writeFlow],
@@ -109,25 +130,27 @@ describe('addDiagram', () => {
 
 describe('renameDiagram', () => {
   it('retitles the diagram and leaves its elements as they were', () => {
-    const next = modelOf(renameDiagram(base, mainDiagram, 'Retitled'));
+    const next = modelOf(renameDiagram(validModel, mainDiagram, 'Retitled'));
     expect(next.diagrams[0].title).toBe('Retitled');
-    expect(next.diagrams[0].elements).toBe(base.diagrams[0].elements);
+    expect(next.diagrams[0].elements).toBe(validModel.diagrams[0].elements);
   });
 
   it('refuses an empty title, a whitespace title, and a refused character', () => {
-    expect(errorOf(renameDiagram(base, mainDiagram, ''))).toEqual(
+    expect(errorOf(renameDiagram(validModel, mainDiagram, ''))).toEqual(
       OperationFailure.EmptyTitle({ diagramId: mainDiagram }),
     );
-    expect(errorOf(renameDiagram(base, mainDiagram, '  '))).toEqual(
+    expect(errorOf(renameDiagram(validModel, mainDiagram, '  '))).toEqual(
       OperationFailure.EmptyTitle({ diagramId: mainDiagram }),
     );
-    expect(errorOf(renameDiagram(base, mainDiagram, 'Ma\u00adin'))).toEqual(
+    expect(
+      errorOf(renameDiagram(validModel, mainDiagram, `Ma${softHyphen}in`)),
+    ).toEqual(
       OperationFailure.RefusedTitleCharacter({ diagramId: mainDiagram, at: 2 }),
     );
   });
 
   it('fails on an unknown diagram', () => {
-    expect(errorOf(renameDiagram(base, secondDiagram, 'Ghost'))).toEqual(
+    expect(errorOf(renameDiagram(validModel, secondDiagram, 'Ghost'))).toEqual(
       OperationFailure.UnknownDiagram({ diagramId: secondDiagram }),
     );
   });
@@ -136,7 +159,11 @@ describe('renameDiagram', () => {
 describe('removeDiagram', () => {
   it('drops a diagram that owns no element', () => {
     const withSecond = modelOf(
-      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
+      addDiagram(validModel, {
+        id: secondDiagram,
+        title: 'Second',
+        elements: [],
+      }),
     );
     expect(
       modelOf(removeDiagram(withSecond, secondDiagram)).diagrams.map(
@@ -146,63 +173,61 @@ describe('removeDiagram', () => {
   });
 
   it('refuses a diagram that still owns elements, counting them', () => {
-    expect(errorOf(removeDiagram(base, mainDiagram))).toEqual(
+    expect(errorOf(removeDiagram(validModel, mainDiagram))).toEqual(
       OperationFailure.DiagramNotEmpty({
         diagramId: mainDiagram,
-        elements: base.diagrams[0].elements.length,
+        elements: validModel.diagrams[0].elements.length,
       }),
     );
   });
 
   it('fails on an unknown diagram', () => {
-    expect(errorOf(removeDiagram(base, secondDiagram))).toEqual(
+    expect(errorOf(removeDiagram(validModel, secondDiagram))).toEqual(
       OperationFailure.UnknownDiagram({ diagramId: secondDiagram }),
     );
   });
 
   it('goes through once the caller has emptied it with removeElement', () => {
-    const emptied = elementIds(base).reduce(
+    const emptied = elementIds(validModel).reduce(
       (model, id) => modelOf(removeElement(model, elementId(id))),
-      base,
+      validModel,
     );
     const next = modelOf(removeDiagram(emptied, mainDiagram));
     expect(next.diagrams).toEqual([]);
     expect(next.threats.map((threat) => threat.elements)).toEqual([[]]);
-    expect(next.assumptions).toEqual(base.assumptions);
+    expect(next.assumptions).toEqual(validModel.assumptions);
     expect(Either.isRight(parseModel(next))).toBe(true);
   });
 });
 
-describe('operation purity', () => {
-  it('leaves the input model untouched', () => {
-    const pristine = structuredClone(base);
-    addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] });
-    renameDiagram(base, mainDiagram, 'Retitled');
-    removeDiagram(base, mainDiagram);
-    expect(base).toEqual(pristine);
-  });
-});
-
-describe('operation outputs re-parse through parseModel', () => {
-  const outputs: [string, OperationOutcome][] = [
-    [
-      'addDiagram',
-      addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
-    ],
-    ['addDiagram of elements', addDiagram(base, secondOfElements)],
-    ['renameDiagram', renameDiagram(base, mainDiagram, 'Retitled')],
-    [
-      'removeDiagram',
-      Either.flatMap(
-        addDiagram(base, { id: secondDiagram, title: 'Second', elements: [] }),
-        (model) => removeDiagram(model, secondDiagram),
+describe('diagram operations', () => {
+  operationContract({
+    addDiagram: {
+      input: validModel,
+      run: (model) =>
+        addDiagram(model, { id: secondDiagram, title: 'Second', elements: [] }),
+    },
+    'addDiagram of elements': {
+      input: validModel,
+      run: (model) => addDiagram(model, secondOfElements),
+    },
+    renameDiagram: {
+      input: validModel,
+      run: (model) => renameDiagram(model, mainDiagram, 'Retitled'),
+    },
+    'removeDiagram of the diagram the model holds': {
+      input: validModel,
+      run: (model) => removeDiagram(model, mainDiagram),
+    },
+    removeDiagram: {
+      input: modelOf(
+        addDiagram(validModel, {
+          id: secondDiagram,
+          title: 'Second',
+          elements: [],
+        }),
       ),
-    ],
-  ];
-
-  for (const [operation, result] of outputs) {
-    it(`${operation} returns a model parseModel accepts`, () => {
-      expect(Either.isRight(parseModel(modelOf(result)))).toBe(true);
-    });
-  }
+      run: (model) => removeDiagram(model, secondDiagram),
+    },
+  });
 });

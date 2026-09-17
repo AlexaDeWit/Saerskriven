@@ -1,22 +1,20 @@
 import { Either } from 'effect';
-import { validModelFixture } from './fixtures.js';
-import { parseModel, type Model } from './parse.js';
+import { parsedFixture } from '../fixtures.js';
+import { validModelFixture } from './model.fixtures.js';
+import type { Model } from './parse.js';
 import {
   chosenDiagram,
   DiagramChoiceFailure,
   diagramsNamed,
 } from './references.js';
 
-const model: Model = Either.getOrThrowWith(
-  parseModel({
-    ...validModelFixture,
-    diagrams: [
-      ...validModelFixture.diagrams,
-      { id: 'diagram-second', title: 'Main data flow', elements: [] },
-    ],
-  }),
-  () => new Error('The references fixture does not parse.'),
-);
+const model: Model = parsedFixture({
+  ...validModelFixture,
+  diagrams: [
+    ...validModelFixture.diagrams,
+    { id: 'diagram-second', title: 'Main data flow', elements: [] },
+  ],
+});
 
 describe('diagramsNamed', () => {
   it('selects the diagram whose id the name is', () => {
@@ -32,16 +30,13 @@ describe('diagramsNamed', () => {
   });
 
   it('puts the diagram whose id the name is before one titled with it', () => {
-    const titledFirst = Either.getOrThrowWith(
-      parseModel({
-        ...validModelFixture,
-        diagrams: [
-          { id: 'diagram-titled', title: 'diagram-main', elements: [] },
-          ...validModelFixture.diagrams,
-        ],
-      }),
-      () => new Error('The collision fixture does not parse.'),
-    );
+    const titledFirst = parsedFixture({
+      ...validModelFixture,
+      diagrams: [
+        { id: 'diagram-titled', title: 'diagram-main', elements: [] },
+        ...validModelFixture.diagrams,
+      ],
+    });
     expect(
       diagramsNamed(titledFirst.diagrams, 'diagram-main').map((one) => one.id),
     ).toEqual(['diagram-main', 'diagram-titled']);

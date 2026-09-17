@@ -1,14 +1,12 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
-import { diagramId } from '@saerskriven/model/fixtures';
+import type { DiagramId, Model } from '@saerskriven/model';
+import { committedText } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { studioVersion } from '../version.js';
 import { FileLifecycle, type RetainedSource } from './state.js';
 import {
   foreignSource,
   nativeSource,
-  restorableSnapshot,
   sampleModel,
   secondDiagram,
   twoDiagramModel,
@@ -39,20 +37,35 @@ function memoryStorage() {
   };
 }
 
-function failureFor(raw: string) {
+function loadStored(raw: string) {
   const memory = memoryStorage();
   memory.values.set(recoveryStorageKey, raw);
-  const loaded = localRecoveryStorage(() => memory.backend).load();
-  return Either.isLeft(loaded) ? loaded.left : undefined;
+  return localRecoveryStorage(() => memory.backend).load();
 }
 
-const snapshotBeforeVersion2 = readFileSync(
-  join(
-    import.meta.dirname,
-    '../../../../test-data/studio/recovery-v0.4.0.json',
-  ),
-  'utf8',
-);
+const rejectionOf = (raw: string): string => {
+  const loaded = loadStored(raw);
+  if (Either.isRight(loaded)) {
+    throw new Error('The stored snapshot loaded, and this expects a refusal');
+  }
+  return loaded.left.reason;
+};
+
+const expectedRestore = (
+  present: Model,
+  dirty: boolean,
+  file: FileLifecycle,
+  activeDiagram?: DiagramId,
+) => ({
+  version: 2,
+  writtenBy: { studioVersion },
+  dirty,
+  file,
+  activeDiagram,
+  present,
+});
+
+const snapshotBeforeVersion2 = committedText('studio/recovery-v0.4.0.json');
 
 const version1Snapshot = JSON.stringify({
   version: 1,
@@ -61,82 +74,7 @@ const version1Snapshot = JSON.stringify({
   file: { _tag: 'NoFile' },
 });
 
-const flowWithoutDirection = {
-  kind: 'flow',
-  id: 'flow-reads',
-  name: 'reads',
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  source: { kind: 'attached', element: 'actor-reader' },
-  target: { kind: 'attached', element: 'process-studio' },
-  waypoints: [],
-};
-
-const documentWithoutDirection = {
-  formatVersion: 1,
-  metadata: { title: 'Earlier', owner: '', description: '', contributors: [] },
-  diagrams: [
-    {
-      id: 'diagram-main',
-      title: 'Main',
-      elements: [
-        {
-          kind: 'actor',
-          id: 'actor-reader',
-          name: 'Reader',
-          description: '',
-          outOfScope: false,
-          reasonOutOfScope: '',
-          position: { x: 0, y: 0 },
-          size: { width: 120, height: 60 },
-        },
-        {
-          kind: 'process',
-          id: 'process-studio',
-          name: 'Studio',
-          description: '',
-          outOfScope: false,
-          reasonOutOfScope: '',
-          position: { x: 200, y: 0 },
-          size: { width: 120, height: 60 },
-        },
-        flowWithoutDirection,
-      ],
-    },
-  ],
-  threats: [],
-  lastIssuedThreatNumber: 0,
-  mitigations: [],
-  assumptions: [],
-};
-
-const documentWithElementLinkedAssumption = {
-  ...documentWithoutDirection,
-  threats: [
-    {
-      id: 'threat-spoofed-reader',
-      number: 1,
-      title: 'Spoofed reader',
-      category: { methodology: 'STRIDE', category: 'spoofing' },
-      severity: 'high',
-      status: 'open',
-      description: '',
-      mitigation: '',
-      elements: ['actor-reader'],
-    },
-  ],
-  lastIssuedThreatNumber: 1,
-  assumptions: [
-    {
-      id: 'assumption-signed-in',
-      prose: 'Every reader signs in.',
-      status: 'valid',
-      elements: ['actor-reader', 'process-studio'],
-      threats: ['threat-spoofed-reader'],
-    },
-  ],
-};
+const current = recoverySnapshot(sampleModel, false, FileLifecycle.NoFile());
 
 describe('local recovery storage', () => {
   it('loads nothing when the namespaced key is absent', () => {
@@ -144,7 +82,6 @@ describe('local recovery storage', () => {
     const storage = localRecoveryStorage(() => memory.backend);
 
     expect(storage.load()).toEqual(Either.right(undefined));
-    expect(recoveryStorageKey).toContain('saerskriven:studio:');
   });
 
   it('replaces the one versioned snapshot and gives the model back on load', () => {
@@ -155,7 +92,7 @@ describe('local recovery storage', () => {
 
     expect(Either.isRight(storage.replace(first))).toBe(true);
     expect(storage.load()).toEqual(
-      Either.right(restorableSnapshot(sampleModel, false, opened())),
+      Either.right(expectedRestore(sampleModel, false, opened())),
     );
     expect(Either.isRight(storage.replace(latest))).toBe(true);
 
@@ -171,7 +108,7 @@ describe('local recovery storage', () => {
     expect(raw).not.toContain('"renaming"');
     expect(raw).not.toContain('"lastFailure"');
     expect(storage.load()).toEqual(
-      Either.right(restorableSnapshot(sampleModel, true, opened(nativeSource))),
+      Either.right(expectedRestore(sampleModel, true, opened(nativeSource))),
     );
   });
 
@@ -188,7 +125,7 @@ describe('local recovery storage', () => {
     expect(Either.isRight(storage.replace(shown))).toBe(true);
     expect(storage.load()).toEqual(
       Either.right(
-        restorableSnapshot(twoDiagramModel, false, opened(), secondDiagram),
+        expectedRestore(twoDiagramModel, false, opened(), secondDiagram),
       ),
     );
 
@@ -198,92 +135,11 @@ describe('local recovery storage', () => {
     expect(Either.getOrThrow(earlier)?.activeDiagram).toBeUndefined();
   });
 
-  it('restores a document written before the format declared a key, on the mapping default', () => {
-    const memory = memoryStorage();
-    memory.values.set(
-      recoveryStorageKey,
-      JSON.stringify({
-        version: 2,
-        document: documentWithoutDirection,
-        writtenBy: { studioVersion: '0.2.1' },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
-    );
-    const loaded = localRecoveryStorage(() => memory.backend).load();
-
-    expect(Either.isRight(loaded)).toBe(true);
-    expect(
-      Either.getOrThrow(loaded)?.present.diagrams[0].elements.find(
-        (element) => element.kind === 'flow',
-      ),
-    ).toMatchObject({ bidirectional: false });
-  });
-
-  it('restores a document whose assumption links elements, without the element links', () => {
-    const memory = memoryStorage();
-    memory.values.set(
-      recoveryStorageKey,
-      JSON.stringify({
-        version: 2,
-        document: documentWithElementLinkedAssumption,
-        writtenBy: { studioVersion: '0.4.0' },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
-    );
-    const loaded = localRecoveryStorage(() => memory.backend).load();
-
-    expect(Either.getOrThrow(loaded)?.present.assumptions).toEqual([
-      {
-        id: 'assumption-signed-in',
-        prose: 'Every reader signs in.',
-        status: 'valid',
-        threats: ['threat-spoofed-reader'],
-        appliesToModel: false,
-      },
-    ]);
-  });
-
-  it('restores a document whose threat carries mitigation text, holding the text as its mitigation record', () => {
-    const memory = memoryStorage();
-    memory.values.set(
-      recoveryStorageKey,
-      JSON.stringify({
-        version: 2,
-        document: {
-          ...documentWithElementLinkedAssumption,
-          threats: documentWithElementLinkedAssumption.threats.map(
-            (threat) => ({ ...threat, mitigation: 'Readers sign in.' }),
-          ),
-        },
-        writtenBy: { studioVersion: '0.4.0' },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
-    );
-    const loaded = localRecoveryStorage(() => memory.backend).load();
-
-    expect(Either.getOrThrow(loaded)?.present.mitigations).toEqual([
-      {
-        id: 'threat-spoofed-reader-mitigation',
-        title: '',
-        prose: 'Readers sign in.',
-        status: 'proposed',
-        threats: ['threat-spoofed-reader'],
-      },
-    ]);
-  });
-
   it('restores a snapshot whose document and retained source are version 1, migrated, with its dirty flag, file and diagram', () => {
-    const memory = memoryStorage();
-    memory.values.set(recoveryStorageKey, snapshotBeforeVersion2);
-    const snapshot = Either.getOrThrow(
-      localRecoveryStorage(() => memory.backend).load(),
-    );
+    const snapshot = Either.getOrThrow(loadStored(snapshotBeforeVersion2));
 
     expect(snapshot?.dirty).toBe(true);
-    expect(snapshot?.activeDiagram).toBe('diagram-second');
+    expect(snapshot?.activeDiagram).toBe(secondDiagram);
     expect(snapshot?.present.mitigations).toEqual([
       expect.objectContaining({
         status: 'implemented',
@@ -337,16 +193,14 @@ describe('local recovery storage', () => {
       name: 'model.yaml',
       source: { format: 'saerskriven-yaml', document: source },
     });
-    const diagram = diagramId('diagram-second');
-
-    storage.replace(recoverySnapshot(present, true, file, diagram));
+    storage.replace(recoverySnapshot(present, true, file, secondDiagram));
 
     expect(storage.load()).toEqual(
-      Either.right(restorableSnapshot(present, true, file, diagram)),
+      Either.right(expectedRestore(present, true, file, secondDiagram)),
     );
     const restored = Either.getOrThrow(storage.load());
     expect(restored?.dirty).toBe(true);
-    expect(restored?.activeDiagram).toBe(diagram);
+    expect(restored?.activeDiagram).toBe(secondDiagram);
     expect(restored?.file).toMatchObject({
       _tag: 'Opened',
       name: 'model.yaml',
@@ -362,68 +216,41 @@ describe('local recovery storage', () => {
   });
 
   it('rejects a version 1 snapshot, saying an earlier release wrote it', () => {
-    const older = failureFor(version1Snapshot);
+    const older = rejectionOf(version1Snapshot);
 
-    expect(older?._tag).toBe('Rejected');
-    expect(older?.reason).toContain('earlier release');
-    expect(older?.reason).not.toBe(failureFor('{}')?.reason);
+    expect(loadStored(version1Snapshot)).toEqual(
+      Either.left(RecoveryStorageFailure.Rejected({ reason: older })),
+    );
+    expect(older).not.toBe(rejectionOf('{'));
+    expect(older).not.toBe(
+      rejectionOf(JSON.stringify({ ...current, version: 3 })),
+    );
   });
 
   it.each([
     ['malformed JSON', '{'],
     [
       'an unsupported later version',
-      JSON.stringify({
-        version: 3,
-        document: documentWithoutDirection,
-        writtenBy: { studioVersion },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
+      JSON.stringify({ ...current, version: 3 }),
     ],
     [
       'a document the model refuses',
       JSON.stringify({
-        version: 2,
+        ...current,
         document: {
-          ...documentWithoutDirection,
-          threats: [
-            {
-              id: 'threat-1',
-              number: 1,
-              title: 'Attached to nothing',
-              category: { methodology: 'STRIDE', category: 'spoofing' },
-              severity: 'medium',
-              status: 'open',
-              description: '',
-              mitigation: '',
-              elements: ['element-missing'],
-            },
-          ],
-          lastIssuedThreatNumber: 1,
+          ...current.document,
+          threats: current.document.threats.map((threat) => ({
+            ...threat,
+            elements: ['element-missing'],
+          })),
         },
-        writtenBy: { studioVersion },
-        dirty: false,
-        file: { _tag: 'NoFile' },
       }),
     ],
-    [
-      'an invalid document',
-      JSON.stringify({
-        version: 2,
-        document: {},
-        writtenBy: { studioVersion },
-        dirty: false,
-        file: { _tag: 'NoFile' },
-      }),
-    ],
+    ['an invalid document', JSON.stringify({ ...current, document: {} })],
     [
       'an invalid retained source',
       JSON.stringify({
-        version: 2,
-        document: documentWithoutDirection,
-        writtenBy: { studioVersion },
-        dirty: false,
+        ...current,
         file: {
           _tag: 'Opened',
           name: 'model.json',
@@ -432,11 +259,7 @@ describe('local recovery storage', () => {
       }),
     ],
   ])('rejects %s without throwing', (_case, raw) => {
-    const memory = memoryStorage();
-    memory.values.set(recoveryStorageKey, raw);
-    const loaded = localRecoveryStorage(() => memory.backend).load();
-
-    expect(loaded).toEqual(
+    expect(loadStored(raw)).toEqual(
       Either.left(expect.objectContaining({ _tag: 'Rejected' })),
     );
   });

@@ -1,44 +1,47 @@
 import { Either, Option } from 'effect';
-import { parsedFixture } from '../fixtures.js';
-import { validModelFixture } from './fixtures.js';
+import { validModel } from '../fixtures.js';
 import { setModelMetadata } from './metadata-operations.js';
-
-const base = parsedFixture(validModelFixture);
 
 describe('setModelMetadata', () => {
   it('replaces the named fields and keeps the others', () => {
     const next = Either.getOrThrow(
-      setModelMetadata(base, {
+      setModelMetadata(validModel, {
         owner: 'Jonas Lindqvist',
         contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
       }),
     );
     expect(next.metadata).toEqual({
-      ...base.metadata,
+      ...validModel.metadata,
       owner: 'Jonas Lindqvist',
       contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
     });
-    expect(next.diagrams).toBe(base.diagrams);
+    expect(next.diagrams).toBe(validModel.diagrams);
   });
 
   it('clears a field to empty text', () => {
     const next = Either.getOrThrow(
-      setModelMetadata(base, { title: '', contributors: [] }),
+      setModelMetadata(validModel, { title: '', contributors: [] }),
     );
     expect(next.metadata).toMatchObject({ title: '', contributors: [] });
   });
 
   it('keeps the model where nothing differs', () => {
-    expect(Either.getOrThrow(setModelMetadata(base, {}))).toBe(base);
+    expect(Either.getOrThrow(setModelMetadata(validModel, {}))).toBe(
+      validModel,
+    );
     expect(
-      Either.getOrThrow(setModelMetadata(base, { ...base.metadata })),
-    ).toBe(base);
+      Either.getOrThrow(
+        setModelMetadata(validModel, { ...validModel.metadata }),
+      ),
+    ).toBe(validModel);
   });
 
   it('names the field or contributor carrying a refused character', () => {
     expect(
       Option.getOrUndefined(
-        Either.getLeft(setModelMetadata(base, { description: 'ab\u0007' })),
+        Either.getLeft(
+          setModelMetadata(validModel, { description: 'ab\u0007' }),
+        ),
       ),
     ).toMatchObject({
       _tag: 'RefusedMetadataCharacter',
@@ -48,7 +51,7 @@ describe('setModelMetadata', () => {
     expect(
       Option.getOrUndefined(
         Either.getLeft(
-          setModelMetadata(base, { contributors: ['Ada', '\u200bBob'] }),
+          setModelMetadata(validModel, { contributors: ['Ada', '\u200bBob'] }),
         ),
       ),
     ).toMatchObject({

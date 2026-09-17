@@ -19,7 +19,7 @@ import {
   threatTarget,
 } from './records.js';
 import { optionName } from './distinct-labels.js';
-import { numbersIn } from './panel.fixtures.js';
+import { numbersIn } from '../ui/ui.fixtures.js';
 
 const [mitigation] = recordedModel.mitigations;
 

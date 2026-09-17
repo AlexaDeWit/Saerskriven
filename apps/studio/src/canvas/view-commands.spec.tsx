@@ -11,14 +11,16 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { Action } from '../store/actions.js';
-import { initialState, placeholderModel } from '../store/state.js';
+import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
+  actorElement,
   nativeSource,
+  sampleModel,
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
-import { canvasModel, readerElement } from './canvas.fixtures.js';
+import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { FitOnOpen, useViewCommands } from './view-commands.js';
 
 const unfitted = 'transform: translate(0px, 0px) scale(1)';
@@ -39,6 +41,22 @@ const fitted = async (): Promise<string> => {
   return transform();
 };
 
+function ViewControls({ cover = 0 }: { readonly cover?: number }) {
+  const snapping = useSnap();
+  const view = useViewCommands(cover);
+  return (
+    <CommandSurfaceProvider surface={{ ...recordingSurface().surface, view }}>
+      <CommandButton command="fit-selection" />
+      <CommandButton command="fit-to-view" />
+      <CommandButton command="reset-zoom" />
+      <CommandButton command="zoom-in" />
+      <CommandButton command="zoom-out" />
+      <CommandButton command="snap-to-grid" />
+      <span data-testid="snap-state">{snapping ? 'on' : 'off'}</span>
+    </CommandSurfaceProvider>
+  );
+}
+
 describe('FitOnOpen', () => {
   beforeEach(() => {
     modelStore.setState(initialState(canvasModel), true);
@@ -57,7 +75,7 @@ describe('FitOnOpen', () => {
     act(() => {
       dispatch(
         Action.Opened({
-          model: placeholderModel,
+          model: sampleModel,
           name: 'other.yaml',
           source: nativeSource,
           divergences: [],
@@ -91,7 +109,7 @@ describe('FitOnOpen', () => {
     act(() => {
       dispatch(
         Action.MoveElement({
-          elementId: readerElement,
+          elementId: actorElement,
           offset: { x: 400, y: 400 },
         }),
       );
@@ -101,85 +119,63 @@ describe('FitOnOpen', () => {
   });
 });
 
-function ViewControls({ cover = 0 }: { readonly cover?: number }) {
-  const snapping = useSnap();
-  const view = useViewCommands(cover);
-  return (
-    <CommandSurfaceProvider surface={{ ...recordingSurface().surface, view }}>
-      <CommandButton command="fit-selection" />
-      <CommandButton command="fit-to-view" />
-      <CommandButton command="reset-zoom" />
-      <CommandButton command="zoom-in" />
-      <CommandButton command="zoom-out" />
-      <CommandButton command="snap-to-grid" />
-      <span data-testid="snap-state">{snapping ? 'on' : 'off'}</span>
-    </CommandSurfaceProvider>
-  );
-}
+describe('useViewCommands', () => {
+  it('fits a selected flow and resets zoom without editing the document or its history', async () => {
+    openCanvas([requestFlow]);
+    const before = modelStore.getState();
+    render(
+      <ReactFlow width={800} height={600} edges={[]} nodes={[]}>
+        <ViewControls />
+      </ReactFlow>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+    const selected = await fitted();
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+    await waitFor(() => {
+      expect(transform()).not.toBe(selected);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom to 100%' }));
+    await waitFor(() => {
+      expect(transform()).toContain('scale(1)');
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
+    await waitFor(() => {
+      expect(transform()).not.toContain('scale(1)');
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    const snapping = currentSnap();
+    fireEvent.click(screen.getByRole('button', { name: 'Snap to grid' }));
+    expect(currentSnap()).toBe(!snapping);
+    fireEvent.click(screen.getByRole('button', { name: 'Snap to grid' }));
+    expect(currentSnap()).toBe(snapping);
+    expect(modelStore.getState()).toBe(before);
+    act(() => {
+      dispatch(Action.Select({ elementIds: [] }));
+    });
+    const at = transform();
+    fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+    expect(transform()).toBe(at);
+  });
 
-it('fits a selected flow and resets zoom without editing the document or its history', async () => {
-  const flow = placeholderModel.diagrams[0].elements[2];
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [flow.id] },
-    true,
-  );
-  const before = modelStore.getState();
-  render(
-    <ReactFlow width={800} height={600} edges={[]} nodes={[]}>
-      <ViewControls />
-    </ReactFlow>,
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
-  const selected = await fitted();
-  fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
-  await waitFor(() => {
-    expect(transform()).not.toBe(selected);
+  it('refits the selection when pane coverage changes without changing the document', async () => {
+    openCanvas([requestFlow]);
+    const before = modelStore.getState();
+    const { rerender } = render(
+      <ReactFlow width={1000} height={600} edges={[]} nodes={[]}>
+        <ViewControls cover={100} />
+      </ReactFlow>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+    const narrow = await fitted();
+    rerender(
+      <ReactFlow width={1000} height={600} edges={[]} nodes={[]}>
+        <ViewControls cover={200} />
+      </ReactFlow>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+    await waitFor(() => {
+      expect(transform()).not.toBe(narrow);
+    });
+    expect(modelStore.getState()).toBe(before);
   });
-  fireEvent.click(screen.getByRole('button', { name: 'Reset zoom to 100%' }));
-  await waitFor(() => {
-    expect(transform()).toContain('scale(1)');
-  });
-  fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }));
-  await waitFor(() => {
-    expect(transform()).not.toContain('scale(1)');
-  });
-  fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
-  const snapping = currentSnap();
-  fireEvent.click(screen.getByRole('button', { name: 'Snap to grid' }));
-  expect(currentSnap()).toBe(!snapping);
-  fireEvent.click(screen.getByRole('button', { name: 'Snap to grid' }));
-  expect(currentSnap()).toBe(snapping);
-  expect(modelStore.getState()).toBe(before);
-  act(() => {
-    dispatch(Action.Select({ elementIds: [] }));
-  });
-  const at = transform();
-  fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
-  expect(transform()).toBe(at);
-});
-
-it('refits the selection when pane coverage changes without changing the document', async () => {
-  const flow = placeholderModel.diagrams[0].elements[2];
-  modelStore.setState(
-    { ...initialState(placeholderModel), selection: [flow.id] },
-    true,
-  );
-  const before = modelStore.getState();
-  const { rerender } = render(
-    <ReactFlow width={1000} height={600} edges={[]} nodes={[]}>
-      <ViewControls cover={100} />
-    </ReactFlow>,
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
-  const narrow = await fitted();
-  rerender(
-    <ReactFlow width={1000} height={600} edges={[]} nodes={[]}>
-      <ViewControls cover={200} />
-    </ReactFlow>,
-  );
-  fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
-  await waitFor(() => {
-    expect(transform()).not.toBe(narrow);
-  });
-  expect(modelStore.getState()).toBe(before);
 });

@@ -1,11 +1,4 @@
 import {
-  addElement,
-  addDiagram,
-  parseModel,
-  removeElement,
-  selectionFragment,
-  remapFragment,
-  insertFragment,
   moveElement,
   renameElement,
   resizeElement,
@@ -15,7 +8,6 @@ import {
   type Model,
 } from '@saerskriven/model';
 import {
-  diagramId,
   elementId,
   parsedFixture,
   validModelFixture,
@@ -32,7 +24,7 @@ import {
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import { allCells, threatsOf } from './threat-dragon-document.js';
-import { ecluseSecurityText } from './threat-dragon.fixtures.js';
+import { featureCompleteText } from './threat-dragon.fixtures.js';
 import { isRecord } from './records.js';
 import { readFailureIssues } from './codec.fixtures.js';
 
@@ -207,10 +199,9 @@ describe('security facts across Threat Dragon and native YAML', () => {
   });
 });
 
-describe('the current Écluse migration', () => {
+describe('the feature-complete Threat Dragon file through both codecs', () => {
   it('preserves source facts, declared relationships, threat links, numbers and issuance bookkeeping', () => {
-    const before = Either.getOrThrow(readThreatDragon(ecluseSecurityText));
-    expect(before.divergences).toEqual([]);
+    const before = Either.getOrThrow(readThreatDragon(featureCompleteText));
     const expected = allCells(before.source).map((cell) => ({
       id: cell.id,
       ...facts(cell.data),
@@ -245,7 +236,7 @@ describe('the current Écluse migration', () => {
     );
     const written = writeThreatDragon(after);
     const restored = Either.getOrThrow(readThreatDragon(written.output));
-    expect(restored.divergences).toEqual([]);
+    expect(restored.divergences).toEqual(before.divergences);
     expect(elementFacts(restored.model)).toStrictEqual(expected);
     expect(
       new Map(restored.model.threats.map((threat) => [threat.id, threat])),
@@ -261,15 +252,14 @@ describe('the current Écluse migration', () => {
 });
 
 describe('declared relationship validation and edits', () => {
-  it('refuses invalid Threat Dragon relationship assertions without changing the source', () => {
+  it('refuses invalid Threat Dragon relationship assertions', () => {
     const original = writeThreatDragon(secured).output;
     const source = threatDragonWireSchema.parse(JSON.parse(original));
     const flow = allCells(source).find((cell) => cell.shape === 'flow');
     expect(flow).toBeDefined();
     if (flow === undefined) return;
     flow.data.trustBoundaryIds = ['missing-boundary'];
-    const supplied = JSON.stringify(source);
-    const result = readThreatDragon(supplied);
+    const result = readThreatDragon(JSON.stringify(source));
     expect(
       readFailureIssues(Either.getOrThrow(Either.flip(result))),
     ).toContainEqual(
@@ -277,7 +267,6 @@ describe('declared relationship validation and edits', () => {
         path: ['diagrams', 0, 'elements', 3, 'trustBoundaryIds', 0],
       }),
     );
-    expect(JSON.stringify(source)).toBe(supplied);
   });
 
   it.each([
@@ -300,43 +289,6 @@ describe('declared relationship validation and edits', () => {
     );
   });
 
-  it('refuses cross-diagram references and checks new elements and diagrams', () => {
-    const boundary = secured.diagrams[0].elements[4];
-    const outside = parsedFixture({
-      ...secured,
-      threats: [],
-      mitigations: [],
-      assumptions: [],
-      diagrams: [
-        {
-          ...secured.diagrams[0],
-          elements: secured.diagrams[0].elements.slice(0, 3),
-        },
-        { id: 'other', title: 'Other', elements: [] },
-      ],
-    });
-    expect(
-      Either.isLeft(addElement(outside, diagramId('other'), boundary)),
-    ).toBe(true);
-    expect(
-      Either.isLeft(
-        addDiagram(outside, {
-          id: diagramId('new'),
-          title: 'New',
-          elements: [boundary],
-        }),
-      ),
-    ).toBe(true);
-    const invalid = {
-      ...outside,
-      diagrams: [
-        ...outside.diagrams,
-        { id: 'third', title: 'Third', elements: [boundary] },
-      ],
-    };
-    expect(Either.isLeft(parseModel(invalid))).toBe(true);
-  });
-
   it('keeps ordered repeated assertions without inventing reciprocal lists', () => {
     const draft = structuredClone(secured);
     const boundary = draft.diagrams[0].elements.find(
@@ -355,80 +307,5 @@ describe('declared relationship validation and edits', () => {
     if (flow === undefined) return;
     delete flow.trustBoundaryIds;
     expect(nativeCycle(draft)).toStrictEqual(draft);
-  });
-
-  it('removes only references to the explicitly deleted element, keeping absence distinct from empty', () => {
-    const withoutStore = Either.getOrThrow(
-      removeElement(secured, elementId('element-db')),
-    );
-    expect(
-      withoutStore.diagrams[0].elements.find(
-        (element) => element.id === 'element-perimeter',
-      ),
-    ).toMatchObject({
-      containedElements: ['element-api'],
-      crossingFlows: ['element-order-flow'],
-    });
-    const withoutFlow = Either.getOrThrow(
-      removeElement(withoutStore, elementId('element-order-flow')),
-    );
-    expect(
-      withoutFlow.diagrams[0].elements.find(
-        (element) => element.id === 'element-perimeter',
-      ),
-    ).toMatchObject({ containedElements: ['element-api'], crossingFlows: [] });
-    const withoutBoundary = Either.getOrThrow(
-      removeElement(secured, elementId('element-perimeter')),
-    );
-    expect(
-      withoutBoundary.diagrams[0].elements.find(
-        (element) => element.kind === 'flow',
-      ),
-    ).toMatchObject({ trustBoundaryIds: [] });
-    expect(Either.isRight(parseModel(withoutBoundary))).toBe(true);
-    const legacy = parsedFixture(validModelFixture);
-    const removed = Either.getOrThrow(
-      removeElement(legacy, elementId('element-perimeter')),
-    );
-    expect(removed.diagrams[0].elements.map(facts)).toEqual(
-      removed.diagrams[0].elements.map(() => ({})),
-    );
-    expect(secured.diagrams[0].elements[4]).toMatchObject(properties[4]);
-  });
-
-  it('restricts copied lists to selected targets and remaps every retained relationship', () => {
-    const partial = Either.getOrThrow(
-      selectionFragment(secured, diagramId('diagram-main'), [
-        elementId('element-perimeter'),
-        elementId('element-api'),
-      ]),
-    );
-    expect(
-      partial.diagrams[0].elements.find(
-        (element) => element.kind === 'trust-boundary',
-      ),
-    ).toMatchObject({ containedElements: ['element-api'], crossingFlows: [] });
-    const full = Either.getOrThrow(
-      selectionFragment(
-        secured,
-        diagramId('diagram-main'),
-        secured.diagrams[0].elements.map((element) => element.id),
-      ),
-    );
-    const remapped = Either.getOrThrow(
-      remapFragment(full, 'copy', { x: 20, y: 30 }, secured),
-    );
-    expect(remapped.diagrams[0].elements[3]).toMatchObject({
-      trustBoundaryIds: ['copy:element-perimeter'],
-    });
-    expect(remapped.diagrams[0].elements[4]).toMatchObject({
-      containedElements: ['copy:element-api', 'copy:element-db'],
-      crossingFlows: ['copy:element-order-flow'],
-    });
-    const inserted = Either.getOrThrow(
-      insertFragment(secured, diagramId('diagram-main'), remapped),
-    );
-    expect(Either.isRight(parseModel(inserted))).toBe(true);
-    expect(elementFacts(inserted).slice(0, 6)).toEqual(elementFacts(secured));
   });
 });

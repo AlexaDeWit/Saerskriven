@@ -1,12 +1,10 @@
 import { ReactFlowProvider } from '@xyflow/react';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CommandSurfaceProvider } from '../commands/binding.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
+import { button } from '../ui/ui.fixtures.js';
 import { ZoomCluster } from './zoom-cluster.js';
-
-const control = (name: string): HTMLElement =>
-  screen.getByRole('button', { name });
 
 describe('ZoomCluster', () => {
   it('names each icon after the command it runs, and says which chord runs it', () => {
@@ -16,16 +14,16 @@ describe('ZoomCluster', () => {
       </ReactFlowProvider>,
     );
 
-    expect(control('Zoom in').getAttribute('aria-keyshortcuts')).toBe(
+    expect(button('Zoom in').getAttribute('aria-keyshortcuts')).toBe(
       'Control+= Control+Plus',
     );
-    expect(control('Zoom out').getAttribute('aria-keyshortcuts')).toBe(
+    expect(button('Zoom out').getAttribute('aria-keyshortcuts')).toBe(
       'Control+-',
     );
     expect(
-      control('Reset zoom to 100%').getAttribute('aria-describedby'),
+      button('Reset zoom to 100%').getAttribute('aria-describedby'),
     ).toBeTruthy();
-    expect(control('Fit to view').getAttribute('aria-keyshortcuts')).toBe(
+    expect(button('Fit to view').getAttribute('aria-keyshortcuts')).toBe(
       'Control+0',
     );
   });
@@ -41,11 +39,11 @@ describe('ZoomCluster', () => {
       </ReactFlowProvider>,
     );
 
-    await user.click(control('Zoom in'));
-    await user.click(control('Zoom out'));
-    await user.click(control('Fit to view'));
-    await user.click(control('Fit selection'));
-    await user.click(control('Reset zoom to 100%'));
+    await user.click(button('Zoom in'));
+    await user.click(button('Zoom out'));
+    await user.click(button('Fit to view'));
+    await user.click(button('Fit selection'));
+    await user.click(button('Reset zoom to 100%'));
 
     expect(recording.asked).toEqual([
       'zoomIn',

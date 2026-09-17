@@ -1,4 +1,5 @@
 import type { Point } from '@saerskriven/model';
+import { boxAt, curveBoundary, modelWith } from '@saerskriven/model/fixtures';
 import type { CanvasBounds } from './bounds.js';
 import {
   boxOfPoints,
@@ -9,27 +10,15 @@ import {
   type Segment,
 } from './geometry.js';
 import {
-  boxAt,
-  diagramOf,
-  elementSolids,
+  drawnSolids,
+  layoutOf,
   openThreatOn,
   scenes,
   textBoxOf,
-} from './label-placement.fixtures.js';
-import { layoutOf } from './layout.fixtures.js';
+} from './canvas.fixtures.js';
 import type { CanvasLayout, CanvasNode } from './layout.js';
 import { sampledCurve } from './paths.js';
 import { nodeTextPlacement, textPlacementCorners } from './text-placement.js';
-
-const curveOf = (value: string, waypoints: readonly Point[], name: string) => ({
-  kind: 'trust-boundary',
-  id: value,
-  name,
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  shape: { kind: 'curve', waypoints },
-});
 
 const dividerName = 'a divider named at length, over more than one line';
 
@@ -57,7 +46,11 @@ const curveBeside = (
   name: string,
   elements: unknown[],
 ): CanvasLayout =>
-  layoutOf(diagramOf([curveOf('el-divider', waypoints, name), ...elements]));
+  layoutOf(
+    modelWith({
+      elements: [curveBoundary('el-divider', waypoints, name), ...elements],
+    }),
+  );
 
 const layoutOfCurve = (
   waypoints: readonly Point[],
@@ -65,7 +58,7 @@ const layoutOfCurve = (
 ): CanvasLayout => curveBeside(waypoints, name, []);
 
 const curveNameOverlaps = (layout: CanvasLayout): string[] => {
-  const solids = elementSolids(layout);
+  const solids = drawnSolids(layout);
   return layout.nodes.flatMap((node) => {
     const box = node.kind === 'boundary-curve' ? textBoxOf(node) : undefined;
     return box === undefined
@@ -244,13 +237,16 @@ const dividerWaypoints = [
 
 const dividerBeside = (
   elements: unknown[],
-  threats: unknown[] = [],
+  threats: readonly { readonly number: number }[] = [],
 ): CanvasLayout =>
   layoutOf(
-    diagramOf(
-      [curveOf('el-divider', dividerWaypoints, dividerName), ...elements],
+    modelWith({
+      elements: [
+        curveBoundary('el-divider', dividerWaypoints, dividerName),
+        ...elements,
+      ],
       threats,
-    ),
+    }),
   );
 
 const dividerNameX = (layout: CanvasLayout): number =>

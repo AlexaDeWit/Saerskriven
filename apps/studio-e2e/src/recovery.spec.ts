@@ -1,28 +1,31 @@
 import { expect, test } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { committedText } from '@saerskriven/model/fixtures';
+import { canvasContainer, canvasSettled } from './canvas.fixtures.js';
 import {
-  canvasContainer,
-  canvasSettled,
+  featureCompleteFile,
+  nameField,
   nodeNamed,
   openPlaceholder,
+  placeholder,
   runFromMenu,
   savedFile,
-  vendored,
 } from './studio.fixtures.js';
 
-const sourceText = readFileSync(vendored('test-data/ecluse.json'), 'utf8');
 const handleWriteKey = 'saerskrivenRecoveryTestHandleWrite';
 
 test('reload restores the last completed edit', async ({ page }) => {
+  const sourceText = committedText(featureCompleteFile);
   await page.addInitScript(
     ({ handleWriteKey: recoveryHandleWriteKey, sourceText: openedText }) => {
       Object.defineProperty(globalThis, 'showOpenFilePicker', {
         value: () =>
           Promise.resolve([
             {
-              name: 'ecluse.json',
+              name: 'feature-complete.json',
               getFile: () =>
-                Promise.resolve(new File([openedText], 'ecluse.json')),
+                Promise.resolve(
+                  new File([openedText], 'feature-complete.json'),
+                ),
               createWritable: () =>
                 Promise.resolve({
                   write: () => {
@@ -38,22 +41,22 @@ test('reload restores the last completed edit', async ({ page }) => {
   );
   await openPlaceholder(page);
   await runFromMenu(page, 'Open');
-  await expect(nodeNamed(page, /^Écluse proxy, process/u)).toBeVisible();
+  await expect(nodeNamed(page, /^Booking service, process/u)).toBeVisible();
   await canvasSettled(page);
 
-  await nodeNamed(page, /^Écluse proxy, process/u).dblclick();
-  const name = page.getByRole('textbox', { name: 'Name of Écluse proxy' });
-  await name.fill('Recovered proxy');
+  await nodeNamed(page, /^Booking service, process/u).dblclick();
+  const name = nameField(page, 'Booking service');
+  await name.fill('Recovered booking');
   await name.press('Enter');
 
   await page.reload();
   await expect(canvasContainer(page)).toBeVisible();
   await canvasSettled(page);
 
-  await expect(nodeNamed(page, /^Recovered proxy, process/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Recovered booking, process/u)).toHaveCount(1);
 
   const written = await savedFile(page);
-  expect(written.name).toBe('ecluse.json');
+  expect(written.name).toBe('feature-complete.json');
   expect(sourceText).toContain('"containedElements"');
   expect(written.text).toContain('"containedElements"');
   expect(
@@ -69,23 +72,23 @@ test('two tabs follow each other, so the one in view is the one that is right', 
   await openPlaceholder(page);
   await openPlaceholder(other);
 
-  await nodeNamed(page, /^Store, store/u).dblclick();
-  await page.getByRole('textbox', { name: 'Name of Store' }).fill('Ledger');
-  await page.getByRole('textbox', { name: 'Name of Store' }).press('Enter');
+  await nodeNamed(page, placeholder.store).dblclick();
+  await nameField(page, 'Store').fill('Ledger');
+  await nameField(page, 'Store').press('Enter');
 
   await expect(nodeNamed(other, /^Ledger, store/u)).toHaveCount(1);
 
-  await nodeNamed(other, /^Actor, actor/u).dblclick();
-  await other.getByRole('textbox', { name: 'Name of Actor' }).fill('Clerk');
-  await other.getByRole('textbox', { name: 'Name of Actor' }).press('Enter');
+  await nodeNamed(other, placeholder.actor).dblclick();
+  await nameField(other, 'Actor').fill('Clerk');
+  await nameField(other, 'Actor').press('Enter');
 
   await expect(nodeNamed(page, /^Clerk, actor/u)).toHaveCount(1);
   await expect(nodeNamed(page, /^Ledger, store/u)).toHaveCount(1);
 
   await runFromMenu(page, 'Undo');
-  await expect(nodeNamed(page, /^Actor, actor/u)).toHaveCount(1);
-  await expect(nodeNamed(other, /^Actor, actor/u)).toHaveCount(1);
+  await expect(nodeNamed(page, placeholder.actor)).toHaveCount(1);
+  await expect(nodeNamed(other, placeholder.actor)).toHaveCount(1);
   await runFromMenu(other, 'Undo');
-  await expect(nodeNamed(other, /^Store, store/u)).toHaveCount(1);
-  await expect(nodeNamed(page, /^Store, store/u)).toHaveCount(1);
+  await expect(nodeNamed(other, placeholder.store)).toHaveCount(1);
+  await expect(nodeNamed(page, placeholder.store)).toHaveCount(1);
 });

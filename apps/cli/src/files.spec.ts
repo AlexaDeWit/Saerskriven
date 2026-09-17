@@ -1,16 +1,10 @@
 import { Either } from 'effect';
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { scratchDirectory } from './cli.fixtures.js';
 import { createPrivateFile, readTextFile, writeFile } from './files.js';
 
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-files-'));
+const directory = scratchDirectory('files');
 
 describe('text files at the edge', () => {
   it('replaces a symbolic link with a private file, leaving its target alone', () => {
@@ -27,8 +21,8 @@ describe('text files at the edge', () => {
 
   it('writes a text and reads back what it wrote', () => {
     const path = join(directory, 'written.txt');
-    expect(writeFile(path, 'Écluse\n')).toEqual(Either.right(undefined));
-    expect(readTextFile(path)).toEqual(Either.right('Écluse\n'));
+    expect(writeFile(path, 'Særskriven\n')).toEqual(Either.right(undefined));
+    expect(readTextFile(path)).toEqual(Either.right('Særskriven\n'));
   });
 
   it('names the path and the reason where a file is not there', () => {

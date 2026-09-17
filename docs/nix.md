@@ -112,9 +112,10 @@ nix flake check --all-systems --no-build
 Substitute the native system in the first command. On Linux, use a Nix daemon
 with `sandbox = true`. The sandbox exposes only declared build inputs and
 has no external network route. The check runs the installed package from a
-scratch directory, validates the committed Écluse model, and renders Markdown,
-SVG, and PDF. It checks PDF text and embedded Liberation fonts with Poppler.
-No external Node, Deno, browser, or Typst executable is on the check's PATH.
+scratch directory, validates the committed v0.2.1 model file, and renders
+Markdown, SVG, and PDF. It checks PDF text and embedded Liberation fonts with
+Poppler. No external Node, Deno, browser, or Typst executable is on the
+check's PATH.
 Poppler belongs to the check, not the installed CLI's runtime closure.
 
 ## Updating the release pin

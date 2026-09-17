@@ -3,10 +3,14 @@ import {
   parseModel,
   threatFlags,
   type Flow,
-  type FlowEndpoint,
   type Model,
 } from '@saerskriven/model';
-import { modelInputArbitrary } from '@saerskriven/model/fixtures';
+import {
+  committedModel,
+  modelInputArbitrary,
+  parsedFixture,
+  repositoryRoot,
+} from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { Either } from 'effect';
@@ -17,24 +21,24 @@ import { parse } from 'yaml';
 import { inferredMitigationStatus } from './mitigation-text.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
-  ecluseModel,
-  emittedModels,
+  featureCompleteYaml,
+  featureCompleteYamlModel,
+  frozenV021Model,
   frozenV021Path,
   frozenV030Path,
-  goldenPath,
   nativeFixtures,
   propertyTimeout,
+  twoDiagramsYaml,
 } from './saerskriven-yaml.fixtures.js';
 import { threatStatusesToModel } from './saerskriven-yaml-vocabulary.js';
-
-const golden = readFileSync(goldenPath, 'utf8');
+import { unusedConstructs } from './wire-coverage.fixtures.js';
 
 const frozenV021 = readFileSync(frozenV021Path, 'utf8');
 
 const frozenV030 = readFileSync(frozenV030Path, 'utf8');
 
 const description = readFileSync(
-  join(import.meta.dirname, '../../../../docs/saerskriven-yaml.md'),
+  join(repositoryRoot, 'docs/saerskriven-yaml.md'),
   'utf8',
 );
 
@@ -86,30 +90,6 @@ function readOrThrow(text: string) {
   return Either.getOrThrow(saerskrivenYamlCodec.read(text));
 }
 
-function withoutPinnedSides(model: Model): Model {
-  return {
-    ...model,
-    diagrams: model.diagrams.map((diagram) => ({
-      ...diagram,
-      elements: diagram.elements.map((element) =>
-        element.kind === 'flow'
-          ? {
-              ...element,
-              source: unpinned(element.source),
-              target: unpinned(element.target),
-            }
-          : element,
-      ),
-    })),
-  };
-}
-
-function unpinned(endpoint: FlowEndpoint): FlowEndpoint {
-  return endpoint.kind === 'attached'
-    ? { kind: 'attached', element: endpoint.element }
-    : endpoint;
-}
-
 function flowsOf(model: Model): readonly Flow[] {
   return model.diagrams.flatMap((diagram) =>
     diagram.elements.flatMap((element) =>
@@ -119,13 +99,19 @@ function flowsOf(model: Model): readonly Flow[] {
 }
 
 describe('the Saerskriven YAML codec', () => {
-  it('pairs the read and the write with the schema they share', () => {
-    expect(saerskrivenYamlCodec.wire).toBe(saerskrivenYamlV2WireSchema);
+  it('reads a feature-complete file that uses every field, enum value and variant the wire schema declares', () => {
+    expect(
+      unusedConstructs(saerskrivenYamlV2WireSchema, [
+        parse(featureCompleteYaml),
+      ]),
+    ).toEqual([]);
   });
 
-  it('reads the committed fixture as the model it was written from', () => {
-    const reading = readOrThrow(golden);
-    expect(reading.model).toEqual(withThreatsInNumberOrder(ecluseModel));
+  it('reads the feature-complete file as the model written out by hand, with nothing diverging', () => {
+    const reading = readOrThrow(featureCompleteYaml);
+    expect(reading.model).toStrictEqual(
+      parsedFixture(featureCompleteYamlModel),
+    );
     expect(reading.divergences).toEqual([]);
   });
 
@@ -135,10 +121,6 @@ describe('the Saerskriven YAML codec', () => {
     expect(saerskrivenYamlCodec.write(reading.model).output).toBe(
       documentedExample,
     );
-  });
-
-  it('hands back the document it read, for a write to merge onto', () => {
-    expect(readOrThrow(golden).source.formatVersion).toBe(2);
   });
 });
 
@@ -193,35 +175,7 @@ describe('the document shape v0.2.1 wrote', () => {
   it('reads as the model it describes, with nothing diverging', () => {
     const reading = readOrThrow(frozenV021);
     expect(reading.divergences).toEqual([]);
-    const legacy = withoutPinnedSides(withThreatsInNumberOrder(ecluseModel));
-    const diagrams = legacy.diagrams.map((diagram) => ({
-      ...diagram,
-      elements: diagram.elements.map((element) =>
-        Object.fromEntries(
-          Object.entries(element).filter(
-            ([key]) =>
-              ![
-                'providesAuthentication',
-                'handlesCardPayment',
-                'handlesGoodsOrServices',
-                'isWebApplication',
-                'privilegeLevel',
-                'isALog',
-                'isEncrypted',
-                'isSigned',
-                'storesCredentials',
-                'storesInventory',
-                'protocol',
-                'isPublicNetwork',
-                'trustBoundaryIds',
-                'containedElements',
-                'crossingFlows',
-              ].includes(key),
-          ),
-        ),
-      ),
-    }));
-    expect(reading.model).toEqual({ ...legacy, diagrams });
+    expect(reading.model).toStrictEqual(parsedFixture(frozenV021Model));
   });
 
   it('holds one record for each non-empty mitigation text, under the one-to-one status rule', () => {
@@ -245,7 +199,7 @@ describe('the document shape v0.2.1 wrote', () => {
 
   it('takes every flow as one-way and every attached end as unpinned', () => {
     const flows = flowsOf(readOrThrow(frozenV021).model);
-    expect(flows).toHaveLength(20);
+    expect(flows).toHaveLength(3);
     expect(flows.filter((flow) => flow.bidirectional)).toEqual([]);
     expect(
       flows
@@ -333,26 +287,21 @@ describe('the document shape v0.3.0 wrote', () => {
   });
 });
 
-describe.each(nativeFixtures)('the committed $name', ({ path, text }) => {
-  it('reads with nothing diverging, and writes back the bytes committed', async () => {
+describe.each(nativeFixtures)('the committed $name', ({ text }) => {
+  it('reads with nothing diverging, and writes back the bytes committed', () => {
     const reading = readOrThrow(text);
     expect(reading.divergences).toEqual([]);
-    await expect(
-      saerskrivenYamlCodec.write(reading.model).output,
-    ).toMatchFileSnapshot(path);
+    expect(saerskrivenYamlCodec.write(reading.model).output).toBe(text);
   });
 });
 
-describe.each(emittedModels)(
-  'the internal model of the $name',
-  ({ text, modelJsonPath }) => {
-    it('is written out for the render and canvas suites to read', async () => {
-      await expect(
-        `${JSON.stringify(readOrThrow(text).model, null, 2)}\n`,
-      ).toMatchFileSnapshot(modelJsonPath);
-    });
-  },
-);
+describe('the committed two-diagram file', () => {
+  it('reads as the two-diagram model the render goldens are drawn from', () => {
+    expect(readOrThrow(twoDiagramsYaml).model).toEqual(
+      committedModel('two-diagrams.model.json'),
+    );
+  });
+});
 
 describe(
   'any model at all',

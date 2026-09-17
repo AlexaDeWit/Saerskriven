@@ -1,5 +1,5 @@
 import { categoryTranslations } from './threat-dragon-locales.js';
-import { localeCategories } from './threat-dragon.fixtures.js';
+import { localeCategories } from './corpus.fixtures.js';
 
 const english = localeCategories['en'] ?? {};
 
@@ -68,23 +68,24 @@ describe('categoryTranslations', () => {
     ]);
   });
 
-  it('holds every translated STRIDE label and nothing else', () => {
-    expect(categoryTranslations.stride).toEqual(translated('stride'));
-  });
-
-  it('holds every translated LINDDUN label and nothing else', () => {
-    expect(categoryTranslations.linddun).toEqual(translated('linddun'));
-  });
-
-  it('holds every translated CIA label and nothing else', () => {
-    expect(categoryTranslations.cia).toEqual(translated('cia'));
-  });
-
-  it('holds every translated DIE label and nothing else', () => {
-    expect(categoryTranslations.die).toEqual(
-      translated('ciadie', ['distributed', 'immutable', 'ephemeral']),
-    );
-  });
+  it.each([
+    { named: 'STRIDE', methodology: 'stride', section: 'stride' },
+    { named: 'LINDDUN', methodology: 'linddun', section: 'linddun' },
+    { named: 'CIA', methodology: 'cia', section: 'cia' },
+    {
+      named: 'DIE',
+      methodology: 'die',
+      section: 'ciadie',
+      categories: ['distributed', 'immutable', 'ephemeral'],
+    },
+  ] as const)(
+    'holds every translated $named label and nothing else',
+    ({ methodology, section, categories }) => {
+      expect(categoryTranslations[methodology]).toEqual(
+        translated(section, categories),
+      );
+    },
+  );
 
   it('keeps the trailing space Threat Dragon wrote into a Spanish label', () => {
     expect(

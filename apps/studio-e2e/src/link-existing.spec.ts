@@ -2,52 +2,66 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   expandThreat,
   focusedOption,
-  openEcluse,
+  openTwoDiagrams,
   panelControl,
   panelField,
+  runFromMenu,
+  selectByKeyboard,
   selectNode,
+  storefront,
 } from './studio.fixtures.js';
 
-const proxy = /^Écluse proxy, process/u;
-
-const forwarded = /Forwarded caller credentials/u;
-
-const chokepoint = /Chokepoint exhaustion/u;
-
 const offered = {
-  first: /^Fail-closed caps bound the input/u,
-  middle: /^The control is an operator-architecture invariant/u,
-  last: /^Dredger must verify explicit operator consent/u,
+  first: {
+    name: /^The server prices the basket/u,
+    description: /^The server prices the basket/u,
+  },
+  middle: {
+    name: /^Write an audit entry/u,
+    description: /^Write an audit entry/u,
+  },
+  last: {
+    name: /^Reservation expiry/u,
+    description: /^A reservation lapses/u,
+  },
 } as const;
 
 const openPicker = async (page: Page) => {
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
   const trigger = panelField(page, 'combobox', 'Existing mitigation');
   await trigger.scrollIntoViewIfNeeded();
   await expect(trigger).toBeInViewport({ ratio: 1 });
   return trigger;
 };
 
-for (const [place, name] of Object.entries(offered)) {
-  test(`a pointer links the ${place} mitigation offered, picked by name`, async ({
-    page,
-  }) => {
+test(
+  'a pointer links the first, middle and last mitigation offered, picked by name',
+  { tag: '@phone' },
+  async ({ page }) => {
     const trigger = await openPicker(page);
-    await trigger.click();
-    const listbox = page.getByRole('listbox');
-    await expect(listbox).toBeInViewport({ ratio: 1 });
+    const linked = panelField(page, 'textbox', 'Mitigation 2 description');
 
-    await listbox.getByRole('option', { name }).click();
-    await expect(listbox).toHaveCount(0);
-    await panelControl(page, 'Link existing mitigation').click();
+    for (const [place, { name, description }] of Object.entries(offered)) {
+      await test.step(place, async () => {
+        await trigger.scrollIntoViewIfNeeded();
+        await trigger.click();
+        const listbox = page.getByRole('listbox');
+        await expect(listbox).toBeInViewport({ ratio: 1 });
 
-    await expect(
-      panelField(page, 'textbox', 'Mitigation 2 description'),
-    ).toHaveValue(name);
-  });
-}
+        await listbox.getByRole('option', { name }).click();
+        await expect(listbox).toHaveCount(0);
+        await panelControl(page, 'Link existing mitigation').click();
+
+        await expect(linked).toHaveValue(description);
+
+        await runFromMenu(page, 'Undo');
+        await expect(linked).toHaveCount(0);
+      });
+    }
+  },
+);
 
 test('the keyboard links the last mitigation offered', async ({ page }) => {
   const trigger = await openPicker(page);
@@ -55,7 +69,7 @@ test('the keyboard links the last mitigation offered', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(page.getByRole('listbox')).toBeVisible();
   await page.keyboard.press('End');
-  await expect(focusedOption(page)).toHaveAccessibleName(offered.last);
+  await expect(focusedOption(page)).toHaveAccessibleName(offered.last.name);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await expect(trigger).toBeFocused();
@@ -64,7 +78,7 @@ test('the keyboard links the last mitigation offered', async ({ page }) => {
 
   await expect(
     panelField(page, 'textbox', 'Mitigation 2 description'),
-  ).toHaveValue(offered.last);
+  ).toHaveValue(offered.last.description);
 });
 
 const suffixShownIn = async (holder: Locator): Promise<string> => {
@@ -91,9 +105,9 @@ test('two mitigations whose first lines match past the cut stay told apart in th
 }) => {
   const shared =
     'Callers forward a bearer token that the proxy holds in memory for the life of the request, and the proxy never writes it to a log, a span or a cache.';
-  await openEcluse(page);
-  await selectNode(page, proxy);
-  await expandThreat(page, forwarded);
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
   for (const row of [2, 3]) {
     await panelControl(page, 'Add mitigation').click();
     await page.keyboard.insertText(shared);
@@ -103,7 +117,8 @@ test('two mitigations whose first lines match past the cut stay told apart in th
     ).toBeFocused();
   }
 
-  await expandThreat(page, chokepoint);
+  await selectByKeyboard(page, storefront.webShop);
+  await expandThreat(page, storefront.basketPrice);
   const trigger = panelField(page, 'combobox', 'Existing mitigation');
   await trigger.scrollIntoViewIfNeeded();
   await trigger.click();

@@ -6,12 +6,8 @@ import type { Divergence } from './divergence.js';
 import { indexById } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
-import {
-  allThreats,
-  corpusTexts,
-  ecluseSecurityText,
-  threatDragonJsonSchema,
-} from './threat-dragon.fixtures.js';
+import { corpusTexts, threatDragonJsonSchema } from './corpus.fixtures.js';
+import { allThreats, featureCompleteText } from './threat-dragon.fixtures.js';
 
 const writtenVersion = '2.6.2';
 
@@ -57,12 +53,12 @@ const roundTrip = (file: { name: string; text: string }) => {
   };
 };
 
-const roundTrips = corpusTexts.map(roundTrip);
+const featureCompleteName = 'threat-dragon/feature-complete.json';
 
-const mitigationTrips = [
-  ...roundTrips,
-  roundTrip({ name: 'ecluse-security.json', text: ecluseSecurityText }),
-];
+const roundTrips = [
+  ...corpusTexts,
+  { name: featureCompleteName, text: featureCompleteText },
+].map(roundTrip);
 
 const textsOf = (document: ThreatDragonDocument) =>
   allThreats(document).map((threat) => threat.mitigation);
@@ -157,7 +153,7 @@ const stampedPaths = (
 
 describe('every Threat Dragon file the repository vendors', () => {
   it('is the corpus the codec claims to read', () => {
-    expect(corpusTexts).toHaveLength(13);
+    expect(corpusTexts).toHaveLength(12);
   });
 
   it('reads, so the codec refuses none of the format its author ships', () => {
@@ -204,25 +200,18 @@ describe('writing every vendored file back onto its own document', () => {
   );
 });
 
-describe('the Écluse model, the one file this codec preserves whole', () => {
-  const ecluse = roundTrips[0];
-
-  it('is the file the rest of the corpus is measured beside', () => {
-    expect(ecluse.name).toBe('ecluse.json');
-  });
-
+describe('the feature-complete file, stamped with the release this codec writes', () => {
   it('comes back with every scalar it went in with, and no stamp moved', () => {
-    expect(moved(ecluse.before, ecluse.after)).toEqual(new Set());
-    expect(stamps(ecluse.source, ecluse.document)).toEqual([]);
-  });
-
-  it('reports no divergence at all', () => {
-    expect(ecluse.written.divergences).toEqual([]);
+    const trip = roundTrips.find(({ name }) => name === featureCompleteName);
+    expect(trip).toBeDefined();
+    if (trip === undefined) return;
+    expect(moved(trip.before, trip.after)).toEqual(new Set());
+    expect(stamps(trip.source, trip.document)).toEqual([]);
   });
 });
 
-describe('the mitigation text of every vendored file and the current Écluse file', () => {
-  it.each(mitigationTrips)(
+describe('the mitigation text of every vendored file and the feature-complete file', () => {
+  it.each(roundTrips)(
     'reads each text of $name as one record of its threat alone, in threat number order',
     ({ source, model }) => {
       expect(
@@ -231,23 +220,23 @@ describe('the mitigation text of every vendored file and the current Écluse fil
     },
   );
 
-  it('reads the 116 records the texts of those files make', () => {
+  it('reads the 56 records the texts of those files make', () => {
     expect(
-      mitigationTrips.reduce(
+      roundTrips.reduce(
         (total, { model }) => total + model.mitigations.length,
         0,
       ),
-    ).toBe(116);
+    ).toBe(56);
   });
 
-  it.each(mitigationTrips)(
+  it.each(roundTrips)(
     'writes every text of $name back to the byte',
     ({ source, document }) => {
       expect(textsOf(document)).toEqual(textsOf(source));
     },
   );
 
-  it.each(mitigationTrips)(
+  it.each(roundTrips)(
     'reports nothing of a mitigation written back onto $name',
     ({ written }) => {
       expect(

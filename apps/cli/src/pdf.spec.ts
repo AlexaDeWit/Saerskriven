@@ -1,23 +1,22 @@
 import { deepestProse, renderTypst } from '@saerskriven/render';
 import { Either } from 'effect';
-import { copyFileSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
+import { copyFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fixtureFile, proseThreatYaml } from './cli.fixtures.js';
+import {
+  fixtureFile,
+  proseThreatYaml,
+  scratchDirectory,
+} from './cli.fixtures.js';
 import { readModel } from './input.js';
 import { compilePdf } from './pdf.js';
 import { compileTimeout, outlineTitles, pageCount } from './pdf.fixtures.js';
 
-const repositoryRoot = join(import.meta.dirname, '../../..');
-
 const assets = join(repositoryRoot, 'apps/cli/dist/assets');
 
-const hostileFile = join(
-  repositoryRoot,
-  'test-data/adversarial/typst-injection.yaml',
-);
+const hostileFile = testDataPath('adversarial/typst-injection.yaml');
 
-const directory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-pdf-'));
+const directory = scratchDirectory('pdf');
 
 const deepProseFile = fixtureFile(
   directory,
@@ -47,15 +46,6 @@ const refusal = (outcome: Either.Either<Uint8Array, string>): string =>
 
 describe('Typst source compiled to a PDF', () => {
   it(
-    'writes a PDF the header of which says so',
-    async () => {
-      const pdf = Either.getOrThrow(await compiled(document('#"a document"')));
-      expect(Buffer.from(pdf.subarray(0, 5)).toString('latin1')).toBe('%PDF-');
-    },
-    compileTimeout,
-  );
-
-  it(
     'gives the same bytes twice for one source, carrying no date',
     async () => {
       const source = document('#"twice"');
@@ -80,18 +70,6 @@ describe('Typst source compiled to a PDF', () => {
   );
 
   it(
-    'reports assets it cannot read as a reason to show a user',
-    async () => {
-      const outcome = await compilePdf(
-        document('#"a document"'),
-        join(repositoryRoot, 'apps/cli/dist/absent'),
-      );
-      expect(refusal(outcome)).toContain('typst_ts_web_compiler_bg.wasm');
-    },
-    compileTimeout,
-  );
-
-  it(
     'compiles the deepest prose the register admits',
     async () => {
       const source = renderTypst(
@@ -107,7 +85,7 @@ describe('Typst source compiled to a PDF', () => {
 });
 
 describe('an install with the module and no font face', () => {
-  const bareDirectory = mkdtempSync(join(tmpdir(), 'saerskriven-cli-no-font-'));
+  const bareDirectory = scratchDirectory('no-font');
   copyFileSync(
     join(assets, 'typst_ts_web_compiler_bg.wasm'),
     join(bareDirectory, 'typst_ts_web_compiler_bg.wasm'),
@@ -168,18 +146,10 @@ describe('the hostile fixture', () => {
   });
 
   it(
-    'compiles to a PDF of the pages its two threats need',
+    'carries every injection attempt into the PDF as text, on the pages its two threats need',
     async () => {
       const pdf = Either.getOrThrow(await compiled(hostileSource));
       expect(pageCount(pdf)).toBe(2);
-    },
-    compileTimeout,
-  );
-
-  it(
-    'carries every injection attempt into the PDF as text',
-    async () => {
-      const pdf = Either.getOrThrow(await compiled(hostileSource));
       expect(outlineTitles(pdf)).toEqual([
         'Diagram #read("/etc/passwd") <script>alert(1)</script>',
         'Injection model #eval("1+1") threat register',

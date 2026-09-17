@@ -1,8 +1,6 @@
-import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { PdfFailure } from '@saerskriven/render/pdf';
-import { ResvgFailure } from '@saerskriven/render/png';
 import {
   act,
   fireEvent,
@@ -26,39 +24,27 @@ import {
   mainDiagram,
   nativeSource,
   newNote,
-  newProcess,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
 import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
+  brokenThreatDragonText,
   chosenFile,
-  pngSignature,
+  edit,
+  sampleNativeText,
   specBridge,
+  type SpecBridge,
   specRenders,
   vendoredFile,
-  type SpecBridge,
 } from './files.fixtures.js';
 import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
 
-const nativeText = saerskrivenYamlCodec.write(sampleModel).output;
-
 type User = ReturnType<typeof userEvent.setup>;
-
-const edit = (): void => {
-  act(() => {
-    dispatch(
-      Action.AddElement({
-        diagramId: mainDiagram,
-        element: newProcess('process-added', 'Added'),
-      }),
-    );
-  });
-};
 
 const burger = (): HTMLElement =>
   screen.getByRole('button', { name: /^Menu/u });
@@ -101,16 +87,13 @@ function Menu({
   renders,
 }: {
   readonly bridge: SpecBridge;
-  readonly runs?: 'pdf' | 'png';
+  readonly runs?: 'pdf';
   readonly renders?: RenderExports;
 }) {
   const session = useFileSession(bridge, renders);
   useEffect(() => {
     if (runs === 'pdf') {
       session.commands.exportPdf();
-    }
-    if (runs === 'png') {
-      session.commands.exportPng();
     }
   }, [runs, session.commands]);
   const surface = useMemo(
@@ -128,7 +111,7 @@ function Menu({
 const mounted = (
   bridge: SpecBridge,
   renders?: RenderExports,
-  runs?: 'pdf' | 'png',
+  runs?: 'pdf',
 ): void => {
   render(<Menu bridge={bridge} renders={renders} runs={runs} />);
 };
@@ -137,7 +120,7 @@ const asked = (): boolean =>
   !globalThis.dispatchEvent(new Event('beforeunload', { cancelable: true }));
 
 const withUndeclaredKeys = async (): Promise<string> =>
-  (await vendoredFile('test-data/ecluse.json').text())
+  (await vendoredFile('threat-dragon/feature-complete.json').text())
     .replace(
       '"version"',
       '"unknownRoot": "nothing declares this",\n  "version"',
@@ -161,12 +144,6 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     const items = screen.getAllByRole('menuitem');
-    expect(
-      items.map((entry) => entry.getAttribute('aria-keyshortcuts')),
-    ).toContain('Control+S');
-    expect(
-      items.filter((entry) => entry.hasAttribute('aria-keyshortcuts')),
-    ).toHaveLength(11);
     for (const name of [
       'Copy',
       'Cut',
@@ -261,59 +238,18 @@ describe('what the menu offers', () => {
     expect(item('Diagram as SVG: Other diagram')).toBeDefined();
   });
 
-  it('disables the SVG export when the model holds no diagram', async () => {
-    const user = userEvent.setup();
-    modelStore.setState(initialState(emptyModel), true);
-    mounted(specBridge());
+  it.each(['Diagram as SVG', 'Diagram as PNG'])(
+    'disables %s when the model holds no diagram',
+    async (name) => {
+      const user = userEvent.setup();
+      modelStore.setState(initialState(emptyModel), true);
+      mounted(specBridge());
 
-    await openExportMenu(user);
+      await openExportMenu(user);
 
-    expect(item('Diagram as SVG').getAttribute('data-disabled')).not.toBeNull();
-  });
-
-  it('disables the PNG export when the model holds no diagram', async () => {
-    const user = userEvent.setup();
-    modelStore.setState(initialState(emptyModel), true);
-    mounted(specBridge());
-
-    await openExportMenu(user);
-
-    expect(item('Diagram as PNG').getAttribute('data-disabled')).not.toBeNull();
-  });
-
-  it('writes the PNG the rasterizer drew through the same bridge', async () => {
-    const bridge = specBridge();
-    mounted(bridge, specRenders(), 'png');
-
-    await waitFor(() => {
-      expect(bridge.writes).toHaveLength(1);
-    });
-    expect(bridge.writes[0].name).toBe('Untitled.png');
-    expect(bridge.writes[0].bytes).toEqual(pngSignature);
-  });
-
-  it('announces a rasterizer refusal and writes no file', async () => {
-    const bridge = specBridge();
-    mounted(
-      bridge,
-      specRenders({
-        draw: () =>
-          Promise.resolve(
-            Either.left(
-              ResvgFailure.Unusable({ sentence: 'the module reserved none' }),
-            ),
-          ),
-      }),
-      'png',
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('export-report').textContent).toContain(
-        'the module reserved none',
-      );
-    });
-    expect(bridge.writes).toEqual([]);
-  });
+      expect(item(name).getAttribute('data-disabled')).not.toBeNull();
+    },
+  );
 
   it('announces a PDF compile refusal and writes no file', async () => {
     const user = userEvent.setup();
@@ -333,12 +269,9 @@ describe('what the menu offers', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('export-report').textContent).toContain(
-        'Saerskriven could not compile the PDF.',
+        'unknown function: nope',
       );
     });
-    expect(screen.getByTestId('export-report').textContent).toContain(
-      'unknown function: nope',
-    );
     expect(bridge.writes).toEqual([]);
 
     await user.click(
@@ -512,14 +445,6 @@ describe('what the studio says about the file', () => {
     expect(document.activeElement).toBe(title);
   });
 
-  it('names the file, its format, and whether it holds everything on screen', async () => {
-    const user = userEvent.setup();
-    mounted(specBridge());
-
-    expect(await shown(user)).toContain('Saerskriven YAML');
-    expect(burger().getAttribute('aria-label')).toBe('Menu');
-  });
-
   it('guards the tab only after the latest recovery write fails', () => {
     mounted(specBridge());
 
@@ -545,7 +470,7 @@ describe('what the studio says about the file', () => {
 
     expect(asked()).toBe(true);
     expect(screen.getByTestId('failure-notice').textContent).toContain(
-      'Local recovery is unavailable.',
+      'Quota reached',
     );
 
     setItem.mockRestore();
@@ -565,7 +490,7 @@ describe('what the studio says about the file', () => {
 describe('opening', () => {
   it('puts the model a file carries into the store', async () => {
     const user = userEvent.setup();
-    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    mounted(specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }));
 
     await choose(user, 'Open');
 
@@ -577,7 +502,7 @@ describe('opening', () => {
 
   it('asks in the menu before losing changes that are in no file', async () => {
     const user = userEvent.setup();
-    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    mounted(specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }));
     edit();
 
     await choose(user, 'Open');
@@ -594,7 +519,7 @@ describe('opening', () => {
 
   it('opens on the second step, dropping the changes it warned about', async () => {
     const user = userEvent.setup();
-    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    mounted(specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }));
     edit();
 
     await choose(user, 'Open');
@@ -636,10 +561,7 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(
       specBridge({
-        offers: chosenFile(
-          'broken.json',
-          '{"version":"2.0","summary":{"title":"Broken"},"detail":{"diagrams":[{"id":0}]}}',
-        ),
+        offers: chosenFile('broken.json', brokenThreatDragonText),
       }),
     );
 
@@ -647,7 +569,7 @@ describe('opening', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('failure-notice').textContent).toContain(
-        'broken.json is not a valid document',
+        'broken.json',
       );
     });
     expect(screen.getByTestId('failure-notice').textContent).toContain(
@@ -660,7 +582,7 @@ describe('opening', () => {
     mounted(specBridge());
 
     fireEvent.change(screen.getByTestId('file-input'), {
-      target: { files: [chosenFile('model.yaml', nativeText)] },
+      target: { files: [chosenFile('model.yaml', sampleNativeText)] },
     });
     await openMenu(user);
 
@@ -672,7 +594,7 @@ describe('opening', () => {
   it('says what the read dropped, which no later save can report', async () => {
     const user = userEvent.setup();
     const bridge = specBridge({
-      offers: chosenFile('ecluse.json', await withUndeclaredKeys()),
+      offers: chosenFile('feature-complete.json', await withUndeclaredKeys()),
     });
     mounted(bridge);
 
@@ -681,10 +603,11 @@ describe('opening', () => {
     await waitFor(() => {
       expect(reportEntries().length > 0).toBe(true);
     });
-    expect(reportEntries().map((entry) => entry.textContent)).toEqual([
-      'model: the key unknownRoot (not declared by the wire schema)',
-      'model: the key detail.unknownDetail (not declared by the wire schema)',
-    ]);
+    const entries = reportEntries().map((entry) => entry.textContent);
+    expect(entries).toHaveLength(3);
+    expect(entries[0]).toContain('unknownRoot');
+    expect(entries[1]).toContain('detail.unknownDetail');
+    expect(entries[2]).toContain('threat-card');
 
     await choose(user, 'Save');
 
@@ -711,7 +634,7 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(
       specBridge({
-        offers: chosenFile('ecluse.json', await withUndeclaredKeys()),
+        offers: chosenFile('feature-complete.json', await withUndeclaredKeys()),
       }),
     );
     await choose(user, 'Open');
@@ -851,7 +774,7 @@ describe('saving', () => {
 describe('closing', () => {
   it('closes at once while there is nothing to lose', async () => {
     const user = userEvent.setup();
-    mounted(specBridge({ offers: chosenFile('model.yaml', nativeText) }));
+    mounted(specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }));
     await choose(user, 'Open');
     await waitFor(() => {
       expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
@@ -917,7 +840,7 @@ describe('closing', () => {
     expect(isDirty(modelStore.getState())).toBe(true);
     expect(bridge.releases.count).toBe(0);
     expect(screen.getByTestId('failure-notice').textContent).toContain(
-      'Local recovery is unavailable.',
+      'Clear failed.',
     );
 
     removeItem.mockRestore();

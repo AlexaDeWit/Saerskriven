@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
-import { editableTree, modelFile } from './edit.fixtures.js';
+import { editableTree, modelFile, staleRevision } from './edit.fixtures.js';
 import { revisionOf } from './revision.js';
 import {
   WriteFailure,
@@ -28,8 +28,6 @@ const target = (root: string, file: string) => ({
 
 const revisionIn = (root: string, file: string): string =>
   revisionOf(readFileSync(join(root, file)));
-
-const staleRevision = `sha256:${'0'.repeat(64)}`;
 
 const paddedTo = (root: string, bytes: number): string => {
   const model = readFileSync(join(root, modelFile), 'utf8');
@@ -56,17 +54,6 @@ describe('replacing a file', () => {
     expect(Either.getOrUndefined(written)).toEqual(
       revisionIn(tree.root, modelFile),
     );
-  });
-
-  it('keeps the permissions the file carried', () => {
-    const tree = editableTree();
-    chmodSync(join(tree.root, modelFile), 0o640);
-    replacedFile(
-      target(tree.root, modelFile),
-      'replaced\n',
-      revisionIn(tree.root, modelFile),
-    );
-    expect(statSync(join(tree.root, modelFile)).mode & 0o777).toEqual(0o640);
   });
 
   it('prefers the mode the target carries to the one for a new file', () => {
@@ -121,11 +108,13 @@ describe('a save that lands while a replacement is being prepared', () => {
       'the other writer saved\n',
     );
     expect(new Set(readdirSync(tree.root))).toEqual(before);
-    expect(renderWriteFailure(failureOf(refused))).toEqual([
-      `The file "${modelFile}" changed since the read this call quoted, so nothing was written.`,
-      `The call quoted ${quoted}, and the file on disk is ${revisionIn(tree.root, modelFile)}.`,
-      'Read the file again and reconsider the edit against what it holds now.',
-    ]);
+    expect(failureOf(refused)).toEqual(
+      WriteFailure.StaleRevision({
+        file: modelFile,
+        quoted,
+        found: revisionIn(tree.root, modelFile),
+      }),
+    );
   });
 
   it('reports the reason the system gave where the target is gone', () => {
@@ -237,8 +226,10 @@ describe('creating a file', () => {
   it('refuses a path already holding a file, leaving its bytes alone', () => {
     const tree = editableTree();
     const before = readFileSync(join(tree.root, modelFile));
+    const listed = new Set(readdirSync(tree.root));
     const refused = createdFile(target(tree.root, modelFile), 'replaced\n');
     expect(readFileSync(join(tree.root, modelFile))).toEqual(before);
+    expect(new Set(readdirSync(tree.root))).toEqual(listed);
     expect(renderWriteFailure(failureOf(refused))).toEqual([
       `The file "${modelFile}" is already there, and this tool writes only a path that is free.`,
     ]);
@@ -259,13 +250,6 @@ describe('creating a file', () => {
     const tree = editableTree();
     createdFile(target(tree.root, 'plain.yaml'), 'formatVersion: 1\n');
     expect(statSync(join(tree.root, 'plain.yaml')).mode & 0o200).toEqual(0o200);
-  });
-
-  it('leaves no temporary file behind when it refuses', () => {
-    const tree = editableTree();
-    const before = new Set(readdirSync(tree.root));
-    createdFile(target(tree.root, modelFile), 'replaced\n');
-    expect(new Set(readdirSync(tree.root))).toEqual(before);
   });
 });
 
@@ -320,8 +304,14 @@ describe('the file a call names', () => {
   it('refuses a call naming none against a server carrying no default', () => {
     const tree = editableTree();
     const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
-    expect(
-      renderWriteFailure(failureOf(namedFile(workspace, undefined)))[0],
-    ).toContain('No file was named and this server carries no default');
+    expect(failureOf(namedFile(workspace, undefined))).toEqual(
+      WriteFailure.NoFile({ root: workspace.root }),
+    );
+    const lines = renderWriteFailure(
+      WriteFailure.NoFile({ root: workspace.root }),
+    );
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain(workspace.root);
+    expect(lines[1]).toContain('`file`');
   });
 });

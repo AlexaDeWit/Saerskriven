@@ -1,41 +1,13 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Action } from '../store/actions.js';
-import { initialState } from '../store/state.js';
-import type { State } from '../store/state.js';
-import { dispatch, modelStore } from '../store/store.js';
-import { announce, resetAnnouncements } from './announcements.js';
-import { resetConnecting, startFlow } from './connecting.js';
-import { canvasModel, readerElement } from './canvas.fixtures.js';
-import { currentTool, resetTools } from './tools.js';
-import { CanvasAnnouncement } from './canvas-announcement.js';
-import { FlowTargetChooser } from './flow-target-chooser.js';
+import { openCanvas } from './canvas.fixtures.js';
+import { currentTool } from './tools.js';
 import { Toolbox } from './toolbox.js';
-
-const opened = (selected?: State['selection'][number]): void => {
-  const selection = selected === undefined ? [] : [selected];
-  modelStore.setState({ ...initialState(canvasModel), selection }, true);
-  resetAnnouncements();
-  resetConnecting();
-  resetTools();
-};
-
-const elementCount = (): number =>
-  modelStore.getState().present.diagrams[0].elements.length;
-
-const chrome = (): void => {
-  render(
-    <>
-      <Toolbox />
-      <CanvasAnnouncement />
-      <FlowTargetChooser />
-    </>,
-  );
-};
+import { heldElements } from '../store/store.fixtures.js';
 
 describe('Toolbox', () => {
   beforeEach(() => {
-    opened();
+    openCanvas();
   });
 
   it('offers Select, every element kind and Hand as icon buttons', () => {
@@ -65,7 +37,7 @@ describe('Toolbox', () => {
     await user.click(screen.getByRole('button', { name: 'Actor' }));
 
     expect(currentTool()).toMatchObject({ active: 'actor', locked: false });
-    expect(elementCount()).toBe(6);
+    expect(heldElements()).toBe(6);
     expect(
       screen
         .getByRole('button', { name: 'Actor' })
@@ -91,56 +63,5 @@ describe('Toolbox', () => {
     const tooltip = await screen.findByRole('tooltip');
     expect(tooltip.textContent).toContain('Actor');
     expect(within(tooltip).getByText('A or 2')).toBeDefined();
-  });
-});
-
-describe('the canvas messages', () => {
-  beforeEach(() => {
-    opened();
-  });
-
-  it('keeps the canvas message region mounted while it has nothing to say', () => {
-    chrome();
-
-    const status = screen.getByRole('status');
-    expect(status.textContent).toBe('');
-    expect(status.getAttribute('aria-label')).toBeNull();
-    expect(status.getAttribute('aria-atomic')).toBe('true');
-  });
-
-  it('clears a message when the next canvas action changes state', () => {
-    chrome();
-    act(() => {
-      announce('An edit completed.');
-    });
-    expect(screen.getByRole('status').textContent).toContain('completed');
-
-    act(() => {
-      dispatch(Action.Select({ elementIds: [readerElement] }));
-    });
-
-    expect(screen.getByRole('status').textContent).toBe('');
-  });
-
-  it('opens the connector command chooser without adding a flow tool', () => {
-    opened(readerElement);
-    startFlow();
-
-    chrome();
-
-    expect(screen.getByRole('listbox')).toBeDefined();
-    expect(screen.queryByRole('button', { name: /flow tool/iu })).toBeNull();
-  });
-
-  it('commits the connector command target directly', async () => {
-    const user = userEvent.setup();
-    opened(readerElement);
-    startFlow();
-    chrome();
-
-    await user.click(screen.getByRole('option', { name: 'Studio' }));
-
-    expect(elementCount()).toBe(7);
-    expect(screen.queryByRole('listbox')).toBeNull();
   });
 });

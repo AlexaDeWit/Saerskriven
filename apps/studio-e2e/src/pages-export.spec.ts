@@ -1,12 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { repositoryRoot, sha256Of } from '@saerskriven/model/fixtures';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import {
-  digestOf,
-  expectedPdfDigest,
-  pdfPageCount,
-} from './exports.fixtures.js';
-import { exportedFile, openFile, vendored } from './studio.fixtures.js';
+import { join } from 'node:path';
+import { expectedPdfDigest, pdfPageCount } from './exports.fixtures.js';
+import { exportedFile, openFile, twoDiagramsFile } from './studio.fixtures.js';
 
 const compilerDownloadAndTypesetTimeout = 60_000;
 
@@ -18,13 +16,13 @@ test('the Pages build loads its hashed PDF assets below the site base', async ({
   page,
 }) => {
   test.setTimeout(compilerDownloadAndTypesetTimeout);
-  await openFile(page, 'test-data/ecluse.json', './');
+  await openFile(page, twoDiagramsFile, './');
 
   const output = await exportedFile(page, 'Model as PDF');
 
-  expect(output.name).toBe('ecluse.pdf');
-  expect(pdfPageCount(output.bytes)).toBe(17);
-  expect(digestOf(output.bytes)).toBe(expectedPdfDigest);
+  expect(output.name).toBe('two-diagrams.pdf');
+  expect(pdfPageCount(output.bytes)).toBe(6);
+  expect(sha256Of(output.bytes)).toBe(expectedPdfDigest());
 });
 
 test('the Pages build publishes the social card and its text alternative', async ({
@@ -64,7 +62,7 @@ test('the release build identifies its own version outside the menu', async ({
 }) => {
   await page.goto('./');
   const manifest: unknown = JSON.parse(
-    readFileSync(vendored('package.json'), 'utf8'),
+    readFileSync(join(repositoryRoot, 'package.json'), 'utf8'),
   );
   assert.ok(
     typeof manifest === 'object' && manifest !== null && 'version' in manifest,

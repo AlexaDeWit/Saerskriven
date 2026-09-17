@@ -19,6 +19,18 @@ describe('undeclaredDivergences', () => {
     ]);
   });
 
+  it('reports a stripped key whose name is a prototype member', () => {
+    expect(
+      reportOn(
+        Object.fromEntries<unknown>([
+          ['kept', { inner: 'yes' }],
+          ['__proto__', { pwn: 1 }],
+          ['toString', 'no'],
+        ]),
+      ),
+    ).toEqual(['the key __proto__', 'the key toString']);
+  });
+
   it('escapes a dot in a key, so it cannot read as a path through two', () => {
     expect(reportOn({ kept: { inner: 'yes' }, 'a.b': 1 })).toEqual([
       'the key a\\.b',

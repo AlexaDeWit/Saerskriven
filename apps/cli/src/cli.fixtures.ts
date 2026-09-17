@@ -1,101 +1,52 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { referencingYaml, smallYaml } from '@saerskriven/mcp/fixtures';
+import { testDataPath } from '@saerskriven/model/fixtures';
+import { typstFontFiles } from '@saerskriven/render/build-assets';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-
-const heading = `formatVersion: 1
-metadata:
-  title: Small
-  owner: Owner
-  description: ''
-  contributors: []
-assumptions: []
-mitigations: []
-`;
-
-const oneThreat = `threats:
-  - id: threat-1
-    number: 1
-    title: Spoofed caller
-    category: { methodology: STRIDE, category: spoofing }
-    severity: high
-    status: open
-    description: ''
-    mitigation: ''
-    elements: []
-lastIssuedThreatNumber: 1
-`;
-
-const processElement = (id: string, x: number): string => `      - kind: process
-        id: ${id}
-        name: ${id}
-        description: ''
-        outOfScope: false
-        reasonOutOfScope: ''
-        position: { x: ${String(x)}, y: 0 }
-        size: { width: 10, height: 10 }
-`;
-
-const flow = (id: string, target: string): string => `      - kind: flow
-        id: ${id}
-        name: ${id}
-        description: ''
-        outOfScope: false
-        reasonOutOfScope: ''
-        source: { kind: attached, element: element-1 }
-        target: { kind: attached, element: ${target} }
-        waypoints: []
-`;
-
-const referencing = (element: string): string => `${heading}diagrams:
-  - id: only
-    title: Only
-    elements:
-${processElement('element-1', 0)}threats:
-  - id: threat-1
-    number: 1
-    title: Spoofed caller
-    category: { methodology: STRIDE, category: spoofing }
-    severity: high
-    status: open
-    description: ''
-    mitigation: ''
-    elements: [${element}]
-lastIssuedThreatNumber: 1
-`;
+import { resvgWasmFile } from './png.js';
 
 /**
  * A native file whose one threat names an element no diagram holds. The
  * document is valid and the model it maps to is not, which is the failure
  * that carries a path into the model rather than into the file.
  */
-export const danglingReferenceYaml = referencing('element-2');
+export const danglingReferenceYaml = referencingYaml('element-2');
 
 /**
  * A native file whose one threat names an element id built out of ANSI
  * escapes, which the model refuses and then quotes back in the sentence
  * saying the reference resolves to nothing.
  */
-export const ansiElementIdYaml = referencing('"\\e[31mBOOM\\e[0m"');
+export const ansiElementIdYaml = referencingYaml('"\\e[31mBOOM\\e[0m"');
 
 /**
  * A native file whose one threat names an element id spelling those same
  * escapes out of literal characters. The model accepts the text, and what
  * a user reads has to tell it apart from the file above.
  */
-export const literalEscapeIdYaml = referencing('"\\\\e[31mBOOM\\\\e[0m"');
+export const literalEscapeIdYaml = referencingYaml('"\\\\e[31mBOOM\\\\e[0m"');
 
 /**
  * A native file carrying a key the wire schema does not declare, which a
  * read drops and reports as a divergence rather than passing over.
  */
-export const undeclaredKeyYaml = `${heading}nonsense: true
-diagrams: []
-${oneThreat}`;
+export const undeclaredKeyYaml = smallYaml.replace(
+  'diagrams: []',
+  'nonsense: true\ndiagrams: []',
+);
 
 /**
  * A version 1 native file whose one assumption links the file's element as
  * well as its threat, which a read drops and reports.
  */
-export const elementLinkedAssumptionYaml = referencing('element-1').replace(
+export const elementLinkedAssumptionYaml = referencingYaml('element-1').replace(
   'assumptions: []',
   `assumptions:
   - id: assumption-1
@@ -106,52 +57,23 @@ export const elementLinkedAssumptionYaml = referencing('element-1').replace(
 );
 
 /** A native file whose title is a number, which the wire schema refuses. */
-export const brokenDocumentYaml = `${heading.replace(
+export const brokenDocumentYaml = smallYaml.replace(
   'title: Small',
   'title: 42',
-)}diagrams: []
-${oneThreat}`;
-
-/** A native file holding no diagram, so there is nothing to draw. */
-export const noDiagramYaml = `${heading}diagrams: []
-${oneThreat}`;
-
-/**
- * A native file whose second flow ends on the first flow. The model permits
- * an endpoint on any element, the canvas draws a flow as no box, so the
- * layout reports the endpoint and leaves that flow out of the drawing.
- */
-export const unplacedFlowYaml = `${heading}diagrams:
-  - id: only
-    title: Only
-    elements:
-${processElement('element-1', 0)}${processElement('element-2', 100)}${flow(
-  'flow-1',
-  'element-2',
-)}${flow('flow-2', 'flow-1')}${oneThreat}`;
+);
 
 /**
  * A native file whose one threat carries the given text as its description,
  * so a spec that decides the shape of that prose has a model to put it in.
  */
 export function proseThreatYaml(description: string): string {
-  return `${heading}diagrams: []
-threats:
-  - id: threat-1
-    number: 1
-    title: Deep prose
-    category: { methodology: STRIDE, category: spoofing }
-    severity: high
-    status: open
-    description: ${JSON.stringify(description)}
-    mitigation: ''
-    elements: []
-lastIssuedThreatNumber: 1
-`;
+  return smallYaml
+    .replace('title: Spoofed caller', 'title: Deep prose')
+    .replace(
+      "    description: ''\n    mitigation:",
+      () => `    description: ${JSON.stringify(description)}\n    mitigation:`,
+    );
 }
-
-/** A YAML text no registered codec claims. */
-export const unclaimedYaml = 'hello: world\n';
 
 /**
  * One fixture on disk, at the path it was written to. A name holding a
@@ -167,4 +89,41 @@ export function fixtureFile(
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, text);
   return path;
+}
+
+const scratch: string[] = [];
+
+afterAll(() => {
+  for (const directory of scratch.splice(0)) {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+/**
+ * A fresh temporary directory, removed after the spec file that asked for
+ * it. The removal hook is registered when a spec file imports this module.
+ */
+export function scratchDirectory(prefix: string): string {
+  const directory = mkdtempSync(join(tmpdir(), `saerskriven-cli-${prefix}-`));
+  scratch.push(directory);
+  return directory;
+}
+
+/** A committed render golden under `test-data/render`, as bytes. */
+export const renderGolden = (name: string): Buffer =>
+  readFileSync(testDataPath('render', name));
+
+/**
+ * An asset directory a rasterizer reads without drawing: a stand-in module
+ * and one stand-in face per name, each face's bytes spelling `face:<name>`.
+ */
+export function fakeAssets(
+  directory: string,
+  faces: readonly string[] = typstFontFiles,
+): string {
+  writeFileSync(join(directory, resvgWasmFile), 'module');
+  for (const name of faces) {
+    writeFileSync(join(directory, name), `face:${name}`);
+  }
+  return directory;
 }

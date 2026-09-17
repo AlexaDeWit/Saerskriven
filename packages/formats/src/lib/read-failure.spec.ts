@@ -80,6 +80,14 @@ describe('why a read produced nothing', () => {
     ]);
   });
 
+  it('serializes a failure to its plain tagged shape', () => {
+    const failure = ReadFailure.InvalidWireDocument({ issues: [] });
+    expect(JSON.parse(JSON.stringify(failure)) as unknown).toEqual({
+      _tag: 'InvalidWireDocument',
+      issues: [],
+    });
+  });
+
   it('lists the formats tried where none claimed the text', () => {
     expect(
       renderReadFailure(
