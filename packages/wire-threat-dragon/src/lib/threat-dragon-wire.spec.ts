@@ -119,48 +119,13 @@ function processCell(id: string, threats: readonly unknown[]): unknown {
   };
 }
 
-const parsed = parsedOf(unmodelled);
-
-const cellsOfFixture = parsed?.detail.diagrams[0]?.cells ?? [];
-
-const threatsOfFixture = cellsOfFixture.flatMap((cell) =>
-  cell.shape === 'process' ? (cell.data.threats ?? []) : [],
-);
-
 describe('the Threat Dragon wire schema', () => {
   it('reads a file holding nothing but what the format requires', () => {
     expect(parsedOf(minimal)).toEqual(minimal);
   });
 
-  it('reads what Threat Dragon writes and the model has no home for', () => {
-    expect(parsed).toEqual(unmodelled);
-  });
-
-  it('reads a threat with no number, an unlisted severity, and a translated category', () => {
-    expect(threatsOfFixture[0]?.number).toBeUndefined();
-    expect(threatsOfFixture[0]).toMatchObject({
-      severity: 'TBA',
-      type: 'Manipulation',
-    });
-  });
-
-  it('reads an EOP threat, whose type is null and whose card is its identity', () => {
-    expect(threatsOfFixture[1]).toMatchObject({
-      modelType: 'EOP',
-      type: null,
-      eopGameId: 'cornucopia',
-      cardSuit: 'Data Validation & Encoding',
-      cardNumber: '3',
-    });
-  });
-
-  it('reads the curve shape name Threat Dragon itself misspells', () => {
-    expect(cellsOfFixture[1]?.shape).toBe('trust-broundary-curve');
-  });
-
-  it('reads the two-part version Threat Dragon writes as well as the three', () => {
-    expect(parsed?.version).toBe('2.0');
-    expect(parsedOf(minimal)?.version).toBe('2.9.13');
+  it('reads a two-part version, an unnumbered, translated and EOP threat, and the misspelled curve whole', () => {
+    expect(parsedOf(unmodelled)).toEqual(unmodelled);
   });
 
   it('refuses a file stamped outside the major it reads, at that path', () => {
@@ -185,40 +150,39 @@ describe('the Threat Dragon wire schema', () => {
     );
   });
 
-  it('refuses a cell id of one character, at that path', () => {
-    expect(issuePathsOf(withCells([processCell('a', [])]))).toEqual([
-      ['detail', 'diagrams', 0, 'cells', 0, 'id'],
-    ]);
-  });
-
-  it('refuses a threat id of one character, at that path', () => {
-    expect(
-      issuePathsOf(
-        withCells([processCell('process-1', [{ ...translated, id: 'a' }])]),
-      ),
-    ).toEqual([
-      ['detail', 'diagrams', 0, 'cells', 0, 'data', 'threats', 0, 'id'],
-    ]);
-  });
-
-  it('refuses an edge anchored to a one-character cell, at that path', () => {
-    expect(
-      issuePathsOf(
-        withCells([
-          {
-            id: 'flow-1',
-            shape: 'flow',
-            data: { type: 'tm.Flow' },
-            source: { cell: 'a' },
-            target: { cell: 'process-1' },
-          },
-        ]),
-      ),
-    ).toEqual([['detail', 'diagrams', 0, 'cells', 0, 'source', 'cell']]);
-  });
-
-  it('refuses a summary id of one character, at that path', () => {
-    expect(issuePathsOf(withSummaryId('a'))).toEqual([['summary', 'id']]);
+  it.each([
+    {
+      named: 'a cell id',
+      document: withCells([processCell('a', [])]),
+      path: ['detail', 'diagrams', 0, 'cells', 0, 'id'],
+    },
+    {
+      named: 'a threat id',
+      document: withCells([
+        processCell('process-1', [{ ...translated, id: 'a' }]),
+      ]),
+      path: ['detail', 'diagrams', 0, 'cells', 0, 'data', 'threats', 0, 'id'],
+    },
+    {
+      named: 'the cell an edge is anchored to',
+      document: withCells([
+        {
+          id: 'flow-1',
+          shape: 'flow',
+          data: { type: 'tm.Flow' },
+          source: { cell: 'a' },
+          target: { cell: 'process-1' },
+        },
+      ]),
+      path: ['detail', 'diagrams', 0, 'cells', 0, 'source', 'cell'],
+    },
+    {
+      named: 'a summary id',
+      document: withSummaryId('a'),
+      path: ['summary', 'id'],
+    },
+  ])('refuses $named of one character, at that path', ({ document, path }) => {
+    expect(issuePathsOf(document)).toEqual([path]);
   });
 
   it('reads a summary id written as an integer and one written as a string', () => {

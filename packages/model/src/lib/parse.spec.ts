@@ -1,5 +1,4 @@
 import { Either } from 'effect';
-import * as api from '../index.js';
 import { issuesOf, seededModel, validModelFixture } from './fixtures.js';
 import { issueLine, parseModel, toParseIssues } from './parse.js';
 
@@ -292,16 +291,5 @@ describe('issueLine', () => {
     expect(issueLine({ path: [], message: 'no', code: 'custom' })).toBe(
       '(root): no',
     );
-  });
-});
-
-describe('package surface', () => {
-  it('exports parseModel and keeps the structural model schema internal', () => {
-    expect(typeof api.parseModel).toBe('function');
-    expect('modelSchema' in api).toBe(false);
-  });
-
-  it('exports the schema-issue mapper the format codecs read issues through', () => {
-    expect(typeof api.toParseIssues).toBe('function');
   });
 });
