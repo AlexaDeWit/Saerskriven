@@ -117,10 +117,9 @@ test('keyboard insertion chooses a segment, previews, cancels, and commits one u
   await second.focus();
   const before = turnsOf(await drawnBy(line))[2];
   await page.keyboard.press('Shift+ArrowRight');
-  expect(turnsOf(await drawnBy(line))[2]).toEqual({
-    x: before.x + 20,
-    y: before.y,
-  });
+  await expect
+    .poll(async () => turnsOf(await drawnBy(line))[2])
+    .toEqual({ x: before.x + 20, y: before.y });
   await page.keyboard.press('Delete');
   await expect(page.locator('[data-bend-index]')).toHaveCount(1);
   await page.getByRole('button', { name: 'Bend 1', exact: true }).focus();
@@ -208,7 +207,7 @@ test('click-only insertion, movement, and removal keep the flow and expose acces
   await audit(page, 'showing the controls of a chosen bend');
   await page.getByRole('button', { name: 'Move bend', exact: true }).click();
   await page.mouse.click(at.x + 50, at.y + 100);
-  expect(await drawnBy(line)).not.toBe(inserted);
+  await expect.poll(() => drawnBy(line)).not.toBe(inserted);
   await page.getByRole('button', { name: 'Bend 1', exact: true }).click();
   await page.getByRole('button', { name: 'Remove bend', exact: true }).click();
   await expect(line).toHaveAttribute('d', original);

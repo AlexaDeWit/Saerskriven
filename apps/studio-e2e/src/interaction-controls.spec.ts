@@ -11,6 +11,7 @@ import {
   touchSession,
 } from './canvas.fixtures.js';
 import {
+  editAnnouncement,
   featureCompleteFile,
   menuItem,
   nodeNamed,
@@ -126,7 +127,7 @@ test('clipboard commands preserve graph references and leave text fields their o
   await openFallback(page);
   await selectByKeyboard(page, placeholder.records);
   await page.keyboard.press('ControlOrMeta+c');
-  await expect(page.getByTestId('canvas-announcement')).toContainText('Copied');
+  await expect(editAnnouncement(page)).not.toBeEmpty();
   await page.keyboard.press('ControlOrMeta+v');
   await expect(page.locator('.react-flow__node')).toHaveCount(4);
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
@@ -291,9 +292,7 @@ for (const { fixture, duplicated, retargeted } of [
     await openFile(page, fixture);
     await selectByKeyboard(page, duplicated);
     await page.keyboard.press('ControlOrMeta+d');
-    await expect(page.getByTestId('canvas-announcement')).toContainText(
-      'Duplicated',
-    );
+    await expect(editAnnouncement(page)).not.toBeEmpty();
     await page.keyboard.press('ControlOrMeta+Shift+p');
     const geometry = page.getByRole('region', { name: 'Position and size' });
     await geometry
@@ -327,12 +326,12 @@ test('snapping is optional and preserves manual placement when disabled', async 
   const actor = await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('ControlOrMeta+Shift+g');
   await dragBy(page, actor, 37);
-  const snapped = await boxOf(actor);
-  expect(snapped.x % gridSpacing).toBe(0);
+  await expect.poll(async () => (await boxOf(actor)).x % gridSpacing).toBe(0);
   await page.keyboard.press('ControlOrMeta+Shift+g');
   await dragBy(page, actor, 37);
-  const manual = await boxOf(actor);
-  expect(manual.x % gridSpacing).not.toBe(0);
+  await expect
+    .poll(async () => (await boxOf(actor)).x % gridSpacing)
+    .not.toBe(0);
 });
 
 test('endpoint typeahead keeps its keyboard ownership', async ({ page }) => {

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+  canvasSettled,
   emptyCanvasPoint,
   type Point,
   touchDrag,
@@ -105,6 +106,7 @@ for (const placement of notePlacements) {
         const session = await touchSession(page);
         const before = await viewportTransform(page);
         await touchDrag(session, from, movedPoint(page, from));
+        await canvasSettled(page);
         expect(await viewportTransform(page)).toBe(before);
         await session.detach();
       } else if (placement === 'click') {

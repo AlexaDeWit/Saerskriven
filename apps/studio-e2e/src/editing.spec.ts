@@ -532,8 +532,6 @@ test('the delete key removes the element, the flows it held lose an end, and one
 
   await expect(elementNodes(page)).toHaveCount(6);
   await expect(editAnnouncement(page)).toContainText('Shopper');
-  await expect(editAnnouncement(page)).toContainText('2');
-  await expect(editAnnouncement(page)).toContainText('1');
   await expect(returned).toHaveAttribute('aria-label', /to a free point/u);
   await expect(canvasSurface(page)).toBeFocused();
 

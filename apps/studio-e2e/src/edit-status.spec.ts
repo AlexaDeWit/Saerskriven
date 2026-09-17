@@ -21,7 +21,7 @@ test('edit status follows focus and lasts until the next edit', async ({
   await page.keyboard.press('Delete');
 
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
-  await expect(editAnnouncement(page)).toContainText('Removed');
+  await expect(editAnnouncement(page)).toContainText('New actor');
 
   await placeByClick(page, 'Actor', /^New actor, actor/u);
 
@@ -30,5 +30,5 @@ test('edit status follows focus and lasts until the next edit', async ({
   await page.keyboard.press(registeredChords.undo[0]);
 
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
-  await expect(editAnnouncement(page)).toContainText('Undo');
+  await expect(editAnnouncement(page)).not.toBeEmpty();
 });

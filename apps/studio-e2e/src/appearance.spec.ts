@@ -15,6 +15,19 @@ const chooseAppearance = async (
   await page.getByRole('menuitemradio', { name: mode }).click();
 };
 
+const expectAppearance = async (
+  page: Page,
+  mode: 'System' | 'Light' | 'Dark',
+): Promise<void> => {
+  await openMenu(page);
+  await appearance(page).press('ArrowRight');
+  await expect(page.getByRole('menuitemradio', { name: mode })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await page.keyboard.press('Escape');
+};
+
 for (const [mode, palette, systemMode] of [
   ['light', lightPalette, 'dark'],
   ['dark', darkPalette, 'light'],
@@ -56,8 +69,7 @@ test('selects each appearance mode and persists explicit choices', async ({
     'light',
   );
   await expect(page.locator('html')).toHaveCSS('color-scheme', 'light');
-  await openMenu(page);
-  await expect(appearance(page)).toHaveText('AppearanceLight');
+  await expectAppearance(page, 'Light');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute(
     'data-pn-colour-mode',
@@ -70,8 +82,7 @@ test('selects each appearance mode and persists explicit choices', async ({
     'dark',
   );
   await expect(page.locator('html')).toHaveCSS('color-scheme', 'dark');
-  await openMenu(page);
-  await expect(appearance(page)).toHaveText('AppearanceDark');
+  await expectAppearance(page, 'Dark');
   await audit(page, 'in the dark appearance chosen from the menu');
 });
 
@@ -80,8 +91,7 @@ test('invalid stored appearance returns to System', async ({ page }) => {
     localStorage.setItem('saerskrivenColourMode', 'broken');
   });
   await openPlaceholder(page);
-  await openMenu(page);
 
-  await expect(appearance(page)).toHaveText('AppearanceSystem');
+  await expectAppearance(page, 'System');
   await expect(page.locator('html')).not.toHaveAttribute('data-pn-colour-mode');
 });

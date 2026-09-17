@@ -124,6 +124,7 @@ test('focusing an off-screen element does not pan the viewport', async ({
   await node.focus();
   await page.keyboard.press('Enter');
   await expect(node).toHaveClass(/selected/u);
+  await canvasSettled(page);
   expect(await viewportTransform(page)).toBe(before);
 });
 
