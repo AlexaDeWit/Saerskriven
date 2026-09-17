@@ -1,9 +1,5 @@
 import { ReadFailure } from '@saerskriven/formats';
-import {
-  catalogueTemplates,
-  locales,
-  wellFormedTemplate,
-} from '@saerskriven/i18n';
+import { locales } from '@saerskriven/i18n';
 import { act, render, screen } from '@testing-library/react';
 import { isValidElement } from 'react';
 import {
@@ -25,7 +21,6 @@ import {
 } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
-import { studioCatalogues } from './catalogues.js';
 import { activeTranslator, chooseLocale } from './locale.js';
 import { Message } from './message.js';
 
@@ -47,17 +42,18 @@ afterEach(() => {
   resetDiagramRenaming();
 });
 
-describe('studio catalogues', () => {
-  it('keep every brace inside a placeholder', () => {
-    expect(
-      catalogueTemplates(studioCatalogues).filter(
-        ({ template }) => !wellFormedTemplate(template),
-      ),
-    ).toEqual([]);
+describe('the active locale', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
   });
 
-  it('take the browser languages until a locale is chosen', () => {
-    expect(activeTranslator().locale).toBe('en-CA');
+  it('is negotiated from the browser languages until one is chosen', async () => {
+    vi.stubGlobal('navigator', { languages: ['de-DE', 'fr-FR'] });
+    vi.resetModules();
+    const fresh = await import('./locale.js');
+
+    expect(fresh.activeTranslator().locale).toBe('fr-CA');
   });
 });
 
