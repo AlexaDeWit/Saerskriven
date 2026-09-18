@@ -5,7 +5,7 @@ import {
   type Divergence,
 } from '@saerskriven/formats';
 import { mitigationIdSchema } from '@saerskriven/model';
-import { activeTranslator, chooseLocale } from '../messages/locale.js';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { FileLifecycle, type RetainedSource } from '../store/state.js';
 import {
@@ -287,7 +287,8 @@ describe('reportLines', () => {
   ];
 
   afterEach(() => {
-    chooseLocale('en-CA');
+    chooseLanguage('en-CA');
+    globalThis.localStorage.clear();
   });
 
   it('says nothing at all where nothing diverged', () => {
@@ -315,7 +316,7 @@ describe('reportLines', () => {
 
   it('phrases every line in the translator it is handed', () => {
     const english = reportLines(speaker(), divergences, 'open');
-    chooseLocale('sv');
+    chooseLanguage('sv');
 
     expect(reportLines(speaker(), divergences, 'open')).not.toEqual(english);
   });

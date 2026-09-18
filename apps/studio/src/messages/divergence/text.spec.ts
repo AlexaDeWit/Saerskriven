@@ -5,7 +5,7 @@ import {
 } from '@saerskriven/formats';
 import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
 import { studioCatalogues } from '../catalogues.js';
-import { activeTranslator, chooseLocale } from '../locale.js';
+import { activeTranslator, chooseLanguage } from '../locale.js';
 import { divergenceDetail, divergenceLine } from './text.js';
 
 const samples: readonly DivergenceDetail[] = [
@@ -143,7 +143,8 @@ const readsFrom = (id: string, text: string): boolean =>
     );
 
 afterEach(() => {
-  chooseLocale('en-CA');
+  chooseLanguage('en-CA');
+  globalThis.localStorage.clear();
 });
 
 describe('the divergence mapping', () => {
@@ -189,6 +190,10 @@ describe('the divergence mapping', () => {
     [samples.find(({ code }) => code === 'field-not-retained'), 'kept.nowhere'],
     [samples.find(({ code }) => code === 'cell-reshaped'), 'reshaped-from'],
     [
+      samples.find(({ code }) => code === 'threat-attachment-stray'),
+      'stray-kind',
+    ],
+    [
       samples.find(({ code }) => code === 'mitigation-status-dropped'),
       'dropped-inferred',
     ],
@@ -209,7 +214,7 @@ describe('the divergence mapping', () => {
     if (numbered === undefined || raised === undefined) {
       throw new Error('the sample table covers every code');
     }
-    chooseLocale('fr-CA');
+    chooseLanguage('fr-CA');
 
     expect(described(numbered)).toContain('19');
     expect(described(raised)).toContain('11');

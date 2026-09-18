@@ -39,7 +39,7 @@ import {
   specRenders,
   vendoredFile,
 } from './files.fixtures.js';
-import { chooseLocale } from '../messages/locale.js';
+import { chooseLanguage } from '../messages/locale.js';
 import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
@@ -134,8 +134,9 @@ beforeEach(() => {
 
 afterEach(() => {
   act(() => {
-    chooseLocale('en-CA');
+    chooseLanguage('en-CA');
   });
+  globalThis.localStorage.clear();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -637,7 +638,7 @@ describe('opening', () => {
     const english = reportEntries().map((entry) => entry.textContent);
 
     act(() => {
-      chooseLocale('sv');
+      chooseLanguage('sv');
     });
 
     const swedish = reportEntries().map((entry) => entry.textContent);
