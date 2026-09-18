@@ -15,9 +15,16 @@ person typed reach a message as parameters and pass through unchanged.
 | `locale.ts`                               | The chosen language, `activeTranslator` for code outside components, `useTranslator`, `useLanguage` |
 | `message.tsx`                             | `Message`, which renders a message with element parameters                                          |
 
-The sections so far are `canvas` (announcements), `notice` (the failure
-notice) and `shell` (the language control and the browser tab's name). Most
-studio text is still written in place in English.
+The sections so far are `canvas` (announcements), `divergence` (what a codec
+or an import could not carry), `notice` (the failure notice) and `shell` (the
+language control and the browser tab's name). Most studio text is still
+written in place in English.
+
+`divergence/text.ts` maps each divergence code `@saerskriven/formats` records
+to its message, with the codec's parameters passed through. A divergence line
+is the one place a message takes another message's text as a parameter: the
+subject, the detail and the reason are each a complete phrase, and the `line`
+message owns their order and punctuation.
 
 ## Adding a message
 

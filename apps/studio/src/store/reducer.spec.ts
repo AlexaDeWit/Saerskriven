@@ -834,7 +834,10 @@ describe('the file lifecycle', () => {
         divergences: [
           {
             subject: { kind: 'model' },
-            detail: 'the key unknownRoot',
+            detail: {
+              code: 'key-undeclared',
+              parameters: { path: 'unknownRoot' },
+            },
             reason: 'undeclared',
           },
         ],

@@ -40,7 +40,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     fields(definition, ['id', 'name', 'description']);
     if (referencedThreats.has(definition.id)) {
       report(
-        `Threat ${JSON.stringify(definition.id)} becomes separate records for its occurrences.`,
+        { code: 'otm-threat-split', parameters: { id: definition.id } },
         'split',
       );
     }
@@ -73,9 +73,10 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
       status,
       elements: [...attached],
     });
-    report(
-      `Threat ${JSON.stringify(definition.id)} imports with undecided severity and an unspecified category.`,
-    );
+    report({
+      code: 'otm-threat-undecided',
+      parameters: { id: definition.id },
+    });
     for (const mitigation of otmMitigations(
       occurrence,
       id,
@@ -126,7 +127,10 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
       return [
         unlinkedMitigationLine(
           context,
-          `Mitigation ${JSON.stringify(definition.id)}`,
+          {
+            code: 'otm-mitigation-unlinked',
+            parameters: { id: definition.id },
+          },
           [
             'Mitigation: ',
             definition.name,
@@ -172,7 +176,7 @@ function otmMitigations(
     fields(mitigation, ['id', 'name', 'description']);
     if (referenced.has(mitigation.id)) {
       report(
-        `Mitigation ${JSON.stringify(mitigation.id)} becomes separate records for its occurrences.`,
+        { code: 'otm-mitigation-split', parameters: { id: mitigation.id } },
         'split',
       );
     }
@@ -183,9 +187,10 @@ function otmMitigations(
       given.state !== 'required' &&
       given.state !== 'proposed'
     ) {
-      report(
-        `Mitigation ${JSON.stringify(mitigation.id)} has source status ${JSON.stringify(given.state)}, retained in its description and imported as proposed.`,
-      );
+      report({
+        code: 'otm-mitigation-status-retained',
+        parameters: { id: mitigation.id, status: given.state },
+      });
     }
     mitigations.push({
       id: context.id('otm-mitigation', mitigation.id, threatId, String(index)),
@@ -224,9 +229,10 @@ function otmThreatStatus(
       return 'not-applicable';
     case undefined:
     default:
-      context.report(
-        `Threat status ${JSON.stringify(state) ?? 'absent'} imports as open. Supplied status text remains in the description.`,
-      );
+      context.report({
+        code: 'otm-threat-status-unmapped',
+        parameters: { status: state },
+      });
       return 'open';
   }
 }

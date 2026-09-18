@@ -12,6 +12,10 @@ export {
   type FormatName,
 } from './lib/detect.js';
 export {
+  type DivergenceCode,
+  type DivergenceDetail,
+} from './lib/divergence-detail.js';
+export {
   divergenceSchema,
   escapedForTerminal,
   hasDiverged,

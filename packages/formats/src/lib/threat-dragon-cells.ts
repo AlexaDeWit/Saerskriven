@@ -452,7 +452,10 @@ function unlabelled(element: TextElement): readonly Divergence[] {
     : [
         {
           subject: { kind: 'element', id: element.id },
-          detail: `the name "${element.name}", which the format has one text for a note and no name beside it`,
+          detail: {
+            code: 'note-name-dropped',
+            parameters: { name: element.name },
+          },
           reason: 'unrepresentable',
         },
       ];
@@ -463,8 +466,7 @@ function unscoped(element: TextElement | TrustBoundary): readonly Divergence[] {
     ? [
         {
           subject: { kind: 'element', id: element.id },
-          detail:
-            'the out-of-scope marking, which the format records on the elements a threat attaches to alone',
+          detail: { code: 'scope-marking-dropped' },
           reason: 'unrepresentable',
         },
       ]
@@ -480,7 +482,10 @@ function reshaped(
     ? [
         {
           subject: { kind: 'element', id: element.id },
-          detail: `what the source held on the ${held.shape} cell of this id, which now draws a ${element.kind}`,
+          detail: {
+            code: 'cell-reshaped',
+            parameters: { shape: held.shape, kind: element.kind },
+          },
           reason: 'discarded-by-edit',
         },
       ]

@@ -25,8 +25,10 @@ it('turns a mitigation definition no occurrence names into one description line 
   expect(paragraphs.at(-1)).toContain('Unattached work');
   expect(paragraphs.at(-1)).toContain('Work no occurrence names.');
   expect(
-    read.divergences.filter((entry) =>
-      entry.detail.includes('unattached-mitigation'),
+    read.divergences.filter(
+      (entry) =>
+        entry.detail.code === 'otm-mitigation-unlinked' &&
+        entry.detail.parameters.id === 'unattached-mitigation',
     ),
   ).toHaveLength(1);
 });
@@ -54,8 +56,10 @@ it.each([
     const line = read.model.metadata.description.split('\n\n').at(-1);
     expect(line?.endsWith('Unattached work')).toBe(true);
     expect(
-      read.divergences.filter((entry) =>
-        entry.detail.includes('unattached-mitigation'),
+      read.divergences.filter(
+        (entry) =>
+          entry.detail.code === 'otm-mitigation-unlinked' &&
+          entry.detail.parameters.id === 'unattached-mitigation',
       ),
     ).toHaveLength(1);
   },

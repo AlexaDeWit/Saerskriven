@@ -380,12 +380,15 @@ describe('a key the wire schema does not declare', () => {
     expect(readingOf(withExtras)?.divergences).toEqual([
       {
         subject: { kind: 'model' },
-        detail: 'the key threats.0.likelihood',
+        detail: {
+          code: 'key-undeclared',
+          parameters: { path: 'threats.0.likelihood' },
+        },
         reason: 'undeclared',
       },
       {
         subject: { kind: 'model' },
-        detail: 'the key notes',
+        detail: { code: 'key-undeclared', parameters: { path: 'notes' } },
         reason: 'undeclared',
       },
     ]);

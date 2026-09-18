@@ -4,6 +4,8 @@ import {
   threatDragonCodec,
   type Divergence,
 } from '@saerskriven/formats';
+import { mitigationIdSchema } from '@saerskriven/model';
+import { chooseLocale } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { FileLifecycle, type RetainedSource } from '../store/state.js';
 import {
@@ -269,32 +271,50 @@ describe('writeThrough', () => {
 });
 
 describe('reportLines', () => {
+  const divergences: readonly Divergence[] = [
+    {
+      subject: { kind: 'mitigation', id: mitigationIdSchema.parse('m-1') },
+      detail: { code: 'assumption-unrecorded' },
+      reason: 'unrepresentable',
+    },
+    {
+      subject: { kind: 'model' },
+      detail: { code: 'key-undeclared', parameters: { path: 'notes' } },
+      reason: 'undeclared',
+    },
+  ];
+
+  afterEach(() => {
+    chooseLocale('en-CA');
+  });
+
   it('says nothing at all where nothing diverged', () => {
     expect(reportLines([])).toEqual([]);
   });
 
   it.each(['open', 'import'] as const)(
-    'renders one line an entry on %s, each naming its detail',
+    'describes one entry per line on %s, carrying the data its code names',
     (occasion) => {
-      const divergences: readonly Divergence[] = [
-        {
-          subject: { kind: 'model' },
-          detail: 'A mitigation has no place in the format',
-          reason: 'unrepresentable',
-        },
-        {
-          subject: { kind: 'model' },
-          detail: 'the key notes',
-          reason: 'undeclared',
-        },
-      ];
-
       const lines = reportLines(divergences, occasion);
 
       expect(lines).toHaveLength(divergences.length);
-      divergences.forEach(({ detail }, index) => {
-        expect(lines[index]).toContain(detail);
-      });
+      expect(lines[1]).toContain('notes');
     },
   );
+
+  it('names the subject and the reason on an open, and neither on an import', () => {
+    const [opened] = reportLines(divergences, 'open');
+    const [imported] = reportLines(divergences, 'import');
+
+    expect(opened).toContain('m-1');
+    expect(opened).toContain(imported);
+    expect(imported).not.toContain('m-1');
+  });
+
+  it('phrases every line in the chosen locale', () => {
+    const english = reportLines(divergences, 'open');
+    chooseLocale('sv');
+
+    expect(reportLines(divergences, 'open')).not.toEqual(english);
+  });
 });

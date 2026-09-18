@@ -1,4 +1,5 @@
 import type { ParseIssue } from '@saerskriven/model';
+import type { DivergenceDetail } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { importBudget } from './import-budget.js';
 import { isRecord } from './records.js';
@@ -14,7 +15,7 @@ export function importContext() {
   const divergences: Divergence[] = [];
   const issues: ParseIssue[] = [];
   const report = (
-    detail: string,
+    detail: DivergenceDetail,
     reason: Divergence['reason'] = 'narrowed',
   ): void => {
     if (budget.failure !== undefined) {
@@ -87,12 +88,10 @@ export function importElement(
  */
 export function unlinkedMitigationLine(
   context: ImportContext,
-  subject: string,
+  detail: DivergenceDetail,
   parts: readonly string[],
 ): string {
-  context.report(
-    `${subject} names no threat and becomes a line of the model description.`,
-  );
+  context.report(detail);
   return context.text(parts, '');
 }
 
@@ -116,7 +115,7 @@ function indexed<T>(
 function omittedFields(
   source: object,
   used: WeakMap<object, Set<string>>,
-  report: (detail: string, reason: Divergence['reason']) => void,
+  report: (detail: DivergenceDetail, reason: Divergence['reason']) => void,
 ): void {
   const pending: { value: unknown; path: readonly string[] }[] = [
     { value: source, path: [] },
@@ -145,7 +144,7 @@ function omittedFields(
           pending.push({ value, path });
         } else {
           report(
-            `The source field ${JSON.stringify(path)} is not retained by import.`,
+            { code: 'field-not-retained', parameters: { path } },
             'unrepresentable',
           );
         }

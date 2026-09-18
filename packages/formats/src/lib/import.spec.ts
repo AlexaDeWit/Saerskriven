@@ -4,7 +4,8 @@ import { otmWireSchema } from '@saerskriven/wire-otm';
 import { tmbomWireSchema } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { stringify } from 'yaml';
-import { z } from 'zod';
+import { divergenceDetailText } from './divergence-detail.js';
+import type { Divergence } from './divergence.js';
 import { importModel } from './import.js';
 import {
   importCorpus,
@@ -60,7 +61,8 @@ it('places an OTM component the diagram representation misses on the shared grid
     read.divergences.filter(
       (entry) =>
         entry.reason === 'overridden' &&
-        entry.detail.includes('class-customerdatabase'),
+        entry.detail.code === 'otm-geometry-generated' &&
+        entry.detail.parameters.id === 'class-customerdatabase',
     ),
   ).toHaveLength(1);
 });
@@ -126,13 +128,17 @@ it('reports undeclared fields and does not turn OTM numeric impact into a severi
     expect.arrayContaining([
       expect.objectContaining({
         reason: 'undeclared',
-        detail: 'the key futureField',
+        detail: { code: 'key-undeclared', parameters: { path: 'futureField' } },
       }),
     ]),
   );
-  expect(read.divergences.some((entry) => entry.detail.includes('risk'))).toBe(
-    true,
-  );
+  expect(
+    read.divergences.some(
+      (entry) =>
+        entry.detail.code === 'field-not-retained' &&
+        entry.detail.parameters.path.includes('risk'),
+    ),
+  ).toBe(true);
 });
 
 it('validates the different TM-BOM 1.0.2 requirements', () => {
@@ -530,21 +536,18 @@ const registerOf = (model: Model) => {
   };
 };
 
-const unretained = /^The source field (\[.*\]) is not retained by import\.$/;
-
-const reportsOf = (divergences: readonly { detail: string }[]) =>
+const reportsOf = (divergences: readonly Divergence[]) =>
   divergences
-    .map(({ detail }) => detail)
-    .filter((detail) => !unretained.test(detail));
+    .filter(({ detail }) => detail.code !== 'field-not-retained')
+    .map(({ detail }) => divergenceDetailText(detail));
 
-const unretainedFieldsOf = (divergences: readonly { detail: string }[]) =>
+const unretainedFieldsOf = (divergences: readonly Divergence[]) =>
   new Set(
-    divergences.flatMap(({ detail }) => {
-      const path = unretained.exec(detail)?.[1];
-      return path === undefined
-        ? []
-        : [z.array(z.string()).parse(JSON.parse(path)).join('.')];
-    }),
+    divergences.flatMap(({ detail }) =>
+      detail.code === 'field-not-retained'
+        ? [detail.parameters.path.join('.')]
+        : [],
+    ),
   );
 
 describe('the feature-complete OTM document', () => {

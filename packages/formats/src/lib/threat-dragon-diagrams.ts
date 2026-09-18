@@ -168,7 +168,7 @@ const genericThumbnail = './public/content/images/thumbnail.jpg';
 function unnamedDiagram(id: DiagramId, number: number): Divergence {
   return {
     subject: { kind: 'diagram', id },
-    detail: `the name, which the format numbers a diagram rather than naming one, written as ${number}`,
+    detail: { code: 'diagram-name-numbered', parameters: { number } },
     reason: 'unrepresentable',
   };
 }
@@ -177,7 +177,7 @@ function discardedCell(cell: ThreatDragonCell): Divergence {
   const id = elementIdSchema.safeParse(cell.id);
   return {
     subject: id.success ? { kind: 'element', id: id.data } : { kind: 'model' },
-    detail: `the ${cell.shape} cell the source document held`,
+    detail: { code: 'cell-discarded', parameters: { shape: cell.shape } },
     reason: 'discarded-by-edit',
   };
 }

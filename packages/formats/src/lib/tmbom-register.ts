@@ -29,9 +29,7 @@ export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
   );
   const assumptions = tmbomAssumptions(document, context);
   if (threats.length > 0) {
-    context.report(
-      'Threats import as open with undecided severity and an unspecified category. Separate risk assessments are not converted into threat severity.',
-    );
+    context.report({ code: 'tmbom-threats-undecided' });
   }
   return { threats, mitigations, assumptions, descriptionLines };
 }
@@ -116,7 +114,10 @@ function tmbomControls(
       descriptionLines.push(
         unlinkedMitigationLine(
           context,
-          `Control ${JSON.stringify(control.symbolic_name)}`,
+          {
+            code: 'tmbom-control-unlinked',
+            parameters: { name: control.symbolic_name },
+          },
           [
             'Mitigation: ',
             control.title,
@@ -132,9 +133,10 @@ function tmbomControls(
       continue;
     }
     if (control.status !== 'active' && control.status !== 'suggested') {
-      context.report(
-        `Control ${JSON.stringify(control.symbolic_name)} imports as proposed. Its original status remains in the description.`,
-      );
+      context.report({
+        code: 'tmbom-control-proposed',
+        parameters: { name: control.symbolic_name },
+      });
     }
     mitigations.push({
       id: context.id('tmbom-control', control.symbolic_name),

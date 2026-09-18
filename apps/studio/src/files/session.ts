@@ -1,12 +1,10 @@
 import {
-  escapedForTerminal,
   importModel,
   ReadFailure,
   formatNameSchema,
   hasDiverged,
   saerskrivenYamlCodec,
   readAnyFormat,
-  renderDivergences,
   threatDragonCodec,
   type DetectedRead,
   type Divergence,
@@ -15,6 +13,11 @@ import {
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
+import {
+  divergenceDetail,
+  divergenceLine,
+} from '../messages/divergence/text.js';
+import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import {
   FileLifecycle,
@@ -175,17 +178,18 @@ export function savedBy(
   });
 }
 
-/** A report's lines: an import's details escaped one per line, otherwise the codec's rendering of the divergences. */
+/**
+ * A report's lines in the reader's language, one per divergence. An import
+ * charges every entry to the model, so its lines carry the detail alone.
+ */
 export function reportLines(
   divergences: readonly Divergence[],
   occasion?: LossOccasion,
 ): readonly string[] {
-  if (occasion === 'import') {
-    return divergences.map(({ detail }) => escapedForTerminal(detail));
-  }
-  return hasDiverged(divergences)
-    ? renderDivergences(divergences).split('\n')
-    : [];
+  const { t } = activeTranslator();
+  return occasion === 'import'
+    ? divergences.map(({ detail }) => divergenceDetail(t, detail))
+    : divergences.map((divergence) => divergenceLine(t, divergence));
 }
 
 type LossOccasion = 'open' | 'save' | 'import';

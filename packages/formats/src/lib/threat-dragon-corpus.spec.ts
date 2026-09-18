@@ -2,6 +2,7 @@ import { diagramIdSchema, inNumberOrder, type Model } from '@saerskriven/model';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
+import { divergenceDetailText } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { indexById } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
@@ -26,7 +27,7 @@ const diverged = readings.flatMap((reading) =>
   Either.isRight(reading.result)
     ? reading.result.right.divergences.map(
         (divergence) =>
-          `${reading.name}: ${divergence.detail} (${divergence.reason})`,
+          `${reading.name}: ${divergenceDetailText(divergence.detail)} (${divergence.reason})`,
       )
     : [],
 );
@@ -102,9 +103,37 @@ const released = (
   subject: Divergence['subject'],
 ): Divergence => ({
   subject,
-  detail: `the release "${from}" the source was written by, for the ${writtenVersion} this codec writes`,
+  detail: {
+    code: 'release-restamped',
+    parameters: { from, written: writtenVersion },
+  },
   reason: 'overridden',
 });
+
+const raisedThreatMark = (
+  source: ThreatDragonDocument,
+  after: ThreatDragonDocument,
+): readonly { path: string; divergence: Divergence }[] => {
+  const from = source.detail.threatTop;
+  const raised = after.detail.threatTop;
+  return from === undefined ||
+    raised === undefined ||
+    allThreats(source).every((threat) => threat.number !== undefined)
+    ? []
+    : [
+        {
+          path: 'detail.threatTop',
+          divergence: {
+            subject: { kind: 'model' },
+            detail: {
+              code: 'threat-mark-raised-by-issue',
+              parameters: { from, raised },
+            },
+            reason: 'overridden',
+          },
+        },
+      ];
+};
 
 const stamps = (
   source: ThreatDragonDocument,
@@ -118,18 +147,7 @@ const stamps = (
           divergence: released(source.version, { kind: 'model' }),
         },
       ]),
-  ...(allThreats(source).some((threat) => threat.number === undefined)
-    ? [
-        {
-          path: 'detail.threatTop',
-          divergence: {
-            subject: { kind: 'model' as const },
-            detail: `the threat high-water mark ${source.detail.threatTop}, raised to ${after.detail.threatTop} to cover a number this write issued`,
-            reason: 'overridden' as const,
-          },
-        },
-      ]
-    : []),
+  ...raisedThreatMark(source, after),
   ...source.detail.diagrams.flatMap((diagram, index) =>
     diagram.version === undefined || diagram.version === writtenVersion
       ? []

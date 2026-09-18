@@ -49,9 +49,7 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
     context,
   );
   if (assets.size > 0) {
-    context.report(
-      'Referenced asset names become descriptions on flows and components. Shared data identity is not retained.',
-    );
+    context.report({ code: 'otm-assets-as-descriptions' });
   }
   return {
     elements: [...nodes, ...zones, ...flows],
@@ -112,9 +110,7 @@ function otmComponents(
     });
   }
   if (components.length > 0) {
-    context.report(
-      'OTM component types become process nodes. Their original types remain in the descriptions.',
-    );
+    context.report({ code: 'otm-components-as-processes' });
   }
   return elements;
 }
@@ -236,7 +232,7 @@ function otmGeometry(
   }
   if (appearance?.position == null || appearance.size == null) {
     context.report(
-      `Element ${JSON.stringify(item.id)} receives generated geometry where the source has none.`,
+      { code: 'otm-geometry-generated', parameters: { id: item.id } },
       'overridden',
     );
   }

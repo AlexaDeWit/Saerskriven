@@ -6,6 +6,10 @@ import {
   threatIdSchema,
 } from '@saerskriven/model';
 import { z } from 'zod';
+import {
+  divergenceDetailSchema,
+  divergenceDetailText,
+} from './divergence-detail.js';
 
 const modelSubjectSchema = z.object({ kind: z.literal('model') });
 
@@ -71,13 +75,13 @@ export type DivergenceSubject = z.infer<typeof divergenceSubjectSchema>;
 export type DivergenceReason = z.infer<typeof divergenceReasonSchema>;
 
 /**
- * One divergence. `detail` is prose in the entity's own terms rather than a
- * path into the file. Nothing parses a divergence, so the non-empty bound on
- * `detail` is not enforced at any boundary.
+ * One divergence. `detail` is a code and its parameters rather than a
+ * sentence, so a reader phrases it in its own language, and this package
+ * needs none.
  */
 export const divergenceSchema = z.object({
   subject: divergenceSubjectSchema,
-  detail: z.string().min(1),
+  detail: divergenceDetailSchema,
   reason: divergenceReasonSchema,
 });
 
@@ -93,10 +97,12 @@ export function hasDiverged(divergences: readonly Divergence[]): boolean {
 }
 
 /**
- * The divergences as lines for a person, one per entry, or a line saying
- * there are none. `detail` is escaped as {@link escapedForTerminal} escapes,
- * and an id as {@link quotedForTerminal} quotes. What that leaves in an id is
- * the format characters the model accepts, which
+ * The divergences as English lines for a person, one per entry, or a line
+ * saying there are none. This is the CLI's and the MCP server's output, so
+ * the wording is an interface. Each detail is worded by
+ * {@link divergenceDetailText} and escaped as {@link escapedForTerminal}
+ * escapes, and an id as {@link quotedForTerminal} quotes. What that leaves in
+ * an id is the format characters the model accepts, which
  * [`SCHEMA.md`](../../../model/SCHEMA.md) lists, some of them invisible.
  */
 export function renderDivergences(divergences: readonly Divergence[]): string {
@@ -140,7 +146,7 @@ const escapableQuoted = /["\\]|\p{Cc}/gu;
 
 function renderDivergence(divergence: Divergence): string {
   return `${renderSubject(divergence.subject)}: ${escapedForTerminal(
-    divergence.detail,
+    divergenceDetailText(divergence.detail),
   )} (${reasonPhrases[divergence.reason]})`;
 }
 
