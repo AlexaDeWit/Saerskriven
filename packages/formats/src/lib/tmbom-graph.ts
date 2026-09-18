@@ -57,15 +57,10 @@ export function tmbomGraph(document: TmbomDocument, context: ImportContext) {
     ...tmbomFlows(document.data_flows, indexes, context),
   ];
   if (nodes.length > 0) {
-    context.report(
-      'The diagram receives generated geometry grouped by source trust zone. Membership becomes visual.',
-      'overridden',
-    );
+    context.report({ code: 'tmbom-geometry-generated' }, 'overridden');
   }
   if (document.data_flows.length > 0) {
-    context.report(
-      'Flow encryption and sensitivity fields remain prose in the flow descriptions.',
-    );
+    context.report({ code: 'tmbom-flow-fields-as-prose' });
   }
   return elements;
 }
@@ -281,9 +276,11 @@ function dataDescriptions(
       placements += 1;
     }
     context.report(
-      placements > 0
-        ? `Data set ${JSON.stringify(data.symbolic_name)} becomes prose on its stores. Shared data identity is not retained.`
-        : `Data set ${JSON.stringify(data.symbolic_name)} has no store placement and is not retained.`,
+      {
+        code:
+          placements > 0 ? 'tmbom-data-set-as-prose' : 'tmbom-data-set-dropped',
+        parameters: { name: data.symbolic_name },
+      },
       'unrepresentable',
     );
   }

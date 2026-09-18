@@ -1,3 +1,4 @@
+import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
 import { DetailLines } from '../ui/detail-lines.js';
 import { FailureNotice } from '../ui/failure-notice.js';
@@ -12,6 +13,7 @@ import { reportHeadlines, reportLines } from './session.js';
  * refused or costs the model a key.
  */
 export function FileReports({ session }: { readonly session: FileSession }) {
+  const { t } = useTranslator();
   const failure = useModelStore((state) => state.lastFailure);
   const { dismissExportNotice, dismissReport, exportNotice, report } = session;
 
@@ -30,7 +32,7 @@ export function FileReports({ session }: { readonly session: FileSession }) {
             </p>
             <DetailLines
               className={styles.lines}
-              lines={reportLines(report.divergences, report.occasion)}
+              lines={reportLines(t, report.divergences, report.occasion)}
               summary={
                 report.occasion === 'import' ? (
                   <>{report.divergences.length} conversion details</>

@@ -14,7 +14,7 @@ export function undeclaredDivergences(
   return undeclaredKeys(given, kept, [], reservePath).map(
     (key): Divergence => ({
       subject: { kind: 'model' },
-      detail: `the key ${key}`,
+      detail: { code: 'key-undeclared', parameters: { path: key } },
       reason: 'undeclared',
     }),
   );

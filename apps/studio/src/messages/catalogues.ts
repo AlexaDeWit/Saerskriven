@@ -3,6 +3,10 @@ import { canvasMessages } from './canvas/contract.js';
 import { canvasEnCA } from './canvas/en-CA.js';
 import { canvasFrCA } from './canvas/fr-CA.js';
 import { canvasSv } from './canvas/sv.js';
+import { divergenceMessages } from './divergence/contract.js';
+import { divergenceEnCA } from './divergence/en-CA.js';
+import { divergenceFrCA } from './divergence/fr-CA.js';
+import { divergenceSv } from './divergence/sv.js';
 import { noticeMessages } from './notice/contract.js';
 import { noticeEnCA } from './notice/en-CA.js';
 import { noticeFrCA } from './notice/fr-CA.js';
@@ -15,6 +19,7 @@ import { shellSv } from './shell/sv.js';
 /** The studio's message contract, one section per surface. */
 export const studioMessages = {
   canvas: canvasMessages,
+  divergence: divergenceMessages,
   notice: noticeMessages,
   shell: shellMessages,
 } as const;
@@ -25,7 +30,22 @@ export type StudioMessageId = MessageId<StudioMessages>;
 
 /** Every locale's catalogues, bundled with the studio. */
 export const studioCatalogues: Catalogues<StudioMessages> = {
-  'en-CA': { canvas: canvasEnCA, notice: noticeEnCA, shell: shellEnCA },
-  'fr-CA': { canvas: canvasFrCA, notice: noticeFrCA, shell: shellFrCA },
-  sv: { canvas: canvasSv, notice: noticeSv, shell: shellSv },
+  'en-CA': {
+    canvas: canvasEnCA,
+    divergence: divergenceEnCA,
+    notice: noticeEnCA,
+    shell: shellEnCA,
+  },
+  'fr-CA': {
+    canvas: canvasFrCA,
+    divergence: divergenceFrCA,
+    notice: noticeFrCA,
+    shell: shellFrCA,
+  },
+  sv: {
+    canvas: canvasSv,
+    divergence: divergenceSv,
+    notice: noticeSv,
+    shell: shellSv,
+  },
 };

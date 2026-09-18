@@ -74,8 +74,11 @@ function narrowedText(threat: Threat, model: Model): Divergence[] {
           subject: { kind: 'threat', id: threat.id },
           detail:
             parts > 1
-              ? `the ${String(parts)} records merged into its one mitigation text, which reads back as one record with no title`
-              : 'the mitigation title written into its one mitigation text, which reads back as one record with no title',
+              ? {
+                  code: 'mitigation-records-merged',
+                  parameters: { count: parts },
+                }
+              : { code: 'mitigation-title-merged' },
           reason: 'narrowed',
         },
       ]
@@ -87,7 +90,10 @@ function emptyRecords(threat: Threat, model: Model): Divergence[] {
     .filter(writesNothing)
     .map((mitigation): Divergence => ({
       subject: { kind: 'mitigation', id: mitigation.id },
-      detail: `the mitigation with no title and no text, which writes nothing into the text of the threat "${threat.id}"`,
+      detail: {
+        code: 'mitigation-empty-dropped',
+        parameters: { threat: threat.id },
+      },
       reason: 'unrepresentable',
     }));
 }
@@ -101,7 +107,14 @@ function lostStatuses(threat: Threat, model: Model): Divergence[] {
     )
     .map((mitigation): Divergence => ({
       subject: { kind: 'mitigation', id: mitigation.id },
-      detail: `the status "${mitigation.status}" in the text of the threat "${threat.id}", which reads back as "${inferred}"`,
+      detail: {
+        code: 'mitigation-status-dropped',
+        parameters: {
+          status: mitigation.status,
+          threat: threat.id,
+          inferred,
+        },
+      },
       reason: 'unrepresentable',
     }));
 }
@@ -114,12 +127,20 @@ function spread(mitigation: Mitigation, threats: number): Divergence[] {
     threats === 0
       ? {
           subject: { kind: 'mitigation', id: mitigation.id },
-          detail: `the mitigation "${mitigation.title === '' ? mitigation.id : mitigation.title}", which is linked to no threat the format holds`,
+          detail: {
+            code: 'mitigation-unlinked',
+            parameters: {
+              name: mitigation.title === '' ? mitigation.id : mitigation.title,
+            },
+          },
           reason: 'unrepresentable',
         }
       : {
           subject: { kind: 'mitigation', id: mitigation.id },
-          detail: `the one record, written into the mitigation text of each of the ${String(threats)} threats it is linked to`,
+          detail: {
+            code: 'mitigation-split-across-threats',
+            parameters: { count: threats },
+          },
           reason: 'split',
         },
   ];

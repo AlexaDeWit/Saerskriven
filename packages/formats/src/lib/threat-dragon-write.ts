@@ -92,12 +92,12 @@ export function writeThreatDragon(
     divergences: [
       ...restamped(source?.version, { kind: 'model' }),
       ...overriddenMark(
-        'threat high-water mark',
+        threatMarkCodes,
         source?.detail.threatTop,
         plan.threatTop,
       ),
       ...overriddenMark(
-        'diagram high-water mark',
+        diagramMarkCodes,
         source?.detail.diagramTop,
         numbering.diagramTop,
       ),
@@ -132,14 +132,27 @@ function restamped(
     : [
         {
           subject,
-          detail: `the release "${from}" the source was written by, for the ${writtenVersion} this codec writes`,
+          detail: {
+            code: 'release-restamped',
+            parameters: { from, written: writtenVersion },
+          },
           reason: 'overridden',
         },
       ];
 }
 
+const threatMarkCodes = {
+  issued: 'threat-mark-raised-by-issue',
+  held: 'threat-mark-raised-to-issued',
+} as const;
+
+const diagramMarkCodes = {
+  issued: 'diagram-mark-raised-by-issue',
+  held: 'diagram-mark-raised-to-issued',
+} as const;
+
 function overriddenMark(
-  name: string,
+  codes: typeof threatMarkCodes | typeof diagramMarkCodes,
   from: number | undefined,
   mark: HighWaterMark,
 ): readonly Divergence[] {
@@ -148,10 +161,10 @@ function overriddenMark(
     : [
         {
           subject: { kind: 'model' },
-          detail:
-            mark.cause === 'issued'
-              ? `the ${name} ${from}, raised to ${mark.value} to cover a number this write issued`
-              : `the ${name} ${from}, raised to ${mark.value}, the highest number the model has issued and no number in the file reaches`,
+          detail: {
+            code: mark.cause === 'issued' ? codes.issued : codes.held,
+            parameters: { from, raised: mark.value },
+          },
           reason: 'overridden',
         },
       ];
@@ -160,7 +173,7 @@ function overriddenMark(
 function unrecordedAssumptions(model: Model): readonly Divergence[] {
   return model.assumptions.map((assumption): Divergence => ({
     subject: { kind: 'assumption', id: assumption.id },
-    detail: 'the assumption, which the format keeps no record of',
+    detail: { code: 'assumption-unrecorded' },
     reason: 'unrepresentable',
   }));
 }
@@ -202,7 +215,10 @@ function discardedDiagram(diagram: ThreatDragonDiagram): Divergence {
   const id = diagramIdSchema.safeParse(String(diagram.id));
   return {
     subject: id.success ? { kind: 'diagram', id: id.data } : { kind: 'model' },
-    detail: `the diagram "${diagram.title}" the source document held`,
+    detail: {
+      code: 'diagram-discarded',
+      parameters: { title: diagram.title },
+    },
     reason: 'discarded-by-edit',
   };
 }
@@ -213,7 +229,10 @@ function detachedThreat(
 ): Divergence {
   return {
     subject: threatSubject(threat),
-    detail: `the copy the source document nested under the cell "${cell.id}", which the model no longer attaches it to`,
+    detail: {
+      code: 'threat-copy-detached',
+      parameters: { cell: cell.id },
+    },
     reason: 'discarded-by-edit',
   };
 }
@@ -221,7 +240,10 @@ function detachedThreat(
 function discardedThreat(threat: ThreatDragonThreat): Divergence {
   return {
     subject: threatSubject(threat),
-    detail: `the threat "${threat.title}" the source document nested under a cell the model kept`,
+    detail: {
+      code: 'threat-discarded',
+      parameters: { title: threat.title },
+    },
     reason: 'discarded-by-edit',
   };
 }

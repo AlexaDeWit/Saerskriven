@@ -23,6 +23,7 @@ import {
   refusedWireDocument,
   type ReadResult,
 } from './codec.js';
+import type { DivergenceDetail } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { idsHeld, mitigationsFromText } from './mitigation-text.js';
 import { parseWithinLimits } from './read-limits.js';
@@ -147,7 +148,7 @@ function toMitigations(
 
 function narrowings(
   model: Model,
-  notes: ReadonlyMap<string, readonly string[]>,
+  notes: ReadonlyMap<string, readonly DivergenceDetail[]>,
 ): Divergence[] {
   return model.threats.flatMap((threat) =>
     (notes.get(threat.id) ?? []).map((detail): Divergence => ({
@@ -321,7 +322,7 @@ function groupThreats(
 function toThreat(entry: ThreatEntry): {
   record: ThreatInput;
   text: string;
-  notes: string[];
+  notes: DivergenceDetail[];
 } {
   const { threat } = entry;
   const status = toThreatStatus(threat.status);
@@ -342,11 +343,19 @@ function toThreat(entry: ThreatEntry): {
     notes: [
       ...(status.exact
         ? []
-        : [`the status "${threat.status}", which the model has no state for`]),
+        : [
+            {
+              code: 'threat-status-unmapped' as const,
+              parameters: { status: threat.status },
+            },
+          ]),
       ...(severity.exact
         ? []
         : [
-            `the severity "${threat.severity}", which the model has no level for`,
+            {
+              code: 'threat-severity-unmapped' as const,
+              parameters: { severity: threat.severity },
+            },
           ]),
       ...(category.exact ? [] : [categoryNote(threat, category.value)]),
     ],
@@ -356,8 +365,11 @@ function toThreat(entry: ThreatEntry): {
 function categoryNote(
   threat: ThreatDragonThreat,
   category: ThreatCategory,
-): string {
+): DivergenceDetail {
   return threat.modelType === 'EOP'
-    ? 'the Elevation of Privilege card, of which the model holds the suit alone'
-    : `the category "${category.category}", which no language of Threat Dragon's names`;
+    ? { code: 'threat-category-eop-suit' }
+    : {
+        code: 'threat-category-unmapped',
+        parameters: { category: category.category },
+      };
 }

@@ -87,7 +87,9 @@ it('maps each assumption validity onto its status and keeps the description as p
   expect(
     read.divergences.some(
       (entry) =>
-        entry.reason === 'unrepresentable' && entry.detail.includes('topics'),
+        entry.reason === 'unrepresentable' &&
+        entry.detail.code === 'field-not-retained' &&
+        entry.detail.parameters.path.includes('topics'),
     ),
   ).toBe(true);
 });
@@ -131,7 +133,11 @@ it('imports active and pending controls naming a threat as linked records, witho
   expect(
     ['active-control', 'pending-control'].map(
       (name) =>
-        read.divergences.filter((entry) => entry.detail.includes(name)).length,
+        read.divergences.filter(
+          (entry) =>
+            entry.detail.code === 'tmbom-control-proposed' &&
+            entry.detail.parameters.name === name,
+        ).length,
     ),
   ).toEqual([0, 1]);
 });
@@ -164,8 +170,10 @@ it.each([
     expect(line).toContain('Work on no threat.');
     expect(line).toContain(mapped);
     expect(
-      read.divergences.filter((entry) =>
-        entry.detail.includes('unlinked-control'),
+      read.divergences.filter(
+        (entry) =>
+          entry.detail.code === 'tmbom-control-unlinked' &&
+          entry.detail.parameters.name === 'unlinked-control',
       ),
     ).toHaveLength(1);
   },
@@ -194,7 +202,9 @@ it.each(['retired', 'wont_do'] as const)(
       read.divergences.some(
         (entry) =>
           entry.reason === 'unrepresentable' &&
-          entry.detail.includes('"controls","0"'),
+          entry.detail.code === 'field-not-retained' &&
+          entry.detail.parameters.path[0] === 'controls' &&
+          entry.detail.parameters.path[1] === '0',
       ),
     ).toBe(true);
   },

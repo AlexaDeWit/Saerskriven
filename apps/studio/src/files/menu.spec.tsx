@@ -39,6 +39,7 @@ import {
   specRenders,
   vendoredFile,
 } from './files.fixtures.js';
+import { chooseLanguage } from '../messages/locale.js';
 import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
@@ -132,6 +133,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  act(() => {
+    chooseLanguage('en-CA');
+  });
+  globalThis.localStorage.clear();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -616,6 +621,30 @@ describe('opening', () => {
     });
     expect(bridge.writes[0].text).not.toContain('unknownRoot');
     expect(reportEntries()).toEqual([]);
+  });
+
+  it('re-words a standing report when the language changes', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge({
+      offers: chosenFile('feature-complete.json', await withUndeclaredKeys()),
+    });
+    mounted(bridge);
+
+    await choose(user, 'Open');
+
+    await waitFor(() => {
+      expect(reportEntries().length > 0).toBe(true);
+    });
+    const english = reportEntries().map((entry) => entry.textContent);
+
+    act(() => {
+      chooseLanguage('sv');
+    });
+
+    const swedish = reportEntries().map((entry) => entry.textContent);
+    expect(swedish).toHaveLength(english.length);
+    expect(swedish).not.toEqual(english);
+    expect(swedish[0]).toContain('unknownRoot');
   });
 
   it('changes nothing when the picker is dismissed', async () => {

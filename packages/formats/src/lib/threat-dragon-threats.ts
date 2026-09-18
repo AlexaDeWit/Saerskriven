@@ -233,7 +233,10 @@ function strayAttachment(
 ): Divergence {
   return {
     subject: { kind: 'threat', id: threat },
-    detail: `the attachment to the ${kind ?? 'unknown'} "${element}", which the format nests a threat under an actor, a process, a store, or a flow alone`,
+    detail: {
+      code: 'threat-attachment-stray',
+      parameters: { element, kind },
+    },
     reason: 'unrepresentable',
   };
 }
@@ -241,8 +244,7 @@ function strayAttachment(
 function unplaceable(threat: ThreatId): Divergence {
   return {
     subject: { kind: 'threat', id: threat },
-    detail:
-      'the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under',
+    detail: { code: 'threat-unplaceable' },
     reason: 'unrepresentable',
   };
 }
@@ -250,7 +252,10 @@ function unplaceable(threat: ThreatId): Divergence {
 function split(threat: ThreatId, count: number): Divergence {
   return {
     subject: { kind: 'threat', id: threat },
-    detail: `the one record, written once under each of the ${count} elements it names`,
+    detail: {
+      code: 'threat-split-across-elements',
+      parameters: { count },
+    },
     reason: 'split',
   };
 }
@@ -258,7 +263,13 @@ function split(threat: ThreatId, count: number): Divergence {
 function unnamedCategory(threat: Threat): Divergence {
   return {
     subject: { kind: 'threat', id: threat.id },
-    detail: `the ${threat.category.methodology} category "${threat.category.category}", which Threat Dragon's own labels do not name`,
+    detail: {
+      code: 'threat-category-unnamed',
+      parameters: {
+        methodology: threat.category.methodology,
+        category: threat.category.category,
+      },
+    },
     reason: 'narrowed',
   };
 }

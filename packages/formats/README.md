@@ -40,9 +40,18 @@ goes back through the same one.
 
 A divergence is a place a file and the model do not correspond exactly, or a
 written file and the source it was merged onto. Reads and writes return one
-list of them, and an empty list is the aligned case. The reasons and the
-terminal escaping of `renderDivergences` are in
+list of them, and an empty list is the aligned case. The subjects, the reasons
+and the terminal escaping of `renderDivergences` are in
 [`divergence.ts`](src/lib/divergence.ts).
+
+An entry names its subject, its reason and a `detail`: a code from a closed
+set with the data that code needs, in
+[`divergence-detail.ts`](src/lib/divergence-detail.ts). A parameter is a path,
+an identifier, a count, a format name or a text a person wrote, passed through
+as it stands, so a reader phrases the entry in its own language. This package
+imports no translation code. `divergenceDetailText` words each code in
+English, and `renderDivergences` builds the report the CLI and the MCP server
+print from it, so that English is an interface.
 
 ## Read limits
 

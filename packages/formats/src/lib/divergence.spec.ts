@@ -5,6 +5,7 @@ import {
   mitigationIdSchema,
   threatIdSchema,
 } from '@saerskriven/model';
+import type { DivergenceDetail } from './divergence-detail.js';
 import {
   escapedForTerminal,
   hasDiverged,
@@ -20,9 +21,14 @@ const bellChar = String.fromCharCode(7);
 
 const entry = (
   subject: DivergenceSubject,
-  detail: string,
+  detail: DivergenceDetail,
   reason: DivergenceReason,
 ): Divergence => ({ subject, detail, reason });
+
+const undeclared = (path: string): DivergenceDetail => ({
+  code: 'key-undeclared',
+  parameters: { path },
+});
 
 const threatSubject: DivergenceSubject = {
   kind: 'threat',
@@ -31,7 +37,7 @@ const threatSubject: DivergenceSubject = {
 
 const splitThreat = entry(
   threatSubject,
-  'one identity across the three elements it is attached to',
+  { code: 'threat-split-across-elements', parameters: { count: 3 } },
   'split',
 );
 
@@ -55,14 +61,14 @@ describe('renderDivergences', () => {
       splitThreat,
       entry(
         { kind: 'element', id: elementIdSchema.parse('element-customer') },
-        'the cell ports',
+        undeclared('cells.0.ports'),
         'discarded-by-edit',
       ),
     ];
     expect(renderDivergences(divergences)).toBe(
       [
-        'threat "threat-4": one identity across the three elements it is attached to (split by the format)',
-        'element "element-customer": the cell ports (removed by an edit)',
+        'threat "threat-4": the one record, written once under each of the 3 elements it names (split by the format)',
+        'element "element-customer": the key cells.0.ports (removed by an edit)',
       ].join('\n'),
     );
   });
@@ -70,13 +76,9 @@ describe('renderDivergences', () => {
   it('names the model as a whole where no record owns the divergence', () => {
     expect(
       renderDivergences([
-        entry(
-          { kind: 'model' },
-          'the last issued threat number',
-          'unrepresentable',
-        ),
+        entry({ kind: 'model' }, undeclared('threatTop'), 'unrepresentable'),
       ]),
-    ).toBe('model: the last issued threat number (no place in the format)');
+    ).toBe('model: the key threatTop (no place in the format)');
   });
 
   it('names every other entity kind by its kind and id', () => {
@@ -88,14 +90,14 @@ describe('renderDivergences', () => {
       { kind: 'assumption', id: assumptionIdSchema.parse('assumption-1') },
     ];
     const divergences = subjects.map((subject) =>
-      entry(subject, 'the record', 'unrepresentable'),
+      entry(subject, undeclared('notes'), 'unrepresentable'),
     );
     expect(renderDivergences(divergences).split('\n')).toEqual([
-      'diagram "diagram-main": the record (no place in the format)',
-      'element "element-customer": the record (no place in the format)',
-      'threat "threat-4": the record (no place in the format)',
-      'mitigation "mitigation-1": the record (no place in the format)',
-      'assumption "assumption-1": the record (no place in the format)',
+      'diagram "diagram-main": the key notes (no place in the format)',
+      'element "element-customer": the key notes (no place in the format)',
+      'threat "threat-4": the key notes (no place in the format)',
+      'mitigation "mitigation-1": the key notes (no place in the format)',
+      'assumption "assumption-1": the key notes (no place in the format)',
     ]);
   });
 
@@ -109,15 +111,15 @@ describe('renderDivergences', () => {
       'discarded-by-edit',
     ];
     const divergences = reasons.map((reason) =>
-      entry({ kind: 'model' }, 'the thing', reason),
+      entry({ kind: 'model' }, undeclared('notes'), reason),
     );
     expect(renderDivergences(divergences).split('\n')).toEqual([
-      'model: the thing (no place in the format)',
-      'model: the thing (not declared by the wire schema)',
-      'model: the thing (reduced to fit the format)',
-      'model: the thing (split by the format)',
-      'model: the thing (not repeated by the codec)',
-      'model: the thing (removed by an edit)',
+      'model: the key notes (no place in the format)',
+      'model: the key notes (not declared by the wire schema)',
+      'model: the key notes (reduced to fit the format)',
+      'model: the key notes (split by the format)',
+      'model: the key notes (not repeated by the codec)',
+      'model: the key notes (removed by an edit)',
     ]);
   });
 
@@ -126,12 +128,12 @@ describe('renderDivergences', () => {
       renderDivergences([
         entry(
           { kind: 'element', id: elementIdSchema.parse(id) },
-          'the ports',
+          undeclared('ports'),
           'unrepresentable',
         ),
       ]);
     expect(rendered('a\\u000ab')).toBe(
-      'element "a\\\\u000ab": the ports (no place in the format)',
+      'element "a\\\\u000ab": the key ports (no place in the format)',
     );
     expect(rendered('a\nb')).not.toBe(rendered('a\\u000ab'));
   });
@@ -141,18 +143,20 @@ describe('renderDivergences', () => {
       renderDivergences([
         entry(
           { kind: 'element', id: elementIdSchema.parse('he said "no"') },
-          'the ports',
+          undeclared('ports'),
           'unrepresentable',
         ),
       ]),
-    ).toBe('element "he said \\"no\\"": the ports (no place in the format)');
+    ).toBe(
+      'element "he said \\"no\\"": the key ports (no place in the format)',
+    );
   });
 
   it('escapes the control characters a foreign file carries into a terminal', () => {
     const divergences = [
       entry(
         { kind: 'element', id: elementIdSchema.parse('a\nb') },
-        `the key summary${escapeChar}[31m${bellChar}`,
+        undeclared(`summary${escapeChar}[31m${bellChar}`),
         'unrepresentable',
       ),
     ];

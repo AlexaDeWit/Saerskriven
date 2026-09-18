@@ -33,7 +33,7 @@ export function droppedAssumptionElementLinks(
       : [
           {
             subject: { kind: 'assumption', id: id.data },
-            detail: 'its element links, which an assumption does not hold',
+            detail: { code: 'assumption-element-links-dropped' },
             reason: 'narrowed',
           },
         ];
