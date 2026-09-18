@@ -12,19 +12,41 @@ person typed reach a message as parameters and pass through unchanged.
 | `<section>/contract.ts`                   | One surface's messages and their parameters                                                         |
 | `<section>/en-CA.ts`, `fr-CA.ts`, `sv.ts` | That surface's catalogue in each locale                                                             |
 | `catalogues.ts`                           | The sections joined into the studio's contract, and every catalogue, bundled                        |
+| `enum-labels.ts`                          | The message each stored value of the model is shown under                                           |
 | `locale.ts`                               | The chosen language, `activeTranslator` for code outside components, `useTranslator`, `useLanguage` |
 | `message.tsx`                             | `Message`, which renders a message with element parameters                                          |
 
-The sections so far are `canvas` (announcements), `divergence` (what a codec
-or an import could not carry), `notice` (the failure notice) and `shell` (the
-language control and the browser tab's name). Most studio text is still
-written in place in English.
+| Section      | The surface it words                                                            |
+| ------------ | ------------------------------------------------------------------------------- |
+| `canvas`     | Announcements                                                                   |
+| `commands`   | Command labels, the context each runs in, the group headings, the key reference |
+| `defaults`   | The names a newly created thing is given                                        |
+| `divergence` | What a codec or an import could not carry                                       |
+| `enums`      | The label each stored value is shown under                                      |
+| `fields`     | What a control is called, drawn or spoken                                       |
+| `menu`       | The burger menu, its submenus and the diagram switcher                          |
+| `notice`     | The failure notice                                                              |
+| `panel`      | The threat panel, the model's properties and the record groups                  |
+| `shell`      | The language control, the browser tab's name and the version                    |
+| `tools`      | The controls drawn over the canvas: zoom, placement, routes and endpoints       |
 
 `divergence/text.ts` maps each divergence code `@saerskriven/formats` records
 to its message, with the codec's parameters passed through. A divergence line
 is the one place a message takes another message's text as a parameter: the
 subject, the detail and the reason are each a complete phrase, and the `line`
 message owns their order and punctuation.
+
+## What stays in English
+
+`../../index.html` is served before any script runs, so no language has been
+negotiated when a reader sees it. Its `<title>`, its meta description, the
+loading line "Loading the threat modelling studio." and the no-JavaScript line
+"Enable JavaScript to use the interactive studio." are fixed en-CA. The app
+replaces the title with `shell.landing-title` once it runs.
+
+A file format's name, a path, a model's own names and descriptions, and
+anything a person typed are data: they reach a message as parameters and pass
+through unchanged.
 
 ## Adding a message
 
@@ -36,7 +58,9 @@ message owns their order and punctuation.
    fluent speaker.
 
 A sentence is one message with named parameters, never English fragments
-joined together.
+joined together. A stored value of the model is never drawn as its own label:
+`enum-labels.ts` names the message each one is shown under, and `EnumField`
+requires a `labelOf`.
 
 ## Reading a message
 
@@ -45,6 +69,14 @@ A component reads `useTranslator().t(id, params)`, or renders
 component calls `activeTranslator().t(id, params)` when the text is needed.
 Neither may run at module load, where the text would stay in the locale of
 that moment.
+
+## Naming what is created
+
+A default name is written in the active language at the moment the thing is
+created, through `activeTranslator()`, and is model content from then on. A
+later change of language renames nothing. `defaults` holds those names, and
+`canvas/elements.ts`, `canvas/diagrams.ts` and `panel/threats.ts` resolve one
+at creation.
 
 ## Choosing the language
 
