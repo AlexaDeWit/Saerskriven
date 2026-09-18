@@ -20,9 +20,16 @@ paste or an Undo. It ends at the next action that changes the canvas or the
 panel.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
-persists across reloads. The Project group links to GitHub. A released build
-shows its version above the React Flow attribution, and any other build says
-`development`.
+persists across reloads. **Language** beside it selects English (Canada),
+Français (Canada) or Svenska, and persists the same way. It starts on Follow
+the browser, which reads the languages your browser asks for and falls back to
+English (Canada), and that option is there to return to. The language decides
+the studio's own words. A model's names and descriptions are yours and are
+never translated, and the file picker, the download dialog and the unsaved
+changes question are the browser's own text.
+
+The Project group links to GitHub. A released build shows its version above
+the React Flow attribution, and any other build says `development`.
 
 ## Files
 

@@ -32,8 +32,10 @@ and the diagram use the same canvas ground. A blocking script beside the sheet
 applies a saved Light or Dark choice before the first paint, and
 [`../theme.tsx`](../theme.tsx) applies later choices by setting
 `data-pn-colour-mode` on the document root. The choice persists in
-`localStorage` under `saerskrivenColourMode`, and invalid or unavailable stored
-data selects System. A colour written into another stylesheet is a failing
+`localStorage` under `saerskrivenColourMode`, through
+[`../preference-storage.ts`](../preference-storage.ts), which the language
+choice reads and writes the same way, and invalid or unavailable stored data
+selects System. A colour written into another stylesheet is a failing
 spec, `../styles.spec.ts`, which walks the production files of this app and of
 the canvas package for one.
 

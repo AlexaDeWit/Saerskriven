@@ -16,6 +16,7 @@ what an import carries over is in
 | `file-commands.ts`                                               | The one session the app owns: file and export commands, reports, and the questions the menu asks                           |
 | `export-commands.ts`, `render-assets.ts`                         | The projections through `@saerskriven/render`, and the loader for the WebAssembly modules and faces                        |
 | `menu.tsx`, `menu-items.tsx`, `submenu.tsx`, `radio-choices.tsx` | The burger menu, the items it and the switcher share, the second level, and a one-of-several group                         |
+| `settings-menu.tsx`                                              | The appearance and language submenus                                                                                       |
 | `diagram-switcher.tsx`                                           | The control joined to the burger that names, switches, adds and renames diagrams                                           |
 | `file-reports.tsx`                                               | The failure notice, the crossing report and the export report, hung under the chrome card                                  |
 

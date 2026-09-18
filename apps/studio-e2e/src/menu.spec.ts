@@ -59,6 +59,7 @@ test('every item is reached, run and left by the keyboard alone', async ({
     'Export',
     'New model',
     /^Appearance /u,
+    /^Language /u,
     'Undo',
   ]) {
     await page.keyboard.press('ArrowDown');

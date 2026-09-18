@@ -165,7 +165,7 @@ describe('what the menu offers', () => {
     const submenus = items.filter(
       (entry) => entry.getAttribute('aria-haspopup') === 'menu',
     );
-    expect(submenus).toHaveLength(3);
+    expect(submenus).toHaveLength(4);
     for (const submenu of submenus) {
       expect(submenu.querySelector('svg')?.getAttribute('aria-hidden')).toBe(
         'true',

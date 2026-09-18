@@ -7,16 +7,17 @@ person typed reach a message as parameters and pass through unchanged.
 
 ## Modules
 
-| Module                                    | What it holds                                                                      |
-| ----------------------------------------- | ---------------------------------------------------------------------------------- |
-| `<section>/contract.ts`                   | One surface's messages and their parameters                                        |
-| `<section>/en-CA.ts`, `fr-CA.ts`, `sv.ts` | That surface's catalogue in each locale                                            |
-| `catalogues.ts`                           | The sections joined into the studio's contract, and every catalogue, bundled       |
-| `locale.ts`                               | The active locale, `activeTranslator` for code outside components, `useTranslator` |
-| `message.tsx`                             | `Message`, which renders a message with element parameters                         |
+| Module                                    | What it holds                                                                                       |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `<section>/contract.ts`                   | One surface's messages and their parameters                                                         |
+| `<section>/en-CA.ts`, `fr-CA.ts`, `sv.ts` | That surface's catalogue in each locale                                                             |
+| `catalogues.ts`                           | The sections joined into the studio's contract, and every catalogue, bundled                        |
+| `locale.ts`                               | The chosen language, `activeTranslator` for code outside components, `useTranslator`, `useLanguage` |
+| `message.tsx`                             | `Message`, which renders a message with element parameters                                          |
 
-The sections so far are `canvas` (announcements) and `notice` (the failure
-notice). Most studio text is still written in place in English.
+The sections so far are `canvas` (announcements), `notice` (the failure
+notice) and `shell` (the language control and the browser tab's name). Most
+studio text is still written in place in English.
 
 ## Adding a message
 
@@ -38,6 +39,25 @@ component calls `activeTranslator().t(id, params)` when the text is needed.
 Neither may run at module load, where the text would stay in the locale of
 that moment.
 
-The locale is negotiated from `navigator.languages` on first use, with en-CA
-as the fallback, and `chooseLocale` changes it. The studio has no control
-that calls `chooseLocale` yet.
+## Choosing the language
+
+The Language item in the menu offers each locale under its own name, plus
+"Follow the browser", which is the state a first visit starts in. Following
+the browser negotiates `navigator.languages` through
+[`negotiate`](../../../../packages/i18n/README.md#negotiation), with en-CA as
+the fallback, and negotiates again on the `languagechange` event. A chosen
+locale is stored in `localStorage` under `saerskrivenLanguage`
+([`../language-preference.ts`](../language-preference.ts)), and a stored value
+that names no supported locale, or storage that is absent or throws, follows
+the browser. `document.documentElement.lang` follows the active locale, and
+`index.html` declares `en-CA` until the app script runs.
+
+A change of language re-renders every reader of a message. It changes no model
+state, so it never dirties the document or reaches the undo stacks, the
+recovery snapshot or the other tabs.
+
+Browser-owned prompts are the platform's text, not the studio's: the file
+picker, the download dialog and the `beforeunload` question read in the
+browser's own language, whatever the studio's is. The only browser-owned text
+the studio decides is a label an API accepts from it, such as a suggested file
+name.
