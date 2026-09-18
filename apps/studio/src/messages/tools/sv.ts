@@ -43,6 +43,10 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   'remove-bend': 'Ta bort knäckpunkten',
   'move-bend': 'Flytta knäckpunkten',
   'follow-route': 'Följ sträckningen',
+  'bend-handle-help':
+    'Dra eller använd piltangenterna för att flytta. Klicka för åtgärder. Delete tar bort knäckpunkten.',
+  'flow-end-handle-help':
+    'Dra till en annan sida av sitt objekt. Piltangenterna fäster en sida, Delete låter den följa sträckningen. Klicka för åtgärder.',
   'bend-choose-help':
     'Segment {number}: Vänster/Höger för att välja, Retur för att lägga till. Eller klicka på ett segment.',
   'bend-place-help':

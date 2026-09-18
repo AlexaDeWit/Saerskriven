@@ -44,6 +44,10 @@ export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   'remove-bend': 'Retirer le coude',
   'move-bend': 'Déplacer le coude',
   'follow-route': 'Suivre le tracé',
+  'bend-handle-help':
+    'Faites glisser ou utilisez les touches fléchées pour déplacer. Cliquez pour les actions. Suppr retire ce coude.',
+  'flow-end-handle-help':
+    'Faites glisser vers un autre côté de son élément. Les touches fléchées fixent un côté, Suppr la laisse suivre le tracé. Cliquez pour les actions.',
   'bend-choose-help':
     'Segment {number} : Gauche/Droite pour choisir, Entrée pour ajouter. Ou cliquez un segment.',
   'bend-place-help':

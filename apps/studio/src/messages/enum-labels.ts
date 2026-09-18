@@ -8,6 +8,10 @@ import type {
   ThreatStatus,
 } from '@saerskriven/model';
 import type { ColourMode } from '../theme-preference.js';
+import type { StudioMessageId } from './catalogues.js';
+
+/** A message of the `enums` section, which is where every label below lives. */
+type EnumMessageId = Extract<StudioMessageId, `enums.${string}`>;
 
 /** A category the model enumerates, as opposed to one an author named. */
 export type EnumeratedCategory = Exclude<
@@ -21,7 +25,7 @@ export const severityMessages = {
   high: 'enums.severity-high',
   critical: 'enums.severity-critical',
   undecided: 'enums.severity-undecided',
-} as const satisfies Record<Severity, string>;
+} as const satisfies Record<Severity, EnumMessageId>;
 
 export const statusMessages = {
   open: 'enums.status-open',
@@ -31,14 +35,14 @@ export const statusMessages = {
   'accepted-risk': 'enums.status-accepted-risk',
   eliminated: 'enums.status-eliminated',
   'not-applicable': 'enums.status-not-applicable',
-} as const satisfies Record<ThreatStatus, string>;
+} as const satisfies Record<ThreatStatus, EnumMessageId>;
 
 export const flagMessages = {
   'mitigated-without-implemented-work':
     'enums.flag-mitigated-without-implemented-work',
   'rests-on-invalidated-assumption':
     'enums.flag-rests-on-invalidated-assumption',
-} as const satisfies Record<ThreatFlag, string>;
+} as const satisfies Record<ThreatFlag, EnumMessageId>;
 
 /** What an element is called in a sentence when it carries no name. */
 export const articleKindMessages = {
@@ -48,7 +52,7 @@ export const articleKindMessages = {
   text: 'enums.the-text',
   flow: 'enums.the-flow',
   'trust-boundary': 'enums.the-trust-boundary',
-} as const satisfies Record<Element['kind'], string>;
+} as const satisfies Record<Element['kind'], EnumMessageId>;
 
 export const kindMessages = {
   actor: 'enums.kind-actor',
@@ -57,20 +61,20 @@ export const kindMessages = {
   text: 'enums.kind-text',
   flow: 'enums.kind-flow',
   'trust-boundary': 'enums.kind-trust-boundary',
-} as const satisfies Record<Element['kind'], string>;
+} as const satisfies Record<Element['kind'], EnumMessageId>;
 
 export const sideMessages = {
   top: 'enums.side-top',
   right: 'enums.side-right',
   bottom: 'enums.side-bottom',
   left: 'enums.side-left',
-} as const satisfies Record<Side, string>;
+} as const satisfies Record<Side, EnumMessageId>;
 
 export const colourModeMessages = {
   system: 'enums.colour-system',
   light: 'enums.colour-light',
   dark: 'enums.colour-dark',
-} as const satisfies Record<ColourMode, string>;
+} as const satisfies Record<ColourMode, EnumMessageId>;
 
 export const categoryMessages = {
   spoofing: 'enums.category-spoofing',
@@ -104,4 +108,4 @@ export const categoryMessages = {
     'enums.category-safety-and-environmental-impact',
   'transparency-and-accessibility':
     'enums.category-transparency-and-accessibility',
-} as const satisfies Record<EnumeratedCategory, string>;
+} as const satisfies Record<EnumeratedCategory, EnumMessageId>;

@@ -126,7 +126,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
               top: point.y,
               transform: `translate(-50%, -50%) scale(${String(1 / zoom)})`,
             }}
-            title="Drag or use arrow keys to move. Click for actions. Delete removes this bend."
+            title={t('tools.bend-handle-help')}
             type="button"
           >
             <span aria-hidden="true">●</span>
@@ -169,7 +169,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
                 top: point.y,
                 transform: `translate(-50%, -50%) scale(${String(1 / zoom)})`,
               }}
-              title="Drag to another side of its element. Arrow keys pin a side, Delete lets it follow the route. Click for actions."
+              title={t('tools.flow-end-handle-help')}
               type="button"
             >
               <span aria-hidden="true">◆</span>

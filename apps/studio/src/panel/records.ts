@@ -253,7 +253,7 @@ function recordDetail<Held extends ThreatRecord>(
   kind: RecordKind<Held>,
   record: Held,
   threats: readonly NumberedThreat[],
-  { t }: StudioTranslator,
+  { t, list }: StudioTranslator,
 ): string {
   const numbers = threatNumbers(record, threats);
   return [
@@ -261,7 +261,7 @@ function recordDetail<Held extends ThreatRecord>(
     numbers.length > 0 &&
       t('panel.detail-threats', {
         count: numbers.length,
-        list: numbers.join(', '),
+        list: list(numbers),
       }),
     'appliesToModel' in record &&
       record.appliesToModel &&

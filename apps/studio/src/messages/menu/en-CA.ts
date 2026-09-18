@@ -17,6 +17,7 @@ export const menuEnCA = catalogue(menuMessages)('en-CA')({
   export: 'Export',
   appearance: 'Appearance',
   'appearance-chosen': 'Appearance {mode}',
+  'language-chosen': 'Language {language}',
   'snap-on': 'Snap to grid: on',
   'snap-off': 'Snap to grid: off',
   diagram: 'Diagram',

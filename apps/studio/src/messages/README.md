@@ -44,6 +44,14 @@ loading line "Loading the threat modelling studio." and the no-JavaScript line
 "Enable JavaScript to use the interactive studio." are fixed en-CA. The app
 replaces the title with `shell.landing-title` once it runs.
 
+The starter document in [`../store/state.ts`](../store/state.ts) is the other
+exception. It is built at module load, before a locale is negotiated, and what
+it holds is model content the moment it exists: the `Untitled` model, its
+`Untitled diagram`, the two elements it draws and the threat on them stay
+en-CA, under the rule that a written name is never rewritten. A model the
+studio starts from a file or a recovery snapshot carries that file's own
+names, and everything created afterwards is named in the active language.
+
 A file format's name, a path, a model's own names and descriptions, and
 anything a person typed are data: they reach a message as parameters and pass
 through unchanged.

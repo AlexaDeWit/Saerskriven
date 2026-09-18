@@ -59,15 +59,16 @@ export function LanguageMenu() {
   const translator = useTranslator();
   const [choice, choose] = useLanguage();
   const heading = translator.t('shell.language');
+  const chosen = nameOf(choice, translator);
 
   return (
     <Submenu
-      label={`${heading} ${nameOf(choice, translator)}`}
+      label={translator.t('menu.language-chosen', { language: chosen })}
       trigger={
         <>
           <span>{heading}</span>
           <span aria-hidden="true" className={styles.chord}>
-            {nameOf(choice, translator)}
+            {chosen}
           </span>
         </>
       }

@@ -17,6 +17,7 @@ export const menuMessages = {
   export: text(),
   appearance: text(),
   'appearance-chosen': text({ mode: 'text' }),
+  'language-chosen': text({ language: 'text' }),
   'snap-on': text(),
   'snap-off': text(),
   diagram: text(),

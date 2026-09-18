@@ -17,6 +17,7 @@ export const menuFrCA = catalogue(menuMessages)('fr-CA')({
   export: 'Exporter',
   appearance: 'Apparence',
   'appearance-chosen': 'Apparence {mode}',
+  'language-chosen': 'Langue {language}',
   'snap-on': 'Alignement sur la grille : activé',
   'snap-off': 'Alignement sur la grille : désactivé',
   diagram: 'Diagramme',

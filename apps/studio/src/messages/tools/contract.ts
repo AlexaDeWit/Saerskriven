@@ -40,6 +40,8 @@ export const toolMessages = {
   'remove-bend': text(),
   'move-bend': text(),
   'follow-route': text(),
+  'bend-handle-help': text(),
+  'flow-end-handle-help': text(),
   'bend-choose-help': text({ number: 'number' }),
   'bend-place-help': text(),
   'bend-idle-help': text(),

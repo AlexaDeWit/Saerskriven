@@ -43,6 +43,10 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   'remove-bend': 'Remove bend',
   'move-bend': 'Move bend',
   'follow-route': 'Follow the route',
+  'bend-handle-help':
+    'Drag or use arrow keys to move. Click for actions. Delete removes this bend.',
+  'flow-end-handle-help':
+    'Drag to another side of its element. Arrow keys pin a side, Delete lets it follow the route. Click for actions.',
   'bend-choose-help':
     'Segment {number}: Left/Right to choose, Enter to add. Or click a segment.',
   'bend-place-help':

@@ -17,6 +17,7 @@ export const menuSv = catalogue(menuMessages)('sv')({
   export: 'Exportera',
   appearance: 'Utseende',
   'appearance-chosen': 'Utseende {mode}',
+  'language-chosen': 'Språk {language}',
   'snap-on': 'Fäst mot rutnätet: på',
   'snap-off': 'Fäst mot rutnätet: av',
   diagram: 'Diagram',
