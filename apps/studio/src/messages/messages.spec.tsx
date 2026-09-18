@@ -21,7 +21,7 @@ import {
 } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { FailureNotice } from '../ui/failure-notice.js';
-import { activeTranslator, chooseLocale } from './locale.js';
+import { activeTranslator, chooseLanguage } from './locale.js';
 import { Message } from './message.js';
 
 const refusedRead = StudioFailure.Read({
@@ -36,30 +36,15 @@ const refusedRead = StudioFailure.Read({
 
 afterEach(() => {
   act(() => {
-    chooseLocale('en-CA');
+    chooseLanguage('en-CA');
   });
   resetAnnouncements();
   resetDiagramRenaming();
 });
 
-describe('the active locale', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.resetModules();
-  });
-
-  it('is negotiated from the browser languages until one is chosen', async () => {
-    vi.stubGlobal('navigator', { languages: ['de-DE', 'fr-FR'] });
-    vi.resetModules();
-    const fresh = await import('./locale.js');
-
-    expect(fresh.activeTranslator().locale).toBe('fr-CA');
-  });
-});
-
 describe.each(locales)('the %s vertical slice', (locale) => {
   beforeEach(() => {
-    chooseLocale(locale);
+    chooseLanguage(locale);
   });
 
   it('announces outside a component in the locale chosen after load', () => {
@@ -108,7 +93,7 @@ describe.each(locales)('the %s vertical slice', (locale) => {
     ).toBeDefined();
 
     act(() => {
-      chooseLocale(next);
+      chooseLanguage(next);
     });
 
     expect(

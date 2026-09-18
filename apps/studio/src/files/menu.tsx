@@ -24,12 +24,12 @@ import {
 import { nameOf } from '../store/state.js';
 import { useModelStore } from '../store/store.js';
 import { useCloseFocus } from '../ui/close-focus.js';
-import { colourModes, type ColourMode } from '../theme-preference.js';
+import type { ColourMode } from '../theme-preference.js';
 import { DiagramSwitcher } from './diagram-switcher.js';
 import { MenuCommand, MenuItem, RegisteredMenuCommand } from './menu-items.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
-import { RadioChoices } from './radio-choices.js';
+import { AppearanceMenu, LanguageMenu } from './settings-menu.js';
 import { Submenu, SubmenuEdge } from './submenu.js';
 import { formatFiles, formatOf, formatsFrom } from './session.js';
 
@@ -156,9 +156,6 @@ export function StudioMenu({
   );
 }
 
-const titled = (mode: ColourMode): string =>
-  mode[0].toUpperCase() + mode.slice(1);
-
 type MenuPanelProps = {
   readonly colourMode: ColourMode;
   readonly dirty: boolean;
@@ -184,29 +181,8 @@ function MenuPanel({
     >
       <FileMenu dirty={dirty} session={session} />
       <DropdownMenu.Separator className={styles.rule} />
-      <Submenu
-        label={`Appearance ${colourMode}`}
-        trigger={
-          <>
-            <span>Appearance</span>
-            <span aria-hidden="true" className={styles.chord}>
-              {titled(colourMode)}
-            </span>
-          </>
-        }
-      >
-        <RadioChoices
-          choices={colourModes.map((mode) => ({
-            value: mode,
-            label: titled(mode),
-          }))}
-          label="Appearance"
-          onChoose={(mode) => {
-            onColourModeChange?.(mode);
-          }}
-          value={colourMode}
-        />
-      </Submenu>
+      <AppearanceMenu mode={colourMode} onChange={onColourModeChange} />
+      <LanguageMenu />
       <DropdownMenu.Separator className={styles.rule} />
       <EditMenu />
       <DropdownMenu.Separator className={styles.rule} />

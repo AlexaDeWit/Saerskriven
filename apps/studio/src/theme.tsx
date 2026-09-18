@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { localPreferenceStorage } from './preference-storage.js';
 import {
   readColourMode,
   writeColourMode,
@@ -9,15 +10,7 @@ import { externalStore } from './ui/external-store.js';
 let selectedMode: ColourMode | undefined;
 
 const currentMode = (): ColourMode =>
-  (selectedMode ??= readColourMode(readStorage()));
-
-const readStorage = (): Storage | undefined => {
-  try {
-    return globalThis.localStorage;
-  } catch {
-    return undefined;
-  }
-};
+  (selectedMode ??= readColourMode(localPreferenceStorage()));
 
 const applyColourMode = (mode: ColourMode): void => {
   if (typeof document === 'undefined') {
@@ -55,7 +48,7 @@ export function useColourMode(): readonly [
 
   const choose = (next: ColourMode): void => {
     selectedMode = next;
-    writeColourMode(readStorage(), next);
+    writeColourMode(localPreferenceStorage(), next);
     colourMode.notify();
   };
 

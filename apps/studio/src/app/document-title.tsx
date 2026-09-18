@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
+import { useTranslator } from '../messages/locale.js';
 import { showingPlaceholder, windowTitle } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 
-const landingTitle = 'Saerskriven: Open-source threat modelling studio';
-
 /** Names the tab after the landing page or the model on screen. */
 export function DocumentTitle() {
-  const title = useModelStore((state) =>
-    showingPlaceholder(state) ? landingTitle : windowTitle(state),
+  const { t } = useTranslator();
+  const named = useModelStore((state) =>
+    showingPlaceholder(state) ? undefined : windowTitle(state),
   );
+  const title = named ?? t('shell.landing-title');
 
   useEffect(() => {
     document.title = title;

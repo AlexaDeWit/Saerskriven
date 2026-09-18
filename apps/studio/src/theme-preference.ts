@@ -1,39 +1,34 @@
+import {
+  readPreference,
+  writePreference,
+  type PreferenceStorage,
+} from './preference-storage.js';
+
 export const colourModes = ['system', 'light', 'dark'] as const;
 
 export type ColourMode = (typeof colourModes)[number];
 
-function isColourMode(value: string): value is ColourMode {
-  return value === 'system' || value === 'light' || value === 'dark';
-}
-
 export const colourModeStorageKey = 'saerskrivenColourMode';
+
+const isColourMode = (value: string): value is ColourMode =>
+  colourModes.some((mode) => mode === value);
 
 /** The stored colour mode, or `system` for a missing or unknown value. */
 export function parseColourMode(value: string | null): ColourMode {
   return value !== null && isColourMode(value) ? value : 'system';
 }
 
-type ColourModeStorage = Pick<Storage, 'getItem' | 'setItem'>;
-
 /** The stored colour mode, or `system` where storage is absent or throws. */
 export function readColourMode(
-  storage: ColourModeStorage | undefined,
+  storage: PreferenceStorage | undefined,
 ): ColourMode {
-  try {
-    return parseColourMode(storage?.getItem(colourModeStorageKey) ?? null);
-  } catch {
-    return 'system';
-  }
+  return readPreference(storage, colourModeStorageKey, parseColourMode);
 }
 
 /** Stores the colour mode, ignoring storage that is absent or throws. */
 export function writeColourMode(
-  storage: ColourModeStorage | undefined,
+  storage: PreferenceStorage | undefined,
   mode: ColourMode,
 ): void {
-  try {
-    storage?.setItem(colourModeStorageKey, mode);
-  } catch {
-    return;
-  }
+  writePreference(storage, colourModeStorageKey, mode);
 }
