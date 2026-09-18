@@ -97,7 +97,7 @@ type EnumFieldProps<Value extends string> = {
   readonly value: Value | undefined;
   readonly placeholder?: string;
   readonly options: readonly Value[];
-  readonly labelOf?: (option: Value) => string | OptionText;
+  readonly labelOf: (option: Value) => string | OptionText;
   readonly groupOf?: (option: Value) => string;
   readonly onCommit: (chosen: Value) => void;
 };
@@ -105,7 +105,8 @@ type EnumFieldProps<Value extends string> = {
 /**
  * A labelled listbox that commits one choice. `label` is the accessible name,
  * and `shownLabel` replaces the drawn label, an empty one drawing none. With
- * no `value` the trigger shows `placeholder`. The overlay stays in the
+ * no `value` the trigger shows `placeholder`. `labelOf` is required, so a
+ * stored value is never drawn as its own label. The overlay stays in the
  * containing landmark and is placed within the box the field scrolls in.
  */
 export function EnumField<Value extends string>({
@@ -125,7 +126,7 @@ export function EnumField<Value extends string>({
     setBoundary(box === null ? [] : [box]);
   }, []);
   const item = (option: Value) => {
-    const text = labelOf?.(option) ?? option;
+    const text = labelOf(option);
     return (
       <Listed
         key={option}

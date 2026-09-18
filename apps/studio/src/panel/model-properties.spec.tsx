@@ -13,8 +13,8 @@ import {
   recordedModel,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { activeTranslator } from '../messages/locale.js';
 import { ModelPropertiesPanel } from './model-properties.js';
-import { sectionLabel } from '@saerskriven/render';
 import { present, undoable } from '../store/store.fixtures.js';
 import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
@@ -75,7 +75,9 @@ describe(
       expect(document.activeElement).toBe(button('Add assumption'));
       expect(
         screen
-          .getByRole('group', { name: sectionLabel('model-assumptions') })
+          .getByRole('group', {
+            name: activeTranslator().t('enums.model-assumptions'),
+          })
           .contains(document.activeElement),
       ).toBe(true);
     });
@@ -211,7 +213,7 @@ describe(
       expect(undoable()).toBe(2);
       const edited = present();
 
-      await chooseFrom('Assumption 1 status', 'invalidated');
+      await chooseFrom('Assumption 1 status', 'Invalidated');
 
       expect(present().assumptions).toEqual([
         { ...edited.assumptions[0], status: 'invalidated' },

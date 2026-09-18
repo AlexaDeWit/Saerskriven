@@ -9,13 +9,12 @@ import {
 } from '../canvas/diagrams.js';
 import { activeDiagram } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
+import { useTranslator } from '../messages/locale.js';
 import { refusedName, useTextDraft } from '../ui/text-field.js';
 import { useCloseFocus } from '../ui/close-focus.js';
 import styles from './menu.module.css';
 import { MenuCommand } from './menu-items.js';
 import { RadioChoices } from './radio-choices.js';
-
-const noDiagram = 'No diagram';
 
 /**
  * The title of the diagram on screen, opening a list of diagrams to switch
@@ -32,6 +31,7 @@ export function DiagramSwitcher() {
   const wasEditing = useRef(false);
   const blurred = useRef(false);
   const closeFocus = useCloseFocus();
+  const { t } = useTranslator();
 
   useEffect(() => {
     if (wasEditing.current && !editing) {
@@ -64,12 +64,14 @@ export function DiagramSwitcher() {
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger
-        aria-label={`Diagram: ${active?.title ?? noDiagram}`}
+        aria-label={t('menu.diagram-named', {
+          title: active?.title ?? t('menu.no-diagram'),
+        })}
         className={styles.switcher}
         data-testid="diagram-switcher"
         ref={trigger}
       >
-        {active?.title ?? noDiagram}
+        {active?.title ?? t('menu.no-diagram')}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         {...closeFocus}
@@ -85,7 +87,7 @@ export function DiagramSwitcher() {
                 value: diagram.id,
                 label: diagram.title,
               }))}
-              label="Diagram"
+              label={t('menu.diagram')}
               onChoose={showDiagram}
               value={active.id}
             />
@@ -108,8 +110,9 @@ function TitleField({ title, onClose }: TitleFieldProps) {
   const field = useRef<HTMLInputElement>(null);
   const refusalId = useId();
   const settled = useRef(false);
+  const { t } = useTranslator();
   const draft = useTextDraft(
-    'Diagram title',
+    t('fields.diagram-title'),
     title,
     undefined,
     (text) => {
@@ -156,7 +159,7 @@ function TitleField({ title, onClose }: TitleFieldProps) {
       <input
         aria-describedby={draft.refusal === undefined ? undefined : refusalId}
         aria-invalid={draft.refusal !== undefined}
-        aria-label="Diagram title"
+        aria-label={t('fields.diagram-title')}
         className={styles.titleField}
         data-testid="diagram-title"
         onBlur={blur}

@@ -15,12 +15,18 @@ import {
   contextualShortcuts,
   pressesContextualShortcut,
 } from './contextual-shortcuts.js';
-import { commandGroups, commands, type ReferenceCommands } from './registry.js';
+import { useTranslator } from '../messages/locale.js';
+import type { StudioTranslator } from '../messages/catalogues.js';
+import { commands } from './registry.js';
+import type { ReferenceCommands } from './surface.js';
+import { commandGroups } from './table.js';
 import {
   hostPlatform,
+  shortcutLabelText,
   shortcutsOn,
   spellChord,
   type Chord,
+  type CommandMessageId,
   type Platform,
   type ShortcutEntry,
 } from './shortcuts.js';
@@ -81,6 +87,7 @@ export function ShortcutReference({
   readonly platform?: Platform;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
+  const { t } = useTranslator();
 
   useEffect(() => {
     heading.current?.focus();
@@ -111,10 +118,10 @@ export function ShortcutReference({
           ref={heading}
           tabIndex={-1}
         >
-          Keyboard shortcuts
+          {t('commands.label-shortcut-reference')}
         </h2>
         <button
-          aria-label="Close keyboard shortcuts"
+          aria-label={t('commands.reference-close')}
           className={styles.close}
           onClick={onClose}
           type="button"
@@ -123,8 +130,7 @@ export function ShortcutReference({
         </button>
       </header>
       <p className={styles.introduction}>
-        Shortcuts run only in the contexts shown. Commands typed into a text
-        field stay with that field unless their context says otherwise.
+        {t('commands.reference-introduction')}
       </p>
       <Accordion.Root type="multiple" className={styles.groups}>
         {commandGroups.map((group) => (
@@ -160,14 +166,16 @@ function ReferenceSection({
 }: {
   readonly entries: readonly ShortcutEntry[];
   readonly platform: Platform;
-  readonly title: string;
+  readonly title: CommandMessageId;
   readonly type: 'command' | 'contextual';
 }) {
+  const { t } = useTranslator();
+
   return (
     <Accordion.Item className={styles.group} value={`${type}-${title}`}>
       <Accordion.Header className={styles.groupHeading}>
         <Accordion.Trigger className={styles.disclosure}>
-          <span>{title}</span>
+          <span>{t(title)}</span>
           <span aria-hidden="true" className={styles.count}>
             {entries.length}
           </span>
@@ -183,15 +191,17 @@ function ReferenceSection({
               data-contextual-id={type === 'contextual' ? entry.id : undefined}
               key={entry.id}
             >
-              <span className={styles.label}>{entry.label}</span>
+              <span className={styles.label}>
+                {shortcutLabelText(entry.label, t)}
+              </span>
               <div className={styles.keys}>
-                {referenceKeys(entry.shortcuts, platform).map((keys) => (
+                {referenceKeys(entry.shortcuts, platform, t).map((keys) => (
                   <kbd className={styles.key} key={keys}>
                     {keys}
                   </kbd>
                 ))}
               </div>
-              <span className={styles.when}>{entry.when}</span>
+              <span className={styles.when}>{t(entry.when)}</span>
             </li>
           ))}
         </ul>
@@ -203,16 +213,17 @@ function ReferenceSection({
 function referenceKeys(
   shortcuts: readonly Chord[],
   platform: Platform,
+  t: StudioTranslator['t'],
 ): readonly string[] {
   const chords = shortcutsOn(shortcuts, platform);
   if (chords.length === 0) {
-    return ['No shortcut'];
+    return [t('commands.no-shortcut')];
   }
   const allArrows =
     chords.length === resizeKeys.length &&
     resizeKeys.every((key) => chords.some((chord) => chord.key === key));
   if (allArrows && chords.every((chord) => chord.modifiers.length === 0)) {
-    return ['Arrow Keys'];
+    return [t('commands.arrow-keys')];
   }
   if (
     allArrows &&
@@ -220,7 +231,7 @@ function referenceKeys(
       (chord) => chord.modifiers.length === 1 && chord.modifiers[0] === 'Shift',
     )
   ) {
-    return ['Shift+Arrow'];
+    return [t('commands.shift-arrow')];
   }
   return chords.map((chord) => spellChord(chord, platform));
 }

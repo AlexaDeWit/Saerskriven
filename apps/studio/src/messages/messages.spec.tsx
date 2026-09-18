@@ -1,7 +1,13 @@
 import { ReadFailure } from '@saerskriven/formats';
 import { locales } from '@saerskriven/i18n';
+import type { Severity } from '@saerskriven/model';
 import { act, render, screen } from '@testing-library/react';
 import { isValidElement } from 'react';
+import { commands } from '../commands/registry.js';
+import { shortcutLabelText } from '../commands/shortcuts.js';
+import { chooseFrom } from '../panel/panel.fixtures.js';
+import { SeverityField } from '../ui/severity-field.js';
+import { listboxTimeout } from '../ui/ui.fixtures.js';
 import {
   currentAnnouncement,
   resetAnnouncements,
@@ -108,6 +114,43 @@ describe.each(locales)('the %s vertical slice', (locale) => {
     ).toBeDefined();
   });
 });
+
+describe.each(locales)('a %s reader', (locale) => {
+  beforeEach(() => {
+    chooseLanguage(locale);
+  });
+
+  it('names every command and the context it runs in', () => {
+    const { t } = activeTranslator();
+
+    for (const command of commands) {
+      expect(shortcutLabelText(command.label, t)).not.toBe('');
+      expect(t(command.when)).not.toBe('');
+    }
+  });
+});
+
+describe.each(locales)(
+  'a field a %s reader commits',
+  (locale) => {
+    beforeEach(() => {
+      chooseLanguage(locale);
+    });
+
+    it('carries the stored value of the option chosen under its label', async () => {
+      const onCommit = vi.fn<(severity: Severity) => void>();
+      render(<SeverityField onCommit={onCommit} value="high" />);
+
+      await chooseFrom(
+        activeTranslator().t('fields.severity'),
+        activeTranslator().t('enums.severity-critical'),
+      );
+
+      expect(onCommit).toHaveBeenCalledWith('critical');
+    });
+  },
+  listboxTimeout,
+);
 
 describe('message components the typecheck refuses', () => {
   const details = 'notice.refusal-details';

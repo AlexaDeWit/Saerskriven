@@ -120,8 +120,8 @@ export function showingPlaceholder(state: State): boolean {
 }
 
 /** The browser tab's name: {@link nameOf} the file, then the product name. */
-export function windowTitle(state: State): string {
-  return `${nameOf(state.file)} - ${productName}`;
+export function windowTitle(state: State, untitled: string): string {
+  return `${nameOf(state.file, untitled)} - ${productName}`;
 }
 
 function nameEditable(state: State, elementId: ElementId): boolean {

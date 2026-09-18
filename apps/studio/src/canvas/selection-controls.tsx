@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { CommandButton } from '../commands/command-button.js';
+import { useTranslator } from '../messages/locale.js';
 import { selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { modelStore, useModelStore } from '../store/store.js';
@@ -78,11 +79,12 @@ export function FlowEndpointCommands() {
   const state = useModelStore((value) => value);
   const flow = selectedElementRecord(state);
   const tool = useTool();
+  const { t } = useTranslator();
   return flow?.kind === 'flow' &&
     state.inlineEditor === undefined &&
     tool.active === 'select' ? (
     <section
-      aria-label="Reconnect flow"
+      aria-label={t('tools.reconnect-flow')}
       className={styles.endpoints}
       data-pane=""
     >
@@ -103,6 +105,7 @@ function SelectionEditor({
   readonly close: () => void;
 }) {
   const root = useRef<HTMLElement>(null);
+  const { t } = useTranslator();
   const onClose = useEffectEvent(close);
   useEffect(() => {
     const panel = root.current;
@@ -136,9 +139,11 @@ function SelectionEditor({
   }, []);
   return (
     <section
-      aria-label={
-        control === 'geometry' ? 'Position and size' : 'Flow endpoint'
-      }
+      aria-label={t(
+        control === 'geometry'
+          ? 'commands.label-edit-geometry'
+          : 'tools.flow-endpoint',
+      )}
       data-pane=""
       data-selection-editor
       className={styles.panel}

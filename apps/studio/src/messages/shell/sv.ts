@@ -5,4 +5,5 @@ export const shellSv = catalogue(shellMessages)('sv')({
   language: 'Språk',
   'follow-browser': 'Följ webbläsaren',
   'landing-title': 'Saerskriven: studio för hotmodellering med öppen källkod',
+  'development-version': '{version} (utveckling)',
 });

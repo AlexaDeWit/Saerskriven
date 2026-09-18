@@ -266,14 +266,14 @@ describe(
       await user.click(screen.getByRole('button', { name: /A reader edits/u }));
 
       await user.click(screen.getByRole('combobox', { name: 'Severity' }));
-      await user.click(screen.getByRole('option', { name: 'critical' }));
-      expect(severityOf()).toContain('critical');
+      await user.click(screen.getByRole('option', { name: 'Critical' }));
+      expect(severityOf()).toContain('Critical');
 
       act(() => {
         dispatch(Action.Undo());
       });
 
-      expect(severityOf()).toContain('medium');
+      expect(severityOf()).toContain('Medium');
     });
 
     it('keeps a refused draft on screen where the threat would collapse, and says so', async () => {

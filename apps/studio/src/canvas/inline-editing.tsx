@@ -58,6 +58,7 @@ import {
   resizeNode,
   stopInlineEditing,
 } from './edits.js';
+import { useTranslator } from '../messages/locale.js';
 import { edgeLabel, nodeLabel } from './names.js';
 import styles from './inline-editing.module.css';
 
@@ -150,6 +151,7 @@ function InlineField({
 }: InlineFieldProps) {
   const refusalId = useId();
   const keyboardDescriptionId = useId();
+  const { t } = useTranslator();
   const field = useRef<HTMLTextAreaElement>(null);
   const settled = useRef(false);
   const draft = useTextDraft(
@@ -217,6 +219,7 @@ function InlineField({
         {describeContextualShortcuts(
           [multiline ? 'commit-note' : 'commit-name', 'cancel-canvas-text'],
           hostPlatform,
+          t,
         )}
       </VisuallyHidden>
       <textarea
@@ -258,6 +261,7 @@ function InlineField({
 
 function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
+  const { t } = useTranslator();
   const [resizing, setResizing] = useState(false);
   const editor = useModelStore(
     useCallback(
@@ -295,9 +299,9 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         >
           <InlineField
             elementId={node.id}
-            label={`Name of ${nodeLabel(node)}`}
+            label={t('fields.name-of', { element: nodeLabel(node, t) })}
             onCommit={commitRename}
-            refuse={refusedNameOf(node.name, nodeLabel(node))}
+            refuse={refusedNameOf(node.name, nodeLabel(node, t))}
             room={
               node.kind === 'boundary-curve'
                 ? undefined
@@ -312,7 +316,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         <div className={`${styles.overNote} nodrag nopan`}>
           <InlineField
             elementId={node.id}
-            label="Note text"
+            label={t('fields.note-text')}
             multiline
             onCommit={commitNote}
             textStyle={placement.textStyle}
@@ -326,6 +330,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
 function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
   const edge = props.data?.edge;
+  const { t } = useTranslator();
   const editing = useModelStore(
     useCallback(
       (state: State) =>
@@ -346,9 +351,9 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
           >
             <InlineField
               elementId={edge.id}
-              label={`Name of ${edgeLabel(edge)}`}
+              label={t('fields.name-of', { element: edgeLabel(edge, t) })}
               onCommit={commitRename}
-              refuse={refusedNameOf(edge.name, edgeLabel(edge))}
+              refuse={refusedNameOf(edge.name, edgeLabel(edge, t))}
               textStyle={edge.label.name.textStyle}
               value={edge.name}
             />

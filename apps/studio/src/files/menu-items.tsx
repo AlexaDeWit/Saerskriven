@@ -9,9 +9,11 @@ import {
 } from '../commands/registry.js';
 import {
   hostPlatform,
+  shortcutLabelText,
   shortcutText,
   type ShortcutText,
 } from '../commands/shortcuts.js';
+import { useTranslator } from '../messages/locale.js';
 import styles from './menu.module.css';
 
 type MenuItemProps = {
@@ -95,6 +97,7 @@ export function RegisteredMenuCommand({
   asking,
 }: RegisteredMenuCommandProps) {
   const surface = useCommandSurface();
+  const { t } = useTranslator();
 
   if (asking !== undefined) {
     return (
@@ -120,10 +123,10 @@ export function RegisteredMenuCommand({
       shortcut={
         entry.shortcuts.length === 0
           ? undefined
-          : shortcutText(entry.shortcuts, hostPlatform)
+          : shortcutText(entry.shortcuts, hostPlatform, t)
       }
     >
-      {children ?? entry.label}
+      {children ?? shortcutLabelText(entry.label, t)}
     </MenuItem>
   );
 }

@@ -197,7 +197,7 @@ test(
     await onScreenUnscrolled(page, status);
     await onScreenUnscrolled(page, modelControl(page, 'Unlink assumption 3'));
 
-    await chooseInPanel(page, 'Assumption 3 status', 'valid', modelPanel(page));
+    await chooseInPanel(page, 'Assumption 3 status', 'Valid', modelPanel(page));
     await expect(status).toContainText(/valid/iu);
     await onScreenUnscrolled(page, status);
 
@@ -241,7 +241,7 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await chooseInPanel(
     page,
     'Assumption 3 status',
-    'invalidated',
+    'Invalidated',
     modelPanel(page),
   );
 

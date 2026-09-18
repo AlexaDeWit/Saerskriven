@@ -63,10 +63,10 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
   await title.press('ControlOrMeta+a');
   await page.keyboard.type(addedTitle);
   await title.press('Enter');
-  await chooseInPanel(page, 'Severity', 'critical');
+  await chooseInPanel(page, 'Severity', 'Critical');
 
   await expect(archive).toHaveAccessibleName(
-    'Paper archive, store, 1 open threat, highest severity critical',
+    'Paper archive, store, 1 open threat, highest severity Critical',
   );
   await expect(archive.locator('.pn-badge-mark')).toHaveText('C');
 
@@ -74,7 +74,7 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
 
   await expect(
     threatPanel(page).getByRole('combobox', { name: 'Severity' }),
-  ).toContainText('undecided');
+  ).toContainText('Undecided');
   await expect(archive).toHaveAccessibleName(
     'Paper archive, store, 1 open threat, severity not assessed',
   );

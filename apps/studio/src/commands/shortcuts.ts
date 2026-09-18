@@ -1,3 +1,8 @@
+import type {
+  StudioMessageId,
+  StudioTranslator,
+} from '../messages/catalogues.js';
+
 declare global {
   interface Navigator {
     readonly userAgentData?: { readonly platform?: string };
@@ -106,13 +111,45 @@ export const enterChord = bare('Enter');
 /** The unmodified Escape chord shared by commands and contextual actions. */
 export const escapeChord = bare('Escape');
 
+/** A message the `commands` section declares. */
+export type CommandMessageId = Extract<StudioMessageId, `commands.${string}`>;
+
+type DistanceLabelId =
+  | 'commands.key-move-bend'
+  | 'commands.key-move-selection'
+  | 'commands.key-resize-selection';
+
+type NamedDiagramLabelId = 'commands.export-diagram-named';
+
+/**
+ * What a shortcut is called: a message of the `commands` section, or one of
+ * the few that name something, with the value it names.
+ */
+export type ShortcutLabel =
+  | Exclude<CommandMessageId, DistanceLabelId | NamedDiagramLabelId>
+  | { readonly id: DistanceLabelId; readonly units: number }
+  | { readonly id: NamedDiagramLabelId; readonly title: string };
+
 /** A registered or contextual shortcut as the reference lists it. */
 export type ShortcutEntry = {
   readonly id: string;
-  readonly label: string;
+  readonly label: ShortcutLabel;
   readonly shortcuts: readonly Chord[];
-  readonly when: string;
+  readonly when: CommandMessageId;
 };
+
+/** A shortcut's name in the active locale. */
+export function shortcutLabelText(
+  label: ShortcutLabel,
+  t: StudioTranslator['t'],
+): string {
+  if (typeof label === 'string') {
+    return t(label);
+  }
+  return 'units' in label
+    ? t(label.id, { units: label.units })
+    : t(label.id, { title: label.title });
+}
 
 /** A shortcut spelled for a person and for assistive technology. */
 export type ShortcutText = {
@@ -197,19 +234,27 @@ export function spellChord(chord: Chord, platform: Platform): string {
 export function spellShortcuts(
   shortcuts: readonly Chord[],
   platform: Platform,
+  t: StudioTranslator['t'],
 ): string {
   return shortcutsOn(shortcuts, platform)
     .map((chord) => spellChord(chord, platform))
-    .join(' or ');
+    .reduce(
+      (spelled, chord) =>
+        spelled === ''
+          ? chord
+          : t('commands.either-chord', { first: spelled, second: chord }),
+      '',
+    );
 }
 
 /** The chord a person reads and the `aria-keyshortcuts` value for the same shortcuts. */
 export function shortcutText(
   shortcuts: readonly Chord[],
   platform: Platform,
+  t: StudioTranslator['t'],
 ): ShortcutText {
   return {
-    chord: spellShortcuts(shortcuts, platform),
+    chord: spellShortcuts(shortcuts, platform, t),
     keyShortcuts: keyShortcutsAttribute(shortcuts, platform),
   };
 }
@@ -218,11 +263,15 @@ export function shortcutText(
 export function describeShortcutEntries(
   entries: readonly ShortcutEntry[],
   platform: Platform,
+  t: StudioTranslator['t'],
 ): string {
   return entries
-    .map(
-      (entry) =>
-        `${entry.label}: ${spellShortcuts(entry.shortcuts, platform)}. ${entry.when}.`,
+    .map((entry) =>
+      t('commands.shortcut-summary', {
+        label: shortcutLabelText(entry.label, t),
+        keys: spellShortcuts(entry.shortcuts, platform, t),
+        when: t(entry.when),
+      }),
     )
     .join(' ');
 }

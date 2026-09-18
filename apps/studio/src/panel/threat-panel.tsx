@@ -22,6 +22,7 @@ import {
   announceRefusal,
   resetAnnouncements,
 } from '../canvas/announcements.js';
+import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { historyFocusHandler } from './panel-focus.js';
@@ -78,6 +79,7 @@ export function ThreatPanel({
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const addControl = useRef<HTMLButtonElement>(null);
+  const { t } = useTranslator();
   const held = threats.some((threat) => threat.id === draft?.threatId)
     ? draft
     : undefined;
@@ -119,7 +121,7 @@ export function ThreatPanel({
     if (element === undefined) {
       return;
     }
-    const threat = freshThreat(number, element.id);
+    const threat = freshThreat(number, element.id, t);
     dispatch(Action.AddThreat({ threat }));
     const added = modelStore
       .getState()
@@ -175,14 +177,14 @@ export function ThreatPanel({
 
   return (
     <PanelFrame
-      closeLabel="Close threats"
+      closeLabel={t('panel.close-threats')}
       closeShortcut="close-threat-panel"
       heading={
         element === undefined
-          ? 'Threats'
-          : `Threats on ${elementLabel(element)}`
+          ? t('panel.threats')
+          : t('panel.threats-on', { element: elementLabel(element, t) })
       }
-      label="Threats"
+      label={t('panel.threats')}
       onClose={onClose}
       onCover={onCover}
       onToggleWidth={onToggleWidth}
@@ -191,8 +193,7 @@ export function ThreatPanel({
     >
       {subject.kind === 'several' ? (
         <p className={styles.instruction}>
-          {subject.count} elements selected. Select one of them to record a
-          threat against it.
+          {t('panel.several-selected', { count: subject.count })}
         </p>
       ) : (
         <>
@@ -206,12 +207,10 @@ export function ThreatPanel({
             ref={addControl}
             type="button"
           >
-            Add a threat
+            {t('panel.add-threat')}
           </button>
           {threats.length === 0 ? (
-            <p className={styles.instruction}>
-              No threats are recorded against this element.
-            </p>
+            <p className={styles.instruction}>{t('panel.no-threats')}</p>
           ) : (
             <Accordion.Root
               className={styles.list}

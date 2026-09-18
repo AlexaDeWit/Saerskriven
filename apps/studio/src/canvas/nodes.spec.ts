@@ -7,6 +7,7 @@ import {
   probeFlow,
   requestFlow,
 } from './canvas.fixtures.js';
+import { activeTranslator } from '../messages/locale.js';
 import { accessibleNames } from './names.js';
 import {
   diagramGraph,
@@ -17,19 +18,21 @@ import {
 } from './nodes.js';
 import { actorElement, processElement } from '../store/store.fixtures.js';
 
+const { t } = activeTranslator();
+
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
-const names = accessibleNames(layout, canvasModel);
+const names = accessibleNames(layout, canvasModel, t);
 
 describe('diagramGraph', () => {
   it('carries an element node per drawn node and an anchor per free end', () => {
-    const { nodes } = diagramGraph(layout, canvasModel, []);
+    const { nodes } = diagramGraph(layout, canvasModel, [], t);
     expect(nodes).toHaveLength(layout.nodes.length + 1);
     expect(nodes.at(-1)?.id).toBe(flowEndNodeId(probeFlow, 'target'));
   });
 
   it('names each element node and marks the one the store has selected', () => {
-    const { nodes } = diagramGraph(layout, canvasModel, [actorElement]);
+    const { nodes } = diagramGraph(layout, canvasModel, [actorElement], t);
     const reader = nodes.find((node) => node.id === actorElement);
     expect(reader?.selected).toBe(true);
     expect(reader?.zIndex).toBe(1);
@@ -47,6 +50,7 @@ describe('diagramGraph', () => {
       layoutDiagram(flagged.diagrams[0], flagged),
       flagged,
       [],
+      t,
     );
     expect(nodes.find((node) => node.id === actorElement)?.ariaLabel).toContain(
       'Rests on an invalidated assumption',
@@ -54,13 +58,13 @@ describe('diagramGraph', () => {
   });
 
   it('keeps a selected boundary below unselected nodes', () => {
-    const { nodes } = diagramGraph(layout, canvasModel, [boundaryElement]);
+    const { nodes } = diagramGraph(layout, canvasModel, [boundaryElement], t);
     expect(nodes.find((node) => node.id === boundaryElement)?.zIndex).toBe(-1);
     expect(nodes.find((node) => node.id === actorElement)?.zIndex).toBe(0);
   });
 
   it('marks a node a flow can end on connectable, and no other', () => {
-    const { nodes } = diagramGraph(layout, canvasModel, []);
+    const { nodes } = diagramGraph(layout, canvasModel, [], t);
     const connectable = (id: string): boolean | undefined =>
       nodes.find((node) => node.id === id)?.connectable;
 
@@ -71,7 +75,7 @@ describe('diagramGraph', () => {
   });
 
   it('carries one named edge per flow and marks the selected one', () => {
-    const { edges } = diagramGraph(layout, canvasModel, [requestFlow]);
+    const { edges } = diagramGraph(layout, canvasModel, [requestFlow], t);
     expect(edges).toHaveLength(2);
     const request = edges.find((edge) => edge.id === requestFlow);
     expect(request?.selected).toBe(true);
@@ -79,7 +83,7 @@ describe('diagramGraph', () => {
   });
 
   it('marks a selected flow on the flow alone, no node beside it', () => {
-    const { nodes } = diagramGraph(layout, canvasModel, [requestFlow]);
+    const { nodes } = diagramGraph(layout, canvasModel, [requestFlow], t);
     expect(nodes.some((node) => node.selected)).toBe(false);
   });
 });
@@ -105,7 +109,7 @@ describe('nodesById', () => {
 
 describe('withMeasurements', () => {
   it('carries the extent React Flow measured onto the nodes the model gives', () => {
-    const measured = diagramGraph(layout, canvasModel, []).nodes.map(
+    const measured = diagramGraph(layout, canvasModel, [], t).nodes.map(
       (node) => ({
         ...node,
         measured: { width: 120, height: 60 },
@@ -113,7 +117,7 @@ describe('withMeasurements', () => {
     );
 
     const carried = withMeasurements(
-      diagramGraph(layout, canvasModel, []).nodes,
+      diagramGraph(layout, canvasModel, [], t).nodes,
       measured,
     );
 
@@ -122,7 +126,7 @@ describe('withMeasurements', () => {
 
   it('leaves a node nothing was measured for as the model gave it', () => {
     const [first] = withMeasurements(
-      diagramGraph(layout, canvasModel, []).nodes,
+      diagramGraph(layout, canvasModel, [], t).nodes,
       [],
     );
     expect(first.measured).toBeUndefined();
@@ -131,7 +135,7 @@ describe('withMeasurements', () => {
 
 describe('withLiveEdges', () => {
   it('reuses settled edges and replaces changed geometry', () => {
-    const graph = diagramGraph(layout, canvasModel, []);
+    const graph = diagramGraph(layout, canvasModel, [], t);
     const changed = {
       ...layout,
       edges: layout.edges.map((edge, index) =>
@@ -149,7 +153,7 @@ describe('withLiveEdges', () => {
   });
 
   it('keeps a selected flow label on its prior candidate', () => {
-    const graph = diagramGraph(layout, canvasModel, [requestFlow]);
+    const graph = diagramGraph(layout, canvasModel, [requestFlow], t);
     const index = layout.edges.findIndex((edge) => edge.id === requestFlow);
     const settled = layout.edges[index];
     const offset = { x: 10, y: 15 };

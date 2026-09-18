@@ -5,4 +5,5 @@ export const shellMessages = {
   language: text(),
   'follow-browser': text(),
   'landing-title': text(),
+  'development-version': text({ version: 'text' }),
 } as const;

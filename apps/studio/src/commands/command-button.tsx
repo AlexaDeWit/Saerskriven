@@ -1,5 +1,6 @@
 import { Tooltip } from 'radix-ui';
 import { useId, type MouseEventHandler, type ReactNode } from 'react';
+import { useTranslator } from '../messages/locale.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { useCommandSurface } from './binding.js';
 import {
@@ -8,7 +9,12 @@ import {
   type Command,
   type CommandId,
 } from './registry.js';
-import { hostPlatform, shortcutText, type ShortcutText } from './shortcuts.js';
+import {
+  hostPlatform,
+  shortcutLabelText,
+  shortcutText,
+  type ShortcutText,
+} from './shortcuts.js';
 import styles from './command-button.module.css';
 
 const tooltipDelay = 200;
@@ -45,7 +51,8 @@ export function CommandButton({
   children,
 }: CommandButtonProps) {
   const description = useId();
-  const { entry, chord, keyShortcuts, press } = usePressed(command);
+  const { t } = useTranslator();
+  const { label, chord, keyShortcuts, press } = usePressed(command);
 
   return (
     <>
@@ -58,9 +65,11 @@ export function CommandButton({
         title={chord}
         type="button"
       >
-        {children ?? entry.label}
+        {children ?? label}
       </button>
-      <VisuallyHidden id={description}>Shortcut: {chord}</VisuallyHidden>
+      <VisuallyHidden id={description}>
+        {t('commands.button-shortcut', { chord })}
+      </VisuallyHidden>
     </>
   );
 }
@@ -80,7 +89,8 @@ export function IconCommandButton({
   children,
 }: IconCommandButtonProps) {
   const descriptionId = useId();
-  const { entry, chord, keyShortcuts, press } = usePressed(command);
+  const { t } = useTranslator();
+  const { label, chord, keyShortcuts, press } = usePressed(command);
 
   return (
     <Tooltip.Provider delayDuration={tooltipDelay} disableHoverableContent>
@@ -90,7 +100,7 @@ export function IconCommandButton({
             ? {}
             : { 'aria-describedby': descriptionId })}
           aria-keyshortcuts={keyShortcuts}
-          aria-label={entry.label}
+          aria-label={label}
           aria-pressed={pressed}
           className={className}
           disabled={disabled}
@@ -105,11 +115,11 @@ export function IconCommandButton({
           side={side}
           sideOffset={tooltipOffset}
         >
-          {entry.label} <span className={styles.chord}>{chord}</span>
+          {label} <span className={styles.chord}>{chord}</span>
         </Tooltip.Content>
         {description !== undefined && (
           <VisuallyHidden id={descriptionId}>
-            {description} Shortcut: {chord}
+            {t('commands.icon-description', { description, chord })}
           </VisuallyHidden>
         )}
       </Tooltip.Root>
@@ -119,16 +129,19 @@ export function IconCommandButton({
 
 type Pressed = ShortcutText & {
   readonly entry: Command;
+  readonly label: string;
   readonly press: () => void;
 };
 
 function usePressed(command: CommandId): Pressed {
   const surface = useCommandSurface();
+  const { t } = useTranslator();
   const entry = commandById(command);
 
   return {
-    ...shortcutText(entry.shortcuts, hostPlatform),
+    ...shortcutText(entry.shortcuts, hostPlatform, t),
     entry,
+    label: shortcutLabelText(entry.label, t),
     press: () => {
       runCommand(entry, surface);
     },

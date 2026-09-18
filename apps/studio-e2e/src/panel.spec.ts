@@ -206,12 +206,12 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
   await expect(webShop.locator('.pn-badge-mark')).toHaveText('?');
   await expect(badgeTone(webShop)).toHaveClass('pn-tone-neutral');
 
-  await chooseInPanel(page, 'Severity', 'critical');
+  await chooseInPanel(page, 'Severity', 'Critical');
 
   await expect(
     nodeNamed(
       page,
-      'Web shop, process, 1 open threat, highest severity critical',
+      'Web shop, process, 1 open threat, highest severity Critical',
     ),
   ).toBeVisible();
   await expect(webShop.locator('.pn-badge-mark')).toHaveText('C');
@@ -224,11 +224,11 @@ test('a status chosen in the panel takes the threat out of the count the canvas 
   await openTwoDiagrams(page);
   const shopper = await selectNode(page, storefront.shopper);
   await expect(shopper).toHaveAccessibleName(
-    /1 open threat, highest severity high/u,
+    /1 open threat, highest severity High/u,
   );
 
   await threatSummary(page, storefront.takeover).click();
-  await chooseInPanel(page, 'Status', 'mitigated');
+  await chooseInPanel(page, 'Status', 'Mitigated');
 
   await expect(shopper).not.toHaveAccessibleName(/open threat/u);
 });
@@ -276,14 +276,14 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   await expect(panelField(page, 'combobox', 'Category')).toBeFocused();
   await chooseByKeyboard(page, 'ArrowDown');
   await expect(panelField(page, 'combobox', 'Category')).toContainText(
-    'STRIDE tampering',
+    'Tampering',
   );
 
   await page.keyboard.press('Tab');
   await expect(panelField(page, 'combobox', 'Severity')).toBeFocused();
   await chooseByKeyboard(page, 'ArrowUp');
   await expect(panelField(page, 'combobox', 'Severity')).toContainText(
-    'critical',
+    'Critical',
   );
 
   await page.keyboard.press('Tab');
@@ -345,7 +345,7 @@ test('every field of a threat is reachable and editable from the keyboard, add a
 
   await expect(threatSummary(page, /Queue poisoning/u)).toBeVisible();
   await expect(printer).toHaveAccessibleName(
-    /1 open threat, highest severity critical/u,
+    /1 open threat, highest severity Critical/u,
   );
 
   await runFromMenu(page, 'Undo');
@@ -390,9 +390,9 @@ test('collapsed summaries expose severity and status without an empty content st
   await panel.getByRole('button', { name: 'Add a threat' }).click();
   const summary = threatSummary(page, /New threat/u);
   await expect(summary).toHaveAccessibleName(
-    /Severity: undecided.*Status: open/u,
+    /Severity: Undecided.*Status: Open/u,
   );
-  await chooseInPanel(page, 'Severity', 'high');
+  await chooseInPanel(page, 'Severity', 'High');
   const contentId = await summary.getAttribute('aria-controls');
   await summary.click();
   const content = page.locator(`[id="${contentId ?? ''}"]`);
@@ -402,7 +402,7 @@ test('collapsed summaries expose severity and status without an empty content st
   ).toBe(0);
   expect(await content.locator('input, textarea, button').count()).toBe(0);
   await expect(summary).toHaveAttribute('aria-expanded', 'false');
-  await expect(summary).toHaveAccessibleName(/Severity: high.*Status: open/u);
+  await expect(summary).toHaveAccessibleName(/Severity: High.*Status: Open/u);
   for (const mode of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: mode });
     await expect(summary.locator('circle')).toHaveCSS(
@@ -413,13 +413,13 @@ test('collapsed summaries expose severity and status without an empty content st
   await page.emulateMedia({ forcedColors: 'active' });
   await summary.focus();
   await page.keyboard.press('Enter');
-  await chooseInPanel(page, 'Status', 'mitigated');
+  await chooseInPanel(page, 'Status', 'Mitigated');
   await summary.click();
   await expect(summary).toHaveAccessibleName(
-    /Severity: high.*Status: mitigated/u,
+    /Severity: High.*Status: Mitigated/u,
   );
   await expect(nodeNamed(page, placeholder.actor)).toHaveAccessibleName(
-    /1 open threat, highest severity medium/u,
+    /1 open threat, highest severity Medium/u,
   );
   await page.keyboard.press('Tab');
   expect(
@@ -584,10 +584,10 @@ test('long titles and fields remain usable in a narrow viewport', async ({
     status.left >= severity.right || status.top >= severity.bottom,
     'Severity and Status overlap',
   ).toBe(true);
-  await chooseInPanel(page, 'Severity', 'critical');
-  await expect(severityField).toContainText('critical');
-  await chooseInPanel(page, 'Status', 'mitigated');
-  await expect(statusField).toContainText('mitigated');
+  await chooseInPanel(page, 'Severity', 'Critical');
+  await expect(severityField).toContainText('Critical');
+  await chooseInPanel(page, 'Status', 'Mitigated');
+  await expect(statusField).toContainText('Mitigated');
   const longSummary = threatSummary(page, /A long threat title/u);
   await longSummary.scrollIntoViewIfNeeded();
   expect((await edgesOf(longSummary)).right).toBeLessThanOrEqual(bounds.right);

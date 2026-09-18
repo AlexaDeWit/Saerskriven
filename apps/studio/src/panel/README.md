@@ -64,14 +64,16 @@ drag.
 
 ## Drawing a threat
 
-The summary takes its flag wording from `flagLabel` in `@saerskriven/render`,
-as the register does, and its severity marker uses the canvas tone class. Each
+The summary takes its flag wording from the studio's own catalogue, not from
+the render package's report labels, which stay English for a generated
+register. Its severity and status read from the catalogue too, so no stored
+value is drawn as its own label. Its severity marker uses the canvas tone
+class. Each
 flag mark has a glyph shape of its own, an outline and its label as text, all
 in the text colour, so severity and every mark stay distinct in forced colours.
 The whole summary, counts and marks included, is the accordion control's
 accessible name, in drawn order, and it holds no control of its own. The
-model's properties head their assumptions group with `sectionLabel`, the
-register's label for that section.
+model's properties head their assumptions group with `enums.model-assumptions`.
 
 ## Record groups
 

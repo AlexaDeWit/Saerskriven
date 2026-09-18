@@ -154,7 +154,9 @@ describe('showingPlaceholder', () => {
 
 describe('windowTitle', () => {
   it('gives a model with no file a non-empty title', () => {
-    expect(windowTitle(initialState(placeholderModel)).trim()).not.toBe('');
+    expect(
+      windowTitle(initialState(placeholderModel), 'Untitled').trim(),
+    ).not.toBe('');
   });
 
   it('says the file once the model lives in one, opened or saved', () => {
@@ -172,8 +174,10 @@ describe('windowTitle', () => {
       Action.Saved({ name: 'model.yaml', source: nativeSource }),
     );
 
-    expect(windowTitle(opened)).toContain('other.yaml');
-    expect(windowTitle(saved)).toContain('model.yaml');
-    expect(windowTitle(opened)).not.toBe(windowTitle(saved));
+    expect(windowTitle(opened, 'Untitled')).toContain('other.yaml');
+    expect(windowTitle(saved, 'Untitled')).toContain('model.yaml');
+    expect(windowTitle(opened, 'Untitled')).not.toBe(
+      windowTitle(saved, 'Untitled'),
+    );
   });
 });

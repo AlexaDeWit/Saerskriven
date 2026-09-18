@@ -50,7 +50,7 @@ test('the studio carries no violation with the threat panel open on a selected e
   const summary = page.getByRole('button', { name: /sends records/u });
   await summary.click();
   await expect(page.getByRole('textbox', { name: 'Title' })).toBeVisible();
-  await chooseInPanel(page, 'Status', 'mitigated');
+  await chooseInPanel(page, 'Status', 'Mitigated');
   await expect(summary.locator('[data-flag]')).toHaveCount(1);
 
   await audit(page, 'showing the threat panel with a flagged threat');

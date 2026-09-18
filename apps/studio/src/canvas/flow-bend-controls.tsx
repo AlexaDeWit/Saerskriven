@@ -16,7 +16,8 @@ import {
   type FlowEnd,
 } from './flow-bend-interaction.js';
 import type { FlowBends } from './flow-bends.js';
-import { sideLabels } from './side-labels.js';
+import { sideMessages } from '../messages/enum-labels.js';
+import { useTranslator } from '../messages/locale.js';
 import styles from './flow-bend-controls.module.css';
 
 const flowEnds: readonly FlowEnd[] = ['source', 'target'];
@@ -27,6 +28,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
   const { zoom } = useViewport();
   const edge = bends.layout.edges.find((value) => value.id === bends.flow?.id);
   const toolbar = useRef<HTMLFieldSetElement>(null);
+  const { t } = useTranslator();
   const interaction = useFlowBendInteraction(bends, edge, toolbar);
   if (edge === undefined || bends.flow === undefined) {
     return null;
@@ -37,10 +39,12 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
     mode?.kind === 'actions' ? bends.flow.waypoints[mode.index] : undefined;
   const help =
     mode?.kind === 'choose'
-      ? `Segment ${String(mode.index + 1)}: Left/Right to choose, Enter to add. Or click a segment.`
-      : mode?.kind === 'place'
-        ? 'Arrow keys move the bend. Enter confirms, Escape cancels. Or click its destination.'
-        : 'Pull the line to add a bend. Drag a bend to move it. Drag an end to another side of its element. Click a handle for actions.';
+      ? t('tools.bend-choose-help', { number: mode.index + 1 })
+      : t(
+          mode?.kind === 'place'
+            ? 'tools.bend-place-help'
+            : 'tools.bend-idle-help',
+        );
   return (
     <>
       <ViewportPortal>
@@ -98,7 +102,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
       <ViewportPortal>
         {edge.waypoints.map((point, index) => (
           <button
-            aria-label={`Bend ${String(index + 1)}`}
+            aria-label={t('tools.bend-numbered', { number: index + 1 })}
             className={`${styles.handle} nodrag nopan`}
             data-bend-index={index}
             key={index}
@@ -122,7 +126,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
               top: point.y,
               transform: `translate(-50%, -50%) scale(${String(1 / zoom)})`,
             }}
-            title="Drag or use arrow keys to move. Click for actions. Delete removes this bend."
+            title={t('tools.bend-handle-help')}
             type="button"
           >
             <span aria-hidden="true">●</span>
@@ -137,7 +141,11 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
           const point = end === 'source' ? edge.source : edge.target;
           return (
             <button
-              aria-label={`Flow ${end} end`}
+              aria-label={t(
+                end === 'source'
+                  ? 'tools.flow-source-end'
+                  : 'tools.flow-target-end',
+              )}
               className={`${styles.handle} ${styles.end} nodrag nopan`}
               data-flow-end={end}
               key={end}
@@ -161,7 +169,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
                 top: point.y,
                 transform: `translate(-50%, -50%) scale(${String(1 / zoom)})`,
               }}
-              title="Drag to another side of its element. Arrow keys pin a side, Delete lets it follow the route. Click for actions."
+              title={t('tools.flow-end-handle-help')}
               type="button"
             >
               <span aria-hidden="true">◆</span>
@@ -210,7 +218,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
       </ViewportPortal>
       <Panel position="bottom-center">
         <fieldset
-          aria-label="Flow route"
+          aria-label={t('tools.flow-route')}
           className={`${styles.toolbar} nodrag nopan`}
           data-bend-toolbar
           ref={toolbar}
@@ -246,23 +254,24 @@ function BendActions({
   readonly style: CSSProperties;
 }) {
   const first = useRef<HTMLButtonElement>(null);
+  const { t } = useTranslator();
   useEffect(() => {
     first.current?.focus();
   }, []);
   return (
     <fieldset
-      aria-label="Bend actions"
+      aria-label={t('tools.bend-actions')}
       className={`${styles.actions} nodrag nopan`}
       style={style}
     >
       <button onClick={onRemove} ref={first} type="button">
-        Remove bend
+        {t('tools.remove-bend')}
       </button>
       <button onClick={onMove} type="button">
-        Move bend
+        {t('tools.move-bend')}
       </button>
       <button onClick={onClose} type="button">
-        Close
+        {t('tools.close')}
       </button>
     </fieldset>
   );
@@ -280,12 +289,13 @@ function EndActions({
   readonly style: CSSProperties;
 }) {
   const first = useRef<HTMLButtonElement>(null);
+  const { t } = useTranslator();
   useEffect(() => {
     first.current?.focus();
   }, []);
   return (
     <fieldset
-      aria-label="Flow end actions"
+      aria-label={t('tools.flow-end-actions')}
       className={`${styles.actions} nodrag nopan`}
       style={style}
     >
@@ -297,7 +307,7 @@ function EndActions({
         ref={first}
         type="button"
       >
-        Follow the route
+        {t('tools.follow-route')}
       </button>
       {sides.map((side) => (
         <button
@@ -308,11 +318,11 @@ function EndActions({
           }}
           type="button"
         >
-          {sideLabels[side]}
+          {t(sideMessages[side])}
         </button>
       ))}
       <button onClick={onClose} type="button">
-        Close
+        {t('tools.close')}
       </button>
     </fieldset>
   );

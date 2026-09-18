@@ -1,3 +1,4 @@
+import { activeTranslator } from '../messages/locale.js';
 import {
   character,
   firedBy,
@@ -9,6 +10,8 @@ import {
   spellShortcuts,
   type Chord,
 } from './shortcuts.js';
+
+const { t } = activeTranslator();
 
 const save: Chord = { modifiers: ['Mod'], key: 's' };
 const saveAs: Chord = { modifiers: ['Mod', 'Shift'], key: 's' };
@@ -51,7 +54,7 @@ describe('spelling a chord', () => {
 
   it('offers both chords of a command that answers to two', () => {
     expect(
-      spellShortcuts([saveAs, { modifiers: ['Mod'], key: 'y' }], 'other'),
+      spellShortcuts([saveAs, { modifiers: ['Mod'], key: 'y' }], 'other', t),
     ).toBe('Ctrl+Shift+S or Ctrl+Y');
   });
 
@@ -127,12 +130,12 @@ describe('firedBy', () => {
 
   it('limits platform-specific alternatives in matching, labels and ARIA', () => {
     const redoAlternative = mod('y', 'other');
-    expect(spellShortcuts([redoAlternative], 'apple')).toBe('');
+    expect(spellShortcuts([redoAlternative], 'apple', t)).toBe('');
     expect(keyShortcutsAttribute([redoAlternative], 'apple')).toBe('');
     expect(
       firedBy(press({ key: 'y', metaKey: true }), redoAlternative, 'apple'),
     ).toBe(false);
-    expect(spellShortcuts([redoAlternative], 'other')).toBe('Ctrl+Y');
+    expect(spellShortcuts([redoAlternative], 'other', t)).toBe('Ctrl+Y');
     expect(keyShortcutsAttribute([redoAlternative], 'other')).toBe('Control+Y');
     expect(
       firedBy(press({ key: 'y', ctrlKey: true }), redoAlternative, 'other'),

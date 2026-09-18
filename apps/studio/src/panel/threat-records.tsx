@@ -12,6 +12,7 @@ import {
   quoted,
   recordQuoteLength,
 } from '../canvas/announcements.js';
+import { useTranslator } from '../messages/locale.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { EnumField, type OptionText } from '../ui/enum-field.js';
 import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
@@ -76,8 +77,10 @@ export function RecordGroup<Held extends ThreatRecord>({
 }: RecordGroupProps<Held>) {
   const all = useModelStore((state) => kind.held(state.present));
   const threats = useModelStore((state) => state.present.threats);
+  const translator = useTranslator();
+  const { t } = translator;
   const records = all.filter(target.holds);
-  const linkable = linkableRecords(all, target, threats);
+  const linkable = linkableRecords(kind, all, target, threats, translator);
   const group = useRef<HTMLFieldSetElement>(null);
   const [draft, setDraft] = useState<Held | undefined>(() => {
     const heldField = recordFieldIn(held?.field, kind.noun);
@@ -217,7 +220,7 @@ export function RecordGroup<Held extends ThreatRecord>({
 
   return (
     <fieldset className={styles.records} ref={group}>
-      <legend>{target.heading}</legend>
+      <legend>{t(target.heading)}</legend>
       <div className={styles.recordBody} onBlur={tracked} onFocus={tracked}>
         {rows.map((record, index) => (
           <RecordRow
@@ -225,7 +228,11 @@ export function RecordGroup<Held extends ThreatRecord>({
             held={held}
             key={record.id}
             kind={kind}
-            name={`${kind.title} ${String(index + 1)}`}
+            name={t('fields.record-name', {
+              kind: t(kind.title),
+              number: index + 1,
+            })}
+            position={index + 1}
             onBlur={left}
             onChange={onChange}
             onCommit={(part) => commit(record, part)}
@@ -255,13 +262,15 @@ export function RecordGroup<Held extends ThreatRecord>({
                 unlink(record, index);
               }
             }}
-            elsewhere={target.elsewhere(record, threats)}
+            elsewhere={target.elsewhere(record, threats, translator)}
             record={record}
           />
         ))}
         <div className={styles.addLink}>
           <button
-            aria-label={`Add ${kind.noun}`}
+            aria-label={t('fields.add-record', {
+              kind: t(kind.nounMessage),
+            })}
             className={styles.recordAction}
             data-add-record
             onClick={() => {
@@ -279,12 +288,12 @@ export function RecordGroup<Held extends ThreatRecord>({
             type="button"
           >
             <PlusIcon aria-hidden="true" />
-            Add
+            {t('panel.add')}
           </button>
           {linkable.length > 0 && (
             <LinkExisting
               linkable={linkable}
-              noun={kind.noun}
+              noun={t(kind.nounMessage)}
               onLink={(record) => {
                 dispatch(target.link(record));
                 focus.current = { kind: 'text', recordId: record.id };
@@ -314,25 +323,27 @@ function LinkExisting<Held extends ThreatRecord>({
   const [chosen, setChosen] = useState<string | undefined>(undefined);
   const offered = linkable.find(({ record }) => record.id === chosen);
   const reasonId = useId();
+  const { t } = useTranslator();
   const texts = new Map<string, OptionText>(
     linkable.map(({ record, text }) => [record.id, text]),
   );
+  const existing = t('fields.existing-record', { kind: noun });
 
   return (
     <div className={styles.existing}>
       <EnumField
-        label={`Existing ${noun}`}
+        label={existing}
         labelOf={(id) => texts.get(id) ?? id}
         onCommit={setChosen}
         options={linkable.map(({ record }) => record.id)}
-        placeholder={`Existing ${noun}`}
+        placeholder={existing}
         shownLabel=""
         value={offered?.record.id}
       />
       <button
         aria-describedby={offered === undefined ? reasonId : undefined}
         aria-disabled={offered === undefined}
-        aria-label={`Link existing ${noun}`}
+        aria-label={t('fields.link-existing-record', { kind: noun })}
         className={styles.recordAction}
         onClick={() => {
           if (offered !== undefined) {
@@ -343,11 +354,11 @@ function LinkExisting<Held extends ThreatRecord>({
         type="button"
       >
         <Link2Icon aria-hidden="true" />
-        Link
+        {t('panel.link')}
       </button>
       {offered === undefined && (
         <VisuallyHidden id={reasonId}>
-          {`Choose an existing ${noun} first.`}
+          {t('fields.choose-existing-first', { kind: noun })}
         </VisuallyHidden>
       )}
     </div>
@@ -359,6 +370,7 @@ type RecordRowProps<Held extends ThreatRecord> = {
   readonly record: Held;
   readonly elsewhere: string | undefined;
   readonly name: string;
+  readonly position: number;
   readonly draft: boolean;
   readonly held: HeldText | undefined;
   readonly onBlur: (event: FocusEvent<HTMLElement>) => void;
@@ -377,6 +389,7 @@ function RecordRow<Held extends ThreatRecord>({
   record,
   elsewhere,
   name,
+  position,
   draft,
   held,
   onBlur,
@@ -387,19 +400,27 @@ function RecordRow<Held extends ThreatRecord>({
   onRemove,
 }: RecordRowProps<Held>) {
   const sharedId = useId();
+  const { t } = useTranslator();
   const heldField = recordFieldIn(held?.field, kind.noun);
   const heldIn = (part: RecordPart): string | undefined =>
     heldField?.recordId === record.id && heldField.part === part
       ? held?.text
       : undefined;
   const shownLabel = (part: RecordPart): string =>
-    kind.parts.length === 1 ? '' : part === 'title' ? 'Title' : 'Description';
+    kind.parts.length === 1
+      ? ''
+      : t(part === 'title' ? 'fields.title' : 'fields.description');
   const fieldProps = (part: RecordPart) => ({
     held: heldIn(part),
     label:
       kind.parts.length === 1
         ? name
-        : `${name} ${shownLabel(part).toLowerCase()}`,
+        : t(
+            part === 'title'
+              ? 'fields.record-title-field'
+              : 'fields.record-prose-field',
+            { name },
+          ),
     shownLabel: shownLabel(part),
     onChange,
     onCommit: onCommit(part),
@@ -431,7 +452,8 @@ function RecordRow<Held extends ThreatRecord>({
         )}
         <div className={styles.recordState}>
           <EnumField
-            label={`${name} status`}
+            label={t('fields.record-status-field', { name })}
+            labelOf={(status) => t(kind.statusMessage(status))}
             onCommit={onStatus}
             options={kind.statuses}
             shownLabel=""
@@ -439,7 +461,10 @@ function RecordRow<Held extends ThreatRecord>({
           />
           <button
             aria-describedby={elsewhere === undefined ? undefined : sharedId}
-            aria-label={`${draft ? 'Discard' : 'Unlink'} ${name.toLowerCase()}`}
+            aria-label={t(
+              draft ? 'fields.discard-record' : 'fields.unlink-record',
+              { kind: t(kind.nounMessage), number: position },
+            )}
             className={styles.unlink}
             data-unlink-record={draft ? undefined : true}
             onClick={onRemove}
@@ -452,7 +477,7 @@ function RecordRow<Held extends ThreatRecord>({
             }
             type="button"
           >
-            {draft ? 'Discard' : 'Unlink'}
+            {t(draft ? 'panel.discard' : 'panel.unlink')}
           </button>
         </div>
         {elsewhere !== undefined && (

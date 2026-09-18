@@ -9,7 +9,9 @@ import {
   contextualGroups,
   contextualShortcuts,
 } from './contextual-shortcuts.js';
-import { commandGroups, commands } from './registry.js';
+import { activeTranslator } from '../messages/locale.js';
+import { commands } from './registry.js';
+import { commandGroups } from './table.js';
 import { ShortcutReference } from './shortcut-reference.js';
 import { platforms } from './shortcuts.js';
 
@@ -36,8 +38,9 @@ describe('ShortcutReference', () => {
   it('renders every metadata entry exactly once with platform spelling', () => {
     render(<ShortcutReference onClose={() => undefined} platform="apple" />);
 
+    const { t } = activeTranslator();
     const triggers = [...commandGroups, ...contextualGroups].map((group) =>
-      screen.getByRole('button', { name: group }),
+      screen.getByRole('button', { name: t(group) }),
     );
     for (const trigger of triggers) {
       expect(trigger.getAttribute('aria-expanded')).toBe('false');

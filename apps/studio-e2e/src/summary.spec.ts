@@ -56,7 +56,7 @@ const namesItsParts = async (summary: Locator): Promise<void> => {
 const raiseBothFlags = async (page: Page): Promise<void> => {
   await expandThreat(page, storefront.orderDenied);
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
-  await chooseInPanel(page, 'Assumption 1 status', 'invalidated');
+  await chooseInPanel(page, 'Assumption 1 status', 'Invalidated');
 };
 
 test('collapsed counts follow records linked and unlinked from the expanded view', async ({
@@ -99,12 +99,12 @@ test('a mitigated threat with only proposed work is marked until the work is imp
   await namesItsParts(summary);
 
   await expandThreat(page, storefront.orderDenied);
-  await chooseInPanel(page, 'Mitigation 1 status', 'implemented');
+  await chooseInPanel(page, 'Mitigation 1 status', 'Implemented');
   await collapse(page, storefront.orderDenied);
   await expect(markOn(summary, unbacked)).toHaveCount(0);
 
   await expandThreat(page, storefront.orderDenied);
-  await chooseInPanel(page, 'Mitigation 1 status', 'proposed');
+  await chooseInPanel(page, 'Mitigation 1 status', 'Proposed');
   await collapse(page, storefront.orderDenied);
   await expect(markOn(summary, unbacked)).toBeVisible();
 });
@@ -118,14 +118,14 @@ test('only an invalidated assumption marks the threat it is linked to', async ({
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
   const summary = threatSummary(page, storefront.takeover);
 
-  for (const status of ['unconfirmed', 'valid']) {
+  for (const status of ['Unconfirmed', 'Valid']) {
     await chooseInPanel(page, 'Assumption 1 status', status);
     await collapse(page, storefront.takeover);
     await expect(summary.locator('[data-flag]')).toHaveCount(0);
     await expandThreat(page, storefront.takeover);
   }
 
-  await chooseInPanel(page, 'Assumption 1 status', 'invalidated');
+  await chooseInPanel(page, 'Assumption 1 status', 'Invalidated');
   await collapse(page, storefront.takeover);
   await expect(markOn(summary, invalidated)).toBeVisible();
   await namesItsParts(summary);
@@ -211,7 +211,7 @@ test('a record status changed in one tab updates the collapsed summary in anothe
 
   await selectNode(page, storefront.ledger);
   await expandThreat(page, storefront.orderDenied);
-  await chooseInPanel(page, 'Mitigation 1 status', 'implemented');
+  await chooseInPanel(page, 'Mitigation 1 status', 'Implemented');
   await expect(
     panelField(page, 'combobox', 'Mitigation 1 status'),
   ).toContainText(/implemented/iu);

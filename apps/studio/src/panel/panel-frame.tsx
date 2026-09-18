@@ -8,6 +8,7 @@ import {
   type ContextualShortcutId,
 } from '../commands/contextual-shortcuts.js';
 import { hostPlatform } from '../commands/shortcuts.js';
+import { useTranslator } from '../messages/locale.js';
 import { useMeasured } from '../ui/measure.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import styles from './threat-panel.module.css';
@@ -24,6 +25,11 @@ type PanelFrameProps = {
   readonly onCover?: (cover: number) => void;
   readonly children: ReactNode;
 };
+
+const widthLabel = (
+  wide: boolean,
+): 'panel.restore-pane-width' | 'panel.widen-pane' =>
+  wide ? 'panel.restore-pane-width' : 'panel.widen-pane';
 
 /**
  * The pane the panel location draws, whichever subject it shows: the width
@@ -45,6 +51,7 @@ export function PanelFrame({
 }: PanelFrameProps) {
   const panel = useRef<HTMLElement>(null);
   const keyboardDescriptionId = useId();
+  const { t } = useTranslator();
 
   useMeasured(
     panel,
@@ -83,14 +90,14 @@ export function PanelFrame({
       onKeyDownCapture={closing}
     >
       <VisuallyHidden id={keyboardDescriptionId}>
-        {describeContextualShortcuts([closeShortcut], hostPlatform)}
+        {describeContextualShortcuts([closeShortcut], hostPlatform, t)}
       </VisuallyHidden>
       <header className={styles.panelHeader}>
         <Tooltip.Provider>
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
               <button
-                aria-label={wide ? 'Restore pane width' : 'Widen pane'}
+                aria-label={t(widthLabel(wide))}
                 aria-pressed={wide}
                 className={styles.width}
                 onClick={onToggleWidth}
@@ -104,7 +111,7 @@ export function PanelFrame({
               </button>
             </Tooltip.Trigger>
             <Tooltip.Content className={styles.tooltip} side="bottom">
-              {wide ? 'Restore pane width' : 'Widen pane'}
+              {t(widthLabel(wide))}
             </Tooltip.Content>
           </Tooltip.Root>
         </Tooltip.Provider>

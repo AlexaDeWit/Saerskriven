@@ -152,7 +152,7 @@ export const openText = async (
 
 /** The button the studio's one menu opens from. */
 export const menuButton = (page: Page): Locator =>
-  page.getByRole('button', { name: /^Menu/u });
+  page.getByRole('button', { name: /^(?:Menu|Meny)/u });
 
 /** One command of the open menu, by the words it runs under. */
 export const menuItem = (page: Page, name: string): Locator =>
@@ -184,9 +184,12 @@ export const runFromMenu = async (page: Page, name: string): Promise<void> => {
 };
 
 /** Whether the menu offers Undo, read by opening the menu and putting it away again. */
-export const undoOffered = async (page: Page): Promise<boolean> => {
+export const undoOffered = async (
+  page: Page,
+  undo = 'Undo',
+): Promise<boolean> => {
   await openMenu(page);
-  const disabled = await menuItem(page, 'Undo').getAttribute('aria-disabled');
+  const disabled = await menuItem(page, undo).getAttribute('aria-disabled');
   await closeMenu(page);
   return disabled !== 'true';
 };

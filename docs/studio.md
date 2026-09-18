@@ -24,9 +24,18 @@ persists across reloads. **Language** beside it selects English (Canada),
 Français (Canada) or Svenska, and persists the same way. It starts on Follow
 the browser, which reads the languages your browser asks for and falls back to
 English (Canada), and that option is there to return to. The language decides
-the studio's own words. A model's names and descriptions are yours and are
-never translated, and the file picker, the download dialog and the unsaved
-changes question are the browser's own text.
+the studio's own words: the menus, the toolbox, the panel, every field label
+and the words a stored value is shown under, such as a severity, a status or
+a threat category. A model's names and descriptions are yours and are never
+translated, and the file picker, the download dialog and the unsaved changes
+question are the browser's own text.
+
+A name the studio writes for you is written in the language you are in at the
+time: Untitled, Untitled diagram, New actor, New flow, New threat and the
+rest. It is part of the model from then on, so changing language later renames
+nothing. The page before the app script runs, which is the loading line and
+the message for a browser with JavaScript turned off, is fixed English,
+because no language has been negotiated yet.
 
 The Project group links to GitHub. A released build shows its version above
 the React Flow attribution, and any other build says `development`.

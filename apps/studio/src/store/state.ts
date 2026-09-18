@@ -81,18 +81,24 @@ export type State = {
   readonly recoveryCurrent: boolean;
 };
 
-/** The name of a model that has never been in a file. */
+/** The name the placeholder model carries, before any locale is chosen. */
 export const untitledModel = 'Untitled';
 
-/** The open file's name, or {@link untitledModel} while there is none. */
-export function nameOf(file: FileLifecycle): string {
+/**
+ * The open file's name, or `untitled` while there is none. A caller with a
+ * translator passes the name in the active locale.
+ */
+export function nameOf(
+  file: FileLifecycle,
+  untitled: string = untitledModel,
+): string {
   return FileLifecycle.$match(file, {
-    NoFile: () => untitledModel,
+    NoFile: () => untitled,
     Opened: ({ name }) => name,
   });
 }
 
-/** The title a diagram carries until it is given one. */
+/** The title the placeholder diagram carries, before any locale is chosen. */
 export const untitledDiagram = 'Untitled diagram';
 
 const placeholderDocument = {

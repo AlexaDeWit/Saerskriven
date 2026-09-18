@@ -349,7 +349,7 @@ describe(
     it('changes a status in place as one undo step that moves no threat status', async () => {
       showThreatEditor({ threat: recordedThreat(firstThreat) });
 
-      await chooseFrom('Mitigation 1 status', 'verified');
+      await chooseFrom('Mitigation 1 status', 'Verified');
 
       expect(present().mitigations[0].status).toBe('verified');
       expect(present().threats).toBe(recordedModel.threats);
@@ -468,7 +468,7 @@ describe(
         secondThreat,
       ]);
 
-      await chooseFrom('Assumption 1 status', 'invalidated');
+      await chooseFrom('Assumption 1 status', 'Invalidated');
 
       expect(present().assumptions[0].status).toBe('invalidated');
       expect(present().threats).toBe(recordedModel.threats);
@@ -596,7 +596,7 @@ describe(
       showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add mitigation'));
-      await chooseFrom('Mitigation 1 status', 'implemented');
+      await chooseFrom('Mitigation 1 status', 'Implemented');
       expect(present()).toBe(recordedModel);
       await user.click(button('Discard mitigation 1'));
 
@@ -607,7 +607,7 @@ describe(
       expect(present()).toBe(recordedModel);
 
       await user.click(button('Add mitigation'));
-      await chooseFrom('Mitigation 1 status', 'implemented');
+      await chooseFrom('Mitigation 1 status', 'Implemented');
       await user.click(textbox('Mitigation 1 title'));
       await user.keyboard('Sign every share link');
       await user.tab();
@@ -643,7 +643,7 @@ describe(
       await user.click(button('Add assumption'));
       await user.keyboard(`Pasted${softHyphen}prose`);
       await user.tab();
-      await chooseFrom('Assumption 1 status', 'valid');
+      await chooseFrom('Assumption 1 status', 'Valid');
 
       const reported = onRefusal.mock.lastCall?.[0];
       expect(reported?.status).toBe('valid');
@@ -656,7 +656,7 @@ describe(
       expect(
         screen.getByRole('combobox', { name: 'Assumption 1 status' })
           .textContent,
-      ).toContain('valid');
+      ).toContain('Valid');
       expect(present()).toBe(recordedModel);
     });
 
@@ -673,7 +673,7 @@ describe(
       await user.tab();
       await user.keyboard(`Pasted${softHyphen}prose`);
       await user.tab();
-      await chooseFrom('Mitigation 1 status', 'implemented');
+      await chooseFrom('Mitigation 1 status', 'Implemented');
 
       const reported = onRefusal.mock.lastCall?.[0];
       expect(reported?.field.startsWith('new-mitigation/title/')).toBe(true);
@@ -687,7 +687,7 @@ describe(
       expect(
         screen.getByRole('combobox', { name: 'Mitigation 1 status' })
           .textContent,
-      ).toContain('implemented');
+      ).toContain('Implemented');
     });
   },
   editorTimeout,

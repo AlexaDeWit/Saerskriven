@@ -6,9 +6,11 @@ import {
 import { commandById } from '../commands/registry.js';
 import {
   hostPlatform,
+  shortcutLabelText,
   spellShortcuts,
   type ShortcutEntry,
 } from '../commands/shortcuts.js';
+import { activeTranslator } from '../messages/locale.js';
 import { currentAnnouncement } from './announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -34,8 +36,10 @@ const contextualEntry = (id: ContextualShortcutId): ShortcutEntry => {
   return entry;
 };
 
+const { t } = activeTranslator();
+
 const spelled = ({ label, shortcuts }: ShortcutEntry): string =>
-  `${label}: ${spellShortcuts(shortcuts, hostPlatform)}`;
+  `${shortcutLabelText(label, t)}: ${spellShortcuts(shortcuts, hostPlatform, t)}`;
 
 const reader = (): HTMLElement =>
   screen.getByRole('group', { name: /^Reader, actor/u });
@@ -64,7 +68,7 @@ describe('DiagramCanvas', () => {
     );
     expect(
       screen.getAllByRole('group', {
-        name: 'Reader, actor, 1 open threat, highest severity medium',
+        name: 'Reader, actor, 1 open threat, highest severity Medium',
       }),
     ).toHaveLength(1);
     expect(

@@ -79,11 +79,11 @@ describe(
     });
 
     it.each([
-      ['Severity', 'critical', { severity: 'critical' }],
-      ['Status', 'mitigated', { status: 'mitigated' }],
+      ['Severity', 'Critical', { severity: 'critical' }],
+      ['Status', 'Mitigated', { status: 'mitigated' }],
       [
         'Category',
-        'STRIDE spoofing',
+        'Spoofing',
         { category: { methodology: 'STRIDE', category: 'spoofing' } },
       ],
     ] as const)(

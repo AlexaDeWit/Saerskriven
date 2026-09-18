@@ -18,6 +18,7 @@ import type { State } from '../store/state.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { announce, quotedName } from './announcements.js';
 import { flowEnds, freshBoundaryCurve, freshFlow } from './elements.js';
+import { activeTranslator } from '../messages/locale.js';
 import { currentLayout } from './layout.js';
 import { edgeLabel, nodeLabel } from './names.js';
 import { elementIds } from './nodes.js';
@@ -298,15 +299,16 @@ function placed(
 }
 
 function spokenName(state: State, elementId: ElementId): string {
+  const { t } = activeTranslator();
   const layout = currentLayout(state);
   const node = layout.nodes.find(({ id }) => id === elementId);
   if (node !== undefined) {
-    return quotedName(node.name, nodeLabel(node));
+    return quotedName(node.name, nodeLabel(node, t));
   }
   const edge = layout.edges.find(({ id }) => id === elementId);
   return edge === undefined
     ? elementId
-    : quotedName(edge.name, edgeLabel(edge));
+    : quotedName(edge.name, edgeLabel(edge, t));
 }
 
 function counted(total: number, thing: string): string {

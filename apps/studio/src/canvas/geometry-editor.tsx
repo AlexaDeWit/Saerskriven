@@ -1,6 +1,7 @@
 import { boxOfPoints } from '@saerskriven/canvas';
 import { pointSchema, sizeSchema } from '@saerskriven/model';
 import { useId, useState, type FormEvent } from 'react';
+import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -32,13 +33,14 @@ export function GeometryEditor({
     height: String(single?.size.height ?? 1),
   });
   const [error, setError] = useState('');
+  const { t } = useTranslator();
   const resizable = single !== undefined && single.kind !== 'boundary-curve';
   if (bounds === undefined) {
     return (
       <>
-        <p>Select a node to edit its geometry.</p>
+        <p>{t('tools.select-node-geometry')}</p>
         <button onClick={close} type="button">
-          Close
+          {t('tools.close')}
         </button>
       </>
     );
@@ -74,11 +76,11 @@ export function GeometryEditor({
   };
   return (
     <form onSubmit={commit}>
-      <h2>Position and size</h2>
+      <h2>{t('commands.label-edit-geometry')}</h2>
       {(['x', 'y'] as const).map((axis) => (
         <NumberField
           key={axis}
-          label={axis.toUpperCase()}
+          label={t(axis === 'x' ? 'tools.axis-x' : 'tools.axis-y')}
           value={position[axis]}
           change={(value) => {
             setPosition({ ...position, [axis]: value });
@@ -89,7 +91,7 @@ export function GeometryEditor({
         (['width', 'height'] as const).map((axis) => (
           <NumberField
             key={axis}
-            label={axis === 'width' ? 'Width' : 'Height'}
+            label={t(axis === 'width' ? 'tools.width' : 'tools.height')}
             value={size[axis]}
             change={(value) => {
               setSize({ ...size, [axis]: value });
@@ -98,9 +100,9 @@ export function GeometryEditor({
         ))}
       {error !== '' && <p>{error}</p>}
       <div className={styles.actions}>
-        <button type="submit">Apply geometry</button>
+        <button type="submit">{t('tools.apply-geometry')}</button>
         <button onClick={close} type="button">
-          Cancel
+          {t('tools.cancel')}
         </button>
       </div>
     </form>
@@ -121,12 +123,13 @@ function NumberField({
   readonly change: (value: string) => void;
 }) {
   const inputId = useId();
+  const { t } = useTranslator();
   return (
     <div className={styles.field}>
       <label htmlFor={inputId}>{label}</label>
       <span>
         <button
-          aria-label={`Decrease ${label}`}
+          aria-label={t('tools.decrease', { label })}
           onClick={() => {
             change(String(numeric(value) - 1));
           }}
@@ -145,7 +148,7 @@ function NumberField({
           }}
         />
         <button
-          aria-label={`Increase ${label}`}
+          aria-label={t('tools.increase', { label })}
           onClick={() => {
             change(String(numeric(value) + 1));
           }}
