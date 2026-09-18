@@ -16,28 +16,32 @@ import {
 } from './resizing.js';
 import { resizeHandle, strokeWidths } from './tokens.js';
 
+/** The accessible name of each resize control, which the mounting canvas words. */
+export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
+
 /**
  * The resize controls of a selected node: a line control on each side, which
  * resizes one axis, and a handle at each corner, which resizes both. Each
- * holds a named button that resizes by arrow key in model-space steps. Both
- * routes hand `onResizeEnd` the settled position and size together, so a
- * resize from the top or left is one edit. On a node with a badge, the
+ * holds a button named from `labels` that resizes by arrow key in
+ * model-space steps. Both routes hand `onResizeEnd` the settled position and
+ * size together, so a resize from the top or left is one edit. On a node with a badge, the
  * top-right handle sits on the top edge `resizeHandle.badgeGap` screen pixels
  * left of the badge's ink at every zoom, and at full zoom it stays clear of
  * the top-left handle.
  */
 export function ResizeControls({
+  labels,
   node,
   onResize,
   onResizeEnd,
   visible,
 }: {
+  readonly labels: ResizeLabels;
   readonly node: CanvasNode;
   readonly onResize: (() => void) | undefined;
   readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
   readonly visible: boolean;
 }): ReactElement {
-  const name = node.name.trim() || node.kind.replace('-', ' ');
   const keyDown = (
     control: ResizeControlPosition,
     event: KeyboardEvent<HTMLButtonElement>,
@@ -93,7 +97,7 @@ export function ResizeControls({
         >
           <button
             aria-keyshortcuts={resizeControlKeys[position].join(' ')}
-            aria-label={`Resize ${name} from ${resizeControlLabels[position]}`}
+            aria-label={labels[position]}
             onKeyDown={(event) => {
               keyDown(position, event);
             }}
@@ -104,17 +108,6 @@ export function ResizeControls({
     </>
   );
 }
-
-const resizeControlLabels = {
-  top: 'top',
-  right: 'right',
-  bottom: 'bottom',
-  left: 'left',
-  'top-left': 'top left corner',
-  'top-right': 'top right corner',
-  'bottom-right': 'bottom right corner',
-  'bottom-left': 'bottom left corner',
-} as const satisfies Record<ResizeControlPosition, string>;
 
 const verticalKeys = resizeKeys.filter(
   (key) => key === 'ArrowUp' || key === 'ArrowDown',

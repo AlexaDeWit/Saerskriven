@@ -116,11 +116,14 @@ nothing. A flow end at a free position rides on an anchor node named by
 diagram out at the node positions React Flow holds during a gesture.
 [`resizing.ts`](src/lib/resizing.ts): `resizeKeys`, `keyboardResizeStep` and
 `shiftedKeyboardResizeStep` are the keyboard resize the node body's controls
-use.
+use, one control per `resizeControlPositions` entry.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
-each node its accessible name, and loads `@xyflow/react/dist/style.css`
-beside the canvas stylesheet. That sheet styles React Flow's container,
-viewport, handles and controls, none of which a primitive draws.
+each node its accessible name, hands `CanvasNodeBody` the `resizeLabels` its
+resize controls are named by, and loads `@xyflow/react/dist/style.css` beside
+the canvas stylesheet. The package words nothing a reader hears, so the
+mounting app supplies that text in its own language. The sheet styles React
+Flow's container, viewport, handles and controls, none of which a primitive
+draws.
 
 Unit tests: `pnpm nx test @saerskriven/canvas`.
