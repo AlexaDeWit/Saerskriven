@@ -63,11 +63,7 @@ describe('the bytes a projection is drawn with', () => {
 
     expect(Either.isRight(await loader.loadPdfAssets())).toBe(true);
     expect(refused).toEqual(
-      Either.left(
-        RenderAssetFailure.Unavailable({
-          reason: `this studio build holds no ${drawingFace}, which text is set in`,
-        }),
-      ),
+      Either.left(RenderAssetFailure.FaceMissing({ face: drawingFace })),
     );
   });
 
@@ -88,7 +84,7 @@ describe('the bytes a projection is drawn with', () => {
     if (Either.isRight(denied)) {
       throw new Error('The refused asset load unexpectedly succeeded.');
     }
-    expect(denied.left.reason).toContain('answered 404.');
+    expect(denied.left).toMatchObject({ _tag: 'Answered', status: 404 });
     refused = false;
 
     expect(Either.isRight(await loader.loadPdfAssets())).toBe(true);

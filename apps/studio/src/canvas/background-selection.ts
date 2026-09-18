@@ -85,7 +85,7 @@ export function useBackgroundSelection() {
       const canvas = event.target.closest<HTMLElement>('.react-flow');
       dispatch(Action.Select({ elementIds: [] }));
       canvas?.focus({ preventScroll: true });
-      announce('Selection cleared.');
+      announce((t) => t('canvas.selection-cleared'));
     },
   };
 }

@@ -173,7 +173,7 @@ function TitleField({ title, onClose }: TitleFieldProps) {
       />
       {draft.refusal !== undefined && (
         <p className={styles.titleRefusal} id={refusalId}>
-          {draft.refusal.shown}
+          {draft.refusal.shown(t)}
         </p>
       )}
     </div>

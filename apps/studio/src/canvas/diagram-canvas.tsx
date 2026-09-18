@@ -9,6 +9,7 @@ import {
   ConnectionMode,
   ReactFlow,
   SelectionMode,
+  type AriaLabelConfig,
   type Connection,
   type EdgeMouseHandler,
   type ReactFlowInstance,
@@ -35,6 +36,7 @@ import {
 import { commandFor, describeCommandShortcuts } from '../commands/registry.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
+import { sentences } from '../messages/said.js';
 import { selectedElement, selectedElements } from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
@@ -89,14 +91,15 @@ const canvasCommands = [
 ] as const;
 
 type CanvasKeyboardText = {
-  readonly a11y: Record<string, string>;
+  readonly a11y: AriaLabelConfig;
   readonly description: string;
 };
 
 /**
- * The spoken key descriptions in the active locale. They are resolved on
- * render rather than at module load, where they would freeze the language of
- * that moment.
+ * The spoken key descriptions and every text React Flow speaks, in the active
+ * locale. They are resolved on render rather than at module load, where they
+ * would freeze the language of that moment. The whole configuration is given,
+ * so no English default of the library is left to show through.
  */
 function useCanvasKeyboardText(): CanvasKeyboardText {
   const { t } = useTranslator();
@@ -117,10 +120,21 @@ function useCanvasKeyboardText(): CanvasKeyboardText {
       hostPlatform,
       t,
     );
+    const nodeText = sentences(itemText, commandText);
     return {
       a11y: {
-        'node.a11yDescription.keyboardDisabled': `${itemText} ${commandText}`,
-        'edge.a11yDescription.default': `${flowText} ${commandText}`,
+        'node.a11yDescription.default': nodeText,
+        'node.a11yDescription.keyboardDisabled': nodeText,
+        'node.a11yDescription.ariaLiveMessage': ({ x, y }) =>
+          t('canvas.node-moved', { x, y }),
+        'edge.a11yDescription.default': sentences(flowText, commandText),
+        'controls.ariaLabel': t('canvas.flow-controls'),
+        'controls.zoomIn.ariaLabel': t('commands.label-zoom-in'),
+        'controls.zoomOut.ariaLabel': t('commands.label-zoom-out'),
+        'controls.fitView.ariaLabel': t('commands.label-fit-to-view'),
+        'controls.interactive.ariaLabel': t('canvas.toggle-interactivity'),
+        'minimap.ariaLabel': t('canvas.minimap'),
+        'handle.ariaLabel': t('canvas.handle'),
       },
       description: describeContextualShortcuts(
         contextualShortcuts

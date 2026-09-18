@@ -130,10 +130,29 @@ export function restoredState(snapshot: RecoverySnapshot): State {
   };
 }
 
+type ReadBound = Omit<
+  Extract<ReadFailure, { readonly _tag: 'ExceededReadLimit' }>,
+  '_tag'
+>;
+
+/**
+ * What stopped a snapshot, as data the failure notice words. `Thrown` carries
+ * the text a browser or the JSON parser raised, which no code describes.
+ */
+export type RecoveryProblem = Data.TaggedEnum<{
+  Thrown: { readonly reason: string };
+  PastBound: ReadBound;
+  Unsupported: {};
+  EarlierRelease: { readonly writer: string | undefined };
+}>;
+
+/** Constructors for {@link RecoveryProblem}, plus Effect's `$match`. */
+export const RecoveryProblem = Data.taggedEnum<RecoveryProblem>();
+
 /** Why recovery storage could not supply or keep a snapshot. */
 export type RecoveryStorageFailure = Data.TaggedEnum<{
-  Rejected: { readonly reason: string };
-  Unavailable: { readonly reason: string };
+  Rejected: { readonly problem: RecoveryProblem };
+  Unavailable: { readonly problem: RecoveryProblem };
 }>;
 
 /** Constructors for {@link RecoveryStorageFailure}. */
@@ -197,8 +216,12 @@ function accessStorage<Value>(
   return Either.try({
     try: () => use(storage()),
     catch: (cause) =>
-      RecoveryStorageFailure.Unavailable({ reason: reasonOf(cause) }),
+      unavailable(RecoveryProblem.Thrown({ reason: reasonOf(cause) })),
   });
+}
+
+function unavailable(problem: RecoveryProblem): RecoveryStorageFailure {
+  return RecoveryStorageFailure.Unavailable({ problem });
 }
 
 function encodeSnapshot(
@@ -208,13 +231,11 @@ function encodeSnapshot(
     Either.try({
       try: () => JSON.stringify(snapshot),
       catch: (cause) =>
-        RecoveryStorageFailure.Unavailable({ reason: reasonOf(cause) }),
+        unavailable(RecoveryProblem.Thrown({ reason: reasonOf(cause) })),
     }),
     (encoded) =>
       Either.mapLeft(withinTextLimit(encoded), (failure) =>
-        RecoveryStorageFailure.Unavailable({
-          reason: describeReadLimit(failure),
-        }),
+        unavailable(readProblem(failure)),
       ),
   );
 }
@@ -231,14 +252,14 @@ function parseRecoverySnapshot(
       }),
     ),
     (failure) =>
-      RecoveryStorageFailure.Rejected({ reason: describeReadLimit(failure) }),
+      RecoveryStorageFailure.Rejected({ problem: readProblem(failure) }),
   );
   return Either.flatMap(decoded, (value) => {
     const snapshot = recoverySnapshotSchema.safeParse(value);
     return snapshot.success
       ? Either.right(snapshot.data)
       : Either.left(
-          RecoveryStorageFailure.Rejected({ reason: refusal(value) }),
+          RecoveryStorageFailure.Rejected({ problem: refusal(value) }),
         );
   });
 }
@@ -248,23 +269,21 @@ const envelopeSchema = z.object({
   writtenBy: z.object({ studioVersion: z.string() }).optional(),
 });
 
-function refusal(value: unknown): string {
+function refusal(value: unknown): RecoveryProblem {
   const envelope = envelopeSchema.safeParse(value);
-  if (!envelope.success || envelope.data.version >= recoveryVersion) {
-    return 'The stored snapshot is malformed or unsupported.';
-  }
-  const writer = envelope.data.writtenBy?.studioVersion;
-  return writer === undefined
-    ? 'An earlier release of Saerskriven stored this session, in a form this release cannot restore.'
-    : `Saerskriven ${writer} stored this session, in a form this release cannot restore.`;
+  return !envelope.success || envelope.data.version >= recoveryVersion
+    ? RecoveryProblem.Unsupported()
+    : RecoveryProblem.EarlierRelease({
+        writer: envelope.data.writtenBy?.studioVersion,
+      });
 }
 
-function describeReadLimit(failure: ReadFailure): string {
+function readProblem(failure: ReadFailure): RecoveryProblem {
   return ReadFailure.$match(failure, {
     ExceededReadLimit: ({ limit, bound, observed }) =>
-      `${limit}: the bound is ${String(bound)}, the snapshot reached ${String(observed)}.`,
-    MalformedText: ({ message }) => message,
-    InvalidWireDocument: () => 'The stored snapshot is not valid.',
-    InvalidModel: () => 'The stored model is not valid.',
+      RecoveryProblem.PastBound({ limit, bound, observed }),
+    MalformedText: ({ message }) => RecoveryProblem.Thrown({ reason: message }),
+    InvalidWireDocument: () => RecoveryProblem.Unsupported(),
+    InvalidModel: () => RecoveryProblem.Unsupported(),
   });
 }

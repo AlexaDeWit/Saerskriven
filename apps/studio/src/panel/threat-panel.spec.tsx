@@ -31,6 +31,7 @@ import {
   textbox,
 } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
+import { activeTranslator } from '../messages/locale.js';
 
 const panelProps = (
   overrides: Partial<ThreatPanelProps> = {},
@@ -318,7 +319,9 @@ describe(
         field: 'Description',
         text: `Pasted${softHyphen}prose`,
       });
-      expect(drafts.get(actorElement)?.said.trim()).not.toBe('');
+      expect(
+        drafts.get(actorElement)?.said(activeTranslator().t).trim(),
+      ).not.toBe('');
     });
 
     it('opens on the draft it was given without repeating its past refusal', () => {
@@ -329,7 +332,7 @@ describe(
             threatId: firstThreat,
             field: 'Description',
             text: `Pasted${softHyphen}prose`,
-            said: 'A refusal',
+            said: () => 'A refusal',
           },
         ],
       ]);

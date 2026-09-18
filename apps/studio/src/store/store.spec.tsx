@@ -16,6 +16,7 @@ import {
 } from './store.fixtures.js';
 import { activeDiagramId, isDirty, needsCloseGuard } from './selectors.js';
 import {
+  RecoveryProblem,
   RecoveryStorageFailure,
   type RecoverySnapshot,
   type RecoveryStorage,
@@ -182,7 +183,9 @@ describe('session recovery', () => {
       ...loaded(),
       load: () =>
         Either.left(
-          RecoveryStorageFailure.Rejected({ reason: 'Unsupported version.' }),
+          RecoveryStorageFailure.Rejected({
+            problem: RecoveryProblem.Unsupported(),
+          }),
         ),
     };
 
@@ -236,7 +239,9 @@ describe('session recovery', () => {
         return replacements === 1
           ? Either.right(undefined)
           : Either.left(
-              RecoveryStorageFailure.Unavailable({ reason: 'Quota reached.' }),
+              RecoveryStorageFailure.Unavailable({
+                problem: RecoveryProblem.Thrown({ reason: 'Quota reached.' }),
+              }),
             );
       },
     };
@@ -277,7 +282,9 @@ describe('session recovery', () => {
       ...tab.storage,
       replace: () =>
         Either.left(
-          RecoveryStorageFailure.Unavailable({ reason: 'Quota reached.' }),
+          RecoveryStorageFailure.Unavailable({
+            problem: RecoveryProblem.Thrown({ reason: 'Quota reached.' }),
+          }),
         ),
     };
     const runtime = createModelStore(tab.storage, tab.sync, sampleModel);
@@ -366,7 +373,9 @@ describe('session recovery', () => {
         clears += 1;
         return clears === 1
           ? Either.left(
-              RecoveryStorageFailure.Unavailable({ reason: 'Clear failed.' }),
+              RecoveryStorageFailure.Unavailable({
+                problem: RecoveryProblem.Thrown({ reason: 'Clear failed.' }),
+              }),
             )
           : Either.right(undefined);
       },

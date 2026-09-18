@@ -12,19 +12,15 @@ import {
   type WriteResult,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
+import type { StudioMessageId } from '../messages/catalogues.js';
 import { Either } from 'effect';
 import {
   divergenceDetail,
   divergenceLine,
-  type Speaker,
 } from '../messages/divergence/text.js';
+import type { Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
-import {
-  FileLifecycle,
-  nameOf,
-  untitledModel,
-  type RetainedSource,
-} from '../store/state.js';
+import { FileLifecycle, nameOf, type RetainedSource } from '../store/state.js';
 import { OpenOutcome, SaveOutcome, type SaveFileType } from './bridge.js';
 
 type FormatFile = {
@@ -92,12 +88,16 @@ export function proposedName(name: string, format: FormatName): string {
   return withExtension(name, formatFiles[format].extensions[0], unnamedModel);
 }
 
-/** The proposed export name, derived from the open file or `Untitled`. */
+/**
+ * The proposed export name, derived from the open file, or `untitled` in the
+ * active language while there is none.
+ */
 export function proposedExportName(
   file: FileLifecycle,
   extension: string,
+  untitled: string,
 ): string {
-  return withExtension(nameOf(file), extension, untitledModel);
+  return withExtension(nameOf(file, untitled), extension, untitled);
 }
 
 /** Where a save writes, and the document it merges the model onto. */
@@ -202,12 +202,12 @@ export type LossReport = {
   readonly divergences: readonly Divergence[];
 };
 
-/** How each occasion introduces its report to a person. */
-export const reportHeadlines: Record<LossOccasion, string> = {
-  open: 'Opening the file dropped what it holds and Saerskriven does not:',
-  import: 'Import created a native model with these conversions and omissions:',
-  save: 'The last save did not carry everything the model holds:',
-};
+/** The message each occasion introduces its report with. */
+export const reportHeadlines = {
+  open: 'reports.opened',
+  import: 'reports.imported',
+  save: 'reports.saved',
+} as const satisfies Record<LossOccasion, StudioMessageId>;
 
 /** Reports losses from reading, including fields absent from the retained document. */
 export function openReport(

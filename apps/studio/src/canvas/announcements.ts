@@ -1,13 +1,20 @@
+import { activeTranslator, useTranslator } from '../messages/locale.js';
+import type { Said, Speaker } from '../messages/said.js';
 import { onCanvasOrPanelChange } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
 import type { RefusedDraft } from '../ui/text-field.js';
+
+type Held = {
+  readonly said: Said | undefined;
+  readonly sequence: number;
+};
 
 type Announcement = {
   readonly message: string;
   readonly sequence: number;
 };
 
-const nothingSaid: Announcement = { message: '', sequence: 0 };
+const nothingSaid: Held = { said: undefined, sequence: 0 };
 
 /** How many grapheme clusters of a record's first line an announcement quotes. */
 export const recordQuoteLength = 24;
@@ -19,13 +26,16 @@ const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 
 let current = nothingSaid;
 
-const announcementStore = externalStore(currentAnnouncement);
+const announcementStore = externalStore(() => current);
 
 onCanvasOrPanelChange(clear);
 
-/** Says `message` in the canvas announcement. Its sequence moves, so repeated words announce again. */
-export function announce(message: string): void {
-  current = { message, sequence: current.sequence + 1 };
+/**
+ * Says `said` in the canvas announcement, worded in the language active when
+ * it is shown. Its sequence moves, so repeated words announce again.
+ */
+export function announce(said: Said): void {
+  current = { said, sequence: current.sequence + 1 };
   announcementStore.notify();
 }
 
@@ -57,14 +67,14 @@ export function excerpt(text: string, bound: number): string {
     : clusters.join('');
 }
 
-/** {@link excerpt} in English quotation marks. */
-export function quoted(text: string, bound: number): string {
-  return `“${excerpt(text, bound)}”`;
+/** {@link excerpt} in the reader's quotation marks. */
+export function quoted(t: Speaker, text: string, bound: number): string {
+  return t('canvas.quoted', { text: excerpt(text, bound) });
 }
 
 /** An element's own name quoted to {@link nameQuoteLength}, or `unnamed` while it has none. */
-export function quotedName(name: string, unnamed: string): string {
-  return name === '' ? unnamed : quoted(name, nameQuoteLength);
+export function quotedName(t: Speaker, name: string, unnamed: string): string {
+  return name === '' ? unnamed : quoted(t, name, nameQuoteLength);
 }
 
 /** Clears the announcement and its sequence. */
@@ -73,20 +83,29 @@ export function resetAnnouncements(): void {
   announcementStore.notify();
 }
 
-/** What was last said. */
+/** What was last said, worded in the active language. */
 export function currentAnnouncement(): Announcement {
-  return current;
+  return worded(current, activeTranslator().t);
 }
 
-/** Subscribes a component to {@link announce}. */
+/** Subscribes a component to {@link announce}, rewording what was said on a change of language. */
 export function useAnnouncement(): Announcement {
-  return announcementStore.use();
+  const held = announcementStore.use();
+  const { t } = useTranslator();
+  return worded(held, t);
+}
+
+function worded(held: Held, t: Speaker): Announcement {
+  return {
+    message: held.said === undefined ? '' : held.said(t),
+    sequence: held.sequence,
+  };
 }
 
 function clear(): void {
-  if (current.message === '') {
+  if (current.said === undefined) {
     return;
   }
-  current = { ...current, message: '' };
+  current = { ...current, said: undefined };
   announcementStore.notify();
 }

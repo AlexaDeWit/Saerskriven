@@ -7,9 +7,16 @@ import { renderFaces } from 'virtual:saerskriven-render-faces';
 import typstWasmUrl from 'virtual:saerskriven-typst-wasm?url';
 import { reasonOf } from '../reason.js';
 
-/** Why the browser could not load the bytes a projection is drawn with. */
+/**
+ * Why the browser could not load the bytes a projection is drawn with.
+ * `Unavailable` carries the text the browser raised, `Answered` the status a
+ * server gave instead of the bytes, and `FaceMissing` the face the build
+ * lacks.
+ */
 export type RenderAssetFailure = Data.TaggedEnum<{
   Unavailable: { readonly reason: string };
+  Answered: { readonly url: string; readonly status: number };
+  FaceMissing: { readonly face: string };
 }>;
 
 /** Constructors for {@link RenderAssetFailure}. */
@@ -49,7 +56,10 @@ export function loadPngAssets(): Promise<
   Either.Either<ResvgAssets, RenderAssetFailure>
 > {
   return assembled(resvgModule, (faces) =>
-    ledBy(faces, (face) => face.name, drawingFace, subject),
+    Either.mapLeft(
+      ledBy(faces, (face) => face.name, drawingFace, subject),
+      () => RenderAssetFailure.FaceMissing({ face: drawingFace }),
+    ),
   );
 }
 
@@ -70,7 +80,9 @@ const resvgModule: Loaded<Uint8Array> = once(() => fetchBytes(resvgWasmUrl));
 
 async function assembled(
   module: Loaded<Uint8Array>,
-  lettered: (faces: readonly Face[]) => Either.Either<readonly Face[], string>,
+  lettered: (
+    faces: readonly Face[],
+  ) => Either.Either<readonly Face[], RenderAssetFailure>,
 ): Promise<Either.Either<Assets, RenderAssetFailure>> {
   const [wasm, loaded] = await Promise.all([module(), faces()]);
   if (Either.isLeft(wasm)) {
@@ -79,13 +91,10 @@ async function assembled(
   if (Either.isLeft(loaded)) {
     return Either.left(loaded.left);
   }
-  return Either.mapBoth(lettered(loaded.right), {
-    onLeft: (reason) => RenderAssetFailure.Unavailable({ reason }),
-    onRight: (ordered) => ({
-      wasm: wasm.right,
-      fonts: ordered.map((face) => face.bytes),
-    }),
-  });
+  return Either.map(lettered(loaded.right), (ordered) => ({
+    wasm: wasm.right,
+    fonts: ordered.map((face) => face.bytes),
+  }));
 }
 
 function firstFailureOrAll<Value>(
@@ -137,9 +146,7 @@ async function fetchBytes(
   }
   if (!response.right.ok) {
     return Either.left(
-      RenderAssetFailure.Unavailable({
-        reason: `${url} answered ${String(response.right.status)}.`,
-      }),
+      RenderAssetFailure.Answered({ url, status: response.right.status }),
     );
   }
   const body = response.right;

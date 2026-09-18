@@ -12,6 +12,7 @@ import { editorTimeout, showThreatEditor } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 import { describedNumbers, numbersIn, textbox } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
+import { activeTranslator } from '../messages/locale.js';
 
 const commits = () => vi.fn<(patch: Partial<Threat>) => void>();
 
@@ -108,7 +109,9 @@ describe(
         field: 'Description',
         text: `Pasted${softHyphen}prose`,
       });
-      expect(numbersIn(refusedDescription?.said)).toEqual([7]);
+      expect(numbersIn(refusedDescription?.said(activeTranslator().t))).toEqual(
+        [7],
+      );
 
       await typeInto('Title', ' by token');
 
@@ -120,7 +123,7 @@ describe(
         held: {
           field: 'Description',
           text: `Pasted${softHyphen}prose`,
-          said: 'A refusal',
+          said: () => 'A refusal',
         },
       });
 

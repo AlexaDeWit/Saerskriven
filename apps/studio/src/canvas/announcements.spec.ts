@@ -1,4 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import { actorElement, sampleModel } from '../store/store.fixtures.js';
@@ -17,6 +18,7 @@ const clusters = (text: string): number =>
 
 describe('announce', () => {
   const message = 'message';
+  const said = () => message;
 
   beforeEach(() => {
     modelStore.setState(initialState(sampleModel), true);
@@ -24,32 +26,28 @@ describe('announce', () => {
   });
 
   it('holds what was last said', () => {
-    announce(message);
+    announce(said);
 
     expect(currentAnnouncement().message).toBe(message);
   });
 
   it('counts every announcement, so the same words twice over are two of them', () => {
-    announce(message);
+    announce(said);
     const first = currentAnnouncement();
-    announce(message);
+    announce(said);
 
     expect(currentAnnouncement().sequence).toBe(first.sequence + 1);
   });
 
-  it('hands back the same value while nothing is said, as a subscription needs', () => {
-    expect(currentAnnouncement()).toBe(currentAnnouncement());
-  });
-
   it('starts again from silence when reset', () => {
-    announce(message);
+    announce(said);
     resetAnnouncements();
 
     expect(currentAnnouncement().message).toBe('');
   });
 
   it('clears when the next action changes canvas state', () => {
-    announce(message);
+    announce(said);
 
     dispatch(Action.Select({ elementIds: [actorElement] }));
 
@@ -57,7 +55,7 @@ describe('announce', () => {
   });
 
   it('stays when an action changes nothing', () => {
-    announce(message);
+    announce(said);
 
     dispatch(Action.Undo());
 
@@ -71,12 +69,19 @@ describe('useAnnouncement', () => {
     resetAnnouncements();
   });
 
+  afterEach(() => {
+    act(() => {
+      chooseLanguage('en-CA');
+    });
+    globalThis.localStorage.clear();
+  });
+
   it('tells a subscribed component what was said, and that it was unsaid', () => {
     const { result } = renderHook(() => useAnnouncement());
     const message = 'message';
 
     act(() => {
-      announce(message);
+      announce(() => message);
     });
     expect(result.current.message).toBe(message);
 
@@ -85,13 +90,33 @@ describe('useAnnouncement', () => {
     });
     expect(result.current.message).toBe('');
   });
+
+  it('rewords a standing announcement in a language chosen after it was made', () => {
+    const { result } = renderHook(() => useAnnouncement());
+    act(() => {
+      announce((speak) => speak('canvas.selection-cleared'));
+    });
+    const before = result.current;
+
+    act(() => {
+      chooseLanguage('sv');
+    });
+
+    expect(result.current.message).toBe(
+      activeTranslator().t('canvas.selection-cleared'),
+    );
+    expect(result.current.message).not.toBe(before.message);
+    expect(result.current.sequence).toBe(before.sequence);
+  });
 });
 
 describe('quoted', () => {
   const bound = 24;
 
+  const { t } = activeTranslator();
+
   it('sets short text off whole, on one line', () => {
-    const said = quoted('Callers\n never share', bound);
+    const said = quoted(t, 'Callers\n never share', bound);
 
     expect(said).toContain('Callers never share');
     expect(said).not.toBe('Callers never share');
@@ -99,7 +124,7 @@ describe('quoted', () => {
 
   it('cuts long text to a bounded prefix ending in an ellipsis', () => {
     const long = 'Særskriven carries a token in a redacted type. '.repeat(20);
-    const said = quoted(long, bound);
+    const said = quoted(t, long, bound);
 
     expect(said).toContain(long.slice(0, bound / 2));
     expect(clusters(said)).toBeLessThanOrEqual(bound + 2);
@@ -107,7 +132,7 @@ describe('quoted', () => {
 
   it('never cuts inside one character a person sees', () => {
     const family = '👩‍👩‍👧';
-    const said = quoted(family.repeat(bound * 2), bound);
+    const said = quoted(t, family.repeat(bound * 2), bound);
 
     expect(said).toContain(family.repeat(bound - 1));
     expect(clusters(said)).toBeLessThanOrEqual(bound + 2);

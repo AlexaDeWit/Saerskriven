@@ -6,38 +6,147 @@ import {
 } from '@saerskriven/model';
 import { useTranslator } from '../messages/locale.js';
 import { Message } from '../messages/message.js';
+import type { Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
+import { RecoveryProblem } from '../store/recovery-storage.js';
 import { StudioFailure } from '../store/state.js';
 import { dispatch } from '../store/store.js';
-import { DetailLines } from './detail-lines.js';
+import { DetailLines, type NoticeText } from './detail-lines.js';
 import styles from './failure-notice.module.css';
 import { LiveRegion } from './live-region.js';
 
-type FailureDescription = {
-  readonly headline: string;
-  readonly details: readonly string[];
-};
-
-/** A refusal as a person reads it: one sentence, and the lines under it with any schema paths. */
-export function describeFailure(failure: StudioFailure): FailureDescription {
+/**
+ * A refusal as a person reads it: a headline in the reader's language, and
+ * the lines under it. An id, a file name, a limit's name and a schema path
+ * pass through unchanged. A parse issue's own text, and text a browser or a
+ * parser raised, stays a literal line, since no code says what it means.
+ */
+export function describeFailure(
+  t: Speaker,
+  failure: StudioFailure,
+): NoticeText {
   return StudioFailure.$match(failure, {
     Operation: ({ failure: refusal }) => ({
-      headline: 'The model refused the edit.',
-      details: [describeOperation(refusal)],
+      headline: t('notice.operation-refused'),
+      details: describeOperation(t, refusal),
     }),
-    Read: ({ name, failure: refusal }) => describeRead(name, refusal),
+    Read: ({ name, failure: refusal }) => describeRead(t, name, refusal),
     File: ({ reason }) => ({
-      headline: 'Saerskriven could not reach the file.',
+      headline: t('notice.file-unreachable'),
       details: [reason],
     }),
-    StoredRecoveryRejected: ({ reason }) => ({
-      headline: 'Saerskriven rejected the stored recovery snapshot.',
-      details: [reason],
+    StoredRecoveryRejected: ({ problem }) => ({
+      headline: t('notice.recovery-rejected'),
+      details: [describeRecovery(t, problem)],
     }),
-    RecoveryUnavailable: ({ reason }) => ({
-      headline: 'Local recovery is unavailable.',
-      details: [reason],
+    RecoveryUnavailable: ({ problem }) => ({
+      headline: t('notice.recovery-unavailable'),
+      details: [describeRecovery(t, problem)],
     }),
+  });
+}
+
+/** What the model refused, as a sentence followed by any parse issue lines. */
+export function describeOperation(
+  t: Speaker,
+  failure: OperationFailure,
+): readonly string[] {
+  return OperationFailure.$match(failure, {
+    InvalidElementProperties: ({ issues }) => [
+      t('notice.op-element-properties'),
+      ...issueLines(issues),
+    ],
+    InvalidElementRelationship: ({ issues }) => [
+      t('notice.op-element-relationships'),
+      ...issueLines(issues),
+    ],
+    InvalidFragment: ({ issues }) => [
+      t('notice.op-fragment'),
+      ...issueLines(issues),
+    ],
+    UnknownDiagram: ({ diagramId }) => [
+      t('notice.op-unknown-diagram', { id: diagramId }),
+    ],
+    DuplicateDiagramId: ({ diagramId }) => [
+      t('notice.op-duplicate-diagram', { id: diagramId }),
+    ],
+    EmptyTitle: ({ diagramId }) => [
+      t('notice.op-empty-title', { id: diagramId }),
+    ],
+    RefusedTitleCharacter: ({ diagramId }) => [
+      t('notice.op-title-character', { id: diagramId }),
+    ],
+    DiagramNotEmpty: ({ diagramId, elements }) => [
+      t('notice.op-diagram-not-empty', { id: diagramId, count: elements }),
+    ],
+    UnknownElement: ({ elementId }) => [
+      t('notice.op-unknown-element', { id: elementId }),
+    ],
+    UnknownThreat: ({ threatId }) => [
+      t('notice.op-unknown-threat', { id: threatId }),
+    ],
+    UnknownMitigation: ({ mitigationId }) => [
+      t('notice.op-unknown-mitigation', { id: mitigationId }),
+    ],
+    UnknownAssumption: ({ assumptionId }) => [
+      t('notice.op-unknown-assumption', { id: assumptionId }),
+    ],
+    DuplicateElementId: ({ elementId }) => [
+      t('notice.op-duplicate-element', { id: elementId }),
+    ],
+    DuplicateThreatId: ({ threatId }) => [
+      t('notice.op-duplicate-threat', { id: threatId }),
+    ],
+    DuplicateMitigationId: ({ mitigationId }) => [
+      t('notice.op-duplicate-mitigation', { id: mitigationId }),
+    ],
+    DuplicateAssumptionId: ({ assumptionId }) => [
+      t('notice.op-duplicate-assumption', { id: assumptionId }),
+    ],
+    RecordWithoutThreat: ({ record }) => [
+      t(
+        record.kind === 'mitigation'
+          ? 'notice.op-mitigation-without-threat'
+          : 'notice.op-assumption-without-threat',
+        { id: record.id },
+      ),
+    ],
+    AssumptionWithoutReference: ({ assumptionId }) => [
+      t('notice.op-assumption-without-reference', { id: assumptionId }),
+    ],
+    ReusedThreatNumber: ({ number }) => [
+      t('notice.op-reused-number', { number }),
+    ],
+    ChangedThreatNumber: ({ threatId, number }) => [
+      t('notice.op-changed-number', { id: threatId, number }),
+    ],
+    InvalidFlowEndpoint: ({ side, reference }) => [
+      t(
+        side === 'source'
+          ? 'notice.op-source-endpoint'
+          : 'notice.op-target-endpoint',
+        { id: reference },
+      ),
+    ],
+    NotResizable: ({ elementId }) => [
+      t('notice.op-not-resizable', { id: elementId }),
+    ],
+    NotTextElement: ({ elementId }) => [
+      t('notice.op-not-note', { id: elementId }),
+    ],
+    NotFlowElement: ({ elementId }) => [
+      t('notice.op-not-flow', { id: elementId }),
+    ],
+    EmptyName: ({ elementId }) => [
+      t('notice.op-empty-name', { id: elementId }),
+    ],
+    RefusedCharacter: ({ elementId }) => [
+      t('notice.op-element-character', { id: elementId }),
+    ],
+    RefusedMetadataCharacter: ({ field }) => [t(metadataCharacter[field])],
+    RefusedContributorCharacter: ({ contributor }) => [
+      t('notice.op-contributor-character', { entry: contributor + 1 }),
+    ],
   });
 }
 
@@ -49,12 +158,12 @@ type FailureNoticeProps = {
 export function FailureNotice({ failure }: FailureNoticeProps) {
   const { t } = useTranslator();
   const described =
-    failure === undefined ? undefined : describeFailure(failure);
+    failure === undefined ? undefined : describeFailure(t, failure);
 
   return (
     <LiveRegion
       className={styles.notice}
-      label="Problems"
+      label={t('notice.problems')}
       testId="failure-notice"
     >
       {described !== undefined && (
@@ -89,92 +198,51 @@ export function FailureNotice({ failure }: FailureNoticeProps) {
   );
 }
 
+const metadataCharacter = {
+  title: 'notice.op-model-title-character',
+  owner: 'notice.op-model-owner-character',
+  description: 'notice.op-model-description-character',
+} as const;
+
 function describeRead(
+  t: Speaker,
   name: string,
   failure: ReadFailure | DetectionFailure,
-): FailureDescription {
+): NoticeText {
   return DetectionFailure.$is('NoFormatClaimed')(failure)
     ? {
-        headline: `No format claimed ${name}.`,
-        details: [`Saerskriven tried ${failure.tried.join(', ')}.`],
+        headline: t('notice.no-format-claimed', { name }),
+        details: [t('notice.formats-tried', { formats: failure.tried })],
       }
     : ReadFailure.$match(failure, {
-        ExceededReadLimit: ({ limit, bound, observed }) => ({
-          headline: `${name} is past a read bound, so nothing read it.`,
-          details: [
-            `${limit}: the bound is ${String(bound)}, the file reached ${String(observed)}.`,
-          ],
+        ExceededReadLimit: (bound) => ({
+          headline: t('notice.read-limit', { name }),
+          details: [t('notice.read-limit-detail', bound)],
         }),
         MalformedText: ({ message }) => ({
-          headline: `${name} is not valid text of the format that claimed it.`,
+          headline: t('notice.malformed-text', { name }),
           details: [message],
         }),
         InvalidWireDocument: ({ issues }) => ({
-          headline: `${name} is not a valid document of the format that claimed it.`,
+          headline: t('notice.invalid-document', { name }),
           details: issueLines(issues),
         }),
         InvalidModel: ({ issues }) => ({
-          headline: `${name} is a valid document, and the model it maps to is not.`,
+          headline: t('notice.invalid-model', { name }),
           details: issueLines(issues),
         }),
       });
 }
 
-function describeOperation(failure: OperationFailure): string {
-  return OperationFailure.$match(failure, {
-    InvalidElementProperties: ({ issues }) =>
-      `The element properties were refused: ${issueLines(issues).join(' ')}`,
-    InvalidElementRelationship: ({ issues }) =>
-      `The element has invalid boundary relationships: ${issueLines(issues).join(' ')}`,
-    InvalidFragment: ({ issues }) =>
-      `The copied graph was refused. ${issueLines(issues).join(' ')}`,
-    UnknownDiagram: ({ diagramId }) =>
-      `The model holds no diagram ${diagramId}.`,
-    DuplicateDiagramId: ({ diagramId }) =>
-      `The model already holds a diagram ${diagramId}.`,
-    EmptyTitle: ({ diagramId }) =>
-      `Diagram ${diagramId} cannot be left without a title.`,
-    RefusedTitleCharacter: ({ diagramId }) =>
-      `The title for diagram ${diagramId} carries a character the model does not accept.`,
-    DiagramNotEmpty: ({ diagramId, elements }) =>
-      `Diagram ${diagramId} cannot be removed while it holds elements, and it holds ${String(elements)}.`,
-    UnknownElement: ({ elementId }) =>
-      `The model holds no element ${elementId}.`,
-    UnknownThreat: ({ threatId }) => `The model holds no threat ${threatId}.`,
-    UnknownMitigation: ({ mitigationId }) =>
-      `The model holds no mitigation ${mitigationId}.`,
-    UnknownAssumption: ({ assumptionId }) =>
-      `The model holds no assumption ${assumptionId}.`,
-    DuplicateElementId: ({ elementId }) =>
-      `The model already holds an element ${elementId}.`,
-    DuplicateThreatId: ({ threatId }) =>
-      `The model already holds a threat ${threatId}.`,
-    DuplicateMitigationId: ({ mitigationId }) =>
-      `The model already holds a mitigation ${mitigationId}.`,
-    DuplicateAssumptionId: ({ assumptionId }) =>
-      `The model already holds an assumption ${assumptionId}.`,
-    RecordWithoutThreat: ({ record }) =>
-      `The ${record.kind} ${record.id} links no threat, and a ${record.kind} is added on a threat.`,
-    AssumptionWithoutReference: ({ assumptionId }) =>
-      `The assumption ${assumptionId} links no threat and does not apply to the model.`,
-    ReusedThreatNumber: ({ number }) =>
-      `Threat number ${String(number)} was issued already.`,
-    ChangedThreatNumber: ({ threatId, number }) =>
-      `Threat ${threatId} cannot take number ${String(number)}, a number being issued once.`,
-    InvalidFlowEndpoint: ({ side, reference }) =>
-      `The flow's ${side} names ${reference}, which cannot be one.`,
-    NotResizable: ({ elementId }) => `Element ${elementId} has no size to set.`,
-    NotTextElement: ({ elementId }) =>
-      `Element ${elementId} is not a canvas note.`,
-    NotFlowElement: ({ elementId }) => `Element ${elementId} is not a flow.`,
-    EmptyName: ({ elementId }) =>
-      `Element ${elementId} cannot be left without a name.`,
-    RefusedCharacter: ({ elementId }) =>
-      `The text for element ${elementId} carries a character the model does not accept.`,
-    RefusedMetadataCharacter: ({ field }) =>
-      `The model ${field} carries a character the model does not accept.`,
-    RefusedContributorCharacter: ({ contributor }) =>
-      `Entry ${String(contributor + 1)} of the contributors carries a character the model does not accept.`,
+function describeRecovery(t: Speaker, problem: RecoveryProblem): string {
+  return RecoveryProblem.$match(problem, {
+    Thrown: ({ reason }) => reason,
+    PastBound: (bound) => t('notice.snapshot-limit-detail', bound),
+    Unsupported: () => t('notice.snapshot-unsupported'),
+    EarlierRelease: ({ writer }) =>
+      writer === undefined
+        ? t('notice.snapshot-earlier-release')
+        : t('notice.snapshot-release', { release: writer }),
   });
 }
 

@@ -102,8 +102,6 @@ export function arrangeSelected(operation: Arrangement): void {
   const moves = arrangementMoves(nodes, operation);
   dispatch(Action.ArrangeElements({ moves }));
   if (modelStore.getState().present !== state.present) {
-    announce(
-      `Arranged ${String(nodes.length)} nodes. Flow bends and free endpoints stayed in place.`,
-    );
+    announce((t) => t('canvas.arranged', { count: nodes.length }));
   }
 }

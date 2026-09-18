@@ -9,6 +9,8 @@ import {
   type Ref,
 } from 'react';
 
+import { useTranslator } from '../messages/locale.js';
+import { sentences, type Said } from '../messages/said.js';
 import { growUnlessResized, sizesFieldsToContent } from './grow-to-content.js';
 import styles from './text-field.module.css';
 
@@ -74,15 +76,15 @@ export function useTextDraft(
   };
 }
 
-/** Inline and announced forms of a validation refusal. */
+/** Inline and announced forms of a validation refusal, worded when shown. */
 export type TextRefusal = {
-  readonly shown: string;
-  readonly said: string;
+  readonly shown: Said;
+  readonly said: Said;
 };
 
 /** The refused text and its announcement, retained when the editor unmounts. */
 export type RefusedDraft = {
-  readonly said: string;
+  readonly said: Said;
   readonly text: string;
 };
 
@@ -95,12 +97,9 @@ export function refusedText(
   if (at === undefined) {
     return undefined;
   }
-  const before = Array.from(text.slice(0, at)).length;
-  const shown = `Character ${String(before + 1)} is one the model does not accept.`;
-  return { shown, said: `${label} was not saved. ${shown}` };
+  const position = Array.from(text.slice(0, at)).length + 1;
+  return refusedWith(label, (t) => t('notice.refused-character', { position }));
 }
-
-const emptyRefusal = 'A name cannot be empty.';
 
 /** Refuses an empty name ahead of the characters {@link refusedText} refuses. */
 export function refusedName(
@@ -108,8 +107,16 @@ export function refusedName(
   text: string,
 ): TextRefusal | undefined {
   return isEmptyName(text)
-    ? { shown: emptyRefusal, said: `${label} was not saved. ${emptyRefusal}` }
+    ? refusedWith(label, (t) => t('notice.empty-name'))
     : refusedText(label, text);
+}
+
+function refusedWith(label: string, shown: Said): TextRefusal {
+  return {
+    shown,
+    said: (t) =>
+      sentences(t('notice.field-not-saved', { field: label }), shown(t)),
+  };
 }
 
 type TextFieldProps = {
@@ -138,6 +145,7 @@ function Labelled({
   readonly refusal: TextRefusal | undefined;
   readonly children: ReactNode;
 }) {
+  const { t } = useTranslator();
   return (
     <div className={styles.field}>
       {shownLabel !== '' && (
@@ -148,7 +156,7 @@ function Labelled({
       {children}
       {refusal !== undefined && (
         <p className={styles.refusal} id={refusalId}>
-          {refusal.shown}
+          {refusal.shown(t)}
         </p>
       )}
     </div>

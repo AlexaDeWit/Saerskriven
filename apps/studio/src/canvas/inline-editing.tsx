@@ -46,11 +46,7 @@ import {
   useTextDraft,
   type TextRefusal,
 } from '../ui/text-field.js';
-import {
-  announceRefusal,
-  quotedName,
-  resetAnnouncements,
-} from './announcements.js';
+import { announceRefusal, resetAnnouncements } from './announcements.js';
 import {
   commitNote,
   commitRename,
@@ -59,7 +55,7 @@ import {
   stopInlineEditing,
 } from './edits.js';
 import { useTranslator } from '../messages/locale.js';
-import { edgeLabel, nodeLabel } from './names.js';
+import { edgeLabel, nodeLabel, resizeLabels } from './names.js';
 import styles from './inline-editing.module.css';
 
 type InlineFieldProps = {
@@ -129,14 +125,6 @@ function typeOf(textStyle: WrappedTextStyle, room?: number): CSSProperties {
     lineHeight: lineHeightRatio,
     maxHeight: room === undefined ? undefined : `${String(room)}px`,
   };
-}
-
-function refusedNameOf(
-  name: string,
-  unnamed: string,
-): (label: string, text: string) => TextRefusal | undefined {
-  const spoken = `Name of ${quotedName(name, unnamed)}`;
-  return (_label, text) => refusedName(spoken, text);
 }
 
 function InlineField({
@@ -252,7 +240,7 @@ function InlineField({
       />
       {draft.refusal !== undefined && (
         <p className={styles.refusal} id={refusalId}>
-          {draft.refusal.shown}
+          {draft.refusal.shown(t)}
         </p>
       )}
     </>
@@ -289,6 +277,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
           setResizing(false);
           resizeNode(node, box);
         }}
+        resizeLabels={resizeLabels(node, t)}
         resizing={resizing}
         textVisible={!editing}
       />
@@ -301,7 +290,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
             elementId={node.id}
             label={t('fields.name-of', { element: nodeLabel(node, t) })}
             onCommit={commitRename}
-            refuse={refusedNameOf(node.name, nodeLabel(node, t))}
+            refuse={refusedName}
             room={
               node.kind === 'boundary-curve'
                 ? undefined
@@ -353,7 +342,7 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
               elementId={edge.id}
               label={t('fields.name-of', { element: edgeLabel(edge, t) })}
               onCommit={commitRename}
-              refuse={refusedNameOf(edge.name, edgeLabel(edge, t))}
+              refuse={refusedName}
               textStyle={edge.label.name.textStyle}
               value={edge.name}
             />

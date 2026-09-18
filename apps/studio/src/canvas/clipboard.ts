@@ -8,13 +8,16 @@ import {
   remapFragment,
   selectionFragment,
   type Model,
+  type SelectionFragmentFailure,
 } from '@saerskriven/model';
 import { Data, Effect, Either } from 'effect';
+import { sentences, type Said, type Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import { sameSelection } from '../store/selection.js';
 import { activeDiagramId } from '../store/selectors.js';
 import { FileLifecycle, type State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { describeOperation } from '../ui/failure-notice.js';
 import { announce } from './announcements.js';
 import { focusCanvas, focusElement, removeSelected } from './edits.js';
 
@@ -23,16 +26,27 @@ let lastPaste = '';
 let pasteCount = 0;
 
 type ClipboardFailure = Data.TaggedEnum<{
-  Refused: { readonly reason: string };
+  NothingSelected: {};
+  Unfragmentable: { readonly failure: SelectionFragmentFailure };
+  TooLarge: {};
+  WriteFailed: {};
+  ReadFailed: {};
 }>;
 const ClipboardFailure = Data.taggedEnum<ClipboardFailure>();
+
+type CopyReport = {
+  readonly elements: number;
+  readonly threats: number;
+  readonly excluded: number;
+  readonly sourceFields: boolean;
+};
 
 /** Copies the selection to the system clipboard and cuts only after a successful write. */
 export async function copySelected(cut = false): Promise<void> {
   const state = modelStore.getState();
   const copy = selectedCopy(state);
   if (Either.isLeft(copy)) {
-    announce(copy.left.reason);
+    announce(refusal(copy.left));
     return;
   }
   const written = await Effect.runPromise(
@@ -41,16 +55,12 @@ export async function copySelected(cut = false): Promise<void> {
         try: async () => {
           await navigator.clipboard.writeText(copy.right.text);
         },
-        catch: () =>
-          ClipboardFailure.Refused({
-            reason:
-              'Clipboard write failed. Nothing was cut. Check browser clipboard permission.',
-          }),
+        catch: () => ClipboardFailure.WriteFailed(),
       }),
     ),
   );
   if (Either.isLeft(written)) {
-    announce(written.left.reason);
+    announce(refusal(written.left));
     return;
   }
   if (
@@ -59,13 +69,21 @@ export async function copySelected(cut = false): Promise<void> {
     sameSelection(modelStore.getState().selection, state.selection)
   ) {
     removeSelected();
-    announce(
-      `Cut selection. Copied ${copy.right.report} Original threats remain in the register. Other attached flows retain free endpoints.`,
+    announce((t) =>
+      sentences(
+        t('canvas.cut'),
+        copyReport(t, copy.right.report),
+        t('canvas.cut-remains'),
+      ),
     );
     focusCanvas();
   } else {
-    announce(
-      `Copied ${copy.right.report}${cut ? ' The selection changed while copying. Nothing was cut.' : ''}`,
+    announce((t) =>
+      sentences(
+        t('canvas.copied'),
+        copyReport(t, copy.right.report),
+        cut ? t('canvas.cut-abandoned') : '',
+      ),
     );
   }
 }
@@ -74,13 +92,12 @@ export async function copySelected(cut = false): Promise<void> {
 export function duplicateSelected(): void {
   const copy = selectedCopy(modelStore.getState());
   if (Either.isLeft(copy)) {
-    announce(copy.left.reason);
+    announce(refusal(copy.left));
     return;
   }
-  insertCopy(
-    copy.right.fragment,
-    gridSpacing,
-    `Duplicated ${copy.right.report}`,
+  const { report } = copy.right;
+  insertCopy(copy.right.fragment, gridSpacing, (t) =>
+    sentences(t('canvas.duplicated'), copyReport(t, report)),
   );
 }
 
@@ -91,28 +108,24 @@ export async function pasteSelected(): Promise<void> {
     Effect.either(
       Effect.tryPromise({
         try: () => navigator.clipboard.readText(),
-        catch: () =>
-          ClipboardFailure.Refused({
-            reason:
-              'Clipboard read failed. Check browser clipboard permission.',
-          }),
+        catch: () => ClipboardFailure.ReadFailed(),
       }),
     ),
   );
   if (Either.isLeft(read)) {
-    announce(read.left.reason);
+    announce(refusal(read.left));
     return;
   }
   if (
     modelStore.getState().present !== state.present ||
     modelStore.getState().file !== state.file
   ) {
-    announce('The document changed while reading the clipboard. Paste again.');
+    announce((t) => t('canvas.paste-document-changed'));
     return;
   }
   const text = read.right;
   if (!text.startsWith(marker)) {
-    announce('The clipboard contains no Saerskriven selection.');
+    announce((t) => t('canvas.paste-no-selection'));
     return;
   }
   const parsed = saerskrivenYamlCodec.read(text);
@@ -121,17 +134,13 @@ export async function pasteSelected(): Promise<void> {
     parsed.right.divergences.length > 0 ||
     parsed.right.model.diagrams.length !== 1
   ) {
-    announce(
-      'The clipboard selection is invalid, unsupported, or exceeds a read limit.',
-    );
+    announce((t) => t('canvas.paste-invalid'));
     return;
   }
   const count = text === lastPaste ? pasteCount + 1 : 1;
   if (
-    insertCopy(
-      parsed.right.model,
-      gridSpacing * count,
-      'Pasted selection with new element and threat IDs.',
+    insertCopy(parsed.right.model, gridSpacing * count, (t) =>
+      t('canvas.pasted'),
     )
   ) {
     lastPaste = text;
@@ -139,15 +148,11 @@ export async function pasteSelected(): Promise<void> {
   }
 }
 
-function insertCopy(
-  fragment: Model,
-  distance: number,
-  message: string,
-): boolean {
+function insertCopy(fragment: Model, distance: number, said: Said): boolean {
   const state = modelStore.getState();
   const diagramId = activeDiagramId(state);
   if (diagramId === undefined) {
-    announce('There is no diagram to paste into.');
+    announce((t) => t('canvas.paste-no-diagram'));
     return false;
   }
   const remapped = remapFragment(
@@ -157,7 +162,7 @@ function insertCopy(
     state.present,
   );
   if (Either.isLeft(remapped)) {
-    announce('The copied graph could not be remapped.');
+    announce((t) => t('canvas.paste-remap-failed'));
     return false;
   }
   const { linked, cloned } = fragmentRecordCounts(
@@ -176,54 +181,70 @@ function insertCopy(
   if (first !== undefined) {
     focusElement(first);
   }
-  announce(
-    `${message} Records linked: ${String(linked)}. Records cloned: ${String(cloned)}.`,
+  announce((t) =>
+    sentences(said(t), t('canvas.records-counts', { linked, cloned })),
   );
   return true;
 }
 
-function selectedCopy(
-  state: State,
-): Either.Either<
-  { readonly fragment: Model; readonly text: string; readonly report: string },
+function selectedCopy(state: State): Either.Either<
+  {
+    readonly fragment: Model;
+    readonly text: string;
+    readonly report: CopyReport;
+  },
   ClipboardFailure
 > {
   const diagramId = activeDiagramId(state);
   if (diagramId === undefined || state.selection.length === 0) {
-    return Either.left(
-      ClipboardFailure.Refused({ reason: 'Select elements to copy.' }),
-    );
+    return Either.left(ClipboardFailure.NothingSelected());
   }
   return Either.flatMap(
     Either.mapLeft(
       selectionFragment(state.present, diagramId, state.selection),
-      (failure) =>
-        ClipboardFailure.Refused({ reason: `Copy refused: ${failure._tag}.` }),
+      (failure) => ClipboardFailure.Unfragmentable({ failure }),
     ),
     (fragment) => {
       const text = marker + saerskrivenYamlCodec.write(fragment).output;
       const limit = withinTextLimit(text);
       if (Either.isLeft(limit)) {
-        return Either.left(
-          ClipboardFailure.Refused({
-            reason: 'The selection exceeds the clipboard size limit.',
-          }),
-        );
+        return Either.left(ClipboardFailure.TooLarge());
       }
       const copiedIds = elementIdsAcross(fragment.diagrams);
       const excluded = externalLinkCount(state.present, fragment, copiedIds);
-      const extras =
-        FileLifecycle.$is('Opened')(state.file) &&
-        state.file.source.format === 'threat-dragon'
-          ? ' Source-format fields outside the model are not copied.'
-          : '';
       return Either.right({
         fragment,
         text,
-        report: `${String(copiedIds.size)} elements and ${String(fragment.threats.length)} threats. ${String(excluded)} external links excluded.${extras}`,
+        report: {
+          elements: copiedIds.size,
+          threats: fragment.threats.length,
+          excluded,
+          sourceFields:
+            FileLifecycle.$is('Opened')(state.file) &&
+            state.file.source.format === 'threat-dragon',
+        },
       });
     },
   );
+}
+
+function copyReport(t: Speaker, report: CopyReport): string {
+  return sentences(
+    t('canvas.copy-counts', report),
+    report.sourceFields ? t('canvas.copy-source-fields') : '',
+  );
+}
+
+function refusal(failure: ClipboardFailure): Said {
+  return (t) =>
+    ClipboardFailure.$match(failure, {
+      NothingSelected: () => t('canvas.copy-nothing-selected'),
+      Unfragmentable: ({ failure: refused }) =>
+        sentences(t('canvas.copy-refused'), ...describeOperation(t, refused)),
+      TooLarge: () => t('canvas.copy-too-large'),
+      WriteFailed: () => t('canvas.clipboard-write-failed'),
+      ReadFailed: () => t('canvas.clipboard-read-failed'),
+    });
 }
 
 function externalLinkCount(

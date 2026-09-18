@@ -1,4 +1,3 @@
-import { activeTranslator } from '../messages/locale.js';
 import { externalStore } from '../ui/external-store.js';
 import { announce } from './announcements.js';
 
@@ -15,9 +14,8 @@ export function currentSnap(): boolean {
 export function toggleSnap(): void {
   enabled = !enabled;
   snapStore.notify();
-  announce(
-    activeTranslator().t(enabled ? 'canvas.snap-on' : 'canvas.snap-off'),
-  );
+  const said = enabled ? 'canvas.snap-on' : 'canvas.snap-off';
+  announce((t) => t(said));
 }
 
 /** Subscribes a control to the snap setting. */

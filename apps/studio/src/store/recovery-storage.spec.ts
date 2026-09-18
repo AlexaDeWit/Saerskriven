@@ -15,6 +15,7 @@ import {
   localRecoveryStorage,
   recoverySnapshot,
   recoveryStorageKey,
+  RecoveryProblem,
   RecoveryStorageFailure,
 } from './recovery-storage.js';
 
@@ -43,12 +44,12 @@ function loadStored(raw: string) {
   return localRecoveryStorage(() => memory.backend).load();
 }
 
-const rejectionOf = (raw: string): string => {
+const rejectionOf = (raw: string): RecoveryProblem => {
   const loaded = loadStored(raw);
   if (Either.isRight(loaded)) {
     throw new Error('The stored snapshot loaded, and this expects a refusal');
   }
-  return loaded.left.reason;
+  return loaded.left.problem;
 };
 
 const expectedRestore = (
@@ -219,11 +220,14 @@ describe('local recovery storage', () => {
     const older = rejectionOf(version1Snapshot);
 
     expect(loadStored(version1Snapshot)).toEqual(
-      Either.left(RecoveryStorageFailure.Rejected({ reason: older })),
+      Either.left(RecoveryStorageFailure.Rejected({ problem: older })),
     );
-    expect(older).not.toBe(rejectionOf('{'));
-    expect(older).not.toBe(
-      rejectionOf(JSON.stringify({ ...current, version: 3 })),
+    expect(older).toEqual(
+      RecoveryProblem.EarlierRelease({ writer: undefined }),
+    );
+    expect(rejectionOf('{')).toMatchObject({ _tag: 'Thrown' });
+    expect(rejectionOf(JSON.stringify({ ...current, version: 3 }))).toEqual(
+      RecoveryProblem.Unsupported(),
     );
   });
 
@@ -277,7 +281,9 @@ describe('local recovery storage', () => {
     ]) {
       expect(outcome).toEqual(
         Either.left(
-          RecoveryStorageFailure.Unavailable({ reason: 'storage disabled' }),
+          RecoveryStorageFailure.Unavailable({
+            problem: RecoveryProblem.Thrown({ reason: 'storage disabled' }),
+          }),
         ),
       );
     }

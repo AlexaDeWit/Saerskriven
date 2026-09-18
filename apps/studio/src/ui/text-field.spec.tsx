@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { activeTranslator } from '../messages/locale.js';
 
 import {
   ProseField,
@@ -7,10 +8,12 @@ import {
   refusedText,
   type RefusedDraft,
 } from './text-field.js';
-import { noop, textbox } from './ui.fixtures.js';
+import { noop, numbersIn, textbox } from './ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 
 const commits = () => vi.fn<(text: string) => void>();
+
+const { t } = activeTranslator();
 
 const refusals = () => vi.fn<(refused: RefusedDraft | undefined) => void>();
 
@@ -20,20 +23,20 @@ describe('refusedText', () => {
   });
 
   it('says where the first character the model refuses sits', () => {
-    expect(refusedText('Title', `ab${softHyphen}c`)?.shown).toContain('3');
+    expect(refusedText('Title', `ab${softHyphen}c`)?.shown(t)).toContain('3');
   });
 
   it('names the field where the refusal is read away from it', () => {
     const refusal = refusedText('Title', `ab${softHyphen}c`);
 
-    expect(refusal?.said).toContain('Title');
-    expect(refusal?.said.endsWith(refusal.shown)).toBe(true);
+    expect(refusal?.said(t)).toContain('Title');
+    expect(refusal?.said(t).endsWith(refusal.shown(t))).toBe(true);
   });
 
   it('counts characters rather than the code units the model reports', () => {
-    expect(refusedText('Title', `😀ab${softHyphen}`)?.shown).toContain(
-      'Character 4',
-    );
+    expect(
+      numbersIn(refusedText('Title', `😀ab${softHyphen}`)?.shown(t)),
+    ).toEqual([4]);
   });
 });
 

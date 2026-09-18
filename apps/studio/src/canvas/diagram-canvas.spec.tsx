@@ -10,7 +10,7 @@ import {
   spellShortcuts,
   type ShortcutEntry,
 } from '../commands/shortcuts.js';
-import { activeTranslator } from '../messages/locale.js';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { currentAnnouncement } from './announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -58,6 +58,13 @@ const resizeControl = (from: string): HTMLElement =>
 describe('DiagramCanvas', () => {
   beforeEach(() => {
     openCanvas();
+  });
+
+  afterEach(() => {
+    act(() => {
+      chooseLanguage('en-CA');
+    });
+    globalThis.localStorage.clear();
   });
 
   it('mounts one node per element, each named from the model', () => {
@@ -363,6 +370,37 @@ describe('DiagramCanvas', () => {
     expect(flowDescription?.textContent).toContain(
       spelled(contextualEntry('edit-canvas-text')),
     );
+  });
+
+  it('rewords what React Flow and the resize controls say in a language chosen after it mounted', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    const nodeDescription = (): string | null | undefined =>
+      document.querySelector('[id^="react-flow__node-desc"]')?.textContent;
+    const english = nodeDescription();
+
+    act(() => {
+      chooseLanguage('fr-CA');
+    });
+    const { t: french } = activeTranslator();
+    const { position } = readerBox();
+    fireEvent.keyDown(screen.getByRole('group', { name: /^Reader, /u }), {
+      key: 'ArrowRight',
+    });
+
+    expect(nodeDescription()).not.toBe(english);
+    expect(nodeDescription()).toContain(
+      shortcutLabelText(contextualEntry('edit-canvas-text').label, french),
+    );
+    expect(
+      screen.getByRole('button', {
+        name: french('canvas.resize-top', { element: 'Reader' }),
+      }),
+    ).toBeDefined();
+    const moved = document.querySelector(
+      '[id^="react-flow__aria-live"]',
+    )?.textContent;
+    expect(moved).toBe(french('canvas.node-moved', position));
   });
 
   it('describes the canvas keys to the application it labels', () => {

@@ -9,7 +9,7 @@ import {
 } from 'react';
 import {
   announce,
-  quoted,
+  excerpt,
   recordQuoteLength,
 } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
@@ -196,12 +196,17 @@ export function RecordGroup<Held extends ThreatRecord>({
     const kept = kind
       .held(modelStore.getState().present)
       .some(({ id }) => id === record.id);
-    const named = `${kind.noun} ${quoted(recordLabel(record), recordQuoteLength)}`;
-    announce(
-      kept
-        ? `Unlinked ${named}. It stays on its other references.`
-        : `Removed ${named}. Nothing else used it. Undo restores it.`,
-    );
+    const label = excerpt(recordLabel(record), recordQuoteLength);
+    const { nounMessage } = kind;
+    announce((speak) => {
+      const named = speak('canvas.record-named', {
+        kind: speak(nounMessage),
+        label,
+      });
+      return kept
+        ? speak('canvas.record-unlinked', { record: named })
+        : speak('canvas.record-removed', { record: named });
+    });
   };
 
   const tracked = (event: FocusEvent<HTMLDivElement>): void => {

@@ -18,9 +18,9 @@ import type { State } from '../store/state.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { announce, quotedName } from './announcements.js';
 import { flowEnds, freshBoundaryCurve, freshFlow } from './elements.js';
-import { activeTranslator } from '../messages/locale.js';
+import { articleKindMessages } from '../messages/enum-labels.js';
+import { sentences, type Speaker } from '../messages/said.js';
 import { currentLayout } from './layout.js';
-import { edgeLabel, nodeLabel } from './names.js';
 import { elementIds } from './nodes.js';
 
 type RemovalCascade = {
@@ -75,8 +75,12 @@ export function toggleFlowDirection(): void {
   if (
     changedModel(Action.SetFlowDirection({ elementId: flow.id, bidirectional }))
   ) {
-    const named = quotedName(flow.name, 'The flow');
-    announce(`${named} now runs ${bidirectional ? 'both ways' : 'one way'}.`);
+    const { name } = flow;
+    announce((t) =>
+      t(bidirectional ? 'canvas.flow-both-ways' : 'canvas.flow-one-way', {
+        flow: quotedName(t, name, t(articleKindMessages.flow)),
+      }),
+    );
   }
 }
 
@@ -88,10 +92,7 @@ export function removeSelected(): boolean {
     return false;
   }
   const one = selection.at(0);
-  const name =
-    selection.length === 1 && one !== undefined
-      ? spokenName(state, one)
-      : counted(selection.length, 'element');
+  const removed = removedSubject(state, selection);
   const cascade = removalCascade(state.present, selection);
   const action =
     selection.length === 1 && one !== undefined
@@ -100,7 +101,7 @@ export function removeSelected(): boolean {
   if (!changedModel(action)) {
     return false;
   }
-  announce(describeRemoval(name, cascade));
+  announce((t) => describeRemoval(t, removed, cascade));
   return true;
 }
 
@@ -130,11 +131,30 @@ export function removalCascade(
   return { flows, threats };
 }
 
+/** What a removal took: one element by its own name and kind, or a count of them. */
+export type RemovedSubject =
+  | { readonly name: string; readonly kind: Element['kind'] }
+  | { readonly count: number };
+
 /** Describes removal with explicit counts, including zero. */
-export function describeRemoval(name: string, cascade: RemovalCascade): string {
-  const flows = counted(cascade.flows, 'flow');
-  const threats = counted(cascade.threats, 'threat link');
-  return `Removed ${name}. ${flows} detached, ${threats} dropped.`;
+export function describeRemoval(
+  t: Speaker,
+  removed: RemovedSubject,
+  cascade: RemovalCascade,
+): string {
+  return sentences(
+    'count' in removed
+      ? t('canvas.removed-elements', removed)
+      : t('canvas.removed-named', {
+          name: quotedName(
+            t,
+            removed.name,
+            t(articleKindMessages[removed.kind]),
+          ),
+        }),
+    t('canvas.flows-detached', { count: cascade.flows }),
+    t('canvas.threat-links-dropped', { count: cascade.threats }),
+  );
 }
 
 /** Opens the selected element's inline editor when its text is editable. */
@@ -298,22 +318,13 @@ function placed(
   return true;
 }
 
-function spokenName(state: State, elementId: ElementId): string {
-  const { t } = activeTranslator();
-  const layout = currentLayout(state);
-  const node = layout.nodes.find(({ id }) => id === elementId);
-  if (node !== undefined) {
-    return quotedName(node.name, nodeLabel(node, t));
-  }
-  const edge = layout.edges.find(({ id }) => id === elementId);
-  return edge === undefined
-    ? elementId
-    : quotedName(edge.name, edgeLabel(edge, t));
-}
-
-function counted(total: number, thing: string): string {
-  if (total === 0) {
-    return `no ${thing}s`;
-  }
-  return total === 1 ? `1 ${thing}` : `${String(total)} ${thing}s`;
+function removedSubject(
+  state: State,
+  selection: readonly ElementId[],
+): RemovedSubject {
+  const one = selection.length === 1 ? selection[0] : undefined;
+  const element = one === undefined ? undefined : elementById(state, one);
+  return element === undefined
+    ? { count: selection.length }
+    : { name: element.name, kind: element.kind };
 }
