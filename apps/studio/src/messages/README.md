@@ -15,26 +15,31 @@ person typed reach a message as parameters and pass through unchanged.
 | `enum-labels.ts`                          | The message each stored value of the model is shown under                                           |
 | `locale.ts`                               | The chosen language, `activeTranslator` for code outside components, `useTranslator`, `useLanguage` |
 | `message.tsx`                             | `Message`, which renders a message with element parameters                                          |
+| `said.ts`                                 | `Said`, text worded when it is shown, and `sentences`, which joins complete sentences               |
 
 | Section      | The surface it words                                                            |
 | ------------ | ------------------------------------------------------------------------------- |
-| `canvas`     | Announcements                                                                   |
+| `canvas`     | Announcements, clipboard reports, React Flow's text and the resize controls     |
 | `commands`   | Command labels, the context each runs in, the group headings, the key reference |
 | `defaults`   | The names a newly created thing is given                                        |
 | `divergence` | What a codec or an import could not carry                                       |
 | `enums`      | The label each stored value is shown under                                      |
 | `fields`     | What a control is called, drawn or spoken                                       |
 | `menu`       | The burger menu, its submenus and the diagram switcher                          |
-| `notice`     | The failure notice                                                              |
+| `notice`     | The failure notice, each refused operation, and a text field's refusal          |
 | `panel`      | The threat panel, the model's properties and the record groups                  |
-| `shell`      | The language control, the browser tab's name and the version                    |
+| `reports`    | File reports, export reports and the file types an export offers                |
+| `shell`      | The language control, the browser tab's name, the version, the stopped page     |
 | `tools`      | The controls drawn over the canvas: zoom, placement, routes and endpoints       |
 
 `divergence/text.ts` maps each divergence code `@saerskriven/formats` records
 to its message, with the codec's parameters passed through. A divergence line
-is the one place a message takes another message's text as a parameter: the
-subject, the detail and the reason are each a complete phrase, and the `line`
-message owns their order and punctuation.
+takes other messages' text as parameters: the subject, the detail and the
+reason are each a complete phrase, and the `line` message owns their order
+and punctuation. The canvas does the same with a name: `canvas.quoted` sets a
+person's text in the reader's quotation marks, and an element without a name
+is called by its kind (`enums.the-actor` and the like), so an announcement
+takes either as one noun phrase.
 
 ## What stays in English
 
@@ -54,7 +59,25 @@ names, and everything created afterwards is named in the active language.
 
 A file format's name, a path, a model's own names and descriptions, and
 anything a person typed are data: they reach a message as parameters and pass
-through unchanged.
+through unchanged. So do ids, a read limit's name, and the file name an open
+or an import was given.
+
+Some diagnostic text has no code to translate from, and a notice shows it as a
+literal line under a headline in the reader's language:
+
+- A model or schema parse issue (`issueLine` from `@saerskriven/model`): its
+  path and the issue's own message, until #488 gives the issues codes.
+- Text a browser raised: a refused file read or write, a refused storage
+  access, a failed fetch of a compiler or font, and the error an unexpected
+  render failure carries on the stopped page.
+- Text a parser or compiler raised: the JSON or YAML parser's message for
+  malformed text, the Typst compiler's sentences, and the rasterizer's.
+
+Exports are not the studio's text. The SVG, PNG, Markdown, Typst and PDF an
+export writes are the same bytes in every language, including the severity
+letters a badge carries, and the CLI's warning about undrawn flow ends stays
+in `@saerskriven/render`. The studio words that warning itself, from the
+endpoints the projection returns.
 
 ## Adding a message
 
@@ -77,6 +100,13 @@ A component reads `useTranslator().t(id, params)`, or renders
 component calls `activeTranslator().t(id, params)` when the text is needed.
 Neither may run at module load, where the text would stay in the locale of
 that moment.
+
+Text that stands after the event that made it, an announcement, a refusal or
+a notice, is kept as data or as a `Said` and worded when it is shown, so a
+change of language rewords it. `announce` takes a `Said`, a failure notice
+and an export report are data that `describeFailure` and
+`describeExportNotice` word on render, and a text field's refusal carries a
+`Said` for what it shows and what it announces.
 
 ## Naming what is created
 

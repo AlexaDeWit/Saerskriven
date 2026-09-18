@@ -6,4 +6,8 @@ export const shellSv = catalogue(shellMessages)('sv')({
   'follow-browser': 'Följ webbläsaren',
   'landing-title': 'Saerskriven: studio för hotmodellering med öppen källkod',
   'development-version': '{version} (utveckling)',
+  stopped: 'Saerskriven stannade',
+  'stopped-explanation':
+    'Studion stötte på något som den inte kan hantera. En omladdning använder den senaste fullständiga återställningsögonblicksbilden. Arbete efter en misslyckad återställningsskrivning kan ha gått förlorat.',
+  reload: 'Ladda om studion',
 });

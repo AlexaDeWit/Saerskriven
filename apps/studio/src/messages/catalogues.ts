@@ -35,6 +35,10 @@ import { panelMessages } from './panel/contract.js';
 import { panelEnCA } from './panel/en-CA.js';
 import { panelFrCA } from './panel/fr-CA.js';
 import { panelSv } from './panel/sv.js';
+import { reportMessages } from './reports/contract.js';
+import { reportsEnCA } from './reports/en-CA.js';
+import { reportsFrCA } from './reports/fr-CA.js';
+import { reportsSv } from './reports/sv.js';
 import { shellMessages } from './shell/contract.js';
 import { shellEnCA } from './shell/en-CA.js';
 import { shellFrCA } from './shell/fr-CA.js';
@@ -55,6 +59,7 @@ export const studioMessages = {
   menu: menuMessages,
   notice: noticeMessages,
   panel: panelMessages,
+  reports: reportMessages,
   shell: shellMessages,
   tools: toolMessages,
 } as const;
@@ -78,6 +83,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     menu: menuEnCA,
     notice: noticeEnCA,
     panel: panelEnCA,
+    reports: reportsEnCA,
     shell: shellEnCA,
     tools: toolsEnCA,
   },
@@ -91,6 +97,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     menu: menuFrCA,
     notice: noticeFrCA,
     panel: panelFrCA,
+    reports: reportsFrCA,
     shell: shellFrCA,
     tools: toolsFrCA,
   },
@@ -104,6 +111,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     menu: menuSv,
     notice: noticeSv,
     panel: panelSv,
+    reports: reportsSv,
     shell: shellSv,
     tools: toolsSv,
   },

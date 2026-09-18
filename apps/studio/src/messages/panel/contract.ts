@@ -28,8 +28,8 @@ export const panelMessages = {
   discard: text(),
   unlink: text(),
   'also-applies-to-model': text(),
-  'also-on-threats': plural('count', { list: 'text' }),
+  'also-on-threats': plural('count', { list: 'list' }),
   'more-threats': text({ count: 'number' }),
-  'detail-threats': plural('count', { list: 'text' }),
+  'detail-threats': plural('count', { list: 'list' }),
   'detail-applies-to-model': text(),
 } as const;

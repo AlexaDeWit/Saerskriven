@@ -253,7 +253,7 @@ function recordDetail<Held extends ThreatRecord>(
   kind: RecordKind<Held>,
   record: Held,
   threats: readonly NumberedThreat[],
-  { t, list }: StudioTranslator,
+  { t }: StudioTranslator,
 ): string {
   const numbers = threatNumbers(record, threats);
   return [
@@ -261,7 +261,7 @@ function recordDetail<Held extends ThreatRecord>(
     numbers.length > 0 &&
       t('panel.detail-threats', {
         count: numbers.length,
-        list: list(numbers),
+        list: numbers,
       }),
     'appliesToModel' in record &&
       record.appliesToModel &&
@@ -362,7 +362,7 @@ const namedThreats = 3;
 function alsoOn(
   record: ThreatRecord,
   threats: readonly NumberedThreat[],
-  { t, list }: StudioTranslator,
+  { t }: StudioTranslator,
   except?: ThreatId,
 ): string | false {
   const numbers = threatNumbers(record, threats, except);
@@ -378,7 +378,7 @@ function alsoOn(
       : numbers;
   return t('panel.also-on-threats', {
     count: numbers.length,
-    list: list(named),
+    list: named,
   });
 }
 
