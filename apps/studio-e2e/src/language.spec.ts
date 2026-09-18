@@ -10,30 +10,36 @@ import {
 
 const languageStorageKey = 'saerskrivenLanguage';
 
-const language = (page: Page, heading: string) =>
-  page.getByRole('menuitem', { name: new RegExp(`^${heading} `, 'u') });
+/** The Language row, named in each locale the spec reads it in. */
+const heading = {
+  'en-CA': /^Language /u,
+  'fr-CA': /^Langue /u,
+  sv: /^Språk /u,
+} as const;
 
-const openLanguage = async (page: Page, heading: string): Promise<void> => {
+type Heading = (typeof heading)[keyof typeof heading];
+
+const openLanguage = async (page: Page, row: Heading): Promise<void> => {
   await openMenu(page);
-  await language(page, heading).press('ArrowRight');
+  await page.getByRole('menuitem', { name: row }).press('ArrowRight');
   await expect(page.getByRole('menuitemradio').first()).toBeVisible();
 };
 
 const chooseLanguage = async (
   page: Page,
-  heading: string,
+  row: Heading,
   name: string,
 ): Promise<void> => {
-  await openLanguage(page, heading);
+  await openLanguage(page, row);
   await page.getByRole('menuitemradio', { name }).click();
 };
 
 const expectChosen = async (
   page: Page,
-  heading: string,
+  row: Heading,
   name: string,
 ): Promise<void> => {
-  await openLanguage(page, heading);
+  await openLanguage(page, row);
   await expect(page.getByRole('menuitemradio', { name })).toHaveAttribute(
     'aria-checked',
     'true',
@@ -50,16 +56,16 @@ test.describe('a French browser', () => {
     await openPlaceholder(page);
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr-CA');
-    await expectChosen(page, 'Langue', 'Suivre le navigateur');
+    await expectChosen(page, heading['fr-CA'], 'Suivre le navigateur');
 
-    await chooseLanguage(page, 'Langue', 'Svenska');
+    await chooseLanguage(page, heading['fr-CA'], 'Svenska');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'sv');
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'sv');
-    await expectChosen(page, 'Språk', 'Svenska');
+    await expectChosen(page, heading.sv, 'Svenska');
 
-    await chooseLanguage(page, 'Språk', 'Följ webbläsaren');
+    await chooseLanguage(page, heading.sv, 'Följ webbläsaren');
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr-CA');
     await audit(page, 'in the French the browser asked for');
@@ -73,7 +79,7 @@ test.describe('a browser asking for a language the studio has not got', () => {
     await openPlaceholder(page);
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en-CA');
-    await expectChosen(page, 'Language', 'Follow the browser');
+    await expectChosen(page, heading['en-CA'], 'Follow the browser');
   });
 });
 
@@ -86,7 +92,7 @@ test('a stored value naming no supported language follows the browser', async ({
   await openPlaceholder(page);
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-CA');
-  await expectChosen(page, 'Language', 'Follow the browser');
+  await expectChosen(page, heading['en-CA'], 'Follow the browser');
 });
 
 test('a change of language keeps unsaved work, its undo and its file state', async ({
@@ -97,7 +103,7 @@ test('a change of language keeps unsaved work, its undo and its file state', asy
   await page.keyboard.press('Enter');
   await expect(menuButton(page)).toHaveAccessibleName(/unsaved changes/u);
 
-  await chooseLanguage(page, 'Language', 'Français (Canada)');
+  await chooseLanguage(page, heading['en-CA'], 'Français (Canada)');
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr-CA');
   await expect(placed).toHaveCount(1);

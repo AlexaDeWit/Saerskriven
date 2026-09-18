@@ -212,7 +212,7 @@ test(
   async ({ page }) => {
     await openFallback(page);
 
-    for (const name of ['Export', 'Arrange', /^Appearance /u]) {
+    for (const name of ['Export', 'Arrange', /^Appearance /u, /^Language /u]) {
       await openMenu(page);
       const { scrolls } = await opensOnScreen(page, name);
       expect(scrolls).toBe(false);
@@ -312,8 +312,9 @@ test(
     const burger = await openInShortViewport(page);
     const panel = await screenBoxOf(rootMenu(page));
     const beside = panel.x + panel.width - 8;
+    const clearOfEveryTrigger = { x: panel.x + 8, y: panel.y + 4 };
 
-    for (const name of ['Export', /^Appearance /u, 'Arrange']) {
+    for (const name of ['Export', /^Appearance /u, /^Language /u, 'Arrange']) {
       const row = await screenBoxOf(page.getByRole('menuitem', { name }));
       const middle = row.y + row.height / 2;
       await page.mouse.move(row.x + row.width / 2, middle);
@@ -323,6 +324,7 @@ test(
       await page.mouse.move(beside, row.y - row.height, { steps: 5 });
       await expect(page.getByRole('menu', { name })).toHaveCount(0);
       await staysInPlace(page, burger);
+      await page.mouse.move(clearOfEveryTrigger.x, clearOfEveryTrigger.y);
     }
   },
 );

@@ -1,7 +1,7 @@
 import { languageStorageKey } from '../language-preference.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
-import { chooseLanguage } from './locale.js';
+import { activeTranslator, chooseLanguage } from './locale.js';
 
 type LocaleModule = typeof import('./locale.js');
 
@@ -131,6 +131,7 @@ describe('the model the studio holds', () => {
 
     chooseLanguage('fr-CA');
 
+    expect(activeTranslator().locale).toBe('fr-CA');
     expect(modelStore.getState()).toBe(before);
   });
 });
