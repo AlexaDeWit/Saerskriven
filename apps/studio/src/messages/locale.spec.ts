@@ -35,7 +35,7 @@ afterEach(() => {
 });
 
 describe('the language on first use', () => {
-  it('follows a supported browser preference', async () => {
+  it('negotiates from a supported browser preference', async () => {
     speaking('de-DE', 'fr-FR');
 
     const locale = await freshLocale();
@@ -52,7 +52,7 @@ describe('the language on first use', () => {
     expect(locale.activeTranslator().locale).toBe('en-CA');
   });
 
-  it('prefers a stored choice over the browser', async () => {
+  it('prefers a stored locale over the browser', async () => {
     speaking('fr-FR');
 
     const locale = await freshLocale('sv');
@@ -60,7 +60,7 @@ describe('the language on first use', () => {
     expect(locale.activeTranslator().locale).toBe('sv');
   });
 
-  it('follows the browser for a stored value that names no supported locale', async () => {
+  it('negotiates from the browser for a stored value that names no supported locale', async () => {
     speaking('sv-SE');
 
     const locale = await freshLocale('kl-GL');
@@ -68,7 +68,15 @@ describe('the language on first use', () => {
     expect(locale.activeTranslator().locale).toBe('sv');
   });
 
-  it('follows the browser where storage throws', async () => {
+  it('negotiates from the browser for the old follow-the-browser value', async () => {
+    speaking('sv-SE');
+
+    const locale = await freshLocale('browser');
+
+    expect(locale.activeTranslator().locale).toBe('sv');
+  });
+
+  it('negotiates from the browser where storage throws', async () => {
     speaking('fr-CH');
     vi.stubGlobal('localStorage', blockedStorage);
     vi.resetModules();
@@ -76,6 +84,14 @@ describe('the language on first use', () => {
     const locale: LocaleModule = await import('./locale.js');
 
     expect(locale.activeTranslator().locale).toBe('fr-CA');
+  });
+
+  it('does not store the negotiated locale', async () => {
+    speaking('fr-FR');
+
+    await freshLocale();
+
+    expect(globalThis.localStorage.getItem(languageStorageKey)).toBeNull();
   });
 });
 
@@ -89,38 +105,6 @@ describe('choosing a language', () => {
     expect(locale.activeTranslator().locale).toBe('sv');
     expect(document.documentElement.lang).toBe('sv');
     expect(globalThis.localStorage.getItem(languageStorageKey)).toBe('sv');
-  });
-
-  it('returns to the browser preference, storing no locale', async () => {
-    speaking('fr-BE');
-    const locale = await freshLocale('sv');
-
-    locale.chooseLanguage('browser');
-
-    expect(locale.activeTranslator().locale).toBe('fr-CA');
-    expect(globalThis.localStorage.getItem(languageStorageKey)).toBe('browser');
-  });
-});
-
-describe('a change of browser preferences', () => {
-  it('is negotiated again while the browser is being followed', async () => {
-    speaking('fr-FR');
-    const locale = await freshLocale();
-
-    speaking('sv-FI');
-    globalThis.dispatchEvent(new Event('languagechange'));
-
-    expect(locale.activeTranslator().locale).toBe('sv');
-  });
-
-  it('leaves an explicit choice alone', async () => {
-    speaking('fr-FR');
-    const locale = await freshLocale('sv');
-
-    speaking('en-GB');
-    globalThis.dispatchEvent(new Event('languagechange'));
-
-    expect(locale.activeTranslator().locale).toBe('sv');
   });
 });
 

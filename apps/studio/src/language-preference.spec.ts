@@ -6,13 +6,13 @@ import {
 } from './language-preference.js';
 
 describe('language preference', () => {
-  it('accepts only a supported locale, and follows the browser otherwise', () => {
+  it('accepts only a supported locale, and leaves the rest unset', () => {
     expect(parseLanguage('sv')).toBe('sv');
     expect(parseLanguage('fr-CA')).toBe('fr-CA');
-    expect(parseLanguage('fr-FR')).toBe('browser');
-    expect(parseLanguage('browser')).toBe('browser');
-    expect(parseLanguage('')).toBe('browser');
-    expect(parseLanguage(null)).toBe('browser');
+    expect(parseLanguage('fr-FR')).toBeUndefined();
+    expect(parseLanguage('browser')).toBeUndefined();
+    expect(parseLanguage('')).toBeUndefined();
+    expect(parseLanguage(null)).toBeUndefined();
   });
 
   it('reads and writes the local storage choice', () => {
@@ -28,7 +28,7 @@ describe('language preference', () => {
     expect(readLanguage(store)).toBe('fr-CA');
   });
 
-  it('falls back when storage refuses access', () => {
+  it('is unset when storage refuses access', () => {
     const storage = {
       getItem: () => {
         throw new Error('blocked');
@@ -38,8 +38,8 @@ describe('language preference', () => {
       },
     };
 
-    expect(readLanguage(storage)).toBe('browser');
-    expect(readLanguage(undefined)).toBe('browser');
+    expect(readLanguage(storage)).toBeUndefined();
+    expect(readLanguage(undefined)).toBeUndefined();
     expect(() => {
       writeLanguage(storage, 'sv');
     }).not.toThrow();
