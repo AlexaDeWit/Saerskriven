@@ -26,12 +26,14 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
     '{limit}: gränsen är {bound}, ögonblicksbilden nådde {observed}.',
   'snapshot-unsupported':
     'Den sparade ögonblicksbilden är felformad eller stöds inte.',
+  'snapshot-invalid': 'Den sparade ögonblicksbilden är inte giltig.',
+  'snapshot-model-invalid': 'Den sparade modellen är inte giltig.',
   'snapshot-earlier-release':
     'En tidigare version av Saerskriven sparade den här sessionen, i en form som den här versionen inte kan återställa.',
   'snapshot-release':
     'Saerskriven {release} sparade den här sessionen, i en form som den här versionen inte kan återställa.',
   'field-not-saved': '{field} sparades inte.',
-  'refused-character': 'Tecken {position} är ett som modellen inte godtar.',
+  'refused-character': 'Modellen godtar inte tecknet på position {position}.',
   'empty-name': 'Ett namn kan inte vara tomt.',
   'op-element-properties': 'Objektets egenskaper avvisades.',
   'op-element-relationships': 'Objektet har ogiltiga gränsrelationer.',
@@ -62,7 +64,7 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
     'Antagandet {id} är inte länkat till något hot och gäller inte modellen.',
   'op-reused-number': 'Hotnummer {number} har redan delats ut.',
   'op-changed-number':
-    'Hot {id} kan inte få nummer {number}, eftersom ett nummer delas ut en gång.',
+    'Hot {id} kan inte få nummer {number}, eftersom ett nummer bara delas ut en gång.',
   'op-source-endpoint': 'Flödets källa anger {id}, som inte kan vara en källa.',
   'op-target-endpoint': 'Flödets mål anger {id}, som inte kan vara ett mål.',
   'op-not-resizable': 'Objekt {id} har ingen storlek att ange.',

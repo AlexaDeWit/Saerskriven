@@ -239,6 +239,8 @@ function describeRecovery(t: Speaker, problem: RecoveryProblem): string {
     Thrown: ({ reason }) => reason,
     PastBound: (bound) => t('notice.snapshot-limit-detail', bound),
     Unsupported: () => t('notice.snapshot-unsupported'),
+    InvalidSnapshot: () => t('notice.snapshot-invalid'),
+    InvalidModel: () => t('notice.snapshot-model-invalid'),
     EarlierRelease: ({ writer }) =>
       writer === undefined
         ? t('notice.snapshot-earlier-release')

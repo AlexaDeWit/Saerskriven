@@ -19,7 +19,7 @@ export const reportsFrCA = catalogue(reportMessages)('fr-CA')({
   'write-refused': 'Saerskriven n’a pas pu écrire l’exportation.',
   'compiler-unavailable': 'Saerskriven n’a pas pu charger le compilateur PDF.',
   'rasterizer-unavailable':
-    'Saerskriven n’a pas pu charger le matriciseur SVG.',
+    'Saerskriven n’a pas pu charger le rastériseur SVG.',
   'asset-answered': '{url} a répondu {status}.',
   'face-missing':
     'Cette version du studio ne contient pas {face}, la police du texte.',

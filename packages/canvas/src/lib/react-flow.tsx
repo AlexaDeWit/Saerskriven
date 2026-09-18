@@ -73,9 +73,9 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * The drawing is hidden from assistive technology, so the mounting canvas
  * gives the node its accessible name. `textVisible` false leaves the glyph's
  * text out, for a canvas with a text editor over it. A selected element the
- * model can resize carries the resize controls, named from `resizeLabels`. The badge draws last, in an
- * SVG layer classed `pn-badge-layer`, so a canvas can stack it above the
- * selection frame.
+ * model can resize carries the resize controls, named from `resizeLabels`.
+ * The badge draws last, in an SVG layer classed `pn-badge-layer`, so a
+ * canvas can stack it above the selection frame.
  */
 export function CanvasNodeBody({
   controlsVisible = true,

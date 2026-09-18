@@ -112,7 +112,7 @@ function TitleField({ title, onClose }: TitleFieldProps) {
   const settled = useRef(false);
   const { t } = useTranslator();
   const draft = useTextDraft(
-    t('fields.diagram-title'),
+    (speak) => speak('fields.diagram-title'),
     title,
     undefined,
     (text) => {

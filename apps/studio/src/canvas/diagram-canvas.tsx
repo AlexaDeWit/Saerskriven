@@ -95,12 +95,6 @@ type CanvasKeyboardText = {
   readonly description: string;
 };
 
-/**
- * The spoken key descriptions and every text React Flow speaks, in the active
- * locale. They are resolved on render rather than at module load, where they
- * would freeze the language of that moment. The whole configuration is given,
- * so no English default of the library is left to show through.
- */
 function useCanvasKeyboardText(): CanvasKeyboardText {
   const { t } = useTranslator();
 

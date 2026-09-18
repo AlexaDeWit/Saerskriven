@@ -28,6 +28,8 @@ export const noticeMessages = {
   'invalid-model': text(name),
   'snapshot-limit-detail': text(bound),
   'snapshot-unsupported': text(),
+  'snapshot-invalid': text(),
+  'snapshot-model-invalid': text(),
   'snapshot-earlier-release': text(),
   'snapshot-release': text({ release: 'text' }),
   'field-not-saved': text({ field: 'text' }),

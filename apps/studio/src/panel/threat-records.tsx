@@ -13,6 +13,7 @@ import {
   recordQuoteLength,
 } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
+import type { Speaker } from '../messages/said.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { EnumField, type OptionText } from '../ui/enum-field.js';
 import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
@@ -417,15 +418,20 @@ function RecordRow<Held extends ThreatRecord>({
       : t(part === 'title' ? 'fields.title' : 'fields.description');
   const fieldProps = (part: RecordPart) => ({
     held: heldIn(part),
-    label:
-      kind.parts.length === 1
-        ? name
-        : t(
+    label: (speak: Speaker): string => {
+      const named = speak('fields.record-name', {
+        kind: speak(kind.title),
+        number: position,
+      });
+      return kind.parts.length === 1
+        ? named
+        : speak(
             part === 'title'
               ? 'fields.record-title-field'
               : 'fields.record-prose-field',
-            { name },
-          ),
+            { name: named },
+          );
+    },
     shownLabel: shownLabel(part),
     onChange,
     onCommit: onCommit(part),

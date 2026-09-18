@@ -24,10 +24,10 @@ export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
  * resizes one axis, and a handle at each corner, which resizes both. Each
  * holds a button named from `labels` that resizes by arrow key in
  * model-space steps. Both routes hand `onResizeEnd` the settled position and
- * size together, so a resize from the top or left is one edit. On a node with a badge, the
- * top-right handle sits on the top edge `resizeHandle.badgeGap` screen pixels
- * left of the badge's ink at every zoom, and at full zoom it stays clear of
- * the top-left handle.
+ * size together, so a resize from the top or left is one edit. On a node with
+ * a badge, the top-right handle sits on the top edge `resizeHandle.badgeGap`
+ * screen pixels left of the badge's ink at every zoom, and at full zoom it
+ * stays clear of the top-left handle.
  */
 export function ResizeControls({
   labels,

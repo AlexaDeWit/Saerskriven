@@ -29,13 +29,15 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
     '{limit} : la limite est de {bound}, l’instantané a atteint {observed}.',
   'snapshot-unsupported':
     'L’instantané enregistré est mal formé ou non pris en charge.',
+  'snapshot-invalid': 'L’instantané enregistré n’est pas valide.',
+  'snapshot-model-invalid': 'Le modèle enregistré n’est pas valide.',
   'snapshot-earlier-release':
     'Une version antérieure de Saerskriven a enregistré cette session sous une forme que cette version ne peut pas restaurer.',
   'snapshot-release':
     'Saerskriven {release} a enregistré cette session sous une forme que cette version ne peut pas restaurer.',
   'field-not-saved': 'Champ non enregistré : {field}.',
   'refused-character':
-    'Le caractère {position} est un caractère que le modèle n’accepte pas.',
+    'Le modèle n’accepte pas le caractère en position {position}.',
   'empty-name': 'Un nom ne peut pas être vide.',
   'op-element-properties': 'Les propriétés de l’élément ont été refusées.',
   'op-element-relationships':

@@ -4,7 +4,7 @@ import { reportMessages } from './contract.js';
 export const reportsSv = catalogue(reportMessages)('sv')({
   region: 'Filrapporter',
   opened:
-    'När filen öppnades föll det bort som den innehåller och Saerskriven inte har:',
+    'När filen öppnades föll följande bort, som filen innehåller men Saerskriven inte stöder:',
   imported:
     'Importen skapade en inbyggd modell med dessa konverteringar och utelämnanden:',
   saved: 'Den senaste sparningen fick inte med allt som modellen innehåller:',

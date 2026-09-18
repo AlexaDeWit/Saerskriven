@@ -55,6 +55,9 @@ const readerBox = () => {
 const resizeControl = (from: string): HTMLElement =>
   screen.getByRole('button', { name: `Resize Reader from ${from}` });
 
+const nodeDescriptionText = (): string | null | undefined =>
+  document.querySelector('[id^="react-flow__node-desc"]')?.textContent;
+
 describe('DiagramCanvas', () => {
   beforeEach(() => {
     openCanvas();
@@ -375,9 +378,7 @@ describe('DiagramCanvas', () => {
   it('rewords what React Flow and the resize controls say in a language chosen after it mounted', () => {
     openCanvas([actorElement]);
     render(<DiagramCanvas />);
-    const nodeDescription = (): string | null | undefined =>
-      document.querySelector('[id^="react-flow__node-desc"]')?.textContent;
-    const english = nodeDescription();
+    const english = nodeDescriptionText();
 
     act(() => {
       chooseLanguage('fr-CA');
@@ -388,8 +389,8 @@ describe('DiagramCanvas', () => {
       key: 'ArrowRight',
     });
 
-    expect(nodeDescription()).not.toBe(english);
-    expect(nodeDescription()).toContain(
+    expect(nodeDescriptionText()).not.toBe(english);
+    expect(nodeDescriptionText()).toContain(
       shortcutLabelText(contextualEntry('edit-canvas-text').label, french),
     );
     expect(

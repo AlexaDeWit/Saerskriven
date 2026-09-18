@@ -6,7 +6,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'snap-on': 'Alignement sur la grille activé.',
   'snap-off': 'Alignement sur la grille désactivé.',
   'diagram-shown': 'Affichage de « {title} ».',
-  'diagram-added': 'Ajout de « {title} ».',
+  'diagram-added': '« {title} » ajouté.',
   'diagram-renamed': 'Diagramme renommé en « {title} ».',
   'selection-cleared': 'Sélection effacée.',
   'geometry-updated': 'Position et taille mises à jour.',
@@ -40,7 +40,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   },
   'bend-added': 'Coude {number} ajouté sur {flow}.',
   'bend-moved': 'Coude {number} déplacé sur {flow}.',
-  'bend-removed': 'Coude {number} retiré sur {flow}.',
+  'bend-removed': 'Coude {number} retiré : {flow}.',
   'bend-at': 'Coude en x {x}, y {y}.',
   'source-released': 'Source libérée pour suivre le tracé : {flow}.',
   'target-released': 'Destination libérée pour suivre le tracé : {flow}.',
@@ -68,7 +68,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
     'Le presse-papiers ne contient aucune sélection Saerskriven.',
   'paste-invalid':
     'La sélection du presse-papiers est invalide, non prise en charge ou au-delà d’une limite de lecture.',
-  'paste-no-diagram': 'Aucun diagramme où coller.',
+  'paste-no-diagram': 'Aucun diagramme dans lequel coller.',
   'paste-remap-failed':
     'Les identifiants du graphe copié n’ont pas pu être réattribués.',
   copied: 'Sélection copiée.',

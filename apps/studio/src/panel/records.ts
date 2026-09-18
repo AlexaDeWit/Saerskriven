@@ -14,6 +14,7 @@ import {
 } from '@saerskriven/model';
 import type { z } from 'zod';
 import type { StudioTranslator } from '../messages/catalogues.js';
+import { sentences } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import type { OptionText } from '../ui/enum-field.js';
 import { distinctTexts } from './distinct-labels.js';
@@ -392,9 +393,9 @@ function threatNumbers(
   ).map(({ number }) => String(number));
 }
 
-function joined(sentences: readonly (string | false)[]): string | undefined {
-  const said = sentences.filter((sentence) => sentence !== false);
-  return said.length === 0 ? undefined : said.join(' ');
+function joined(said: readonly (string | false)[]): string | undefined {
+  const text = sentences(...said.filter((sentence) => sentence !== false));
+  return text === '' ? undefined : text;
 }
 
 function firstLine(record: ThreatRecord): string | undefined {

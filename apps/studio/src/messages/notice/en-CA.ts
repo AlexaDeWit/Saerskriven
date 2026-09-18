@@ -25,6 +25,8 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
   'snapshot-limit-detail':
     '{limit}: the bound is {bound}, the snapshot reached {observed}.',
   'snapshot-unsupported': 'The stored snapshot is malformed or unsupported.',
+  'snapshot-invalid': 'The stored snapshot is not valid.',
+  'snapshot-model-invalid': 'The stored model is not valid.',
   'snapshot-earlier-release':
     'An earlier release of Saerskriven stored this session, in a form this release cannot restore.',
   'snapshot-release':

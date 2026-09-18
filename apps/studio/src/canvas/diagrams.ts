@@ -65,8 +65,8 @@ export function renameActiveDiagram(title: string): boolean {
   if (renamed === undefined || renamed.title !== title) {
     return false;
   }
-  const quoted = excerpt(title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-renamed', { title: quoted }));
+  const excerpted = excerpt(title, nameQuoteLength);
+  announce((t) => t('canvas.diagram-renamed', { title: excerpted }));
   return true;
 }
 
