@@ -6,12 +6,15 @@ import {
   probeFlow,
   requestFlow,
 } from './canvas.fixtures.js';
+import { activeTranslator } from '../messages/locale.js';
 import { accessibleNames } from './names.js';
 import { actorElement, processElement } from '../store/store.fixtures.js';
 
+const { t } = activeTranslator();
+
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
-const names = accessibleNames(layout, canvasModel);
+const names = accessibleNames(layout, canvasModel, t);
 
 const withoutNodes = (from: CanvasLayout): CanvasLayout => ({
   ...from,
@@ -19,7 +22,7 @@ const withoutNodes = (from: CanvasLayout): CanvasLayout => ({
 });
 
 const namedIn = (model: Model, id: string): string | undefined =>
-  accessibleNames(layoutDiagram(model.diagrams[0], model), model).get(id);
+  accessibleNames(layoutDiagram(model.diagrams[0], model), model, t).get(id);
 
 describe('accessibleNames', () => {
   it('names an element by what it is called and what kind it is', () => {
@@ -28,7 +31,7 @@ describe('accessibleNames', () => {
 
   it('says what an element badge shows, which no glyph says to a reader', () => {
     expect(names.get(actorElement)).toBe(
-      'Reader, actor, 1 open threat, highest severity medium',
+      'Reader, actor, 1 open threat, highest severity Medium',
     );
   });
 
@@ -46,7 +49,7 @@ describe('accessibleNames', () => {
       'threat-tampering': { invalidated: true },
     });
     expect(namedIn(model, actorElement)).toBe(
-      'Reader, actor, 1 open threat, highest severity medium, Rests on an invalidated assumption',
+      'Reader, actor, 1 open threat, highest severity Medium, Rests on an invalidated assumption',
     );
   });
 
@@ -57,7 +60,7 @@ describe('accessibleNames', () => {
       'threat-tampering': { elements: [requestFlow], invalidated: true },
     });
     expect(namedIn(model, requestFlow)).toBe(
-      'Opens a model, flow, from Reader to Studio, 2 open threats, highest severity medium, Mitigated without implemented work, Rests on an invalidated assumption',
+      'Opens a model, flow, from Reader to Studio, 2 open threats, highest severity Medium, Mitigated without implemented work, Rests on an invalidated assumption',
     );
   });
 
@@ -92,6 +95,7 @@ describe('accessibleNames', () => {
         ),
       },
       canvasModel,
+      t,
     );
     expect(bothWays.get(requestFlow)).toContain(
       'Opens a model, flow, between Reader and Studio',
@@ -106,7 +110,7 @@ describe('accessibleNames', () => {
 
   it('falls back to the id of an end the layout drew no node for', () => {
     expect(
-      accessibleNames(withoutNodes(layout), canvasModel).get(requestFlow),
+      accessibleNames(withoutNodes(layout), canvasModel, t).get(requestFlow),
     ).toContain(`from ${actorElement} to ${processElement}`);
   });
 
@@ -115,7 +119,7 @@ describe('accessibleNames', () => {
       ...layout,
       nodes: layout.nodes.map((node) => ({ ...node, name: '' })),
     };
-    const spoken = accessibleNames(unnamed, canvasModel);
+    const spoken = accessibleNames(unnamed, canvasModel, t);
     expect(spoken.get(processElement)).toBe('process');
     expect(spoken.get(requestFlow)).toContain('from actor to process');
   });

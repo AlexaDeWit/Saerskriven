@@ -4,6 +4,7 @@ import {
   announceRefusal,
   resetAnnouncements,
 } from '../canvas/announcements.js';
+import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import { ProseField, TextField } from '../ui/text-field.js';
@@ -37,6 +38,7 @@ export function ModelPropertiesPanel({
 }: ModelPropertiesPanelProps) {
   const metadata = useModelStore((state) => state.present.metadata);
   const titleField = useRef<HTMLInputElement>(null);
+  const { t } = useTranslator();
   const [draft, setDraft] = useState<RefusedField | undefined>(held);
   const { refusals, note, refused } = useRefusals((refusal) => {
     const heldText = draft?.field === refusal?.field ? draft?.text : undefined;
@@ -64,10 +66,10 @@ export function ModelPropertiesPanel({
 
   return (
     <PanelFrame
-      closeLabel="Close model properties"
+      closeLabel={t('commands.key-close-model-properties')}
       closeShortcut="close-model-properties"
-      heading="Model properties"
-      label="Model properties"
+      heading={t('commands.label-model-properties')}
+      label={t('commands.label-model-properties')}
       onClose={onClose}
       onCover={onCover}
       onToggleWidth={onToggleWidth}
@@ -75,7 +77,7 @@ export function ModelPropertiesPanel({
     >
       <TextField
         held={draftIn(draft, 'Title')}
-        label="Title"
+        label={t('fields.title')}
         onChange={resetAnnouncements}
         onCommit={commit('title')}
         onRefused={refused('Title')}
@@ -84,7 +86,7 @@ export function ModelPropertiesPanel({
       />
       <ProseField
         held={draftIn(draft, 'Description')}
-        label="Description"
+        label={t('fields.description')}
         onChange={resetAnnouncements}
         onCommit={commit('description')}
         onRefused={refused('Description')}

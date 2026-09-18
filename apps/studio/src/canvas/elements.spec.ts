@@ -18,6 +18,8 @@ import {
   mainDiagram,
   processElement,
 } from '../store/store.fixtures.js';
+import { activeTranslator } from '../messages/locale.js';
+
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
 describe('placement geometry', () => {
@@ -122,9 +124,9 @@ describe('freshElement', () => {
     expect(Either.isRight(added)).toBe(true);
   });
 
-  it('gives a placed element its placeholder name', () => {
+  it('gives a placed element its placeholder name in the active language', () => {
     expect(freshElement('actor', { x: 0, y: 0 }).name).toBe(
-      placeholderNames.actor,
+      activeTranslator().t(placeholderNames.actor),
     );
   });
 

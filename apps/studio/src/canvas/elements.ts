@@ -12,6 +12,7 @@ import {
   type Point,
   type Size,
 } from '@saerskriven/model';
+import { activeTranslator } from '../messages/locale.js';
 
 /** The element tools in the toolbox. */
 export const elementTools = [
@@ -26,17 +27,15 @@ export const elementTools = [
 /** One kind of element the toolbox places. */
 export type ElementTool = (typeof elementTools)[number];
 
-/** What each placed element is called until it is renamed. */
+/** The message naming each placed element until it is renamed. */
 export const placeholderNames = {
-  actor: 'New actor',
-  process: 'New process',
-  store: 'New store',
-  note: 'Note',
-  'boundary-box': 'New trust boundary',
-  'boundary-curve': 'New trust boundary curve',
+  actor: 'defaults.new-actor',
+  process: 'defaults.new-process',
+  store: 'defaults.new-store',
+  note: 'defaults.new-note',
+  'boundary-box': 'defaults.new-boundary-box',
+  'boundary-curve': 'defaults.new-boundary-curve',
 } as const satisfies Record<ElementTool, string>;
-
-const newFlowName = 'New flow';
 
 /** The actors, processes and stores that a flow can connect. */
 export function flowEnds(layout: CanvasLayout): CanvasNode[] {
@@ -126,13 +125,17 @@ export function defaultCurveWaypoints(centre: Point): readonly Point[] {
   return arch(placed.position, placed.size);
 }
 
-/** A new element with its required defaults and a fresh id. */
+/**
+ * A new element with its required defaults and a fresh id. Its name is
+ * written in the active locale at creation and is model content from then on.
+ */
 export function freshElement(
   kind: ElementTool,
   position: Point,
   size: Size = defaultSize(kind),
 ): Element {
-  const named = namedElement(placeholderNames[kind]);
+  const { t } = activeTranslator();
+  const named = namedElement(t(placeholderNames[kind]));
   if (kind === 'boundary-box') {
     return {
       ...named,
@@ -148,7 +151,13 @@ export function freshElement(
     };
   }
   if (kind === 'note') {
-    return { ...named, kind: 'text', text: 'New note', position, size };
+    return {
+      ...named,
+      kind: 'text',
+      text: t('defaults.new-note-text'),
+      position,
+      size,
+    };
   }
   return { ...named, kind, position, size };
 }
@@ -173,7 +182,7 @@ export function withPlacement(
 /** A boundary curve through the waypoints a person committed. */
 export function freshBoundaryCurve(waypoints: readonly Point[]): Element {
   return {
-    ...namedElement(placeholderNames['boundary-curve']),
+    ...namedElement(activeTranslator().t(placeholderNames['boundary-curve'])),
     kind: 'trust-boundary',
     shape: { kind: 'curve', waypoints: [...waypoints] },
   };
@@ -183,7 +192,7 @@ export function freshBoundaryCurve(waypoints: readonly Point[]): Element {
 export function freshFlow(source: ElementId, target: ElementId): Element {
   return {
     kind: 'flow',
-    ...namedElement(newFlowName),
+    ...namedElement(activeTranslator().t('defaults.new-flow')),
     source: { kind: 'attached', element: source },
     target: { kind: 'attached', element: target },
     waypoints: [],

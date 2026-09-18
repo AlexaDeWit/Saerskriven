@@ -1,6 +1,5 @@
 import { recordsLinkedTo } from '@saerskriven/model';
 import { mitigationId, threatId } from '@saerskriven/model/fixtures';
-import { sectionLabel } from '@saerskriven/render';
 import {
   firstThreat,
   recordedModel,
@@ -18,8 +17,11 @@ import {
   recordLabel,
   threatTarget,
 } from './records.js';
+import { activeTranslator } from '../messages/locale.js';
 import { optionName } from './distinct-labels.js';
 import { numbersIn } from '../ui/ui.fixtures.js';
+
+const translator = activeTranslator();
 
 const [mitigation] = recordedModel.mitigations;
 
@@ -59,32 +61,40 @@ describe('recordsLinkedTo and linkableRecords', () => {
     expect(recordsLinkedTo(records, secondThreat)).toEqual([shared]);
     expect(
       linkableRecords(
+        mitigationKind,
         records,
         threatTarget(mitigationKind, secondThreat),
         recordedModel.threats,
+        translator,
       ).map(({ record }) => record),
     ).toEqual([mitigation]);
   });
 
   it('describes an offered record by its status and the numbers of the threats holding it, in number order', () => {
     const [{ text }] = linkableRecords(
+      mitigationKind,
       [{ ...shared, threats: [secondThreat, firstThreat] }],
       { holds: () => false },
       recordedModel.threats,
+      translator,
     );
-    expect(text.detail).toContain(shared.status);
+    expect(text.detail).toContain(
+      translator.t(mitigationKind.statusMessage(shared.status)),
+    );
     expect(text.detail).toMatch(/1\D+2/u);
   });
 
   it('says where an offered assumption applies to the model, naming no threat where it holds none', () => {
     const [assumption] = recordedModel.assumptions;
     const [onModel, onNothing] = linkableRecords(
+      assumptionKind,
       [
         { ...assumption, threats: [], appliesToModel: true },
         { ...assumption, threats: [], appliesToModel: false },
       ],
       { holds: () => false },
       recordedModel.threats,
+      translator,
     );
     expect(onModel.text.detail).not.toBe(onNothing.text.detail);
     expect(onModel.text.detail).not.toMatch(/\d/u);
@@ -95,9 +105,11 @@ describe('recordsLinkedTo and linkableRecords', () => {
     expect(
       optionName(
         linkableRecords(
+          mitigationKind,
           [blank],
           threatTarget(mitigationKind, secondThreat),
           recordedModel.threats,
+          translator,
         )[0].text,
       ),
     ).toContain(mitigation.id);
@@ -111,15 +123,17 @@ describe('the model as a record target', () => {
   it('offers to link only the assumptions that do not apply to the model', () => {
     expect(
       linkableRecords(
+        assumptionKind,
         [assumption, applying],
         modelTarget,
         recordedModel.threats,
+        translator,
       ).map(({ record }) => record),
     ).toEqual([assumption]);
   });
 
-  it('heads its group as the register heads that section', () => {
-    expect(modelTarget.heading).toBe(sectionLabel('model-assumptions'));
+  it('heads its group from the studio catalogue rather than the register', () => {
+    expect(modelTarget.heading).toBe('enums.model-assumptions');
     expect(threatTarget(assumptionKind, firstThreat).heading).toBe(
       assumptionKind.heading,
     );
@@ -145,35 +159,41 @@ describe('where else a shared row says its record is referenced', () => {
     );
 
   it('names the other threats by number, in number order, alike in both panels', () => {
-    expect(numbersIn(onThreat(9).elsewhere(on(9, 25, 4), numbered))).toEqual([
-      4, 25,
-    ]);
-    expect(numbersIn(modelTarget.elsewhere(on(25, 4), numbered))).toEqual([
-      4, 25,
-    ]);
-    expect(onThreat(9).elsewhere(on(9, 25, 4), numbered)).toBe(
-      modelTarget.elsewhere(on(25, 4), numbered),
+    expect(
+      numbersIn(onThreat(9).elsewhere(on(9, 25, 4), numbered, translator)),
+    ).toEqual([4, 25]);
+    expect(
+      numbersIn(modelTarget.elsewhere(on(25, 4), numbered, translator)),
+    ).toEqual([4, 25]);
+    expect(onThreat(9).elsewhere(on(9, 25, 4), numbered, translator)).toBe(
+      modelTarget.elsewhere(on(25, 4), numbered, translator),
     );
   });
 
   it('names up to four threats, and past four names three and counts the rest', () => {
-    expect(numbersIn(modelTarget.elsewhere(on(4, 7, 9, 25), numbered))).toEqual(
-      [4, 7, 9, 25],
-    );
     expect(
-      numbersIn(modelTarget.elsewhere(on(4, 7, 9, 12, 25), numbered)),
+      numbersIn(modelTarget.elsewhere(on(4, 7, 9, 25), numbered, translator)),
+    ).toEqual([4, 7, 9, 25]);
+    expect(
+      numbersIn(
+        modelTarget.elsewhere(on(4, 7, 9, 12, 25), numbered, translator),
+      ),
     ).toEqual([4, 7, 9, 2]);
     expect(
-      numbersIn(modelTarget.elsewhere(on(4, 7, 9, 12, 25, 31), numbered)),
+      numbersIn(
+        modelTarget.elsewhere(on(4, 7, 9, 12, 25, 31), numbered, translator),
+      ),
     ).toEqual([4, 7, 9, 3]);
   });
 
   it('says an assumption on a threat also applies to the model, and says nothing of a record on this target alone', () => {
     const applying = { ...on(9), appliesToModel: true };
-    expect(onThreat(9).elsewhere(applying, numbered)).toBeDefined();
-    expect(numbersIn(onThreat(9).elsewhere(applying, numbered))).toEqual([]);
-    expect(onThreat(9).elsewhere(on(9), numbered)).toBeUndefined();
-    expect(modelTarget.elsewhere(on(), numbered)).toBeUndefined();
+    expect(onThreat(9).elsewhere(applying, numbered, translator)).toBeDefined();
+    expect(
+      numbersIn(onThreat(9).elsewhere(applying, numbered, translator)),
+    ).toEqual([]);
+    expect(onThreat(9).elsewhere(on(9), numbered, translator)).toBeUndefined();
+    expect(modelTarget.elsewhere(on(), numbered, translator)).toBeUndefined();
   });
 });
 

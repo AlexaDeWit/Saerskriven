@@ -10,6 +10,7 @@ import {
   sampleModel,
   sampleThreat,
 } from '../store/store.fixtures.js';
+import { activeTranslator } from '../messages/locale.js';
 import {
   attachedThreats,
   elementLabel,
@@ -86,13 +87,19 @@ describe('attachedThreats', () => {
   });
 });
 
+const { t } = activeTranslator();
+
 describe('elementLabel', () => {
   it('is what the element is called', () => {
-    expect(elementLabel(newProcess('process-named', 'Studio'))).toBe('Studio');
+    expect(elementLabel(newProcess('process-named', 'Studio'), t)).toBe(
+      'Studio',
+    );
   });
 
   it('is what kind of element it is where it is called nothing', () => {
-    expect(elementLabel(newProcess('process-unnamed', ''))).toBe('the process');
+    expect(elementLabel(newProcess('process-unnamed', ''), t)).toBe(
+      'the process',
+    );
   });
 });
 
@@ -104,7 +111,7 @@ describe('nextNumber', () => {
 
 describe('freshThreat', () => {
   it('opens attached to the element, unassessed and undispositioned', () => {
-    const threat = freshThreat(7, actorElement);
+    const threat = freshThreat(7, actorElement, t);
 
     expect(threat.number).toBe(7);
     expect(threat.elements).toEqual([actorElement]);
@@ -113,8 +120,8 @@ describe('freshThreat', () => {
   });
 
   it('takes an id of its own on every add', () => {
-    expect(freshThreat(7, actorElement).id).not.toBe(
-      freshThreat(8, actorElement).id,
+    expect(freshThreat(7, actorElement, t).id).not.toBe(
+      freshThreat(8, actorElement, t).id,
     );
   });
 });

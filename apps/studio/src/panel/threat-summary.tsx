@@ -5,8 +5,13 @@ import {
   type Threat,
   type ThreatFlag,
 } from '@saerskriven/model';
-import { flagLabel } from '@saerskriven/render';
 import { useShallow } from 'zustand/react/shallow';
+import {
+  flagMessages,
+  severityMessages,
+  statusMessages,
+} from '../messages/enum-labels.js';
+import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
 import styles from './threat-panel.module.css';
 
@@ -30,6 +35,7 @@ export function ThreatSummary({ threat }: { readonly threat: Threat }) {
   const flags = useModelStore(
     useShallow((state) => threatFlags(state.present, threat)),
   );
+  const { t } = useTranslator();
 
   return (
     <>
@@ -46,12 +52,22 @@ export function ThreatSummary({ threat }: { readonly threat: Threat }) {
                 r="5"
               />
             </svg>
-            Severity: {threat.severity}
+            {t('panel.summary-severity', {
+              severity: t(severityMessages[threat.severity]),
+            })}
           </span>
-          <span>Status: {threat.status}</span>
+          <span>
+            {t('panel.summary-status', {
+              status: t(statusMessages[threat.status]),
+            })}
+          </span>
           <span className={styles.counts}>
-            <span data-count="mitigations">Mitigations: {mitigations}</span>
-            <span data-count="assumptions">Assumptions: {assumptions}</span>
+            <span data-count="mitigations">
+              {t('panel.summary-mitigations', { count: mitigations })}
+            </span>
+            <span data-count="assumptions">
+              {t('panel.summary-assumptions', { count: assumptions })}
+            </span>
           </span>
           {flags.map((flag) => (
             <span className={styles.flag} data-flag={flag} key={flag}>
@@ -62,7 +78,7 @@ export function ThreatSummary({ threat }: { readonly threat: Threat }) {
               >
                 <path className={styles.flagGlyph} d={flagGlyphs[flag]} />
               </svg>
-              {flagLabel(flag)}
+              {t(flagMessages[flag])}
             </span>
           ))}
         </span>

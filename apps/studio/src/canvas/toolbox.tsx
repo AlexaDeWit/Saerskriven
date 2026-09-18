@@ -2,6 +2,7 @@ import { CursorArrowIcon, HandIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 import { IconCommandButton } from '../commands/command-button.js';
 import { toolCommands } from '../commands/registry.js';
+import { useTranslator } from '../messages/locale.js';
 import { isElementTool, lockTool, tools, useTool, type Tool } from './tools.js';
 import styles from './toolbox.module.css';
 
@@ -25,9 +26,14 @@ const glyphs: Record<Tool, ReactNode> = {
 /** The tool modes, as row two of the shell's chrome card. */
 export function Toolbox() {
   const mode = useTool();
+  const { t } = useTranslator();
 
   return (
-    <section aria-label="Tools" className={styles.row} data-testid="toolbox">
+    <section
+      aria-label={t('commands.group-tools')}
+      className={styles.row}
+      data-testid="toolbox"
+    >
       {tools.map((tool) => (
         <IconCommandButton
           className={styles.control}

@@ -13,6 +13,7 @@ import {
 } from '@saerskriven/canvas';
 import type { ElementId, Model } from '@saerskriven/model';
 import { flowEnds } from './elements.js';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { accessibleNames } from './names.js';
 
 /** Every node the canvas mounts: an element's own, or a free end's anchor. */
@@ -34,8 +35,9 @@ export function diagramGraph(
   layout: CanvasLayout,
   model: Model,
   selection: readonly ElementId[],
+  t: StudioTranslator['t'],
 ): DiagramGraph {
-  const names = accessibleNames(layout, model);
+  const names = accessibleNames(layout, model, t);
   const ends = new Set<string>(flowEnds(layout).map((node) => node.id));
   const selected = new Set<string>(selection);
   return {

@@ -8,6 +8,7 @@ import {
   type ThreatId,
 } from '@saerskriven/model';
 import { kindLabel } from '../canvas/names.js';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { Action } from '../store/actions.js';
 import { selectedElement, selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
@@ -52,8 +53,11 @@ export function attachedThreats(state: State): readonly Threat[] {
 }
 
 /** What the panel calls an element, as {@link kindLabel} words it. */
-export function elementLabel(element: Element): string {
-  return kindLabel(element.name, element.kind);
+export function elementLabel(
+  element: Element,
+  t: StudioTranslator['t'],
+): string {
+  return kindLabel(element.name, element.kind, t);
 }
 
 /** The number the next threat added here takes, which the model issues. */
@@ -61,12 +65,20 @@ export function nextNumber(state: State): number {
   return nextThreatNumber(state.present);
 }
 
-/** The threat an add starts from: undecided, open, STRIDE spoofing, attached to `elementId`. */
-export function freshThreat(number: number, elementId: ElementId): Threat {
+/**
+ * The threat an add starts from: undecided, open, STRIDE spoofing, attached
+ * to `elementId`. Its title is written in the active locale at creation and
+ * is model content from then on.
+ */
+export function freshThreat(
+  number: number,
+  elementId: ElementId,
+  t: StudioTranslator['t'],
+): Threat {
   return {
     id: generateThreatId(),
     number,
-    title: 'New threat',
+    title: t('defaults.new-threat'),
     category: { methodology: 'STRIDE', category: 'spoofing' },
     severity: 'undecided',
     status: 'open',

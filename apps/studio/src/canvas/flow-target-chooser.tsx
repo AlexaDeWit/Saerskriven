@@ -1,4 +1,5 @@
 import { Select } from 'radix-ui';
+import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
 import {
   chooserOpened,
@@ -13,6 +14,7 @@ import styles from './toolbox.module.css';
 export function FlowTargetChooser() {
   const layout = useModelStore(currentLayout);
   const connecting = useConnecting();
+  const { t } = useTranslator();
   if (!connecting.open || connecting.from === undefined) {
     return null;
   }
@@ -32,8 +34,11 @@ export function FlowTargetChooser() {
       open
       value=""
     >
-      <Select.Trigger aria-label="Flow target" className={styles.flowTrigger}>
-        <Select.Value placeholder="Choose a flow target" />
+      <Select.Trigger
+        aria-label={t('tools.flow-target')}
+        className={styles.flowTrigger}
+      >
+        <Select.Value placeholder={t('tools.choose-flow-target')} />
       </Select.Trigger>
       <Select.Content className={styles.content} position="popper">
         <Select.Viewport className={styles.viewport}>

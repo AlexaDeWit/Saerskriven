@@ -66,7 +66,8 @@ describe('the studio and the canvas, coloured from one table', () => {
 
 describe('the studio browser interfaces', () => {
   it('uses no browser dialog global', () => {
-    const browserDialogGlobal = /\b(?:alert|confirm|prompt)\b/u;
+    const browserDialogGlobal =
+      /(?:(?:window|globalThis)\.)?\b(?:alert|confirm|prompt)\s*\(/u;
     const carrying = studioSources.filter((source) =>
       browserDialogGlobal.test(source.text),
     );

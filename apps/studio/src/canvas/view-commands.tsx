@@ -2,7 +2,7 @@ import { drawnBounds } from '@saerskriven/canvas';
 import type { DiagramId, Model } from '@saerskriven/model';
 import { useReactFlow, useStore } from '@xyflow/react';
 import { useEffect, useMemo, useRef } from 'react';
-import type { ViewCommands } from '../commands/registry.js';
+import type { ViewCommands } from '../commands/surface.js';
 import { activeDiagramId, modelAsOpened } from '../store/selectors.js';
 import { modelStore, useModelStore } from '../store/store.js';
 import { currentLayout } from './layout.js';

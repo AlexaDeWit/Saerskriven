@@ -14,6 +14,7 @@ import {
   diagramExportCommand,
   type CommandId,
 } from '../commands/registry.js';
+import { useTranslator } from '../messages/locale.js';
 import {
   canRedo,
   canUndo,
@@ -39,8 +40,13 @@ type UnsavedChangesCommandProps = {
   readonly command: CommandId;
   readonly dirty: boolean;
   readonly proceed: () => void;
-  readonly question: string;
+  readonly question: DiscardQuestion;
 };
+
+type DiscardQuestion =
+  | 'menu.discard-and-open'
+  | 'menu.discard-and-import'
+  | 'menu.discard-and-new';
 
 function UnsavedChangesCommand({
   asking,
@@ -50,14 +56,16 @@ function UnsavedChangesCommand({
   proceed,
   question,
 }: UnsavedChangesCommandProps) {
+  const { t } = useTranslator();
+
   return (
     <>
       <RegisteredMenuCommand
-        asking={asking ? { question, answer: proceed } : undefined}
+        asking={asking ? { question: t(question), answer: proceed } : undefined}
         entry={commandById(command)}
         keepOpen={dirty && !asking}
       />
-      {asking && <MenuItem onChoose={cancel}>Cancel</MenuItem>}
+      {asking && <MenuItem onChoose={cancel}>{t('menu.cancel')}</MenuItem>}
     </>
   );
 }
@@ -98,6 +106,7 @@ export function StudioMenu({
   const guarded = useModelStore(needsCloseGuard);
   const [open, setOpen] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
+  const { t } = useTranslator();
 
   useCloseGuard(guarded);
   useAsking(session.opening, dirty, setOpen, session.cancelOpen);
@@ -124,7 +133,7 @@ export function StudioMenu({
         open={open}
       >
         <DropdownMenu.Trigger
-          aria-label={dirty ? 'Menu, unsaved changes' : 'Menu'}
+          aria-label={t(dirty ? 'menu.menu-unsaved' : 'menu.menu')}
           className={styles.burger}
           ref={triggerRef}
         >
@@ -170,6 +179,7 @@ function MenuPanel({
   session,
 }: MenuPanelProps) {
   const closeFocus = useCloseFocus(focusSelectionControl);
+  const { t } = useTranslator();
 
   return (
     <DropdownMenu.Content
@@ -190,15 +200,17 @@ function MenuPanel({
       <DropdownMenu.Separator className={styles.rule} />
       <DropdownMenu.Group>
         <DropdownMenu.Label className={styles.heading}>
-          Project
+          {t('menu.project')}
         </DropdownMenu.Label>
         <ProjectLink href="https://github.com/AlexaDeWit/Saerskriven">
-          View source on GitHub
+          {t('menu.view-source')}
         </ProjectLink>
       </DropdownMenu.Group>
       <DropdownMenu.Separator className={styles.rule} />
       <DropdownMenu.Group>
-        <DropdownMenu.Label className={styles.heading}>Help</DropdownMenu.Label>
+        <DropdownMenu.Label className={styles.heading}>
+          {t('commands.group-help')}
+        </DropdownMenu.Label>
         <MenuCommand command="shortcut-reference" />
       </DropdownMenu.Group>
       <DropdownMenu.Separator className={styles.rule} />
@@ -209,12 +221,16 @@ function MenuPanel({
 
 function FileState({ dirty }: { readonly dirty: boolean }) {
   const file = useModelStore((state) => state.file);
+  const { t } = useTranslator();
+  const named = {
+    name: nameOf(file, t('defaults.untitled-model')),
+    format: formatFiles[formatOf(file)].label,
+  };
 
   return (
     <DropdownMenu.Group className={styles.about}>
       <p className={styles.state} data-testid="file-state">
-        {nameOf(file)}, {formatFiles[formatOf(file)].label},{' '}
-        {dirty ? 'unsaved changes' : 'no unsaved changes'}
+        {t(dirty ? 'menu.file-state-dirty' : 'menu.file-state-clean', named)}
       </p>
     </DropdownMenu.Group>
   );
@@ -240,27 +256,32 @@ function FileMenu({
     confirmClose,
     opening,
   } = session;
+  const { t } = useTranslator();
   const format = formatOf(file);
   const askingOpen = opening && dirty;
   const askingClose = closing && dirty;
 
   return (
     <DropdownMenu.Group>
-      <DropdownMenu.Label className={styles.heading}>File</DropdownMenu.Label>
+      <DropdownMenu.Label className={styles.heading}>
+        {t('commands.group-file')}
+      </DropdownMenu.Label>
       <UnsavedChangesCommand
         asking={askingOpen}
         cancel={cancelOpen}
         command="open"
         dirty={dirty}
         proceed={confirmOpen}
-        question="Discard changes and open"
+        question="menu.discard-and-open"
       />
       <MenuCommand command="save" />
       <RegisteredMenuCommand
         asking={
           choosing
             ? {
-                question: `Save as ${formatFiles[format].label}`,
+                question: t('menu.save-as-format', {
+                  format: formatFiles[format].label,
+                }),
                 answer: () => {
                   chooseFormat(format);
                 },
@@ -283,7 +304,9 @@ function FileMenu({
                 chooseFormat(option);
               }}
             >
-              Save as {formatFiles[option].label}
+              {t('menu.save-as-format', {
+                format: formatFiles[option].label,
+              })}
             </MenuItem>
           ))}
       <UnsavedChangesCommand
@@ -292,7 +315,7 @@ function FileMenu({
         command="import"
         dirty={dirty}
         proceed={session.confirmImport}
-        question="Discard changes and import"
+        question="menu.discard-and-import"
       />
       <ExportMenu />
       <UnsavedChangesCommand
@@ -301,13 +324,14 @@ function FileMenu({
         command="close-file"
         dirty={dirty}
         proceed={confirmClose}
-        question="Discard changes and create new model"
+        question="menu.discard-and-new"
       />
     </DropdownMenu.Group>
   );
 }
 
 function EditMenu() {
+  const { t } = useTranslator();
   const undoable = useModelStore(canUndo);
   const redoable = useModelStore(canRedo);
   const nothing = useModelStore((state) => state.selection.length === 0);
@@ -315,10 +339,12 @@ function EditMenu() {
 
   return (
     <DropdownMenu.Group>
-      <DropdownMenu.Label className={styles.heading}>Edit</DropdownMenu.Label>
+      <DropdownMenu.Label className={styles.heading}>
+        {t('commands.group-edit')}
+      </DropdownMenu.Label>
       <MenuCommand command="undo" disabled={!undoable} />
       <MenuCommand command="redo" disabled={!redoable} />
-      <Submenu trigger="Arrange">
+      <Submenu trigger={t('menu.arrange')}>
         {(
           [
             'align-left',
@@ -341,26 +367,30 @@ function EditMenu() {
 }
 
 function ViewMenu() {
+  const { t } = useTranslator();
   const snapping = useSnap();
   const nothing = useModelStore((state) => state.selection.length === 0);
 
   return (
     <DropdownMenu.Group>
-      <DropdownMenu.Label className={styles.heading}>View</DropdownMenu.Label>
+      <DropdownMenu.Label className={styles.heading}>
+        {t('commands.group-view')}
+      </DropdownMenu.Label>
       <MenuCommand command="fit-selection" disabled={nothing} />
       <MenuCommand command="snap-to-grid">
-        {commandById('snap-to-grid').label}: {snapping ? 'on' : 'off'}
+        {t(snapping ? 'menu.snap-on' : 'menu.snap-off')}
       </MenuCommand>
     </DropdownMenu.Group>
   );
 }
 
 function ExportMenu() {
+  const { t } = useTranslator();
   const diagrams = useModelStore((state) => state.present.diagrams);
   const several = diagrams.length > 1;
 
   return (
-    <Submenu trigger={<span>Export</span>}>
+    <Submenu trigger={<span>{t('menu.export')}</span>}>
       {diagrams.length === 0 && (
         <MenuCommand command="export-diagram" disabled />
       )}

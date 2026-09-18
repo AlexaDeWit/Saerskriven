@@ -34,6 +34,7 @@ import {
 } from '../commands/contextual-shortcuts.js';
 import { commandFor, describeCommandShortcuts } from '../commands/registry.js';
 import { hostPlatform } from '../commands/shortcuts.js';
+import { useTranslator } from '../messages/locale.js';
 import { selectedElement, selectedElements } from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
@@ -65,34 +66,72 @@ import { useBackgroundSelection } from './background-selection.js';
 import styles from './diagram-canvas.module.css';
 
 const panMouseButtons: number[] = [1];
-const canvasCommandDescription = describeCommandShortcuts(
-  ['hand-tool', 'focus-threats', 'delete', 'select-tool'],
-  hostPlatform,
-);
-const canvasItemDescription = describeContextualShortcuts(
-  [
-    'select-canvas-item',
-    'edit-canvas-text',
-    'toggle-canvas-item',
-    'move-selection',
-    'move-selection-far',
-  ],
-  hostPlatform,
-);
-const flowDescription = describeContextualShortcuts(
-  ['select-canvas-item', 'edit-canvas-text', 'toggle-canvas-item'],
-  hostPlatform,
-);
-const canvasA11y = {
-  'node.a11yDescription.keyboardDisabled': `${canvasItemDescription} ${canvasCommandDescription}`,
-  'edge.a11yDescription.default': `${flowDescription} ${canvasCommandDescription}`,
+
+const itemKeys = [
+  'select-canvas-item',
+  'edit-canvas-text',
+  'toggle-canvas-item',
+  'move-selection',
+  'move-selection-far',
+] as const;
+
+const flowKeys = [
+  'select-canvas-item',
+  'edit-canvas-text',
+  'toggle-canvas-item',
+] as const;
+
+const canvasCommands = [
+  'hand-tool',
+  'focus-threats',
+  'delete',
+  'select-tool',
+] as const;
+
+type CanvasKeyboardText = {
+  readonly a11y: Record<string, string>;
+  readonly description: string;
 };
-const keyboardDescription = describeContextualShortcuts(
-  contextualShortcuts
-    .filter((entry) => entry.group !== 'Panels')
-    .map((entry) => entry.id),
-  hostPlatform,
-);
+
+/**
+ * The spoken key descriptions in the active locale. They are resolved on
+ * render rather than at module load, where they would freeze the language of
+ * that moment.
+ */
+function useCanvasKeyboardText(): CanvasKeyboardText {
+  const { t } = useTranslator();
+
+  return useMemo(() => {
+    const commandText = describeCommandShortcuts(
+      canvasCommands,
+      hostPlatform,
+      t,
+    );
+    const itemText = describeContextualShortcuts(
+      [...itemKeys],
+      hostPlatform,
+      t,
+    );
+    const flowText = describeContextualShortcuts(
+      [...flowKeys],
+      hostPlatform,
+      t,
+    );
+    return {
+      a11y: {
+        'node.a11yDescription.keyboardDisabled': `${itemText} ${commandText}`,
+        'edge.a11yDescription.default': `${flowText} ${commandText}`,
+      },
+      description: describeContextualShortcuts(
+        contextualShortcuts
+          .filter((entry) => entry.group !== 'commands.group-panels')
+          .map((entry) => entry.id),
+        hostPlatform,
+        t,
+      ),
+    };
+  }, [t]);
+}
 
 /** The controlled diagram canvas and its floating editing controls. */
 export function DiagramCanvas({
@@ -108,9 +147,11 @@ export function DiagramCanvas({
   const selection = useModelStore(selectedElements);
   const selected = useModelStore(selectedElement);
   const keyboardDescriptionId = useId();
+  const keyboard = useCanvasKeyboardText();
+  const { t } = useTranslator();
   const graph = useMemo(
-    () => diagramGraph(layout, model, selection),
-    [layout, model, selection],
+    () => diagramGraph(layout, model, selection, t),
+    [layout, model, selection, t],
   );
   const elements = useMemo(() => elementIds(layout), [layout]);
   const positions = useMemo(() => nodesById(layout), [layout]);
@@ -266,12 +307,12 @@ export function DiagramCanvas({
     >
       <style>{themedCanvasStylesheet}</style>
       <VisuallyHidden id={keyboardDescriptionId}>
-        {keyboardDescription}
+        {keyboard.description}
       </VisuallyHidden>
       <ReactFlow
         aria-describedby={keyboardDescriptionId}
-        aria-label="Diagram"
-        ariaLabelConfig={canvasA11y}
+        aria-label={t('tools.diagram-region')}
+        ariaLabelConfig={keyboard.a11y}
         attributionPosition="bottom-left"
         autoPanOnNodeFocus={false}
         autoPanOnSelection={false}

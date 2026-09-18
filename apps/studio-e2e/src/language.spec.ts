@@ -99,14 +99,18 @@ test('a change of language keeps unsaved work, its undo and its file state', asy
   page,
 }) => {
   await openPlaceholder(page);
-  const placed = await placeByClick(page, 'Actor', /^New actor, actor/u);
+  await placeByClick(page, 'Actor', /^New actor, actor/u);
   await page.keyboard.press('Enter');
   await expect(menuButton(page)).toHaveAccessibleName(/unsaved changes/u);
 
   await chooseLanguage(page, heading['en-CA'], 'Français (Canada)');
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr-CA');
-  await expect(placed).toHaveCount(1);
-  await expect(menuButton(page)).toHaveAccessibleName(/unsaved changes/u);
-  expect(await undoOffered(page)).toBe(true);
+  await expect(
+    page.getByRole('group', { name: /^New actor, acteur/u }),
+  ).toHaveCount(1);
+  await expect(menuButton(page)).toHaveAccessibleName(
+    /modifications non enregistrées/u,
+  );
+  expect(await undoOffered(page, 'Annuler')).toBe(true);
 });

@@ -1,7 +1,6 @@
 import { generateDiagramId, type DiagramId } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
-import { untitledDiagram } from '../store/state.js';
 import { activeTranslator } from '../messages/locale.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
@@ -37,11 +36,15 @@ export function stepDiagram(direction: 'next' | 'previous'): boolean {
   return target === undefined ? false : showDiagram(target.id);
 }
 
-/** Adds an empty diagram after the others, shows it, and opens its title for editing. */
+/**
+ * Adds an empty diagram after the others, shows it, and opens its title for
+ * editing. Its title is written in the active locale at creation and is model
+ * content from then on.
+ */
 export function createDiagram(): boolean {
   const diagram = {
     id: generateDiagramId(),
-    title: untitledDiagram,
+    title: activeTranslator().t('defaults.untitled-diagram'),
     elements: [],
   };
   if (!changedModel(Action.AddDiagram({ diagram }))) {

@@ -36,6 +36,7 @@ describe('EnumField', () => {
         onCommit={noop}
         options={options}
         value="first"
+        labelOf={(option) => option}
       />,
     );
 
@@ -50,6 +51,7 @@ describe('EnumField', () => {
         onCommit={noop}
         options={options}
         value="first"
+        labelOf={(option) => option}
       />,
     );
 
@@ -66,6 +68,7 @@ describe('EnumField', () => {
         onCommit={noop}
         options={options}
         value="first"
+        labelOf={(option) => option}
       />,
     );
 
@@ -123,6 +126,7 @@ describe('EnumField', () => {
         options={options}
         placeholder="Pick a rank"
         value={undefined}
+        labelOf={(option) => option}
       />,
     );
 
@@ -148,6 +152,7 @@ describe('EnumField', () => {
           options={options}
           shownLabel="Rank"
           value="first"
+          labelOf={(option) => option}
         />
         <EnumField
           label="Rank of the second"
@@ -155,6 +160,7 @@ describe('EnumField', () => {
           options={options}
           shownLabel=""
           value="first"
+          labelOf={(option) => option}
         />
       </>,
     );
@@ -177,6 +183,7 @@ describe('EnumField', () => {
         onCommit={noop}
         options={options}
         value="first"
+        labelOf={(option) => option}
       />,
     );
 
@@ -198,6 +205,7 @@ describe('EnumField', () => {
         onCommit={onCommit}
         options={options}
         value="first"
+        labelOf={(option) => option}
       />,
     );
 
@@ -218,6 +226,7 @@ describe('EnumField', () => {
         onCommit={onCommit}
         options={options}
         value="first"
+        labelOf={(option) => option}
       />,
     );
 
@@ -237,6 +246,7 @@ describe('EnumField', () => {
         onCommit={onCommit}
         options={options}
         value="first"
+        labelOf={(option) => option}
       />,
     );
 
@@ -256,6 +266,7 @@ describe('EnumField', () => {
           onCommit={noop}
           options={options}
           value="first"
+          labelOf={(option) => option}
         />
       </div>,
     );

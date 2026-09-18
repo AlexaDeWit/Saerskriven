@@ -1,4 +1,4 @@
-import type { CommandSurface } from './registry.js';
+import type { CommandSurface } from './surface.js';
 
 type RecordingSurface = {
   readonly surface: CommandSurface;

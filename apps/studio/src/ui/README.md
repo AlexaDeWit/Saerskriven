@@ -89,9 +89,9 @@ rule](../panel/README.md#the-commit-rule)).
 
 `EnumField` is the worked example, and `SeverityField`, `StatusField` and
 `CategoryField` are it three times: each reads its options from a model
-schema, so the field offers what the model names and nothing else. It accepts
-a `labelOf` function when an option stores an ID but shows a name, and that
-function can return an `OptionText`: a `suffix` that tells two like labels
+schema, so the field offers what the model names and nothing else, and each
+maps the stored value to a catalogue message. `labelOf` is required, so a
+stored value is never drawn as its own label. It can return an `OptionText`: a `suffix` that tells two like labels
 apart, drawn on its own line so the cut below cannot hide it, and a `detail`
 line under the option that becomes its accessible description. The trigger
 and each option draw at most two lines of their label, so a long label cannot

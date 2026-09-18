@@ -1,6 +1,7 @@
 import type { Element, Threat } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import { useEffect, useId, useRef } from 'react';
+import { useTranslator } from '../messages/locale.js';
 import { CategoryField } from '../ui/category-field.js';
 import { SeverityField } from '../ui/severity-field.js';
 import { StatusField } from '../ui/status-field.js';
@@ -43,6 +44,7 @@ export function ThreatEditor({
   const titleField = useRef<HTMLInputElement>(null);
   const disclosure = useRef<HTMLButtonElement>(null);
   const spreadId = useId();
+  const { t } = useTranslator();
   const { refusals, note, refused } = useRefusals(onRefusal);
   const spread = threat.elements.length;
 
@@ -75,7 +77,7 @@ export function ThreatEditor({
       <Accordion.Content className={styles.content}>
         <TextField
           held={draftIn(held, 'Title')}
-          label="Title"
+          label={t('fields.title')}
           onChange={onChange}
           onCommit={(title) => {
             onCommit({ title });
@@ -106,7 +108,7 @@ export function ThreatEditor({
         </div>
         <ProseField
           held={draftIn(held, 'Description')}
-          label="Description"
+          label={t('fields.description')}
           onChange={onChange}
           onCommit={(description) => {
             onCommit({ description });
@@ -132,13 +134,13 @@ export function ThreatEditor({
         />
         {spread > 1 && (
           <div className={styles.spread}>
-            <p id={spreadId}>
-              This threat names {spread} elements. Deleting it takes it off all
-              of them.
-            </p>
-            <ul aria-label="Attached elements" className={styles.attachments}>
+            <p id={spreadId}>{t('panel.threat-spread', { count: spread })}</p>
+            <ul
+              aria-label={t('panel.attached-elements')}
+              className={styles.attachments}
+            >
               {attachments.map((element) => (
-                <li key={element.id}>{elementLabel(element)}</li>
+                <li key={element.id}>{elementLabel(element, t)}</li>
               ))}
             </ul>
           </div>
@@ -149,7 +151,7 @@ export function ThreatEditor({
           onClick={onDelete}
           type="button"
         >
-          Delete threat {threat.number}
+          {t('panel.delete-threat', { number: threat.number })}
         </button>
       </Accordion.Content>
     </Accordion.Item>

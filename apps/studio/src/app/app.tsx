@@ -3,12 +3,13 @@ import { useMemo, useState } from 'react';
 import { DiagramCanvas } from '../canvas/diagram-canvas.js';
 import { useViewCommands } from '../canvas/view-commands.js';
 import { CommandSurfaceProvider } from '../commands/binding.js';
-import type { CommandSurface } from '../commands/registry.js';
+import type { CommandSurface } from '../commands/surface.js';
 import {
   ShortcutReference,
   useShortcutReference,
 } from '../commands/shortcut-reference.js';
 import { useFileSession } from '../files/file-commands.js';
+import { useTranslator } from '../messages/locale.js';
 import { useColourMode } from '../theme.js';
 import { studioReleaseTag, studioVersion } from '../version.js';
 import styles from './app.module.css';
@@ -29,6 +30,7 @@ function Studio() {
   const view = useViewCommands(paneCoverage[0]);
   const [colourMode, setColourMode] = useColourMode();
   const reference = useShortcutReference();
+  const { t } = useTranslator();
 
   const surface = useMemo<CommandSurface>(
     () => ({
@@ -53,8 +55,9 @@ function Studio() {
             />
             <DiagramCanvas paneCoverage={paneCoverage} />
             <span className={styles.version} data-testid="studio-version">
-              {studioVersion}
-              {studioReleaseTag === '' && ' (development)'}
+              {studioReleaseTag === ''
+                ? t('shell.development-version', { version: studioVersion })
+                : studioVersion}
             </span>
             {reference.open && <ShortcutReference onClose={reference.close} />}
           </div>

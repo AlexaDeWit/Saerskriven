@@ -69,7 +69,7 @@ test(
     await expect(status).toContainText(/proposed/iu);
     await onScreen(panelControl(page, 'Unlink mitigation 2'));
 
-    for (const chosen of ['implemented', 'verified']) {
+    for (const chosen of ['Implemented', 'Verified']) {
       await chooseInPanel(page, 'Mitigation 2 status', chosen);
       await expect(status).toContainText(chosen);
       await expect(threatStatus).toHaveText(before ?? '');
@@ -484,7 +484,7 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
   await expect(panelField(other, 'textbox', 'Mitigation 2 title')).toHaveValue(
     'Strip caller tokens at the edge',
   );
-  await chooseInPanel(other, 'Mitigation 2 status', 'verified');
+  await chooseInPanel(other, 'Mitigation 2 status', 'Verified');
 
   await expect(
     panelField(page, 'combobox', 'Mitigation 2 status'),

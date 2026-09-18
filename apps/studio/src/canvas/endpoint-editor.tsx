@@ -7,7 +7,8 @@ import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
 import { flowEnds } from './elements.js';
 import { currentLayout } from './layout.js';
-import { sideLabels } from './side-labels.js';
+import { sideMessages } from '../messages/enum-labels.js';
+import { useTranslator } from '../messages/locale.js';
 import styles from './selection-controls.module.css';
 
 /** The form reconnecting one end of the selected flow to another element and side. */
@@ -33,6 +34,8 @@ export function EndpointEditor({
   const [anchor, setAnchor] = useState<Side | undefined>(
     previous?.kind === 'attached' ? previous.side : undefined,
   );
+  const { t } = useTranslator();
+  const end = t(side === 'source' ? 'tools.source' : 'tools.target');
   return (
     <form
       onSubmit={(event) => {
@@ -53,14 +56,14 @@ export function EndpointEditor({
         }
       }}
     >
-      <h2>Flow endpoint</h2>
+      <h2>{t('tools.flow-endpoint')}</h2>
       {flow === undefined ? (
-        <p>Select one flow to reconnect it.</p>
+        <p>{t('tools.select-one-flow')}</p>
       ) : (
         <label className={styles.field}>
-          {side === 'source' ? 'Source' : 'Target'}
+          {end}
           <select
-            aria-label={side === 'source' ? 'Source' : 'Target'}
+            aria-label={end}
             value={target ?? ''}
             onChange={(event) => {
               setTarget(
@@ -78,9 +81,9 @@ export function EndpointEditor({
       )}
       {flow !== undefined && (
         <label className={styles.field}>
-          Side
+          {t('tools.side')}
           <select
-            aria-label="Side"
+            aria-label={t('tools.side')}
             value={anchor ?? ''}
             onChange={(event) => {
               setAnchor(
@@ -88,10 +91,10 @@ export function EndpointEditor({
               );
             }}
           >
-            <option value="">Automatic</option>
+            <option value="">{t('tools.automatic')}</option>
             {sides.map((candidate) => (
               <option key={candidate} value={candidate}>
-                {sideLabels[candidate]}
+                {t(sideMessages[candidate])}
               </option>
             ))}
           </select>
@@ -102,10 +105,10 @@ export function EndpointEditor({
           disabled={flow === undefined || target === undefined}
           type="submit"
         >
-          Apply endpoint
+          {t('tools.apply-endpoint')}
         </button>
         <button onClick={close} type="button">
-          Cancel
+          {t('tools.cancel')}
         </button>
       </div>
     </form>

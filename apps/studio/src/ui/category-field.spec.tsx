@@ -55,12 +55,12 @@ describe('categoryCommitter', () => {
 describe(
   'CategoryField',
   () => {
-    it('names its trigger Category, as a combobox showing the pair', () => {
+    it('names its trigger Category, as a combobox showing the category', () => {
       render(<CategoryField onCommit={noop} value={stride} />);
 
       expect(
         screen.getByRole('combobox', { name: 'Category' }).textContent,
-      ).toContain('STRIDE tampering');
+      ).toContain('Tampering');
     });
 
     it('offers every enumerated pair', async () => {
@@ -87,7 +87,7 @@ describe(
       );
       expect(
         screen.getByRole('group', { name: 'STRIDE' }).textContent,
-      ).toContain('STRIDE tampering');
+      ).toContain('Tampering');
     });
 
     it('shows a custom category the file carried, beside the enumerated pairs', async () => {
@@ -98,9 +98,10 @@ describe(
       await user.keyboard('{Enter}');
 
       expect(
-        screen.getByRole('option', {
-          name: 'custom House rules billing abuse',
-        }),
+        screen.getByRole('group', { name: 'House rules' }).textContent,
+      ).toContain('billing abuse');
+      expect(
+        screen.getByRole('option', { name: 'billing abuse' }),
       ).toBeDefined();
       expect(screen.getAllByRole('option')).toHaveLength(
         enumeratedCategoryKeys.length + 1,

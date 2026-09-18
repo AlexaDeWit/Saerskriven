@@ -1,11 +1,7 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { holdHandTool, releaseHandTool } from '../canvas/tools.js';
-import {
-  commandFor,
-  runCommand,
-  type Command,
-  type CommandSurface,
-} from './registry.js';
+import { commandFor, runCommand, type Command } from './registry.js';
+import type { CommandSurface } from './surface.js';
 import { modelStore } from '../store/store.js';
 import { hostPlatform, type Platform } from './shortcuts.js';
 

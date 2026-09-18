@@ -1,19 +1,16 @@
-import type { Translator } from '@saerskriven/i18n';
 import {
   followBrowser,
   languageChoices,
   languageNames,
   type LanguageChoice,
 } from '../language-preference.js';
-import type { StudioMessages } from '../messages/catalogues.js';
+import type { StudioTranslator } from '../messages/catalogues.js';
+import { colourModeMessages } from '../messages/enum-labels.js';
 import { useLanguage, useTranslator } from '../messages/locale.js';
 import { colourModes, type ColourMode } from '../theme-preference.js';
 import styles from './menu.module.css';
 import { RadioChoices } from './radio-choices.js';
 import { Submenu } from './submenu.js';
-
-const titled = (mode: ColourMode): string =>
-  mode[0].toUpperCase() + mode.slice(1);
 
 /** The colour mode submenu: System, Light or Dark. */
 export function AppearanceMenu({
@@ -23,14 +20,18 @@ export function AppearanceMenu({
   readonly mode: ColourMode;
   readonly onChange?: (mode: ColourMode) => void;
 }) {
+  const { t } = useTranslator();
+  const heading = t('menu.appearance');
+  const chosen = t(colourModeMessages[mode]);
+
   return (
     <Submenu
-      label={`Appearance ${mode}`}
+      label={t('menu.appearance-chosen', { mode: chosen })}
       trigger={
         <>
-          <span>Appearance</span>
+          <span>{heading}</span>
           <span aria-hidden="true" className={styles.chord}>
-            {titled(mode)}
+            {chosen}
           </span>
         </>
       }
@@ -38,11 +39,11 @@ export function AppearanceMenu({
       <RadioChoices
         choices={colourModes.map((choice) => ({
           value: choice,
-          label: titled(choice),
+          label: t(colourModeMessages[choice]),
         }))}
-        label="Appearance"
-        onChoose={(chosen) => {
-          onChange?.(chosen);
+        label={heading}
+        onChoose={(next) => {
+          onChange?.(next);
         }}
         value={mode}
       />
@@ -84,10 +85,7 @@ export function LanguageMenu() {
   );
 }
 
-function nameOf(
-  choice: LanguageChoice,
-  translator: Translator<StudioMessages>,
-): string {
+function nameOf(choice: LanguageChoice, translator: StudioTranslator): string {
   return choice === followBrowser
     ? translator.t('shell.follow-browser')
     : languageNames[choice];

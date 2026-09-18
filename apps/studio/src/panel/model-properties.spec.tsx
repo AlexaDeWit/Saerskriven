@@ -211,7 +211,7 @@ describe(
       expect(undoable()).toBe(2);
       const edited = present();
 
-      await chooseFrom('Assumption 1 status', 'invalidated');
+      await chooseFrom('Assumption 1 status', 'Invalidated');
 
       expect(present().assumptions).toEqual([
         { ...edited.assumptions[0], status: 'invalidated' },

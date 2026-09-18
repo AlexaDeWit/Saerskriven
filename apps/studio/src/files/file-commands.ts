@@ -5,7 +5,7 @@ import {
 } from '@saerskriven/formats';
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { FileCommands } from '../commands/registry.js';
+import type { FileCommands } from '../commands/surface.js';
 import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import type { State } from '../store/state.js';

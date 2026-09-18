@@ -12,8 +12,8 @@ import {
   type Threat,
   type ThreatId,
 } from '@saerskriven/model';
-import { sectionLabel } from '@saerskriven/render';
 import type { z } from 'zod';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { Action } from '../store/actions.js';
 import type { OptionText } from '../ui/enum-field.js';
 import { distinctTexts } from './distinct-labels.js';
@@ -38,8 +38,10 @@ type RecordNoun = 'mitigation' | 'assumption';
  */
 export type RecordKind<Held extends ThreatRecord> = {
   readonly noun: RecordNoun;
-  readonly title: string;
-  readonly heading: string;
+  readonly title: 'enums.mitigation' | 'enums.assumption';
+  readonly nounMessage: 'enums.noun-mitigation' | 'enums.noun-assumption';
+  readonly heading: 'enums.mitigations' | 'enums.assumptions';
+  readonly statusMessage: (status: Held['status']) => RecordStatusMessage;
   readonly parts: readonly RecordPart[];
   readonly statuses: readonly Held['status'][];
   readonly held: (model: Model) => readonly Held[];
@@ -56,11 +58,34 @@ export type RecordKind<Held extends ThreatRecord> = {
   readonly setStatus: (record: Held, status: Held['status']) => Action;
 };
 
+/** The catalogue label of one record status, of either kind. */
+export type RecordStatusMessage =
+  | 'enums.mitigation-proposed'
+  | 'enums.mitigation-implemented'
+  | 'enums.mitigation-verified'
+  | 'enums.assumption-unconfirmed'
+  | 'enums.assumption-valid'
+  | 'enums.assumption-invalidated';
+
+const mitigationStatusMessages = {
+  proposed: 'enums.mitigation-proposed',
+  implemented: 'enums.mitigation-implemented',
+  verified: 'enums.mitigation-verified',
+} as const satisfies Record<Mitigation['status'], RecordStatusMessage>;
+
+const assumptionStatusMessages = {
+  unconfirmed: 'enums.assumption-unconfirmed',
+  valid: 'enums.assumption-valid',
+  invalidated: 'enums.assumption-invalidated',
+} as const satisfies Record<Assumption['status'], RecordStatusMessage>;
+
 /** Mitigations, which start `proposed`. */
 export const mitigationKind: RecordKind<Mitigation> = {
   noun: 'mitigation',
-  title: 'Mitigation',
-  heading: 'Mitigations',
+  title: 'enums.mitigation',
+  nounMessage: 'enums.noun-mitigation',
+  heading: 'enums.mitigations',
+  statusMessage: (status) => mitigationStatusMessages[status],
   parts: ['title', 'prose'],
   statuses: mitigationStatusSchema.options,
   held: (model) => model.mitigations,
@@ -85,8 +110,10 @@ export const mitigationKind: RecordKind<Mitigation> = {
 /** Assumptions, which start `unconfirmed` and carry prose alone. */
 export const assumptionKind: RecordKind<Assumption> = {
   noun: 'assumption',
-  title: 'Assumption',
-  heading: 'Assumptions',
+  title: 'enums.assumption',
+  nounMessage: 'enums.noun-assumption',
+  heading: 'enums.assumptions',
+  statusMessage: (status) => assumptionStatusMessages[status],
   parts: ['prose'],
   statuses: assumptionStatusSchema.options,
   held: (model) => model.assumptions,
@@ -115,7 +142,10 @@ type NumberedThreat = Pick<Threat, 'id' | 'number'>;
  * assumptions the model. `elsewhere` says which other threats hold a record.
  */
 export type RecordTarget<Held extends ThreatRecord> = {
-  readonly heading: string;
+  readonly heading:
+    | 'enums.mitigations'
+    | 'enums.assumptions'
+    | 'enums.model-assumptions';
   readonly holds: (record: Held) => boolean;
   readonly attach: (record: Held) => Held;
   readonly link: (record: Held) => Action;
@@ -123,6 +153,7 @@ export type RecordTarget<Held extends ThreatRecord> = {
   readonly elsewhere: (
     record: Held,
     threats: readonly NumberedThreat[],
+    translator: StudioTranslator,
   ) => string | undefined;
 };
 
@@ -137,24 +168,25 @@ export function threatTarget<Held extends ThreatRecord>(
     attach: (record) => ({ ...record, threats: [threatId] }),
     link: (record) => kind.link(record, threatId),
     unlink: (record) => kind.unlink(record, threatId),
-    elsewhere: (record, threats) =>
+    elsewhere: (record, threats, translator) =>
       joined([
-        alsoOn(record, threats, threatId),
+        alsoOn(record, threats, translator, threatId),
         'appliesToModel' in record &&
           record.appliesToModel &&
-          'Also applies to the model.',
+          translator.t('panel.also-applies-to-model'),
       ]),
   };
 }
 
 /** The assumptions that apply to the model. */
 export const modelTarget: RecordTarget<Assumption> = {
-  heading: sectionLabel('model-assumptions'),
+  heading: 'enums.model-assumptions',
   holds: (assumption) => assumption.appliesToModel,
   attach: (assumption) => ({ ...assumption, appliesToModel: true }),
   link: ({ id }) => Action.LinkAssumptionToModel({ assumptionId: id }),
   unlink: ({ id }) => Action.UnlinkAssumptionFromModel({ assumptionId: id }),
-  elsewhere: (assumption, threats) => joined([alsoOn(assumption, threats)]),
+  elsewhere: (assumption, threats, translator) =>
+    joined([alsoOn(assumption, threats, translator)]),
 };
 
 /** The text of one part of a record. */
@@ -177,9 +209,11 @@ export function recordLabel(record: ThreatRecord): string {
  * a line giving its status and the threats, by number, that hold it.
  */
 export function linkableRecords<Held extends ThreatRecord>(
+  kind: RecordKind<Held>,
   records: readonly Held[],
   target: Pick<RecordTarget<Held>, 'holds'>,
   threats: readonly NumberedThreat[],
+  translator: StudioTranslator,
 ): readonly { readonly record: Held; readonly text: OptionText }[] {
   return distinctTexts(
     records
@@ -192,7 +226,7 @@ export function linkableRecords<Held extends ThreatRecord>(
       })),
   ).map(([{ record }, text]) => ({
     record,
-    text: { ...text, detail: recordDetail(record, threats) },
+    text: { ...text, detail: recordDetail(kind, record, threats, translator) },
   }));
 }
 
@@ -215,17 +249,23 @@ function restoredRecord<Held extends ThreatRecord>(
   };
 }
 
-function recordDetail(
-  record: ThreatRecord,
+function recordDetail<Held extends ThreatRecord>(
+  kind: RecordKind<Held>,
+  record: Held,
   threats: readonly NumberedThreat[],
+  { t }: StudioTranslator,
 ): string {
   const numbers = threatNumbers(record, threats);
   return [
-    record.status,
-    numbers.length > 0 && `${threatWord(numbers.length)} ${numbers.join(', ')}`,
+    t(kind.statusMessage(record.status)),
+    numbers.length > 0 &&
+      t('panel.detail-threats', {
+        count: numbers.length,
+        list: numbers.join(', '),
+      }),
     'appliesToModel' in record &&
       record.appliesToModel &&
-      'applies to the model',
+      t('panel.detail-applies-to-model'),
   ]
     .filter((part) => part !== false)
     .join(', ');
@@ -322,6 +362,7 @@ const namedThreats = 3;
 function alsoOn(
   record: ThreatRecord,
   threats: readonly NumberedThreat[],
+  { t, list }: StudioTranslator,
   except?: ThreatId,
 ): string | false {
   const numbers = threatNumbers(record, threats, except);
@@ -332,10 +373,13 @@ function alsoOn(
     numbers.length > namedThreats + 1
       ? [
           ...numbers.slice(0, namedThreats),
-          `${String(numbers.length - namedThreats)} more`,
+          t('panel.more-threats', { count: numbers.length - namedThreats }),
         ]
       : numbers;
-  return `Also on ${threatWord(numbers.length)} ${listed(named)}.`;
+  return t('panel.also-on-threats', {
+    count: numbers.length,
+    list: list(named),
+  });
 }
 
 function threatNumbers(
@@ -346,16 +390,6 @@ function threatNumbers(
   return inNumberOrder(
     threats.filter(({ id }) => id !== except && record.threats.includes(id)),
   ).map(({ number }) => String(number));
-}
-
-function threatWord(count: number): string {
-  return count === 1 ? 'threat' : 'threats';
-}
-
-function listed(items: readonly string[]): string {
-  return items.length === 1
-    ? items[0]
-    : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 function joined(sentences: readonly (string | false)[]): string | undefined {

@@ -8,12 +8,14 @@ import {
   type ThreatCategory,
 } from '@saerskriven/model';
 
+import {
+  categoryMessages,
+  type EnumeratedCategory,
+} from '../messages/enum-labels.js';
+import { useTranslator } from '../messages/locale.js';
 import { EnumField } from './enum-field.js';
 
-const enumerated: readonly {
-  readonly methodology: string;
-  readonly categories: readonly string[];
-}[] = [
+const enumerated = [
   {
     methodology: strideCategorySchema.shape.methodology.value,
     categories: strideCategorySchema.shape.category.options,
@@ -34,10 +36,18 @@ const enumerated: readonly {
     methodology: plot4aiCategorySchema.shape.methodology.value,
     categories: plot4aiCategorySchema.shape.category.options,
   },
-];
+] as const;
+
+type CategoryMessage = (typeof categoryMessages)[EnumeratedCategory];
 
 function methodologyOf(key: string): string {
   return key.split(' ')[0];
+}
+
+function methodologyName(category: ThreatCategory): string {
+  return category.methodology === 'custom'
+    ? category.methodologyName
+    : category.methodology;
 }
 
 function categoryFromKey(key: string): ThreatCategory | undefined {
@@ -60,11 +70,19 @@ export function categoryKey(category: ThreatCategory): string {
     : `${category.methodology} ${category.category}`;
 }
 
-/** The key of every enumerated methodology and category pair, in the union's order. */
-export const enumeratedCategoryKeys: readonly string[] = enumerated.flatMap(
-  ({ methodology, categories }) =>
-    categories.map((category) => `${methodology} ${category}`),
+const messageByKey = new Map<string, CategoryMessage>(
+  enumerated.flatMap(({ methodology, categories }) =>
+    categories.map(
+      (category) =>
+        [`${methodology} ${category}`, categoryMessages[category]] as const,
+    ),
+  ),
 );
+
+/** The key of every enumerated methodology and category pair, in the union's order. */
+export const enumeratedCategoryKeys: readonly string[] = [
+  ...messageByKey.keys(),
+];
 
 /**
  * The listbox's value handler, bound to one `onCommit`. A key the category
@@ -88,19 +106,28 @@ type CategoryFieldProps = {
 
 /**
  * A threat's category as one listbox of methodology and category pairs,
- * grouped by methodology. A custom category is offered as an option of its
- * own ahead of the enumerated pairs.
+ * grouped by methodology. An enumerated pair reads under its catalogue label
+ * and the methodology's own name. A custom category is offered as an option
+ * of its own ahead of them, under the names its author typed.
  */
 export function CategoryField({ value, onCommit }: CategoryFieldProps) {
+  const { t } = useTranslator();
   const key = categoryKey(value);
-  const options = enumeratedCategoryKeys.includes(key)
+  const options = messageByKey.has(key)
     ? enumeratedCategoryKeys
     : [key, ...enumeratedCategoryKeys];
+  const named = (option: string): string => {
+    const message = messageByKey.get(option);
+    return message === undefined ? value.category : t(message);
+  };
+  const grouped = (option: string): string =>
+    messageByKey.has(option) ? methodologyOf(option) : methodologyName(value);
 
   return (
     <EnumField
-      groupOf={methodologyOf}
-      label="Category"
+      groupOf={grouped}
+      label={t('fields.category')}
+      labelOf={named}
       onCommit={categoryCommitter(onCommit)}
       options={options}
       value={key}

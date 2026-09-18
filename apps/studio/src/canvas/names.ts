@@ -11,16 +11,13 @@ import {
   type ElementId,
   type Model,
 } from '@saerskriven/model';
-import { flagLabel } from '@saerskriven/render';
-
-const kindWords = {
-  actor: 'actor',
-  process: 'process',
-  store: 'store',
-  text: 'text',
-  flow: 'flow',
-  'trust-boundary': 'trust boundary',
-} as const satisfies Record<Element['kind'], string>;
+import type { StudioTranslator } from '../messages/catalogues.js';
+import {
+  articleKindMessages,
+  flagMessages,
+  kindMessages,
+  severityMessages,
+} from '../messages/enum-labels.js';
 
 const elementKindOf = {
   actor: 'actor',
@@ -31,8 +28,6 @@ const elementKindOf = {
   'boundary-curve': 'trust-boundary',
 } as const satisfies Record<CanvasNodeKind, Element['kind']>;
 
-const freeEndWords = 'a free point';
-
 /**
  * The accessible name of every element the layout drew, keyed by its React
  * Flow id: its name, kind, badge and raised flags, and for a flow the
@@ -41,41 +36,51 @@ const freeEndWords = 'a free point';
 export function accessibleNames(
   layout: CanvasLayout,
   model: Model,
+  t: StudioTranslator['t'],
 ): ReadonlyMap<string, string> {
   const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
   const flags = flagsByElement(model);
   const flagWords = (element: ElementId): string[] =>
-    (flags.get(element) ?? []).map(flagLabel);
+    (flags.get(element) ?? []).map((flag) => t(flagMessages[flag]));
   return new Map<string, string>([
     ...layout.nodes.map(
-      (node) => [node.id, nodeName(node, flagWords(node.id))] as const,
+      (node) => [node.id, nodeName(node, flagWords(node.id), t)] as const,
     ),
     ...layout.edges.map(
-      (edge) => [edge.id, edgeName(edge, nodes, flagWords(edge.id))] as const,
+      (edge) =>
+        [edge.id, edgeName(edge, nodes, flagWords(edge.id), t)] as const,
     ),
   ]);
 }
 
-/** What an element is called in a sentence: its name, or "the" and its kind while it has none. */
-export function kindLabel(name: string, kind: Element['kind']): string {
-  return name === '' ? `the ${kindWords[kind]}` : name;
+/** What an element is called in a sentence: its name, or its kind while it has none. */
+export function kindLabel(
+  name: string,
+  kind: Element['kind'],
+  t: StudioTranslator['t'],
+): string {
+  return name === '' ? t(articleKindMessages[kind]) : name;
 }
 
 /** {@link kindLabel} for one drawn element. */
-export function nodeLabel(node: CanvasNode): string {
-  return kindLabel(node.name, elementKindOf[node.kind]);
+export function nodeLabel(node: CanvasNode, t: StudioTranslator['t']): string {
+  return kindLabel(node.name, elementKindOf[node.kind], t);
 }
 
 /** {@link kindLabel} for one drawn flow. */
-export function edgeLabel(edge: CanvasEdge): string {
-  return kindLabel(edge.name, 'flow');
+export function edgeLabel(edge: CanvasEdge, t: StudioTranslator['t']): string {
+  return kindLabel(edge.name, 'flow', t);
 }
 
-function nodeName(node: CanvasNode, flags: readonly string[]): string {
+function nodeName(
+  node: CanvasNode,
+  flags: readonly string[],
+  t: StudioTranslator['t'],
+): string {
   return spoken([
     node.name,
-    kindWords[elementKindOf[node.kind]],
-    ...badgeWords(node.badge),
+    t(kindMessages[elementKindOf[node.kind]]),
+    ...badgeWords(node.badge, t),
     ...flags,
   ]);
 }
@@ -84,16 +89,18 @@ function edgeName(
   edge: CanvasEdge,
   nodes: ReadonlyMap<ElementId, CanvasNode>,
   flags: readonly string[],
+  t: StudioTranslator['t'],
 ): string {
-  const source = endName(edge.sourceElement, nodes);
-  const target = endName(edge.targetElement, nodes);
+  const source = endName(edge.sourceElement, nodes, t);
+  const target = endName(edge.targetElement, nodes, t);
   return spoken([
     edge.name,
-    'flow',
-    edge.bidirectional
-      ? `between ${source} and ${target}`
-      : `from ${source} to ${target}`,
-    ...badgeWords(edge.badge),
+    t(kindMessages.flow),
+    t(edge.bidirectional ? 'tools.flow-between' : 'tools.flow-from-to', {
+      source,
+      target,
+    }),
+    ...badgeWords(edge.badge, t),
     ...flags,
   ]);
 }
@@ -101,26 +108,34 @@ function edgeName(
 function endName(
   element: ElementId | undefined,
   nodes: ReadonlyMap<ElementId, CanvasNode>,
+  t: StudioTranslator['t'],
 ): string {
   if (element === undefined) {
-    return freeEndWords;
+    return t('tools.free-point');
   }
   const node = nodes.get(element);
   if (node === undefined) {
     return element;
   }
-  return node.name === '' ? kindWords[elementKindOf[node.kind]] : node.name;
+  return node.name === ''
+    ? t(kindMessages[elementKindOf[node.kind]])
+    : node.name;
 }
 
-function badgeWords(badge: ThreatBadge | undefined): string[] {
+function badgeWords(
+  badge: ThreatBadge | undefined,
+  t: StudioTranslator['t'],
+): string[] {
   if (badge === undefined || badge.kind === 'flag-only') {
     return [];
   }
   return [
-    badge.count === 1 ? '1 open threat' : `${badge.count} open threats`,
+    t('tools.open-threats', { count: badge.count }),
     badge.severity === 'undecided'
-      ? 'severity not assessed'
-      : `highest severity ${badge.severity}`,
+      ? t('tools.severity-not-assessed')
+      : t('tools.highest-severity', {
+          severity: t(severityMessages[badge.severity]),
+        }),
   ];
 }
 

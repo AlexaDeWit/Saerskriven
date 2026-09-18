@@ -12,7 +12,9 @@ the in-app shortcut reference this directory renders.
 
 | Module                    | What it holds                                                                                             |
 | ------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `registry.ts`             | The command table, built from entry builders, with `commandById`, `commandFor` and `runCommand`           |
+| `table.ts`                | The command table and the entry builders that fill it                                                     |
+| `registry.ts`             | Reading that table: `commandById`, `commandFor`, `runCommand` and the diagram export                      |
+| `surface.ts`              | The command surface types: the file session, the reference and the viewport                               |
 | `shortcuts.ts`            | The chord type, its builders, and how each platform writes a chord                                        |
 | `binding.tsx`             | The document-level key listener, who owns a key press, and the `CommandSurface` context                   |
 | `contextual-shortcuts.ts` | Keys that act only inside one control, such as bend and resize keys, with their matchers and descriptions |
@@ -21,14 +23,17 @@ the in-app shortcut reference this directory renders.
 
 ## What a command is
 
-`registry.ts` is one table keyed by command id. `commandById` reads it by key,
+`table.ts` is one table keyed by command id. `commandById` reads it by key,
 and `commandFor` finds the one command whose chord matches a key event. Each
 entry carries:
 
-- **The label**, which is what a menu, a toolbox tooltip or a bare
-  `CommandButton` says.
-- **The group and context**, which place and explain it in the shortcut
-  reference.
+- **The label**, a message id of the `commands` section, which is what a menu,
+  a toolbox tooltip or a bare `CommandButton` says once a renderer resolves it
+  ([the messages](../messages/README.md)). The table stores no text, so a
+  label is never fixed in the language of module load. A label that names a
+  distance or a diagram carries that value beside its id.
+- **The group and context**, message ids too, which place and explain it in
+  the shortcut reference.
 - **The shortcuts**, zero or more chords, in the order they are offered.
 - **`inTextFields`**, whether the chord still fires while a person is typing.
 - **`available`**, where given, the state in which the command is the studio's
@@ -132,6 +137,9 @@ only some directions list those keys.
   control, as `../files/menu.tsx` does. Never hold a label or a chord beside a
   control: the menu, the toolbox, the panel and the zoom cluster read both from
   here.
+- Add a command's words to the `commands` catalogue section in all three
+  locales and store the id. A function that spells a chord or describes an
+  entry takes the active translator, so the caller resolves at render.
 - Bind a new command by adding an entry, not by adding a listener.
 - Add a key that acts only inside one control to `contextual-shortcuts.ts`.
   Renderers, event handlers and accessible descriptions read it from there.
