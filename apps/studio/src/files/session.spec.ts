@@ -5,7 +5,7 @@ import {
   type Divergence,
 } from '@saerskriven/formats';
 import { mitigationIdSchema } from '@saerskriven/model';
-import { chooseLocale } from '../messages/locale.js';
+import { activeTranslator, chooseLocale } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { FileLifecycle, type RetainedSource } from '../store/state.js';
 import {
@@ -270,6 +270,8 @@ describe('writeThrough', () => {
   });
 });
 
+const speaker = () => activeTranslator().t;
+
 describe('reportLines', () => {
   const divergences: readonly Divergence[] = [
     {
@@ -289,13 +291,13 @@ describe('reportLines', () => {
   });
 
   it('says nothing at all where nothing diverged', () => {
-    expect(reportLines([])).toEqual([]);
+    expect(reportLines(speaker(), [])).toEqual([]);
   });
 
   it.each(['open', 'import'] as const)(
     'describes one entry per line on %s, carrying the data its code names',
     (occasion) => {
-      const lines = reportLines(divergences, occasion);
+      const lines = reportLines(speaker(), divergences, occasion);
 
       expect(lines).toHaveLength(divergences.length);
       expect(lines[1]).toContain('notes');
@@ -303,18 +305,18 @@ describe('reportLines', () => {
   );
 
   it('names the subject and the reason on an open, and neither on an import', () => {
-    const [opened] = reportLines(divergences, 'open');
-    const [imported] = reportLines(divergences, 'import');
+    const [opened] = reportLines(speaker(), divergences, 'open');
+    const [imported] = reportLines(speaker(), divergences, 'import');
 
     expect(opened).toContain('m-1');
     expect(opened).toContain(imported);
     expect(imported).not.toContain('m-1');
   });
 
-  it('phrases every line in the chosen locale', () => {
-    const english = reportLines(divergences, 'open');
+  it('phrases every line in the translator it is handed', () => {
+    const english = reportLines(speaker(), divergences, 'open');
     chooseLocale('sv');
 
-    expect(reportLines(divergences, 'open')).not.toEqual(english);
+    expect(reportLines(speaker(), divergences, 'open')).not.toEqual(english);
   });
 });

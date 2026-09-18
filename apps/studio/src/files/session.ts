@@ -16,8 +16,8 @@ import { Either } from 'effect';
 import {
   divergenceDetail,
   divergenceLine,
+  type Speaker,
 } from '../messages/divergence/text.js';
-import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import {
   FileLifecycle,
@@ -179,14 +179,16 @@ export function savedBy(
 }
 
 /**
- * A report's lines in the reader's language, one per divergence. An import
- * charges every entry to the model, so its lines carry the detail alone.
+ * A report's lines in the caller's language, one per divergence. The caller
+ * supplies the translator so a component re-words a standing report on a
+ * change of locale. An import charges every entry to the model, so its lines
+ * carry the detail alone.
  */
 export function reportLines(
+  t: Speaker,
   divergences: readonly Divergence[],
   occasion?: LossOccasion,
 ): readonly string[] {
-  const { t } = activeTranslator();
   return occasion === 'import'
     ? divergences.map(({ detail }) => divergenceDetail(t, detail))
     : divergences.map((divergence) => divergenceLine(t, divergence));

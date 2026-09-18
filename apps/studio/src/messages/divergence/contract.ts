@@ -4,7 +4,7 @@ const id = { id: 'text' } as const;
 
 const name = { name: 'text' } as const;
 
-const mark = { from: 'number', raised: 'number' } as const;
+const mark = { from: 'text', raised: 'text' } as const;
 
 /**
  * What a codec or an import reports it could not carry, one message per
@@ -38,7 +38,7 @@ export const divergenceMessages = {
   'note-name-dropped': text(name),
   'scope-marking-dropped': text(),
   'cell-reshaped': text({ shape: 'text', kind: 'text' }),
-  'diagram-name-numbered': text({ number: 'number' }),
+  'diagram-name-numbered': text({ number: 'text' }),
   'cell-discarded': text({ shape: 'text' }),
   'threat-attachment-stray': text({ element: 'text', kind: 'text' }),
   'threat-attachment-stray-unknown': text({ element: 'text' }),

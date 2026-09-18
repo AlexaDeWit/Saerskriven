@@ -2,7 +2,8 @@ import type { Divergence, DivergenceDetail } from '@saerskriven/formats';
 import type { Translator } from '@saerskriven/i18n';
 import type { StudioMessages } from '../catalogues.js';
 
-type Speaker = Translator<StudioMessages>['t'];
+/** The part of a translator a divergence needs: one message, resolved to text. */
+export type Speaker = Translator<StudioMessages>['t'];
 
 /**
  * One divergence as a sentence in the reader's language: its subject, what
@@ -23,13 +24,25 @@ export function divergenceDetail(t: Speaker, detail: DivergenceDetail): string {
     case 'release-restamped':
       return t('divergence.release-restamped', detail.parameters);
     case 'threat-mark-raised-by-issue':
-      return t('divergence.threat-mark-raised-by-issue', detail.parameters);
+      return t(
+        'divergence.threat-mark-raised-by-issue',
+        literalMark(detail.parameters),
+      );
     case 'threat-mark-raised-to-issued':
-      return t('divergence.threat-mark-raised-to-issued', detail.parameters);
+      return t(
+        'divergence.threat-mark-raised-to-issued',
+        literalMark(detail.parameters),
+      );
     case 'diagram-mark-raised-by-issue':
-      return t('divergence.diagram-mark-raised-by-issue', detail.parameters);
+      return t(
+        'divergence.diagram-mark-raised-by-issue',
+        literalMark(detail.parameters),
+      );
     case 'diagram-mark-raised-to-issued':
-      return t('divergence.diagram-mark-raised-to-issued', detail.parameters);
+      return t(
+        'divergence.diagram-mark-raised-to-issued',
+        literalMark(detail.parameters),
+      );
     case 'assumption-unrecorded':
       return t('divergence.assumption-unrecorded');
     case 'diagram-discarded':
@@ -45,7 +58,9 @@ export function divergenceDetail(t: Speaker, detail: DivergenceDetail): string {
     case 'cell-reshaped':
       return t('divergence.cell-reshaped', detail.parameters);
     case 'diagram-name-numbered':
-      return t('divergence.diagram-name-numbered', detail.parameters);
+      return t('divergence.diagram-name-numbered', {
+        number: String(detail.parameters.number),
+      });
     case 'cell-discarded':
       return t('divergence.cell-discarded', detail.parameters);
     case 'threat-attachment-stray':
@@ -137,6 +152,13 @@ export function divergenceDetail(t: Speaker, detail: DivergenceDetail): string {
     default:
       return undescribed(detail);
   }
+}
+
+function literalMark(parameters: {
+  readonly from: number;
+  readonly raised: number;
+}) {
+  return { from: String(parameters.from), raised: String(parameters.raised) };
 }
 
 function undescribed(_detail: never): string {
