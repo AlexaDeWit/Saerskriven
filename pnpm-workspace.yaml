@@ -136,7 +136,7 @@ catalog:
   nx: 23.2.1
   # Pinned exactly: a pre-1.0 oxfmt bump may reformat the tree, so it happens
   # only in a reviewed PR. Renovate proposes the bumps.
-  oxfmt: 0.66.0
+  oxfmt: 0.67.0
   # Pinned exactly: oxlint minors add rules, so a range bump could redden CI
   # outside a reviewed PR. Renovate proposes the bumps.
   oxlint: 1.81.0
