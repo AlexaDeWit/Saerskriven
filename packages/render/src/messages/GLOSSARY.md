@@ -117,30 +117,44 @@ earlier wording stands.
 
 ### Diagram elements
 
-| English        | fr-CA                       | sv                       | Changed                            | Sources                                                                |
-| -------------- | --------------------------- | ------------------------ | ---------------------------------- | ---------------------------------------------------------------------- |
-| actor          | acteur (m.)                 | aktör (common)           |                                    | see the note                                                           |
-| process        | processus (m.)              | process (common)         |                                    | [Microsoft fr][ms-fr-start], [Microsoft sv][ms-sv-dfd]                 |
-| data store     | magasin de données (m.)     | datalager (neuter)       | fr `entrepôt`, `dépôt`, sv `lager` | [GDT: magasin de données][gdt-magasin], [Microsoft sv][ms-sv-dfd]      |
-| data flow      | flux (m.)                   | flöde (neuter)           |                                    | [Microsoft fr][ms-fr-start], [Microsoft sv][ms-sv-dfd]                 |
-| trust boundary | frontière de confiance (f.) | förtroendegräns (common) |                                    | [Microsoft sv][ms-sv-dfd], [Microsoft sv][ms-sv-start], fr unconfirmed |
-| trust zone     | zone de confiance           | förtroendezon            | sv `tillitszon`                    | [Microsoft sv][ms-sv-dfd] ("förtroendezonändring"), fr unconfirmed     |
+| English        | fr-CA                       | sv                       | Changed                            | Sources                                                                       |
+| -------------- | --------------------------- | ------------------------ | ---------------------------------- | ----------------------------------------------------------------------------- |
+| actor          | acteur (m.)                 | aktör (common)           |                                    | see the note                                                                  |
+| process        | processus (m.)              | process (common)         |                                    | [Microsoft fr][ms-fr-dfd], [Microsoft sv][ms-sv-dfd]                          |
+| data store     | magasin de données (m.)     | datalager (neuter)       | fr `entrepôt`, `dépôt`, sv `lager` | [Microsoft fr][ms-fr-dfd], [Microsoft sv][ms-sv-dfd]                          |
+| data flow      | flux (m.)                   | flöde (neuter)           |                                    | [Microsoft fr][ms-fr-dfd], [Microsoft sv][ms-sv-dfd]                          |
+| trust boundary | frontière de confiance (f.) | förtroendegräns (common) |                                    | [WeeSec][weesec], [Microsoft sv][ms-sv-dfd], [Microsoft sv][ms-sv-start]      |
+| trust zone     | zone de confiance           | förtroendezon            | sv `tillitszon`                    | [Microsoft fr][ms-fr-dfd], [Microsoft sv][ms-sv-dfd] ("förtroendezonändring") |
 
 - **actor:** the data-flow-diagram literature calls this element an external
   entity (fr `entité externe`, sv `extern entitet`). Saerskriven's English
   calls it an actor, so both catalogues translate the English word. Moving to
   the external-entity term is a change to the English too.
-- **data store:** the GDT gives `magasin de données` for "data store" and
-  keeps `entrepôt de données` for a data warehouse, so `entrepôt` misleads a
-  French reader. `dépôt` has no GDT entry in this sense. Swedish `lager` alone
-  reads as stock or layer, and Microsoft's Swedish module names the element
-  `Datalager`. The studio's log-store flag follows: fr `Magasin de journaux`,
-  sv `Logglager`.
-- **trust boundary:** Microsoft's French writes `limites d'approbation`,
-  following its own translation of "trust" as `approbation`, which French
-  security writing outside Microsoft does not use. `frontière de confiance`
-  has no GDT or TERMIUM entry in this sense and is unconfirmed from an
-  authority. Swedish Microsoft pages write `förtroendegränser`. In
+- **data store:** Microsoft's French data-flow-diagram module titles the
+  element's unit "Magasin de données - Élément de stockage". The GDT has no
+  entry for the diagram element. Its [`magasin de données`][gdt-magasin] is
+  the entry for an operational data store (ODS), a data-warehousing concept
+  that lists "data store" only as an English synonym and prefers to keep the
+  French term for ODS. The same field sets `entrepôt de données` apart as the
+  data warehouse, so `entrepôt` misleads a French reader, and `dépôt` has no
+  GDT entry in this sense. Swedish `lager` alone reads as stock or layer, and
+  Microsoft's Swedish module names the element `Datalager`.
+- **log store:** the studio's log-store flag is fr `Dépôt de journaux` and sv
+  `Logglager`. French keeps `dépôt` here by the maintainer's ruling:
+  `magasin de journaux` reads as a newspaper shop, and a log store is a place
+  logs are deposited rather than a data-flow-diagram element.
+- **trust boundary:** French practice writes both `frontière de confiance`
+  ([WeeSec][weesec]: "Identification des frontières de confiance (trust
+  boundaries)") and `limite de confiance` (Microsoft's French data-flow-diagram
+  module, and [Stéphane Robert][stephane-robert], who uses both). Neither has a
+  GDT or TERMIUM entry in this sense. `frontière` is kept because the GDT
+  already gives [`limite de confiance`][gdt-limite] to statistics, as a
+  confidence limit, and a register that sits beside risk figures should not
+  borrow it. Microsoft's older [Threat Modeling Tool page][ms-fr-start] writes
+  `limites d'approbation`, following its own translation of "trust" as
+  `approbation`, and its newer training has dropped it. The trust zone is
+  `zone de confiance` in the same module. Swedish Microsoft pages write
+  `förtroendegränser`. In
   Swedish, `förtroendegräns` and `förtroendezon` share a stem, as the English
   pair does.
 - **data flow:** the short form stands on the canvas, where the element is
@@ -162,11 +176,18 @@ earlier wording stands.
   and French practitioners write `usurpation d'identité`. Swedish
   `identitetsstöld` (Advania) means identity theft, which is narrower, so
   `Förfalskning` stands.
-- **Tampering:** Microsoft writes `falsification`, and `altération` is the
-  word for the damage rather than the attack.
+- **Tampering:** Microsoft and [OWASP Threat Dragon's French][td-fr] write
+  `falsification`, and `altération` is the word for the damage rather than
+  the attack.
+- **Information disclosure:** Microsoft writes the plural `divulgation
+d'informations`. Threat Dragon's French writes the singular. The plural is
+  kept, since a disclosure rarely concerns one item.
 - **Denial of service:** Lund gives "Denial of Service attack
-  (överbelastningsattack, tillgänglighetsattack)". Bare `överbelastning` is
-  the load, not the attack.
+  (överbelastningsattack, tillgänglighetsattack)". [Advania][advania] glosses
+  it as "Denial of Service (överbelastning)". Lund wins because it is an
+  institution's reviewed terminology rather than a vendor glossary, and
+  because bare `överbelastning` is the load, not the attack, so a STRIDE label
+  naming a threat needs the `-attack`.
 - **Elevation of privilege:** `Utökade rättigheter` names the state an
   attacker ends in rather than the threat. `Behörighetseskalering` is
   Advania's term and matches the studio's `Behörighetsnivå` for privilege
@@ -239,7 +260,12 @@ and unconfirmed.
 [oqlf-risk]: https://www.oqlf.gouv.qc.ca/ressources/bibliotheque/dictionnaires/terminologie_risque/Vocabulaire_gestion_risque04.pdf
 [cccs-gijia]: https://www.cyber.gc.ca/fr/orientation/gestion-de-lidentite-des-justificatifs-didentite-et-de-lacces-gijia-itsap30018
 [ms-fr-start]: https://learn.microsoft.com/fr-fr/azure/security/develop/threat-modeling-tool-getting-started
+[ms-fr-dfd]: https://learn.microsoft.com/fr-fr/training/modules/tm-create-a-threat-model-using-foundational-data-flow-diagram-elements/
 [ms-fr-stride]: https://learn.microsoft.com/fr-fr/training/modules/tm-use-a-framework-to-identify-threats-and-find-ways-to-reduce-or-eliminate-risk/
+[gdt-limite]: https://vitrinelinguistique.oqlf.gouv.qc.ca/fiche-gdt/fiche/507686/limite-de-confiance
+[weesec]: https://www.weesec.com/threat-modeling/
+[stephane-robert]: https://blog.stephane-robert.info/docs/devops/fondamentaux/threat-modeling-stride/
+[td-fr]: https://github.com/OWASP/threat-dragon/blob/main/td.vue/src/i18n/fr.json
 [aws-fr]: https://docs.aws.amazon.com/fr_fr/inspector/latest/user/findings-understanding-severity.html
 [msb-klassning]: https://metodstod-informationssakerhet.msb.se/sv/utforma/klassningsmodell/
 [msb-riskanalys]: https://metodstod-informationssakerhet.msb.se/sv/anvanda/riskanalys/
@@ -252,6 +278,19 @@ and unconfirmed.
 [cert-se-v13]: https://www.cert.se/2026/03/cert-se-veckobrev-v13.html
 [linddun]: https://linddun.org/threat-types/
 [plot4ai]: https://plot4.ai/library
+
+Also checked, with nothing to cite:
+
+- **NCSC-SE** ([ncsc.se](https://www.ncsc.se/sv/)) publishes general
+  security guidance and nothing on threat modelling, STRIDE or
+  data-flow diagrams, so no Swedish term here rests on it.
+- **OWASP** publishes its threat-modelling material in English. Its Québec
+  City chapter titles talks "modélisation des menaces", which matches the
+  catalogues. [OWASP Threat Dragon][td-fr] ships a French locale, cited above
+  for STRIDE, and no Swedish one. Its French LINDDUN labels (`Capacité de
+liaison`, `Identifiabilité`, `Détectabilité`, `Inconscience`) follow the
+  older LINDDUN names this model does not use, and its status labels are
+  partly untranslated, so it is not cited for either.
 
 Microsoft's French and Swedish pages cited here are marked as machine
 translated. They are cited for the words in circulation, never alone.

@@ -25,7 +25,7 @@ export const fieldsFrCA = catalogue(fieldMessages)('fr-CA')({
   'handles-goods-or-services': 'Traite des biens ou des services',
   'web-application': 'Application web',
   'privilege-level': 'Niveau de privilège',
-  'log-store': 'Magasin de journaux',
+  'log-store': 'Dépôt de journaux',
   'encrypted-storage': 'Stockage chiffré',
   'signed-storage': 'Stockage signé',
   'stores-credentials': 'Conserve des justificatifs d’identité',
