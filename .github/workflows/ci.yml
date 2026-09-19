@@ -95,7 +95,7 @@ jobs:
           version="$(jq -r .version package.json)"
           expected="${TAG:-v$version}"
           reported="$("./dist/cli/saer-${version}-x86_64-unknown-linux-gnu" --version)"
-          if [ "v$reported" != $expected ]; then
+          if [ "v$reported" != "$expected" ]; then
             echo "the executable reports ${reported}, expected ${expected}" >&2
             exit 1
           fi
