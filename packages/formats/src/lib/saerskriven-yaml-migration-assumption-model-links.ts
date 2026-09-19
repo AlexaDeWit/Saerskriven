@@ -5,7 +5,7 @@ import type { SaerskrivenYamlV2Assumption } from '@saerskriven/wire-saerskriven-
  * The assumptions of a version 1 document as version 2 holds them: one that
  * links no threat applies to the model, and one that links threats keeps
  * them and does not. Nothing is reported, since the version 1 assumption
- * loses nothing here. The version 1 `elements` list has no version 2 key;
+ * loses nothing here. The version 1 `elements` list has no version 2 key.
  * `droppedAssumptionElementLinks` reports it from the original document.
  */
 export function assumptionsWithModelLinks(
