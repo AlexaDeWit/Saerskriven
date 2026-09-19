@@ -13,19 +13,15 @@ import {
   type StudioMessages,
 } from './catalogues.js';
 
-let activeLocale: Locale | undefined;
+let chosenLocale: Locale | undefined;
 
 const translators = new Map<Locale, Translator<StudioMessages>>();
 
 const browserLanguages = (): readonly string[] =>
   typeof navigator === 'undefined' ? [] : navigator.languages;
 
-const currentLocale = (): Locale =>
-  (activeLocale ??=
-    readLanguage(localPreferenceStorage()) ?? negotiate(browserLanguages()));
-
 const applyLocale = (locale: Locale): void => {
-  activeLocale = locale;
+  chosenLocale = locale;
   if (typeof document !== 'undefined') {
     document.documentElement.lang = locale;
   }
@@ -33,7 +29,7 @@ const applyLocale = (locale: Locale): void => {
 
 const translatorStore = externalStore(activeTranslator);
 
-const choiceStore = externalStore(currentLocale);
+const choiceStore = externalStore(activeLocale);
 
 const notifyReaders = (): void => {
   translatorStore.notify();
@@ -41,11 +37,20 @@ const notifyReaders = (): void => {
 };
 
 /**
+ * The active locale, for callers outside components, such as an export that
+ * frames its document in the language of the moment it runs.
+ */
+export function activeLocale(): Locale {
+  return (chosenLocale ??=
+    readLanguage(localPreferenceStorage()) ?? negotiate(browserLanguages()));
+}
+
+/**
  * The translator for the active locale, for callers outside components. It is
  * read when the text is needed, so no text is fixed at module load.
  */
 export function activeTranslator(): Translator<StudioMessages> {
-  const locale = currentLocale();
+  const locale = activeLocale();
   const known = translators.get(locale);
   if (known !== undefined) {
     return known;
@@ -76,4 +81,4 @@ export function useLanguage(): readonly [Locale, (locale: Locale) => void] {
   return [choiceStore.use(), chooseLanguage];
 }
 
-applyLocale(currentLocale());
+applyLocale(activeLocale());

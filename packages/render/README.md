@@ -85,6 +85,8 @@ words and marks for its screen: a function per stored value and the
 `BadgeMarks` `@saerskriven/canvas` letters. `termMessages` and
 `termCatalogues` are that section's contract and catalogues, for an app that
 joins them to its own sections rather than keeping a second copy.
+The studio does so, draws these marks on its canvas, and passes its active
+language to every export.
 
 A French or Swedish Typst source sets its text language (`lang: "fr"` with
 `region: "CA"`, or `lang: "sv"`), which Typst hyphenates by and writes into

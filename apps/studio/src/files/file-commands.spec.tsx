@@ -1,4 +1,5 @@
 import { readLimits, saerskrivenYamlCodec } from '@saerskriven/formats';
+import { locales, type Locale } from '@saerskriven/i18n';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import {
@@ -631,6 +632,33 @@ describe('useFileSession', () => {
       elsewhere: false,
     });
   });
+
+  it.each(['model.yaml', 'model.json'])(
+    'writes %s byte for byte the same in every language',
+    async (name) => {
+      const written = async (locale: Locale): Promise<string> => {
+        modelStore.setState(initialState(sampleModel), true);
+        chooseLanguage(locale);
+        const bridge = specBridge({ chooses: name });
+        const result = session(bridge);
+        act(() => {
+          result.current.commands.saveAs();
+        });
+        await waitFor(() => {
+          expect(bridge.writes).toHaveLength(1);
+        });
+        return bridge.writes[0].text;
+      };
+
+      const texts = [];
+      for (const locale of locales) {
+        texts.push(await written(locale));
+      }
+
+      expect(texts[0]).not.toBe('');
+      expect(new Set(texts).size).toBe(1);
+    },
+  );
 
   it('writes a name in no registered format in the one the file is already in', async () => {
     const bridge = specBridge({ chooses: 'notes.txt' });

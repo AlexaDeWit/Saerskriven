@@ -130,7 +130,7 @@ describe('the studio exports', () => {
     ]);
   });
 
-  it('names an untitled export and its file type in the language active when it runs, and keeps the bytes', async () => {
+  it('names an untitled export and its file type in the language active when it runs, and frames it in that language', async () => {
     modelStore.setState(initialState(sampleModel), true);
     const bridge = specBridge();
     const result = session(bridge);
@@ -148,7 +148,99 @@ describe('the studio exports', () => {
     expect(bridge.offered.at(-1)?.[0]?.description).toBe(
       t('reports.markdown-file'),
     );
-    expect(bridge.writes[0].text).toBe(renderRegister(sampleModel, 'en-CA'));
+    expect(bridge.writes[0].text).toBe(renderRegister(sampleModel, 'sv'));
+  });
+
+  it.each(['fr-CA', 'sv'] as const)(
+    'frames every export in %s when that language is active',
+    async (locale) => {
+      chooseLanguage(locale);
+      const bridge = specBridge();
+      const compile = vi.fn<RenderExports['compile']>(() =>
+        Promise.resolve(Either.right(new Uint8Array([37, 80, 68, 70]))),
+      );
+      const draw = vi.fn<RenderExports['draw']>(() =>
+        Promise.resolve(
+          Either.right({
+            png: pngSignature,
+            width: 2,
+            height: 1,
+            unplaced: [],
+          }),
+        ),
+      );
+      const result = session(bridge, specRenders({ compile, draw }));
+
+      act(() => {
+        result.current.commands.diagram(mainDiagram);
+        result.current.commands.register();
+        result.current.commands.typst();
+        result.current.commands.pdf();
+        result.current.commands.png();
+      });
+
+      await waitFor(() => {
+        expect(bridge.writes).toHaveLength(5);
+      });
+      const framed = [
+        renderSvg(sampleModel.diagrams[0], sampleModel, locale).svg,
+        renderRegister(sampleModel, locale),
+        renderTypst(sampleModel, locale).typst,
+      ];
+      expect(bridge.writes.slice(0, 3).map((write) => write.text)).toEqual(
+        framed,
+      );
+      expect(framed).not.toEqual([
+        renderSvg(sampleModel.diagrams[0], sampleModel, 'en-CA').svg,
+        renderRegister(sampleModel, 'en-CA'),
+        renderTypst(sampleModel, 'en-CA').typst,
+      ]);
+      expect(compile).toHaveBeenCalledWith(framed[2], expect.anything());
+      expect(draw).toHaveBeenCalledWith(
+        sampleModel.diagrams[0],
+        sampleModel,
+        locale,
+        expect.anything(),
+      );
+    },
+  );
+
+  it('frames an export in the language chosen since the last one', async () => {
+    const bridge = specBridge();
+    const draw = vi.fn<RenderExports['draw']>(() =>
+      Promise.resolve(
+        Either.right({ png: pngSignature, width: 2, height: 1, unplaced: [] }),
+      ),
+    );
+    const result = session(bridge, specRenders({ draw }));
+
+    act(() => {
+      result.current.commands.register();
+      result.current.commands.png();
+    });
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(2);
+    });
+    act(() => {
+      chooseLanguage('fr-CA');
+    });
+    act(() => {
+      result.current.commands.register();
+      result.current.commands.png();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(4);
+    });
+    const registers = bridge.writes
+      .filter((write) => write.name.endsWith('.md'))
+      .map((write) => write.text);
+    expect(registers).toEqual([
+      renderRegister(sampleModel, 'en-CA'),
+      renderRegister(sampleModel, 'fr-CA'),
+    ]);
+    expect(registers[0]).not.toBe(registers[1]);
+    expect(draw.mock.calls.map((call) => call[2])).toEqual(['en-CA', 'fr-CA']);
   });
 
   it('compiles the render projection and writes the PDF as binary content', async () => {

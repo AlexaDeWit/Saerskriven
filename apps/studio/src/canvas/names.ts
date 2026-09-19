@@ -13,6 +13,7 @@ import {
   type ElementId,
   type Model,
 } from '@saerskriven/model';
+import type { Locale } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
 import type { StudioTranslator } from '../messages/catalogues.js';
 import {
@@ -21,6 +22,7 @@ import {
   kindMessages,
   severityMessages,
 } from '../messages/enum-labels.js';
+import { useLanguage } from '../messages/locale.js';
 
 const elementKindOf = {
   actor: 'actor',
@@ -70,11 +72,20 @@ export function nodeLabel(node: CanvasNode, t: StudioTranslator['t']): string {
   return kindLabel(node.name, elementKindOf[node.kind], t);
 }
 
+const marksByLocale: { readonly [L in Locale]: BadgeMarks } = {
+  'en-CA': renderTerms('en-CA').marks,
+  'fr-CA': renderTerms('fr-CA').marks,
+  sv: renderTerms('sv').marks,
+};
+
 /**
- * The marks the canvas badges letter, render's en-CA marks until the badges
- * follow the active language.
+ * The marks the canvas badges letter: render's marks for the active locale,
+ * so the screen matches an export. A change of language re-renders the caller.
  */
-export const badgeMarks: BadgeMarks = renderTerms('en-CA').marks;
+export function useBadgeMarks(): BadgeMarks {
+  const [locale] = useLanguage();
+  return marksByLocale[locale];
+}
 
 /** The accessible name of each of a drawn element's resize controls. */
 export function resizeLabels(
