@@ -79,6 +79,8 @@ export function ThreatPanel({
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const addControl = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const keepHeader = useHeaderKept(list);
   const { t } = useTranslator();
   const held = threats.some((threat) => threat.id === draft?.threatId)
     ? draft
@@ -168,12 +170,14 @@ export function ThreatPanel({
     };
 
   const expand = (value: string): void => {
-    if (held === undefined || value === held.threatId) {
-      if (value !== expanded) {
-        resetAnnouncements();
-      }
-      setExpanded(value);
+    if (held !== undefined && value !== held.threatId) {
+      return;
     }
+    if (value !== expanded) {
+      resetAnnouncements();
+      keepHeader(value === '' ? expanded : value);
+    }
+    setExpanded(value);
   };
 
   return (
@@ -217,6 +221,7 @@ export function ThreatPanel({
               className={styles.list}
               collapsible
               onValueChange={expand}
+              ref={list}
               type="single"
               value={expanded}
             >
@@ -301,4 +306,52 @@ function useHistoryFocus(
       }),
     [addControl, restore],
   );
+}
+
+function useHeaderKept(
+  list: RefObject<HTMLDivElement | null>,
+): (threatId: string) => void {
+  const frame = useRef<number | undefined>(undefined);
+
+  useEffect(
+    () => () => {
+      if (frame.current !== undefined) {
+        cancelAnimationFrame(frame.current);
+      }
+    },
+    [],
+  );
+
+  return (threatId) => {
+    const body = list.current?.closest(`.${styles.body}`);
+    const header = [
+      ...(list.current?.querySelectorAll<HTMLElement>('[data-threat-item]') ??
+        []),
+    ]
+      .find((item) => item.dataset['threatItem'] === threatId)
+      ?.querySelector(`.${styles.header}`);
+    if (
+      body === null ||
+      body === undefined ||
+      header === null ||
+      header === undefined
+    ) {
+      return;
+    }
+    const top = header.getBoundingClientRect().top;
+    if (frame.current !== undefined) {
+      cancelAnimationFrame(frame.current);
+    }
+    frame.current = requestAnimationFrame(() => {
+      frame.current = undefined;
+      body.scrollTop += header.getBoundingClientRect().top - top;
+      const hidden =
+        body.getBoundingClientRect().top +
+        body.clientTop -
+        header.getBoundingClientRect().top;
+      if (hidden > 0) {
+        body.scrollTop -= hidden;
+      }
+    });
+  };
 }
