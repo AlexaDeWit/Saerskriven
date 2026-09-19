@@ -1,9 +1,10 @@
 import {
+  boundedParse,
   parseModel,
-  toParseIssues,
+  schemaFailureIssues,
   type Model,
   type ParseIssue,
-  type SchemaIssue,
+  type SchemaParser,
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
 import type { z } from 'zod';
@@ -81,11 +82,17 @@ export type ReadFailure = Data.TaggedEnum<{
 /** Constructors and matchers for {@link ReadFailure}. */
 export const ReadFailure = Data.taggedEnum<ReadFailure>();
 
-/** A wire schema's refusal as the read failure a codec returns. */
-export function refusedWireDocument(
-  issues: readonly SchemaIssue[],
-): ReadFailure {
-  return ReadFailure.InvalidWireDocument({ issues: toParseIssues(issues) });
+/**
+ * A parsed value as its wire document, or the schema's refusal as
+ * `InvalidWireDocument`, a flood of issues or a throw as one root issue.
+ */
+export function parseWire<Wire>(
+  schema: SchemaParser<Wire>,
+  given: unknown,
+): Either.Either<Wire, ReadFailure> {
+  return Either.mapLeft(boundedParse(schema, given), (failure) =>
+    ReadFailure.InvalidWireDocument({ issues: schemaFailureIssues(failure) }),
+  );
 }
 
 /** A mapped model input through `parseModel`, refused as `InvalidModel`. */

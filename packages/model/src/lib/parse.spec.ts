@@ -1,6 +1,13 @@
 import { Either, Option } from 'effect';
 import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
-import { issueLine, parseModel, toParseIssues } from './parse.js';
+import {
+  boundedParse,
+  issueFloodCode,
+  issueLine,
+  parseModel,
+  schemaFailureIssues,
+  toParseIssues,
+} from './parse.js';
 
 const plantEverywhere = (value: unknown): unknown =>
   Array.isArray(value)
@@ -254,5 +261,41 @@ describe('issueLine', () => {
     expect(issueLine({ path: [], message: 'no', code: 'custom' })).toBe(
       '(root): no',
     );
+  });
+});
+
+const throwing = (error: Error) => ({
+  safeParse: (): never => {
+    throw error;
+  },
+});
+
+describe('boundedParse', () => {
+  it.each([
+    ['RangeError', new RangeError('overflow'), issueFloodCode],
+    ['TypeError', new TypeError('schema defect'), 'custom'],
+  ])(
+    'turns a parse that throws %s into one root issue',
+    (_name, error, code) => {
+      const parsed = boundedParse(throwing(error), {});
+
+      expect(
+        Either.isLeft(parsed) && schemaFailureIssues(parsed.left),
+      ).toMatchObject([{ path: [], code }]);
+    },
+  );
+
+  it('refuses a model with more invalid entries than zod 4.6.2 gathers on V8', () => {
+    const flooded = {
+      ...validModelFixture,
+      threats: [{ elements: Array.from({ length: 135_000 }, () => 1) }],
+    };
+
+    const parsed = parseModel(flooded);
+
+    expect(Either.isLeft(parsed) && parsed.left).toMatchObject({
+      _tag: 'InvalidModel',
+      issues: [{ path: [], code: issueFloodCode }],
+    });
   });
 });

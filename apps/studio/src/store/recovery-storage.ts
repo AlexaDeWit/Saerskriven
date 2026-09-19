@@ -9,7 +9,9 @@ import {
   writeSaerskrivenYamlDocument,
 } from '@saerskriven/formats';
 import {
+  boundedParse,
   diagramIdSchema,
+  SchemaFailure,
   type DiagramId,
   type Model,
 } from '@saerskriven/model';
@@ -256,14 +258,17 @@ function parseRecoverySnapshot(
     (failure) =>
       RecoveryStorageFailure.Rejected({ problem: readProblem(failure) }),
   );
-  return Either.flatMap(decoded, (value) => {
-    const snapshot = recoverySnapshotSchema.safeParse(value);
-    return snapshot.success
-      ? Either.right(snapshot.data)
-      : Either.left(
-          RecoveryStorageFailure.Rejected({ problem: refusal(value) }),
-        );
-  });
+  return Either.flatMap(decoded, (value) =>
+    Either.mapLeft(boundedParse(recoverySnapshotSchema, value), (failure) =>
+      RecoveryStorageFailure.Rejected({
+        problem: SchemaFailure.$match(failure, {
+          Refused: () => refusal(value),
+          IssueFlood: () => RecoveryProblem.InvalidSnapshot(),
+          Threw: ({ reason }) => RecoveryProblem.Thrown({ reason }),
+        }),
+      }),
+    ),
+  );
 }
 
 const envelopeSchema = z.object({

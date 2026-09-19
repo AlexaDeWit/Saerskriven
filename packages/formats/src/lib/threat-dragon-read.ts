@@ -17,12 +17,7 @@ import {
   type ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
-import {
-  modelFrom,
-  ReadFailure,
-  refusedWireDocument,
-  type ReadResult,
-} from './codec.js';
+import { modelFrom, parseWire, ReadFailure, type ReadResult } from './codec.js';
 import type { DivergenceDetail } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { idsHeld, mitigationsFromText } from './mitigation-text.js';
@@ -90,19 +85,17 @@ function parseJson(text: string): Either.Either<unknown, ReadFailure> {
 function mapDocument(
   given: unknown,
 ): Either.Either<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
-  const wire = threatDragonWireSchema.safeParse(given);
-  if (!wire.success) {
-    return Either.left(refusedWireDocument(wire.error.issues));
-  }
-  const mapping = toMapping(wire.data);
-  return Either.map(modelFrom(mapping.input), (model) => ({
-    model,
-    source: wire.data,
-    divergences: [
-      ...undeclaredDivergences(given, wire.data),
-      ...narrowings(model, mapping.notes),
-    ],
-  }));
+  return Either.flatMap(parseWire(threatDragonWireSchema, given), (wire) => {
+    const mapping = toMapping(wire);
+    return Either.map(modelFrom(mapping.input), (model) => ({
+      model,
+      source: wire,
+      divergences: [
+        ...undeclaredDivergences(given, wire),
+        ...narrowings(model, mapping.notes),
+      ],
+    }));
+  });
 }
 
 function toMapping(document: ThreatDragonDocument) {

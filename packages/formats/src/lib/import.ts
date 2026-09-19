@@ -1,9 +1,9 @@
 import type { Model } from '@saerskriven/model';
-import { otmWireSchema } from '@saerskriven/wire-otm';
-import { tmbomWireSchema } from '@saerskriven/wire-tmbom';
+import { otmWireSchema, type OtmDocument } from '@saerskriven/wire-otm';
+import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { z } from 'zod';
-import { modelFrom, ReadFailure, refusedWireDocument } from './codec.js';
+import { modelFrom, parseWire, ReadFailure } from './codec.js';
 import type { Divergence } from './divergence.js';
 import { mapOtm } from './otm-import.js';
 import { parseYaml } from './parse-yaml.js';
@@ -68,14 +68,14 @@ function convert(
   format: ImportFormat,
   given: unknown,
 ): Either.Either<ImportResult, ReadFailure> {
-  const parsed =
+  const parsed: Either.Either<OtmDocument | TmbomDocument, ReadFailure> =
     format === 'otm'
-      ? otmWireSchema.safeParse(given)
-      : tmbomWireSchema.safeParse(given);
-  if (!parsed.success) {
-    return Either.left(refusedWireDocument(parsed.error.issues));
+      ? parseWire(otmWireSchema, given)
+      : parseWire(tmbomWireSchema, given);
+  if (Either.isLeft(parsed)) {
+    return Either.left(parsed.left);
   }
-  const source = parsed.data;
+  const source = parsed.right;
   const mapped = 'otmVersion' in source ? mapOtm(source) : mapTmbom(source);
   if (mapped.context.failure !== undefined) {
     return Either.left(mapped.context.failure);
