@@ -7,10 +7,12 @@ coverage:
       default:
         target: auto
         threshold: 1%
-    # Gating since M1 landed real code (issue #22). 90%, not 100%: the model
-    # package covers every line it has today, so the floor catches a real
-    # regression while leaving room for the occasional line a test cannot
-    # reach, rather than turning each PR into a coverage negotiation.
+    # Informational, not required: a red patch is a mandatory look for the
+    # reviewer, not a mandatory fix. The checks that block a merge are listed
+    # in .agents/orchestration.md's Gating CI section. 90%, not 100%: the
+    # model package covers every line it has today, so the floor catches a
+    # real regression while leaving room for the occasional line a test
+    # cannot reach, rather than turning each PR into a coverage negotiation.
     patch:
       default:
         target: 90%
