@@ -168,6 +168,43 @@ export function assumptionScopesTree(): ModelWorkspace {
   );
 }
 
+/** What a hostile id carries after its line feed, posing as a line of a result. */
+export const forgedLine = 'forged: nothing in this model needs review';
+
+/**
+ * A disposable root whose default model gives its threat and its second
+ * diagram ids that carry a line feed and then {@link forgedLine}.
+ */
+export function forgedIdsTree(): ModelWorkspace {
+  const [threat] = editableModel.threats;
+  const [drawn, empty] = editableModel.diagrams;
+  const forgedThreat = `${threat.id}\n${forgedLine}`;
+  const relinked = <Linked extends { readonly threats: readonly string[] }>(
+    record: Linked,
+  ): Linked => ({
+    ...record,
+    threats: record.threats.map((id) => (id === threat.id ? forgedThreat : id)),
+  });
+  return treeHolding(
+    saerskrivenYamlCodec.write(
+      parsedFixture({
+        ...editableModel,
+        diagrams: [drawn, { ...empty, id: `${empty.id}\n${forgedLine}` }],
+        threats: [{ ...threat, id: forgedThreat }],
+        mitigations: editableModel.mitigations.map(relinked),
+        assumptions: editableModel.assumptions.map(relinked),
+      }),
+    ).output,
+  );
+}
+
+/** The lines of a text result, split at every line feed, that open with {@link forgedLine}. */
+export function forgedLinesIn(lines: readonly string[]): readonly string[] {
+  return lines
+    .flatMap((line) => line.split('\n'))
+    .filter((line) => line.trimStart().startsWith(forgedLine));
+}
+
 /**
  * A disposable root holding a model of more threats than a concise listing
  * carries. Every committed fixture holds fewer records than the limit, so
