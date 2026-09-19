@@ -13,7 +13,7 @@ import { useTranslator } from '../messages/locale.js';
 import { refusedName, useTextDraft } from '../ui/text-field.js';
 import { useCloseFocus } from '../ui/close-focus.js';
 import styles from './menu.module.css';
-import { MenuCommand } from './menu-items.js';
+import { MenuCommand, panelPlacement } from './menu-items.js';
 import { RadioChoices } from './radio-choices.js';
 
 /**
@@ -75,9 +75,8 @@ export function DiagramSwitcher() {
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         {...closeFocus}
-        align="start"
+        {...panelPlacement}
         className={styles.panel}
-        sideOffset={6}
         tabIndex={0}
       >
         {active !== undefined && (

@@ -15,6 +15,7 @@ import {
   diagramTitleField,
   downloaded,
   exportedFile,
+  featureCompleteFile,
   menuButton,
   menuItem,
   nodeNamed,
@@ -35,6 +36,8 @@ import {
 import { registeredChords } from './chords.fixtures.js';
 
 const { first, second } = twoDiagrams;
+
+const submenus = ['Export', 'Arrange', /^Appearance /u, /^Language /u];
 
 const below = async (target: Locator, card: Box): Promise<void> => {
   const box = await screenBoxOf(target);
@@ -151,6 +154,13 @@ test(
   },
 );
 
+const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
+  expect(await scrolledAbove(chromeCard(page))).toBe(0);
+  expect(await screenBoxOf(menuButton(page))).toEqual(burger);
+};
+
+const rootMenu = (page: Page): Locator => page.getByRole('menu').first();
+
 type OpenedSubmenu = {
   readonly row: Box;
   readonly drawn: Box;
@@ -212,7 +222,7 @@ test(
   async ({ page }) => {
     await openFallback(page);
 
-    for (const name of ['Export', 'Arrange', /^Appearance /u, /^Language /u]) {
+    for (const name of submenus) {
       await openMenu(page);
       const { scrolls } = await opensOnScreen(page, name);
       expect(scrolls).toBe(false);
@@ -222,6 +232,31 @@ test(
     const output = await exportedFile(page, 'Diagram as SVG');
     expect(output.name).toBe('Untitled.svg');
     expect(output.bytes.length).toBeGreaterThan(0);
+  },
+);
+
+test(
+  'a long file name leaves the menu inside the screen, and a click opens each submenu at the card edge without moving the chrome',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openFile(page, featureCompleteFile);
+    const burger = await screenBoxOf(menuButton(page));
+    const width = page.viewportSize()?.width ?? 0;
+
+    for (const name of submenus) {
+      await openMenu(page);
+      const panel = await screenBoxOf(rootMenu(page));
+      expect(panel.x).toBeGreaterThanOrEqual(0);
+      expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+      expect(
+        await rootMenu(page).evaluate(
+          (menu) => menu.scrollWidth <= menu.clientWidth,
+        ),
+      ).toBe(true);
+      await opensOnScreen(page, name);
+      await staysInPlace(page, burger);
+      await closeMenu(page);
+    }
   },
 );
 
@@ -270,11 +305,6 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
   expect(output.name).toBe('two-diagrams.svg');
 });
 
-const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
-  expect(await scrolledAbove(chromeCard(page))).toBe(0);
-  expect(await screenBoxOf(menuButton(page))).toEqual(burger);
-};
-
 const openInShortViewport = async (page: Page): Promise<Box> => {
   await shortenViewport(page, 720);
   await openFile(page, twoDiagramsFile);
@@ -282,8 +312,6 @@ const openInShortViewport = async (page: Page): Promise<Box> => {
   await openMenu(page);
   return burger;
 };
-
-const rootMenu = (page: Page): Locator => page.getByRole('menu').first();
 
 test(
   'the menu ends inside a 720 px tall viewport and scrolls itself to its last row',
