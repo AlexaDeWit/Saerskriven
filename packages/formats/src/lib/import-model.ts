@@ -7,7 +7,8 @@ import { isRecord } from './records.js';
 /**
  * The state one OTM or TM-BOM import accumulates: the text budget, the
  * divergences it reports, the reference problems it finds, and the source
- * fields a mapping used, so every other field is reported by `omitted`.
+ * fields a mapping used, so `omitted` reports every other field that holds a
+ * value. A null field carries nothing to drop and goes unreported.
  */
 export function importContext() {
   const budget = importBudget();
@@ -142,7 +143,7 @@ function omittedFields(
         const path = [...entry.path, key];
         if (selected?.has(key)) {
           pending.push({ value, path });
-        } else {
+        } else if (value !== null) {
           report(
             { code: 'field-not-retained', parameters: { path } },
             'unrepresentable',
