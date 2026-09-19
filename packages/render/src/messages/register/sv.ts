@@ -9,7 +9,7 @@ export const registerSv = catalogue(registerMessages)('sv')({
   title: 'Titel',
   elements: 'Objekt',
   category: 'Kategori',
-  severity: 'Allvarlighet',
+  severity: 'Allvarlighetsgrad',
   status: 'Status',
   flags: 'Flaggor',
   description: 'Beskrivning',

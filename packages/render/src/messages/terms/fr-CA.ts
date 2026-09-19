@@ -23,10 +23,10 @@ export const termsFrCA = catalogue(termMessages)('fr-CA')({
   'flag-mitigated-without-implemented-work':
     'Atténuée sans travail mis en œuvre',
   'flag-rests-on-invalidated-assumption': 'Repose sur une hypothèse invalidée',
-  'category-spoofing': 'Usurpation',
-  'category-tampering': 'Altération',
+  'category-spoofing': 'Usurpation d’identité',
+  'category-tampering': 'Falsification',
   'category-repudiation': 'Répudiation',
-  'category-information-disclosure': 'Divulgation d’information',
+  'category-information-disclosure': 'Divulgation d’informations',
   'category-denial-of-service': 'Déni de service',
   'category-elevation-of-privilege': 'Élévation de privilèges',
   'category-linking': 'Association',
