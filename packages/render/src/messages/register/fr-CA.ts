@@ -5,7 +5,7 @@ export const registerFrCA = catalogue(registerMessages)('fr-CA')({
   untitled: 'Registre des menaces',
   titled: 'Registre des menaces : {title}',
   threat: 'Menace {number} : {title}',
-  'model-assumptions': "Hypothèses qui s'appliquent au modèle",
+  'model-assumptions': 'Hypothèses qui s’appliquent au modèle',
   number: 'Numéro',
   title: 'Titre',
   elements: 'Éléments',

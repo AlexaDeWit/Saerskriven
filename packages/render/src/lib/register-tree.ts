@@ -337,16 +337,15 @@ function field(
   { messages }: Wording,
 ): Paragraph {
   const name: PhrasingContent = { type: 'strong', children: [text(label)] };
-  const content = { nodes: value };
   return {
     type: 'paragraph',
     children: messages
-      .parts('register.field', { label: name, value: content })
+      .parts('register.field', { label: name, value })
       .flatMap((part): PhrasingContent[] => {
         if (part === name) {
           return [name];
         }
-        if (part === content) {
+        if (part === value) {
           return [...value];
         }
         return typeof part === 'string' && part.length > 0 ? [text(part)] : [];

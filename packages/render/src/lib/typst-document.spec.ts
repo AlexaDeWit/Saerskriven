@@ -463,6 +463,10 @@ describe.each(translatedLocales)('the Typst document in %s', (locale) => {
     expect(source).toContain(`#strong[#"${t('register.severity')}"]`);
   });
 
+  it('declares the text language of the locale', () => {
+    expect(source).toContain(`#set text(lang: "${locale.slice(0, 2)}"`);
+  });
+
   it("embeds each diagram as the locale's drawing", () => {
     for (const diagram of twoDiagramsModel.diagrams) {
       const svg = renderSvg(diagram, twoDiagramsModel, locale).svg;

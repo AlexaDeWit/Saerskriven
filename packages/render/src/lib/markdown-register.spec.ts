@@ -928,6 +928,27 @@ describe('a register render', () => {
   });
 });
 
+const fieldNames = [
+  'register.elements',
+  'register.category',
+  'register.severity',
+  'register.status',
+  'register.flags',
+  'register.description',
+  'register.mitigations',
+  'register.assumptions',
+] as const;
+
+function strongTextsOf(nodes: readonly Nodes[]): string[] {
+  return nodes.flatMap((node) =>
+    node.type === 'strong'
+      ? [textOf(node.children)]
+      : 'children' in node
+        ? strongTextsOf(node.children)
+        : [],
+  );
+}
+
 function shapeOf(node: Nodes): unknown {
   return 'children' in node
     ? [node.type, ...node.children.map(shapeOf)]
@@ -969,6 +990,18 @@ describe.each(translatedLocales)('the register in %s', (locale) => {
     expect(badges.map(({ label }) => label)).toEqual(
       badges.map(({ badge }) => badgeLabel(badge, terms)),
     );
+  });
+
+  it("names every field of a threat section in the locale's words", () => {
+    const [section] = threatSectionsIn(translated);
+    const bold = new Set(strongTextsOf(section));
+    const englishText = exportText('en-CA').t;
+    expect(fieldNames.filter((name) => !bold.has(t(name)))).toEqual([]);
+    expect(
+      fieldNames
+        .filter((name) => englishText(name) !== t(name))
+        .filter((name) => bold.has(englishText(name))),
+    ).toEqual([]);
   });
 
   it('keeps the en-CA tree, only reworded', () => {

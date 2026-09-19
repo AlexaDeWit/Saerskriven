@@ -26,7 +26,7 @@ export const termsFrCA = catalogue(termMessages)('fr-CA')({
   'category-spoofing': 'Usurpation',
   'category-tampering': 'Altération',
   'category-repudiation': 'Répudiation',
-  'category-information-disclosure': "Divulgation d'information",
+  'category-information-disclosure': 'Divulgation d’information',
   'category-denial-of-service': 'Déni de service',
   'category-elevation-of-privilege': 'Élévation de privilèges',
   'category-linking': 'Association',

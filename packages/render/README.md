@@ -51,8 +51,9 @@ over the defaults, and `withBundledFonts` swaps a family the PDF and PNG
 outputs do not carry for the default.
 [`register-stylesheet.ts`](src/lib/register-stylesheet.ts):
 `registerStylesheet` is the scoped CSS a styled register carries, for a host
-that writes it to its own file. [`register-options.ts`](src/lib/register-options.ts):
-`registerOptionsSchema` holds the heading controls.
+that writes it to its own file.
+[`register-options.ts`](src/lib/register-options.ts): `registerOptionsSchema`
+holds the heading controls.
 
 ## Languages
 
@@ -85,8 +86,11 @@ words and marks for its screen: a function per stored value and the
 `termCatalogues` are that section's contract and catalogues, for an app that
 joins them to its own sections rather than keeping a second copy.
 
-Limits: the Typst source declares no document language, so a PDF carries
-none. A register joins element names and flags with `, ` and writes a
+A French or Swedish Typst source sets its text language (`lang: "fr"` with
+`region: "CA"`, or `lang: "sv"`), which Typst hyphenates by and writes into
+the PDF. An en-CA source leaves Typst's English default and sets nothing.
+
+Limits: a register joins element names and flags with `, ` and writes a
 category's methodology in parentheses in every locale. The CLI and the MCP
 render tool pass `en-CA`.
 
@@ -127,8 +131,9 @@ writes the module the variable names, as
 `renderPng(diagram, model, locale, options)`, on the `@saerskriven/render/png`
 subpath ([`png.ts`](src/png.ts)), draws one diagram with `renderSvg` and
 rasterizes it. It exists because MCP hosts take an image block as PNG, JPEG,
-GIF or WebP and never as SVG. `options.assets` is what `rasterizeSvg` needs, and a caller
-leads the faces with `drawingFace`, which `ledBy` arranges or refuses.
+GIF or WebP and never as SVG. `options.assets` is what `rasterizeSvg` needs,
+and a caller leads the faces with `drawingFace`, which `ledBy` arranges or
+refuses.
 
 ## The goldens
 
