@@ -116,6 +116,19 @@ later change of language renames nothing. `defaults` holds those names, and
 `canvas/elements.ts`, `canvas/diagrams.ts` and `panel/threats.ts` resolve one
 at creation.
 
+The stem a save or export proposes for an unnamed document is not model
+content, so it is not written once: `files/file-commands.ts` and
+`files/export-commands.ts` resolve `defaults.untitled-file` and
+`defaults.untitled-model` again each time a picker opens, and a later change
+of language changes the next proposal.
+
+`defaults.untitled-file` is a bare file stem in every locale: no path
+separator, no dot, and none of the characters `< > : " / \ | ? *`, which some
+platform's file picker refuses. An accented letter stays: the File System
+Access API's `suggestedName` and the `download` attribute both accept one
+without refusal, and `defaults.untitled-model`'s fr-CA and sv text already
+reaches a file name the same way.
+
 ## Choosing the language
 
 The Language item in the menu offers en-CA, fr-CA and sv, each under its own

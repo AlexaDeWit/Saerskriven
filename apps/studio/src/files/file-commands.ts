@@ -6,6 +6,7 @@ import {
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FileCommands } from '../commands/surface.js';
+import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import type { State } from '../store/state.js';
@@ -118,7 +119,7 @@ export function useFileSession(
 
   const applyOpen = useCallback(
     (result: FileResult<OpenOutcome>, intent: ReadIntent): void => {
-      const action = openedBy(result.outcome, intent);
+      const action = openedBy(result.outcome, untitledFileStem(), intent);
       if (action === undefined) {
         result.settle('unchanged');
         return;
@@ -352,8 +353,12 @@ export function useFileSession(
   );
 }
 
+function untitledFileStem(): string {
+  return activeTranslator().t('defaults.untitled-file');
+}
+
 function planSave(state: State, format: FormatName): PlannedSave {
-  const target = saveTarget(state.file, format);
+  const target = saveTarget(state.file, format, untitledFileStem());
   return {
     target,
     written: writeThrough(state.present, target.source),

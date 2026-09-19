@@ -45,8 +45,6 @@ export const formatFiles = {
 
 const nativeFormat: FormatName = 'saerskriven-yaml';
 
-const unnamedModel = 'threat-model';
-
 /** Which format the open file is in, and the native one while there is none. */
 export function formatOf(file: FileLifecycle): FormatName {
   return FileLifecycle.$match(file, {
@@ -83,9 +81,16 @@ export function formatOfName(name: string): FormatName | undefined {
   );
 }
 
-/** Replaces the extension and supplies a stem when the name has none. */
-export function proposedName(name: string, format: FormatName): string {
-  return withExtension(name, formatFiles[format].extensions[0], unnamedModel);
+/**
+ * Replaces the extension and supplies a stem when the name has none. The
+ * caller passes the stem in the active locale.
+ */
+export function proposedName(
+  name: string,
+  format: FormatName,
+  untitled: string,
+): string {
+  return withExtension(name, formatFiles[format].extensions[0], untitled);
 }
 
 /**
@@ -106,21 +111,26 @@ export type SaveTarget = {
   readonly source: RetainedSource;
 };
 
-/** Same-format saves retain the source document for merging. Other formats project the model. */
+/**
+ * Same-format saves retain the source document for merging. Other formats
+ * project the model. The caller passes the stem an unnamed document
+ * proposes, in the active locale.
+ */
 export function saveTarget(
   file: FileLifecycle,
   format: FormatName,
+  untitled: string,
 ): SaveTarget {
   return FileLifecycle.$match(file, {
     NoFile: () => ({
-      name: proposedName(unnamedModel, format),
+      name: `${untitled}${formatFiles[format].extensions[0]}`,
       source: { format, document: undefined },
     }),
     Opened: ({ name, source }) =>
       source.format === format
         ? { name, source }
         : {
-            name: proposedName(name, format),
+            name: proposedName(name, format, untitled),
             source: { format, document: undefined },
           },
   });
@@ -139,16 +149,21 @@ export function writeThrough(
 /** The selected read operation determines whether the source remains a save target. */
 export type ReadIntent = 'open' | 'import';
 
-/** Cancellation produces no action. Import refuses without changing the current file. */
+/**
+ * Cancellation produces no action. Import refuses without changing the
+ * current file. `untitled` names an import whose own stem reduces to
+ * nothing, in the active locale.
+ */
 export function openedBy(
   outcome: OpenOutcome,
+  untitled: string,
   intent: ReadIntent = 'open',
 ): Action | undefined {
   const failed = intent === 'import' ? Action.ImportFailed : Action.ReadFailed;
   return OpenOutcome.$match(outcome, {
     Chosen: ({ name, text }) =>
       intent === 'import'
-        ? actionForImport(name, text)
+        ? actionForImport(name, text, untitled)
         : actionForText(name, text),
     TooLarge: ({ name, bound, observed }) =>
       failed({
@@ -250,13 +265,13 @@ function actionForText(name: string, text: string): Action {
   });
 }
 
-function actionForImport(name: string, text: string): Action {
+function actionForImport(name: string, text: string, untitled: string): Action {
   return Either.match(importModel(text), {
     onLeft: (failure) => Action.ImportFailed({ name, failure }),
     onRight: ({ model, divergences }) =>
       Action.Imported({
         model,
-        name: proposedName(name, nativeFormat),
+        name: proposedName(name, nativeFormat, untitled),
         divergences,
       }),
   });

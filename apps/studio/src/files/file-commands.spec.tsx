@@ -1,5 +1,6 @@
 import { readLimits, saerskrivenYamlCodec } from '@saerskriven/formats';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import {
   FileLifecycle,
   initialState,
@@ -8,7 +9,11 @@ import {
 import { isDirty } from '../store/selectors.js';
 import { modelStore } from '../store/store.js';
 import type { StoreSync, SyncedState } from '../store/sync.js';
-import { mainDiagram, sampleModel } from '../store/store.fixtures.js';
+import {
+  mainDiagram,
+  nativeSource,
+  sampleModel,
+} from '../store/store.fixtures.js';
 import type { RenderExports } from './export-commands.js';
 import {
   SaveOutcome,
@@ -71,6 +76,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  chooseLanguage('en-CA');
+  globalThis.localStorage.clear();
 });
 
 describe('useFileSession', () => {
@@ -537,6 +544,65 @@ describe('useFileSession', () => {
       'Saerskriven YAML',
       'Threat Dragon JSON',
     ]);
+  });
+
+  it('names an untitled save-as in the language active when it runs', async () => {
+    const bridge = specBridge();
+    const result = session(bridge);
+    chooseLanguage('sv');
+
+    act(() => {
+      result.current.commands.saveAs();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    const untitled = activeTranslator().t('defaults.untitled-file');
+    expect(untitled).not.toBe('threat-model');
+    expect(bridge.writes[0].name).toBe(`${untitled}.yaml`);
+  });
+
+  it('names an untitled save in the language active when it runs', async () => {
+    const bridge = specBridge();
+    const result = session(bridge);
+    chooseLanguage('sv');
+
+    act(() => {
+      result.current.commands.save();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    const untitled = activeTranslator().t('defaults.untitled-file');
+    expect(untitled).not.toBe('threat-model');
+    expect(bridge.writes[0].name).toBe(`${untitled}.yaml`);
+  });
+
+  it('keeps an already-named file on a save, whatever the active language', async () => {
+    const bridge = specBridge();
+    modelStore.setState(
+      {
+        ...initialState(sampleModel),
+        file: FileLifecycle.Opened({
+          name: 'model.yaml',
+          source: nativeSource,
+        }),
+      },
+      true,
+    );
+    const result = session(bridge);
+    chooseLanguage('sv');
+
+    act(() => {
+      result.current.commands.save();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(bridge.writes[0].name).toBe('model.yaml');
   });
 
   it('writes through the codec the name the picker came back with names, and saves there after', async () => {

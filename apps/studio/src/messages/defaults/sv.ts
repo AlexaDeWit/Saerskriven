@@ -4,6 +4,7 @@ import { defaultMessages } from './contract.js';
 export const defaultsSv = catalogue(defaultMessages)('sv')({
   'untitled-model': 'Namnlös',
   'untitled-diagram': 'Namnlöst diagram',
+  'untitled-file': 'hotmodell',
   'new-actor': 'Ny aktör',
   'new-process': 'Ny process',
   'new-store': 'Nytt lager',

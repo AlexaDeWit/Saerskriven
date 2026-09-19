@@ -4,6 +4,7 @@ import { defaultMessages } from './contract.js';
 export const defaultsEnCA = catalogue(defaultMessages)('en-CA')({
   'untitled-model': 'Untitled',
   'untitled-diagram': 'Untitled diagram',
+  'untitled-file': 'threat-model',
   'new-actor': 'New actor',
   'new-process': 'New process',
   'new-store': 'New store',
