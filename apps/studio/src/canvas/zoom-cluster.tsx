@@ -4,6 +4,7 @@ import {
   ZoomOutIcon,
 } from '@radix-ui/react-icons';
 import { Panel, useViewport } from '@xyflow/react';
+import { useMemo } from 'react';
 import { IconCommandButton } from '../commands/command-button.js';
 import { useTranslator } from '../messages/locale.js';
 import styles from './zoom-cluster.module.css';
@@ -13,9 +14,11 @@ export function ZoomCluster() {
   const { zoom } = useViewport();
   const { t, locale } = useTranslator();
   const percent = Math.round(zoom * 100);
-  const shown = new Intl.NumberFormat(locale, { style: 'percent' }).format(
-    percent / 100,
+  const percentFormat = useMemo(
+    () => new Intl.NumberFormat(locale, { style: 'percent' }),
+    [locale],
   );
+  const shown = percentFormat.format(percent / 100);
   return (
     <Panel position="bottom-right" className={styles.panel}>
       <section aria-label={t('tools.zoom-and-fit')} className={styles.cluster}>
