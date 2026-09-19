@@ -1,3 +1,6 @@
+import { canvasClassNames } from '@saerskriven/canvas';
+import { locales } from '@saerskriven/i18n';
+import { renderTerms } from '@saerskriven/render';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
   contextualShortcuts,
@@ -15,6 +18,7 @@ import { currentAnnouncement } from './announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
+  canvasModel,
   laidOutNode,
   noteElement,
   openCanvas,
@@ -43,6 +47,13 @@ const spelled = ({ label, shortcuts }: ShortcutEntry): string =>
 
 const reader = (): HTMLElement =>
   screen.getByRole('group', { name: /^Reader, actor/u });
+
+const readerInAnyLocale = (): HTMLElement =>
+  screen.getByRole('group', { name: /^Reader, /u });
+
+const readerMark = (): string | null | undefined =>
+  readerInAnyLocale().querySelector(`.${canvasClassNames.badgeMark}`)
+    ?.textContent;
 
 const note = (): HTMLElement =>
   screen.getByRole('group', { name: /^Note, text/u });
@@ -84,6 +95,33 @@ describe('DiagramCanvas', () => {
     expect(
       screen.getAllByRole('group', { name: 'Studio, process' }),
     ).toHaveLength(1);
+  });
+
+  it("letters the badges with render's marks for the active locale, and names the severity in words", () => {
+    openCanvas([], {
+      ...canvasModel,
+      threats: canvasModel.threats.map((threat) => ({
+        ...threat,
+        severity: 'high' as const,
+      })),
+    });
+    render(<DiagramCanvas />);
+
+    for (const locale of locales) {
+      act(() => {
+        chooseLanguage(locale);
+      });
+      const terms = renderTerms(locale);
+
+      expect(readerMark()).toBe(terms.marks.severity.high);
+      expect(readerInAnyLocale().getAttribute('aria-label')).toContain(
+        terms.severity('high'),
+      );
+    }
+    expect(
+      new Set(locales.map((locale) => renderTerms(locale).marks.severity.high))
+        .size,
+    ).toBeGreaterThan(1);
   });
 
   it('reaches every element by keyboard', () => {

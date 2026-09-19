@@ -71,10 +71,11 @@ locale, and so do the model's YAML and JSON, which this package never writes.
 
 The catalogues live under [`src/messages`](src/messages), built on
 `@saerskriven/i18n` with the studio's compile rule, in three sections: `terms`
-for the stored values and the badge marks, `register` for the register's
-framing, and `warning` for the unplaced-flow warning. A message lands in
-`en-CA.ts`, `fr-CA.ts` and `sv.ts` in the same change, and the typecheck fails
-until all three have it with its declared parameters. An adjective agrees
+for the stored values, the record-group headings and the badge marks,
+`register` for the rest of the register's framing, and `warning` for the
+unplaced-flow warning. A message lands in `en-CA.ts`, `fr-CA.ts` and `sv.ts`
+in the same change, and the typecheck fails until all three have it with its
+declared parameters. An adjective agrees
 with the noun it qualifies: a severity with the severity field (sv
 `allvarlighet`, fr `gravité`), a threat status with the threat (sv `hot`, fr
 `menace`), and a record status with its record. The marks of one locale are

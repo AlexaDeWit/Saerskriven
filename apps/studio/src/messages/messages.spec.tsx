@@ -167,7 +167,7 @@ describe.each(locales)(
 
       await chooseFrom(
         activeTranslator().t('fields.severity'),
-        activeTranslator().t('enums.severity-critical'),
+        activeTranslator().t('terms.severity-critical'),
       );
 
       expect(onCommit).toHaveBeenCalledWith('critical');

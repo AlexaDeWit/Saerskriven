@@ -1,3 +1,4 @@
+import type { Locale } from '@saerskriven/i18n';
 import type { DiagramId } from '@saerskriven/model';
 import {
   renderRegister,
@@ -18,7 +19,7 @@ import {
 import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { activeTranslator } from '../messages/locale.js';
+import { activeLocale, activeTranslator } from '../messages/locale.js';
 import { activeDiagram } from '../store/selectors.js';
 import type { FileLifecycle, State } from '../store/state.js';
 import { modelStore, onCanvasOrPanelChange } from '../store/store.js';
@@ -183,7 +184,7 @@ export function useExportCommands(
         if (diagram === undefined) {
           return;
         }
-        const projection = renderSvg(diagram, state.present, 'en-CA');
+        const projection = renderSvg(diagram, state.present, activeLocale());
         void place(
           state.file,
           exportFiles.svg,
@@ -196,12 +197,12 @@ export function useExportCommands(
         void place(
           state.file,
           exportFiles.markdown,
-          renderRegister(state.present, 'en-CA'),
+          renderRegister(state.present, activeLocale()),
         );
       },
       typst: () => {
         const state = modelStore.getState();
-        const projection = renderTypst(state.present, 'en-CA');
+        const projection = renderTypst(state.present, activeLocale());
         void place(
           state.file,
           exportFiles.typst,
@@ -210,10 +211,14 @@ export function useExportCommands(
         );
       },
       pdf: () => {
-        produce(exportFiles.pdf, (state) => compiled(state, renders));
+        produce(exportFiles.pdf, (state) =>
+          compiled(state, activeLocale(), renders),
+        );
       },
       png: () => {
-        produce(exportFiles.png, (state) => drawn(state, renders));
+        produce(exportFiles.png, (state) =>
+          drawn(state, activeLocale(), renders),
+        );
       },
     }),
     [place, produce, renders],
@@ -241,9 +246,10 @@ export function useExportCommands(
 
 async function compiled(
   state: State,
+  locale: Locale,
   renders: RenderExports,
 ): Promise<Either.Either<Produced, ExportNotice>> {
-  const projection = renderTypst(state.present, 'en-CA');
+  const projection = renderTypst(state.present, locale);
   const assets = await renders.pdfAssets();
   if (Either.isLeft(assets)) {
     return Either.left(assetNotice(assets.left, 'compiler'));
@@ -259,6 +265,7 @@ async function compiled(
 
 async function drawn(
   state: State,
+  locale: Locale,
   renders: RenderExports,
 ): Promise<Either.Either<Produced, ExportNotice> | undefined> {
   const diagram = activeDiagram(state);
@@ -270,7 +277,7 @@ async function drawn(
     return Either.left(assetNotice(assets.left, 'rasterizer'));
   }
   return Either.mapBoth(
-    await renders.draw(diagram, state.present, 'en-CA', {
+    await renders.draw(diagram, state.present, locale, {
       assets: assets.right,
     }),
     {

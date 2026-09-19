@@ -41,7 +41,7 @@ export type RecordKind<Held extends ThreatRecord> = {
   readonly noun: RecordNoun;
   readonly title: 'enums.mitigation' | 'enums.assumption';
   readonly nounMessage: 'enums.noun-mitigation' | 'enums.noun-assumption';
-  readonly heading: 'enums.mitigations' | 'enums.assumptions';
+  readonly heading: 'terms.mitigations' | 'terms.assumptions';
   readonly statusMessage: (status: Held['status']) => RecordStatusMessage;
   readonly parts: readonly RecordPart[];
   readonly statuses: readonly Held['status'][];
@@ -61,23 +61,23 @@ export type RecordKind<Held extends ThreatRecord> = {
 
 /** The catalogue label of one record status, of either kind. */
 export type RecordStatusMessage =
-  | 'enums.mitigation-proposed'
-  | 'enums.mitigation-implemented'
-  | 'enums.mitigation-verified'
-  | 'enums.assumption-unconfirmed'
-  | 'enums.assumption-valid'
-  | 'enums.assumption-invalidated';
+  | 'terms.mitigation-proposed'
+  | 'terms.mitigation-implemented'
+  | 'terms.mitigation-verified'
+  | 'terms.assumption-unconfirmed'
+  | 'terms.assumption-valid'
+  | 'terms.assumption-invalidated';
 
 const mitigationStatusMessages = {
-  proposed: 'enums.mitigation-proposed',
-  implemented: 'enums.mitigation-implemented',
-  verified: 'enums.mitigation-verified',
+  proposed: 'terms.mitigation-proposed',
+  implemented: 'terms.mitigation-implemented',
+  verified: 'terms.mitigation-verified',
 } as const satisfies Record<Mitigation['status'], RecordStatusMessage>;
 
 const assumptionStatusMessages = {
-  unconfirmed: 'enums.assumption-unconfirmed',
-  valid: 'enums.assumption-valid',
-  invalidated: 'enums.assumption-invalidated',
+  unconfirmed: 'terms.assumption-unconfirmed',
+  valid: 'terms.assumption-valid',
+  invalidated: 'terms.assumption-invalidated',
 } as const satisfies Record<Assumption['status'], RecordStatusMessage>;
 
 /** Mitigations, which start `proposed`. */
@@ -85,7 +85,7 @@ export const mitigationKind: RecordKind<Mitigation> = {
   noun: 'mitigation',
   title: 'enums.mitigation',
   nounMessage: 'enums.noun-mitigation',
-  heading: 'enums.mitigations',
+  heading: 'terms.mitigations',
   statusMessage: (status) => mitigationStatusMessages[status],
   parts: ['title', 'prose'],
   statuses: mitigationStatusSchema.options,
@@ -113,7 +113,7 @@ export const assumptionKind: RecordKind<Assumption> = {
   noun: 'assumption',
   title: 'enums.assumption',
   nounMessage: 'enums.noun-assumption',
-  heading: 'enums.assumptions',
+  heading: 'terms.assumptions',
   statusMessage: (status) => assumptionStatusMessages[status],
   parts: ['prose'],
   statuses: assumptionStatusSchema.options,
@@ -144,9 +144,9 @@ type NumberedThreat = Pick<Threat, 'id' | 'number'>;
  */
 export type RecordTarget<Held extends ThreatRecord> = {
   readonly heading:
-    | 'enums.mitigations'
-    | 'enums.assumptions'
-    | 'enums.model-assumptions';
+    | 'terms.mitigations'
+    | 'terms.assumptions'
+    | 'terms.model-assumptions';
   readonly holds: (record: Held) => boolean;
   readonly attach: (record: Held) => Held;
   readonly link: (record: Held) => Action;
@@ -181,7 +181,7 @@ export function threatTarget<Held extends ThreatRecord>(
 
 /** The assumptions that apply to the model. */
 export const modelTarget: RecordTarget<Assumption> = {
-  heading: 'enums.model-assumptions',
+  heading: 'terms.model-assumptions',
   holds: (assumption) => assumption.appliesToModel,
   attach: (assumption) => ({ ...assumption, appliesToModel: true }),
   link: ({ id }) => Action.LinkAssumptionToModel({ assumptionId: id }),

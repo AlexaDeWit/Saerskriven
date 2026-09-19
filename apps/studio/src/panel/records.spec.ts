@@ -133,7 +133,7 @@ describe('the model as a record target', () => {
   });
 
   it('heads its group from the studio catalogue rather than the register', () => {
-    expect(modelTarget.heading).toBe('enums.model-assumptions');
+    expect(modelTarget.heading).toBe('terms.model-assumptions');
     expect(threatTarget(assumptionKind, firstThreat).heading).toBe(
       assumptionKind.heading,
     );

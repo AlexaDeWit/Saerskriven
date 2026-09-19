@@ -13,7 +13,7 @@ person typed reach a message as parameters and pass through unchanged.
 | `<section>/en-CA.ts`, `fr-CA.ts`, `sv.ts` | That surface's catalogue in each locale                                                             |
 | `catalogues.ts`                           | The sections joined into the studio's contract, and every catalogue, bundled                        |
 | `enum-labels.ts`                          | The message each stored value of the model is shown under                                           |
-| `locale.ts`                               | The chosen language, `activeTranslator` for code outside components, `useTranslator`, `useLanguage` |
+| `locale.ts`                               | The language: `activeLocale`, `activeTranslator` outside components, `useTranslator`, `useLanguage` |
 | `message.tsx`                             | `Message`, which renders a message with element parameters                                          |
 | `said.ts`                                 | `Said`, text worded when it is shown, and `sentences`, which joins complete sentences               |
 
@@ -23,13 +23,14 @@ person typed reach a message as parameters and pass through unchanged.
 | `commands`   | Command labels, the context each runs in, the group headings, the key reference |
 | `defaults`   | The names a newly created thing is given                                        |
 | `divergence` | What a codec or an import could not carry                                       |
-| `enums`      | The label each stored value is shown under                                      |
+| `enums`      | The label of each stored value only the studio shows                            |
 | `fields`     | What a control is called, drawn or spoken                                       |
 | `menu`       | The burger menu, its submenus and the diagram switcher                          |
 | `notice`     | The failure notice, each refused operation, and a text field's refusal          |
 | `panel`      | The threat panel, the model's properties and the record groups                  |
 | `reports`    | File reports, export reports and the file types an export offers                |
 | `shell`      | The language control, the browser tab's name, the version, the stopped page     |
+| `terms`      | Render's words for stored values, record-group headings and badge marks         |
 | `tools`      | The controls drawn over the canvas: zoom, placement, routes and endpoints       |
 
 `divergence/text.ts` maps each divergence code `@saerskriven/formats` records
@@ -73,16 +74,27 @@ literal line under a headline in the reader's language:
 - Text a parser or compiler raised: the JSON or YAML parser's message for
   malformed text, the Typst compiler's sentences, and the rasterizer's.
 
-Exports are not the studio's text. The SVG, PNG, Markdown, Typst and PDF an
-export writes are the same bytes in every language, including the severity
-letters a badge carries, and the CLI's warning about undrawn flow ends stays
-in `@saerskriven/render`. The studio words that warning itself, from the
-endpoints the projection returns.
+## Exports and render's terms
+
+An export is framed in the language active at the moment it runs. The SVG,
+PNG, Markdown, Typst and PDF it writes are worded by `@saerskriven/render` in
+that locale, and there is no language control at export time. The canvas
+badges draw render's marks for the active locale, so the screen matches the
+export, and a change of language redraws them. The studio words the
+undrawn-flow warning itself, from the endpoints the projection returns.
+
+The `terms` section is render's own catalogue, `termMessages` and
+`termCatalogues`, joined to the studio's contract. A stored value an export
+also shows, such as a severity, a status or a category, and a record group's
+heading are labelled from there, so each term has one home. `enums` keeps the
+labels only the studio shows. Saving YAML or JSON writes the same bytes in
+every language, because the wire formats keep the model's own values.
 
 ## Adding a message
 
 1. Declare it in the section's `contract.ts`, or add a section for a new
-   surface and join it in `catalogues.ts`.
+   surface and join it in `catalogues.ts`. A term an export also shows goes
+   in render's `terms` section instead.
 2. Write it in all three catalogues in the same change. The typecheck fails
    until every locale has it with the declared parameters and plural forms.
 3. Mark new French and Swedish text in the pull request for review by a

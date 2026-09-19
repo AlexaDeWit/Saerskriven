@@ -1,6 +1,13 @@
-import { canvasClassNames, wrappedTextStyles } from '@saerskriven/canvas';
+import {
+  canvasClassNames,
+  toReactFlowEdges,
+  wrappedTextStyles,
+} from '@saerskriven/canvas';
+import { locales } from '@saerskriven/i18n';
 import type { ElementId } from '@saerskriven/model';
-import { fireEvent, render } from '@testing-library/react';
+import { renderTerms } from '@saerskriven/render';
+import { act, fireEvent, render } from '@testing-library/react';
+import { Position, ReactFlowProvider } from '@xyflow/react';
 import userEvent from '@testing-library/user-event';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { elementById } from '../store/selectors.js';
@@ -9,6 +16,9 @@ import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { canvasModel, noteElement } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
+import { editingEdgeTypes } from './inline-editing.js';
+import { currentLayout } from './layout.js';
+import { chooseLanguage } from '../messages/locale.js';
 import { actorElement, processElement } from '../store/store.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 import { textbox } from '../ui/ui.fixtures.js';
@@ -224,5 +234,61 @@ describe('the field standing where the text is drawn', () => {
     await user.paste('Audit\nor');
 
     expect(textbox('Name of Reader')).toHaveProperty('value', 'Auditor');
+  });
+});
+
+describe('a flow on the canvas', () => {
+  afterEach(() => {
+    act(() => {
+      chooseLanguage('en-CA');
+    });
+    globalThis.localStorage.clear();
+  });
+
+  it("letters its badge with render's mark for the active locale", () => {
+    modelStore.setState(
+      initialState({
+        ...canvasModel,
+        threats: canvasModel.threats.map((threat) => ({
+          ...threat,
+          severity: 'high' as const,
+        })),
+      }),
+      true,
+    );
+    const FlowBody = editingEdgeTypes.flow;
+    const { container } = render(
+      <ReactFlowProvider>
+        <svg>
+          {toReactFlowEdges(currentLayout(modelStore.getState())).map(
+            (edge) => (
+              <FlowBody
+                data={edge.data}
+                id={edge.id}
+                key={edge.id}
+                source={edge.source}
+                sourcePosition={Position.Right}
+                sourceX={0}
+                sourceY={0}
+                target={edge.target}
+                targetPosition={Position.Left}
+                targetX={0}
+                targetY={0}
+              />
+            ),
+          )}
+        </svg>
+      </ReactFlowProvider>,
+    );
+    const mark = (): string | null | undefined =>
+      container.querySelector(`.${canvasClassNames.badgeMark}`)?.textContent;
+
+    for (const locale of locales) {
+      act(() => {
+        chooseLanguage(locale);
+      });
+
+      expect(mark()).toBe(renderTerms(locale).marks.severity.high);
+    }
   });
 });

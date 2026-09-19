@@ -54,6 +54,9 @@ export const termsFrCA = catalogue(termMessages)('fr-CA')({
   'category-safety-and-environmental-impact':
     'Sécurité et impact environnemental',
   'category-transparency-and-accessibility': 'Transparence et accessibilité',
+  mitigations: 'Mesures',
+  assumptions: 'Hypothèses',
+  'model-assumptions': 'Hypothèses qui s’appliquent au modèle',
   'mark-undecided': '?',
   'mark-low': 'F',
   'mark-medium': 'M',

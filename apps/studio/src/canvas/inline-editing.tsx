@@ -56,7 +56,7 @@ import {
 } from './edits.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
-import { badgeMarks, edgeLabel, nodeLabel, resizeLabels } from './names.js';
+import { edgeLabel, nodeLabel, resizeLabels, useBadgeMarks } from './names.js';
 import styles from './inline-editing.module.css';
 
 type InlineFieldProps = {
@@ -251,6 +251,7 @@ function InlineField({
 function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
   const { t } = useTranslator();
+  const marks = useBadgeMarks();
   const [resizing, setResizing] = useState(false);
   const editor = useModelStore(
     useCallback(
@@ -271,7 +272,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
       <CanvasNodeBody
         {...props}
         controlsVisible={!editing}
-        marks={badgeMarks}
+        marks={marks}
         onResize={() => {
           setResizing(true);
         }}
@@ -323,6 +324,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
 function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
   const edge = props.data?.edge;
+  const marks = useBadgeMarks();
   const editing = useModelStore(
     useCallback(
       (state: State) =>
@@ -334,7 +336,7 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
 
   return (
     <>
-      <CanvasEdgeBody {...props} marks={badgeMarks} textVisible={!editing} />
+      <CanvasEdgeBody {...props} marks={marks} textVisible={!editing} />
       {editing && edge !== undefined && (
         <EdgeLabelRenderer>
           <div
