@@ -437,6 +437,30 @@ export const panelControl = (page: Page, name: string): Locator =>
 export const threatSummary = (page: Page, title: string | RegExp): Locator =>
   threatPanel(page).getByRole('button', { name: title });
 
+/** Scrolls the nearest scrolling ancestor alone so `target` meets its top or bottom edge, and says whether it reached there. */
+export const scrollPaneTo = (
+  target: Locator,
+  edge: 'top' | 'bottom',
+): Promise<boolean> =>
+  target.evaluate((element, side) => {
+    let pane = element.parentElement;
+    while (pane !== null && getComputedStyle(pane).overflowY !== 'auto') {
+      pane = pane.parentElement;
+    }
+    if (pane === null) {
+      return false;
+    }
+    const drawn = element.getBoundingClientRect();
+    const port = pane.getBoundingClientRect().top + pane.clientTop;
+    const wanted =
+      pane.scrollTop +
+      (side === 'top'
+        ? drawn.top - port
+        : drawn.bottom - port - pane.clientHeight);
+    pane.scrollTop = wanted;
+    return Math.abs(pane.scrollTop - wanted) < 1;
+  }, edge);
+
 /** Expands the panel's threat whose summary matches `title`. */
 export const expandThreat = async (
   page: Page,

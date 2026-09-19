@@ -1,6 +1,14 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
-import { softHyphen } from '@saerskriven/model/fixtures';
+import type { Model } from '@saerskriven/model';
+import {
+  committedModel,
+  elementId,
+  mitigationId,
+  softHyphen,
+  threatId,
+  threatIn,
+} from '@saerskriven/model/fixtures';
 import {
   canvasSettled,
   edgesOf,
@@ -13,13 +21,16 @@ import {
   chooseByKeyboard,
   chooseInPanel,
   editAnnouncement,
+  expandThreat,
   nameField,
   nodeNamed,
+  openModelDocument,
   openPlaceholder,
   openTwoDiagrams,
   panelField,
   placeholder,
   runFromMenu,
+  scrollPaneTo,
   selectByKeyboard,
   selectNode,
   storefront,
@@ -27,6 +38,107 @@ import {
   threatSummary,
 } from './studio.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
+
+const replayed = /Session token replayed/u;
+
+const shopperWithLongThreats = (): Model => {
+  const model = committedModel('two-diagrams.model.json');
+  const takeover = threatIn(model, 'th-account-takeover');
+  const added = Array.from({ length: 8 }, (unused, index) => ({
+    ...takeover,
+    id: threatId(`th-shopper-${String(index)}`),
+    number: model.lastIssuedThreatNumber + index + 1,
+    title:
+      index === 0
+        ? 'Session token replayed'
+        : `Shopper threat ${String(index)}`,
+    elements: [elementId('el-shopper')],
+  }));
+  const steps = Array.from(
+    { length: 12 },
+    (unused, index) =>
+      `Step ${String(index + 1)}: refuse a sign-in the throttle has not cleared.`,
+  ).join('\n');
+  return {
+    ...model,
+    lastIssuedThreatNumber: model.lastIssuedThreatNumber + added.length,
+    threats: [...model.threats, ...added],
+    mitigations: [
+      ...model.mitigations,
+      ...['Captcha after failures', 'Breached password check'].map(
+        (title, index) => ({
+          id: mitigationId(`mi-long-${String(index)}`),
+          title,
+          status: 'proposed' as const,
+          threats: [takeover.id, added[0].id],
+          prose: steps,
+        }),
+      ),
+    ],
+  };
+};
+
+const paneBody = (page: Page): Locator =>
+  threatPanel(page).locator(':scope > header + div');
+
+const insidePaneBody = async (
+  page: Page,
+  target: Locator,
+): Promise<boolean> => {
+  const body = await edgesOf(paneBody(page));
+  const drawn = await edgesOf(target);
+  return drawn.top >= body.top - 0.5 && drawn.bottom <= body.bottom + 0.5;
+};
+
+const belowLongTakeover = async (page: Page): Promise<Locator> => {
+  await openModelDocument(page, shopperWithLongThreats());
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
+  const below = threatSummary(page, replayed);
+  await expect(below).toHaveAttribute('aria-expanded', 'false');
+  return below;
+};
+
+test(
+  'expanding a threat below a long open one keeps its header inside the pane when it cannot stay where it was',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const below = await belowLongTakeover(page);
+    expect(await scrollPaneTo(below, 'bottom')).toBe(true);
+
+    await below.click();
+
+    await expect(below).toHaveAttribute('aria-expanded', 'true');
+    await expect(threatSummary(page, storefront.takeover)).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(await insidePaneBody(page, below)).toBe(true);
+  },
+);
+
+test(
+  'a threat expanded from the keyboard below a long open one keeps its header where it was and keeps focus, without scroll anchoring',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const below = await belowLongTakeover(page);
+    await paneBody(page).evaluate((body) => {
+      body.style.overflowAnchor = 'none';
+    });
+    await below.focus();
+    expect(await scrollPaneTo(below, 'top')).toBe(true);
+    const pressed = await screenBoxOf(below);
+
+    await page.keyboard.press('Enter');
+
+    await expect(below).toHaveAttribute('aria-expanded', 'true');
+    await expect(below).toBeFocused();
+    expect(await insidePaneBody(page, below)).toBe(true);
+    expect(
+      Math.abs((await screenBoxOf(below)).y - pressed.y),
+    ).toBeLessThanOrEqual(1);
+  },
+);
 
 const badgeTone = (node: Locator): Locator =>
   node.locator('.pn-badge-primary circle');

@@ -147,6 +147,16 @@ A commit always comes before a collapse: reaching the control that collapses
 an item, by pointer or by Tab, takes focus out of the field, which is the
 commit.
 
+Expanding a threat collapses the open one, and when that one sits above, the
+body could no longer scroll as far and the header just pressed would land out
+of view. The panel measures that header before the swap and scrolls the body in
+the next animation frame so the header is back where it was, or as near as the
+scroll reaches, and never above the top of the body. The frame is the earliest
+point that works: Radix removes the collapsed content in a layout effect of its
+own, after the panel's layout effects have run. Browser scroll anchoring does
+not hold the header on its own, since its anchor is often a row of the content
+that goes.
+
 ## Saying what happened
 
 An added threat opens expanded with focus in its title, and the focused field

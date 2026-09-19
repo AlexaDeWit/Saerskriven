@@ -17,6 +17,7 @@ import {
   panelControl,
   panelField,
   runFromMenu,
+  scrollPaneTo,
   selectByKeyboard,
   selectNode,
   storefront,
@@ -308,29 +309,6 @@ test(
     expect((await screenBoxOf(remaining)).y).toBe(field);
   },
 );
-
-const scrollPaneTo = (
-  target: Locator,
-  edge: 'top' | 'bottom',
-): Promise<boolean> =>
-  target.evaluate((element, side) => {
-    let pane = element.parentElement;
-    while (pane !== null && getComputedStyle(pane).overflowY !== 'auto') {
-      pane = pane.parentElement;
-    }
-    if (pane === null) {
-      return false;
-    }
-    const drawn = element.getBoundingClientRect();
-    const port = pane.getBoundingClientRect().top + pane.clientTop;
-    const wanted =
-      pane.scrollTop +
-      (side === 'top'
-        ? drawn.top - port
-        : drawn.bottom - port - pane.clientHeight);
-    pane.scrollTop = wanted;
-    return Math.abs(pane.scrollTop - wanted) < 1;
-  }, edge);
 
 const settledBox = async (target: Locator): Promise<Box> => {
   let before = '';
