@@ -81,12 +81,60 @@ export type ReadFailure = Data.TaggedEnum<{
 /** Constructors and matchers for {@link ReadFailure}. */
 export const ReadFailure = Data.taggedEnum<ReadFailure>();
 
-/** A wire schema's refusal as the read failure a codec returns. */
-export function refusedWireDocument(
-  issues: readonly SchemaIssue[],
-): ReadFailure {
-  return ReadFailure.InvalidWireDocument({ issues: toParseIssues(issues) });
+/**
+ * A wire schema, declared by the one method a read calls so no zod type
+ * crosses {@link parseWire}'s signature.
+ */
+export type WireParser<Wire> = {
+  readonly safeParse: (given: unknown) =>
+    | { readonly success: true; readonly data: Wire }
+    | {
+        readonly success: false;
+        readonly error: { readonly issues: readonly SchemaIssue[] };
+      };
+};
+
+/**
+ * A parsed value as its wire document, or the schema's refusal as
+ * `InvalidWireDocument`. zod hands a nested value's issues to its parent as
+ * the arguments of one call, so about 125,000 of them under one array
+ * element throw `RangeError`, and that refusal is one root issue instead.
+ * Any other throw is a defect in a schema and is not caught.
+ */
+export function parseWire<Wire>(
+  schema: WireParser<Wire>,
+  given: unknown,
+): Either.Either<Wire, ReadFailure> {
+  return Either.flatMap(
+    Either.try({
+      try: () => schema.safeParse(given),
+      catch: (error) => {
+        if (error instanceof RangeError) {
+          return issueFlood;
+        }
+        throw error;
+      },
+    }),
+    (parsed) =>
+      parsed.success
+        ? Either.right(parsed.data)
+        : Either.left(
+            ReadFailure.InvalidWireDocument({
+              issues: toParseIssues(parsed.error.issues),
+            }),
+          ),
+  );
 }
+
+const issueFlood = ReadFailure.InvalidWireDocument({
+  issues: [
+    {
+      path: [],
+      code: 'too_big',
+      message: 'The document has more problems than a read can list.',
+    },
+  ],
+});
 
 /** A mapped model input through `parseModel`, refused as `InvalidModel`. */
 export function modelFrom(input: unknown): Either.Either<Model, ReadFailure> {
