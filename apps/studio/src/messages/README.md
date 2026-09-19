@@ -66,8 +66,10 @@ or an import was given.
 Some text on screen is not a catalogue's, and the pseudo-locale pass lists it
 as an exception:
 
-- A key chord is shown in the key names the shortcut registry holds, such as
-  `Ctrl+Shift+S` or `ArrowLeft`, in every language.
+- A character or function key in a chord, such as the `S` of `Ctrl+Maj+S`,
+  `?` or `F1`, is written as its key cap prints it. Named keys and modifiers
+  come from the `commands` section, and Apple's modifier symbols `⇧` and `⌘`
+  are the same in every language.
 - Each language is offered under its own name, from
   [`../language-preference.ts`](../language-preference.ts).
 - The product name `Saerskriven` in the page heading, and a file format's

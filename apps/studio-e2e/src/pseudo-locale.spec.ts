@@ -75,8 +75,9 @@ const exceptions: readonly {
   readonly reason: string;
 }[] = [
   {
-    text: /^(?:(?:Ctrl|Shift|Alt)\+)*(?:Arrow(?:Up|Down|Left|Right)|Enter|Escape|Tab|Space|Delete|Backspace|F\d{1,2}|[A-Z\d?])$/u,
-    reason: 'a key chord is named by the key names the shortcut registry holds',
+    text: /^(?:F\d{1,2}|[A-Z\d?=+-])$/u,
+    reason:
+      'a character or function key is written as its key cap prints it, in every language',
   },
   {
     text: /^(?:English \(Canada\)|Français \(Canada\)|Svenska)$/u,

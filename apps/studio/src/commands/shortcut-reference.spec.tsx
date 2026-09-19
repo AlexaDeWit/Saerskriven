@@ -66,12 +66,12 @@ describe('ShortcutReference', () => {
     ).toBeTruthy();
     expect(keysIn(contextualRow('select-canvas-item'))).toEqual([
       'Enter',
-      'Space',
+      'Spacebar',
     ]);
     expect(within(commandRow('add-bend')).getByText('+')).toBeTruthy();
     expect(keysIn(contextualRow('choose-bend-segment'))).toEqual([
-      'ArrowLeft',
-      'ArrowRight',
+      'Left arrow',
+      'Right arrow',
     ]);
     expect(keysIn(contextualRow('remove-bend'))).toEqual([
       'Delete',
@@ -89,7 +89,7 @@ describe('ShortcutReference', () => {
         fireEvent.click(screen.getByRole('button', { name }));
       }
       for (const id of ['move-selection', 'resize-selection', 'move-bend']) {
-        expect(keysIn(contextualRow(id))).toEqual(['Arrow Keys']);
+        expect(keysIn(contextualRow(id))).toEqual(['Arrow keys']);
         expect(keysIn(contextualRow(`${id}-far`))).toEqual(['Shift+Arrow']);
       }
       expect(keysIn(commandRow('redo'))).toEqual(

@@ -219,15 +219,25 @@ export function firedBy(
   );
 }
 
-/** Spells a chord with Apple symbols or modifier names. */
-export function spellChord(chord: Chord, platform: Platform): string {
-  const written = heldIn(chord, platform).map((modifier) =>
-    platform === 'apple' ? appleSymbols[modifier] : modifierWords[modifier],
+/**
+ * Spells a chord in `t`'s language: Apple's modifier symbols before the
+ * key name, or modifier and key names joined by `commands.key-combination`.
+ * A character key is written as the character it types.
+ */
+export function spellChord(
+  chord: Chord,
+  platform: Platform,
+  t: StudioTranslator['t'],
+): string {
+  const key = keyName(chord.key, t);
+  const held = heldIn(chord, platform);
+  if (platform === 'apple') {
+    return `${held.map((modifier) => appleSymbols[modifier]).join('')}${key}`;
+  }
+  return [...held.map((modifier) => t(modifierNames[modifier])), key].reduce(
+    (written, next) =>
+      t('commands.key-combination', { held: written, key: next }),
   );
-  const key = spellKey(chord.key);
-  return platform === 'apple'
-    ? `${written.join('')}${key}`
-    : [...written, key].join('+');
 }
 
 /** Spells only the shortcuts available on the given platform. */
@@ -237,7 +247,7 @@ export function spellShortcuts(
   t: StudioTranslator['t'],
 ): string {
   return shortcutsOn(shortcuts, platform)
-    .map((chord) => spellChord(chord, platform))
+    .map((chord) => spellChord(chord, platform, t))
     .reduce(
       (spelled, chord) =>
         spelled === ''
@@ -287,7 +297,7 @@ export function keyShortcutsAttribute(
         ...heldIn(chord, platform).map(
           (modifier) => ariaNames[platform][modifier],
         ),
-        chord.key === '+' ? 'Plus' : spellKey(chord.key),
+        chord.key === '+' ? 'Plus' : ariaKey(chord.key),
       ].join('+'),
     )
     .join(' ');
@@ -310,9 +320,38 @@ const appleSymbols: Record<ChordModifier, string> = {
   Mod: '⌘',
 };
 
-const modifierWords: Record<ChordModifier, string> = {
-  Mod: 'Ctrl',
-  Shift: 'Shift',
+type KeyNameId = Extract<CommandMessageId, `commands.key-name-${string}`>;
+
+const modifierNames: Record<ChordModifier, KeyNameId> = {
+  Mod: 'commands.key-name-control',
+  Shift: 'commands.key-name-shift',
+};
+
+type Named<Key extends ChordKey> = Key extends ' '
+  ? Key
+  : Key extends `F${number}`
+    ? never
+    : Key extends `${string}${infer Rest}`
+      ? Rest extends ''
+        ? never
+        : Key
+      : never;
+
+type NamedKey = Named<ChordKey>;
+
+const keyNames: Record<NamedKey, KeyNameId> = {
+  ' ': 'commands.key-name-space',
+  Backspace: 'commands.key-name-backspace',
+  Delete: 'commands.key-name-delete',
+  Escape: 'commands.key-name-escape',
+  Tab: 'commands.key-name-tab',
+  Enter: 'commands.key-name-enter',
+  ArrowUp: 'commands.key-name-arrow-up',
+  ArrowRight: 'commands.key-name-arrow-right',
+  ArrowDown: 'commands.key-name-arrow-down',
+  ArrowLeft: 'commands.key-name-arrow-left',
+  PageUp: 'commands.key-name-page-up',
+  PageDown: 'commands.key-name-page-down',
 };
 
 const ariaNames: Record<Platform, Record<ChordModifier, string>> = {
@@ -331,7 +370,15 @@ function heldIn(chord: Chord, platform: Platform): readonly ChordModifier[] {
   );
 }
 
-function spellKey(key: ChordKey): string {
+function isNamed(key: ChordKey): key is NamedKey {
+  return Object.hasOwn(keyNames, key);
+}
+
+function keyName(key: ChordKey, t: StudioTranslator['t']): string {
+  return isNamed(key) ? t(keyNames[key]) : key.toUpperCase();
+}
+
+function ariaKey(key: ChordKey): string {
   if (key === ' ') {
     return 'Space';
   }
