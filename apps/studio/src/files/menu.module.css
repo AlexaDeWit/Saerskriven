@@ -132,11 +132,15 @@
   font-weight: 600;
 }
 
+/* A row too narrow for its label and its chord wraps the chord under the
+   label, at the end edge, and a chord still too wide breaks between its
+   alternatives, so neither is clipped. */
 .item {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--pn-space-4);
+  column-gap: var(--pn-space-4);
   padding: var(--pn-space-2) var(--pn-space-3);
   border-radius: var(--pn-radius);
   user-select: none;
@@ -163,8 +167,8 @@
 }
 
 .chord {
+  margin-inline-start: auto;
   color: var(--pn-colour-text-muted);
-  white-space: nowrap;
 }
 
 .radioMark {
