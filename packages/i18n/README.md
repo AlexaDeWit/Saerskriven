@@ -81,6 +81,20 @@ emphasis is a `node` parameter.
 
 `catalogueTemplates(catalogues)` lists every template with its locale, id and
 plural form, and `wellFormedTemplate` checks one template's braces.
+`sameAsDefault(catalogues)` lists the fr-CA and sv templates that read exactly
+as en-CA's for the same message and form, for a report rather than a refusal.
+
+## Pseudo-locale
+
+`pseudoTranslator(sections, catalogues)` reads the en-CA catalogues through
+`pseudoText`: each literal run of a template is accented, lengthened by two
+fifths and set between the `pseudoMarkers`, `⟦` and `⟧`, and each parameter
+value passes through unmarked. Text shown without the markers came from
+outside the catalogues or is data, and the lengthening stands in for a longer
+language. It is for development: it adds no locale, and a catalogue still
+compiles only when every real locale has every message. The studio reads it
+when its development server is opened with `?pseudo-locale`
+([the studio's messages](../../apps/studio/src/messages/README.md#adding-or-changing-a-message)).
 
 ## Negotiation
 

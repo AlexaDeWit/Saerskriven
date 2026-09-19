@@ -25,6 +25,7 @@ export {
 export {
   catalogue,
   catalogueTemplates,
+  sameAsDefault,
   type Catalogue,
   type CatalogueTemplate,
   type Catalogues,
@@ -41,3 +42,4 @@ export {
   type Translator,
 } from './lib/translator.js';
 export { negotiate, supportedLocale } from './lib/negotiate.js';
+export { pseudoMarkers, pseudoText, pseudoTranslator } from './lib/pseudo.js';

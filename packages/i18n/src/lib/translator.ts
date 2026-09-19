@@ -91,7 +91,7 @@ const addressed = (
   return { section: id.slice(0, dot), message: id.slice(dot + 1) };
 };
 
-type DotFree<S> = {
+export type DotFree<S> = {
   readonly [K in keyof S]: K extends `${string}.${string}`
     ? { readonly 'a section name holds no dot': never }
     : S[K];
@@ -105,6 +105,19 @@ export function translator<S extends Sections>(
   sections: S & DotFree<S>,
   catalogues: Catalogues<S>,
   locale: Locale,
+): Translator<S> {
+  return literalsShaped(sections, catalogues, locale, (literal) => literal);
+}
+
+/**
+ * {@link translator} with `shape` applied to each literal run of a template,
+ * and never to a parameter value.
+ */
+export function literalsShaped<S extends Sections>(
+  sections: S & DotFree<S>,
+  catalogues: Catalogues<S>,
+  locale: Locale,
+  shape: (literal: string) => string,
 ): Translator<S> {
   const numbers = new Intl.NumberFormat(locale);
   const lists = new Intl.ListFormat(locale, { type: 'conjunction' });
@@ -149,7 +162,7 @@ export function translator<S extends Sections>(
     const kinds: Readonly<Record<string, ParameterKind | undefined>> =
       contracts[section][message].params;
     return templateParts(template(id, values)).map((part, index) =>
-      index % 2 === 0 ? part : formatted(kinds[part], values[part]),
+      index % 2 === 0 ? shape(part) : formatted(kinds[part], values[part]),
     );
   };
 
