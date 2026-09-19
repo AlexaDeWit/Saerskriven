@@ -259,12 +259,12 @@ describe('a diagram whose id carries a line feed', () => {
   });
 });
 
-describe('a diagram title carrying tabs and line feeds', () => {
-  it('collapses them to single spaces in the list a refusal offers', async () => {
+describe('a diagram title carrying tabs, line feeds and a backslash', () => {
+  it('collapses the whitespace to single spaces and escapes the backslash', async () => {
     const refused = refusalOf(
       await renderDiagram(spacedTitleTree(), noRasterizer, {}),
     );
-    expect(refused).toContain('  "diagram-empty": Taking an order');
+    expect(refused).toContain('  "diagram-empty": Taking an order\\\\');
   });
 });
 

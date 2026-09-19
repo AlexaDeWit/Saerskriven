@@ -17,6 +17,7 @@ export {
   type DivergenceDetail,
 } from './lib/divergence-detail.js';
 export {
+  collapsedWhitespace,
   divergenceSchema,
   escapedForTerminal,
   hasDiverged,

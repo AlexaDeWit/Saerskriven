@@ -1,5 +1,9 @@
 import type { ContentBlock } from '@modelcontextprotocol/server';
-import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
+import {
+  collapsedWhitespace,
+  escapedForTerminal,
+  quotedForTerminal,
+} from '@saerskriven/formats';
 import {
   acceptedTextSchema,
   chosenDiagram,
@@ -371,8 +375,4 @@ function diagramList(diagrams: readonly Diagram[]): readonly string[] {
     (diagram) =>
       `  ${quotedForTerminal(diagram.id)}: ${escapedForTerminal(collapsedWhitespace(diagram.title))}`,
   );
-}
-
-function collapsedWhitespace(text: string): string {
-  return text.replace(/\s+/gu, ' ');
 }

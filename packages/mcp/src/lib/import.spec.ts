@@ -14,7 +14,7 @@ import {
   renderImport,
 } from './import.js';
 import { openWorkspace } from './workspace.js';
-import { refusalOf } from './read-tools.fixtures.js';
+import { forgedPathSegment, refusalOf } from './read-tools.fixtures.js';
 
 const converted = (root: string, file: string, target: string) =>
   importIntoModel(
@@ -73,14 +73,17 @@ describe('converting a foreign model', () => {
 
   it('escapes a source path that carries a control character', () => {
     const tree = editableTree();
-    const forged = 'source\u001b[31m\u0007.json';
-    copyFileSync(join(tree.root, otmFile), join(tree.root, forged));
-    const answer = converted(tree.root, forged, 'converted-forged.yaml');
+    copyFileSync(join(tree.root, otmFile), join(tree.root, forgedPathSegment));
+    const answer = converted(
+      tree.root,
+      forgedPathSegment,
+      'converted-forged.yaml',
+    );
     expect(
       Either.match(answer, {
         onLeft: (lines) => lines,
         onRight: renderImport,
       })[0],
-    ).toEqual('converted: source\\u001b[31m\\u0007.json (otm)');
+    ).toEqual('converted: model\\u001b[31m\\u0007.yaml (otm)');
   });
 });

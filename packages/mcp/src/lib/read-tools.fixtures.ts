@@ -205,7 +205,11 @@ export function forgedLinesIn(lines: readonly string[]): readonly string[] {
     .filter((line) => line.trimStart().startsWith(forgedLine));
 }
 
-/** A file name carrying the control characters a terminal escape sequence uses. */
+/**
+ * A file name carrying the control characters a terminal escape sequence
+ * uses, for every spec pinning that a path is escaped before it reaches a
+ * text result.
+ */
 export const forgedPathSegment = 'model\u001b[31m\u0007.yaml';
 
 /**
@@ -218,8 +222,11 @@ export function forgedPathTree(): ModelWorkspace {
   return Either.getOrThrow(openWorkspace({ root, file: forgedPathSegment }));
 }
 
-/** A title carrying the tabs and line feeds a diagram list collapses to one space. */
-export const spacedTitle = 'Taking\tan\norder';
+/**
+ * A title carrying the tabs and line feeds a diagram list collapses to one
+ * space, and a backslash the list still escapes once collapsed.
+ */
+export const spacedTitle = 'Taking\tan\norder\\';
 
 /**
  * A disposable root whose default model holds two diagrams, the second
