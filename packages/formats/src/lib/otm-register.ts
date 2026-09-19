@@ -5,7 +5,11 @@ import type {
   ThreatStatus,
 } from '@saerskriven/model';
 import type { OtmDocument } from '@saerskriven/wire-otm';
-import { unlinkedMitigationLine, type ImportContext } from './import-model.js';
+import {
+  labeledClause,
+  unlinkedMitigationLine,
+  type ImportContext,
+} from './import-model.js';
 
 /**
  * The OTM threats and mitigations as native records, one threat record per
@@ -51,7 +55,8 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
       owner,
       String(threats.length),
     );
-    const state = occurrence?.state;
+    const occurrenceState = occurrence?.state;
+    const state = occurrenceState === '' ? undefined : occurrenceState;
     if (occurrence !== undefined) {
       fields(occurrence, ['threat', 'state', 'mitigations']);
     }
@@ -62,7 +67,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
       title: context.text([definition.name]),
       description: context.text([
         definition.description ?? '',
-        state === undefined || state === '' ? '' : `Source status: ${state}`,
+        ...labeledClause('Source status: ', state),
       ]),
       category: {
         methodology: 'custom',
@@ -135,9 +140,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
             ...(definition.name === ''
               ? ['Mitigation']
               : ['Mitigation: ', definition.name]),
-            ...(description === ''
-              ? []
-              : [definition.name === '' ? ': ' : '. ', description]),
+            ...(description === '' ? [] : ['. ', description]),
           ],
         ),
       ];
@@ -188,7 +191,8 @@ function otmMitigations(
     if (
       status === 'proposed' &&
       given.state !== 'required' &&
-      given.state !== 'proposed'
+      given.state !== 'proposed' &&
+      given.state !== ''
     ) {
       report({
         code: 'otm-mitigation-status-retained',
@@ -200,9 +204,7 @@ function otmMitigations(
       title: context.text([mitigation.name]),
       prose: context.text([
         mitigation.description ?? '',
-        given.state == null || given.state === ''
-          ? ''
-          : `Source status: ${given.state}`,
+        ...labeledClause('Source status: ', given.state),
       ]),
       status,
       threats: [threatId],

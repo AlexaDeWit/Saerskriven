@@ -67,7 +67,7 @@ it.each([
 
 it.each([
   ['no', undefined, 'Mitigation'],
-  ['a', 'Work no occurrence names.', 'Mitigation: Work no occurrence names.'],
+  ['a', 'Work no occurrence names.', 'Mitigation. Work no occurrence names.'],
 ] as const)(
   'opens an unattached mitigation definition line with the bare word Mitigation when its name is empty, keeping %s description',
   (_, description, expected) => {
@@ -143,6 +143,13 @@ it('drops the Source status line from a threat description when the occurrence s
   const threat = read.model.threats.find((entry) => entry.title === 'Threat 1');
   if (threat === undefined) throw new Error('The occurrence was not imported');
   expect(threat.description).toBe('Description fo the threat number 1');
+  expect(
+    read.divergences.filter(
+      (entry) =>
+        entry.detail.code === 'otm-threat-status-unmapped' &&
+        entry.detail.parameters.status === undefined,
+    ),
+  ).toHaveLength(1);
 });
 
 it('drops the Source status line from a mitigation prose when the occurrence state is empty', () => {
@@ -163,4 +170,9 @@ it('drops the Source status line from a mitigation prose when the occurrence sta
     throw new Error('The occurrence was not imported');
   }
   expect(mitigation.prose).toBe('Description for mitigation 1');
+  expect(
+    read.divergences.filter(
+      (entry) => entry.detail.code === 'otm-mitigation-status-retained',
+    ),
+  ).toHaveLength(0);
 });

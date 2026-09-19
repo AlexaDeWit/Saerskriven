@@ -4,7 +4,11 @@ import type {
   ThreatInput,
 } from '@saerskriven/model';
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
-import { unlinkedMitigationLine, type ImportContext } from './import-model.js';
+import {
+  labeledClause,
+  unlinkedMitigationLine,
+  type ImportContext,
+} from './import-model.js';
 import { tmbomNodeId } from './tmbom-graph.js';
 
 /**
@@ -64,7 +68,7 @@ function tmbomThreats(
       title: context.text([threat.title]),
       description: context.text([
         threat.description,
-        ...(threat.event === '' ? [] : [`Trigger: ${threat.event}`]),
+        ...labeledClause('Trigger: ', threat.event),
       ]),
       severity: 'undecided',
       status: 'open',
