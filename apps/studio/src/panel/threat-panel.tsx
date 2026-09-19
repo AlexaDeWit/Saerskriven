@@ -25,6 +25,7 @@ import {
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { useHeaderKept } from './kept-header.js';
 import { historyFocusHandler } from './panel-focus.js';
 import { PanelFrame } from './panel-frame.js';
 import type { RefusedField } from './refusals.js';
@@ -79,6 +80,8 @@ export function ThreatPanel({
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const addControl = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const keepHeader = useHeaderKept(list);
   const { t } = useTranslator();
   const held = threats.some((threat) => threat.id === draft?.threatId)
     ? draft
@@ -168,12 +171,14 @@ export function ThreatPanel({
     };
 
   const expand = (value: string): void => {
-    if (held === undefined || value === held.threatId) {
-      if (value !== expanded) {
-        resetAnnouncements();
-      }
-      setExpanded(value);
+    if (held !== undefined && value !== held.threatId) {
+      return;
     }
+    if (value !== expanded) {
+      resetAnnouncements();
+      keepHeader(value === '' ? expanded : value);
+    }
+    setExpanded(value);
   };
 
   return (
@@ -217,6 +222,7 @@ export function ThreatPanel({
               className={styles.list}
               collapsible
               onValueChange={expand}
+              ref={list}
               type="single"
               value={expanded}
             >
