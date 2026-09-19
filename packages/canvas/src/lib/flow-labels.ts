@@ -330,12 +330,12 @@ function homeSegment(
   segments: readonly Segment[],
 ): Segment {
   let longest: Segment = { from: points[0], to: points[0] };
+  let reach = 0;
   for (const segment of segments) {
-    if (
-      squaredDistance(segment.from, segment.to) >
-      squaredDistance(longest.from, longest.to)
-    ) {
+    const span = squaredDistance(segment.from, segment.to);
+    if (span > reach + translationNoiseTolerance) {
       longest = segment;
+      reach = span;
     }
   }
   return longest;

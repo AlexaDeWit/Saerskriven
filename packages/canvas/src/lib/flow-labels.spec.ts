@@ -2,14 +2,17 @@ import type { Point } from '@saerskriven/model';
 import {
   assumptionOf,
   boxAt,
-  committedModel,
   elementId,
   flowFrom,
   modelWith,
 } from '@saerskriven/model/fixtures';
 import { badgeBox } from './badges.js';
 import { flowGeometry } from './flow-anchors.js';
-import { flowLabelPlacements, type FlowGeometry } from './flow-labels.js';
+import {
+  flowLabelPlacements,
+  type FlowGeometry,
+  type FlowLabelPlacement,
+} from './flow-labels.js';
 import {
   boxesOverlap,
   boxMeetsCircle,
@@ -389,6 +392,37 @@ const twinFlow = (name: string): FlowGeometry => ({
   ],
 });
 
+const placementDriftAllowed = 1e-6;
+
+const movedPoints = (
+  points: readonly [Point, ...Point[]],
+  by: Point,
+): [Point, ...Point[]] => [
+  shiftedBy(points[0], by),
+  ...points.slice(1).map((point) => shiftedBy(point, by)),
+];
+
+const placementDrift = (
+  moved: FlowLabelPlacement,
+  settled: FlowLabelPlacement,
+  by: Point,
+): number => {
+  const name = Math.hypot(
+    moved.name.at.x - settled.name.at.x - by.x,
+    moved.name.at.y - settled.name.at.y - by.y,
+  );
+  if (moved.badge === undefined || settled.badge === undefined) {
+    return name;
+  }
+  return Math.max(
+    name,
+    Math.hypot(
+      moved.badge.x - settled.badge.x - by.x,
+      moved.badge.y - settled.badge.y - by.y,
+    ),
+  );
+};
+
 describe('the placement as a function of the model alone', () => {
   it('answers two flows of one id in the order it was handed them', () => {
     const placed = flowLabelPlacements(
@@ -436,32 +470,29 @@ describe('the placement as a function of the model alone', () => {
     );
   });
 
-  it('moves every placement with a diagram moved as a whole', () => {
-    const layout = layoutOf(committedModel('two-diagrams.model.json'));
-    const by = { x: 100, y: 0 };
-    const flows = layout.edges.map(flowGeometry);
-    const moved = flowLabelPlacements(
-      flows.map((flow) => ({
-        ...flow,
-        points: [
-          shiftedBy(flow.points[0], by),
-          ...flow.points.slice(1).map((point) => shiftedBy(point, by)),
-        ],
-      })),
-      layout.nodes.map((node) => ({
-        ...node,
-        position: shiftedBy(node.position, by),
-      })),
-    );
-    const settled = flowLabelPlacements(flows, layout.nodes);
-    const drift = moved.map(({ name }, index) =>
-      Math.hypot(
-        name.at.x - settled[index].name.at.x - by.x,
-        name.at.y - settled[index].name.at.y - by.y,
-      ),
-    );
-    expect(Math.max(...drift)).toBeLessThan(1e-6);
-  });
+  it.each(scenes)(
+    'moves every placement with $name moved as a whole',
+    ({ layout }) => {
+      const by = { x: 100.3, y: 37.7 };
+      const flows = layout.edges.map(flowGeometry);
+      const moved = flowLabelPlacements(
+        flows.map((flow) => ({
+          ...flow,
+          points: movedPoints(flow.points, by),
+        })),
+        layout.nodes.map((node) => ({
+          ...node,
+          position: shiftedBy(node.position, by),
+        })),
+      );
+      const settled = flowLabelPlacements(flows, layout.nodes);
+      const drift = moved.map((placement, index) =>
+        placementDrift(placement, settled[index], by),
+      );
+
+      expect(Math.max(...drift)).toBeLessThan(placementDriftAllowed);
+    },
+  );
 
   it('places a flow with no name at all beside its line', () => {
     const layout = layoutOf(

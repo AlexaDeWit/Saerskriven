@@ -20,18 +20,22 @@ const pause = 300;
 
 const besideOf = async (part: Locator, anchor: Locator): Promise<Point> => {
   const node = await anchor.elementHandle();
-  return part.evaluate((drawn, from) => {
+  const at = await part.evaluate((drawn, from) => {
     if (!(from instanceof HTMLElement)) {
-      return { x: Number.NaN, y: Number.NaN };
+      return undefined;
     }
-    const at = drawn.getBoundingClientRect();
+    const box = drawn.getBoundingClientRect();
     const origin = from.getBoundingClientRect();
     const zoom = origin.width / from.offsetWidth;
     return {
-      x: Math.round((at.x - origin.x) / zoom),
-      y: Math.round((at.y - origin.y) / zoom),
+      x: Math.round((box.x - origin.x) / zoom),
+      y: Math.round((box.y - origin.y) / zoom),
     };
   }, node);
+  expect(at, 'the two are drawn and the canvas is scaled').toBeDefined();
+  const read = at ?? { x: Number.NaN, y: Number.NaN };
+  expect(Number.isFinite(read.x) && Number.isFinite(read.y)).toBe(true);
+  return read;
 };
 
 test('a flow follows the element it attaches to through a drag, at either end', async ({
