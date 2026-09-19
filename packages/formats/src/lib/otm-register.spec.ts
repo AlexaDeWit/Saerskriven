@@ -64,3 +64,38 @@ it.each([
     ).toHaveLength(1);
   },
 );
+
+it('reports a mitigation reference with no mitigation only by the fields that hold a value', () => {
+  const document = otmFixture();
+  document.components?.[1].threats?.[0].mitigations?.push(
+    { mitigation: null, state: null },
+    { mitigation: null, state: 'implemented' },
+  );
+  const before = Either.getOrThrow(importModel(JSON.stringify(otmFixture())));
+  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  expect(read.model.mitigations).toEqual(before.model.mitigations);
+  expect(read.divergences).toHaveLength(before.divergences.length + 1);
+  expect(read.divergences).toEqual(
+    expect.arrayContaining([
+      ...before.divergences,
+      {
+        subject: { kind: 'model' },
+        detail: {
+          code: 'field-not-retained',
+          parameters: {
+            path: [
+              'components',
+              '1',
+              'threats',
+              '0',
+              'mitigations',
+              '2',
+              'state',
+            ],
+          },
+        },
+        reason: 'unrepresentable',
+      },
+    ]),
+  );
+});
