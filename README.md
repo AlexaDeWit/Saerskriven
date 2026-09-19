@@ -200,7 +200,7 @@ stated it.
 register. `--format svg` draws one diagram, which `--diagram <id or title>`
 chooses where the model holds more than one, and which a model of one does
 not have to name. `--format png` draws that same diagram as a picture,
-2500 pixels on its longer edge, for a reader that takes an image and not an
+1568 pixels on its longer edge, for a reader that takes an image and not an
 SVG. `--format pdf` writes one document holding every diagram, one to a
 landscape page, then that same register, so it takes no `--diagram` either.
 `--out -` writes to standard output, the PDF's and the PNG's bytes included.

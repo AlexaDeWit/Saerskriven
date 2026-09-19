@@ -20,7 +20,7 @@ const badgeGap = 3;
 
 const countOffset = -3;
 
-const markOffset = 6;
+const markOffset = 7.5;
 
 const flagMarkOffset = 4;
 
@@ -144,10 +144,13 @@ export function badgeBox(at: Point, badge: ThreatBadge): Box {
 /**
  * The stacked threat badge, hanging on `at`. A counted badge's primary
  * carries the count over the mark of its severity, so the tone repeats what
- * the mark already says rather than carrying it alone. The secondary sits
- * beneath the primary and is left out where the model gives the two nothing
- * to say apart, and the flag mark sits beneath both. A flag-only badge is the
- * flag mark alone, centred on `at`.
+ * the mark already says rather than carrying it alone. `countOffset` and
+ * `markOffset` keep the two apart by a margin of about 1.6 user units, so a
+ * mark carrying a diacritic, such as the fr-CA high-severity `É`, clears the
+ * count above it at the default export size. The secondary sits beneath the
+ * primary and is left out where the model gives the two nothing to say
+ * apart, and the flag mark sits beneath both. A flag-only badge is the flag
+ * mark alone, centred on `at`.
  */
 export function ThreatBadgeGlyph({
   badge,

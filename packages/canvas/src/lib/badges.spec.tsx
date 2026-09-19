@@ -318,6 +318,32 @@ describe('the ring a badge cuts itself out with', () => {
   });
 });
 
+describe('the space between a badge count and its mark', () => {
+  it('keeps the mark clear of the em-box the count sits in, so a diacritic on the mark does not reach it', () => {
+    const markup = renderToStaticMarkup(
+      <ThreatBadgeGlyph
+        marks={specMarks}
+        badge={counted(1, 'high', 0)}
+        at={{ x: 0, y: 0 }}
+      />,
+    );
+    const countY = Number(
+      new RegExp(
+        `class="${canvasClassNames.badgeCount}" y="(-?[\\d.]+)"`,
+        'u',
+      ).exec(markup)?.[1],
+    );
+    const markY = Number(
+      new RegExp(
+        `class="${canvasClassNames.badgeMark}" y="(-?[\\d.]+)"`,
+        'u',
+      ).exec(markup)?.[1],
+    );
+    const halfHeights = canvasType.badgeCount / 2 + canvasType.badgeMark / 2;
+    expect(markY - countY).toBeGreaterThanOrEqual(halfHeights);
+  });
+});
+
 describe('ThreatBadgeGlyph', () => {
   it('draws the count in the tone of the badge severity', () => {
     const markup = renderToStaticMarkup(

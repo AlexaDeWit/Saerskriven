@@ -10,6 +10,7 @@ import {
   twoDiagramsWorkspace,
   twoDiagramsYaml,
 } from './read-tools.fixtures.js';
+import { mcpImageLongEdge } from './render-diagram.js';
 import { register, renderRegisterResult } from './register.js';
 import {
   completedDiagrams,
@@ -147,8 +148,12 @@ describe('the diagram resources', () => {
       );
       const [image] = blobsOf(read);
       const prose = resourceProseOf(read);
+      const png = Buffer.from(image?.bytes ?? []);
       expect(image?.mimeType).toEqual('image/png');
-      expect(Buffer.from(image?.bytes ?? []).subarray(0, 4)).toEqual(pngMagic);
+      expect(png.subarray(0, 4)).toEqual(pngMagic);
+      expect(Math.max(png.readUInt32BE(16), png.readUInt32BE(20))).toBe(
+        mcpImageLongEdge,
+      );
       expect(prose.unread).toEqual([]);
       expect(prose.prose.map(opening)).toEqual([dataNotInstructions]);
     });
