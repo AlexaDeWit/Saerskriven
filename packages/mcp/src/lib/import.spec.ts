@@ -1,6 +1,6 @@
 import { readAnyFormat } from '@saerskriven/formats';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
+import { copyFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   editableTree,
@@ -14,7 +14,7 @@ import {
   renderImport,
 } from './import.js';
 import { openWorkspace } from './workspace.js';
-import { refusalOf } from './read-tools.fixtures.js';
+import { forgedPathSegment, refusalOf } from './read-tools.fixtures.js';
 
 const converted = (root: string, file: string, target: string) =>
   importIntoModel(
@@ -69,5 +69,21 @@ describe('converting a foreign model', () => {
     const tree = editableTree();
     const refused = converted(tree.root, modelFile, 'converted.yaml');
     expect(refusalOf(refused).join('\n')).toContain('was not converted');
+  });
+
+  it('escapes a source path that carries a control character', () => {
+    const tree = editableTree();
+    copyFileSync(join(tree.root, otmFile), join(tree.root, forgedPathSegment));
+    const answer = converted(
+      tree.root,
+      forgedPathSegment,
+      'converted-forged.yaml',
+    );
+    expect(
+      Either.match(answer, {
+        onLeft: (lines) => lines,
+        onRight: renderImport,
+      })[0],
+    ).toEqual('converted: model\\u001b[31m\\u0007.yaml (otm)');
   });
 });

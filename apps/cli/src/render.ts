@@ -1,5 +1,5 @@
 import type { RenderTheme, UnplacedEndpoint } from '@saerskriven/canvas';
-import { escapedForTerminal } from '@saerskriven/formats';
+import { collapsedWhitespace, escapedForTerminal } from '@saerskriven/formats';
 import {
   defaultLocale,
   locales,
@@ -314,12 +314,10 @@ function refusedChoice(failure: DiagramChoiceFailure): string {
 
 function diagramList(diagrams: readonly Diagram[]): readonly string[] {
   return diagrams.map((diagram) =>
-    escapedForTerminal(`  ${diagram.id}: ${collapsed(diagram.title)}`),
+    escapedForTerminal(
+      `  ${diagram.id}: ${collapsedWhitespace(diagram.title)}`,
+    ),
   );
-}
-
-function collapsed(text: string): string {
-  return text.replace(/\s+/gu, ' ');
 }
 
 function quoted(text: string): string {

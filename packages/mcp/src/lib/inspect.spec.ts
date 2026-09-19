@@ -4,6 +4,7 @@ import {
   assumptionScopesTree,
   forgedIdsTree,
   forgedLinesIn,
+  forgedPathTree,
 } from './read-tools.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import { openWorkspace } from './workspace.js';
@@ -82,5 +83,14 @@ describe('an inspection of a diagram whose id carries a line feed', () => {
   it('forges no line in its text', () => {
     const inspection = Either.getOrThrow(inspect(forgedIdsTree(), {}));
     expect(forgedLinesIn(renderInspection(inspection))).toEqual([]);
+  });
+});
+
+describe('an inspection of a file whose path carries a control character', () => {
+  it('escapes it in the file: line', () => {
+    const inspection = Either.getOrThrow(inspect(forgedPathTree(), {}));
+    expect(renderInspection(inspection)[0]).toEqual(
+      'file: model\\u001b[31m\\u0007.yaml',
+    );
   });
 });

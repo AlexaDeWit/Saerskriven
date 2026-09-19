@@ -131,6 +131,14 @@ export function quotedForTerminal(text: string): string {
   return `"${text.replace(escapableQuoted, escapeCharacter)}"`;
 }
 
+/**
+ * `text` with every run of whitespace, a line feed included, collapsed to
+ * one space, so a title reads on the one line of a listing it is given.
+ */
+export function collapsedWhitespace(text: string): string {
+  return text.replace(/\s+/gu, ' ');
+}
+
 const reasonPhrases: Record<DivergenceReason, string> = {
   unrepresentable: 'no place in the format',
   undeclared: 'not declared by the wire schema',
