@@ -16,6 +16,18 @@ import {
 import { useTranslator } from '../messages/locale.js';
 import styles from './menu.module.css';
 
+/**
+ * Where the burger menu and the diagram switcher open their panels: under the
+ * card, kept off each screen edge by the chrome band's own gutter
+ * (`--pn-space-3`, at the default font size), which also narrows the width
+ * Radix reports as available to the panel.
+ */
+export const panelPlacement = {
+  align: 'start',
+  collisionPadding: 12,
+  sideOffset: 6,
+} as const;
+
 type MenuItemProps = {
   readonly shortcut?: ShortcutText;
   readonly children: ReactNode;
