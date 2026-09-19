@@ -16,6 +16,12 @@ inputs:
       Whether to install the workspace dependencies from the frozen lockfile.
       Jobs needing a deliberately different install keep that step themselves.
     default: 'false'
+  restore-pnpm-store:
+    description: >-
+      Whether to restore the pnpm store for a job that installs by hand. A job
+      with install-dependencies "true" always restores it. A job that never
+      runs pnpm leaves both unset and downloads no store.
+    default: 'false'
   save-nix-store:
     description: >-
       Whether this job may save the Nix-store cache (only ever on main). Set
@@ -64,12 +70,14 @@ runs:
         save: ${{ inputs.save-nix-store == 'true' && github.ref == 'refs/heads/main' }}
         gc-max-store-size-linux: ${{ inputs.nix-gc-max-store-size }}
 
-    # The workflow sets npm_config_store_dir to this path, so pnpm installs
-    # from it. Saved by the workflow on main only, mirroring the Nix rule.
+    # The calling workflow sets pnpm_config_store_dir, the spelling pnpm 11
+    # reads (it ignores npm_config_store_dir). Saved by the workflow on main
+    # only, mirroring the Nix rule.
     - name: Restore pnpm store
+      if: inputs.install-dependencies == 'true' || inputs.restore-pnpm-store == 'true'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: ${{ github.workspace }}/.pnpm-store
+        path: ${{ env.pnpm_config_store_dir }}
         key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
         restore-keys: |
           pnpm-store-${{ runner.os }}-
@@ -85,3 +93,8 @@ runs:
       if: inputs.install-dependencies == 'true'
       shell: bash
       run: nix develop .#ci --command pnpm install --frozen-lockfile
+
+    - name: Check pnpm installed into the cached store directory
+      if: inputs.install-dependencies == 'true'
+      shell: bash
+      run: nix develop .#ci --command scripts/check-pnpm-store.sh

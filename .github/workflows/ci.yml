@@ -23,7 +23,7 @@ permissions:
   contents: read
 
 env:
-  npm_config_store_dir: ${{ github.workspace }}/.pnpm-store
+  pnpm_config_store_dir: ${{ github.workspace }}/.pnpm-store
   DENO_NO_UPDATE_CHECK: '1'
   DENO_NO_PROMPT: '1'
 
@@ -109,11 +109,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      # A restore through the prefix fallback carries every package an older
+      # lockfile installed, so prune before saving or the entry only grows.
+      - name: Prune the pnpm store (main only)
+        if: github.ref == 'refs/heads/main'
+        run: nix develop .#ci --command pnpm store prune
+
+      # actions/cache/save only warns when its path is missing, which hid a
+      # store that was never written (#358). Runs on every ref so a PR proves
+      # the check the main-only save depends on.
+      - name: Check the pnpm store exists to save
+        run: nix develop .#ci --command scripts/check-pnpm-store.sh
+
       - name: Save pnpm store (main only)
         if: github.ref == 'refs/heads/main'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ${{ github.workspace }}/.pnpm-store
+          path: ${{ env.pnpm_config_store_dir }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
 
   installer-smoke:
@@ -440,11 +452,15 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           save-nix-store: 'false'
+          restore-pnpm-store: 'true'
 
       - name: Install the lockfile parser
         run: >-
           nix develop .#ci --command
           pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Check pnpm installed into the cached store directory
+        run: nix develop .#ci --command scripts/check-pnpm-store.sh
 
       - name: Check dependency provenance
         run: nix develop .#ci --command scripts/check-provenance.mjs
