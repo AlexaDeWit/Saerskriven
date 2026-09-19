@@ -77,9 +77,13 @@ unplaced-flow warning. A message lands in `en-CA.ts`, `fr-CA.ts` and `sv.ts`
 in the same change, and the typecheck fails until all three have it with its
 declared parameters. An adjective agrees
 with the noun it qualifies: a severity with the severity field (sv
-`allvarlighet`, fr `gravité`), a threat status with the threat (sv `hot`, fr
+`allvarlighetsgrad`, fr `gravité`), a threat status with the threat (sv `hot`, fr
 `menace`), and a record status with its record. The marks of one locale are
 one character each and differ from each other.
+
+The French and Swedish terms, their sources and the words they replaced are
+in the [terminology glossary](src/messages/GLOSSARY.md). A new term or a
+rewording checks it first and lands in it.
 
 `renderTerms(locale)` ([`terms.ts`](src/lib/terms.ts)) gives an app the same
 words and marks for its screen: a function per stored value and the
