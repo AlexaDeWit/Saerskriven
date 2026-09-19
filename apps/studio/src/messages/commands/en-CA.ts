@@ -155,7 +155,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'reference-introduction':
     'Shortcuts run only in the contexts shown. Commands typed into a text field stay with that field unless their context says otherwise.',
   'no-shortcut': 'No shortcut',
-  'arrow-keys': 'Arrow Keys',
+  'arrow-keys': 'Arrow keys',
   'shift-arrow': 'Shift+Arrow',
   'key-name-control': 'Ctrl',
   'key-name-shift': 'Shift',

@@ -1,8 +1,8 @@
 # Terminology glossary
 
 The security and threat-modelling terms Saerskriven's fr-CA and sv text uses,
-the key names its shortcuts are spelled with, and where each comes from. It covers render's catalogues in this directory and
-the studio's in [`apps/studio/src/messages`](../../../../apps/studio/src/messages).
+the key names its shortcuts are spelled with, and where each comes from. It
+covers render's catalogues in this directory and the studio's in [`apps/studio/src/messages`](../../../../apps/studio/src/messages).
 A stored value of the model (a severity, a status, a category) is worded once,
 in [`terms`](terms), and the studio shows the same word. A term the studio
 alone uses, such as an element kind, lives in the studio's `enums` section and
@@ -263,57 +263,62 @@ a function key (`S`, `0`, `?`, `F1`) are written as the key cap prints them.
 `aria-keyshortcuts` keeps the key values the attribute requires
 (`Control+Shift+S`) in every language.
 
-| English     | en-CA       | fr-CA               | sv         | Sources                                                                                                                |
-| ----------- | ----------- | ------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Ctrl        | Ctrl        | Ctrl                | Ctrl       | [Microsoft en][ms-en-keys], [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                 |
-| Shift       | Shift       | Maj                 | Skift      | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide], [Apple fr][apple-fr], [Apple sv][apple-sv] |
-| Backspace   | Backspace   | Retour arrière      | Backsteg   | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                                             |
-| Delete      | Delete      | Suppr               | Delete     | [Microsoft fr-CA guide][ms-fr-ca-guide], [GDT: touche Suppression][gdt-suppr], [Microsoft sv guide][ms-sv-guide]       |
-| Esc         | Esc         | Échap               | Esc        | [Microsoft fr-CA guide][ms-fr-ca-guide], [GDT: touche d’échappement][gdt-echap], [Microsoft sv guide][ms-sv-guide]     |
-| Tab         | Tab         | Tab                 | Tabb       | [Microsoft fr-CA guide][ms-fr-ca-guide], [GDT: touche de tabulation][gdt-tab], [Microsoft sv guide][ms-sv-guide]       |
-| Enter       | Enter       | Entrée              | Retur      | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                                             |
-| Spacebar    | Spacebar    | Espace              | Blanksteg  | [Microsoft fr-CA guide][ms-fr-ca-guide] (in its shortcut table), [Microsoft sv guide][ms-sv-guide]                     |
-| Up arrow    | Up arrow    | Flèche vers le haut | Uppåtpil   | [Microsoft fr-CA Windows][ms-fr-ca-windows], [Microsoft sv guide][ms-sv-guide]                                         |
-| Right arrow | Right arrow | Flèche droite       | Högerpil   | [Microsoft fr-CA Windows][ms-fr-ca-windows], [Microsoft sv guide][ms-sv-guide]                                         |
-| Down arrow  | Down arrow  | Flèche vers le bas  | Nedåtpil   | [Microsoft fr-CA Windows][ms-fr-ca-windows], [Microsoft sv guide][ms-sv-guide]                                         |
-| Left arrow  | Left arrow  | Flèche gauche       | Vänsterpil | [Microsoft fr-CA Windows][ms-fr-ca-windows], [Microsoft sv guide][ms-sv-guide]                                         |
-| Page up     | Page up     | Pg préc             | Page Up    | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                                             |
-| Page down   | Page down   | Pg suiv             | Page Down  | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                                             |
+| English     | en-CA       | fr-CA          | sv         | Sources                                                                                                                |
+| ----------- | ----------- | -------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Ctrl        | Ctrl        | Ctrl           | Ctrl       | [Microsoft en][ms-en-keys], [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                 |
+| Shift       | Shift       | Maj            | Skift      | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide], [Apple fr][apple-fr], [Apple sv][apple-sv] |
+| Backspace   | Backspace   | Retour arrière | Backsteg   | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                                             |
+| Delete      | Delete      | Suppr          | Delete     | [Microsoft fr-CA guide][ms-fr-ca-guide], [GDT: touche Suppression][gdt-suppr], [Microsoft sv guide][ms-sv-guide]       |
+| Esc         | Esc         | Échap          | Esc        | [Microsoft fr-CA guide][ms-fr-ca-guide], [GDT: touche d’échappement][gdt-echap], [Microsoft sv guide][ms-sv-guide]     |
+| Tab         | Tab         | Tab            | Tabb       | [Microsoft fr-CA guide][ms-fr-ca-guide], [GDT: touche de tabulation][gdt-tab], [Microsoft sv guide][ms-sv-guide]       |
+| Enter       | Enter       | Entrée         | Retur      | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                                             |
+| Spacebar    | Spacebar    | Espace         | Blanksteg  | [Microsoft fr-CA guide][ms-fr-ca-guide] (in its shortcut table), [Microsoft sv guide][ms-sv-guide]                     |
+| Up arrow    | Up arrow    | Flèche haut    | Uppåtpil   | [Microsoft fr-CA Windows][ms-fr-ca-windows], [Microsoft sv guide][ms-sv-guide]                                         |
+| Right arrow | Right arrow | Flèche droite  | Högerpil   | [Microsoft fr-CA Windows][ms-fr-ca-windows], [Microsoft sv guide][ms-sv-guide]                                         |
+| Down arrow  | Down arrow  | Flèche bas     | Nedåtpil   | [Microsoft fr-CA Windows][ms-fr-ca-windows], [Microsoft sv guide][ms-sv-guide]                                         |
+| Left arrow  | Left arrow  | Flèche gauche  | Vänsterpil | [Microsoft fr-CA Windows][ms-fr-ca-windows], [Microsoft sv guide][ms-sv-guide]                                         |
+| Page up     | Page up     | Pg préc        | Page Up    | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                                             |
+| Page down   | Page down   | Pg suiv        | Page Down  | [Microsoft fr-CA guide][ms-fr-ca-guide], [Microsoft sv guide][ms-sv-guide]                                             |
 
 - **One name, shown and spoken.** The chord a person reads and the chord a
   screen reader reads out use the same name. Microsoft's localization guides
   give one name per key, and no source was found for a separate, fuller
-  spoken set. The name is the one a
-  sighted helper finds on the key.
+  spoken set. The name is the one a sighted helper finds on the key.
 - **Microsoft's guides decide.** Microsoft's Canadian French and Swedish
-  localization style guides each list the key names (section "Keys") and
-  the standard shortcuts written with them. They are guidance for
-  translators rather than translated pages. The Canadian multilingual standard keyboard, CAN/CSA Z243.200-92,
-  arranges the alphanumeric keys only and does not fix the words printed on
-  the others ([CAN/CSA Z243.200][csa-wiki]), so it decides nothing here.
-- **Ctrl:** both French guides list `Control` as the key's name, and both
-  write `Ctrl` in every shortcut they give (`Ctrl+Maj+Suppr`, `Ctrl+Échap`).
+  localization style guides each list the key names (section "Keys") and the
+  standard shortcuts written with them, and its [France French
+  guide][ms-fr-fr-guide] lists the same French names. They are guidance for
+  translators rather than translated pages. The Canadian multilingual standard
+  keyboard, CAN/CSA Z243.200-92, arranges the alphanumeric keys only and does
+  not fix the words printed on the others ([CAN/CSA Z243.200][csa-wiki]), so it decides nothing here.
+- **Ctrl:** both French guides ([fr-CA][ms-fr-ca-guide],
+  [fr-FR][ms-fr-fr-guide]) list `Control` as the key's name, and both write
+  `Ctrl` in every shortcut they give (`Ctrl+Maj+Suppr`, `Ctrl+Échap`).
   A chord is a shortcut, so fr-CA writes `Ctrl`, as Microsoft's fr-CA Windows
   shortcut page does.
 - **Échap, Suppr, Tab:** the GDT lists `Échap.`, `Suppr.` and `touche Tab.`
   with a period, and notes that `Échap.` breaks the classical rule, which asks
   for `Échapp.`. The catalogues write the key-cap form without a period, as
-  Microsoft's guides and Apple's French keyboard page do, since a period inside
-  `Ctrl+Échap.` reads as the end of a sentence. The GDT has no abbreviation
+  Microsoft's guides do, since a period inside `Ctrl+Échap.` reads as the end
+  of a sentence. Apple's French keyboard page lists the keys as
+  `Esc (échappement)` and `Supprimer`. The GDT has no abbreviation
   for the Shift key: its entry is `touche Majuscule`, and `Maj` is Microsoft's.
-- **Arrows:** Microsoft's French guides name the arrows `Haut`, `Bas`,
-  `Gauche` and `Droite`. Microsoft's fr-CA Windows shortcut page writes
-  `Flèche gauche` and `Flèche vers le haut`, and Apple's `Flèche de gauche`.
+- **Arrows:** Microsoft's French guides ([fr-CA][ms-fr-ca-guide],
+  [fr-FR][ms-fr-fr-guide]) name the arrows `Haut`, `Bas`, `Gauche` and
+  `Droite`. Microsoft's fr-CA Windows shortcut page mostly writes
+  `Flèche haut`, `Flèche bas`, `Flèche gauche` and `Flèche droite`, with
+  `Flèche vers le haut` and `Flèche vers le bas` in a few places, and Apple's
+  page writes `Flèche de gauche`.
   The catalogues follow the Windows page, since a key reference that lists a
   bare `Gauche` does not say which key it means, and the studio's existing
   `Maj+Flèche` and `Touches fléchées` already say `Flèche`. Prose that names
   two directions together, such as `Gauche/Droite pour choisir`, keeps the
   short form.
-- **Espace:** the French guides name the key `Barre d’espace` and write
-  `Alt+Espace` in their shortcut table. A chord takes `Espace`.
+- **Espace:** both French guides name the key `Barre d’espace` and write
+  `Alt+Espace` in their shortcut tables. A chord takes `Espace`.
 - **Swedish Delete, Page Up:** the Swedish guide keeps `Delete`, `Page Up` and
-  `Page Down` in English, and so do the catalogues. Microsoft's sv Windows
-  page also writes `Del` and `PgUp`.
+  `Page Down` in English, and so do the catalogues. Microsoft's
+  [sv Windows shortcut page][ms-sv-windows] also writes `Del` and `PgUp`.
 - **English:** Microsoft's English style guide writes `Esc` ("Always use Esc,
   not Escape"), `Spacebar`, and the arrows and page keys in sentence case,
   which en-CA follows. The studio's prose says `Esc` wherever it names the key.
@@ -358,6 +363,8 @@ a function key (`S`, `0`, `?`, `F1`) are written as the key cap prints them.
 [ms-en-keys]: https://learn.microsoft.com/en-us/style-guide/a-z-word-list-term-collections/term-collections/keys-keyboard-shortcuts
 [ms-fr-ca-guide]: https://download.microsoft.com/download/5/6/8/568628ff-0646-4740-a052-d8bd97ecdcf8/fra-can-StyleGuide.pdf
 [ms-sv-guide]: https://download.microsoft.com/download/5/0/9/5095f52b-dd67-4951-9afa-c15bb1696a4a/swe-swe-StyleGuide.pdf
+[ms-fr-fr-guide]: https://download.microsoft.com/download/c/7/9/c7921dbd-4531-4a4e-8490-e4656d739f3d/fra-fra-StyleGuide.pdf
+[ms-sv-windows]: https://support.microsoft.com/sv-se/windows/keyboard-shortcuts-in-windows-dcc61a57-8ff0-cffe-9796-cb9706c75eec
 [ms-fr-ca-windows]: https://support.microsoft.com/fr-ca/windows/keyboard-shortcuts-in-windows-dcc61a57-8ff0-cffe-9796-cb9706c75eec
 [apple-fr]: https://support.apple.com/fr-ca/102650
 [apple-sv]: https://support.apple.com/sv-se/102650

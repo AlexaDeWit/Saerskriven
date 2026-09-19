@@ -89,7 +89,7 @@ describe('ShortcutReference', () => {
         fireEvent.click(screen.getByRole('button', { name }));
       }
       for (const id of ['move-selection', 'resize-selection', 'move-bend']) {
-        expect(keysIn(contextualRow(id))).toEqual(['Arrow Keys']);
+        expect(keysIn(contextualRow(id))).toEqual(['Arrow keys']);
         expect(keysIn(contextualRow(`${id}-far`))).toEqual(['Shift+Arrow']);
       }
       expect(keysIn(commandRow('redo'))).toEqual(

@@ -327,7 +327,19 @@ const modifierNames: Record<ChordModifier, KeyNameId> = {
   Shift: 'commands.key-name-shift',
 };
 
-const keyNames: Partial<Record<ChordKey, KeyNameId>> = {
+type Named<Key extends ChordKey> = Key extends ' '
+  ? Key
+  : Key extends `F${number}`
+    ? never
+    : Key extends `${string}${infer Rest}`
+      ? Rest extends ''
+        ? never
+        : Key
+      : never;
+
+type NamedKey = Named<ChordKey>;
+
+const keyNames: Record<NamedKey, KeyNameId> = {
   ' ': 'commands.key-name-space',
   Backspace: 'commands.key-name-backspace',
   Delete: 'commands.key-name-delete',
@@ -358,9 +370,12 @@ function heldIn(chord: Chord, platform: Platform): readonly ChordModifier[] {
   );
 }
 
+function isNamed(key: ChordKey): key is NamedKey {
+  return Object.hasOwn(keyNames, key);
+}
+
 function keyName(key: ChordKey, t: StudioTranslator['t']): string {
-  const named = keyNames[key];
-  return named === undefined ? key.toUpperCase() : t(named);
+  return isNamed(key) ? t(keyNames[key]) : key.toUpperCase();
 }
 
 function ariaKey(key: ChordKey): string {

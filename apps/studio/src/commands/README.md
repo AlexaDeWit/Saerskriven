@@ -75,8 +75,9 @@ a person reads is in the active locale: a named key and a modifier word come
 from the `commands` catalogue section (fr-CA `Ctrl+Maj+S`, sv `Ctrl+Skift+S`),
 following the [key names in the glossary](../../../../packages/render/src/messages/GLOSSARY.md#key-names),
 and one name serves the eye and the screen reader alike. That spelling is the
-tooltip and the control's accessible description, which `CommandButton` renders beside the button rather
-than inside it: inside, the accessible name of Save would read "Save Ctrl+S".
+tooltip and the control's accessible description, which `CommandButton`
+renders beside the button rather than inside it: inside, the accessible name
+of Save would read "Save Ctrl+S".
 A menu item draws the chord beside its label, where a native menu draws it,
 and hides it from assistive technology, which reads `aria-keyshortcuts`
 instead.
@@ -131,7 +132,7 @@ contextual key from `contextual-shortcuts.ts`. Resize keys and distances come
 from the canvas package, where the resize controls use them. The panel is
 non-modal: opening it focuses its heading without trapping focus, and Escape
 closes it only while focus is inside, returning focus to the opener. Complete
-direction groups read as `Arrow Keys` or `Shift+Arrow`, and groups that accept
+direction groups read as `Arrow keys` or `Shift+Arrow`, and groups that accept
 only some directions list those keys.
 
 ## Rules for changes
