@@ -179,7 +179,7 @@ it.each([
   },
 );
 
-it('ends an unlinked control line with an empty description at the closing parenthesis, with no trailing separator', () => {
+it('ends an unlinked control line with an empty description after its status, with no trailing separator', () => {
   const baseline = tmbomFixture();
   baseline.controls = [];
   const document = tmbomFixture();
