@@ -11,8 +11,11 @@ import styles from './zoom-cluster.module.css';
 /** The zoom and fit controls over the canvas. */
 export function ZoomCluster() {
   const { zoom } = useViewport();
-  const { t } = useTranslator();
+  const { t, locale } = useTranslator();
   const percent = Math.round(zoom * 100);
+  const shown = new Intl.NumberFormat(locale, { style: 'percent' }).format(
+    percent / 100,
+  );
   return (
     <Panel position="bottom-right" className={styles.panel}>
       <section aria-label={t('tools.zoom-and-fit')} className={styles.cluster}>
@@ -27,7 +30,7 @@ export function ZoomCluster() {
           command="reset-zoom"
           description={t('tools.current-zoom', { percent })}
         >
-          <span>{percent}%</span>
+          <span>{shown}</span>
         </IconCommandButton>
         <IconCommandButton className={styles.control} command="fit-selection">
           <span aria-hidden="true">⊡</span>
