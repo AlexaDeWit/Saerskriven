@@ -185,11 +185,13 @@ saer render threat-model.yaml --format svg --out diagram.svg
 saer render threat-model.yaml --format png --out diagram.png
 saer render threat-model.yaml --format pdf --out threat-model.pdf
 saer render threat-model.yaml --format svg --out -
+saer convert threat-model.yaml --to saerskriven-yaml --out threat-model.yaml
+saer convert threat-model.yaml --to threat-dragon --out threat-model.json
 ```
 
-Both commands read Threat Dragon v2 JSON and Saerskriven YAML, and the content
-decides which: the file name is never consulted, so a model saved under any
-extension reads.
+`validate`, `render` and `convert` read Threat Dragon v2 JSON and Saerskriven
+YAML, and the content decides which: the file name is never consulted, so a
+model saved under any extension reads.
 
 `validate` prints one line naming the format and what the model holds, and
 warns on standard error wherever the file and the model do not correspond
@@ -218,6 +220,24 @@ The PDF is compiled by Typst and the PNG is rasterized by resvg, both of
 which the executable carries as WebAssembly modules together with the fonts
 they set text in, so both formats work with no network and on a machine that
 has neither Typst nor a browser installed.
+
+`convert` writes the model in the format `--to` names, `saerskriven-yaml` at
+the current `formatVersion` or `threat-dragon`, to the path `--out` names or
+to standard output with `--out -`. It reads OTM and TM-BOM files as well,
+converting them as [import](docs/import.md) does. A file already in the target
+format is merged onto the document it was read from, so a Threat Dragon file
+keeps what the model does not describe, and a Saerskriven YAML file comes out
+in the current writer's form, which moves a version 1 file to version 2.
+`--out` may name the input file itself when `--to` is the format it is already
+in: the document is written to a temporary file beside it and renamed over it
+once complete, following a symbolic link to the file it names, and a file the
+read refuses is left as it was. A symbolic link to nothing is refused rather
+than replaced. Converting a file to another format over itself, through any
+link or spelling, is refused with exit code 2 before anything is written. A
+document past the size Saerskriven reads is not written to a file. OTM and
+TM-BOM are read only, so `--to` refuses them. Whatever the read and the write
+did not carry exactly goes to standard error as a warning, and the command
+still writes the document and exits 0.
 
 | Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

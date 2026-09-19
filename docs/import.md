@@ -9,7 +9,8 @@ unsaved-changes confirmation. The result is an unsaved native model: Save
 writes YAML under the source file's stem and never writes back to the imported
 file. A refused import leaves the current model and file available. Over MCP,
 `saer_import` writes the converted model to a new file ([the MCP
-server](mcp.md)).
+server](mcp.md)). On the command line, `saer convert <file> --to
+saerskriven-yaml` writes it as native YAML ([usage](../README.md#usage)).
 
 The conversion report names generated values, changed representations, and
 omitted source fields that hold a value. Expand its details before dismissing

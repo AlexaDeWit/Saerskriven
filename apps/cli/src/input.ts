@@ -1,12 +1,16 @@
 import {
+  DetectionFailure,
   exceededReadLimit,
   hasDiverged,
+  importFormatOf,
+  importModel,
+  parseYaml,
   readAnyFormat,
   renderDivergences,
   renderReadFailure,
   type DetectedRead,
-  type DetectionFailure,
   type Divergence,
+  type ImportResult,
   type ReadFailure,
 } from '@saerskriven/formats';
 import { Either } from 'effect';
@@ -26,11 +30,24 @@ import {
 export function readModel(
   file: string,
 ): Either.Either<DetectedRead, CommandOutcome> {
-  return Either.flatMap(withinSizeBound(file), () => detected(file));
+  return readWith(file, readAnyFormat);
 }
 
-function describeReadFailure(failure: ReadFailure | DetectionFailure): string {
-  return lines(...renderReadFailure(failure));
+/**
+ * The file read as {@link readModel} reads it, or converted from OTM or
+ * TM-BOM where no codec claims it and its root names one of those formats.
+ */
+export function readConvertible(
+  file: string,
+): Either.Either<DetectedRead | ImportResult, CommandOutcome> {
+  return readWith(file, (text) =>
+    Either.orElse(readAnyFormat(text), (failure) =>
+      DetectionFailure.$is('NoFormatClaimed')(failure) &&
+      namesImportFormat(text)
+        ? importModel(text)
+        : Either.left(failure),
+    ),
+  );
 }
 
 /**
@@ -49,6 +66,21 @@ export function describeDivergences(
     : '';
 }
 
+function readWith<Read>(
+  file: string,
+  read: (text: string) => Either.Either<Read, ReadFailure | DetectionFailure>,
+): Either.Either<Read, CommandOutcome> {
+  return Either.flatMap(withinSizeBound(file), () =>
+    Either.match(readTextFile(file), {
+      onLeft: (reason) => Either.left(usageError(lines(`error: ${reason}`))),
+      onRight: (text) =>
+        Either.mapLeft(read(text), (failure) =>
+          invalidInput(describeReadFailure(failure)),
+        ),
+    }),
+  );
+}
+
 function withinSizeBound(file: string): Either.Either<void, CommandOutcome> {
   return withinReadBound(file, (observed) =>
     invalidInput(
@@ -57,12 +89,10 @@ function withinSizeBound(file: string): Either.Either<void, CommandOutcome> {
   );
 }
 
-function detected(file: string): Either.Either<DetectedRead, CommandOutcome> {
-  return Either.match(readTextFile(file), {
-    onLeft: (reason) => Either.left(usageError(lines(`error: ${reason}`))),
-    onRight: (text) =>
-      Either.mapLeft(readAnyFormat(text), (failure) =>
-        invalidInput(describeReadFailure(failure)),
-      ),
-  });
+function namesImportFormat(text: string): boolean {
+  return Either.isRight(Either.flatMap(parseYaml(text), importFormatOf));
+}
+
+function describeReadFailure(failure: ReadFailure | DetectionFailure): string {
+  return lines(...renderReadFailure(failure));
 }

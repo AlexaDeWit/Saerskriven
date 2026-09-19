@@ -1,6 +1,7 @@
 import { testDataPath } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { runCli, writeOutcome, type CliStreams } from './cli.js';
+import { convert } from './convert.js';
 import { render, renderOptionsSchema } from './render.js';
 import { validate } from './validate.js';
 import { cliVersion } from './version.js';
@@ -126,6 +127,25 @@ describe('the arguments as the outcome they ask for', () => {
       err: 'error: --format: must be svg, png, md or pdf\n',
     });
   });
+
+  it('hands convert the options it was given', async () => {
+    await expect(
+      runCli(['convert', model, '--to', 'threat-dragon', '--out', '-']),
+    ).resolves.toEqual(convert(model, { to: 'threat-dragon', out: '-' }));
+  });
+
+  it.each(['otm', 'tmbom'])(
+    'refuses %s as a format to convert to, since no codec writes it',
+    async (format) => {
+      await expect(
+        runCli(['convert', model, '--to', format, '--out', '-']),
+      ).resolves.toEqual({
+        code: 2,
+        out: '',
+        err: 'error: --to: must be threat-dragon or saerskriven-yaml\n',
+      });
+    },
+  );
 
   it('hands mcp install the options it was given, --file included', async () => {
     const outcome = await runCli([

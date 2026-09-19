@@ -60,6 +60,14 @@ export type WriteFailure = Data.TaggedEnum<{
  */
 export const WriteFailure = Data.taggedEnum<WriteFailure>();
 
+/** The two ways {@link overwrittenFile} can refuse, which check no revision. */
+export type OverwriteFailure = Extract<
+  WriteFailure,
+  { readonly _tag: 'PastReadBound' | 'Unwritten' }
+>;
+
+type Unwritten = Extract<WriteFailure, { readonly _tag: 'Unwritten' }>;
+
 /** Where a write is going: the spelling a result names, and the path on disk. */
 export type WriteTarget = {
   readonly file: string;
@@ -202,14 +210,26 @@ export function replacedFile(
       bytes,
       (temporary) =>
         Either.flatMap(unmovedSince(target, quoted), () =>
-          Either.try({
-            try: () => {
-              renameSync(temporary, target.path);
-            },
-            catch: (error) => unwritten(target.file, error),
-          }),
+          renamedOnto(target, temporary),
         ),
       created,
+    ),
+  );
+}
+
+/**
+ * `text` in place of whatever `target` holds, or as a new file where it holds
+ * nothing, through a temporary file renamed onto it. It is {@link
+ * replacedFile} with no revision checked: an MCP tool uses `replacedFile`,
+ * and this is for a writer that never read the target.
+ */
+export function overwrittenFile(
+  target: WriteTarget,
+  text: string,
+): Either.Either<string, OverwriteFailure> {
+  return Either.flatMap(readableBytes(target, text), (bytes) =>
+    throughTemporary(target, bytes, (temporary) =>
+      renamedOnto(target, temporary),
     ),
   );
 }
@@ -284,7 +304,7 @@ const errnoSchema = z.object({ code: z.string() });
 function readableBytes(
   target: WriteTarget,
   text: string,
-): Either.Either<Buffer, WriteFailure> {
+): Either.Either<Buffer, OverwriteFailure> {
   const bytes = Buffer.from(text, 'utf8');
   return withinTextBytes(bytes.length)
     ? Either.right(bytes)
@@ -293,12 +313,12 @@ function readableBytes(
       );
 }
 
-function throughTemporary(
+function throughTemporary<Failure extends WriteFailure>(
   target: WriteTarget,
   bytes: Uint8Array,
-  commit: (temporary: string) => Either.Either<void, WriteFailure>,
+  commit: (temporary: string) => Either.Either<void, Failure>,
   created?: number,
-): Either.Either<string, WriteFailure> {
+): Either.Either<string, Failure | Unwritten> {
   const temporary = join(
     dirname(target.path),
     `.${basename(target.path)}.${randomUUID()}.saer`,
@@ -323,7 +343,7 @@ function staged(
   temporary: string,
   bytes: Uint8Array,
   created?: number,
-): Either.Either<void, WriteFailure> {
+): Either.Either<void, Unwritten> {
   const mode = modeOf(target.path) ?? created;
   return Either.try({
     try: () => {
@@ -335,6 +355,18 @@ function staged(
       if (mode !== undefined) {
         chmodSync(temporary, mode);
       }
+    },
+    catch: (error) => unwritten(target.file, error),
+  });
+}
+
+function renamedOnto(
+  target: WriteTarget,
+  temporary: string,
+): Either.Either<void, Unwritten> {
+  return Either.try({
+    try: () => {
+      renameSync(temporary, target.path);
     },
     catch: (error) => unwritten(target.file, error),
   });
@@ -393,7 +425,7 @@ function modeOf(path: string): number | undefined {
   return Either.getOrUndefined(Either.try(() => statSync(path).mode & 0o777));
 }
 
-function unwritten(file: string, error: unknown): WriteFailure {
+function unwritten(file: string, error: unknown): Unwritten {
   return WriteFailure.Unwritten({ file, reason: reasonOf(error) });
 }
 
