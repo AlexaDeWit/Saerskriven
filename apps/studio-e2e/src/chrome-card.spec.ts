@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { committedText } from '@saerskriven/model/fixtures';
 import {
   type Box,
   centreOf,
@@ -184,9 +185,7 @@ const opensOnScreen = async (
   const bottom = Math.round(drawn.y + drawn.height);
   expect(Math.round(drawn.x - card.x)).toBeGreaterThanOrEqual(0);
   expect(Math.round(drawn.x - card.x)).toBeLessThanOrEqual(1);
-  expect(Math.round(drawn.x + drawn.width)).toBeLessThanOrEqual(
-    viewport?.width ?? 0,
-  );
+  expect(drawn.x + drawn.width).toBeLessThanOrEqual(viewport?.width ?? 0);
   expect(top).toBeGreaterThanOrEqual(0);
   expect(bottom).toBeLessThanOrEqual(viewport?.height ?? 0);
   expect(
@@ -235,28 +234,47 @@ test(
   },
 );
 
+const unbrokenName =
+  'quarterly_clinic_booking_threat_model_review_final_v2_with_appendices.json';
+
+const menuFitsAndEverySubmenuOpensInPlace = async (
+  page: Page,
+  burger: Box,
+): Promise<void> => {
+  const width = page.viewportSize()?.width ?? 0;
+  for (const name of submenus) {
+    await openMenu(page);
+    const panel = await screenBoxOf(rootMenu(page));
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    expect(
+      await rootMenu(page).evaluate(
+        (menu) => menu.scrollWidth <= menu.clientWidth,
+      ),
+    ).toBe(true);
+    await opensOnScreen(page, name);
+    await staysInPlace(page, burger);
+    await closeMenu(page);
+  }
+};
+
 test(
   'a long file name leaves the menu inside the screen, and a click opens each submenu at the card edge without moving the chrome',
   { tag: '@phone' },
   async ({ page }) => {
     await openFile(page, featureCompleteFile);
     const burger = await screenBoxOf(menuButton(page));
-    const width = page.viewportSize()?.width ?? 0;
+    await menuFitsAndEverySubmenuOpensInPlace(page, burger);
 
-    for (const name of submenus) {
-      await openMenu(page);
-      const panel = await screenBoxOf(rootMenu(page));
-      expect(panel.x).toBeGreaterThanOrEqual(0);
-      expect(panel.x + panel.width).toBeLessThanOrEqual(width);
-      expect(
-        await rootMenu(page).evaluate(
-          (menu) => menu.scrollWidth <= menu.clientWidth,
-        ),
-      ).toBe(true);
-      await opensOnScreen(page, name);
-      await staysInPlace(page, burger);
-      await closeMenu(page);
-    }
+    await openText(
+      page,
+      unbrokenName,
+      committedText('threat-dragon', 'feature-complete.json'),
+    );
+    await openMenu(page);
+    await expect(page.getByTestId('file-state')).toContainText(unbrokenName);
+    await closeMenu(page);
+    await menuFitsAndEverySubmenuOpensInPlace(page, burger);
   },
 );
 

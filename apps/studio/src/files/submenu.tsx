@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
+import { panelPlacement } from './menu-items.js';
 import styles from './menu.module.css';
 
 /** The element a {@link Submenu} lines its start edge up with: row one of the chrome card, on screen at every width. */
@@ -111,6 +112,7 @@ export function Submenu({ children, label, trigger }: SubmenuProps) {
         alignOffset={placement.alignOffset}
         avoidCollisions={false}
         className={`${styles.panel} ${styles.submenu}`}
+        collisionPadding={panelPlacement.collisionPadding}
         ref={place}
         sideOffset={placement.sideOffset}
         tabIndex={0}

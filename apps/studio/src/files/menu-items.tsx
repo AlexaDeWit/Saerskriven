@@ -1,5 +1,5 @@
 import { DropdownMenu } from 'radix-ui';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
@@ -36,7 +36,27 @@ type MenuItemProps = {
   readonly onChoose: () => void;
 };
 
-/** One item of the menu, its chord drawn beside it and declared for assistive technology. */
+function Alternatives({ shortcut }: { readonly shortcut: ShortcutText }) {
+  const { t } = useTranslator();
+  const separator = t('commands.either-chord', { first: '', second: '' });
+
+  return (
+    <span aria-hidden="true" className={`${styles.chord} ${styles.chords}`}>
+      {shortcut.alternatives.map((chord, index) => (
+        <Fragment key={chord}>
+          {index > 0 && separator}
+          <span className={styles.alternative}>{chord}</span>
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * One item of the menu, its chord drawn beside it and declared for assistive
+ * technology. A row too narrow for both wraps between the alternative chords,
+ * never inside one.
+ */
 export function MenuItem({
   shortcut,
   children,
@@ -57,11 +77,7 @@ export function MenuItem({
       }}
     >
       <span>{children}</span>
-      {shortcut !== undefined && (
-        <span aria-hidden="true" className={styles.chord}>
-          {shortcut.chord}
-        </span>
-      )}
+      {shortcut !== undefined && <Alternatives shortcut={shortcut} />}
     </DropdownMenu.Item>
   );
 }
