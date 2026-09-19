@@ -64,7 +64,7 @@ function tmbomThreats(
       title: context.text([threat.title]),
       description: context.text([
         threat.description,
-        `Trigger: ${threat.event}`,
+        ...(threat.event === '' ? [] : [`Trigger: ${threat.event}`]),
       ]),
       severity: 'undecided',
       status: 'open',
@@ -119,8 +119,9 @@ function tmbomControls(
             parameters: { name: control.symbolic_name },
           },
           [
-            'Mitigation: ',
-            control.title,
+            ...(control.title === ''
+              ? ['Mitigation']
+              : ['Mitigation: ', control.title]),
             ' (',
             status,
             ', source status ',

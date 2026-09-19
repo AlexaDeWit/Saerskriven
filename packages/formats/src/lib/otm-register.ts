@@ -62,7 +62,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
       title: context.text([definition.name]),
       description: context.text([
         definition.description ?? '',
-        state === undefined ? '' : `Source status: ${state}`,
+        state === undefined || state === '' ? '' : `Source status: ${state}`,
       ]),
       category: {
         methodology: 'custom',
@@ -132,9 +132,12 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
             parameters: { id: definition.id },
           },
           [
-            'Mitigation: ',
-            definition.name,
-            ...(description === '' ? [] : ['. ', description]),
+            ...(definition.name === ''
+              ? ['Mitigation']
+              : ['Mitigation: ', definition.name]),
+            ...(description === ''
+              ? []
+              : [definition.name === '' ? ': ' : '. ', description]),
           ],
         ),
       ];
@@ -197,7 +200,9 @@ function otmMitigations(
       title: context.text([mitigation.name]),
       prose: context.text([
         mitigation.description ?? '',
-        given.state == null ? '' : `Source status: ${given.state}`,
+        given.state == null || given.state === ''
+          ? ''
+          : `Source status: ${given.state}`,
       ]),
       status,
       threats: [threatId],

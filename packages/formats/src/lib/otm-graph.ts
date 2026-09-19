@@ -89,7 +89,9 @@ function otmComponents(
     }
     const description = context.text([
       component.description ?? '',
-      `Source component type: ${component.type}`,
+      ...(component.type === ''
+        ? []
+        : [`Source component type: ${component.type}`]),
       dataProse(
         data?.processed ?? [],
         'components.assets.processed',
