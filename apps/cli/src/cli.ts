@@ -1,9 +1,14 @@
-import { escapedForTerminal } from '@saerskriven/formats';
+import { escapedForTerminal, formatNameSchema } from '@saerskriven/formats';
 import { defaultLocale, locales } from '@saerskriven/i18n';
 import { reasonOf } from '@saerskriven/mcp';
 import { Command } from 'commander';
 import { Either } from 'effect';
 import type { z } from 'zod';
+import {
+  convert,
+  convertOptionsSchema,
+  type ConvertOptions,
+} from './convert.js';
 import {
   installMcp,
   installOptionsSchema,
@@ -28,6 +33,11 @@ type Request =
       readonly kind: 'render';
       readonly file: string;
       readonly options: RenderOptions;
+    }
+  | {
+      readonly kind: 'convert';
+      readonly file: string;
+      readonly options: ConvertOptions;
     }
   | { readonly kind: 'mcp'; readonly options: McpOptions }
   | { readonly kind: 'mcp-install'; readonly options: InstallOptions }
@@ -134,6 +144,7 @@ function programFor(state: ParseState): Command {
     });
   validateCommand(program, state);
   renderCommand(program, state);
+  convertCommand(program, state);
   mcpCommand(program, state);
   return program;
 }
@@ -181,6 +192,24 @@ function renderCommand(program: Command, state: ParseState): void {
       const parsed = renderOptionsSchema.safeParse(options);
       state.request = parsed.success
         ? { kind: 'render', file, options: parsed.data }
+        : refused(parsed.error.issues);
+    });
+}
+
+function convertCommand(program: Command, state: ParseState): void {
+  program
+    .command('convert')
+    .description('write a model file in another format, or rewrite it')
+    .argument('<file>', 'the model file to read')
+    .option('--to <format>', formatNameSchema.options.join(' or '))
+    .option(
+      '--out <path>',
+      'the file to write, which may be <file> itself, or - for standard output',
+    )
+    .action((file: string, options: unknown) => {
+      const parsed = convertOptionsSchema.safeParse(options);
+      state.request = parsed.success
+        ? { kind: 'convert', file, options: parsed.data }
         : refused(parsed.error.issues);
     });
 }
@@ -244,6 +273,8 @@ function outcomeOf(request: Request): Promise<CommandOutcome> {
       return Promise.resolve(validate(request.file));
     case 'render':
       return render(request.file, request.options);
+    case 'convert':
+      return Promise.resolve(convert(request.file, request.options));
     case 'mcp':
       return serveMcp(request.options);
     case 'mcp-install':

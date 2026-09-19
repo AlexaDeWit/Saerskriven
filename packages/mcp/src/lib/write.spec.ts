@@ -14,6 +14,7 @@ import {
   WriteFailure,
   createdFile,
   namedFile,
+  overwrittenFile,
   renderWriteFailure,
   replacedFile,
   serialized,
@@ -218,6 +219,27 @@ describe('a write past the size this server reads', () => {
     expect(readdirSync(tree.root)).not.toContain('fresh.yaml');
     expect(renderWriteFailure(failureOf(refused)).join('\n')).toContain(
       'past the size this server reads',
+    );
+  });
+});
+
+describe('overwriting a file', () => {
+  it('replaces bytes that changed since any read, having no revision to check', () => {
+    const tree = editableTree();
+    writeFileSync(join(tree.root, modelFile), 'saved elsewhere\n');
+    const written = overwrittenFile(target(tree.root, modelFile), 'replaced\n');
+    expect(Either.isRight(written)).toEqual(true);
+    expect(readFileSync(join(tree.root, modelFile), 'utf8')).toEqual(
+      'replaced\n',
+    );
+  });
+
+  it('creates a path that holds nothing, leaving no temporary file behind', () => {
+    const tree = editableTree();
+    const before = readdirSync(tree.root);
+    overwrittenFile(target(tree.root, 'fresh.yaml'), 'created\n');
+    expect(new Set(readdirSync(tree.root))).toEqual(
+      new Set([...before, 'fresh.yaml']),
     );
   });
 });

@@ -25,6 +25,7 @@ export {
   type Divergence,
 } from './lib/divergence.js';
 export {
+  importFormatOf,
   importFormatSchema,
   importModel,
   type ImportFormat,

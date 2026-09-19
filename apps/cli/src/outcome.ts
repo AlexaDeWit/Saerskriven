@@ -1,3 +1,5 @@
+import { Either } from 'effect';
+
 /**
  * What the process answers with: 0 for the command doing what it was asked,
  * 1 for a file Saerskriven read and refused, and 2 for an invocation it
@@ -49,4 +51,26 @@ export function usageError(err: string): CommandOutcome {
  */
 export function lines(...texts: readonly string[]): string {
   return texts.map((text) => `${text}\n`).join('');
+}
+
+/**
+ * `content` on standard output where `out` is `-`, and otherwise handed to
+ * `write` for the path `out` names, whose refusal lines exit 2. `warning`
+ * goes to standard error either way.
+ */
+export function delivered<Content extends CommandOutput>(
+  out: string,
+  content: Content,
+  warning: string,
+  write: (
+    path: string,
+    content: Content,
+  ) => Either.Either<unknown, readonly string[]>,
+): CommandOutcome {
+  return out === '-'
+    ? succeeded(content, warning)
+    : Either.match(write(out, content), {
+        onLeft: (refusal) => usageError(lines(...refusal)),
+        onRight: () => succeeded('', warning),
+      });
 }

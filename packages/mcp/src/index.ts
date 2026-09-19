@@ -4,9 +4,11 @@ export { createSaerskrivenServer, serverName } from './lib/server.js';
 export {
   WriteFailure,
   createdFile,
+  overwrittenFile,
   renderWriteFailure,
   replacedFile,
   serialized,
+  writtenThrough,
   type WriteTarget,
 } from './lib/write.js';
 export {

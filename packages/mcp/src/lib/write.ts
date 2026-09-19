@@ -202,14 +202,26 @@ export function replacedFile(
       bytes,
       (temporary) =>
         Either.flatMap(unmovedSince(target, quoted), () =>
-          Either.try({
-            try: () => {
-              renameSync(temporary, target.path);
-            },
-            catch: (error) => unwritten(target.file, error),
-          }),
+          renamedOnto(target, temporary),
         ),
       created,
+    ),
+  );
+}
+
+/**
+ * `text` in place of whatever `target` holds, or as a new file where it holds
+ * nothing, through a temporary file renamed onto it. It is {@link
+ * replacedFile} with no revision checked, for a writer that holds no read of
+ * the target to quote.
+ */
+export function overwrittenFile(
+  target: WriteTarget,
+  text: string,
+): Either.Either<string, WriteFailure> {
+  return Either.flatMap(readableBytes(target, text), (bytes) =>
+    throughTemporary(target, bytes, (temporary) =>
+      renamedOnto(target, temporary),
     ),
   );
 }
@@ -335,6 +347,18 @@ function staged(
       if (mode !== undefined) {
         chmodSync(temporary, mode);
       }
+    },
+    catch: (error) => unwritten(target.file, error),
+  });
+}
+
+function renamedOnto(
+  target: WriteTarget,
+  temporary: string,
+): Either.Either<void, WriteFailure> {
+  return Either.try({
+    try: () => {
+      renameSync(temporary, target.path);
     },
     catch: (error) => unwritten(target.file, error),
   });
