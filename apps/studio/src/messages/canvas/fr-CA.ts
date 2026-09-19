@@ -90,6 +90,8 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'toggle-interactivity': 'Activer ou désactiver la modification',
   minimap: 'Vue d’ensemble du diagramme',
   handle: 'Point de connexion',
+  'element-role': 'élément',
+  'flow-role': 'flux',
   'resize-top': 'Redimensionner {element} par le haut',
   'resize-right': 'Redimensionner {element} par la droite',
   'resize-bottom': 'Redimensionner {element} par le bas',

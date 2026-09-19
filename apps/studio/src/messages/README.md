@@ -74,8 +74,7 @@ as an exception:
   [`../language-preference.ts`](../language-preference.ts).
 - The product name `Saerskriven` in the page heading, and a file format's
   name.
-- React Flow's attribution link, and the role descriptions `node` and `edge`
-  React Flow fixes on every drawn element and edge.
+- React Flow's attribution link, whose accessible name React Flow fixes.
 - The comma `spoken` in [`../canvas/names.ts`](../canvas/names.ts) puts
   between the parts of a canvas item's accessible name, and the separators of
   a `list` parameter, which `Intl.ListFormat` supplies for the locale.

@@ -78,6 +78,8 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'toggle-interactivity': 'Toggle editing',
   minimap: 'Diagram overview',
   handle: 'Connection point',
+  'element-role': 'element',
+  'flow-role': 'flow',
   'resize-top': 'Resize {element} from top',
   'resize-right': 'Resize {element} from right',
   'resize-bottom': 'Resize {element} from bottom',

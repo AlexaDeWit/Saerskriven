@@ -98,9 +98,8 @@ const exceptions: readonly {
     reason: 'a decorative glyph is hidden from assistive technology',
   },
   {
-    text: /^(?:React Flow|React Flow attribution|node|edge)$/u,
-    reason:
-      "React Flow's attribution link and the role descriptions it fixes on a node and an edge",
+    text: /^(?:React Flow|React Flow attribution)$/u,
+    reason: "React Flow's attribution link",
   },
   {
     text: /^[\w.]+: Invalid input: /u,

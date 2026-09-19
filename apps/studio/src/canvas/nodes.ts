@@ -27,9 +27,9 @@ export type DiagramGraph = {
 
 /**
  * The laid-out diagram as React Flow takes it, each element carrying its
- * accessible name, its selection and whether a flow can end on it, followed
- * by the free-end anchors. Every object is new on each call. `layout` must be
- * laid out from `model`.
+ * accessible name, its role description, its selection and whether a flow
+ * can end on it, followed by the free-end anchors. Every object is new on
+ * each call. `layout` must be laid out from `model`.
  */
 export function diagramGraph(
   layout: CanvasLayout,
@@ -40,6 +40,8 @@ export function diagramGraph(
   const names = accessibleNames(layout, model, t);
   const ends = new Set<string>(flowEnds(layout).map((node) => node.id));
   const selected = new Set<string>(selection);
+  const elementRole = { 'aria-roledescription': t('canvas.element-role') };
+  const flowRole = { 'aria-roledescription': t('canvas.flow-role') };
   return {
     nodes: [
       ...toReactFlowNodes(layout).map((node) => {
@@ -49,6 +51,7 @@ export function diagramGraph(
           selected: isSelected,
           connectable: ends.has(node.id),
           ariaLabel: names.get(node.id),
+          domAttributes: elementRole,
           zIndex: isSelected && !isBoundary(node.data.node) ? 1 : node.zIndex,
         };
       }),
@@ -58,6 +61,7 @@ export function diagramGraph(
       ...edge,
       selected: selected.has(edge.id),
       ariaLabel: names.get(edge.id),
+      domAttributes: flowRole,
     })),
   };
 }

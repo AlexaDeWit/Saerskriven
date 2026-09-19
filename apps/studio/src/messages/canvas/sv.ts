@@ -83,6 +83,8 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'toggle-interactivity': 'Slå på eller av redigering',
   minimap: 'Översikt över diagrammet',
   handle: 'Anslutningspunkt',
+  'element-role': 'element',
+  'flow-role': 'flöde',
   'resize-top': 'Ändra storlek på {element} från överkanten',
   'resize-right': 'Ändra storlek på {element} från högerkanten',
   'resize-bottom': 'Ändra storlek på {element} från nederkanten',

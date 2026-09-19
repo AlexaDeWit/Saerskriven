@@ -282,8 +282,9 @@ export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
 /**
  * One anchor node per free flow end, so React Flow resolves an edge that
  * ends at a position belonging to no element. An anchor is not draggable,
- * not selectable, not focusable and hidden from assistive technology: it is
- * a place for an edge to end, not a thing on the diagram.
+ * not selectable, not focusable, hidden from assistive technology and
+ * without React Flow's role description: it is a place for an edge to end,
+ * not a thing on the diagram.
  */
 export function freeEndNodes(layout: CanvasLayout): CanvasFreeEndNode[] {
   return layout.edges.flatMap((edge) => [
@@ -480,7 +481,7 @@ function anchorOf(edge: CanvasEdge, side: FlowEndSide): CanvasFreeEndNode[] {
       focusable: false,
       connectable: false,
       deletable: false,
-      domAttributes: { 'aria-hidden': true },
+      domAttributes: { 'aria-hidden': true, 'aria-roledescription': undefined },
     },
   ];
 }

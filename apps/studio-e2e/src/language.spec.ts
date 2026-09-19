@@ -37,6 +37,8 @@ const readers = {
     register: 'Register as Markdown',
     registerTitle: 'threat register',
     severity: 'Severity',
+    element: 'element',
+    flow: 'flow',
   },
   'fr-CA': {
     language: 'Français (Canada)',
@@ -49,6 +51,8 @@ const readers = {
     register: 'Registre en Markdown',
     registerTitle: 'Registre des menaces',
     severity: 'Gravité',
+    element: 'élément',
+    flow: 'flux',
   },
   sv: {
     language: 'Svenska',
@@ -61,6 +65,8 @@ const readers = {
     register: 'Register som Markdown',
     registerTitle: 'Hotregister',
     severity: 'Allvarlighetsgrad',
+    element: 'element',
+    flow: 'flöde',
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
@@ -187,7 +193,7 @@ for (const { locale, browser, prefill } of passes) {
       await expectChosen(page, reader.language);
     });
 
-    test('names its controls, words and dismisses a refusal, and passes the audit', async ({
+    test('names its controls and canvas roles, words and dismisses a refusal, and passes the audit', async ({
       page,
     }) => {
       const reader = readers[locale];
@@ -204,6 +210,15 @@ for (const { locale, browser, prefill } of passes) {
       await expect(page.getByRole('application')).toHaveAccessibleName(
         reader.diagram,
       );
+      await expect(nodeNamed(page, /^Web shop, /u)).toHaveAttribute(
+        'aria-roledescription',
+        reader.element,
+      );
+      await expect(
+        page.getByRole('group', {
+          name: /^browse the catalogue and fill a basket, /u,
+        }),
+      ).toHaveAttribute('aria-roledescription', reader.flow);
 
       await openText(page, 'broken.yaml', refusedYaml);
       await expect(page.getByTestId('failure-notice')).toContainText(
