@@ -94,6 +94,18 @@ it('maps each assumption validity onto its status and keeps the description as p
   ).toBe(true);
 });
 
+it('drops the Trigger line from a threat description when the event is empty, leaving no separator behind', () => {
+  const document = tmbomFixture();
+  const first = document.threats?.[0];
+  if (first === undefined) throw new Error('The fixture lacks a threat');
+  document.threats = [
+    { ...first, event: '' },
+    ...(document.threats?.slice(1) ?? []),
+  ];
+  const read = imported(document);
+  expect(read.model.threats[0].description).toBe(first.description);
+});
+
 it('imports active and pending controls naming a threat as linked records, without reviving retired or declined work', () => {
   const document = tmbomFixture();
   document.controls = [
@@ -198,6 +210,28 @@ it('ends an unlinked control line with an empty description after its status, wi
   expect(after).toHaveLength(before.length + 1);
   expect(after.at(-1)).toBe(
     'Mitigation: Unlinked work (implemented, source status active).',
+  );
+});
+
+it('opens an unlinked control line with the bare word Mitigation when the title is empty, with no colon beside it', () => {
+  const baseline = tmbomFixture();
+  baseline.controls = [];
+  const document = tmbomFixture();
+  document.controls = [
+    control(document, {
+      symbolic_name: 'unlinked-control',
+      title: '',
+      description: 'Work on no threat.',
+      status: 'active',
+      threats: [],
+    }),
+  ];
+  const read = imported(document);
+  const before = paragraphs(imported(baseline).model.metadata.description);
+  const after = paragraphs(read.model.metadata.description);
+  expect(after).toHaveLength(before.length + 1);
+  expect(after.at(-1)).toBe(
+    'Mitigation (implemented, source status active). Work on no threat.',
   );
 });
 

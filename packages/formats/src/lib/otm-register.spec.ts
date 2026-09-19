@@ -65,6 +65,35 @@ it.each([
   },
 );
 
+it.each([
+  ['no', undefined, 'Mitigation'],
+  ['a', 'Work no occurrence names.', 'Mitigation: Work no occurrence names.'],
+] as const)(
+  'opens an unattached mitigation definition line with the bare word Mitigation when its name is empty, keeping %s description',
+  (_, description, expected) => {
+    const document = otmFixture();
+    document.mitigations = [
+      ...(document.mitigations?.slice(0, 1) ?? []),
+      {
+        id: 'unattached-mitigation',
+        name: '',
+        riskReduction: 0,
+        ...(description === undefined ? {} : { description }),
+      },
+    ];
+    const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+    const line = read.model.metadata.description.split('\n\n').at(-1);
+    expect(line).toBe(expected);
+    expect(
+      read.divergences.filter(
+        (entry) =>
+          entry.detail.code === 'otm-mitigation-unlinked' &&
+          entry.detail.parameters.id === 'unattached-mitigation',
+      ),
+    ).toHaveLength(1);
+  },
+);
+
 it('reports a mitigation reference with no mitigation only by the fields that hold a value', () => {
   const document = otmFixture();
   document.components?.[1].threats?.[0].mitigations?.push(
@@ -98,4 +127,40 @@ it('reports a mitigation reference with no mitigation only by the fields that ho
       },
     ]),
   );
+});
+
+it('drops the Source status line from a threat description when the occurrence state is empty', () => {
+  const document = otmFixture();
+  const occurrence = document.components?.[1].threats?.[0];
+  if (occurrence === undefined) {
+    throw new Error('The fixture lacks the expected occurrence');
+  }
+  document.dataflows = (document.dataflows ?? []).filter(
+    (flow) => flow.id !== 'cc-store-in-db',
+  );
+  occurrence.state = '';
+  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const threat = read.model.threats.find((entry) => entry.title === 'Threat 1');
+  if (threat === undefined) throw new Error('The occurrence was not imported');
+  expect(threat.description).toBe('Description fo the threat number 1');
+});
+
+it('drops the Source status line from a mitigation prose when the occurrence state is empty', () => {
+  const document = otmFixture();
+  const given = document.components?.[1].threats?.[0].mitigations?.[0];
+  if (given === undefined || given === null) {
+    throw new Error('The fixture lacks the expected mitigation reference');
+  }
+  document.dataflows = (document.dataflows ?? []).filter(
+    (flow) => flow.id !== 'cc-store-in-db',
+  );
+  given.state = '';
+  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const mitigation = read.model.mitigations.find(
+    (entry) => entry.title === 'This is the name of mitigation 1',
+  );
+  if (mitigation === undefined) {
+    throw new Error('The occurrence was not imported');
+  }
+  expect(mitigation.prose).toBe('Description for mitigation 1');
 });
