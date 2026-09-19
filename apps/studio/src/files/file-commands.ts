@@ -6,6 +6,7 @@ import {
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FileCommands } from '../commands/surface.js';
+import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import type { State } from '../store/state.js';
@@ -174,7 +175,12 @@ export function useFileSession(
       const settle = async (): Promise<void> => {
         setChoosing(false);
         setReport(undefined);
-        const planned = planSave(modelStore.getState(), format);
+        const { t } = activeTranslator();
+        const planned = planSave(
+          modelStore.getState(),
+          format,
+          t('defaults.untitled-file'),
+        );
         land(
           await bridge.saveAs(
             planned.target.name,
@@ -193,7 +199,12 @@ export function useFileSession(
     const store = async (): Promise<void> => {
       setReport(undefined);
       const state = modelStore.getState();
-      const planned = planSave(state, formatOf(state.file));
+      const { t } = activeTranslator();
+      const planned = planSave(
+        state,
+        formatOf(state.file),
+        t('defaults.untitled-file'),
+      );
       land(
         await bridge.save(planned.target.name, planned.written.output),
         planned,
@@ -204,14 +215,16 @@ export function useFileSession(
       setReport(undefined);
       const state = modelStore.getState();
       const current = formatOf(state.file);
-      let planned = planSave(state, current);
+      const { t } = activeTranslator();
+      const untitled = t('defaults.untitled-file');
+      let planned = planSave(state, current, untitled);
       const outcome = await bridge.saveAs(
         planned.target.name,
         saveTypes(formatsFrom(current)),
         (chosen) => {
           const format = formatOfName(chosen) ?? current;
           if (format !== planned.target.source.format) {
-            planned = planSave(state, format);
+            planned = planSave(state, format, untitled);
           }
           return planned.written.output;
         },
@@ -352,8 +365,12 @@ export function useFileSession(
   );
 }
 
-function planSave(state: State, format: FormatName): PlannedSave {
-  const target = saveTarget(state.file, format);
+function planSave(
+  state: State,
+  format: FormatName,
+  untitled: string,
+): PlannedSave {
+  const target = saveTarget(state.file, format, untitled);
   return {
     target,
     written: writeThrough(state.present, target.source),

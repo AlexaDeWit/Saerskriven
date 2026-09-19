@@ -163,6 +163,11 @@ describe('savedBy', () => {
 });
 
 describe('saveTarget', () => {
+  afterEach(() => {
+    chooseLanguage('en-CA');
+    globalThis.localStorage.clear();
+  });
+
   it('proposes a file in the native format while the model is in none', () => {
     expect(saveTarget(FileLifecycle.NoFile(), 'saerskriven-yaml')).toEqual({
       name: 'threat-model.yaml',
@@ -183,6 +188,28 @@ describe('saveTarget', () => {
 
   it('has nothing to merge onto when the target is another format', () => {
     expect(saveTarget(openedForeign, 'saerskriven-yaml')).toEqual({
+      name: 'model.yaml',
+      source: nativeSource,
+    });
+  });
+
+  it.each(['en-CA', 'fr-CA'] as const)(
+    'proposes the untitled stem in the language it is given (%s)',
+    (locale) => {
+      chooseLanguage(locale);
+      const untitled = activeTranslator().t('defaults.untitled-file');
+
+      expect(
+        saveTarget(FileLifecycle.NoFile(), 'saerskriven-yaml', untitled),
+      ).toEqual({
+        name: `${untitled}.yaml`,
+        source: nativeSource,
+      });
+    },
+  );
+
+  it('keeps an opened file its own name, whatever the untitled stem given', () => {
+    expect(saveTarget(openedNative, 'saerskriven-yaml', 'hotmodell')).toEqual({
       name: 'model.yaml',
       source: nativeSource,
     });

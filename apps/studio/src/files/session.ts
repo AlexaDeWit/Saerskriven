@@ -83,9 +83,16 @@ export function formatOfName(name: string): FormatName | undefined {
   );
 }
 
-/** Replaces the extension and supplies a stem when the name has none. */
-export function proposedName(name: string, format: FormatName): string {
-  return withExtension(name, formatFiles[format].extensions[0], unnamedModel);
+/**
+ * Replaces the extension and supplies a stem when the name has none. A
+ * caller with a translator passes the stem in the active locale.
+ */
+export function proposedName(
+  name: string,
+  format: FormatName,
+  untitled: string = unnamedModel,
+): string {
+  return withExtension(name, formatFiles[format].extensions[0], untitled);
 }
 
 /**
@@ -106,21 +113,26 @@ export type SaveTarget = {
   readonly source: RetainedSource;
 };
 
-/** Same-format saves retain the source document for merging. Other formats project the model. */
+/**
+ * Same-format saves retain the source document for merging. Other formats
+ * project the model. A caller with a translator passes the stem an unnamed
+ * document proposes in the active locale.
+ */
 export function saveTarget(
   file: FileLifecycle,
   format: FormatName,
+  untitled: string = unnamedModel,
 ): SaveTarget {
   return FileLifecycle.$match(file, {
     NoFile: () => ({
-      name: proposedName(unnamedModel, format),
+      name: proposedName(untitled, format, untitled),
       source: { format, document: undefined },
     }),
     Opened: ({ name, source }) =>
       source.format === format
         ? { name, source }
         : {
-            name: proposedName(name, format),
+            name: proposedName(name, format, untitled),
             source: { format, document: undefined },
           },
   });

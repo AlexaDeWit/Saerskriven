@@ -116,6 +116,12 @@ later change of language renames nothing. `defaults` holds those names, and
 `canvas/elements.ts`, `canvas/diagrams.ts` and `panel/threats.ts` resolve one
 at creation.
 
+The stem a save or export proposes for an unnamed document is not model
+content, so it is not written once: `files/session.ts` and
+`files/export-commands.ts` resolve `defaults.untitled-file` and
+`defaults.untitled-model` again each time a picker opens, and a later change
+of language changes the next proposal.
+
 ## Choosing the language
 
 The Language item in the menu offers en-CA, fr-CA and sv, each under its own
