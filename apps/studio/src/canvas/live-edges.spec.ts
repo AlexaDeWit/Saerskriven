@@ -4,10 +4,17 @@ import {
   type CanvasFlowEdge,
   type FlowLabelPlacement,
 } from '@saerskriven/canvas';
+import type { Point } from '@saerskriven/model';
+import {
+  boxAt,
+  elementId,
+  flowFrom,
+  modelWith,
+} from '@saerskriven/model/fixtures';
 import { act, renderHook } from '@testing-library/react';
 import type { NodeChange } from '@xyflow/react';
 import { activeTranslator } from '../messages/locale.js';
-import { canvasModel, noteElement, openCanvas } from './canvas.fixtures.js';
+import { openCanvas } from './canvas.fixtures.js';
 import { useLiveEdges } from './live-edges.js';
 import {
   diagramGraph,
@@ -17,35 +24,48 @@ import {
 } from './nodes.js';
 
 const { t } = activeTranslator();
-const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
-const moving = [noteElement];
+
+const drifter = elementId('el-drifter');
+const drifterSize = { width: 120, height: 80 };
+const endSize = { width: 120, height: 60 };
+const overlap = 5;
+
+const model = modelWith({
+  elements: [
+    boxAt('el-source', 0, 0, 'actor', endSize),
+    boxAt('el-target', 600, 0, 'actor', endSize),
+    flowFrom('el-flow', 'el-source', 'el-target', 'a flow with room'),
+    boxAt('el-drifter', 0, 600, 'actor', drifterSize),
+  ],
+});
+
+const layout = layoutDiagram(model.diagrams[0], model);
+const moving = [drifter];
 const elements = elementIds(layout);
 const positions = nodesById(layout);
+const labelled = layout.edges[0];
+const settled = layout.edges.map((edge) => edge.label);
+
+const onto = (): Point => {
+  const at = labelled.label.name.at;
+  const beyond = at.y < labelled.source.y;
+  return {
+    x: at.x - drifterSize.width / 2,
+    y: beyond ? at.y - drifterSize.height + overlap : at.y - overlap,
+  };
+};
+
+const dragTo = (at: Point): NodeChange<DiagramNode>[] => [
+  { id: drifter, type: 'position', position: at, dragging: true },
+];
 
 const labelsOf = (edges: readonly CanvasFlowEdge[]): FlowLabelPlacement[] =>
   edges.flatMap((edge) =>
     edge.data === undefined ? [] : [edge.data.edge.label],
   );
 
-const onto = (): { readonly x: number; readonly y: number } => {
-  const covered = layout.edges[0].label.name.at;
-  const note = layout.nodes.find((node) => node.id === noteElement);
-  assert.isDefined(note, 'the layout draws the note');
-  return {
-    x: covered.x - note.size.width / 2,
-    y: covered.y - note.size.height / 2,
-  };
-};
-
-const dragTo = (at: {
-  readonly x: number;
-  readonly y: number;
-}): NodeChange<DiagramNode>[] => [
-  { id: noteElement, type: 'position', position: at, dragging: true },
-];
-
 beforeEach(() => {
-  openCanvas(moving);
+  openCanvas(moving, model);
   vi.useFakeTimers();
 });
 
@@ -56,19 +76,18 @@ afterEach(() => {
 
 describe('useLiveEdges', () => {
   it('lays every flow out in full once the pointer pauses', () => {
-    const graph = diagramGraph(layout, canvasModel, moving, t);
+    const graph = diagramGraph(layout, model, moving, t);
     const at = onto();
-    const settled = layout.edges.map((edge) => edge.label);
     const paused = layoutAtReactFlowNodes(
       layout,
       graph.nodes.map((node) =>
-        node.id === noteElement ? { ...node, position: at } : node,
+        node.id === drifter ? { ...node, position: at } : node,
       ),
       moving,
     );
     expect(
       paused.edges.map((edge) => edge.label),
-      'the note covers a label the full search then moves',
+      'the drifter covers a label the full search then moves',
     ).not.toEqual(settled);
 
     const { result } = renderHook(() =>
