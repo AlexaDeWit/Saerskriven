@@ -24,8 +24,8 @@ set -euo pipefail
 allowed_prefixes='nix-|pnpm-store-|determinatesystem-nix-installer-'
 
 keep="${KEEP_PER_PREFIX:-2}"
-# A `nix-*` epoch is about 1.4 GB where every other entry is under 50 MB, so the heavy
-# prefix carries the whole quota and retains the current epoch alone.
+# A `nix-*` epoch is about 1.4 GB, several times any other entry (the pnpm store is
+# about 400 MB before compression), so the heavy prefix retains the current epoch alone.
 keep_nix="${KEEP_NIX:-1}"
 rows="$(cat)"
 
