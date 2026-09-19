@@ -25,6 +25,7 @@ import {
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { useHeaderKept } from './kept-header.js';
 import { historyFocusHandler } from './panel-focus.js';
 import { PanelFrame } from './panel-frame.js';
 import type { RefusedField } from './refusals.js';
@@ -306,52 +307,4 @@ function useHistoryFocus(
       }),
     [addControl, restore],
   );
-}
-
-function useHeaderKept(
-  list: RefObject<HTMLDivElement | null>,
-): (threatId: string) => void {
-  const frame = useRef<number | undefined>(undefined);
-
-  useEffect(
-    () => () => {
-      if (frame.current !== undefined) {
-        cancelAnimationFrame(frame.current);
-      }
-    },
-    [],
-  );
-
-  return (threatId) => {
-    const body = list.current?.closest(`.${styles.body}`);
-    const header = [
-      ...(list.current?.querySelectorAll<HTMLElement>('[data-threat-item]') ??
-        []),
-    ]
-      .find((item) => item.dataset['threatItem'] === threatId)
-      ?.querySelector(`.${styles.header}`);
-    if (
-      body === null ||
-      body === undefined ||
-      header === null ||
-      header === undefined
-    ) {
-      return;
-    }
-    const top = header.getBoundingClientRect().top;
-    if (frame.current !== undefined) {
-      cancelAnimationFrame(frame.current);
-    }
-    frame.current = requestAnimationFrame(() => {
-      frame.current = undefined;
-      body.scrollTop += header.getBoundingClientRect().top - top;
-      const hidden =
-        body.getBoundingClientRect().top +
-        body.clientTop -
-        header.getBoundingClientRect().top;
-      if (hidden > 0) {
-        body.scrollTop -= hidden;
-      }
-    });
-  };
 }

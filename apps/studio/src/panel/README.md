@@ -14,6 +14,7 @@ a person can do with it is in
 | `threat-overlay.tsx`                                    | The mount: which panel to draw, the drafts and pane width it retains across both, and the keyboard                          |
 | `panel-frame.tsx`                                       | The pane either panel draws: width control, heading, close control, Escape, and the coverage it reports to the canvas       |
 | `threat-panel.tsx`, `threat-editor.tsx`                 | The panel for a selection, and one expanded threat                                                                          |
+| `kept-header.ts`                                        | Keeping a pressed threat header in view when the accordion swaps                                                            |
 | `threat-summary.tsx`                                    | A collapsed threat's summary, which is also its accordion trigger's accessible name                                         |
 | `threat-records.tsx`, `records.ts`                      | One record group, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
 | `model-properties.tsx`                                  | The panel for the model: title, description and the model's assumptions                                                     |
@@ -149,13 +150,13 @@ commit.
 
 Expanding a threat collapses the open one, and when that one sits above, the
 body could no longer scroll as far and the header just pressed would land out
-of view. The panel measures that header before the swap and scrolls the body in
-the next animation frame so the header is back where it was, or as near as the
-scroll reaches, and never above the top of the body. The frame is the earliest
-point that works: Radix removes the collapsed content in a layout effect of its
-own, after the panel's layout effects have run. Browser scroll anchoring does
-not hold the header on its own, since its anchor is often a row of the content
-that goes.
+of view. `kept-header.ts` measures that header before the swap and scrolls the
+body in the next animation frame so the header is back where it was, moved only
+as far as it takes to show it whole, or to show its top where it is taller than
+the body. The frame is the earliest point that works: Radix removes the
+collapsed content in a layout effect of its own, after the panel's layout
+effects have run. Browser scroll anchoring does not hold the header on its own,
+since its anchor is often a row of the content that goes.
 
 ## Saying what happened
 

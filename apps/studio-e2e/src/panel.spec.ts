@@ -140,6 +140,55 @@ test(
   },
 );
 
+const pressedPartlyClipped = async (
+  page: Page,
+  header: Locator,
+  edge: 'top' | 'bottom',
+): Promise<void> => {
+  const clipped = 12;
+  await header.evaluate((element) => {
+    element.focus({ preventScroll: true });
+  });
+  expect(await scrollPaneTo(header, edge)).toBe(true);
+  await paneBody(page).evaluate(
+    (body, by) => {
+      body.scrollTop += by;
+    },
+    edge === 'top' ? clipped : -clipped,
+  );
+  expect(await insidePaneBody(page, header)).toBe(false);
+  await page.keyboard.press('Enter');
+  await expect(header).toHaveAttribute('aria-expanded', 'true');
+};
+
+test(
+  'a header pressed while partly above the pane comes fully into it as the long threat above collapses',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const below = await belowLongTakeover(page);
+
+    await pressedPartlyClipped(page, below, 'top');
+
+    await expect(below).toBeFocused();
+    expect(await insidePaneBody(page, below)).toBe(true);
+  },
+);
+
+test(
+  'a header pressed while partly below the pane comes fully into it',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openModelDocument(page, shopperWithLongThreats());
+    await selectNode(page, storefront.shopper);
+    const lower = threatSummary(page, /Shopper threat 5/u);
+
+    await pressedPartlyClipped(page, lower, 'bottom');
+
+    await expect(lower).toBeFocused();
+    expect(await insidePaneBody(page, lower)).toBe(true);
+  },
+);
+
 const badgeTone = (node: Locator): Locator =>
   node.locator('.pn-badge-primary circle');
 
