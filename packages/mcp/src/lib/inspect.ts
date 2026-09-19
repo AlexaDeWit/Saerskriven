@@ -1,6 +1,7 @@
 import {
   divergenceSchema,
   escapedForTerminal,
+  quotedForTerminal,
   renderDivergences,
 } from '@saerskriven/formats';
 import {
@@ -188,7 +189,7 @@ function renderModel(
     'diagrams:',
     ...reading.diagrams.map(
       (diagram) =>
-        `  ${diagram.id}: ${escapedForTerminal(diagram.title)} (elements ${String(diagram.elements)}, threats ${String(diagram.threats)})`,
+        `  ${quotedForTerminal(diagram.id)}: ${escapedForTerminal(diagram.title)} (elements ${String(diagram.elements)}, threats ${String(diagram.threats)})`,
     ),
     'divergences:',
     renderDivergences(reading.divergences),

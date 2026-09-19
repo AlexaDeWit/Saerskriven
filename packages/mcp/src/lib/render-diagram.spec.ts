@@ -10,6 +10,9 @@ import {
 import {
   answerOf,
   drawableTree,
+  forgedIdsTree,
+  forgedLine,
+  forgedLinesIn,
   refusalOf,
   rootWorkspace,
   treeHolding,
@@ -207,7 +210,7 @@ describe('what the text of a render says', () => {
       'file: model.yaml',
       'format: saerskriven-yaml',
       `revision: sha256:${'0'.repeat(64)}`,
-      'diagram: only (Only)',
+      'diagram: "only" (Only)',
       'image: image/png, 320 by 240 pixels, 4096 bytes',
     ]);
   });
@@ -236,6 +239,22 @@ describe('what the text of a render says', () => {
       'a flow endpoint names an element the canvas draws as no box',
     );
     expect(lines.at(-1)).toEqual('  flow "flow-2" target names "flow-1"');
+  });
+});
+
+describe('a diagram whose id carries a line feed', () => {
+  it('forges no line in the text of the drawing', () => {
+    const drawn = oneDrawing({
+      diagram: { id: `only\n${forgedLine}`, title: 'Only' },
+    });
+    expect(forgedLinesIn(renderDrawing(drawn))).toEqual([]);
+  });
+
+  it('forges no line in the list a refusal offers', async () => {
+    const refused = refusalOf(
+      await renderDiagram(forgedIdsTree(), noRasterizer, {}),
+    );
+    expect(forgedLinesIn(refused)).toEqual([]);
   });
 });
 

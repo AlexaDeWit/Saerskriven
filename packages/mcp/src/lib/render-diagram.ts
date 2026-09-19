@@ -157,7 +157,7 @@ export async function renderDiagram(
 export function renderDrawing(result: RenderDiagramResult): readonly string[] {
   return [
     ...renderReading(result),
-    `diagram: ${result.diagram.id} (${escapedForTerminal(result.diagram.title)})`,
+    `diagram: ${quotedForTerminal(result.diagram.id)} (${escapedForTerminal(result.diagram.title)})`,
     `image: ${result.image.mimeType}, ${String(result.image.width)} by ${String(result.image.height)} pixels, ${String(result.image.bytes)} bytes`,
     ...(result.written === undefined
       ? []
@@ -368,6 +368,7 @@ function refusedChoice(failure: DiagramChoiceFailure): readonly string[] {
 
 function diagramList(diagrams: readonly Diagram[]): readonly string[] {
   return diagrams.map(
-    (diagram) => `  ${diagram.id}: ${escapedForTerminal(diagram.title)}`,
+    (diagram) =>
+      `  ${quotedForTerminal(diagram.id)}: ${escapedForTerminal(diagram.title)}`,
   );
 }
