@@ -751,7 +751,7 @@ describe('the feature-complete TM-BOM document', () => {
       ],
     });
     expect(read.model.metadata.description).toBe(
-      'Every field a TM-BOM file carries.\n\nA clinic books appointments online.\n\nMitigation: Control scheduled (proposed, source status scheduled). A control the team marks scheduled.\n\nMitigation: Unwritten control (proposed, source status scheduled). ',
+      'Every field a TM-BOM file carries.\n\nA clinic books appointments online.\n\nMitigation: Control scheduled (proposed, source status scheduled). A control the team marks scheduled.\n\nMitigation: Unwritten control (proposed, source status scheduled).',
     );
   });
 
