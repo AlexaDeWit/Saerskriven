@@ -91,8 +91,9 @@ A French or Swedish Typst source sets its text language (`lang: "fr"` with
 the PDF. An en-CA source leaves Typst's English default and sets nothing.
 
 Limits: a register joins element names and flags with `, ` and writes a
-category's methodology in parentheses in every locale. The CLI and the MCP
-render tool pass `en-CA`.
+category's methodology in parentheses in every locale. The CLI's `--lang`
+resolves to the locale it passes here, en-CA by default. The MCP render tool
+takes no such option and always passes `en-CA`.
 
 ## Typst source as a PDF
 

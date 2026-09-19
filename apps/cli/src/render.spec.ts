@@ -327,4 +327,67 @@ describe('render', () => {
       out: '',
     });
   });
+
+  describe('--lang', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    it('writes the register in French for a French tag', async () => {
+      const outcome = await render(
+        twoDiagrams,
+        options({ format: 'md', lang: 'fr-FR' }),
+      );
+      expect(outcome.code).toBe(0);
+      expect(outcome.out).toContain('# Registre des menaces : Two diagrams');
+    });
+
+    it('writes the register in Swedish for a Swedish tag', async () => {
+      const outcome = await render(
+        twoDiagrams,
+        options({ format: 'md', lang: 'sv-SE' }),
+      );
+      expect(outcome.code).toBe(0);
+      expect(outcome.out).toContain('# Hotregister för Two diagrams');
+    });
+
+    it('writes the register in English by default, with no --lang', async () => {
+      const outcome = await render(twoDiagrams, options({ format: 'md' }));
+      expect(outcome.code).toBe(0);
+      expect(outcome.out).toContain('# Two diagrams threat register');
+    });
+
+    it('ignores a French environment and stays in English with no --lang', async () => {
+      vi.stubEnv('LANG', 'fr_FR.UTF-8');
+      vi.stubEnv('LC_ALL', 'fr_FR.UTF-8');
+      vi.stubEnv('LANGUAGE', 'fr');
+      const outcome = await render(twoDiagrams, options({ format: 'md' }));
+      expect(outcome.code).toBe(0);
+      expect(outcome.out).toContain('# Two diagrams threat register');
+    });
+
+    it('draws the diagram with the badge marks of the given language', async () => {
+      const run = await written('storefront.fr.svg', twoDiagrams, {
+        format: 'svg',
+        lang: 'fr',
+        ...storefront,
+      });
+      expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
+      expect(run.text()).toContain(
+        '<text class="pn-badge-mark" y="6">É</text>',
+      );
+    });
+
+    it('refuses a tag naming no supported locale', async () => {
+      await expect(
+        render(twoDiagrams, options({ format: 'md', lang: 'de' })),
+      ).resolves.toEqual({
+        code: 2,
+        out: '',
+        err:
+          'error: --lang names no supported locale: "de"\n' +
+          '  supported locales: en-CA, fr-CA, sv\n',
+      });
+    });
+  });
 });

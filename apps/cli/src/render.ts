@@ -1,6 +1,12 @@
 import type { RenderTheme } from '@saerskriven/canvas';
 import { escapedForTerminal } from '@saerskriven/formats';
 import {
+  defaultLocale,
+  locales,
+  supportedLocale,
+  type Locale,
+} from '@saerskriven/i18n';
+import {
   chosenDiagram,
   DiagramChoiceFailure,
   type Diagram,
@@ -44,6 +50,7 @@ export const renderOptionsSchema = registerOptionsSchema.extend({
   }),
   out: z.string({ error: 'must be a path, or - for standard output' }),
   diagram: z.string().optional(),
+  lang: z.string().optional(),
 });
 
 /** The options a render was asked for. */
@@ -64,6 +71,18 @@ export function render(
   options: RenderOptions,
   assets: string = runtimeAssets,
 ): Promise<CommandOutcome> {
+  return Either.match(chosenLocale(options.lang), {
+    onLeft: (message) => Promise.resolve(usageError(message)),
+    onRight: (locale) => withLocale(file, options, assets, locale),
+  });
+}
+
+function withLocale(
+  file: string,
+  options: RenderOptions,
+  assets: string,
+  locale: Locale,
+): Promise<CommandOutcome> {
   return Either.match(readModel(file), {
     onLeft: (outcome) => Promise.resolve(outcome),
     onRight: async (read) => {
@@ -77,6 +96,7 @@ export function render(
         options,
         assets,
         selected.theme,
+        locale,
       );
       const diagnostics = [
         ...selected.diagnostics,
@@ -88,6 +108,29 @@ export function render(
       };
     },
   });
+}
+
+/**
+ * No `--lang` gives en-CA. Given one, its language subtag through
+ * {@link supportedLocale} decides, or the invocation is refused: negotiating
+ * to a default here would render silently in the wrong language rather than
+ * naming the tag as unsupported.
+ */
+function chosenLocale(lang: string | undefined): Either.Either<Locale, string> {
+  if (lang === undefined) {
+    return Either.right(defaultLocale);
+  }
+  const locale = supportedLocale(lang);
+  return locale === undefined
+    ? Either.left(refusedLanguage(lang))
+    : Either.right(locale);
+}
+
+function refusedLanguage(lang: string): string {
+  return lines(
+    `error: --lang names no supported locale: ${quoted(lang)}`,
+    `  supported locales: ${locales.join(', ')}`,
+  );
 }
 
 function markdownOptionDiagnostics(
@@ -126,10 +169,11 @@ function projection(
   options: RenderOptions,
   assets: string,
   theme: RenderTheme,
+  locale: Locale,
 ): Promise<CommandOutcome> {
   return options.format === 'svg' || options.format === 'png'
-    ? drawing(model, options.format, options, assets, theme)
-    : wholeModel(model, options.format, options, assets, theme);
+    ? drawing(model, options.format, options, assets, theme, locale)
+    : wholeModel(model, options.format, options, assets, theme, locale);
 }
 
 function wholeModel(
@@ -138,9 +182,10 @@ function wholeModel(
   options: RenderOptions,
   assets: string,
   theme: RenderTheme,
+  locale: Locale,
 ): Promise<CommandOutcome> {
   return options.diagram === undefined
-    ? document(model, format, options, assets, theme)
+    ? document(model, format, options, assets, theme, locale)
     : Promise.resolve(usageError(lines(refusedDiagram(format))));
 }
 
@@ -154,12 +199,13 @@ function document(
   options: RenderOptions,
   assets: string,
   theme: RenderTheme,
+  locale: Locale,
 ): Promise<CommandOutcome> {
   return format === 'md'
     ? Promise.resolve(
         written(
           options.out,
-          renderRegister(model, 'en-CA', {
+          renderRegister(model, locale, {
             title: options.title,
             headingLevel: options.headingLevel,
             styled: options.styled,
@@ -169,7 +215,7 @@ function document(
           '',
         ),
       )
-    : compiled(model, options.out, assets, theme);
+    : compiled(model, options.out, assets, theme, locale);
 }
 
 async function compiled(
@@ -177,8 +223,9 @@ async function compiled(
   out: string,
   assets: string,
   theme: RenderTheme,
+  locale: Locale,
 ): Promise<CommandOutcome> {
-  const source = renderTypst(model, 'en-CA', theme);
+  const source = renderTypst(model, locale, theme);
   return Either.match(await compilePdf(source.typst, assets), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
     onRight: (pdf) =>
@@ -192,11 +239,12 @@ function drawing(
   options: RenderOptions,
   assets: string,
   theme: RenderTheme,
+  locale: Locale,
 ): Promise<CommandOutcome> {
   return Either.match(chosenDiagram(model.diagrams, options.diagram), {
     onLeft: (failure) => Promise.resolve(usageError(refusedChoice(failure))),
     onRight: (diagram) =>
-      drawn(diagram, model, format, options.out, assets, theme),
+      drawn(diagram, model, format, options.out, assets, theme, locale),
   });
 }
 
@@ -207,10 +255,11 @@ function drawn(
   out: string,
   assets: string,
   theme: RenderTheme,
+  locale: Locale,
 ): Promise<CommandOutcome> {
   return format === 'svg'
-    ? Promise.resolve(vector(diagram, model, out, theme))
-    : raster(diagram, model, out, assets, theme);
+    ? Promise.resolve(vector(diagram, model, out, theme, locale))
+    : raster(diagram, model, out, assets, theme, locale);
 }
 
 function vector(
@@ -218,8 +267,9 @@ function vector(
   model: Model,
   out: string,
   theme: RenderTheme,
+  locale: Locale,
 ): CommandOutcome {
-  const rendered = renderSvg(diagram, model, 'en-CA', theme);
+  const rendered = renderSvg(diagram, model, locale, theme);
   return written(
     out,
     rendered.svg,
@@ -233,8 +283,9 @@ async function raster(
   out: string,
   assets: string,
   theme: RenderTheme,
+  locale: Locale,
 ): Promise<CommandOutcome> {
-  return Either.match(await drawPng(diagram, model, assets, theme), {
+  return Either.match(await drawPng(diagram, model, assets, locale, theme), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
     onRight: (image) =>
       written(out, image.png, renderUnplacedWarning(image.unplaced, 'en-CA')),

@@ -1,4 +1,5 @@
 import type { RenderTheme } from '@saerskriven/canvas';
+import type { Locale } from '@saerskriven/i18n';
 import type { Diagram, Model } from '@saerskriven/model';
 import {
   drawingFace,
@@ -24,23 +25,25 @@ export function drawPng(
   diagram: Diagram,
   model: Model,
   assets: string,
+  locale: Locale,
   theme?: RenderTheme,
 ): Promise<Either.Either<PngImage, string>> {
   return Either.match(pngAssets(assets), {
     onLeft: (reason) =>
       Promise.resolve(Either.left(`cannot draw the PNG: ${reason}`)),
-    onRight: (found) => rasterized(diagram, model, found, theme),
+    onRight: (found) => rasterized(diagram, model, locale, found, theme),
   });
 }
 
 async function rasterized(
   diagram: Diagram,
   model: Model,
+  locale: Locale,
   assets: WasmAssets,
   theme?: RenderTheme,
 ): Promise<Either.Either<PngImage, string>> {
   return Either.mapLeft(
-    await renderPng(diagram, model, 'en-CA', { assets, theme }),
+    await renderPng(diagram, model, locale, { assets, theme }),
     reported,
   );
 }

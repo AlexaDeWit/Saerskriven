@@ -17,21 +17,27 @@ function languageOf(tag: string): readonly string[] {
 }
 
 /**
- * The supported locale for language tags in preference order. Each tag is
- * canonicalized and an invalid one skipped. The first tag whose language is
- * English, French or Swedish decides, whatever its region, script or
- * extensions: every French tag gets fr-CA, every Swedish tag sv, and every
- * English tag en-CA. No match gives en-CA.
+ * The catalogued locale one language tag's language subtag matches, or
+ * undefined where the tag is invalid or its language is none of English,
+ * French or Swedish: every French tag gets fr-CA, every Swedish tag sv, and
+ * every English tag en-CA, whatever its region, script or extensions.
+ */
+export function supportedLocale(tag: string): Locale | undefined {
+  return languageOf(tag)
+    .flatMap((language) =>
+      Object.hasOwn(catalogueLanguages, language)
+        ? [catalogueLanguages[language]]
+        : [],
+    )
+    .at(0);
+}
+
+/**
+ * The supported locale for language tags in preference order, each matched
+ * through {@link supportedLocale}. No match gives en-CA.
  */
 export function negotiate(tags: readonly string[]): Locale {
   return (
-    tags
-      .flatMap(languageOf)
-      .flatMap((language) =>
-        Object.hasOwn(catalogueLanguages, language)
-          ? [catalogueLanguages[language]]
-          : [],
-      )
-      .at(0) ?? defaultLocale
+    tags.flatMap((tag) => supportedLocale(tag) ?? []).at(0) ?? defaultLocale
   );
 }

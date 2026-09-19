@@ -1,4 +1,22 @@
-import { negotiate } from './negotiate.js';
+import { negotiate, supportedLocale } from './negotiate.js';
+
+describe('supportedLocale', () => {
+  it.each([
+    ['fr', 'fr-CA'],
+    ['fr-FR', 'fr-CA'],
+    ['sv-SE', 'sv'],
+    ['en-US', 'en-CA'],
+  ] as const)('matches %j to %s', (tag, locale) => {
+    expect(supportedLocale(tag)).toBe(locale);
+  });
+
+  it.each(['de', 'nb-NO', 'not a tag!', ''])(
+    'matches %j to no locale',
+    (tag) => {
+      expect(supportedLocale(tag)).toBeUndefined();
+    },
+  );
+});
 
 describe('negotiate', () => {
   it.each([
