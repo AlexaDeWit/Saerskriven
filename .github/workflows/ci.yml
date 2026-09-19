@@ -69,7 +69,7 @@ jobs:
       - name: Allow the unprivileged user namespace the compile runs in
         run: |
           knob=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
-          if [ -e "$knob" ]; then
+          if [ -e $knob ]; then
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           else
             echo "no apparmor_restrict_unprivileged_userns on this runner"
