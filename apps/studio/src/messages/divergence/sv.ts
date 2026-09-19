@@ -41,9 +41,9 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
     'namnet, eftersom formatet numrerar ett diagram i stället för att namnge det, skrivet som {number}',
   'cell-discarded': 'cellen {shape} som källdokumentet innehöll',
   'threat-attachment-stray':
-    'kopplingen till {kind} ”{element}”, eftersom formatet bara lägger ett hot under en aktör, en process, ett lager eller ett flöde',
+    'kopplingen till {kind} ”{element}”, eftersom formatet bara lägger ett hot under en aktör, en process, ett datalager eller ett flöde',
   'threat-attachment-stray-unknown':
-    'kopplingen till det okända ”{element}”, eftersom formatet bara lägger ett hot under en aktör, en process, ett lager eller ett flöde',
+    'kopplingen till det okända ”{element}”, eftersom formatet bara lägger ett hot under en aktör, en process, ett datalager eller ett flöde',
   'threat-unplaceable':
     'själva hotet, som formatet bara håller under en cell medan detta hot inte nämner någon att lägga det under',
   'threat-split-across-elements': {
@@ -74,7 +74,7 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   'threat-status-unmapped':
     'statusen ”{status}”, som modellen inte har något tillstånd för',
   'threat-severity-unmapped':
-    'allvarsgraden ”{severity}”, som modellen inte har någon nivå för',
+    'allvarlighetsgraden ”{severity}”, som modellen inte har någon nivå för',
   'threat-category-eop-suit':
     'kortet Elevation of Privilege, av vilket modellen bara håller färgen',
   'threat-category-unmapped':
@@ -84,7 +84,7 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
     'dess länkar till element, som ett antagande inte håller',
   'otm-threat-split': 'Hotet ”{id}” blir separata poster för sina förekomster.',
   'otm-threat-undecided':
-    'Hotet ”{id}” importeras med obestämd allvarsgrad och en ospecificerad kategori.',
+    'Hotet ”{id}” importeras med obestämd allvarlighetsgrad och en ospecificerad kategori.',
   'otm-threat-status-unmapped':
     'Hotstatusen ”{status}” importeras som öppen. Den angivna statustexten stannar i beskrivningen.',
   'otm-threat-status-absent':
@@ -104,18 +104,18 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   'otm-geometry-generated':
     'Elementet ”{id}” får genererad geometri där källan saknar sådan.',
   'tmbom-threats-undecided':
-    'Hot importeras som öppna med obestämd allvarsgrad och en ospecificerad kategori. Separata riskbedömningar omvandlas inte till hotens allvarsgrad.',
+    'Hot importeras som öppna med obestämd allvarlighetsgrad och en ospecificerad kategori. Separata riskbedömningar omvandlas inte till hotens allvarlighetsgrad.',
   'tmbom-control-proposed':
     'Kontrollen ”{name}” importeras som föreslagen. Dess ursprungliga status stannar i beskrivningen.',
   'tmbom-control-unlinked':
     'Kontrollen ”{name}” nämner inget hot och blir en rad i modellens beskrivning.',
   'tmbom-geometry-generated':
-    'Diagrammet får genererad geometri grupperad efter källans tillitszon. Tillhörigheten blir visuell.',
+    'Diagrammet får genererad geometri grupperad efter källans förtroendezon. Tillhörigheten blir visuell.',
   'tmbom-flow-fields-as-prose':
     'Flödenas fält för kryptering och känslighet stannar som löptext i flödesbeskrivningarna.',
   'tmbom-data-set-as-prose':
-    'Datamängden ”{name}” blir löptext på sina lager. Delad dataidentitet behålls inte.',
+    'Datamängden ”{name}” blir löptext på sina datalager. Delad dataidentitet behålls inte.',
   'tmbom-data-set-dropped':
-    'Datamängden ”{name}” har ingen placering på ett lager och behålls inte.',
+    'Datamängden ”{name}” har ingen placering på ett datalager och behålls inte.',
   'field-not-retained': 'Källfältet {path} behålls inte vid import.',
 });

@@ -7,7 +7,7 @@ export const defaultsSv = catalogue(defaultMessages)('sv')({
   'untitled-file': 'hotmodell',
   'new-actor': 'Ny aktör',
   'new-process': 'Ny process',
-  'new-store': 'Nytt lager',
+  'new-store': 'Nytt datalager',
   'new-note': 'Notering',
   'new-note-text': 'Ny notering',
   'new-boundary-box': 'Ny förtroendegräns',

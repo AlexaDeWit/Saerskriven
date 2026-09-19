@@ -7,7 +7,7 @@ export const defaultsFrCA = catalogue(defaultMessages)('fr-CA')({
   'untitled-file': 'modèle-de-menaces',
   'new-actor': 'Nouvel acteur',
   'new-process': 'Nouveau processus',
-  'new-store': 'Nouvel entrepôt',
+  'new-store': 'Nouveau magasin de données',
   'new-note': 'Note',
   'new-note-text': 'Nouvelle note',
   'new-boundary-box': 'Nouvelle frontière de confiance',

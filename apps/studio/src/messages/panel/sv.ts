@@ -21,7 +21,7 @@ export const panelSv = catalogue(panelMessages)('sv')({
       'Det här hotet nämner {count} objekt. Tas det bort försvinner det från alla.',
   },
   'attached-elements': 'Kopplade objekt',
-  'summary-severity': 'Allvarlighet: {severity}',
+  'summary-severity': 'Allvarlighetsgrad: {severity}',
   'summary-status': 'Status: {status}',
   'summary-mitigations': 'Åtgärder: {count}',
   'summary-assumptions': 'Antaganden: {count}',

@@ -51,7 +51,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-hand-tool': 'Hand',
   'label-actor-tool': 'Aktör',
   'label-process-tool': 'Process',
-  'label-store-tool': 'Lager',
+  'label-store-tool': 'Datalager',
   'label-note-tool': 'Notering',
   'label-boundary-box-tool': 'Förtroendegräns',
   'label-boundary-curve-tool': 'Förtroendegränskurva',
