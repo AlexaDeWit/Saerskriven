@@ -1,12 +1,14 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import {
   boxOf,
+  canvasSettled,
   drawnBy,
   endsOn,
   handlesOf,
   lineOf,
   placeOf,
   pressOn,
+  type Point,
 } from './canvas.fixtures.js';
 import { nodeNamed, openTwoDiagrams, storefront } from './studio.fixtures.js';
 
@@ -14,6 +16,23 @@ const outward = /^read the product listings, flow/u;
 const inward = /^confirm the authorisation, flow/u;
 const elsewhere = /^card network callback, flow/u;
 const badged = /^browse the catalogue and fill a basket, flow/u;
+const pause = 300;
+
+const besideOf = async (part: Locator, anchor: Locator): Promise<Point> => {
+  const node = await anchor.elementHandle();
+  return part.evaluate((drawn, from) => {
+    if (!(from instanceof HTMLElement)) {
+      return { x: Number.NaN, y: Number.NaN };
+    }
+    const at = drawn.getBoundingClientRect();
+    const origin = from.getBoundingClientRect();
+    const zoom = origin.width / from.offsetWidth;
+    return {
+      x: Math.round((at.x - origin.x) / zoom),
+      y: Math.round((at.y - origin.y) / zoom),
+    };
+  }, node);
+};
 
 test('a flow follows the element it attaches to through a drag, at either end', async ({
   page,
@@ -174,4 +193,56 @@ test('a one-endpoint move settles its attached label before release', async ({
   await page.mouse.up();
 
   expect(await label.boundingBox()).toEqual(live);
+});
+
+test('a quick release keeps the live placement of a label beside an opposite flow', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  const dragged = nodeNamed(page, storefront.webShop);
+  const label = nodeNamed(page, inward).locator('.pn-flow-label');
+
+  const at = await pressOn(page, dragged);
+  await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
+  const live = await besideOf(label, dragged);
+  await page.mouse.up();
+
+  await canvasSettled(page);
+  expect(await besideOf(label, dragged)).toEqual(live);
+});
+
+test('a release after a pause keeps the placement the pause gave a label beside an opposite flow', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  const dragged = nodeNamed(page, storefront.webShop);
+  const label = nodeNamed(page, inward).locator('.pn-flow-label');
+
+  const at = await pressOn(page, dragged);
+  await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
+  await page.waitForTimeout(pause);
+  const paused = await besideOf(label, dragged);
+  await page.mouse.up();
+
+  await canvasSettled(page);
+  expect(await besideOf(label, dragged)).toEqual(paused);
+});
+
+test('a group drag keeps a badge beside an opposite flow where the drag left it', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  const dragged = nodeNamed(page, storefront.webShop);
+  const badge = nodeNamed(page, badged).locator('.pn-badge');
+  await page.keyboard.press('ControlOrMeta+a');
+  const placed = await placeOf(dragged);
+
+  const at = await pressOn(page, dragged);
+  await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
+  await expect.poll(() => placeOf(dragged)).not.toBe(placed);
+  const live = await besideOf(badge, dragged);
+  await page.mouse.up();
+
+  await canvasSettled(page);
+  expect(await besideOf(badge, dragged)).toEqual(live);
 });

@@ -2,11 +2,13 @@ import type { Point } from '@saerskriven/model';
 import {
   assumptionOf,
   boxAt,
+  committedModel,
   elementId,
   flowFrom,
   modelWith,
 } from '@saerskriven/model/fixtures';
 import { badgeBox } from './badges.js';
+import { flowGeometry } from './flow-anchors.js';
 import { flowLabelPlacements, type FlowGeometry } from './flow-labels.js';
 import {
   boxesOverlap,
@@ -432,6 +434,33 @@ describe('the placement as a function of the model alone', () => {
     expect(new Map(placementsById(backwards))).toEqual(
       new Map(placementsById(forwards)),
     );
+  });
+
+  it('moves every placement with a diagram moved as a whole', () => {
+    const layout = layoutOf(committedModel('two-diagrams.model.json'));
+    const by = { x: 100, y: 0 };
+    const flows = layout.edges.map(flowGeometry);
+    const moved = flowLabelPlacements(
+      flows.map((flow) => ({
+        ...flow,
+        points: [
+          shiftedBy(flow.points[0], by),
+          ...flow.points.slice(1).map((point) => shiftedBy(point, by)),
+        ],
+      })),
+      layout.nodes.map((node) => ({
+        ...node,
+        position: shiftedBy(node.position, by),
+      })),
+    );
+    const settled = flowLabelPlacements(flows, layout.nodes);
+    const drift = moved.map(({ name }, index) =>
+      Math.hypot(
+        name.at.x - settled[index].name.at.x - by.x,
+        name.at.y - settled[index].name.at.y - by.y,
+      ),
+    );
+    expect(Math.max(...drift)).toBeLessThan(1e-6);
   });
 
   it('places a flow with no name at all beside its line', () => {
