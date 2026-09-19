@@ -23,12 +23,15 @@ import {
   toolCommands,
   type CommandId,
 } from './registry.js';
+import { activeTranslator } from '../messages/locale.js';
 import { platforms, shortcutsOn, spellChord } from './shortcuts.js';
+
+const { t } = activeTranslator();
 
 const chordsOn = (platform: (typeof platforms)[number]): string[] =>
   commands.flatMap((command) =>
     shortcutsOn(command.shortcuts, platform).map((chord) =>
-      spellChord(chord, platform),
+      spellChord(chord, platform, t),
     ),
   );
 

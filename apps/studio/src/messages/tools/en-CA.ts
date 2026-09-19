@@ -50,7 +50,7 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   'bend-choose-help':
     'Segment {number}: Left/Right to choose, Enter to add. Or click a segment.',
   'bend-place-help':
-    'Arrow keys move the bend. Enter confirms, Escape cancels. Or click its destination.',
+    'Arrow keys move the bend. Enter confirms, Esc cancels. Or click its destination.',
   'bend-idle-help':
     'Pull the line to add a bend. Drag a bend to move it. Drag an end to another side of its element. Click a handle for actions.',
 });

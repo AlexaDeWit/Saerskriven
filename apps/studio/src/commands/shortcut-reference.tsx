@@ -233,5 +233,5 @@ function referenceKeys(
   ) {
     return [t('commands.shift-arrow')];
   }
-  return chords.map((chord) => spellChord(chord, platform));
+  return chords.map((chord) => spellChord(chord, platform, t));
 }

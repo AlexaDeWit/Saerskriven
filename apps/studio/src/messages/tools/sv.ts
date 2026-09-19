@@ -50,7 +50,7 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   'bend-choose-help':
     'Segment {number}: Vänster/Höger för att välja, Retur för att lägga till. Eller klicka på ett segment.',
   'bend-place-help':
-    'Piltangenterna flyttar knäckpunkten. Retur bekräftar, Escape avbryter. Eller klicka på målet.',
+    'Piltangenterna flyttar knäckpunkten. Retur bekräftar, Esc avbryter. Eller klicka på målet.',
   'bend-idle-help':
     'Dra i linjen för att lägga till en knäckpunkt. Dra en knäckpunkt för att flytta den. Dra en ände till en annan sida av sitt objekt. Klicka på ett handtag för åtgärder.',
 });

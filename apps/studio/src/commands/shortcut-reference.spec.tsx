@@ -66,12 +66,12 @@ describe('ShortcutReference', () => {
     ).toBeTruthy();
     expect(keysIn(contextualRow('select-canvas-item'))).toEqual([
       'Enter',
-      'Space',
+      'Spacebar',
     ]);
     expect(within(commandRow('add-bend')).getByText('+')).toBeTruthy();
     expect(keysIn(contextualRow('choose-bend-segment'))).toEqual([
-      'ArrowLeft',
-      'ArrowRight',
+      'Left arrow',
+      'Right arrow',
     ]);
     expect(keysIn(contextualRow('remove-bend'))).toEqual([
       'Delete',

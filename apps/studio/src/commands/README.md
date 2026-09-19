@@ -70,8 +70,12 @@ chord is then written three ways:
 | `aria-keyshortcuts`  | `Shift+Meta+S` | `Control+Shift+S` |
 
 The attribute is spelled as ARIA asks, since assistive technology reads the
-binding from it. The spelling a person reads is the tooltip and the control's
-accessible description, which `CommandButton` renders beside the button rather
+binding from it, and stays in those key values in every language. The spelling
+a person reads is in the active locale: a named key and a modifier word come
+from the `commands` catalogue section (fr-CA `Ctrl+Maj+S`, sv `Ctrl+Skift+S`),
+following the [key names in the glossary](../../../../packages/render/src/messages/GLOSSARY.md#key-names),
+and one name serves the eye and the screen reader alike. That spelling is the
+tooltip and the control's accessible description, which `CommandButton` renders beside the button rather
 than inside it: inside, the accessible name of Save would read "Save Ctrl+S".
 A menu item draws the chord beside its label, where a native menu draws it,
 and hides it from assistive technology, which reads `aria-keyshortcuts`

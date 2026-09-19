@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { Locale } from '@saerskriven/i18n';
 import { audit } from './accessibility.fixtures.js';
+import { registeredChords } from './chords.fixtures.js';
 import {
   closeMenu,
   downloaded,
@@ -18,6 +19,7 @@ import {
   readBack,
   recoverySnapshot,
   refusedYaml,
+  selectNode,
   storefront,
   twoDiagramsFile,
   undoOffered,
@@ -212,6 +214,57 @@ for (const { locale, browser, prefill } of passes) {
       await page.keyboard.press('Enter');
       await expect(page.getByTestId('failure-notice')).toBeEmpty();
     });
+  });
+}
+
+const keyReaders = {
+  'fr-CA': {
+    reference: 'Raccourcis clavier',
+    file: 'Fichier',
+    edit: 'Édition',
+    saveAs: 'Ctrl+Maj+S',
+    removal: ['Suppr', 'Retour arrière'],
+  },
+  sv: {
+    reference: 'Tangentbordsgenvägar',
+    file: 'Arkiv',
+    edit: 'Redigera',
+    saveAs: 'Ctrl+Skift+S',
+    removal: ['Delete', 'Backsteg'],
+  },
+} as const;
+
+for (const [locale, reader] of Object.entries(keyReaders)) {
+  test(`a reader in ${locale} reads the key names in that language and presses the same keys`, async ({
+    page,
+  }) => {
+    await page.addInitScript(
+      ({ key, value }) => {
+        localStorage.setItem(key, value);
+      },
+      { key: languageStorageKey, value: locale },
+    );
+    await openPlaceholder(page);
+    const actor = await selectNode(page, /^Actor, /u);
+
+    await page.keyboard.press(registeredChords['shortcut-reference'][1]);
+    const reference = page.getByRole('region', { name: reader.reference });
+    await expect(reference).toBeVisible();
+    for (const group of [reader.file, reader.edit]) {
+      await reference.getByRole('button', { name: group, exact: true }).click();
+    }
+    await expect(
+      reference.locator('[data-command-id="save-as"] kbd'),
+    ).toHaveText([reader.saveAs]);
+    await expect(
+      reference.locator('[data-command-id="delete"] kbd'),
+    ).toHaveText(reader.removal);
+    await page.keyboard.press('Escape');
+    await expect(reference).toHaveCount(0);
+
+    await actor.click();
+    await page.keyboard.press(registeredChords.delete[0]);
+    await expect(actor).toHaveCount(0);
   });
 }
 

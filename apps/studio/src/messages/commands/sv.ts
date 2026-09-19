@@ -82,7 +82,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'when-diagram-switcher-with-diagram':
     'Från diagramväljaren, så länge modellen innehåller ett diagram',
   'when-select-tool':
-    'Utanför textfält. Escape avbryter placeringen och tömmer markeringen',
+    'Utanför textfält. Esc avbryter placeringen och tömmer markeringen',
   'when-hand-tool':
     'Håll ned blanksteg för ett tillfälligt handverktyg, utanför textfält',
   'when-outside-fields-and-menus':
@@ -163,6 +163,21 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'no-shortcut': 'Ingen genväg',
   'arrow-keys': 'Piltangenter',
   'shift-arrow': 'Skift+Pil',
+  'key-name-control': 'Ctrl',
+  'key-name-shift': 'Skift',
+  'key-name-backspace': 'Backsteg',
+  'key-name-delete': 'Delete',
+  'key-name-escape': 'Esc',
+  'key-name-tab': 'Tabb',
+  'key-name-enter': 'Retur',
+  'key-name-space': 'Blanksteg',
+  'key-name-arrow-up': 'Uppåtpil',
+  'key-name-arrow-right': 'Högerpil',
+  'key-name-arrow-down': 'Nedåtpil',
+  'key-name-arrow-left': 'Vänsterpil',
+  'key-name-page-up': 'Page Up',
+  'key-name-page-down': 'Page Down',
+  'key-combination': '{held}+{key}',
   'either-chord': '{first} eller {second}',
   'shortcut-summary': '{label}: {keys}. {when}.',
   'button-shortcut': 'Genväg: {chord}',

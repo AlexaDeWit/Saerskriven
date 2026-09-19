@@ -1,5 +1,8 @@
+import { translator } from '@saerskriven/i18n';
+import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { activeTranslator } from '../messages/locale.js';
 import {
+  bare,
   character,
   firedBy,
   keyShortcutsAttribute,
@@ -12,6 +15,9 @@ import {
 } from './shortcuts.js';
 
 const { t } = activeTranslator();
+
+const inLocale = (locale: 'fr-CA' | 'sv') =>
+  translator(studioMessages, studioCatalogues, locale).t;
 
 const save: Chord = { modifiers: ['Mod'], key: 's' };
 const saveAs: Chord = { modifiers: ['Mod', 'Shift'], key: 's' };
@@ -44,12 +50,12 @@ describe('platformOf', () => {
 
 describe('spelling a chord', () => {
   it('writes each platform the way that platform writes it', () => {
-    expect(spellChord(save, 'other')).toBe('Ctrl+S');
-    expect(spellChord(save, 'apple')).toBe('⌘S');
-    expect(spellChord(saveAs, 'other')).toBe('Ctrl+Shift+S');
-    expect(spellChord(saveAs, 'apple')).toBe('⇧⌘S');
-    expect(spellChord(clear, 'other')).toBe('Escape');
-    expect(spellChord(clear, 'apple')).toBe('Escape');
+    expect(spellChord(save, 'other', t)).toBe('Ctrl+S');
+    expect(spellChord(save, 'apple', t)).toBe('⌘S');
+    expect(spellChord(saveAs, 'other', t)).toBe('Ctrl+Shift+S');
+    expect(spellChord(saveAs, 'apple', t)).toBe('⇧⌘S');
+    expect(spellChord(clear, 'other', t)).toBe('Esc');
+    expect(spellChord(clear, 'apple', t)).toBe('Esc');
   });
 
   it('offers both chords of a command that answers to two', () => {
@@ -69,8 +75,39 @@ describe('spelling a chord', () => {
   it('writes a produced character without exposing its physical Shift key', () => {
     const help = character('?');
 
-    expect(spellChord(help, 'other')).toBe('?');
+    expect(spellChord(help, 'other', t)).toBe('?');
     expect(keyShortcutsAttribute([help], 'other')).toBe('?');
+  });
+});
+
+describe('a chord in the reader’s language', () => {
+  it.each([
+    ['fr-CA', 'Ctrl+Maj+S', 'Échap', 'Flèche gauche'],
+    ['sv', 'Ctrl+Skift+S', 'Esc', 'Vänsterpil'],
+  ] as const)(
+    'names the keys and modifiers in %s off Apple hardware',
+    (locale, savingAs, escape, left) => {
+      const spoken = inLocale(locale);
+      expect(spellChord(saveAs, 'other', spoken)).toBe(savingAs);
+      expect(spellChord(clear, 'other', spoken)).toBe(escape);
+      expect(spellChord(bare('ArrowLeft'), 'other', spoken)).toBe(left);
+    },
+  );
+
+  it('keeps Apple’s modifier symbols before a named key', () => {
+    expect(spellChord(saveAs, 'apple', inLocale('fr-CA'))).toBe('⇧⌘S');
+    expect(spellChord(bare('Enter'), 'apple', inLocale('sv'))).toBe('Retur');
+  });
+
+  it('keeps aria-keyshortcuts in the key values the attribute requires', () => {
+    expect(keyShortcutsAttribute([saveAs, clear], 'other')).toBe(
+      'Control+Shift+S Escape',
+    );
+  });
+
+  it('fires on the same key whatever name the chord is shown under', () => {
+    expect(firedBy(press({ key: 'Escape' }), clear, 'other')).toBe(true);
+    expect(firedBy(press({ key: 'Échap' }), clear, 'other')).toBe(false);
   });
 });
 
