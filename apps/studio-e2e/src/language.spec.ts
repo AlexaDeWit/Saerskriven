@@ -58,7 +58,7 @@ const readers = {
     export: 'Exportera',
     register: 'Register som Markdown',
     registerTitle: 'Hotregister',
-    severity: 'Allvarlighet',
+    severity: 'Allvarlighetsgrad',
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
