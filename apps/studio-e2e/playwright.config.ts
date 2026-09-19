@@ -34,6 +34,10 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:4200',
     trace: 'retain-on-failure',
+    // Pinned so a spec asserting English text reads the studio in en-CA
+    // whatever language the host reports. A spec needing another language
+    // overrides it with its own test.use.
+    locale: 'en-CA',
   },
   webServer: [
     // This command string is load-bearing twice. @nx/playwright parses it to

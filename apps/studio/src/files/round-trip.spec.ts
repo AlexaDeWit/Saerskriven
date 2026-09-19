@@ -38,6 +38,8 @@ const gated: readonly Gated[] = [
   { path: 'saerskriven/feature-complete.yaml', format: 'saerskriven-yaml' },
 ];
 
+const untitledFile = 'threat-model';
+
 const asDocument = (format: FormatName, text: string): unknown =>
   format === 'threat-dragon' ? JSON.parse(text) : text;
 
@@ -49,12 +51,14 @@ const applied = (action: Action | undefined): void => {
 };
 
 const opened = async (bridge: SpecBridge): Promise<void> => {
-  applied(openedBy(await settled(bridge.open(readLimits.maxTextBytes))));
+  applied(
+    openedBy(await settled(bridge.open(readLimits.maxTextBytes)), untitledFile),
+  );
 };
 
 const saved = async (bridge: SpecBridge): Promise<readonly Divergence[]> => {
   const state = modelStore.getState();
-  const target = saveTarget(state.file, formatOf(state.file));
+  const target = saveTarget(state.file, formatOf(state.file), untitledFile);
   const written = writeThrough(state.present, target.source);
   applied(
     savedBy(

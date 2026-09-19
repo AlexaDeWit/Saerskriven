@@ -5,7 +5,10 @@ import {
   type Divergence,
 } from '@saerskriven/formats';
 import { mitigationIdSchema } from '@saerskriven/model';
+import { committedText } from '@saerskriven/model/fixtures';
+import { translator, type Locale } from '@saerskriven/i18n';
 import { activeTranslator, chooseLanguage } from '../messages/locale.js';
+import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { Action } from '../store/actions.js';
 import { FileLifecycle, type RetainedSource } from '../store/state.js';
 import {
@@ -68,9 +71,16 @@ const openedForeign = FileLifecycle.Opened({
   source: foreignSource,
 });
 
+const untitledFile = 'threat-model';
+
+const untitledFileIn = (locale: Locale): string =>
+  translator(studioMessages, studioCatalogues, locale).t(
+    'defaults.untitled-file',
+  );
+
 describe('openedBy', () => {
   it('opens a text the native codec claims, keeping the document it read', () => {
-    const action = openedBy(openOutcomes.Chosen);
+    const action = openedBy(openOutcomes.Chosen, untitledFile);
 
     expect(action?._tag).toBe('Opened');
     expect(action).toMatchObject({
@@ -82,6 +92,7 @@ describe('openedBy', () => {
   it('opens a text the Threat Dragon codec claims as that format, retaining the document a save merges onto', () => {
     const action = openedBy(
       OpenOutcome.Chosen({ name: 'model.json', text: foreignText }),
+      untitledFile,
     );
 
     expect(action).toMatchObject({
@@ -96,6 +107,7 @@ describe('openedBy', () => {
   it('reports a text no format claimed, naming what was tried', () => {
     const action = openedBy(
       OpenOutcome.Chosen({ name: 'notes.txt', text: 'nothing to read here' }),
+      untitledFile,
     );
 
     expect(action).toMatchObject({
@@ -108,6 +120,7 @@ describe('openedBy', () => {
   it('reports where a claimed file broke, with the path into it', () => {
     const action = openedBy(
       OpenOutcome.Chosen({ name: 'broken.json', text: brokenThreatDragonText }),
+      untitledFile,
     );
 
     expect(action).toMatchObject({
@@ -117,7 +130,7 @@ describe('openedBy', () => {
   });
 
   it('reports a file past the bound as the codecs report one', () => {
-    expect(openedBy(openOutcomes.TooLarge)).toEqual(
+    expect(openedBy(openOutcomes.TooLarge, untitledFile)).toEqual(
       Action.ReadFailed({
         name: 'huge.json',
         failure: ReadFailure.ExceededReadLimit({
@@ -130,14 +143,27 @@ describe('openedBy', () => {
   });
 
   it('reports a file the platform would not hand over', () => {
-    expect(openedBy(openOutcomes.Unreadable)).toEqual(
+    expect(openedBy(openOutcomes.Unreadable, untitledFile)).toEqual(
       Action.FileRefused({ operation: 'open', reason: 'The file was moved.' }),
     );
   });
 
   it('dispatches nothing where there is nothing to record', () => {
-    expect(openedBy(openOutcomes.Cancelled)).toBeUndefined();
-    expect(openedBy(openOutcomes.NoPicker)).toBeUndefined();
+    expect(openedBy(openOutcomes.Cancelled, untitledFile)).toBeUndefined();
+    expect(openedBy(openOutcomes.NoPicker, untitledFile)).toBeUndefined();
+  });
+
+  it('names an import whose own stem reduces to nothing, in the language given', () => {
+    const action = openedBy(
+      OpenOutcome.Chosen({
+        name: '.json',
+        text: committedText('otm/example.json'),
+      }),
+      'hotmodell',
+      'import',
+    );
+
+    expect(action).toMatchObject({ _tag: 'Imported', name: 'hotmodell.yaml' });
   });
 });
 
@@ -163,50 +189,46 @@ describe('savedBy', () => {
 });
 
 describe('saveTarget', () => {
-  afterEach(() => {
-    chooseLanguage('en-CA');
-    globalThis.localStorage.clear();
-  });
-
   it('proposes a file in the native format while the model is in none', () => {
-    expect(saveTarget(FileLifecycle.NoFile(), 'saerskriven-yaml')).toEqual({
+    expect(
+      saveTarget(FileLifecycle.NoFile(), 'saerskriven-yaml', untitledFile),
+    ).toEqual({
       name: 'threat-model.yaml',
       source: nativeSource,
     });
   });
 
   it('writes back to the open file, merging onto what its read retained', () => {
-    expect(saveTarget(openedForeign, 'threat-dragon')).toEqual({
+    expect(saveTarget(openedForeign, 'threat-dragon', untitledFile)).toEqual({
       name: 'model.json',
       source: foreignSource,
     });
-    expect(saveTarget(openedNative, 'saerskriven-yaml')).toEqual({
+    expect(saveTarget(openedNative, 'saerskriven-yaml', untitledFile)).toEqual({
       name: 'model.yaml',
       source: nativeSource,
     });
   });
 
   it('has nothing to merge onto when the target is another format', () => {
-    expect(saveTarget(openedForeign, 'saerskriven-yaml')).toEqual({
-      name: 'model.yaml',
-      source: nativeSource,
-    });
+    expect(saveTarget(openedForeign, 'saerskriven-yaml', untitledFile)).toEqual(
+      {
+        name: 'model.yaml',
+        source: nativeSource,
+      },
+    );
   });
 
-  it.each(['en-CA', 'fr-CA'] as const)(
-    'proposes the untitled stem in the language it is given (%s)',
-    (locale) => {
-      chooseLanguage(locale);
-      const untitled = activeTranslator().t('defaults.untitled-file');
+  it('proposes the stem it is given, distinct in fr-CA and sv from en-CA', () => {
+    const enUntitled = untitledFileIn('en-CA');
+    const frUntitled = untitledFileIn('fr-CA');
+    const svUntitled = untitledFileIn('sv');
 
-      expect(
-        saveTarget(FileLifecycle.NoFile(), 'saerskriven-yaml', untitled),
-      ).toEqual({
-        name: `${untitled}.yaml`,
-        source: nativeSource,
-      });
-    },
-  );
+    expect(frUntitled).not.toBe(enUntitled);
+    expect(svUntitled).not.toBe(enUntitled);
+    expect(
+      saveTarget(FileLifecycle.NoFile(), 'saerskriven-yaml', frUntitled),
+    ).toEqual({ name: `${frUntitled}.yaml`, source: nativeSource });
+  });
 
   it('keeps an opened file its own name, whatever the untitled stem given', () => {
     expect(saveTarget(openedNative, 'saerskriven-yaml', 'hotmodell')).toEqual({
@@ -218,12 +240,18 @@ describe('saveTarget', () => {
 
 describe('naming', () => {
   it('carries the extension of the format it targets', () => {
-    expect(proposedName('model.json', 'saerskriven-yaml')).toBe('model.yaml');
-    expect(proposedName('model.yaml', 'threat-dragon')).toBe('model.json');
+    expect(proposedName('model.json', 'saerskriven-yaml', untitledFile)).toBe(
+      'model.yaml',
+    );
+    expect(proposedName('model.yaml', 'threat-dragon', untitledFile)).toBe(
+      'model.json',
+    );
   });
 
   it('names a file that would otherwise be all extension', () => {
-    expect(proposedName('.yaml', 'saerskriven-yaml')).toBe('threat-model.yaml');
+    expect(proposedName('.yaml', 'saerskriven-yaml', untitledFile)).toBe(
+      'threat-model.yaml',
+    );
   });
 
   it('derives an export name from the open file, or from the untitled stem it is given', () => {

@@ -546,6 +546,23 @@ describe('useFileSession', () => {
     ]);
   });
 
+  it('names an untitled save-as in the language active when it runs', async () => {
+    const bridge = specBridge();
+    const result = session(bridge);
+    chooseLanguage('sv');
+
+    act(() => {
+      result.current.commands.saveAs();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    const untitled = activeTranslator().t('defaults.untitled-file');
+    expect(untitled).not.toBe('threat-model');
+    expect(bridge.writes[0].name).toBe(`${untitled}.yaml`);
+  });
+
   it('names an untitled save in the language active when it runs', async () => {
     const bridge = specBridge();
     const result = session(bridge);
@@ -558,8 +575,9 @@ describe('useFileSession', () => {
     await waitFor(() => {
       expect(bridge.writes).toHaveLength(1);
     });
-    const { t } = activeTranslator();
-    expect(bridge.writes[0].name).toBe(`${t('defaults.untitled-file')}.yaml`);
+    const untitled = activeTranslator().t('defaults.untitled-file');
+    expect(untitled).not.toBe('threat-model');
+    expect(bridge.writes[0].name).toBe(`${untitled}.yaml`);
   });
 
   it('keeps an already-named file on a save, whatever the active language', async () => {

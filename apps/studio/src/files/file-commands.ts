@@ -119,7 +119,7 @@ export function useFileSession(
 
   const applyOpen = useCallback(
     (result: FileResult<OpenOutcome>, intent: ReadIntent): void => {
-      const action = openedBy(result.outcome, intent);
+      const action = openedBy(result.outcome, untitledFileStem(), intent);
       if (action === undefined) {
         result.settle('unchanged');
         return;
@@ -175,12 +175,7 @@ export function useFileSession(
       const settle = async (): Promise<void> => {
         setChoosing(false);
         setReport(undefined);
-        const { t } = activeTranslator();
-        const planned = planSave(
-          modelStore.getState(),
-          format,
-          t('defaults.untitled-file'),
-        );
+        const planned = planSave(modelStore.getState(), format);
         land(
           await bridge.saveAs(
             planned.target.name,
@@ -199,12 +194,7 @@ export function useFileSession(
     const store = async (): Promise<void> => {
       setReport(undefined);
       const state = modelStore.getState();
-      const { t } = activeTranslator();
-      const planned = planSave(
-        state,
-        formatOf(state.file),
-        t('defaults.untitled-file'),
-      );
+      const planned = planSave(state, formatOf(state.file));
       land(
         await bridge.save(planned.target.name, planned.written.output),
         planned,
@@ -215,16 +205,14 @@ export function useFileSession(
       setReport(undefined);
       const state = modelStore.getState();
       const current = formatOf(state.file);
-      const { t } = activeTranslator();
-      const untitled = t('defaults.untitled-file');
-      let planned = planSave(state, current, untitled);
+      let planned = planSave(state, current);
       const outcome = await bridge.saveAs(
         planned.target.name,
         saveTypes(formatsFrom(current)),
         (chosen) => {
           const format = formatOfName(chosen) ?? current;
           if (format !== planned.target.source.format) {
-            planned = planSave(state, format, untitled);
+            planned = planSave(state, format);
           }
           return planned.written.output;
         },
@@ -365,12 +353,12 @@ export function useFileSession(
   );
 }
 
-function planSave(
-  state: State,
-  format: FormatName,
-  untitled: string,
-): PlannedSave {
-  const target = saveTarget(state.file, format, untitled);
+function untitledFileStem(): string {
+  return activeTranslator().t('defaults.untitled-file');
+}
+
+function planSave(state: State, format: FormatName): PlannedSave {
+  const target = saveTarget(state.file, format, untitledFileStem());
   return {
     target,
     written: writeThrough(state.present, target.source),
