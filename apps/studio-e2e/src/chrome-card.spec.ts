@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { committedText } from '@saerskriven/model/fixtures';
 import {
   type Box,
   centreOf,
@@ -15,6 +16,7 @@ import {
   diagramTitleField,
   downloaded,
   exportedFile,
+  featureCompleteFile,
   menuButton,
   menuItem,
   nodeNamed,
@@ -35,6 +37,10 @@ import {
 import { registeredChords } from './chords.fixtures.js';
 
 const { first, second } = twoDiagrams;
+
+const submenus = ['Export', 'Arrange', /^Appearance /u, /^Language /u];
+
+const cardBorder = 1;
 
 const below = async (target: Locator, card: Box): Promise<void> => {
   const box = await screenBoxOf(target);
@@ -151,6 +157,13 @@ test(
   },
 );
 
+const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
+  expect(await scrolledAbove(chromeCard(page))).toBe(0);
+  expect(await screenBoxOf(menuButton(page))).toEqual(burger);
+};
+
+const rootMenu = (page: Page): Locator => page.getByRole('menu').first();
+
 type OpenedSubmenu = {
   readonly row: Box;
   readonly drawn: Box;
@@ -172,11 +185,10 @@ const opensOnScreen = async (
   const drawn = await screenBoxOf(submenu);
   const top = Math.round(drawn.y);
   const bottom = Math.round(drawn.y + drawn.height);
-  expect(Math.round(drawn.x - card.x)).toBeGreaterThanOrEqual(0);
-  expect(Math.round(drawn.x - card.x)).toBeLessThanOrEqual(1);
-  expect(Math.round(drawn.x + drawn.width)).toBeLessThanOrEqual(
-    viewport?.width ?? 0,
-  );
+  const fromCardEdge = Math.round(drawn.x - card.x);
+  expect(fromCardEdge).toBeGreaterThanOrEqual(0);
+  expect(fromCardEdge).toBeLessThanOrEqual(cardBorder);
+  expect(drawn.x + drawn.width).toBeLessThanOrEqual(viewport?.width ?? 0);
   expect(top).toBeGreaterThanOrEqual(0);
   expect(bottom).toBeLessThanOrEqual(viewport?.height ?? 0);
   expect(
@@ -212,7 +224,7 @@ test(
   async ({ page }) => {
     await openFallback(page);
 
-    for (const name of ['Export', 'Arrange', /^Appearance /u, /^Language /u]) {
+    for (const name of submenus) {
       await openMenu(page);
       const { scrolls } = await opensOnScreen(page, name);
       expect(scrolls).toBe(false);
@@ -222,6 +234,50 @@ test(
     const output = await exportedFile(page, 'Diagram as SVG');
     expect(output.name).toBe('Untitled.svg');
     expect(output.bytes.length).toBeGreaterThan(0);
+  },
+);
+
+const unbrokenName =
+  'quarterly_clinic_booking_threat_model_review_final_v2_with_appendices.json';
+
+const menuFitsAndEverySubmenuOpensInPlace = async (
+  page: Page,
+  burger: Box,
+): Promise<void> => {
+  const width = page.viewportSize()?.width ?? 0;
+  for (const name of submenus) {
+    await openMenu(page);
+    const panel = await screenBoxOf(rootMenu(page));
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    expect(
+      await rootMenu(page).evaluate(
+        (menu) => menu.scrollWidth <= menu.clientWidth,
+      ),
+    ).toBe(true);
+    await opensOnScreen(page, name);
+    await staysInPlace(page, burger);
+    await closeMenu(page);
+  }
+};
+
+test(
+  'a long file name leaves the menu inside the screen, and a click opens each submenu at the card edge without moving the chrome',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openFile(page, featureCompleteFile);
+    const burger = await screenBoxOf(menuButton(page));
+    await menuFitsAndEverySubmenuOpensInPlace(page, burger);
+
+    await openText(
+      page,
+      unbrokenName,
+      committedText('threat-dragon', 'feature-complete.json'),
+    );
+    await openMenu(page);
+    await expect(page.getByTestId('file-state')).toContainText(unbrokenName);
+    await closeMenu(page);
+    await menuFitsAndEverySubmenuOpensInPlace(page, burger);
   },
 );
 
@@ -270,11 +326,6 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
   expect(output.name).toBe('two-diagrams.svg');
 });
 
-const staysInPlace = async (page: Page, burger: Box): Promise<void> => {
-  expect(await scrolledAbove(chromeCard(page))).toBe(0);
-  expect(await screenBoxOf(menuButton(page))).toEqual(burger);
-};
-
 const openInShortViewport = async (page: Page): Promise<Box> => {
   await shortenViewport(page, 720);
   await openFile(page, twoDiagramsFile);
@@ -282,8 +333,6 @@ const openInShortViewport = async (page: Page): Promise<Box> => {
   await openMenu(page);
   return burger;
 };
-
-const rootMenu = (page: Page): Locator => page.getByRole('menu').first();
 
 test(
   'the menu ends inside a 720 px tall viewport and scrolls itself to its last row',

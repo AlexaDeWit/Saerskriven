@@ -151,8 +151,9 @@ export function shortcutLabelText(
     : t(label.id, { title: label.title });
 }
 
-/** A shortcut spelled for a person and for assistive technology. */
+/** A shortcut spelled for a person, whole and one alternative at a time, and for assistive technology. */
 export type ShortcutText = {
+  readonly alternatives: readonly string[];
   readonly chord: string;
   readonly keyShortcuts: string;
 };
@@ -240,21 +241,28 @@ export function spellChord(
   );
 }
 
+const spellAlternatives = (
+  shortcuts: readonly Chord[],
+  platform: Platform,
+  t: StudioTranslator['t'],
+): readonly string[] =>
+  shortcutsOn(shortcuts, platform).map((chord) =>
+    spellChord(chord, platform, t),
+  );
+
 /** Spells only the shortcuts available on the given platform. */
 export function spellShortcuts(
   shortcuts: readonly Chord[],
   platform: Platform,
   t: StudioTranslator['t'],
 ): string {
-  return shortcutsOn(shortcuts, platform)
-    .map((chord) => spellChord(chord, platform, t))
-    .reduce(
-      (spelled, chord) =>
-        spelled === ''
-          ? chord
-          : t('commands.either-chord', { first: spelled, second: chord }),
-      '',
-    );
+  return spellAlternatives(shortcuts, platform, t).reduce(
+    (spelled, chord) =>
+      spelled === ''
+        ? chord
+        : t('commands.either-chord', { first: spelled, second: chord }),
+    '',
+  );
 }
 
 /** The chord a person reads and the `aria-keyshortcuts` value for the same shortcuts. */
@@ -264,6 +272,7 @@ export function shortcutText(
   t: StudioTranslator['t'],
 ): ShortcutText {
   return {
+    alternatives: spellAlternatives(shortcuts, platform, t),
     chord: spellShortcuts(shortcuts, platform, t),
     keyShortcuts: keyShortcutsAttribute(shortcuts, platform),
   };

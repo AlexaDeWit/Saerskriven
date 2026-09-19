@@ -27,7 +27,12 @@ import { useModelStore } from '../store/store.js';
 import { useCloseFocus } from '../ui/close-focus.js';
 import type { ColourMode } from '../theme-preference.js';
 import { DiagramSwitcher } from './diagram-switcher.js';
-import { MenuCommand, MenuItem, RegisteredMenuCommand } from './menu-items.js';
+import {
+  MenuCommand,
+  MenuItem,
+  panelPlacement,
+  RegisteredMenuCommand,
+} from './menu-items.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
 import { AppearanceMenu, LanguageMenu } from './settings-menu.js';
@@ -185,9 +190,8 @@ function MenuPanel({
     <DropdownMenu.Content
       tabIndex={0}
       {...closeFocus}
-      align="start"
+      {...panelPlacement}
       className={styles.panel}
-      sideOffset={6}
     >
       <FileMenu dirty={dirty} session={session} />
       <DropdownMenu.Separator className={styles.rule} />

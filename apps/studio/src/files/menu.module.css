@@ -132,11 +132,15 @@
   font-weight: 600;
 }
 
+/* A row too narrow for its label and its chord wraps the chord under the
+   label, at the end edge, and a chord still too wide breaks between its
+   alternatives, never inside one, so neither is clipped. */
 .item {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--pn-space-4);
+  column-gap: var(--pn-space-4);
   padding: var(--pn-space-2) var(--pn-space-3);
   border-radius: var(--pn-radius);
   user-select: none;
@@ -163,7 +167,17 @@
 }
 
 .chord {
+  margin-inline-start: auto;
   color: var(--pn-colour-text-muted);
+  white-space: nowrap;
+}
+
+.chords {
+  white-space: normal;
+  text-align: end;
+}
+
+.alternative {
   white-space: nowrap;
 }
 
@@ -194,10 +208,12 @@
 }
 
 /* Whether the model is in a file is said in words, never by a colour or a
-   mark alone. */
+   mark alone. A file name with no break in it breaks anywhere rather than
+   widening the panel. */
 .state {
   margin: 0;
   color: var(--pn-colour-text-muted);
+  overflow-wrap: anywhere;
 }
 
 /* As with the failure notice, the region collapses while it is empty rather
