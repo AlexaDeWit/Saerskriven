@@ -100,6 +100,11 @@ every language, because the wire formats keep the model's own values.
 3. Mark new French and Swedish text in the pull request for review by a
    fluent speaker.
 
+A security or threat-modelling term follows the
+[terminology glossary](../../../../packages/render/src/messages/GLOSSARY.md),
+which is the one list of the French and Swedish terms both the studio and the
+exports use, with a source for each.
+
 A sentence is one message with named parameters, never English fragments
 joined together. A stored value of the model is never drawn as its own label:
 `enum-labels.ts` names the message each one is shown under, and `EnumField`

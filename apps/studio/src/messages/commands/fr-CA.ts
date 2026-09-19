@@ -51,7 +51,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-hand-tool': 'Main',
   'label-actor-tool': 'Acteur',
   'label-process-tool': 'Processus',
-  'label-store-tool': 'Entrepôt',
+  'label-store-tool': 'Magasin de données',
   'label-note-tool': 'Note',
   'label-boundary-box-tool': 'Frontière de confiance',
   'label-boundary-curve-tool': 'Courbe de frontière de confiance',
