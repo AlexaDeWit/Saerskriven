@@ -11,8 +11,12 @@ import { rasterizeSvg, type ResvgAssets, type ResvgFailure } from './resvg.js';
 
 export { ResvgFailure } from './resvg-failures.js';
 
-/** Default raster size on the longer edge, in pixels. */
-export const defaultLongEdge = 1568;
+/**
+ * Default raster size on the longer edge, in pixels: the smallest round size
+ * at which the fr-CA `É` high-severity mark clears the count digit above it
+ * in a badge with a count.
+ */
+export const defaultLongEdge = 2500;
 
 /**
  * The face a caller leads the rasterizer's faces with. A family no face
@@ -54,8 +58,8 @@ export type PngImage = {
 
 /**
  * One diagram as a PNG: {@link renderSvg} in `locale`, rasterized on its
- * themed background at `longEdge` pixels on the longer side, 1568 by default,
- * the size an MCP host downscales an image block to.
+ * themed background at `longEdge` pixels on the longer side,
+ * {@link defaultLongEdge} by default.
  */
 export async function renderPng(
   diagram: Diagram,
