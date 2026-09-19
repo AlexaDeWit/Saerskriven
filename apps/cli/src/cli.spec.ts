@@ -92,7 +92,7 @@ describe('the arguments as the outcome they ask for', () => {
     const outcome = await runCli(['render', '--help']);
     expect(outcome.code).toEqual(0);
     expect(outcome.out).toContain('--lang <tag>');
-    expect(outcome.out).toContain('en-CA, fr-CA or sv');
+    expect(outcome.out).toContain('en-CA, fr-CA, sv');
   });
 
   it('refuses a --lang naming no supported locale', async () => {

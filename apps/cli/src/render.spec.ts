@@ -13,7 +13,7 @@ import {
   renderGolden,
   scratchDirectory,
 } from './cli.fixtures.js';
-import { compileTimeout, pageCount } from './pdf.fixtures.js';
+import { compileTimeout, outlineTitles, pageCount } from './pdf.fixtures.js';
 import { render, type RenderOptions } from './render.js';
 
 const directory = scratchDirectory('render');
@@ -229,6 +229,18 @@ describe('render', () => {
     });
   });
 
+  it('keeps the unplaced-flow warning in English however --lang is set', async () => {
+    const file = fixtureFile(directory, 'unplaced-fr.yaml', unplacedFlowYaml);
+    await expect(
+      render(file, options({ out: '-', lang: 'fr' })),
+    ).resolves.toMatchObject({
+      code: 0,
+      err:
+        'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.\n' +
+        '  flow "flow-2" target names "flow-1"\n',
+    });
+  });
+
   it('refuses a diagram chosen for a register, which holds them all', async () => {
     await expect(
       render(twoDiagrams, options({ format: 'md', ...storefront })),
@@ -377,6 +389,33 @@ describe('render', () => {
         '<text class="pn-badge-mark" y="6">É</text>',
       );
     });
+
+    it('rasterizes the diagram with the given language, not the golden default', async () => {
+      const run = await written('storefront.fr.png', twoDiagrams, {
+        format: 'png',
+        lang: 'fr',
+        ...storefront,
+      });
+      expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
+      expect(run.bytes()).not.toEqual(
+        renderGolden('two-diagrams-storefront.snapshot.png'),
+      );
+    });
+
+    it(
+      'compiles the PDF with the register title in the given language',
+      async () => {
+        const run = await written('two-diagrams.fr.pdf', twoDiagrams, {
+          format: 'pdf',
+          lang: 'fr',
+        });
+        expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
+        expect(outlineTitles(run.bytes())).toContain(
+          'Registre des menaces : Two diagrams',
+        );
+      },
+      compileTimeout,
+    );
 
     it('refuses a tag naming no supported locale', async () => {
       await expect(

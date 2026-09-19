@@ -207,10 +207,12 @@ landscape page, then that same register, so it takes no `--diagram` either.
 
 `--lang <tag>` chooses the written document's language: en-CA, fr-CA or sv,
 matched from the tag's language subtag (`fr`, `fr-FR` and `fr-CA` all give
-fr-CA). Without it the document is en-CA, whatever `LANG`, `LC_*` or
-`LANGUAGE` say in the environment, since the CLI never reads them. A tag
-naming no supported locale is refused rather than rendered in en-CA. The
-CLI's own prose, help and errors included, stays English.
+fr-CA). The tag is a BCP 47 tag such as `fr-CA`, not the underscore form
+`fr_CA` an environment variable like `LANG` carries. Without it the document
+is en-CA, whatever `LANG`, `LC_*` or `LANGUAGE` say in the environment, since
+the CLI never reads them. A tag naming no supported locale is refused rather
+than rendered in en-CA. The CLI's own prose, help and errors included, stays
+English.
 
 The PDF is compiled by Typst and the PNG is rasterized by resvg, both of
 which the executable carries as WebAssembly modules together with the fonts

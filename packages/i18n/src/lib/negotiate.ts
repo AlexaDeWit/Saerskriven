@@ -23,13 +23,8 @@ function languageOf(tag: string): readonly string[] {
  * every English tag en-CA, whatever its region, script or extensions.
  */
 export function supportedLocale(tag: string): Locale | undefined {
-  return languageOf(tag)
-    .flatMap((language) =>
-      Object.hasOwn(catalogueLanguages, language)
-        ? [catalogueLanguages[language]]
-        : [],
-    )
-    .at(0);
+  const language = languageOf(tag).at(0);
+  return language === undefined ? undefined : catalogueLanguages[language];
 }
 
 /**

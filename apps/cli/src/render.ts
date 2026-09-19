@@ -110,12 +110,6 @@ function withLocale(
   });
 }
 
-/**
- * No `--lang` gives en-CA. Given one, its language subtag through
- * {@link supportedLocale} decides, or the invocation is refused: negotiating
- * to a default here would render silently in the wrong language rather than
- * naming the tag as unsupported.
- */
 function chosenLocale(lang: string | undefined): Either.Either<Locale, string> {
   if (lang === undefined) {
     return Either.right(defaultLocale);
