@@ -935,8 +935,8 @@ const fieldNames = [
   'register.status',
   'register.flags',
   'register.description',
-  'register.mitigations',
-  'register.assumptions',
+  'terms.mitigations',
+  'terms.assumptions',
 ] as const;
 
 function strongTextsOf(nodes: readonly Nodes[]): string[] {
@@ -978,7 +978,7 @@ describe.each(translatedLocales)('the register in %s', (locale) => {
         ] as const
       ).map((column) => t(column)),
     );
-    expect(written).toContain(t('register.model-assumptions'));
+    expect(written).toContain(t('terms.model-assumptions'));
     expect(written).not.toContain('Assumptions that apply to the model');
   });
 

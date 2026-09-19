@@ -219,10 +219,7 @@ function modelAssumptionSection(context: SectionContext): RootContent[] {
   return assumptions.length === 0
     ? []
     : [
-        heading(
-          context.depth,
-          context.messages.t('register.model-assumptions'),
-        ),
+        heading(context.depth, context.messages.t('terms.model-assumptions')),
         ...recordList(
           assumptions.map((assumption) => assumptionItem(assumption, context)),
           context,
@@ -249,7 +246,7 @@ function threatSection(threat: Threat, context: SectionContext): RootContent[] {
       proseContent(threat.description, context),
     ),
     ...labelled(
-      t('register.mitigations'),
+      t('terms.mitigations'),
       recordList(
         recordsLinkedTo(context.model.mitigations, threat.id).map(
           (mitigation) => mitigationItem(mitigation, context),
@@ -258,7 +255,7 @@ function threatSection(threat: Threat, context: SectionContext): RootContent[] {
       ),
     ),
     ...labelled(
-      t('register.assumptions'),
+      t('terms.assumptions'),
       recordList(
         recordsLinkedTo(context.model.assumptions, threat.id).map(
           (assumption) => assumptionItem(assumption, context),

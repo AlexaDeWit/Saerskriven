@@ -76,7 +76,7 @@ describe(
       expect(
         screen
           .getByRole('group', {
-            name: activeTranslator().t('enums.model-assumptions'),
+            name: activeTranslator().t('terms.model-assumptions'),
           })
           .contains(document.activeElement),
       ).toBe(true);

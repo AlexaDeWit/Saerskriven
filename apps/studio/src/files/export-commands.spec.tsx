@@ -12,6 +12,7 @@ import { dispatch, modelStore } from '../store/store.js';
 import {
   foreignSource,
   mainDiagram,
+  recordedModel,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
@@ -92,6 +93,14 @@ const unplacedModel = parsedFixture({
   ],
 });
 
+const badgedModel = parsedFixture({
+  ...recordedModel,
+  threats: recordedModel.threats.map((threat, index) => ({
+    ...threat,
+    severity: index === 0 ? 'high' : 'critical',
+  })),
+});
+
 const selectableElement = sampleModel.diagrams[0].elements[0].id;
 
 beforeEach(() => {
@@ -169,6 +178,7 @@ describe('the studio exports', () => {
           }),
         ),
       );
+      modelStore.setState(openedState(badgedModel), true);
       const result = session(bridge, specRenders({ compile, draw }));
 
       act(() => {
@@ -182,23 +192,27 @@ describe('the studio exports', () => {
       await waitFor(() => {
         expect(bridge.writes).toHaveLength(5);
       });
-      const framed = [
-        renderSvg(sampleModel.diagrams[0], sampleModel, locale).svg,
-        renderRegister(sampleModel, locale),
-        renderTypst(sampleModel, locale).typst,
-      ];
-      expect(bridge.writes.slice(0, 3).map((write) => write.text)).toEqual(
-        framed,
-      );
-      expect(framed).not.toEqual([
-        renderSvg(sampleModel.diagrams[0], sampleModel, 'en-CA').svg,
-        renderRegister(sampleModel, 'en-CA'),
-        renderTypst(sampleModel, 'en-CA').typst,
-      ]);
-      expect(compile).toHaveBeenCalledWith(framed[2], expect.anything());
+      const written = (extension: string): string | undefined =>
+        bridge.writes.find((write) => write.name.endsWith(extension))?.text;
+      const diagram = badgedModel.diagrams[0];
+      const exported = {
+        svg: renderSvg(diagram, badgedModel, locale).svg,
+        md: renderRegister(badgedModel, locale),
+        typ: renderTypst(badgedModel, locale).typst,
+      };
+      const english = {
+        svg: renderSvg(diagram, badgedModel, 'en-CA').svg,
+        md: renderRegister(badgedModel, 'en-CA'),
+        typ: renderTypst(badgedModel, 'en-CA').typst,
+      };
+      for (const extension of ['svg', 'md', 'typ'] as const) {
+        expect(written(`.${extension}`)).toBe(exported[extension]);
+        expect(exported[extension]).not.toBe(english[extension]);
+      }
+      expect(compile).toHaveBeenCalledWith(exported.typ, expect.anything());
       expect(draw).toHaveBeenCalledWith(
-        sampleModel.diagrams[0],
-        sampleModel,
+        diagram,
+        badgedModel,
         locale,
         expect.anything(),
       );

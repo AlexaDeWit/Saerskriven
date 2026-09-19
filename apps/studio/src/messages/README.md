@@ -30,7 +30,7 @@ person typed reach a message as parameters and pass through unchanged.
 | `panel`      | The threat panel, the model's properties and the record groups                  |
 | `reports`    | File reports, export reports and the file types an export offers                |
 | `shell`      | The language control, the browser tab's name, the version, the stopped page     |
-| `terms`      | Render's words for the stored values an export shows, and the badge marks       |
+| `terms`      | Render's words for stored values, record-group headings and badge marks         |
 | `tools`      | The controls drawn over the canvas: zoom, placement, routes and endpoints       |
 
 `divergence/text.ts` maps each divergence code `@saerskriven/formats` records
@@ -84,11 +84,11 @@ export, and a change of language redraws them. The studio words the
 undrawn-flow warning itself, from the endpoints the projection returns.
 
 The `terms` section is render's own catalogue, `termMessages` and
-`termCatalogues`, joined to the studio's contract: a stored value an export
-also shows, such as a severity, a status or a category, is labelled from
-there, so each term has one home. `enums` keeps the labels only the studio
-shows. Saving YAML or JSON writes the same bytes in every language, because
-the wire formats keep the model's own values.
+`termCatalogues`, joined to the studio's contract. A stored value an export
+also shows, such as a severity, a status or a category, and a record group's
+heading are labelled from there, so each term has one home. `enums` keeps the
+labels only the studio shows. Saving YAML or JSON writes the same bytes in
+every language, because the wire formats keep the model's own values.
 
 ## Adding a message
 

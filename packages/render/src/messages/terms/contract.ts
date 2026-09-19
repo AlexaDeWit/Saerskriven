@@ -1,9 +1,9 @@
 import { text } from '@saerskriven/i18n';
 
 /**
- * The words an export shows a stored value of the model under, and the marks
- * a threat badge draws. A mark is one character, and the marks of one locale
- * differ from each other.
+ * The words an export shows a stored value of the model under, the headings
+ * of its record groups, and the marks a threat badge draws. A mark is one
+ * character, and the marks of one locale differ from each other.
  */
 export const termMessages = {
   'severity-low': text(),
@@ -53,6 +53,9 @@ export const termMessages = {
   'category-privacy-and-data-protection': text(),
   'category-safety-and-environmental-impact': text(),
   'category-transparency-and-accessibility': text(),
+  mitigations: text(),
+  assumptions: text(),
+  'model-assumptions': text(),
   'mark-undecided': text(),
   'mark-low': text(),
   'mark-medium': text(),

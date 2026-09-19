@@ -73,7 +73,7 @@ flag mark has a glyph shape of its own, an outline and its label as text, all
 in the text colour, so severity and every mark stay distinct in forced colours.
 The whole summary, counts and marks included, is the accordion control's
 accessible name, in drawn order, and it holds no control of its own. The
-model's properties head their assumptions group with `enums.model-assumptions`.
+model's properties head their assumptions group with `terms.model-assumptions`.
 
 ## Record groups
 
