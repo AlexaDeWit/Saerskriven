@@ -14,6 +14,12 @@ import {
 
 const developmentModelKey = 'saerskrivenDevelopmentModel';
 
+const recoveryStorageKey = 'saerskriven:studio:recovery';
+
+/** The recovery snapshot the studio last wrote, as stored, or `null` before its first write. */
+export const recoverySnapshot = (page: Page): Promise<string | null> =>
+  page.evaluate((key) => localStorage.getItem(key), recoveryStorageKey);
+
 /** What the placeholder model draws, by the names assistive technology has for them. */
 export const placeholder = {
   actor: /^Actor, actor/u,
@@ -71,10 +77,11 @@ const landed = async (page: Page): Promise<void> => {
   await canvasSettled(page);
 };
 
-/** Opens a model document through the development hook. Existing recovery still takes precedence. */
+/** Opens a model document at `entry` through the development hook. Existing recovery still takes precedence. */
 export const openModelDocument = async (
   page: Page,
   model: unknown,
+  entry = '/',
 ): Promise<void> => {
   await page.addInitScript(
     ({ key, model: document }) => {
@@ -82,7 +89,7 @@ export const openModelDocument = async (
     },
     { key: developmentModelKey, model },
   );
-  await page.goto('/');
+  await page.goto(entry);
   await landed(page);
 };
 

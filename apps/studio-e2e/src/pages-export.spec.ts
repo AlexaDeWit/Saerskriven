@@ -4,7 +4,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expectedPdfDigest, pdfPageCount } from './exports.fixtures.js';
-import { exportedFile, openFile, twoDiagramsFile } from './studio.fixtures.js';
+import { pseudoMarkers } from '@saerskriven/i18n';
+import {
+  exportedFile,
+  menuButton,
+  openFile,
+  twoDiagramsFile,
+} from './studio.fixtures.js';
 
 const compilerDownloadAndTypesetTimeout = 60_000;
 
@@ -84,4 +90,51 @@ test('the release build identifies its own version outside the menu', async ({
     version,
     tag: `v${String(version)}`,
   });
+});
+
+test('the Pages build words the studio in each language below the site base, with no pseudo-locale', async ({
+  page,
+}) => {
+  const refused: string[] = [];
+  page.on('response', (response) => {
+    if (response.status() >= 400) {
+      refused.push(`${String(response.status())} ${response.url()}`);
+    }
+  });
+  page.on('requestfailed', (request) => {
+    refused.push(`failed ${request.url()}`);
+  });
+
+  for (const [locale, menu] of [
+    ['en-CA', 'Menu'],
+    ['fr-CA', 'Menu'],
+    ['sv', 'Meny'],
+  ] as const) {
+    await page.goto('./?pseudo-locale');
+    await page.evaluate((chosen) => {
+      localStorage.setItem('saerskrivenLanguage', chosen);
+    }, locale);
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+    await expect(menuButton(page)).toHaveAccessibleName(menu);
+  }
+
+  const base = new URL('./', page.url()).href;
+  const scripts = await page.evaluate(() =>
+    [
+      ...document.querySelectorAll<HTMLScriptElement>('script[src]'),
+      ...document.querySelectorAll<HTMLLinkElement>(
+        'link[rel="modulepreload"]',
+      ),
+    ].map((element) =>
+      element instanceof HTMLScriptElement ? element.src : element.href,
+    ),
+  );
+  expect(scripts.length).toBeGreaterThan(0);
+  for (const script of scripts) {
+    expect(script.startsWith(base)).toBe(true);
+    const source = await (await page.request.get(script)).text();
+    expect(source.includes(pseudoMarkers.open), script).toBe(false);
+  }
+  expect(refused).toEqual([]);
 });
