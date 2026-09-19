@@ -67,12 +67,12 @@ catalog:
   # so a bump is a reviewed change. 0.7.0 carries Typst 0.14.2, which the
   # PDF's own Creator field records.
   '@myriaddreamin/typst-ts-web-compiler': 0.7.0
-  '@nx/esbuild': 23.2.0
-  '@nx/eslint-plugin': 23.2.0
-  '@nx/js': 23.2.0
-  '@nx/playwright': 23.2.0
-  '@nx/vite': 23.2.0
-  '@nx/vitest': 23.2.0
+  '@nx/esbuild': 23.2.1
+  '@nx/eslint-plugin': 23.2.1
+  '@nx/js': 23.2.1
+  '@nx/playwright': 23.2.1
+  '@nx/vite': 23.2.1
+  '@nx/vitest': 23.2.1
   # Pinned exactly to the nixpkgs playwright-driver version: the browsers come
   # from the flake, and a driver of one version cannot run browsers installed
   # for another. The version-equality test in apps/studio-e2e reds a mismatch,
@@ -133,13 +133,13 @@ catalog:
   fast-check: ^4.0.0
   jiti: 2.7.0
   jsdom: ^30.0.0
-  nx: 23.2.0
+  nx: 23.2.1
   # Pinned exactly: a pre-1.0 oxfmt bump may reformat the tree, so it happens
   # only in a reviewed PR. Renovate proposes the bumps.
-  oxfmt: 0.66.0
+  oxfmt: 0.67.0
   # Pinned exactly: oxlint minors add rules, so a range bump could redden CI
   # outside a reviewed PR. Renovate proposes the bumps.
-  oxlint: 1.81.0
+  oxlint: 1.82.0
   # tsgolint bundles its own typescript-go checker, so it does not care about
   # the catalog's typescript version.
   oxlint-tsgolint: 7.0.2001
@@ -175,7 +175,7 @@ catalog:
   yaml: ^2.9.0
   # Floor below the 4.5 line: it was younger than minimumReleaseAge when
   # adopted (2026-08-29), so the caret resolves to the newest aged release
-  # and picks up 4.5.x as it ages.
+  # and picks up later releases as they age.
   zod: ^4.4.0
   # The studio's state host, ruled on issue #35: one store, one dispatch over
   # a pure reducer. React Flow carries a zustand 4 copy of its own for its
