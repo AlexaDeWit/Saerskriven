@@ -2,6 +2,8 @@ import { withinTextBytes } from '@saerskriven/formats';
 import { reasonOf, type WriteTarget } from '@saerskriven/mcp';
 import { Either } from 'effect';
 import {
+  existsSync,
+  lstatSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -79,6 +81,30 @@ export function resolved(target: WriteTarget): WriteTarget {
       () => target.path,
     ),
   };
+}
+
+/** Whether the path is a symbolic link naming nothing that exists. */
+export function danglingLink(path: string): boolean {
+  return Either.getOrElse(
+    Either.try(() => lstatSync(path).isSymbolicLink() && !existsSync(path)),
+    () => false,
+  );
+}
+
+/**
+ * Whether two paths name one file, by device and inode, so a link, a hard
+ * link or a case-insensitive spelling all match. A path that cannot be
+ * measured names no file.
+ */
+export function sameFile(first: string, second: string): boolean {
+  return Either.getOrElse(
+    Either.try(() => {
+      const one = statSync(first);
+      const other = statSync(second);
+      return one.dev === other.dev && one.ino === other.ino;
+    }),
+    () => false,
+  );
 }
 
 function sizeOf(path: string): number | undefined {

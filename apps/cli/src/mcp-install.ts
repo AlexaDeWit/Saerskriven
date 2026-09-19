@@ -7,10 +7,10 @@ import {
   type WriteTarget,
 } from '@saerskriven/mcp';
 import { Either } from 'effect';
-import { existsSync, lstatSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { z } from 'zod';
-import { resolved, withinReadBound } from './files.js';
+import { danglingLink, resolved, withinReadBound } from './files.js';
 import {
   InstallFailure,
   entryText,
@@ -279,13 +279,6 @@ function takenPath(target: WriteTarget): InstallFailure {
   return danglingLink(target.path)
     ? InstallFailure.DanglingLink({ path: target.file })
     : InstallFailure.Occupied({ path: target.file });
-}
-
-function danglingLink(path: string): boolean {
-  return Either.getOrElse(
-    Either.try(() => lstatSync(path).isSymbolicLink() && !existsSync(path)),
-    () => false,
-  );
 }
 
 const ownerOnly = 0o600;

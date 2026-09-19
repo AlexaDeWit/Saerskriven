@@ -9,6 +9,7 @@ export {
   replacedFile,
   serialized,
   writtenThrough,
+  type OverwriteFailure,
   type WriteTarget,
 } from './lib/write.js';
 export {

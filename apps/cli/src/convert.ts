@@ -11,15 +11,14 @@ import {
 } from '@saerskriven/formats';
 import {
   overwrittenFile,
-  renderWriteFailure,
-  serialized,
   WriteFailure,
   writtenThrough,
+  type OverwriteFailure,
 } from '@saerskriven/mcp';
 import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
-import { resolved } from './files.js';
+import { danglingLink, resolved, sameFile } from './files.js';
 import { describeDivergences, readConvertible } from './input.js';
 import {
   delivered,
@@ -74,7 +73,7 @@ function rewritable(
 ): Either.Either<void, CommandOutcome> {
   return options.out !== '-' &&
     read.format !== options.to &&
-    pathOf(file) === pathOf(options.out)
+    sameFile(file, options.out)
     ? Either.left(
         usageError(
           lines(
@@ -89,18 +88,12 @@ function converted(
   read: ConvertedRead,
   options: ConvertOptions,
 ): CommandOutcome {
-  return Either.match(
-    serialized(destinationOf(options.out), () => writtenAs(read, options.to)),
-    {
-      onLeft: (failure) => usageError(lines(...refusedWrite(failure))),
-      onRight: (written) =>
-        delivered(
-          options.out,
-          written.output,
-          describeDivergences([...read.divergences, ...written.divergences]),
-          replaced,
-        ),
-    },
+  const written = writtenAs(read, options.to);
+  return delivered(
+    options.out,
+    written.output,
+    describeDivergences([...read.divergences, ...written.divergences]),
+    replaced,
   );
 }
 
@@ -114,26 +107,25 @@ function replaced(
   path: string,
   text: string,
 ): Either.Either<string, readonly string[]> {
-  return Either.mapLeft(
-    overwrittenFile(resolved({ file: path, path }), text),
-    refusedWrite,
-  );
+  return danglingLink(path)
+    ? Either.left([
+        `error: ${escapedForTerminal(path)} is a symbolic link to a file that is not there, so nothing was written.`,
+      ])
+    : Either.mapLeft(
+        overwrittenFile(resolved({ file: path, path }), text),
+        refusedWrite,
+      );
 }
 
-function refusedWrite(failure: WriteFailure): readonly string[] {
-  if (WriteFailure.$is('PastReadBound')(failure)) {
-    return [
-      `error: ${failure.file} was not written: the converted document is ${String(failure.size)} bytes, past the ${String(readLimits.maxTextBytes)} bytes Saerskriven reads.`,
-    ];
-  }
-  if (WriteFailure.$is('Unwritten')(failure)) {
-    return [
-      `error: cannot write ${failure.file}: ${escapedForTerminal(withoutPath(failure.reason))}`,
-    ];
-  }
-  return renderWriteFailure(failure).map((line, index) =>
-    index === 0 ? `error: ${line}` : line,
-  );
+function refusedWrite(failure: OverwriteFailure): readonly string[] {
+  const file = escapedForTerminal(failure.file);
+  return WriteFailure.$is('PastReadBound')(failure)
+    ? [
+        `error: ${file} was not written: the converted document is ${String(failure.size)} bytes, past the ${String(readLimits.maxTextBytes)} bytes Saerskriven reads.`,
+      ]
+    : [
+        `error: cannot write ${file}: ${escapedForTerminal(withoutPath(failure.reason))}`,
+      ];
 }
 
 function withoutPath(reason: string): string {
@@ -141,12 +133,4 @@ function withoutPath(reason: string): string {
     /^(?<system>E[A-Z]+: [^,]*), \w+ '.*'$/u.exec(reason)?.groups?.['system'] ??
     reason
   );
-}
-
-function pathOf(file: string): string {
-  return resolved({ file, path: file }).path;
-}
-
-function destinationOf(out: string): string {
-  return out === '-' ? 'standard output' : out;
 }
