@@ -78,8 +78,9 @@ as an exception:
   between the parts of a canvas item's accessible name, and the separators of
   a `list` parameter, which `Intl.ListFormat` supplies for the locale.
 - A badge's severity letter and flag mark, which come from
-  `@saerskriven/render`'s en-CA terms rather than the studio's catalogues
-  until #499.
+  `@saerskriven/render`'s terms for the active locale (reused on screen since
+  #499) rather than through the studio's translator, so the pseudo-locale
+  does not mark them.
 - Decorative glyphs hidden from assistive technology: the menu's `☰`, the
   fit-selection `⊡`, a radio's `●` and `○`, a disclosure's `▾`.
 

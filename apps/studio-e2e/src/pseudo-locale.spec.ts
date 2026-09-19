@@ -64,7 +64,7 @@ const userData = new Set(
 
 const markedLiteral = /⟦[^⟧]*⟧/u;
 
-const formattedNumber = /^[\d\s.,%]+$/u;
+const formattedNumber = /^(?=.*\d)[\d\s.,%]+$/u;
 
 const itemSeparator = /,(?: |$)/u;
 
@@ -90,7 +90,7 @@ const exceptions: readonly {
   {
     text: /^[?LMHC!]$/u,
     reason:
-      "a badge mark comes from render's en-CA terms, which the pseudo-locale does not read, until #499",
+      "a badge mark comes from render's terms for the locale, which #499 reuses on screen and the pseudo-locale does not read",
   },
   {
     text: /^[☰⊡●○▾]$/u,

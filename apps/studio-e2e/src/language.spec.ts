@@ -5,6 +5,7 @@ import {
   closeMenu,
   downloaded,
   editAnnouncement,
+  exportedFile,
   languageStorageKey,
   menuButton,
   menuItem,
@@ -30,6 +31,10 @@ const readers = {
     save: 'Save',
     undo: 'Undo',
     dismiss: 'Dismiss problem',
+    export: 'Export',
+    register: 'Register as Markdown',
+    registerTitle: 'threat register',
+    severity: 'Severity',
   },
   'fr-CA': {
     language: 'Français (Canada)',
@@ -38,6 +43,10 @@ const readers = {
     save: 'Enregistrer',
     undo: 'Annuler',
     dismiss: 'Masquer le problème',
+    export: 'Exporter',
+    register: 'Registre en Markdown',
+    registerTitle: 'Registre des menaces',
+    severity: 'Gravité',
   },
   sv: {
     language: 'Svenska',
@@ -46,6 +55,10 @@ const readers = {
     save: 'Spara',
     undo: 'Ångra',
     dismiss: 'Dölj problemet',
+    export: 'Exportera',
+    register: 'Register som Markdown',
+    registerTitle: 'Hotregister',
+    severity: 'Allvarlighet',
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
@@ -119,7 +132,7 @@ for (const { locale, browser, prefill } of passes) {
   test.describe(`a reader choosing ${locale} in a ${browser} browser`, () => {
     test.use({ locale: browser });
 
-    test('is chosen by keyboard, keeps the model, its history, recovery and saved bytes, and survives a reload', async ({
+    test('is chosen by keyboard, keeps the model, its history, recovery and saved bytes, exports in its language, and survives a reload', async ({
       page,
     }) => {
       const reader = readers[locale];
@@ -155,6 +168,16 @@ for (const { locale, browser, prefill } of passes) {
           diagram.elements.map((element) => element.name),
         ),
       ).toContain(accented);
+
+      const register = await exportedFile(page, reader.register, reader.export);
+      expect(register.text).toContain(reader.registerTitle);
+      expect(register.text).toContain(reader.severity);
+      expect(register.text).toContain(accented);
+      for (const other of Object.values(readers)) {
+        if (other.severity !== reader.severity) {
+          expect(register.text).not.toContain(other.severity);
+        }
+      }
 
       await page.reload();
       await expect(page.locator('html')).toHaveAttribute('lang', locale);

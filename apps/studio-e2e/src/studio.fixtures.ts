@@ -269,13 +269,14 @@ export const savedFromMenu = async (
   return downloaded(page, () => chosen.click());
 };
 
-/** Opens the Export menu, chooses one item and reads its download. */
+/** Opens the Export menu, under its name in the active language, chooses one item and reads its download. */
 export const exportedFile = async (
   page: Page,
   item: string,
+  exportMenu = 'Export',
 ): Promise<Downloaded> => {
   await openMenu(page);
-  await menuItem(page, 'Export').hover();
+  await menuItem(page, exportMenu).hover();
   const chosen = menuItem(page, item);
   await expect(chosen).toBeVisible();
   return downloaded(page, () => chosen.click());
