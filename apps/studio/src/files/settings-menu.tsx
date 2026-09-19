@@ -1,10 +1,5 @@
-import {
-  followBrowser,
-  languageChoices,
-  languageNames,
-  type LanguageChoice,
-} from '../language-preference.js';
-import type { StudioTranslator } from '../messages/catalogues.js';
+import { locales } from '@saerskriven/i18n';
+import { languageNames } from '../language-preference.js';
 import { colourModeMessages } from '../messages/enum-labels.js';
 import { useLanguage, useTranslator } from '../messages/locale.js';
 import { colourModes, type ColourMode } from '../theme-preference.js';
@@ -51,15 +46,12 @@ export function AppearanceMenu({
   );
 }
 
-/**
- * The language submenu: the browser's preferences, or one locale named in its
- * own language.
- */
+/** The language submenu: each locale named in its own language. */
 export function LanguageMenu() {
   const translator = useTranslator();
-  const [choice, choose] = useLanguage();
+  const [locale, choose] = useLanguage();
   const heading = translator.t('shell.language');
-  const chosen = nameOf(choice, translator);
+  const chosen = languageNames[locale];
 
   return (
     <Submenu
@@ -74,20 +66,14 @@ export function LanguageMenu() {
       }
     >
       <RadioChoices
-        choices={languageChoices.map((value) => ({
+        choices={locales.map((value) => ({
           value,
-          label: nameOf(value, translator),
+          label: languageNames[value],
         }))}
         label={heading}
         onChoose={choose}
-        value={choice}
+        value={locale}
       />
     </Submenu>
   );
-}
-
-function nameOf(choice: LanguageChoice, translator: StudioTranslator): string {
-  return choice === followBrowser
-    ? translator.t('shell.follow-browser')
-    : languageNames[choice];
 }

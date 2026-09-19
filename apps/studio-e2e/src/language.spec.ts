@@ -50,13 +50,14 @@ const expectChosen = async (
 test.describe('a French browser', () => {
   test.use({ locale: 'fr-FR' });
 
-  test('reads the studio in French until another language is chosen', async ({
+  test('prefills French, and a chosen language survives a reload', async ({
     page,
   }) => {
     await openPlaceholder(page);
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr-CA');
-    await expectChosen(page, heading['fr-CA'], 'Suivre le navigateur');
+    await expectChosen(page, heading['fr-CA'], 'Français (Canada)');
+    await audit(page, 'in the French the browser asked for');
 
     await chooseLanguage(page, heading['fr-CA'], 'Svenska');
 
@@ -64,11 +65,6 @@ test.describe('a French browser', () => {
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'sv');
     await expectChosen(page, heading.sv, 'Svenska');
-
-    await chooseLanguage(page, heading.sv, 'Följ webbläsaren');
-
-    await expect(page.locator('html')).toHaveAttribute('lang', 'fr-CA');
-    await audit(page, 'in the French the browser asked for');
   });
 });
 
@@ -79,11 +75,11 @@ test.describe('a browser asking for a language the studio has not got', () => {
     await openPlaceholder(page);
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en-CA');
-    await expectChosen(page, heading['en-CA'], 'Follow the browser');
+    await expectChosen(page, heading['en-CA'], 'English (Canada)');
   });
 });
 
-test('a stored value naming no supported language follows the browser', async ({
+test('a stored value naming no supported language prefills from the browser', async ({
   page,
 }) => {
   await page.addInitScript((key) => {
@@ -92,7 +88,24 @@ test('a stored value naming no supported language follows the browser', async ({
   await openPlaceholder(page);
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-CA');
-  await expectChosen(page, heading['en-CA'], 'Follow the browser');
+  await expectChosen(page, heading['en-CA'], 'English (Canada)');
+  const stored = await page.evaluate(
+    (key) => localStorage.getItem(key),
+    languageStorageKey,
+  );
+  expect(stored).toBe('kl-GL');
+});
+
+test('the old follow-the-browser value prefills from the browser', async ({
+  page,
+}) => {
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, 'browser');
+  }, languageStorageKey);
+  await openPlaceholder(page);
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en-CA');
+  await expectChosen(page, heading['en-CA'], 'English (Canada)');
 });
 
 test('a change of language keeps unsaved work, its undo and its file state', async ({

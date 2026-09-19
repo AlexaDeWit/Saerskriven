@@ -88,16 +88,18 @@ at creation.
 
 ## Choosing the language
 
-The Language item in the menu offers each locale under its own name, plus
-"Follow the browser", which is the state a first visit starts in. Following
-the browser negotiates `navigator.languages` through
+The Language item in the menu offers en-CA, fr-CA and sv, each under its own
+name. A first visit has no stored locale, so the studio prefills the active
+locale by negotiating `navigator.languages` through
 [`negotiate`](../../../../packages/i18n/README.md#negotiation), with en-CA as
-the fallback, and negotiates again on the `languagechange` event. A chosen
-locale is stored in `localStorage` under `saerskrivenLanguage`
-([`../language-preference.ts`](../language-preference.ts)), and a stored value
-that names no supported locale, or storage that is absent or throws, follows
-the browser. `document.documentElement.lang` follows the active locale, and
-`index.html` declares `en-CA` until the app script runs.
+the fallback. That prefill is read once at start-up and is never written to
+storage. A locale a reader picks from the menu is stored in `localStorage`
+under `saerskrivenLanguage`
+([`../language-preference.ts`](../language-preference.ts)) and wins over the
+prefill from then on. A stored value that names no supported locale, or
+storage that is absent or throws, prefills from the browser instead.
+`document.documentElement.lang` follows the active locale, and `index.html`
+declares `en-CA` until the app script runs.
 
 A change of language re-renders every reader of a message. It changes no model
 state, so it never dirties the document or reaches the undo stacks, the

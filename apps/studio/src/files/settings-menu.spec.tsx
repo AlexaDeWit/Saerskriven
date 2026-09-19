@@ -26,21 +26,22 @@ const choice = (name: string): HTMLElement =>
   screen.getByRole('menuitemradio', { name });
 
 afterEach(() => {
-  chooseLanguage('browser');
+  chooseLanguage('en-CA');
   globalThis.localStorage.clear();
 });
 
 describe('the language submenu', () => {
-  it('names every language in its own language, whatever the active one', async () => {
+  it('lists exactly the three supported locales, each in its own language', async () => {
     const user = userEvent.setup();
     openPanel(<LanguageMenu />);
 
     await openSubmenu(user, /^Language /u);
 
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(3);
     expect(choice('English (Canada)')).toBeDefined();
     expect(choice('Français (Canada)')).toBeDefined();
     expect(choice('Svenska')).toBeDefined();
-    expect(choice('Follow the browser').getAttribute('aria-checked')).toBe(
+    expect(choice('English (Canada)').getAttribute('aria-checked')).toBe(
       'true',
     );
   });
@@ -54,7 +55,6 @@ describe('the language submenu', () => {
     await openSubmenu(user, /^Språk /u);
 
     expect(choice('Svenska').getAttribute('aria-checked')).toBe('true');
-    expect(choice('Följ webbläsaren')).toBeDefined();
     expect(choice('Français (Canada)')).toBeDefined();
   });
 });
