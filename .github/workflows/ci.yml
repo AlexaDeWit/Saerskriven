@@ -217,8 +217,13 @@ jobs:
         with:
           save-nix-store: 'false'
 
+      # actionlint skips its shellcheck and pyflakes passes without a word
+      # when either tool is missing from PATH, so the step runs both first and
+      # fails if the flake stops carrying them.
       - name: Lint workflows (actionlint)
-        run: nix develop .#ci --command actionlint
+        run: >-
+          nix develop .#ci --command
+          sh -c 'shellcheck --version && pyflakes --version && actionlint'
 
       - name: Audit workflows (zizmor)
         run: >-

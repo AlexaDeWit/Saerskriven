@@ -112,8 +112,12 @@
           SAERSKRIVEN_UNSHARE = "${pkgs.util-linux}/bin/unshare";
         };
 
+        # actionlint lints `run:` blocks through shellcheck and pyflakes, and
+        # only when they are on PATH.
         workflowLintInputs = [
           pkgs.actionlint
+          pkgs.shellcheck
+          pkgs.python3Packages.pyflakes
           pkgs.zizmor
         ];
 
