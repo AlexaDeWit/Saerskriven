@@ -69,7 +69,7 @@ jobs:
       - name: Allow the unprivileged user namespace the compile runs in
         run: |
           knob=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
-          if [ -e $knob ]; then
+          if [ -e "$knob" ]; then
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           else
             echo "no apparmor_restrict_unprivileged_userns on this runner"
@@ -95,7 +95,7 @@ jobs:
           version="$(jq -r .version package.json)"
           expected="${TAG:-v$version}"
           reported="$("./dist/cli/saer-${version}-x86_64-unknown-linux-gnu" --version)"
-          if [ "v$reported" != "$expected" ]; then
+          if [ "v$reported" != $expected ]; then
             echo "the executable reports ${reported}, expected ${expected}" >&2
             exit 1
           fi
