@@ -205,6 +205,38 @@ export function forgedLinesIn(lines: readonly string[]): readonly string[] {
     .filter((line) => line.trimStart().startsWith(forgedLine));
 }
 
+/** A file name carrying the control characters a terminal escape sequence uses. */
+export const forgedPathSegment = 'model\u001b[31m\u0007.yaml';
+
+/**
+ * A disposable root whose default model sits at a path carrying {@link
+ * forgedPathSegment}, for escaping the `file:` line of a read result.
+ */
+export function forgedPathTree(): ModelWorkspace {
+  const root = mkdtempSync(join(tmpdir(), 'saerskriven-mcp-path-'));
+  writeFileSync(join(root, forgedPathSegment), smallYaml);
+  return Either.getOrThrow(openWorkspace({ root, file: forgedPathSegment }));
+}
+
+/** A title carrying the tabs and line feeds a diagram list collapses to one space. */
+export const spacedTitle = 'Taking\tan\norder';
+
+/**
+ * A disposable root whose default model holds two diagrams, the second
+ * titled {@link spacedTitle}, for the whitespace a diagram list collapses.
+ */
+export function spacedTitleTree(): ModelWorkspace {
+  const [main, empty] = editableModel.diagrams;
+  return treeHolding(
+    saerskrivenYamlCodec.write(
+      parsedFixture({
+        ...editableModel,
+        diagrams: [main, { ...empty, title: spacedTitle }],
+      }),
+    ).output,
+  );
+}
+
 /**
  * A disposable root holding a model of more threats than a concise listing
  * carries. Every committed fixture holds fewer records than the limit, so

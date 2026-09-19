@@ -15,6 +15,7 @@ import {
   forgedLinesIn,
   refusalOf,
   rootWorkspace,
+  spacedTitleTree,
   treeHolding,
   twoDiagramsFile,
   twoDiagramsYaml,
@@ -255,6 +256,15 @@ describe('a diagram whose id carries a line feed', () => {
       await renderDiagram(forgedIdsTree(), noRasterizer, {}),
     );
     expect(forgedLinesIn(refused)).toEqual([]);
+  });
+});
+
+describe('a diagram title carrying tabs and line feeds', () => {
+  it('collapses them to single spaces in the list a refusal offers', async () => {
+    const refused = refusalOf(
+      await renderDiagram(spacedTitleTree(), noRasterizer, {}),
+    );
+    expect(refused).toContain('  "diagram-empty": Taking an order');
   });
 });
 

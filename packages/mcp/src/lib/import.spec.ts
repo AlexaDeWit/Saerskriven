@@ -1,6 +1,6 @@
 import { readAnyFormat } from '@saerskriven/formats';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
+import { copyFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   editableTree,
@@ -69,5 +69,18 @@ describe('converting a foreign model', () => {
     const tree = editableTree();
     const refused = converted(tree.root, modelFile, 'converted.yaml');
     expect(refusalOf(refused).join('\n')).toContain('was not converted');
+  });
+
+  it('escapes a source path that carries a control character', () => {
+    const tree = editableTree();
+    const forged = 'source\u001b[31m\u0007.json';
+    copyFileSync(join(tree.root, otmFile), join(tree.root, forged));
+    const answer = converted(tree.root, forged, 'converted-forged.yaml');
+    expect(
+      Either.match(answer, {
+        onLeft: (lines) => lines,
+        onRight: renderImport,
+      })[0],
+    ).toEqual('converted: source\\u001b[31m\\u0007.json (otm)');
   });
 });

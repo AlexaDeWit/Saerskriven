@@ -369,6 +369,10 @@ function refusedChoice(failure: DiagramChoiceFailure): readonly string[] {
 function diagramList(diagrams: readonly Diagram[]): readonly string[] {
   return diagrams.map(
     (diagram) =>
-      `  ${quotedForTerminal(diagram.id)}: ${escapedForTerminal(diagram.title)}`,
+      `  ${quotedForTerminal(diagram.id)}: ${escapedForTerminal(collapsedWhitespace(diagram.title))}`,
   );
+}
+
+function collapsedWhitespace(text: string): string {
+  return text.replace(/\s+/gu, ' ');
 }

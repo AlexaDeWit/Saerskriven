@@ -20,6 +20,7 @@ import { candidateFiles } from './candidates.js';
 import {
   readNamed,
   readingSchema,
+  renderReading,
   reportedReading,
   type ModelReading,
 } from './reading.js';
@@ -176,9 +177,7 @@ function renderModel(
   reading: z.infer<typeof inspectedSchema>,
 ): readonly string[] {
   return [
-    `file: ${reading.file}`,
-    `format: ${reading.format}`,
-    `revision: ${reading.revision}`,
+    ...renderReading(reading),
     `title: ${escapedForTerminal(reading.metadata.title)}`,
     `owner: ${escapedForTerminal(reading.metadata.owner)}`,
     'assumptions that apply to the model:',

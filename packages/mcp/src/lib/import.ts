@@ -1,4 +1,5 @@
 import {
+  escapedForTerminal,
   importFormatSchema,
   importModel,
   quotedForTerminal,
@@ -90,7 +91,7 @@ export function importIntoModel(
 /** The converted model as the lines its text result carries. */
 export function renderImport(result: ImportResult): readonly string[] {
   return [
-    `converted: ${result.source.file} (${result.source.format})`,
+    `converted: ${escapedForTerminal(result.source.file)} (${result.source.format})`,
     ...renderWriteReport(result),
   ];
 }
