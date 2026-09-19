@@ -179,6 +179,28 @@ it.each([
   },
 );
 
+it('ends an unlinked control line with an empty description after its status, with no trailing separator', () => {
+  const baseline = tmbomFixture();
+  baseline.controls = [];
+  const document = tmbomFixture();
+  document.controls = [
+    control(document, {
+      symbolic_name: 'unlinked-control',
+      title: 'Unlinked work',
+      description: '',
+      status: 'active',
+      threats: [],
+    }),
+  ];
+  const read = imported(document);
+  const before = paragraphs(imported(baseline).model.metadata.description);
+  const after = paragraphs(read.model.metadata.description);
+  expect(after).toHaveLength(before.length + 1);
+  expect(after.at(-1)).toBe(
+    'Mitigation: Unlinked work (implemented, source status active).',
+  );
+});
+
 it.each(['retired', 'wont_do'] as const)(
   'reports a %s control naming no threat as an omission and writes no description line',
   (status) => {

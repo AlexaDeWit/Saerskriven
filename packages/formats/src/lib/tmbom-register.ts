@@ -125,8 +125,9 @@ function tmbomControls(
             status,
             ', source status ',
             control.status,
-            '). ',
-            control.description,
+            ...(control.description === ''
+              ? [').']
+              : ['). ', control.description]),
           ],
         ),
       );
