@@ -64,12 +64,13 @@ runs:
         save: ${{ inputs.save-nix-store == 'true' && github.ref == 'refs/heads/main' }}
         gc-max-store-size-linux: ${{ inputs.nix-gc-max-store-size }}
 
-    # The workflow sets npm_config_store_dir to this path, so pnpm installs
-    # from it. Saved by the workflow on main only, mirroring the Nix rule.
+    # The calling workflow sets pnpm_config_store_dir, the spelling pnpm 11
+    # reads (it ignores npm_config_store_dir). Saved by the workflow on main
+    # only, mirroring the Nix rule.
     - name: Restore pnpm store
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: ${{ github.workspace }}/.pnpm-store
+        path: ${{ env.pnpm_config_store_dir }}
         key: pnpm-store-${{ runner.os }}-${{ hashFiles('flake.lock', 'pnpm-lock.yaml') }}
         restore-keys: |
           pnpm-store-${{ runner.os }}-
@@ -85,3 +86,21 @@ runs:
       if: inputs.install-dependencies == 'true'
       shell: bash
       run: nix develop .#ci --command pnpm install --frozen-lockfile
+
+    - name: Check pnpm installed into the cached store directory
+      if: inputs.install-dependencies == 'true'
+      shell: bash
+      run: |
+        reported="$(nix develop .#ci --command pnpm store path)"
+        case "$reported" in
+          "$pnpm_config_store_dir"/*) ;;
+          *)
+            echo "pnpm reports its store at ${reported}, expected under ${pnpm_config_store_dir}" >&2
+            exit 1
+            ;;
+        esac
+        if [ ! -d "$reported" ]; then
+          echo "pnpm's store ${reported} does not exist after the install" >&2
+          exit 1
+        fi
+        echo "pnpm store: ${reported}"

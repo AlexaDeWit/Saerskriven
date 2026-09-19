@@ -22,6 +22,7 @@ test-output/
 /result
 
 # Toolchain caches
+.pnpm-store/
 *.tsbuildinfo
 .direnv/
 
