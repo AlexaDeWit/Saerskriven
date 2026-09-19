@@ -139,7 +139,7 @@ catalog:
   oxfmt: 0.67.0
   # Pinned exactly: oxlint minors add rules, so a range bump could redden CI
   # outside a reviewed PR. Renovate proposes the bumps.
-  oxlint: 1.81.0
+  oxlint: 1.82.0
   # tsgolint bundles its own typescript-go checker, so it does not care about
   # the catalog's typescript version.
   oxlint-tsgolint: 7.0.2001
