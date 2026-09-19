@@ -96,6 +96,20 @@ export function unlinkedMitigationLine(
   return context.text(parts, '');
 }
 
+/**
+ * A label and a value as one clause for a `context.text` parts array, empty
+ * along with the label when the value is absent or the empty string, so a
+ * missing value never leaves the label's separator behind.
+ */
+export function labeledClause(
+  label: string,
+  value: string | null | undefined,
+): readonly string[] {
+  return value === null || value === undefined || value === ''
+    ? []
+    : [`${label}${value}`];
+}
+
 function indexed<T>(
   values: readonly T[],
   key: (value: T) => string,

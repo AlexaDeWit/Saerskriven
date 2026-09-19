@@ -204,12 +204,13 @@ function tmbomFlows(
       'encrypted',
       'has_sensitive_data',
     ]);
+    const flags = `Encrypted: ${String(flow.encrypted)}\nCarries sensitive data: ${String(flow.has_sensitive_data)}`;
     return {
       ...importElement(
         context,
         context.id('tmbom-flow', flow.symbolic_name),
         flow.title,
-        `${flow.description}\n\nEncrypted: ${String(flow.encrypted)}\nCarries sensitive data: ${String(flow.has_sensitive_data)}`,
+        flow.description === '' ? flags : `${flow.description}\n\n${flags}`,
       ),
       kind: 'flow',
       source: {

@@ -4,7 +4,11 @@ import {
   type ElementInput,
 } from '@saerskriven/model';
 import type { OtmDocument } from '@saerskriven/wire-otm';
-import { importElement, type ImportContext } from './import-model.js';
+import {
+  importElement,
+  labeledClause,
+  type ImportContext,
+} from './import-model.js';
 
 /**
  * The OTM components, trust zones and dataflows as diagram elements, placed
@@ -89,7 +93,7 @@ function otmComponents(
     }
     const description = context.text([
       component.description ?? '',
-      `Source component type: ${component.type}`,
+      ...labeledClause('Source component type: ', component.type),
       dataProse(
         data?.processed ?? [],
         'components.assets.processed',
