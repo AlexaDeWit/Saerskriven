@@ -96,6 +96,8 @@ const expectChosen = async (page: Page, name: string): Promise<void> => {
 };
 
 const arrowTo = async (page: Page, target: Locator): Promise<void> => {
+  const ownMenu = target.locator('xpath=ancestor::*[@role="menu"][1]');
+  await expect(ownMenu.locator('[role^="menuitem"]:focus')).toHaveCount(1);
   const steps = await target.evaluate((element) => {
     const menu = element.closest('[role="menu"]');
     const items = [
@@ -107,8 +109,19 @@ const arrowTo = async (page: Page, target: Locator): Promise<void> => {
       items.findIndex((item) => item === document.activeElement)
     );
   });
+  expect(
+    steps,
+    `arrowTo needs a forward step count toward the target, got ${steps}`,
+  ).toBeGreaterThanOrEqual(0);
   for (let step = 0; step < steps; step += 1) {
+    const focused = await page.evaluateHandle(() => document.activeElement);
     await page.keyboard.press('ArrowDown');
+    await page.waitForFunction(
+      (previous) => document.activeElement !== previous,
+      focused,
+      { polling: 'raf', timeout: 2_000 },
+    );
+    await focused.dispose();
   }
   await expect(target).toBeFocused();
 };
