@@ -1,8 +1,5 @@
 import { assumptionId } from '@saerskriven/model/fixtures';
-import {
-  droppedAssumptionElementLinks,
-  withoutAssumptionElementLinks,
-} from './saerskriven-yaml-migration-assumption-element-links.js';
+import { droppedAssumptionElementLinks } from './saerskriven-yaml-migration-assumption-element-links.js';
 import { version1Document } from './saerskriven-yaml.fixtures.js';
 
 const assumption = (id: string, elements: string[]) => ({
@@ -32,17 +29,5 @@ describe('droppedAssumptionElementLinks', () => {
         reason: 'narrowed',
       }),
     ]);
-  });
-});
-
-describe('withoutAssumptionElementLinks', () => {
-  it('empties every element list and keeps the threat links', () => {
-    expect(
-      withoutAssumptionElementLinks(document).assumptions.map(
-        ({ elements, threats }) => ({ elements, threats }),
-      ),
-    ).toEqual(
-      document.assumptions.map(() => ({ elements: [], threats: ['threat-1'] })),
-    );
   });
 });

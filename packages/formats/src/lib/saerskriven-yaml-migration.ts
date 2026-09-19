@@ -9,10 +9,7 @@ import {
   type SaerskrivenYamlV2Threat,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { z } from 'zod';
-import {
-  droppedAssumptionElementLinks,
-  withoutAssumptionElementLinks,
-} from './saerskriven-yaml-migration-assumption-element-links.js';
+import { droppedAssumptionElementLinks } from './saerskriven-yaml-migration-assumption-element-links.js';
 import { assumptionsWithModelLinks } from './saerskriven-yaml-migration-assumption-model-links.js';
 import type { Divergence } from './divergence.js';
 import { withMitigationTextAsRecords } from './saerskriven-yaml-migration-mitigation-text.js';
@@ -42,10 +39,12 @@ export type CurrentSaerskrivenYaml = {
 /**
  * A document of any released version in the current one. A version 2
  * document comes back as it is, reporting nothing. A version 1 document goes
- * through three steps: element links dropped with a report per assumption
- * that held any, each threat's mitigation text made a record under the
+ * through two steps: each threat's mitigation text made a record under the
  * one-to-one status rule, and each assumption given the model link
- * {@link assumptionsWithModelLinks} reads. Statuses carry over one to one.
+ * {@link assumptionsWithModelLinks} reads. The version 1 `elements` list has
+ * no version 2 key, so {@link droppedAssumptionElementLinks} reports each
+ * assumption that held one, read from the original document. Statuses carry
+ * over one to one.
  */
 export function currentSaerskrivenYaml(
   document: SaerskrivenYamlVersionedDocument,
@@ -58,9 +57,7 @@ export function currentSaerskrivenYaml(
 function migratedFromVersion1(
   document: SaerskrivenYamlDocument,
 ): CurrentSaerskrivenYaml {
-  const stepped = withMitigationTextAsRecords(
-    withoutAssumptionElementLinks(document),
-  );
+  const stepped = withMitigationTextAsRecords(document);
   return {
     document: {
       formatVersion: 2,
