@@ -1,5 +1,4 @@
-/** The query parameter that asks a development session for the pseudo-locale. */
-export const pseudoLocaleParameter = 'pseudo-locale';
+const pseudoLocaleParameter = 'pseudo-locale';
 
 /**
  * Whether the studio was opened with `?pseudo-locale` in its address. Its

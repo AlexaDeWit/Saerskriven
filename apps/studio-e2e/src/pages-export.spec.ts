@@ -7,6 +7,7 @@ import { expectedPdfDigest, pdfPageCount } from './exports.fixtures.js';
 import { pseudoMarkers } from '@saerskriven/i18n';
 import {
   exportedFile,
+  languageStorageKey,
   menuButton,
   openFile,
   twoDiagramsFile,
@@ -111,9 +112,12 @@ test('the Pages build words the studio in each language below the site base, wit
     ['sv', 'Meny'],
   ] as const) {
     await page.goto('./?pseudo-locale');
-    await page.evaluate((chosen) => {
-      localStorage.setItem('saerskrivenLanguage', chosen);
-    }, locale);
+    await page.evaluate(
+      ({ key, chosen }) => {
+        localStorage.setItem(key, chosen);
+      },
+      { key: languageStorageKey, chosen: locale },
+    );
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', locale);
     await expect(menuButton(page)).toHaveAccessibleName(menu);

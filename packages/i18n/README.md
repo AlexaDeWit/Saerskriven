@@ -83,6 +83,8 @@ emphasis is a `node` parameter.
 plural form, and `wellFormedTemplate` checks one template's braces.
 `sameAsDefault(catalogues)` lists the fr-CA and sv templates that read exactly
 as en-CA's for the same message and form, for a report rather than a refusal.
+`catalogueReport(catalogues)` gives both at once for a catalogue spec: the
+malformed templates, and one line per entry `sameAsDefault` lists.
 
 ## Pseudo-locale
 

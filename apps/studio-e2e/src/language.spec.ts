@@ -5,6 +5,7 @@ import {
   closeMenu,
   downloaded,
   editAnnouncement,
+  languageStorageKey,
   menuButton,
   menuItem,
   nodeNamed,
@@ -15,17 +16,12 @@ import {
   placeByClick,
   readBack,
   recoverySnapshot,
+  refusedYaml,
   storefront,
   twoDiagramsFile,
   undoOffered,
 } from './studio.fixtures.js';
 
-const languageStorageKey = 'saerskrivenLanguage';
-
-/**
- * The accessible names a reader of each locale finds, from the studio's
- * catalogues. Each language is offered under its own name.
- */
 const readers = {
   'en-CA': {
     language: 'English (Canada)',
@@ -53,7 +49,6 @@ const readers = {
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
-/** The Language row, whose name ends in the active language's own name in every locale. */
 const languageRow = (page: Page): Locator =>
   page.getByRole('menuitem', {
     name: /(?:English \(Canada\)|Français \(Canada\)|Svenska)$/u,
@@ -79,21 +74,24 @@ const expectChosen = async (page: Page, name: string): Promise<void> => {
   await closeMenu(page);
 };
 
-const menuLength = 40;
-
 const arrowTo = async (page: Page, target: Locator): Promise<void> => {
-  for (let step = 0; step < menuLength; step += 1) {
-    if (
-      await target.evaluate((element) => element === document.activeElement)
-    ) {
-      break;
-    }
+  const steps = await target.evaluate((element) => {
+    const menu = element.closest('[role="menu"]');
+    const items = [
+      ...(menu?.querySelectorAll('[role^="menuitem"]:not([data-disabled])') ??
+        []),
+    ].filter((item) => item.closest('[role="menu"]') === menu);
+    return (
+      items.indexOf(element) -
+      items.findIndex((item) => item === document.activeElement)
+    );
+  });
+  for (let step = 0; step < steps; step += 1) {
     await page.keyboard.press('ArrowDown');
   }
   await expect(target).toBeFocused();
 };
 
-/** Chooses a language from the menu with the keyboard alone. */
 const chooseByKeyboard = async (page: Page, name: string): Promise<void> => {
   await menuButton(page).focus();
   await page.keyboard.press('Enter');
@@ -111,12 +109,6 @@ const savedAs = async (page: Page, save: string) => {
 
 const accented = 'Kafé Ödmjuk Ångström à Québec';
 
-const refusedYaml = ['formatVersion: 1', 'diagrams: none'].join('\n');
-
-/**
- * Each locale is chosen from a browser that asks for another, so the choice
- * is what changes the language rather than the prefill.
- */
 const passes = [
   { locale: 'en-CA', browser: 'sv-SE', prefill: 'sv' },
   { locale: 'fr-CA', browser: 'en-CA', prefill: 'en-CA' },

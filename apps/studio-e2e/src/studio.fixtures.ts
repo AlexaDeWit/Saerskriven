@@ -16,6 +16,12 @@ const developmentModelKey = 'saerskrivenDevelopmentModel';
 
 const recoveryStorageKey = 'saerskriven:studio:recovery';
 
+/** The local storage key the studio keeps the chosen language under. */
+export const languageStorageKey = 'saerskrivenLanguage';
+
+/** A Saerskriven YAML document every format refuses, for a spec that needs a failure notice on screen. */
+export const refusedYaml = ['formatVersion: 1', 'diagrams: none'].join('\n');
+
 /** The recovery snapshot the studio last wrote, as stored, or `null` before its first write. */
 export const recoverySnapshot = (page: Page): Promise<string | null> =>
   page.evaluate((key) => localStorage.getItem(key), recoveryStorageKey);

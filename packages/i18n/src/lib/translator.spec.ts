@@ -1,4 +1,9 @@
-import { catalogue, catalogueTemplates, sameAsDefault } from './catalogue.js';
+import {
+  catalogue,
+  catalogueReport,
+  catalogueTemplates,
+  sameAsDefault,
+} from './catalogue.js';
 import { plural, text } from './contract.js';
 import { shelfCatalogues, shelfTranslator } from './i18n.fixtures.js';
 import { wellFormedTemplate } from './template.js';
@@ -78,7 +83,7 @@ describe('translator', () => {
       description: text(),
       items: plural('count'),
     } as const;
-    const same = sameAsDefault({
+    const catalogues = {
       'en-CA': {
         shared: catalogue(shared)('en-CA')({
           menu: 'Menu',
@@ -104,12 +109,16 @@ describe('translator', () => {
           items: { one: 'En sak', other: '{count} saker' },
         }),
       },
-    });
+    };
+    const same = sameAsDefault(catalogues);
 
     expect(same.map(({ locale, id, form }) => [locale, id, form])).toEqual([
       ['fr-CA', 'shared.menu', undefined],
       ['fr-CA', 'shared.description', undefined],
       ['fr-CA', 'shared.items', 'many'],
     ]);
+    expect(catalogueReport(catalogues).sameAsDefault).toContain(
+      'fr-CA shared.menu  "Menu"',
+    );
   });
 });

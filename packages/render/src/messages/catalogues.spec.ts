@@ -1,31 +1,19 @@
-import {
-  catalogueTemplates,
-  sameAsDefault,
-  wellFormedTemplate,
-} from '@saerskriven/i18n';
+import { catalogueReport } from '@saerskriven/i18n';
 import { exportCatalogues } from './catalogues.js';
+
+const report = catalogueReport(exportCatalogues);
 
 describe('the export catalogues', () => {
   it('hold no brace outside a placeholder', () => {
-    expect(
-      catalogueTemplates(exportCatalogues).filter(
-        ({ template }) => !wellFormedTemplate(template),
-      ),
-    ).toEqual([]);
+    expect(report.malformed).toEqual([]);
   });
 
   it('report the entries fr-CA and sv word as en-CA does', async ({
     annotate,
   }) => {
-    const same = sameAsDefault(exportCatalogues);
-    await annotate(
-      same
-        .map(({ locale, id, form, template }) =>
-          [locale, id, form ?? '', JSON.stringify(template)].join(' '),
-        )
-        .join('\n') || 'none',
-      'same as en-CA',
+    await annotate(report.sameAsDefault.join('\n') || 'none', 'same as en-CA');
+    expect(report.sameAsDefault.some((line) => line.startsWith('en-CA'))).toBe(
+      false,
     );
-    expect(same.every(({ locale }) => locale !== 'en-CA')).toBe(true);
   });
 });

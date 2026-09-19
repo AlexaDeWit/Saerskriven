@@ -4,8 +4,10 @@ import { committedText } from '@saerskriven/model/fixtures';
 import {
   chromeCard,
   diagramSwitcher,
+  menuItem,
   openModelDocument,
   openText,
+  refusedYaml,
   selectNode,
   storefront,
   withoutPickers,
@@ -15,38 +17,59 @@ const pseudoEntry = '/?pseudo-locale';
 
 const refusedName = 'broken.yaml';
 
-const refusedYaml = ['formatVersion: 1', 'diagrams: none'].join('\n');
-
 const twoDiagramsModel: unknown = JSON.parse(
   committedText('two-diagrams.model.json'),
 );
 
-const stringsIn = (value: unknown): readonly string[] =>
-  typeof value === 'string'
-    ? [value.replaceAll(/\s+/gu, ' ').trim()]
-    : Array.isArray(value)
-      ? value.flatMap(stringsIn)
-      : typeof value === 'object' && value !== null
-        ? Object.values(value).flatMap(stringsIn)
-        : [];
+const typedFields = new Set([
+  'title',
+  'name',
+  'description',
+  'prose',
+  'text',
+  'owner',
+  'contributors',
+  'reasonOutOfScope',
+  'methodologyName',
+]);
 
-const userData = [...stringsIn(twoDiagramsModel), refusedName];
+const spaced = (text: string): string => text.replaceAll(/\s+/gu, ' ').trim();
+
+const typedIn = (value: unknown, field?: string): readonly string[] => {
+  if (typeof value === 'string') {
+    return field !== undefined && typedFields.has(field) ? [value] : [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => typedIn(item, field));
+  }
+  if (typeof value !== 'object' || value === null) {
+    return [];
+  }
+  const custom =
+    'methodology' in value &&
+    value.methodology === 'custom' &&
+    'category' in value &&
+    typeof value.category === 'string'
+      ? [value.category]
+      : [];
+  return [
+    ...custom,
+    ...Object.entries(value).flatMap(([key, item]) => typedIn(item, key)),
+  ];
+};
+
+const userData = new Set(
+  [...typedIn(twoDiagramsModel), refusedName].map(spaced),
+);
 
 const markedLiteral = /⟦[^⟧]*⟧/u;
 
 const formattedNumber = /^[\d\s.,%]+$/u;
 
-/**
- * What joins data with no catalogue between: `Intl.ListFormat` in en-CA, and
- * the comma `spoken` in the studio's `canvas/names.ts` puts between the parts
- * of a canvas item's accessible name.
- */
-const dataSeparator = /,(?: |$)| and /u;
+const itemSeparator = /,(?: |$)/u;
 
-/**
- * Text on screen that no catalogue words, each with the reason it stays. The
- * studio's messages README lists the same exceptions.
- */
+const listConjunction = / and /u;
+
 const exceptions: readonly {
   readonly text: RegExp;
   readonly reason: string;
@@ -67,16 +90,16 @@ const exceptions: readonly {
   {
     text: /^[?LMHC!]$/u,
     reason:
-      "a badge mark comes from render's terms, which the pseudo-locale does not read",
+      "a badge mark comes from render's en-CA terms, which the pseudo-locale does not read, until #499",
   },
   {
     text: /^[☰⊡●○▾]$/u,
     reason: 'a decorative glyph is hidden from assistive technology',
   },
   {
-    text: /^(?:React Flow|React Flow attribution|node)$/u,
+    text: /^(?:React Flow|React Flow attribution|node|edge)$/u,
     reason:
-      "React Flow's attribution link and the role description it fixes on a node",
+      "React Flow's attribution link and the role descriptions it fixes on a node and an edge",
   },
   {
     text: /^[\w.]+: Invalid input: /u,
@@ -85,20 +108,19 @@ const exceptions: readonly {
   },
 ];
 
-const spaced = (text: string): string => text.replaceAll(/\s+/gu, ' ').trim();
+const isDatum = (item: string): boolean =>
+  formattedNumber.test(item) ||
+  userData.has(item) ||
+  item.split(listConjunction).every((part) => userData.has(part.trim()));
 
 const isData = (piece: string): boolean =>
+  isDatum(piece.replace(/,$/u, '')) ||
   piece
-    .split(dataSeparator)
+    .split(itemSeparator)
     .map((item) => item.trim())
     .filter((item) => item !== '')
-    .every(
-      (item) =>
-        formattedNumber.test(item) ||
-        userData.some((datum) => datum.includes(item)),
-    );
+    .every(isDatum);
 
-/** The text on screen outside the markers, and not the data it names. */
 const strayText = (shown: readonly string[]): readonly string[] =>
   shown.filter((text) =>
     text
@@ -134,8 +156,23 @@ const shownText = (page: Page): Promise<readonly string[]> =>
       node = walker.nextNode()
     ) {
       const text = node.textContent?.trim() ?? '';
-      if (text !== '' && node.parentElement?.checkVisibility(shown) === true) {
+      const parent = node.parentElement;
+      if (
+        text !== '' &&
+        parent?.closest('svg text') === null &&
+        parent.checkVisibility(shown)
+      ) {
         found.push(text);
+      }
+    }
+    for (const label of document.body.querySelectorAll('svg text')) {
+      if (label.checkVisibility(shown)) {
+        const lines = [...label.querySelectorAll('tspan')].map(
+          (line) => line.textContent ?? '',
+        );
+        found.push(
+          (lines.length === 0 ? [label.textContent ?? ''] : lines).join(' '),
+        );
       }
     }
     for (const element of document.body.querySelectorAll('*')) {
@@ -166,9 +203,6 @@ const scanned = async (
 const menuButton = (page: Page) =>
   page.getByRole('button', { name: pseudoText('Menu'), exact: true });
 
-const menuItem = (page: Page, english: string) =>
-  page.getByRole('menuitem', { name: pseudoText(english), exact: true });
-
 const openPseudo = async (page: Page): Promise<void> => {
   await page.addInitScript(withoutPickers);
   await openModelDocument(page, twoDiagramsModel, pseudoEntry);
@@ -193,7 +227,7 @@ test('the pseudo-locale shows no app text outside the catalogues', async ({
     await page.keyboard.press('ArrowLeft');
     await expect(page.getByRole('menu')).toHaveCount(1);
   }
-  await menuItem(page, 'Keyboard shortcuts').click();
+  await menuItem(page, pseudoText('Keyboard shortcuts')).click();
   await expect(
     page.getByRole('region', { name: pseudoText('Keyboard shortcuts') }),
   ).toBeVisible();
@@ -201,7 +235,7 @@ test('the pseudo-locale shows no app text outside the catalogues', async ({
   await page.keyboard.press('Escape');
 
   await menuButton(page).click();
-  await menuItem(page, 'Model properties').click();
+  await menuItem(page, pseudoText('Model properties')).click();
   await scanned(page, 'in the model properties', found);
 
   await selectNode(page, /^Web shop, /u);
@@ -270,7 +304,7 @@ test(
     await menuButton(page).click();
     const menus = page.getByRole('menu');
     await fitsAcross(page, menus);
-    await menuItem(page, 'Export').press('ArrowRight');
+    await menuItem(page, pseudoText('Export')).press('ArrowRight');
     await expect(menus).toHaveCount(2);
     await fitsAcross(page, menus.last());
     await page.keyboard.press('Escape');

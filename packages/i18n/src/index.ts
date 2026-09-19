@@ -24,9 +24,11 @@ export {
 } from './lib/template.js';
 export {
   catalogue,
+  catalogueReport,
   catalogueTemplates,
   sameAsDefault,
   type Catalogue,
+  type CatalogueReport,
   type CatalogueTemplate,
   type Catalogues,
   type DeclaredCatalogue,

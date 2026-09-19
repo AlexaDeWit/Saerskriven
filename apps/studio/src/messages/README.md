@@ -72,13 +72,14 @@ as an exception:
   [`../language-preference.ts`](../language-preference.ts).
 - The product name `Saerskriven` in the page heading, and a file format's
   name.
-- React Flow's attribution link, and the role description `node` React Flow
-  fixes on every drawn element.
+- React Flow's attribution link, and the role descriptions `node` and `edge`
+  React Flow fixes on every drawn element and edge.
 - The comma `spoken` in [`../canvas/names.ts`](../canvas/names.ts) puts
   between the parts of a canvas item's accessible name, and the separators of
   a `list` parameter, which `Intl.ListFormat` supplies for the locale.
 - A badge's severity letter and flag mark, which come from
-  `@saerskriven/render`'s terms rather than the studio's catalogues.
+  `@saerskriven/render`'s en-CA terms rather than the studio's catalogues
+  until #499.
 - Decorative glyphs hidden from assistive technology: the menu's `☰`, the
   fit-selection `⊡`, a radio's `●` and `○`, a disclosure's `▾`.
 
@@ -128,7 +129,8 @@ every language, because the wire formats keep the model's own values.
    and sv entry that reads exactly as en-CA does (`sameAsDefault` from
    `@saerskriven/i18n`). The report never fails: a shared word such as
    `Description` or `Menu` is right as it stands. Read it for a message that
-   was pasted in English.
+   was pasted in English: the verbose reporter prints the annotation, as in
+   `pnpm nx test @saerskriven/studio -- src/messages/catalogues.spec.ts --reporter=verbose`.
 5. Open the development server with `?pseudo-locale` in the address, such as
    `http://localhost:4200/?pseudo-locale`, to read the studio through the
    pseudo-locale: every literal run of an en-CA template accented, lengthened

@@ -5,7 +5,11 @@ import {
   type Locale,
   type PluralCategory,
 } from './locales.js';
-import type { MalformedTemplate, Placeholders } from './template.js';
+import {
+  wellFormedTemplate,
+  type MalformedTemplate,
+  type Placeholders,
+} from './template.js';
 
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
@@ -143,10 +147,10 @@ export function catalogueTemplates<S extends Sections>(
 
 /**
  * Every template outside the default locale that reads exactly as the en-CA
- * template for the same message and plural form, a form en-CA does not have
- * compared with its `other`. Some are right as they stand, such as a product
- * name or a word both languages share, so this is a list to read, not a
- * refusal.
+ * template for the same message and plural form. A plural form en-CA lacks
+ * is compared with en-CA's `other`. Some are right as they stand, such as a
+ * product name or a word both languages share, so this is a list to read,
+ * not a refusal.
  */
 export function sameAsDefault<S extends Sections>(
   catalogues: Catalogues<S>,
@@ -163,4 +167,28 @@ export function sameAsDefault<S extends Sections>(
       template ===
         (english.get(`${id} ${form ?? ''}`) ?? english.get(`${id} other`)),
   );
+}
+
+/** What {@link catalogueReport} finds in a set of catalogues. */
+export type CatalogueReport = {
+  readonly malformed: readonly CatalogueTemplate[];
+  readonly sameAsDefault: readonly string[];
+};
+
+/**
+ * The templates with a brace outside a `{name}` placeholder, and one line per
+ * entry {@link sameAsDefault} lists: its locale, id, plural form and text.
+ */
+export function catalogueReport<S extends Sections>(
+  catalogues: Catalogues<S>,
+): CatalogueReport {
+  return {
+    malformed: catalogueTemplates(catalogues).filter(
+      ({ template }) => !wellFormedTemplate(template),
+    ),
+    sameAsDefault: sameAsDefault(catalogues).map(
+      ({ locale, id, form, template }) =>
+        [locale, id, form ?? '', JSON.stringify(template)].join(' '),
+    ),
+  };
 }
