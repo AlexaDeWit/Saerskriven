@@ -1,9 +1,10 @@
 import {
+  boundedParse,
   parseModel,
-  toParseIssues,
+  schemaFailureIssues,
   type Model,
   type ParseIssue,
-  type SchemaIssue,
+  type SchemaParser,
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
 import type { z } from 'zod';
@@ -82,59 +83,17 @@ export type ReadFailure = Data.TaggedEnum<{
 export const ReadFailure = Data.taggedEnum<ReadFailure>();
 
 /**
- * A wire schema, declared by the one method a read calls so no zod type
- * crosses {@link parseWire}'s signature.
- */
-export type WireParser<Wire> = {
-  readonly safeParse: (given: unknown) =>
-    | { readonly success: true; readonly data: Wire }
-    | {
-        readonly success: false;
-        readonly error: { readonly issues: readonly SchemaIssue[] };
-      };
-};
-
-/**
  * A parsed value as its wire document, or the schema's refusal as
- * `InvalidWireDocument`. zod hands a nested value's issues to its parent as
- * the arguments of one call, so about 125,000 of them under one array
- * element throw `RangeError`, and that refusal is one root issue instead.
- * Any other throw is a defect in a schema and is not caught.
+ * `InvalidWireDocument`, a flood of issues or a throw as one root issue.
  */
 export function parseWire<Wire>(
-  schema: WireParser<Wire>,
+  schema: SchemaParser<Wire>,
   given: unknown,
 ): Either.Either<Wire, ReadFailure> {
-  return Either.flatMap(
-    Either.try({
-      try: () => schema.safeParse(given),
-      catch: (error) => {
-        if (error instanceof RangeError) {
-          return issueFlood;
-        }
-        throw error;
-      },
-    }),
-    (parsed) =>
-      parsed.success
-        ? Either.right(parsed.data)
-        : Either.left(
-            ReadFailure.InvalidWireDocument({
-              issues: toParseIssues(parsed.error.issues),
-            }),
-          ),
+  return Either.mapLeft(boundedParse(schema, given), (failure) =>
+    ReadFailure.InvalidWireDocument({ issues: schemaFailureIssues(failure) }),
   );
 }
-
-const issueFlood = ReadFailure.InvalidWireDocument({
-  issues: [
-    {
-      path: [],
-      code: 'too_big',
-      message: 'The document has more problems than a read can list.',
-    },
-  ],
-});
 
 /** A mapped model input through `parseModel`, refused as `InvalidModel`. */
 export function modelFrom(input: unknown): Either.Either<Model, ReadFailure> {

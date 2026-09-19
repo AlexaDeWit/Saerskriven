@@ -1,3 +1,4 @@
+import { issueFloodCode } from '@saerskriven/model';
 import type { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Data, Either } from 'effect';
@@ -46,7 +47,9 @@ export const DetectionFailure = Data.taggedEnum<DetectionFailure>();
  * while one that lost `summary.title` is a broken Threat Dragon file. A
  * claimed failure is returned as that codec's own, and an
  * `ExceededReadLimit` stops detection outright, since the next codec would
- * pay the same cost. A file from an unmodelled release, such as a
+ * pay the same cost. A refusal with more issues than the wire schema could
+ * gather is claimed too, since the schema found them by walking into the
+ * document. A file from an unmodelled release, such as a
  * `formatVersion` other than 1 and 2, is claimed by nobody.
  */
 export function readAnyFormat(
@@ -130,13 +133,14 @@ function verdictOn(
     ExceededReadLimit: (): Verdict => 'bounded',
     MalformedText: (): Verdict => 'declined',
     InvalidWireDocument: ({ issues }): Verdict =>
-      issues.some((issue) =>
+      issues.some((issue) => issue.code === issueFloodCode) ||
+      !issues.some((issue) =>
         discriminators.some((discriminator) =>
           atOrAbove(issue.path, discriminator),
         ),
       )
-        ? 'declined'
-        : 'claimed',
+        ? 'claimed'
+        : 'declined',
     InvalidModel: (): Verdict => 'claimed',
   });
 }

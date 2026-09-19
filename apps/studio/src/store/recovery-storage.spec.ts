@@ -268,6 +268,18 @@ describe('local recovery storage', () => {
     );
   });
 
+  it('rejects a snapshot with more invalid entries than zod 4.6.2 gathers on V8 as invalid', () => {
+    const flooded = JSON.stringify({
+      ...current,
+      document: {
+        ...current.document,
+        threats: [{ elements: Array.from({ length: 135_000 }, () => 1) }],
+      },
+    });
+
+    expect(rejectionOf(flooded)).toEqual(RecoveryProblem.InvalidSnapshot());
+  });
+
   it('reports disabled storage for load, replace, and clear', () => {
     const refused = localRecoveryStorage(() => {
       throw new Error('storage disabled');
