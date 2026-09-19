@@ -17,7 +17,7 @@ import {
 import { registerDocument } from './register-tree.js';
 
 const flagsBySection = (model: Model) =>
-  threatSectionsIn(registerDocument(model)).map((section) =>
+  threatSectionsIn(registerDocument(model, 'en-CA')).map((section) =>
     badgesIn(section).filter((badge) => badge.kind === 'flag'),
   );
 
@@ -26,7 +26,7 @@ describe('registerDocument', () => {
     const model = scopedAssumptionsModel;
 
     it('also list under a threat they link, and leave out an assumption that does not apply to the model', () => {
-      const tree = registerDocument(model);
+      const tree = registerDocument(model, 'en-CA');
       expect(
         sectionItems(modelSectionIn(tree)).map((item) =>
           textOf(item.children.slice(1)),
@@ -42,7 +42,7 @@ describe('registerDocument', () => {
     });
 
     it('carry no flag, and raise none on a threat', () => {
-      const tree = registerDocument(model);
+      const tree = registerDocument(model, 'en-CA');
       expect(
         badgesIn(modelSectionIn(tree)).filter((badge) => badge.kind === 'flag'),
       ).toEqual([]);

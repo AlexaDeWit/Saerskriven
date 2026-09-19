@@ -1,3 +1,4 @@
+import type { Locale } from '@saerskriven/i18n';
 import type { Model } from '@saerskriven/model';
 import type { Html, Root } from 'mdast';
 import { createElement } from 'react';
@@ -15,15 +16,16 @@ import {
 import { registerDocument } from './register-tree.js';
 
 /**
- * The register as Markdown. Portable by default. With `styled`, badges become
- * classed HTML spans inside a register `<div>`, preceded by the scoped
- * stylesheet unless `stylesheet` is false.
+ * The register as Markdown, framed in `locale`'s words. Portable by default.
+ * With `styled`, badges become classed HTML spans inside a register `<div>`,
+ * preceded by the scoped stylesheet unless `stylesheet` is false.
  */
 export function renderRegister(
   model: Model,
+  locale: Locale,
   options: MarkdownOptions = {},
 ): string {
-  const tree = registerDocument(model, options);
+  const tree = registerDocument(model, locale, options);
   return markdown.stringify(
     options.styled === true ? styledTree(tree, options) : tree,
   );

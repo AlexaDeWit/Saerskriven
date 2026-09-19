@@ -37,13 +37,13 @@ export function specRenders(
     pdfAssets: () => Promise.resolve(Either.right(assets)),
     compile: () => Promise.resolve(Either.right(new Uint8Array([37, 80]))),
     pngAssets: () => Promise.resolve(Either.right(assets)),
-    draw: (diagram, model) =>
+    draw: (diagram, model, locale) =>
       Promise.resolve(
         Either.right({
           png: pngSignature,
           width: 2,
           height: 1,
-          unplaced: renderSvg(diagram, model).unplaced,
+          unplaced: renderSvg(diagram, model, locale).unplaced,
         }),
       ),
     ...overrides,

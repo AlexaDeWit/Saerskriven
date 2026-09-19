@@ -183,7 +183,7 @@ export function useExportCommands(
         if (diagram === undefined) {
           return;
         }
-        const projection = renderSvg(diagram, state.present);
+        const projection = renderSvg(diagram, state.present, 'en-CA');
         void place(
           state.file,
           exportFiles.svg,
@@ -196,12 +196,12 @@ export function useExportCommands(
         void place(
           state.file,
           exportFiles.markdown,
-          renderRegister(state.present),
+          renderRegister(state.present, 'en-CA'),
         );
       },
       typst: () => {
         const state = modelStore.getState();
-        const projection = renderTypst(state.present);
+        const projection = renderTypst(state.present, 'en-CA');
         void place(
           state.file,
           exportFiles.typst,
@@ -243,7 +243,7 @@ async function compiled(
   state: State,
   renders: RenderExports,
 ): Promise<Either.Either<Produced, ExportNotice>> {
-  const projection = renderTypst(state.present);
+  const projection = renderTypst(state.present, 'en-CA');
   const assets = await renders.pdfAssets();
   if (Either.isLeft(assets)) {
     return Either.left(assetNotice(assets.left, 'compiler'));
@@ -270,7 +270,9 @@ async function drawn(
     return Either.left(assetNotice(assets.left, 'rasterizer'));
   }
   return Either.mapBoth(
-    await renders.draw(diagram, state.present, { assets: assets.right }),
+    await renders.draw(diagram, state.present, 'en-CA', {
+      assets: assets.right,
+    }),
     {
       onLeft: rasterNotice,
       onRight: (image: PngImage) => ({

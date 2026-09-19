@@ -1,4 +1,5 @@
 import type {
+  BadgeMarks,
   CanvasEdge,
   CanvasLayout,
   CanvasNode,
@@ -12,6 +13,7 @@ import {
   type ElementId,
   type Model,
 } from '@saerskriven/model';
+import { renderTerms } from '@saerskriven/render';
 import type { StudioTranslator } from '../messages/catalogues.js';
 import {
   articleKindMessages,
@@ -67,6 +69,12 @@ export function kindLabel(
 export function nodeLabel(node: CanvasNode, t: StudioTranslator['t']): string {
   return kindLabel(node.name, elementKindOf[node.kind], t);
 }
+
+/**
+ * The marks the canvas badges letter, render's en-CA marks until the badges
+ * follow the active language.
+ */
+export const badgeMarks: BadgeMarks = renderTerms('en-CA').marks;
 
 /** The accessible name of each of a drawn element's resize controls. */
 export function resizeLabels(

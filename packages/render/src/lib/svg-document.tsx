@@ -9,8 +9,10 @@ import {
   type CanvasBounds,
   type UnplacedEndpoint,
 } from '@saerskriven/canvas';
+import type { Locale } from '@saerskriven/i18n';
 import type { Diagram, Model } from '@saerskriven/model';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { renderTerms } from './terms.js';
 
 const margin = 8;
 
@@ -29,15 +31,17 @@ export type SvgDocument = {
  * One diagram as a standalone SVG document, drawn with the canvas primitives:
  * a `title` carrying the diagram's title, the themed background, a `style`
  * element resolving the theme to values, and the glyphs in painting order,
- * ending in a newline. The viewBox is the canvas's drawn bounds grown by 8 on
- * every side. The document references nothing outside itself, and its bytes
- * depend on the model alone, painting order included. The title goes through
- * `xmlSafeText` as the glyphs' text does, since a model built in memory can
- * carry characters its parse would refuse.
+ * ending in a newline. Its badges letter `locale`'s marks. The viewBox is the
+ * canvas's drawn bounds grown by 8 on every side. The document references
+ * nothing outside itself, and its bytes depend on the model and the locale
+ * alone, painting order included. The title goes through `xmlSafeText` as the
+ * glyphs' text does, since a model built in memory can carry characters its
+ * parse would refuse.
  */
 export function renderSvg(
   diagram: Diagram,
   model: Model,
+  locale: Locale,
   theme: RenderTheme = defaultRenderTheme,
 ): SvgDocument {
   const layout = layoutDiagram(diagram, model);
@@ -58,7 +62,7 @@ export function renderSvg(
         fill={theme.colours.background}
       />
       <style>{renderCanvasStylesheet(theme)}</style>
-      <DiagramGlyphs layout={layout} />
+      <DiagramGlyphs layout={layout} marks={renderTerms(locale).marks} />
     </svg>,
   );
   return {

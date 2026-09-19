@@ -40,7 +40,7 @@ async function rasterized(
   theme?: RenderTheme,
 ): Promise<Either.Either<PngImage, string>> {
   return Either.mapLeft(
-    await renderPng(diagram, model, { assets, theme }),
+    await renderPng(diagram, model, 'en-CA', { assets, theme }),
     reported,
   );
 }

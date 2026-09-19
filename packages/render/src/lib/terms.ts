@@ -1,3 +1,5 @@
+import type { BadgeMarks } from '@saerskriven/canvas';
+import type { Locale } from '@saerskriven/i18n';
 import type {
   AssumptionStatus,
   CustomCategory,
@@ -7,155 +9,79 @@ import type {
   ThreatFlag,
   ThreatStatus,
 } from '@saerskriven/model';
+import { exportText } from '../messages/catalogues.js';
 import type { RegisterBadge } from './register-badges.js';
 
-const severityLabels = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  critical: 'Critical',
-  undecided: 'Undecided',
-} satisfies Record<Severity, string>;
+/** A category the model enumerates, as opposed to one an author named. */
+export type EnumeratedCategory = Exclude<
+  ThreatCategory,
+  CustomCategory
+>['category'];
 
-const statusLabels = {
-  open: 'Open',
-  mitigated: 'Mitigated',
-  transferred: 'Transferred',
-  avoided: 'Avoided',
-  'accepted-risk': 'Accepted risk',
-  eliminated: 'Eliminated',
-  'not-applicable': 'Not applicable',
-} satisfies Record<ThreatStatus, string>;
-
-const mitigationLabels = {
-  proposed: 'Proposed',
-  implemented: 'Implemented',
-  verified: 'Verified',
-} satisfies Record<MitigationStatus, string>;
-
-const assumptionLabels = {
-  unconfirmed: 'Unconfirmed',
-  valid: 'Valid',
-  invalidated: 'Invalidated',
-} satisfies Record<AssumptionStatus, string>;
-
-const flagLabels = {
-  'mitigated-without-implemented-work': 'Mitigated without implemented work',
-  'rests-on-invalidated-assumption': 'Rests on an invalidated assumption',
-} satisfies Record<ThreatFlag, string>;
-
-/** A section of the register that belongs to no single threat. */
-export type RegisterSection = 'model-assumptions';
-
-const sectionLabels = {
-  'model-assumptions': 'Assumptions that apply to the model',
-} satisfies Record<RegisterSection, string>;
-
-type EnumeratedCategory = Exclude<ThreatCategory, CustomCategory>;
-
-type CategoryLabels = {
-  [Variant in EnumeratedCategory as Variant['methodology']]: Record<
-    Variant['category'],
-    string
-  >;
+/**
+ * The words one locale's exports show the model's stored values under, and
+ * the marks its threat badges draw, for an app that shows the same terms on
+ * screen. A category an author named is content and has no term.
+ */
+export type RenderTerms = {
+  readonly severity: (value: Severity) => string;
+  readonly status: (value: ThreatStatus) => string;
+  readonly mitigation: (value: MitigationStatus) => string;
+  readonly assumption: (value: AssumptionStatus) => string;
+  readonly flag: (value: ThreatFlag) => string;
+  readonly category: (category: EnumeratedCategory) => string;
+  readonly marks: BadgeMarks;
 };
 
-const categoryLabels = {
-  STRIDE: {
-    spoofing: 'Spoofing',
-    tampering: 'Tampering',
-    repudiation: 'Repudiation',
-    'information-disclosure': 'Information disclosure',
-    'denial-of-service': 'Denial of service',
-    'elevation-of-privilege': 'Elevation of privilege',
-  },
-  LINDDUN: {
-    linking: 'Linking',
-    identifying: 'Identifying',
-    'non-repudiation': 'Non-repudiation',
-    detecting: 'Detecting',
-    'data-disclosure': 'Data disclosure',
-    unawareness: 'Unawareness',
-    'non-compliance': 'Non-compliance',
-  },
-  CIA: {
-    confidentiality: 'Confidentiality',
-    integrity: 'Integrity',
-    availability: 'Availability',
-  },
-  'CIA-DIE': {
-    confidentiality: 'Confidentiality',
-    integrity: 'Integrity',
-    availability: 'Availability',
-    distributed: 'Distributed',
-    immutable: 'Immutable',
-    ephemeral: 'Ephemeral',
-  },
-  PLOT4ai: {
-    'accountability-and-human-oversight': 'Accountability and human oversight',
-    'bias-fairness-and-discrimination': 'Bias, fairness and discrimination',
-    cybersecurity: 'Cybersecurity',
-    'data-and-data-governance': 'Data and data governance',
-    'ethics-and-human-rights': 'Ethics and human rights',
-    'privacy-and-data-protection': 'Privacy and data protection',
-    'safety-and-environmental-impact': 'Safety and environmental impact',
-    'transparency-and-accessibility': 'Transparency and accessibility',
-  },
-} satisfies CategoryLabels;
+/** The terms of `locale`'s exports. */
+export function renderTerms(locale: Locale): RenderTerms {
+  const { t } = exportText(locale);
+  return {
+    severity: (value) => t(`terms.severity-${value}`),
+    status: (value) => t(`terms.status-${value}`),
+    mitigation: (value) => t(`terms.mitigation-${value}`),
+    assumption: (value) => t(`terms.assumption-${value}`),
+    flag: (value) => t(`terms.flag-${value}`),
+    category: (category) => t(`terms.category-${category}`),
+    marks: {
+      severity: {
+        undecided: t('terms.mark-undecided'),
+        low: t('terms.mark-low'),
+        medium: t('terms.mark-medium'),
+        high: t('terms.mark-high'),
+        critical: t('terms.mark-critical'),
+      },
+      flag: t('terms.mark-flag'),
+    },
+  };
+}
 
-/** The display label of a badge, from tables the compiler checks are total. */
-export function badgeLabel(badge: RegisterBadge): string {
+/** The label a register badge reads as. */
+export function badgeLabel(badge: RegisterBadge, terms: RenderTerms): string {
   if (badge.kind === 'severity') {
-    return severityLabels[badge.value];
+    return terms.severity(badge.value);
   }
   if (badge.kind === 'status') {
-    return statusLabels[badge.value];
+    return terms.status(badge.value);
   }
   if (badge.kind === 'mitigation') {
-    return mitigationLabels[badge.value];
+    return terms.mitigation(badge.value);
   }
   if (badge.kind === 'assumption') {
-    return assumptionLabels[badge.value];
+    return terms.assumption(badge.value);
   }
-  return flagLabel(badge.value);
+  return terms.flag(badge.value);
 }
 
-/** The display label of a flag, for every surface that names one. */
-export function flagLabel(flag: ThreatFlag): string {
-  return flagLabels[flag];
-}
-
-/** The heading of a register section that belongs to no single threat. */
-export function sectionLabel(section: RegisterSection): string {
-  return sectionLabels[section];
-}
-
-/** A category's display label followed by its methodology in parentheses. */
-export function categoryLabel(category: ThreatCategory): string {
-  return `${categoryName(category)} (${methodologyName(category)})`;
-}
-
-function categoryName(category: ThreatCategory): string {
-  if (category.methodology === 'STRIDE') {
-    return categoryLabels.STRIDE[category.category];
-  }
-  if (category.methodology === 'LINDDUN') {
-    return categoryLabels.LINDDUN[category.category];
-  }
-  if (category.methodology === 'CIA') {
-    return categoryLabels.CIA[category.category];
-  }
-  if (category.methodology === 'CIA-DIE') {
-    return categoryLabels['CIA-DIE'][category.category];
-  }
-  if (category.methodology === 'PLOT4ai') {
-    return categoryLabels.PLOT4ai[category.category];
-  }
-  return category.category;
-}
-
-function methodologyName(category: ThreatCategory): string {
+/**
+ * A category's label followed by its methodology in parentheses. An author's
+ * own category and methodology names pass through as written.
+ */
+export function categoryLabel(
+  category: ThreatCategory,
+  terms: RenderTerms,
+): string {
   return category.methodology === 'custom'
-    ? category.methodologyName
-    : category.methodology;
+    ? `${category.category} (${category.methodologyName})`
+    : `${terms.category(category.category)} (${category.methodology})`;
 }

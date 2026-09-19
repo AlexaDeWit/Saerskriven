@@ -176,7 +176,7 @@ export async function rasterized(
       `This install cannot draw a PNG: ${escapedForTerminal(found.left)}.`,
     ]);
   }
-  const image = await renderPng(diagram, model, {
+  const image = await renderPng(diagram, model, 'en-CA', {
     assets: found.right,
     longEdge,
   });
@@ -196,7 +196,7 @@ export function drawnOf(
 function unplacedLines(
   unplaced: readonly z.infer<typeof unplacedSchema>[],
 ): readonly string[] {
-  const warning = renderUnplacedWarning(unplaced);
+  const warning = renderUnplacedWarning(unplaced, 'en-CA');
   return warning === '' ? [] : warning.trimEnd().split('\n');
 }
 

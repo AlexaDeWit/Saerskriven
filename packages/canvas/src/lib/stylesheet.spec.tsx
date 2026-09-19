@@ -1,6 +1,6 @@
 import { severitySchema } from '@saerskriven/model';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { everyGlyphModel } from './canvas.fixtures.js';
+import { everyGlyphModel, specMarks } from './canvas.fixtures.js';
 import { layoutDiagram } from './layout.js';
 import { defaultRenderTheme, type RenderTheme } from './render-theme.js';
 import { DiagramGlyphs } from './scene.js';
@@ -27,6 +27,7 @@ const emitted = new Set<string>(
   (
     renderToStaticMarkup(
       <DiagramGlyphs
+        marks={specMarks}
         layout={layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel)}
       />,
     ).match(/class="[^"]*"/gu) ?? []

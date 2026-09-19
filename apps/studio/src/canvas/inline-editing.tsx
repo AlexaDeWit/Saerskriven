@@ -56,7 +56,7 @@ import {
 } from './edits.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
-import { edgeLabel, nodeLabel, resizeLabels } from './names.js';
+import { badgeMarks, edgeLabel, nodeLabel, resizeLabels } from './names.js';
 import styles from './inline-editing.module.css';
 
 type InlineFieldProps = {
@@ -271,6 +271,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
       <CanvasNodeBody
         {...props}
         controlsVisible={!editing}
+        marks={badgeMarks}
         onResize={() => {
           setResizing(true);
         }}
@@ -333,7 +334,7 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
 
   return (
     <>
-      <CanvasEdgeBody {...props} textVisible={!editing} />
+      <CanvasEdgeBody {...props} marks={badgeMarks} textVisible={!editing} />
       {editing && edge !== undefined && (
         <EdgeLabelRenderer>
           <div

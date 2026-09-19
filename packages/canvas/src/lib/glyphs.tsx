@@ -1,6 +1,6 @@
 import type { Size } from '@saerskriven/model';
 import type { CSSProperties, ReactElement } from 'react';
-import { badgeAnchor, ThreatBadgeGlyph } from './badges.js';
+import { badgeAnchor, ThreatBadgeGlyph, type BadgeMarks } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
 import { WrappedText } from './labels.js';
 import type { CanvasEdge, CanvasNode, CanvasNodeKind } from './layout.js';
@@ -66,13 +66,16 @@ export function BoxElementGlyph({
  * {@link PlacedElementGlyph}. `textVisible` false leaves the run of text out,
  * for a canvas with an editor open where that text is drawn. `badgeVisible`
  * false leaves the badge out, for a canvas that draws it in a layer of its own.
+ * `marks` are the letters the badge draws.
  */
 export function ElementGlyph({
   badgeVisible = true,
+  marks,
   node,
   textVisible = true,
 }: {
   readonly badgeVisible?: boolean;
+  readonly marks: BadgeMarks;
   readonly node: CanvasNode;
   readonly textVisible?: boolean;
 }): ReactElement {
@@ -81,7 +84,11 @@ export function ElementGlyph({
       {outlineOf(node)}
       {textVisible ? <WrappedText {...nodeTextPlacement(node)} /> : null}
       {!badgeVisible || node.badge === undefined ? null : (
-        <ThreatBadgeGlyph badge={node.badge} at={badgeAnchor(node.size)} />
+        <ThreatBadgeGlyph
+          badge={node.badge}
+          at={badgeAnchor(node.size)}
+          marks={marks}
+        />
       )}
     </g>
   );
@@ -92,13 +99,15 @@ export function ElementGlyph({
  * headless render composes into a standalone SVG.
  */
 export function PlacedElementGlyph({
+  marks,
   node,
 }: {
+  readonly marks: BadgeMarks;
   readonly node: CanvasNode;
 }): ReactElement {
   return (
     <g transform={translate(node.position)}>
-      <ElementGlyph node={node} />
+      <ElementGlyph marks={marks} node={node} />
     </g>
   );
 }
@@ -112,9 +121,11 @@ export function PlacedElementGlyph({
  */
 export function FlowGlyph({
   edge,
+  marks,
   textVisible = true,
 }: {
   readonly edge: CanvasEdge;
+  readonly marks: BadgeMarks;
   readonly textVisible?: boolean;
 }): ReactElement {
   const points = edgePoints(edge);
@@ -136,7 +147,11 @@ export function FlowGlyph({
       ) : null}
       {textVisible ? <WrappedText {...edge.label.name} /> : null}
       {edge.badge === undefined || edge.label.badge === undefined ? null : (
-        <ThreatBadgeGlyph badge={edge.badge} at={edge.label.badge} />
+        <ThreatBadgeGlyph
+          badge={edge.badge}
+          at={edge.label.badge}
+          marks={marks}
+        />
       )}
     </g>
   );

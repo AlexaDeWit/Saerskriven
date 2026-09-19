@@ -16,6 +16,9 @@ import {
 } from './build-assets.js';
 import type { PdfAssets } from './pdf.js';
 
+/** The locales whose exports reword the en-CA framing. */
+export const translatedLocales = ['fr-CA', 'sv'] as const;
+
 const svgSuffix = '.snapshot.svg';
 
 const pngSuffix = '.snapshot.png';

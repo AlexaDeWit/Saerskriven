@@ -19,12 +19,17 @@ import {
   repositoryRoot,
   threatOf,
 } from '@saerskriven/model/fixtures';
-import type { ListItem, Strong } from 'mdast';
+import type { ListItem, Nodes, Strong } from 'mdast';
 import { join } from 'node:path';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import { badgedModel, twoDiagramsModel } from '../render.fixtures.js';
+import { exportText } from '../messages/catalogues.js';
+import {
+  badgedModel,
+  translatedLocales,
+  twoDiagramsModel,
+} from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
 import {
   badgesIn,
@@ -37,6 +42,7 @@ import {
   threatSectionsIn,
 } from './register-tree.fixtures.js';
 import { registerDocument } from './register-tree.js';
+import { badgeLabel, renderTerms } from './terms.js';
 
 const labelsPath = join(
   import.meta.dirname,
@@ -193,8 +199,8 @@ describe('the two-diagram register', () => {
   const model = twoDiagramsModel;
 
   it('matches the golden file committed under test-data, on a second run too', async () => {
-    const first = renderRegister(model);
-    const second = renderRegister(model);
+    const first = renderRegister(model, 'en-CA');
+    const second = renderRegister(model, 'en-CA');
     expect(second).toBe(first);
     await expect(second).toMatchFileSnapshot(registerGolden);
   });
@@ -208,7 +214,7 @@ describe('the two-diagram register', () => {
       ? 1
       : 0;
     expect(
-      headingsOf(renderRegister(model))
+      headingsOf(renderRegister(model, 'en-CA'))
         .filter((entry) => entry.depth === 2)
         .slice(modelSections)
         .map((entry) => entry.text),
@@ -223,7 +229,7 @@ describe('the two-diagram register', () => {
   });
 
   it('carries one overview row per threat, under the six column headings', () => {
-    const rows = tableRowsOf(renderRegister(model));
+    const rows = tableRowsOf(renderRegister(model, 'en-CA'));
     expect(rows[0]).toEqual([
       'Number',
       'Title',
@@ -239,8 +245,8 @@ describe('the two-diagram register', () => {
     const numbers = model.threats.map((threat) => threat.number);
     numbers.sort((left, right) => left - right);
     const targets = numbers.map((number) => `threat-${String(number)}`);
-    expect(threatTargetsOf(renderRegister(model))).toEqual(targets);
-    expect(overviewLinksOf(renderRegister(model))).toEqual(
+    expect(threatTargetsOf(renderRegister(model, 'en-CA'))).toEqual(targets);
+    expect(overviewLinksOf(renderRegister(model, 'en-CA'))).toEqual(
       numbers.map((number) => ({
         number: String(number),
         target: `#threat-${String(number)}`,
@@ -251,7 +257,9 @@ describe('the two-diagram register', () => {
 
 describe('the register document', () => {
   it('titles itself after the model', () => {
-    expect(headingsOf(renderRegister(modelFrom({ threats: [] })))[0]).toEqual({
+    expect(
+      headingsOf(renderRegister(modelFrom({ threats: [] }), 'en-CA'))[0],
+    ).toEqual({
       depth: 1,
       text: 'Sample threat register',
     });
@@ -259,7 +267,9 @@ describe('the register document', () => {
 
   it('titles itself bare where the model carries no title', () => {
     expect(
-      headingsOf(renderRegister(modelFrom({ threats: [], title: '' })))[0],
+      headingsOf(
+        renderRegister(modelFrom({ threats: [], title: '' }), 'en-CA'),
+      )[0],
     ).toEqual({
       depth: 1,
       text: 'Threat register',
@@ -269,20 +279,23 @@ describe('the register document', () => {
   it('keeps its title on one line where the model title carries a break', () => {
     expect(
       headingsOf(
-        renderRegister(modelFrom({ threats: [], title: 'Two\nlines' })),
+        renderRegister(
+          modelFrom({ threats: [], title: 'Two\nlines' }),
+          'en-CA',
+        ),
       )[0],
     ).toEqual({ depth: 1, text: 'Two lines threat register' });
   });
 
   it('states that a model holding no threats records none, and writes no table', () => {
-    const rendered = renderRegister(modelFrom({ threats: [] }));
+    const rendered = renderRegister(modelFrom({ threats: [] }), 'en-CA');
     expect(rendered).toContain('This model records no threats.');
     expect(tableRowsOf(rendered)).toEqual([]);
   });
 
   it('keeps appearance out of portable output and permits the host stylesheet', () => {
-    const plain = renderRegister(badgedModel);
-    const styled = renderRegister(badgedModel, {
+    const plain = renderRegister(badgedModel, 'en-CA');
+    const styled = renderRegister(badgedModel, 'en-CA', {
       styled: true,
       stylesheet: false,
     });
@@ -299,7 +312,7 @@ describe('the register document', () => {
 describe.each([false, true])('register embedding, styled %s', (styled) => {
   it('starts threats at H3 below an existing H2 without another title', () => {
     const options = { styled, title: false, headingLevel: 3 as const };
-    const markdown = renderRegister(badgedModel, options);
+    const markdown = renderRegister(badgedModel, 'en-CA', options);
     expect(markdown).toContain('### Threat 7:');
     expect(markdown).not.toMatch(/^# /mu);
     expect(markdown).toContain('#### First');
@@ -312,14 +325,14 @@ describe.each([false, true])('register embedding, styled %s', (styled) => {
     'keeps anchors when the first heading is H%s',
     (headingLevel) => {
       for (const title of [false, true]) {
-        const markdown = renderRegister(badgedModel, {
+        const markdown = renderRegister(badgedModel, 'en-CA', {
           styled,
           title,
           headingLevel,
         });
         expect(markdown).toContain('<a name="threat-7"></a>');
         expect(markdown).toContain('[7](#threat-7)');
-        const headings = registerDocument(badgedModel, {
+        const headings = registerDocument(badgedModel, 'en-CA', {
           title,
           headingLevel,
         }).children.filter((node) => node.type === 'heading');
@@ -334,6 +347,7 @@ describe('a threat section', () => {
   it('leads its heading with the number, then the title', () => {
     const rendered = renderRegister(
       modelFrom({ threats: [threatOf({ number: 7, title: 'Token replay' })] }),
+      'en-CA',
     );
     expect(headingsOf(rendered)).toContainEqual({
       depth: 2,
@@ -347,6 +361,7 @@ describe('a threat section', () => {
   ])('keeps its heading where the title $named a line break', ({ title }) => {
     const rendered = renderRegister(
       modelFrom({ threats: [threatOf({ number: 1, title })] }),
+      'en-CA',
     );
     expect(headingsOf(rendered).filter((entry) => entry.depth === 2)).toEqual([
       { depth: 2, text: 'Threat 1: Token replay' },
@@ -364,6 +379,7 @@ describe('a threat section', () => {
           threatOf({ number: 2, title: 'The real second threat' }),
         ],
       }),
+      'en-CA',
     );
     expect(headingsOf(rendered).filter((entry) => entry.depth === 2)).toEqual([
       { depth: 2, text: 'Threat 1: x Threat 2: Someone elses title' },
@@ -379,6 +395,7 @@ describe('a threat section', () => {
           threatOf({ number: 2, title: 'second\nShared tail' }),
         ],
       }),
+      'en-CA',
     );
     expect(headingsOf(rendered).filter((entry) => entry.depth === 2)).toEqual([
       { depth: 2, text: 'Threat 1: first Shared tail' },
@@ -399,6 +416,7 @@ describe('a threat section', () => {
         ],
         diagrams: [diagramOf('d0', [{ id: 'el-a', name: 'Gateway' }])],
       }),
+      'en-CA',
     );
     expect(rendered).toContain('- **Elements**: Gateway');
     expect(rendered).toContain('- **Category**: Tampering (STRIDE)');
@@ -415,13 +433,17 @@ describe('a threat section', () => {
           diagramOf('d1', [{ id: 'el-b', name: 'Ledger' }]),
         ],
       }),
+      'en-CA',
     );
     expect(rendered).toContain('- **Elements**: Gateway, Ledger');
   });
 
   it('says None where the threat attaches to no element', () => {
     expect(
-      renderRegister(modelFrom({ threats: [threatOf({ number: 1 })] })),
+      renderRegister(
+        modelFrom({ threats: [threatOf({ number: 1 })] }),
+        'en-CA',
+      ),
     ).toContain('- **Elements**: None');
   });
 
@@ -431,6 +453,7 @@ describe('a threat section', () => {
         threats: [threatOf({ number: 1, elements: ['el-a'] })],
         diagrams: [diagramOf('d0', [{ id: 'el-a', name: '' }])],
       }),
+      'en-CA',
     );
     expect(rendered).toContain('- **Elements**: el-a');
   });
@@ -438,6 +461,7 @@ describe('a threat section', () => {
   it('falls back to the element id where the reference resolves to nothing', () => {
     const rendered = renderRegister(
       modelFrom({ threats: [threatOf({ number: 1, elements: ['el-gone'] })] }),
+      'en-CA',
     );
     expect(rendered).toContain('- **Elements**: el-gone');
   });
@@ -445,6 +469,7 @@ describe('a threat section', () => {
   it('says None recorded where the threat carries neither prose nor records, and holds no mitigation prose section', () => {
     const rendered = renderRegister(
       modelFrom({ threats: [threatOf({ number: 1 })] }),
+      'en-CA',
     );
     expect(rendered).toContain('**Description**\n\nNone recorded.');
     expect(rendered).not.toContain('**Mitigation**');
@@ -459,6 +484,7 @@ describe('a threat section', () => {
           threatOf({ number: index + 1, ...entry.fields }),
         ),
       }),
+      'en-CA',
     );
     const rows = tableRowsOf(rendered).slice(1);
     expect(rows.length).toBe(labelledMembers.length);
@@ -467,7 +493,7 @@ describe('a threat section', () => {
       .join('\n');
     const recordLines = [
       ...new Set(
-        badgeTextsIn(registerDocument(everyRecordLabel).children)
+        badgeTextsIn(registerDocument(everyRecordLabel, 'en-CA').children)
           .filter(({ badge }) => !['severity', 'status'].includes(badge.kind))
           .map(({ badge, label }) => `${badge.kind} ${badge.value}: ${label}`),
       ),
@@ -490,6 +516,7 @@ describe('a threat section', () => {
             }),
           ],
         }),
+        'en-CA',
       ),
     );
     const sectionLine = `section model-assumptions: ${textOf([sectionHeading])}`;
@@ -534,7 +561,7 @@ describe("a threat's records", () => {
   });
 
   it('lists exactly the linked records, with their status badges, in model order', () => {
-    const [first] = threatSectionsIn(registerDocument(model));
+    const [first] = threatSectionsIn(registerDocument(model, 'en-CA'));
     const mitigations = recordItems(first, 'Mitigations');
     const assumptions = recordItems(first, 'Assumptions');
     expect(mitigations.map((item) => badgesIn(item.children))).toEqual([
@@ -544,7 +571,9 @@ describe("a threat's records", () => {
     expect(assumptions.map((item) => badgesIn(item.children))).toEqual([
       [{ kind: 'assumption', value: 'valid' }],
     ]);
-    const [written] = threatSectionsIn(reader.parse(renderRegister(model)));
+    const [written] = threatSectionsIn(
+      reader.parse(renderRegister(model, 'en-CA')),
+    );
     expect(
       recordItems(written, 'Mitigations').map((item) =>
         textOf(item.children.slice(1)),
@@ -558,7 +587,7 @@ describe("a threat's records", () => {
   });
 
   it('lists a shared record in each of its threats, and in no other part of the register', () => {
-    const tree = registerDocument(model);
+    const tree = registerDocument(model, 'en-CA');
     const sections = threatSectionsIn(tree);
     expect(
       sections.map((section) =>
@@ -578,7 +607,7 @@ describe("a threat's records", () => {
     );
     expect(beforeSections.some((node) => node.type === 'list')).toBe(false);
     expect(textOf(beforeSections)).not.toContain('shared');
-    expect(renderRegister(model)).not.toContain('unlinked');
+    expect(renderRegister(model, 'en-CA')).not.toContain('unlinked');
   });
 
   it('writes a mitigation title before its prose, and no title line where it has none', () => {
@@ -599,8 +628,8 @@ describe("a threat's records", () => {
       ],
     });
     for (const tree of [
-      registerDocument(titledModel),
-      reader.parse(renderRegister(titledModel)),
+      registerDocument(titledModel, 'en-CA'),
+      reader.parse(renderRegister(titledModel, 'en-CA')),
     ]) {
       const [section] = threatSectionsIn(tree);
       const [titled, bare] = recordItems(section, 'Mitigations');
@@ -632,6 +661,7 @@ describe("a threat's records", () => {
           }),
         ],
       }),
+      'en-CA',
     );
     const [section] = threatSectionsIn(reader.parse(rendered));
     const [mitigation] = recordItems(section, 'Mitigations');
@@ -655,7 +685,7 @@ describe('the assumptions that apply to the model', () => {
   const model = scopedAssumptionsModel;
 
   it('sit in one section between the overview and the first threat, with their status badges in model order', () => {
-    const tree = registerDocument(model);
+    const tree = registerDocument(model, 'en-CA');
     expect(tree.children[1]?.type).toBe('table');
     const section = modelSectionIn(tree);
     expect(section.map((node) => node.type)).toEqual(['heading', 'list']);
@@ -666,7 +696,9 @@ describe('the assumptions that apply to the model', () => {
       [{ kind: 'assumption', value: 'invalidated' }],
       [{ kind: 'assumption', value: 'unconfirmed' }],
     ]);
-    const written = modelSectionIn(reader.parse(renderRegister(model)));
+    const written = modelSectionIn(
+      reader.parse(renderRegister(model, 'en-CA')),
+    );
     expect(written.map((node) => node.type)).toEqual(['heading', 'list']);
     expect(
       sectionItems(written).map((item) => textOf(item.children.slice(1))),
@@ -681,8 +713,10 @@ describe('the assumptions that apply to the model', () => {
         assumptionOf({ id: 'assumption-a', threats: ['threat-1'] }),
       ],
     });
-    expect(modelSectionIn(registerDocument(unscoped))).toEqual([]);
-    expect(modelSectionIn(reader.parse(renderRegister(unscoped)))).toEqual([]);
+    expect(modelSectionIn(registerDocument(unscoped, 'en-CA'))).toEqual([]);
+    expect(
+      modelSectionIn(reader.parse(renderRegister(unscoped, 'en-CA'))),
+    ).toEqual([]);
   });
 
   it('follow the no-threats paragraph in a model holding no threats', () => {
@@ -699,8 +733,8 @@ describe('the assumptions that apply to the model', () => {
       ],
     });
     for (const tree of [
-      registerDocument(threatless),
-      reader.parse(renderRegister(threatless)),
+      registerDocument(threatless, 'en-CA'),
+      reader.parse(renderRegister(threatless, 'en-CA')),
     ]) {
       expect(tree.children.map((node) => node.type)).toEqual([
         'heading',
@@ -709,9 +743,9 @@ describe('the assumptions that apply to the model', () => {
         'list',
       ]);
     }
-    expect(badgesIn(modelSectionIn(registerDocument(threatless)))).toEqual([
-      { kind: 'assumption', value: 'valid' },
-    ]);
+    expect(
+      badgesIn(modelSectionIn(registerDocument(threatless, 'en-CA'))),
+    ).toEqual([{ kind: 'assumption', value: 'valid' }]);
   });
 
   it('parse their prose as markdown, demoting its headings and keeping its lists and HTML', () => {
@@ -728,6 +762,7 @@ describe('the assumptions that apply to the model', () => {
           }),
         ],
       }),
+      'en-CA',
     );
     const [item] = sectionItems(modelSectionIn(reader.parse(rendered)));
     expect(item.children.map((node) => node.type)).toEqual([
@@ -753,6 +788,7 @@ describe('threat prose', () => {
           }),
         ],
       }),
+      'en-CA',
     );
     expect(rendered).toContain('- one\n- two');
     expect(rendered).toContain('A [link](https://example.invalid).');
@@ -768,6 +804,7 @@ describe('threat prose', () => {
           }),
         ],
       }),
+      'en-CA',
     );
     expect(headingsOf(rendered).map((entry) => entry.depth)).toEqual([
       1, 2, 3, 6,
@@ -782,6 +819,7 @@ describe('threat prose', () => {
           threatOf({ number: 1, description: `${'> '.repeat(4000)}too deep` }),
         ],
       }),
+      'en-CA',
     );
     expect(rendered).toContain('too deep');
   });
@@ -796,6 +834,7 @@ describe('threat prose', () => {
           }),
         ],
       }),
+      'en-CA',
     );
     expect(rendered).toContain('Set <span data-role="note">the flag</span>');
   });
@@ -805,6 +844,7 @@ describe('a hostile threat title', () => {
   const title = '# Pipe | backtick ` asterisk * end';
   const rendered = renderRegister(
     modelFrom({ threats: [threatOf({ number: 1, title })] }),
+    'en-CA',
   );
 
   it('reaches the heading as the text the author wrote', () => {
@@ -832,19 +872,21 @@ describe('a register render', () => {
       threatOf({ number: 1 }),
       threatOf({ number: 2 }),
     ];
-    expect(renderRegister(modelFrom({ threats: threats }))).toBe(
-      renderRegister(modelFrom({ threats: inNumberOrder(threats) })),
+    expect(renderRegister(modelFrom({ threats: threats }), 'en-CA')).toBe(
+      renderRegister(modelFrom({ threats: inNumberOrder(threats) }), 'en-CA'),
     );
   });
 
   it('keeps a target when its threat title changes', () => {
     const before = renderRegister(
       modelFrom({ threats: [threatOf({ number: 7, title: 'Token replay' })] }),
+      'en-CA',
     );
     const after = renderRegister(
       modelFrom({
         threats: [threatOf({ number: 7, title: 'Replay of a token' })],
       }),
+      'en-CA',
     );
     expect(threatTargetsOf(after)).toEqual(threatTargetsOf(before));
     expect(overviewLinksOf(after)).toEqual(overviewLinksOf(before));
@@ -852,10 +894,13 @@ describe('a register render', () => {
 
   it('leaves every existing section byte-identical when a higher-numbered threat is added', () => {
     const existing = [threatOf({ number: 1 }), threatOf({ number: 2 })];
-    const before = sectionsOf(renderRegister(modelFrom({ threats: existing })));
+    const before = sectionsOf(
+      renderRegister(modelFrom({ threats: existing }), 'en-CA'),
+    );
     const after = sectionsOf(
       renderRegister(
         modelFrom({ threats: [...existing, threatOf({ number: 3 })] }),
+        'en-CA',
       ),
     );
     expect(after.slice(0, before.length).join('').trimEnd()).toBe(
@@ -871,11 +916,77 @@ describe('a register render', () => {
       threatOf({ number: 3 }),
     ];
     const targetsBefore = threatTargetsOf(
-      renderRegister(modelFrom({ threats: existing })),
+      renderRegister(modelFrom({ threats: existing }), 'en-CA'),
     );
     const targetsAfter = threatTargetsOf(
-      renderRegister(modelFrom({ threats: [existing[0], existing[2]] })),
+      renderRegister(
+        modelFrom({ threats: [existing[0], existing[2]] }),
+        'en-CA',
+      ),
     );
     expect(targetsAfter).toEqual([targetsBefore[0], targetsBefore[2]]);
+  });
+});
+
+function shapeOf(node: Nodes): unknown {
+  return 'children' in node
+    ? [node.type, ...node.children.map(shapeOf)]
+    : node.type;
+}
+
+describe.each(translatedLocales)('the register in %s', (locale) => {
+  const { t } = exportText(locale);
+  const terms = renderTerms(locale);
+  const english = registerDocument(twoDiagramsModel, 'en-CA');
+  const translated = registerDocument(twoDiagramsModel, locale);
+  const written = renderRegister(twoDiagramsModel, locale);
+
+  it("heads the register, its columns and its sections in the locale's words", () => {
+    expect(headingsOf(written)[0].text).toBe(
+      t('register.titled', { title: twoDiagramsModel.metadata.title }),
+    );
+    expect(tableRowsOf(written)[0]).toEqual(
+      (
+        [
+          'register.number',
+          'register.title',
+          'register.elements',
+          'register.category',
+          'register.severity',
+          'register.status',
+        ] as const
+      ).map((column) => t(column)),
+    );
+    expect(written).toContain(t('register.model-assumptions'));
+    expect(written).not.toContain('Assumptions that apply to the model');
+  });
+
+  it("labels every badge in the locale's terms, under the same roles", () => {
+    const badges = badgeTextsIn(translated.children);
+    expect(badges.map(({ badge }) => badge)).toEqual(
+      badgesIn(english.children),
+    );
+    expect(badges.map(({ label }) => label)).toEqual(
+      badges.map(({ badge }) => badgeLabel(badge, terms)),
+    );
+  });
+
+  it('keeps the en-CA tree, only reworded', () => {
+    expect(shapeOf(translated)).toEqual(shapeOf(english));
+  });
+
+  it("passes the author's text through untouched", () => {
+    for (const threat of twoDiagramsModel.threats) {
+      expect(written).toContain(threat.title);
+      expect(written).toContain(threat.description);
+    }
+    expect(written).toContain('Callback integrity (Payments checklist)');
+  });
+
+  it('classes a styled badge by its role, whatever its label', () => {
+    const styled = renderRegister(badgedModel, locale, { styled: true });
+    expect(styled).toContain(
+      `<span class="saer-badge saer-severity saer-severity-high"><span class="saer-badge-label">${terms.severity('high')}</span></span>`,
+    );
   });
 });

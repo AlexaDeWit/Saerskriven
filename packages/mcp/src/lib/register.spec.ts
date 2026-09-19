@@ -13,7 +13,7 @@ describe('what saer_register writes', () => {
   it('carries the markdown the render package writes for the model', () => {
     const model = answerOf(readNamed(workspace, undefined)).model;
     expect(answerOf(register(workspace, {})).markdown).toEqual(
-      renderRegister(model),
+      renderRegister(model, 'en-CA'),
     );
   });
 

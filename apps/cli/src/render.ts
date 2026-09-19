@@ -159,7 +159,7 @@ function document(
     ? Promise.resolve(
         written(
           options.out,
-          renderRegister(model, {
+          renderRegister(model, 'en-CA', {
             title: options.title,
             headingLevel: options.headingLevel,
             styled: options.styled,
@@ -178,10 +178,11 @@ async function compiled(
   assets: string,
   theme: RenderTheme,
 ): Promise<CommandOutcome> {
-  const source = renderTypst(model, theme);
+  const source = renderTypst(model, 'en-CA', theme);
   return Either.match(await compilePdf(source.typst, assets), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
-    onRight: (pdf) => written(out, pdf, renderUnplacedWarning(source.unplaced)),
+    onRight: (pdf) =>
+      written(out, pdf, renderUnplacedWarning(source.unplaced, 'en-CA')),
   });
 }
 
@@ -218,8 +219,12 @@ function vector(
   out: string,
   theme: RenderTheme,
 ): CommandOutcome {
-  const rendered = renderSvg(diagram, model, theme);
-  return written(out, rendered.svg, renderUnplacedWarning(rendered.unplaced));
+  const rendered = renderSvg(diagram, model, 'en-CA', theme);
+  return written(
+    out,
+    rendered.svg,
+    renderUnplacedWarning(rendered.unplaced, 'en-CA'),
+  );
 }
 
 async function raster(
@@ -232,7 +237,7 @@ async function raster(
   return Either.match(await drawPng(diagram, model, assets, theme), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
     onRight: (image) =>
-      written(out, image.png, renderUnplacedWarning(image.unplaced)),
+      written(out, image.png, renderUnplacedWarning(image.unplaced, 'en-CA')),
   });
 }
 

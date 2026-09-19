@@ -75,9 +75,17 @@ describe('consumer themes', () => {
       severity: { high: '#b45309' },
       status: { 'accepted-risk': '#223344' },
     }).theme;
-    const svg = renderSvg(badgedModel.diagrams[0], badgedModel, theme).svg;
-    const markdown = renderRegister(badgedModel, { styled: true, theme });
-    const typst = renderTypst(badgedModel, theme).typst;
+    const svg = renderSvg(
+      badgedModel.diagrams[0],
+      badgedModel,
+      'en-CA',
+      theme,
+    ).svg;
+    const markdown = renderRegister(badgedModel, 'en-CA', {
+      styled: true,
+      theme,
+    });
+    const typst = renderTypst(badgedModel, 'en-CA', theme).typst;
     expect(svg).toContain(`.${severityToneClass.high} { fill: #b45309;`);
     expect(markdown).toContain('--saer-severity-high: #b45309');
     expect(markdown).toContain(
@@ -112,8 +120,11 @@ describe('consumer themes', () => {
     const theme = readThemeOverrides({
       mitigation: { proposed: '#123456' },
     }).theme;
-    const markdown = renderRegister(badgedModel, { styled: true, theme });
-    const typst = renderTypst(badgedModel, theme).typst;
+    const markdown = renderRegister(badgedModel, 'en-CA', {
+      styled: true,
+      theme,
+    });
+    const typst = renderTypst(badgedModel, 'en-CA', theme).typst;
     for (const kind of ['mitigation', 'assumption', 'flag']) {
       expect(markdown).toContain(`saer-badge saer-${kind} saer-${kind}-`);
     }
@@ -125,7 +136,7 @@ describe('consumer themes', () => {
     );
     expect(registerStylesheet(defaultRenderTheme)).not.toContain('#123456');
     expect(typst).toMatch(/#saer-badge\("[^"]+", rgb\("#123456"\)\)/u);
-    expect(renderTypst(badgedModel).typst).not.toContain('#123456');
+    expect(renderTypst(badgedModel, 'en-CA').typst).not.toContain('#123456');
   });
 
   it('applies font and outlined badge controls without hiding labels', () => {
@@ -133,8 +144,13 @@ describe('consumer themes', () => {
       fonts: { body: 'Liberation Mono', code: 'Liberation Sans' },
       badges: { style: 'outline', borderWidth: 1, text: '#123456' },
     }).theme;
-    const svg = renderSvg(badgedModel.diagrams[0], badgedModel, theme).svg;
-    const typst = renderTypst(badgedModel, theme).typst;
+    const svg = renderSvg(
+      badgedModel.diagrams[0],
+      badgedModel,
+      'en-CA',
+      theme,
+    ).svg;
+    const typst = renderTypst(badgedModel, 'en-CA', theme).typst;
     expect(svg).toContain('font-family: "Liberation Mono"');
     expect(svg).toContain(
       `fill: ${theme.colours.background}; stroke: ${theme.severity.high}; stroke-width: 1`,
@@ -178,7 +194,7 @@ describe('themed PDF compilation', () => {
         badges: { style },
       }).theme;
       const result = await compilePdf(
-        renderTypst(badgedModel, theme).typst,
+        renderTypst(badgedModel, 'en-CA', theme).typst,
         typstAssets(),
       );
       expect(Either.isRight(result)).toBe(true);

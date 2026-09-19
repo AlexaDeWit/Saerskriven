@@ -1,7 +1,7 @@
 import { elementId } from '@saerskriven/model/fixtures';
 import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { everyGlyphLayout, nodeNamed } from './canvas.fixtures.js';
+import { everyGlyphLayout, nodeNamed, specMarks } from './canvas.fixtures.js';
 import { handleSides } from './handles.js';
 import type { ResizeLabels } from './resize-controls.js';
 import {
@@ -84,6 +84,7 @@ const bodyMarkup = (
   renderToStaticMarkup(
     <ReactFlowProvider>
       <CanvasNodeBody
+        marks={specMarks}
         {...nodeProps(node)}
         selected={selected}
         isConnectable={isConnectable}
@@ -106,6 +107,7 @@ const edgeMarkup = (
   renderToStaticMarkup(
     <ReactFlowProvider initialNodes={nodes}>
       <CanvasEdgeBody
+        marks={specMarks}
         {...edgeProps(data, selected)}
         textVisible={textVisible}
       />
