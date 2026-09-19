@@ -1,4 +1,4 @@
-import { canvasClassNames } from '@saerskriven/canvas';
+import { canvasClassNames, flowEndNodeId } from '@saerskriven/canvas';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -22,6 +22,7 @@ import {
   laidOutNode,
   noteElement,
   openCanvas,
+  probeFlow,
   requestFlow,
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
@@ -440,6 +441,27 @@ describe('DiagramCanvas', () => {
       '[id^="react-flow__aria-live"]',
     )?.textContent;
     expect(moved).toBe(french('canvas.node-moved', position));
+  });
+
+  it('describes an element by role in a language chosen after it mounted, and a free end by none', () => {
+    render(<DiagramCanvas />);
+    const anchor = screen.getByTestId(
+      `rf__node-${flowEndNodeId(probeFlow, 'target')}`,
+    );
+
+    for (const [locale, role] of [
+      ['fr-CA', 'élément'],
+      ['sv', 'element'],
+    ] as const) {
+      act(() => {
+        chooseLanguage(locale);
+      });
+
+      expect(readerInAnyLocale().getAttribute('aria-roledescription')).toBe(
+        role,
+      );
+      expect(anchor.hasAttribute('aria-roledescription')).toBe(false);
+    }
   });
 
   it('describes the canvas keys to the application it labels', () => {

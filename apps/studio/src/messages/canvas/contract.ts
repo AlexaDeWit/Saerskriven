@@ -73,6 +73,8 @@ export const canvasMessages = {
   'toggle-interactivity': text(),
   minimap: text(),
   handle: text(),
+  'element-role': text(),
+  'flow-role': text(),
   'resize-top': text(element),
   'resize-right': text(element),
   'resize-bottom': text(element),
