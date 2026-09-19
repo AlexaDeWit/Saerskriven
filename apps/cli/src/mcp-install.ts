@@ -7,16 +7,10 @@ import {
   type WriteTarget,
 } from '@saerskriven/mcp';
 import { Either } from 'effect';
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  realpathSync,
-} from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { z } from 'zod';
-import { withinReadBound } from './files.js';
+import { resolved, withinReadBound } from './files.js';
 import {
   InstallFailure,
   entryText,
@@ -36,7 +30,6 @@ import {
   type HostRegistration,
   type HostScope,
   type InstallEnvironment,
-  type NamedHostFile,
 } from './mcp-hosts.js';
 import {
   lines,
@@ -177,16 +170,6 @@ function scopeOf(
     (options.project !== true && registration.project === undefined)
     ? 'user'
     : 'project';
-}
-
-function resolved(file: NamedHostFile): WriteTarget {
-  return {
-    file: file.file,
-    path: Either.getOrElse(
-      Either.try(() => realpathSync(file.path)),
-      () => file.path,
-    ),
-  };
 }
 
 type HeldFile =

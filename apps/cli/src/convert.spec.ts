@@ -6,7 +6,7 @@ import {
 import { unclaimedYaml } from '@saerskriven/mcp/fixtures';
 import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { readFileSync, readdirSync } from 'node:fs';
+import { lstatSync, readFileSync, readdirSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   brokenDocumentYaml,
@@ -62,17 +62,48 @@ describe('convert', () => {
     expect(readdirSync(join(directory, 'in-place'))).toEqual(['model.yaml']);
   });
 
+  it('rewrites the file a symbolic link names, leaving the link in place', () => {
+    const target = fixtureFile(
+      directory,
+      'linked/target.yaml',
+      readFileSync(frozenVersion1, 'utf8'),
+    );
+    const link = join(directory, 'linked', 'link.yaml');
+    symlinkSync(target, link);
+    expect(convert(link, { to: 'saerskriven-yaml', out: link })).toMatchObject({
+      code: 0,
+      out: '',
+    });
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readFileSync(target, 'utf8')).toEqual(version2Of(frozenVersion1));
+  });
+
+  it('refuses to write another format over the file it read, writing nothing', () => {
+    const text = readFileSync(frozenVersion1, 'utf8');
+    const path = fixtureFile(directory, 'kept/model.yaml', text);
+    const outcome = convert(path, { to: 'threat-dragon', out: path });
+    expect(outcome).toMatchObject({ code: 2, out: '' });
+    expect(outcome.err.startsWith('error: ')).toBe(true);
+    expect(readFileSync(path, 'utf8')).toEqual(text);
+    expect(readdirSync(join(directory, 'kept'))).toEqual(['model.yaml']);
+  });
+
   it('merges an unedited Threat Dragon file onto itself and reports nothing', () => {
     const path = join(directory, 'written.json');
     convert(testDataPath('saerskriven/two-diagrams.yaml'), {
       to: 'threat-dragon',
       out: path,
     });
+    const before = readBack(readFileSync(path, 'utf8')).model;
     const outcome = convert(path, toThreatDragon);
     expect(outcome).toMatchObject({ code: 0, err: '' });
-    expect(readBack(outcome.out).model).toEqual(
-      readBack(readFileSync(path, 'utf8')).model,
-    );
+    expect(readBack(outcome.out).model).toEqual(before);
+    expect(convert(path, { to: 'threat-dragon', out: path })).toEqual({
+      code: 0,
+      out: '',
+      err: '',
+    });
+    expect(readBack(readFileSync(path, 'utf8')).model).toEqual(before);
   });
 
   it('writes a native file as Threat Dragon, reporting what that format cannot hold', () => {
@@ -141,6 +172,8 @@ describe('convert', () => {
       out: join(directory, 'absent', 'model.yaml'),
     });
     expect(outcome).toMatchObject({ code: 2, out: '' });
-    expect(outcome.err).toContain('ENOENT');
+    expect(outcome.err).toEqual(
+      `error: cannot write ${join(directory, 'absent', 'model.yaml')}: ENOENT: no such file or directory\n`,
+    );
   });
 });

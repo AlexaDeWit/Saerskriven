@@ -212,8 +212,8 @@ export function replacedFile(
 /**
  * `text` in place of whatever `target` holds, or as a new file where it holds
  * nothing, through a temporary file renamed onto it. It is {@link
- * replacedFile} with no revision checked, for a writer that holds no read of
- * the target to quote.
+ * replacedFile} with no revision checked: an MCP tool uses `replacedFile`,
+ * and this is for a writer that never read the target.
  */
 export function overwrittenFile(
   target: WriteTarget,

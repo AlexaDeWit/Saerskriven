@@ -228,9 +228,11 @@ converting them as [import](docs/import.md) does. A file already in the target f
 onto the document it was read from, so a Threat Dragon file keeps what the
 model does not describe, and a Saerskriven YAML file comes out in the current
 writer's form, which moves a version 1 file to version 2. `--out` may name the
-input file itself: the document is written to a temporary file beside it and
-renamed over it once complete, and a file the read refuses is left as it was.
-A document past the size Saerskriven reads is not written to a file. OTM and
+input file itself when `--to` is the format it is already in: the document is
+written to a temporary file beside it and renamed over it once complete,
+following a symbolic link to the file it names, and a file the read refuses
+is left as it was. Converting a file to another format over itself is refused
+with exit code 2 before anything is written. A document past the size Saerskriven reads is not written to a file. OTM and
 TM-BOM are read only, so `--to` refuses them. Whatever the read and the write
 did not carry exactly goes to standard error as a warning, and the command
 still writes the document and exits 0.

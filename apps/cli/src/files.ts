@@ -1,7 +1,13 @@
 import { withinTextBytes } from '@saerskriven/formats';
-import { reasonOf } from '@saerskriven/mcp';
+import { reasonOf, type WriteTarget } from '@saerskriven/mcp';
 import { Either } from 'effect';
-import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 
 /** A file as UTF-8 text, or a sentence naming the path and the system's reason. */
 export function readTextFile(path: string): Either.Either<string, string> {
@@ -58,6 +64,21 @@ export function createPrivateFile(
     },
     catch: (error) => `cannot write ${path}: ${reasonOf(error)}`,
   });
+}
+
+/**
+ * The target with a symbolic link at its path followed to the file it names,
+ * so a write renamed onto it replaces that file rather than the link. A path
+ * that does not resolve is kept as given.
+ */
+export function resolved(target: WriteTarget): WriteTarget {
+  return {
+    file: target.file,
+    path: Either.getOrElse(
+      Either.try(() => realpathSync(target.path)),
+      () => target.path,
+    ),
+  };
 }
 
 function sizeOf(path: string): number | undefined {
