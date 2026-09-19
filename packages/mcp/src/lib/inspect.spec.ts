@@ -1,6 +1,10 @@
 import { Either } from 'effect';
 import { inspect, renderInspection } from './inspect.js';
-import { assumptionScopesTree } from './read-tools.fixtures.js';
+import {
+  assumptionScopesTree,
+  forgedIdsTree,
+  forgedLinesIn,
+} from './read-tools.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import { openWorkspace } from './workspace.js';
 
@@ -71,5 +75,12 @@ describe('the assumptions an inspection lists', () => {
       expect.stringMatching(/^ {2}"assumption-reviewed" \(valid\): /u),
       expect.stringMatching(/^ {2}"assumption-hand-written" \(valid\): /u),
     ]);
+  });
+});
+
+describe('an inspection of a diagram whose id carries a line feed', () => {
+  it('forges no line in its text', () => {
+    const inspection = Either.getOrThrow(inspect(forgedIdsTree(), {}));
+    expect(forgedLinesIn(renderInspection(inspection))).toEqual([]);
   });
 });

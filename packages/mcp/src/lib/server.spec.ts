@@ -364,11 +364,11 @@ for (const era of eras) {
           expect(drawn).toEqual([
             [
               'saer://diagram/..%2Fa%20b%2Fc%3Fd%23e',
-              'diagram: ../a b/c?d#e (fulfilment)',
+              'diagram: "../a b/c?d#e" (fulfilment)',
             ],
             [
               'saer://diagram/fulfilment',
-              'diagram: fulfilment (Shipping an order)',
+              'diagram: "fulfilment" (Shipping an order)',
             ],
           ]);
         });

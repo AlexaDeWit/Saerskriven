@@ -4,6 +4,8 @@ import {
   assumptionScopesTree,
   everyRecordTree,
   featureCompleteWorkspace,
+  forgedIdsTree,
+  forgedLinesIn,
   refusalOf,
 } from './read-tools.fixtures.js';
 
@@ -87,5 +89,12 @@ describe('a threat whose assumption also applies to the model', () => {
     expect(
       rendered.filter((line) => line.includes('also applies to the model')),
     ).toEqual([expect.stringContaining('assumption-reviewed')]);
+  });
+});
+
+describe('a threat whose id carries a line feed', () => {
+  it('forges no line in the text of the result', () => {
+    const read = answerOf(getThreat(forgedIdsTree(), { ref: '1' }));
+    expect(forgedLinesIn(renderThreatRecord(read))).toEqual([]);
   });
 });

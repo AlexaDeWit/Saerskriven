@@ -90,7 +90,7 @@ export function renderThreatRecord(result: GetThreatResult): readonly string[] {
   const { threat } = result;
   return [
     ...renderReading(result),
-    `threat ${String(threat.number)} (${threat.id}): ${escapedForTerminal(threat.title)}`,
+    `threat ${String(threat.number)} (${quotedForTerminal(threat.id)}): ${escapedForTerminal(threat.title)}`,
     `status: ${threat.status}`,
     `severity: ${threat.severity}`,
     `category: ${renderCategory(threat.category)}`,
