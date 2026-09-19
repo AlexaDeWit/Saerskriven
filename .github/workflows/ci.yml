@@ -109,15 +109,17 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      # A restore through the prefix fallback carries every package an older
+      # lockfile installed, so prune before saving or the entry only grows.
+      - name: Prune the pnpm store (main only)
+        if: github.ref == 'refs/heads/main'
+        run: nix develop .#ci --command pnpm store prune
+
       # actions/cache/save only warns when its path is missing, which hid a
       # store that was never written (#358). Runs on every ref so a PR proves
       # the check the main-only save depends on.
       - name: Check the pnpm store exists to save
-        run: |
-          if [ -z "$(ls -A "$pnpm_config_store_dir" 2>/dev/null)" ]; then
-            echo "the pnpm store ${pnpm_config_store_dir} is missing or empty, so there is nothing to cache" >&2
-            exit 1
-          fi
+        run: nix develop .#ci --command scripts/check-pnpm-store.sh
 
       - name: Save pnpm store (main only)
         if: github.ref == 'refs/heads/main'
@@ -450,11 +452,15 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           save-nix-store: 'false'
+          restore-pnpm-store: 'true'
 
       - name: Install the lockfile parser
         run: >-
           nix develop .#ci --command
           pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Check pnpm installed into the cached store directory
+        run: nix develop .#ci --command scripts/check-pnpm-store.sh
 
       - name: Check dependency provenance
         run: nix develop .#ci --command scripts/check-provenance.mjs

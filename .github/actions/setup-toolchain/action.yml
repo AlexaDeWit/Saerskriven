@@ -16,6 +16,12 @@ inputs:
       Whether to install the workspace dependencies from the frozen lockfile.
       Jobs needing a deliberately different install keep that step themselves.
     default: 'false'
+  restore-pnpm-store:
+    description: >-
+      Whether to restore the pnpm store for a job that installs by hand. A job
+      with install-dependencies "true" always restores it. A job that never
+      runs pnpm leaves both unset and downloads no store.
+    default: 'false'
   save-nix-store:
     description: >-
       Whether this job may save the Nix-store cache (only ever on main). Set
@@ -68,6 +74,7 @@ runs:
     # reads (it ignores npm_config_store_dir). Saved by the workflow on main
     # only, mirroring the Nix rule.
     - name: Restore pnpm store
+      if: inputs.install-dependencies == 'true' || inputs.restore-pnpm-store == 'true'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ env.pnpm_config_store_dir }}
@@ -90,17 +97,4 @@ runs:
     - name: Check pnpm installed into the cached store directory
       if: inputs.install-dependencies == 'true'
       shell: bash
-      run: |
-        reported="$(nix develop .#ci --command pnpm store path)"
-        case "$reported" in
-          "$pnpm_config_store_dir"/*) ;;
-          *)
-            echo "pnpm reports its store at ${reported}, expected under ${pnpm_config_store_dir}" >&2
-            exit 1
-            ;;
-        esac
-        if [ ! -d "$reported" ]; then
-          echo "pnpm's store ${reported} does not exist after the install" >&2
-          exit 1
-        fi
-        echo "pnpm store: ${reported}"
+      run: nix develop .#ci --command scripts/check-pnpm-store.sh
