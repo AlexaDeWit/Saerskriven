@@ -136,10 +136,10 @@ writes the module the variable names, as
 
 `renderPng(diagram, model, locale, options)`, on the `@saerskriven/render/png`
 subpath ([`png.ts`](src/png.ts)), draws one diagram with `renderSvg` and
-rasterizes it. It exists because MCP hosts take an image block as PNG, JPEG,
-GIF or WebP and never as SVG. `options.assets` is what `rasterizeSvg` needs,
-and a caller leads the faces with `drawingFace`, which `ledBy` arranges or
-refuses.
+rasterizes it, for the CLI's `--format png`, the studio's PNG export, and an
+MCP host, which takes an image block as PNG, JPEG, GIF or WebP and never as
+SVG. `options.assets` is what `rasterizeSvg` needs, and a caller leads the
+faces with `drawingFace`, which `ledBy` arranges or refuses.
 
 ## The goldens
 

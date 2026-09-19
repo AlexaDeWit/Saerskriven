@@ -11,7 +11,6 @@ import {
 } from '@saerskriven/model';
 import { renderUnplacedWarning } from '@saerskriven/render';
 import {
-  defaultLongEdge,
   renderPng,
   ResvgFailure,
   type PngImage,
@@ -41,6 +40,14 @@ import {
 /** The media type of every image this server puts in a result. */
 export const imageMediaType = 'image/png';
 
+/**
+ * The pixel length `saer_render_diagram` draws an image block's longer edge
+ * at by default: the size an MCP host downscales an image block to. Held
+ * independently of `@saerskriven/render/png`'s own default, since MCP does
+ * not follow that default's size.
+ */
+export const mcpImageLongEdge = 1568;
+
 const imageExtension = '.png';
 
 /**
@@ -60,10 +67,10 @@ export const renderDiagramArgumentsSchema = fileArgumentSchema.extend({
   width: z
     .int()
     .min(1)
-    .max(defaultLongEdge)
+    .max(mcpImageLongEdge)
     .optional()
     .describe(
-      `The pixel length of the longer edge of the image, whichever edge that is. It defaults to ${String(defaultLongEdge)}, which is what a host downscales an image block to, and it cannot be asked for larger than that.`,
+      `The pixel length of the longer edge of the image, whichever edge that is. It defaults to ${String(mcpImageLongEdge)}, which is what a host downscales an image block to, and it cannot be asked for larger than that.`,
     ),
   out: z
     .string()
@@ -125,7 +132,7 @@ export const renderDiagramDescription = [
   'Draw one diagram of a Saerskriven threat model as a picture and return it as a PNG image block, so you can see the shape of the system rather than read a listing of its parts.',
   'Call this when the geometry matters: which elements a trust boundary encloses, where a flow runs, what the diagram looks like to the people who drew it. Do not call it to enumerate elements or threats, which saer_search_elements and saer_search_threats answer in a fraction of the context a picture costs.',
   'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `diagram` names which diagram to draw by id or exact title, and a model of one diagram does not need it. `width` is the pixel length of the longer edge. `out` also writes the PNG to a path under the root, which comes back as a resource link.',
-  `The image is always PNG, never SVG, and never larger than ${String(defaultLongEdge)} pixels on its longer edge. A flow whose endpoint names an element the canvas draws as no box is left out of the drawing, and the text of the result names every such endpoint, so a picture is not the whole diagram where that list is not empty.`,
+  `The image is always PNG, never SVG, and never larger than ${String(mcpImageLongEdge)} pixels on its longer edge. A flow whose endpoint names an element the canvas draws as no box is left out of the drawing, and the text of the result names every such endpoint, so a picture is not the whole diagram where that list is not empty.`,
   'Called without `out` this tool writes nothing. Called with it, it writes that one PNG and never a model, and it refuses a path that is already taken rather than replacing what is there.',
 ].join(' ');
 
@@ -219,7 +226,7 @@ async function drawn(
     chosen.diagram,
     chosen.reading.model,
     assets,
-    args.width ?? defaultLongEdge,
+    args.width ?? mcpImageLongEdge,
   );
   return Either.flatMap(image, (drawing) =>
     answered(chosen, drawing, target.right),

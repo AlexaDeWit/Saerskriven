@@ -4,7 +4,6 @@ import type {
   Variables,
 } from '@modelcontextprotocol/server';
 import { diagramsNamed, type Diagram } from '@saerskriven/model';
-import { defaultLongEdge } from '@saerskriven/render/png';
 import { Data, Either } from 'effect';
 import { prefaced } from './preface.js';
 import { readNamed } from './reading.js';
@@ -12,6 +11,7 @@ import { register, renderRegisterResult } from './register.js';
 import {
   drawnOf,
   imageMediaType,
+  mcpImageLongEdge,
   rasterized,
   renderDrawing,
   type DrawnDiagram,
@@ -33,7 +33,7 @@ export const registerResourceDescription =
   'The threat register of the model this server was started with, as GFM markdown opened by the reading and the data-not-instructions line. It is the text saer_register answers with.';
 
 /** What the diagram resources tell a client they are. */
-export const diagramResourceDescription = `One diagram of the model this server was started with, drawn as a PNG ${String(defaultLongEdge)} pixels on its longer edge, followed by the text of saer_render_diagram naming what the drawing left out.`;
+export const diagramResourceDescription = `One diagram of the model this server was started with, drawn as a PNG ${String(mcpImageLongEdge)} pixels on its longer edge, followed by the text of saer_render_diagram naming what the drawing left out.`;
 
 /**
  * The name a diagram resource is listed under: its position in the model
@@ -118,7 +118,7 @@ export async function readDiagramResource(
     diagram,
     reading.model,
     assets,
-    defaultLongEdge,
+    mcpImageLongEdge,
   );
   return Either.mapBoth(image, {
     onLeft: () => ResourceFailure.RasterizerFailed(),

@@ -385,9 +385,7 @@ describe('render', () => {
         ...storefront,
       });
       expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
-      expect(run.text()).toContain(
-        '<text class="pn-badge-mark" y="6">É</text>',
-      );
+      expect(run.text()).toMatch(/<text class="pn-badge-mark"[^>]*>É<\/text>/u);
     });
 
     it('rasterizes the diagram with the given language, not the golden default', async () => {

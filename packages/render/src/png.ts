@@ -54,8 +54,8 @@ export type PngImage = {
 
 /**
  * One diagram as a PNG: {@link renderSvg} in `locale`, rasterized on its
- * themed background at `longEdge` pixels on the longer side, 1568 by default,
- * the size an MCP host downscales an image block to.
+ * themed background at `longEdge` pixels on the longer side,
+ * {@link defaultLongEdge} by default.
  */
 export async function renderPng(
   diagram: Diagram,
