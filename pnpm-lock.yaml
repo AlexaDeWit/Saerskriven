@@ -107,7 +107,7 @@ catalogs:
       version: 10.10.0
     fast-check:
       specifier: ^4.0.0
-      version: 4.9.0
+      version: 4.10.0
     jiti:
       specifier: 2.7.0
       version: 2.7.0
@@ -452,7 +452,7 @@ importers:
         version: 8.20.0
       fast-check:
         specifier: 'catalog:'
-        version: 4.9.0
+        version: 4.10.0
 
   packages/i18n: {}
 
@@ -492,7 +492,7 @@ importers:
     devDependencies:
       fast-check:
         specifier: 'catalog:'
-        version: 4.9.0
+        version: 4.10.0
 
   packages/render:
     dependencies:
@@ -3740,8 +3740,8 @@ packages:
     resolution: {integrity: sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==}
     engines: {node: '>=8.0.0'}
 
-  fast-check@4.9.0:
-    resolution: {integrity: sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==}
+  fast-check@4.10.0:
+    resolution: {integrity: sha512-hhqQL+IJllZi3aM4TKvmCj3bywLEcycNTTLZeLhA9ttMxBrCqM07q7Di4kl+j9EWSTXvJH1+EpIgsDbF/+8H5Q==}
     engines: {node: '>=12.17.0'}
 
   fast-deep-equal@3.1.3:
@@ -8266,7 +8266,7 @@ snapshots:
     dependencies:
       pure-rand: 6.1.0
 
-  fast-check@4.9.0:
+  fast-check@4.10.0:
     dependencies:
       pure-rand: 8.4.2
 
