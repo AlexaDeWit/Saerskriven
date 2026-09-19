@@ -80,6 +80,33 @@ describe('the arguments as the outcome they ask for', () => {
     ).resolves.toEqual(await render(model, { format: 'md', out: '-' }));
   });
 
+  it('hands render the --lang it was given', async () => {
+    await expect(
+      runCli(['render', model, '--format', 'md', '--out', '-', '--lang', 'fr']),
+    ).resolves.toEqual(
+      await render(model, { format: 'md', out: '-', lang: 'fr' }),
+    );
+  });
+
+  it('documents --lang and the supported locales in render --help', async () => {
+    const outcome = await runCli(['render', '--help']);
+    expect(outcome.code).toEqual(0);
+    expect(outcome.out).toContain('--lang <tag>');
+    expect(outcome.out).toContain('en-CA, fr-CA, sv');
+  });
+
+  it('refuses a --lang naming no supported locale', async () => {
+    await expect(
+      runCli(['render', model, '--format', 'md', '--out', '-', '--lang', 'de']),
+    ).resolves.toEqual({
+      code: 2,
+      out: '',
+      err:
+        'error: --lang names no supported locale: "de"\n' +
+        '  supported locales: en-CA, fr-CA, sv\n',
+    });
+  });
+
   it('says which options a render needs where it was given none', async () => {
     await expect(runCli(['render', model])).resolves.toEqual({
       code: 2,

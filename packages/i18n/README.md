@@ -91,6 +91,11 @@ match gives en-CA. Every regional variant uses its language's one catalogue:
 fr-FR, fr-BE and fr-CH read fr-CA, sv-FI reads sv, and en-US and en-GB read
 en-CA. There is no fallback between languages, so `nb` reads en-CA.
 
+`supportedLocale(tag)` is `negotiate`'s per-tag match, for a caller that
+needs to tell a matched tag from a default: it gives the same locale for a
+matching tag and undefined rather than en-CA for one that matches nothing.
+The CLI's `--lang` refuses on that undefined rather than negotiating it away.
+
 ## Limits
 
 - A template cannot contain a literal brace.

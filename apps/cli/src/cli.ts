@@ -1,4 +1,5 @@
 import { escapedForTerminal } from '@saerskriven/formats';
+import { defaultLocale, locales } from '@saerskriven/i18n';
 import { reasonOf } from '@saerskriven/mcp';
 import { Command } from 'commander';
 import { Either } from 'effect';
@@ -153,6 +154,10 @@ function renderCommand(program: Command, state: ParseState): void {
     .description('write a projection of a model file')
     .argument('<file>', 'the model file to read')
     .option('--format <format>', 'svg, png, md or pdf')
+    .option(
+      '--lang <tag>',
+      `the language to write the document in, matched to ${locales.join(', ')} by subtag, default ${defaultLocale}`,
+    )
     .option('--out <path>', 'the file to write, or - for standard output')
     .option(
       '--theme <path>',

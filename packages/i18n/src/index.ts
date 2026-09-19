@@ -40,4 +40,4 @@ export {
   type TextMessageId,
   type Translator,
 } from './lib/translator.js';
-export { negotiate } from './lib/negotiate.js';
+export { negotiate, supportedLocale } from './lib/negotiate.js';

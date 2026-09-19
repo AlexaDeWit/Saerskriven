@@ -281,6 +281,9 @@ importers:
       '@saerskriven/formats':
         specifier: workspace:*
         version: link:../../packages/formats
+      '@saerskriven/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@saerskriven/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
