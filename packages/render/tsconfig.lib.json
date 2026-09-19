@@ -18,6 +18,9 @@
       "path": "../canvas/tsconfig.lib.json"
     },
     {
+      "path": "../i18n/tsconfig.lib.json"
+    },
+    {
       "path": "../model/tsconfig.lib.json"
     }
   ],
