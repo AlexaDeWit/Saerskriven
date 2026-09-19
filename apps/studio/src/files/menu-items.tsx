@@ -43,7 +43,7 @@ function Alternatives({ shortcut }: { readonly shortcut: ShortcutText }) {
   return (
     <span aria-hidden="true" className={`${styles.chord} ${styles.chords}`}>
       {shortcut.alternatives.map((chord, index) => (
-        <Fragment key={chord}>
+        <Fragment key={index}>
           {index > 0 && separator}
           <span className={styles.alternative}>{chord}</span>
         </Fragment>

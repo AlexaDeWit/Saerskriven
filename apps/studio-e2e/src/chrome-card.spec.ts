@@ -40,6 +40,8 @@ const { first, second } = twoDiagrams;
 
 const submenus = ['Export', 'Arrange', /^Appearance /u, /^Language /u];
 
+const cardBorder = 1;
+
 const below = async (target: Locator, card: Box): Promise<void> => {
   const box = await screenBoxOf(target);
   expect(box.y).toBeGreaterThanOrEqual(card.y + card.height);
@@ -183,8 +185,9 @@ const opensOnScreen = async (
   const drawn = await screenBoxOf(submenu);
   const top = Math.round(drawn.y);
   const bottom = Math.round(drawn.y + drawn.height);
-  expect(Math.round(drawn.x - card.x)).toBeGreaterThanOrEqual(0);
-  expect(Math.round(drawn.x - card.x)).toBeLessThanOrEqual(1);
+  const fromCardEdge = Math.round(drawn.x - card.x);
+  expect(fromCardEdge).toBeGreaterThanOrEqual(0);
+  expect(fromCardEdge).toBeLessThanOrEqual(cardBorder);
   expect(drawn.x + drawn.width).toBeLessThanOrEqual(viewport?.width ?? 0);
   expect(top).toBeGreaterThanOrEqual(0);
   expect(bottom).toBeLessThanOrEqual(viewport?.height ?? 0);
