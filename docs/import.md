@@ -12,9 +12,9 @@ file. A refused import leaves the current model and file available. Over MCP,
 server](mcp.md)).
 
 The conversion report names generated values, changed representations, and
-omitted source fields. Expand its details before dismissing it. Import does
-not retain a source document for later merging, so keep the original file when
-its omitted information matters.
+omitted source fields that hold a value. Expand its details before dismissing
+it. Import does not retain a source document for later merging, so keep the
+original file when its omitted information matters.
 
 `importModel(text)` in `@saerskriven/formats` provides the same conversion to
 application code. It returns Effect's `Either`, with `ReadFailure` on refusal.
