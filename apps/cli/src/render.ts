@@ -1,4 +1,4 @@
-import type { RenderTheme } from '@saerskriven/canvas';
+import type { RenderTheme, UnplacedEndpoint } from '@saerskriven/canvas';
 import { escapedForTerminal } from '@saerskriven/formats';
 import {
   defaultLocale,
@@ -222,8 +222,7 @@ async function compiled(
   const source = renderTypst(model, locale, theme);
   return Either.match(await compilePdf(source.typst, assets), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
-    onRight: (pdf) =>
-      written(out, pdf, renderUnplacedWarning(source.unplaced, 'en-CA')),
+    onRight: (pdf) => written(out, pdf, unplacedWarning(source.unplaced)),
   });
 }
 
@@ -264,11 +263,7 @@ function vector(
   locale: Locale,
 ): CommandOutcome {
   const rendered = renderSvg(diagram, model, locale, theme);
-  return written(
-    out,
-    rendered.svg,
-    renderUnplacedWarning(rendered.unplaced, 'en-CA'),
-  );
+  return written(out, rendered.svg, unplacedWarning(rendered.unplaced));
 }
 
 async function raster(
@@ -282,8 +277,12 @@ async function raster(
   return Either.match(await drawPng(diagram, model, assets, locale, theme), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
     onRight: (image) =>
-      written(out, image.png, renderUnplacedWarning(image.unplaced, 'en-CA')),
+      written(out, image.png, unplacedWarning(image.unplaced)),
   });
+}
+
+function unplacedWarning(unplaced: readonly UnplacedEndpoint[]): string {
+  return renderUnplacedWarning(unplaced, 'en-CA');
 }
 
 function written(
