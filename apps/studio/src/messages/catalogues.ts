@@ -1,4 +1,5 @@
 import type { Catalogues, MessageId, Translator } from '@saerskriven/i18n';
+import { termCatalogues, termMessages } from '@saerskriven/render';
 import { canvasMessages } from './canvas/contract.js';
 import { canvasEnCA } from './canvas/en-CA.js';
 import { canvasFrCA } from './canvas/fr-CA.js';
@@ -61,6 +62,7 @@ export const studioMessages = {
   panel: panelMessages,
   reports: reportMessages,
   shell: shellMessages,
+  terms: termMessages,
   tools: toolMessages,
 } as const;
 
@@ -85,6 +87,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     panel: panelEnCA,
     reports: reportsEnCA,
     shell: shellEnCA,
+    terms: termCatalogues['en-CA'],
     tools: toolsEnCA,
   },
   'fr-CA': {
@@ -99,6 +102,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     panel: panelFrCA,
     reports: reportsFrCA,
     shell: shellFrCA,
+    terms: termCatalogues['fr-CA'],
     tools: toolsFrCA,
   },
   sv: {
@@ -113,6 +117,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     panel: panelSv,
     reports: reportsSv,
     shell: shellSv,
+    terms: termCatalogues.sv,
     tools: toolsSv,
   },
 };

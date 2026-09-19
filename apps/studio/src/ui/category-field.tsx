@@ -7,11 +7,8 @@ import {
   threatCategorySchema,
   type ThreatCategory,
 } from '@saerskriven/model';
-
-import {
-  categoryMessages,
-  type EnumeratedCategory,
-} from '../messages/enum-labels.js';
+import type { EnumeratedCategory } from '@saerskriven/render';
+import { categoryMessages } from '../messages/enum-labels.js';
 import { useTranslator } from '../messages/locale.js';
 import { EnumField } from './enum-field.js';
 

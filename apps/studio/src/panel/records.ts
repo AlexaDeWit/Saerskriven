@@ -61,23 +61,23 @@ export type RecordKind<Held extends ThreatRecord> = {
 
 /** The catalogue label of one record status, of either kind. */
 export type RecordStatusMessage =
-  | 'enums.mitigation-proposed'
-  | 'enums.mitigation-implemented'
-  | 'enums.mitigation-verified'
-  | 'enums.assumption-unconfirmed'
-  | 'enums.assumption-valid'
-  | 'enums.assumption-invalidated';
+  | 'terms.mitigation-proposed'
+  | 'terms.mitigation-implemented'
+  | 'terms.mitigation-verified'
+  | 'terms.assumption-unconfirmed'
+  | 'terms.assumption-valid'
+  | 'terms.assumption-invalidated';
 
 const mitigationStatusMessages = {
-  proposed: 'enums.mitigation-proposed',
-  implemented: 'enums.mitigation-implemented',
-  verified: 'enums.mitigation-verified',
+  proposed: 'terms.mitigation-proposed',
+  implemented: 'terms.mitigation-implemented',
+  verified: 'terms.mitigation-verified',
 } as const satisfies Record<Mitigation['status'], RecordStatusMessage>;
 
 const assumptionStatusMessages = {
-  unconfirmed: 'enums.assumption-unconfirmed',
-  valid: 'enums.assumption-valid',
-  invalidated: 'enums.assumption-invalidated',
+  unconfirmed: 'terms.assumption-unconfirmed',
+  valid: 'terms.assumption-valid',
+  invalidated: 'terms.assumption-invalidated',
 } as const satisfies Record<Assumption['status'], RecordStatusMessage>;
 
 /** Mitigations, which start `proposed`. */
