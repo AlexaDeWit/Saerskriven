@@ -1,6 +1,11 @@
 import { Either } from 'effect';
+import { renderTypst } from './lib/typst-document.js';
 import { compilePdf, PdfFailure } from './pdf.js';
-import { typstAssets } from './render.fixtures.js';
+import {
+  translatedLocales,
+  twoDiagramsModel,
+  typstAssets,
+} from './render.fixtures.js';
 
 const assets = typstAssets(false);
 
@@ -44,4 +49,29 @@ describe('Typst source compiled to a PDF', () => {
       PdfFailure.Refused({ sentences: ['panicked with: "a quoted word"'] }),
     );
   });
+});
+
+describe('a localized document compiled to a PDF', () => {
+  const withFonts = typstAssets();
+
+  const pdfOf = async (
+    locale: 'en-CA' | (typeof translatedLocales)[number],
+  ): Promise<Buffer> =>
+    Buffer.from(
+      Either.getOrThrow(
+        await compilePdf(
+          renderTypst(twoDiagramsModel, locale).typst,
+          withFonts,
+        ),
+      ),
+    );
+
+  it.each(translatedLocales)(
+    'compiles the %s document into a PDF of its own',
+    async (locale) => {
+      const translated = await pdfOf(locale);
+      expect(translated.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      expect(translated).not.toEqual(await pdfOf('en-CA'));
+    },
+  );
 });

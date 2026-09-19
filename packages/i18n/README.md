@@ -1,11 +1,12 @@
 # @saerskriven/i18n
 
-Typed messages over `Intl` for the studio's catalogues: the supported locales,
-their plural categories, contract and catalogue declarations, a translator
-with number and list formatting, and locale negotiation. It imports no
-internal package and no React, and only an app imports it, so model data,
-file formats and rendered exports stay independent of the reader's language.
-The catalogues themselves belong to the app that shows them.
+Typed messages over `Intl` for the studio's and the exports' catalogues: the
+supported locales, their plural categories, contract and catalogue
+declarations, a translator with number and list formatting, and locale
+negotiation. It imports no internal package and no React. Only an app and
+`@saerskriven/render` import it, so model data and file formats stay
+independent of the reader's language, and an export takes its language as a
+parameter. The catalogues themselves belong to the package that shows them.
 
 ## Contracts and catalogues
 

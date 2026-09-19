@@ -24,7 +24,7 @@ describe('what review_model renders', () => {
     ).prose;
     expect(data?.split('\n')[0]).toEqual(dataNotInstructions);
     expect(data).toContain(renderCoverage(coverageOf(reading)).join('\n'));
-    expect(data).toContain(renderRegister(reading.model));
+    expect(data).toContain(renderRegister(reading.model, 'en-CA'));
     expect(brief).toEqual(reviewBrief.join('\n'));
   });
 

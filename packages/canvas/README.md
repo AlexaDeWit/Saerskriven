@@ -51,7 +51,11 @@ document.
 
 [`badges.tsx`](src/lib/badges.tsx) counts open threats on the model's own
 definition of open and marks any flagged threat, so a badge, the register and
-the CLI count one set.
+the CLI count one set. A badge letters the `BadgeMarks` its caller passes as
+`marks`, one per severity and one for the flag, since a mark abbreviates a
+word in the reader's language. `DiagramGlyphs`, `ElementGlyph` and the React
+Flow bodies each require them, and `@saerskriven/render` supplies them from
+its catalogues.
 
 [`handles.ts`](src/lib/handles.ts): every box element exposes four handles at
 its side midpoints. An attached flow end takes its pinned side, or else
@@ -120,10 +124,10 @@ use, one control per `resizeControlPositions` entry.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
 each node its accessible name, hands `CanvasNodeBody` the `resizeLabels` its
-resize controls are named by, and loads `@xyflow/react/dist/style.css` beside
-the canvas stylesheet. The package words nothing a reader hears, so the
-mounting app supplies that text in its own language. The sheet styles React
-Flow's container, viewport, handles and controls, none of which a primitive
-draws.
+resize controls are named by and both bodies the badge `marks`, and loads
+`@xyflow/react/dist/style.css` beside the canvas stylesheet. The package words
+nothing a reader sees or hears, so the mounting app supplies that text in its
+own language. The sheet styles React Flow's container, viewport, handles and
+controls, none of which a primitive draws.
 
 Unit tests: `pnpm nx test @saerskriven/canvas`.

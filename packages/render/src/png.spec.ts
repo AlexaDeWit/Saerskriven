@@ -12,6 +12,7 @@ import {
   goldenDocuments,
   resvgUnbuilt,
   resvgWasm,
+  translatedLocales,
   twoDiagramsModel,
   type GoldenDocument,
 } from './render.fixtures.js';
@@ -22,7 +23,8 @@ import {
   renderPng,
   type PngImage,
 } from './png.js';
-import type { ResvgAssets } from './resvg.js';
+import { renderSvg } from './lib/svg-document.js';
+import { rasterizeSvg, type ResvgAssets } from './resvg.js';
 
 const monoFace = 'LiberationMono-Regular.ttf';
 
@@ -48,7 +50,7 @@ const rasterized = async (
   leading = drawingFace,
 ): Promise<PngImage> =>
   Either.getOrThrow(
-    await renderPng(model.diagrams[0], model, {
+    await renderPng(model.diagrams[0], model, 'en-CA', {
       assets: assetsLedBy(leading),
       longEdge,
     }),
@@ -56,7 +58,7 @@ const rasterized = async (
 
 const goldenOf = async (entry: GoldenDocument): Promise<PngImage> =>
   Either.getOrThrow(
-    await renderPng(diagramOf(entry), entry.model, {
+    await renderPng(diagramOf(entry), entry.model, 'en-CA', {
       assets: assetsLedBy(drawingFace),
     }),
   );
@@ -136,6 +138,7 @@ describe.skipIf(resvgUnbuilt)('a diagram rasterized as a PNG', () => {
     const outcome = await renderPng(
       twoDiagramsModel.diagrams[0],
       twoDiagramsModel,
+      'en-CA',
       {
         assets: assetsLedBy(drawingFace),
         longEdge: 0.5,
@@ -145,11 +148,39 @@ describe.skipIf(resvgUnbuilt)('a diagram rasterized as a PNG', () => {
   });
 });
 
+describe.skipIf(resvgUnbuilt)('a diagram rasterized in another locale', () => {
+  it.each(translatedLocales)(
+    "rasterizes the drawing %s letters, at the en-CA drawing's size",
+    async (locale) => {
+      const [diagram] = everyGlyphModel.diagrams;
+      const assets = assetsLedBy(drawingFace);
+      const english = await rasterized(everyGlyphModel);
+      const translated = Either.getOrThrow(
+        await renderPng(diagram, everyGlyphModel, locale, { assets }),
+      );
+      const drawing = Either.getOrThrow(
+        await rasterizeSvg(
+          renderSvg(diagram, everyGlyphModel, locale).svg,
+          assets,
+          defaultLongEdge,
+        ),
+      );
+      expect(Buffer.from(translated.png)).toEqual(Buffer.from(drawing.png));
+      expect(Buffer.from(translated.png)).not.toEqual(Buffer.from(english.png));
+      expect([translated.width, translated.height]).toEqual([
+        english.width,
+        english.height,
+      ]);
+    },
+  );
+});
+
 describe.skipIf(resvgUnbuilt)('the selected PNG theme', () => {
   it('applies font, badge, and background overrides to the raster', async () => {
     const base = await renderPng(
       twoDiagramsModel.diagrams[0],
       twoDiagramsModel,
+      'en-CA',
       {
         assets: assetsLedBy(drawingFace),
         longEdge: 400,
@@ -158,6 +189,7 @@ describe.skipIf(resvgUnbuilt)('the selected PNG theme', () => {
     const changed = await renderPng(
       twoDiagramsModel.diagrams[0],
       twoDiagramsModel,
+      'en-CA',
       {
         assets: assetsLedBy(drawingFace),
         longEdge: 400,

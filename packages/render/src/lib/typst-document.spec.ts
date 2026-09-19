@@ -7,10 +7,16 @@ import {
   threatOf,
 } from '@saerskriven/model/fixtures';
 import { join } from 'node:path';
-import { everyGlyphModel, twoDiagramsModel } from '../render.fixtures.js';
+import { exportText } from '../messages/catalogues.js';
+import {
+  everyGlyphModel,
+  translatedLocales,
+  twoDiagramsModel,
+} from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
-import { badgeLabel } from './register-labels.js';
+import { badgeLabel, renderTerms } from './terms.js';
 import { deepestProse } from './register-tree.js';
+import { renderSvg } from './svg-document.js';
 import { renderTypst } from './typst-document.js';
 
 const goldenPath = join(
@@ -18,7 +24,7 @@ const goldenPath = join(
   'test-data/render/two-diagrams.snapshot.typ',
 );
 
-const sourceOf = (model: Model): string => renderTypst(model).typst;
+const sourceOf = (model: Model): string => renderTypst(model, 'en-CA').typst;
 
 const recordsModel = (
   mitigations: readonly {
@@ -104,7 +110,7 @@ describe('the Typst document', () => {
   });
 
   it('reports a flow endpoint no diagram could draw', () => {
-    expect(renderTypst(everyGlyphModel).unplaced).toEqual([
+    expect(renderTypst(everyGlyphModel, 'en-CA').unplaced).toEqual([
       { flow: 'el-replay', side: 'source', element: 'el-request' },
     ]);
   });
@@ -158,7 +164,7 @@ describe('threat prose', () => {
   it('keeps a mitigation an author wrote as HTML alone', () => {
     const model = recordsModel([{ prose: '<img src=x onerror="alert(1)">' }]);
     expect(sourceOf(model)).toContain('<img src=x onerror=');
-    expect(renderRegister(model)).toContain('<img src=x onerror=');
+    expect(renderRegister(model, 'en-CA')).toContain('<img src=x onerror=');
   });
 
   it('writes a list as a Typst list', () => {
@@ -305,7 +311,7 @@ describe("a threat's flags", () => {
     const flagged = flagsOf('#"Threat 1: ');
     expect(flagged.split('#saer-badge(').length - 1).toBe(1);
     expect(flagged).toContain(
-      `#saer-badge("${badgeLabel({ kind: 'flag', value: 'mitigated-without-implemented-work' })}"`,
+      `#saer-badge("${badgeLabel({ kind: 'flag', value: 'mitigated-without-implemented-work' }, renderTerms('en-CA'))}"`,
     );
     expect(flagsOf('#"Threat 2: ')).not.toContain('#saer-badge(');
   });
@@ -332,10 +338,10 @@ describe('the assumptions that apply to the model', () => {
     expect(source.indexOf('#table(')).toBeLessThan(source.indexOf(section));
     expect(section.split('#saer-badge(').length - 1).toBe(2);
     const invalidated = section.indexOf(
-      `#saer-badge("${badgeLabel({ kind: 'assumption', value: 'invalidated' })}"`,
+      `#saer-badge("${badgeLabel({ kind: 'assumption', value: 'invalidated' }, renderTerms('en-CA'))}"`,
     );
     const unconfirmed = section.indexOf(
-      `#saer-badge("${badgeLabel({ kind: 'assumption', value: 'unconfirmed' })}"`,
+      `#saer-badge("${badgeLabel({ kind: 'assumption', value: 'unconfirmed' }, renderTerms('en-CA'))}"`,
     );
     expect(invalidated).toBeGreaterThan(-1);
     expect(invalidated).toBeLessThan(section.indexOf('#"alpha"'));
@@ -429,6 +435,7 @@ describe('the prose depth bound', () => {
         modelFrom({
           threats: [threatOf({ number: 1, description: nested(admitted) })],
         }),
+        'en-CA',
       ),
     ).toContain('bottom');
   });
@@ -437,5 +444,42 @@ describe('the prose depth bound', () => {
     const source = proseOf(nested(deepestProse - 1));
     expect(quotesIn(source)).toBe(0);
     expect(source).toContain('bottom');
+  });
+});
+
+describe.each(translatedLocales)('the Typst document in %s', (locale) => {
+  const { t } = exportText(locale);
+  const terms = renderTerms(locale);
+  const source = renderTypst(twoDiagramsModel, locale).typst;
+
+  it("frames the register in the locale's words", () => {
+    const [threat] = twoDiagramsModel.threats;
+    expect(source).toContain(
+      `#"${t('register.threat', { number: String(threat.number), title: threat.title })}"`,
+    );
+    expect(source).toContain(
+      `#saer-badge("${terms.severity(threat.severity)}"`,
+    );
+    expect(source).toContain(`#strong[#"${t('register.severity')}"]`);
+  });
+
+  it('declares the text language of the locale', () => {
+    expect(source).toContain(`#set text(lang: "${locale.slice(0, 2)}"`);
+  });
+
+  it("embeds each diagram as the locale's drawing", () => {
+    for (const diagram of twoDiagramsModel.diagrams) {
+      const svg = renderSvg(diagram, twoDiagramsModel, locale).svg;
+      expect(source).toContain(svg.replace(/["\\]/gu, (quote) => `\\${quote}`));
+    }
+  });
+
+  it("passes the author's text through untouched", () => {
+    expect(source).toContain(
+      `#set document(title: "${twoDiagramsModel.metadata.title}"`,
+    );
+    for (const threat of twoDiagramsModel.threats) {
+      expect(source).toContain(threat.title);
+    }
   });
 });

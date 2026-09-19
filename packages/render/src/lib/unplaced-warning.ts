@@ -1,17 +1,31 @@
-import type { SvgDocument } from './svg-document.js';
+import type { UnplacedEndpoint } from '@saerskriven/canvas';
+import type { Locale } from '@saerskriven/i18n';
+import { exportText } from '../messages/catalogues.js';
 
-type UnplacedFlow = SvgDocument['unplaced'][number];
-
-/** The shared warning for flow endpoints a projection could not place. */
+/**
+ * The warning, in `locale`'s words, for flow endpoints a projection could not
+ * place: a headline, then one indented line per endpoint with its flow and
+ * element ids in JSON quotes. Empty when every endpoint was placed.
+ */
 export function renderUnplacedWarning(
-  unplaced: readonly UnplacedFlow[],
+  unplaced: readonly UnplacedEndpoint[],
+  locale: Locale,
 ): string {
+  const { t } = exportText(locale);
   return unplaced.length > 0
     ? [
-        'warning: a flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
+        t('warning.unplaced'),
         ...unplaced.map(
           (endpoint) =>
-            `  flow ${quoted(endpoint.flow)} ${endpoint.side} names ${quoted(endpoint.element)}`,
+            `  ${t(
+              endpoint.side === 'source'
+                ? 'warning.unplaced-source'
+                : 'warning.unplaced-target',
+              {
+                flow: quoted(endpoint.flow),
+                element: quoted(endpoint.element),
+              },
+            )}`,
         ),
         '',
       ].join('\n')

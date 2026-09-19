@@ -4,6 +4,7 @@ import {
   type RenderTheme,
   type UnplacedEndpoint,
 } from '@saerskriven/canvas';
+import type { Locale } from '@saerskriven/i18n';
 import type { Model } from '@saerskriven/model';
 import type { RootContent } from 'mdast';
 import { badgeColour } from './register-badges.js';
@@ -14,6 +15,12 @@ const escapable = /["\\]|\p{Cc}/gu;
 
 const softBreaks = /\r?\n/gu;
 
+const textLanguage = {
+  'en-CA': [],
+  'fr-CA': ['#set text(lang: "fr", region: "CA")'],
+  sv: ['#set text(lang: "sv")'],
+} as const satisfies Record<Locale, readonly string[]>;
+
 /** Complete Typst source and the flow endpoints its diagrams did not draw. */
 export type TypstDocument = {
   readonly typst: string;
@@ -23,10 +30,13 @@ export type TypstDocument = {
 /**
  * The whole model as the source of one Typst document: every diagram on a
  * landscape page, embedded as the bytes {@link renderSvg} writes, then the
- * register. The source references no file, font, package or URL and carries
- * no date, so a compiler with no access writes the same PDF twice. It names
- * the theme's font families without carrying them, and a compiler lacking
- * one substitutes in the drawings as well as the text.
+ * register, all framed in `locale`'s words. A French or Swedish source sets
+ * the text language, for hyphenation and the PDF's language tag, and an
+ * en-CA one leaves Typst's English default. The source references no file,
+ * font, package or URL and carries no date, so a compiler with no access
+ * writes the same PDF twice. It names the theme's font families without
+ * carrying them, and a compiler lacking one substitutes in the drawings as
+ * well as the text.
  *
  * No value out of the model is written as markup: each is a string literal
  * shown in markup position, so every `#` in the output is this package's.
@@ -36,28 +46,30 @@ export type TypstDocument = {
  */
 export function renderTypst(
   model: Model,
+  locale: Locale,
   theme: RenderTheme = defaultRenderTheme,
 ): TypstDocument {
   const drawings = model.diagrams.map((diagram) =>
-    renderSvg(diagram, model, theme),
+    renderSvg(diagram, model, locale, theme),
   );
   return {
     typst: [
-      preamble(model, theme),
+      preamble(model, locale, theme),
       ...model.diagrams.map((diagram, index) =>
         diagramPage(diagram.title, drawings[index].svg),
       ),
-      blocksOf(registerDocument(model).children, theme),
+      blocksOf(registerDocument(model, locale).children, theme),
     ].join('\n\n'),
     unplaced: drawings.flatMap((drawing) => drawing.unplaced),
   };
 }
 
-function preamble(model: Model, theme: RenderTheme): string {
+function preamble(model: Model, locale: Locale, theme: RenderTheme): string {
   return [
     `#set document(title: ${literal(model.metadata.title)}, date: none)`,
     `#set page(paper: "a4", margin: 2cm, numbering: "1", fill: rgb(${literal(theme.colours.background)}))`,
     `#set text(font: ${literal(theme.fonts.body)}, size: 10pt, fill: rgb(${literal(theme.colours.text)}))`,
+    ...textLanguage[locale],
     `#show raw: set text(font: ${literal(theme.fonts.code)}, size: 9pt)`,
     '#set table(inset: 5pt)',
     badgeDefinition(theme),

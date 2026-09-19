@@ -6,7 +6,7 @@ import {
   modelWith,
   threatOf,
 } from '@saerskriven/model/fixtures';
-import { badgeAnchor, badgeBox } from './badges.js';
+import { badgeAnchor, badgeBox, type BadgeMarks } from './badges.js';
 import {
   boxesOverlap,
   boxMeetsCircle,
@@ -60,6 +60,18 @@ export const everyGlyphModel: Model = committedModel('every-glyph.model.json');
 
 /** The every-glyph diagram laid out. */
 export const everyGlyphLayout = layoutOf(everyGlyphModel);
+
+/** Badge marks unlike any locale's, so a spec sees the marks it passed drawn. */
+export const specMarks: BadgeMarks = {
+  severity: {
+    undecided: 'u',
+    low: 'l',
+    medium: 'm',
+    high: 'h',
+    critical: 'c',
+  },
+  flag: 'f',
+};
 
 /** The every-glyph node under the id, throwing where the layout has none. */
 export const nodeNamed = (value: string): CanvasNode => {

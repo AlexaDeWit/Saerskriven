@@ -40,7 +40,7 @@ export function register(
 ): Either.Either<RegisterResult, readonly string[]> {
   return Either.map(readNamed(workspace, args.file), (reading) => ({
     ...reportedReading(reading),
-    markdown: renderRegister(reading.model),
+    markdown: renderRegister(reading.model, 'en-CA'),
   }));
 }
 

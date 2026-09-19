@@ -26,6 +26,7 @@ const deepProseFile = fixtureFile(
 
 const hostileSource = renderTypst(
   Either.getOrThrow(readModel(hostileFile)).model,
+  'en-CA',
 ).typst;
 
 const document = (body: string): string =>
@@ -74,6 +75,7 @@ describe('Typst source compiled to a PDF', () => {
     async () => {
       const source = renderTypst(
         Either.getOrThrow(readModel(deepProseFile)).model,
+        'en-CA',
       ).typst;
       expect(source.split('#quote(block: true)[').length - 1).toBe(
         deepestProse - 2,

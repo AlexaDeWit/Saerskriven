@@ -124,9 +124,9 @@ describe('the studio exports', () => {
       'model.typ',
     ]);
     expect(bridge.writes.map((write) => write.text)).toEqual([
-      renderSvg(sampleModel.diagrams[0], sampleModel).svg,
-      renderRegister(sampleModel),
-      renderTypst(sampleModel).typst,
+      renderSvg(sampleModel.diagrams[0], sampleModel, 'en-CA').svg,
+      renderRegister(sampleModel, 'en-CA'),
+      renderTypst(sampleModel, 'en-CA').typst,
     ]);
   });
 
@@ -148,7 +148,7 @@ describe('the studio exports', () => {
     expect(bridge.offered.at(-1)?.[0]?.description).toBe(
       t('reports.markdown-file'),
     );
-    expect(bridge.writes[0].text).toBe(renderRegister(sampleModel));
+    expect(bridge.writes[0].text).toBe(renderRegister(sampleModel, 'en-CA'));
   });
 
   it('compiles the render projection and writes the PDF as binary content', async () => {
@@ -166,10 +166,13 @@ describe('the studio exports', () => {
     await waitFor(() => {
       expect(bridge.writes).toHaveLength(1);
     });
-    expect(compile).toHaveBeenCalledWith(renderTypst(sampleModel).typst, {
-      wasm: new Uint8Array(),
-      fonts: [],
-    });
+    expect(compile).toHaveBeenCalledWith(
+      renderTypst(sampleModel, 'en-CA').typst,
+      {
+        wasm: new Uint8Array(),
+        fonts: [],
+      },
+    );
     expect(bridge.writes[0]).toMatchObject({ name: 'model.pdf', text: '' });
     expect(bridge.writes[0].bytes).toEqual(bytes);
   });
@@ -195,9 +198,12 @@ describe('the studio exports', () => {
     await waitFor(() => {
       expect(bridge.writes).toHaveLength(1);
     });
-    expect(draw).toHaveBeenCalledWith(sampleModel.diagrams[0], sampleModel, {
-      assets: { wasm: new Uint8Array(), fonts: [] },
-    });
+    expect(draw).toHaveBeenCalledWith(
+      sampleModel.diagrams[0],
+      sampleModel,
+      'en-CA',
+      { assets: { wasm: new Uint8Array(), fonts: [] } },
+    );
     expect(bridge.writes[0]).toMatchObject({ name: 'model.png', text: '' });
     expect(bridge.writes[0].bytes).toEqual(pngSignature);
   });

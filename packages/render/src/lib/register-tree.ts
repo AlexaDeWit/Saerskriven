@@ -1,3 +1,4 @@
+import type { Locale } from '@saerskriven/i18n';
 import {
   elementsAcross,
   inNumberOrder,
@@ -32,9 +33,15 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
+import { exportText, type ExportText } from '../messages/catalogues.js';
 import type { RegisterBadge } from './register-badges.js';
-import { badgeLabel, categoryLabel, sectionLabel } from './register-labels.js';
 import type { RegisterOptions } from './register-options.js';
+import {
+  badgeLabel,
+  categoryLabel,
+  renderTerms,
+  type RenderTerms,
+} from './terms.js';
 
 declare module 'mdast' {
   interface TextData {
@@ -66,19 +73,13 @@ const headingDepths = [1, 2, 3, 4, 5, 6] as const;
 const lineBreaks = /\s*[\r\n]+\s*/gu;
 
 const overviewColumns = [
-  'Number',
-  'Title',
-  'Elements',
-  'Category',
-  'Severity',
-  'Status',
+  'register.number',
+  'register.title',
+  'register.elements',
+  'register.category',
+  'register.severity',
+  'register.status',
 ] as const;
-
-const none = 'None';
-
-const noProse = 'None recorded.';
-
-const noThreats = 'This model records no threats.';
 
 const recordNesting = 2;
 
@@ -97,7 +98,12 @@ const flowTypes = {
   thematicBreak: true,
 } satisfies Record<FlowContent['type'], true>;
 
-type SectionContext = {
+type Wording = {
+  readonly messages: ExportText;
+  readonly terms: RenderTerms;
+};
+
+type SectionContext = Wording & {
   readonly model: Model;
   readonly elements: ReadonlyMap<string, Element>;
   readonly depth: Heading['depth'];
@@ -122,17 +128,22 @@ type SectionContext = {
  * below the section's and its raw HTML kept as written. Prose nested past
  * {@link deepestProse}, counting a record's two enclosing levels, is one
  * paragraph of the author's text. Line breaks in a heading collapse to
- * spaces. Every enum reaches its label through a table the compiler checks
- * is total, an absent value reads `None` or `None recorded.`, and a model
- * with no threats says so in place of the overview table.
+ * spaces. Headings, field names, enum labels and the lines standing for
+ * absent content are `locale`'s, and every enum has a label in each locale.
+ * An absent value reads as `none` or `none-recorded` in the register
+ * catalogue, and a model with no threats says so in place of the overview
+ * table.
  */
 export function registerDocument(
   model: Model,
+  locale: Locale,
   options: RegisterOptions = {},
 ): Root {
   const first = options.headingLevel ?? 1;
   const threats = inNumberOrder(model.threats);
   const context: SectionContext = {
+    messages: exportText(locale),
+    terms: renderTerms(locale),
     model,
     elements: elementsById(model),
     depth: boundedDepth(first + (options.title === false ? 0 : 1)),
@@ -142,19 +153,21 @@ export function registerDocument(
     children: [
       ...(options.title === false
         ? []
-        : [heading(first, registerTitle(model))]),
+        : [heading(first, registerTitle(model, context))]),
       threats.length === 0
-        ? paragraph(noThreats)
-        : overviewTable(threats, context.elements),
+        ? paragraph(context.messages.t('register.no-threats'))
+        : overviewTable(threats, context),
       ...modelAssumptionSection(context),
       ...threats.flatMap((threat) => threatSection(threat, context)),
     ],
   };
 }
 
-function registerTitle(model: Model): string {
+function registerTitle(model: Model, { messages }: Wording): string {
   const title = headingText(model.metadata.title);
-  return title.length === 0 ? 'Threat register' : `${title} threat register`;
+  return title.length === 0
+    ? messages.t('register.untitled')
+    : messages.t('register.titled', { title });
 }
 
 function headingText(value: string): string {
@@ -169,20 +182,20 @@ function elementsById(model: Model): Map<string, Element> {
 
 function overviewTable(
   threats: readonly Threat[],
-  elements: ReadonlyMap<string, Element>,
+  context: SectionContext,
 ): Table {
   return {
     type: 'table',
     children: [
-      tableRow(overviewColumns),
+      tableRow(overviewColumns.map((column) => context.messages.t(column))),
       ...threats.map((threat) =>
         tableRow([
           threatLink(threat.number),
           threat.title,
-          elementNames(threat, elements),
-          categoryLabel(threat.category),
-          badgeText({ kind: 'severity', value: threat.severity }),
-          badgeText({ kind: 'status', value: threat.status }),
+          elementNames(threat, context),
+          categoryLabel(threat.category, context.terms),
+          badgeText({ kind: 'severity', value: threat.severity }, context),
+          badgeText({ kind: 'status', value: threat.status }, context),
         ]),
       ),
     ],
@@ -206,36 +219,51 @@ function modelAssumptionSection(context: SectionContext): RootContent[] {
   return assumptions.length === 0
     ? []
     : [
-        heading(context.depth, sectionLabel('model-assumptions')),
+        heading(
+          context.depth,
+          context.messages.t('register.model-assumptions'),
+        ),
         ...recordList(
           assumptions.map((assumption) => assumptionItem(assumption, context)),
+          context,
         ),
       ];
 }
 
 function threatSection(threat: Threat, context: SectionContext): RootContent[] {
+  const { t } = context.messages;
   return [
     threatAnchor(threat.number),
     heading(
       context.depth,
-      headingText(`Threat ${threat.number}: ${threat.title}`),
+      headingText(
+        t('register.threat', {
+          number: String(threat.number),
+          title: threat.title,
+        }),
+      ),
     ),
     fieldList(threat, context),
-    ...labelled('Description', proseContent(threat.description, context)),
     ...labelled(
-      'Mitigations',
+      t('register.description'),
+      proseContent(threat.description, context),
+    ),
+    ...labelled(
+      t('register.mitigations'),
       recordList(
         recordsLinkedTo(context.model.mitigations, threat.id).map(
           (mitigation) => mitigationItem(mitigation, context),
         ),
+        context,
       ),
     ),
     ...labelled(
-      'Assumptions',
+      t('register.assumptions'),
       recordList(
         recordsLinkedTo(context.model.assumptions, threat.id).map(
           (assumption) => assumptionItem(assumption, context),
         ),
+        context,
       ),
     ),
   ];
@@ -264,18 +292,28 @@ function threatTarget(number: number): string {
 }
 
 function fieldList(threat: Threat, context: SectionContext): List {
+  const { t } = context.messages;
   const flags = threatFlags(context.model, threat).map((flag) =>
-    badgeText({ kind: 'flag', value: flag }),
+    badgeText({ kind: 'flag', value: flag }, context),
   );
   const fields: readonly (readonly [string, readonly PhrasingContent[]])[] = [
-    ['Elements', [text(elementNames(threat, context.elements))]],
-    ['Category', [text(categoryLabel(threat.category))]],
-    ['Severity', [badgeText({ kind: 'severity', value: threat.severity })]],
-    ['Status', [badgeText({ kind: 'status', value: threat.status })]],
+    [t('register.elements'), [text(elementNames(threat, context))]],
     [
-      'Flags',
+      t('register.category'),
+      [text(categoryLabel(threat.category, context.terms))],
+    ],
+    [
+      t('register.severity'),
+      [badgeText({ kind: 'severity', value: threat.severity }, context)],
+    ],
+    [
+      t('register.status'),
+      [badgeText({ kind: 'status', value: threat.status }, context)],
+    ],
+    [
+      t('register.flags'),
       flags.length === 0
-        ? [text(none)]
+        ? [text(t('register.none'))]
         : flags.flatMap((flag, index) =>
             index === 0 ? [flag] : [text(', '), flag],
           ),
@@ -288,17 +326,30 @@ function fieldList(threat: Threat, context: SectionContext): List {
     children: fields.map(([label, value]) => ({
       type: 'listItem',
       spread: false,
-      children: [
-        {
-          type: 'paragraph',
-          children: [
-            { type: 'strong', children: [text(label)] },
-            text(': '),
-            ...value,
-          ],
-        },
-      ],
+      children: [field(label, value, context)],
     })),
+  };
+}
+
+function field(
+  label: string,
+  value: readonly PhrasingContent[],
+  { messages }: Wording,
+): Paragraph {
+  const name: PhrasingContent = { type: 'strong', children: [text(label)] };
+  return {
+    type: 'paragraph',
+    children: messages
+      .parts('register.field', { label: name, value })
+      .flatMap((part): PhrasingContent[] => {
+        if (part === name) {
+          return [name];
+        }
+        if (part === value) {
+          return [...value];
+        }
+        return typeof part === 'string' && part.length > 0 ? [text(part)] : [];
+      }),
   };
 }
 
@@ -312,9 +363,12 @@ function labelled(label: string, content: RootContent[]): RootContent[] {
   ];
 }
 
-function recordList(items: readonly ListItem[]): RootContent[] {
+function recordList(
+  items: readonly ListItem[],
+  { messages }: Wording,
+): RootContent[] {
   return items.length === 0
-    ? [paragraph(noProse)]
+    ? [paragraph(messages.t('register.none-recorded'))]
     : [{ type: 'list', ordered: false, spread: true, children: [...items] }];
 }
 
@@ -325,7 +379,7 @@ function mitigationItem(
   const title = headingText(mitigation.title);
   return recordItem(
     [
-      badgeText({ kind: 'mitigation', value: mitigation.status }),
+      badgeText({ kind: 'mitigation', value: mitigation.status }, context),
       ...(title.length === 0
         ? []
         : [text(' '), { type: 'strong' as const, children: [text(title)] }]),
@@ -339,7 +393,7 @@ function assumptionItem(
   context: SectionContext,
 ): ListItem {
   return recordItem(
-    [badgeText({ kind: 'assumption', value: assumption.status })],
+    [badgeText({ kind: 'assumption', value: assumption.status }, context)],
     proseContent(assumption.prose, context, recordNesting),
   );
 }
@@ -359,7 +413,7 @@ function proseContent(
 ): FlowContent[] {
   const parsed = prose.parse(written);
   if (parsed.children.length === 0) {
-    return [paragraph(noProse)];
+    return [paragraph(context.messages.t('register.none-recorded'))];
   }
   const flow = parsed.children.filter(isFlow);
   if (
@@ -398,13 +452,10 @@ function isParent(node: Nodes): node is Parents {
   return Object.hasOwn(node, 'children');
 }
 
-function elementNames(
-  threat: Threat,
-  elements: ReadonlyMap<string, Element>,
-): string {
+function elementNames(threat: Threat, context: SectionContext): string {
   return threat.elements.length === 0
-    ? none
-    : threat.elements.map((id) => elementName(id, elements)).join(', ');
+    ? context.messages.t('register.none')
+    : threat.elements.map((id) => elementName(id, context.elements)).join(', ');
 }
 
 function elementName(
@@ -431,10 +482,10 @@ function boundedDepth(depth: number): Heading['depth'] {
   return headingDepths[Math.min(6, Math.max(1, depth)) - 1];
 }
 
-function badgeText(badge: RegisterBadge): Text {
+function badgeText(badge: RegisterBadge, { terms }: Wording): Text {
   return {
     type: 'text',
-    value: badgeLabel(badge),
+    value: badgeLabel(badge, terms),
     data: { registerBadge: badge },
   };
 }

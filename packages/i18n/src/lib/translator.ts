@@ -84,6 +84,13 @@ type Values = Readonly<Record<string, unknown>>;
 
 const isText = (value: unknown): value is string => typeof value === 'string';
 
+const addressed = (
+  id: string,
+): { readonly section: string; readonly message: string } => {
+  const dot = id.indexOf('.');
+  return { section: id.slice(0, dot), message: id.slice(dot + 1) };
+};
+
 type DotFree<S> = {
   readonly [K in keyof S]: K extends `${string}.${string}`
     ? { readonly 'a section name holds no dot': never }
@@ -113,17 +120,18 @@ export function translator<S extends Sections>(
   const number = (value: number): string => numbers.format(value);
   const list = (items: readonly string[]): string => lists.format(items);
 
-  const formatted = (value: unknown): unknown =>
-    typeof value === 'number'
+  const formatted = (
+    kind: ParameterKind | undefined,
+    value: unknown,
+  ): unknown =>
+    kind === 'number' && typeof value === 'number'
       ? number(value)
-      : Array.isArray(value)
+      : kind === 'list' && Array.isArray(value)
         ? list(value.filter(isText))
         : value;
 
   const template = (id: string, values: Values): string => {
-    const dot = id.indexOf('.');
-    const section = id.slice(0, dot);
-    const message = id.slice(dot + 1);
+    const { section, message } = addressed(id);
     const spec = contracts[section][message];
     const entry = entries[section].messages[message];
     if (typeof entry === 'string') {
@@ -136,10 +144,14 @@ export function translator<S extends Sections>(
     );
   };
 
-  const parts = (id: string, values: Values): readonly unknown[] =>
-    templateParts(template(id, values)).map((part, index) =>
-      index % 2 === 0 ? part : formatted(values[part]),
+  const parts = (id: string, values: Values): readonly unknown[] => {
+    const { section, message } = addressed(id);
+    const kinds: Readonly<Record<string, ParameterKind | undefined>> =
+      contracts[section][message].params;
+    return templateParts(template(id, values)).map((part, index) =>
+      index % 2 === 0 ? part : formatted(kinds[part], values[part]),
     );
+  };
 
   const t = (id: string, values: Values = {}): string =>
     parts(id, values)

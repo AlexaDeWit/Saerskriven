@@ -12,7 +12,7 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import type { ReactElement } from 'react';
-import { badgeAnchor, ThreatBadgeGlyph } from './badges.js';
+import { badgeAnchor, ThreatBadgeGlyph, type BadgeMarks } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
 import { shiftedBy } from './geometry.js';
 import { ElementGlyph, FlowGlyph } from './glyphs.js';
@@ -74,14 +74,15 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * gives the node its accessible name. `textVisible` false leaves the glyph's
  * text out, for a canvas with a text editor over it. A selected element the
  * model can resize carries the resize controls, named from `resizeLabels`.
- * The badge draws last, in an SVG layer classed `pn-badge-layer`, so a
- * canvas can stack it above the selection frame.
+ * The badge letters `marks` and draws last, in an SVG layer classed
+ * `pn-badge-layer`, so a canvas can stack it above the selection frame.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
   data,
   height,
   isConnectable,
+  marks,
   onResize,
   onResizeEnd,
   resizeLabels,
@@ -91,6 +92,7 @@ export function CanvasNodeBody({
   width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
+  readonly marks: BadgeMarks;
   readonly resizeLabels: ResizeLabels;
   readonly onResize?: () => void;
   readonly onResizeEnd?: (box: NodeBox) => void;
@@ -120,6 +122,7 @@ export function CanvasNodeBody({
         {isBoundary(shownNode) ? <BoundaryHitTarget node={shownNode} /> : null}
         <ElementGlyph
           badgeVisible={false}
+          marks={marks}
           node={shownNode}
           textVisible={textVisible}
         />
@@ -143,7 +146,7 @@ export function CanvasNodeBody({
           visible={controlsVisible}
         />
       ) : null}
-      <BadgeLayer node={shownNode} />
+      <BadgeLayer marks={marks} node={shownNode} />
     </>
   );
 }
@@ -152,16 +155,18 @@ export function CanvasNodeBody({
  * One flow from the transient layout a controlled canvas supplies. During a
  * drag it follows the live endpoint boxes and translates selected flow
  * geometry by the shared group offset. `textVisible` false leaves the name
- * out, as on {@link CanvasNodeBody}.
+ * out, as on {@link CanvasNodeBody}, and its badge letters `marks`.
  */
 export function CanvasEdgeBody({
   data,
   interactionWidth,
+  marks,
   selected,
   source,
   target,
   textVisible = true,
 }: EdgeProps<CanvasFlowEdge> & {
+  readonly marks: BadgeMarks;
   readonly textVisible?: boolean;
 }): ReactElement | null {
   const sourceNode = useInternalNode(source);
@@ -203,7 +208,7 @@ export function CanvasEdgeBody({
         strokeOpacity={0}
       />
       <g aria-hidden="true">
-        <FlowGlyph edge={edge} textVisible={textVisible} />
+        <FlowGlyph edge={edge} marks={marks} textVisible={textVisible} />
       </g>
     </>
   );
@@ -379,8 +384,10 @@ const handlePlacement = {
 } as const satisfies Record<HandleSide, Position>;
 
 function BadgeLayer({
+  marks,
   node,
 }: {
+  readonly marks: BadgeMarks;
   readonly node: CanvasNode;
 }): ReactElement | null {
   if (node.badge === undefined) {
@@ -400,7 +407,11 @@ function BadgeLayer({
         className={node.outOfScope ? canvasClassNames.outOfScope : undefined}
         pointerEvents={isBoundary(node) ? undefined : 'visiblePainted'}
       >
-        <ThreatBadgeGlyph badge={node.badge} at={badgeAnchor(node.size)} />
+        <ThreatBadgeGlyph
+          badge={node.badge}
+          at={badgeAnchor(node.size)}
+          marks={marks}
+        />
       </g>
     </svg>
   );

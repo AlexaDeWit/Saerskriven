@@ -55,11 +55,12 @@ export default [
               onlyDependOnLibsWithTags: [],
             },
             {
-              // Language machinery for the studio's catalogues: locales,
-              // plural rules, catalogue checks and negotiation over Intl. It
-              // stays framework-free so any caller can resolve a message, and
-              // only an app imports it, so model data and file formats never
-              // depend on a language.
+              // Language machinery for the studio's and the exports'
+              // catalogues: locales, plural rules, catalogue checks and
+              // negotiation over Intl. It stays framework-free so any caller
+              // can resolve a message. Only an app and `render`, which words
+              // the exports' framing, import it, so model data and file
+              // formats never depend on a language.
               sourceTag: 'layer:i18n',
               onlyDependOnLibsWithTags: [],
               bannedExternalImports: ['react', 'react-dom'],
@@ -74,7 +75,11 @@ export default [
             },
             {
               sourceTag: 'layer:render',
-              onlyDependOnLibsWithTags: ['layer:model', 'layer:canvas'],
+              onlyDependOnLibsWithTags: [
+                'layer:model',
+                'layer:canvas',
+                'layer:i18n',
+              ],
             },
             {
               // The MCP server object, which reaches the same layers a CLI

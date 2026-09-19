@@ -40,23 +40,15 @@ export const severityRank = {
 } as const satisfies Record<Severity, number>;
 
 /**
- * The mark the primary badge carries under its count, one per severity, so
- * the severity reads with the colour ignored. `undecided` takes a question
- * mark rather than a letter, since it is the absence of an assessment.
+ * The marks a threat badge letters, which the app drawing it supplies in its
+ * reader's language: one per severity under the count, so the severity reads
+ * with the colour ignored, and `flag` inside the flag mark's triangle. The
+ * marks of one set differ from each other.
  */
-export const severityMark = {
-  undecided: '?',
-  low: 'L',
-  medium: 'M',
-  high: 'H',
-  critical: 'C',
-} as const satisfies Record<Severity, string>;
-
-/**
- * The glyph lettered inside the flag mark's triangle. The triangle is the
- * shape no severity mark takes, and the glyph is none of their letters.
- */
-export const flagMark = '!';
+export type BadgeMarks = {
+  readonly severity: { readonly [S in Severity]: string };
+  readonly flag: string;
+};
 
 /**
  * What an element's badge says. A `counted` badge has open threats naming
@@ -160,14 +152,16 @@ export function badgeBox(at: Point, badge: ThreatBadge): Box {
 export function ThreatBadgeGlyph({
   badge,
   at,
+  marks,
 }: {
   readonly badge: ThreatBadge;
   readonly at: Point;
+  readonly marks: BadgeMarks;
 }): ReactElement {
   return (
     <g className={canvasClassNames.badge} transform={translate(at)}>
       {badge.kind === 'flag-only' ? (
-        <FlagMarkGlyph centre={0} />
+        <FlagMarkGlyph centre={0} mark={marks.flag} />
       ) : (
         <>
           <g className={canvasClassNames.badgePrimary}>
@@ -185,7 +179,7 @@ export function ThreatBadgeGlyph({
               className={canvasClassNames.badgeMark}
               y={svgNumber(markOffset)}
             >
-              {severityMark[badge.severity]}
+              {marks.severity[badge.severity]}
             </text>
           </g>
           {badge.secondary === 0 ? null : (
@@ -202,14 +196,22 @@ export function ThreatBadgeGlyph({
               </text>
             </g>
           )}
-          {badge.flagged ? <FlagMarkGlyph centre={flagCentre(badge)} /> : null}
+          {badge.flagged ? (
+            <FlagMarkGlyph centre={flagCentre(badge)} mark={marks.flag} />
+          ) : null}
         </>
       )}
     </g>
   );
 }
 
-function FlagMarkGlyph({ centre }: { readonly centre: number }): ReactElement {
+function FlagMarkGlyph({
+  centre,
+  mark,
+}: {
+  readonly centre: number;
+  readonly mark: string;
+}): ReactElement {
   const reach = badgeRadius.flag;
   return (
     <g
@@ -228,7 +230,7 @@ function FlagMarkGlyph({ centre }: { readonly centre: number }): ReactElement {
         className={canvasClassNames.badgeMark}
         y={svgNumber(flagMarkOffset)}
       >
-        {flagMark}
+        {mark}
       </text>
     </g>
   );

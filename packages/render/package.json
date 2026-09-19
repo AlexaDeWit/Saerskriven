@@ -36,6 +36,7 @@
   "dependencies": {
     "@myriaddreamin/typst-ts-web-compiler": "catalog:",
     "@saerskriven/canvas": "workspace:*",
+    "@saerskriven/i18n": "workspace:*",
     "@saerskriven/model": "workspace:*",
     "@types/mdast": "catalog:",
     "effect": "catalog:",

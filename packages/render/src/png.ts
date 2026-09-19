@@ -3,6 +3,7 @@ import {
   type RenderTheme,
   type UnplacedEndpoint,
 } from '@saerskriven/canvas';
+import type { Locale } from '@saerskriven/i18n';
 import type { Diagram, Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { renderSvg } from './lib/svg-document.js';
@@ -52,17 +53,18 @@ export type PngImage = {
 };
 
 /**
- * One diagram as a PNG: {@link renderSvg} rasterized, on its themed
- * background, at `longEdge` pixels on the longer side, 1568 by default, the
- * size an MCP host downscales an image block to.
+ * One diagram as a PNG: {@link renderSvg} in `locale`, rasterized on its
+ * themed background at `longEdge` pixels on the longer side, 1568 by default,
+ * the size an MCP host downscales an image block to.
  */
 export async function renderPng(
   diagram: Diagram,
   model: Model,
+  locale: Locale,
   options: PngOptions,
 ): Promise<Either.Either<PngImage, ResvgFailure>> {
   const theme = options.theme ?? defaultRenderTheme;
-  const drawn = renderSvg(diagram, model, theme);
+  const drawn = renderSvg(diagram, model, locale, theme);
   const raster = await rasterizeSvg(
     drawn.svg,
     options.assets,

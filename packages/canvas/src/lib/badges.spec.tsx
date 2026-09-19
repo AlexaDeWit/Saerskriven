@@ -1,5 +1,4 @@
 import {
-  severitySchema,
   type Severity,
   type Threat,
   type ThreatStatus,
@@ -17,13 +16,11 @@ import {
   badgeBox,
   badgeExtent,
   badgesByElement,
-  flagMark,
-  severityMark,
   severityRank,
   ThreatBadgeGlyph,
   type ThreatBadge,
 } from './badges.js';
-import { everyGlyphModel } from './canvas.fixtures.js';
+import { everyGlyphModel, specMarks } from './canvas.fixtures.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
 import { badgeRadius, canvasType, strokeWidths } from './tokens.js';
 import { textExtent } from './typography.js';
@@ -66,7 +63,11 @@ const badgeOfOne = (
   ).get(elementId('el-one'));
 
 const stacked = renderToStaticMarkup(
-  <ThreatBadgeGlyph badge={counted(12, 'high', 12)} at={{ x: 0, y: 0 }} />,
+  <ThreatBadgeGlyph
+    marks={specMarks}
+    badge={counted(12, 'high', 12)}
+    at={{ x: 0, y: 0 }}
+  />,
 );
 
 const countOffsets = [
@@ -95,14 +96,6 @@ describe('severityRank', () => {
     expect(severityRank.low).toBeLessThan(severityRank.medium);
     expect(severityRank.medium).toBeLessThan(severityRank.high);
     expect(severityRank.high).toBeLessThan(severityRank.critical);
-  });
-});
-
-describe('severityMark', () => {
-  it('gives each severity a mark of its own, so no two badges read alike', () => {
-    expect(new Set(Object.values(severityMark)).size).toBe(
-      severitySchema.options.length,
-    );
   });
 });
 
@@ -328,7 +321,11 @@ describe('the ring a badge cuts itself out with', () => {
 describe('ThreatBadgeGlyph', () => {
   it('draws the count in the tone of the badge severity', () => {
     const markup = renderToStaticMarkup(
-      <ThreatBadgeGlyph badge={counted(4, 'high', 0)} at={{ x: 160, y: 0 }} />,
+      <ThreatBadgeGlyph
+        marks={specMarks}
+        badge={counted(4, 'high', 0)}
+        at={{ x: 160, y: 0 }}
+      />,
     );
     expect(markup).toContain('transform="translate(160, 0)"');
     expect(markup).toContain(`class="${severityToneClass.high}"`);
@@ -338,15 +335,20 @@ describe('ThreatBadgeGlyph', () => {
 
   it('marks the severity in text, so the tone is not the only thing saying it', () => {
     const markup = renderToStaticMarkup(
-      <ThreatBadgeGlyph badge={counted(4, 'high', 0)} at={{ x: 0, y: 0 }} />,
+      <ThreatBadgeGlyph
+        marks={specMarks}
+        badge={counted(4, 'high', 0)}
+        at={{ x: 0, y: 0 }}
+      />,
     );
     expect(markup).toContain(canvasClassNames.badgeMark);
-    expect(markup).toContain(`>${severityMark.high}</text>`);
+    expect(markup).toContain(`>${specMarks.severity.high}</text>`);
   });
 
   it('stacks the undecided count under the primary badge', () => {
     const markup = renderToStaticMarkup(
       <ThreatBadgeGlyph
+        marks={specMarks}
         badge={counted(5, 'critical', 2)}
         at={{ x: 0, y: 0 }}
       />,
@@ -356,24 +358,24 @@ describe('ThreatBadgeGlyph', () => {
     expect(markup).toContain('>2</text>');
   });
 
-  it('marks a flag with a triangle and a glyph no severity mark uses', () => {
+  it('marks a flag with a triangle lettered with the flag mark', () => {
     const markup = renderToStaticMarkup(
       <ThreatBadgeGlyph
+        marks={specMarks}
         badge={counted(4, 'high', 2, true)}
         at={{ x: 0, y: 0 }}
       />,
     );
     expect(markup).toContain(`class="${canvasClassNames.badgeFlag}"`);
     expect(markup).toContain(`class="${canvasClassNames.toneFlag}"`);
-    expect(markup).toContain(`>${flagMark}</text>`);
+    expect(markup).toContain(`>${specMarks.flag}</text>`);
     expect(markup).toContain('>4</text>');
-    expect(Object.values(severityMark)).not.toContain(flagMark);
   });
 
   it('draws the flag mark beneath the counts, inside the box the badge reports', () => {
     const badge = counted(4, 'high', 2, true);
     const markup = renderToStaticMarkup(
-      <ThreatBadgeGlyph badge={badge} at={{ x: 0, y: 0 }} />,
+      <ThreatBadgeGlyph marks={specMarks} badge={badge} at={{ x: 0, y: 0 }} />,
     );
     const centre = Number(
       new RegExp(
@@ -391,7 +393,11 @@ describe('ThreatBadgeGlyph', () => {
 
   it('draws a flag-only badge as the flag mark with no count or severity', () => {
     const markup = renderToStaticMarkup(
-      <ThreatBadgeGlyph badge={flagOnly} at={{ x: 0, y: 0 }} />,
+      <ThreatBadgeGlyph
+        marks={specMarks}
+        badge={flagOnly}
+        at={{ x: 0, y: 0 }}
+      />,
     );
     expect(markup).toContain(canvasClassNames.badgeFlag);
     expect(markup).not.toContain(canvasClassNames.badgePrimary);
@@ -401,7 +407,11 @@ describe('ThreatBadgeGlyph', () => {
   it('leaves the flag mark off an unflagged badge', () => {
     expect(
       renderToStaticMarkup(
-        <ThreatBadgeGlyph badge={counted(4, 'high', 2)} at={{ x: 0, y: 0 }} />,
+        <ThreatBadgeGlyph
+          marks={specMarks}
+          badge={counted(4, 'high', 2)}
+          at={{ x: 0, y: 0 }}
+        />,
       ),
     ).not.toContain(canvasClassNames.badgeFlag);
   });

@@ -6,6 +6,7 @@ import {
   wrappedTextStyles,
   type TextStyleRule,
 } from '@saerskriven/canvas';
+import type { Locale } from '@saerskriven/i18n';
 import {
   type Diagram,
   type Element as DiagramElement,
@@ -24,13 +25,15 @@ import {
   diagramOf,
   everyGlyphModel,
   goldenDocuments,
+  translatedLocales,
   type GoldenDocument,
 } from '../render.fixtures.js';
 import { renderSvg } from './svg-document.js';
+import { renderTerms } from './terms.js';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
 
-const { DOMParser } = new JSDOM().window;
+const { DOMParser, XMLSerializer } = new JSDOM().window;
 
 const square = { width: 100, height: 100 };
 
@@ -144,7 +147,7 @@ function firstDiagram(model: Model): Diagram {
 }
 
 function svgOf(model: Model): string {
-  return renderSvg(firstDiagram(model), model).svg;
+  return renderSvg(firstDiagram(model), model, 'en-CA').svg;
 }
 
 function documentOf(svg: string): Document {
@@ -386,9 +389,27 @@ function drawnOutsideTheViewBox(svg: string): Box[] {
 }
 
 const svgOfEntry = (entry: GoldenDocument): string =>
-  renderSvg(diagramOf(entry), entry.model).svg;
+  renderSvg(diagramOf(entry), entry.model, 'en-CA').svg;
 
 const forbiddenCharacterSvg = svgOf(forbiddenCharacterModel);
+
+const markTextsOf = (svg: string): readonly string[] =>
+  [...documentOf(svg).getElementsByClassName(canvasClassNames.badgeMark)].map(
+    (mark) => mark.textContent,
+  );
+
+const withoutMarks = (svg: string): string => {
+  const document = documentOf(svg);
+  for (const mark of document.getElementsByClassName(
+    canvasClassNames.badgeMark,
+  )) {
+    mark.textContent = '';
+  }
+  return new XMLSerializer().serializeToString(document);
+};
+
+const everyGlyphIn = (locale: Locale): string =>
+  renderSvg(firstDiagram(everyGlyphModel), everyGlyphModel, locale).svg;
 
 describe('a diagram as a standalone SVG document', () => {
   it.each(goldenDocuments)(
@@ -407,7 +428,7 @@ describe('a diagram as a standalone SVG document', () => {
 
   it('renders each diagram of a model as a document of its own', () => {
     const [front, back] = twoDiagramModel.diagrams.map(
-      (diagram) => renderSvg(diagram, twoDiagramModel).svg,
+      (diagram) => renderSvg(diagram, twoDiagramModel, 'en-CA').svg,
     );
     expect(front).toContain('<title>Front of house</title>');
     expect(front).toContain('Guest');
@@ -418,7 +439,11 @@ describe('a diagram as a standalone SVG document', () => {
   });
 
   it('leaves a flow whose endpoint names another flow out of the drawing', () => {
-    const rendered = renderSvg(firstDiagram(everyGlyphModel), everyGlyphModel);
+    const rendered = renderSvg(
+      firstDiagram(everyGlyphModel),
+      everyGlyphModel,
+      'en-CA',
+    );
     expect(rendered.svg).not.toContain('Replayed submission');
     expect(rendered.unplaced).toEqual([
       { flow: 'el-replay', side: 'source', element: 'el-request' },
@@ -493,13 +518,14 @@ describe('free text carrying what XML forbids, never parsed', () => {
 describe.each([
   ...goldenDocuments.map((entry) => ({
     name: entry.name,
-    drawn: renderSvg(diagramOf(entry), entry.model),
+    drawn: renderSvg(diagramOf(entry), entry.model, 'en-CA'),
   })),
   {
     name: 'text XML forbids',
     drawn: renderSvg(
       firstDiagram(forbiddenCharacterModel),
       forbiddenCharacterModel,
+      'en-CA',
     ),
   },
 ])('$name as a document a reader can open', ({ drawn }) => {
@@ -552,5 +578,23 @@ describe.each([
     ).toEqual([]);
     expect(svg).not.toContain('url(');
     expect(svg).not.toContain('@import');
+  });
+});
+
+describe.each(translatedLocales)('a diagram drawn in %s', (locale) => {
+  const english = everyGlyphIn('en-CA');
+  const translated = everyGlyphIn(locale);
+
+  it("letters every badge with the locale's marks", () => {
+    const { marks } = renderTerms(locale);
+    const known = new Set([...Object.values(marks.severity), marks.flag]);
+    const drawn = markTextsOf(translated);
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(drawn.filter((mark) => !known.has(mark))).toEqual([]);
+    expect(drawn).not.toEqual(markTextsOf(english));
+  });
+
+  it('changes nothing in the drawing but the marks', () => {
+    expect(withoutMarks(translated)).toBe(withoutMarks(english));
   });
 });

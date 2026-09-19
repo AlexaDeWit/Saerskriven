@@ -50,6 +50,14 @@ describe('translator', () => {
     ]);
   });
 
+  it.each([[['a', { element: 'b' }, 3]], [7]])(
+    'passes the node parameter %j through as given, never formatted',
+    (link) => {
+      const [, given] = shelfTranslator('fr-CA').parts('shelf.help', { link });
+      expect(given).toBe(link);
+    },
+  );
+
   it('lists every template with its locale, id and plural form', () => {
     const templates = catalogueTemplates(shelfCatalogues);
     expect(templates).toContainEqual({

@@ -53,7 +53,7 @@ export function reviewModel(
         ...renderCoverage(coverageOf(reading)),
         'register:',
         '',
-        renderRegister(reading.model),
+        renderRegister(reading.model, 'en-CA'),
       ],
       brief: reviewBrief,
     }),

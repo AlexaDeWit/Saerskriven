@@ -2,7 +2,7 @@ import { elementId } from '@saerskriven/model/fixtures';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { edgeNamed, nodeNamed } from './canvas.fixtures.js';
+import { edgeNamed, nodeNamed, specMarks } from './canvas.fixtures.js';
 import {
   boxElementStrokeInsets,
   BoxElementGlyph,
@@ -28,7 +28,9 @@ import {
 import { strokeWidths } from './tokens.js';
 
 const glyphOf = (value: string): string =>
-  renderToStaticMarkup(<ElementGlyph node={nodeNamed(value)} />);
+  renderToStaticMarkup(
+    <ElementGlyph marks={specMarks} node={nodeNamed(value)} />,
+  );
 
 const packageSource = join(import.meta.dirname, '..');
 
@@ -137,7 +139,11 @@ describe('ElementGlyph, taking its extent from the model', () => {
 
   it('leaves the text out while a field stands in for it', () => {
     const markup = renderToStaticMarkup(
-      <ElementGlyph node={nodeNamed('el-client')} textVisible={false} />,
+      <ElementGlyph
+        marks={specMarks}
+        node={nodeNamed('el-client')}
+        textVisible={false}
+      />,
     );
     expect(markup).toContain('<rect');
     expect(markup).not.toContain(canvasClassNames.label);
@@ -148,16 +154,20 @@ describe('ElementGlyph, taking its extent from the model', () => {
       ...nodeNamed('el-client'),
       size: { width: 999, height: 111 },
     };
-    expect(renderToStaticMarkup(<ElementGlyph node={widened} />)).toContain(
-      'width="999" height="111"',
-    );
+    expect(
+      renderToStaticMarkup(<ElementGlyph marks={specMarks} node={widened} />),
+    ).toContain('width="999" height="111"');
   });
 });
 
 describe('PlacedElementGlyph', () => {
   it('moves the glyph to the model position', () => {
     const node = nodeNamed('el-client');
-    expect(renderToStaticMarkup(<PlacedElementGlyph node={node} />)).toContain(
+    expect(
+      renderToStaticMarkup(
+        <PlacedElementGlyph marks={specMarks} node={node} />,
+      ),
+    ).toContain(
       `transform="translate(${node.position.x}, ${node.position.y})"`,
     );
   });
@@ -166,25 +176,35 @@ describe('PlacedElementGlyph', () => {
 describe('FlowGlyph', () => {
   it('runs straight segments from source through waypoints to target', () => {
     expect(
-      renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-request')} />),
+      renderToStaticMarkup(
+        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
+      ),
     ).toContain('d="M 200 100 L 240 100 L 280 120"');
   });
 
   it('marks the target with an arrowhead', () => {
     expect(
-      renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-request')} />),
+      renderToStaticMarkup(
+        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
+      ),
     ).toContain(`class="${canvasClassNames.flowArrow}"`);
   });
 
   it('names the flow near the midpoint of its longest segment', () => {
     expect(
-      renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-probe')} />),
+      renderToStaticMarkup(
+        <FlowGlyph marks={specMarks} edge={edgeNamed('el-probe')} />,
+      ),
     ).toContain('Nightly backup probe');
   });
 
   it('leaves the name out while a field stands in for it', () => {
     const markup = renderToStaticMarkup(
-      <FlowGlyph edge={edgeNamed('el-probe')} textVisible={false} />,
+      <FlowGlyph
+        marks={specMarks}
+        edge={edgeNamed('el-probe')}
+        textVisible={false}
+      />,
     );
     expect(markup).toContain(`class="${canvasClassNames.flowArrow}"`);
     expect(markup).not.toContain('Nightly backup probe');
@@ -192,10 +212,14 @@ describe('FlowGlyph', () => {
 
   it('badges a flow the open threats name', () => {
     expect(
-      renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-request')} />),
+      renderToStaticMarkup(
+        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
+      ),
     ).toContain(canvasClassNames.badge);
     expect(
-      renderToStaticMarkup(<FlowGlyph edge={edgeNamed('el-write')} />),
+      renderToStaticMarkup(
+        <FlowGlyph marks={specMarks} edge={edgeNamed('el-write')} />,
+      ),
     ).not.toContain(canvasClassNames.badge);
   });
 });
@@ -303,7 +327,7 @@ describe('FlowGlyph, keeping its label off its own line', () => {
     'draws the name clear of a %s segment',
     (_orientation, from, to) => {
       const markup = renderToStaticMarkup(
-        <FlowGlyph edge={probeFlow(from, to, undefined)} />,
+        <FlowGlyph marks={specMarks} edge={probeFlow(from, to, undefined)} />,
       );
       expect(markup.match(/<tspan/gu)?.length).toBeGreaterThanOrEqual(3);
       expect(segmentMeetsBox({ from, to }, labelBoxOf(markup))).toBe(false);
@@ -314,7 +338,7 @@ describe('FlowGlyph, keeping its label off its own line', () => {
     'draws the badge clear of a %s segment',
     (_orientation, from, to) => {
       const markup = renderToStaticMarkup(
-        <FlowGlyph edge={probeFlow(from, to, wordyBadge)} />,
+        <FlowGlyph marks={specMarks} edge={probeFlow(from, to, wordyBadge)} />,
       );
       expect(
         segmentMeetsBox({ from, to }, badgeBoxOf(markup, wordyBadge)),
@@ -328,7 +352,7 @@ describe('FlowGlyph, keeping its label off its own line', () => {
       { x: 400, y: 0 },
     ];
     const markup = renderToStaticMarkup(
-      <FlowGlyph edge={probeFlow(from, to, wordyBadge)} />,
+      <FlowGlyph marks={specMarks} edge={probeFlow(from, to, wordyBadge)} />,
     );
     expect(labelBoxOf(markup).minY).toBeCloseTo(flowLabelClearance);
     expect(badgeBoxOf(markup, wordyBadge).maxY).toBeCloseTo(
@@ -340,6 +364,7 @@ describe('FlowGlyph, keeping its label off its own line', () => {
     const box = labelBoxOf(
       renderToStaticMarkup(
         <FlowGlyph
+          marks={specMarks}
           edge={probeFlow({ x: 0, y: 0 }, { x: 400, y: 0 }, undefined)}
         />,
       ),
@@ -350,11 +375,13 @@ describe('FlowGlyph, keeping its label off its own line', () => {
   it('takes a side from the segment, not from the end it runs from', () => {
     const forwards = renderToStaticMarkup(
       <FlowGlyph
+        marks={specMarks}
         edge={probeFlow({ x: 0, y: 0 }, { x: 0, y: 400 }, undefined)}
       />,
     );
     const backwards = renderToStaticMarkup(
       <FlowGlyph
+        marks={specMarks}
         edge={probeFlow({ x: 0, y: 400 }, { x: 0, y: 0 }, undefined)}
       />,
     );
@@ -365,7 +392,7 @@ describe('FlowGlyph, keeping its label off its own line', () => {
   it('draws a flow of no length beside where it sits', () => {
     const still = { x: 50, y: 50 };
     const markup = renderToStaticMarkup(
-      <FlowGlyph edge={probeFlow(still, still, undefined)} />,
+      <FlowGlyph marks={specMarks} edge={probeFlow(still, still, undefined)} />,
     );
     expect(labelBoxOf(markup).minY).toBeGreaterThan(still.y);
   });
@@ -374,6 +401,7 @@ describe('FlowGlyph, keeping its label off its own line', () => {
     expect(
       renderToStaticMarkup(
         <FlowGlyph
+          marks={specMarks}
           edge={probeFlow(
             { x: 0, y: 0 },
             {

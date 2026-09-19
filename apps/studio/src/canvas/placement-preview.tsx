@@ -6,6 +6,7 @@ import {
 } from '@saerskriven/canvas';
 import type { Point, Size } from '@saerskriven/model';
 import { ViewportPortal } from '@xyflow/react';
+import { badgeMarks } from './names.js';
 import styles from './placement.module.css';
 
 /** The element geometry shown before a placement reaches the model. */
@@ -44,7 +45,10 @@ export function PlacementPreview({
           }}
           width={svgNumber(preview.size.width)}
         >
-          <ElementGlyph node={{ ...preview.node, position: { x: 0, y: 0 } }} />
+          <ElementGlyph
+            marks={badgeMarks}
+            node={{ ...preview.node, position: { x: 0, y: 0 } }}
+          />
         </svg>
       </ViewportPortal>
     );
