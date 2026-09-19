@@ -36,7 +36,12 @@ export function importModel(
   );
 }
 
-function importFormatOf(
+/**
+ * The import format a parsed document names at its root, by an `otmVersion`
+ * or a `$schema` key, or the refusal {@link importModel} returns where it
+ * names neither.
+ */
+export function importFormatOf(
   given: unknown,
 ): Either.Either<ImportFormat, ReadFailure> {
   if (isRecord(given) && Object.hasOwn(given, 'otmVersion')) {

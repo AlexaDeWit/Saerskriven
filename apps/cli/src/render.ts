@@ -26,8 +26,8 @@ import { runtimeAssets } from './assets.js';
 import { writeFile } from './files.js';
 import { readModel } from './input.js';
 import {
+  delivered,
   lines,
-  succeeded,
   usageError,
   type CommandOutcome,
   type CommandOutput,
@@ -290,12 +290,9 @@ function written(
   content: CommandOutput,
   warning: string,
 ): CommandOutcome {
-  return out === '-'
-    ? succeeded(content, warning)
-    : Either.match(writeFile(out, content), {
-        onLeft: (reason) => usageError(lines(`error: ${reason}`)),
-        onRight: () => succeeded('', warning),
-      });
+  return delivered(out, content, warning, (path, bytes) =>
+    Either.mapLeft(writeFile(path, bytes), (reason) => [`error: ${reason}`]),
+  );
 }
 
 function refusedChoice(failure: DiagramChoiceFailure): string {

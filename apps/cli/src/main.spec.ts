@@ -49,6 +49,13 @@ const scenarios: readonly Scenario[] = [
     err: "error: cannot read test-data/absent.json: ENOENT: no such file or directory, open 'test-data/absent.json'\n",
   },
   {
+    name: 'writes a native file back in the form it was read',
+    args: ['convert', twoDiagrams, '--to', 'saerskriven-yaml', '--out', '-'],
+    code: 0,
+    out: readFileSync(join(repositoryRoot, twoDiagrams), 'utf8'),
+    err: '',
+  },
+  {
     name: 'prints a host registration, writing no file',
     args: ['mcp', 'install', '--host', 'claude-code', '--print'],
     code: 0,
