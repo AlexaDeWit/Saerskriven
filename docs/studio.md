@@ -21,14 +21,16 @@ panel.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
 persists across reloads. **Language** beside it selects English (Canada),
-Français (Canada) or Svenska, and persists the same way. It starts on Follow
-the browser, which reads the languages your browser asks for and falls back to
-English (Canada), and that option is there to return to. The language decides
+Français (Canada) or Svenska, and persists the same way. Until you choose
+one, the studio starts in the first of those your browser asks for, or in
+English (Canada) where it asks for none of them. The language decides
 the studio's own words: the menus, the toolbox, the panel, every field label
 and the words a stored value is shown under, such as a severity, a status or
 a threat category. A model's names and descriptions are yours and are never
 translated, and the file picker, the download dialog and the unsaved changes
-question are the browser's own text.
+question are the browser's own text. Key names in a shortcut, such as
+`Ctrl+Shift+S`, and each language's own name in the Language list read the
+same in every language.
 
 A name the studio writes for you is written in the language you are in at the
 time: Untitled, Untitled diagram, New actor, New flow, New threat and the

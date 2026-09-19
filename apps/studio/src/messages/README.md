@@ -63,6 +63,27 @@ anything a person typed are data: they reach a message as parameters and pass
 through unchanged. So do ids, a read limit's name, and the file name an open
 or an import was given.
 
+Some text on screen is not a catalogue's, and the pseudo-locale pass lists it
+as an exception:
+
+- A key chord is shown in the key names the shortcut registry holds, such as
+  `Ctrl+Shift+S` or `ArrowLeft`, in every language.
+- Each language is offered under its own name, from
+  [`../language-preference.ts`](../language-preference.ts).
+- The product name `Saerskriven` in the page heading, and a file format's
+  name.
+- React Flow's attribution link, and the role descriptions `node` and `edge`
+  React Flow fixes on every drawn element and edge.
+- The comma `spoken` in [`../canvas/names.ts`](../canvas/names.ts) puts
+  between the parts of a canvas item's accessible name, and the separators of
+  a `list` parameter, which `Intl.ListFormat` supplies for the locale.
+- A badge's severity letter and flag mark, which come from
+  `@saerskriven/render`'s terms for the active locale (reused on screen since
+  #499) rather than through the studio's translator, so the pseudo-locale
+  does not mark them.
+- Decorative glyphs hidden from assistive technology: the menu's `☰`, the
+  fit-selection `⊡`, a radio's `●` and `○`, a disclosure's `▾`.
+
 Some diagnostic text has no code to translate from, and a notice shows it as a
 literal line under a headline in the reader's language:
 
@@ -90,15 +111,38 @@ heading are labelled from there, so each term has one home. `enums` keeps the
 labels only the studio shows. Saving YAML or JSON writes the same bytes in
 every language, because the wire formats keep the model's own values.
 
-## Adding a message
+## Adding or changing a message
 
 1. Declare it in the section's `contract.ts`, or add a section for a new
    surface and join it in `catalogues.ts`. A term an export also shows goes
-   in render's `terms` section instead.
+   in render's `terms` section instead, and a message `@saerskriven/render`
+   writes only into an export belongs to its catalogues under
+   [`packages/render/src/messages`](../../../../packages/render/src/messages),
+   the same way.
 2. Write it in all three catalogues in the same change. The typecheck fails
    until every locale has it with the declared parameters and plural forms.
-3. Mark new French and Swedish text in the pull request for review by a
-   fluent speaker.
+   Changing a message's parameters is the same change: the contract first,
+   then all three templates.
+3. Changing only the words of one locale is an edit to that catalogue alone.
+   Keep a term the same wherever it recurs, on screen and in an export.
+4. Run the studio's and render's `catalogues.spec.ts`. They refuse a brace
+   outside a `{name}` placeholder, and annotate their report with every fr-CA
+   and sv entry that reads exactly as en-CA does (`sameAsDefault` from
+   `@saerskriven/i18n`). The report never fails: a shared word such as
+   `Description` or `Menu` is right as it stands. Read it for a message that
+   was pasted in English: the verbose reporter prints the annotation, as in
+   `pnpm nx test @saerskriven/studio -- src/messages/catalogues.spec.ts --reporter=verbose`.
+5. Open the development server with `?pseudo-locale` in the address, such as
+   `http://localhost:4200/?pseudo-locale`, to read the studio through the
+   pseudo-locale: every literal run of an en-CA template accented, lengthened
+   by two fifths and set between `⟦` and `⟧`, and every parameter as given.
+   Text on screen without the markers came from outside the catalogues or is
+   data. The address parameter does nothing in a production build, which
+   leaves the pseudo-locale out. `pseudo-locale.spec.ts` in the browser suite
+   makes the same pass over the canvas, the menu and its submenus, the
+   panels, the switcher and a notice, and fails on text outside the markers
+   that is neither the model's own text nor one of the exceptions it lists,
+   the ones under [What stays in English](#what-stays-in-english).
 
 A security or threat-modelling term follows the
 [terminology glossary](../../../../packages/render/src/messages/GLOSSARY.md),

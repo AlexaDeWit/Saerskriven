@@ -3,13 +3,16 @@
   "include": [],
   "references": [
     {
-      "path": "../../packages/canvas"
+      "path": "../../packages/model"
+    },
+    {
+      "path": "../../packages/i18n"
     },
     {
       "path": "../../packages/formats"
     },
     {
-      "path": "../../packages/model"
+      "path": "../../packages/canvas"
     },
     {
       "path": "./tsconfig.e2e.json"

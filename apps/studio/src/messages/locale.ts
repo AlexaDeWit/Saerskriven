@@ -1,5 +1,6 @@
 import {
   negotiate,
+  pseudoTranslator,
   translator,
   type Locale,
   type Translator,
@@ -12,6 +13,7 @@ import {
   studioMessages,
   type StudioMessages,
 } from './catalogues.js';
+import { pseudoLocaleRequested } from './pseudo-locale.js';
 
 let chosenLocale: Locale | undefined;
 
@@ -55,7 +57,10 @@ export function activeTranslator(): Translator<StudioMessages> {
   if (known !== undefined) {
     return known;
   }
-  const made = translator(studioMessages, studioCatalogues, locale);
+  const made =
+    import.meta.env.DEV && pseudoLocaleRequested()
+      ? pseudoTranslator(studioMessages, studioCatalogues)
+      : translator(studioMessages, studioCatalogues, locale);
   translators.set(locale, made);
   return made;
 }

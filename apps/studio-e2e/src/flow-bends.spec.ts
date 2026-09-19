@@ -19,12 +19,11 @@ import {
   openText,
   placeholder,
   readBack,
+  recoverySnapshot,
   savedFile,
   selectByKeyboard,
   twoDiagramsFile,
 } from './studio.fixtures.js';
-
-const recoveryKey = 'saerskriven:studio:recovery';
 
 test('Shift-click still deselects a flow through its line hit target', async ({
   page,
@@ -32,10 +31,7 @@ test('Shift-click still deselects a flow through its line hit target', async ({
   await openPlaceholder(page);
   const flow = await selectByKeyboard(page, placeholder.records);
   const at = await halfwayAlong(lineOf(page, placeholder.records));
-  const recovery = await page.evaluate(
-    (key) => localStorage.getItem(key),
-    recoveryKey,
-  );
+  const recovery = await recoverySnapshot(page);
   await page.keyboard.down('Shift');
   await page.mouse.click(at.x, at.y);
   await page.keyboard.up('Shift');
@@ -43,9 +39,7 @@ test('Shift-click still deselects a flow through its line hit target', async ({
   await expect(
     page.getByRole('button', { name: 'Add bend', exact: true }),
   ).toHaveCount(0);
-  expect(
-    await page.evaluate((key) => localStorage.getItem(key), recoveryKey),
-  ).toBe(recovery);
+  expect(await recoverySnapshot(page)).toBe(recovery);
 });
 
 test('clicking a preview bend confirms its insertion', async ({ page }) => {
@@ -72,10 +66,7 @@ test('keyboard insertion chooses a segment, previews, cancels, and commits one u
   const flow = await selectByKeyboard(page, placeholder.records);
   const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
-  const recovery = await page.evaluate(
-    (key) => localStorage.getItem(key),
-    recoveryKey,
-  );
+  const recovery = await recoverySnapshot(page);
   await page.keyboard.press('+');
   await expect(page.locator('[data-chosen="true"]')).toHaveAttribute(
     'data-bend-segment',
@@ -87,9 +78,7 @@ test('keyboard insertion chooses a segment, previews, cancels, and commits one u
     page.getByRole('button', { name: 'Bend 1', exact: true }),
   ).toBeVisible();
   expect(turnsOf(await drawnBy(line))[1].y).toBe(turnsOf(original)[0].y + 20);
-  expect(
-    await page.evaluate((key) => localStorage.getItem(key), recoveryKey),
-  ).toBe(recovery);
+  expect(await recoverySnapshot(page)).toBe(recovery);
   await page.keyboard.press('Escape');
   await expect(line).toHaveAttribute('d', original);
   await expect(flow).toBeFocused();
@@ -141,10 +130,7 @@ test('pulling the line and its bends previews after zoom and pan, with cancellat
   const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
   const at = await halfwayAlong(line);
-  const recovery = await page.evaluate(
-    (key) => localStorage.getItem(key),
-    recoveryKey,
-  );
+  const recovery = await recoverySnapshot(page);
   await page.mouse.move(at.x, at.y);
   await page.mouse.down();
   await page.mouse.move(at.x + 30, at.y + 65, { steps: 5 });
@@ -163,9 +149,7 @@ test('pulling the line and its bends previews after zoom and pan, with cancellat
     at.y + 65,
     0,
   );
-  expect(
-    await page.evaluate((key) => localStorage.getItem(key), recoveryKey),
-  ).toBe(recovery);
+  expect(await recoverySnapshot(page)).toBe(recovery);
   await page.mouse.up();
   await expect(line).toHaveAttribute('d', preview);
   const bend = page.getByRole('button', { name: 'Bend 1', exact: true });
@@ -222,19 +206,14 @@ test('a selected flow still renames and a cancelled or returned drag creates no 
   const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
   const at = await halfwayAlong(line);
-  const recovery = await page.evaluate(
-    (key) => localStorage.getItem(key),
-    recoveryKey,
-  );
+  const recovery = await recoverySnapshot(page);
   await page.mouse.move(at.x, at.y);
   await page.mouse.down();
   await page.mouse.move(at.x, at.y + 50, { steps: 4 });
   await page.mouse.move(at.x, at.y, { steps: 4 });
   await page.mouse.up();
   await expect(line).toHaveAttribute('d', original);
-  expect(
-    await page.evaluate((key) => localStorage.getItem(key), recoveryKey),
-  ).toBe(recovery);
+  expect(await recoverySnapshot(page)).toBe(recovery);
   await page.mouse.dblclick(at.x, at.y);
   const name = nameField(page, 'Records');
   await expect(name).toBeFocused();

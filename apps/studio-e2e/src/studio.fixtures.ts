@@ -14,6 +14,18 @@ import {
 
 const developmentModelKey = 'saerskrivenDevelopmentModel';
 
+const recoveryStorageKey = 'saerskriven:studio:recovery';
+
+/** The local storage key the studio keeps the chosen language under. */
+export const languageStorageKey = 'saerskrivenLanguage';
+
+/** A Saerskriven YAML document every format refuses, for a spec that needs a failure notice on screen. */
+export const refusedYaml = ['formatVersion: 1', 'diagrams: none'].join('\n');
+
+/** The recovery snapshot the studio last wrote, as stored, or `null` before its first write. */
+export const recoverySnapshot = (page: Page): Promise<string | null> =>
+  page.evaluate((key) => localStorage.getItem(key), recoveryStorageKey);
+
 /** What the placeholder model draws, by the names assistive technology has for them. */
 export const placeholder = {
   actor: /^Actor, actor/u,
@@ -71,10 +83,11 @@ const landed = async (page: Page): Promise<void> => {
   await canvasSettled(page);
 };
 
-/** Opens a model document through the development hook. Existing recovery still takes precedence. */
+/** Opens a model document at `entry` through the development hook. Existing recovery still takes precedence. */
 export const openModelDocument = async (
   page: Page,
   model: unknown,
+  entry = '/',
 ): Promise<void> => {
   await page.addInitScript(
     ({ key, model: document }) => {
@@ -82,7 +95,7 @@ export const openModelDocument = async (
     },
     { key: developmentModelKey, model },
   );
-  await page.goto('/');
+  await page.goto(entry);
   await landed(page);
 };
 
@@ -256,13 +269,14 @@ export const savedFromMenu = async (
   return downloaded(page, () => chosen.click());
 };
 
-/** Opens the Export menu, chooses one item and reads its download. */
+/** Opens the Export menu, under its name in the active language, chooses one item and reads its download. */
 export const exportedFile = async (
   page: Page,
   item: string,
+  exportMenu = 'Export',
 ): Promise<Downloaded> => {
   await openMenu(page);
-  await menuItem(page, 'Export').hover();
+  await menuItem(page, exportMenu).hover();
   const chosen = menuItem(page, item);
   await expect(chosen).toBeVisible();
   return downloaded(page, () => chosen.click());

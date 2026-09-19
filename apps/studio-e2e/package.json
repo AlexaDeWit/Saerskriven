@@ -10,6 +10,7 @@
     "@axe-core/playwright": "catalog:",
     "@saerskriven/canvas": "workspace:*",
     "@saerskriven/formats": "workspace:*",
+    "@saerskriven/i18n": "workspace:*",
     "@saerskriven/model": "workspace:*",
     "@playwright/test": "catalog:",
     "effect": "catalog:"

@@ -1,8 +1,10 @@
+import { locales } from '@saerskriven/i18n';
 import { ReactFlowProvider } from '@xyflow/react';
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CommandSurfaceProvider } from '../commands/binding.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
+import { chooseLanguage } from '../messages/locale.js';
 import { button } from '../ui/ui.fixtures.js';
 import { ZoomCluster } from './zoom-cluster.js';
 
@@ -52,5 +54,33 @@ describe('ZoomCluster', () => {
       'fitSelection',
       'resetZoom',
     ]);
+  });
+
+  describe('in each locale', () => {
+    afterEach(() => {
+      act(() => {
+        chooseLanguage('en-CA');
+      });
+      globalThis.localStorage.clear();
+    });
+
+    it("writes the zoom in the reader's percent format", () => {
+      render(
+        <ReactFlowProvider>
+          <ZoomCluster />
+        </ReactFlowProvider>,
+      );
+      const reset = button('Reset zoom to 100%');
+
+      for (const locale of locales) {
+        act(() => {
+          chooseLanguage(locale);
+        });
+
+        expect(reset.textContent).toBe(
+          new Intl.NumberFormat(locale, { style: 'percent' }).format(1),
+        );
+      }
+    });
   });
 });

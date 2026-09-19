@@ -24,7 +24,8 @@ The projects run in order:
   Tag a test `@phone` when its layout depends on the width.
   `playwright.config.ts` says why the project exists.
 - `pages` checks the production build below `/Saerskriven/`, including PDF
-  assets, the social card, its text alternative, and the release version.
+  assets, the social card, its text alternative, the release version, each
+  language, and a bundle without the development pseudo-locale.
 - `frame-time` measures a drag of `Web shop`, a process with flows at both
   ends, in a scene the spec builds from three offset copies of the
   two-diagram model's storefront diagram, with one worker and one retry.

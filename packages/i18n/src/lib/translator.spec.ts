@@ -1,4 +1,10 @@
-import { catalogueTemplates } from './catalogue.js';
+import {
+  catalogue,
+  catalogueReport,
+  catalogueTemplates,
+  sameAsDefault,
+} from './catalogue.js';
+import { plural, text } from './contract.js';
 import { shelfCatalogues, shelfTranslator } from './i18n.fixtures.js';
 import { wellFormedTemplate } from './template.js';
 
@@ -69,5 +75,50 @@ describe('translator', () => {
     expect(
       templates.filter(({ template }) => !wellFormedTemplate(template)),
     ).toEqual([]);
+  });
+
+  it('lists the entries a locale words as en-CA does, a form en-CA lacks read against its other', () => {
+    const shared = {
+      menu: text(),
+      description: text(),
+      items: plural('count'),
+    } as const;
+    const catalogues = {
+      'en-CA': {
+        shared: catalogue(shared)('en-CA')({
+          menu: 'Menu',
+          description: 'Description',
+          items: { one: 'One item', other: '{count} items' },
+        }),
+      },
+      'fr-CA': {
+        shared: catalogue(shared)('fr-CA')({
+          menu: 'Menu',
+          description: 'Description',
+          items: {
+            one: '{count} élément',
+            many: '{count} items',
+            other: '{count} éléments',
+          },
+        }),
+      },
+      sv: {
+        shared: catalogue(shared)('sv')({
+          menu: 'Meny',
+          description: 'Beskrivning',
+          items: { one: 'En sak', other: '{count} saker' },
+        }),
+      },
+    };
+    const same = sameAsDefault(catalogues);
+
+    expect(same.map(({ locale, id, form }) => [locale, id, form])).toEqual([
+      ['fr-CA', 'shared.menu', undefined],
+      ['fr-CA', 'shared.description', undefined],
+      ['fr-CA', 'shared.items', 'many'],
+    ]);
+    expect(catalogueReport(catalogues).sameAsDefault).toContain(
+      'fr-CA shared.menu  "Menu"',
+    );
   });
 });
