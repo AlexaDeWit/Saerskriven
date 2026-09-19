@@ -46,11 +46,7 @@ import {
   useTextDraft,
   type TextRefusal,
 } from '../ui/text-field.js';
-import {
-  announceRefusal,
-  quotedName,
-  resetAnnouncements,
-} from './announcements.js';
+import { announceRefusal, resetAnnouncements } from './announcements.js';
 import {
   commitNote,
   commitRename,
@@ -59,18 +55,19 @@ import {
   stopInlineEditing,
 } from './edits.js';
 import { useTranslator } from '../messages/locale.js';
-import { edgeLabel, nodeLabel } from './names.js';
+import type { Said } from '../messages/said.js';
+import { edgeLabel, nodeLabel, resizeLabels } from './names.js';
 import styles from './inline-editing.module.css';
 
 type InlineFieldProps = {
   readonly elementId: ElementId;
-  readonly label: string;
+  readonly label: Said;
   readonly value: string;
   readonly textStyle: WrappedTextStyle;
   readonly room?: number;
   readonly multiline?: boolean;
   readonly onCommit: (elementId: ElementId, text: string) => void;
-  readonly refuse?: (label: string, text: string) => TextRefusal | undefined;
+  readonly refuse?: (label: Said, text: string) => TextRefusal | undefined;
 };
 
 /** The height of a one-line name field, which a placed element must reach in both dimensions for its name to open in place. */
@@ -129,14 +126,6 @@ function typeOf(textStyle: WrappedTextStyle, room?: number): CSSProperties {
     lineHeight: lineHeightRatio,
     maxHeight: room === undefined ? undefined : `${String(room)}px`,
   };
-}
-
-function refusedNameOf(
-  name: string,
-  unnamed: string,
-): (label: string, text: string) => TextRefusal | undefined {
-  const spoken = `Name of ${quotedName(name, unnamed)}`;
-  return (_label, text) => refusedName(spoken, text);
 }
 
 function InlineField({
@@ -229,7 +218,7 @@ function InlineField({
             : `${keyboardDescriptionId} ${refusalId}`
         }
         aria-invalid={draft.refusal !== undefined}
-        aria-label={label}
+        aria-label={label(t)}
         className={`${styles.field}${multiline ? ` ${styles.note}` : ''}`}
         onBlur={() => {
           if (!settled.current) {
@@ -252,7 +241,7 @@ function InlineField({
       />
       {draft.refusal !== undefined && (
         <p className={styles.refusal} id={refusalId}>
-          {draft.refusal.shown}
+          {draft.refusal.shown(t)}
         </p>
       )}
     </>
@@ -289,6 +278,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
           setResizing(false);
           resizeNode(node, box);
         }}
+        resizeLabels={resizeLabels(node, t)}
         resizing={resizing}
         textVisible={!editing}
       />
@@ -299,9 +289,11 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         >
           <InlineField
             elementId={node.id}
-            label={t('fields.name-of', { element: nodeLabel(node, t) })}
+            label={(speak) =>
+              speak('fields.name-of', { element: nodeLabel(node, speak) })
+            }
             onCommit={commitRename}
-            refuse={refusedNameOf(node.name, nodeLabel(node, t))}
+            refuse={refusedName}
             room={
               node.kind === 'boundary-curve'
                 ? undefined
@@ -316,7 +308,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         <div className={`${styles.overNote} nodrag nopan`}>
           <InlineField
             elementId={node.id}
-            label={t('fields.note-text')}
+            label={(speak) => speak('fields.note-text')}
             multiline
             onCommit={commitNote}
             textStyle={placement.textStyle}
@@ -330,7 +322,6 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
 function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
   const edge = props.data?.edge;
-  const { t } = useTranslator();
   const editing = useModelStore(
     useCallback(
       (state: State) =>
@@ -351,9 +342,11 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
           >
             <InlineField
               elementId={edge.id}
-              label={t('fields.name-of', { element: edgeLabel(edge, t) })}
+              label={(speak) =>
+                speak('fields.name-of', { element: edgeLabel(edge, speak) })
+              }
               onCommit={commitRename}
-              refuse={refusedNameOf(edge.name, edgeLabel(edge, t))}
+              refuse={refusedName}
               textStyle={edge.label.name.textStyle}
               value={edge.name}
             />

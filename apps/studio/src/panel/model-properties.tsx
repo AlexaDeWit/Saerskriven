@@ -77,7 +77,7 @@ export function ModelPropertiesPanel({
     >
       <TextField
         held={draftIn(draft, 'Title')}
-        label={t('fields.title')}
+        label={(speak) => speak('fields.title')}
         onChange={resetAnnouncements}
         onCommit={commit('title')}
         onRefused={refused('Title')}
@@ -86,7 +86,7 @@ export function ModelPropertiesPanel({
       />
       <ProseField
         held={draftIn(draft, 'Description')}
-        label={t('fields.description')}
+        label={(speak) => speak('fields.description')}
         onChange={resetAnnouncements}
         onCommit={commit('description')}
         onRefused={refused('Description')}

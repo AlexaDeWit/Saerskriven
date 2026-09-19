@@ -15,6 +15,7 @@ import {
   nameQuoteLength,
   resetAnnouncements,
 } from './announcements.js';
+import { activeTranslator } from '../messages/locale.js';
 import { currentLayout } from './layout.js';
 import {
   boundaryElement,
@@ -120,23 +121,24 @@ describe('removalCascade', () => {
 
 describe('describeRemoval', () => {
   it('says what went and what the model changed around it', () => {
-    const description = describeRemoval('Reader, actor', {
-      flows: 2,
-      threats: 1,
-    });
+    const description = describeRemoval(
+      activeTranslator().t,
+      { name: 'Reader', kind: 'actor' },
+      { flows: 2, threats: 1 },
+    );
 
     expect(description).toContain('Reader');
     expect(numbersIn(description)).toEqual([2, 1]);
   });
 
   it('says a count of none rather than leaving it out', () => {
-    const description = describeRemoval('Reader, actor', {
-      flows: 0,
-      threats: 0,
-    });
+    const description = describeRemoval(
+      activeTranslator().t,
+      { count: 2 },
+      { flows: 0, threats: 0 },
+    );
 
-    expect(description).toMatch(/flow/u);
-    expect(description).toMatch(/threat/u);
+    expect(numbersIn(description)).toEqual([2, 0, 0]);
   });
 });
 

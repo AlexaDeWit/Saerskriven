@@ -83,7 +83,7 @@ describe('StudioChrome', () => {
     const held = card();
 
     act(() => {
-      announce('An edit completed.');
+      announce(() => 'An edit completed.');
     });
 
     const region = screen.getByRole('status');

@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
+import type { Said } from '../messages/said.js';
 
 import {
   ProseField,
@@ -7,33 +9,50 @@ import {
   refusedText,
   type RefusedDraft,
 } from './text-field.js';
-import { noop, textbox } from './ui.fixtures.js';
+import { noop, numbersIn, textbox } from './ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 
 const commits = () => vi.fn<(text: string) => void>();
+
+const { t } = activeTranslator();
+
+const title: Said = (speak) => speak('fields.title');
 
 const refusals = () => vi.fn<(refused: RefusedDraft | undefined) => void>();
 
 describe('refusedText', () => {
   it('accepts text of the character set the model defines', () => {
-    expect(refusedText('Title', 'Threats, Særskriven, 脅威')).toBeUndefined();
+    expect(refusedText(title, 'Threats, Særskriven, 脅威')).toBeUndefined();
   });
 
   it('says where the first character the model refuses sits', () => {
-    expect(refusedText('Title', `ab${softHyphen}c`)?.shown).toContain('3');
+    expect(refusedText(title, `ab${softHyphen}c`)?.shown(t)).toContain('3');
   });
 
   it('names the field where the refusal is read away from it', () => {
-    const refusal = refusedText('Title', `ab${softHyphen}c`);
+    const refusal = refusedText(title, `ab${softHyphen}c`);
 
-    expect(refusal?.said).toContain('Title');
-    expect(refusal?.said.endsWith(refusal.shown)).toBe(true);
+    expect(refusal?.said(t)).toContain('Title');
+    expect(refusal?.said(t).endsWith(refusal.shown(t))).toBe(true);
+  });
+
+  it('names the field in the language the refusal is read in, not the one it was made in', () => {
+    const refusal = refusedText(title, `ab${softHyphen}c`);
+    const english = refusal?.said(t);
+
+    chooseLanguage('sv');
+    const { t: swedish } = activeTranslator();
+    chooseLanguage('en-CA');
+    globalThis.localStorage.clear();
+
+    expect(refusal?.said(swedish)).toContain(swedish('fields.title'));
+    expect(refusal?.said(swedish)).not.toBe(english);
   });
 
   it('counts characters rather than the code units the model reports', () => {
-    expect(refusedText('Title', `😀ab${softHyphen}`)?.shown).toContain(
-      'Character 4',
-    );
+    expect(
+      numbersIn(refusedText(title, `😀ab${softHyphen}`)?.shown(t)),
+    ).toEqual([4]);
   });
 });
 
@@ -42,7 +61,7 @@ describe('TextField', () => {
     const user = userEvent.setup();
     const onCommit = commits();
     render(
-      <TextField label="Title" onCommit={onCommit} onRefused={noop} value="" />,
+      <TextField label={title} onCommit={onCommit} onRefused={noop} value="" />,
     );
 
     await user.click(textbox('Title'));
@@ -58,7 +77,7 @@ describe('TextField', () => {
     const user = userEvent.setup();
     const onCommit = commits();
     render(
-      <TextField label="Title" onCommit={onCommit} onRefused={noop} value="" />,
+      <TextField label={title} onCommit={onCommit} onRefused={noop} value="" />,
     );
 
     await user.click(textbox('Title'));
@@ -74,7 +93,7 @@ describe('TextField', () => {
     const onRefused = refusals();
     render(
       <TextField
-        label="Title"
+        label={title}
         onCommit={onCommit}
         onRefused={onRefused}
         value=""
@@ -100,7 +119,7 @@ describe('TextField', () => {
     const onRefused = refusals();
     render(
       <TextField
-        label="Title"
+        label={title}
         onCommit={commits()}
         onRefused={onRefused}
         value=""
@@ -120,7 +139,7 @@ describe('TextField', () => {
     const onRefused = refusals();
     const { rerender } = render(
       <TextField
-        label="Title"
+        label={title}
         onCommit={commits()}
         onRefused={onRefused}
         value=""
@@ -137,7 +156,7 @@ describe('TextField', () => {
 
     rerender(
       <TextField
-        label="Title"
+        label={title}
         onCommit={commits()}
         onRefused={onRefused}
         value="Landed from elsewhere"
@@ -152,7 +171,7 @@ describe('TextField', () => {
     render(
       <TextField
         held={`ab${softHyphen}c`}
-        label="Title"
+        label={title}
         onCommit={commits()}
         onRefused={onRefused}
         value="Committed earlier"
@@ -171,7 +190,7 @@ describe('TextField', () => {
   it('takes the value an edit landing from elsewhere left behind', () => {
     const { rerender } = render(
       <TextField
-        label="Title"
+        label={title}
         onCommit={commits()}
         onRefused={noop}
         value="before"
@@ -180,7 +199,7 @@ describe('TextField', () => {
 
     rerender(
       <TextField
-        label="Title"
+        label={title}
         onCommit={commits()}
         onRefused={noop}
         value="after"
@@ -200,14 +219,24 @@ describe('ProseField', () => {
       vi.restoreAllMocks();
     });
     const { unmount } = render(
-      <ProseField label="Notes" onCommit={noop} onRefused={noop} value="" />,
+      <ProseField
+        label={() => 'Notes'}
+        onCommit={noop}
+        onRefused={noop}
+        value=""
+      />,
     );
     expect(textbox('Notes').style.height).toBe('120px');
     unmount();
 
     vi.stubGlobal('CSS', { supports: () => true });
     render(
-      <ProseField label="Notes" onCommit={noop} onRefused={noop} value="" />,
+      <ProseField
+        label={() => 'Notes'}
+        onCommit={noop}
+        onRefused={noop}
+        value=""
+      />,
     );
     expect(textbox('Notes').style.height).toBe('');
   });
@@ -217,7 +246,7 @@ describe('ProseField', () => {
     const onCommit = commits();
     render(
       <ProseField
-        label="Description"
+        label={() => 'Description'}
         onCommit={onCommit}
         onRefused={noop}
         value=""

@@ -3,6 +3,7 @@ import type {
   CanvasLayout,
   CanvasNode,
   CanvasNodeKind,
+  ResizeLabels,
   ThreatBadge,
 } from '@saerskriven/canvas';
 import {
@@ -65,6 +66,24 @@ export function kindLabel(
 /** {@link kindLabel} for one drawn element. */
 export function nodeLabel(node: CanvasNode, t: StudioTranslator['t']): string {
   return kindLabel(node.name, elementKindOf[node.kind], t);
+}
+
+/** The accessible name of each of a drawn element's resize controls. */
+export function resizeLabels(
+  node: CanvasNode,
+  t: StudioTranslator['t'],
+): ResizeLabels {
+  const element = nodeLabel(node, t);
+  return {
+    top: t('canvas.resize-top', { element }),
+    right: t('canvas.resize-right', { element }),
+    bottom: t('canvas.resize-bottom', { element }),
+    left: t('canvas.resize-left', { element }),
+    'top-left': t('canvas.resize-top-left', { element }),
+    'top-right': t('canvas.resize-top-right', { element }),
+    'bottom-right': t('canvas.resize-bottom-right', { element }),
+    'bottom-left': t('canvas.resize-bottom-left', { element }),
+  };
 }
 
 /** {@link kindLabel} for one drawn flow. */

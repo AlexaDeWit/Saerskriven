@@ -199,10 +199,12 @@ describe('naming', () => {
     expect(proposedName('.yaml', 'saerskriven-yaml')).toBe('threat-model.yaml');
   });
 
-  it('derives an export name from the open file, or from Untitled', () => {
-    expect(proposedExportName(openedForeign, '.svg')).toBe('model.svg');
-    expect(proposedExportName(FileLifecycle.NoFile(), '.pdf')).toBe(
-      'Untitled.pdf',
+  it('derives an export name from the open file, or from the untitled stem it is given', () => {
+    expect(proposedExportName(openedForeign, '.svg', 'Namnlös')).toBe(
+      'model.svg',
+    );
+    expect(proposedExportName(FileLifecycle.NoFile(), '.pdf', 'Namnlös')).toBe(
+      'Namnlös.pdf',
     );
   });
 

@@ -9,7 +9,10 @@ import {
 } from '@saerskriven/model/fixtures';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { locales } from '@saerskriven/i18n';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
+import { RecoveryProblem } from '../store/recovery-storage.js';
 import { isDirty } from '../store/selectors.js';
 import { StudioFailure, initialState } from '../store/state.js';
 import { sampleModel } from '../store/store.fixtures.js';
@@ -166,17 +169,19 @@ const studioFailures: ByTag<StudioFailure> = {
   }),
   File: StudioFailure.File({ reason: 'The folder is read only.' }),
   StoredRecoveryRejected: StudioFailure.StoredRecoveryRejected({
-    reason: 'The stored snapshot is malformed or unsupported.',
+    problem: RecoveryProblem.Unsupported(),
   }),
   RecoveryUnavailable: StudioFailure.RecoveryUnavailable({
-    reason: 'The browser refused storage.',
+    problem: RecoveryProblem.Thrown({ reason: 'The browser refused storage.' }),
   }),
 };
+
+const { t } = activeTranslator();
 
 describe('describeFailure', () => {
   for (const failure of Object.values(studioFailures)) {
     it(`words ${failure._tag} rather than showing its tag`, () => {
-      const described = describeFailure(failure);
+      const described = describeFailure(t, failure);
 
       expect(described.headline.length > 0).toBe(true);
       expect(described.headline).not.toContain(failure._tag);
@@ -186,6 +191,7 @@ describe('describeFailure', () => {
   for (const failure of Object.values(readFailures)) {
     it(`words the read that stopped at ${failure._tag}, naming the file`, () => {
       const described = describeFailure(
+        t,
         StudioFailure.Read({ name: 'model.json', failure }),
       );
 
@@ -196,7 +202,10 @@ describe('describeFailure', () => {
 
   for (const failure of Object.values(operationFailures)) {
     it(`words the model refusing ${failure._tag}`, () => {
-      const described = describeFailure(StudioFailure.Operation({ failure }));
+      const described = describeFailure(
+        t,
+        StudioFailure.Operation({ failure }),
+      );
 
       expect(described.details[0].length > 0).toBe(true);
       expect(described.details[0]).not.toContain(failure._tag);
@@ -205,6 +214,7 @@ describe('describeFailure', () => {
 
   it('names every format tried where none claimed the file', () => {
     const described = describeFailure(
+      t,
       StudioFailure.Read({
         name: 'notes.txt',
         failure: DetectionFailure.NoFormatClaimed({
@@ -220,9 +230,11 @@ describe('describeFailure', () => {
 
   it('distinguishes rejected recovery data from unavailable storage', () => {
     const rejected = describeFailure(
+      t,
       studioFailures.StoredRecoveryRejected,
     ).headline;
     const unavailable = describeFailure(
+      t,
       studioFailures.RecoveryUnavailable,
     ).headline;
 
@@ -235,13 +247,14 @@ describe('describeFailure', () => {
   });
 
   it('renders a path into the document a codec refused', () => {
-    expect(describeFailure(studioFailures.Read).details).toEqual([
+    expect(describeFailure(t, studioFailures.Read).details).toEqual([
       'detail.diagrams.0: is required',
     ]);
   });
 
   it('says the root where an issue names no path at all', () => {
     const described = describeFailure(
+      t,
       StudioFailure.Read({
         name: 'model.json',
         failure: ReadFailure.InvalidModel({
@@ -251,6 +264,62 @@ describe('describeFailure', () => {
     );
 
     expect(described.details).toEqual(['(root): is not a model']);
+  });
+});
+
+describe.each(locales)('a failure a %s reader is shown', (locale) => {
+  beforeEach(() => {
+    chooseLanguage(locale);
+  });
+
+  afterEach(() => {
+    chooseLanguage('en-CA');
+    globalThis.localStorage.clear();
+  });
+
+  it('keeps the file name, the schema path and the parse issue text as they came', () => {
+    const described = describeFailure(
+      activeTranslator().t,
+      studioFailures.Read,
+    );
+
+    expect(described.headline).toContain('broken.json');
+    expect(described.details).toEqual(['detail.diagrams.0: is required']);
+  });
+
+  it("keeps the ids an operation names, under a sentence in the reader's language", () => {
+    const described = describeFailure(
+      activeTranslator().t,
+      StudioFailure.Operation({
+        failure: operationFailures.ChangedThreatNumber,
+      }),
+    );
+
+    expect(described.details[0]).toContain('threat-moved');
+    expect(described.details[0]).not.toBe(
+      describeFailure(
+        activeTranslator().t,
+        StudioFailure.Operation({
+          failure: operationFailures.DuplicateThreatId,
+        }),
+      ).details[0],
+    );
+  });
+
+  it('keeps the text a browser raised, and the release that wrote a snapshot', () => {
+    const { t: speak } = activeTranslator();
+
+    expect(
+      describeFailure(speak, studioFailures.RecoveryUnavailable).details,
+    ).toEqual(['The browser refused storage.']);
+    expect(
+      describeFailure(
+        speak,
+        StudioFailure.StoredRecoveryRejected({
+          problem: RecoveryProblem.EarlierRelease({ writer: '0.1.4' }),
+        }),
+      ).details[0],
+    ).toContain('0.1.4');
   });
 });
 
@@ -268,7 +337,7 @@ describe('FailureNotice', () => {
   it('shows the refusal and every path under it', () => {
     render(<FailureNotice failure={studioFailures.Read} />);
 
-    const { headline } = describeFailure(studioFailures.Read);
+    const { headline } = describeFailure(t, studioFailures.Read);
 
     expect(headline).toContain('broken.json');
     expect(screen.getByText(headline)).toBeDefined();

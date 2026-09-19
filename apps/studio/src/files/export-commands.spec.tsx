@@ -5,6 +5,7 @@ import { PdfFailure } from '@saerskriven/render/pdf';
 import { drawingFace, ResvgFailure } from '@saerskriven/render/png';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Either } from 'effect';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { initialState, FileLifecycle } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -16,12 +17,25 @@ import {
 import { SaveOutcome } from './bridge.js';
 import { useExportCommands, type RenderExports } from './export-commands.js';
 import {
+  describeExportNotice,
+  isRefusal,
+  type ExportNotice,
+} from './export-notice.js';
+import {
   pngSignature,
   specBridge,
   specRenders,
   type SpecBridge,
 } from './files.fixtures.js';
 import { RenderAssetFailure } from './render-assets.js';
+
+const worded = (notice: ExportNotice | undefined) =>
+  notice === undefined
+    ? undefined
+    : describeExportNotice(activeTranslator().t, notice);
+
+const refused = (notice: ExportNotice | undefined): boolean | undefined =>
+  notice === undefined ? undefined : isRefusal(notice);
 
 const session = (bridge: SpecBridge, renders = specRenders()) =>
   renderHook(() => useExportCommands(bridge, renders)).result;
@@ -41,9 +55,9 @@ const headlineOf = async (
     run(result.current.commands);
   });
   await waitFor(() => {
-    expect(result.current.notice?.refusal).toBe(true);
+    expect(refused(result.current.notice)).toBe(true);
   });
-  return result.current.notice?.headline;
+  return worded(result.current.notice)?.headline;
 };
 
 const openedState = (model: Model = sampleModel) => ({
@@ -86,6 +100,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  chooseLanguage('en-CA');
+  globalThis.localStorage.clear();
 });
 
 describe('the studio exports', () => {
@@ -112,6 +128,27 @@ describe('the studio exports', () => {
       renderRegister(sampleModel),
       renderTypst(sampleModel).typst,
     ]);
+  });
+
+  it('names an untitled export and its file type in the language active when it runs, and keeps the bytes', async () => {
+    modelStore.setState(initialState(sampleModel), true);
+    const bridge = specBridge();
+    const result = session(bridge);
+    chooseLanguage('sv');
+
+    act(() => {
+      result.current.commands.register();
+    });
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    const { t } = activeTranslator();
+    expect(bridge.writes[0].name).toBe(`${t('defaults.untitled-model')}.md`);
+    expect(bridge.offered.at(-1)?.[0]?.description).toBe(
+      t('reports.markdown-file'),
+    );
+    expect(bridge.writes[0].text).toBe(renderRegister(sampleModel));
   });
 
   it('compiles the render projection and writes the PDF as binary content', async () => {
@@ -182,9 +219,11 @@ describe('the studio exports', () => {
       });
 
       await waitFor(() => {
-        expect(result.current.notice?.refusal).toBe(true);
+        expect(refused(result.current.notice)).toBe(true);
       });
-      expect(result.current.notice?.details).toEqual([failure.sentence]);
+      expect(worded(result.current.notice)?.details).toEqual([
+        failure.sentence,
+      ]);
       expect(bridge.writes).toEqual([]);
     },
   );
@@ -198,11 +237,7 @@ describe('the studio exports', () => {
         draw,
         pngAssets: () =>
           Promise.resolve(
-            Either.left(
-              RenderAssetFailure.Unavailable({
-                reason: `this studio build holds no ${drawingFace}, which text is set in`,
-              }),
-            ),
+            Either.left(RenderAssetFailure.FaceMissing({ face: drawingFace })),
           ),
       }),
     );
@@ -212,9 +247,11 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice?.refusal).toBe(true);
+      expect(refused(result.current.notice)).toBe(true);
     });
-    expect(result.current.notice?.details.join(' ')).toContain(drawingFace);
+    expect(worded(result.current.notice)?.details.join(' ')).toContain(
+      drawingFace,
+    );
     expect(draw).not.toHaveBeenCalled();
     expect(bridge.writes).toEqual([]);
   });
@@ -254,10 +291,11 @@ describe('the studio exports', () => {
         expect(result.current.notice).toBeDefined();
       });
       expect(bridge.writes).toHaveLength(1);
-      expect(result.current.notice).toMatchObject({
-        details: ['flow "flow-2" target names "flow-1"'],
-        refusal: false,
-      });
+      expect(refused(result.current.notice)).toBe(false);
+      const details = worded(result.current.notice)?.details ?? [];
+      expect(details).toHaveLength(1);
+      expect(details[0]).toContain('flow-2');
+      expect(details[0]).toContain('flow-1');
     },
   );
 
@@ -280,10 +318,10 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice).toMatchObject({
-        details: ['unknown function: nope'],
-        refusal: true,
-      });
+      expect(refused(result.current.notice)).toBe(true);
+      expect(worded(result.current.notice)?.details).toEqual([
+        'unknown function: nope',
+      ]);
     });
     expect(bridge.writes).toEqual([]);
   });
@@ -307,10 +345,8 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice).toMatchObject({
-        details: ['offline'],
-        refusal: true,
-      });
+      expect(refused(result.current.notice)).toBe(true);
+      expect(worded(result.current.notice)?.details).toEqual(['offline']);
     });
     expect(compile).not.toHaveBeenCalled();
     expect(bridge.writes).toEqual([]);
@@ -330,10 +366,8 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice).toMatchObject({
-        details: [],
-        refusal: true,
-      });
+      expect(refused(result.current.notice)).toBe(true);
+      expect(worded(result.current.notice)?.details).toEqual([]);
     });
     expect(bridge.writes).toEqual([]);
   });
@@ -406,10 +440,10 @@ describe('the studio exports', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.notice).toMatchObject({
-        details: ['NotAllowedError'],
-        refusal: true,
-      });
+      expect(refused(result.current.notice)).toBe(true);
+      expect(worded(result.current.notice)?.details).toEqual([
+        'NotAllowedError',
+      ]);
     });
     act(() => {
       result.current.dismissNotice();
@@ -426,7 +460,7 @@ describe('the studio exports', () => {
         result.current.commands.diagram(mainDiagram);
       });
       await waitFor(() => {
-        expect(result.current.notice?.refusal).toBe(false);
+        expect(refused(result.current.notice)).toBe(false);
       });
     };
 
@@ -459,13 +493,13 @@ describe('the studio exports', () => {
       result.current.commands.register();
     });
     await waitFor(() => {
-      expect(result.current.notice?.refusal).toBe(true);
+      expect(refused(result.current.notice)).toBe(true);
     });
 
     act(() => {
       dispatch(Action.Select({ elementIds: [selectableElement] }));
     });
-    expect(result.current.notice?.refusal).toBe(true);
+    expect(refused(result.current.notice)).toBe(true);
 
     act(() => {
       result.current.dismissNotice();

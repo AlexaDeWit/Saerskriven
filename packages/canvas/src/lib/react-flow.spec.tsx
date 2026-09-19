@@ -3,6 +3,11 @@ import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphLayout, nodeNamed } from './canvas.fixtures.js';
 import { handleSides } from './handles.js';
+import type { ResizeLabels } from './resize-controls.js';
+import {
+  resizeControlPositions,
+  type ResizeControlPosition,
+} from './resizing.js';
 import { canvasClassNames } from './stylesheet.js';
 import type { CanvasNode } from './layout.js';
 import {
@@ -52,6 +57,21 @@ const edgeProps = (
   data,
 });
 
+const resizeLabels = (node: CanvasNode): ResizeLabels => {
+  const named = (position: ResizeControlPosition): string =>
+    `${node.name} ${position}`;
+  return {
+    top: named('top'),
+    right: named('right'),
+    bottom: named('bottom'),
+    left: named('left'),
+    'top-left': named('top-left'),
+    'top-right': named('top-right'),
+    'bottom-right': named('bottom-right'),
+    'bottom-left': named('bottom-left'),
+  };
+};
+
 const bodyMarkup = (
   node: CanvasNode,
   selected = false,
@@ -68,6 +88,7 @@ const bodyMarkup = (
         selected={selected}
         isConnectable={isConnectable}
         controlsVisible={controlsVisible}
+        resizeLabels={resizeLabels(node)}
         width={size?.width}
         height={size?.height}
         resizing={resizing}
@@ -145,12 +166,12 @@ describe('CanvasNodeBody', () => {
     );
   });
 
-  it('offers four side controls and four corner controls on a selected resizable element', () => {
+  it('offers four side controls and four corner controls on a selected resizable element, each under the name it is given', () => {
     const node = nodeNamed('el-client');
     const markup = bodyMarkup(node, true);
     expect(markup.match(/react-flow__resize-control/gu)).toHaveLength(8);
-    for (const position of ['top', 'right', 'bottom', 'left']) {
-      expect(markup).toContain(`Resize ${node.name} from ${position}`);
+    for (const position of resizeControlPositions) {
+      expect(markup).toContain(`aria-label="${resizeLabels(node)[position]}"`);
     }
     expect(markup).toContain('aria-keyshortcuts="ArrowUp ArrowDown"');
     expect(markup.match(/class="[^"]*\bline\b/gu)).toHaveLength(4);

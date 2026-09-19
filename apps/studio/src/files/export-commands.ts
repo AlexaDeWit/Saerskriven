@@ -3,7 +3,6 @@ import {
   renderRegister,
   renderSvg,
   renderTypst,
-  renderUnplacedWarning,
   type SvgDocument,
 } from '@saerskriven/render';
 import {
@@ -19,16 +18,17 @@ import {
 import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { activeTranslator } from '../messages/locale.js';
 import { activeDiagram } from '../store/selectors.js';
 import type { FileLifecycle, State } from '../store/state.js';
 import { modelStore, onCanvasOrPanelChange } from '../store/store.js';
 import { SaveOutcome, type FileBridge, type SaveFileType } from './bridge.js';
 import { browserFileBridge } from './browser-bridge.js';
+import { ExportNotice, isRefusal } from './export-notice.js';
 import {
   loadPdfAssets,
   loadPngAssets,
-  RenderAssetFailure,
-  type RenderAssetFailure as RenderAssetFailureType,
+  type RenderAssetFailure,
 } from './render-assets.js';
 import { proposedExportName } from './session.js';
 
@@ -36,7 +36,13 @@ type UnplacedFlow = SvgDocument['unplaced'][number];
 
 type ExportFile = {
   readonly extension: string;
-  readonly type: SaveFileType;
+  readonly description:
+    | 'reports.svg-file'
+    | 'reports.png-file'
+    | 'reports.markdown-file'
+    | 'reports.typst-file'
+    | 'reports.pdf-file';
+  readonly accept: SaveFileType['accept'];
 };
 
 type Produced = {
@@ -47,38 +53,28 @@ type Produced = {
 const exportFiles = {
   svg: {
     extension: '.svg',
-    type: {
-      description: 'SVG image',
-      accept: { 'image/svg+xml': ['.svg'] },
-    },
+    description: 'reports.svg-file',
+    accept: { 'image/svg+xml': ['.svg'] },
   },
   png: {
     extension: '.png',
-    type: {
-      description: 'PNG image',
-      accept: { 'image/png': ['.png'] },
-    },
+    description: 'reports.png-file',
+    accept: { 'image/png': ['.png'] },
   },
   markdown: {
     extension: '.md',
-    type: {
-      description: 'Markdown document',
-      accept: { 'text/markdown': ['.md'] },
-    },
+    description: 'reports.markdown-file',
+    accept: { 'text/markdown': ['.md'] },
   },
   typst: {
     extension: '.typ',
-    type: {
-      description: 'Typst document',
-      accept: { 'text/plain': ['.typ'] },
-    },
+    description: 'reports.typst-file',
+    accept: { 'text/plain': ['.typ'] },
   },
   pdf: {
     extension: '.pdf',
-    type: {
-      description: 'PDF document',
-      accept: { 'application/pdf': ['.pdf'] },
-    },
+    description: 'reports.pdf-file',
+    accept: { 'application/pdf': ['.pdf'] },
   },
 } as const satisfies Record<string, ExportFile>;
 
@@ -90,24 +86,14 @@ type ExportCommands = {
   png(): void;
 };
 
-/**
- * A report from the last export. A `refusal` stands until dismissed or
- * replaced, and any other report also goes at the next canvas or panel change.
- */
-export type ExportNotice = {
-  readonly headline: string;
-  readonly details: readonly string[];
-  readonly refusal: boolean;
-};
-
 /** The asset loaders and projections the PDF and PNG exports run, which a spec replaces. */
 export type RenderExports = {
   readonly pdfAssets: () => Promise<
-    Either.Either<PdfAssets, RenderAssetFailureType>
+    Either.Either<PdfAssets, RenderAssetFailure>
   >;
   readonly compile: typeof compilePdf;
   readonly pngAssets: () => Promise<
-    Either.Either<ResvgAssets, RenderAssetFailureType>
+    Either.Either<ResvgAssets, RenderAssetFailure>
   >;
   readonly draw: typeof renderPng;
 };
@@ -120,7 +106,11 @@ export const browserRenderExports: RenderExports = {
   draw: renderPng,
 };
 
-/** The export commands and the report their last run produced. */
+/**
+ * The export commands and the report their last run produced. A refusal
+ * stands until dismissed or replaced, and any other report also goes at the
+ * next canvas or panel change.
+ */
 export function useExportCommands(
   bridge: FileBridge = browserFileBridge,
   renders: RenderExports = browserRenderExports,
@@ -138,9 +128,14 @@ export function useExportCommands(
       content: string | Uint8Array,
       unplaced: readonly UnplacedFlow[] = [],
     ): Promise<void> => {
+      const { t } = activeTranslator();
       const outcome = await bridge.exportFile(
-        proposedExportName(sourceFile, file.extension),
-        file.type,
+        proposedExportName(
+          sourceFile,
+          file.extension,
+          t('defaults.untitled-model'),
+        ),
+        { description: t(file.description), accept: file.accept },
         content,
       );
       setNotice(noticeFrom(outcome, unplaced));
@@ -232,7 +227,7 @@ export function useExportCommands(
     () =>
       onCanvasOrPanelChange(() => {
         setNotice((current) =>
-          current?.refusal === true ? current : undefined,
+          current !== undefined && isRefusal(current) ? current : undefined,
         );
       }),
     [],
@@ -251,7 +246,7 @@ async function compiled(
   const projection = renderTypst(state.present);
   const assets = await renders.pdfAssets();
   if (Either.isLeft(assets)) {
-    return Either.left(assetNotice(assets.left, 'PDF compiler'));
+    return Either.left(assetNotice(assets.left, 'compiler'));
   }
   return Either.mapBoth(await renders.compile(projection.typst, assets.right), {
     onLeft: compileNotice,
@@ -272,7 +267,7 @@ async function drawn(
   }
   const assets = await renders.pngAssets();
   if (Either.isLeft(assets)) {
-    return Either.left(assetNotice(assets.left, 'SVG rasterizer'));
+    return Either.left(assetNotice(assets.left, 'rasterizer'));
   }
   return Either.mapBoth(
     await renders.draw(diagram, state.present, { assets: assets.right }),
@@ -291,67 +286,32 @@ function noticeFrom(
   unplaced: readonly UnplacedFlow[],
 ): ExportNotice | undefined {
   return SaveOutcome.$match(outcome, {
-    Written: () => unplacedNotice(unplaced),
+    Written: () =>
+      unplaced.length > 0 ? ExportNotice.Unplaced({ unplaced }) : undefined,
     Cancelled: () => undefined,
-    Refused: ({ reason }) => ({
-      headline: 'Saerskriven could not write the export.',
-      details: [reason],
-      refusal: true,
-    }),
+    Refused: ({ reason }) => ExportNotice.WriteRefused({ reason }),
   });
-}
-
-function unplacedNotice(
-  unplaced: readonly UnplacedFlow[],
-): ExportNotice | undefined {
-  const [headline, ...details] = renderUnplacedWarning(unplaced)
-    .trimEnd()
-    .split('\n');
-  return headline === ''
-    ? undefined
-    : {
-        headline,
-        details: details.map((line) => line.trim()),
-        refusal: false,
-      };
 }
 
 function assetNotice(
-  failure: RenderAssetFailureType,
-  reader: string,
+  failure: RenderAssetFailure,
+  reader: 'compiler' | 'rasterizer',
 ): ExportNotice {
-  return RenderAssetFailure.$match(failure, {
-    Unavailable: ({ reason }) => ({
-      headline: `Saerskriven could not load the ${reader}.`,
-      details: [reason],
-      refusal: true,
-    }),
-  });
+  return ExportNotice.AssetsUnavailable({ reader, failure });
 }
 
 function compileNotice(failure: PdfFailure): ExportNotice {
   return PdfFailure.$match(failure, {
-    Refused: ({ sentences }) => ({
-      headline: 'Saerskriven could not compile the PDF.',
-      details: sentences,
-      refusal: true,
-    }),
-    NoDocument: () => ({
-      headline: 'The Typst compiler produced no PDF.',
-      details: [],
-      refusal: true,
-    }),
+    Refused: ({ sentences }) => ExportNotice.CompileRefused({ sentences }),
+    NoDocument: () => ExportNotice.NoPdf(),
   });
 }
 
 function rasterNotice(failure: ResvgFailure): ExportNotice {
-  const said = ResvgFailure.$match(failure, {
-    Refused: ({ sentence }) => sentence,
-    Unusable: ({ sentence }) => sentence,
+  return ExportNotice.DrawRefused({
+    sentence: ResvgFailure.$match(failure, {
+      Refused: ({ sentence }) => sentence,
+      Unusable: ({ sentence }) => sentence,
+    }),
   });
-  return {
-    headline: 'Saerskriven could not draw the PNG.',
-    details: [said],
-    refusal: true,
-  };
 }

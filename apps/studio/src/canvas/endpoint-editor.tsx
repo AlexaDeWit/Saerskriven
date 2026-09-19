@@ -51,7 +51,13 @@ export function EndpointEditor({
           );
           close();
           if (modelStore.getState().present !== state.present) {
-            announce(`Changed flow ${side}.`);
+            announce((speak) =>
+              speak(
+                side === 'source'
+                  ? 'canvas.source-changed'
+                  : 'canvas.target-changed',
+              ),
+            );
           }
         }
       }}

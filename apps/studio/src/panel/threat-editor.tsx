@@ -77,7 +77,7 @@ export function ThreatEditor({
       <Accordion.Content className={styles.content}>
         <TextField
           held={draftIn(held, 'Title')}
-          label={t('fields.title')}
+          label={(speak) => speak('fields.title')}
           onChange={onChange}
           onCommit={(title) => {
             onCommit({ title });
@@ -108,7 +108,7 @@ export function ThreatEditor({
         </div>
         <ProseField
           held={draftIn(held, 'Description')}
-          label={t('fields.description')}
+          label={(speak) => speak('fields.description')}
           onChange={onChange}
           onCommit={(description) => {
             onCommit({ description });

@@ -33,7 +33,7 @@ import {
 } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { polylinePath, smoothPath } from './paths.js';
-import { ResizeControls } from './resize-controls.js';
+import { ResizeControls, type ResizeLabels } from './resize-controls.js';
 import { canvasClassNames } from './stylesheet.js';
 import { interactionWidths } from './tokens.js';
 
@@ -73,9 +73,9 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * The drawing is hidden from assistive technology, so the mounting canvas
  * gives the node its accessible name. `textVisible` false leaves the glyph's
  * text out, for a canvas with a text editor over it. A selected element the
- * model can resize carries the resize controls. The badge draws last, in an
- * SVG layer classed `pn-badge-layer`, so a canvas can stack it above the
- * selection frame.
+ * model can resize carries the resize controls, named from `resizeLabels`.
+ * The badge draws last, in an SVG layer classed `pn-badge-layer`, so a
+ * canvas can stack it above the selection frame.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
@@ -84,12 +84,14 @@ export function CanvasNodeBody({
   isConnectable,
   onResize,
   onResizeEnd,
+  resizeLabels,
   resizing = false,
   selected,
   textVisible = true,
   width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
+  readonly resizeLabels: ResizeLabels;
   readonly onResize?: () => void;
   readonly onResizeEnd?: (box: NodeBox) => void;
   readonly resizing?: boolean;
@@ -134,6 +136,7 @@ export function CanvasNodeBody({
       ))}
       {selected && resizableKinds.has(data.node.kind) ? (
         <ResizeControls
+          labels={resizeLabels}
           node={data.node}
           onResize={onResize}
           onResizeEnd={onResizeEnd}

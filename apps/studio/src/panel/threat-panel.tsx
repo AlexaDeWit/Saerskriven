@@ -143,7 +143,8 @@ export function ThreatPanel({
     } else {
       setFocus({ kind: 'disclosure', threatId: next });
     }
-    announce(`Threat ${String(threat.number)} deleted.`);
+    const deleted = threat.number;
+    announce((speak) => speak('canvas.threat-deleted', { number: deleted }));
   };
 
   const refused =

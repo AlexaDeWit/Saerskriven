@@ -15,9 +15,9 @@ import { browserFileBridge } from './browser-bridge.js';
 import {
   browserRenderExports,
   useExportCommands,
-  type ExportNotice,
   type RenderExports,
 } from './export-commands.js';
+import type { ExportNotice } from './export-notice.js';
 import {
   OpenOutcome,
   SaveOutcome,

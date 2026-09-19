@@ -9,6 +9,8 @@ import {
   type Ref,
 } from 'react';
 
+import { useTranslator } from '../messages/locale.js';
+import { sentences, type Said } from '../messages/said.js';
 import { growUnlessResized, sizesFieldsToContent } from './grow-to-content.js';
 import styles from './text-field.module.css';
 
@@ -16,15 +18,12 @@ type Draft = { readonly shown: string; readonly text: string };
 
 /** State and validation shared by the studio's controlled text editors. */
 export function useTextDraft(
-  label: string,
+  label: Said,
   value: string,
   held: string | undefined,
   onCommit: (text: string) => void,
   onRefused: (refused: RefusedDraft | undefined) => void,
-  refuse: (
-    label: string,
-    text: string,
-  ) => TextRefusal | undefined = refusedText,
+  refuse: (label: Said, text: string) => TextRefusal | undefined = refusedText,
 ): {
   readonly text: string;
   readonly refusal: TextRefusal | undefined;
@@ -74,46 +73,51 @@ export function useTextDraft(
   };
 }
 
-/** Inline and announced forms of a validation refusal. */
+/** Inline and announced forms of a validation refusal, worded when shown. */
 export type TextRefusal = {
-  readonly shown: string;
-  readonly said: string;
+  readonly shown: Said;
+  readonly said: Said;
 };
 
 /** The refused text and its announcement, retained when the editor unmounts. */
 export type RefusedDraft = {
-  readonly said: string;
+  readonly said: Said;
   readonly text: string;
 };
 
 /** Identifies the first character the model refuses. */
 export function refusedText(
-  label: string,
+  label: Said,
   text: string,
 ): TextRefusal | undefined {
   const at = firstRefusedCharacter(text);
   if (at === undefined) {
     return undefined;
   }
-  const before = Array.from(text.slice(0, at)).length;
-  const shown = `Character ${String(before + 1)} is one the model does not accept.`;
-  return { shown, said: `${label} was not saved. ${shown}` };
+  const position = Array.from(text.slice(0, at)).length + 1;
+  return refusedWith(label, (t) => t('notice.refused-character', { position }));
 }
-
-const emptyRefusal = 'A name cannot be empty.';
 
 /** Refuses an empty name ahead of the characters {@link refusedText} refuses. */
 export function refusedName(
-  label: string,
+  label: Said,
   text: string,
 ): TextRefusal | undefined {
   return isEmptyName(text)
-    ? { shown: emptyRefusal, said: `${label} was not saved. ${emptyRefusal}` }
+    ? refusedWith(label, (t) => t('notice.empty-name'))
     : refusedText(label, text);
 }
 
+function refusedWith(label: Said, shown: Said): TextRefusal {
+  return {
+    shown,
+    said: (t) =>
+      sentences(t('notice.field-not-saved', { field: label(t) }), shown(t)),
+  };
+}
+
 type TextFieldProps = {
-  readonly label: string;
+  readonly label: Said;
   readonly shownLabel?: string;
   readonly value: string;
   readonly held?: string;
@@ -138,6 +142,7 @@ function Labelled({
   readonly refusal: TextRefusal | undefined;
   readonly children: ReactNode;
 }) {
+  const { t } = useTranslator();
   return (
     <div className={styles.field}>
       {shownLabel !== '' && (
@@ -148,7 +153,7 @@ function Labelled({
       {children}
       {refusal !== undefined && (
         <p className={styles.refusal} id={refusalId}>
-          {refusal.shown}
+          {refusal.shown(t)}
         </p>
       )}
     </div>
@@ -171,7 +176,7 @@ function controlProps(
 }
 
 /**
- * Commits a single line on blur or Enter, as one undo step. `label` is the
+ * Commits a single line on blur or Enter, as one undo step. `label` words the
  * accessible name and names the field in a refusal, and `shownLabel` replaces
  * the drawn label, an empty one drawing none. `held` opens the field on a
  * refused draft instead of `value`.
@@ -186,6 +191,8 @@ export function TextField({
   onRefused,
   ref,
 }: TextFieldProps) {
+  const { t } = useTranslator();
+  const named = label(t);
   const fieldId = useId();
   const refusalId = useId();
   const { text, refusal, change, commit } = useTextDraft(
@@ -199,13 +206,13 @@ export function TextField({
   return (
     <Labelled
       fieldId={fieldId}
-      label={label}
+      label={named}
       refusal={refusal}
       refusalId={refusalId}
       shownLabel={shownLabel}
     >
       <input
-        {...controlProps(label, shownLabel, fieldId, refusalId, refusal)}
+        {...controlProps(named, shownLabel, fieldId, refusalId, refusal)}
         className={styles.input}
         onBlur={commit}
         onChange={(event) => {
@@ -245,6 +252,8 @@ export function ProseField({
   onCommit,
   onRefused,
 }: ProseFieldProps) {
+  const { t } = useTranslator();
+  const named = label(t);
   const fieldId = useId();
   const refusalId = useId();
   const field = useRef<HTMLTextAreaElement>(null);
@@ -266,13 +275,13 @@ export function ProseField({
   return (
     <Labelled
       fieldId={fieldId}
-      label={label}
+      label={named}
       refusal={refusal}
       refusalId={refusalId}
       shownLabel={shownLabel}
     >
       <textarea
-        {...controlProps(label, shownLabel, fieldId, refusalId, refusal)}
+        {...controlProps(named, shownLabel, fieldId, refusalId, refusal)}
         className={compact ? `${styles.prose} ${styles.compact}` : styles.prose}
         onBlur={commit}
         onChange={(event) => {

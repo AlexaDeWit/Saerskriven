@@ -1,6 +1,7 @@
 import type { Element, ElementId } from '@saerskriven/model';
 import { useRef, useState } from 'react';
 import { useTranslator } from '../messages/locale.js';
+import type { Said } from '../messages/said.js';
 import { EnumField } from '../ui/enum-field.js';
 import { TextField, type RefusedDraft } from '../ui/text-field.js';
 import { distinctLabels } from './distinct-labels.js';
@@ -52,7 +53,8 @@ export function TextProperty({
   onCommit,
   held,
   onRefused,
-}: Field<string | undefined> & {
+}: Omit<Field<string | undefined>, 'label'> & {
+  readonly label: Said;
   readonly held?: string;
   readonly onRefused: (draft: RefusedDraft | undefined) => void;
 }) {
@@ -61,7 +63,7 @@ export function TextProperty({
   return (
     <div className={styles.group}>
       <EnumField
-        label={t('fields.recording-of', { label })}
+        label={t('fields.recording-of', { label: label(t) })}
         labelOf={(option) => t(flagMessages[option])}
         value={value === undefined ? 'not-recorded' : 'recorded'}
         options={recording}

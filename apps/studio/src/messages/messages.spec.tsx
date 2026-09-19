@@ -18,7 +18,10 @@ import {
   resetDiagramRenaming,
   showDiagram,
 } from '../canvas/diagrams.js';
+import { copySelected } from '../canvas/clipboard.js';
+import { describeRemoval } from '../canvas/edits.js';
 import { toggleSnap } from '../canvas/snap.js';
+import { numbersIn } from '../ui/ui.fixtures.js';
 import { activeDiagramId } from '../store/selectors.js';
 import {
   StudioFailure,
@@ -81,6 +84,27 @@ describe.each(locales)('the %s vertical slice', (locale) => {
       activeTranslator().t('canvas.diagram-shown', { title }),
     );
     expect(currentAnnouncement().message).toContain(title);
+  });
+
+  it('announces a refused copy outside a component in the chosen locale', async () => {
+    modelStore.setState(initialState(placeholderModel), true);
+
+    await copySelected();
+
+    expect(currentAnnouncement().message).toBe(
+      activeTranslator().t('canvas.copy-nothing-selected'),
+    );
+  });
+
+  it('counts a removal at zero, one and many, choosing the plural form by count', () => {
+    const { t } = activeTranslator();
+    const removal = (count: number): string =>
+      describeRemoval(t, { count }, { flows: count, threats: count });
+
+    for (const count of [0, 1, 5]) {
+      expect(numbersIn(removal(count))).toEqual([count, count, count]);
+    }
+    expect(removal(1)).not.toBe(removal(2).replaceAll('2', '1'));
   });
 
   it('renders a label and a plural in a component, following a later change of locale', () => {

@@ -4,7 +4,7 @@ import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { activeTranslator } from '../messages/locale.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
-import { announce, excerpt, nameQuoteLength, quoted } from './announcements.js';
+import { announce, excerpt, nameQuoteLength } from './announcements.js';
 
 /** Puts the diagram `diagramId` names on screen and says so, where it was not already. */
 export function showDiagram(diagramId: DiagramId): boolean {
@@ -14,11 +14,8 @@ export function showDiagram(diagramId: DiagramId): boolean {
   if (shown === undefined || shown.id === before) {
     return false;
   }
-  announce(
-    activeTranslator().t('canvas.diagram-shown', {
-      title: excerpt(shown.title, nameQuoteLength),
-    }),
-  );
+  const title = excerpt(shown.title, nameQuoteLength);
+  announce((t) => t('canvas.diagram-shown', { title }));
   return true;
 }
 
@@ -50,7 +47,8 @@ export function createDiagram(): boolean {
   if (!changedModel(Action.AddDiagram({ diagram }))) {
     return false;
   }
-  announce(`Added ${quoted(diagram.title, nameQuoteLength)}.`);
+  const title = excerpt(diagram.title, nameQuoteLength);
+  announce((t) => t('canvas.diagram-added', { title }));
   beginRenamingDiagram();
   return true;
 }
@@ -67,7 +65,8 @@ export function renameActiveDiagram(title: string): boolean {
   if (renamed === undefined || renamed.title !== title) {
     return false;
   }
-  announce(`Renamed the diagram to ${quoted(title, nameQuoteLength)}.`);
+  const excerpted = excerpt(title, nameQuoteLength);
+  announce((t) => t('canvas.diagram-renamed', { title: excerpted }));
   return true;
 }
 

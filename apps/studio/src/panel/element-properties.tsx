@@ -177,7 +177,7 @@ function PropertyFields({
           }}
         />
         <TextProperty
-          label={t('fields.privilege-level')}
+          label={(speak) => speak('fields.privilege-level')}
           value={element.privilegeLevel}
           held={drafts.get('privilegeLevel')?.text}
           onRefused={refused('privilegeLevel')}
@@ -247,7 +247,7 @@ function PropertyFields({
           }}
         />
         <TextProperty
-          label={t('fields.protocol')}
+          label={(speak) => speak('fields.protocol')}
           value={element.protocol}
           held={drafts.get('protocol')?.text}
           onRefused={refused('protocol')}

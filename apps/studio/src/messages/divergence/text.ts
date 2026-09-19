@@ -1,9 +1,5 @@
 import type { Divergence, DivergenceDetail } from '@saerskriven/formats';
-import type { Translator } from '@saerskriven/i18n';
-import type { StudioMessages } from '../catalogues.js';
-
-/** The part of a translator a divergence needs: one message, resolved to text. */
-export type Speaker = Translator<StudioMessages>['t'];
+import type { Speaker } from '../said.js';
 
 /**
  * One divergence as a sentence in the reader's language: its subject, what

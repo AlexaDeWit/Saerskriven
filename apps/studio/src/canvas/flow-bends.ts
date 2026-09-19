@@ -13,6 +13,8 @@ import { Action } from '../store/actions.js';
 import { selectedElement, selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { articleKindMessages, sideMessages } from '../messages/enum-labels.js';
+import type { Said, Speaker } from '../messages/said.js';
 import { announce, quotedName } from './announcements.js';
 import { currentLayout } from './layout.js';
 import { currentTool, useTool } from './tools.js';
@@ -118,8 +120,12 @@ export function useFlowBends() {
         }),
       );
       setHeld(undefined);
-      announce(
-        `Removed bend ${String(index + 1)} from ${quotedName(flow.name, 'the flow')}.`,
+      const { name } = flow;
+      announce((t) =>
+        t('canvas.bend-removed', {
+          number: index + 1,
+          flow: flowName(t, name),
+        }),
       );
     },
   };
@@ -168,14 +174,33 @@ function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
     : undefined;
 }
 
-function routeAnnouncement(flow: Flow, target: RouteTarget): string {
-  const named = quotedName(flow.name, 'the flow');
-  if (target.kind !== 'anchor') {
-    return `${target.kind === 'insert' ? 'Added' : 'Moved'} bend ${String(target.index + 1)} on ${named}.`;
-  }
-  return target.side === undefined
-    ? `Released the ${target.end} of ${named} to follow its route.`
-    : `Pinned the ${target.end} of ${named} to the ${target.side} side.`;
+function routeAnnouncement(flow: Flow, target: RouteTarget): Said {
+  const { name } = flow;
+  return (t) => {
+    const named = flowName(t, name);
+    if (target.kind !== 'anchor') {
+      return t(
+        target.kind === 'insert' ? 'canvas.bend-added' : 'canvas.bend-moved',
+        { number: target.index + 1, flow: named },
+      );
+    }
+    if (target.side === undefined) {
+      return t(
+        target.end === 'source'
+          ? 'canvas.source-released'
+          : 'canvas.target-released',
+        { flow: named },
+      );
+    }
+    return t(
+      target.end === 'source' ? 'canvas.source-pinned' : 'canvas.target-pinned',
+      { flow: named, side: t(sideMessages[target.side]) },
+    );
+  };
+}
+
+function flowName(t: Speaker, name: string): string {
+  return quotedName(t, name, t(articleKindMessages.flow));
 }
 
 function currentDraft(draft: RouteDraft): boolean {

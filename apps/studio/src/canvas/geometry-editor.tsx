@@ -32,7 +32,7 @@ export function GeometryEditor({
     width: String(single?.size.width ?? 1),
     height: String(single?.size.height ?? 1),
   });
-  const [error, setError] = useState('');
+  const [refused, setRefused] = useState(false);
   const { t } = useTranslator();
   const resizable = single !== undefined && single.kind !== 'boundary-curve';
   if (bounds === undefined) {
@@ -56,9 +56,8 @@ export function GeometryEditor({
       height: numeric(size.height),
     });
     if (!at.success || (resizable && !extent.success)) {
-      const message = 'Enter finite coordinates and positive dimensions.';
-      setError(message);
-      announce(message);
+      setRefused(true);
+      announce((speak) => speak('canvas.geometry-invalid'));
       return;
     }
     if (single !== undefined && resizable && extent.success) {
@@ -71,7 +70,7 @@ export function GeometryEditor({
     }
     close();
     if (modelStore.getState().present !== state.present) {
-      announce('Position and size updated.');
+      announce((speak) => speak('canvas.geometry-updated'));
     }
   };
   return (
@@ -98,7 +97,7 @@ export function GeometryEditor({
             }}
           />
         ))}
-      {error !== '' && <p>{error}</p>}
+      {refused && <p>{t('canvas.geometry-invalid')}</p>}
       <div className={styles.actions}>
         <button type="submit">{t('tools.apply-geometry')}</button>
         <button onClick={close} type="button">

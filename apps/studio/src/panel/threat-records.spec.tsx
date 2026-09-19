@@ -321,7 +321,7 @@ describe(
         held: {
           field: 'new-mitigation/title/mitigation-drafted',
           text: `Pasted${softHyphen}title`,
-          said: 'A refusal',
+          said: () => 'A refusal',
         },
       });
 
@@ -393,7 +393,7 @@ describe(
       ({ field, text, row }) => {
         showThreatEditor({
           threat: recordedThreat(secondThreat),
-          held: { field, text, said: 'A refusal' },
+          held: { field, text, said: () => 'A refusal' },
         });
 
         expect(screen.getByDisplayValue(text)).toBe(textbox(row));
@@ -564,7 +564,7 @@ describe(
         held: {
           field: 'mitigation/title/mitigation-culled',
           text: `Pasted${softHyphen}title`,
-          said: 'A refusal',
+          said: () => 'A refusal',
         },
         onRefusal: onRefusal,
       });

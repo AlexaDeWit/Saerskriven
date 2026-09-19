@@ -124,15 +124,17 @@ const toolCommand = <const Id extends string>({
     },
   });
 
-const history = (action: Action, message: string) => (): void => {
-  const before = modelStore.getState().present;
-  stepHistory(() => {
-    dispatch(action);
-  });
-  if (modelStore.getState().present !== before) {
-    announce(message);
-  }
-};
+const history =
+  (action: Action, message: 'canvas.undo-done' | 'canvas.redo-done') =>
+  (): void => {
+    const before = modelStore.getState().present;
+    stepHistory(() => {
+      dispatch(action);
+    });
+    if (modelStore.getState().present !== before) {
+      announce((t) => t(message));
+    }
+  };
 
 /** Every command the studio offers, named once. */
 export const commandTable = {
@@ -339,7 +341,7 @@ export const commandTable = {
     shortcuts: [mod('z')],
     when: 'commands.when-anywhere',
     inTextFields: true,
-    run: history(Action.Undo(), 'Undo completed.'),
+    run: history(Action.Undo(), 'canvas.undo-done'),
   }),
   redo: command({
     id: 'redo',
@@ -348,7 +350,7 @@ export const commandTable = {
     shortcuts: [modShift('z'), mod('y', 'other')],
     when: 'commands.when-anywhere',
     inTextFields: true,
-    run: history(Action.Redo(), 'Redo completed.'),
+    run: history(Action.Redo(), 'canvas.redo-done'),
   }),
   delete: command({
     id: 'delete',

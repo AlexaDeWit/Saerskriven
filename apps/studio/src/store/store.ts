@@ -141,7 +141,7 @@ function settled(
       ...(closing ? before : reduced),
       recoveryCurrent: closing ? before.recoveryCurrent : false,
       lastFailure: StudioFailure.RecoveryUnavailable({
-        reason: stored.left.reason,
+        problem: stored.left.problem,
       }),
     };
   }
@@ -161,8 +161,10 @@ function syncedState(state: State): SyncedState {
 
 function startupFailure(failure: RecoveryStorageFailure): StudioFailure {
   return RecoveryStorageFailure.$match(failure, {
-    Rejected: ({ reason }) => StudioFailure.StoredRecoveryRejected({ reason }),
-    Unavailable: ({ reason }) => StudioFailure.RecoveryUnavailable({ reason }),
+    Rejected: ({ problem }) =>
+      StudioFailure.StoredRecoveryRejected({ problem }),
+    Unavailable: ({ problem }) =>
+      StudioFailure.RecoveryUnavailable({ problem }),
   });
 }
 

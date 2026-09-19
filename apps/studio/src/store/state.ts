@@ -13,6 +13,7 @@ import {
   type OperationFailure,
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
+import type { RecoveryProblem } from './recovery-storage.js';
 
 type Retained<Read> = Read extends {
   readonly format: FormatName;
@@ -46,8 +47,8 @@ export type StudioFailure = Data.TaggedEnum<{
     readonly failure: ReadFailure | DetectionFailure;
   };
   File: { readonly reason: string };
-  StoredRecoveryRejected: { readonly reason: string };
-  RecoveryUnavailable: { readonly reason: string };
+  StoredRecoveryRejected: { readonly problem: RecoveryProblem };
+  RecoveryUnavailable: { readonly problem: RecoveryProblem };
 }>;
 
 /**

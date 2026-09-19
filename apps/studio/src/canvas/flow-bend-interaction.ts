@@ -100,16 +100,12 @@ export function useFlowBendInteraction(
   };
   const choose = (index: number): void => {
     setMode({ kind: 'choose', index });
-    announce(
-      `Segment ${String(index + 1)}. Use Left or Right to choose a segment, then Enter.`,
-    );
+    announce((t) => t('tools.bend-choose-help', { number: index + 1 }));
   };
   const place = (target: BendTarget): void => {
     setMode({ kind: 'place', target });
     bends.preview(target);
-    announce(
-      'Use arrow keys or click a position. Enter confirms. Escape cancels.',
-    );
+    announce((t) => t('tools.bend-place-help'));
   };
   const commit = (target: BendTarget | AnchorTarget): void => {
     bends.commit(target);
@@ -405,7 +401,7 @@ function placingKey(
     const moved = { ...target, point };
     setMode({ kind: 'place', target: moved });
     bends.preview(moved);
-    announce(`Bend at ${String(point.x)}, ${String(point.y)}.`);
+    announce((t) => t('canvas.bend-at', point));
     return true;
   }
   if (pressesContextualShortcut('commit-bend', event, hostPlatform)) {
