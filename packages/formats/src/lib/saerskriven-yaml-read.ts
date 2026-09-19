@@ -25,7 +25,7 @@ import type {
 import { Either } from 'effect';
 import {
   modelFrom,
-  refusedWireDocument,
+  parseWire,
   type ReadFailure,
   type ReadResult,
 } from './codec.js';
@@ -78,19 +78,20 @@ export function readSaerskrivenYamlDocument(
 function mapDocument(
   given: unknown,
 ): Either.Either<ReadResult<typeof saerskrivenYamlV2WireSchema>, ReadFailure> {
-  const wire = saerskrivenYamlVersionsSchema.safeParse(given);
-  if (!wire.success) {
-    return Either.left(refusedWireDocument(wire.error.issues));
-  }
-  const current = currentSaerskrivenYaml(wire.data);
-  return Either.map(modelFrom(toModelInput(current.document)), (model) => ({
-    model,
-    source: current.document,
-    divergences: [
-      ...undeclaredDivergences(given, wire.data),
-      ...current.divergences,
-    ],
-  }));
+  return Either.flatMap(
+    parseWire(saerskrivenYamlVersionsSchema, given),
+    (wire) => {
+      const current = currentSaerskrivenYaml(wire);
+      return Either.map(modelFrom(toModelInput(current.document)), (model) => ({
+        model,
+        source: current.document,
+        divergences: [
+          ...undeclaredDivergences(given, wire),
+          ...current.divergences,
+        ],
+      }));
+    },
+  );
 }
 
 function toModelInput(document: SaerskrivenYamlV2Document): ModelInput {
