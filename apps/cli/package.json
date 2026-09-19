@@ -5,9 +5,9 @@
   "type": "module",
   "//": [
     "The build bundles every workspace and npm dependency as ESM for `deno compile`. It stamps the root manifest version through esbuild.config.mts.",
-    "The build copies the Typst module out of node_modules, the pinned fonts out of the flake, and the resvg module out of the resvg-wasm project's output into dist/assets, so it names the fonts variable and that output among its inputs. dependsOn restates ^build because a leaf override replaces what the executor default declares. The compiled executable includes that directory.",
+    "The build copies the Typst module out of node_modules, the pinned fonts out of the flake, and the resvg module out of the resvg-wasm project's output into dist/assets. The executor default names the fonts variable, and the build adds that output. Its inputs and dependsOn open with the spread token because a leaf array without it replaces the default instead of extending it. The compiled executable includes that directory.",
     "The typecheck writes declarations under out-tsc. The build writes only the bundle and its runtime assets under dist.",
-    "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js. The compiled test runs those two and the runner table's own spec, which is what demands the executable compile produced.",
+    "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js, and it hashes all of dist, because the fonts and modules under dist/assets change the PDF and PNG while the bundle stays the same. The compiled test runs those two and the runner table's own spec, which is what demands the executable compile produced.",
     "The compile target hashes its bundle, packaging script, toolchain, fixture, and host target. Nx stores the gitignored dist/cli directory as its output."
   ],
   "nx": {
@@ -18,7 +18,7 @@
       "build": {
         "executor": "@nx/esbuild:esbuild",
         "dependsOn": [
-          "^build",
+          "...",
           {
             "projects": [
               "resvg-wasm"
@@ -27,11 +27,7 @@
           }
         ],
         "inputs": [
-          "production",
-          "^production",
-          {
-            "env": "SAERSKRIVEN_FONTS_DIR"
-          },
+          "...",
           {
             "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
             "transitive": false
@@ -56,6 +52,10 @@
           "cliTestFixtures",
           {
             "env": "SAERSKRIVEN_COMPILED_RUNNER"
+          },
+          {
+            "dependentTasksOutputFiles": "apps/cli/dist/**/*",
+            "transitive": false
           }
         ],
         "dependsOn": [
