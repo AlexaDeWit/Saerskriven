@@ -1,55 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -21 669 439" width="669" height="439"><title>Main data flow</title><rect x="-8" y="-21" width="669" height="439" fill="#F9F6F0"></rect><style>.pn-element {
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -21 669 439" width="669" height="439"><title>Main data flow</title><rect x="-8" y="-21" width="669" height="439" fill="#F9F6F0"></rect><style>.saer-element {
   font-family: "Liberation Sans";
 }
-.pn-shape {
+.saer-shape {
   fill: #FAF8F2;
   stroke: #38342E;
   stroke-width: 2;
 }
-.pn-actor {
+.saer-actor {
   fill: #EAE5DA;
 }
-.pn-process {
+.saer-process {
   fill: #E7E9E1;
 }
-.pn-store {
+.saer-store {
   fill: none;
   stroke-width: 2.5;
 }
-.pn-boundary-box,
-.pn-boundary-curve {
+.saer-boundary-box,
+.saer-boundary-curve {
   fill: none;
   stroke: #6B655C;
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
-.pn-out-of-scope {
+.saer-out-of-scope {
   opacity: 0.5;
 }
-.pn-out-of-scope .pn-shape {
+.saer-out-of-scope .saer-shape {
   stroke-dasharray: 6 4;
 }
-.pn-label {
+.saer-label {
   fill: #38342E;
   font-size: 10px;
   font-weight: 500;
   text-anchor: middle;
   dominant-baseline: central;
 }
-.pn-note {
+.saer-note {
   fill: #6B655C;
   font-size: 12px;
   text-anchor: middle;
   dominant-baseline: central;
 }
-.pn-flow {
+.saer-flow {
   fill: none;
 }
-.pn-flow-arrow {
+.saer-flow-arrow {
   fill: #38342E;
   stroke: none;
 }
-.pn-flow-label {
+.saer-flow-label {
   fill: #6B655C;
   font-size: 10px;
   text-anchor: middle;
@@ -59,24 +59,24 @@
   stroke-width: 3;
   stroke-linejoin: round;
 }
-.pn-badge {
+.saer-diagram-badge {
   stroke: #FAF8F2;
   stroke-width: 3;
 }
-.pn-badge-count {
+.saer-diagram-badge-count {
   fill: #FAF8F2;
   stroke: none;
   font-weight: 600;
   text-anchor: middle;
   dominant-baseline: central;
 }
-.pn-badge-primary .pn-badge-count {
+.saer-diagram-badge-primary .saer-diagram-badge-count {
   font-size: 11px;
 }
-.pn-badge-secondary .pn-badge-count {
+.saer-diagram-badge-secondary .saer-diagram-badge-count {
   font-size: 9px;
 }
-.pn-badge-mark {
+.saer-diagram-badge-mark {
   fill: #FAF8F2;
   stroke: none;
   font-size: 9px;
@@ -84,37 +84,37 @@
   text-anchor: middle;
   dominant-baseline: central;
 }
-.pn-badge-flag {
+.saer-diagram-badge-flag {
   stroke-linejoin: round;
 }
-.pn-tone-critical {
+.saer-tone-critical {
   fill: #C14339;
 }
-.pn-tone-high {
+.saer-tone-high {
   fill: #A85E1D;
 }
-.pn-tone-medium {
+.saer-tone-medium {
   fill: #46788A;
 }
-.pn-tone-low {
+.saer-tone-low {
   fill: #4B6B50;
 }
-.pn-tone-neutral {
+.saer-tone-neutral {
   fill: #756E63;
 }
-.pn-tone-flag {
+.saer-tone-flag {
   fill: #38342E;
 }
 
-.pn-tone-low { fill: #4B6B50; stroke: #4B6B50; stroke-width: 3; }
-.pn-tone-low ~ .pn-badge-count, .pn-tone-low ~ .pn-badge-mark { fill: #FAF8F2; }
-.pn-tone-medium { fill: #46788A; stroke: #46788A; stroke-width: 3; }
-.pn-tone-medium ~ .pn-badge-count, .pn-tone-medium ~ .pn-badge-mark { fill: #FAF8F2; }
-.pn-tone-high { fill: #A85E1D; stroke: #A85E1D; stroke-width: 3; }
-.pn-tone-high ~ .pn-badge-count, .pn-tone-high ~ .pn-badge-mark { fill: #FAF8F2; }
-.pn-tone-critical { fill: #C14339; stroke: #C14339; stroke-width: 3; }
-.pn-tone-critical ~ .pn-badge-count, .pn-tone-critical ~ .pn-badge-mark { fill: #FAF8F2; }
-.pn-tone-neutral { fill: #756E63; stroke: #756E63; stroke-width: 3; }
-.pn-tone-neutral ~ .pn-badge-count, .pn-tone-neutral ~ .pn-badge-mark { fill: #FAF8F2; }
-.pn-tone-flag { fill: #38342E; stroke: #38342E; stroke-width: 3; }
-.pn-tone-flag ~ .pn-badge-count, .pn-tone-flag ~ .pn-badge-mark { fill: #FAF8F2; }</style><g transform="translate(0, 0)"><g class="pn-element"><rect class="pn-shape pn-boundary-box" width="640" height="260"></rect><text class="pn-label" x="320" y="11"><tspan x="320" dy="0">Service perimeter</tspan></text><g class="pn-badge" transform="translate(640, 0)"><g class="pn-badge-primary"><circle class="pn-tone-neutral" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="7.5">?</text></g></g></g></g><g transform="translate(298, 298)"><g class="pn-element"><path class="pn-shape pn-boundary-curve" d="M 2 2 C 22 8.667 82 42 122 42 C 162 42 222 8.667 242 2"></path><text class="pn-label" x="122" y="61"><tspan x="122" dy="0">Edge zone</tspan></text><g class="pn-badge" transform="translate(244, 0)"><g class="pn-badge-flag" transform="translate(0, 0)"><path class="pn-tone-flag" d="M 0 -11 L 11 11 L -11 11 Z"></path><text class="pn-badge-mark" y="4">!</text></g></g></g></g><g transform="translate(40, 60)"><g class="pn-element"><rect class="pn-shape pn-actor" width="160" height="80"></rect><text class="pn-label" x="80" y="33.75"><tspan x="80" dy="0">Customer</tspan><tspan x="80" dy="12.5">browser</tspan></text><g class="pn-badge" transform="translate(160, 0)"><g class="pn-badge-primary"><circle class="pn-tone-critical" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="7.5">C</text></g></g></g></g><g transform="translate(280, 60)"><g class="pn-element"><circle class="pn-shape pn-process" cx="60" cy="60" r="60"></circle><text class="pn-label" x="60" y="60"><tspan x="60" dy="0">Order API</tspan></text><g class="pn-badge" transform="translate(120, 0)"><g class="pn-badge-primary"><circle class="pn-tone-high" r="13"></circle><text class="pn-badge-count" y="-3">2</text><text class="pn-badge-mark" y="7.5">H</text></g><g class="pn-badge-secondary" transform="translate(0, 25)"><circle class="pn-tone-neutral" r="9"></circle><text class="pn-badge-count">1</text></g></g></g></g><g transform="translate(460, 60)"><g class="pn-element pn-out-of-scope"><line class="pn-shape pn-store" x1="0" y1="0" x2="160" y2="0"></line><line class="pn-shape pn-store" x1="0" y1="80" x2="160" y2="80"></line><text class="pn-label" x="80" y="40"><tspan x="80" dy="0">Order database</tspan></text><g class="pn-badge" transform="translate(160, 0)"><g class="pn-badge-primary"><circle class="pn-tone-medium" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="7.5">M</text></g></g></g></g><g transform="translate(40, 320)"><g class="pn-element"><text class="pn-note" x="100" y="37.5"><tspan x="100" dy="0">Orders are kept for seven</tspan><tspan x="100" dy="15">years.</tspan></text></g></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 200 100 L 240 100 L 280 120"></path><path class="pn-flow-arrow" d="M 280 120 L 260.77 118.211 L 267.031 105.689 Z"></path><path class="pn-flow-arrow" d="M 200 100 L 218 93 L 218 107 Z"></path><text class="pn-flow-label" x="235.139" y="134.722"><tspan x="235.139" dy="0">Submit order</tspan></text><g class="pn-badge" transform="translate(264.061, 76.878)"><g class="pn-badge-primary"><circle class="pn-tone-low" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="7.5">L</text></g></g></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 400 120 L 460 100"></path><path class="pn-flow-arrow" d="M 460 100 L 445.137 112.333 L 440.71 99.051 Z"></path><text class="pn-flow-label" x="443.379" y="150.138"><tspan x="443.379" dy="0">Store order</tspan></text></g><g class="pn-element"><path class="pn-shape pn-flow" d="M 620 320 L 540 140"></path><path class="pn-flow-arrow" d="M 540 140 L 553.707 153.606 L 540.914 159.292 Z"></path><text class="pn-flow-label" x="499.423" y="211.923"><tspan x="499.423" dy="0">Nightly backup probe</tspan></text><g class="pn-badge" transform="translate(597.752, 168.221)"><g class="pn-badge-primary"><circle class="pn-tone-medium" r="13"></circle><text class="pn-badge-count" y="-3">1</text><text class="pn-badge-mark" y="7.5">M</text></g><g class="pn-badge-flag" transform="translate(0, 27)"><path class="pn-tone-flag" d="M 0 -11 L 11 11 L -11 11 Z"></path><text class="pn-badge-mark" y="4">!</text></g></g></g></svg>
+.saer-tone-low { fill: #4B6B50; stroke: #4B6B50; stroke-width: 3; }
+.saer-tone-low ~ .saer-diagram-badge-count, .saer-tone-low ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-tone-medium { fill: #46788A; stroke: #46788A; stroke-width: 3; }
+.saer-tone-medium ~ .saer-diagram-badge-count, .saer-tone-medium ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-tone-high { fill: #A85E1D; stroke: #A85E1D; stroke-width: 3; }
+.saer-tone-high ~ .saer-diagram-badge-count, .saer-tone-high ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-tone-critical { fill: #C14339; stroke: #C14339; stroke-width: 3; }
+.saer-tone-critical ~ .saer-diagram-badge-count, .saer-tone-critical ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-tone-neutral { fill: #756E63; stroke: #756E63; stroke-width: 3; }
+.saer-tone-neutral ~ .saer-diagram-badge-count, .saer-tone-neutral ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-tone-flag { fill: #38342E; stroke: #38342E; stroke-width: 3; }
+.saer-tone-flag ~ .saer-diagram-badge-count, .saer-tone-flag ~ .saer-diagram-badge-mark { fill: #FAF8F2; }</style><g transform="translate(0, 0)"><g class="saer-element"><rect class="saer-shape saer-boundary-box" width="640" height="260"></rect><text class="saer-label" x="320" y="11"><tspan x="320" dy="0">Service perimeter</tspan></text><g class="saer-diagram-badge" transform="translate(640, 0)"><g class="saer-diagram-badge-primary"><circle class="saer-tone-neutral" r="13"></circle><text class="saer-diagram-badge-count" y="-3">1</text><text class="saer-diagram-badge-mark" y="7.5">?</text></g></g></g></g><g transform="translate(298, 298)"><g class="saer-element"><path class="saer-shape saer-boundary-curve" d="M 2 2 C 22 8.667 82 42 122 42 C 162 42 222 8.667 242 2"></path><text class="saer-label" x="122" y="61"><tspan x="122" dy="0">Edge zone</tspan></text><g class="saer-diagram-badge" transform="translate(244, 0)"><g class="saer-diagram-badge-flag" transform="translate(0, 0)"><path class="saer-tone-flag" d="M 0 -11 L 11 11 L -11 11 Z"></path><text class="saer-diagram-badge-mark" y="4">!</text></g></g></g></g><g transform="translate(40, 60)"><g class="saer-element"><rect class="saer-shape saer-actor" width="160" height="80"></rect><text class="saer-label" x="80" y="33.75"><tspan x="80" dy="0">Customer</tspan><tspan x="80" dy="12.5">browser</tspan></text><g class="saer-diagram-badge" transform="translate(160, 0)"><g class="saer-diagram-badge-primary"><circle class="saer-tone-critical" r="13"></circle><text class="saer-diagram-badge-count" y="-3">1</text><text class="saer-diagram-badge-mark" y="7.5">C</text></g></g></g></g><g transform="translate(280, 60)"><g class="saer-element"><circle class="saer-shape saer-process" cx="60" cy="60" r="60"></circle><text class="saer-label" x="60" y="60"><tspan x="60" dy="0">Order API</tspan></text><g class="saer-diagram-badge" transform="translate(120, 0)"><g class="saer-diagram-badge-primary"><circle class="saer-tone-high" r="13"></circle><text class="saer-diagram-badge-count" y="-3">2</text><text class="saer-diagram-badge-mark" y="7.5">H</text></g><g class="saer-diagram-badge-secondary" transform="translate(0, 25)"><circle class="saer-tone-neutral" r="9"></circle><text class="saer-diagram-badge-count">1</text></g></g></g></g><g transform="translate(460, 60)"><g class="saer-element saer-out-of-scope"><line class="saer-shape saer-store" x1="0" y1="0" x2="160" y2="0"></line><line class="saer-shape saer-store" x1="0" y1="80" x2="160" y2="80"></line><text class="saer-label" x="80" y="40"><tspan x="80" dy="0">Order database</tspan></text><g class="saer-diagram-badge" transform="translate(160, 0)"><g class="saer-diagram-badge-primary"><circle class="saer-tone-medium" r="13"></circle><text class="saer-diagram-badge-count" y="-3">1</text><text class="saer-diagram-badge-mark" y="7.5">M</text></g></g></g></g><g transform="translate(40, 320)"><g class="saer-element"><text class="saer-note" x="100" y="37.5"><tspan x="100" dy="0">Orders are kept for seven</tspan><tspan x="100" dy="15">years.</tspan></text></g></g><g class="saer-element"><path class="saer-shape saer-flow" d="M 200 100 L 240 100 L 280 120"></path><path class="saer-flow-arrow" d="M 280 120 L 260.77 118.211 L 267.031 105.689 Z"></path><path class="saer-flow-arrow" d="M 200 100 L 218 93 L 218 107 Z"></path><text class="saer-flow-label" x="235.139" y="134.722"><tspan x="235.139" dy="0">Submit order</tspan></text><g class="saer-diagram-badge" transform="translate(264.061, 76.878)"><g class="saer-diagram-badge-primary"><circle class="saer-tone-low" r="13"></circle><text class="saer-diagram-badge-count" y="-3">1</text><text class="saer-diagram-badge-mark" y="7.5">L</text></g></g></g><g class="saer-element"><path class="saer-shape saer-flow" d="M 400 120 L 460 100"></path><path class="saer-flow-arrow" d="M 460 100 L 445.137 112.333 L 440.71 99.051 Z"></path><text class="saer-flow-label" x="443.379" y="150.138"><tspan x="443.379" dy="0">Store order</tspan></text></g><g class="saer-element"><path class="saer-shape saer-flow" d="M 620 320 L 540 140"></path><path class="saer-flow-arrow" d="M 540 140 L 553.707 153.606 L 540.914 159.292 Z"></path><text class="saer-flow-label" x="499.423" y="211.923"><tspan x="499.423" dy="0">Nightly backup probe</tspan></text><g class="saer-diagram-badge" transform="translate(597.752, 168.221)"><g class="saer-diagram-badge-primary"><circle class="saer-tone-medium" r="13"></circle><text class="saer-diagram-badge-count" y="-3">1</text><text class="saer-diagram-badge-mark" y="7.5">M</text></g><g class="saer-diagram-badge-flag" transform="translate(0, 27)"><path class="saer-tone-flag" d="M 0 -11 L 11 11 L -11 11 Z"></path><text class="saer-diagram-badge-mark" y="4">!</text></g></g></g></svg>

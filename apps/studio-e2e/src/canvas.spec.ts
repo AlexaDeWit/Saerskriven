@@ -37,7 +37,7 @@ const expectBoundaryHitTarget = async (
     ({ x, y }) => document.elementFromPoint(x, y)?.getAttribute('class') ?? '',
     at,
   );
-  expect(target).toContain('pn-boundary-hit-target');
+  expect(target).toContain('saer-boundary-hit-target');
 };
 
 const dragFromBoundaryHandle = async (
@@ -102,7 +102,7 @@ test('a flow under a selected trust boundary takes a line or label click', async
 
   await page.mouse.click(onOutline.x, onOutline.y);
   await canvasSettled(page);
-  await flow.locator('.pn-flow-label').click();
+  await flow.locator('.saer-flow-label').click();
   await expect(flow).toHaveClass(/selected/u);
   await expect(boundary).not.toHaveClass(/selected/u);
 });
@@ -111,7 +111,7 @@ test('a trust boundary selects from its drawn name', async ({ page }) => {
   await openTwoDiagrams(page);
   const boundary = nodeNamed(page, storefront.shopNetwork);
 
-  await boundary.locator('.pn-label').click();
+  await boundary.locator('.saer-label').click();
 
   await expect(boundary).toHaveClass(/selected/u);
 });

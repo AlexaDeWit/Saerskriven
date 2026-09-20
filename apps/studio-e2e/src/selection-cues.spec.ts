@@ -30,7 +30,7 @@ const frameAround = async (node: Locator): Promise<number> =>
 const outlineOf = async (node: Locator): Promise<number> =>
   lengthOf(
     await node
-      .locator('.pn-shape')
+      .locator('.saer-shape')
       .first()
       .evaluate((shape) => getComputedStyle(shape).strokeWidth),
   );

@@ -13,33 +13,39 @@ import {
   type Palette,
 } from './tokens.js';
 
-/** Stable class names emitted by the canvas primitives. */
+/**
+ * Stable class names emitted by the canvas primitives. The badge family
+ * carries a `diagram` segment because `@saerskriven/render` already puts
+ * `saer-badge` on a register badge, and a document can hold both.
+ */
 export const canvasClassNames = {
-  element: 'pn-element',
-  outOfScope: 'pn-out-of-scope',
-  shape: 'pn-shape',
-  actor: 'pn-actor',
-  process: 'pn-process',
-  store: 'pn-store',
-  note: 'pn-note',
-  boundaryBox: 'pn-boundary-box',
-  boundaryCurve: 'pn-boundary-curve',
-  label: 'pn-label',
-  flow: 'pn-flow',
-  flowArrow: 'pn-flow-arrow',
-  flowLabel: 'pn-flow-label',
-  badge: 'pn-badge',
-  badgePrimary: 'pn-badge-primary',
-  badgeSecondary: 'pn-badge-secondary',
-  badgeCount: 'pn-badge-count',
-  badgeMark: 'pn-badge-mark',
-  badgeFlag: 'pn-badge-flag',
-  toneCritical: 'pn-tone-critical',
-  toneHigh: 'pn-tone-high',
-  toneMedium: 'pn-tone-medium',
-  toneLow: 'pn-tone-low',
-  toneNeutral: 'pn-tone-neutral',
-  toneFlag: 'pn-tone-flag',
+  element: 'saer-element',
+  outOfScope: 'saer-out-of-scope',
+  shape: 'saer-shape',
+  actor: 'saer-actor',
+  process: 'saer-process',
+  store: 'saer-store',
+  note: 'saer-note',
+  boundaryBox: 'saer-boundary-box',
+  boundaryCurve: 'saer-boundary-curve',
+  boundaryHitTarget: 'saer-boundary-hit-target',
+  label: 'saer-label',
+  flow: 'saer-flow',
+  flowArrow: 'saer-flow-arrow',
+  flowLabel: 'saer-flow-label',
+  badge: 'saer-diagram-badge',
+  badgeLayer: 'saer-diagram-badge-layer',
+  badgePrimary: 'saer-diagram-badge-primary',
+  badgeSecondary: 'saer-diagram-badge-secondary',
+  badgeCount: 'saer-diagram-badge-count',
+  badgeMark: 'saer-diagram-badge-mark',
+  badgeFlag: 'saer-diagram-badge-flag',
+  toneCritical: 'saer-tone-critical',
+  toneHigh: 'saer-tone-high',
+  toneMedium: 'saer-tone-medium',
+  toneLow: 'saer-tone-low',
+  toneNeutral: 'saer-tone-neutral',
+  toneFlag: 'saer-tone-flag',
 } as const;
 
 /** Which run of text a primitive is drawing. */

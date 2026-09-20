@@ -199,7 +199,7 @@ describe('CanvasNodeBody', () => {
     const node = nodeNamed('el-db');
     expect(node.outOfScope).toBe(true);
     const markup = bodyMarkup(node);
-    const layer = markup.slice(markup.indexOf('pn-badge-layer'));
+    const layer = markup.slice(markup.indexOf('saer-diagram-badge-layer'));
     expect(layer).toContain(`<g class="${canvasClassNames.outOfScope}"`);
   });
 
@@ -234,7 +234,7 @@ describe('CanvasNodeBody', () => {
       expect(node).toBeDefined();
       const markup = node === undefined ? '' : bodyMarkup(node);
       expect(markup).toContain(
-        'class="pn-boundary-hit-target" fill="none" ' +
+        'class="saer-boundary-hit-target" fill="none" ' +
           'pointer-events="stroke" stroke="transparent" stroke-width="20"',
       );
     }
