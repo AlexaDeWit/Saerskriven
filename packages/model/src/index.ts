@@ -22,6 +22,8 @@ export {
   type ModelMetadataChange,
   type ModelMetadataInput,
 } from './lib/model.js';
+export { carrying, coded } from './lib/coded.js';
+export * from './lib/parse-issue.js';
 export * from './lib/parse.js';
 export * from './lib/empty.js';
 export * from './lib/operation-failures.js';

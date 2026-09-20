@@ -39,8 +39,8 @@ describe('a model file read at the edge', () => {
     expect(readModel(path)).toEqual(
       refusedModel(
         'The file is a valid document, and the model it maps to is not:\n' +
-          'threats.0.elements.0: Text carries a character the model does not accept.\n' +
-          'threats.0.elements.0: Threat elements references unknown element id "\\u001b[31mBOOM\\u001b[0m".\n',
+          'threats.0.elements.0: text carries a character the model does not accept\n' +
+          'threats.0.elements.0: names unknown element id "\\u001b[31mBOOM\\u001b[0m"\n',
       ),
     );
   });
@@ -50,7 +50,7 @@ describe('a model file read at the edge', () => {
     expect(readModel(path)).toEqual(
       refusedModel(
         'The file is a valid document, and the model it maps to is not:\n' +
-          'threats.0.elements.0: Threat elements references unknown element id "\\\\e[31mBOOM\\\\e[0m".\n',
+          'threats.0.elements.0: names unknown element id "\\\\e[31mBOOM\\\\e[0m"\n',
       ),
     );
   });

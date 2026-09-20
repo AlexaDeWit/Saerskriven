@@ -102,9 +102,9 @@ const exceptions: readonly {
     reason: "React Flow's attribution link",
   },
   {
-    text: /^[\w.]+: Invalid input: /u,
+    text: /^[a-z][\w-]*(?:\.[\w-]+)*$/u,
     reason:
-      'a model or schema parse issue is English under a worded headline until #488',
+      'a parse issue names the path into the document, which is data and reaches the line as a parameter',
   },
 ];
 

@@ -1,4 +1,4 @@
-import type { ParseIssue } from '@saerskriven/model';
+import type { ParseIssue, ParseIssueDetail } from '@saerskriven/model';
 import type { DivergenceDetail } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { importBudget } from './import-budget.js';
@@ -26,9 +26,9 @@ export function importContext() {
   };
   const problem = (
     path: readonly (string | number)[],
-    message: string,
+    detail: ParseIssueDetail,
   ): void => {
-    issues.push({ path: [...path], message, code: 'custom' });
+    issues.push({ path: [...path], detail });
   };
   return {
     text: budget.text,
@@ -114,13 +114,19 @@ function indexed<T>(
   values: readonly T[],
   key: (value: T) => string,
   path: string,
-  problem: (path: readonly (string | number)[], message: string) => void,
+  problem: (
+    path: readonly (string | number)[],
+    detail: ParseIssueDetail,
+  ) => void,
 ): Map<string, T> {
   const result = new Map<string, T>();
   for (const [position, value] of values.entries()) {
     const id = key(value);
     if (result.has(id)) {
-      problem([path, position], `Duplicate identifier ${JSON.stringify(id)}`);
+      problem([path, position], {
+        code: 'duplicate-identifier',
+        parameters: { id },
+      });
     }
     result.set(id, value);
   }

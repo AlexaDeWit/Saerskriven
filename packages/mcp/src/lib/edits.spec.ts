@@ -18,22 +18,30 @@ type ByTag<Union extends { readonly _tag: string }> = {
 const failures: ByTag<OperationFailure> = {
   InvalidElementProperties: OperationFailure.InvalidElementProperties({
     elementId: elementId('element-api'),
-    issues: [
-      { path: ['kind'], code: 'custom', message: 'Element kind changed.' },
-    ],
+    issues: [{ path: ['kind'], detail: { code: 'element-kind-changed' } }],
   }),
   InvalidElementRelationship: OperationFailure.InvalidElementRelationship({
     elementId: elementId('element-api'),
     issues: [
       {
         path: ['trustBoundaryIds', 0],
-        code: 'custom',
-        message: 'Unknown boundary.',
+        detail: {
+          code: 'related-boundary-unknown',
+          parameters: { id: 'element-perimeter' },
+        },
       },
     ],
   }),
   InvalidFragment: OperationFailure.InvalidFragment({
-    issues: [{ path: ['op'], code: 'custom', message: 'nothing applies it' }],
+    issues: [
+      {
+        path: ['op'],
+        detail: {
+          code: 'unknown-element-reference',
+          parameters: { id: 'element-ghost' },
+        },
+      },
+    ],
   }),
   UnknownDiagram: OperationFailure.UnknownDiagram({
     diagramId: diagramId('diagram-main'),

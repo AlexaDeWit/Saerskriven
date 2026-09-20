@@ -34,15 +34,17 @@ describe('why a read produced nothing', () => {
           issues: [
             {
               path: ['metadata', 'title'],
-              message: 'expected string',
-              code: 'invalid_type',
+              detail: {
+                code: 'type-mismatch',
+                parameters: { expected: 'string', received: 'number' },
+              },
             },
           ],
         }),
       ),
     ).toEqual([
       'The file is not a valid document of the format that claimed it:',
-      'metadata.title: expected string',
+      'metadata.title: expected a string, received a number',
     ]);
   });
 
@@ -51,13 +53,19 @@ describe('why a read produced nothing', () => {
       renderReadFailure(
         ReadFailure.InvalidModel({
           issues: [
-            { path: [], message: 'expected object', code: 'invalid_type' },
+            {
+              path: [],
+              detail: {
+                code: 'type-mismatch',
+                parameters: { expected: 'object', received: 'string' },
+              },
+            },
           ],
         }),
       ),
     ).toEqual([
       'The file is a valid document, and the model it maps to is not:',
-      '(root): expected object',
+      '(root): expected an object, received a string',
     ]);
   });
 
@@ -68,15 +76,17 @@ describe('why a read produced nothing', () => {
           issues: [
             {
               path: ['threats', 0],
-              message: 'saw \u001b[31m',
-              code: 'custom',
+              detail: {
+                code: 'duplicate-identifier',
+                parameters: { id: 'saw \u001b[31m' },
+              },
             },
           ],
         }),
       ),
     ).toEqual([
       'The file is a valid document, and the model it maps to is not:',
-      'threats.0: saw \\u001b[31m',
+      'threats.0: duplicate identifier "saw \\u001b[31m"',
     ]);
   });
 

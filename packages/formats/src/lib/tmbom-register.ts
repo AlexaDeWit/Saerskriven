@@ -56,10 +56,10 @@ function tmbomThreats(
     ]);
     for (const id of threat.components_affected ?? []) {
       if (!componentIndex.has(id)) {
-        context.problem(
-          ['threats', index, 'components_affected'],
-          `Unknown component ${JSON.stringify(id)}`,
-        );
+        context.problem(['threats', index, 'components_affected'], {
+          code: 'unknown-source-reference',
+          parameters: { id, kind: 'component' },
+        });
       }
     }
     return {
@@ -104,10 +104,10 @@ function tmbomControls(
     ]);
     for (const id of control.threats) {
       if (!threatIndex.has(id)) {
-        context.problem(
-          ['controls', control.symbolic_name, 'threats'],
-          `Unknown threat ${JSON.stringify(id)}`,
-        );
+        context.problem(['controls', control.symbolic_name, 'threats'], {
+          code: 'unknown-source-reference',
+          parameters: { id, kind: 'threat' },
+        });
       }
     }
     const status =

@@ -37,8 +37,20 @@ const refusedRead = StudioFailure.Read({
   name: 'broken.json',
   failure: ReadFailure.InvalidWireDocument({
     issues: [
-      { path: ['diagrams', 0], message: 'is required', code: 'invalid_type' },
-      { path: ['threats', 1], message: 'is required', code: 'invalid_type' },
+      {
+        path: ['diagrams', 0],
+        detail: {
+          code: 'type-mismatch',
+          parameters: { expected: 'array', received: 'undefined' },
+        },
+      },
+      {
+        path: ['threats', 1],
+        detail: {
+          code: 'type-mismatch',
+          parameters: { expected: 'array', received: 'undefined' },
+        },
+      },
     ],
   }),
 });

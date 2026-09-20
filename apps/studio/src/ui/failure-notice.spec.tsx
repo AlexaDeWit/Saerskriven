@@ -36,9 +36,11 @@ type ByTag<Union extends { readonly _tag: string }> = {
 
 const issue = {
   path: ['detail', 'diagrams', 0],
-  message: 'is required',
-  code: 'invalid_type',
-};
+  detail: {
+    code: 'type-mismatch',
+    parameters: { expected: 'array', received: 'undefined' },
+  },
+} as const;
 
 const readFailures: ByTag<ReadFailure> = {
   ExceededReadLimit: ReadFailure.ExceededReadLimit({
@@ -54,17 +56,17 @@ const readFailures: ByTag<ReadFailure> = {
 const operationFailures: ByTag<OperationFailure> = {
   InvalidElementProperties: OperationFailure.InvalidElementProperties({
     elementId: elementId('element-api'),
-    issues: [
-      { path: ['kind'], code: 'custom', message: 'Element kind changed.' },
-    ],
+    issues: [{ path: ['kind'], detail: { code: 'element-kind-changed' } }],
   }),
   InvalidElementRelationship: OperationFailure.InvalidElementRelationship({
     elementId: elementId('element-api'),
     issues: [
       {
         path: ['trustBoundaryIds', 0],
-        code: 'custom',
-        message: 'Unknown boundary.',
+        detail: {
+          code: 'related-boundary-unknown',
+          parameters: { id: 'element-perimeter' },
+        },
       },
     ],
   }),
@@ -72,8 +74,10 @@ const operationFailures: ByTag<OperationFailure> = {
     issues: [
       {
         path: ['diagrams'],
-        code: 'custom',
-        message: 'Duplicate copied element.',
+        detail: {
+          code: 'duplicate-element-id',
+          parameters: { id: 'element-api' },
+        },
       },
     ],
   }),
@@ -247,9 +251,10 @@ describe('describeFailure', () => {
   });
 
   it('renders a path into the document a codec refused', () => {
-    expect(describeFailure(t, studioFailures.Read).details).toEqual([
-      'detail.diagrams.0: is required',
-    ]);
+    const [line] = describeFailure(t, studioFailures.Read).details;
+
+    expect(line).toContain('detail.diagrams.0');
+    expect(line).toContain(t('issues.kind-array'));
   });
 
   it('says the root where an issue names no path at all', () => {
@@ -258,12 +263,14 @@ describe('describeFailure', () => {
       StudioFailure.Read({
         name: 'model.json',
         failure: ReadFailure.InvalidModel({
-          issues: [{ path: [], message: 'is not a model', code: 'custom' }],
+          issues: [{ path: [], detail: { code: 'issue-flood' } }],
         }),
       }),
     );
 
-    expect(described.details).toEqual(['(root): is not a model']);
+    expect(described.details).toEqual([
+      t('issues.line-root', { detail: t('issues.issue-flood') }),
+    ]);
   });
 });
 
