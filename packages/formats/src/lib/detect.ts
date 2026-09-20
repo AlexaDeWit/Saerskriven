@@ -94,6 +94,8 @@ export function retainedSource(read: DetectedRead): RetainedSource {
       return { format: read.format, document: read.source };
     case 'saerskriven-yaml':
       return { format: read.format, document: read.source };
+    default:
+      return unretained(read);
   }
 }
 
@@ -102,7 +104,7 @@ export function retainedSource(read: DetectedRead): RetainedSource {
  * the document retained with it, or projected into the format's canonical
  * form where the source retained none. The branches narrow the source so each
  * codec receives its own format's document, and a format no branch names
- * leaves the switch without a return.
+ * reaches a fallback that takes `never`, so adding one stops compiling here.
  */
 export function writeThrough(
   model: Model,
@@ -113,6 +115,8 @@ export function writeThrough(
       return threatDragonCodec.write(model, source.document);
     case 'saerskriven-yaml':
       return saerskrivenYamlCodec.write(model, source.document);
+    default:
+      return unwritten(source);
   }
 }
 
@@ -132,6 +136,14 @@ type Retained<Name extends FormatName, WireSchema extends z.ZodType<object>> = {
   readonly format: Name;
   readonly document?: z.infer<WireSchema> | undefined;
 };
+
+function unretained(_read: never): RetainedSource {
+  return { format: 'saerskriven-yaml' };
+}
+
+function unwritten(_source: never): WriteResult {
+  return { output: '', divergences: [] };
+}
 
 const threatDragonDiscriminators: readonly DiscriminatorPath[] = [
   ['version'],
