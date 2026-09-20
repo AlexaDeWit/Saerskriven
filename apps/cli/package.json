@@ -7,6 +7,7 @@
     "The build bundles every workspace and npm dependency as ESM for `deno compile`. It stamps the root manifest version through esbuild.config.mts.",
     "The build copies the Typst module out of node_modules, the pinned fonts out of the flake, and the resvg module out of the resvg-wasm project's output into dist/assets. The executor default names the fonts variable, and the build adds that output. Its inputs and dependsOn extend the default with the spread token (CODING.md, Build targets). The compiled executable includes that directory.",
     "The typecheck writes declarations under out-tsc. The build writes only the bundle and its runtime assets under dist.",
+    "The build overrides the executor default's tsConfig with tsconfig.esbuild.json, which extends tsconfig.app.json and widens lib alone, so the lib that resolves WebAssembly for the render sources it compiles stays out of the typecheck's program. The reason and the measurement are in that file.",
     "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js, and it hashes all of dist (CODING.md, Build targets). The compiled test runs those two and the runner table's own spec, which is what demands the executable compile produced.",
     "The compile target hashes its bundle, packaging script, toolchain, fixture, and host target. Nx stores the gitignored dist/cli directory as its output."
   ],
@@ -35,6 +36,7 @@
         ],
         "options": {
           "bundle": true,
+          "tsConfig": "apps/cli/tsconfig.esbuild.json",
           "outputFileName": "saer.js",
           "declaration": false,
           "thirdParty": true,
