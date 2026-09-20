@@ -2,7 +2,9 @@ import {
   ReadFailure,
   hasDiverged,
   threatDragonCodec,
+  writeThrough,
   type Divergence,
+  type RetainedSource,
 } from '@saerskriven/formats';
 import { mitigationIdSchema } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
@@ -10,7 +12,7 @@ import { translator, type Locale } from '@saerskriven/i18n';
 import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { Action } from '../store/actions.js';
-import { FileLifecycle, type RetainedSource } from '../store/state.js';
+import { FileLifecycle } from '../store/state.js';
 import {
   foreignSource,
   nativeSource,
@@ -28,7 +30,6 @@ import {
   saveTarget,
   saveTypes,
   savedBy,
-  writeThrough,
 } from './session.js';
 import { brokenThreatDragonText, sampleNativeText } from './files.fixtures.js';
 

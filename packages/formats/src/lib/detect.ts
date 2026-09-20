@@ -1,9 +1,14 @@
-import { issueFloodCode } from '@saerskriven/model';
+import { issueFloodCode, type Model } from '@saerskriven/model';
 import type { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Data, Either } from 'effect';
 import { z } from 'zod';
-import { ReadFailure, type Codec, type ReadResult } from './codec.js';
+import {
+  ReadFailure,
+  type Codec,
+  type ReadResult,
+  type WriteResult,
+} from './codec.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
@@ -21,6 +26,16 @@ export type FormatName = z.infer<typeof formatNameSchema>;
 export type DetectedRead =
   | Answer<'threat-dragon', typeof threatDragonWireSchema>
   | Answer<'saerskriven-yaml', typeof saerskrivenYamlV2WireSchema>;
+
+/**
+ * A format paired with the wire document a later write merges onto, for a
+ * caller that keeps the pairing past the read that produced it, and with no
+ * document where the write projects the model instead. Narrowing on `format`
+ * pairs `document` with its own codec, as {@link DetectedRead} does.
+ */
+export type RetainedSource =
+  | Retained<'threat-dragon', typeof threatDragonWireSchema>
+  | Retained<'saerskriven-yaml', typeof saerskrivenYamlV2WireSchema>;
 
 /**
  * No registered codec claimed the text. `tried` names every format offered
@@ -68,6 +83,39 @@ export function readAnyFormat(
   );
 }
 
+/**
+ * What a read retains for a later write: its format and the document it
+ * produced, without the model or the codec, so a caller may keep it past the
+ * read, store it, or send it between sessions.
+ */
+export function retainedSource(read: DetectedRead): RetainedSource {
+  switch (read.format) {
+    case 'threat-dragon':
+      return { format: read.format, document: read.source };
+    case 'saerskriven-yaml':
+      return { format: read.format, document: read.source };
+  }
+}
+
+/**
+ * `model` through the codec registered for the source's format, merged onto
+ * the document retained with it, or projected into the format's canonical
+ * form where the source retained none. The branches narrow the source so each
+ * codec receives its own format's document, and a format no branch names
+ * leaves the switch without a return.
+ */
+export function writeThrough(
+  model: Model,
+  source: RetainedSource,
+): WriteResult {
+  switch (source.format) {
+    case 'threat-dragon':
+      return threatDragonCodec.write(model, source.document);
+    case 'saerskriven-yaml':
+      return saerskrivenYamlCodec.write(model, source.document);
+  }
+}
+
 type DiscriminatorPath = readonly string[];
 
 type Verdict = 'bounded' | 'claimed' | 'declined';
@@ -78,6 +126,11 @@ type Answer<
 > = ReadResult<WireSchema> & {
   readonly format: Name;
   readonly codec: Codec<WireSchema>;
+};
+
+type Retained<Name extends FormatName, WireSchema extends z.ZodType<object>> = {
+  readonly format: Name;
+  readonly document?: z.infer<WireSchema> | undefined;
 };
 
 const threatDragonDiscriminators: readonly DiscriminatorPath[] = [
