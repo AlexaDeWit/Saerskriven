@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
   canvasSettled,
+  centreOf,
   emptyCanvasPoint,
   type Point,
   screenBoxOf,
@@ -28,7 +29,7 @@ const movedPoint = (page: Page, from: Point): Point => {
 
 const anchorSlack = 2;
 
-test('scroll zooms around the pointer while a modified scroll keeps pinch zoom', async ({
+test('scroll zooms around the pointer, and a Control-held scroll still zooms', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -62,6 +63,40 @@ test('scroll zooms around the pointer while a modified scroll keeps pinch zoom',
   await page.keyboard.up('Control');
 
   await expect.poll(() => viewportZoom(page)).toBeGreaterThan(zoomedOut);
+});
+
+const overflowingNote = Array.from(
+  { length: 40 },
+  (unused, line) => `Line ${String(line + 1)}`,
+).join('\n');
+
+test('a scroll over an open note scrolls the note and leaves the zoom alone', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const at = await emptyCanvasPoint(page);
+  await toolButton(page, 'Note').click();
+  await page.mouse.click(at.x, at.y);
+  const editor = page.getByRole('textbox', { name: 'Note text' });
+  await expect(editor).toBeFocused();
+  await editor.fill(overflowingNote);
+  await editor.evaluate((field) => {
+    field.scrollTop = 0;
+  });
+  await canvasSettled(page);
+  expect(
+    await editor.evaluate((field) => field.scrollHeight > field.clientHeight),
+    'the note holds more lines than it shows',
+  ).toBe(true);
+  const zoom = await viewportZoom(page);
+  const over = await centreOf(editor);
+
+  await page.mouse.move(over.x, over.y);
+  await page.mouse.wheel(0, 200);
+  await canvasSettled(page);
+
+  expect(await viewportZoom(page)).toBe(zoom);
+  expect(await editor.evaluate((field) => field.scrollTop)).toBeGreaterThan(0);
 });
 
 test('middle-button dragging pans without zooming or clearing selection', async ({

@@ -307,7 +307,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         </div>
       )}
       {editingNote && placement !== undefined && (
-        <div className={`${styles.overNote} nodrag nopan`}>
+        <div className={`${styles.overNote} nodrag nopan nowheel`}>
           <InlineField
             elementId={node.id}
             label={(speak) => speak('fields.note-text')}
