@@ -12,8 +12,9 @@
     "tsBuildInfoFile": "out-tsc/app/tsconfig.app.tsbuildinfo",
     // @types/node declares the Web Storage globals, so localStorage
     // type-checks in this program although node leaves it undefined. The
-    // es2022 lib the base config sets refuses document and window, and not
-    // that one, and deno, which the compiled executable runs on, defines it.
+    // es2022 lib the base config sets refuses document and window. It does not
+    // reach localStorage, and deno, which the compiled executable runs on,
+    // defines it.
     "types": ["node"],
     "rootDir": "src"
   },

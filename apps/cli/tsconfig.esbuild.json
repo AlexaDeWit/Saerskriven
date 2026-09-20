@@ -7,9 +7,8 @@
     // WebAssembly: with tsconfig.app.json's es2022 alone the build stops with
     // seven errors, TS2503 and TS2304 on packages/render/src/resvg.ts. Only
     // lib.dom and lib.webworker declare that namespace and @types/node does
-    // not. webworker is the smaller of the two, 289 top-level declarations
-    // against dom's 929, and declares neither document nor window, so this
-    // program refuses both the way the typecheck does.
+    // not. webworker is the narrower of the two and declares neither document
+    // nor window, so this program refuses both the way the typecheck does.
     // Not named tsconfig.build.json: @nx/js:typescript-sync adopts that name
     // and fills it with the six project references, which the executor's
     // program never reads.
