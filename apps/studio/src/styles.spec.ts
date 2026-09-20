@@ -41,12 +41,24 @@ const literalColour =
   /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/u;
 
 const referenced = (text: string): string[] =>
-  (text.match(/var\(--saer-[\w-]+/gu) ?? []).map((token) => token.slice(4));
+  (text.match(/var\(--[\w-]+/gu) ?? []).map((token) => token.slice(4));
 
-const readProperties = new Set([
+const allReferenced = new Set([
   ...sources.flatMap((source) => referenced(source.text)),
   ...referenced(themedCanvasStylesheet),
+  ...referenced(initialPageStylesheet),
 ]);
+
+const readFromElsewhere = new Set([
+  '--radix-dropdown-menu-content-available-height',
+  '--radix-dropdown-menu-content-available-width',
+  '--radix-select-content-available-height',
+  '--radix-select-content-available-width',
+]);
+
+const readProperties = new Set(
+  [...allReferenced].filter((property) => !readFromElsewhere.has(property)),
+);
 
 describe('the studio and the canvas, coloured from one table', () => {
   it('carries no literal colour outside the token module', () => {
@@ -82,12 +94,19 @@ const colourDeclarations = (block: string): Set<string> =>
   new Set(block.match(/--saer-colour-[\w-]+(?=:)/gu) ?? []);
 
 describe('the document theme', () => {
-  it('declares every custom property the studio reads, the injected canvas sheet among them', () => {
+  it('declares every custom property the studio reads, the injected canvas sheet among them, bar the ones read from elsewhere', () => {
     const declared = initialPageStylesheet;
     const missing = [...readProperties].filter(
       (property) => !declared.includes(`${property}:`),
     );
     expect(missing).toEqual([]);
+  });
+
+  it('names no property on the elsewhere list that nothing reads', () => {
+    const unused = [...readFromElsewhere].filter(
+      (property) => !allReferenced.has(property),
+    );
+    expect(unused).toEqual([]);
   });
 
   it('declares them on the document root, so any module reads them', () => {
