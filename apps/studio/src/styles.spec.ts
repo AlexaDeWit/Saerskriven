@@ -41,12 +41,21 @@ const literalColour =
   /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/u;
 
 const referenced = (text: string): string[] =>
-  (text.match(/var\(--saer-[\w-]+/gu) ?? []).map((token) => token.slice(4));
+  (text.match(/var\(--[\w-]+/gu) ?? []).map((token) => token.slice(4));
 
-const readProperties = new Set([
-  ...sources.flatMap((source) => referenced(source.text)),
-  ...referenced(themedCanvasStylesheet),
+const readFromElsewhere = new Set([
+  '--radix-dropdown-menu-content-available-height',
+  '--radix-dropdown-menu-content-available-width',
+  '--radix-select-content-available-height',
+  '--radix-select-content-available-width',
 ]);
+
+const readProperties = new Set(
+  [
+    ...sources.flatMap((source) => referenced(source.text)),
+    ...referenced(themedCanvasStylesheet),
+  ].filter((property) => !readFromElsewhere.has(property)),
+);
 
 describe('the studio and the canvas, coloured from one table', () => {
   it('carries no literal colour outside the token module', () => {
@@ -82,7 +91,7 @@ const colourDeclarations = (block: string): Set<string> =>
   new Set(block.match(/--saer-colour-[\w-]+(?=:)/gu) ?? []);
 
 describe('the document theme', () => {
-  it('declares every custom property the studio reads, the injected canvas sheet among them', () => {
+  it('declares every custom property the studio reads, apart from the ones named as read from elsewhere, the injected canvas sheet among them', () => {
     const declared = initialPageStylesheet;
     const missing = [...readProperties].filter(
       (property) => !declared.includes(`${property}:`),
