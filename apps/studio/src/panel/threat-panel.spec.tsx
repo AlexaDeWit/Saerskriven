@@ -176,6 +176,40 @@ describe(
       );
     });
 
+    it('attaches an element from the threat editor, as one undo step', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await chooseFrom('Existing element', 'Studio');
+      await user.click(button('Attach existing element'));
+
+      expect(present().threats[0].elements).toEqual([
+        actorElement,
+        processElement,
+      ]);
+      expect(undoable()).toBe(1);
+      expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
+
+      act(() => {
+        dispatch(Action.Undo());
+      });
+
+      expect(present().threats[0].elements).toEqual([actorElement]);
+    });
+
+    it('leaves focus on the attachment above when the last one is detached', async () => {
+      const user = userEvent.setup();
+      shareThreat();
+      showPanel(actorElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await user.click(button('Detach Studio'));
+
+      expect(present().threats[0].elements).toEqual([actorElement]);
+      expect(document.activeElement).toBe(button('Detach Reader'));
+    });
+
     it('detaches an element from a threat that names others, leaving the threat and focus on the next attachment', async () => {
       const user = userEvent.setup();
       shareThreat();
