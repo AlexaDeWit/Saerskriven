@@ -36,6 +36,8 @@ export const panelSv = catalogue(panelMessages)('sv')({
   link: 'Länka',
   discard: 'Kasta',
   unlink: 'Ta bort länken',
+  attach: 'Koppla',
+  detach: 'Koppla bort',
   'also-applies-to-model': 'Gäller även modellen.',
   'also-on-threats': {
     one: 'Även på hot {list}.',
@@ -47,4 +49,5 @@ export const panelSv = catalogue(panelMessages)('sv')({
     other: 'hoten {list}',
   },
   'detail-applies-to-model': 'gäller modellen',
+  'detail-no-elements': 'kopplat till inget objekt',
 });

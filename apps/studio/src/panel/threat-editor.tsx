@@ -1,4 +1,4 @@
-import type { Element, Threat } from '@saerskriven/model';
+import type { ElementId, Threat } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslator } from '../messages/locale.js';
@@ -9,22 +9,23 @@ import { ProseField, TextField } from '../ui/text-field.js';
 import styles from './threat-panel.module.css';
 import { assumptionKind, mitigationKind, threatTarget } from './records.js';
 import { draftIn, useRefusals, type RefusedField } from './refusals.js';
+import { AttachmentGroup } from './threat-attachments.js';
 import { RecordGroup } from './threat-records.js';
 import { ThreatSummary } from './threat-summary.js';
-import { elementLabel } from './threats.js';
 
 /** Focus after adding or deleting a threat. */
 export type EditorFocus = 'title' | 'disclosure';
 
-/** A threat, its attachments, and callbacks for edits and refused drafts. */
+/** A threat and callbacks for its edits, its attachments and its refused drafts. */
 export type ThreatEditorProps = {
   readonly threat: Threat;
-  readonly attachments: readonly Element[];
   readonly focus: EditorFocus | undefined;
   readonly held: RefusedField | undefined;
   readonly onChange: () => void;
   readonly onCommit: (patch: Partial<Threat>) => void;
   readonly onRefusal: (refused: RefusedField | undefined) => void;
+  readonly onAttach: (elementId: ElementId) => void;
+  readonly onDetach: (elementId: ElementId) => void;
   readonly onDelete: () => void;
   readonly onFocused: () => void;
 };
@@ -32,12 +33,13 @@ export type ThreatEditorProps = {
 /** An expandable threat with one commit per field. */
 export function ThreatEditor({
   threat,
-  attachments,
   focus,
   held,
   onChange,
   onCommit,
   onRefusal,
+  onAttach,
+  onDetach,
   onDelete,
   onFocused,
 }: ThreatEditorProps) {
@@ -132,18 +134,15 @@ export function ThreatEditor({
           refusals={refusals}
           target={threatTarget(assumptionKind, threat.id)}
         />
+        <AttachmentGroup
+          onAttach={onAttach}
+          onDetach={onDetach}
+          threat={threat}
+        />
         {spread > 1 && (
-          <div className={styles.spread}>
-            <p id={spreadId}>{t('panel.threat-spread', { count: spread })}</p>
-            <ul
-              aria-label={t('panel.attached-elements')}
-              className={styles.attachments}
-            >
-              {attachments.map((element) => (
-                <li key={element.id}>{elementLabel(element, t)}</li>
-              ))}
-            </ul>
-          </div>
+          <p className={styles.spread} id={spreadId}>
+            {t('panel.threat-spread', { count: spread })}
+          </p>
         )}
         <button
           aria-describedby={spread > 1 ? spreadId : undefined}

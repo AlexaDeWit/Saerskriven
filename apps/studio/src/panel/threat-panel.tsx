@@ -2,12 +2,7 @@ import {
   ElementPropertiesEditor,
   type ElementPropertyDrafts,
 } from './element-properties.js';
-import {
-  elementsAcross,
-  type ElementId,
-  type Threat,
-  type ThreatId,
-} from '@saerskriven/model';
+import type { Element, ElementId, Threat, ThreatId } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import {
   useCallback,
@@ -24,14 +19,17 @@ import {
 } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
+import { elementById } from '../store/selectors.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { useHeaderKept } from './kept-header.js';
+import { PickExisting } from './pick-existing.js';
 import { historyFocusHandler } from './panel-focus.js';
 import { PanelFrame } from './panel-frame.js';
 import type { RefusedField } from './refusals.js';
 import { ThreatEditor, type EditorFocus } from './threat-editor.js';
 import styles from './threat-panel.module.css';
 import {
+  attachableThreats,
   attachedThreats,
   elementLabel,
   freshThreat,
@@ -74,7 +72,7 @@ export function ThreatPanel({
   const element = subject.kind === 'element' ? subject.element : undefined;
   const threats = useModelStore(useShallow(attachedThreats));
   const number = useModelStore(nextNumber);
-  const diagrams = useModelStore((state) => state.present.diagrams);
+  const registered = useModelStore((state) => state.present.threats);
   const opened = element === undefined ? undefined : drafts.get(element.id);
   const [expanded, setExpanded] = useState<string>(opened?.threatId ?? '');
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
@@ -82,7 +80,12 @@ export function ThreatPanel({
   const addControl = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const keepHeader = useHeaderKept(list);
-  const { t } = useTranslator();
+  const translator = useTranslator();
+  const { t } = translator;
+  const attachable =
+    element === undefined
+      ? []
+      : attachableThreats(registered, element.id, translator);
   const held = threats.some((threat) => threat.id === draft?.threatId)
     ? draft
     : undefined;
@@ -137,18 +140,61 @@ export function ThreatPanel({
     setFocus({ kind: 'title', threatId: threat.id });
   };
 
-  const remove = (threat: Threat): void => {
-    const next = threatAfterDeleting(threats, threat.id);
-    dispatch(Action.RemoveThreat({ threatId: threat.id }));
+  const leave = (threatId: ThreatId): void => {
+    const next = threatAfterDeleting(threats, threatId);
     setDraft(undefined);
     if (next === undefined) {
       addControl.current?.focus();
     } else {
       setFocus({ kind: 'disclosure', threatId: next });
     }
+  };
+
+  const remove = (threat: Threat): void => {
+    dispatch(Action.RemoveThreat({ threatId: threat.id }));
+    leave(threat.id);
     const deleted = threat.number;
     announce((speak) => speak('canvas.threat-deleted', { number: deleted }));
   };
+
+  const attach = (threatId: ThreatId, on: Element): boolean => {
+    dispatch(Action.AttachThreat({ threatId, elementId: on.id }));
+    const attached = threatIn(threatId);
+    if (attached?.elements.includes(on.id) !== true) {
+      return false;
+    }
+    const attachedNumber = attached.number;
+    announce((speak) =>
+      speak('canvas.threat-attached', {
+        number: attachedNumber,
+        element: elementLabel(on, speak),
+      }),
+    );
+    return true;
+  };
+
+  const detach =
+    (threat: Threat) =>
+    (elementId: ElementId): void => {
+      dispatch(Action.DetachThreat({ threatId: threat.id, elementId }));
+      const kept = threatIn(threat.id);
+      const loose = elementById(modelStore.getState(), elementId);
+      const detachedNumber = threat.number;
+      announce((speak) =>
+        kept === undefined || loose === undefined
+          ? speak('canvas.threat-detach-removed', { number: detachedNumber })
+          : speak('canvas.threat-detached', {
+              number: detachedNumber,
+              element: elementLabel(loose, speak),
+            }),
+      );
+      if (
+        element !== undefined &&
+        kept?.elements.includes(element.id) !== true
+      ) {
+        leave(threat.id);
+      }
+    };
 
   const refused =
     (threat: Threat) =>
@@ -207,14 +253,31 @@ export function ThreatPanel({
             elementId={subject.element.id}
             drafts={propertyDrafts}
           />
-          <button
-            className={styles.add}
-            onClick={add}
-            ref={addControl}
-            type="button"
-          >
-            {t('panel.add-threat')}
-          </button>
+          <div className={styles.addLink}>
+            <button
+              className={styles.add}
+              onClick={add}
+              ref={addControl}
+              type="button"
+            >
+              {t('panel.add-threat')}
+            </button>
+            {attachable.length > 0 && (
+              <PickExisting
+                actionLabel={t('fields.attach-existing-threat')}
+                actionText={t('panel.attach')}
+                choices={attachable}
+                fieldLabel={t('fields.existing-threat')}
+                onPick={(threatId) => {
+                  if (attach(threatId, subject.element) && held === undefined) {
+                    setExpanded(threatId);
+                    setFocus({ kind: 'disclosure', threatId });
+                  }
+                }}
+                reason={t('fields.choose-existing-threat-first')}
+              />
+            )}
+          </div>
           {threats.length === 0 ? (
             <p className={styles.instruction}>{t('panel.no-threats')}</p>
           ) : (
@@ -228,17 +291,21 @@ export function ThreatPanel({
             >
               {threats.map((threat) => (
                 <ThreatEditor
-                  attachments={elementsAcross(diagrams).filter((candidate) =>
-                    threat.elements.includes(candidate.id),
-                  )}
                   focus={focusIn(focus, threat)}
                   held={held?.threatId === threat.id ? held : undefined}
                   key={threat.id}
+                  onAttach={(elementId) => {
+                    const on = elementById(modelStore.getState(), elementId);
+                    if (on !== undefined) {
+                      attach(threat.id, on);
+                    }
+                  }}
                   onChange={resetAnnouncements}
                   onCommit={threatCommitter(dispatch, threat)}
                   onDelete={() => {
                     remove(threat);
                   }}
+                  onDetach={detach(threat)}
                   onFocused={focused}
                   onRefusal={refused(threat)}
                   threat={threat}
@@ -250,6 +317,12 @@ export function ThreatPanel({
       )}
     </PanelFrame>
   );
+}
+
+function threatIn(threatId: ThreatId): Threat | undefined {
+  return modelStore
+    .getState()
+    .present.threats.find((threat) => threat.id === threatId);
 }
 
 function focusIn(

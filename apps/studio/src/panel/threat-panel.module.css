@@ -202,17 +202,28 @@
 
 .attachments {
   display: flex;
+  flex-direction: column;
+  gap: var(--saer-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attachment {
+  display: flex;
   flex-wrap: wrap;
-  gap: var(--saer-space-1) var(--saer-space-3);
-  padding-inline-start: var(--saer-space-3);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--saer-space-2);
+}
+
+.attachmentName {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .spread {
   overflow-wrap: anywhere;
-}
-
-.spread p {
-  margin: 0;
 }
 
 .records {
