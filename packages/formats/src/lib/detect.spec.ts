@@ -6,8 +6,11 @@ import {
   DetectionFailure,
   formatNameSchema,
   readAnyFormat,
+  retainedSource,
+  writeThrough,
   type DetectedRead,
 } from './detect.js';
+import { hasDiverged } from './divergence.js';
 import {
   featureCompleteYaml,
   minimalYamlV1,
@@ -269,4 +272,52 @@ describe('the codec the result carries', () => {
       opened(writtenAsSaerskrivenYaml(opened(featureCompleteText))).format,
     ).toBe('saerskriven-yaml');
   });
+});
+
+describe('writeThrough', () => {
+  const model = opened(featureCompleteYaml).model;
+
+  it('writes the format the source names', () => {
+    expect(writeThrough(model, { format: 'saerskriven-yaml' }).output).toBe(
+      saerskrivenYamlCodec.write(model).output,
+    );
+    expect(writeThrough(model, { format: 'threat-dragon' }).output).toBe(
+      threatDragonCodec.write(model).output,
+    );
+  });
+
+  it('merges onto the document the source carries rather than projecting', () => {
+    const answer = opened(featureCompleteText);
+    expect(writeThrough(answer.model, retainedSource(answer)).output).not.toBe(
+      threatDragonCodec.write(answer.model).output,
+    );
+  });
+
+  it('reports what a format with no place for the model could not hold', () => {
+    expect(
+      hasDiverged(
+        writeThrough(model, { format: 'saerskriven-yaml' }).divergences,
+      ),
+    ).toBe(false);
+    expect(
+      hasDiverged(writeThrough(model, { format: 'threat-dragon' }).divergences),
+    ).toBe(true);
+  });
+});
+
+describe('retainedSource', () => {
+  it.each([
+    { name: 'the native file', text: featureCompleteYaml },
+    { name: 'the Threat Dragon file', text: featureCompleteText },
+  ])(
+    'keeps $name under the format that read it, and writes back what that codec wrote',
+    ({ text }) => {
+      const answer = opened(text);
+      const retained = retainedSource(answer);
+      expect(retained.format).toBe(answer.format);
+      expect(writeThrough(answer.model, retained).output).toBe(
+        rewritten(answer).output,
+      );
+    },
+  );
 });

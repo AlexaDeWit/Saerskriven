@@ -98,9 +98,9 @@ format it was read as, and the wire document that read produced. A save merges
 the model onto that document, and what Saerskriven does not model survives
 only that way. It rides in the store so that one dispatch settles which file
 the model lives in and what a save merges onto, and it stays out of the stacks
-with the rest of the file: an undo moves the model, never the file. The type is
-derived from the formats package's detected-read union, so a document cannot be
-filed under the wrong format.
+with the rest of the file: an undo moves the model, never the file. The type
+comes from `@saerskriven/formats`, where it is declared beside the detected-read
+union it mirrors, so a document cannot be filed under the wrong format.
 
 ## Recovery
 

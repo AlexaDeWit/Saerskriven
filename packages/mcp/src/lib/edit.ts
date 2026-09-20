@@ -1,4 +1,8 @@
-import { quotedForTerminal } from '@saerskriven/formats';
+import {
+  quotedForTerminal,
+  retainedSource,
+  writeThrough,
+} from '@saerskriven/formats';
 import {
   recordReferenceSchema,
   threatSchema,
@@ -25,7 +29,6 @@ import {
   serialized,
   unchangedSince,
   writeReportSchema,
-  writtenThrough,
 } from './write.js';
 import {
   readModelFile,
@@ -153,7 +156,7 @@ function saved(
 ): Either.Either<EditResult, readonly string[]> {
   const file = withinRoot(workspace, read.path);
   return pipe(
-    serialized(file, () => writtenThrough(read.read, model)),
+    serialized(file, () => writeThrough(model, retainedSource(read.read))),
     Either.flatMap((written) =>
       Either.map(
         replacedFile({ file, path: read.path }, written.output, read.revision),
