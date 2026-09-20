@@ -1,5 +1,6 @@
 import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { themedCanvasStylesheet } from '@saerskriven/canvas';
+import { tokenStylesheet } from '@saerskriven/canvas/tokens';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { initialPageStylesheet } from '../initial-page.mjs';
@@ -24,24 +25,25 @@ const filesUnder = (from: string): string[] =>
         : [];
   });
 
+const sourceAt = (path: string): { path: string; text: string } => ({
+  path: relative(repositoryRoot, path),
+  text: readFileSync(path, 'utf8'),
+});
+
 const sources = trees
   .flatMap(filesUnder)
   .filter((path) => path !== tokenModule)
-  .map((path) => ({
-    path: relative(repositoryRoot, path),
-    text: readFileSync(path, 'utf8'),
-  }));
+  .map(sourceAt);
 
-const studioSources = filesUnder(studioTree).map((path) => ({
-  path: relative(repositoryRoot, path),
-  text: readFileSync(path, 'utf8'),
-}));
+const studioSources = filesUnder(studioTree).map(sourceAt);
 
 const literalColour =
   /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/u;
 
 const referenced = (text: string): string[] =>
-  (text.match(/var\(--[\w-]+/gu) ?? []).map((token) => token.slice(4));
+  (text.match(/var\(\s*--[\w-]+/gu) ?? []).map((token) =>
+    token.replace(/^var\(\s*/u, ''),
+  );
 
 const allReferenced = new Set([
   ...sources.flatMap((source) => referenced(source.text)),
@@ -58,6 +60,17 @@ const readFromElsewhere = new Set([
 
 const readProperties = new Set(
   [...allReferenced].filter((property) => !readFromElsewhere.has(property)),
+);
+
+const socialCardSource = readFileSync(
+  join(repositoryRoot, 'apps/studio/social-card-source.html'),
+  'utf8',
+);
+
+const cardReferenced = new Set(referenced(socialCardSource));
+
+const cardReadProperties = new Set(
+  [...cardReferenced].filter((property) => !readFromElsewhere.has(property)),
 );
 
 describe('the studio and the canvas, coloured from one table', () => {
@@ -93,18 +106,19 @@ const darkScheme = '@media (prefers-color-scheme: dark)';
 const colourDeclarations = (block: string): Set<string> =>
   new Set(block.match(/--saer-colour-[\w-]+(?=:)/gu) ?? []);
 
+const undeclared = (properties: Iterable<string>, sheet: string): string[] =>
+  [...properties].filter((property) => !sheet.includes(`${property}:`));
+
 describe('the document theme', () => {
   it('declares every custom property the studio reads, the injected canvas sheet among them, bar the ones read from elsewhere', () => {
-    const declared = initialPageStylesheet;
-    const missing = [...readProperties].filter(
-      (property) => !declared.includes(`${property}:`),
-    );
+    const missing = undeclared(readProperties, initialPageStylesheet);
     expect(missing).toEqual([]);
   });
 
   it('names no property on the elsewhere list that nothing reads', () => {
     const unused = [...readFromElsewhere].filter(
-      (property) => !allReferenced.has(property),
+      (property) =>
+        !allReferenced.has(property) && !cardReferenced.has(property),
     );
     expect(unused).toEqual([]);
   });
@@ -118,5 +132,12 @@ describe('the document theme', () => {
 
     const [root, dark] = initialPageStylesheet.split(darkScheme);
     expect(colourDeclarations(dark)).toEqual(colourDeclarations(root));
+  });
+});
+
+describe('the social card', () => {
+  it('declares every custom property its source reads, against the token sheet its build embeds, bar the ones read from elsewhere', () => {
+    const missing = undeclared(cardReadProperties, tokenStylesheet);
+    expect(missing).toEqual([]);
   });
 });
