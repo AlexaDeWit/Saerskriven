@@ -33,6 +33,10 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     one: '{count} hotlänk togs bort.',
     other: '{count} hotlänkar togs bort.',
   },
+  'threats-removed': {
+    one: '{count} hot togs bort.',
+    other: '{count} hot togs bort.',
+  },
   'bend-added': 'Lade till knäckpunkt {number} på {flow}.',
   'bend-moved': 'Flyttade knäckpunkt {number} på {flow}.',
   'bend-removed': 'Tog bort knäckpunkt {number} från {flow}.',

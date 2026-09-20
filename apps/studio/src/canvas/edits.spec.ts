@@ -6,6 +6,7 @@ import {
   actorElement,
   otherElement,
   processElement,
+  sampleThreat,
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
@@ -20,6 +21,7 @@ import { currentLayout } from './layout.js';
 import {
   boundaryElement,
   canvasModel,
+  flaggedCanvasModel,
   openCanvas,
   probeFlow,
   requestFlow,
@@ -107,6 +109,7 @@ describe('removalCascade', () => {
   it('counts the flows an element holds and the threats that name it', () => {
     expect(removalCascade(canvasModel, actorElement)).toEqual({
       flows: 1,
+      threatLinks: 1,
       threats: 1,
     });
   });
@@ -114,8 +117,32 @@ describe('removalCascade', () => {
   it('counts nothing for a flow, which no other element holds', () => {
     expect(removalCascade(canvasModel, probeFlow)).toEqual({
       flows: 0,
+      threatLinks: 0,
       threats: 0,
     });
+  });
+
+  it('counts a threat the removal takes the last attachment of', () => {
+    expect(removalCascade(canvasModel, requestFlow)).toEqual({
+      flows: 0,
+      threatLinks: 2,
+      threats: 2,
+    });
+  });
+
+  it('counts a threat once for a selection that holds every element of it', () => {
+    expect(removalCascade(canvasModel, [actorElement, requestFlow])).toEqual({
+      flows: 0,
+      threatLinks: 3,
+      threats: 3,
+    });
+  });
+
+  it('counts no threat that keeps an attachment the removal leaves', () => {
+    const shared = flaggedCanvasModel({
+      'threat-path-disclosure': { elements: [requestFlow, processElement] },
+    });
+    expect(removalCascade(shared, requestFlow).threats).toBe(1);
   });
 });
 
@@ -124,21 +151,21 @@ describe('describeRemoval', () => {
     const description = describeRemoval(
       activeTranslator().t,
       { name: 'Reader', kind: 'actor' },
-      { flows: 2, threats: 1 },
+      { flows: 2, threatLinks: 1, threats: 1 },
     );
 
     expect(description).toContain('Reader');
-    expect(numbersIn(description)).toEqual([2, 1]);
+    expect(numbersIn(description)).toEqual([2, 1, 1]);
   });
 
   it('says a count of none rather than leaving it out', () => {
     const description = describeRemoval(
       activeTranslator().t,
       { count: 2 },
-      { flows: 0, threats: 0 },
+      { flows: 0, threatLinks: 0, threats: 0 },
     );
 
-    expect(numbersIn(description)).toEqual([2, 0, 0]);
+    expect(numbersIn(description)).toEqual([2, 0, 0, 0]);
   });
 });
 
@@ -280,7 +307,20 @@ describe('removeSelected', () => {
 
     expect(removeSelected()).toBe(true);
     expect(currentAnnouncement().message).toContain('Reader');
-    expect(numbersIn(currentAnnouncement().message)).toEqual([1, 1]);
+    expect(numbersIn(currentAnnouncement().message)).toEqual([1, 1, 1]);
+  });
+
+  it('removes a threat the selection was the last attachment of, one undo bringing it back', () => {
+    openCanvas([actorElement]);
+
+    removeSelected();
+
+    expect(
+      modelStore.getState().present.threats.map((threat) => threat.id),
+    ).not.toContain(sampleThreat.id);
+    dispatch(Action.Undo());
+    expect(modelStore.getState().present.threats).toEqual(canvasModel.threats);
+    expect(modelStore.getState().past).toHaveLength(0);
   });
 
   it('names an element with a long name by a bounded prefix', () => {
@@ -317,7 +357,7 @@ describe('removeSelected', () => {
 
     expect(modelStore.getState().past).toHaveLength(1);
     expect(modelStore.getState().selection).toEqual([]);
-    expect(numbersIn(currentAnnouncement().message)).toEqual([2, 2, 1]);
+    expect(numbersIn(currentAnnouncement().message)).toEqual([2, 2, 1, 1]);
   });
 });
 

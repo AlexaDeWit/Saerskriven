@@ -516,6 +516,27 @@ describe('history', () => {
   });
 });
 
+describe('a threat', () => {
+  it('goes with the detach that takes its last element, and one undo brings it back with what it culled', () => {
+    const detached = reduce(recordedStart, applied.DetachThreat);
+    expect(detached.present.threats.map((threat) => threat.id)).not.toContain(
+      firstThreat,
+    );
+    expect(detached.present.mitigations).toEqual([]);
+    expect(detached.past).toHaveLength(1);
+    expect(reduce(detached, Action.Undo()).present).toBe(recordedStart.present);
+  });
+
+  it('stays where the detach leaves it another element', () => {
+    const attached = reduce(recordedStart, applied.AttachThreat);
+    const detached = reduce(attached, applied.DetachThreat);
+    expect(
+      detached.present.threats.find((threat) => threat.id === firstThreat)
+        ?.elements,
+    ).toEqual([processElement]);
+  });
+});
+
 describe('a record', () => {
   it('goes with the unlink that takes its last threat, and one undo brings it back linked', () => {
     const unlinked = reduce(recordedStart, applied.UnlinkMitigation);

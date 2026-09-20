@@ -38,6 +38,11 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
     many: '{count} de liens de menace retirés.',
     other: '{count} liens de menace retirés.',
   },
+  'threats-removed': {
+    one: '{count} menace supprimée.',
+    many: '{count} de menaces supprimées.',
+    other: '{count} menaces supprimées.',
+  },
   'bend-added': 'Coude {number} ajouté sur {flow}.',
   'bend-moved': 'Coude {number} déplacé sur {flow}.',
   'bend-removed': 'Coude {number} retiré : {flow}.',

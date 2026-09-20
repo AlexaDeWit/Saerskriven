@@ -1,8 +1,10 @@
-import { quotedForTerminal } from '@saerskriven/formats';
+import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
 import {
   recordReferenceSchema,
+  threatSchema,
   type Model,
   type RecordReference,
+  type Threat,
 } from '@saerskriven/model';
 import { Either, pipe } from 'effect';
 import { z } from 'zod';
@@ -53,6 +55,11 @@ export const editResultSchema = writeReportSchema.extend({
     .describe(
       'The mitigations and assumptions the file held before the batch that the batch culled by taking away their last reference: a threat link, or for an assumption its model link.',
     ),
+  culledThreats: z
+    .array(threatSchema)
+    .describe(
+      'The threats the file held before the batch that the batch culled by taking away their last element attachment, each as it stood before it went.',
+    ),
 });
 
 /** What `saer_edit` answers with. */
@@ -68,6 +75,7 @@ export const editDescription = [
   'Pass `revision` as the handle the last read of this file returned. A file that changed before this call is refused rather than overwritten, and the answer to that refusal is to read the file again and reconsider the edit against what the file now holds. The file is hashed again immediately before it is replaced, so a change that landed while this call was working is refused there instead of overwritten. That check is not a lock: a save landing between it and the replacement is still overwritten with neither side told, so read the file in the same turn you edit it, and expect to lose an edit where somebody is working in the same file from another tool.',
   'A mitigation is added on at least one threat, and an assumption on at least one threat or applying to the model. `link_mitigation`, `unlink_mitigation`, `link_assumption` and `unlink_assumption` take the record id and a threat id. `link_assumption_to_model` and `unlink_assumption_from_model` take the assumption id. `set_mitigation_status` and `set_assumption_status` change the status and nothing else, and never change a threat status. `add_assumption` starts an assumption `unconfirmed` and not applying to the model where those fields are left out. `replace_assumption` takes the whole record, `appliesToModel` included.',
   "A mitigation's references are its threat links. An assumption's references are its threat links and its model link. An edit that takes a record's last reference away (removing the threat that was its last reference, unlinking it, unlinking an assumption from the model where it links no threat, or a replace that leaves it none) removes the record in the same edit. The result names under `culled`, once each, every record the file held before the batch that an edit of the batch culled, even where a later edit adds it back. A record removed by `remove_mitigation` or `remove_assumption` is not named there, and neither is one the batch itself added.",
+  "A threat's references are its element attachments. An edit that takes a threat's last attachment away (`detach_threat`, or `remove_element` on the element that was its last) removes the threat in the same edit, with the cascade `remove_threat` carries. A threat the file already held attached to nothing stays, and no read ever culls one. The result names culled threats under `culledThreats` on the same terms as `culled`, a threat removed by `remove_threat` not among them.",
   'A threat carries no number: the model issues one when a threat is added and holds it when the threat is replaced, so numbers name one threat for the life of a model and there is no edit that renumbers.',
   'Use this on a model that exists. Start a new one with saer_create and convert a foreign file with saer_import. What the file format cannot hold comes back in the divergences of the result rather than as a refusal, so read them after a write to a Threat Dragon file.',
 ].join(' ');
@@ -106,6 +114,7 @@ export function editModel(
       saved(workspace, read, batch.model, {
         applied: args.edits.length,
         culled: [...batch.culled],
+        culledThreats: [...batch.culledThreats],
       }),
     ),
   );
@@ -119,6 +128,10 @@ export function renderEdit(result: EditResult): readonly string[] {
     ...(result.culled.length === 0
       ? ['No record culled.']
       : result.culled.map(culledLine)),
+    'threats culled:',
+    ...(result.culledThreats.length === 0
+      ? ['No threat culled.']
+      : result.culledThreats.map(culledThreatLine)),
     ...renderWriteReport(result),
   ];
 }
@@ -127,11 +140,15 @@ function culledLine(record: RecordReference): string {
   return `${record.kind} ${quotedForTerminal(record.id)}`;
 }
 
+function culledThreatLine(threat: Threat): string {
+  return `threat ${String(threat.number)} (${quotedForTerminal(threat.id)}): ${escapedForTerminal(threat.title)}`;
+}
+
 function saved(
   workspace: ModelWorkspace,
   read: ReadModelFile,
   model: Model,
-  batch: Pick<EditResult, 'applied' | 'culled'>,
+  batch: Pick<EditResult, 'applied' | 'culled' | 'culledThreats'>,
 ): Either.Either<EditResult, readonly string[]> {
   const file = withinRoot(workspace, read.path);
   return pipe(

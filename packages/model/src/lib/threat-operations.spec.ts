@@ -14,6 +14,7 @@ import {
   addThreat,
   attachThreat,
   detachThreat,
+  droppedThreats,
   nextThreatNumber,
   removeThreat,
   replaceThreat,
@@ -22,7 +23,9 @@ import { threatSchema } from './threats.js';
 
 const shopper = elementId('element-shopper');
 const ledger = elementId('element-ledger');
+const checkout = elementId('element-checkout');
 const spoofShopper = threatId('threat-spoof-shopper');
+const tamperPayment = threatId('threat-tamper-payment');
 const floodCheckout = threatId('threat-flood-checkout');
 
 const threatIds = (model: Model): string[] =>
@@ -197,6 +200,14 @@ describe('replaceThreat', () => {
     ).toBe(registerModel.lastIssuedThreatNumber);
   });
 
+  it('keeps a threat whose replacement names no element', () => {
+    const detached = threatSchema.parse({ ...editedFlood, elements: [] });
+    expect(
+      threatIn(modelOf(replaceThreat(registerModel, detached)), detached.id)
+        .elements,
+    ).toEqual([]);
+  });
+
   it('fails on an id the register does not hold', () => {
     expect(errorOf(replaceThreat(registerModel, replay))).toEqual(
       OperationFailure.UnknownThreat({ threatId: replay.id }),
@@ -263,9 +274,52 @@ describe('attachThreat', () => {
 });
 
 describe('detachThreat', () => {
-  it('unlinks the element from the threat', () => {
+  it('unlinks the element from a threat that keeps another', () => {
+    const next = modelOf(detachThreat(registerModel, tamperPayment, checkout));
+    expect(threatIn(next, 'threat-tamper-payment').elements).toEqual([
+      'element-pay-flow',
+    ]);
+  });
+
+  it('removes the threat when the detached element was its last', () => {
     const next = modelOf(detachThreat(registerModel, spoofShopper, shopper));
-    expect(threatIn(next, 'threat-spoof-shopper').elements).toEqual([]);
+    expect(threatIds(next)).not.toContain('threat-spoof-shopper');
+  });
+
+  it('carries the cascade of a removal when it takes the last element', () => {
+    const next = modelOf(detachThreat(registerModel, spoofShopper, shopper));
+    expect(next.mitigations).toEqual([
+      {
+        ...registerModel.mitigations[0],
+        threats: [tamperPayment],
+      },
+    ]);
+    expect(next.assumptions).toEqual([]);
+  });
+
+  it('keeps an assumption that applies to the model when its only threat goes', () => {
+    const modelWide = parsedFixture({
+      ...threatRegisterFixture,
+      assumptions: [
+        { ...threatRegisterFixture.assumptions[0], appliesToModel: true },
+      ],
+    });
+    expect(
+      modelOf(detachThreat(modelWide, spoofShopper, shopper)).assumptions,
+    ).toEqual([{ ...modelWide.assumptions[0], threats: [] }]);
+  });
+
+  it('leaves the number of the threat it removed spent', () => {
+    const next = modelOf(detachThreat(registerModel, spoofShopper, shopper));
+    expect(next.lastIssuedThreatNumber).toBe(
+      registerModel.lastIssuedThreatNumber,
+    );
+    expect(nextThreatNumber(next)).toBe(13);
+  });
+
+  it('keeps a threat that was attached to no element', () => {
+    const next = modelOf(detachThreat(registerModel, spoofShopper, shopper));
+    expect(threatIds(next)).toContain('threat-model-drift');
   });
 
   it('changes nothing when the element is not linked', () => {
@@ -292,6 +346,20 @@ describe('detachThreat', () => {
         elementId: elementId('element-ghost'),
       }),
     );
+  });
+});
+
+describe('droppedThreats', () => {
+  it('names the threat a detach culled, and nothing else', () => {
+    const next = modelOf(detachThreat(registerModel, spoofShopper, shopper));
+    expect(
+      droppedThreats(registerModel, next).map((threat) => threat.id),
+    ).toEqual([spoofShopper]);
+  });
+
+  it('names nothing where the detached threat kept an element', () => {
+    const next = modelOf(detachThreat(registerModel, tamperPayment, checkout));
+    expect(droppedThreats(registerModel, next)).toEqual([]);
   });
 });
 

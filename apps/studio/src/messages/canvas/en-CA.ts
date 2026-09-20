@@ -33,6 +33,10 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
     one: '{count} threat link dropped.',
     other: '{count} threat links dropped.',
   },
+  'threats-removed': {
+    one: '{count} threat removed.',
+    other: '{count} threats removed.',
+  },
   'bend-added': 'Added bend {number} on {flow}.',
   'bend-moved': 'Moved bend {number} on {flow}.',
   'bend-removed': 'Removed bend {number} from {flow}.',

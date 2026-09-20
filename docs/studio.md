@@ -212,8 +212,11 @@ Threat Dragon file's extra keys, are not copied, and the status line says so.
 
 Delete or Backspace removes the selection from anywhere in the studio outside a
 form field (a text box or a drop-down list). A flow attached to a removed
-element loses that end and keeps the other, and a threat keeps its record and
-loses the link.
+element loses that end and keeps the other, and a threat loses the link. A
+threat the deletion leaves attached to no element goes with it, together with
+the mitigations and assumptions left on no threat, which the notice counts
+beside the flows detached and the threat links dropped. One Delete stays one
+undo step, whatever it took.
 
 Every edit is one undo step: a placement, a drag, a resize, a committed field,
 a paste. Selecting, panning, zooming and switching diagrams add no undo step
