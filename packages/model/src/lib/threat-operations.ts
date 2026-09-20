@@ -100,10 +100,10 @@ export function removeThreat(
 }
 
 /**
- * `model` with `relink` applied to every threat's elements, the threats that
- * relink leaves attached to none removed, and {@link removeThreat}'s cascade
- * run for each of them. A threat that was attached to no element before the
- * relink stays, so a file read with one keeps it. This is the package's own
+ * `model` with `relink` applied to every threat, the threats that leaves
+ * attached to none removed, and {@link removeThreat}'s cascade run for each
+ * of them. A threat that was attached to no element before the relink
+ * stays, so a file read with one keeps it. This is the package's own
  * helper, not part of its public surface: outside it, {@link droppedThreats}
  * is how a caller learns what a cull took.
  */
@@ -131,11 +131,12 @@ export function droppedThreats(before: Model, after: Model): Threat[] {
 }
 
 /**
- * Swaps the threat carrying `threat.id` for `threat` in place. Every field
- * but the id and the number is the caller's to change, and a replacement
- * naming no element leaves the threat where it is: only {@link detachThreat}
- * and an element removal cull one. Fails on an unknown threat, a changed
- * number, or a link to an element the model does not hold.
+ * Swaps the threat carrying `threat.id` for `threat` in place, culling it
+ * where the swap takes its last element attachment away, with the cascade
+ * {@link removeThreat} carries. Every field but the id and the number is the
+ * caller's to change. A threat already attached to nothing keeps that
+ * standing whatever else the replacement changes. Fails on an unknown
+ * threat, a changed number, or a link to an element the model does not hold.
  */
 export function replaceThreat(
   model: Model,
@@ -161,7 +162,9 @@ export function replaceThreat(
       OperationFailure.UnknownElement({ elementId: unlinkable }),
     );
   }
-  return Either.right(withThreat(model, threat));
+  return Either.right(
+    withCulledThreats(model, (held) => (held.id === threat.id ? threat : held)),
+  );
 }
 
 /**

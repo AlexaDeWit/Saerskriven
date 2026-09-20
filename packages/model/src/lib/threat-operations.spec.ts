@@ -200,12 +200,33 @@ describe('replaceThreat', () => {
     ).toBe(registerModel.lastIssuedThreatNumber);
   });
 
-  it('keeps a threat whose replacement names no element', () => {
+  it('removes a threat whose replacement takes its last element', () => {
     const detached = threatSchema.parse({ ...editedFlood, elements: [] });
     expect(
-      threatIn(modelOf(replaceThreat(registerModel, detached)), detached.id)
-        .elements,
-    ).toEqual([]);
+      threatIds(modelOf(replaceThreat(registerModel, detached))),
+    ).not.toContain('threat-flood-checkout');
+  });
+
+  it('carries the cascade of a removal when the replacement takes the last element', () => {
+    const detachedSpoof = threatSchema.parse({
+      ...threatIn(registerModel, spoofShopper),
+      elements: [],
+    });
+    const next = modelOf(replaceThreat(registerModel, detachedSpoof));
+    expect(next.mitigations).toEqual([
+      { ...registerModel.mitigations[0], threats: [tamperPayment] },
+    ]);
+    expect(next.assumptions).toEqual([]);
+  });
+
+  it('keeps a threat already attached to nothing, whatever else the replacement changes', () => {
+    const redescribed = threatSchema.parse({
+      ...threatIn(registerModel, 'threat-model-drift'),
+      title: 'Model drift, revisited',
+      status: 'mitigated',
+    });
+    const next = modelOf(replaceThreat(registerModel, redescribed));
+    expect(threatIn(next, 'threat-model-drift')).toEqual(redescribed);
   });
 
   it('fails on an id the register does not hold', () => {
