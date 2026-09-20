@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "//": [
-    "build repeats the Vite plugin's inferred inputs because a leaf override replaces them, then adds the environment inputs below.",
+    "build extends the Vite plugin's inferred inputs and dependsOn with the spread token (CODING.md, Build targets), then adds the environment inputs below.",
     "The studio emits external fonts, Pages metadata, and a browser-rendered card, so changes to their paths must invalidate the cached build."
   ],
   "dependencies": {
@@ -37,7 +37,7 @@
     "targets": {
       "build": {
         "dependsOn": [
-          "^build",
+          "...",
           {
             "projects": [
               "resvg-wasm"
@@ -46,8 +46,7 @@
           }
         ],
         "inputs": [
-          "production",
-          "^production",
+          "...",
           {
             "env": "SAERSKRIVEN_FONTS_DIR"
           },
@@ -69,7 +68,6 @@
           },
           {
             "externalDependencies": [
-              "vite",
               "@vitejs/plugin-react",
               "@playwright/test"
             ]
