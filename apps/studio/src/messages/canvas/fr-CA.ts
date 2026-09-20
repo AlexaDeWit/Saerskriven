@@ -86,7 +86,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'copy-source-fields':
     'Les champs du format source hors du modèle ne sont pas copiés.',
   'cut-remains':
-    'Les menaces d’origine restent dans le registre. Les autres flux rattachés gardent des extrémités libres.',
+    'Une menace qui ne reste rattachée à rien est supprimée, et une menace rattachée ailleurs reste au registre. Les autres flux rattachés gardent des extrémités libres.',
   'cut-abandoned':
     'La sélection a changé pendant la copie. Rien n’a été coupé.',
   'records-counts': 'Fiches liées : {linked}. Fiches clonées : {cloned}.',

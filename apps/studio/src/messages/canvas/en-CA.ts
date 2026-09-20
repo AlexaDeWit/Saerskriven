@@ -74,7 +74,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'copy-source-fields':
     'Source-format fields outside the model are not copied.',
   'cut-remains':
-    'Original threats remain in the register. Other attached flows retain free endpoints.',
+    'A threat left attached to nothing is removed, and one attached elsewhere stays in the register. Other attached flows retain free endpoints.',
   'cut-abandoned': 'The selection changed while copying. Nothing was cut.',
   'records-counts': 'Records linked: {linked}. Records cloned: {cloned}.',
   'node-moved': 'Moved the selection. New position, x: {x}, y: {y}.',

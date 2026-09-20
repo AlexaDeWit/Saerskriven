@@ -193,9 +193,11 @@ Copy takes the selected elements, the attached ends of selected flows, flows
 between copied elements, the threats attached to them, and the mitigations and
 assumptions those threats link. The copy goes to the system clipboard as
 Saerskriven YAML. Cut removes the selection once the copy is written, and
-removes nothing if the model or the selection changed meanwhile. Paste and
-Duplicate add the copy with new ids and threat numbers, offset by a grid
-interval each time. A pasted mitigation or assumption identical to one the
+removes nothing if the model or the selection changed meanwhile. A threat the
+cut leaves attached to no element goes with it, and pasting brings it back as a
+copy under a new id and a new number, the cut threat's own number staying
+spent. Paste and Duplicate add the copy with new ids and threat numbers, offset
+by a grid interval each time. A pasted mitigation or assumption identical to one the
 model already holds links the pasted threats to that record, and every other
 record is added as a new one. A pasted assumption does not apply to the model.
 The status line counts what was linked and added, and the links left behind.
