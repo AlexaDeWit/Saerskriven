@@ -252,8 +252,9 @@ closed for that element until the selection moves or Focus threats runs again.
 
 **Attach existing threat** sits beside Add a threat and lists every threat in
 the register that this element does not already name, the ones attached to no
-element first. Choose one, then Attach. The threat opens expanded, and an
-undo takes the attachment back.
+element first. Choose one, then Attach. The threat opens expanded unless
+another threat is holding a refused draft, which keeps the open one where it
+is, and an undo takes the attachment back.
 
 Each threat's summary shows its number, title, severity, status, how many
 mitigations and assumptions it links, and a mark for each flag it raises.

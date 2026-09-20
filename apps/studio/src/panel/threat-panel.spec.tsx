@@ -176,17 +176,18 @@ describe(
       );
     });
 
-    it('detaches an element from a threat that names others, leaving the threat', async () => {
+    it('detaches an element from a threat that names others, leaving the threat and focus on the next attachment', async () => {
       const user = userEvent.setup();
       shareThreat();
-      showPanel(actorElement);
+      showPanel(processElement);
       await user.click(screen.getByRole('button', { name: /A reader edits/u }));
 
-      await user.click(button('Detach Studio'));
+      await user.click(button('Detach Reader'));
 
-      expect(present().threats[0].elements).toEqual([actorElement]);
+      expect(present().threats[0].elements).toEqual([processElement]);
       expect(threatsInStore()).toBe(1);
       expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
+      expect(document.activeElement).toBe(button('Detach Studio'));
     });
 
     it('removes the threat when the detach takes its last element, and one undo brings it back', async () => {

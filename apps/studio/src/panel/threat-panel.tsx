@@ -31,6 +31,7 @@ import styles from './threat-panel.module.css';
 import {
   attachableThreats,
   attachedThreats,
+  detachSaid,
   elementLabel,
   freshThreat,
   nextNumber,
@@ -176,18 +177,13 @@ export function ThreatPanel({
   const detach =
     (threat: Threat) =>
     (elementId: ElementId): void => {
+      const detached = elementById(modelStore.getState(), elementId);
       dispatch(Action.DetachThreat({ threatId: threat.id, elementId }));
       const kept = threatIn(threat.id);
-      const loose = elementById(modelStore.getState(), elementId);
-      const detachedNumber = threat.number;
-      announce((speak) =>
-        kept === undefined || loose === undefined
-          ? speak('canvas.threat-detach-removed', { number: detachedNumber })
-          : speak('canvas.threat-detached', {
-              number: detachedNumber,
-              element: elementLabel(loose, speak),
-            }),
-      );
+      const said = detachSaid(threat, detached, kept);
+      if (said !== undefined) {
+        announce(said);
+      }
       if (
         element !== undefined &&
         kept?.elements.includes(element.id) !== true
