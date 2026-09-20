@@ -25,24 +25,25 @@ const filesUnder = (from: string): string[] =>
         : [];
   });
 
+const sourceAt = (path: string): { path: string; text: string } => ({
+  path: relative(repositoryRoot, path),
+  text: readFileSync(path, 'utf8'),
+});
+
 const sources = trees
   .flatMap(filesUnder)
   .filter((path) => path !== tokenModule)
-  .map((path) => ({
-    path: relative(repositoryRoot, path),
-    text: readFileSync(path, 'utf8'),
-  }));
+  .map(sourceAt);
 
-const studioSources = filesUnder(studioTree).map((path) => ({
-  path: relative(repositoryRoot, path),
-  text: readFileSync(path, 'utf8'),
-}));
+const studioSources = filesUnder(studioTree).map(sourceAt);
 
 const literalColour =
   /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/u;
 
 const referenced = (text: string): string[] =>
-  (text.match(/var\(--[\w-]+/gu) ?? []).map((token) => token.slice(4));
+  (text.match(/var\(\s*--[\w-]+/gu) ?? []).map((token) =>
+    token.replace(/^var\(\s*/u, ''),
+  );
 
 const allReferenced = new Set([
   ...sources.flatMap((source) => referenced(source.text)),
@@ -66,10 +67,10 @@ const socialCardSource = readFileSync(
   'utf8',
 );
 
+const cardReferenced = new Set(referenced(socialCardSource));
+
 const cardReadProperties = new Set(
-  referenced(socialCardSource).filter(
-    (property) => !readFromElsewhere.has(property),
-  ),
+  [...cardReferenced].filter((property) => !readFromElsewhere.has(property)),
 );
 
 describe('the studio and the canvas, coloured from one table', () => {
@@ -116,7 +117,8 @@ describe('the document theme', () => {
 
   it('names no property on the elsewhere list that nothing reads', () => {
     const unused = [...readFromElsewhere].filter(
-      (property) => !allReferenced.has(property),
+      (property) =>
+        !allReferenced.has(property) && !cardReferenced.has(property),
     );
     expect(unused).toEqual([]);
   });
