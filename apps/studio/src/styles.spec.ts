@@ -1,5 +1,6 @@
 import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { themedCanvasStylesheet } from '@saerskriven/canvas';
+import { tokenStylesheet } from '@saerskriven/canvas/tokens';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { initialPageStylesheet } from '../initial-page.mjs';
@@ -60,6 +61,17 @@ const readProperties = new Set(
   [...allReferenced].filter((property) => !readFromElsewhere.has(property)),
 );
 
+const socialCardSource = readFileSync(
+  join(repositoryRoot, 'apps/studio/social-card-source.html'),
+  'utf8',
+);
+
+const cardReadProperties = new Set(
+  referenced(socialCardSource).filter(
+    (property) => !readFromElsewhere.has(property),
+  ),
+);
+
 describe('the studio and the canvas, coloured from one table', () => {
   it('carries no literal colour outside the token module', () => {
     const carrying = sources.filter((source) =>
@@ -93,12 +105,12 @@ const darkScheme = '@media (prefers-color-scheme: dark)';
 const colourDeclarations = (block: string): Set<string> =>
   new Set(block.match(/--saer-colour-[\w-]+(?=:)/gu) ?? []);
 
+const undeclared = (properties: Iterable<string>, sheet: string): string[] =>
+  [...properties].filter((property) => !sheet.includes(`${property}:`));
+
 describe('the document theme', () => {
   it('declares every custom property the studio reads, the injected canvas sheet among them, bar the ones read from elsewhere', () => {
-    const declared = initialPageStylesheet;
-    const missing = [...readProperties].filter(
-      (property) => !declared.includes(`${property}:`),
-    );
+    const missing = undeclared(readProperties, initialPageStylesheet);
     expect(missing).toEqual([]);
   });
 
@@ -118,5 +130,12 @@ describe('the document theme', () => {
 
     const [root, dark] = initialPageStylesheet.split(darkScheme);
     expect(colourDeclarations(dark)).toEqual(colourDeclarations(root));
+  });
+});
+
+describe('the social card', () => {
+  it('declares every custom property its source reads, against the token sheet its build embeds, bar the ones read from elsewhere', () => {
+    const missing = undeclared(cardReadProperties, tokenStylesheet);
+    expect(missing).toEqual([]);
   });
 });
