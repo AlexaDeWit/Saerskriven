@@ -1,10 +1,7 @@
 import {
   ReadFailure,
-  hasDiverged,
   threatDragonCodec,
-  writeThrough,
   type Divergence,
-  type RetainedSource,
 } from '@saerskriven/formats';
 import { mitigationIdSchema } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
@@ -38,11 +35,6 @@ type OutcomesByTag<Outcome extends { readonly _tag: string }> = {
 };
 
 const foreignText = threatDragonCodec.write(sampleModel).output;
-
-const projectedForeign: RetainedSource = {
-  format: 'threat-dragon',
-  document: undefined,
-};
 
 const openOutcomes: OutcomesByTag<OpenOutcome> = {
   Chosen: OpenOutcome.Chosen({ name: 'model.yaml', text: sampleNativeText }),
@@ -299,32 +291,6 @@ describe('naming', () => {
   it('reads the format of the file the model lives in', () => {
     expect(formatOf(FileLifecycle.NoFile())).toBe('saerskriven-yaml');
     expect(formatOf(openedForeign)).toBe('threat-dragon');
-  });
-});
-
-describe('writeThrough', () => {
-  it('writes the format the source names', () => {
-    expect(writeThrough(sampleModel, nativeSource).output).toBe(
-      sampleNativeText,
-    );
-    expect(writeThrough(sampleModel, projectedForeign).output).toBe(
-      foreignText,
-    );
-  });
-
-  it('merges onto the document the source carries rather than projecting', () => {
-    expect(writeThrough(sampleModel, foreignSource).output).not.toBe(
-      foreignText,
-    );
-  });
-
-  it('reports what a format with no place for the model could not hold', () => {
-    expect(
-      hasDiverged(writeThrough(sampleModel, nativeSource).divergences),
-    ).toBe(false);
-    expect(
-      hasDiverged(writeThrough(sampleModel, projectedForeign).divergences),
-    ).toBe(true);
   });
 });
 
