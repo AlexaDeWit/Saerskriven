@@ -150,7 +150,7 @@ export function renderWriteFailure(failure: WriteFailure): readonly string[] {
     ],
     StaleRevision: ({ file, quoted, found }) => [
       `The file ${quotedForTerminal(file)} changed since the read this call quoted, so nothing was written.`,
-      `The call quoted ${quoted}, and the file on disk is ${found}.`,
+      `The call quoted ${quotedForTerminal(quoted)}, and the file on disk is ${found}.`,
       'Read the file again and reconsider the edit against what it holds now.',
     ],
     Occupied: ({ file }) => [
