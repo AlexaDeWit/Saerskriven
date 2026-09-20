@@ -355,7 +355,6 @@ export function DiagramCanvas({
               ? panMouseButtons
               : false
         }
-        panOnScroll
         ref={surface}
         snapToGrid={snapping}
         snapGrid={[gridSpacing, gridSpacing]}
@@ -364,7 +363,7 @@ export function DiagramCanvas({
         selectionOnDrag={mode.active === 'select'}
         tabIndex={-1}
         zoomOnDoubleClick={false}
-        zoomOnScroll={false}
+        zoomOnScroll
         zIndexMode="manual"
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />

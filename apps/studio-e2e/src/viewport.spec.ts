@@ -3,6 +3,7 @@ import {
   boxesOverlap,
   canvasContainer,
   canvasSettled,
+  emptyCanvasPoint,
   screenBoxOf,
   viewportTransform,
   viewportZoom,
@@ -171,6 +172,34 @@ test('the cluster zooms and fits by pointer, and says which chord does the same'
   await page.getByRole('button', { name: 'Fit to view' }).click();
   await expect.poll(async () => viewportTransform(page)).toBe(fitted);
   await drawnInside(page, furthestAcross);
+});
+
+const pastTheBound = 2000;
+
+const wheeledToAStop = async (page: Page, by: number): Promise<number> => {
+  for (let step = 0; step < 4; step += 1) {
+    await page.mouse.wheel(0, by);
+  }
+  await canvasSettled(page);
+  return viewportZoom(page);
+};
+
+test('the wheel zooms no further than the cluster does', async ({ page }) => {
+  await openPlaceholder(page);
+  const at = await emptyCanvasPoint(page);
+
+  await page.mouse.move(at.x, at.y);
+  const floor = await wheeledToAStop(page, pastTheBound);
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  await canvasSettled(page);
+  expect(await viewportZoom(page)).toBe(floor);
+
+  await page.mouse.move(at.x, at.y);
+  const ceiling = await wheeledToAStop(page, -pastTheBound);
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+  await canvasSettled(page);
+  expect(await viewportZoom(page)).toBe(ceiling);
+  expect(ceiling).toBeGreaterThan(floor);
 });
 
 test('each control in the cluster says which chord runs it, to a pointer and to a reader alike', async ({

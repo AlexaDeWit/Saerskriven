@@ -3,6 +3,7 @@ import {
   canvasSettled,
   emptyCanvasPoint,
   type Point,
+  screenBoxOf,
   touchDrag,
   touchSession,
   viewportTransform,
@@ -25,28 +26,42 @@ const movedPoint = (page: Page, from: Point): Point => {
   };
 };
 
-test('scroll pans while a modified scroll keeps pinch zoom', async ({
+const anchorSlack = 2;
+
+test('scroll zooms around the pointer while a modified scroll keeps pinch zoom', async ({
   page,
 }) => {
   await openPlaceholder(page);
   const actor = nodeNamed(page, placeholder.actor);
   await actor.click();
+  await canvasSettled(page);
   const at = await emptyCanvasPoint(page);
-  await page.mouse.move(at.x, at.y);
-  const beforePan = await viewportTransform(page);
+  const before = await screenBoxOf(actor, 'the actor');
   const zoom = await viewportZoom(page);
 
-  await page.mouse.wheel(80, 50);
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.wheel(0, 200);
+  await canvasSettled(page);
 
-  await expect.poll(() => viewportTransform(page)).not.toBe(beforePan);
-  expect(await viewportZoom(page)).toBe(zoom);
+  const zoomedOut = await viewportZoom(page);
+  expect(zoomedOut).toBeLessThan(zoom);
+  const after = await screenBoxOf(actor, 'the actor');
+  const scaled = after.width / before.width;
+  expect(scaled).toBeLessThan(1);
+  expect(Math.abs(after.x - (at.x + (before.x - at.x) * scaled))).toBeLessThan(
+    anchorSlack,
+  );
+  expect(Math.abs(after.y - (at.y + (before.y - at.y) * scaled))).toBeLessThan(
+    anchorSlack,
+  );
   await expect(actor).toHaveClass(/selected/u);
 
+  await page.mouse.move(at.x, at.y);
   await page.keyboard.down('Control');
-  await page.mouse.wheel(0, 100);
+  await page.mouse.wheel(0, -100);
   await page.keyboard.up('Control');
 
-  await expect.poll(() => viewportZoom(page)).not.toBe(zoom);
+  await expect.poll(() => viewportZoom(page)).toBeGreaterThan(zoomedOut);
 });
 
 test('middle-button dragging pans without zooming or clearing selection', async ({

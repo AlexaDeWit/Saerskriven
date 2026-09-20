@@ -125,7 +125,9 @@ test('pulling the line and its bends previews after zoom and pan, with cancellat
   await page.keyboard.press('ControlOrMeta+-');
   await canvasSettled(page);
   await page.mouse.move(550, 240);
-  await page.mouse.wheel(65, 40);
+  await page.mouse.down({ button: 'middle' });
+  await page.mouse.move(517, 220, { steps: 6 });
+  await page.mouse.up({ button: 'middle' });
   await canvasSettled(page);
   const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
