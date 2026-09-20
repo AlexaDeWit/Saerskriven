@@ -1,18 +1,18 @@
 .properties {
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
   min-inline-size: 0;
 }
 .trigger {
   display: flex;
   justify-content: space-between;
-  gap: var(--pn-space-2);
+  gap: var(--saer-space-2);
   inline-size: 100%;
-  padding: var(--pn-space-2) var(--pn-space-3);
+  padding: var(--saer-space-2) var(--saer-space-3);
   border: 0;
   background: none;
-  color: var(--pn-colour-text);
+  color: var(--saer-colour-text);
   font: inherit;
   font-weight: 600;
   text-align: start;
@@ -22,47 +22,47 @@
 .relationship {
   display: flex;
   flex-direction: column;
-  gap: var(--pn-space-3);
+  gap: var(--saer-space-3);
   min-inline-size: 0;
 }
 .content {
-  padding: var(--pn-space-3);
-  border-top: 1px solid var(--pn-colour-border);
+  padding: var(--saer-space-3);
+  border-top: 1px solid var(--saer-colour-border);
 }
 .content[hidden] {
   display: none;
 }
 .relationship {
   margin: 0;
-  padding: var(--pn-space-2);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
+  padding: var(--saer-space-2);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
 }
 .relationship legend {
   font-weight: 600;
-  padding-inline: var(--pn-space-1);
+  padding-inline: var(--saer-space-1);
 }
 .relationshipRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  gap: var(--pn-space-2);
+  gap: var(--saer-space-2);
 }
 .relationship button {
-  padding: var(--pn-space-2);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
-  color: var(--pn-colour-text);
+  padding: var(--saer-space-2);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
   font: inherit;
 }
 .properties button:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 .hint {
   margin: 0;
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
   overflow-wrap: anywhere;
 }
 

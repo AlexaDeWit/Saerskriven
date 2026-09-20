@@ -44,7 +44,7 @@ for (const [mode, palette, systemMode] of [
     await page.goto('/');
 
     await expect(page.locator('html')).toHaveAttribute(
-      'data-pn-colour-mode',
+      'data-saer-colour-mode',
       mode,
     );
     await expect(page.locator('.initial-page[role="status"]')).toHaveCSS(
@@ -61,24 +61,26 @@ test('selects each appearance mode and persists explicit choices', async ({
   await openPlaceholder(page);
 
   await chooseAppearance(page, 'System');
-  await expect(page.locator('html')).not.toHaveAttribute('data-pn-colour-mode');
+  await expect(page.locator('html')).not.toHaveAttribute(
+    'data-saer-colour-mode',
+  );
 
   await chooseAppearance(page, 'Light');
   await expect(page.locator('html')).toHaveAttribute(
-    'data-pn-colour-mode',
+    'data-saer-colour-mode',
     'light',
   );
   await expect(page.locator('html')).toHaveCSS('color-scheme', 'light');
   await expectAppearance(page, 'Light');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute(
-    'data-pn-colour-mode',
+    'data-saer-colour-mode',
     'light',
   );
 
   await chooseAppearance(page, 'Dark');
   await expect(page.locator('html')).toHaveAttribute(
-    'data-pn-colour-mode',
+    'data-saer-colour-mode',
     'dark',
   );
   await expect(page.locator('html')).toHaveCSS('color-scheme', 'dark');
@@ -93,5 +95,7 @@ test('invalid stored appearance returns to System', async ({ page }) => {
   await openPlaceholder(page);
 
   await expectAppearance(page, 'System');
-  await expect(page.locator('html')).not.toHaveAttribute('data-pn-colour-mode');
+  await expect(page.locator('html')).not.toHaveAttribute(
+    'data-saer-colour-mode',
+  );
 });

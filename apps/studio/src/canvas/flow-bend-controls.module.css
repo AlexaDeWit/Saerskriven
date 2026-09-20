@@ -15,7 +15,7 @@
 }
 
 .segment[data-chosen='true'] {
-  stroke: var(--pn-colour-accent);
+  stroke: var(--saer-colour-accent);
   stroke-opacity: 0.4;
   stroke-dasharray: 4 3;
 }
@@ -27,15 +27,15 @@
   touch-action: none;
   width: 1.75rem;
   height: 1.75rem;
-  border: 1px solid var(--pn-colour-accent);
+  border: 1px solid var(--saer-colour-accent);
   border-radius: 50%;
-  background: var(--pn-colour-surface-raised);
-  color: var(--pn-colour-text);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
   cursor: move;
 }
 
 .end {
-  border-radius: var(--pn-radius);
+  border-radius: var(--saer-radius);
   cursor: grab;
 }
 
@@ -43,8 +43,8 @@
 .toolbar:focus-visible,
 .toolbar button:focus-visible,
 .actions button:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 .toolbar,
@@ -52,14 +52,14 @@
   display: flex;
   margin: 0;
   min-inline-size: 0;
-  gap: var(--pn-space-2);
-  padding: var(--pn-space-2);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
-  color: var(--pn-colour-text);
-  font-family: var(--pn-font-family);
-  font-size: var(--pn-font-size);
+  gap: var(--saer-space-2);
+  padding: var(--saer-space-2);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
+  font-family: var(--saer-font-family);
+  font-size: var(--saer-font-size);
   pointer-events: all;
 }
 
@@ -81,9 +81,9 @@
   flex-shrink: 0;
   white-space: nowrap;
   min-height: 1.75rem;
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
-  color: var(--pn-colour-text);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
   font: inherit;
 }

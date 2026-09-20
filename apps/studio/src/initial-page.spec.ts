@@ -65,7 +65,7 @@ describe('the initial page, as index.html and initial-page.mts write it', () => 
       styleRuleFor(rules, '.initial-page')?.style.getPropertyValue(
         'background',
       ),
-    ).toBe('var(--pn-colour-canvas)');
+    ).toBe('var(--saer-colour-canvas)');
     const reducedMotion = [...rules]
       .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule)
       .find((rule) =>

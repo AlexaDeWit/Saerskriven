@@ -23,10 +23,10 @@
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: var(--pn-radius);
-  outline: 1px solid var(--pn-colour-border);
-  background: var(--pn-colour-surface);
-  color: var(--pn-colour-text);
+  border-radius: var(--saer-radius);
+  outline: 1px solid var(--saer-colour-border);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
   text-align: center;
   overflow: hidden;
   resize: none;
@@ -34,7 +34,7 @@
 
 .note {
   height: 100%;
-  padding: var(--pn-space-1) var(--pn-space-2);
+  padding: var(--saer-space-1) var(--saer-space-2);
   overflow: auto;
   text-align: start;
 }
@@ -44,25 +44,25 @@
    field is there either way. It is a shadow rather than the outline so the
    focus ring, which a refused field keeps, does not replace it. */
 .field[aria-invalid='true'] {
-  box-shadow: 0 0 0 2px var(--pn-colour-text);
+  box-shadow: 0 0 0 2px var(--saer-colour-text);
 }
 
 .field:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 /* Below the field rather than in the flow under it, so a refusal appearing
    leaves the field where the text was. */
 .refusal {
   position: absolute;
-  top: calc(100% + var(--pn-space-1));
+  top: calc(100% + var(--saer-space-1));
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
-  padding: var(--pn-space-1) var(--pn-space-2);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
-  color: var(--pn-colour-text);
+  padding: var(--saer-space-1) var(--saer-space-2);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
   white-space: nowrap;
 }
