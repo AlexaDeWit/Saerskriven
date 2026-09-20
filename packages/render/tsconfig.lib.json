@@ -5,10 +5,13 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": true,
-    // WebAssembly is declared in lib.dom rather than in an es lib, and the
-    // resvg subpath instantiates a module. This package runs in a browser as
-    // well as under node.
-    "lib": ["dom", "es2022"],
+    // The resvg subpath instantiates a WebAssembly module, and only lib.dom
+    // and lib.webworker declare that namespace: with es2022 alone this program
+    // stops with seven errors, TS2503 and TS2304 on src/resvg.ts. webworker is
+    // the smaller of the two, 289 top-level declarations against dom's 929,
+    // and declares neither document nor window, which this package reaches for
+    // in no browser either.
+    "lib": ["webworker", "es2022"],
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
