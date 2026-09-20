@@ -3,25 +3,34 @@ import { issueMessages } from './contract.js';
 
 export const issuesEnCA = catalogue(issueMessages)('en-CA')({
   line: '{path}: {detail}',
-  'line-root': 'The document as a whole: {detail}',
+  'line-root': 'the whole document: {detail}',
   'kind-string': 'a text',
   'kind-number': 'a number',
   'kind-integer': 'a whole number',
   'kind-boolean': 'a true or false value',
   'kind-array': 'a list',
-  'kind-object': 'a record',
+  'kind-object': 'an object',
   'kind-date': 'a date',
-  'kind-null': 'null',
-  'kind-undefined': 'nothing',
-  'kind-other': 'another kind of value',
-  'referent-component': 'component',
-  'referent-asset': 'asset',
-  'referent-threat': 'threat',
-  'referent-mitigation': 'mitigation',
-  'referent-trust-zone': 'trust zone',
-  'referent-endpoint': 'endpoint',
-  'referent-data-store': 'data store',
-  'type-mismatch': 'expected {expected} and found {received}',
+  'kind-null': 'the null value',
+  'kind-undefined': 'a missing value',
+  'kind-other': 'a value of another kind',
+  'format-regex': 'the text does not match the pattern the schema declares',
+  'format-url': 'the text is not a web address',
+  'format-date': 'the text is not an ISO date',
+  'format-datetime': 'the text is not an ISO date and time',
+  'format-other': 'the text does not match the format the schema declares',
+  'source-component-unknown':
+    'the source document declares no component "{id}"',
+  'source-asset-unknown': 'the source document declares no asset "{id}"',
+  'source-threat-unknown': 'the source document declares no threat "{id}"',
+  'source-mitigation-unknown':
+    'the source document declares no mitigation "{id}"',
+  'source-trust-zone-unknown':
+    'the source document declares no trust zone "{id}"',
+  'source-endpoint-unknown': 'the source document declares no endpoint "{id}"',
+  'source-data-store-unknown':
+    'the source document declares no data store "{id}"',
+  'type-mismatch': 'should be {expected} but is {received}',
   'value-unexpected': 'expected one of {values}',
   'option-unmatched': 'no declared option accepts this value',
   'too-small-characters': {
@@ -29,8 +38,8 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
     other: 'expected at least {bound} characters',
   },
   'too-small-items': {
-    one: 'expected at least {bound} item',
-    other: 'expected at least {bound} items',
+    one: 'expected at least {bound} entry',
+    other: 'expected at least {bound} entries',
   },
   'too-small-value': 'expected at least {bound}',
   'too-small-above': 'expected more than {bound}',
@@ -39,13 +48,13 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
     other: 'expected at most {bound} characters',
   },
   'too-big-items': {
-    one: 'expected at most {bound} item',
-    other: 'expected at most {bound} items',
+    one: 'expected at most {bound} entry',
+    other: 'expected at most {bound} entries',
   },
   'too-big-value': 'expected at most {bound}',
   'too-big-below': 'expected less than {bound}',
-  'format-mismatch': 'the text does not match the {format} format',
-  'value-refused': 'the value is not accepted here ({kind})',
+  'value-refused': 'the value is not accepted here',
+  'operation-unknown': 'no operation of this server applies it',
   'text-character-refused': 'the text carries a character the model refuses',
   'element-kind-changed': 'the properties must match the element kind',
   'duplicate-element-id':
@@ -74,9 +83,8 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
   'related-boundary-unknown':
     '"{id}" names no trust boundary of the element’s own diagram',
   'related-flow-unknown': '"{id}" names no flow of the element’s own diagram',
-  'unknown-source-reference': 'the source document declares no {kind} "{id}"',
   'import-format-unnamed':
     'an import needs an OTM version stamp or a TM-BOM schema URI',
   'issue-flood': 'the file has more problems than a parse can list',
-  'schema-threw': 'the parse stopped: {reason}',
+  'schema-threw': 'the parse stopped before it could report what is wrong',
 });

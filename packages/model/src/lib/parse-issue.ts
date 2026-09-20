@@ -33,6 +33,29 @@ const sourceReferentSchema = z.enum([
 /** What an entry of a source document names when a mapping cannot resolve it. */
 export type SourceReferent = z.infer<typeof sourceReferentSchema>;
 
+const stringFormatSchema = z.enum([
+  'regex',
+  'url',
+  'date',
+  'datetime',
+  'other',
+]);
+
+/** The string formats this tree's schemas declare, and `other` for any later one. */
+export type StringFormat = z.infer<typeof stringFormatSchema>;
+
+const refusalKindSchema = z.enum([
+  'custom',
+  'not-multiple-of',
+  'unrecognized-keys',
+  'invalid-key',
+  'invalid-element',
+  'other',
+]);
+
+/** What a refusal no other code covers was about, as a closed set. */
+export type RefusalKind = z.infer<typeof refusalKindSchema>;
+
 const identified = { id: z.string() };
 
 /**
@@ -40,8 +63,10 @@ const identified = { id: z.string() };
  * rather than a sentence, so a reader phrases the entry in its own language.
  * The first group is what a schema refused, the second what the model's own
  * rules refused, and the last two what stopped a parse from reporting at all.
- * `value-refused` is the catch-all: `kind` names the schema's own issue kind
- * for a refusal no other code covers.
+ * `value-refused` is the catch-all, and `kind` names the shape of refusal it
+ * stands for. Every parameter is closed data: a text a reader could not
+ * phrase, such as a throw's own reason, is carried for a log rather than for
+ * a line on screen.
  */
 export const parseIssueDetailSchema = z.discriminatedUnion('code', [
   carrying('type-mismatch', {
@@ -60,10 +85,11 @@ export const parseIssueDetailSchema = z.discriminatedUnion('code', [
     kind: valueKindSchema,
     inclusive: z.boolean(),
   }),
-  carrying('format-mismatch', { format: z.string() }),
-  carrying('value-refused', { kind: z.string() }),
+  carrying('format-mismatch', { format: stringFormatSchema }),
+  carrying('value-refused', { kind: refusalKindSchema }),
   coded('text-character-refused'),
   coded('element-kind-changed'),
+  coded('operation-unknown'),
   carrying('duplicate-element-id', identified),
   carrying('duplicate-diagram-id', identified),
   carrying('duplicate-threat-id', identified),
@@ -110,8 +136,12 @@ export type ParseIssue = {
 /** The code of the one root issue that stands for a flood of issues. */
 export const issueFloodCode = 'issue-flood';
 
-/** The code a text carrying a character the model refuses reports. */
-export const refusedCharacterCode = 'text-character-refused';
+const refusedCharacterCode = 'text-character-refused';
+
+/** The detail `acceptedTextSchema` names for itself when it refuses a text. */
+export const refusedCharacterDetail: ParseIssueDetail = {
+  code: refusedCharacterCode,
+};
 
 /**
  * One issue as a schema reports it. Declared structurally rather than as a
@@ -137,10 +167,10 @@ export type SchemaIssue = {
  * Schema issues as the plain {@link ParseIssue} data this package reports. A
  * schema that names its own detail carries it in the issue's `params`, and
  * every other issue is mapped by its kind. `given` is the value the schema
- * read, walked along each issue's path for the kind a type mismatch received,
- * since a schema reports what it expected alone. A symbol path segment, which
- * a key of that kind produces and JSON has no spelling for, becomes its
- * string form.
+ * read: a type mismatch walks it along the issue's path for the kind it
+ * received, since a schema reports what it expected alone. A symbol path
+ * segment, which a key of that kind produces and JSON has no spelling for,
+ * becomes its string form.
  */
 export function toParseIssues(
   issues: readonly SchemaIssue[],
@@ -150,7 +180,7 @@ export function toParseIssues(
     path: issue.path.map((key) =>
       typeof key === 'symbol' ? String(key) : key,
     ),
-    detail: detailOf(issue, kindOf(valueAt(given, issue.path))),
+    detail: detailOf(issue, given),
   }));
 }
 
@@ -178,9 +208,11 @@ export function parseIssueText(detail: ParseIssueDetail): string {
     case 'too-big':
       return `expected ${boundPhrase(detail.parameters, 'at most', 'less than')}`;
     case 'format-mismatch':
-      return `the text does not match the ${detail.parameters.format} format`;
+      return formatSentences[detail.parameters.format];
     case 'value-refused':
-      return `the value is not accepted here (${detail.parameters.kind})`;
+      return `the value is not accepted here (${refusalNouns[detail.parameters.kind]})`;
+    case 'operation-unknown':
+      return 'no operation of this server applies it';
     case 'text-character-refused':
       return 'text carries a character the model does not accept';
     case 'element-kind-changed':
@@ -222,7 +254,7 @@ export function parseIssueText(detail: ParseIssueDetail): string {
     case 'issue-flood':
       return 'the input has more problems than a parse can list';
     case 'schema-threw':
-      return detail.parameters.reason;
+      return `the parse stopped: ${detail.parameters.reason}`;
     default:
       return unworded(detail);
   }
@@ -239,6 +271,38 @@ const kindNouns: Record<ValueKind, string> = {
   null: 'null',
   undefined: 'nothing',
   other: 'another kind',
+};
+
+const formatSentences: Record<StringFormat, string> = {
+  regex: 'the text does not match the pattern the schema declares',
+  url: 'the text is not a web address',
+  date: 'the text is not an ISO date',
+  datetime: 'the text is not an ISO date and time',
+  other: 'the text does not match the format the schema declares',
+};
+
+const refusalNouns: Record<RefusalKind, string> = {
+  custom: 'a rule the schema declares',
+  'not-multiple-of': 'a step the schema declares',
+  'unrecognized-keys': 'a key the schema does not declare',
+  'invalid-key': 'a key of an entry the schema declares',
+  'invalid-element': 'an entry of a collection the schema declares',
+  other: 'a rule no code of this package covers',
+};
+
+const refusalKinds: Readonly<Record<string, RefusalKind>> = {
+  custom: 'custom',
+  not_multiple_of: 'not-multiple-of',
+  unrecognized_keys: 'unrecognized-keys',
+  invalid_key: 'invalid-key',
+  invalid_element: 'invalid-element',
+};
+
+const stringFormats: Readonly<Record<string, StringFormat>> = {
+  regex: 'regex',
+  url: 'url',
+  date: 'date',
+  datetime: 'datetime',
 };
 
 const heldKinds: Readonly<Record<string, ValueKind>> = {
@@ -300,15 +364,20 @@ function boundPhrase(
   if (!parameters.inclusive) {
     return bound;
   }
-  return parameters.kind === 'string'
-    ? `${bound} characters`
-    : parameters.kind === 'array'
-      ? `${bound} items`
-      : bound;
+  if (parameters.kind === 'string') {
+    return `${bound} ${counted(parameters.bound, 'character', 'characters')}`;
+  }
+  return parameters.kind === 'array'
+    ? `${bound} ${counted(parameters.bound, 'entry', 'entries')}`
+    : bound;
 }
 
-function detailOf(issue: SchemaIssue, received: ValueKind): ParseIssueDetail {
-  const named = namedDetail(issue.params);
+function counted(count: number, one: string, many: string): string {
+  return count === 1 ? one : many;
+}
+
+function detailOf(issue: SchemaIssue, given: unknown): ParseIssueDetail {
+  const named = issue.code === 'custom' ? namedDetail(issue.params) : undefined;
   if (named !== undefined) {
     return named;
   }
@@ -316,7 +385,10 @@ function detailOf(issue: SchemaIssue, received: ValueKind): ParseIssueDetail {
     case 'invalid_type':
       return {
         code: 'type-mismatch',
-        parameters: { expected: namedKind(issue.expected), received },
+        parameters: {
+          expected: namedKind(issue.expected),
+          received: kindOf(valueAt(given, issue.path)),
+        },
       };
     case 'invalid_value':
       return {
@@ -351,10 +423,13 @@ function detailOf(issue: SchemaIssue, received: ValueKind): ParseIssueDetail {
     case 'invalid_format':
       return {
         code: 'format-mismatch',
-        parameters: { format: issue.format ?? 'declared' },
+        parameters: { format: stringFormats[issue.format ?? ''] ?? 'other' },
       };
     default:
-      return { code: 'value-refused', parameters: { kind: issue.code } };
+      return {
+        code: 'value-refused',
+        parameters: { kind: refusalKinds[issue.code] ?? 'other' },
+      };
   }
 }
 

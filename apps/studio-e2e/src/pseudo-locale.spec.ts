@@ -70,9 +70,12 @@ const itemSeparator = /,(?: |$)/u;
 
 const listConjunction = / and /u;
 
+const noticeState = 'in a failure notice';
+
 const exceptions: readonly {
   readonly text: RegExp;
   readonly reason: string;
+  readonly state?: string;
 }[] = [
   {
     text: /^(?:F\d{1,2}|[A-Z\d?=+-])$/u,
@@ -103,6 +106,7 @@ const exceptions: readonly {
   },
   {
     text: /^[a-z][\w-]*(?:\.[\w-]+)*$/u,
+    state: noticeState,
     reason:
       'a parse issue names the path into the document, which is data and reaches the line as a parameter',
   },
@@ -121,16 +125,23 @@ const isData = (piece: string): boolean =>
     .filter((item) => item !== '')
     .every(isDatum);
 
-const strayText = (shown: readonly string[]): readonly string[] =>
+const excepted = (piece: string, state: string): boolean =>
+  exceptions.some(
+    (entry) =>
+      (entry.state === undefined || entry.state === state) &&
+      entry.text.test(piece),
+  );
+
+const strayText = (
+  shown: readonly string[],
+  state: string,
+): readonly string[] =>
   shown.filter((text) =>
     text
       .split(markedLiteral)
       .map(spaced)
       .some(
-        (piece) =>
-          piece !== '' &&
-          !isData(piece) &&
-          !exceptions.some(({ text: excepted }) => excepted.test(piece)),
+        (piece) => piece !== '' && !isData(piece) && !excepted(piece, state),
       ),
   );
 
@@ -193,7 +204,7 @@ const scanned = async (
   state: string,
   found: Map<string, string>,
 ): Promise<void> => {
-  for (const text of strayText(await shownText(page))) {
+  for (const text of strayText(await shownText(page), state)) {
     if (!found.has(text)) {
       found.set(text, state);
     }
@@ -257,7 +268,7 @@ test('the pseudo-locale shows no app text outside the catalogues', async ({
   const notice = page.getByTestId('failure-notice');
   await expect(notice).toContainText(refusedName);
   await notice.locator('summary').click();
-  await scanned(page, 'in a failure notice', found);
+  await scanned(page, noticeState, found);
 
   expect(
     [...found].map(([text, state]) => `${state}: ${text}`),

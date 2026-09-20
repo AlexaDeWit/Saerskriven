@@ -3,25 +3,36 @@ import { issueMessages } from './contract.js';
 
 export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
   line: '{path} : {detail}',
-  'line-root': 'Le document dans son ensemble : {detail}',
+  'line-root': 'le document entier : {detail}',
   'kind-string': 'un texte',
   'kind-number': 'un nombre',
   'kind-integer': 'un nombre entier',
   'kind-boolean': 'une valeur vraie ou fausse',
   'kind-array': 'une liste',
-  'kind-object': 'un enregistrement',
+  'kind-object': 'un objet',
   'kind-date': 'une date',
   'kind-null': 'la valeur nulle',
-  'kind-undefined': 'rien',
+  'kind-undefined': 'une valeur absente',
   'kind-other': 'une valeur d’un autre genre',
-  'referent-component': 'composant',
-  'referent-asset': 'actif',
-  'referent-threat': 'menace',
-  'referent-mitigation': 'mesure',
-  'referent-trust-zone': 'zone de confiance',
-  'referent-endpoint': 'extrémité',
-  'referent-data-store': 'entrepôt de données',
-  'type-mismatch': '{expected} était attendu et {received} a été trouvé',
+  'format-regex': 'le texte ne correspond pas au motif déclaré par le schéma',
+  'format-url': 'le texte n’est pas une adresse web',
+  'format-date': 'le texte n’est pas une date ISO',
+  'format-datetime': 'le texte n’est pas une date et une heure ISO',
+  'format-other': 'le texte ne correspond pas au format déclaré par le schéma',
+  'source-component-unknown':
+    'le document source ne déclare aucun composant « {id} »',
+  'source-asset-unknown': 'le document source ne déclare aucun actif « {id} »',
+  'source-threat-unknown':
+    'le document source ne déclare aucune menace « {id} »',
+  'source-mitigation-unknown':
+    'le document source ne déclare aucune mesure « {id} »',
+  'source-trust-zone-unknown':
+    'le document source ne déclare aucune zone de confiance « {id} »',
+  'source-endpoint-unknown':
+    'le document source ne déclare aucune extrémité « {id} »',
+  'source-data-store-unknown':
+    'le document source ne déclare aucun magasin de données « {id} »',
+  'type-mismatch': 'devait être {expected} mais est {received}',
   'value-unexpected': 'une valeur parmi {values} était attendue',
   'option-unmatched': 'aucune option déclarée n’accepte cette valeur',
   'too-small-characters': {
@@ -48,8 +59,8 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
   },
   'too-big-value': 'une valeur d’au plus {bound} était attendue',
   'too-big-below': 'une valeur inférieure à {bound} était attendue',
-  'format-mismatch': 'le texte ne correspond pas au format {format}',
-  'value-refused': 'la valeur n’est pas acceptée ici ({kind})',
+  'value-refused': 'la valeur n’est pas acceptée ici',
+  'operation-unknown': 'aucune opération de ce serveur ne l’applique',
   'text-character-refused': 'le texte porte un caractère que le modèle refuse',
   'element-kind-changed':
     'les propriétés doivent correspondre au genre de l’élément',
@@ -82,11 +93,10 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
     '« {id} » ne nomme aucune frontière de confiance du diagramme de l’élément',
   'related-flow-unknown':
     '« {id} » ne nomme aucun flux du diagramme de l’élément',
-  'unknown-source-reference':
-    'le document source ne déclare aucun {kind} « {id} »',
   'import-format-unnamed':
     'une importation exige une version OTM ou une adresse de schéma TM-BOM',
   'issue-flood':
     'le fichier porte plus de problèmes qu’une analyse ne peut en énumérer',
-  'schema-threw': 'l’analyse s’est arrêtée : {reason}',
+  'schema-threw':
+    'l’analyse s’est arrêtée avant de pouvoir dire ce qui ne va pas',
 });

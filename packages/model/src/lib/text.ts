@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { refusedCharacterCode } from './parse-issue.js';
+import { refusedCharacterDetail } from './parse-issue.js';
 
 const acceptedClass =
   '\\p{L}\\p{M}\\p{N}\\p{P}\\p{S}\\p{Zs}\\t\\n\\r' +
@@ -31,7 +31,7 @@ export function acceptsEveryCharacter(text: string): boolean {
  */
 export const acceptedTextSchema = z
   .string()
-  .refine(acceptsEveryCharacter, { params: { code: refusedCharacterCode } });
+  .refine(acceptsEveryCharacter, { params: refusedCharacterDetail });
 
 /**
  * Whether `text` is a name with nothing in it. A name of only spaces, tabs or

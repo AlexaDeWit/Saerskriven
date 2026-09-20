@@ -2,6 +2,7 @@ import type {
   ParseIssue,
   ParseIssueDetail,
   SourceReferent,
+  StringFormat,
   ValueKind,
 } from '@saerskriven/model';
 import type { Speaker } from '../said.js';
@@ -35,9 +36,11 @@ export function parseIssueDetail(t: Speaker, detail: ParseIssueDetail): string {
     case 'too-big':
       return bigBound(t, detail.parameters);
     case 'format-mismatch':
-      return t('issues.format-mismatch', detail.parameters);
+      return t(formatIds[detail.parameters.format]);
     case 'value-refused':
-      return t('issues.value-refused', detail.parameters);
+      return t('issues.value-refused');
+    case 'operation-unknown':
+      return t('issues.operation-unknown');
     case 'text-character-refused':
       return t('issues.text-character-refused');
     case 'element-kind-changed':
@@ -73,16 +76,15 @@ export function parseIssueDetail(t: Speaker, detail: ParseIssueDetail): string {
     case 'related-flow-unknown':
       return t('issues.related-flow-unknown', detail.parameters);
     case 'unknown-source-reference':
-      return t('issues.unknown-source-reference', {
+      return t(sourceIds[detail.parameters.kind], {
         id: detail.parameters.id,
-        kind: referentText(t, detail.parameters.kind),
       });
     case 'import-format-unnamed':
       return t('issues.import-format-unnamed');
     case 'issue-flood':
       return t('issues.issue-flood');
     case 'schema-threw':
-      return t('issues.schema-threw', detail.parameters);
+      return t('issues.schema-threw');
     default:
       return undescribed(detail);
   }
@@ -105,17 +107,25 @@ const kindIds = {
   null: 'issues.kind-null',
   undefined: 'issues.kind-undefined',
   other: 'issues.kind-other',
-} as const;
+} as const satisfies Record<ValueKind, string>;
 
-const referentIds = {
-  component: 'issues.referent-component',
-  asset: 'issues.referent-asset',
-  threat: 'issues.referent-threat',
-  mitigation: 'issues.referent-mitigation',
-  'trust-zone': 'issues.referent-trust-zone',
-  endpoint: 'issues.referent-endpoint',
-  'data-store': 'issues.referent-data-store',
-} as const;
+const sourceIds = {
+  component: 'issues.source-component-unknown',
+  asset: 'issues.source-asset-unknown',
+  threat: 'issues.source-threat-unknown',
+  mitigation: 'issues.source-mitigation-unknown',
+  'trust-zone': 'issues.source-trust-zone-unknown',
+  endpoint: 'issues.source-endpoint-unknown',
+  'data-store': 'issues.source-data-store-unknown',
+} as const satisfies Record<SourceReferent, string>;
+
+const formatIds = {
+  regex: 'issues.format-regex',
+  url: 'issues.format-url',
+  date: 'issues.format-date',
+  datetime: 'issues.format-datetime',
+  other: 'issues.format-other',
+} as const satisfies Record<StringFormat, string>;
 
 function undescribed(_detail: never): string {
   return '';
@@ -123,10 +133,6 @@ function undescribed(_detail: never): string {
 
 function kindText(t: Speaker, kind: ValueKind): string {
   return t(kindIds[kind]);
-}
-
-function referentText(t: Speaker, referent: SourceReferent): string {
-  return t(referentIds[referent]);
 }
 
 function smallBound(t: Speaker, parameters: Bound): string {

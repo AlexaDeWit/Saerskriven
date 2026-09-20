@@ -91,7 +91,7 @@ export function schemaFailureIssues(
 
 /**
  * Why parseModel refused an input, as tagged data: zod stays behind the
- * parse boundary, so no zod type appears in the exported surface.
+ * parse boundary, so no zod type appears on this failure.
  */
 export type ParseFailure = Data.TaggedEnum<{
   InvalidModel: { readonly issues: readonly ParseIssue[] };

@@ -284,14 +284,20 @@ describe.each(locales)('a failure a %s reader is shown', (locale) => {
     globalThis.localStorage.clear();
   });
 
-  it('keeps the file name, the schema path and the parse issue text as they came', () => {
-    const described = describeFailure(
-      activeTranslator().t,
-      studioFailures.Read,
-    );
+  it('keeps the file name and the schema path, and words the issue from the catalogue', () => {
+    const said = activeTranslator().t;
+    const described = describeFailure(said, studioFailures.Read);
 
     expect(described.headline).toContain('broken.json');
-    expect(described.details).toEqual(['detail.diagrams.0: is required']);
+    expect(described.details).toEqual([
+      said('issues.line', {
+        path: 'detail.diagrams.0',
+        detail: said('issues.type-mismatch', {
+          expected: said('issues.kind-array'),
+          received: said('issues.kind-undefined'),
+        }),
+      }),
+    ]);
   });
 
   it("keeps the ids an operation names, under a sentence in the reader's language", () => {

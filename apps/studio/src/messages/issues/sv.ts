@@ -3,25 +3,33 @@ import { issueMessages } from './contract.js';
 
 export const issuesSv = catalogue(issueMessages)('sv')({
   line: '{path}: {detail}',
-  'line-root': 'Dokumentet som helhet: {detail}',
+  'line-root': 'hela dokumentet: {detail}',
   'kind-string': 'en text',
   'kind-number': 'ett tal',
   'kind-integer': 'ett heltal',
   'kind-boolean': 'ett sant eller falskt värde',
   'kind-array': 'en lista',
-  'kind-object': 'en post',
+  'kind-object': 'ett objekt',
   'kind-date': 'ett datum',
-  'kind-null': 'null',
-  'kind-undefined': 'ingenting',
+  'kind-null': 'nullvärdet',
+  'kind-undefined': 'ett värde som saknas',
   'kind-other': 'ett värde av annat slag',
-  'referent-component': 'komponent',
-  'referent-asset': 'tillgång',
-  'referent-threat': 'hot',
-  'referent-mitigation': 'åtgärd',
-  'referent-trust-zone': 'tillitszon',
-  'referent-endpoint': 'ändpunkt',
-  'referent-data-store': 'datalager',
-  'type-mismatch': '{expected} väntades och {received} hittades',
+  'format-regex': 'texten följer inte mönstret som schemat deklarerar',
+  'format-url': 'texten är inte en webbadress',
+  'format-date': 'texten är inte ett ISO-datum',
+  'format-datetime': 'texten är inte ett ISO-datum med tid',
+  'format-other': 'texten följer inte formatet som schemat deklarerar',
+  'source-component-unknown':
+    'källdokumentet deklarerar ingen komponent ”{id}”',
+  'source-asset-unknown': 'källdokumentet deklarerar ingen tillgång ”{id}”',
+  'source-threat-unknown': 'källdokumentet deklarerar inget hot ”{id}”',
+  'source-mitigation-unknown': 'källdokumentet deklarerar ingen åtgärd ”{id}”',
+  'source-trust-zone-unknown':
+    'källdokumentet deklarerar ingen förtroendezon ”{id}”',
+  'source-endpoint-unknown': 'källdokumentet deklarerar ingen ändpunkt ”{id}”',
+  'source-data-store-unknown':
+    'källdokumentet deklarerar inget datalager ”{id}”',
+  'type-mismatch': 'ska vara {expected} men är {received}',
   'value-unexpected': 'ett värde bland {values} väntades',
   'option-unmatched': 'inget deklarerat alternativ tar emot detta värde',
   'too-small-characters': {
@@ -29,8 +37,8 @@ export const issuesSv = catalogue(issueMessages)('sv')({
     other: 'minst {bound} tecken väntades',
   },
   'too-small-items': {
-    one: 'minst {bound} post väntades',
-    other: 'minst {bound} poster väntades',
+    one: 'minst {bound} värde väntades',
+    other: 'minst {bound} värden väntades',
   },
   'too-small-value': 'ett värde på minst {bound} väntades',
   'too-small-above': 'ett värde över {bound} väntades',
@@ -39,13 +47,13 @@ export const issuesSv = catalogue(issueMessages)('sv')({
     other: 'högst {bound} tecken väntades',
   },
   'too-big-items': {
-    one: 'högst {bound} post väntades',
-    other: 'högst {bound} poster väntades',
+    one: 'högst {bound} värde väntades',
+    other: 'högst {bound} värden väntades',
   },
   'too-big-value': 'ett värde på högst {bound} väntades',
   'too-big-below': 'ett värde under {bound} väntades',
-  'format-mismatch': 'texten följer inte formatet {format}',
-  'value-refused': 'värdet tas inte emot här ({kind})',
+  'value-refused': 'värdet tas inte emot här',
+  'operation-unknown': 'ingen operation i den här servern utför den',
   'text-character-refused': 'texten bär ett tecken som modellen avvisar',
   'element-kind-changed': 'egenskaperna måste stämma med elementets slag',
   'duplicate-element-id':
@@ -71,12 +79,11 @@ export const issuesSv = catalogue(issueMessages)('sv')({
   'related-element-unknown':
     '”{id}” namnger inget annat element i elementets eget diagram',
   'related-boundary-unknown':
-    '”{id}” namnger ingen tillitsgräns i elementets eget diagram',
+    '”{id}” namnger ingen förtroendegräns i elementets eget diagram',
   'related-flow-unknown':
     '”{id}” namnger inget flöde i elementets eget diagram',
-  'unknown-source-reference': 'källdokumentet deklarerar ingen {kind} ”{id}”',
   'import-format-unnamed':
     'en import kräver en OTM-version eller en TM-BOM-schemaadress',
   'issue-flood': 'filen bär fler problem än en tolkning kan räkna upp',
-  'schema-threw': 'tolkningen stannade: {reason}',
+  'schema-threw': 'tolkningen stannade innan den kunde säga vad som är fel',
 });

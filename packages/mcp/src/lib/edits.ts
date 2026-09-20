@@ -439,7 +439,7 @@ function applyEdit(
 function unapplied(_edit: never): Either.Either<Model, OperationFailure> {
   return Either.left(
     OperationFailure.InvalidFragment({
-      issues: [{ path: ['op'], detail: { code: 'option-unmatched' } }],
+      issues: [{ path: ['op'], detail: { code: 'operation-unknown' } }],
     }),
   );
 }

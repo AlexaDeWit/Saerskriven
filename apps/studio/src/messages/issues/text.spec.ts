@@ -10,7 +10,7 @@ import { parseIssueDetail, parseIssueLine } from './text.js';
 
 const samples = parseIssueSamples;
 
-const bounds: readonly {
+const branches: readonly {
   readonly detail: ParseIssueDetail;
   readonly id: string;
 }[] = [
@@ -49,6 +49,64 @@ const bounds: readonly {
     },
     id: 'issues.too-big-below',
   },
+  {
+    detail: { code: 'format-mismatch', parameters: { format: 'regex' } },
+    id: 'issues.format-regex',
+  },
+  {
+    detail: { code: 'format-mismatch', parameters: { format: 'date' } },
+    id: 'issues.format-date',
+  },
+  {
+    detail: { code: 'format-mismatch', parameters: { format: 'datetime' } },
+    id: 'issues.format-datetime',
+  },
+  {
+    detail: { code: 'format-mismatch', parameters: { format: 'other' } },
+    id: 'issues.format-other',
+  },
+  {
+    detail: {
+      code: 'unknown-source-reference',
+      parameters: { id: 'source-component', kind: 'component' },
+    },
+    id: 'issues.source-component-unknown',
+  },
+  {
+    detail: {
+      code: 'unknown-source-reference',
+      parameters: { id: 'source-asset', kind: 'asset' },
+    },
+    id: 'issues.source-asset-unknown',
+  },
+  {
+    detail: {
+      code: 'unknown-source-reference',
+      parameters: { id: 'source-threat', kind: 'threat' },
+    },
+    id: 'issues.source-threat-unknown',
+  },
+  {
+    detail: {
+      code: 'unknown-source-reference',
+      parameters: { id: 'source-mitigation', kind: 'mitigation' },
+    },
+    id: 'issues.source-mitigation-unknown',
+  },
+  {
+    detail: {
+      code: 'unknown-source-reference',
+      parameters: { id: 'source-endpoint', kind: 'endpoint' },
+    },
+    id: 'issues.source-endpoint-unknown',
+  },
+  {
+    detail: {
+      code: 'unknown-source-reference',
+      parameters: { id: 'source-data-store', kind: 'data-store' },
+    },
+    id: 'issues.source-data-store-unknown',
+  },
 ];
 
 const declaredCodes = parseIssueDetailSchema.options.map(
@@ -57,6 +115,20 @@ const declaredCodes = parseIssueDetailSchema.options.map(
 
 const described = (detail: ParseIssueDetail): string =>
   parseIssueDetail(activeTranslator().t, detail);
+
+const sampleOf = (code: string): ParseIssueDetail | undefined =>
+  samples.find((sample) => sample.code === code);
+
+const entryOf = (detail: ParseIssueDetail): string =>
+  detail.code === 'too-small'
+    ? 'issues.too-small-characters'
+    : detail.code === 'too-big'
+      ? 'issues.too-big-value'
+      : detail.code === 'format-mismatch'
+        ? 'issues.format-url'
+        : detail.code === 'unknown-source-reference'
+          ? 'issues.source-trust-zone-unknown'
+          : `issues.${detail.code}`;
 
 const englishTemplates = catalogueTemplates(studioCatalogues).filter(
   (entry) => entry.locale === 'en-CA',
@@ -87,22 +159,15 @@ describe('the parse issue mapping', () => {
   });
 
   it.each(samples)('reads %j from the entry its own code names', (detail) => {
-    const id =
-      detail.code === 'too-small'
-        ? 'issues.too-small-characters'
-        : detail.code === 'too-big'
-          ? 'issues.too-big-value'
-          : `issues.${detail.code}`;
-
-    expect(readsFrom(id, described(detail))).toBe(true);
+    expect(readsFrom(entryOf(detail), described(detail))).toBe(true);
   });
 
-  it.each(bounds)('words $detail.code from $id', ({ detail, id }) => {
+  it.each(branches)('words $detail.code from $id', ({ detail, id }) => {
     expect(readsFrom(id, described(detail))).toBe(true);
   });
 
   it('gives each code its own message, so none reads as another', () => {
-    const texts = [...samples, ...bounds.map(({ detail }) => detail)].map(
+    const texts = [...samples, ...branches.map(({ detail }) => detail)].map(
       described,
     );
 
@@ -113,25 +178,31 @@ describe('the parse issue mapping', () => {
     ['unknown-element-reference', 'element-ghost'],
     ['duplicate-identifier', 'source-twice'],
     ['unknown-source-reference', 'source-ghost'],
-    ['schema-threw', 'TypeError: defect'],
-    ['format-mismatch', 'url'],
+    ['duplicate-threat-number', '11'],
   ])('carries the data %s names', (code, value) => {
-    const detail = samples.find((sample) => sample.code === code);
-    if (detail === undefined) {
-      throw new Error('the sample table covers every code');
-    }
+    const detail = sampleOf(code);
+    expect(detail).toBeDefined();
+    if (detail === undefined) return;
 
     expect(described(detail)).toContain(value);
   });
 
-  it('writes a bound and a threat number as the parse reported them', () => {
+  it('leaves a throw and a schema kind out of what the reader is shown', () => {
+    const threw = sampleOf('schema-threw');
+    const refused = sampleOf('value-refused');
+    expect(threw).toBeDefined();
+    expect(refused).toBeDefined();
+    if (threw === undefined || refused === undefined) return;
+
+    expect(described(threw)).not.toContain('TypeError');
+    expect(described(refused)).not.toContain('unrecognized');
+  });
+
+  it('writes a threat number as the parse reported it', () => {
     chooseLanguage('fr-CA');
-    const number = samples.find(
-      ({ code }) => code === 'duplicate-threat-number',
-    );
-    if (number === undefined) {
-      throw new Error('the sample table covers every code');
-    }
+    const number = sampleOf('duplicate-threat-number');
+    expect(number).toBeDefined();
+    if (number === undefined) return;
 
     expect(described(number)).toContain('11');
   });
