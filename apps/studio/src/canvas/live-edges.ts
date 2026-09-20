@@ -58,8 +58,6 @@ export function useLiveEdges(
         layout,
         onScreen,
         movingElements.current,
-        false,
-        edgeBases.current,
       );
       setExactEdges(withLiveEdges(graph.edges, paused));
       edgeBases.current = canvasEdgesById(paused);

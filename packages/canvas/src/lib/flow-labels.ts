@@ -274,11 +274,13 @@ function cheapestCandidate(flow: FlowGeometry, drawn: Obstacles): Candidate {
   let best = initial;
   let cost = collisionsOf(best, drawn, Number.POSITIVE_INFINITY);
   for (const next of candidatesOf(flow, segments, middle, metrics)) {
-    if (cost === 0 && next.fromMiddle >= best.fromMiddle) {
+    const nearer =
+      next.fromMiddle < best.fromMiddle - translationNoiseTolerance;
+    if (cost === 0 && !nearer) {
       continue;
     }
     const held = collisionsOf(next, drawn, cost + 1);
-    if (held < cost || (held === cost && next.fromMiddle < best.fromMiddle)) {
+    if (held < cost || (held === cost && nearer)) {
       best = next;
       cost = held;
     }
@@ -328,12 +330,12 @@ function homeSegment(
   segments: readonly Segment[],
 ): Segment {
   let longest: Segment = { from: points[0], to: points[0] };
+  let reach = 0;
   for (const segment of segments) {
-    if (
-      squaredDistance(segment.from, segment.to) >
-      squaredDistance(longest.from, longest.to)
-    ) {
+    const span = squaredDistance(segment.from, segment.to);
+    if (span > reach + translationNoiseTolerance) {
       longest = segment;
+      reach = span;
     }
   }
   return longest;
