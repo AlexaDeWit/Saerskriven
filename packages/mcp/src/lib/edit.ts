@@ -1,4 +1,4 @@
-import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
+import { quotedForTerminal } from '@saerskriven/formats';
 import {
   recordReferenceSchema,
   threatSchema,
@@ -14,6 +14,7 @@ import {
   modelEditSchema,
   renderRefusedEdit,
 } from './edits.js';
+import { threatHeadingLine } from './threat-rows.js';
 import {
   namedFile,
   readBoundPhrase,
@@ -141,7 +142,7 @@ function culledLine(record: RecordReference): string {
 }
 
 function culledThreatLine(threat: Threat): string {
-  return `threat ${String(threat.number)} (${quotedForTerminal(threat.id)}): ${escapedForTerminal(threat.title)}`;
+  return `threat ${threatHeadingLine(threat)}`;
 }
 
 function saved(

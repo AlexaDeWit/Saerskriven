@@ -82,12 +82,22 @@ export function renderCategory(category: ThreatCategory): string {
 }
 
 /**
+ * The line a text result names one threat by: its number, its id and its
+ * title. The caller supplies whatever precedes it, an indent or a word.
+ */
+export function threatHeadingLine(
+  threat: Pick<Threat, 'number' | 'id' | 'title'>,
+): string {
+  return `${String(threat.number)} (${quotedForTerminal(threat.id)}): ${escapedForTerminal(threat.title)}`;
+}
+
+/**
  * One threat as the lines a text result carries: a heading line naming it,
  * and one indented line per field the row carries past the heading.
  */
 export function renderThreat(row: ThreatDetail): readonly string[] {
   return [
-    `  ${String(row.number)} (${quotedForTerminal(row.id)}): ${escapedForTerminal(row.title)}`,
+    `  ${threatHeadingLine(row)}`,
     ...detailLines(row).map((line) => `    ${line}`),
   ];
 }

@@ -99,10 +99,14 @@ describe.each(locales)('the %s vertical slice', (locale) => {
   it('counts a removal at zero, one and many, choosing the plural form by count', () => {
     const { t } = activeTranslator();
     const removal = (count: number): string =>
-      describeRemoval(t, { count }, { flows: count, threats: count });
+      describeRemoval(
+        t,
+        { count },
+        { flows: count, threatLinks: count, threats: count },
+      );
 
     for (const count of [0, 1, 5]) {
-      expect(numbersIn(removal(count))).toEqual([count, count, count]);
+      expect(numbersIn(removal(count))).toEqual([count, count, count, count]);
     }
     expect(removal(1)).not.toBe(removal(2).replaceAll('2', '1'));
   });

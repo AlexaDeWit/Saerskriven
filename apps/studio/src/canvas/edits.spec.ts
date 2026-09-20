@@ -109,7 +109,7 @@ describe('removalCascade', () => {
   it('counts the flows an element holds and the threats that name it', () => {
     expect(removalCascade(canvasModel, actorElement)).toEqual({
       flows: 1,
-      threatLinks: 1,
+      threatLinks: 0,
       threats: 1,
     });
   });
@@ -125,7 +125,7 @@ describe('removalCascade', () => {
   it('counts a threat the removal takes the last attachment of', () => {
     expect(removalCascade(canvasModel, requestFlow)).toEqual({
       flows: 0,
-      threatLinks: 2,
+      threatLinks: 0,
       threats: 2,
     });
   });
@@ -133,16 +133,20 @@ describe('removalCascade', () => {
   it('counts a threat once for a selection that holds every element of it', () => {
     expect(removalCascade(canvasModel, [actorElement, requestFlow])).toEqual({
       flows: 0,
-      threatLinks: 3,
+      threatLinks: 0,
       threats: 3,
     });
   });
 
-  it('counts no threat that keeps an attachment the removal leaves', () => {
+  it('counts the link a surviving threat drops, and the threat that goes, once each', () => {
     const shared = flaggedCanvasModel({
       'threat-path-disclosure': { elements: [requestFlow, processElement] },
     });
-    expect(removalCascade(shared, requestFlow).threats).toBe(1);
+    expect(removalCascade(shared, requestFlow)).toEqual({
+      flows: 0,
+      threatLinks: 1,
+      threats: 1,
+    });
   });
 });
 
@@ -307,7 +311,7 @@ describe('removeSelected', () => {
 
     expect(removeSelected()).toBe(true);
     expect(currentAnnouncement().message).toContain('Reader');
-    expect(numbersIn(currentAnnouncement().message)).toEqual([1, 1, 1]);
+    expect(numbersIn(currentAnnouncement().message)).toEqual([1, 0, 1]);
   });
 
   it('removes a threat the selection was the last attachment of, one undo bringing it back', () => {
@@ -357,7 +361,7 @@ describe('removeSelected', () => {
 
     expect(modelStore.getState().past).toHaveLength(1);
     expect(modelStore.getState().selection).toEqual([]);
-    expect(numbersIn(currentAnnouncement().message)).toEqual([2, 2, 1, 1]);
+    expect(numbersIn(currentAnnouncement().message)).toEqual([2, 2, 0, 1]);
   });
 });
 

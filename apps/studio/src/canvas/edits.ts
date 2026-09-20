@@ -5,6 +5,7 @@ import {
   type ElementId,
   type Model,
   type Point,
+  type Threat,
 } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
@@ -109,7 +110,8 @@ export function removeSelected(): boolean {
 /**
  * What a removal takes beyond the elements themselves, counted before it:
  * the flows it detaches, the threat links it drops, and the threats it
- * removes for want of a last attachment.
+ * removes for want of a last attachment. A link is counted only on a threat
+ * that survives, so a removed threat is reported once.
  */
 export function removalCascade(
   model: Model,
@@ -304,19 +306,24 @@ function droppedThreatLinks(
   model: Model,
   removed: ReadonlySet<ElementId>,
 ): number {
-  return model.threats.reduce(
-    (count, threat) =>
-      count + threat.elements.filter((held) => removed.has(held)).length,
-    0,
-  );
+  return model.threats
+    .filter((threat) => !culled(threat, removed))
+    .reduce(
+      (count, threat) =>
+        count + threat.elements.filter((held) => removed.has(held)).length,
+      0,
+    );
 }
 
 function culledThreats(model: Model, removed: ReadonlySet<ElementId>): number {
-  return model.threats.filter(
-    (threat) =>
-      threat.elements.length > 0 &&
-      threat.elements.every((held) => removed.has(held)),
-  ).length;
+  return model.threats.filter((threat) => culled(threat, removed)).length;
+}
+
+function culled(threat: Threat, removed: ReadonlySet<ElementId>): boolean {
+  return (
+    threat.elements.length > 0 &&
+    threat.elements.every((held) => removed.has(held))
+  );
 }
 
 function added(action: Action, elementId: ElementId): void {

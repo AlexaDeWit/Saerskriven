@@ -103,7 +103,9 @@ export function removeThreat(
  * `model` with `relink` applied to every threat's elements, the threats that
  * relink leaves attached to none removed, and {@link removeThreat}'s cascade
  * run for each of them. A threat that was attached to no element before the
- * relink stays, so a file read with one keeps it.
+ * relink stays, so a file read with one keeps it. This is the package's own
+ * helper, not part of its public surface: outside it, {@link droppedThreats}
+ * is how a caller learns what a cull took.
  */
 export function withCulledThreats(
   model: Model,
