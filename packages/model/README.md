@@ -95,6 +95,15 @@ it. `removeMitigation` and `removeAssumption` are explicit removals, not culls.
 `droppedRecords` names the records one model holds and another does not, which
 is how a caller reports what an edit culled.
 
+A threat is culled on the same terms, its references being its element
+attachments. `detachThreat` and `removeElement` remove a threat whose last
+attachment they take, carrying `removeThreat`'s own cascade, so the records
+left with no threat go in the same operation and one undo step restores all of
+them. A threat that was attached to nothing before the edit stays: `parseModel`
+keeps it, `replaceThreat` keeps it, and an unrelated `removeElement` keeps it.
+`droppedThreats` names the threats one model holds and another does not, the
+way `droppedRecords` does for records. A culled threat's number stays spent.
+
 `threatFlags` derives the flags a threat's records raise, as
 `threatFlagSchema` values: `mitigated-without-implemented-work` for a
 `mitigated` threat with no linked mitigation `implemented` or `verified`, and

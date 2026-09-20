@@ -13,6 +13,7 @@ import {
   detachThreat,
   diagramIdSchema,
   droppedRecords,
+  droppedThreats,
   editNote,
   elementIdSchema,
   linkAssumption,
@@ -56,6 +57,7 @@ import {
   waypointsSchema,
   type Model,
   type RecordReference,
+  type Threat,
   type ThreatId,
 } from '@saerskriven/model';
 import { Either } from 'effect';
@@ -267,26 +269,29 @@ export type RefusedEdit = {
   readonly failure: OperationFailure;
 };
 
-/** A batch applied: the model it produced and the records it culled. */
+/** A batch applied: the model it produced, and the records and threats it culled. */
 export type AppliedBatch = {
   readonly model: Model;
   readonly culled: readonly RecordReference[];
+  readonly culledThreats: readonly Threat[];
 };
 
 /**
  * Applies a batch in order and returns its first refusal. `culled` names,
  * once each, every record an edit other than `remove_mitigation` or
- * `remove_assumption` took out of the model, where the model the batch
- * started from held that record. The caller owns file writes.
+ * `remove_assumption` took out of the model, and `culledThreats` every
+ * threat an edit other than `remove_threat` did, in both cases where the
+ * model the batch started from held it. The caller owns file writes.
  */
 export function applyEdits(
   model: Model,
   edits: readonly ModelEdit[],
 ): Either.Either<AppliedBatch, RefusedEdit> {
-  const held = new Set([
+  const heldRecords = new Set([
     ...model.mitigations.map(({ id }) => recordKey({ kind: 'mitigation', id })),
     ...model.assumptions.map(({ id }) => recordKey({ kind: 'assumption', id })),
   ]);
+  const heldThreats = new Set<string>(model.threats.map(({ id }) => id));
   return Either.map(
     edits.reduce<Either.Either<AppliedBatch, RefusedEdit>>(
       (carried, edit, index) =>
@@ -297,22 +302,29 @@ export function applyEdits(
               model: next,
               culled: [
                 ...batch.culled,
-                ...(isRemoval(edit) ? [] : droppedRecords(batch.model, next)),
+                ...(isRecordRemoval(edit)
+                  ? []
+                  : droppedRecords(batch.model, next)),
+              ],
+              culledThreats: [
+                ...batch.culledThreats,
+                ...(edit.op === 'remove_threat'
+                  ? []
+                  : droppedThreats(batch.model, next)),
               ],
             }),
           }),
         ),
-      Either.right({ model, culled: [] }),
+      Either.right({ model, culled: [], culledThreats: [] }),
     ),
     (batch) => ({
       model: batch.model,
-      culled: [
-        ...new Map(
-          batch.culled
-            .filter((record) => held.has(recordKey(record)))
-            .map((record) => [recordKey(record), record]),
-        ).values(),
-      ],
+      culled: firstOfEach(batch.culled, recordKey, heldRecords),
+      culledThreats: firstOfEach(
+        batch.culledThreats,
+        (threat) => threat.id,
+        heldThreats,
+      ),
     }),
   );
 }
@@ -468,10 +480,24 @@ function placementIndex(model: Model, diagramId: string): number {
   );
 }
 
-function isRemoval(edit: ModelEdit): boolean {
+function isRecordRemoval(edit: ModelEdit): boolean {
   return edit.op === 'remove_mitigation' || edit.op === 'remove_assumption';
 }
 
 function recordKey(record: RecordReference): string {
   return `${record.kind} ${record.id}`;
+}
+
+function firstOfEach<Culled>(
+  culled: readonly Culled[],
+  key: (item: Culled) => string,
+  held: ReadonlySet<string>,
+): Culled[] {
+  return [
+    ...new Map(
+      culled
+        .filter((item) => held.has(key(item)))
+        .map((item) => [key(item), item]),
+    ).values(),
+  ];
 }

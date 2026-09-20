@@ -33,6 +33,10 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     one: '{count} hotlänk togs bort.',
     other: '{count} hotlänkar togs bort.',
   },
+  'threats-removed': {
+    one: '{count} hot togs bort.',
+    other: '{count} hot togs bort.',
+  },
   'bend-added': 'Lade till knäckpunkt {number} på {flow}.',
   'bend-moved': 'Flyttade knäckpunkt {number} på {flow}.',
   'bend-removed': 'Tog bort knäckpunkt {number} från {flow}.',
@@ -75,7 +79,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'copy-source-fields':
     'Fält från källformatet som ligger utanför modellen kopieras inte.',
   'cut-remains':
-    'De ursprungliga hoten finns kvar i registret. Andra anslutna flöden behåller fria ändar.',
+    'Ett hot som blir utan koppling tas bort, och ett hot som är kopplat någon annanstans finns kvar i registret. Andra anslutna flöden behåller fria ändar.',
   'cut-abandoned': 'Markeringen ändrades under kopieringen. Inget klipptes ut.',
   'records-counts': 'Länkade poster: {linked}. Klonade poster: {cloned}.',
   'node-moved': 'Flyttade markeringen. Ny position, x: {x}, y: {y}.',

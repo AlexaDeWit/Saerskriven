@@ -130,6 +130,7 @@ describe('what an applied edit writes', () => {
       revision: written,
       applied: 1,
       culled: [],
+      culledThreats: [],
       divergences: [],
     });
     expect(written).not.toEqual(quoted);
@@ -148,6 +149,8 @@ describe('what an applied edit writes', () => {
       'edits applied: 1',
       'culled:',
       'No record culled.',
+      'threats culled:',
+      'No threat culled.',
       `file: ${modelFile}`,
       'format: saerskriven-yaml',
       `revision: ${revisionIn(attempted, modelFile)}`,
@@ -428,7 +431,7 @@ describe('what a status edit does to the flags a search reads', () => {
   });
 });
 
-describe('the records a batch culls', () => {
+describe('the records and threats a batch culls', () => {
   it('names each record a removed threat took with it, in its lines too', () => {
     const attempted = attempt();
     const applied = attempted.edit(
@@ -448,6 +451,67 @@ describe('the records a batch culls', () => {
         'assumption "assumption-managed-db"',
       ]),
     );
+  });
+
+  it('names a threat a detach left attached to nothing, with what it took', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      ['element-api', 'element-order-flow'].map((element): EditInput => ({
+        op: 'detach_threat',
+        threat: 'threat-tamper-order',
+        element,
+      })),
+    );
+    expect(
+      Either.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
+    ).toEqual(['threat-tamper-order']);
+    expect(Either.getOrUndefined(applied)?.culled).toEqual([
+      { kind: 'mitigation', id: 'mitigation-tls' },
+      { kind: 'assumption', id: 'assumption-managed-db' },
+    ]);
+    expect(heldModel(attempted)?.threats).toEqual([]);
+    expect(
+      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
+    ).toEqual(
+      expect.arrayContaining([
+        'threats culled:',
+        'threat 1 ("threat-tamper-order"): Order tampering in transit',
+      ]),
+    );
+  });
+
+  it('names a threat whose last attachment a removed element was', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      ['element-api', 'element-order-flow'].map((element): EditInput => ({
+        op: 'remove_element',
+        element,
+      })),
+    );
+    expect(
+      Either.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
+    ).toEqual(['threat-tamper-order']);
+  });
+
+  it('names no threat a remove_threat took, nor one detached from one element of two', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [
+        {
+          op: 'detach_threat',
+          threat: 'threat-tamper-order',
+          element: 'element-api',
+        },
+        { op: 'remove_threat', threat: 'threat-tamper-order' },
+      ],
+    );
+    expect(Either.getOrUndefined(applied)?.culledThreats).toEqual([]);
   });
 
   it('names neither an explicitly removed record nor one the batch added and culled', () => {

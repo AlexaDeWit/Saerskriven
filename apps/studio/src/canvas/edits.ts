@@ -5,6 +5,7 @@ import {
   type ElementId,
   type Model,
   type Point,
+  type Threat,
 } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
@@ -25,6 +26,7 @@ import { elementIds } from './nodes.js';
 
 type RemovalCascade = {
   readonly flows: number;
+  readonly threatLinks: number;
   readonly threats: number;
 };
 
@@ -105,7 +107,12 @@ export function removeSelected(): boolean {
   return true;
 }
 
-/** Counts affected flows and removed threat links before a removal. */
+/**
+ * What a removal takes beyond the elements themselves, counted before it:
+ * the flows it detaches, the threat links it drops, and the threats it
+ * removes for want of a last attachment. A link is counted only on a threat
+ * that survives, so a removed threat is reported once.
+ */
 export function removalCascade(
   model: Model,
   removedIds: ElementId | readonly ElementId[],
@@ -113,22 +120,11 @@ export function removalCascade(
   const removed = new Set(
     Array.isArray(removedIds) ? removedIds : [removedIds],
   );
-  const flows = elementsAcross(model.diagrams).filter(
-    (element) =>
-      element.kind === 'flow' &&
-      !removed.has(element.id) &&
-      [element.source, element.target].some(
-        (endpoint) =>
-          endpoint.kind === 'attached' && removed.has(endpoint.element),
-      ),
-  ).length;
-  const threats = model.threats.reduce(
-    (count, threat) =>
-      count +
-      threat.elements.filter((elementId) => removed.has(elementId)).length,
-    0,
-  );
-  return { flows, threats };
+  return {
+    flows: detachedFlows(model, removed),
+    threatLinks: droppedThreatLinks(model, removed),
+    threats: culledThreats(model, removed),
+  };
 }
 
 /** What a removal took: one element by its own name and kind, or a count of them. */
@@ -153,7 +149,8 @@ export function describeRemoval(
           ),
         }),
     t('canvas.flows-detached', { count: cascade.flows }),
-    t('canvas.threat-links-dropped', { count: cascade.threats }),
+    t('canvas.threat-links-dropped', { count: cascade.threatLinks }),
+    t('canvas.threats-removed', { count: cascade.threats }),
   );
 }
 
@@ -291,6 +288,42 @@ export function focusElement(
   } else {
     requestAnimationFrame(retry);
   }
+}
+
+function detachedFlows(model: Model, removed: ReadonlySet<ElementId>): number {
+  return elementsAcross(model.diagrams).filter(
+    (element) =>
+      element.kind === 'flow' &&
+      !removed.has(element.id) &&
+      [element.source, element.target].some(
+        (endpoint) =>
+          endpoint.kind === 'attached' && removed.has(endpoint.element),
+      ),
+  ).length;
+}
+
+function droppedThreatLinks(
+  model: Model,
+  removed: ReadonlySet<ElementId>,
+): number {
+  return model.threats
+    .filter((threat) => !culled(threat, removed))
+    .reduce(
+      (count, threat) =>
+        count + threat.elements.filter((held) => removed.has(held)).length,
+      0,
+    );
+}
+
+function culledThreats(model: Model, removed: ReadonlySet<ElementId>): number {
+  return model.threats.filter((threat) => culled(threat, removed)).length;
+}
+
+function culled(threat: Threat, removed: ReadonlySet<ElementId>): boolean {
+  return (
+    threat.elements.length > 0 &&
+    threat.elements.every((held) => removed.has(held))
+  );
 }
 
 function added(action: Action, elementId: ElementId): void {

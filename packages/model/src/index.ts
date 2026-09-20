@@ -28,7 +28,20 @@ export * from './lib/operation-failures.js';
 export * from './lib/element-operations.js';
 export * from './lib/flow-operations.js';
 export * from './lib/diagram-operations.js';
-export * from './lib/threat-operations.js';
+export {
+  addThreat,
+  attachThreat,
+  detachThreat,
+  droppedThreats,
+  nextThreatNumber,
+  removeThreat,
+  replaceThreat,
+  type AddThreatFailure,
+  type AttachThreatFailure,
+  type DetachThreatFailure,
+  type RemoveThreatFailure,
+  type ReplaceThreatFailure,
+} from './lib/threat-operations.js';
 export * from './lib/mitigation-operations.js';
 export * from './lib/assumption-operations.js';
 export * from './lib/metadata-operations.js';
