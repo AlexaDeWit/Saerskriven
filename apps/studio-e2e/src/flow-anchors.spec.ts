@@ -62,7 +62,7 @@ test('a flow becomes bidirectional by its command, draws two arrowheads, and sav
 }) => {
   await openPlaceholder(page);
   const flow = await selectByKeyboard(page, placeholder.records);
-  const arrows = flow.locator('path.pn-flow-arrow');
+  const arrows = flow.locator('path.saer-flow-arrow');
   await expect(arrows).toHaveCount(1);
   await page.keyboard.press('ControlOrMeta+Shift+3');
   await expect(arrows).toHaveCount(2);

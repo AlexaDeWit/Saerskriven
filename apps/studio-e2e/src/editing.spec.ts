@@ -43,13 +43,13 @@ const boxTools = [
 ] as const;
 
 const previewedBoxTools = [
-  ['Actor', /^New actor, actor/u, '.pn-actor', 1, false],
-  ['Process', /^New process, process/u, '.pn-process', 1, true],
-  ['Store', /^New store, store/u, '.pn-store', 2, false],
+  ['Actor', /^New actor, actor/u, '.saer-actor', 1, false],
+  ['Process', /^New process, process/u, '.saer-process', 1, true],
+  ['Store', /^New store, store/u, '.saer-store', 2, false],
   [
     'Trust boundary',
     /^New trust boundary, trust boundary/u,
-    '.pn-boundary-box',
+    '.saer-boundary-box',
     1,
     false,
   ],
@@ -356,13 +356,13 @@ test('a thin drag keeps the pointer rectangle', async ({ page }) => {
   await page.mouse.move(from.x + 200, from.y + 20, { steps: 8 });
 
   const draft = page.getByTestId('box-draft');
-  const preview = await inkBoxOf(draft.locator('.pn-actor'));
+  const preview = await inkBoxOf(draft.locator('.saer-actor'));
   expect(preview.width).toBeCloseTo(200, 0);
   expect(preview.height).toBeCloseTo(20, 0);
   await page.mouse.up();
 
   const node = nodeNamed(page, /^New actor, actor/u);
-  const committed = await inkBoxOf(node.locator('.pn-actor'));
+  const committed = await inkBoxOf(node.locator('.saer-actor'));
   expect(committed).toEqual(preview);
   await expect(node.getByRole('textbox')).toHaveCount(0);
   await expect(node).toBeFocused();

@@ -206,7 +206,7 @@ export const handlesOf = (box: Box): Point[] =>
 
 /** The line one flow draws, from its source through its waypoints. */
 export const lineOf = (page: Page, name: RegExp): Locator =>
-  page.getByRole('group', { name }).locator('path.pn-flow');
+  page.getByRole('group', { name }).locator('path.saer-flow');
 
 /** The screen point halfway along a drawn flow. */
 export const halfwayAlong = (line: Locator): Promise<Point> =>

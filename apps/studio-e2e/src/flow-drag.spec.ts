@@ -46,9 +46,9 @@ test('a flow follows the element it attaches to through a drag, at either end', 
   const attached = [lineOf(page, outward), lineOf(page, inward)];
   const detached = lineOf(page, elsewhere);
   const badgedFlow = nodeNamed(page, badged);
-  const badgedLabel = badgedFlow.locator('.pn-flow-label');
-  const badgedBadge = badgedFlow.locator('.pn-badge');
-  const outwardLabel = nodeNamed(page, outward).locator('.pn-flow-label');
+  const badgedLabel = badgedFlow.locator('.saer-flow-label');
+  const badgedBadge = badgedFlow.locator('.saer-diagram-badge');
+  const outwardLabel = nodeNamed(page, outward).locator('.saer-flow-label');
   const settled = await Promise.all(attached.map(drawnBy));
   const untouched = await drawnBy(detached);
   const labelSettled = await badgedLabel.boundingBox();
@@ -100,8 +100,8 @@ test('a group drag carries an attached flow, its label and its badge before poin
   const target = nodeNamed(page, storefront.catalogue);
   const flow = nodeNamed(page, outward);
   const line = lineOf(page, outward);
-  const label = flow.locator('.pn-flow-label');
-  const badge = nodeNamed(page, elsewhere).locator('.pn-badge');
+  const label = flow.locator('.saer-flow-label');
+  const badge = nodeNamed(page, elsewhere).locator('.saer-diagram-badge');
 
   await page.keyboard.press('ControlOrMeta+a');
 
@@ -170,7 +170,7 @@ test('a quick release keeps the last live label placement', async ({
 }) => {
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
-  const label = nodeNamed(page, outward).locator('.pn-flow-label');
+  const label = nodeNamed(page, outward).locator('.saer-flow-label');
 
   const at = await pressOn(page, dragged);
   await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
@@ -187,7 +187,7 @@ test('a one-endpoint move settles its attached label before release', async ({
   await openTwoDiagrams(page);
   const store = nodeNamed(page, storefront.catalogue);
   const label = nodeNamed(page, /^read the product listings, flow/u).locator(
-    '.pn-flow-label',
+    '.saer-flow-label',
   );
 
   const at = await pressOn(page, store);
@@ -204,7 +204,7 @@ test('a quick release keeps the live placement of a label beside an opposite flo
 }) => {
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
-  const label = nodeNamed(page, inward).locator('.pn-flow-label');
+  const label = nodeNamed(page, inward).locator('.saer-flow-label');
 
   const at = await pressOn(page, dragged);
   await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
@@ -220,7 +220,7 @@ test('a release after a pause keeps the placement the pause gave a label beside 
 }) => {
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
-  const label = nodeNamed(page, inward).locator('.pn-flow-label');
+  const label = nodeNamed(page, inward).locator('.saer-flow-label');
 
   const at = await pressOn(page, dragged);
   await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
@@ -237,7 +237,7 @@ test('a group drag keeps a badge beside an opposite flow where the drag left it'
 }) => {
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
-  const badge = nodeNamed(page, badged).locator('.pn-badge');
+  const badge = nodeNamed(page, badged).locator('.saer-diagram-badge');
   await page.keyboard.press('ControlOrMeta+a');
   const placed = await placeOf(dragged);
 

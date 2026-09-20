@@ -48,22 +48,22 @@
 /* Hover is written before selected because the two selectors count the same,
    so source order is what keeps a selected flow under the pointer at the
    heavier weight. */
-.canvas :global(.react-flow__edge:hover .pn-shape) {
+.canvas :global(.react-flow__edge:hover .saer-shape) {
   stroke-width: var(--saer-cue-flow-hover);
 }
 
-.canvas :global(.react-flow__edge.selected .pn-shape) {
+.canvas :global(.react-flow__edge.selected .saer-shape) {
   stroke-width: var(--saer-cue-flow-selection);
 }
 
 /* A boundary takes the pointer on its outline, name and resize control. */
-.canvas :global(.react-flow__node-boundary-box .pn-boundary-hit-target),
-.canvas :global(.react-flow__node-boundary-curve .pn-boundary-hit-target) {
+.canvas :global(.react-flow__node-boundary-box .saer-boundary-hit-target),
+.canvas :global(.react-flow__node-boundary-curve .saer-boundary-hit-target) {
   pointer-events: stroke;
 }
 
-.canvas :global(.react-flow__node-boundary-box .pn-label),
-.canvas :global(.react-flow__node-boundary-curve .pn-label),
+.canvas :global(.react-flow__node-boundary-box .saer-label),
+.canvas :global(.react-flow__node-boundary-curve .saer-label),
 .canvas :global(.react-flow__node-boundary-box .react-flow__resize-control),
 .canvas :global(.react-flow__node-boundary-curve .react-flow__resize-control) {
   pointer-events: all;
@@ -110,7 +110,7 @@
 /* Hand owns a drag wherever it begins, including over a drawn element. */
 .canvas[data-tool='hand'] :global(.react-flow__node),
 .canvas[data-tool='hand'] :global(.react-flow__edge),
-.canvas[data-tool='hand'] :global(.pn-badge-layer g) {
+.canvas[data-tool='hand'] :global(.saer-diagram-badge-layer g) {
   pointer-events: none;
 }
 
@@ -118,7 +118,7 @@
    every control's hit area: a side line forms no stacking context, so its
    button stacks above the badge while its border stays beneath it. The canvas
    package keeps the corner handles clear of the badge. */
-.canvas :global(.pn-badge-layer) {
+.canvas :global(.saer-diagram-badge-layer) {
   z-index: 1;
 }
 

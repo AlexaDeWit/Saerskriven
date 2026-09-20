@@ -126,7 +126,7 @@ for (const placement of notePlacements) {
     await editor.press('Control+Enter');
     const note = nodeNamed(page, /^Note, text/u);
     const drawnText = async (): Promise<string> =>
-      (await note.locator('text.pn-note tspan').allTextContents())
+      (await note.locator('text.saer-note tspan').allTextContents())
         .join('')
         .replace(/\s/gu, '');
     await expect.poll(drawnText).toBe('FirstlineSecondline');

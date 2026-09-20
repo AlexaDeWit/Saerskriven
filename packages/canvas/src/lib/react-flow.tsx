@@ -75,7 +75,8 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * text out, for a canvas with a text editor over it. A selected element the
  * model can resize carries the resize controls, named from `resizeLabels`.
  * The badge letters `marks` and draws last, in an SVG layer classed
- * `pn-badge-layer`, so a canvas can stack it above the selection frame.
+ * `saer-diagram-badge-layer`, so a canvas can stack it above the selection
+ * frame.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
@@ -365,10 +366,6 @@ const boundaryZIndex = -1;
 
 const nodeZIndex = 0;
 
-const boundaryHitTargetClass = 'pn-boundary-hit-target';
-
-const badgeLayerClass = 'pn-badge-layer';
-
 const resizableKinds = new Set<CanvasNodeKind>([
   'actor',
   'process',
@@ -397,7 +394,7 @@ function BadgeLayer({
   return (
     <svg
       aria-hidden="true"
-      className={badgeLayerClass}
+      className={canvasClassNames.badgeLayer}
       height={svgNumber(node.size.height)}
       overflow="visible"
       pointerEvents="none"
@@ -425,7 +422,7 @@ function BoundaryHitTarget({
 }): ReactElement {
   const interaction = {
     'aria-hidden': true,
-    className: boundaryHitTargetClass,
+    className: canvasClassNames.boundaryHitTarget,
     fill: 'none',
     pointerEvents: 'stroke',
     stroke: 'transparent',
