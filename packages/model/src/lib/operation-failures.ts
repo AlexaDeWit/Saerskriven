@@ -6,7 +6,7 @@ import type {
   MitigationId,
   ThreatId,
 } from './ids.js';
-import type { ParseIssue } from './parse.js';
+import type { ParseIssue } from './parse-issue.js';
 import type { RecordReference } from './records.js';
 
 /** Why an operation refused to produce a model: `_tag` names the violation and the other fields say where it is. */

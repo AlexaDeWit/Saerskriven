@@ -18,7 +18,8 @@ import type { Point, Size } from './geometry.js';
 import type { DiagramId, ElementId } from './ids.js';
 import { sameItems } from './lists.js';
 import { OperationFailure } from './operation-failures.js';
-import { toParseIssues, type Model } from './parse.js';
+import type { Model } from './parse.js';
+import { toParseIssues } from './parse-issue.js';
 import { elementIdsAcross, elementIdsIn, elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
 import { firstRefusedCharacter, isEmptyName } from './text.js';
@@ -246,7 +247,7 @@ export function setElementProperties(
         return Either.left(
           OperationFailure.InvalidElementProperties({
             elementId,
-            issues: toParseIssues(patch.error.issues),
+            issues: toParseIssues(patch.error.issues, properties),
           }),
         );
       }
@@ -255,11 +256,7 @@ export function setElementProperties(
           OperationFailure.InvalidElementProperties({
             elementId,
             issues: [
-              {
-                path: ['kind'],
-                code: 'custom',
-                message: 'Properties must match the existing element kind.',
-              },
+              { path: ['kind'], detail: { code: 'element-kind-changed' } },
             ],
           }),
         );
@@ -267,14 +264,13 @@ export function setElementProperties(
       if (!patchChanges(located.element, patch.data)) {
         return Either.right(model);
       }
-      const next = elementSchema.safeParse(
-        patchedElement(located.element, patch.data),
-      );
+      const patched = patchedElement(located.element, patch.data);
+      const next = elementSchema.safeParse(patched);
       if (!next.success) {
         return Either.left(
           OperationFailure.InvalidElementProperties({
             elementId,
-            issues: toParseIssues(next.error.issues),
+            issues: toParseIssues(next.error.issues, patched),
           }),
         );
       }

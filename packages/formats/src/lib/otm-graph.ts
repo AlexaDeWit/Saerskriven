@@ -162,10 +162,10 @@ function otmFlows(
     ]);
     for (const endpoint of [flow.source, flow.destination]) {
       if (!componentIds.has(endpoint)) {
-        context.problem(
-          ['dataflows', flow.id],
-          `Unknown component ${JSON.stringify(endpoint)}`,
-        );
+        context.problem(['dataflows', flow.id], {
+          code: 'unknown-source-reference',
+          parameters: { id: endpoint, kind: 'component' },
+        });
       }
     }
     return {
@@ -206,7 +206,10 @@ function dataProse(
       }
       const asset = assets.get(id);
       if (asset === undefined) {
-        context.problem([path], `Unknown asset ${JSON.stringify(id)}`);
+        context.problem([path], {
+          code: 'unknown-source-reference',
+          parameters: { id, kind: 'asset' },
+        });
         return [];
       }
       context.fields(asset, ['id', 'name', 'description']);

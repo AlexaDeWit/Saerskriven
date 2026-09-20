@@ -1,12 +1,5 @@
+import { carrying, coded } from '@saerskriven/model';
 import { z } from 'zod';
-
-const coded = <const C extends string>(code: C) =>
-  z.object({ code: z.literal(code) });
-
-const carrying = <const C extends string, const P extends z.ZodRawShape>(
-  code: C,
-  parameters: P,
-) => z.object({ code: z.literal(code), parameters: z.object(parameters) });
 
 /**
  * What one divergence is about, as a code and the data the code needs. A

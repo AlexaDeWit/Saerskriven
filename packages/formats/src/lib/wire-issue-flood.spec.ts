@@ -68,7 +68,7 @@ describe('a document with more invalid entries than zod 4.6.2 gathers on V8', ()
     ({ read, text }) => {
       expect(refusalOf(read, text)).toMatchObject({
         _tag: 'InvalidWireDocument',
-        issues: [{ path: [], code: issueFloodCode }],
+        issues: [{ path: [], detail: { code: issueFloodCode } }],
       });
     },
   );
@@ -88,7 +88,7 @@ describe('a document with more invalid entries than zod 4.6.2 gathers on V8', ()
       refusalOf((flooded) => saerskrivenYamlCodec.read(flooded), text),
     ).toMatchObject({
       _tag: 'InvalidModel',
-      issues: [{ path: [], code: issueFloodCode }],
+      issues: [{ path: [], detail: { code: issueFloodCode } }],
     });
   });
 });

@@ -52,14 +52,7 @@ export function importFormatOf(
   }
   return Either.left(
     ReadFailure.InvalidWireDocument({
-      issues: [
-        {
-          path: [],
-          code: 'invalid_format',
-          message:
-            'Import requires an OTM 0.2.0 version stamp or a TM-BOM 1.0.1 or 1.0.2 schema URI.',
-        },
-      ],
+      issues: [{ path: [], detail: { code: 'import-format-unnamed' } }],
     }),
   );
 }

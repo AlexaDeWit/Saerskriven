@@ -100,10 +100,10 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     for (const occurrence of items) {
       const definition = definitions.get(occurrence.threat);
       if (definition === undefined) {
-        context.problem(
-          ['threats'],
-          `Unknown threat ${JSON.stringify(occurrence.threat)}`,
-        );
+        context.problem(['threats'], {
+          code: 'unknown-source-reference',
+          parameters: { id: occurrence.threat, kind: 'threat' },
+        });
       } else {
         addThreat(definition, occurrence, owner, attached);
       }
@@ -172,10 +172,10 @@ function otmMitigations(
     }
     const mitigation = definitions.get(given.mitigation);
     if (mitigation === undefined) {
-      context.problem(
-        ['mitigations', index],
-        `Unknown mitigation ${JSON.stringify(given.mitigation)}`,
-      );
+      context.problem(['mitigations', index], {
+        code: 'unknown-source-reference',
+        parameters: { id: given.mitigation, kind: 'mitigation' },
+      });
       continue;
     }
     fields(given, ['mitigation', 'state']);

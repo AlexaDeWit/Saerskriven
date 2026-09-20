@@ -439,13 +439,7 @@ function applyEdit(
 function unapplied(_edit: never): Either.Either<Model, OperationFailure> {
   return Either.left(
     OperationFailure.InvalidFragment({
-      issues: [
-        {
-          path: ['op'],
-          code: 'invalid_value',
-          message: 'no operation of this server applies it',
-        },
-      ],
+      issues: [{ path: ['op'], detail: { code: 'operation-unknown' } }],
     }),
   );
 }

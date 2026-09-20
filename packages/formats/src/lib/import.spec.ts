@@ -1,4 +1,4 @@
-import type { Model } from '@saerskriven/model';
+import { parseIssueText, type Model } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
 import { otmWireSchema } from '@saerskriven/wire-otm';
 import { tmbomWireSchema } from '@saerskriven/wire-tmbom';
@@ -235,11 +235,11 @@ it('rejects the upstream Vault example with dangling trust-zone references', () 
   const messages = Either.match(result, {
     onLeft: (failure) =>
       failure._tag === 'InvalidWireDocument'
-        ? failure.issues.map((issue) => issue.message)
+        ? failure.issues.map((issue) => parseIssueText(issue.detail))
         : [],
     onRight: () => [],
   });
-  expect(messages).toContain('Unknown trust zone "public-internet"');
+  expect(messages).toContain('names unknown trust zone "public-internet"');
 });
 
 it('identifies an unsupported import before reporting schema fields', () => {
@@ -247,7 +247,7 @@ it('identifies an unsupported import before reporting schema fields', () => {
     _tag: 'Left',
     left: {
       _tag: 'InvalidWireDocument',
-      issues: [{ code: 'invalid_format', path: [] }],
+      issues: [{ detail: { code: 'import-format-unnamed' }, path: [] }],
     },
   });
 });

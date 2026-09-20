@@ -22,6 +22,22 @@ export {
   type ModelMetadataChange,
   type ModelMetadataInput,
 } from './lib/model.js';
+export { carrying, coded } from './lib/coded.js';
+export {
+  issueFloodCode,
+  issueLine,
+  parseIssueDetailSchema,
+  parseIssueText,
+  toParseIssues,
+  type ParseIssue,
+  type ParseIssueCode,
+  type ParseIssueDetail,
+  type RefusalKind,
+  type SchemaIssue,
+  type SourceReferent,
+  type StringFormat,
+  type ValueKind,
+} from './lib/parse-issue.js';
 export * from './lib/parse.js';
 export * from './lib/empty.js';
 export * from './lib/operation-failures.js';

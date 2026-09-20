@@ -1,9 +1,6 @@
 import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
-import {
-  issueLine,
-  OperationFailure,
-  type ParseIssue,
-} from '@saerskriven/model';
+import { OperationFailure, type ParseIssue } from '@saerskriven/model';
+import { parseIssueLine } from '../messages/issues/text.js';
 import { useTranslator } from '../messages/locale.js';
 import { Message } from '../messages/message.js';
 import type { Speaker } from '../messages/said.js';
@@ -18,8 +15,8 @@ import { LiveRegion } from './live-region.js';
 /**
  * A refusal as a person reads it: a headline in the reader's language, and
  * the lines under it. An id, a file name, a limit's name and a schema path
- * pass through unchanged. A parse issue's own text, and text a browser or a
- * parser raised, stays a literal line, since no code says what it means.
+ * pass through unchanged. Text a browser or a parser raised stays a literal
+ * line, since no code says what it means.
  */
 export function describeFailure(
   t: Speaker,
@@ -54,15 +51,15 @@ export function describeOperation(
   return OperationFailure.$match(failure, {
     InvalidElementProperties: ({ issues }) => [
       t('notice.op-element-properties'),
-      ...issueLines(issues),
+      ...issueLines(t, issues),
     ],
     InvalidElementRelationship: ({ issues }) => [
       t('notice.op-element-relationships'),
-      ...issueLines(issues),
+      ...issueLines(t, issues),
     ],
     InvalidFragment: ({ issues }) => [
       t('notice.op-fragment'),
-      ...issueLines(issues),
+      ...issueLines(t, issues),
     ],
     UnknownDiagram: ({ diagramId }) => [
       t('notice.op-unknown-diagram', { id: diagramId }),
@@ -225,11 +222,11 @@ function describeRead(
         }),
         InvalidWireDocument: ({ issues }) => ({
           headline: t('notice.invalid-document', { name }),
-          details: issueLines(issues),
+          details: issueLines(t, issues),
         }),
         InvalidModel: ({ issues }) => ({
           headline: t('notice.invalid-model', { name }),
-          details: issueLines(issues),
+          details: issueLines(t, issues),
         }),
       });
 }
@@ -248,6 +245,9 @@ function describeRecovery(t: Speaker, problem: RecoveryProblem): string {
   });
 }
 
-function issueLines(issues: readonly ParseIssue[]): readonly string[] {
-  return issues.map(issueLine);
+function issueLines(
+  t: Speaker,
+  issues: readonly ParseIssue[],
+): readonly string[] {
+  return issues.map((issue) => parseIssueLine(t, issue));
 }

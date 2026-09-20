@@ -225,8 +225,7 @@ describe('the characters a model string refuses', () => {
     expect(issuesOf(titled(`Order${nullCharacter} service`))).toEqual([
       {
         path: ['metadata', 'title'],
-        message: 'Text carries a character the model does not accept.',
-        code: 'custom',
+        detail: { code: 'text-character-refused' },
       },
     ]);
   });

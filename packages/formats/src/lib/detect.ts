@@ -133,7 +133,7 @@ function verdictOn(
     ExceededReadLimit: (): Verdict => 'bounded',
     MalformedText: (): Verdict => 'declined',
     InvalidWireDocument: ({ issues }): Verdict =>
-      issues.some((issue) => issue.code === issueFloodCode) ||
+      issues.some((issue) => issue.detail.code === issueFloodCode) ||
       !issues.some((issue) =>
         discriminators.some((discriminator) =>
           atOrAbove(issue.path, discriminator),

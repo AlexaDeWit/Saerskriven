@@ -21,6 +21,7 @@ import {
   type MitigationId,
   type ThreatId,
 } from './lib/ids.js';
+import { issueLine } from './lib/parse-issue.js';
 import { parseModel, type Model } from './lib/parse.js';
 import type { Threat } from './lib/threats.js';
 
@@ -38,6 +39,7 @@ export {
 } from './lib/builders.fixtures.js';
 export { validModelFixture } from './lib/model.fixtures.js';
 export { modelInputArbitrary } from './lib/model-input.fixtures.js';
+export { parseIssueSamples } from './lib/parse-issue.fixtures.js';
 export {
   securityModelFixture,
   securityPropertyFixtures,
@@ -69,9 +71,7 @@ export function parsedFixture(input: unknown): Model {
     parseModel(input),
     (failure) =>
       new Error(
-        `Fixture does not parse: ${failure.issues
-          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-          .join('; ')}`,
+        `Fixture does not parse: ${failure.issues.map(issueLine).join('; ')}`,
       ),
   );
 }

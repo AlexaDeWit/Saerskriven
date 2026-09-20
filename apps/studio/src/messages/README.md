@@ -88,8 +88,6 @@ as an exception:
 Some diagnostic text has no code to translate from, and a notice shows it as a
 literal line under a headline in the reader's language:
 
-- A model or schema parse issue (`issueLine` from `@saerskriven/model`): its
-  path and the issue's own message, until #488 gives the issues codes.
 - Text a browser raised: a refused file read or write, a refused storage
   access, a failed fetch of a compiler or font, and the error an unexpected
   render failure carries on the stopped page.
