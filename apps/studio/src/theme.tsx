@@ -18,9 +18,9 @@ const applyColourMode = (mode: ColourMode): void => {
   }
   const root = document.documentElement;
   if (mode === 'system') {
-    delete root.dataset.pnColourMode;
+    delete root.dataset.saerColourMode;
   } else {
-    root.dataset.pnColourMode = mode;
+    root.dataset.saerColourMode = mode;
   }
 };
 

@@ -1,13 +1,13 @@
 .notice {
-  padding: var(--pn-space-3);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
-  color: var(--pn-colour-text);
+  padding: var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
 }
 
 .notice:not(:empty) {
-  margin-top: var(--pn-space-2);
+  margin-top: var(--saer-space-2);
 }
 
 .headline {
@@ -19,23 +19,23 @@
    sideways: a path into a threat nests eight levels deep and is longer than
    the panel is wide. */
 .details {
-  margin: var(--pn-space-2) 0 0;
-  padding-left: var(--pn-space-4);
-  color: var(--pn-colour-text-muted);
+  margin: var(--saer-space-2) 0 0;
+  padding-left: var(--saer-space-4);
+  color: var(--saer-colour-text-muted);
   overflow-wrap: anywhere;
 }
 
 .dismiss {
-  margin-top: var(--pn-space-2);
-  padding: var(--pn-space-2) var(--pn-space-3);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
-  color: var(--pn-colour-text);
+  margin-top: var(--saer-space-2);
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
   font: inherit;
 }
 
 .dismiss:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }

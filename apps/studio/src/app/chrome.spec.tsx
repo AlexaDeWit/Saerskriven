@@ -14,8 +14,8 @@ import { modelStore } from '../store/store.js';
 import { StudioChrome } from './chrome.js';
 
 const measuredHeights = [
-  '--pn-chrome-block-size',
-  '--pn-chrome-reports-block-size',
+  '--saer-chrome-block-size',
+  '--saer-chrome-reports-block-size',
 ];
 
 function Chrome() {

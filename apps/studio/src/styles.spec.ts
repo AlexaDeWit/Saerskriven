@@ -41,7 +41,7 @@ const literalColour =
   /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/u;
 
 const referenced = (text: string): string[] =>
-  (text.match(/var\(--pn-[\w-]+/gu) ?? []).map((token) => token.slice(4));
+  (text.match(/var\(--saer-[\w-]+/gu) ?? []).map((token) => token.slice(4));
 
 const readProperties = new Set([
   ...sources.flatMap((source) => referenced(source.text)),
@@ -79,7 +79,7 @@ describe('the studio browser interfaces', () => {
 const darkScheme = '@media (prefers-color-scheme: dark)';
 
 const colourDeclarations = (block: string): Set<string> =>
-  new Set(block.match(/--pn-colour-[\w-]+(?=:)/gu) ?? []);
+  new Set(block.match(/--saer-colour-[\w-]+(?=:)/gu) ?? []);
 
 describe('the document theme', () => {
   it('declares every custom property the studio reads, the injected canvas sheet among them', () => {

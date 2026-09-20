@@ -42,7 +42,7 @@ const sourceDocument = async (): Promise<string> => {
   const styles = `${tokenStylesheet}
 ${fontFace(400, regular)}
 ${fontFace(700, bold)}
-:root { --pn-font-family: 'Saerskriven Social Card', sans-serif; }`;
+:root { --saer-font-family: 'Saerskriven Social Card', sans-serif; }`;
 
   return source
     .replace(

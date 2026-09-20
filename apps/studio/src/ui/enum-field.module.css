@@ -1,11 +1,11 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--pn-space-1);
+  gap: var(--saer-space-1);
 }
 
 .label {
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
   font-weight: 600;
 }
 
@@ -17,12 +17,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--pn-space-2);
-  padding: var(--pn-space-2) var(--pn-space-3);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
-  color: var(--pn-colour-text);
+  gap: var(--saer-space-2);
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
   font: inherit;
   /* The chosen value reads in the model's own vocabulary; only the case is
      presentation, so the accessible name stays the value itself. */
@@ -30,8 +30,8 @@
 }
 
 .trigger:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 /* A value or option label stops at two lines, so a long label (a record's
@@ -50,7 +50,7 @@
 
 .suffix {
   display: block;
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
   font-size: 0.8em;
   text-align: start;
   overflow-wrap: anywhere;
@@ -59,12 +59,12 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--pn-space-1);
+  gap: var(--saer-space-1);
   min-inline-size: 0;
 }
 
 .detail {
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
   font-size: 0.8em;
   font-weight: 400;
   text-align: start;
@@ -75,25 +75,25 @@
 }
 
 .trigger[data-placeholder] {
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
 }
 
 .icon {
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
 }
 
 .content {
   z-index: 3;
   max-inline-size: min(30rem, var(--radix-select-content-available-width));
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
   overflow: hidden;
 }
 
 .viewport {
   max-block-size: min(24rem, var(--radix-select-content-available-height));
-  padding: var(--pn-space-1);
+  padding: var(--saer-space-1);
 }
 
 .item {
@@ -102,10 +102,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--pn-space-2);
-  padding: var(--pn-space-2) var(--pn-space-3);
-  border-radius: var(--pn-radius);
-  color: var(--pn-colour-text);
+  gap: var(--saer-space-2);
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border-radius: var(--saer-radius);
+  color: var(--saer-colour-text);
   text-transform: capitalize;
   user-select: none;
 }
@@ -114,8 +114,8 @@
    the chosen value through `data-state`, which is where a state is styled
    from rather than a class the component would have to keep in step. */
 .item[data-highlighted] {
-  background: var(--pn-colour-accent);
-  color: var(--pn-colour-accent-text);
+  background: var(--saer-colour-accent);
+  color: var(--saer-colour-accent-text);
 }
 
 .item[data-highlighted] .suffix,
@@ -130,8 +130,8 @@
    background it would be drawn on. It survives forced colours, which the
    background swap above does not. */
 .item[data-highlighted]:focus-visible {
-  outline: var(--pn-focus-ring-width) solid var(--pn-colour-accent-text);
-  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
+  outline: var(--saer-focus-ring-width) solid var(--saer-colour-accent-text);
+  outline-offset: calc(-1 * var(--saer-focus-ring-offset));
 }
 
 /* The chosen value keeps a cue of its own once the highlight moves off it:
@@ -148,7 +148,7 @@
 /* A heading over a group of options, which is not one of them: it takes the
    muted text and the label weight the field's own label carries. */
 .group {
-  padding: var(--pn-space-2) var(--pn-space-3) var(--pn-space-1);
-  color: var(--pn-colour-text-muted);
+  padding: var(--saer-space-2) var(--saer-space-3) var(--saer-space-1);
+  color: var(--saer-colour-text-muted);
   font-weight: 600;
 }

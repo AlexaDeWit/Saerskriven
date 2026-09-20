@@ -1,10 +1,10 @@
 .cluster {
   display: flex;
-  gap: var(--pn-space-1);
-  padding: var(--pn-space-1);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
+  gap: var(--saer-space-1);
+  padding: var(--saer-space-1);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
 }
 
 .control,
@@ -16,20 +16,20 @@
   height: 2rem;
   padding: 0;
   border: 0;
-  border-radius: var(--pn-radius);
+  border-radius: var(--saer-radius);
   background: none;
-  color: var(--pn-colour-text);
+  color: var(--saer-colour-text);
 }
 
 .control:hover,
 .percentage:hover {
-  background: var(--pn-colour-surface);
+  background: var(--saer-colour-surface);
 }
 
 .control:focus-visible,
 .percentage:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 .glyph {
@@ -44,5 +44,5 @@
 }
 
 .panel:global(.react-flow__panel) {
-  margin: var(--pn-space-3);
+  margin: var(--saer-space-3);
 }
