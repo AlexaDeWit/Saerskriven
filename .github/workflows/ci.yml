@@ -218,8 +218,9 @@ jobs:
           save-nix-store: 'false'
 
       # Known gap: actionlint keys action metadata by tag, so the inputs of a
-      # SHA-pinned action stay unchecked. No tag pinned here is in its bundled
-      # database, so resolving a pin's comment would check nothing (#537).
+      # SHA-pinned action stay unchecked. No tag pinned here is in actionlint
+      # 1.7.12's bundled database either, so resolving a pin's comment tag
+      # would check nothing. Worth re-checking after a flake bump (#537).
       - name: Lint workflows (actionlint)
         run: nix develop .#ci --command actionlint
 
