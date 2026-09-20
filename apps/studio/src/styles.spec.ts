@@ -43,6 +43,12 @@ const literalColour =
 const referenced = (text: string): string[] =>
   (text.match(/var\(--[\w-]+/gu) ?? []).map((token) => token.slice(4));
 
+const allReferenced = new Set([
+  ...sources.flatMap((source) => referenced(source.text)),
+  ...referenced(themedCanvasStylesheet),
+  ...referenced(initialPageStylesheet),
+]);
+
 const readFromElsewhere = new Set([
   '--radix-dropdown-menu-content-available-height',
   '--radix-dropdown-menu-content-available-width',
@@ -51,10 +57,7 @@ const readFromElsewhere = new Set([
 ]);
 
 const readProperties = new Set(
-  [
-    ...sources.flatMap((source) => referenced(source.text)),
-    ...referenced(themedCanvasStylesheet),
-  ].filter((property) => !readFromElsewhere.has(property)),
+  [...allReferenced].filter((property) => !readFromElsewhere.has(property)),
 );
 
 describe('the studio and the canvas, coloured from one table', () => {
@@ -91,12 +94,19 @@ const colourDeclarations = (block: string): Set<string> =>
   new Set(block.match(/--saer-colour-[\w-]+(?=:)/gu) ?? []);
 
 describe('the document theme', () => {
-  it('declares every custom property the studio reads, apart from the ones named as read from elsewhere, the injected canvas sheet among them', () => {
+  it('declares every custom property the studio reads, the injected canvas sheet among them, bar the ones read from elsewhere', () => {
     const declared = initialPageStylesheet;
     const missing = [...readProperties].filter(
       (property) => !declared.includes(`${property}:`),
     );
     expect(missing).toEqual([]);
+  });
+
+  it('names no property on the elsewhere list that nothing reads', () => {
+    const unused = [...readFromElsewhere].filter(
+      (property) => !allReferenced.has(property),
+    );
+    expect(unused).toEqual([]);
   });
 
   it('declares them on the document root, so any module reads them', () => {
