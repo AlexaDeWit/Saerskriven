@@ -431,6 +431,19 @@ describe('what a status edit does to the flags a search reads', () => {
   });
 });
 
+const replacedTamperOrder = (elements: readonly string[]): EditInput => ({
+  op: 'replace_threat',
+  threat: {
+    id: 'threat-tamper-order',
+    title: 'Order tampering in transit',
+    category: { methodology: 'STRIDE', category: 'tampering' },
+    severity: 'high',
+    status: 'open',
+    description: 'An order can be altered between the customer and the API.',
+    elements: [...elements],
+  },
+});
+
 describe('the records and threats a batch culls', () => {
   it('names each record a removed threat took with it, in its lines too', () => {
     const attempted = attempt();
@@ -495,6 +508,62 @@ describe('the records and threats a batch culls', () => {
     expect(
       Either.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
     ).toEqual(['threat-tamper-order']);
+  });
+
+  it('names a threat a replace left attached to nothing, with what it took', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [replacedTamperOrder([])],
+    );
+    expect(
+      Either.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
+    ).toEqual(['threat-tamper-order']);
+    expect(Either.getOrUndefined(applied)?.culled).toEqual([
+      { kind: 'mitigation', id: 'mitigation-tls' },
+      { kind: 'assumption', id: 'assumption-managed-db' },
+    ]);
+    expect(heldModel(attempted)?.threats).toEqual([]);
+    expect(
+      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
+    ).toEqual(
+      expect.arrayContaining([
+        'threats culled:',
+        'threat 1 ("threat-tamper-order"): Order tampering in transit',
+      ]),
+    );
+  });
+
+  it('keeps a threat a replace leaves attached to something', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [replacedTamperOrder(['element-api'])],
+    );
+    expect(Either.getOrUndefined(applied)?.culledThreats).toEqual([]);
+    expect(heldModel(attempted)?.threats.map(({ id }) => id)).toContain(
+      'threat-tamper-order',
+    );
+  });
+
+  it('refuses a later edit to a threat a replace culled, as unknown', () => {
+    const attempted = attempt();
+    const refused = refusalOf(
+      attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+        replacedTamperOrder([]),
+        {
+          op: 'set_threat_severity',
+          threat: 'threat-tamper-order',
+          severity: 'low',
+        },
+      ]),
+    );
+    expect(refused.join('\n')).toContain('index 1');
+    expect(refused.join('\n')).toContain(
+      'holds no threat "threat-tamper-order"',
+    );
   });
 
   it('names no threat a remove_threat took, nor one detached from one element of two', () => {

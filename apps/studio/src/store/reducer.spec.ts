@@ -535,6 +535,20 @@ describe('a threat', () => {
         ?.elements,
     ).toEqual([processElement]);
   });
+
+  it('goes with a replace that takes its last element, and one undo brings it back with what it culled', () => {
+    const replaced = reduce(
+      recordedStart,
+      Action.ReplaceThreat({ threat: { ...sampleThreat, elements: [] } }),
+    );
+    expect(replaced.present.threats.map((threat) => threat.id)).not.toContain(
+      firstThreat,
+    );
+    expect(replaced.present.mitigations).toEqual([]);
+    expect(replaced.present.assumptions).toEqual([]);
+    expect(replaced.past).toHaveLength(1);
+    expect(reduce(replaced, Action.Undo()).present).toBe(recordedStart.present);
+  });
 });
 
 describe('a record', () => {
