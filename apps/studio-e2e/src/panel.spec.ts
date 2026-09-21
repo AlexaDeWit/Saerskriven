@@ -489,6 +489,9 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     ['Assumptions', 'button', 'Add assumption'],
     ['Assumptions', 'combobox', 'Existing assumption'],
     ['Assumptions', 'button', 'Link existing assumption'],
+    ['Attached elements', 'button', 'Detach Label printer'],
+    ['Attached elements', 'combobox', 'Existing element'],
+    ['Attached elements', 'button', 'Attach existing element'],
   ] as const) {
     await page.keyboard.press('Tab');
     await expect(

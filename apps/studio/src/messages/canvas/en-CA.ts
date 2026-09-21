@@ -48,6 +48,11 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'undo-done': 'Undo completed.',
   'redo-done': 'Redo completed.',
   'threat-deleted': 'Threat {number} deleted.',
+  'threat-attached': 'Attached threat {number} to {element}.',
+  'threat-detached':
+    'Detached threat {number} from {element}. It stays on its other elements.',
+  'threat-detach-removed':
+    'Removed threat {number}. It was attached to nothing else. Undo restores it.',
   'record-named': '{kind} “{label}”',
   'record-unlinked': 'Unlinked {record}. It stays on its other references.',
   'record-removed': 'Removed {record}. Nothing else used it. Undo restores it.',
