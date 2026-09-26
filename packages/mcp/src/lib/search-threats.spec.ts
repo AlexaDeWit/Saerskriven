@@ -5,6 +5,7 @@ import {
   crowdedTree,
   everyRecordTree,
   featureCompleteWorkspace,
+  refusalOf,
   treeHolding,
 } from './read-tools.fixtures.js';
 import { dataNotInstructions } from './preface.js';
@@ -41,7 +42,7 @@ describe('what saer_search_threats finds', () => {
   it('matches nothing rather than refusing an element id no element carries', () => {
     expect(
       search({ element: 'no-such-element', response_format: 'concise' }).counts,
-    ).toEqual({ matched: 0, returned: 0, truncated: false });
+    ).toEqual({ matched: 0, offset: 0, returned: 0, truncated: false });
   });
 
   it('adds the description and the linked mitigations where detail is asked for', () => {
@@ -81,6 +82,71 @@ describe('what saer_search_threats finds', () => {
       search({ severity: 'high', response_format: 'concise' }),
     );
     expect(rendered.join('\n')).toContain('category STRIDE/');
+  });
+});
+
+describe('the category and diagram a threat search keeps', () => {
+  const tampering = search({
+    category: 'STRIDE/tampering',
+    response_format: 'concise',
+  });
+
+  it('keeps only the category a call names, as a result names it', () => {
+    expect(tampering.counts.matched).toBeGreaterThan(0);
+    expect(tampering.threats.map((row) => row.category)).toEqual(
+      tampering.threats.map(() => ({
+        methodology: 'STRIDE',
+        category: 'tampering',
+      })),
+    );
+  });
+
+  it('compares a category without case', () => {
+    expect(
+      search({ category: 'stride/TAMPERING', response_format: 'concise' })
+        .threats,
+    ).toEqual(tampering.threats);
+  });
+
+  it('keeps a custom category by its own methodology name', () => {
+    expect(
+      answerOf(
+        searchThreats(everyRecordTree(), {
+          category: 'House/process gap',
+          response_format: 'concise',
+        }),
+      ).threats.map(({ id }) => id),
+    ).toEqual(['threat-house-rule']);
+  });
+
+  it('keeps the threats referencing an element of the diagram a call names, by id or title', () => {
+    const byTitle = search({ diagram: 'Records', response_format: 'concise' });
+    expect(byTitle.counts.matched).toBe(9);
+    expect(
+      search({ diagram: '1', response_format: 'concise' }).threats,
+    ).toEqual(byTitle.threats);
+  });
+
+  it('leaves out a threat attached to no element', () => {
+    expect(
+      answerOf(
+        searchThreats(everyRecordTree(), {
+          diagram: 'diagram-main',
+          response_format: 'concise',
+        }),
+      ).threats.map(({ id }) => id),
+    ).toEqual(['threat-tamper-order']);
+  });
+
+  it('refuses a diagram the model does not hold', () => {
+    expect(
+      refusalOf(
+        searchThreats(workspace, {
+          diagram: 'Nothing',
+          response_format: 'concise',
+        }),
+      )[0],
+    ).toContain('holds no diagram named "Nothing"');
   });
 });
 
@@ -237,6 +303,21 @@ describe('a concise listing past its limit', () => {
     const steering = renderThreatSearch(crowded).join('\n');
     expect(steering).toContain('Narrow it with `status`');
     expect(steering).not.toContain('concise form');
+  });
+
+  it('carries the rest of the listing from the offset it names', () => {
+    const next = answerOf(
+      searchThreats(crowdedTree(), {
+        response_format: 'concise',
+        offset: crowded.counts.nextOffset,
+      }),
+    );
+    expect(
+      [...crowded.threats, ...next.threats].map(({ number }) => number),
+    ).toEqual(
+      Array.from({ length: crowdedThreats }, (unused, index) => index + 1),
+    );
+    expect(next.counts.nextOffset).toBeUndefined();
   });
 
   it('offers the concise form to a detailed listing that was cut', () => {

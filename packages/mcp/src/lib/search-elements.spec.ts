@@ -2,12 +2,14 @@ import { threatCountByElement } from '@saerskriven/model';
 import {
   answerOf,
   everyRecordTree,
+  keptReasonTree,
   refusalOf,
   twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
 import { readNamed } from './reading.js';
 import { renderElementSearch, searchElements } from './search-elements.js';
 import { searchLimits } from './search.js';
+import type { ModelWorkspace } from './workspace.js';
 
 const workspace = twoDiagramsWorkspace();
 
@@ -15,6 +17,14 @@ const model = answerOf(readNamed(workspace, undefined)).model;
 
 const search = (args: Parameters<typeof searchElements>[1]) =>
   answerOf(searchElements(workspace, args));
+
+const renderedKind = (
+  tree: ModelWorkspace,
+  kind: Parameters<typeof searchElements>[1]['kind'],
+) =>
+  renderElementSearch(
+    answerOf(searchElements(tree, { kind, response_format: 'detailed' })),
+  );
 
 describe('what saer_search_elements finds', () => {
   it('matches every element of the fixture where nothing narrows it', () => {
@@ -78,6 +88,18 @@ describe('what saer_search_elements finds', () => {
     });
   });
 
+  it('carries the rest of a cut listing from the offset it names', () => {
+    const first = search({ response_format: 'detailed' });
+    const next = search({
+      response_format: 'detailed',
+      offset: first.counts.nextOffset,
+    });
+    expect([...first.elements, ...next.elements].map((row) => row.id)).toEqual(
+      search({ response_format: 'concise' }).elements.map((row) => row.id),
+    );
+    expect(next.counts.nextOffset).toBeUndefined();
+  });
+
   it('steers a cut listing toward a narrower query', () => {
     const rendered = renderElementSearch(
       search({ response_format: 'detailed' }),
@@ -121,14 +143,22 @@ describe('what a detailed element row carries per kind', () => {
     for (const row of rows) expect(row).not.toHaveProperty('position');
   });
 
-  it('renders a free flow endpoint as the position it sits at', () => {
-    expect(
-      renderElementSearch(
-        answerOf(
-          searchElements(rich, { kind: 'flow', response_format: 'detailed' }),
-        ),
-      ).join('\n'),
-    ).toContain('target: free at 280,160');
+  it('renders a free flow endpoint as the position it sits at, and every bend', () => {
+    expect(renderedKind(rich, 'flow')).toEqual(
+      expect.arrayContaining([
+        '    target: free at 280,160',
+        '    waypoints: 200,140',
+      ]),
+    );
+  });
+
+  it('renders the geometry of a box and of a curve boundary', () => {
+    expect(renderedKind(rich, 'trust-boundary')).toEqual(
+      expect.arrayContaining([
+        '    shape: box 280,60 sized 520 by 220',
+        '    shape: curve through 40,320 then 400,300 then 760,340',
+      ]),
+    );
   });
 
   it('says why an out-of-scope element is out of scope', () => {
@@ -139,6 +169,16 @@ describe('what a detailed element row carries per kind', () => {
     ).join('\n');
     expect(rendered).toContain('out of scope');
     expect(rendered).toContain('reason out of scope:');
+  });
+
+  it('says why an element was out of scope where it is back in scope', () => {
+    const rendered = renderedKind(keptReasonTree(), 'store');
+    expect(rendered).toContain(
+      '    reason out of scope: Managed by the cloud provider.',
+    );
+    expect(rendered.filter((line) => line.includes(', out of scope'))).toEqual(
+      [],
+    );
   });
 
   it('matches a query against the text of a canvas note', () => {

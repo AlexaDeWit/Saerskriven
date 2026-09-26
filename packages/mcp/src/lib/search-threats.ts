@@ -1,4 +1,5 @@
 import {
+  elementIdsAcross,
   recordsLinkedTo,
   severitySchema,
   threatStatusSchema,
@@ -15,6 +16,7 @@ import {
   type ModelReading,
 } from './reading.js';
 import {
+  diagramsOf,
   limitedRows,
   matchesQuery,
   renderCounts,
@@ -23,6 +25,7 @@ import {
   searchCountsSchema,
 } from './search.js';
 import {
+  categoryName,
   flagsDescription,
   renderThreat,
   threatDetail,
@@ -43,11 +46,23 @@ export const searchThreatsArgumentsSchema = searchArgumentsSchema.extend({
     .describe(
       'Keep only threats of this severity. `undecided` is a state of its own rather than a missing value, so it has to be asked for by name.',
     ),
+  category: z
+    .string()
+    .optional()
+    .describe(
+      'Keep only threats of this category, written as a result names it: the methodology and the category joined by a slash, such as `STRIDE/tampering`, or the methodology name and category of a custom one. Compared without case against the whole pair.',
+    ),
+  diagram: z
+    .string()
+    .optional()
+    .describe(
+      'Keep only threats that reference an element drawn on this diagram, named by its id or its exact title. A threat attached to no element is on no diagram. A name no diagram carries is refused.',
+    ),
   element: z
     .string()
     .optional()
     .describe(
-      'Keep only threats that reference this element id. Find an id with saer_search_elements; an id no element carries matches nothing rather than being refused.',
+      'Keep only threats that reference this element id. Find an id with saer_search_elements. An id no element carries matches nothing rather than being refused.',
     ),
 });
 
@@ -70,9 +85,10 @@ export type SearchThreatsResult = z.infer<typeof searchThreatsResultSchema>;
 export const searchThreatsDescription = [
   'Find the threats recorded in one Saerskriven threat model. Each match carries the threat number and id, its title, where it stands, how bad it is, its category, the ids of the elements it attaches to, and its flags. The order is the register order the model holds them in.',
   flagsDescription,
-  'Use this to find the threats of one element, of one severity, or of one status, and to get the number of a threat you mean to read in full. Use saer_get_threat for one whole record with its mitigations and assumptions, and saer_coverage for what the model has not analyzed at all.',
-  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `status`, `severity` and `element` each keep only the threats matching them. `query` is text looked for, without case, in the title, the description, and the title and prose of each mitigation linked to the threat.',
+  'Use this to find the threats of one element, of one diagram, of one category, of one severity, or of one status, and to get the number of a threat you mean to read in full. Use saer_get_threat for one whole record with its mitigations and assumptions, and saer_coverage for what the model has not analyzed at all.',
+  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `status`, `severity`, `category`, `diagram` and `element` each keep only the threats matching them. `query` is text looked for, without case, in the title, the description, and the title and prose of each mitigation linked to the threat.',
   '`response_format` is `concise` by default and carries no record text. `detailed` adds the description and the linked mitigation and assumption records of each threat, which is the bulk of a register, so filter before asking for it.',
+  '`offset` skips that many matches, for the next page of a listing cut at its limit, which names the offset to pass.',
   'This tool never writes. A threat number names one threat for the life of a model, so a number read here stays the handle for that threat.',
 ].join(' ');
 
@@ -85,8 +101,10 @@ export function searchThreats(
   workspace: ModelWorkspace,
   args: SearchThreatsArguments,
 ): Either.Either<SearchThreatsResult, readonly string[]> {
-  return Either.map(readNamed(workspace, args.file), (reading) =>
-    found(reading, args),
+  return Either.flatMap(readNamed(workspace, args.file), (reading) =>
+    Either.map(drawnOn(reading.model, args.diagram), (drawn) =>
+      found(reading, drawn, args),
+    ),
   );
 }
 
@@ -102,17 +120,34 @@ export function renderThreatSearch(
   ];
 }
 
-const narrowing = ['`status`', '`severity`', '`element`', '`query`'];
+const narrowing = [
+  '`status`',
+  '`severity`',
+  '`category`',
+  '`diagram`',
+  '`element`',
+  '`query`',
+];
+
+function drawnOn(
+  model: Model,
+  diagram: string | undefined,
+): Either.Either<ReadonlySet<string> | undefined, readonly string[]> {
+  return diagram === undefined
+    ? Either.right(undefined)
+    : Either.map(diagramsOf(model, diagram), elementIdsAcross);
+}
 
 function found(
   reading: ModelReading,
+  drawn: ReadonlySet<string> | undefined,
   args: SearchThreatsArguments,
 ): SearchThreatsResult {
   const limited = limitedRows(
     reading.model.threats.filter((threat) =>
-      keeps(threat, reading.model, args),
+      keeps(threat, reading.model, drawn, args),
     ),
-    args.response_format,
+    args,
   );
   return {
     ...reportedReading(reading),
@@ -129,11 +164,17 @@ function found(
 function keeps(
   threat: Threat,
   model: Model,
+  drawn: ReadonlySet<string> | undefined,
   args: SearchThreatsArguments,
 ): boolean {
   return (
     (args.status === undefined || threat.status === args.status) &&
     (args.severity === undefined || threat.severity === args.severity) &&
+    (args.category === undefined ||
+      categoryName(threat.category).toLowerCase() ===
+        args.category.toLowerCase()) &&
+    (drawn === undefined ||
+      threat.elements.some((element) => drawn.has(element))) &&
     (args.element === undefined ||
       threat.elements.some((element) => element === args.element)) &&
     matchesQuery(args.query, [
