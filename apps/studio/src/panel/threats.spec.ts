@@ -7,12 +7,14 @@ import {
   actorElement,
   newProcess,
   processElement,
+  sampleElement,
   sampleModel,
   sampleThreat,
 } from '../store/store.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
 import {
   attachedThreats,
+  detachSaid,
   elementLabel,
   freshThreat,
   nextNumber,
@@ -100,6 +102,34 @@ describe('elementLabel', () => {
     expect(elementLabel(newProcess('process-unnamed', ''), t)).toBe(
       'the process',
     );
+  });
+});
+
+describe('detachSaid', () => {
+  const reader = sampleElement(actorElement);
+  const onTwo: Threat = {
+    ...sampleThreat,
+    elements: [actorElement, processElement],
+  };
+
+  it('reports the removal where the threat went with its last element', () => {
+    expect(detachSaid(sampleThreat, reader, undefined)?.(t)).toContain(
+      String(sampleThreat.number),
+    );
+  });
+
+  it('names the element where the threat stays on its others', () => {
+    const kept: Threat = { ...onTwo, elements: [processElement] };
+
+    expect(detachSaid(onTwo, reader, kept)?.(t)).toContain('Reader');
+  });
+
+  it('says nothing where the detach was refused and the threat still names the element', () => {
+    expect(detachSaid(onTwo, reader, onTwo)).toBeUndefined();
+  });
+
+  it('says nothing where the model no longer holds the element the row named', () => {
+    expect(detachSaid(onTwo, undefined, onTwo)).toBeUndefined();
   });
 });
 

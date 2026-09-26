@@ -1,4 +1,4 @@
-import type { ElementId } from '@saerskriven/model';
+import type { ElementId, Threat } from '@saerskriven/model';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -12,12 +12,15 @@ import { initialState } from '../store/state.js';
 import {
   actorElement,
   firstThreat,
+  present,
   processElement,
   sampleElement,
   sampleModel,
+  sampleThreat,
+  undoable,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { editorTimeout } from './panel.fixtures.js';
+import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 import {
   ThreatPanel,
   type HeldDraft,
@@ -25,12 +28,13 @@ import {
 } from './threat-panel.js';
 import {
   addControl,
+  button,
   describedNumbers,
   noop,
   numbersIn,
   textbox,
 } from '../ui/ui.fixtures.js';
-import { softHyphen } from '@saerskriven/model/fixtures';
+import { softHyphen, threatId } from '@saerskriven/model/fixtures';
 import { activeTranslator } from '../messages/locale.js';
 
 const panelProps = (
@@ -76,6 +80,17 @@ const runHistory = (id: 'undo' | 'redo'): void => {
   });
 };
 
+const shareThreat = (): void => {
+  dispatch(
+    Action.ReplaceThreat({
+      threat: {
+        ...modelStore.getState().present.threats[0],
+        elements: [actorElement, processElement],
+      },
+    }),
+  );
+};
+
 const addThreat = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(addControl());
 };
@@ -102,19 +117,12 @@ describe(
     });
 
     it('lists the names of every element sharing a threat', () => {
-      dispatch(
-        Action.ReplaceThreat({
-          threat: {
-            ...modelStore.getState().present.threats[0],
-            elements: [actorElement, processElement],
-          },
-        }),
-      );
+      shareThreat();
       showPanel(actorElement);
       act(() => {
         screen.getByRole('button', { name: /A reader edits/u }).click();
       });
-      const attachments = screen.getByRole('list', {
+      const attachments = screen.getByRole('group', {
         name: 'Attached elements',
       });
       expect(attachments.textContent).toContain(
@@ -123,6 +131,116 @@ describe(
       expect(attachments.textContent).toContain(
         sampleElement(processElement).name,
       );
+    });
+
+    it('attaches a threat the register already holds, as one undo step', async () => {
+      const user = userEvent.setup();
+      showPanel(processElement);
+
+      await chooseFrom('Existing threat', sampleThreat.title);
+      await user.click(button('Attach existing threat'));
+
+      expect(present().threats[0].elements).toEqual([
+        actorElement,
+        processElement,
+      ]);
+      expect(undoable()).toBe(1);
+      expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
+    });
+
+    it('offers a threat attached to nothing before the threats attached elsewhere', async () => {
+      const user = userEvent.setup();
+      const loose: Threat = {
+        ...sampleThreat,
+        id: threatId('threat-loose'),
+        number: 2,
+        title: 'A threat that arrived attached to nothing',
+        elements: [],
+      };
+      modelStore.setState(
+        initialState({
+          ...sampleModel,
+          threats: [...sampleModel.threats, loose],
+          lastIssuedThreatNumber: 2,
+        }),
+        true,
+      );
+      showPanel(processElement);
+
+      await user.click(
+        screen.getByRole('combobox', { name: 'Existing threat' }),
+      );
+
+      expect(screen.getAllByRole('option')[0]).toBe(
+        screen.getByRole('option', { name: loose.title }),
+      );
+    });
+
+    it('attaches an element from the threat editor, as one undo step', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await chooseFrom('Existing element', 'Studio');
+      await user.click(button('Attach existing element'));
+
+      expect(present().threats[0].elements).toEqual([
+        actorElement,
+        processElement,
+      ]);
+      expect(undoable()).toBe(1);
+      expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
+
+      act(() => {
+        dispatch(Action.Undo());
+      });
+
+      expect(present().threats[0].elements).toEqual([actorElement]);
+    });
+
+    it('leaves focus on the attachment above when the last one is detached', async () => {
+      const user = userEvent.setup();
+      shareThreat();
+      showPanel(actorElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await user.click(button('Detach Studio'));
+
+      expect(present().threats[0].elements).toEqual([actorElement]);
+      expect(document.activeElement).toBe(button('Detach Reader'));
+    });
+
+    it('detaches an element from a threat that names others, leaving the threat and focus on the next attachment', async () => {
+      const user = userEvent.setup();
+      shareThreat();
+      showPanel(processElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await user.click(button('Detach Reader'));
+
+      expect(present().threats[0].elements).toEqual([processElement]);
+      expect(threatsInStore()).toBe(1);
+      expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
+      expect(document.activeElement).toBe(button('Detach Studio'));
+    });
+
+    it('removes the threat when the detach takes its last element, and one undo brings it back', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await user.click(button('Detach Reader'));
+
+      expect(threatsInStore()).toBe(0);
+      expect(undoable()).toBe(1);
+      expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
+      expect(document.activeElement).toBe(addControl());
+
+      act(() => {
+        dispatch(Action.Undo());
+      });
+
+      expect(present().threats[0].elements).toEqual([actorElement]);
     });
 
     it('names the selected element and lists what is recorded against it', () => {

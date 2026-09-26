@@ -17,9 +17,11 @@ a person can do with it is in
 | `kept-header.ts`                                        | Keeping a pressed threat header in view when the accordion swaps                                                            |
 | `threat-summary.tsx`                                    | A collapsed threat's summary, which is also its accordion trigger's accessible name                                         |
 | `threat-records.tsx`, `records.ts`                      | One record group, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
+| `threat-attachments.tsx`                                | The elements one threat names, with the controls that attach and detach them                                                |
+| `pick-existing.tsx`                                     | The listbox and control that "Link existing" and "Attach existing" share                                                    |
 | `model-properties.tsx`                                  | The panel for the model: title, description and the model's assumptions                                                     |
 | `element-properties.tsx`, `element-property-fields.tsx` | The security properties editor and its field kinds                                                                          |
-| `threats.ts`                                            | `panelSubject` and `attachedThreats`, the selectors the panel binds to                                                      |
+| `threats.ts`                                            | `panelSubject` and `attachedThreats`, the selectors the panel binds to, and what each picker offers                         |
 | `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`   | Refused drafts, option labels a person can tell apart, and the focus channel                                                |
 
 The panel is mounted from `../canvas/diagram-canvas.tsx`, inside the canvas
@@ -110,6 +112,23 @@ control belongs to, so the drawn text is shorter and begins the name or is
 contained in it: Title, Description, Add, Link, Unlink and Discard. Link stays
 on the Tab path while no record is chosen (`aria-disabled`, with a description
 saying to choose one).
+
+## Attachments
+
+Which elements a threat names is edited from two places. The element's panel
+attaches a threat the register already holds, offering the threats attached to
+no element first, since a file can be read with one and nothing else reaches
+them. The expanded threat attaches and detaches elements of its own. Both go
+through `AttachThreat` and `DetachThreat`, never through a `ReplaceThreat`
+carrying a shorter list: the model culls a threat on the detach that takes its
+last element, and a replacement naming no element does not.
+
+The panel owns both dispatches because a detach can take the threat off the
+element whose panel it is, which leaves the group unmounted with nowhere to
+put focus. The group asks only for the next row when it survives. A detach
+that removes the threat says so in the shared status, as an unlinked record
+does, and needs no confirmation because one undo brings the threat back with
+everything the removal took.
 
 ## The commit rule
 

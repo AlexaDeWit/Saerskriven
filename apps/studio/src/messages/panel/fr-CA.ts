@@ -38,6 +38,8 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   link: 'Lier',
   discard: 'Abandonner',
   unlink: 'Délier',
+  attach: 'Rattacher',
+  detach: 'Détacher',
   'also-applies-to-model': 'S’applique aussi au modèle.',
   'also-on-threats': {
     one: 'Aussi sur la menace {list}.',
@@ -51,4 +53,5 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
     other: 'menaces {list}',
   },
   'detail-applies-to-model': 's’applique au modèle',
+  'detail-no-elements': 'rattachée à aucun élément',
 });

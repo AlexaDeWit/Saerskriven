@@ -50,6 +50,11 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'undo-done': 'Ångrade.',
   'redo-done': 'Gjorde om.',
   'threat-deleted': 'Hot {number} togs bort.',
+  'threat-attached': 'Hot {number} kopplades till {element}.',
+  'threat-detached':
+    'Hot {number} kopplades bort från {element}. Det ligger kvar på sina övriga objekt.',
+  'threat-detach-removed':
+    'Hot {number} togs bort. Det var inte kopplat till något annat. Ångra återställer det.',
   'record-named': '{kind} ”{label}”',
   'record-unlinked':
     'Tog bort länken till {record}. Posten finns kvar på sina andra referenser.',

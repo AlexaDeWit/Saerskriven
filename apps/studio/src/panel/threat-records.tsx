@@ -1,4 +1,4 @@
-import { Link2Icon, PlusIcon } from '@radix-ui/react-icons';
+import { PlusIcon } from '@radix-ui/react-icons';
 import {
   useEffect,
   useId,
@@ -15,9 +15,9 @@ import {
 import { useTranslator } from '../messages/locale.js';
 import type { Speaker } from '../messages/said.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
-import { EnumField, type OptionText } from '../ui/enum-field.js';
+import { EnumField } from '../ui/enum-field.js';
 import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
-import { VisuallyHidden } from '../ui/visually-hidden.js';
+import { PickExisting } from './pick-existing.js';
 import {
   editedRecord,
   inShownOrder,
@@ -81,6 +81,7 @@ export function RecordGroup<Held extends ThreatRecord>({
   const translator = useTranslator();
   const { t } = translator;
   const records = all.filter(target.holds);
+  const noun = t(kind.nounMessage);
   const linkable = linkableRecords(kind, all, target, threats, translator);
   const group = useRef<HTMLFieldSetElement>(null);
   const [draft, setDraft] = useState<Held | undefined>(() => {
@@ -297,77 +298,30 @@ export function RecordGroup<Held extends ThreatRecord>({
             {t('panel.add')}
           </button>
           {linkable.length > 0 && (
-            <LinkExisting
-              linkable={linkable}
-              noun={t(kind.nounMessage)}
-              onLink={(record) => {
-                dispatch(target.link(record));
-                focus.current = { kind: 'text', recordId: record.id };
+            <PickExisting
+              actionLabel={t('fields.link-existing-record', { kind: noun })}
+              actionText={t('panel.link')}
+              choices={linkable.map(({ record, text }) => ({
+                id: record.id,
+                text,
+              }))}
+              fieldLabel={t('fields.existing-record', { kind: noun })}
+              onPick={(id) => {
+                const picked = linkable.find(
+                  ({ record }) => record.id === id,
+                )?.record;
+                if (picked === undefined) {
+                  return;
+                }
+                dispatch(target.link(picked));
+                focus.current = { kind: 'text', recordId: picked.id };
               }}
+              reason={t('fields.choose-existing-first', { kind: noun })}
             />
           )}
         </div>
       </div>
     </fieldset>
-  );
-}
-
-type LinkExistingProps<Held extends ThreatRecord> = {
-  readonly noun: string;
-  readonly linkable: readonly {
-    readonly record: Held;
-    readonly text: OptionText;
-  }[];
-  readonly onLink: (record: Held) => void;
-};
-
-function LinkExisting<Held extends ThreatRecord>({
-  noun,
-  linkable,
-  onLink,
-}: LinkExistingProps<Held>) {
-  const [chosen, setChosen] = useState<string | undefined>(undefined);
-  const offered = linkable.find(({ record }) => record.id === chosen);
-  const reasonId = useId();
-  const { t } = useTranslator();
-  const texts = new Map<string, OptionText>(
-    linkable.map(({ record, text }) => [record.id, text]),
-  );
-  const existing = t('fields.existing-record', { kind: noun });
-
-  return (
-    <div className={styles.existing}>
-      <EnumField
-        label={existing}
-        labelOf={(id) => texts.get(id) ?? id}
-        onCommit={setChosen}
-        options={linkable.map(({ record }) => record.id)}
-        placeholder={existing}
-        shownLabel=""
-        value={offered?.record.id}
-      />
-      <button
-        aria-describedby={offered === undefined ? reasonId : undefined}
-        aria-disabled={offered === undefined}
-        aria-label={t('fields.link-existing-record', { kind: noun })}
-        className={styles.recordAction}
-        onClick={() => {
-          if (offered !== undefined) {
-            onLink(offered.record);
-            setChosen(undefined);
-          }
-        }}
-        type="button"
-      >
-        <Link2Icon aria-hidden="true" />
-        {t('panel.link')}
-      </button>
-      {offered === undefined && (
-        <VisuallyHidden id={reasonId}>
-          {t('fields.choose-existing-first', { kind: noun })}
-        </VisuallyHidden>
-      )}
-    </div>
   );
 }
 

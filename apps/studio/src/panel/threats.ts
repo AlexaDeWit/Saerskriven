@@ -2,6 +2,7 @@ import {
   generateThreatId,
   nextThreatNumber,
   threatSchema,
+  type Diagram,
   type Element,
   type ElementId,
   type Threat,
@@ -9,9 +10,13 @@ import {
 } from '@saerskriven/model';
 import { kindLabel } from '../canvas/names.js';
 import type { StudioTranslator } from '../messages/catalogues.js';
+import { severityMessages, statusMessages } from '../messages/enum-labels.js';
+import type { Said } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import { selectedElement, selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
+import { distinctTexts, optionName } from './distinct-labels.js';
+import type { Choice } from './pick-existing.js';
 
 const threatFields = threatSchema.keyof().options;
 
@@ -60,6 +65,99 @@ export function elementLabel(
   return kindLabel(element.name, element.kind, t);
 }
 
+/**
+ * The threats "Attach existing" offers one element: every threat the register
+ * holds that does not already name it, the ones attached to no element first,
+ * each under a label a person can tell apart and a line giving its number,
+ * severity, status, and that it hangs off nothing where it does.
+ */
+export function attachableThreats(
+  registered: readonly Threat[],
+  elementId: ElementId,
+  { t }: StudioTranslator,
+): readonly Choice<ThreatId>[] {
+  const offered = registered.filter(
+    (threat) => !threat.elements.includes(elementId),
+  );
+  const detachedFirst = [
+    ...offered.filter((threat) => threat.elements.length === 0),
+    ...offered.filter((threat) => threat.elements.length > 0),
+  ];
+  return distinctTexts(
+    detachedFirst.map((threat) => ({
+      id: threat.id,
+      label: threat.title,
+      unnamed: threat.title === '',
+      threat,
+    })),
+  ).map(([{ threat }, text]) => ({
+    id: threat.id,
+    text: { ...text, detail: threatDetail(threat, t) },
+  }));
+}
+
+/**
+ * The elements "Attach existing" offers one threat: every element across the
+ * diagrams that the threat does not already name, under the diagram drawing it.
+ */
+export function attachableElements(
+  diagrams: readonly Diagram[],
+  threat: Threat,
+  t: StudioTranslator['t'],
+): readonly Choice<ElementId>[] {
+  return distinctTexts(
+    diagrams.flatMap((diagram) =>
+      diagram.elements
+        .filter((element) => !threat.elements.includes(element.id))
+        .map((element) => ({
+          ...labelled(element, t),
+          detail: diagram.title,
+        })),
+    ),
+  ).map(([{ id, detail }, text]) => ({ id, text: { ...text, detail } }));
+}
+
+/**
+ * What a detach says, read from the model it left behind: the removal where
+ * the threat went with its last element, and the detachment where the threat
+ * stays. Nothing at all where the detach did not land, which a refusal from a
+ * row the model has moved on from looks like, so a refused edit is reported
+ * by its notice alone.
+ */
+export function detachSaid(
+  threat: Threat,
+  detached: Element | undefined,
+  kept: Threat | undefined,
+): Said | undefined {
+  const { number } = threat;
+  if (kept === undefined) {
+    return (speak) => speak('canvas.threat-detach-removed', { number });
+  }
+  if (detached === undefined || kept.elements.includes(detached.id)) {
+    return undefined;
+  }
+  return (speak) =>
+    speak('canvas.threat-detached', {
+      number,
+      element: elementLabel(detached, speak),
+    });
+}
+
+/** The elements one threat names, in diagram order, under labels a person can tell apart. */
+export function threatAttachments(
+  diagrams: readonly Diagram[],
+  threat: Threat,
+  t: StudioTranslator['t'],
+): readonly { readonly id: ElementId; readonly label: string }[] {
+  return distinctTexts(
+    diagrams.flatMap((diagram) =>
+      diagram.elements
+        .filter((element) => threat.elements.includes(element.id))
+        .map((element) => labelled(element, t)),
+    ),
+  ).map(([{ id }, text]) => ({ id, label: optionName(text) }));
+}
+
 /** The number the next threat added here takes, which the model issues. */
 export function nextNumber(state: State): number {
   return nextThreatNumber(state.present);
@@ -99,6 +197,34 @@ export function threatAfterDeleting(
   const next =
     threats.at(index + 1) ?? (index > 0 ? threats.at(index - 1) : undefined);
   return next?.id;
+}
+
+function labelled(
+  element: Element,
+  t: StudioTranslator['t'],
+): {
+  readonly id: ElementId;
+  readonly label: string;
+  readonly unnamed: boolean;
+} {
+  return {
+    id: element.id,
+    label: elementLabel(element, t),
+    unnamed: element.name === '',
+  };
+}
+
+function threatDetail(threat: Threat, t: StudioTranslator['t']): string {
+  return [
+    t('panel.detail-threats', { count: 1, list: [String(threat.number)] }),
+    t('panel.summary-severity', {
+      severity: t(severityMessages[threat.severity]),
+    }),
+    t('panel.summary-status', { status: t(statusMessages[threat.status]) }),
+    threat.elements.length === 0 && t('panel.detail-no-elements'),
+  ]
+    .filter((part) => part !== false)
+    .join(', ');
 }
 
 /**

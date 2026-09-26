@@ -48,8 +48,8 @@ export const recordedThreat = (
 
 /**
  * Renders the threat editor inside the accordion it lives in, open unless
- * `expanded` is false. Every prop defaults to the sample threat with no
- * attachments and handlers that do nothing.
+ * `expanded` is false. Every prop defaults to the sample threat and handlers
+ * that do nothing.
  */
 export const showThreatEditor = (
   overrides: Partial<ThreatEditorProps> = {},
@@ -57,12 +57,13 @@ export const showThreatEditor = (
 ): void => {
   const props: ThreatEditorProps = {
     threat: sampleThreat,
-    attachments: [],
     focus: undefined,
     held: undefined,
     onChange: noop,
     onCommit: noop,
     onRefusal: noop,
+    onAttach: noop,
+    onDetach: noop,
     onDelete: noop,
     onFocused: noop,
     ...overrides,

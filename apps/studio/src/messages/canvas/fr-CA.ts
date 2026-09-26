@@ -54,6 +54,11 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'undo-done': 'Annulation effectuée.',
   'redo-done': 'Rétablissement effectué.',
   'threat-deleted': 'Menace {number} supprimée.',
+  'threat-attached': 'Menace {number} rattachée à {element}.',
+  'threat-detached':
+    'Menace {number} détachée de {element}. Elle reste sur ses autres éléments.',
+  'threat-detach-removed':
+    'Menace {number} supprimée. Elle n’était rattachée à rien d’autre. Annuler la rétablit.',
   'record-named': '{kind} « {label} »',
   'record-unlinked':
     'Déliée : {record}. Elle reste liée à ses autres références.',

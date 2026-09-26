@@ -250,6 +250,12 @@ Close threats, or Escape, closes the panel and returns focus to the element,
 which stays selected. A second Escape clears the selection. The panel stays
 closed for that element until the selection moves or Focus threats runs again.
 
+**Attach existing threat** sits beside Add a threat and lists every threat in
+the register that this element does not already name, the ones attached to no
+element first. Choose one, then Attach. The threat opens expanded unless
+another threat is holding a refused draft, which keeps the open one where it
+is, and an undo takes the attachment back.
+
 Each threat's summary shows its number, title, severity, status, how many
 mitigations and assumptions it links, and a mark for each flag it raises.
 Expand one threat at a time to edit it. A field commits when you leave it, and
@@ -258,6 +264,20 @@ refused character named, and the threat stays expanded until you correct or
 clear it. That draft survives closing the panel and selecting something else,
 until the file changes. Deleting a threat removes it from the model, and so
 from every element it names, which the item says beside its delete control.
+
+### Attached elements
+
+An expanded threat lists the elements it names, across every diagram, with a
+Detach control on each and an **Attach existing element** picker under them
+that offers the elements it does not name. Attach and Detach are one undo step
+each.
+
+Detaching the last element removes the threat, with the mitigations and
+assumptions left on no threat, and the notice says so. There is no
+confirmation: Undo brings the threat back with everything the removal took, as
+unlinking a record's last threat does. Detaching the element whose panel you
+are reading takes the threat off that panel, so focus moves to the threat that
+takes its place, or to Add a threat.
 
 ### Mitigations and assumptions
 
@@ -384,10 +404,9 @@ navigation keys do not.
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model properties. The
   model's explicit record removal has no control.
-- Link existing has no search or filter, and the threat list has no filter,
-  sort or search.
-- A threat's attached elements are read-only in the panel, and its id and
-  number cannot be edited.
+- Link existing and Attach existing have no search or filter, and the threat
+  list has no filter, sort or search.
+- A threat's id and number cannot be edited.
 - A custom methodology cannot be created in the studio. A threat that arrived
   with one shows it and can be moved to a listed category.
 - The model's owner and contributors are not edited in the studio.

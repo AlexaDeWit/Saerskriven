@@ -5,7 +5,6 @@ import userEvent from '@testing-library/user-event';
 import {
   processElement,
   sampleThreat,
-  sampleElement,
   storeElement,
 } from '../store/store.fixtures.js';
 import { editorTimeout, showThreatEditor } from './panel.fixtures.js';
@@ -140,10 +139,6 @@ describe(
     it('says that deleting a threat several elements name takes it off all of them', () => {
       showThreatEditor({
         threat: { ...sampleThreat, elements: [processElement, storeElement] },
-        attachments: [
-          sampleElement(processElement),
-          sampleElement(storeElement),
-        ],
       });
 
       expect(
