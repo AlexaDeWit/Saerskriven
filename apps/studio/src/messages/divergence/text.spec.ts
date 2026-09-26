@@ -4,6 +4,7 @@ import {
   type DivergenceDetail,
 } from '@saerskriven/formats';
 import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
+import { codesOf } from '@saerskriven/model';
 import { studioCatalogues } from '../catalogues.js';
 import { activeTranslator, chooseLanguage } from '../locale.js';
 import { divergenceDetail, divergenceLine } from './text.js';
@@ -119,9 +120,7 @@ const absences: readonly DivergenceDetail[] = [
   },
 ];
 
-const declaredCodes = divergenceDetailSchema.options.map(
-  (option) => option.shape.code.value,
-);
+const declaredCodes = codesOf(divergenceDetailSchema);
 
 const described = (detail: DivergenceDetail): string =>
   divergenceDetail(activeTranslator().t, detail);

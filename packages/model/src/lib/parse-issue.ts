@@ -335,7 +335,6 @@ const expectedKinds: Readonly<Record<string, ValueKind>> = {
   null: 'null',
   undefined: 'undefined',
   void: 'undefined',
-  nonoptional: 'undefined',
 };
 
 const heldKinds: Readonly<Record<string, ValueKind>> = {

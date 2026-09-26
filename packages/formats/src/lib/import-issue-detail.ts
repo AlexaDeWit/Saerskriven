@@ -1,6 +1,7 @@
 import {
   carrying,
   coded,
+  codesOf,
   issueLine,
   parseIssueText,
   type ParseIssue,
@@ -55,7 +56,7 @@ export type WireIssueDetail = ParseIssueDetail | ImportIssueDetail;
 export type WireIssue = ParseIssue<WireIssueDetail>;
 
 const importIssueCodes: ReadonlySet<string> = new Set(
-  importIssueDetailSchema.options.map((option) => option.shape.code.value),
+  codesOf(importIssueDetailSchema),
 );
 
 /** Whether a wire issue's detail is an import code rather than a parse issue code. */

@@ -1,4 +1,5 @@
 import {
+  codesOf,
   parseIssueDetailSchema,
   type ParseIssueDetail,
 } from '@saerskriven/model';
@@ -74,9 +75,7 @@ const branches: readonly {
   },
 ];
 
-const declaredCodes = parseIssueDetailSchema.options.map(
-  (option) => option.shape.code.value,
-);
+const declaredCodes = codesOf(parseIssueDetailSchema);
 
 const described = (detail: ParseIssueDetail): string =>
   parseIssueDetail(activeTranslator().t, detail);

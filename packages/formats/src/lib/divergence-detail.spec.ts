@@ -1,7 +1,7 @@
+import { codesOf } from '@saerskriven/model';
 import {
   divergenceDetailSchema,
   divergenceDetailText,
-  type DivergenceCode,
   type DivergenceDetail,
 } from './divergence-detail.js';
 
@@ -256,8 +256,7 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
   ],
 ];
 
-const declaredCodes: readonly DivergenceCode[] =
-  divergenceDetailSchema.options.map((option) => option.shape.code.value);
+const declaredCodes = codesOf(divergenceDetailSchema);
 
 describe('divergence codes', () => {
   it('words every code the schema declares', () => {

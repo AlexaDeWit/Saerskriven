@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { codesOf } from './coded.js';
 import { parseIssueSamples } from './parse-issue.fixtures.js';
 import {
   issueLine,
@@ -28,9 +29,7 @@ const detailsOf = (
     : toParseIssues(parsed.error.issues, given).map((issue) => issue.detail);
 };
 
-const declaredCodes = parseIssueDetailSchema.options.map(
-  (option) => option.shape.code.value,
-);
+const declaredCodes = codesOf(parseIssueDetailSchema);
 
 describe('a schema issue as a code and its parameters', () => {
   it.each<Mapping>([
@@ -48,6 +47,15 @@ describe('a schema issue as a code and its parameters', () => {
       schema: z.literal('actor'),
       given: 'flow',
       detail: { code: 'value-unexpected', parameters: { values: ['"actor"'] } },
+    },
+    {
+      named: 'a required field the input leaves out',
+      schema: z.object({ title: z.string().optional().nonoptional() }),
+      given: {},
+      detail: {
+        code: 'type-mismatch',
+        parameters: { expected: 'other', received: 'undefined' },
+      },
     },
     {
       named: 'a number the schema does not hold',
@@ -269,10 +277,16 @@ describe('the English wording of a parse issue', () => {
   );
 });
 
-const callerDetailSchema = z.object({
-  code: z.literal('caller-rule'),
-  parameters: z.object({ rule: z.string() }),
-});
+const callerDetailSchema = z.union([
+  z.object({
+    code: z.literal('caller-rule'),
+    parameters: z.object({ rule: z.string() }),
+  }),
+  z.object({ code: z.literal('text-character-refused') }).transform(() => ({
+    code: 'caller-rule' as const,
+    parameters: { rule: 'claimed by the caller' },
+  })),
+]);
 
 const callerRule = { code: 'caller-rule', parameters: { rule: 'one parent' } };
 

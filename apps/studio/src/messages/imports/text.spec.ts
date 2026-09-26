@@ -3,6 +3,7 @@ import {
   type ImportIssueDetail,
 } from '@saerskriven/formats';
 import { catalogueTemplates, locales, templateParts } from '@saerskriven/i18n';
+import { codesOf } from '@saerskriven/model';
 import { studioCatalogues } from '../catalogues.js';
 import { parseIssueLine } from '../issues/text.js';
 import { activeTranslator, chooseLanguage } from '../locale.js';
@@ -49,9 +50,7 @@ const samples: readonly {
   })),
 ];
 
-const declaredCodes = importIssueDetailSchema.options.map(
-  (option) => option.shape.code.value,
-);
+const declaredCodes = codesOf(importIssueDetailSchema);
 
 const described = (detail: ImportIssueDetail): string =>
   importIssueDetail(activeTranslator().t, detail);

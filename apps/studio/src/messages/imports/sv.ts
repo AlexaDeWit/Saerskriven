@@ -5,7 +5,7 @@ export const importsSv = catalogue(importMessages)('sv')({
   'import-format-unnamed':
     'en import kräver en OTM-version eller en TM-BOM-schemaadress (versioner som stöds: OTM {otm}, TM-BOM {tmbom})',
   'otm-parent-not-single':
-    'en förälder namnger exakt en förtroendezon eller en komponent',
+    'ett överordnat element namnger exakt en förtroendezon eller en komponent',
   'duplicate-identifier': 'identifieraren ”{id}” används två gånger',
   'source-component-unknown':
     'källdokumentet deklarerar ingen komponent ”{id}”',

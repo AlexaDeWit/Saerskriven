@@ -1,10 +1,9 @@
-import { parseIssueDetailSchema } from '@saerskriven/model';
+import { codesOf, parseIssueDetailSchema } from '@saerskriven/model';
 import {
   importIssueDetailSchema,
   importIssueText,
   isImportIssueDetail,
   wireIssueLine,
-  type ImportIssueCode,
   type ImportIssueDetail,
 } from './import-issue-detail.js';
 
@@ -33,12 +32,9 @@ const samples: readonly (readonly [ImportIssueDetail, string])[] = [
   ],
 ];
 
-const declaredCodes: readonly ImportIssueCode[] =
-  importIssueDetailSchema.options.map((option) => option.shape.code.value);
+const declaredCodes = codesOf(importIssueDetailSchema);
 
-const parseIssueCodes: readonly string[] = parseIssueDetailSchema.options.map(
-  (option) => option.shape.code.value,
-);
+const parseIssueCodes: readonly string[] = codesOf(parseIssueDetailSchema);
 
 describe('import issue codes', () => {
   it('words every code the schema declares', () => {

@@ -22,7 +22,7 @@ export {
   type ModelMetadataChange,
   type ModelMetadataInput,
 } from './lib/model.js';
-export { carrying, coded } from './lib/coded.js';
+export { carrying, coded, codesOf } from './lib/coded.js';
 export {
   issueFloodCode,
   issueLine,
