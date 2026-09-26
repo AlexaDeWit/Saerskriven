@@ -109,46 +109,6 @@ threat with it and everything that removal cascades to, and the result names
 each such threat under `culledThreats`. A threat the file already held
 attached to nothing stays.
 
-`add_element` accepts the optional security properties of its element kind.
-`set_element_properties` patches an existing element. Omitted fields keep
-their values. Its `unset` list clears named properties back to not recorded,
-distinct from `false`, empty text and empty lists. Clearing fields of another
-kind, or both setting and clearing one field, is refused.
-
-```json
-{
-  "op": "set_element_properties",
-  "element": "flow-id",
-  "properties": { "kind": "flow", "isEncrypted": false },
-  "unset": ["protocol"]
-}
-```
-
-A mitigation is added on at least one threat, and an assumption on at least
-one threat or applying to the model. `link_mitigation`, `unlink_mitigation`,
-`link_assumption` and `unlink_assumption` take the record id and a threat id,
-`link_assumption_to_model` and `unlink_assumption_from_model` take the
-assumption id, and `set_mitigation_status` and `set_assumption_status` change
-the status alone. `add_assumption` starts an assumption `unconfirmed` and not
-applying to the model where those fields are left out, and
-`replace_assumption` takes the whole record, `appliesToModel` included.
-
-```json
-[
-  {
-    "op": "link_mitigation",
-    "mitigation": "mitigation-tls",
-    "threat": "threat-2"
-  },
-  { "op": "link_assumption_to_model", "assumption": "assumption-hosting" },
-  {
-    "op": "set_mitigation_status",
-    "mitigation": "mitigation-tls",
-    "status": "implemented"
-  }
-]
-```
-
 Every call quotes the `revision` a read returned, and a file that changed
 before the call is refused rather than overwritten. The revision is checked
 against the bytes the call read and again by hashing the file immediately
@@ -168,7 +128,8 @@ as a refusal. A Threat Dragon file keeps no assumption and one mitigation text
 per threat, so a write to one reports every assumption, and every mitigation
 status, title, merge of several records into one text, mitigation with neither
 title nor text, or record shared by several threats or linked to none, that the
-text cannot give back.
+text cannot give back. Nor does it keep the scope of a trust boundary or a
+text note, or a text note's name, so a write reports each one it drops.
 
 `saer_create` writes a new model in the native YAML format at version 2, and
 `saer_import` converts an OTM or TM-BOM file into one ([import](import.md)).
@@ -178,6 +139,179 @@ A read refuses a file past 8 MiB in UTF-8, and `saer_edit`, `saer_create` and
 `saer_import` all refuse a write whose output would be past that size, leaving
 the file as it was. Make a smaller change instead. The bound was 4 MiB up to
 0.3.0, so an earlier release refuses a file between the two sizes.
+
+Each edit of a `saer_edit` batch is an object carrying `op` and that op's own
+fields. The ops fall into the groups below. An edit naming an element,
+diagram, threat, mitigation or assumption the model does not hold is refused,
+and so is one adding any of them under an id the model already holds.
+
+#### Elements
+
+`add_element` adds an element at the end of a diagram's element list, with the
+optional security facts and declared boundary relationships of its kind. An
+actor, process, store or text note takes a `placement`: a position and size,
+or `"auto"` for the next place on the shared grid. Left out, `description` and
+`reasonOutOfScope` are empty and `outOfScope` is false, and a flow has no bends
+and runs one way.
+
+`set_element_properties` patches the security facts of an actor, process,
+store or flow, and the declared boundary relationships of a flow or trust
+boundary, and nothing else. `properties.kind` has to be the element's own
+kind, and there is no variant for a text note, which carries neither. Omitted
+fields keep their values. Its `unset` list clears named properties back to not
+recorded, distinct from `false`, empty text and empty lists. Clearing fields of
+another kind, or both setting and clearing one field, is refused.
+
+```json
+{
+  "op": "set_element_properties",
+  "element": "flow-id",
+  "properties": { "kind": "flow", "isEncrypted": false },
+  "unset": ["protocol"]
+}
+```
+
+`set_element_details` changes any of `description`, `outOfScope` and
+`reasonOutOfScope` on an element of any kind, a text note included, and a
+field left out keeps its value. The scope flag and its reason are
+independent: setting `outOfScope` to false keeps the reason.
+
+```json
+{
+  "op": "set_element_details",
+  "element": "store-id",
+  "description": "Holds every order.",
+  "outOfScope": false
+}
+```
+
+`rename_element` changes the name alone, on any kind, and refuses a name with
+nothing in it but white space. `edit_note` changes a text note's text alone,
+empty text included, and refuses any other kind. `set_element_properties`,
+`set_element_details`, `rename_element` and `edit_note` leave the element at
+its place in its diagram's element list.
+
+`remove_element` takes the element out of its diagram, out of every declared
+boundary relationship there and off every threat. The flows attached to it
+stay, each end that was attached to it freed at its anchor: the centre of an
+actor, process, store, text note or box boundary, the first point of a curve
+boundary, or, for a removed flow, its first bend, else its first free end,
+else the canvas origin.
+
+#### Geometry
+
+`move_element` translates an element by `offset`, relative to where it is: the
+position of an actor, process, store, text note or box boundary, every point
+of a curve boundary, or a flow's bends and free ends. An attached flow end
+names its element rather than a point, so it stays on that element whichever
+of the two moves, and moving an element leaves the bends of its flows where
+they were.
+
+`resize_element` sets the `size` of an actor, process, store, text note or box
+boundary and keeps its position. A flow and a curve boundary have no size, and
+it refuses both.
+
+#### Flows
+
+`set_flow_waypoints` replaces a flow's bends with the points given, in order,
+and an empty list takes every bend away. `set_flow_direction` makes a flow
+bidirectional or one way, and the flow keeps its id and the threats attached
+to it. `reconnect_flow` attaches the `source` or `target` end to an actor,
+process or store of the flow's own diagram, never to the element the other end
+is attached to. Its optional `anchor` names the side the end fastens to, and
+where it is left out the renderer chooses. All three refuse an element that is
+not a flow.
+
+#### Diagrams
+
+`add_diagram` adds an empty diagram with the id and title given, after the
+diagrams the model holds, and `rename_diagram` changes a diagram's title. Both
+refuse a title with nothing in it but white space. `remove_diagram` removes
+only a diagram with no elements left, so remove its elements with
+`remove_element` first, in the same batch or an earlier one.
+
+#### Threats
+
+A threat carries no number in an edit: the model issues one when a threat is
+added and keeps it when the threat is replaced, so a number names one threat
+for the life of the model and no edit renumbers. `add_threat` takes the rest of
+the threat, and every element it attaches to has to be one the model holds.
+`replace_threat` takes the whole threat and replaces every field of the one
+with its id but the number. `set_threat_status`, `set_threat_severity` and
+`set_threat_category` change that one field and keep the rest, the category
+given with its methodology. `attach_threat` and `detach_threat` take a threat
+id and an element id, and attaching an element the threat already carries, or
+detaching one it does not, changes nothing. `remove_threat` removes the threat
+and its links from every record.
+
+#### Mitigations and assumptions
+
+A mitigation is added on at least one threat, and an assumption on at least one
+threat or applying to the model. `add_mitigation` and `replace_mitigation` take
+the whole mitigation, and `replace_assumption` the whole assumption,
+`appliesToModel` included. `add_assumption` starts an assumption `unconfirmed`
+and not applying to the model where those fields are left out.
+`link_mitigation`, `unlink_mitigation`, `link_assumption` and
+`unlink_assumption` take the record id and a threat id,
+`link_assumption_to_model` and `unlink_assumption_from_model` take the
+assumption id, and `set_mitigation_status` and `set_assumption_status` change
+the status alone. `remove_mitigation` and `remove_assumption` take the record
+id.
+
+```json
+[
+  {
+    "op": "link_mitigation",
+    "mitigation": "mitigation-tls",
+    "threat": "threat-2"
+  },
+  { "op": "link_assumption_to_model", "assumption": "assumption-hosting" },
+  {
+    "op": "set_mitigation_status",
+    "mitigation": "mitigation-tls",
+    "status": "implemented"
+  }
+]
+```
+
+#### Model metadata
+
+`set_model_metadata` sets any of the model's `title`, `owner`, `description`
+and `contributors`. A field left out keeps its value, empty text is a value,
+and `contributors` replaces the whole list.
+
+#### Current limitations
+
+`packages/model` has no operation for these, so neither `saer_edit` nor the
+studio does them:
+
+- Reordering the elements of a diagram or the diagrams of a model.
+  `add_element` and `add_diagram` append, and every other op keeps the order.
+- Moving an element to another diagram with its flows and threats. A batch
+  can remove it and add it there under the same id, but the removal frees its
+  flows and takes it off its threats, culling any threat it was the last
+  attachment of.
+- Changing an element's kind. `set_element_properties` refuses a `kind` other
+  than the element's own.
+- Changing the id of an element, diagram, threat, mitigation or assumption.
+- Reversing a flow. `reconnect_flow` refuses an end on the element the other
+  end is attached to, so trading the two ends takes a third actor, process or
+  store to hold one end in between.
+- Detaching one end of a flow to a canvas position. `reconnect_flow` only
+  attaches, an end goes free only when its element is removed, and
+  `move_element` shifts a free end only with the rest of its flow.
+- Reshaping a curve boundary, or turning a box boundary into a curve or back.
+  `move_element` shifts a curve whole, `resize_element` refuses one, and
+  `set_flow_waypoints` takes a flow alone.
+
+`saer_edit` also lacks these:
+
+- Copying elements. The studio copies, cuts and pastes a selection, and no op
+  here does.
+- Changing one field of a threat's title and description, a mitigation's title
+  and prose, or an assumption's prose on its own. `replace_threat`,
+  `replace_mitigation` and `replace_assumption` take the whole record.
+- A dry run. A batch the model accepts is written.
 
 ## Resources and prompts
 

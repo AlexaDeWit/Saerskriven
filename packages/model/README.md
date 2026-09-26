@@ -34,23 +34,27 @@ the first character a string carries that the rule refuses, so an editor can
 point at it rather than at the field alone.
 
 `parseModel` is the whole of that gate for a foreign file. `renameElement`,
-`editNote`, `addDiagram` and `renameDiagram` screen the strings that an
-editor commits after parsing. The other edit operations take a caller's
-strings as given, a model assembled in memory being the caller's to assemble.
+`editNote`, `setElementDetails`, `setElementProperties`, `addDiagram`,
+`renameDiagram` and `setModelMetadata` screen the strings that an editor
+commits after parsing, and `selectionFragment`, `remapFragment` and
+`insertFragment` pass what they produce through `parseModel`. The other edit
+operations take a caller's strings as given, a model assembled in memory
+being the caller's to assemble.
 A boundary that renders a model escapes or replaces what its output format
 forbids instead of resting on this rule.
 
 ## Operations
 
 Operations are pure functions returning new models: graph edits (add, remove,
-move, resize, rename, edit Note text, reconnect, set flow route and
-direction, set security properties), diagram edits (add, rename, remove),
-fragment edits (copy, remap, insert), and register edits for threats (add,
-remove, replace, attach, detach), mitigations and assumptions (add, replace,
-remove, link, unlink, set status). Coverage queries read a model without
-changing it: elements no threat references, open threats by severity, and the
-threat count of every element. `autoPlacement` gives a position to a caller
-that has none to read, as the OTM and TM-BOM imports do.
+move, resize, rename, edit Note text, set description and scope, reconnect,
+set flow route and direction, set security properties), diagram edits (add,
+rename, remove), a metadata edit, fragment edits (copy, remap, insert), and
+register edits for threats (add, remove, replace, attach, detach), mitigations
+and assumptions (add, replace, remove, link, unlink, set status). Coverage
+queries read a model without changing it: elements no threat references, open
+threats by severity, and the threat count of every element. `autoPlacement`
+gives a position to a caller that has none to read, as the OTM and TM-BOM
+imports do.
 
 A threat number is issued once and never moves: the model carries the highest
 number it has ever issued, so a removed threat leaves a permanent gap and
@@ -66,6 +70,10 @@ relationships, with the absence semantics of
 `setElementProperties` patches the existing kind: omitted keys keep their
 values, keys set to `undefined` clear them, and a patch that changes nothing
 returns the same model. Geometry edits do not change these facts.
+
+`setElementDetails` changes the `description`, `outOfScope` and
+`reasonOutOfScope` of an element of any kind, a Note included, and the name
+stays with `renameElement`, which refuses an empty one.
 
 A pasted fragment's mitigation or assumption is identical to a record the
 target model holds when it has the same kind, id and content: a mitigation's
