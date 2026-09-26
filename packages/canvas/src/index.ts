@@ -62,6 +62,7 @@ export {
 export { DiagramGlyphs } from './lib/scene.js';
 export {
   canvasClassNames,
+  canvasInteractionClassNames,
   renderCanvasStylesheet,
   severityToneClass,
   themedCanvasStylesheet,

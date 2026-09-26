@@ -32,6 +32,12 @@ const distinctTheme: RenderTheme = renderThemeSchema.parse({
   ),
 });
 
+describe('registerBadgeKinds', () => {
+  it('leaves the saer-diagram- prefix to the diagram, since each kind names a saer-<kind> class', () => {
+    expect(registerBadgeKinds).not.toContain('diagram');
+  });
+});
+
 describe('badgeColour', () => {
   it.each(badgeRoles.map((role, index) => ({ ...role, index })))(
     'resolves the $kind badge $value from its own theme section',

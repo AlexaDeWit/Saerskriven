@@ -13,34 +13,50 @@ import {
   type Palette,
 } from './tokens.js';
 
-/** Stable class names emitted by the canvas primitives. */
+type DiagramClassName = `saer-diagram-${string}`;
+
+/**
+ * Class names the canvas primitives emit and the canvas stylesheet styles.
+ * The `saer-diagram-` prefix keeps them apart from the classes
+ * `@saerskriven/render` puts on a register.
+ */
 export const canvasClassNames = {
-  element: 'pn-element',
-  outOfScope: 'pn-out-of-scope',
-  shape: 'pn-shape',
-  actor: 'pn-actor',
-  process: 'pn-process',
-  store: 'pn-store',
-  note: 'pn-note',
-  boundaryBox: 'pn-boundary-box',
-  boundaryCurve: 'pn-boundary-curve',
-  label: 'pn-label',
-  flow: 'pn-flow',
-  flowArrow: 'pn-flow-arrow',
-  flowLabel: 'pn-flow-label',
-  badge: 'pn-badge',
-  badgePrimary: 'pn-badge-primary',
-  badgeSecondary: 'pn-badge-secondary',
-  badgeCount: 'pn-badge-count',
-  badgeMark: 'pn-badge-mark',
-  badgeFlag: 'pn-badge-flag',
-  toneCritical: 'pn-tone-critical',
-  toneHigh: 'pn-tone-high',
-  toneMedium: 'pn-tone-medium',
-  toneLow: 'pn-tone-low',
-  toneNeutral: 'pn-tone-neutral',
-  toneFlag: 'pn-tone-flag',
-} as const;
+  element: 'saer-diagram-element',
+  outOfScope: 'saer-diagram-out-of-scope',
+  shape: 'saer-diagram-shape',
+  actor: 'saer-diagram-actor',
+  process: 'saer-diagram-process',
+  store: 'saer-diagram-store',
+  note: 'saer-diagram-note',
+  boundaryBox: 'saer-diagram-boundary-box',
+  boundaryCurve: 'saer-diagram-boundary-curve',
+  label: 'saer-diagram-label',
+  flow: 'saer-diagram-flow',
+  flowArrow: 'saer-diagram-flow-arrow',
+  flowLabel: 'saer-diagram-flow-label',
+  badge: 'saer-diagram-badge',
+  badgePrimary: 'saer-diagram-badge-primary',
+  badgeSecondary: 'saer-diagram-badge-secondary',
+  badgeCount: 'saer-diagram-badge-count',
+  badgeMark: 'saer-diagram-badge-mark',
+  badgeFlag: 'saer-diagram-badge-flag',
+  toneCritical: 'saer-diagram-tone-critical',
+  toneHigh: 'saer-diagram-tone-high',
+  toneMedium: 'saer-diagram-tone-medium',
+  toneLow: 'saer-diagram-tone-low',
+  toneNeutral: 'saer-diagram-tone-neutral',
+  toneFlag: 'saer-diagram-tone-flag',
+} as const satisfies Record<string, DiagramClassName>;
+
+/**
+ * Class names the React Flow bodies add for the mounting canvas to style, and
+ * the canvas stylesheet does not: the badge layer and a boundary's pointer
+ * target.
+ */
+export const canvasInteractionClassNames = {
+  badgeLayer: 'saer-diagram-badge-layer',
+  boundaryHitTarget: 'saer-diagram-boundary-hit-target',
+} as const satisfies Record<string, DiagramClassName>;
 
 /** Which run of text a primitive is drawing. */
 export type WrappedTextStyle = 'label' | 'note' | 'flowLabel';

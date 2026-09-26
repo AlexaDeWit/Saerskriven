@@ -1,5 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
+import {
+  canvasClassNames,
+  darkPalette,
+  lightPalette,
+  rgbColour,
+} from '@saerskriven/canvas';
 import type { Model } from '@saerskriven/model';
 import {
   committedModel,
@@ -190,7 +195,7 @@ test(
 );
 
 const badgeTone = (node: Locator): Locator =>
-  node.locator('.pn-badge-primary circle');
+  node.locator(`.${canvasClassNames.badgePrimary} circle`);
 
 const titleField = (page: Page): Locator =>
   panelField(page, 'textbox', 'Title');
@@ -364,8 +369,10 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
   await expect(
     nodeNamed(page, 'Web shop, process, 1 open threat, severity not assessed'),
   ).toBeVisible();
-  await expect(webShop.locator('.pn-badge-mark')).toHaveText('?');
-  await expect(badgeTone(webShop)).toHaveClass('pn-tone-neutral');
+  await expect(webShop.locator(`.${canvasClassNames.badgeMark}`)).toHaveText(
+    '?',
+  );
+  await expect(badgeTone(webShop)).toHaveClass(canvasClassNames.toneNeutral);
 
   await chooseInPanel(page, 'Severity', 'Critical');
 
@@ -375,8 +382,10 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
       'Web shop, process, 1 open threat, highest severity Critical',
     ),
   ).toBeVisible();
-  await expect(webShop.locator('.pn-badge-mark')).toHaveText('C');
-  await expect(badgeTone(webShop)).toHaveClass('pn-tone-critical');
+  await expect(webShop.locator(`.${canvasClassNames.badgeMark}`)).toHaveText(
+    'C',
+  );
+  await expect(badgeTone(webShop)).toHaveClass(canvasClassNames.toneCritical);
 });
 
 test('a status chosen in the panel takes the threat out of the count the canvas draws', async ({

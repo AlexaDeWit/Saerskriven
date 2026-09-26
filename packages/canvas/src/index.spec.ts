@@ -17,6 +17,7 @@ describe('the package barrel', () => {
       'themedCanvasStylesheet',
       'renderCanvasStylesheet',
       'canvasClassNames',
+      'canvasInteractionClassNames',
       'wrappedTextStyles',
       'severityToneClass',
       'renderThemeSchema',

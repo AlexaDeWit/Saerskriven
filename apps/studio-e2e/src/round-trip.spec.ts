@@ -1,5 +1,6 @@
 import { type DetectedRead } from '@saerskriven/formats';
 import { expect, test } from '@playwright/test';
+import { canvasClassNames } from '@saerskriven/canvas';
 import { committedText } from '@saerskriven/model/fixtures';
 import { registeredChords } from './chords.fixtures.js';
 import { differingPaths, identified } from './differing-paths.fixtures.js';
@@ -68,7 +69,9 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
   await expect(archive).toHaveAccessibleName(
     'Paper archive, store, 1 open threat, highest severity Critical',
   );
-  await expect(archive.locator('.pn-badge-mark')).toHaveText('C');
+  await expect(archive.locator(`.${canvasClassNames.badgeMark}`)).toHaveText(
+    'C',
+  );
 
   await runFromMenu(page, 'Undo');
 
@@ -78,7 +81,9 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
   await expect(archive).toHaveAccessibleName(
     'Paper archive, store, 1 open threat, severity not assessed',
   );
-  await expect(archive.locator('.pn-badge-mark')).toHaveText('?');
+  await expect(archive.locator(`.${canvasClassNames.badgeMark}`)).toHaveText(
+    '?',
+  );
 
   const written = await savedFile(page);
 

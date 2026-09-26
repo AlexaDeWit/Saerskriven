@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { canvasClassNames } from '@saerskriven/canvas';
 import { registeredChords } from './chords.fixtures.js';
 import { dragOnto } from './canvas.fixtures.js';
 import {
@@ -40,7 +41,7 @@ test('a store is renamed by double-clicking it, and undo puts the name back', as
 
   const renamed = nodeNamed(page, /^Ledger, store/u);
   await expect(renamed).toHaveCount(1);
-  await expect(drawnName(renamed, 'pn-label')).toHaveText('Ledger');
+  await expect(drawnName(renamed, canvasClassNames.label)).toHaveText('Ledger');
   await expect(renamed).toBeFocused();
 
   await runFromMenu(page, 'Undo');
@@ -118,7 +119,7 @@ test('the field stands where the name was drawn and holds the whole of it', asyn
 
   const field = nameField(page, longName);
   await expect(field).toBeFocused();
-  await expect(drawnName(renamed, 'pn-label')).toHaveCount(0);
+  await expect(drawnName(renamed, canvasClassNames.label)).toHaveCount(0);
   await expect
     .poll(() =>
       field.evaluate((element) => ({
@@ -132,7 +133,9 @@ test('the field stands where the name was drawn and holds the whole of it', asyn
 
   await field.press('Escape');
 
-  await expect(drawnName(renamed, 'pn-label')).toContainText('Ledger');
+  await expect(drawnName(renamed, canvasClassNames.label)).toContainText(
+    'Ledger',
+  );
 });
 
 test('a flow is renamed by double-clicking the label it draws', async ({
@@ -142,15 +145,17 @@ test('a flow is renamed by double-clicking the label it draws', async ({
   await drawFlow(page);
 
   const flow = nodeNamed(page, /^New flow, flow/u);
-  await drawnName(flow, 'pn-flow-label').dblclick();
+  await drawnName(flow, canvasClassNames.flowLabel).dblclick();
   await expect(nameField(page, 'New flow')).toBeFocused();
-  await expect(drawnName(flow, 'pn-flow-label')).toHaveCount(0);
+  await expect(drawnName(flow, canvasClassNames.flowLabel)).toHaveCount(0);
   await nameField(page, 'New flow').fill('Opens');
   await nameField(page, 'New flow').press('Enter');
 
   const renamed = nodeNamed(page, /^Opens, flow/u);
   await expect(renamed).toHaveCount(1);
-  await expect(drawnName(renamed, 'pn-flow-label')).toHaveText('Opens');
+  await expect(drawnName(renamed, canvasClassNames.flowLabel)).toHaveText(
+    'Opens',
+  );
 });
 
 test('a flow of a real model is renamed from the keyboard', async ({
@@ -165,7 +170,9 @@ test('a flow of a real model is renamed from the keyboard', async ({
 
   const renamed = nodeNamed(page, /^Listings, flow/u);
   await expect(renamed).toHaveCount(1);
-  await expect(drawnName(renamed, 'pn-flow-label')).toHaveText('Listings');
+  await expect(drawnName(renamed, canvasClassNames.flowLabel)).toHaveText(
+    'Listings',
+  );
 
   await runFromMenu(page, 'Undo');
 

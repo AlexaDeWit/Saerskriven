@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { canvasClassNames } from '@saerskriven/canvas';
 import { committedText } from '@saerskriven/model/fixtures';
 import {
   boxesOverlap,
@@ -50,7 +51,11 @@ const lowZoom = 0.45;
 const onScreenGap = 2;
 
 const badgeInk = (node: Locator) =>
-  inkBoxOf(node.locator('.pn-badge circle, .pn-badge path'));
+  inkBoxOf(
+    node.locator(
+      `.${canvasClassNames.badge} circle, .${canvasClassNames.badge} path`,
+    ),
+  );
 
 for (const [badge, element, name, counts] of cases) {
   test(
@@ -60,7 +65,9 @@ for (const [badge, element, name, counts] of cases) {
       const node = await selectClear(page, name);
 
       await test.step('no corner handle covers the badge', async () => {
-        await expect(node.locator('.pn-badge-primary')).toHaveCount(counts);
+        await expect(
+          node.locator(`.${canvasClassNames.badgePrimary}`),
+        ).toHaveCount(counts);
         const ink = await badgeInk(node);
         const handles = node.locator('.react-flow__resize-control.handle');
         await expect(handles).toHaveCount(4);
@@ -88,7 +95,9 @@ for (const [badge, element, name, counts] of cases) {
           x: corner.x + corner.width - ink.width * 0.1,
           y: corner.y + ink.width * 0.17,
         };
-        expect(await reachesAt(node.locator('.pn-badge'), inside)).toBe(true);
+        expect(
+          await reachesAt(node.locator(`.${canvasClassNames.badge}`), inside),
+        ).toBe(true);
       });
 
       await test.step('the top right handle keeps a gap from the badge on screen at low zoom', async () => {
