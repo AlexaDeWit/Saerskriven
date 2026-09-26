@@ -83,7 +83,7 @@ catalog:
   '@swc-node/register': 1.12.1
   '@swc/core': 1.16.2
   '@swc/helpers': 0.5.23
-  '@testing-library/dom': 10.4.1
+  '@testing-library/dom': 10.4.2
   '@testing-library/react': 16.3.3
   # Keyboard and pointer interaction in component specs, driven through the
   # events a browser would fire rather than through React's synthetic ones.
