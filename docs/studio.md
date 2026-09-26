@@ -265,6 +265,20 @@ clear it. That draft survives closing the panel and selecting something else,
 until the file changes. Deleting a threat removes it from the model, and so
 from every element it names, which the item says beside its delete control.
 
+### Attached elements
+
+An expanded threat lists the elements it names, across every diagram, with a
+Detach control on each and an **Attach existing element** picker under them
+that offers the elements it does not name. Attach and Detach are one undo step
+each.
+
+Detaching the last element removes the threat, with the mitigations and
+assumptions left on no threat, and the notice says so. There is no
+confirmation: Undo brings the threat back with everything the removal took, as
+unlinking a record's last threat does. Detaching the element whose panel you
+are reading takes the threat off that panel, so focus moves to the threat that
+takes its place, or to Add a threat.
+
 ### Mitigations and assumptions
 
 An expanded threat holds a Mitigations group and an Assumptions group. Nothing
@@ -286,20 +300,6 @@ done to a record changes a threat's status.
 
 A new or returning row joins the end of the group while the group is open, so
 the rows you are reading keep their place.
-
-### Attached elements
-
-An expanded threat lists the elements it names, across every diagram, with a
-Detach control on each and an **Attach existing element** picker under them
-that offers the elements it does not name. Attach and Detach are one undo step
-each.
-
-Detaching the last element removes the threat, with the mitigations and
-assumptions left on no threat, and the notice says so. There is no
-confirmation: Undo brings the threat back with everything the removal took, as
-unlinking a record's last threat does. Detaching the element whose panel you
-are reading takes the threat off that panel, so focus moves to the threat that
-takes its place, or to Add a threat.
 
 ### Model properties
 

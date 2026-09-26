@@ -118,6 +118,11 @@ export function ThreatEditor({
           onRefused={refused('Description')}
           value={threat.description}
         />
+        <AttachmentGroup
+          onAttach={onAttach}
+          onDetach={onDetach}
+          threat={threat}
+        />
         <RecordGroup
           held={held}
           kind={mitigationKind}
@@ -133,11 +138,6 @@ export function ThreatEditor({
           onRefused={note}
           refusals={refusals}
           target={threatTarget(assumptionKind, threat.id)}
-        />
-        <AttachmentGroup
-          onAttach={onAttach}
-          onDetach={onDetach}
-          threat={threat}
         />
         {spread > 1 && (
           <p className={styles.spread} id={spreadId}>
