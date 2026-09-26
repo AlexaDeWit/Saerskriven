@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { canvasClassNames } from '@saerskriven/canvas';
 import { committedText } from '@saerskriven/model/fixtures';
 import {
   boxesOverlap,
@@ -51,7 +52,9 @@ const onScreenGap = 2;
 
 const badgeInk = (node: Locator) =>
   inkBoxOf(
-    node.locator('.saer-diagram-badge circle, .saer-diagram-badge path'),
+    node.locator(
+      `.${canvasClassNames.badge} circle, .${canvasClassNames.badge} path`,
+    ),
   );
 
 for (const [badge, element, name, counts] of cases) {
@@ -62,9 +65,9 @@ for (const [badge, element, name, counts] of cases) {
       const node = await selectClear(page, name);
 
       await test.step('no corner handle covers the badge', async () => {
-        await expect(node.locator('.saer-diagram-badge-primary')).toHaveCount(
-          counts,
-        );
+        await expect(
+          node.locator(`.${canvasClassNames.badgePrimary}`),
+        ).toHaveCount(counts);
         const ink = await badgeInk(node);
         const handles = node.locator('.react-flow__resize-control.handle');
         await expect(handles).toHaveCount(4);
@@ -93,7 +96,7 @@ for (const [badge, element, name, counts] of cases) {
           y: corner.y + ink.width * 0.17,
         };
         expect(
-          await reachesAt(node.locator('.saer-diagram-badge'), inside),
+          await reachesAt(node.locator(`.${canvasClassNames.badge}`), inside),
         ).toBe(true);
       });
 

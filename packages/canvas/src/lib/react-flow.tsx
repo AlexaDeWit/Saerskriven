@@ -34,7 +34,7 @@ import {
 import { svgNumber } from './numbers.js';
 import { polylinePath, smoothPath } from './paths.js';
 import { ResizeControls, type ResizeLabels } from './resize-controls.js';
-import { canvasClassNames } from './stylesheet.js';
+import { canvasClassNames, canvasInteractionClassNames } from './stylesheet.js';
 import { interactionWidths } from './tokens.js';
 
 /** What a React Flow node of a diagram carries: the laid-out node. */
@@ -75,8 +75,8 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * text out, for a canvas with a text editor over it. A selected element the
  * model can resize carries the resize controls, named from `resizeLabels`.
  * The badge letters `marks` and draws last, in an SVG layer classed
- * `saer-diagram-badge-layer`, so a canvas can stack it above the selection
- * frame.
+ * `canvasInteractionClassNames.badgeLayer`, so a canvas can stack it above the
+ * selection frame.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
@@ -394,7 +394,7 @@ function BadgeLayer({
   return (
     <svg
       aria-hidden="true"
-      className={canvasClassNames.badgeLayer}
+      className={canvasInteractionClassNames.badgeLayer}
       height={svgNumber(node.size.height)}
       overflow="visible"
       pointerEvents="none"
@@ -422,7 +422,7 @@ function BoundaryHitTarget({
 }): ReactElement {
   const interaction = {
     'aria-hidden': true,
-    className: canvasClassNames.boundaryHitTarget,
+    className: canvasInteractionClassNames.boundaryHitTarget,
     fill: 'none',
     pointerEvents: 'stroke',
     stroke: 'transparent',

@@ -128,6 +128,8 @@ resize controls are named by and both bodies the badge `marks`, and loads
 `@xyflow/react/dist/style.css` beside the canvas stylesheet. The package words
 nothing a reader sees or hears, so the mounting app supplies that text in its
 own language. The sheet styles React Flow's container, viewport, handles and
-controls, none of which a primitive draws.
+controls, none of which a primitive draws. `canvasInteractionClassNames` names
+the node body's badge layer and a boundary's pointer target, which the canvas
+stylesheet leaves for the mounting canvas to stack and hand the pointer to.
 
 Unit tests: `pnpm nx test @saerskriven/canvas`.

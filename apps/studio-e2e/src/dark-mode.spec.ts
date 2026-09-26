@@ -1,4 +1,5 @@
 import {
+  canvasClassNames,
   darkPalette,
   lightPalette,
   rgbColour,
@@ -14,7 +15,7 @@ import { nodeNamed, openTwoDiagrams, storefront } from './studio.fixtures.js';
  * element where a store's pair of lines would give two.
  */
 const outline = (page: Page): Locator =>
-  nodeNamed(page, storefront.webShop).locator('.saer-shape');
+  nodeNamed(page, storefront.webShop).locator(`.${canvasClassNames.shape}`);
 
 /**
  * The chrome and the diagram are read together because they are coloured by

@@ -112,6 +112,9 @@ flag badges `saer-flag` and `saer-flag-<value>`.
 The values are the YAML keys above, including `accepted-risk` and `undecided`.
 Labels remain readable if the site removes every stylesheet.
 
+A diagram SVG's `saer-diagram-*` classes belong to the renderer and can change
+between releases.
+
 The stylesheet supports these CSS variables within `.saer-register`.
 Unspecified badge fill and lettering values fall back to the current semantic tone:
 

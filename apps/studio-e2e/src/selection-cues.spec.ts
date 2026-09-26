@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { canvasClassNames } from '@saerskriven/canvas';
 import { canvasContainer, halfwayAlong, lineOf } from './canvas.fixtures.js';
 import {
   nodeNamed,
@@ -30,7 +31,7 @@ const frameAround = async (node: Locator): Promise<number> =>
 const outlineOf = async (node: Locator): Promise<number> =>
   lengthOf(
     await node
-      .locator('.saer-shape')
+      .locator(`.${canvasClassNames.shape}`)
       .first()
       .evaluate((shape) => getComputedStyle(shape).strokeWidth),
   );

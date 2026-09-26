@@ -4,6 +4,7 @@ import {
   type Locator,
   type Page,
 } from '@playwright/test';
+import { canvasClassNames } from '@saerskriven/canvas';
 
 /** A box, in the diagram's own coordinates or on screen. */
 export type Box = {
@@ -206,7 +207,7 @@ export const handlesOf = (box: Box): Point[] =>
 
 /** The line one flow draws, from its source through its waypoints. */
 export const lineOf = (page: Page, name: RegExp): Locator =>
-  page.getByRole('group', { name }).locator('path.saer-flow');
+  page.getByRole('group', { name }).locator(`path.${canvasClassNames.flow}`);
 
 /** The screen point halfway along a drawn flow. */
 export const halfwayAlong = (line: Locator): Promise<Point> =>

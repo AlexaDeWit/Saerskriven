@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { canvasClassNames } from '@saerskriven/canvas';
 import {
   canvasSettled,
   emptyCanvasPoint,
@@ -126,7 +127,11 @@ for (const placement of notePlacements) {
     await editor.press('Control+Enter');
     const note = nodeNamed(page, /^Note, text/u);
     const drawnText = async (): Promise<string> =>
-      (await note.locator('text.saer-note tspan').allTextContents())
+      (
+        await note
+          .locator(`text.${canvasClassNames.note} tspan`)
+          .allTextContents()
+      )
         .join('')
         .replace(/\s/gu, '');
     await expect.poll(drawnText).toBe('FirstlineSecondline');

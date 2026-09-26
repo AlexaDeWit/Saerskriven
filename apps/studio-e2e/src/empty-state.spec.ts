@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { canvasClassNames } from '@saerskriven/canvas';
 import { elementNodes } from './canvas.fixtures.js';
 import {
   nodeNamed,
@@ -9,9 +10,13 @@ import {
 } from './studio.fixtures.js';
 
 const drawnNames = [
-  { of: placeholder.actor, className: 'saer-label', says: 'Actor' },
-  { of: placeholder.store, className: 'saer-label', says: 'Store' },
-  { of: placeholder.records, className: 'saer-flow-label', says: 'Records' },
+  { of: placeholder.actor, className: canvasClassNames.label, says: 'Actor' },
+  { of: placeholder.store, className: canvasClassNames.label, says: 'Store' },
+  {
+    of: placeholder.records,
+    className: canvasClassNames.flowLabel,
+    says: 'Records',
+  },
 ] as const;
 
 test('the studio opens on an actor, the records it sends, and the store they land in', async ({
