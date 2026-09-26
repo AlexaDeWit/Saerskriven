@@ -333,7 +333,12 @@ test(
     await selectNode(page, storefront.shopper);
     await expandThreat(page, storefront.takeover);
     await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
-    await addRecord(page, 'mitigation', 'Rotate the upstream token hourly');
+    await addRecord(
+      page,
+      'mitigation',
+      'Rotate the upstream token hourly',
+      'Issue tokens per caller.\nExpire them within the hour.\nRefuse a replay.\nLog each rotation.\nAlert on a failed rotation.',
+    );
 
     const unlink = panelControl(page, 'Unlink mitigation 1');
     await onScreen(unlink);
