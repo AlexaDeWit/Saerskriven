@@ -142,7 +142,7 @@ catalog:
   oxlint: 1.82.0
   # tsgolint bundles its own typescript-go checker, so it does not care about
   # the catalog's typescript version.
-  oxlint-tsgolint: 7.0.2001
+  oxlint-tsgolint: 7.0.2002
   # Radix headless primitives, styled in apps/studio (issue #86). The unified
   # package covers every primitive the panels adopt. Icons remain a separate
   # package because Radix publishes them apart from its primitives.
