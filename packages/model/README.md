@@ -56,6 +56,10 @@ threats by severity, and the threat count of every element. `autoPlacement`
 gives a position to a caller that has none to read, as the OTM and TM-BOM
 imports do.
 
+A diagram's threats are the ones referencing an element drawn on it, which
+`threatsOnDiagrams` reads for one diagram or several. A threat attached to no
+element is on no diagram.
+
 A threat number is issued once and never moves: the model carries the highest
 number it has ever issued, so a removed threat leaves a permanent gap and
 `nextThreatNumber` never hands its number back.

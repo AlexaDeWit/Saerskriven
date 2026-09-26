@@ -2,6 +2,7 @@ import { Either } from 'effect';
 import { inspect, renderInspection } from './inspect.js';
 import {
   assumptionScopesTree,
+  everyRecordTree,
   forgedIdsTree,
   forgedLinesIn,
   forgedPathTree,
@@ -27,6 +28,7 @@ describe('what an inspection reads as', () => {
       expect.stringMatching(/^revision: sha256:[0-9a-f]{64}$/u),
       'title: Small',
       'owner: Owner',
+      'contributors: none',
       'assumptions that apply to the model:',
       'totals: diagrams 0, elements 0, threats 1, mitigations 0, assumptions 0',
       'diagrams:',
@@ -51,6 +53,19 @@ describe('what an inspection reads as', () => {
         (inspection) => inspection.result.kind,
       ),
     ).toEqual(Either.right('inspected'));
+  });
+});
+
+describe('the metadata an inspection names', () => {
+  it('names the description and every contributor after the owner', () => {
+    const lines = renderInspection(
+      Either.getOrThrow(inspect(everyRecordTree(), {})),
+    );
+    const owner = lines.indexOf('owner: Alexandra de Wit');
+    expect(lines.slice(owner + 1, owner + 3)).toEqual([
+      'description: Sample model exercising every record kind.',
+      'contributors: "Alexandra de Wit"',
+    ]);
   });
 });
 

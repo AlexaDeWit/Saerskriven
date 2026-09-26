@@ -70,15 +70,21 @@ export function threatDetail(threat: Threat, model: Model): ThreatDetail {
 }
 
 /**
- * The methodology and the category of a threat as one word pair. The names
- * are the model's own values rather than the display labels the markdown
- * register writes, so what a text result names is what a `category` filter
- * takes.
+ * The methodology and the category of a threat joined by a slash, such as
+ * `STRIDE/tampering`. The names are the model's own values rather than the
+ * display labels the markdown register writes, and a custom category is
+ * named by its own methodology name. The `category` filter of
+ * `saer_search_threats` compares against this, without case.
  */
-export function renderCategory(category: ThreatCategory): string {
+export function categoryName(category: ThreatCategory): string {
   return category.methodology === 'custom'
-    ? `${escapedForTerminal(category.methodologyName)}/${escapedForTerminal(category.category)}`
+    ? `${category.methodologyName}/${category.category}`
     : `${category.methodology}/${category.category}`;
+}
+
+/** {@link categoryName} as a text result carries it, escaped for a terminal. */
+export function renderCategory(category: ThreatCategory): string {
+  return escapedForTerminal(categoryName(category));
 }
 
 /**

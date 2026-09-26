@@ -1,7 +1,8 @@
 import type { Element } from './elements.js';
 import type { ElementId } from './ids.js';
+import type { Diagram } from './model.js';
 import type { Model } from './parse.js';
-import { elementsAcross } from './references.js';
+import { elementIdsAcross, elementsAcross } from './references.js';
 import type { Severity, Threat } from './threats.js';
 
 /**
@@ -56,5 +57,20 @@ export function threatCountByElement(model: Model): Map<ElementId, number> {
       element.id,
       links.get(element.id) ?? 0,
     ]),
+  );
+}
+
+/**
+ * The threats that reference an element drawn on any of the given diagrams,
+ * each once and in register order. A threat attached to no element is on no
+ * diagram.
+ */
+export function threatsOnDiagrams(
+  model: Model,
+  diagrams: readonly Diagram[],
+): Threat[] {
+  const drawn = elementIdsAcross(diagrams);
+  return model.threats.filter((threat) =>
+    threat.elements.some((element) => drawn.has(element)),
   );
 }

@@ -76,5 +76,10 @@ export {
   type RecordReference,
 } from './lib/records.js';
 export * from './lib/threat-flags.js';
-export * from './lib/coverage.js';
+export {
+  elementsWithoutThreats,
+  openThreatsBySeverity,
+  threatCountByElement,
+  threatsOnDiagrams,
+} from './lib/coverage.js';
 export * from './lib/fragment.js';

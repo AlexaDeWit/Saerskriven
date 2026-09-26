@@ -1,6 +1,4 @@
-import { quotedForTerminal } from '@saerskriven/formats';
 import {
-  diagramsNamed,
   elementIdSchema,
   elementKindSchema,
   threatCountByElement,
@@ -24,6 +22,7 @@ import {
   type ModelReading,
 } from './reading.js';
 import {
+  diagramsOf,
   limitedRows,
   matchesQuery,
   renderCounts,
@@ -71,10 +70,11 @@ export type SearchElementsResult = z.infer<typeof searchElementsResultSchema>;
 
 /** What `saer_search_elements` tells a client it is for. */
 export const searchElementsDescription = [
-  'Find the elements of one Saerskriven threat model: the actors, processes, stores, data flows, trust boundaries and canvas notes its diagrams are drawn from. Each match carries the element id, the diagram it is drawn on, its kind, its name, and how many threats reference it.',
+  'Find the elements of one Saerskriven threat model: the actors, processes, stores, data flows, trust boundaries and canvas notes its diagrams are drawn from. Each match carries the element id, the diagram it is drawn on, its kind, its name, whether it is out of scope (`outOfScope`), and how many threats reference it.',
   'Use this to find the id of an element you mean to read threats about or attach a threat to, and to see which parts of a model carry no analysis. Use saer_coverage instead for the whole picture of what is analyzed and what is not, and saer_search_threats to search the threats rather than the elements they hang off.',
   'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `diagram` keeps one diagram, named by id or exact title. `kind` keeps one element kind. `query` searches without case through element ids, names, descriptions, note text, protocol, privilege level and declared relationship ids.',
-  '`response_format` is `concise` by default. `detailed` carries the complete model element, including geometry, flow direction, optional security facts and declared boundary relationships. Missing optional fields mean not recorded, distinct from false, empty text and empty lists. Pass `element` for an exact id lookup.',
+  '`response_format` is `concise` by default. `detailed` carries the complete model element, including its description, the reason it is out of scope, geometry, flow direction, optional security facts and declared boundary relationships. Missing optional fields mean not recorded, distinct from false, empty text and empty lists. Pass `element` for an exact id lookup.',
+  '`offset` skips that many matches, for the next page of a listing cut at its limit, which names the offset to pass.',
   'This tool never writes, and the counts it reports are of threats recorded rather than threats outstanding.',
 ].join(' ');
 
@@ -113,7 +113,7 @@ function found(
   return Either.map(
     searched(reading.model, args),
     (placed): SearchElementsResult => {
-      const limited = limitedRows(placed, args.response_format);
+      const limited = limitedRows(placed, args);
       const counts = threatCountByElement(reading.model);
       return {
         ...reportedReading(reading),
@@ -134,22 +134,6 @@ function searched(
   return Either.map(diagramsOf(model, args.diagram), (diagrams) =>
     elementsOnDiagrams(diagrams).filter((placed) => keeps(placed, args)),
   );
-}
-
-function diagramsOf(
-  model: Model,
-  named: string | undefined,
-): Either.Either<Model['diagrams'], readonly string[]> {
-  if (named === undefined) {
-    return Either.right(model.diagrams);
-  }
-  const selected = diagramsNamed(model.diagrams, named);
-  return selected.length > 0
-    ? Either.right(selected)
-    : Either.left([
-        `The model holds no diagram named ${quotedForTerminal(named)}.`,
-        'Call saer_inspect for the id and the title of every diagram it holds.',
-      ]);
 }
 
 function keeps(

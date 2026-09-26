@@ -141,6 +141,28 @@ export function everyRecordTree(): ModelWorkspace {
 }
 
 /**
+ * A disposable root whose default model is the editable fixture with every
+ * element in scope. The store keeps the reason it was out of scope, since
+ * the model holds the flag and the reason independently.
+ */
+export function keptReasonTree(): ModelWorkspace {
+  return treeHolding(
+    saerskrivenYamlCodec.write(
+      parsedFixture({
+        ...editableModel,
+        diagrams: editableModel.diagrams.map((diagram) => ({
+          ...diagram,
+          elements: diagram.elements.map((element) => ({
+            ...element,
+            outOfScope: false,
+          })),
+        })),
+      }),
+    ).output,
+  );
+}
+
+/**
  * A disposable root whose default model holds an assumption of each scope
  * after the editable fixture's own, which links a threat alone: one that
  * applies to the model and links the threat, and one that applies to the

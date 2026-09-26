@@ -8,6 +8,8 @@ import {
   type Diagram,
   type Element,
   type FlowEndpoint,
+  type Point,
+  type Size,
 } from '@saerskriven/model';
 import { z } from 'zod';
 
@@ -120,31 +122,39 @@ function detailLines(row: ElementDetail): readonly string[] {
     ...(row.description.length === 0
       ? []
       : [`description: ${row.description}`]),
-    ...(row.outOfScope ? [`reason out of scope: ${row.reasonOutOfScope}`] : []),
+    ...(row.outOfScope || row.reasonOutOfScope.length > 0
+      ? [`reason out of scope: ${row.reasonOutOfScope}`]
+      : []),
     ...(row.kind === 'text' && row.text.length > 0
       ? [`text: ${row.text}`]
       : []),
-    ...('position' in row
-      ? [
-          `box: ${String(row.position.x)},${String(row.position.y)} sized ${String(row.size.width)} by ${String(row.size.height)}`,
-        ]
-      : []),
-    ...(row.kind === 'flow'
-      ? [
-          `source: ${renderEndpoint(row.source)}`,
-          `target: ${renderEndpoint(row.target)}`,
-          ...(row.waypoints.length === 0
-            ? []
-            : [`waypoints: ${String(row.waypoints.length)}`]),
-        ]
-      : []),
-    ...(row.kind === 'trust-boundary' ? [`shape: ${row.shape.kind}`] : []),
+    ...geometryLines(row),
     ...Object.entries(row)
       .filter(
         ([key, value]) => !formattedFields.has(key) && value !== undefined,
       )
       .map(([key, value]) => `${key}: ${JSON.stringify(value)}`),
   ];
+}
+
+function geometryLines(row: ElementDetail): readonly string[] {
+  if (row.kind === 'flow') {
+    return [
+      `source: ${renderEndpoint(row.source)}`,
+      `target: ${renderEndpoint(row.target)}`,
+      ...(row.waypoints.length === 0
+        ? []
+        : [`waypoints: ${renderPath(row.waypoints)}`]),
+    ];
+  }
+  if (row.kind === 'trust-boundary') {
+    return [
+      row.shape.kind === 'box'
+        ? `shape: box ${renderBox(row.shape.position, row.shape.size)}`
+        : `shape: curve through ${renderPath(row.shape.waypoints)}`,
+    ];
+  }
+  return [`box: ${renderBox(row.position, row.size)}`];
 }
 
 function threatsOn(
@@ -157,5 +167,17 @@ function threatsOn(
 function renderEndpoint(endpoint: FlowEndpoint): string {
   return endpoint.kind === 'attached'
     ? `element ${endpoint.element}${endpoint.side === undefined ? '' : ` on its ${endpoint.side}`}`
-    : `free at ${String(endpoint.position.x)},${String(endpoint.position.y)}`;
+    : `free at ${renderPoint(endpoint.position)}`;
+}
+
+function renderBox(position: Point, size: Size): string {
+  return `${renderPoint(position)} sized ${String(size.width)} by ${String(size.height)}`;
+}
+
+function renderPath(points: readonly Point[]): string {
+  return points.map(renderPoint).join(' then ');
+}
+
+function renderPoint(point: Point): string {
+  return `${String(point.x)},${String(point.y)}`;
 }
