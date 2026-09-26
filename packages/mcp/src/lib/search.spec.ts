@@ -36,6 +36,31 @@ describe('one page of a listing', () => {
     });
   });
 
+  it('names no next page for a listing that fills one page exactly', () => {
+    expect(
+      limitedRows(listing.slice(0, searchLimits.concise), {
+        response_format: 'concise',
+      }).counts,
+    ).toEqual({
+      matched: searchLimits.concise,
+      offset: 0,
+      returned: searchLimits.concise,
+      truncated: false,
+    });
+  });
+
+  it('names no next page for a page that ends at the last match', () => {
+    const offset = listing.length - searchLimits.detailed;
+    expect(
+      limitedRows(listing, { response_format: 'detailed', offset }).counts,
+    ).toEqual({
+      matched: listing.length,
+      offset,
+      returned: searchLimits.detailed,
+      truncated: false,
+    });
+  });
+
   it('carries nothing from an offset past the last match', () => {
     expect(
       limitedRows(listing, { response_format: 'detailed', offset: 500 }).counts,

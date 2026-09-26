@@ -1,8 +1,8 @@
 import {
-  elementIdsAcross,
   recordsLinkedTo,
   severitySchema,
   threatStatusSchema,
+  threatsOnDiagrams,
   type Model,
   type Threat,
 } from '@saerskriven/model';
@@ -102,8 +102,8 @@ export function searchThreats(
   args: SearchThreatsArguments,
 ): Either.Either<SearchThreatsResult, readonly string[]> {
   return Either.flatMap(readNamed(workspace, args.file), (reading) =>
-    Either.map(drawnOn(reading.model, args.diagram), (drawn) =>
-      found(reading, drawn, args),
+    Either.map(threatsDrawnOn(reading.model, args.diagram), (candidates) =>
+      found(reading, candidates, args),
     ),
   );
 }
@@ -129,24 +129,24 @@ const narrowing = [
   '`query`',
 ];
 
-function drawnOn(
+function threatsDrawnOn(
   model: Model,
   diagram: string | undefined,
-): Either.Either<ReadonlySet<string> | undefined, readonly string[]> {
+): Either.Either<readonly Threat[], readonly string[]> {
   return diagram === undefined
-    ? Either.right(undefined)
-    : Either.map(diagramsOf(model, diagram), elementIdsAcross);
+    ? Either.right(model.threats)
+    : Either.map(diagramsOf(model, diagram), (diagrams) =>
+        threatsOnDiagrams(model, diagrams),
+      );
 }
 
 function found(
   reading: ModelReading,
-  drawn: ReadonlySet<string> | undefined,
+  candidates: readonly Threat[],
   args: SearchThreatsArguments,
 ): SearchThreatsResult {
   const limited = limitedRows(
-    reading.model.threats.filter((threat) =>
-      keeps(threat, reading.model, drawn, args),
-    ),
+    candidates.filter((threat) => keeps(threat, reading.model, args)),
     args,
   );
   return {
@@ -164,7 +164,6 @@ function found(
 function keeps(
   threat: Threat,
   model: Model,
-  drawn: ReadonlySet<string> | undefined,
   args: SearchThreatsArguments,
 ): boolean {
   return (
@@ -173,8 +172,6 @@ function keeps(
     (args.category === undefined ||
       categoryName(threat.category).toLowerCase() ===
         args.category.toLowerCase()) &&
-    (drawn === undefined ||
-      threat.elements.some((element) => drawn.has(element))) &&
     (args.element === undefined ||
       threat.elements.some((element) => element === args.element)) &&
     matchesQuery(args.query, [

@@ -10,6 +10,7 @@ import {
   elementsWithoutThreats,
   openThreatsBySeverity,
   threatCountByElement,
+  threatsOnDiagrams,
 } from './coverage.js';
 import type { Element } from './elements.js';
 import { threatRegisterFixture } from './model.fixtures.js';
@@ -71,5 +72,28 @@ describe('threatCountByElement', () => {
         elementId('element-shopper'),
       ),
     ).toBe(1);
+  });
+});
+
+describe('threatsOnDiagrams', () => {
+  const [front, back] = registerModel.diagrams;
+
+  it('keeps the threats referencing an element of the diagram, in register order', () => {
+    expect(idsOfThreats(threatsOnDiagrams(registerModel, [front]))).toEqual([
+      'threat-spoof-shopper',
+      'threat-tamper-payment',
+      'threat-flood-checkout',
+    ]);
+  });
+
+  it('leaves out a threat attached to no element, whatever diagrams are named', () => {
+    expect(
+      idsOfThreats(threatsOnDiagrams(registerModel, [front, back])),
+    ).toEqual([
+      'threat-spoof-shopper',
+      'threat-tamper-payment',
+      'threat-leak-vault',
+      'threat-flood-checkout',
+    ]);
   });
 });

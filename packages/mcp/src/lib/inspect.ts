@@ -8,9 +8,9 @@ import {
   acceptedTextSchema,
   assumptionSchema,
   diagramIdSchema,
-  elementIdsIn,
   elementsAcross,
   modelMetadataSchema,
+  threatsOnDiagrams,
   type Diagram,
   type Model,
 } from '@saerskriven/model';
@@ -153,14 +153,11 @@ function summaryOf(
   diagram: Diagram,
   model: Model,
 ): z.infer<typeof diagramSummarySchema> {
-  const ids = elementIdsIn(diagram);
   return {
     id: diagram.id,
     title: diagram.title,
     elements: diagram.elements.length,
-    threats: model.threats.filter((threat) =>
-      threat.elements.some((element) => ids.has(element)),
-    ).length,
+    threats: threatsOnDiagrams(model, [diagram]).length,
   };
 }
 

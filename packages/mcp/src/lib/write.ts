@@ -73,8 +73,8 @@ export type WriteTarget = {
 };
 
 /**
- * The `revision` a write quotes back, beside the `file` argument every tool
- * of this server takes.
+ * The `revision` a write quotes back, beside the `file` argument of every
+ * tool that reads a model.
  */
 export const revisionArgumentSchema = fileArgumentSchema.extend({
   revision: z
