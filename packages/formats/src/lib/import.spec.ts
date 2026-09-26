@@ -1,9 +1,10 @@
 import type { Model } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
 import { otmWireSchema } from '@saerskriven/wire-otm';
-import { tmbomWireSchema } from '@saerskriven/wire-tmbom';
+import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { stringify } from 'yaml';
+import { readFailureIssues } from './codec.fixtures.js';
 import { divergenceDetailText } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { importModel } from './import.js';
@@ -197,6 +198,62 @@ it('refuses unknown TM-BOM endpoint types and dangling threat targets', () => {
   expect(Either.isLeft(importModel(JSON.stringify(dangling)))).toBe(true);
 });
 
+it.each<
+  readonly [string, (document: TmbomDocument) => void, Record<string, string>]
+>([
+  [
+    'a data set placed in an undeclared store',
+    (document) => {
+      document.data_sets[0].placements[0].data_store = 'absent-store';
+    },
+    { id: 'absent-store', kind: 'data-store' },
+  ],
+  [
+    'a control naming an undeclared threat',
+    (document) => {
+      document.controls?.[0].threats.push('absent-threat');
+    },
+    { id: 'absent-threat', kind: 'threat' },
+  ],
+])(
+  'names the TM-BOM reference %s leaves unresolved',
+  (_named, mutate, parameters) => {
+    const document = tmbomFixture();
+    mutate(document);
+
+    expect(refusalDetails(JSON.stringify(document))).toContainEqual({
+      code: 'unknown-source-reference',
+      parameters,
+    });
+  },
+);
+
+it.each([
+  ['both', { trustZone: 'internet-trustzone', component: 'web-client' }],
+  ['neither', {}],
+])(
+  'refuses an OTM parent naming %s of a trust zone and a component',
+  (_named, parent) => {
+    const document = otmFixture();
+    document.components = document.components?.map((component, index) =>
+      index === 0 ? { ...component, parent } : component,
+    );
+
+    expect(importModel(JSON.stringify(document))).toMatchObject({
+      _tag: 'Left',
+      left: {
+        _tag: 'InvalidWireDocument',
+        issues: [
+          {
+            path: ['components', 0, 'parent'],
+            detail: { code: 'otm-parent-not-single' },
+          },
+        ],
+      },
+    });
+  },
+);
+
 it.each(['0.3.0', '1.0.0'])(
   'refuses unadopted OTM version %s',
   (otmVersion) => {
@@ -227,27 +284,30 @@ it('enforces the existing size, depth, and alias limits on imports', () => {
 
 it('rejects the upstream Vault example with dangling trust-zone references', () => {
   const text = committedText('tmbom/vault-invalid-zones.json');
-  const result = importModel(text);
-  expect(result).toMatchObject({
+  expect(importModel(text)).toMatchObject({
     _tag: 'Left',
     left: { _tag: 'InvalidWireDocument' },
   });
-  const messages = Either.match(result, {
-    onLeft: (failure) =>
-      failure._tag === 'InvalidWireDocument'
-        ? failure.issues.map((issue) => issue.message)
-        : [],
-    onRight: () => [],
+  expect(refusalDetails(text)).toContainEqual({
+    code: 'unknown-source-reference',
+    parameters: { id: 'public-internet', kind: 'trust-zone' },
   });
-  expect(messages).toContain('Unknown trust zone "public-internet"');
 });
 
-it('identifies an unsupported import before reporting schema fields', () => {
+it('identifies an unsupported import, naming the releases it reads, before reporting schema fields', () => {
   expect(importModel('An unrelated document')).toMatchObject({
     _tag: 'Left',
     left: {
       _tag: 'InvalidWireDocument',
-      issues: [{ code: 'invalid_format', path: [] }],
+      issues: [
+        {
+          detail: {
+            code: 'import-format-unnamed',
+            parameters: { otm: ['0.2.0'], tmbom: ['1.0.1', '1.0.2'] },
+          },
+          path: [],
+        },
+      ],
     },
   });
 });
@@ -490,6 +550,13 @@ it('builds no mitigation linked to no threat and no assumption with no reference
     ]),
   ).toEqual([]);
 });
+
+const refusalDetails = (text: string) =>
+  Either.match(importModel(text), {
+    onLeft: (failure) =>
+      readFailureIssues(failure).map((issue) => issue.detail),
+    onRight: () => [],
+  });
 
 const imported = (document: unknown) =>
   Either.getOrThrowWith(

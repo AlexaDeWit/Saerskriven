@@ -29,6 +29,15 @@ export {
   type Divergence,
 } from './lib/divergence.js';
 export {
+  importIssueDetailSchema,
+  isImportIssueDetail,
+  type ImportIssueCode,
+  type ImportIssueDetail,
+  type SourceReferent,
+  type WireIssue,
+  type WireIssueDetail,
+} from './lib/import-issue-detail.js';
+export {
   importFormatOf,
   importFormatSchema,
   importModel,

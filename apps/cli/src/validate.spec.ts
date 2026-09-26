@@ -68,7 +68,7 @@ describe('validate', () => {
       out: '',
       err:
         'The file is not a valid document of the format that claimed it:\n' +
-        'metadata.title: Invalid input: expected string, received number\n',
+        'metadata.title: expected a string, received a number\n',
     });
   });
 
@@ -78,7 +78,7 @@ describe('validate', () => {
       out: '',
       err:
         'The file is a valid document, and the model it maps to is not:\n' +
-        'threats.0.elements.0: Threat elements references unknown element id "element-2".\n',
+        'threats.0.elements.0: names unknown element id "element-2"\n',
     });
   });
 

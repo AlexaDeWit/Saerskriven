@@ -1,7 +1,7 @@
-import { issueLine, type ParseIssue } from '@saerskriven/model';
 import { ReadFailure } from './codec.js';
 import { DetectionFailure } from './detect.js';
 import { escapedForTerminal } from './divergence.js';
+import { wireIssueLine, type WireIssue } from './import-issue-detail.js';
 
 /**
  * Why a read produced nothing, as lines without terminators, every variant
@@ -35,6 +35,6 @@ export function renderReadFailure(
       });
 }
 
-function issueLines(issues: readonly ParseIssue[]): readonly string[] {
-  return issues.map((issue) => escapedForTerminal(issueLine(issue)));
+function issueLines(issues: readonly WireIssue[]): readonly string[] {
+  return issues.map((issue) => escapedForTerminal(wireIssueLine(issue)));
 }

@@ -1,13 +1,8 @@
 import { Either, Option } from 'effect';
+import { z } from 'zod';
 import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
-import {
-  boundedParse,
-  issueFloodCode,
-  issueLine,
-  parseModel,
-  schemaFailureIssues,
-  toParseIssues,
-} from './parse.js';
+import { issueFloodCode, type ParseIssueDetail } from './parse-issue.js';
+import { boundedParse, parseModel, schemaFailureIssues } from './parse.js';
 
 const plantEverywhere = (value: unknown): unknown =>
   Array.isArray(value)
@@ -28,7 +23,7 @@ type Rejection = {
   readonly named: string;
   readonly mutate: (draft: typeof validModelFixture) => void;
   readonly path: readonly (string | number)[];
-  readonly message: string;
+  readonly detail: ParseIssueDetail;
 };
 
 describe('parseModel', () => {
@@ -75,9 +70,13 @@ describe('parseModel', () => {
       ),
     );
     expect(failure?._tag).toBe('InvalidModel');
-    expect(failure?.issues).toContainEqual(
-      expect.objectContaining({ code: 'invalid_type', path: ['metadata'] }),
-    );
+    expect(failure?.issues).toContainEqual({
+      path: ['metadata'],
+      detail: {
+        code: 'type-mismatch',
+        parameters: { expected: 'object', received: 'string' },
+      },
+    });
     expect(JSON.parse(JSON.stringify(failure))).toEqual({
       _tag: 'InvalidModel',
       issues: failure?.issues,
@@ -95,8 +94,10 @@ describe('parseModel', () => {
         });
       },
       path: ['diagrams', 1, 'elements', 0, 'id'],
-      message:
-        'Duplicate element id "element-customer": element ids must be unique across the model.',
+      detail: {
+        code: 'duplicate-element-id',
+        parameters: { id: 'element-customer' },
+      },
     },
     {
       named: 'a duplicate diagram id',
@@ -108,8 +109,10 @@ describe('parseModel', () => {
         });
       },
       path: ['diagrams', 1, 'id'],
-      message:
-        'Duplicate diagram id "diagram-main": diagram ids must be unique across the model.',
+      detail: {
+        code: 'duplicate-diagram-id',
+        parameters: { id: 'diagram-main' },
+      },
     },
     {
       named: 'a duplicate threat number',
@@ -120,8 +123,7 @@ describe('parseModel', () => {
         });
       },
       path: ['threats', 1, 'number'],
-      message:
-        'Duplicate threat number 1: threat numbers must be unique across the model.',
+      detail: { code: 'duplicate-threat-number', parameters: { number: 1 } },
     },
     {
       named: 'a threat number above the last issued',
@@ -129,8 +131,10 @@ describe('parseModel', () => {
         draft.lastIssuedThreatNumber = 0;
       },
       path: ['lastIssuedThreatNumber'],
-      message:
-        'Threat number 1 exceeds lastIssuedThreatNumber 0: no threat carries a number above the last issued.',
+      detail: {
+        code: 'threat-number-above-issued',
+        parameters: { number: 1, issued: 0 },
+      },
     },
     {
       named: 'a duplicate threat id',
@@ -139,8 +143,10 @@ describe('parseModel', () => {
         draft.lastIssuedThreatNumber = 2;
       },
       path: ['threats', 1, 'id'],
-      message:
-        'Duplicate threat id "threat-tamper-order": threat ids must be unique among threats.',
+      detail: {
+        code: 'duplicate-threat-id',
+        parameters: { id: 'threat-tamper-order' },
+      },
     },
     {
       named: 'a duplicate mitigation id',
@@ -148,8 +154,10 @@ describe('parseModel', () => {
         draft.mitigations.push(structuredClone(draft.mitigations[0]));
       },
       path: ['mitigations', 1, 'id'],
-      message:
-        'Duplicate mitigation id "mitigation-tls": mitigation ids must be unique among mitigations.',
+      detail: {
+        code: 'duplicate-mitigation-id',
+        parameters: { id: 'mitigation-tls' },
+      },
     },
     {
       named: 'a duplicate assumption id',
@@ -157,8 +165,10 @@ describe('parseModel', () => {
         draft.assumptions.push(structuredClone(draft.assumptions[0]));
       },
       path: ['assumptions', 1, 'id'],
-      message:
-        'Duplicate assumption id "assumption-managed-db": assumption ids must be unique among assumptions.',
+      detail: {
+        code: 'duplicate-assumption-id',
+        parameters: { id: 'assumption-managed-db' },
+      },
     },
     {
       named: 'a flow anchored outside its own diagram',
@@ -180,8 +190,10 @@ describe('parseModel', () => {
         }
       },
       path: ['diagrams', 0, 'elements', 3, 'source', 'element'],
-      message:
-        'Flow source references element id "element-remote", which is not in the flow\'s own diagram.',
+      detail: {
+        code: 'flow-endpoint-foreign',
+        parameters: { id: 'element-remote' },
+      },
     },
     {
       named: 'a flow anchored to itself',
@@ -193,8 +205,10 @@ describe('parseModel', () => {
         }
       },
       path: ['diagrams', 0, 'elements', 3, 'target', 'element'],
-      message:
-        'Flow target references the flow\'s own id "element-order-flow": a flow cannot anchor to itself.',
+      detail: {
+        code: 'flow-endpoint-self',
+        parameters: { id: 'element-order-flow' },
+      },
     },
     {
       named: 'a threat attachment naming an unknown element',
@@ -202,7 +216,10 @@ describe('parseModel', () => {
         draft.threats[0].elements.push('element-ghost');
       },
       path: ['threats', 0, 'elements', 2],
-      message: 'Threat elements references unknown element id "element-ghost".',
+      detail: {
+        code: 'unknown-element-reference',
+        parameters: { id: 'element-ghost' },
+      },
     },
     {
       named: 'a mitigation naming an unknown threat',
@@ -210,8 +227,10 @@ describe('parseModel', () => {
         draft.mitigations[0].threats.push('threat-ghost');
       },
       path: ['mitigations', 0, 'threats', 1],
-      message:
-        'Mitigation threats references unknown threat id "threat-ghost".',
+      detail: {
+        code: 'unknown-threat-reference',
+        parameters: { id: 'threat-ghost' },
+      },
     },
     {
       named: 'an assumption naming an unknown threat',
@@ -219,13 +238,13 @@ describe('parseModel', () => {
         draft.assumptions[0].threats.push('threat-ghost');
       },
       path: ['assumptions', 0, 'threats', 1],
-      message:
-        'Assumption threats references unknown threat id "threat-ghost".',
+      detail: {
+        code: 'unknown-threat-reference',
+        parameters: { id: 'threat-ghost' },
+      },
     },
-  ])('rejects $named', ({ mutate, path, message }) => {
-    expect(issuesOf(seededModel(mutate))).toContainEqual(
-      expect.objectContaining({ path, message }),
-    );
+  ])('rejects $named', ({ mutate, path, detail }) => {
+    expect(issuesOf(seededModel(mutate))).toContainEqual({ path, detail });
   });
 
   it('surfaces multiple violations in one parse', () => {
@@ -234,33 +253,6 @@ describe('parseModel', () => {
       draft.threats[0].elements.push('element-ghost');
     });
     expect(issuesOf(result)).toHaveLength(2);
-  });
-});
-
-describe('toParseIssues', () => {
-  it('renders a symbol path segment, which no JSON key spells, as text', () => {
-    expect(
-      toParseIssues([
-        {
-          path: ['diagrams', 0, Symbol('kind')],
-          message: 'no',
-          code: 'custom',
-        },
-      ]),
-    ).toEqual([
-      { path: ['diagrams', 0, 'Symbol(kind)'], message: 'no', code: 'custom' },
-    ]);
-  });
-});
-
-describe('issueLine', () => {
-  it('prints an issue as its dotted path and message, and an empty path as (root)', () => {
-    expect(
-      issueLine({ path: ['diagrams', 0, 'id'], message: 'no', code: 'custom' }),
-    ).toBe('diagrams.0.id: no');
-    expect(issueLine({ path: [], message: 'no', code: 'custom' })).toBe(
-      '(root): no',
-    );
   });
 });
 
@@ -273,7 +265,7 @@ const throwing = (error: Error) => ({
 describe('boundedParse', () => {
   it.each([
     ['RangeError', new RangeError('overflow'), issueFloodCode],
-    ['TypeError', new TypeError('schema defect'), 'custom'],
+    ['TypeError', new TypeError('schema defect'), 'schema-threw'],
   ])(
     'turns a parse that throws %s into one root issue',
     (_name, error, code) => {
@@ -281,9 +273,22 @@ describe('boundedParse', () => {
 
       expect(
         Either.isLeft(parsed) && schemaFailureIssues(parsed.left),
-      ).toMatchObject([{ path: [], code }]);
+      ).toMatchObject([{ path: [], detail: { code } }]);
     },
   );
+
+  it("reads a refusal through the caller's own details", () => {
+    const rule = { code: 'caller-rule' } as const;
+    const parsed = boundedParse(
+      z.string().refine(() => false, { params: rule }),
+      'refused',
+      z.object({ code: z.literal('caller-rule') }),
+    );
+
+    expect(Either.isLeft(parsed) && schemaFailureIssues(parsed.left)).toEqual([
+      { path: [], detail: rule },
+    ]);
+  });
 
   it('refuses a model with more invalid entries than zod 4.6.2 gathers on V8', () => {
     const flooded = {
@@ -295,7 +300,7 @@ describe('boundedParse', () => {
 
     expect(Either.isLeft(parsed) && parsed.left).toMatchObject({
       _tag: 'InvalidModel',
-      issues: [{ path: [], code: issueFloodCode }],
+      issues: [{ path: [], detail: { code: issueFloodCode } }],
     });
   });
 });

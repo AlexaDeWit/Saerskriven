@@ -55,13 +55,25 @@ export function importFormatOf(
       issues: [
         {
           path: [],
-          code: 'invalid_format',
-          message:
-            'Import requires an OTM 0.2.0 version stamp or a TM-BOM 1.0.1 or 1.0.2 schema URI.',
+          detail: { code: 'import-format-unnamed', parameters: releasesRead },
         },
       ],
     }),
   );
+}
+
+const schemaReleaseMark = '/blob/v';
+
+const releasesRead = {
+  otm: [otmWireSchema.shape.otmVersion.value],
+  tmbom: tmbomWireSchema.options.map((option) =>
+    releaseNamedBy(option.shape.$schema.value),
+  ),
+};
+
+function releaseNamedBy(schemaUri: string): string {
+  const start = schemaUri.indexOf(schemaReleaseMark) + schemaReleaseMark.length;
+  return schemaUri.slice(start, schemaUri.indexOf('/', start));
 }
 
 function convert(

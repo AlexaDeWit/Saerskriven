@@ -2,23 +2,21 @@ import { Data, Either } from 'effect';
 import type { z } from 'zod';
 import { modelSchema } from './model.js';
 import {
-  elementIdsAcross,
-  elementIdsIn,
-  elementsById,
-  endpointViolationsOf,
-} from './references.js';
-import { relationshipIssues } from './relationships.js';
-
-type StructuralModel = z.infer<typeof modelSchema>;
-
-type Violation = {
-  path: PropertyKey[];
-  message: string;
-};
+  issueFloodCode,
+  toParseIssues,
+  type ParseIssue,
+  type ParseIssueDetail,
+  type SchemaParser,
+} from './parse-issue.js';
+import { collectViolations } from './violations.js';
 
 const refinedModelSchema = modelSchema.superRefine((model, ctx) => {
   for (const violation of collectViolations(model)) {
-    ctx.addIssue({ code: 'custom', ...violation });
+    ctx.addIssue({
+      code: 'custom',
+      path: [...violation.path],
+      params: violation.detail,
+    });
   }
 });
 
@@ -26,124 +24,74 @@ const refinedModelSchema = modelSchema.superRefine((model, ctx) => {
 export type Model = z.infer<typeof refinedModelSchema>;
 
 /**
- * One violation parseModel found: where in the input, what went wrong, and
- * zod's issue code kept as an opaque string for fidelity.
- */
-export type ParseIssue = {
-  readonly path: readonly (string | number)[];
-  readonly message: string;
-  readonly code: string;
-};
-
-/** One issue as a line of text: its dotted path, `(root)` for an empty one, then its message. */
-export function issueLine(issue: ParseIssue): string {
-  const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
-  return `${path}: ${issue.message}`;
-}
-
-/**
- * One issue as a schema reports it. Declared structurally rather than as a
- * zod type, so a caller behind its own parse boundary can hand its schema's
- * issues over without a zod type crossing the package boundary.
- */
-export type SchemaIssue = {
-  readonly path: readonly PropertyKey[];
-  readonly message: string;
-  readonly code: string;
-};
-
-/**
- * Schema issues as the plain {@link ParseIssue} data this package reports.
- * A symbol path segment, which a key of that kind produces and JSON has no
- * spelling for, becomes its string form.
- */
-export function toParseIssues(
-  issues: readonly SchemaIssue[],
-): readonly ParseIssue[] {
-  return issues.map((issue) => ({
-    path: issue.path.map((key) =>
-      typeof key === 'symbol' ? String(key) : key,
-    ),
-    message: issue.message,
-    code: issue.code,
-  }));
-}
-
-/**
- * A schema as the one method {@link boundedParse} calls, declared
- * structurally so no zod type crosses a fallible signature.
- */
-export type SchemaParser<Value> = {
-  readonly safeParse: (given: unknown) =>
-    | { readonly success: true; readonly data: Value }
-    | {
-        readonly success: false;
-        readonly error: { readonly issues: readonly SchemaIssue[] };
-      };
-};
-
-/**
  * Why {@link boundedParse} produced no value. zod hands a nested value's
  * issues to its parent as the arguments of one call, so enough of them under
  * one array element throw `RangeError` in every engine: that is `IssueFlood`.
- * Any other throw from the parse is `Threw`.
+ * Any other throw from the parse is `Threw`. `Named` is the detail a caller's
+ * own schemas name, as `toParseIssues` reads it.
  */
-export type SchemaFailure = Data.TaggedEnum<{
-  Refused: { readonly issues: readonly ParseIssue[] };
+export type SchemaFailure<Named = never> = Data.TaggedEnum<{
+  Refused: {
+    readonly issues: readonly ParseIssue<ParseIssueDetail | Named>[];
+  };
   IssueFlood: {};
   Threw: { readonly reason: string };
 }>;
 
-/** Constructors for {@link SchemaFailure}, with Effect's `$is` and `$match`. */
-export const SchemaFailure = Data.taggedEnum<SchemaFailure>();
+interface SchemaFailureDefinition extends Data.TaggedEnum.WithGenerics<1> {
+  readonly taggedEnum: SchemaFailure<this['A']>;
+}
 
-/** A schema's parse as a value, whatever the parse threw included. */
-export function boundedParse<Value>(
+/** Constructors for {@link SchemaFailure}, with Effect's `$is` and `$match`. */
+export const SchemaFailure = Data.taggedEnum<SchemaFailureDefinition>();
+
+/**
+ * A schema's parse as a value, whatever the parse threw included. `named`
+ * accepts the details a caller's own schemas name, as `toParseIssues` reads
+ * them.
+ */
+export function boundedParse<Value, Named = never>(
   schema: SchemaParser<Value>,
   given: unknown,
-): Either.Either<Value, SchemaFailure> {
+  named?: SchemaParser<Named>,
+): Either.Either<Value, SchemaFailure<Named>> {
   return Either.flatMap(
     Either.try({
       try: () => schema.safeParse(given),
       catch: (error) =>
         error instanceof RangeError
-          ? SchemaFailure.IssueFlood()
-          : SchemaFailure.Threw({ reason: String(error) }),
+          ? SchemaFailure.IssueFlood<Named>()
+          : SchemaFailure.Threw<Named>({ reason: String(error) }),
     }),
     (parsed) =>
       parsed.success
         ? Either.right(parsed.data)
         : Either.left(
             SchemaFailure.Refused({
-              issues: toParseIssues(parsed.error.issues),
+              issues: toParseIssues(parsed.error.issues, given, named),
             }),
           ),
   );
 }
 
-/** The code of the one root issue that stands for an `IssueFlood`. */
-export const issueFloodCode = 'issue_flood';
-
 /** A failure as issues, a flood or a throw as one issue at the root. */
-export function schemaFailureIssues(
-  failure: SchemaFailure,
-): readonly ParseIssue[] {
+export function schemaFailureIssues<Named>(
+  failure: SchemaFailure<Named>,
+): readonly ParseIssue<ParseIssueDetail | Named>[] {
   return SchemaFailure.$match(failure, {
     Refused: ({ issues }) => issues,
-    IssueFlood: () => [
-      {
-        path: [],
-        code: issueFloodCode,
-        message: 'The input has more problems than a parse can list.',
-      },
+    IssueFlood: (): readonly ParseIssue[] => [
+      { path: [], detail: { code: issueFloodCode } },
     ],
-    Threw: ({ reason }) => [{ path: [], code: 'custom', message: reason }],
+    Threw: ({ reason }): readonly ParseIssue[] => [
+      { path: [], detail: { code: 'schema-threw', parameters: { reason } } },
+    ],
   });
 }
 
 /**
  * Why parseModel refused an input, as tagged data: zod stays behind the
- * parse boundary, so no zod type appears in the exported surface.
+ * parse boundary, so no zod type appears on this failure.
  */
 export type ParseFailure = Data.TaggedEnum<{
   InvalidModel: { readonly issues: readonly ParseIssue[] };
@@ -157,221 +105,4 @@ export function parseModel(input: unknown): Either.Either<Model, ParseFailure> {
   return Either.mapLeft(boundedParse(refinedModelSchema, input), (failure) =>
     ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
   );
-}
-
-function collectViolations(model: StructuralModel): Violation[] {
-  return [
-    ...elementIdViolations(model),
-    ...diagramIdViolations(model),
-    ...threatNumberViolations(model),
-    ...lastIssuedThreatNumberViolations(model),
-    ...recordIdViolations(model),
-    ...flowEndpointViolations(model),
-    ...referenceViolations(model),
-    ...relationshipViolations(model),
-  ];
-}
-
-function duplicateViolations<T>(
-  items: readonly T[],
-  keyOf: (item: T) => PropertyKey,
-  violationOf: (item: T, index: number) => Violation,
-): Violation[] {
-  const seen = new Set<PropertyKey>();
-  const violations: Violation[] = [];
-  items.forEach((item, index) => {
-    const key = keyOf(item);
-    if (seen.has(key)) {
-      violations.push(violationOf(item, index));
-    }
-    seen.add(key);
-  });
-  return violations;
-}
-
-function elementIdViolations(model: StructuralModel): Violation[] {
-  const entries = model.diagrams.flatMap((diagram, diagramIndex) =>
-    diagram.elements.map((element, elementIndex) => ({
-      id: element.id,
-      diagramIndex,
-      elementIndex,
-    })),
-  );
-  return duplicateViolations(
-    entries,
-    (entry) => entry.id,
-    (entry) => ({
-      path: [
-        'diagrams',
-        entry.diagramIndex,
-        'elements',
-        entry.elementIndex,
-        'id',
-      ],
-      message: `Duplicate element id "${entry.id}": element ids must be unique across the model.`,
-    }),
-  );
-}
-
-function diagramIdViolations(model: StructuralModel): Violation[] {
-  return duplicateViolations(
-    model.diagrams,
-    (diagram) => diagram.id,
-    (diagram, index) => ({
-      path: ['diagrams', index, 'id'],
-      message: `Duplicate diagram id "${diagram.id}": diagram ids must be unique across the model.`,
-    }),
-  );
-}
-
-function threatNumberViolations(model: StructuralModel): Violation[] {
-  return duplicateViolations(
-    model.threats,
-    (threat) => threat.number,
-    (threat, index) => ({
-      path: ['threats', index, 'number'],
-      message: `Duplicate threat number ${threat.number}: threat numbers must be unique across the model.`,
-    }),
-  );
-}
-
-function lastIssuedThreatNumberViolations(model: StructuralModel): Violation[] {
-  const highest = model.threats.reduce(
-    (max, threat) => Math.max(max, threat.number),
-    0,
-  );
-  return highest > model.lastIssuedThreatNumber
-    ? [
-        {
-          path: ['lastIssuedThreatNumber'],
-          message: `Threat number ${highest} exceeds lastIssuedThreatNumber ${model.lastIssuedThreatNumber}: no threat carries a number above the last issued.`,
-        },
-      ]
-    : [];
-}
-
-function recordIdViolations(model: StructuralModel): Violation[] {
-  return [
-    ...duplicateRecordIds(
-      model.threats.map((threat) => threat.id),
-      'threats',
-      'threat',
-    ),
-    ...duplicateRecordIds(
-      model.mitigations.map((mitigation) => mitigation.id),
-      'mitigations',
-      'mitigation',
-    ),
-    ...duplicateRecordIds(
-      model.assumptions.map((assumption) => assumption.id),
-      'assumptions',
-      'assumption',
-    ),
-  ];
-}
-
-function duplicateRecordIds(
-  ids: readonly string[],
-  collection: 'threats' | 'mitigations' | 'assumptions',
-  noun: 'threat' | 'mitigation' | 'assumption',
-): Violation[] {
-  return duplicateViolations(
-    ids,
-    (id) => id,
-    (id, index) => ({
-      path: [collection, index, 'id'],
-      message: `Duplicate ${noun} id "${id}": ${noun} ids must be unique among ${collection}.`,
-    }),
-  );
-}
-
-function flowEndpointViolations(model: StructuralModel): Violation[] {
-  return model.diagrams.flatMap((diagram, diagramIndex) => {
-    const diagramElementIds = elementIdsIn(diagram);
-    return diagram.elements.flatMap((element, elementIndex) => {
-      if (element.kind !== 'flow') {
-        return [];
-      }
-      return endpointViolationsOf(element, diagramElementIds).map(
-        ({ side, reference, reason }) => ({
-          path: [
-            'diagrams',
-            diagramIndex,
-            'elements',
-            elementIndex,
-            side,
-            'element',
-          ],
-          message:
-            reason === 'self-anchored'
-              ? `Flow ${side} references the flow's own id "${reference}": a flow cannot anchor to itself.`
-              : `Flow ${side} references element id "${reference}", which is not in the flow's own diagram.`,
-        }),
-      );
-    });
-  });
-}
-
-function referenceViolations(model: StructuralModel): Violation[] {
-  const elementIds = elementIdsAcross(model.diagrams);
-  const threatIds = new Set<string>(model.threats.map((threat) => threat.id));
-  const references = [
-    {
-      collection: 'threats',
-      entity: 'Threat',
-      field: 'elements',
-      referent: 'element',
-      known: elementIds,
-      idLists: model.threats.map((threat) => threat.elements),
-    },
-    {
-      collection: 'mitigations',
-      entity: 'Mitigation',
-      field: 'threats',
-      referent: 'threat',
-      known: threatIds,
-      idLists: model.mitigations.map((mitigation) => mitigation.threats),
-    },
-    {
-      collection: 'assumptions',
-      entity: 'Assumption',
-      field: 'threats',
-      referent: 'threat',
-      known: threatIds,
-      idLists: model.assumptions.map((assumption) => assumption.threats),
-    },
-  ] as const;
-  return references.flatMap(
-    ({ collection, entity, field, referent, known, idLists }) =>
-      idLists.flatMap((ids, recordIndex) =>
-        ids.flatMap((id, idIndex): Violation[] =>
-          known.has(id)
-            ? []
-            : [
-                {
-                  path: [collection, recordIndex, field, idIndex],
-                  message: `${entity} ${field} references unknown ${referent} id "${id}".`,
-                },
-              ],
-        ),
-      ),
-  );
-}
-
-function relationshipViolations(model: StructuralModel): Violation[] {
-  return model.diagrams.flatMap((diagram, diagramIndex) => {
-    const known = elementsById(diagram.elements);
-    return diagram.elements.flatMap((element, elementIndex) =>
-      relationshipIssues(element, known).map((issue) => ({
-        path: [
-          'diagrams',
-          diagramIndex,
-          'elements',
-          elementIndex,
-          ...issue.path,
-        ],
-        message: issue.message,
-      })),
-    );
-  });
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { refusedCharacterDetail } from './parse-issue.js';
 
 const acceptedClass =
   '\\p{L}\\p{M}\\p{N}\\p{P}\\p{S}\\p{Zs}\\t\\n\\r' +
@@ -25,14 +26,12 @@ export function acceptsEveryCharacter(text: string): boolean {
  * defines, tab, line feed and carriage return, and the format characters a
  * script owns. [`SCHEMA.md`](../../SCHEMA.md) states the set in full, and
  * `text.format-characters.snapshot.txt` pins which format characters the
- * runtime's Unicode data admits.
+ * runtime's Unicode data admits. The refusal names its own parse issue code,
+ * since a reader phrases the refusal rather than reading a message.
  */
 export const acceptedTextSchema = z
   .string()
-  .refine(
-    acceptsEveryCharacter,
-    'Text carries a character the model does not accept.',
-  );
+  .refine(acceptsEveryCharacter, { params: refusedCharacterDetail });
 
 /**
  * Whether `text` is a name with nothing in it. A name of only spaces, tabs or

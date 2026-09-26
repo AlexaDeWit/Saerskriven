@@ -2,6 +2,7 @@ import type { ParseIssue } from '@saerskriven/model';
 import type { DivergenceDetail } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { importBudget } from './import-budget.js';
+import type { ImportIssueDetail } from './import-issue-detail.js';
 import { isRecord } from './records.js';
 
 /**
@@ -14,7 +15,7 @@ export function importContext() {
   const budget = importBudget();
   const used = new WeakMap<object, Set<string>>();
   const divergences: Divergence[] = [];
-  const issues: ParseIssue[] = [];
+  const issues: ParseIssue<ImportIssueDetail>[] = [];
   const report = (
     detail: DivergenceDetail,
     reason: Divergence['reason'] = 'narrowed',
@@ -26,9 +27,9 @@ export function importContext() {
   };
   const problem = (
     path: readonly (string | number)[],
-    message: string,
+    detail: ImportIssueDetail,
   ): void => {
-    issues.push({ path: [...path], message, code: 'custom' });
+    issues.push({ path: [...path], detail });
   };
   return {
     text: budget.text,
@@ -114,13 +115,19 @@ function indexed<T>(
   values: readonly T[],
   key: (value: T) => string,
   path: string,
-  problem: (path: readonly (string | number)[], message: string) => void,
+  problem: (
+    path: readonly (string | number)[],
+    detail: ImportIssueDetail,
+  ) => void,
 ): Map<string, T> {
   const result = new Map<string, T>();
   for (const [position, value] of values.entries()) {
     const id = key(value);
     if (result.has(id)) {
-      problem([path, position], `Duplicate identifier ${JSON.stringify(id)}`);
+      problem([path, position], {
+        code: 'duplicate-identifier',
+        parameters: { id },
+      });
     }
     result.set(id, value);
   }

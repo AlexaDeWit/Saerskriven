@@ -25,6 +25,8 @@ person typed reach a message as parameters and pass through unchanged.
 | `divergence` | What a codec or an import could not carry                                       |
 | `enums`      | The label of each stored value only the studio shows                            |
 | `fields`     | What a control is called, drawn or spoken                                       |
+| `imports`    | What an import refused beside the parse issue codes                             |
+| `issues`     | What a parse refused, and the line that places an issue at its path             |
 | `menu`       | The burger menu, its submenus and the diagram switcher                          |
 | `notice`     | The failure notice, each refused operation, and a text field's refusal          |
 | `panel`      | The threat panel, the model's properties and the record groups                  |
@@ -41,6 +43,11 @@ and punctuation. The canvas does the same with a name: `canvas.quoted` sets a
 person's text in the reader's quotation marks, and an element without a name
 is called by its kind (`enums.the-actor` and the like), so an announcement
 takes either as one noun phrase.
+
+`issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
+its message, and `imports/text.ts` each import code `@saerskriven/formats`
+adds beside them. `parseIssueLine` places either at its path. OTM and TM-BOM
+are proper names and stay as they are in every catalogue.
 
 ## What stays in English
 
@@ -88,8 +95,6 @@ as an exception:
 Some diagnostic text has no code to translate from, and a notice shows it as a
 literal line under a headline in the reader's language:
 
-- A model or schema parse issue (`issueLine` from `@saerskriven/model`): its
-  path and the issue's own message, until #488 gives the issues codes.
 - Text a browser raised: a refused file read or write, a refused storage
   access, a failed fetch of a compiler or font, and the error an unexpected
   render failure carries on the stopped page.

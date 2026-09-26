@@ -123,10 +123,10 @@ function zoneLayout(
     const zone =
       'trust_zone' in node.source ? node.source.trust_zone : undefined;
     if (zone !== undefined && !zoneIndex.has(zone)) {
-      context.problem(
-        ['trust_zone'],
-        `Unknown trust zone ${JSON.stringify(zone)}`,
-      );
+      context.problem(['trust_zone'], {
+        code: 'unknown-source-reference',
+        parameters: { id: zone, kind: 'trust-zone' },
+      });
     }
     const group = groups.get(zone) ?? [];
     group.push(node);
@@ -238,10 +238,10 @@ function endpointId(
     ? endpointKinds[type]
     : undefined;
   if (kind === undefined || !indexes[kind].has(given.object)) {
-    context.problem(
-      ['data_flows'],
-      `Unknown endpoint ${JSON.stringify(given)}`,
-    );
+    context.problem(['data_flows'], {
+      code: 'unknown-source-reference',
+      parameters: { id: `${given.type} ${given.object}`, kind: 'endpoint' },
+    });
   }
   return tmbomNodeId(kind ?? 'process', given.object, context);
 }
@@ -266,10 +266,10 @@ function dataDescriptions(
       }
       context.fields(placement, ['data_store']);
       if (!stores.has(placement.data_store)) {
-        context.problem(
-          ['data_sets', data.symbolic_name, 'placements'],
-          `Unknown data store ${JSON.stringify(placement.data_store)}`,
-        );
+        context.problem(['data_sets', data.symbolic_name, 'placements'], {
+          code: 'unknown-source-reference',
+          parameters: { id: placement.data_store, kind: 'data-store' },
+        });
       }
       const prose = descriptions.get(placement.data_store) ?? [];
       prose.push(context.text([data.title, data.description], ': '));

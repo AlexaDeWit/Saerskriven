@@ -2,6 +2,7 @@ import { quotedForTerminal } from '@saerskriven/formats';
 import {
   OperationFailure,
   issueLine,
+  parseIssueText,
   type ParseIssue,
 } from '@saerskriven/model';
 
@@ -68,5 +69,5 @@ export function describeOperationFailure(failure: OperationFailure): string {
 }
 
 function issueLines(issues: readonly ParseIssue[]): string {
-  return issues.map(issueLine).join(', ');
+  return issues.map((issue) => issueLine(issue, parseIssueText)).join(', ');
 }

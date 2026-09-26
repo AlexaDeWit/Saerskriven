@@ -1,19 +1,27 @@
 import type { ElementId } from './ids.js';
 import type { Element } from './elements.js';
-import type { ParseIssue } from './parse.js';
+import type { ParseIssue, ParseIssueCode } from './parse-issue.js';
+
+type RelatedList = {
+  readonly field: string;
+  readonly ids: readonly ElementId[] | undefined;
+  readonly kind: Element['kind'] | undefined;
+  readonly code: Extract<ParseIssueCode, `related-${string}`>;
+};
 
 /** Checks declared relationships without inferring geometry or reciprocal assertions. */
 export function relationshipIssues(
   element: Element,
   known: ReadonlyMap<ElementId, Element>,
 ): ParseIssue[] {
-  const lists =
+  const lists: readonly RelatedList[] =
     element.kind === 'flow'
       ? [
           {
             field: 'trustBoundaryIds',
             ids: element.trustBoundaryIds,
             kind: 'trust-boundary',
+            code: 'related-boundary-unknown',
           },
         ]
       : element.kind === 'trust-boundary'
@@ -22,15 +30,17 @@ export function relationshipIssues(
               field: 'containedElements',
               ids: element.containedElements,
               kind: undefined,
+              code: 'related-element-unknown',
             },
             {
               field: 'crossingFlows',
               ids: element.crossingFlows,
               kind: 'flow',
+              code: 'related-flow-unknown',
             },
           ]
         : [];
-  return lists.flatMap(({ field, ids, kind }) =>
+  return lists.flatMap(({ field, ids, kind, code }) =>
     (ids ?? []).flatMap((reference, index): ParseIssue[] => {
       const target = known.get(reference);
       return target !== undefined &&
@@ -40,8 +50,7 @@ export function relationshipIssues(
         : [
             {
               path: [field, index],
-              code: 'custom',
-              message: `${field} references "${reference}", which must name ${kind ?? 'another element'} in the element's own diagram.`,
+              detail: { code, parameters: { id: reference } },
             },
           ];
     }),

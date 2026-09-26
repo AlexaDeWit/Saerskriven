@@ -1,12 +1,8 @@
 import { Either } from 'effect';
 import { z } from 'zod';
 import { modelSchema } from './model.js';
-import {
-  parseModel,
-  type Model,
-  type ParseFailure,
-  type ParseIssue,
-} from './parse.js';
+import type { ParseIssue } from './parse-issue.js';
+import { parseModel, type Model, type ParseFailure } from './parse.js';
 
 /**
  * The valid fixture with one edit applied, parsed. The draft is a deep copy,

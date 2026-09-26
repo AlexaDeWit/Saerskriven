@@ -9,6 +9,10 @@ import {
 import { Data, Either } from 'effect';
 import type { z } from 'zod';
 import type { Divergence } from './divergence.js';
+import {
+  importIssueDetailSchema,
+  type WireIssue,
+} from './import-issue-detail.js';
 import type { ReadLimit } from './read-limits.js';
 
 /**
@@ -66,7 +70,8 @@ export type WriteResult = {
  * `ExceededReadLimit` names the bound and what the read measured before it
  * stopped. `MalformedText` carries the parser's message, since no path into
  * a document exists yet. `InvalidWireDocument` has paths into the wire
- * document, and `InvalidModel` paths into the internal model.
+ * document, with an import's own codes beside the parse issue codes, and
+ * `InvalidModel` paths into the internal model.
  */
 export type ReadFailure = Data.TaggedEnum<{
   ExceededReadLimit: {
@@ -75,7 +80,7 @@ export type ReadFailure = Data.TaggedEnum<{
     readonly observed: number;
   };
   MalformedText: { readonly message: string };
-  InvalidWireDocument: { readonly issues: readonly ParseIssue[] };
+  InvalidWireDocument: { readonly issues: readonly WireIssue[] };
   InvalidModel: { readonly issues: readonly ParseIssue[] };
 }>;
 
@@ -84,14 +89,17 @@ export const ReadFailure = Data.taggedEnum<ReadFailure>();
 
 /**
  * A parsed value as its wire document, or the schema's refusal as
- * `InvalidWireDocument`, a flood of issues or a throw as one root issue.
+ * `InvalidWireDocument`, a flood of issues or a throw as one root issue. A
+ * wire schema that names an import code for its own refusal keeps it.
  */
 export function parseWire<Wire>(
   schema: SchemaParser<Wire>,
   given: unknown,
 ): Either.Either<Wire, ReadFailure> {
-  return Either.mapLeft(boundedParse(schema, given), (failure) =>
-    ReadFailure.InvalidWireDocument({ issues: schemaFailureIssues(failure) }),
+  return Either.mapLeft(
+    boundedParse(schema, given, importIssueDetailSchema),
+    (failure) =>
+      ReadFailure.InvalidWireDocument({ issues: schemaFailureIssues(failure) }),
   );
 }
 
