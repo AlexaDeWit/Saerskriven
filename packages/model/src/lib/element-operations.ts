@@ -13,7 +13,12 @@ import {
   elementPropertiesSchema,
   type ElementProperties,
 } from './element-properties.js';
-import { elementSchema, type Element, type FlowEndpoint } from './elements.js';
+import {
+  elementSchema,
+  type Element,
+  type ElementDetailsChange,
+  type FlowEndpoint,
+} from './elements.js';
 import type { Point, Size } from './geometry.js';
 import type { DiagramId, ElementId } from './ids.js';
 import { sameItems } from './lists.js';
@@ -59,6 +64,12 @@ export type RenameElementFailure = Extract<
 export type EditNoteFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownElement' | 'NotTextElement' | 'RefusedCharacter' }
+>;
+
+/** The failures {@link setElementDetails} can produce. */
+export type SetElementDetailsFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownElement' | 'RefusedCharacter' }
 >;
 
 /** The failures {@link setElementProperties} can produce. */
@@ -227,6 +238,45 @@ export function editNote(
             }),
           )
         : Either.left(refusal);
+    },
+  );
+}
+
+/**
+ * Replaces the description and scope fields `change` names on any element
+ * kind and keeps the others, returning the same model where nothing differs.
+ * The scope flag and its reason are independent, so clearing the flag keeps
+ * the reason. Where both texts carry a refused character, the failure
+ * points into the description.
+ */
+export function setElementDetails(
+  model: Model,
+  elementId: ElementId,
+  change: ElementDetailsChange,
+): Either.Either<Model, SetElementDetailsFailure> {
+  return Either.flatMap(
+    locatedElement(model, elementId),
+    (located): Either.Either<Model, SetElementDetailsFailure> => {
+      const refusal =
+        refusedCharacter(elementId, change.description ?? '') ??
+        refusedCharacter(elementId, change.reasonOutOfScope ?? '');
+      if (refusal !== undefined) {
+        return Either.left(refusal);
+      }
+      const held = located.element;
+      const next = {
+        ...held,
+        description: change.description ?? held.description,
+        outOfScope: change.outOfScope ?? held.outOfScope,
+        reasonOutOfScope: change.reasonOutOfScope ?? held.reasonOutOfScope,
+      };
+      return Either.right(
+        next.description === held.description &&
+          next.outOfScope === held.outOfScope &&
+          next.reasonOutOfScope === held.reasonOutOfScope
+          ? model
+          : withElement(model, located.diagramIndex, next),
+      );
     },
   );
 }

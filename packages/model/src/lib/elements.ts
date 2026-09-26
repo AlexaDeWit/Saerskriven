@@ -177,3 +177,15 @@ export const elementKindSchema = z.enum([
   'trust-boundary',
   'text',
 ]);
+
+/**
+ * A change to an element's description and scope: the fields it names
+ * replace the held ones. The name has its own operation, which refuses an
+ * empty one.
+ */
+export const elementDetailsChangeSchema = elementBaseSchema
+  .pick({ description: true, outOfScope: true, reasonOutOfScope: true })
+  .partial();
+
+/** A change to an element's description and scope. */
+export type ElementDetailsChange = z.infer<typeof elementDetailsChangeSchema>;

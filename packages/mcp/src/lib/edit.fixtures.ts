@@ -235,6 +235,17 @@ export const editVariants: readonly {
     ],
   },
   {
+    op: 'set_element_details',
+    edits: [
+      {
+        op: 'set_element_details',
+        element: 'element-db',
+        description: 'Holds every order.',
+        outOfScope: false,
+      },
+    ],
+  },
+  {
     op: 'set_flow_waypoints',
     edits: [
       {

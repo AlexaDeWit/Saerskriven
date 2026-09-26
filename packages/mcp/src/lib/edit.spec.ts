@@ -75,6 +75,25 @@ describe('what a refused edit leaves on disk', () => {
       lines: 2,
     },
     {
+      name: 'the model refuses a set_element_details after one it applied',
+      file: modelFile,
+      revision: (attempted) => revisionIn(attempted, modelFile),
+      edits: [
+        {
+          op: 'set_element_details',
+          element: 'element-db',
+          description: 'Holds every order.',
+        },
+        {
+          op: 'set_element_details',
+          element: 'element-absent',
+          description: 'Nothing to describe.',
+        },
+      ],
+      phrase: 'index 1',
+      lines: 2,
+    },
+    {
       name: 'the revision no longer matches the file',
       file: modelFile,
       revision: () => staleRevision,
@@ -195,10 +214,9 @@ const addedBackups = (
   },
 });
 
-const heldModel = (attempted: ReturnType<typeof attempt>) =>
-  Either.getOrUndefined(
-    readAnyFormat(attempted.bytes(modelFile).toString('utf8')),
-  )?.model;
+const heldModel = (attempted: ReturnType<typeof attempt>, file = modelFile) =>
+  Either.getOrUndefined(readAnyFormat(attempted.bytes(file).toString('utf8')))
+    ?.model;
 
 const backupsIn = (attempted: ReturnType<typeof attempt>) =>
   heldModel(attempted)?.assumptions.find(
@@ -653,9 +671,7 @@ describe('what the flow direction and metadata ops write', () => {
         bidirectional: true,
       },
     ]);
-    const model = Either.getOrUndefined(
-      readAnyFormat(attempted.bytes(modelFile).toString('utf8')),
-    )?.model;
+    const model = heldModel(attempted);
     expect(
       model?.diagrams[0].elements.find(
         (element) => element.id === 'element-order-flow',
@@ -680,13 +696,46 @@ describe('what the flow direction and metadata ops write', () => {
       const applied = attempted.edit(file, revisionIn(attempted, file), [
         { op: 'set_model_metadata', ...metadata },
       ]);
-      const reread = readAnyFormat(attempted.bytes(file).toString('utf8'));
-      expect(Either.getOrUndefined(reread)?.model.metadata).toEqual(metadata);
+      expect(heldModel(attempted, file)?.metadata).toEqual(metadata);
       expect(
         Either.getOrUndefined(applied)?.divergences.filter(
           (divergence) => divergence.subject.kind === 'model',
         ),
       ).toEqual([]);
+    });
+  }
+});
+
+describe('what set_element_details writes', () => {
+  const elementsIn = (attempted: ReturnType<typeof attempt>, file: string) =>
+    heldModel(attempted, file)?.diagrams.flatMap(
+      (diagram) => diagram.elements,
+    ) ?? [];
+
+  for (const [file, id] of [
+    [modelFile, 'element-db'],
+    [dragonFile, 'store-archive'],
+  ] as const) {
+    it(`rewords an element of ${file} and clears its scope flag in place, keeping its reason`, () => {
+      const attempted = attempt();
+      const before = elementsIn(attempted, file);
+      attempted.edit(file, revisionIn(attempted, file), [
+        {
+          op: 'set_element_details',
+          element: id,
+          description: 'Reworded on review.',
+          outOfScope: false,
+        },
+      ]);
+      const after = elementsIn(attempted, file);
+      expect(after.map((element) => element.id)).toEqual(
+        before.map((element) => element.id),
+      );
+      expect(after.find((element) => element.id === id)).toEqual({
+        ...before.find((element) => element.id === id),
+        description: 'Reworded on review.',
+        outOfScope: false,
+      });
     });
   }
 });

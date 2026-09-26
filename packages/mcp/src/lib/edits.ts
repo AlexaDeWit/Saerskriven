@@ -15,6 +15,7 @@ import {
   droppedRecords,
   droppedThreats,
   editNote,
+  elementDetailsChangeSchema,
   elementIdSchema,
   linkAssumption,
   linkAssumptionToModel,
@@ -43,6 +44,7 @@ import {
   setFlowWaypoints,
   setMitigationStatus,
   setModelMetadata,
+  setElementDetails,
   setElementProperties,
   severitySchema,
   sideSchema,
@@ -147,6 +149,9 @@ export const modelEditSchema = z.discriminatedUnion('op', [
     op: z.literal('edit_note'),
     text: acceptedTextSchema,
   }),
+  elementEditSchema
+    .extend(elementDetailsChangeSchema.shape)
+    .extend({ op: z.literal('set_element_details') }),
   elementEditSchema.extend({
     op: z.literal('set_flow_waypoints'),
     waypoints: waypointsSchema,
@@ -360,6 +365,8 @@ function applyEdit(
       return renameElement(model, edit.element, edit.name);
     case 'edit_note':
       return editNote(model, edit.element, edit.text);
+    case 'set_element_details':
+      return setElementDetails(model, edit.element, edit);
     case 'set_flow_waypoints':
       return setFlowWaypoints(model, edit.element, edit.waypoints);
     case 'set_flow_direction':

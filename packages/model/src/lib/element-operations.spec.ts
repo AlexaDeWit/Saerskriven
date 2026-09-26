@@ -17,6 +17,7 @@ import {
   removeElement,
   renameElement,
   resizeElement,
+  setElementDetails,
 } from './element-operations.js';
 import { elementSchema } from './elements.js';
 import { validModelFixture } from './model.fixtures.js';
@@ -549,6 +550,90 @@ describe('editNote', () => {
   });
 });
 
+describe('setElementDetails', () => {
+  const details = {
+    description: 'Reworded on review.',
+    outOfScope: true,
+    reasonOutOfScope: 'Run by another team.',
+  };
+  const db = elementId('element-db');
+  const heldDb = elementIn(validModel, db);
+
+  it.each(withNote.diagrams[0].elements)(
+    'changes all three on the $kind $id in place, keeping its other fields',
+    (before) => {
+      const next = modelOf(setElementDetails(withNote, before.id, details));
+      expect(elementIds(next)).toEqual(elementIds(withNote));
+      expect(elementIn(next, before.id)).toEqual({ ...before, ...details });
+    },
+  );
+
+  it('keeps the fields a change leaves out', () => {
+    const next = modelOf(
+      setElementDetails(validModel, db, { description: 'Holds orders.' }),
+    );
+    expect(elementIn(next, db)).toEqual({
+      ...heldDb,
+      description: 'Holds orders.',
+    });
+  });
+
+  it('keeps the reason when the scope flag is cleared, and the flag when the reason is', () => {
+    const cleared = modelOf(
+      setElementDetails(validModel, db, { outOfScope: false }),
+    );
+    const unexplained = modelOf(
+      setElementDetails(validModel, db, { reasonOutOfScope: '' }),
+    );
+    expect(elementIn(cleared, db)).toMatchObject({
+      outOfScope: false,
+      reasonOutOfScope: heldDb.reasonOutOfScope,
+    });
+    expect(elementIn(unexplained, db)).toMatchObject({
+      outOfScope: true,
+      reasonOutOfScope: '',
+    });
+  });
+
+  it('returns the same model for a change that changes nothing', () => {
+    expect(modelOf(setElementDetails(validModel, db, {}))).toBe(validModel);
+    expect(
+      modelOf(
+        setElementDetails(validModel, db, {
+          description: heldDb.description,
+          outOfScope: heldDb.outOfScope,
+          reasonOutOfScope: heldDb.reasonOutOfScope,
+        }),
+      ),
+    ).toBe(validModel);
+  });
+
+  it.each(['description', 'reasonOutOfScope'])(
+    'refuses a character the parse boundary refuses in the %s, saying where it sits',
+    (field) => {
+      expect(
+        errorOf(
+          setElementDetails(validModel, db, {
+            [field]: `Soft${softHyphen}hyphen`,
+          }),
+        ),
+      ).toEqual(OperationFailure.RefusedCharacter({ elementId: db, at: 4 }));
+    },
+  );
+
+  it('fails on an unknown element', () => {
+    expect(
+      errorOf(
+        setElementDetails(validModel, elementId('element-ghost'), details),
+      ),
+    ).toEqual(
+      OperationFailure.UnknownElement({
+        elementId: elementId('element-ghost'),
+      }),
+    );
+  });
+});
+
 describe('element operations', () => {
   operationContract({
     addElement: {
@@ -597,6 +682,14 @@ describe('element operations', () => {
     editNote: {
       input: withNote,
       run: (model) => editNote(model, elementId('element-note'), 'Edited'),
+    },
+    setElementDetails: {
+      input: withNote,
+      run: (model) =>
+        setElementDetails(model, elementId('element-note'), {
+          description: 'Seen on review.',
+          outOfScope: true,
+        }),
     },
   });
 });
