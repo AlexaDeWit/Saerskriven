@@ -1,32 +1,32 @@
 .stopped {
   max-width: 40rem;
-  margin: var(--pn-space-4);
-  padding: var(--pn-space-4);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
+  margin: var(--saer-space-4);
+  padding: var(--saer-space-4);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
 }
 
 .headline {
-  margin: 0 0 var(--pn-space-3);
+  margin: 0 0 var(--saer-space-3);
   font-size: 1.125rem;
 }
 
 .detail {
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
   overflow-wrap: anywhere;
 }
 
 .reload {
-  padding: var(--pn-space-2) var(--pn-space-3);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
-  color: var(--pn-colour-text);
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
   font: inherit;
 }
 
 .reload:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }

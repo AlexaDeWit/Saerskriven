@@ -2,6 +2,7 @@ import type {
   DetectionFailure,
   Divergence,
   ReadFailure,
+  RetainedSource,
 } from '@saerskriven/formats';
 import type {
   Assumption,
@@ -24,7 +25,7 @@ import type {
   ThreatId,
 } from '@saerskriven/model';
 import { Data } from 'effect';
-import type { InlineEditor, RetainedSource } from './state.js';
+import type { InlineEditor } from './state.js';
 import type { SyncedState } from './sync.js';
 
 /** Every state change the reducer accepts. */

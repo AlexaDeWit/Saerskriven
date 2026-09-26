@@ -38,7 +38,7 @@ hook, which is what lets the shell host them.
 The canvas fills the viewport, and the chrome card, the threat panel and the
 zoom cluster float inside it. The card's measured height, and the measured
 height of the notices and flow chooser under it, reach the panel and the
-selection controls through `--pn-pane-block-start`, which adds a fixed
+selection controls through `--saer-pane-block-start`, which adds a fixed
 two-line slot for the announcement.
 
 React Flow draws the graph-paper ground at the canvas package's grid spacing,
@@ -113,7 +113,7 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
 Nothing about selection or hover is carried by colour alone. A selected
 element takes a dashed frame a step heavier than its outline, and a flow's own
 line is heavier under the pointer and heavier again once selected. The weights
-reach `diagram-canvas.module.css` as the `--pn-cue-*` properties
+reach `diagram-canvas.module.css` as the `--saer-cue-*` properties
 `tokenStylesheet` writes, so a cue is measured against the drawing's own stroke
 weight. The canvas package's edge body adds React Flow's invisible interaction
 path, and holds the flow's name, so a click on the line, the wider path or the
@@ -135,7 +135,7 @@ top-right resize handle keeps clear of the badge at every zoom, and on an
 element too narrow for that it stops beside the top-left handle and can meet
 the badge ([the canvas package](../../../../packages/canvas/README.md)).
 
-Focus is the app's ring (`--pn-focus-ring`) and selection the frame and
+Focus is the app's ring (`--saer-focus-ring`) and selection the frame and
 weights above, drawn apart so they stack. Both are an outline or a border
 rather than a shadow, so forced-colours mode keeps them.
 

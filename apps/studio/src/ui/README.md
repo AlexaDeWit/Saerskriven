@@ -25,13 +25,13 @@ stylesheet.
 
 The values are the canvas package's `tokens.ts`
 ([the visual system](../../../../packages/canvas/README.md#the-visual-system)),
-projected as the `--pn-*` custom properties `tokenStylesheet` writes into the
+projected as the `--saer-*` custom properties `tokenStylesheet` writes into the
 document head through [`../../initial-page.mts`](../../initial-page.mts). The
 browser receives that sheet before the app script, so the loading indicator
 and the diagram use the same canvas ground. A blocking script beside the sheet
 applies a saved Light or Dark choice before the first paint, and
 [`../theme.tsx`](../theme.tsx) applies later choices by setting
-`data-pn-colour-mode` on the document root. The choice persists in
+`data-saer-colour-mode` on the document root. The choice persists in
 `localStorage` under `saerskrivenColourMode`, through
 [`../preference-storage.ts`](../preference-storage.ts), which the language
 choice reads and writes the same way, and invalid or unavailable stored data
@@ -51,11 +51,11 @@ surface is a panel in the chrome and the fill inside every element outline,
 the canvas colour is the ground and the halo cut under a flow name, and the
 two inks letter both. The actor and process washes, the badge ground and the
 severity tones are the diagram's own, and the threat summary uses the same
-tone classes as the canvas. `--pn-chrome-block-size` and
-`--pn-chrome-reports-block-size` are placeholders the chrome card
+tone classes as the canvas. `--saer-chrome-block-size` and
+`--saer-chrome-reports-block-size` are placeholders the chrome card
 (`../app/chrome.tsx`) overwrites with the measured heights of the card and the
-notices under it, and `--pn-pane-block-start` adds those to the fixed
-`--pn-announcement-slot`.
+notices under it, and `--saer-pane-block-start` adds those to the fixed
+`--saer-announcement-slot`.
 
 A control never suppresses the focus indicator and never invents its own: it
 applies the focus tokens in `:focus-visible`, swapping the ring's colour only

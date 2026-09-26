@@ -4,15 +4,15 @@
    landmark holds the control. */
 .tooltip {
   display: flex;
-  gap: var(--pn-space-2);
-  padding: var(--pn-space-1) var(--pn-space-2);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
-  color: var(--pn-colour-text);
+  gap: var(--saer-space-2);
+  padding: var(--saer-space-1) var(--saer-space-2);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
   white-space: nowrap;
 }
 
 .chord {
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
 }

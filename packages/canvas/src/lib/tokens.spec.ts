@@ -126,7 +126,7 @@ describe('contrastRatio', () => {
 const darkScheme = '@media (prefers-color-scheme: dark)';
 
 const propertiesOf = (block: string): Set<string> =>
-  new Set(block.match(/--pn-colour-[\w-]+(?=:)/gu) ?? []);
+  new Set(block.match(/--saer-colour-[\w-]+(?=:)/gu) ?? []);
 
 describe('tokenStylesheet', () => {
   const [root, dark] = tokenStylesheet.split(darkScheme);

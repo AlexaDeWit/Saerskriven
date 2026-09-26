@@ -32,6 +32,7 @@ import {
   renderCategory,
   renderFlags,
   renderMitigation,
+  threatHeadingLine,
 } from './threat-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
@@ -90,7 +91,7 @@ export function renderThreatRecord(result: GetThreatResult): readonly string[] {
   const { threat } = result;
   return [
     ...renderReading(result),
-    `threat ${String(threat.number)} (${quotedForTerminal(threat.id)}): ${escapedForTerminal(threat.title)}`,
+    `threat ${threatHeadingLine(threat)}`,
     `status: ${threat.status}`,
     `severity: ${threat.severity}`,
     `category: ${renderCategory(threat.category)}`,

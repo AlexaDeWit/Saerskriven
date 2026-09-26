@@ -227,27 +227,27 @@ export const panelCover = 472;
 
 const chromeCard = '5rem';
 
-const announcementSlot = 'calc(var(--pn-space-2) * 3 + 2px + 2lh)';
+const announcementSlot = 'calc(var(--saer-space-2) * 3 + 2px + 2lh)';
 
 const colourProperties = {
-  surfaceApp: '--pn-colour-surface',
-  surfaceCanvas: '--pn-colour-canvas',
-  surfacePanel: '--pn-colour-surface-raised',
-  surfaceActor: '--pn-colour-actor',
-  surfaceProcess: '--pn-colour-process',
-  textPrimary: '--pn-colour-text',
-  textSecondary: '--pn-colour-text-muted',
-  border: '--pn-colour-border',
-  gridLine: '--pn-colour-grid',
-  actionPrimary: '--pn-colour-accent',
-  actionHover: '--pn-colour-accent-hover',
-  actionText: '--pn-colour-accent-text',
-  badgeGround: '--pn-colour-badge-ground',
-  toneCritical: '--pn-colour-tone-critical',
-  toneHigh: '--pn-colour-tone-high',
-  toneMedium: '--pn-colour-tone-medium',
-  toneLow: '--pn-colour-tone-low',
-  toneNeutral: '--pn-colour-tone-neutral',
+  surfaceApp: '--saer-colour-surface',
+  surfaceCanvas: '--saer-colour-canvas',
+  surfacePanel: '--saer-colour-surface-raised',
+  surfaceActor: '--saer-colour-actor',
+  surfaceProcess: '--saer-colour-process',
+  textPrimary: '--saer-colour-text',
+  textSecondary: '--saer-colour-text-muted',
+  border: '--saer-colour-border',
+  gridLine: '--saer-colour-grid',
+  actionPrimary: '--saer-colour-accent',
+  actionHover: '--saer-colour-accent-hover',
+  actionText: '--saer-colour-accent-text',
+  badgeGround: '--saer-colour-badge-ground',
+  toneCritical: '--saer-colour-tone-critical',
+  toneHigh: '--saer-colour-tone-high',
+  toneMedium: '--saer-colour-tone-medium',
+  toneLow: '--saer-colour-tone-low',
+  toneNeutral: '--saer-colour-tone-neutral',
 } as const satisfies Record<keyof Palette, string>;
 
 /**
@@ -268,56 +268,56 @@ const colourBlock = (palette: Palette, indent: string): string => {
 };
 
 /**
- * The tokens as the `--pn-*` custom properties the studio's CSS modules read,
+ * The tokens as the `--saer-*` custom properties the studio's CSS modules read,
  * injected once at the app root: the light table on the root, the dark one
  * under the system's dark preference, and each forced by
- * `data-pn-colour-mode`. `color-scheme` rides along, so scrollbars and native
+ * `data-saer-colour-mode`. `color-scheme` rides along, so scrollbars and native
  * controls follow the same preference. The headless render reads none of it.
  *
- * Each `--pn-cue-*` width sits a step above the outline weight, so a selection
+ * Each `--saer-cue-*` width sits a step above the outline weight, so a selection
  * reads without colour, and at most one step past the heaviest stroke, so a
  * flow does not swell past its arrowhead. A selected flow is heavier than a
  * hovered one, and each width is a pixel length that a CSS border and an SVG
  * stroke read alike.
- * `--pn-chrome-block-size` is a placeholder the studio's chrome card
+ * `--saer-chrome-block-size` is a placeholder the studio's chrome card
  * overwrites with its measured height, since its tool row can wrap.
- * `--pn-announcement-slot` holds two lines of the canvas announcement with
+ * `--saer-announcement-slot` holds two lines of the canvas announcement with
  * its gap, border and padding, its `lh` resolving on the pane that reads it.
  */
 export const tokenStylesheet = `:root {
   color-scheme: light dark;
 
-  --pn-font-family: ${uiType.family};
-  --pn-font-size: ${uiType.size};
-  --pn-line-height: ${uiType.lineHeight};
+  --saer-font-family: ${uiType.family};
+  --saer-font-size: ${uiType.size};
+  --saer-line-height: ${uiType.lineHeight};
 
 ${colourBlock(lightPalette, '  ')}
 
-  --pn-space-1: ${spacingScale[1]};
-  --pn-space-2: ${spacingScale[2]};
-  --pn-space-3: ${spacingScale[3]};
-  --pn-space-4: ${spacingScale[4]};
+  --saer-space-1: ${spacingScale[1]};
+  --saer-space-2: ${spacingScale[2]};
+  --saer-space-3: ${spacingScale[3]};
+  --saer-space-4: ${spacingScale[4]};
 
-  --pn-radius: ${radius};
+  --saer-radius: ${radius};
 
-  --pn-panel-cover: ${String(panelCover)}px;
-  --pn-chrome-block-size: ${chromeCard};
-  --pn-chrome-reports-block-size: 0px;
-  --pn-announcement-slot: ${announcementSlot};
-  --pn-pane-block-start: calc(
-    var(--pn-space-3) * 2 + var(--pn-chrome-block-size) +
-      var(--pn-chrome-reports-block-size) + var(--pn-announcement-slot)
+  --saer-panel-cover: ${String(panelCover)}px;
+  --saer-chrome-block-size: ${chromeCard};
+  --saer-chrome-reports-block-size: 0px;
+  --saer-announcement-slot: ${announcementSlot};
+  --saer-pane-block-start: calc(
+    var(--saer-space-3) * 2 + var(--saer-chrome-block-size) +
+      var(--saer-chrome-reports-block-size) + var(--saer-announcement-slot)
   );
 
-  --pn-focus-ring-width: ${focusRing.width};
-  --pn-focus-ring: var(--pn-focus-ring-width) solid var(--pn-colour-accent);
-  --pn-focus-ring-offset: ${focusRing.offset};
+  --saer-focus-ring-width: ${focusRing.width};
+  --saer-focus-ring: var(--saer-focus-ring-width) solid var(--saer-colour-accent);
+  --saer-focus-ring-offset: ${focusRing.offset};
 
-  --pn-cue-selection: ${cueWidths.selection}px;
-  --pn-cue-flow-hover: ${cueWidths.flowHover}px;
-  --pn-cue-flow-selection: ${cueWidths.flowSelection}px;
+  --saer-cue-selection: ${cueWidths.selection}px;
+  --saer-cue-flow-hover: ${cueWidths.flowHover}px;
+  --saer-cue-flow-selection: ${cueWidths.flowSelection}px;
 
-  --pn-resize-handle-size: ${String(resizeHandle.size)}px;
+  --saer-resize-handle-size: ${String(resizeHandle.size)}px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -326,12 +326,12 @@ ${colourBlock(darkPalette, '    ')}
   }
 }
 
-:root[data-pn-colour-mode='light'] {
+:root[data-saer-colour-mode='light'] {
   color-scheme: light;
 ${colourBlock(lightPalette, '  ')}
 }
 
-:root[data-pn-colour-mode='dark'] {
+:root[data-saer-colour-mode='dark'] {
   color-scheme: dark;
 ${colourBlock(darkPalette, '  ')}
 }

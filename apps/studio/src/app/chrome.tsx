@@ -7,16 +7,16 @@ import { StudioMenu, type StudioMenuProps } from '../files/menu.js';
 import { useMeasured } from '../ui/measure.js';
 import styles from './chrome.module.css';
 
-const cardHeight = '--pn-chrome-block-size';
+const cardHeight = '--saer-chrome-block-size';
 
-const reportsHeight = '--pn-chrome-reports-block-size';
+const reportsHeight = '--saer-chrome-reports-block-size';
 
 /**
  * The chrome card, with the menu and diagram control on row one and the
  * toolbox on row two, and under it the file reports, the flow chooser and the
  * canvas announcement. The measured heights of the card and of the reports
- * go to the document root as `--pn-chrome-block-size` and
- * `--pn-chrome-reports-block-size`. The announcement is not measured, since
+ * go to the document root as `--saer-chrome-block-size` and
+ * `--saer-chrome-reports-block-size`. The announcement is not measured, since
  * an open pane reserves a fixed slot for it.
  */
 export function StudioChrome({

@@ -120,7 +120,8 @@ sets out.
 
 A record with no reference in the file, a mitigation that links no threat or an
 assumption that links no threat and does not apply to the model, is kept on
-read and not culled. Culling is edit-triggered, as the
+read and not culled, and so is a threat the file attaches to no element.
+Culling is edit-triggered, as the
 [model package](../packages/model/README.md) sets out.
 
 Version 2 removed two keys and added one, and the v1 to v2 migration reads a

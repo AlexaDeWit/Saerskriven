@@ -3,7 +3,7 @@
   width: 100%;
   height: 100%;
   min-height: 0;
-  background: var(--pn-colour-canvas);
+  background: var(--saer-colour-canvas);
   overflow: hidden;
 
   /* React Flow reads each of its own colours from a property here before
@@ -12,9 +12,9 @@
      pair is left alone: setting those here would sit above the declaration
      that shadows them. The grid, and the two colours a connection handle is
      drawn in, are the parts the studio owns rather than the component. */
-  --xy-background-pattern-color: var(--pn-colour-grid);
-  --xy-handle-background-color: var(--pn-colour-accent);
-  --xy-handle-border-color: var(--pn-colour-badge-ground);
+  --xy-background-pattern-color: var(--saer-colour-grid);
+  --xy-handle-background-color: var(--saer-colour-accent);
+  --xy-handle-border-color: var(--saer-colour-badge-ground);
 }
 
 /* React Flow names its own parts with global classes, so the studio reaches
@@ -26,12 +26,12 @@
    focused and selected shows both. */
 .canvas :global(.react-flow__node):focus-visible {
   outline: none;
-  box-shadow: inset 0 0 0 var(--pn-focus-ring-width) var(--pn-colour-accent);
+  box-shadow: inset 0 0 0 var(--saer-focus-ring-width) var(--saer-colour-accent);
 }
 
 .canvas :global(.react-flow__edge):focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 /* The selection frame stays inside the node's requested bounds. */
@@ -40,8 +40,8 @@
   position: absolute;
   inset: 0;
   box-sizing: border-box;
-  border: var(--pn-cue-selection) dashed var(--pn-colour-text);
-  border-radius: var(--pn-radius);
+  border: var(--saer-cue-selection) dashed var(--saer-colour-text);
+  border-radius: var(--saer-radius);
   pointer-events: none;
 }
 
@@ -49,11 +49,11 @@
    so source order is what keeps a selected flow under the pointer at the
    heavier weight. */
 .canvas :global(.react-flow__edge:hover .pn-shape) {
-  stroke-width: var(--pn-cue-flow-hover);
+  stroke-width: var(--saer-cue-flow-hover);
 }
 
 .canvas :global(.react-flow__edge.selected .pn-shape) {
-  stroke-width: var(--pn-cue-flow-selection);
+  stroke-width: var(--saer-cue-flow-selection);
 }
 
 /* A boundary takes the pointer on its outline, name and resize control. */
@@ -124,15 +124,15 @@
 
 /* Resize handles stay square to differ from round connection handles. */
 .canvas :global(.react-flow__resize-control.handle) {
-  width: var(--pn-resize-handle-size);
-  height: var(--pn-resize-handle-size);
-  background: var(--pn-colour-text);
-  border-color: var(--pn-colour-badge-ground);
+  width: var(--saer-resize-handle-size);
+  height: var(--saer-resize-handle-size);
+  background: var(--saer-colour-text);
+  border-color: var(--saer-colour-badge-ground);
   z-index: 2;
 }
 
 .canvas :global(.react-flow__resize-control.line) {
-  border-color: var(--pn-colour-text);
+  border-color: var(--saer-colour-text);
   pointer-events: none;
 }
 
@@ -211,13 +211,13 @@
 }
 
 .canvas :global(.react-flow__resize-control:hover) {
-  border-color: var(--pn-colour-accent);
-  background: var(--pn-colour-accent-hover);
+  border-color: var(--saer-colour-accent);
+  background: var(--saer-colour-accent-hover);
 }
 
 .canvas :global(.react-flow__resize-control > button:focus-visible) {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 /* The handles a flow attaches to are drawn on the element under the pointer
@@ -262,9 +262,9 @@
    colour it ships is below the contrast the studio's axe run demands. The
    attribution itself stays. */
 .canvas :global(.react-flow__attribution) {
-  background: var(--pn-colour-canvas);
+  background: var(--saer-colour-canvas);
 }
 
 .canvas :global(.react-flow__attribution) a {
-  color: var(--pn-colour-text-muted);
+  color: var(--saer-colour-text-muted);
 }

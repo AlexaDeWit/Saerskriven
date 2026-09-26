@@ -194,8 +194,10 @@ describe('removeDiagram', () => {
     );
     const next = modelOf(removeDiagram(emptied, mainDiagram));
     expect(next.diagrams).toEqual([]);
-    expect(next.threats.map((threat) => threat.elements)).toEqual([[]]);
-    expect(next.assumptions).toEqual(validModel.assumptions);
+    expect(next.threats).toEqual([]);
+    expect(next.mitigations).toEqual([]);
+    expect(next.assumptions).toEqual([]);
+    expect(next.lastIssuedThreatNumber).toBe(validModel.lastIssuedThreatNumber);
     expect(Either.isRight(parseModel(next))).toBe(true);
   });
 });

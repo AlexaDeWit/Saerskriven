@@ -6,9 +6,9 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--pn-space-1);
-  padding: var(--pn-space-1);
-  border-block-start: 1px solid var(--pn-colour-border);
+  gap: var(--saer-space-1);
+  padding: var(--saer-space-1);
+  border-block-start: 1px solid var(--saer-colour-border);
 }
 
 .control {
@@ -19,35 +19,35 @@
   height: 2rem;
   padding: 0;
   border: 0;
-  border-radius: var(--pn-radius);
+  border-radius: var(--saer-radius);
   background: none;
-  color: var(--pn-colour-text);
+  color: var(--saer-colour-text);
 }
 
 .control:hover {
-  background: var(--pn-colour-surface);
+  background: var(--saer-colour-surface);
 }
 
 .control[aria-pressed='true'] {
-  background: var(--pn-colour-accent);
-  color: var(--pn-colour-accent-text);
+  background: var(--saer-colour-accent);
+  color: var(--saer-colour-accent-text);
 }
 
 /* The card draws the border an outset ring would be drawn over, so the tool
    ring is inset. The flow chooser hangs under the card with a border of its
    own and keeps the outset one. */
 .control:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
+  outline: var(--saer-focus-ring);
+  outline-offset: calc(-1 * var(--saer-focus-ring-offset));
 }
 
 .flowTrigger:focus-visible {
-  outline: var(--pn-focus-ring);
-  outline-offset: var(--pn-focus-ring-offset);
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 .control[aria-pressed='true']:focus-visible {
-  outline-color: var(--pn-colour-accent-text);
+  outline-color: var(--saer-colour-accent-text);
 }
 
 .icon,
@@ -67,38 +67,38 @@
 .flowTrigger,
 .announcement,
 .content {
-  padding: var(--pn-space-2) var(--pn-space-3);
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
-  color: var(--pn-colour-text);
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
   font: inherit;
 }
 
 .content {
-  padding: var(--pn-space-1);
+  padding: var(--saer-space-1);
 }
 
 .viewport {
   display: flex;
   flex-direction: column;
-  gap: var(--pn-space-1);
+  gap: var(--saer-space-1);
 }
 
 .item {
-  padding: var(--pn-space-2) var(--pn-space-3);
-  border-radius: var(--pn-radius);
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border-radius: var(--saer-radius);
   user-select: none;
 }
 
 .item[data-highlighted] {
-  background: var(--pn-colour-accent);
-  color: var(--pn-colour-accent-text);
+  background: var(--saer-colour-accent);
+  color: var(--saer-colour-accent-text);
 }
 
 .item[data-highlighted]:focus-visible {
-  outline: var(--pn-focus-ring-width) solid var(--pn-colour-accent-text);
-  outline-offset: calc(-1 * var(--pn-focus-ring-offset));
+  outline: var(--saer-focus-ring-width) solid var(--saer-colour-accent-text);
+  outline-offset: calc(-1 * var(--saer-focus-ring-offset));
 }
 
 .announcement:empty {
@@ -110,14 +110,14 @@
    dead space over the diagram. */
 .announcement:not(:empty),
 .flowTrigger {
-  margin-block-start: var(--pn-space-2);
+  margin-block-start: var(--saer-space-2);
 }
 
 .message {
   margin: 0;
 }
 
-/* While a pane is open the pane leaves `--pn-announcement-slot` for the
+/* While a pane is open the pane leaves `--saer-announcement-slot` for the
    announcement, two lines of it, and the message stops there rather than
    growing over the pane's header. A named thing in it is already bounded, so
    the cut falls on fixed words. The clamp is visual: the region still says

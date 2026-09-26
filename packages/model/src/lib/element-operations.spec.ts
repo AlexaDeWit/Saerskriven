@@ -193,6 +193,34 @@ describe('removeElement', () => {
     expect(next.assumptions).toEqual(validModel.assumptions);
   });
 
+  it('removes a threat the deleted element was the last attachment of', () => {
+    const next = ['element-api', 'element-order-flow'].reduce(
+      (model, id) => modelOf(removeElement(model, elementId(id))),
+      validModel,
+    );
+    expect(next.threats).toEqual([]);
+    expect(next.mitigations).toEqual([]);
+    expect(next.assumptions).toEqual([]);
+    expect(next.lastIssuedThreatNumber).toBe(validModel.lastIssuedThreatNumber);
+  });
+
+  it('removes it whichever of its elements the fold deletes last', () => {
+    const next = ['element-order-flow', 'element-api'].reduce(
+      (model, id) => modelOf(removeElement(model, elementId(id))),
+      validModel,
+    );
+    expect(next.threats).toEqual([]);
+  });
+
+  it('keeps a threat that was already attached to no element', () => {
+    const draft = structuredClone(validModelFixture);
+    draft.threats[0].elements = [];
+    const unattached = parsedFixture(draft);
+    const next = modelOf(removeElement(unattached, elementId('element-api')));
+    expect(next.threats).toEqual(unattached.threats);
+    expect(next.mitigations).toEqual(unattached.mitigations);
+  });
+
   it('removes a flow and detaches its threat links', () => {
     const next = modelOf(
       removeElement(validModel, elementId('element-order-flow')),

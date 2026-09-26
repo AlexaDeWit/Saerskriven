@@ -8,7 +8,6 @@ export {
   renderWriteFailure,
   replacedFile,
   serialized,
-  writtenThrough,
   type OverwriteFailure,
   type WriteTarget,
 } from './lib/write.js';

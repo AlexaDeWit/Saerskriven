@@ -1,8 +1,7 @@
 import type {
-  DetectedRead,
   DetectionFailure,
-  FormatName,
   ReadFailure,
+  RetainedSource,
 } from '@saerskriven/formats';
 import {
   emptyModel,
@@ -14,18 +13,6 @@ import {
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
 import type { RecoveryProblem } from './recovery-storage.js';
-
-type Retained<Read> = Read extends {
-  readonly format: FormatName;
-  readonly source: unknown;
-}
-  ? { readonly format: Read['format']; readonly document: Read['source'] }
-  : never;
-
-/** The file format and optional wire document that the next save uses. */
-export type RetainedSource =
-  | Retained<DetectedRead>
-  | { readonly format: FormatName; readonly document: undefined };
 
 /** The file name and source stay outside model history. */
 export type FileLifecycle = Data.TaggedEnum<{

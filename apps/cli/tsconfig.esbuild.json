@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    // The esbuild executor builds its own program out of this file's options
+    // and hands it no project references, so @saerskriven/render's sources
+    // compile here rather than through its declarations, and resvg.ts names
+    // WebAssembly: with tsconfig.app.json's es2022 alone the build stops with
+    // seven errors, TS2503 and TS2304 on packages/render/src/resvg.ts. Only
+    // lib.dom and lib.webworker declare that namespace and @types/node does
+    // not. webworker is the narrower of the two and declares neither document
+    // nor window, so this program refuses both the way the typecheck does.
+    // Not named tsconfig.build.json: @nx/js:typescript-sync adopts that name
+    // and fills it with the six project references, which the executor's
+    // program never reads.
+    "lib": ["webworker", "es2022"]
+  }
+}

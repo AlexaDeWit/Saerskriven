@@ -8,13 +8,13 @@
 .chrome {
   position: absolute;
   z-index: 2;
-  inset-block-start: var(--pn-space-3);
+  inset-block-start: var(--saer-space-3);
   inset-inline-start: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   inline-size: max-content;
-  max-inline-size: calc(100% - 2 * var(--pn-space-3));
+  max-inline-size: calc(100% - 2 * var(--saer-space-3));
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -27,9 +27,9 @@
   flex-direction: column;
   inline-size: max-content;
   max-inline-size: 100%;
-  border: 1px solid var(--pn-colour-border);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface-raised);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
   pointer-events: auto;
 }
 

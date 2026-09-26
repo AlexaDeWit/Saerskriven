@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { editableTree, modelFile, staleRevision } from './edit.fixtures.js';
+import { forgedLine, forgedLinesIn } from './read-tools.fixtures.js';
 import { revisionOf } from './revision.js';
 import {
   WriteFailure,
@@ -316,9 +317,18 @@ describe('the handle a write quotes back', () => {
       ),
     ).toEqual([
       `The file "${modelFile}" changed since the read this call quoted, so nothing was written.`,
-      `The call quoted ${staleRevision}, and the file on disk is ${read.revision}.`,
+      `The call quoted "${staleRevision}", and the file on disk is ${read.revision}.`,
       'Read the file again and reconsider the edit against what it holds now.',
     ]);
+  });
+
+  it('escapes a forged line the quoted revision carries', () => {
+    const tree = editableTree();
+    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
+    const read = Either.getOrThrow(readModelFile(workspace, modelFile));
+    const forged = `${staleRevision}\n${forgedLine}`;
+    const refused = unchangedSince(modelFile, forged, read);
+    expect(forgedLinesIn(renderWriteFailure(failureOf(refused)))).toEqual([]);
   });
 });
 

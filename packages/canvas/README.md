@@ -86,7 +86,7 @@ spacing, for the diagram and the studio's chrome: `lightPalette`,
 floor through `contrastRatio`. `rgbColour` writes a token the way a browser
 serializes a computed style, for a browser spec to compare against.
 `tokenStylesheet`, on the `@saerskriven/canvas/tokens` subpath, is the table
-as the `--pn-*` custom properties the studio's CSS modules read.
+as the `--saer-*` custom properties the studio's CSS modules read.
 
 ## Measuring nothing, and the same bytes every time
 

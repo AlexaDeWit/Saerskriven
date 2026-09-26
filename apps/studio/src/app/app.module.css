@@ -29,14 +29,14 @@
 
 .version {
   position: absolute;
-  bottom: calc(var(--pn-space-4) + var(--pn-space-2));
-  left: var(--pn-space-1);
+  bottom: calc(var(--saer-space-4) + var(--saer-space-2));
+  left: var(--saer-space-1);
   z-index: 1;
-  padding: var(--pn-space-1) var(--pn-space-2);
-  border-radius: var(--pn-radius);
-  background: var(--pn-colour-surface);
-  color: var(--pn-colour-text-muted);
-  font-size: calc(var(--pn-font-size) * 0.75);
-  line-height: var(--pn-line-height);
+  padding: var(--saer-space-1) var(--saer-space-2);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text-muted);
+  font-size: calc(var(--saer-font-size) * 0.75);
+  line-height: var(--saer-line-height);
   pointer-events: none;
 }

@@ -3,11 +3,11 @@
 
 body {
   margin: 0;
-  background: var(--pn-colour-canvas);
-  color: var(--pn-colour-text);
-  font-family: var(--pn-font-family);
-  font-size: var(--pn-font-size);
-  line-height: var(--pn-line-height);
+  background: var(--saer-colour-canvas);
+  color: var(--saer-colour-text);
+  font-family: var(--saer-font-family);
+  font-size: var(--saer-font-size);
+  line-height: var(--saer-line-height);
   overflow: hidden;
 }
 

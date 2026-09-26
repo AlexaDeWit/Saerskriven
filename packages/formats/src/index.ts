@@ -8,8 +8,11 @@ export {
   DetectionFailure,
   formatNameSchema,
   readAnyFormat,
+  retainedSource,
+  writeThrough,
   type DetectedRead,
   type FormatName,
+  type RetainedSource,
 } from './lib/detect.js';
 export {
   divergenceDetailSchema,

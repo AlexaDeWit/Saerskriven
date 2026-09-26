@@ -193,9 +193,11 @@ Copy takes the selected elements, the attached ends of selected flows, flows
 between copied elements, the threats attached to them, and the mitigations and
 assumptions those threats link. The copy goes to the system clipboard as
 Saerskriven YAML. Cut removes the selection once the copy is written, and
-removes nothing if the model or the selection changed meanwhile. Paste and
-Duplicate add the copy with new ids and threat numbers, offset by a grid
-interval each time. A pasted mitigation or assumption identical to one the
+removes nothing if the model or the selection changed meanwhile. A threat the
+cut leaves attached to no element goes with it, and pasting brings it back as a
+copy under a new id and a new number, the cut threat's own number staying
+spent. Paste and Duplicate add the copy with new ids and threat numbers, offset
+by a grid interval each time. A pasted mitigation or assumption identical to one the
 model already holds links the pasted threats to that record, and every other
 record is added as a new one. A pasted assumption does not apply to the model.
 The status line counts what was linked and added, and the links left behind.
@@ -212,8 +214,12 @@ Threat Dragon file's extra keys, are not copied, and the status line says so.
 
 Delete or Backspace removes the selection from anywhere in the studio outside a
 form field (a text box or a drop-down list). A flow attached to a removed
-element loses that end and keeps the other, and a threat keeps its record and
-loses the link.
+element loses that end and keeps the other, and a threat loses the link. A
+threat the deletion leaves attached to no element goes with it, together with
+the mitigations and assumptions left on no threat. The notice counts the flows
+detached, the links dropped from the threats that stay, and the threats
+removed, so a threat that goes is reported once. One Delete stays one undo
+step, whatever it took.
 
 Every edit is one undo step: a placement, a drag, a resize, a committed field,
 a paste. Selecting, panning, zooming and switching diagrams add no undo step

@@ -29,7 +29,7 @@ model's properties are shown, so the panel is the only place a threat is added
 from. It is held clear of the zoom cluster rather than drawn over it, and
 opening it resizes nothing: the fit commands use the coverage the pane reports
 ([the canvas](../canvas/README.md#the-view)). Its default width comes from
-`panelCover` in the canvas tokens, projected as `--pn-panel-cover`.
+`panelCover` in the canvas tokens, projected as `--saer-panel-cover`.
 
 ## What it holds
 

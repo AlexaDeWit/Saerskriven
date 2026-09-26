@@ -102,7 +102,12 @@ given, and the first one the model refuses stops the batch, so nothing is
 written and the result names the index that was refused and what the model
 said. An edit that takes a mitigation's last threat link, or an assumption's
 last threat link and model link, away removes the record with it, and the
-result names each record the batch culled under `culled`.
+result names each record the batch culled under `culled`. An edit that takes a
+threat's last element attachment away (`detach_threat`, `remove_element` on
+its last element, or a `replace_threat` that leaves it none) removes the
+threat with it and everything that removal cascades to, and the result names
+each such threat under `culledThreats`. A threat the file already held
+attached to nothing stays.
 
 `add_element` accepts the optional security properties of its element kind.
 `set_element_properties` patches an existing element. Omitted fields keep

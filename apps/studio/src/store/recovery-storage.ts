@@ -20,12 +20,7 @@ import { z } from 'zod';
 import { reasonOf } from '../reason.js';
 import { studioVersion } from '../version.js';
 import { holdsDiagram } from './selectors.js';
-import {
-  FileLifecycle,
-  initialState,
-  type RetainedSource,
-  type State,
-} from './state.js';
+import { FileLifecycle, initialState, type State } from './state.js';
 
 const recoveryVersion = 2;
 
@@ -43,24 +38,18 @@ const documentSchema = saerskrivenYamlVersionsSchema.transform(
   },
 );
 
-const retainedSourceSchema = z
-  .discriminatedUnion('format', [
-    z.object({
-      format: z.literal('threat-dragon'),
-      document: threatDragonCodec.wire.optional(),
-    }),
-    z.object({
-      format: z.literal('saerskriven-yaml'),
-      document: saerskrivenYamlVersionsSchema
-        .transform((document) => currentSaerskrivenYaml(document).document)
-        .optional(),
-    }),
-  ])
-  .transform((source): RetainedSource =>
-    source.format === 'threat-dragon'
-      ? { format: 'threat-dragon', document: source.document }
-      : { format: 'saerskriven-yaml', document: source.document },
-  );
+const retainedSourceSchema = z.discriminatedUnion('format', [
+  z.object({
+    format: z.literal('threat-dragon'),
+    document: threatDragonCodec.wire.optional(),
+  }),
+  z.object({
+    format: z.literal('saerskriven-yaml'),
+    document: saerskrivenYamlVersionsSchema
+      .transform((document) => currentSaerskrivenYaml(document).document)
+      .optional(),
+  }),
+]);
 
 const fileLifecycleSchema = z
   .discriminatedUnion('_tag', [

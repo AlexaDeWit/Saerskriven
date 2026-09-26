@@ -3,15 +3,12 @@ import {
   ReadFailure,
   formatNameSchema,
   hasDiverged,
-  saerskrivenYamlCodec,
   readAnyFormat,
-  threatDragonCodec,
-  type DetectedRead,
+  retainedSource,
   type Divergence,
   type FormatName,
-  type WriteResult,
+  type RetainedSource,
 } from '@saerskriven/formats';
-import type { Model } from '@saerskriven/model';
 import type { StudioMessageId } from '../messages/catalogues.js';
 import { Either } from 'effect';
 import {
@@ -20,7 +17,7 @@ import {
 } from '../messages/divergence/text.js';
 import type { Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
-import { FileLifecycle, nameOf, type RetainedSource } from '../store/state.js';
+import { FileLifecycle, nameOf } from '../store/state.js';
 import { OpenOutcome, SaveOutcome, type SaveFileType } from './bridge.js';
 
 type FormatFile = {
@@ -136,16 +133,6 @@ export function saveTarget(
   });
 }
 
-/** Pairs each retained document with the codec for its format. */
-export function writeThrough(
-  model: Model,
-  source: RetainedSource,
-): WriteResult {
-  return source.format === 'threat-dragon'
-    ? threatDragonCodec.write(model, source.document)
-    : saerskrivenYamlCodec.write(model, source.document);
-}
-
 /** The selected read operation determines whether the source remains a save target. */
 export type ReadIntent = 'open' | 'import';
 
@@ -237,12 +224,6 @@ export function saveReport(
   divergences: readonly Divergence[],
 ): LossReport | undefined {
   return reported('save', divergences);
-}
-
-function retainedSource(read: DetectedRead): RetainedSource {
-  return read.format === 'threat-dragon'
-    ? { format: 'threat-dragon', document: read.source }
-    : { format: 'saerskriven-yaml', document: read.source };
 }
 
 function reported(

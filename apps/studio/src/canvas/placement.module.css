@@ -13,15 +13,15 @@
 .curve {
   width: 1px;
   height: 1px;
-  color: var(--pn-colour-text);
+  color: var(--saer-colour-text);
   overflow: visible;
 }
 
 .curve path,
 .curve circle {
-  fill: var(--pn-colour-canvas);
+  fill: var(--saer-colour-canvas);
   stroke: currentColor;
-  stroke-width: var(--pn-cue-selection);
+  stroke-width: var(--saer-cue-selection);
   stroke-linecap: round;
   stroke-linejoin: round;
 }

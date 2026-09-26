@@ -20,9 +20,11 @@ import { sameItems } from './lists.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import { toParseIssues } from './parse-issue.js';
+import { withoutId } from './records.js';
 import { elementIdsAcross, elementIdsIn, elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
 import { firstRefusedCharacter, isEmptyName } from './text.js';
+import { withCulledThreats } from './threat-operations.js';
 
 /** The failures {@link addElement} can produce. */
 export type AddElementFailure = Extract<
@@ -105,7 +107,12 @@ export function addElement(
   );
 }
 
-/** Removes an element and its threat and boundary references. Attached flows keep their identity and acquire free endpoints at the removed element's anchor. */
+/**
+ * Removes an element and its threat and boundary references. A threat the
+ * element was the last attachment of goes with it, carrying the cascade
+ * {@link removeThreat} does. Attached flows keep their identity and acquire
+ * free endpoints at the removed element's anchor.
+ */
 export function removeElement(
   model: Model,
   elementId: ElementId,
@@ -136,13 +143,10 @@ export function removeElement(
             : element,
         ),
     }));
-    return {
-      ...trimmed,
-      threats: trimmed.threats.map((threat) => ({
-        ...threat,
-        elements: threat.elements.filter((id) => id !== elementId),
-      })),
-    };
+    return withCulledThreats(trimmed, (threat) => ({
+      ...threat,
+      elements: withoutId(threat.elements, elementId),
+    }));
   });
 }
 

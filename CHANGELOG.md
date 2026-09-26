@@ -1,3 +1,45 @@
+## 0.6.0 (2026-09-20)
+
+### 🚀 Features
+
+- **cli:** add --lang to render, default en-CA ([#511](https://github.com/AlexaDeWit/Saerskriven/pull/511))
+- **cli:** convert a threat model between wire formats ([#531](https://github.com/AlexaDeWit/Saerskriven/pull/531))
+- **formats:** record divergences as codes with parameters ([#492](https://github.com/AlexaDeWit/Saerskriven/pull/492))
+- **i18n:** typed message system and locale negotiation ([#490](https://github.com/AlexaDeWit/Saerskriven/pull/490))
+- **model:** remove a threat when an edit detaches its last element ([#548](https://github.com/AlexaDeWit/Saerskriven/pull/548))
+- **render:** export catalogues and a locale for every rendered document ([#505](https://github.com/AlexaDeWit/Saerskriven/pull/505))
+- **studio:** language selection with a persisted locale ([#491](https://github.com/AlexaDeWit/Saerskriven/pull/491))
+- **studio:** move the shell, menus and editor controls into the catalogues ([#493](https://github.com/AlexaDeWit/Saerskriven/pull/493))
+- **studio:** treat the browser language as a prefill, not a mode ([#495](https://github.com/AlexaDeWit/Saerskriven/pull/495))
+- **studio:** localize canvas accessibility and application diagnostics ([#496](https://github.com/AlexaDeWit/Saerskriven/pull/496))
+- **studio:** word the untitled save stem in the active language ([#504](https://github.com/AlexaDeWit/Saerskriven/pull/504))
+- **studio:** export in the active language and letter badges to match ([#509](https://github.com/AlexaDeWit/Saerskriven/pull/509))
+- **studio:** spell shortcut key names in the reader's language ([#520](https://github.com/AlexaDeWit/Saerskriven/pull/520))
+- **studio:** localize the canvas role descriptions ([#519](https://github.com/AlexaDeWit/Saerskriven/pull/519))
+
+### 🩹 Fixes
+
+- **canvas:** widen a threat badge's count-to-mark gap so an accent clears ([#515](https://github.com/AlexaDeWit/Saerskriven/pull/515))
+- **canvas:** settle flow label ties by the documented order, not by rounding ([#535](https://github.com/AlexaDeWit/Saerskriven/pull/535), [#485](https://github.com/AlexaDeWit/Saerskriven/issues/485))
+- **formats:** leave null source fields out of the import report ([#527](https://github.com/AlexaDeWit/Saerskriven/pull/527), [#483](https://github.com/AlexaDeWit/Saerskriven/issues/483))
+- **formats:** drop the trailing separator on an unlinked TM-BOM control with no description ([#525](https://github.com/AlexaDeWit/Saerskriven/pull/525))
+- **formats:** TM-BOM and OTM import lines keep a separator beside an empty wire string ([#538](https://github.com/AlexaDeWit/Saerskriven/pull/538))
+- **formats:** refuse a wire document whose issues overflow zod ([#529](https://github.com/AlexaDeWit/Saerskriven/pull/529))
+- **i18n:** use the security terms French and Swedish practitioners use ([#510](https://github.com/AlexaDeWit/Saerskriven/pull/510))
+- **mcp:** quote the model ids read tools write into text results ([#526](https://github.com/AlexaDeWit/Saerskriven/pull/526))
+- **mcp:** escape the paths and titles read tools still wrote raw ([#536](https://github.com/AlexaDeWit/Saerskriven/pull/536), [#471](https://github.com/AlexaDeWit/Saerskriven/issues/471))
+- **mcp:** escape the revision a stale write refusal quotes back ([#541](https://github.com/AlexaDeWit/Saerskriven/pull/541), [#539](https://github.com/AlexaDeWit/Saerskriven/issues/539))
+- **model:** cull a threat a replace takes its last element from ([#559](https://github.com/AlexaDeWit/Saerskriven/pull/559))
+- **studio:** keep Title focused when M lands before the closed menu returns focus ([#469](https://github.com/AlexaDeWit/Saerskriven/pull/469))
+- **studio:** name the https site in the canonical URL and sitemap ([#484](https://github.com/AlexaDeWit/Saerskriven/pull/484))
+- **studio:** keep a threat's header in view when expanding it collapses one above ([#532](https://github.com/AlexaDeWit/Saerskriven/pull/532))
+- **studio:** keep the menu panels off the screen edges ([#530](https://github.com/AlexaDeWit/Saerskriven/pull/530))
+- **studio-e2e:** wait for menu focus before counting arrowTo's steps ([#521](https://github.com/AlexaDeWit/Saerskriven/pull/521))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.5.0 (2026-09-15)
 
 ### 🚀 Features
