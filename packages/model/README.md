@@ -34,10 +34,12 @@ the first character a string carries that the rule refuses, so an editor can
 point at it rather than at the field alone.
 
 `parseModel` is the whole of that gate for a foreign file. `renameElement`,
-`editNote`, `setElementDetails`, `addDiagram`, `renameDiagram` and
-`setModelMetadata` screen the strings that an editor commits after parsing.
-The other edit operations take a caller's strings as given, a model assembled
-in memory being the caller's to assemble.
+`editNote`, `setElementDetails`, `setElementProperties`, `addDiagram`,
+`renameDiagram` and `setModelMetadata` screen the strings that an editor
+commits after parsing, and `selectionFragment`, `remapFragment` and
+`insertFragment` pass what they produce through `parseModel`. The other edit
+operations take a caller's strings as given, a model assembled in memory
+being the caller's to assemble.
 A boundary that renders a model escapes or replaces what its output format
 forbids instead of resting on this rule.
 

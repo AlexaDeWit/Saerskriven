@@ -621,6 +621,17 @@ describe('setElementDetails', () => {
     },
   );
 
+  it('points into the description where both texts carry a refused character', () => {
+    expect(
+      errorOf(
+        setElementDetails(validModel, db, {
+          description: `Soft${softHyphen}hyphen`,
+          reasonOutOfScope: `${softHyphen}Hyphen`,
+        }),
+      ),
+    ).toEqual(OperationFailure.RefusedCharacter({ elementId: db, at: 4 }));
+  });
+
   it('fails on an unknown element', () => {
     expect(
       errorOf(

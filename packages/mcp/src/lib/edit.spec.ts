@@ -1,5 +1,9 @@
 import { readAnyFormat, readLimits } from '@saerskriven/formats';
-import { OperationFailure, type AssumptionStatus } from '@saerskriven/model';
+import {
+  OperationFailure,
+  elementsAcross,
+  type AssumptionStatus,
+} from '@saerskriven/model';
 import { assumptionId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
@@ -708,9 +712,7 @@ describe('what the flow direction and metadata ops write', () => {
 
 describe('what set_element_details writes', () => {
   const elementsIn = (attempted: ReturnType<typeof attempt>, file: string) =>
-    heldModel(attempted, file)?.diagrams.flatMap(
-      (diagram) => diagram.elements,
-    ) ?? [];
+    elementsAcross(heldModel(attempted, file)?.diagrams ?? []);
 
   for (const [file, id] of [
     [modelFile, 'element-db'],
