@@ -516,6 +516,41 @@ describe('history', () => {
   });
 });
 
+describe('a threat', () => {
+  it('goes with the detach that takes its last element, and one undo brings it back with what it culled', () => {
+    const detached = reduce(recordedStart, applied.DetachThreat);
+    expect(detached.present.threats.map((threat) => threat.id)).not.toContain(
+      firstThreat,
+    );
+    expect(detached.present.mitigations).toEqual([]);
+    expect(detached.past).toHaveLength(1);
+    expect(reduce(detached, Action.Undo()).present).toBe(recordedStart.present);
+  });
+
+  it('stays where the detach leaves it another element', () => {
+    const attached = reduce(recordedStart, applied.AttachThreat);
+    const detached = reduce(attached, applied.DetachThreat);
+    expect(
+      detached.present.threats.find((threat) => threat.id === firstThreat)
+        ?.elements,
+    ).toEqual([processElement]);
+  });
+
+  it('goes with a replace that takes its last element, and one undo brings it back with what it culled', () => {
+    const replaced = reduce(
+      recordedStart,
+      Action.ReplaceThreat({ threat: { ...sampleThreat, elements: [] } }),
+    );
+    expect(replaced.present.threats.map((threat) => threat.id)).not.toContain(
+      firstThreat,
+    );
+    expect(replaced.present.mitigations).toEqual([]);
+    expect(replaced.present.assumptions).toEqual([]);
+    expect(replaced.past).toHaveLength(1);
+    expect(reduce(replaced, Action.Undo()).present).toBe(recordedStart.present);
+  });
+});
+
 describe('a record', () => {
   it('goes with the unlink that takes its last threat, and one undo brings it back linked', () => {
     const unlinked = reduce(recordedStart, applied.UnlinkMitigation);

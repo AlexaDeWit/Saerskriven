@@ -1,4 +1,4 @@
-import { threatDragonCodec } from '@saerskriven/formats';
+import { threatDragonCodec, type RetainedSource } from '@saerskriven/formats';
 import {
   elementsAcross,
   type DiagramId,
@@ -22,7 +22,7 @@ import {
   type RecoverySnapshot,
 } from './recovery-storage.js';
 import { Action } from './actions.js';
-import type { FileLifecycle, RetainedSource, State } from './state.js';
+import type { FileLifecycle, State } from './state.js';
 import { modelStore } from './store.js';
 
 /**

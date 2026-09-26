@@ -1,5 +1,6 @@
 import {
   readLimits,
+  writeThrough,
   type FormatName,
   type WriteResult,
 } from '@saerskriven/formats';
@@ -36,7 +37,6 @@ import {
   saveTarget,
   saveTypes,
   savedBy,
-  writeThrough,
   type ReadIntent,
   type LossReport,
   type SaveTarget,

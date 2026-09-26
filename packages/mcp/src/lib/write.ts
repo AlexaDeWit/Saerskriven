@@ -6,9 +6,7 @@ import {
   renderDivergences,
   saerskrivenYamlCodec,
   withinTextBytes,
-  type DetectedRead,
   type Divergence,
-  type WriteResult,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
 import { Data, Either, pipe } from 'effect';
@@ -91,7 +89,7 @@ export const writeReportSchema = readingSchema.extend({
   divergences: z.array(divergenceSchema),
 });
 
-/** What every write tool reports about the file it produced. */
+/** {@link writeReportSchema} as the value a write tool builds. */
 export type WriteReport = z.infer<typeof writeReportSchema>;
 
 /** The size bound a write tool's description names, in MiB. */
@@ -286,17 +284,6 @@ export function serialized<Value>(
     try: write,
     catch: (error) => unwritten(file, error),
   });
-}
-
-/**
- * The model through the codec that read the file, merged onto the document
- * that read produced. The two identical branches narrow the detected read so
- * each codec receives its own format's source document.
- */
-export function writtenThrough(read: DetectedRead, model: Model): WriteResult {
-  return read.format === 'threat-dragon'
-    ? read.codec.write(model, read.source)
-    : read.codec.write(model, read.source);
 }
 
 const errnoSchema = z.object({ code: z.string() });

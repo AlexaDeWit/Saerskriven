@@ -1,13 +1,14 @@
 {
   "name": "@saerskriven/cli",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "//": [
     "The build bundles every workspace and npm dependency as ESM for `deno compile`. It stamps the root manifest version through esbuild.config.mts.",
-    "The build copies the Typst module out of node_modules, the pinned fonts out of the flake, and the resvg module out of the resvg-wasm project's output into dist/assets, so it names the fonts variable and that output among its inputs. dependsOn restates ^build because a leaf override replaces what the executor default declares. The compiled executable includes that directory.",
+    "The build copies the Typst module out of node_modules, the pinned fonts out of the flake, and the resvg module out of the resvg-wasm project's output into dist/assets. The executor default names the fonts variable, and the build adds that output. Its inputs and dependsOn extend the default with the spread token (CODING.md, Build targets). The compiled executable includes that directory.",
     "The typecheck writes declarations under out-tsc. The build writes only the bundle and its runtime assets under dist.",
-    "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js. The compiled test runs those two and the runner table's own spec, which is what demands the executable compile produced.",
+    "The build overrides the executor default's tsConfig with tsconfig.esbuild.json, which extends tsconfig.app.json and widens lib alone, so the lib that resolves WebAssembly for the render sources it compiles stays out of the typecheck's program. The reason and the measurement are in that file.",
+    "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js, and it hashes all of dist (CODING.md, Build targets). The compiled test runs those two and the runner table's own spec, which is what demands the executable compile produced.",
     "The compile target hashes its bundle, packaging script, toolchain, fixture, and host target. Nx stores the gitignored dist/cli directory as its output."
   ],
   "nx": {
@@ -18,7 +19,7 @@
       "build": {
         "executor": "@nx/esbuild:esbuild",
         "dependsOn": [
-          "^build",
+          "...",
           {
             "projects": [
               "resvg-wasm"
@@ -27,11 +28,7 @@
           }
         ],
         "inputs": [
-          "production",
-          "^production",
-          {
-            "env": "SAERSKRIVEN_FONTS_DIR"
-          },
+          "...",
           {
             "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
             "transitive": false
@@ -39,6 +36,7 @@
         ],
         "options": {
           "bundle": true,
+          "tsConfig": "apps/cli/tsconfig.esbuild.json",
           "outputFileName": "saer.js",
           "declaration": false,
           "thirdParty": true,
@@ -56,6 +54,10 @@
           "cliTestFixtures",
           {
             "env": "SAERSKRIVEN_COMPILED_RUNNER"
+          },
+          {
+            "dependentTasksOutputFiles": "apps/cli/dist/**/*",
+            "transitive": false
           }
         ],
         "dependsOn": [

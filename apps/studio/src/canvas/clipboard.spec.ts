@@ -1,10 +1,6 @@
 import { readLimits, saerskrivenYamlCodec } from '@saerskriven/formats';
 import { emptyModel } from '@saerskriven/model';
-import {
-  elementId,
-  parsedFixture,
-  threatIn,
-} from '@saerskriven/model/fixtures';
+import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { waitFor } from '@testing-library/react';
 import { Either } from 'effect';
 import { recordingSurface } from '../commands/commands.fixtures.js';
@@ -462,6 +458,24 @@ describe('pasteSelected', () => {
     expect(modelStore.getState().present).toBe(edited);
   });
 
+  it('brings a threat the cut removed back as a copy, its old number staying spent', async () => {
+    recordingClipboard();
+    await copySelected(true);
+    const cut = modelStore.getState().present;
+    expect(cut.threats.map((threat) => threat.id)).not.toContain(firstThreat);
+
+    await pasteSelected();
+
+    const after = modelStore.getState().present;
+    expect(after.diagrams[0].elements).toHaveLength(canvasElements);
+    const pasted = after.threats.at(-1);
+    expect(pasted?.id).not.toBe(firstThreat);
+    expect(pasted?.number).toBe(canvasModel.lastIssuedThreatNumber + 1);
+    expect(after.lastIssuedThreatNumber).toBe(
+      canvasModel.lastIssuedThreatNumber + 1,
+    );
+  });
+
   it('pastes a clone of a record culled after copying', async () => {
     recordingClipboard();
     openCanvas([actorElement], recordedModelWide);
@@ -629,8 +643,8 @@ describe('registered reuse commands', () => {
     });
     expect(modelStore.getState().past).toEqual([canvasModel]);
     expect(
-      threatIn(modelStore.getState().present, firstThreat).elements,
-    ).toEqual([]);
+      modelStore.getState().present.threats.map((threat) => threat.id),
+    ).not.toContain(firstThreat);
     dispatch(Action.Undo());
     runCommand(commandById('paste'), surface);
     await waitFor(() => {

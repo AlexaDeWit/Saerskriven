@@ -1,9 +1,12 @@
-import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import {
+  saerskrivenYamlCodec,
+  type RetainedSource,
+} from '@saerskriven/formats';
 import type { DiagramId, Model } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { studioVersion } from '../version.js';
-import { FileLifecycle, type RetainedSource } from './state.js';
+import { FileLifecycle } from './state.js';
 import {
   foreignSource,
   nativeSource,

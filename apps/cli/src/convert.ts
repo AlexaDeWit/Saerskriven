@@ -2,8 +2,10 @@ import {
   escapedForTerminal,
   formatNameSchema,
   readLimits,
+  retainedSource,
   saerskrivenYamlCodec,
   threatDragonCodec,
+  writeThrough,
   type DetectedRead,
   type FormatName,
   type ImportResult,
@@ -12,7 +14,6 @@ import {
 import {
   overwrittenFile,
   WriteFailure,
-  writtenThrough,
   type OverwriteFailure,
 } from '@saerskriven/mcp';
 import type { Model } from '@saerskriven/model';
@@ -99,7 +100,7 @@ function converted(
 
 function writtenAs(read: ConvertedRead, to: FormatName): WriteResult {
   return 'codec' in read && read.format === to
-    ? writtenThrough(read, read.model)
+    ? writeThrough(read.model, retainedSource(read))
     : projections[to](read.model);
 }
 

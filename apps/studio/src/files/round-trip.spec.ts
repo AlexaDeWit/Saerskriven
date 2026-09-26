@@ -2,6 +2,7 @@ import {
   hasDiverged,
   readAnyFormat,
   readLimits,
+  writeThrough,
   type Divergence,
   type FormatName,
 } from '@saerskriven/formats';
@@ -20,13 +21,7 @@ import {
   type SpecBridge,
   vendoredFile,
 } from './files.fixtures.js';
-import {
-  formatOf,
-  openedBy,
-  saveTarget,
-  savedBy,
-  writeThrough,
-} from './session.js';
+import { formatOf, openedBy, saveTarget, savedBy } from './session.js';
 
 type Gated = {
   readonly path: string;

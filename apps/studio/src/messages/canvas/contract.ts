@@ -31,6 +31,7 @@ export const canvasMessages = {
   'removed-elements': plural('count'),
   'flows-detached': plural('count'),
   'threat-links-dropped': plural('count'),
+  'threats-removed': plural('count'),
   'bend-added': text(bend),
   'bend-moved': text(bend),
   'bend-removed': text(bend),

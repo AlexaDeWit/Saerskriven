@@ -169,6 +169,16 @@ describe('a file with an unconfirmed assumption', () => {
       saerskrivenYamlCodec.write(readOrThrow(unconfirmedDocument).model).output,
     ).toBe(unconfirmedDocument);
   });
+
+  it('keeps the threat the file attaches to no element, reading and writing', () => {
+    const reading = readOrThrow(unconfirmedDocument);
+    expect(
+      reading.model.threats.map(({ id, elements }) => ({ id, elements })),
+    ).toEqual([{ id: 'threat-1', elements: [] }]);
+    expect(saerskrivenYamlCodec.write(reading.model).output).toContain(
+      '    elements: []',
+    );
+  });
 });
 
 describe('the document shape v0.2.1 wrote', () => {
