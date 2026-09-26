@@ -6,8 +6,9 @@ import {
   parseIssueText,
   toParseIssues,
   type ParseIssueDetail,
+  type SchemaIssue,
+  type SchemaParser,
 } from './parse-issue.js';
-import type { SchemaParser } from './parse.js';
 import { acceptedTextSchema } from './text.js';
 
 type Mapping = {
@@ -47,6 +48,12 @@ describe('a schema issue as a code and its parameters', () => {
       schema: z.literal('actor'),
       given: 'flow',
       detail: { code: 'value-unexpected', parameters: { values: ['"actor"'] } },
+    },
+    {
+      named: 'a number the schema does not hold',
+      schema: z.literal(1),
+      given: 2,
+      detail: { code: 'value-unexpected', parameters: { values: ['1'] } },
     },
     {
       named: 'a discriminator naming no option',
@@ -109,16 +116,90 @@ describe('a schema issue as a code and its parameters', () => {
     expect(detailsOf(schema, given)).toContainEqual(detail);
   });
 
-  it('names the kind the input held at the path, not only the expected one', () => {
-    expect(
-      detailsOf(z.object({ title: z.string() }), { title: ['a', 'b'] }),
-    ).toEqual([
+  it.each([
+    ['a list', ['a', 'b'], 'array'],
+    ['null', null, 'null'],
+    ['a date', new Date(0), 'date'],
+    ['a number that is not one', Number.NaN, 'other'],
+    ['a function', () => 'title', 'other'],
+  ])(
+    'names the kind the input held at the path, %s here, not only the expected one',
+    (_named, title, received) => {
+      expect(detailsOf(z.object({ title: z.string() }), { title })).toEqual([
+        { code: 'type-mismatch', parameters: { expected: 'string', received } },
+      ]);
+    },
+  );
+
+  it.each<readonly [SchemaIssue, unknown, ParseIssueDetail]>([
+    [
+      { path: [], code: 'too_small' },
+      'short',
+      {
+        code: 'too-small',
+        parameters: { bound: 0, kind: 'other', inclusive: false },
+      },
+    ],
+    [
+      { path: [], code: 'too_big' },
+      'long',
+      {
+        code: 'too-big',
+        parameters: { bound: 0, kind: 'other', inclusive: false },
+      },
+    ],
+    [
+      { path: [], code: 'invalid_format', format: 'email' },
+      'someone',
+      { code: 'format-mismatch', parameters: { format: 'other' } },
+    ],
+    [
+      { path: [], code: 'invalid_format' },
+      'someone',
+      { code: 'format-mismatch', parameters: { format: 'other' } },
+    ],
+    [
+      { path: [], code: 'invalid_value' },
+      'store',
+      { code: 'value-unexpected', parameters: { values: [] } },
+    ],
+    [
+      { path: [], code: 'invalid_type' },
+      1,
       {
         code: 'type-mismatch',
-        parameters: { expected: 'string', received: 'array' },
+        parameters: { expected: 'other', received: 'number' },
       },
-    ]);
-  });
+    ],
+    [
+      { path: [], code: 'invalid_type', expected: 'symbol' },
+      1,
+      {
+        code: 'type-mismatch',
+        parameters: { expected: 'other', received: 'number' },
+      },
+    ],
+    [
+      { path: ['title', 'text'], code: 'invalid_type', expected: 'string' },
+      { title: 1 },
+      {
+        code: 'type-mismatch',
+        parameters: { expected: 'string', received: 'undefined' },
+      },
+    ],
+    [
+      { path: [], code: 'an_issue_kind_to_come' },
+      'value',
+      { code: 'value-refused', parameters: { kind: 'other' } },
+    ],
+  ])(
+    'reads %j, which omits what its kind reports, with the fallback each parameter names',
+    (issue, given, detail) => {
+      expect(toParseIssues([issue], given)).toEqual([
+        { path: issue.path, detail },
+      ]);
+    },
+  );
 
   it('keeps the detail a schema names for itself', () => {
     expect(detailsOf(acceptedTextSchema, 'Order\u0000service')).toEqual([
@@ -143,9 +224,103 @@ describe('the English wording of a parse issue', () => {
 
     expect(new Set(texts).size).toBe(texts.length);
   });
+
+  it.each<readonly [ParseIssueDetail, string]>([
+    [
+      {
+        code: 'too-small',
+        parameters: { bound: 2, kind: 'string', inclusive: true },
+      },
+      'expected at least 2 characters',
+    ],
+    [
+      {
+        code: 'too-small',
+        parameters: { bound: 1, kind: 'array', inclusive: true },
+      },
+      'expected at least 1 entry',
+    ],
+    [
+      {
+        code: 'too-big',
+        parameters: { bound: 3, kind: 'array', inclusive: true },
+      },
+      'expected at most 3 entries',
+    ],
+    [
+      {
+        code: 'too-small',
+        parameters: { bound: 0, kind: 'number', inclusive: false },
+      },
+      'expected more than 0',
+    ],
+    [
+      {
+        code: 'too-big',
+        parameters: { bound: 9, kind: 'string', inclusive: false },
+      },
+      'expected less than 9',
+    ],
+  ])(
+    'words the bound of %j by its kind and whether it is inclusive',
+    (detail, text) => {
+      expect(parseIssueText(detail)).toBe(text);
+    },
+  );
 });
 
+const callerDetailSchema = z.object({
+  code: z.literal('caller-rule'),
+  parameters: z.object({ rule: z.string() }),
+});
+
+const callerRule = { code: 'caller-rule', parameters: { rule: 'one parent' } };
+
+const namingItself = (params: Record<string, unknown>) =>
+  z.string().refine(() => false, { params });
+
 describe('toParseIssues', () => {
+  it('keeps a detail a caller declares where its schema names one for itself', () => {
+    const parsed = namingItself(callerRule).safeParse('refused');
+
+    expect(
+      parsed.success
+        ? []
+        : toParseIssues(parsed.error.issues, 'refused', callerDetailSchema),
+    ).toEqual([{ path: [], detail: callerRule }]);
+  });
+
+  it.each([
+    ['declares none', undefined],
+    ['declares another', callerDetailSchema],
+  ])(
+    'reads a detail no schema accepts as a refusal where the caller %s',
+    (_declares, named) => {
+      const parsed = namingItself({ code: 'unheard-of' }).safeParse('refused');
+
+      expect(
+        parsed.success
+          ? []
+          : toParseIssues(parsed.error.issues, 'refused', named).map(
+              (issue) => issue.detail,
+            ),
+      ).toEqual([{ code: 'value-refused', parameters: { kind: 'custom' } }]);
+    },
+  );
+
+  it("prefers this package's own detail to a caller's", () => {
+    const given = 'Order\u0000service';
+    const parsed = acceptedTextSchema.safeParse(given);
+
+    expect(
+      parsed.success
+        ? []
+        : toParseIssues(parsed.error.issues, given, callerDetailSchema).map(
+            (issue) => issue.detail,
+          ),
+    ).toEqual([{ code: 'text-character-refused' }]);
+  });
+
   it('renders a symbol path segment, which no JSON key spells, as text', () => {
     expect(
       toParseIssues(
@@ -168,10 +343,12 @@ describe('issueLine', () => {
       parameters: { id: 'diagram-main' },
     };
 
-    expect(issueLine({ path: ['diagrams', 0, 'id'], detail })).toBe(
+    expect(
+      issueLine({ path: ['diagrams', 0, 'id'], detail }, parseIssueText),
+    ).toBe(
       'diagrams.0.id: duplicate diagram id "diagram-main": diagram ids must be unique across the model',
     );
-    expect(issueLine({ path: [], detail })).toBe(
+    expect(issueLine({ path: [], detail }, parseIssueText)).toBe(
       '(root): duplicate diagram id "diagram-main": diagram ids must be unique across the model',
     );
   });

@@ -8,6 +8,10 @@ states remain strings because OTM does not enumerate them. Extension
 attributes remain declared maps of unknown values. Callers must bound input
 before validation, including any values inside those maps.
 
+A `parent` that names neither or both of a trust zone and a component is
+refused with `{ code: 'otm-parent-not-single' }` as the issue's parameters.
+`@saerskriven/formats` reads that code, so it is an interface.
+
 [Fixture provenance](../../test-data/otm/README.md) records the source and
 licences. [Import behaviour](../../docs/import.md) belongs to the mapping
 package.

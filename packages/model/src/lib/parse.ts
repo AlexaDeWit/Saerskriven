@@ -5,7 +5,8 @@ import {
   issueFloodCode,
   toParseIssues,
   type ParseIssue,
-  type SchemaIssue,
+  type ParseIssueDetail,
+  type SchemaParser,
 } from './parse-issue.js';
 import { collectViolations } from './violations.js';
 
@@ -23,63 +24,62 @@ const refinedModelSchema = modelSchema.superRefine((model, ctx) => {
 export type Model = z.infer<typeof refinedModelSchema>;
 
 /**
- * A schema as the one method {@link boundedParse} calls, declared
- * structurally so no zod type crosses a fallible signature.
- */
-export type SchemaParser<Value> = {
-  readonly safeParse: (given: unknown) =>
-    | { readonly success: true; readonly data: Value }
-    | {
-        readonly success: false;
-        readonly error: { readonly issues: readonly SchemaIssue[] };
-      };
-};
-
-/**
  * Why {@link boundedParse} produced no value. zod hands a nested value's
  * issues to its parent as the arguments of one call, so enough of them under
  * one array element throw `RangeError` in every engine: that is `IssueFlood`.
- * Any other throw from the parse is `Threw`.
+ * Any other throw from the parse is `Threw`. `Named` is the detail a caller's
+ * own schemas name, as `toParseIssues` reads it.
  */
-export type SchemaFailure = Data.TaggedEnum<{
-  Refused: { readonly issues: readonly ParseIssue[] };
+export type SchemaFailure<Named = never> = Data.TaggedEnum<{
+  Refused: {
+    readonly issues: readonly ParseIssue<ParseIssueDetail | Named>[];
+  };
   IssueFlood: {};
   Threw: { readonly reason: string };
 }>;
 
-/** Constructors for {@link SchemaFailure}, with Effect's `$is` and `$match`. */
-export const SchemaFailure = Data.taggedEnum<SchemaFailure>();
+interface SchemaFailureDefinition extends Data.TaggedEnum.WithGenerics<1> {
+  readonly taggedEnum: SchemaFailure<this['A']>;
+}
 
-/** A schema's parse as a value, whatever the parse threw included. */
-export function boundedParse<Value>(
+/** Constructors for {@link SchemaFailure}, with Effect's `$is` and `$match`. */
+export const SchemaFailure = Data.taggedEnum<SchemaFailureDefinition>();
+
+/**
+ * A schema's parse as a value, whatever the parse threw included. `named`
+ * accepts the details a caller's own schemas name, as `toParseIssues` reads
+ * them.
+ */
+export function boundedParse<Value, Named = never>(
   schema: SchemaParser<Value>,
   given: unknown,
-): Either.Either<Value, SchemaFailure> {
+  named?: SchemaParser<Named>,
+): Either.Either<Value, SchemaFailure<Named>> {
   return Either.flatMap(
     Either.try({
       try: () => schema.safeParse(given),
       catch: (error) =>
         error instanceof RangeError
-          ? SchemaFailure.IssueFlood()
-          : SchemaFailure.Threw({ reason: String(error) }),
+          ? SchemaFailure.IssueFlood<Named>()
+          : SchemaFailure.Threw<Named>({ reason: String(error) }),
     }),
     (parsed) =>
       parsed.success
         ? Either.right(parsed.data)
         : Either.left(
             SchemaFailure.Refused({
-              issues: toParseIssues(parsed.error.issues, given),
+              issues: toParseIssues(parsed.error.issues, given, named),
             }),
           ),
   );
 }
 
 /** A failure as issues, a flood or a throw as one issue at the root. */
-export function schemaFailureIssues(
-  failure: SchemaFailure,
-): readonly ParseIssue[] {
+export function schemaFailureIssues<Named>(
+  failure: SchemaFailure<Named>,
+): readonly ParseIssue<ParseIssueDetail | Named>[] {
   return SchemaFailure.$match(failure, {
-    Refused: ({ issues }): readonly ParseIssue[] => issues,
+    Refused: ({ issues }) => issues,
     IssueFlood: (): readonly ParseIssue[] => [
       { path: [], detail: { code: issueFloodCode } },
     ],

@@ -6,10 +6,11 @@ const bound = { bound: 'number' } as const;
 
 /**
  * What a schema or the model's own rules refused, one message per parse
- * issue code, with a message of its own for each kind, each string format
- * and each source referent so no locale composes a determiner or an agreeing
- * participle onto a noun, and the line that places the detail at its path. A path and an id are data the parse passed
- * through, so no message joins English fragments.
+ * issue code, with a message of its own for each kind and each string format
+ * so no locale composes a determiner or an agreeing participle onto a noun,
+ * and the line that places a parse or an import issue at its path. A path
+ * and an id are data the parse passed through, so no message joins English
+ * fragments.
  */
 export const issueMessages = {
   line: text({ path: 'text', detail: 'text' }),
@@ -29,13 +30,6 @@ export const issueMessages = {
   'format-date': text(),
   'format-datetime': text(),
   'format-other': text(),
-  'source-component-unknown': text(identified),
-  'source-asset-unknown': text(identified),
-  'source-threat-unknown': text(identified),
-  'source-mitigation-unknown': text(identified),
-  'source-trust-zone-unknown': text(identified),
-  'source-endpoint-unknown': text(identified),
-  'source-data-store-unknown': text(identified),
   'type-mismatch': text({ expected: 'text', received: 'text' }),
   'value-unexpected': text({ values: 'list' }),
   'option-unmatched': text(),
@@ -56,7 +50,6 @@ export const issueMessages = {
   'duplicate-threat-id': text(identified),
   'duplicate-mitigation-id': text(identified),
   'duplicate-assumption-id': text(identified),
-  'duplicate-identifier': text(identified),
   'duplicate-threat-number': text({ number: 'number' }),
   'threat-number-above-issued': text({ number: 'number', issued: 'number' }),
   'flow-endpoint-self': text(identified),
@@ -66,7 +59,6 @@ export const issueMessages = {
   'related-element-unknown': text(identified),
   'related-boundary-unknown': text(identified),
   'related-flow-unknown': text(identified),
-  'import-format-unnamed': text(),
   'issue-flood': text(),
   'schema-threw': text(),
 } as const;

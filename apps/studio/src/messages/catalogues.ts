@@ -24,6 +24,10 @@ import { fieldMessages } from './fields/contract.js';
 import { fieldsEnCA } from './fields/en-CA.js';
 import { fieldsFrCA } from './fields/fr-CA.js';
 import { fieldsSv } from './fields/sv.js';
+import { importMessages } from './imports/contract.js';
+import { importsEnCA } from './imports/en-CA.js';
+import { importsFrCA } from './imports/fr-CA.js';
+import { importsSv } from './imports/sv.js';
 import { issueMessages } from './issues/contract.js';
 import { issuesEnCA } from './issues/en-CA.js';
 import { issuesFrCA } from './issues/fr-CA.js';
@@ -61,6 +65,7 @@ export const studioMessages = {
   divergence: divergenceMessages,
   enums: enumMessages,
   fields: fieldMessages,
+  imports: importMessages,
   issues: issueMessages,
   menu: menuMessages,
   notice: noticeMessages,
@@ -87,6 +92,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     divergence: divergenceEnCA,
     enums: enumsEnCA,
     fields: fieldsEnCA,
+    imports: importsEnCA,
     issues: issuesEnCA,
     menu: menuEnCA,
     notice: noticeEnCA,
@@ -103,6 +109,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     divergence: divergenceFrCA,
     enums: enumsFrCA,
     fields: fieldsFrCA,
+    imports: importsFrCA,
     issues: issuesFrCA,
     menu: menuFrCA,
     notice: noticeFrCA,
@@ -119,6 +126,7 @@ export const studioCatalogues: Catalogues<StudioMessages> = {
     divergence: divergenceSv,
     enums: enumsSv,
     fields: fieldsSv,
+    imports: importsSv,
     issues: issuesSv,
     menu: menuSv,
     notice: noticeSv,

@@ -77,7 +77,7 @@ describe('why a read produced nothing', () => {
             {
               path: ['threats', 0],
               detail: {
-                code: 'duplicate-identifier',
+                code: 'unknown-element-reference',
                 parameters: { id: 'saw \u001b[31m' },
               },
             },
@@ -86,7 +86,33 @@ describe('why a read produced nothing', () => {
       ),
     ).toEqual([
       'The file is a valid document, and the model it maps to is not:',
-      'threats.0: duplicate identifier "saw \\u001b[31m"',
+      'threats.0: names unknown element id "saw \\u001b[31m"',
+    ]);
+  });
+
+  it("words an import's own code beside the parse issue codes", () => {
+    expect(
+      renderReadFailure(
+        ReadFailure.InvalidWireDocument({
+          issues: [
+            {
+              path: [],
+              detail: {
+                code: 'import-format-unnamed',
+                parameters: { otm: ['0.2.0'], tmbom: ['1.0.1', '1.0.2'] },
+              },
+            },
+            {
+              path: ['components', 0, 'parent'],
+              detail: { code: 'otm-parent-not-single' },
+            },
+          ],
+        }),
+      ),
+    ).toEqual([
+      'The file is not a valid document of the format that claimed it:',
+      '(root): import requires an OTM 0.2.0 version stamp or a TM-BOM 1.0.1 or 1.0.2 schema URI',
+      'components.0.parent: a parent names exactly one trust zone or component',
     ]);
   });
 

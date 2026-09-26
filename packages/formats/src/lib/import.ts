@@ -52,9 +52,28 @@ export function importFormatOf(
   }
   return Either.left(
     ReadFailure.InvalidWireDocument({
-      issues: [{ path: [], detail: { code: 'import-format-unnamed' } }],
+      issues: [
+        {
+          path: [],
+          detail: { code: 'import-format-unnamed', parameters: releasesRead },
+        },
+      ],
     }),
   );
+}
+
+const schemaReleaseMark = '/blob/v';
+
+const releasesRead = {
+  otm: [otmWireSchema.shape.otmVersion.value],
+  tmbom: tmbomWireSchema.options.map((option) =>
+    releaseNamedBy(option.shape.$schema.value),
+  ),
+};
+
+function releaseNamedBy(schemaUri: string): string {
+  const start = schemaUri.indexOf(schemaReleaseMark) + schemaReleaseMark.length;
+  return schemaUri.slice(start, schemaUri.indexOf('/', start));
 }
 
 function convert(

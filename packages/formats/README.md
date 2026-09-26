@@ -68,6 +68,12 @@ in [`yaml-alias-cost.ts`](src/lib/yaml-alias-cost.ts).
 `importModel` ([`import.ts`](src/lib/import.ts)). No codec writes those
 formats.
 
+An `InvalidWireDocument` issue carries a parse issue code of
+`@saerskriven/model` or an import code of
+[`import-issue-detail.ts`](src/lib/import-issue-detail.ts).
+`renderReadFailure` words both in English, and the CLI and the MCP server
+print that text, so it is an interface.
+
 ## Fixtures
 
 Each format this package reads keeps one feature-complete fixture, hand

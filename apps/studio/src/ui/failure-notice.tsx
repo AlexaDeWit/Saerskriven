@@ -1,5 +1,9 @@
-import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
-import { OperationFailure, type ParseIssue } from '@saerskriven/model';
+import {
+  DetectionFailure,
+  ReadFailure,
+  type WireIssue,
+} from '@saerskriven/formats';
+import { OperationFailure } from '@saerskriven/model';
 import { parseIssueLine } from '../messages/issues/text.js';
 import { useTranslator } from '../messages/locale.js';
 import { Message } from '../messages/message.js';
@@ -247,7 +251,7 @@ function describeRecovery(t: Speaker, problem: RecoveryProblem): string {
 
 function issueLines(
   t: Speaker,
-  issues: readonly ParseIssue[],
+  issues: readonly WireIssue[],
 ): readonly string[] {
   return issues.map((issue) => parseIssueLine(t, issue));
 }

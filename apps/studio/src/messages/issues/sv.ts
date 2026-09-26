@@ -19,16 +19,6 @@ export const issuesSv = catalogue(issueMessages)('sv')({
   'format-date': 'texten är inte ett ISO-datum',
   'format-datetime': 'texten är inte ett ISO-datum med tid',
   'format-other': 'texten följer inte formatet som schemat deklarerar',
-  'source-component-unknown':
-    'källdokumentet deklarerar ingen komponent ”{id}”',
-  'source-asset-unknown': 'källdokumentet deklarerar ingen tillgång ”{id}”',
-  'source-threat-unknown': 'källdokumentet deklarerar inget hot ”{id}”',
-  'source-mitigation-unknown': 'källdokumentet deklarerar ingen åtgärd ”{id}”',
-  'source-trust-zone-unknown':
-    'källdokumentet deklarerar ingen förtroendezon ”{id}”',
-  'source-endpoint-unknown': 'källdokumentet deklarerar ingen ändpunkt ”{id}”',
-  'source-data-store-unknown':
-    'källdokumentet deklarerar inget datalager ”{id}”',
   'type-mismatch': 'ska vara {expected} men är {received}',
   'value-unexpected': 'ett värde bland {values} väntades',
   'option-unmatched': 'inget deklarerat alternativ tar emot detta värde',
@@ -66,7 +56,6 @@ export const issuesSv = catalogue(issueMessages)('sv')({
     'åtgärds-id:t ”{id}” är redan taget, och åtgärds-id är unika bland åtgärderna',
   'duplicate-assumption-id':
     'antagande-id:t ”{id}” är redan taget, och antagande-id är unika bland antagandena',
-  'duplicate-identifier': 'identifieraren ”{id}” används två gånger',
   'duplicate-threat-number':
     'hotnumret {number} är redan taget, och hotnummer är unika i hela modellen',
   'threat-number-above-issued':
@@ -82,8 +71,6 @@ export const issuesSv = catalogue(issueMessages)('sv')({
     '”{id}” namnger ingen förtroendegräns i elementets eget diagram',
   'related-flow-unknown':
     '”{id}” namnger inget flöde i elementets eget diagram',
-  'import-format-unnamed':
-    'en import kräver en OTM-version eller en TM-BOM-schemaadress',
   'issue-flood': 'filen bär fler problem än en tolkning kan räkna upp',
   'schema-threw': 'tolkningen stannade innan den kunde säga vad som är fel',
 });

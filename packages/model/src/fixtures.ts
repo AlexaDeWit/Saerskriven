@@ -21,7 +21,7 @@ import {
   type MitigationId,
   type ThreatId,
 } from './lib/ids.js';
-import { issueLine } from './lib/parse-issue.js';
+import { issueLine, parseIssueText } from './lib/parse-issue.js';
 import { parseModel, type Model } from './lib/parse.js';
 import type { Threat } from './lib/threats.js';
 
@@ -71,7 +71,7 @@ export function parsedFixture(input: unknown): Model {
     parseModel(input),
     (failure) =>
       new Error(
-        `Fixture does not parse: ${failure.issues.map(issueLine).join('; ')}`,
+        `Fixture does not parse: ${failure.issues.map((issue) => issueLine(issue, parseIssueText)).join('; ')}`,
       ),
   );
 }

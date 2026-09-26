@@ -29,7 +29,6 @@ export const parseIssueSamples: readonly ParseIssueDetail[] = [
   { code: 'duplicate-threat-id', parameters: { id: 'threat-twice' } },
   { code: 'duplicate-mitigation-id', parameters: { id: 'mitigation-twice' } },
   { code: 'duplicate-assumption-id', parameters: { id: 'assumption-twice' } },
-  { code: 'duplicate-identifier', parameters: { id: 'source-twice' } },
   { code: 'duplicate-threat-number', parameters: { number: 11 } },
   {
     code: 'threat-number-above-issued',
@@ -42,11 +41,6 @@ export const parseIssueSamples: readonly ParseIssueDetail[] = [
   { code: 'related-element-unknown', parameters: { id: 'element-unrelated' } },
   { code: 'related-boundary-unknown', parameters: { id: 'element-unbounded' } },
   { code: 'related-flow-unknown', parameters: { id: 'element-unflowed' } },
-  {
-    code: 'unknown-source-reference',
-    parameters: { id: 'source-ghost', kind: 'trust-zone' },
-  },
-  { code: 'import-format-unnamed' },
   { code: 'issue-flood' },
   { code: 'schema-threw', parameters: { reason: 'TypeError: defect' } },
 ];

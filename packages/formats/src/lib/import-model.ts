@@ -1,7 +1,8 @@
-import type { ParseIssue, ParseIssueDetail } from '@saerskriven/model';
+import type { ParseIssue } from '@saerskriven/model';
 import type { DivergenceDetail } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { importBudget } from './import-budget.js';
+import type { ImportIssueDetail } from './import-issue-detail.js';
 import { isRecord } from './records.js';
 
 /**
@@ -14,7 +15,7 @@ export function importContext() {
   const budget = importBudget();
   const used = new WeakMap<object, Set<string>>();
   const divergences: Divergence[] = [];
-  const issues: ParseIssue[] = [];
+  const issues: ParseIssue<ImportIssueDetail>[] = [];
   const report = (
     detail: DivergenceDetail,
     reason: Divergence['reason'] = 'narrowed',
@@ -26,7 +27,7 @@ export function importContext() {
   };
   const problem = (
     path: readonly (string | number)[],
-    detail: ParseIssueDetail,
+    detail: ImportIssueDetail,
   ): void => {
     issues.push({ path: [...path], detail });
   };
@@ -116,7 +117,7 @@ function indexed<T>(
   path: string,
   problem: (
     path: readonly (string | number)[],
-    detail: ParseIssueDetail,
+    detail: ImportIssueDetail,
   ) => void,
 ): Map<string, T> {
   const result = new Map<string, T>();

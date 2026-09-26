@@ -20,19 +20,6 @@ const valueKindSchema = z.enum([
  */
 export type ValueKind = z.infer<typeof valueKindSchema>;
 
-const sourceReferentSchema = z.enum([
-  'component',
-  'asset',
-  'threat',
-  'mitigation',
-  'trust-zone',
-  'endpoint',
-  'data-store',
-]);
-
-/** What an entry of a source document names when a mapping cannot resolve it. */
-export type SourceReferent = z.infer<typeof sourceReferentSchema>;
-
 const stringFormatSchema = z.enum([
   'regex',
   'url',
@@ -95,12 +82,6 @@ export const parseIssueDetailSchema = z.discriminatedUnion('code', [
   carrying('duplicate-threat-id', identified),
   carrying('duplicate-mitigation-id', identified),
   carrying('duplicate-assumption-id', identified),
-  carrying('duplicate-identifier', identified),
-  carrying('unknown-source-reference', {
-    id: z.string(),
-    kind: sourceReferentSchema,
-  }),
-  coded('import-format-unnamed'),
   carrying('duplicate-threat-number', { number: z.number() }),
   carrying('threat-number-above-issued', {
     number: z.number(),
@@ -126,11 +107,13 @@ export type ParseIssueCode = ParseIssueDetail['code'];
 /**
  * One violation a parse found: where in the input it sits, and what it is, as
  * a code and its parameters. The detail holds no sentence, so an app words it
- * in the reader's language and this package needs none.
+ * in the reader's language and this package needs none. `Detail` is wider
+ * than this package's own codes where a caller's schemas name details of
+ * their own, as {@link toParseIssues} reads them.
  */
-export type ParseIssue = {
+export type ParseIssue<Detail = ParseIssueDetail> = {
   readonly path: readonly (string | number)[];
-  readonly detail: ParseIssueDetail;
+  readonly detail: Detail;
 };
 
 /** The code of the one root issue that stands for a flood of issues. */
@@ -164,30 +147,52 @@ export type SchemaIssue = {
 };
 
 /**
- * Schema issues as the plain {@link ParseIssue} data this package reports. A
- * schema that names its own detail carries it in the issue's `params`, and
- * every other issue is mapped by its kind. `given` is the value the schema
- * read: a type mismatch walks it along the issue's path for the kind it
- * received, since a schema reports what it expected alone. A symbol path
- * segment, which a key of that kind produces and JSON has no spelling for,
- * becomes its string form.
+ * A schema as the one method a parse calls, declared structurally so no zod
+ * type crosses a fallible signature.
  */
-export function toParseIssues(
+export type SchemaParser<Value> = {
+  readonly safeParse: (given: unknown) =>
+    | { readonly success: true; readonly data: Value }
+    | {
+        readonly success: false;
+        readonly error: { readonly issues: readonly SchemaIssue[] };
+      };
+};
+
+/**
+ * Schema issues as the plain {@link ParseIssue} data this package reports. A
+ * schema that names its own detail carries it in a custom issue's `params`:
+ * one of this package's codes, or one `named` accepts, for a caller whose
+ * schemas name codes this package does not declare. Every other issue is
+ * mapped by its kind. `given` is the value the schema read: a type mismatch
+ * walks it along the issue's path for the kind it received, since a schema
+ * reports what it expected alone. A symbol path segment, which a key of that
+ * kind produces and JSON has no spelling for, becomes its string form.
+ */
+export function toParseIssues<Named = never>(
   issues: readonly SchemaIssue[],
   given: unknown,
-): readonly ParseIssue[] {
+  named?: SchemaParser<Named>,
+): readonly ParseIssue<ParseIssueDetail | Named>[] {
   return issues.map((issue) => ({
     path: issue.path.map((key) =>
       typeof key === 'symbol' ? String(key) : key,
     ),
-    detail: detailOf(issue, given),
+    detail: namedDetail(issue, named) ?? detailOf(issue, given),
   }));
 }
 
-/** One issue as a line of text: its dotted path, `(root)` for an empty one, then what it says. */
-export function issueLine(issue: ParseIssue): string {
+/**
+ * One issue as a line of text: its dotted path, `(root)` for an empty one,
+ * then what `text` says of its detail, {@link parseIssueText} for this
+ * package's own codes.
+ */
+export function issueLine<Detail>(
+  issue: ParseIssue<Detail>,
+  text: (detail: Detail) => string,
+): string {
   const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
-  return `${path}: ${parseIssueText(issue.detail)}`;
+  return `${path}: ${text(issue.detail)}`;
 }
 
 /**
@@ -198,7 +203,7 @@ export function issueLine(issue: ParseIssue): string {
 export function parseIssueText(detail: ParseIssueDetail): string {
   switch (detail.code) {
     case 'type-mismatch':
-      return `expected ${kindNoun(detail.parameters.expected)}, received ${kindNoun(detail.parameters.received)}`;
+      return `expected ${kindNouns[detail.parameters.expected]}, received ${kindNouns[detail.parameters.received]}`;
     case 'value-unexpected':
       return `expected one of ${detail.parameters.values.join(', ')}`;
     case 'option-unmatched':
@@ -227,12 +232,6 @@ export function parseIssueText(detail: ParseIssueDetail): string {
       return `duplicate mitigation id "${detail.parameters.id}": mitigation ids must be unique among mitigations`;
     case 'duplicate-assumption-id':
       return `duplicate assumption id "${detail.parameters.id}": assumption ids must be unique among assumptions`;
-    case 'duplicate-identifier':
-      return `duplicate identifier "${detail.parameters.id}"`;
-    case 'unknown-source-reference':
-      return `names unknown ${referentNouns[detail.parameters.kind]} "${detail.parameters.id}"`;
-    case 'import-format-unnamed':
-      return 'import requires an OTM version stamp or a TM-BOM schema URI';
     case 'duplicate-threat-number':
       return `duplicate threat number ${String(detail.parameters.number)}: threat numbers must be unique across the model`;
     case 'threat-number-above-issued':
@@ -290,65 +289,8 @@ const refusalNouns: Record<RefusalKind, string> = {
   other: 'a rule no code of this package covers',
 };
 
-const refusalKinds: Readonly<Record<string, RefusalKind>> = {
-  custom: 'custom',
-  not_multiple_of: 'not-multiple-of',
-  unrecognized_keys: 'unrecognized-keys',
-  invalid_key: 'invalid-key',
-  invalid_element: 'invalid-element',
-};
-
-const stringFormats: Readonly<Record<string, StringFormat>> = {
-  regex: 'regex',
-  url: 'url',
-  date: 'date',
-  datetime: 'datetime',
-};
-
-const heldKinds: Readonly<Record<string, ValueKind>> = {
-  string: 'string',
-  bigint: 'number',
-  boolean: 'boolean',
-  undefined: 'undefined',
-  object: 'object',
-};
-
-const referentNouns: Record<SourceReferent, string> = {
-  component: 'component',
-  asset: 'asset',
-  threat: 'threat',
-  mitigation: 'mitigation',
-  'trust-zone': 'trust zone',
-  endpoint: 'endpoint',
-  'data-store': 'data store',
-};
-
-const expectedKinds: Readonly<Record<string, ValueKind>> = {
-  string: 'string',
-  number: 'number',
-  nan: 'number',
-  bigint: 'number',
-  int: 'integer',
-  boolean: 'boolean',
-  array: 'array',
-  tuple: 'array',
-  object: 'object',
-  record: 'object',
-  map: 'object',
-  set: 'object',
-  date: 'date',
-  null: 'null',
-  undefined: 'undefined',
-  void: 'undefined',
-  nonoptional: 'undefined',
-};
-
 function unworded(_detail: never): string {
   return '';
-}
-
-function kindNoun(kind: ValueKind): string {
-  return kindNouns[kind];
 }
 
 function boundPhrase(
@@ -376,11 +318,65 @@ function counted(count: number, one: string, many: string): string {
   return count === 1 ? one : many;
 }
 
-function detailOf(issue: SchemaIssue, given: unknown): ParseIssueDetail {
-  const named = issue.code === 'custom' ? namedDetail(issue.params) : undefined;
-  if (named !== undefined) {
-    return named;
+const expectedKinds: Readonly<Record<string, ValueKind>> = {
+  string: 'string',
+  number: 'number',
+  nan: 'number',
+  bigint: 'number',
+  int: 'integer',
+  boolean: 'boolean',
+  array: 'array',
+  tuple: 'array',
+  object: 'object',
+  record: 'object',
+  map: 'object',
+  set: 'object',
+  date: 'date',
+  null: 'null',
+  undefined: 'undefined',
+  void: 'undefined',
+  nonoptional: 'undefined',
+};
+
+const heldKinds: Readonly<Record<string, ValueKind>> = {
+  string: 'string',
+  bigint: 'number',
+  boolean: 'boolean',
+  undefined: 'undefined',
+  object: 'object',
+};
+
+const stringFormats: Readonly<Record<string, StringFormat>> = {
+  regex: 'regex',
+  url: 'url',
+  date: 'date',
+  datetime: 'datetime',
+};
+
+const refusalKinds: Readonly<Record<string, RefusalKind>> = {
+  custom: 'custom',
+  not_multiple_of: 'not-multiple-of',
+  unrecognized_keys: 'unrecognized-keys',
+  invalid_key: 'invalid-key',
+  invalid_element: 'invalid-element',
+};
+
+function namedDetail<Named>(
+  issue: SchemaIssue,
+  named: SchemaParser<Named> | undefined,
+): ParseIssueDetail | Named | undefined {
+  if (issue.code !== 'custom' || issue.params === undefined) {
+    return undefined;
   }
+  const own = parseIssueDetailSchema.safeParse(issue.params);
+  if (own.success) {
+    return own.data;
+  }
+  const theirs = named?.safeParse(issue.params);
+  return theirs?.success === true ? theirs.data : undefined;
+}
+
+function detailOf(issue: SchemaIssue, given: unknown): ParseIssueDetail {
   switch (issue.code) {
     case 'invalid_type':
       return {
@@ -431,16 +427,6 @@ function detailOf(issue: SchemaIssue, given: unknown): ParseIssueDetail {
         parameters: { kind: refusalKinds[issue.code] ?? 'other' },
       };
   }
-}
-
-function namedDetail(
-  params: SchemaIssue['params'],
-): ParseIssueDetail | undefined {
-  if (params === undefined) {
-    return undefined;
-  }
-  const parsed = parseIssueDetailSchema.safeParse(params);
-  return parsed.success ? parsed.data : undefined;
 }
 
 function namedKind(expected: string | undefined): ValueKind {

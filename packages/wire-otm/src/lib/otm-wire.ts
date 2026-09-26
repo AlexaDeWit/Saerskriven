@@ -30,7 +30,7 @@ const parentSchema = z
   .refine(
     (value) =>
       (value.trustZone === undefined) !== (value.component === undefined),
-    { message: 'A parent names exactly one trust zone or component' },
+    { params: { code: 'otm-parent-not-single' } },
   );
 
 const positionSchema = nullable(

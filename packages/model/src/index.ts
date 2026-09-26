@@ -34,7 +34,7 @@ export {
   type ParseIssueDetail,
   type RefusalKind,
   type SchemaIssue,
-  type SourceReferent,
+  type SchemaParser,
   type StringFormat,
   type ValueKind,
 } from './lib/parse-issue.js';

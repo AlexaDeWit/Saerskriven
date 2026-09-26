@@ -1,4 +1,5 @@
 import { Either, Option } from 'effect';
+import { z } from 'zod';
 import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
 import { issueFloodCode, type ParseIssueDetail } from './parse-issue.js';
 import { boundedParse, parseModel, schemaFailureIssues } from './parse.js';
@@ -275,6 +276,19 @@ describe('boundedParse', () => {
       ).toMatchObject([{ path: [], detail: { code } }]);
     },
   );
+
+  it("reads a refusal through the caller's own details", () => {
+    const rule = { code: 'caller-rule' } as const;
+    const parsed = boundedParse(
+      z.string().refine(() => false, { params: rule }),
+      'refused',
+      z.object({ code: z.literal('caller-rule') }),
+    );
+
+    expect(Either.isLeft(parsed) && schemaFailureIssues(parsed.left)).toEqual([
+      { path: [], detail: rule },
+    ]);
+  });
 
   it('refuses a model with more invalid entries than zod 4.6.2 gathers on V8', () => {
     const flooded = {

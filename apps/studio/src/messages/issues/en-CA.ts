@@ -19,17 +19,6 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
   'format-date': 'the text is not an ISO date',
   'format-datetime': 'the text is not an ISO date and time',
   'format-other': 'the text does not match the format the schema declares',
-  'source-component-unknown':
-    'the source document declares no component "{id}"',
-  'source-asset-unknown': 'the source document declares no asset "{id}"',
-  'source-threat-unknown': 'the source document declares no threat "{id}"',
-  'source-mitigation-unknown':
-    'the source document declares no mitigation "{id}"',
-  'source-trust-zone-unknown':
-    'the source document declares no trust zone "{id}"',
-  'source-endpoint-unknown': 'the source document declares no endpoint "{id}"',
-  'source-data-store-unknown':
-    'the source document declares no data store "{id}"',
   'type-mismatch': 'should be {expected} but is {received}',
   'value-unexpected': 'expected one of {values}',
   'option-unmatched': 'no declared option accepts this value',
@@ -67,7 +56,6 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
     'the mitigation id "{id}" is already used, and mitigation ids are unique among mitigations',
   'duplicate-assumption-id':
     'the assumption id "{id}" is already used, and assumption ids are unique among assumptions',
-  'duplicate-identifier': 'the identifier "{id}" is used twice',
   'duplicate-threat-number':
     'the threat number {number} is already used, and threat numbers are unique across the model',
   'threat-number-above-issued':
@@ -83,8 +71,6 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
   'related-boundary-unknown':
     '"{id}" names no trust boundary of the element’s own diagram',
   'related-flow-unknown': '"{id}" names no flow of the element’s own diagram',
-  'import-format-unnamed':
-    'an import needs an OTM version stamp or a TM-BOM schema URI',
   'issue-flood': 'the file has more problems than a parse can list',
   'schema-threw': 'the parse stopped before it could report what is wrong',
 });

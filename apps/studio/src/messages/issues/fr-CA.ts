@@ -19,19 +19,6 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
   'format-date': 'le texte n’est pas une date ISO',
   'format-datetime': 'le texte n’est pas une date et une heure ISO',
   'format-other': 'le texte ne correspond pas au format déclaré par le schéma',
-  'source-component-unknown':
-    'le document source ne déclare aucun composant « {id} »',
-  'source-asset-unknown': 'le document source ne déclare aucun actif « {id} »',
-  'source-threat-unknown':
-    'le document source ne déclare aucune menace « {id} »',
-  'source-mitigation-unknown':
-    'le document source ne déclare aucune mesure « {id} »',
-  'source-trust-zone-unknown':
-    'le document source ne déclare aucune zone de confiance « {id} »',
-  'source-endpoint-unknown':
-    'le document source ne déclare aucune extrémité « {id} »',
-  'source-data-store-unknown':
-    'le document source ne déclare aucun magasin de données « {id} »',
   'type-mismatch': 'devait être {expected} mais est {received}',
   'value-unexpected': 'une valeur parmi {values} était attendue',
   'option-unmatched': 'aucune option déclarée n’accepte cette valeur',
@@ -74,7 +61,6 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
     'l’identifiant de mesure « {id} » est déjà pris, et les identifiants de mesure sont uniques parmi les mesures',
   'duplicate-assumption-id':
     'l’identifiant d’hypothèse « {id} » est déjà pris, et les identifiants d’hypothèse sont uniques parmi les hypothèses',
-  'duplicate-identifier': 'l’identifiant « {id} » est employé deux fois',
   'duplicate-threat-number':
     'le numéro de menace {number} est déjà pris, et les numéros de menace sont uniques dans tout le modèle',
   'threat-number-above-issued':
@@ -93,8 +79,6 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
     '« {id} » ne nomme aucune frontière de confiance du diagramme de l’élément',
   'related-flow-unknown':
     '« {id} » ne nomme aucun flux du diagramme de l’élément',
-  'import-format-unnamed':
-    'une importation exige une version OTM ou une adresse de schéma TM-BOM',
   'issue-flood':
     'le fichier porte plus de problèmes qu’une analyse ne peut en énumérer',
   'schema-threw':

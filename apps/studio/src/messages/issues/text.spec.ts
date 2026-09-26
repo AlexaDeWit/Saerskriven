@@ -24,6 +24,13 @@ const branches: readonly {
   {
     detail: {
       code: 'too-small',
+      parameters: { bound: 1, kind: 'integer', inclusive: true },
+    },
+    id: 'issues.too-small-value',
+  },
+  {
+    detail: {
+      code: 'too-small',
       parameters: { bound: 0, kind: 'number', inclusive: false },
     },
     id: 'issues.too-small-above',
@@ -65,48 +72,6 @@ const branches: readonly {
     detail: { code: 'format-mismatch', parameters: { format: 'other' } },
     id: 'issues.format-other',
   },
-  {
-    detail: {
-      code: 'unknown-source-reference',
-      parameters: { id: 'source-component', kind: 'component' },
-    },
-    id: 'issues.source-component-unknown',
-  },
-  {
-    detail: {
-      code: 'unknown-source-reference',
-      parameters: { id: 'source-asset', kind: 'asset' },
-    },
-    id: 'issues.source-asset-unknown',
-  },
-  {
-    detail: {
-      code: 'unknown-source-reference',
-      parameters: { id: 'source-threat', kind: 'threat' },
-    },
-    id: 'issues.source-threat-unknown',
-  },
-  {
-    detail: {
-      code: 'unknown-source-reference',
-      parameters: { id: 'source-mitigation', kind: 'mitigation' },
-    },
-    id: 'issues.source-mitigation-unknown',
-  },
-  {
-    detail: {
-      code: 'unknown-source-reference',
-      parameters: { id: 'source-endpoint', kind: 'endpoint' },
-    },
-    id: 'issues.source-endpoint-unknown',
-  },
-  {
-    detail: {
-      code: 'unknown-source-reference',
-      parameters: { id: 'source-data-store', kind: 'data-store' },
-    },
-    id: 'issues.source-data-store-unknown',
-  },
 ];
 
 const declaredCodes = parseIssueDetailSchema.options.map(
@@ -126,9 +91,7 @@ const entryOf = (detail: ParseIssueDetail): string =>
       ? 'issues.too-big-value'
       : detail.code === 'format-mismatch'
         ? 'issues.format-url'
-        : detail.code === 'unknown-source-reference'
-          ? 'issues.source-trust-zone-unknown'
-          : `issues.${detail.code}`;
+        : `issues.${detail.code}`;
 
 const englishTemplates = catalogueTemplates(studioCatalogues).filter(
   (entry) => entry.locale === 'en-CA',
@@ -176,8 +139,6 @@ describe('the parse issue mapping', () => {
 
   it.each([
     ['unknown-element-reference', 'element-ghost'],
-    ['duplicate-identifier', 'source-twice'],
-    ['unknown-source-reference', 'source-ghost'],
     ['duplicate-threat-number', '11'],
   ])('carries the data %s names', (code, value) => {
     const detail = sampleOf(code);

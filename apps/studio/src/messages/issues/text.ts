@@ -1,19 +1,21 @@
+import { isImportIssueDetail, type WireIssue } from '@saerskriven/formats';
 import type {
-  ParseIssue,
   ParseIssueDetail,
-  SourceReferent,
   StringFormat,
   ValueKind,
 } from '@saerskriven/model';
+import { importIssueDetail } from '../imports/text.js';
 import type { Speaker } from '../said.js';
 
 /**
- * One parse issue as a line in the reader's language: where in the input it
- * sits, then what the code says, with the whole document named where the
- * issue points at no path.
+ * One parse or import issue as a line in the reader's language: where in the
+ * input it sits, then what the code says, with the whole document named
+ * where the issue points at no path.
  */
-export function parseIssueLine(t: Speaker, issue: ParseIssue): string {
-  const detail = parseIssueDetail(t, issue.detail);
+export function parseIssueLine(t: Speaker, issue: WireIssue): string {
+  const detail = isImportIssueDetail(issue.detail)
+    ? importIssueDetail(t, issue.detail)
+    : parseIssueDetail(t, issue.detail);
   return issue.path.length > 0
     ? t('issues.line', { path: issue.path.join('.'), detail })
     : t('issues.line-root', { detail });
@@ -55,8 +57,6 @@ export function parseIssueDetail(t: Speaker, detail: ParseIssueDetail): string {
       return t('issues.duplicate-mitigation-id', detail.parameters);
     case 'duplicate-assumption-id':
       return t('issues.duplicate-assumption-id', detail.parameters);
-    case 'duplicate-identifier':
-      return t('issues.duplicate-identifier', detail.parameters);
     case 'duplicate-threat-number':
       return t('issues.duplicate-threat-number', detail.parameters);
     case 'threat-number-above-issued':
@@ -75,12 +75,6 @@ export function parseIssueDetail(t: Speaker, detail: ParseIssueDetail): string {
       return t('issues.related-boundary-unknown', detail.parameters);
     case 'related-flow-unknown':
       return t('issues.related-flow-unknown', detail.parameters);
-    case 'unknown-source-reference':
-      return t(sourceIds[detail.parameters.kind], {
-        id: detail.parameters.id,
-      });
-    case 'import-format-unnamed':
-      return t('issues.import-format-unnamed');
     case 'issue-flood':
       return t('issues.issue-flood');
     case 'schema-threw':
@@ -108,16 +102,6 @@ const kindIds = {
   undefined: 'issues.kind-undefined',
   other: 'issues.kind-other',
 } as const satisfies Record<ValueKind, string>;
-
-const sourceIds = {
-  component: 'issues.source-component-unknown',
-  asset: 'issues.source-asset-unknown',
-  threat: 'issues.source-threat-unknown',
-  mitigation: 'issues.source-mitigation-unknown',
-  'trust-zone': 'issues.source-trust-zone-unknown',
-  endpoint: 'issues.source-endpoint-unknown',
-  'data-store': 'issues.source-data-store-unknown',
-} as const satisfies Record<SourceReferent, string>;
 
 const formatIds = {
   regex: 'issues.format-regex',
