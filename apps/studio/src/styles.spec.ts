@@ -1,5 +1,9 @@
 import { repositoryRoot } from '@saerskriven/model/fixtures';
-import { themedCanvasStylesheet } from '@saerskriven/canvas';
+import {
+  canvasClassNames,
+  canvasInteractionClassNames,
+  themedCanvasStylesheet,
+} from '@saerskriven/canvas';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { initialPageStylesheet } from '../initial-page.mjs';
@@ -61,6 +65,29 @@ describe('the studio and the canvas, coloured from one table', () => {
     expect(walked).toContain('apps/studio/src/styles.css');
     expect(walked).toContain('packages/canvas/src/lib/stylesheet.ts');
     expect(walked.filter((path) => beside.test(path))).toEqual([]);
+  });
+});
+
+describe('the diagram class names', () => {
+  it('spells each one in the studio and canvas sources as the canvas maps declare it', () => {
+    const declared = new Set<string>([
+      ...Object.values(canvasClassNames),
+      ...Object.values(canvasInteractionClassNames),
+    ]);
+    const spelled = sources.flatMap((source) =>
+      (source.text.match(/saer-diagram-[\w-]+/gu) ?? []).map((name) => ({
+        path: source.path,
+        name,
+      })),
+    );
+    expect(spelled.map((use) => use.path)).toContain(
+      'apps/studio/src/canvas/diagram-canvas.module.css',
+    );
+    expect(
+      spelled
+        .filter((use) => !declared.has(use.name))
+        .map((use) => `${use.path}: ${use.name}`),
+    ).toEqual([]);
   });
 });
 
