@@ -485,92 +485,102 @@ describe('DiagramCanvas', () => {
     );
   });
 
-  it('keeps the second press of a double-click out of the panel the first press opened, and edits the element', () => {
-    render(<DiagramCanvas />);
-    fireEvent.pointerDown(reader(), press);
-    fireEvent.click(reader(), { detail: 1 });
-    act(() => {
-      dispatch(Action.Select({ elementIds: [actorElement] }));
-    });
-    const scope = screen.getByRole('combobox', { name: 'Out of scope' });
-
-    fireEvent.pointerDown(scope, press);
-    fireEvent.click(scope, { detail: 2 });
-
-    expect(scope.getAttribute('aria-expanded')).toBe('false');
-    expect(modelStore.getState().inlineEditor).toEqual({
-      kind: 'name',
-      elementId: actorElement,
-    });
-  });
-
-  it('lets a keyboard activation after a shielded press reach its button', () => {
-    render(<DiagramCanvas />);
-    const threats = modelStore.getState().present.threats.length;
-    fireEvent.pointerDown(reader(), press);
-    act(() => {
-      dispatch(Action.Select({ elementIds: [actorElement] }));
-    });
-    fireEvent.pointerDown(
-      screen.getByRole('combobox', { name: 'Out of scope' }),
-      press,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
-      detail: 0,
+  describe('a double-click over the panel', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
     });
 
-    expect(modelStore.getState().present.threats).toHaveLength(threats + 1);
-    expect(modelStore.getState().inlineEditor).toBeUndefined();
-  });
-
-  it('lets go of a shielded press the browser cancelled', () => {
-    render(<DiagramCanvas />);
-    const threats = modelStore.getState().present.threats.length;
-    fireEvent.pointerDown(reader(), press);
-    act(() => {
-      dispatch(Action.Select({ elementIds: [actorElement] }));
-    });
-    const scope = screen.getByRole('combobox', { name: 'Out of scope' });
-    fireEvent.pointerDown(scope, press);
-    fireEvent.pointerCancel(scope, press);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
-      detail: 1,
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
-    expect(modelStore.getState().present.threats).toHaveLength(threats + 1);
-    expect(modelStore.getState().inlineEditor).toBeUndefined();
-  });
+    it('keeps the second press of a double-click out of the panel the first press opened, and edits the element', () => {
+      render(<DiagramCanvas />);
+      fireEvent.pointerDown(reader(), press);
+      fireEvent.click(reader(), { detail: 1 });
+      act(() => {
+        dispatch(Action.Select({ elementIds: [actorElement] }));
+      });
+      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
 
-  it('arms nothing on a first press with another button', () => {
-    render(<DiagramCanvas />);
-    fireEvent.pointerDown(reader(), { ...press, button: 2 });
-    act(() => {
-      dispatch(Action.Select({ elementIds: [actorElement] }));
-    });
-    const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      fireEvent.pointerDown(scope, press);
+      fireEvent.click(scope, { detail: 2 });
 
-    fireEvent.pointerDown(scope, press);
-
-    expect(scope.getAttribute('aria-expanded')).toBe('true');
-  });
-
-  it('leaves a press on the panel that moved as far as a drag to the panel', () => {
-    render(<DiagramCanvas />);
-    fireEvent.pointerDown(reader(), press);
-    act(() => {
-      dispatch(Action.Select({ elementIds: [actorElement] }));
-    });
-    const scope = screen.getByRole('combobox', { name: 'Out of scope' });
-
-    fireEvent.pointerDown(scope, {
-      ...press,
-      clientX: press.clientX + placementClickDistance,
+      expect(scope.getAttribute('aria-expanded')).toBe('false');
+      expect(modelStore.getState().inlineEditor).toEqual({
+        kind: 'name',
+        elementId: actorElement,
+      });
     });
 
-    expect(scope.getAttribute('aria-expanded')).toBe('true');
-    expect(modelStore.getState().inlineEditor).toBeUndefined();
+    it('lets a keyboard activation after a shielded press reach its button', () => {
+      render(<DiagramCanvas />);
+      const threats = modelStore.getState().present.threats.length;
+      fireEvent.pointerDown(reader(), press);
+      act(() => {
+        dispatch(Action.Select({ elementIds: [actorElement] }));
+      });
+      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      fireEvent.pointerDown(scope, press);
+      expect(scope.getAttribute('aria-expanded')).toBe('false');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
+        detail: 0,
+      });
+
+      expect(modelStore.getState().present.threats).toHaveLength(threats + 1);
+      expect(modelStore.getState().inlineEditor).toBeUndefined();
+    });
+
+    it('lets go of a shielded press the browser cancelled', () => {
+      render(<DiagramCanvas />);
+      const threats = modelStore.getState().present.threats.length;
+      fireEvent.pointerDown(reader(), press);
+      act(() => {
+        dispatch(Action.Select({ elementIds: [actorElement] }));
+      });
+      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      fireEvent.pointerDown(scope, press);
+      expect(scope.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.pointerCancel(scope, press);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
+        detail: 1,
+      });
+
+      expect(modelStore.getState().present.threats).toHaveLength(threats + 1);
+      expect(modelStore.getState().inlineEditor).toBeUndefined();
+    });
+
+    it('arms nothing on a first press with another button', () => {
+      render(<DiagramCanvas />);
+      fireEvent.pointerDown(reader(), { ...press, button: 2 });
+      act(() => {
+        dispatch(Action.Select({ elementIds: [actorElement] }));
+      });
+      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+
+      fireEvent.pointerDown(scope, press);
+
+      expect(scope.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('leaves a press on the panel that moved as far as a drag to the panel', () => {
+      render(<DiagramCanvas />);
+      fireEvent.pointerDown(reader(), press);
+      act(() => {
+        dispatch(Action.Select({ elementIds: [actorElement] }));
+      });
+      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+
+      fireEvent.pointerDown(scope, {
+        ...press,
+        clientX: press.clientX + placementClickDistance,
+      });
+
+      expect(scope.getAttribute('aria-expanded')).toBe('true');
+      expect(modelStore.getState().inlineEditor).toBeUndefined();
+    });
   });
 
   it('leaves a click on a canvas control out of the rename gesture', () => {

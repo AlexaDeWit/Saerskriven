@@ -23,7 +23,7 @@ import {
 import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 
 const base = parsedFixture(validModelFixture);
-const note = newNote('note-plan', 'Rollout plan');
+const note = { ...newNote('note-plan', 'Rollout plan'), name: '' };
 const withNote = {
   ...base,
   diagrams: [
