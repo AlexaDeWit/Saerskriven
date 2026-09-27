@@ -11,9 +11,11 @@ import {
   assumptionId,
   diagramId,
   elementId,
+  elementIn,
   mitigationId,
   parsedFixture,
   threatId,
+  validModel,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import {
@@ -281,6 +283,19 @@ export function newNote(id: string, text: string): Element {
     size: { width: 200, height: 40 },
   };
 }
+
+/**
+ * A nameless process and a nameless trust boundary, each under the words a
+ * spec title gives it: a masculine and a feminine kind in French, which a
+ * message putting a preposition before an element words apart.
+ */
+export const namelessElements: readonly (readonly [string, Element])[] = [
+  ['process', newProcess('process-unnamed', '')],
+  [
+    'trust boundary',
+    { ...elementIn(validModel, 'element-perimeter'), name: '' },
+  ],
+];
 
 /** A snapshot as recovery storage hands one back, parsed through the load path's schema. */
 export function restorableSnapshot(

@@ -58,7 +58,11 @@ export function accessibleNames(
   ]);
 }
 
-/** What an element is called in a sentence: its name, or its kind while it has none. */
+/**
+ * What an element is called in a sentence: its name, or its kind while it has
+ * none. A message that puts a preposition before the element words each kind
+ * itself instead, as {@link nameFieldLabel} does.
+ */
 export function kindLabel(
   name: string,
   kind: Element['kind'],
@@ -67,9 +71,27 @@ export function kindLabel(
   return name === '' ? t(articleKindMessages[kind]) : name;
 }
 
-/** {@link kindLabel} for one drawn element. */
-export function nodeLabel(node: CanvasNode, t: StudioTranslator['t']): string {
-  return kindLabel(node.name, elementKindOf[node.kind], t);
+/**
+ * The accessible name of an element's name field. An element without a name
+ * has a message of its own for its kind, since French contracts the
+ * preposition onto the kind's article.
+ */
+export function nameFieldLabel(
+  name: string,
+  kind: Element['kind'],
+  t: StudioTranslator['t'],
+): string {
+  return name === ''
+    ? t(`fields.name-of-${kind}`)
+    : t('fields.name-of', { name });
+}
+
+/** {@link nameFieldLabel} for one drawn element. */
+export function nodeNameFieldLabel(
+  node: CanvasNode,
+  t: StudioTranslator['t'],
+): string {
+  return nameFieldLabel(node.name, elementKindOf[node.kind], t);
 }
 
 const marksByLocale: { readonly [L in Locale]: BadgeMarks } = {
@@ -92,7 +114,7 @@ export function resizeLabels(
   node: CanvasNode,
   t: StudioTranslator['t'],
 ): ResizeLabels {
-  const element = nodeLabel(node, t);
+  const element = kindLabel(node.name, elementKindOf[node.kind], t);
   return {
     top: t('canvas.resize-top', { element }),
     right: t('canvas.resize-right', { element }),
@@ -103,11 +125,6 @@ export function resizeLabels(
     'bottom-right': t('canvas.resize-bottom-right', { element }),
     'bottom-left': t('canvas.resize-bottom-left', { element }),
   };
-}
-
-/** {@link kindLabel} for one drawn flow. */
-export function edgeLabel(edge: CanvasEdge, t: StudioTranslator['t']): string {
-  return kindLabel(edge.name, 'flow', t);
 }
 
 function nodeName(

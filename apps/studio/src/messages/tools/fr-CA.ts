@@ -5,7 +5,7 @@ export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   'diagram-region': 'Diagramme',
   'free-point': 'un point libre',
   'flow-between': 'entre {source} et {target}',
-  'flow-from-to': 'de {source} vers {target}',
+  'flow-from-to': 'depuis {source} vers {target}',
   'open-threats': {
     one: '{count} menace ouverte',
     many: '{count} de menaces ouvertes',

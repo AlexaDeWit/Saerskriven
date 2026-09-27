@@ -1,3 +1,4 @@
+import { translator } from '@saerskriven/i18n';
 import { replaceThreat, type Model, type Threat } from '@saerskriven/model';
 import { elementId, threatId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
@@ -5,15 +6,18 @@ import { Action } from '../store/actions.js';
 import { initialState, type State } from '../store/state.js';
 import {
   actorElement,
+  namelessElements,
   newProcess,
   processElement,
   sampleElement,
   sampleModel,
   sampleThreat,
 } from '../store/store.fixtures.js';
+import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { activeTranslator } from '../messages/locale.js';
 import {
   attachedThreats,
+  attachSaid,
   detachSaid,
   elementLabel,
   freshThreat,
@@ -91,6 +95,8 @@ describe('attachedThreats', () => {
 
 const { t } = activeTranslator();
 
+const french = translator(studioMessages, studioCatalogues, 'fr-CA').t;
+
 describe('elementLabel', () => {
   it('is what the element is called', () => {
     expect(elementLabel(newProcess('process-named', 'Studio'), t)).toBe(
@@ -105,12 +111,32 @@ describe('elementLabel', () => {
   });
 });
 
+describe('attachSaid', () => {
+  const { number } = sampleThreat;
+
+  it.each(namelessElements)(
+    'words a nameless %s in a message of its kind, which French contracts onto the article',
+    (_, on) => {
+      expect(attachSaid(sampleThreat, on)(french)).toBe(
+        french(`canvas.threat-attached-to-${on.kind}`, { number }),
+      );
+    },
+  );
+
+  it('names a named element', () => {
+    expect(attachSaid(sampleThreat, sampleElement(actorElement))(french)).toBe(
+      french('canvas.threat-attached', { number, name: 'Reader' }),
+    );
+  });
+});
+
 describe('detachSaid', () => {
   const reader = sampleElement(actorElement);
   const onTwo: Threat = {
     ...sampleThreat,
     elements: [actorElement, processElement],
   };
+  const { number } = onTwo;
 
   it('reports the removal where the threat went with its last element', () => {
     expect(detachSaid(sampleThreat, reader, undefined)?.(t)).toContain(
@@ -121,8 +147,21 @@ describe('detachSaid', () => {
   it('names the element where the threat stays on its others', () => {
     const kept: Threat = { ...onTwo, elements: [processElement] };
 
-    expect(detachSaid(onTwo, reader, kept)?.(t)).toContain('Reader');
+    expect(detachSaid(onTwo, reader, kept)?.(french)).toBe(
+      french('canvas.threat-detached', { number, name: 'Reader' }),
+    );
   });
+
+  it.each(namelessElements)(
+    'words a nameless %s in a message of its kind where the threat stays on its others, which French contracts onto the article',
+    (_, detached) => {
+      const kept: Threat = { ...onTwo, elements: [actorElement] };
+
+      expect(detachSaid(onTwo, detached, kept)?.(french)).toBe(
+        french(`canvas.threat-detached-from-${detached.kind}`, { number }),
+      );
+    },
+  );
 
   it('says nothing where the detach was refused and the threat still names the element', () => {
     expect(detachSaid(onTwo, reader, onTwo)).toBeUndefined();

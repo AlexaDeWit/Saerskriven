@@ -117,12 +117,22 @@ export function attachableElements(
   ).map(([{ id, detail }, text]) => ({ id, text: { ...text, detail } }));
 }
 
+/** What an attach says: the threat's number, and the element by its name or its kind. */
+export function attachSaid(threat: Threat, on: Element): Said {
+  const { number } = threat;
+  const { name, kind } = on;
+  return (speak) =>
+    name === ''
+      ? speak(`canvas.threat-attached-to-${kind}`, { number })
+      : speak('canvas.threat-attached', { number, name });
+}
+
 /**
  * What a detach says, read from the model it left behind: the removal where
  * the threat went with its last element, and the detachment where the threat
- * stays. Nothing at all where the detach did not land, which a refusal from a
- * row the model has moved on from looks like, so a refused edit is reported
- * by its notice alone.
+ * stays, naming the element by its name or its kind. Nothing at all where the
+ * detach did not land, which a refusal from a row the model has moved on from
+ * looks like, so a refused edit is reported by its notice alone.
  */
 export function detachSaid(
   threat: Threat,
@@ -136,11 +146,11 @@ export function detachSaid(
   if (detached === undefined || kept.elements.includes(detached.id)) {
     return undefined;
   }
+  const { name, kind } = detached;
   return (speak) =>
-    speak('canvas.threat-detached', {
-      number,
-      element: elementLabel(detached, speak),
-    });
+    name === ''
+      ? speak(`canvas.threat-detached-from-${kind}`, { number })
+      : speak('canvas.threat-detached', { number, name });
 }
 
 /** The elements one threat names, in diagram order, under labels a person can tell apart. */

@@ -1,4 +1,5 @@
 import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
+import { translator } from '@saerskriven/i18n';
 import type { Model } from '@saerskriven/model';
 import {
   canvasModel,
@@ -6,9 +7,14 @@ import {
   probeFlow,
   requestFlow,
 } from './canvas.fixtures.js';
+import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { activeTranslator } from '../messages/locale.js';
-import { accessibleNames } from './names.js';
-import { actorElement, processElement } from '../store/store.fixtures.js';
+import { accessibleNames, nameFieldLabel } from './names.js';
+import {
+  actorElement,
+  namelessElements,
+  processElement,
+} from '../store/store.fixtures.js';
 
 const { t } = activeTranslator();
 
@@ -126,5 +132,24 @@ describe('accessibleNames', () => {
 
   it('names every element the layout draws', () => {
     expect(names.size).toBe(layout.nodes.length + layout.edges.length);
+  });
+});
+
+describe('nameFieldLabel', () => {
+  const french = translator(studioMessages, studioCatalogues, 'fr-CA').t;
+
+  it.each(namelessElements)(
+    'words the field of a nameless %s in a message of its kind, which French contracts onto the article',
+    (_, { kind }) => {
+      expect(nameFieldLabel('', kind, french)).toBe(
+        french(`fields.name-of-${kind}`),
+      );
+    },
+  );
+
+  it('words the field of a named element after its name', () => {
+    expect(nameFieldLabel('Studio', 'process', french)).toBe(
+      french('fields.name-of', { name: 'Studio' }),
+    );
   });
 });

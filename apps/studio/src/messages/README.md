@@ -42,7 +42,13 @@ reason are each a complete phrase, and the `line` message owns their order
 and punctuation. The canvas does the same with a name: `canvas.quoted` sets a
 person's text in the reader's quotation marks, and an element without a name
 is called by its kind (`enums.the-actor` and the like), so an announcement
-takes either as one noun phrase.
+takes either as one noun phrase. In French that noun phrase never follows
+_de_ or _à_, which contract onto the article (_du processus_, _au flux_). A
+message that puts either before an element takes the element's name, and a
+sibling for each kind words the element without one, as `fields.name-of` and
+`fields.name-of-process` do. A flow's accessible name reads _depuis_ its
+source in French, because _de_ elides before a vowel (_d’acteur_, _d’un point
+libre_) and the source is a name, a bare kind or a free point.
 
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`

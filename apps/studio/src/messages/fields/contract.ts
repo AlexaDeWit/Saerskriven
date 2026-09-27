@@ -1,10 +1,21 @@
 import { text } from '@saerskriven/i18n';
 
-/** What a control is called, drawn or spoken, across the panel and the canvas. */
+/**
+ * What a control is called, drawn or spoken, across the panel and the canvas.
+ * A control named after an element takes the element's name, and has a
+ * message of its own for each kind of element that has none, so no locale
+ * composes a preposition onto the kind's article.
+ */
 export const fieldMessages = {
   title: text(),
   description: text(),
-  'description-of': text({ element: 'text' }),
+  'description-of': text({ name: 'text' }),
+  'description-of-actor': text(),
+  'description-of-process': text(),
+  'description-of-store': text(),
+  'description-of-text': text(),
+  'description-of-flow': text(),
+  'description-of-trust-boundary': text(),
   'out-of-scope': text(),
   'reason-out-of-scope': text(),
   category: text(),
@@ -12,7 +23,13 @@ export const fieldMessages = {
   status: text(),
   'diagram-title': text(),
   'note-text': text(),
-  'name-of': text({ element: 'text' }),
+  'name-of': text({ name: 'text' }),
+  'name-of-actor': text(),
+  'name-of-process': text(),
+  'name-of-store': text(),
+  'name-of-text': text(),
+  'name-of-flow': text(),
+  'name-of-trust-boundary': text(),
   'record-name': text({ kind: 'text', number: 'number' }),
   'record-title-field': text({ name: 'text' }),
   'record-prose-field': text({ name: 'text' }),

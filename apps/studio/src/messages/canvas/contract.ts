@@ -8,9 +8,16 @@ const position = { x: 'number', y: 'number' } as const;
 
 const element = { element: 'text' } as const;
 
+const numbered = { number: 'number' } as const;
+
+const numberedName = { number: 'number', name: 'text' } as const;
+
 /**
  * What the canvas says: its announcements, the clipboard's reports, and the
  * accessible text React Flow and the resize controls take from the studio.
+ * An announcement naming an element takes the element's name, and has a
+ * message of its own for each kind of element that has none, so no locale
+ * composes a preposition onto the kind's article.
  */
 export const canvasMessages = {
   quoted: text({ text: 'text' }),
@@ -42,10 +49,22 @@ export const canvasMessages = {
   'target-pinned': text({ flow: 'text', side: 'text' }),
   'undo-done': text(),
   'redo-done': text(),
-  'threat-deleted': text({ number: 'number' }),
-  'threat-attached': text({ number: 'number', element: 'text' }),
-  'threat-detached': text({ number: 'number', element: 'text' }),
-  'threat-detach-removed': text({ number: 'number' }),
+  'threat-deleted': text(numbered),
+  'threat-attached': text(numberedName),
+  'threat-attached-to-actor': text(numbered),
+  'threat-attached-to-process': text(numbered),
+  'threat-attached-to-store': text(numbered),
+  'threat-attached-to-text': text(numbered),
+  'threat-attached-to-flow': text(numbered),
+  'threat-attached-to-trust-boundary': text(numbered),
+  'threat-detached': text(numberedName),
+  'threat-detached-from-actor': text(numbered),
+  'threat-detached-from-process': text(numbered),
+  'threat-detached-from-store': text(numbered),
+  'threat-detached-from-text': text(numbered),
+  'threat-detached-from-flow': text(numbered),
+  'threat-detached-from-trust-boundary': text(numbered),
+  'threat-detach-removed': text(numbered),
   'record-named': text({ kind: 'text', label: 'text' }),
   'record-unlinked': text({ record: 'text' }),
   'record-removed': text({ record: 'text' }),

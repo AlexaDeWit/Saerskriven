@@ -54,9 +54,29 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'undo-done': 'Annulation effectuée.',
   'redo-done': 'Rétablissement effectué.',
   'threat-deleted': 'Menace {number} supprimée.',
-  'threat-attached': 'Menace {number} rattachée à {element}.',
+  'threat-attached': 'Menace {number} rattachée à {name}.',
+  'threat-attached-to-actor': 'Menace {number} rattachée à l’acteur.',
+  'threat-attached-to-process': 'Menace {number} rattachée au processus.',
+  'threat-attached-to-store':
+    'Menace {number} rattachée au magasin de données.',
+  'threat-attached-to-text': 'Menace {number} rattachée au texte.',
+  'threat-attached-to-flow': 'Menace {number} rattachée au flux.',
+  'threat-attached-to-trust-boundary':
+    'Menace {number} rattachée à la frontière de confiance.',
   'threat-detached':
-    'Menace {number} détachée de {element}. Elle reste sur ses autres éléments.',
+    'Menace {number} détachée de {name}. Elle reste sur ses autres éléments.',
+  'threat-detached-from-actor':
+    'Menace {number} détachée de l’acteur. Elle reste sur ses autres éléments.',
+  'threat-detached-from-process':
+    'Menace {number} détachée du processus. Elle reste sur ses autres éléments.',
+  'threat-detached-from-store':
+    'Menace {number} détachée du magasin de données. Elle reste sur ses autres éléments.',
+  'threat-detached-from-text':
+    'Menace {number} détachée du texte. Elle reste sur ses autres éléments.',
+  'threat-detached-from-flow':
+    'Menace {number} détachée du flux. Elle reste sur ses autres éléments.',
+  'threat-detached-from-trust-boundary':
+    'Menace {number} détachée de la frontière de confiance. Elle reste sur ses autres éléments.',
   'threat-detach-removed':
     'Menace {number} supprimée. Elle n’était rattachée à rien d’autre. Annuler la rétablit.',
   'record-named': '{kind} « {label} »',
