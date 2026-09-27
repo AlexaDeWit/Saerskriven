@@ -53,13 +53,14 @@ earlier wording stands.
 
 ### The threat model
 
-| English          | fr-CA                    | sv                 | Changed                          | Sources                                                                      |
-| ---------------- | ------------------------ | ------------------ | -------------------------------- | ---------------------------------------------------------------------------- |
-| threat           | menace (f.)              | hot (neuter)       |                                  | [OQLF risk vocabulary][oqlf-risk], [MSB: riskhantering][msb-riskhantering]   |
-| threat modelling | modélisation des menaces | hotmodellering     |                                  | [Microsoft fr: Threat Modeling Tool][ms-fr-start], [Microsoft sv][ms-sv-dfd] |
-| mitigation       | mesure (f.)              | åtgärd (common)    |                                  | [OQLF risk vocabulary][oqlf-risk], [Lund terminology][lund]                  |
-| assumption       | hypothèse (f.)           | antagande (neuter) |                                  | unconfirmed as a term of art, ordinary usage in both languages               |
-| severity         | gravité (f.)             | allvarlighetsgrad  | sv `allvarlighet`, `allvarsgrad` | [OQLF risk vocabulary][oqlf-risk], [Dell sv][dell-sv]                        |
+| English          | fr-CA                    | sv                   | Changed                          | Sources                                                                      |
+| ---------------- | ------------------------ | -------------------- | -------------------------------- | ---------------------------------------------------------------------------- |
+| threat           | menace (f.)              | hot (neuter)         |                                  | [OQLF risk vocabulary][oqlf-risk], [MSB: riskhantering][msb-riskhantering]   |
+| threat modelling | modélisation des menaces | hotmodellering       |                                  | [Microsoft fr: Threat Modeling Tool][ms-fr-start], [Microsoft sv][ms-sv-dfd] |
+| mitigation       | mesure (f.)              | åtgärd (common)      |                                  | [OQLF risk vocabulary][oqlf-risk], [Lund terminology][lund]                  |
+| assumption       | hypothèse (f.)           | antagande (neuter)   |                                  | unconfirmed as a term of art, ordinary usage in both languages               |
+| severity         | gravité (f.)             | allvarlighetsgrad    | sv `allvarlighet`, `allvarsgrad` | [OQLF risk vocabulary][oqlf-risk], [Dell sv][dell-sv]                        |
+| out of scope     | hors périmètre           | utanför omfattningen |                                  | unconfirmed as a term of art, see the note                                   |
 
 - **mitigation:** the OQLF advises against `mitigation` as a calque and gives
   `atténuation` ("on évitera ce calque de l'anglais"). The full term is
@@ -75,6 +76,12 @@ earlier wording stands.
   allvarlighetsgraden (dvs. antingen kritisk, hög, medelhög eller låg)").
   `Allvarlighet` names the quality rather than the rating, and `allvarsgrad`
   appeared in one studio section only.
+- **out of scope:** an element marked out of scope needs no threat analysis,
+  and its reason says why. [Threat Dragon's French][td-fr] writes `hors du
+domaine visé` and `raison de l'exclusion du domaine visé`. The studio kept
+  `hors périmètre` and `utanför omfattningen`, which its divergence notices
+  already used, and words the reason on Threat Dragon's pattern: fr `raison de
+l’exclusion du périmètre`, sv `skäl till att vara utanför omfattningen`.
 
 ### Severity levels
 

@@ -4,6 +4,9 @@ import { text } from '@saerskriven/i18n';
 export const fieldMessages = {
   title: text(),
   description: text(),
+  'description-of': text({ element: 'text' }),
+  'out-of-scope': text(),
+  'reason-out-of-scope': text(),
   category: text(),
   severity: text(),
   status: text(),

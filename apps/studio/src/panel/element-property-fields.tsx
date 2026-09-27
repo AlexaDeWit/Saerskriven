@@ -10,6 +10,8 @@ import { elementLabel } from './threats.js';
 
 const flags = ['not-recorded', 'yes', 'no'] as const;
 
+const answers = ['yes', 'no'] as const;
+
 const recording = ['not-recorded', 'recorded'] as const;
 
 const flagMessages = {
@@ -41,6 +43,27 @@ export function BooleanProperty({
       options={flags}
       onCommit={(choice) => {
         onCommit(choice === 'not-recorded' ? undefined : choice === 'yes');
+      }}
+    />
+  );
+}
+
+/** A flag the model always holds, so it offers Yes and No and nothing unknown. */
+export function RequiredBooleanProperty({
+  label,
+  value,
+  onCommit,
+}: Field<boolean>) {
+  const { t } = useTranslator();
+
+  return (
+    <EnumField
+      label={label}
+      labelOf={(option) => t(flagMessages[option])}
+      value={value ? 'yes' : 'no'}
+      options={answers}
+      onCommit={(choice) => {
+        onCommit(choice === 'yes');
       }}
     />
   );

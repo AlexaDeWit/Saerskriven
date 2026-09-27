@@ -20,7 +20,8 @@ a person can do with it is in
 | `threat-attachments.tsx`                                | The elements one threat names, with the controls that attach and detach them                                                |
 | `pick-existing.tsx`                                     | The listbox and control that "Link existing" and "Attach existing" share                                                    |
 | `model-properties.tsx`                                  | The panel for the model: title, description and the model's assumptions                                                     |
-| `element-properties.tsx`, `element-property-fields.tsx` | The security properties editor and its field kinds                                                                          |
+| `element-properties.tsx`, `element-property-fields.tsx` | The element's own fields: its details, then its security properties, and their field kinds                                  |
+| `element-details.tsx`                                   | An element's description, out-of-scope flag and reason, for every kind, a note included                                     |
 | `threats.ts`                                            | `panelSubject` and `attachedThreats`, the selectors the panel binds to, and what each picker offers                         |
 | `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`   | Refused drafts, option labels a person can tell apart, and the focus channel                                                |
 
@@ -60,10 +61,11 @@ under it, when the threat it named leaves the element, or when the file
 changes. A model arriving with the same ids is a different sitting and starts
 on what the model says. The file is identified by its name, the state carrying
 nothing else that tells two sittings apart, so a save under another name starts
-the drafts afresh as an open does. Security property drafts use the same
-lifetime, and their controls mount on first opening and stay mounted through
-later collapses. The overlay skips renders its canvas parent makes during a
-drag.
+the drafts afresh as an open does. Drafts in an element's description, reason
+and security properties use the same lifetime. The security properties'
+controls mount on first opening and stay mounted through later collapses, and
+only a security property's draft holds that disclosure open. The overlay skips
+renders its canvas parent makes during a drag.
 
 ## Drawing a threat
 
@@ -134,13 +136,14 @@ everything the removal took.
 
 One committed change is one store action carrying one model operation, so one
 field is one undo step: `ReplaceThreat` for a threat's fields,
-`SetModelMetadata` naming one field, a record action for a record. A listbox
-commits the value chosen. A text field commits what it holds when it is left,
-and a title on Enter as well, rather than on every keystroke, which would make
-an undo stack of single characters. A commit that changes nothing dispatches
-nothing: a model operation returns a new model whatever it was asked to do, so
-the store would push an undo entry and mark the file dirty over an edit nobody
-made.
+`SetModelMetadata` naming one field, `SetElementDetails` naming one of an
+element's description, out-of-scope flag and reason, a record action for a
+record. A listbox commits the value chosen. A text field commits what it holds
+when it is left, and a title on Enter as well, rather than on every keystroke,
+which would make an undo stack of single characters. A commit that changes
+nothing dispatches nothing: a model operation can return a new model whatever
+it was asked to do, so the store would push an undo entry and mark the file dirty
+over an edit nobody made.
 
 Text carrying a character the model's character set does not accept is not
 committed at all, because the alternative is a model on screen that no codec

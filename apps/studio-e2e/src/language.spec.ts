@@ -159,8 +159,9 @@ for (const { locale, browser, prefill } of passes) {
       const reader = readers[locale];
       await openFile(page, twoDiagramsFile);
 
-      await nodeNamed(page, storefront.webShop).dblclick();
-      const field = page.getByRole('textbox', { name: /Web shop/u });
+      const webShop = nodeNamed(page, storefront.webShop);
+      await webShop.dblclick();
+      const field = webShop.getByRole('textbox');
       await field.fill(accented);
       await field.press('Enter');
       const renamed = nodeNamed(page, /^Kafé Ödmjuk Ångström à Québec, /u);

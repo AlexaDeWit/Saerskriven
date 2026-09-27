@@ -239,12 +239,13 @@ drag, Hand or held Space pans.
 
 ## The threat panel
 
-The panel shows the threats of the one selected element or flow. With several
-selected it says how many and offers no fields. Focus threats moves focus to
-"Add a threat". Selecting alone never moves focus into the panel. **Widen
-pane** widens it and **Restore pane width** returns it to normal, for the rest
-of the session. The panel covers the diagram rather than shrinking it, so pan
-to reach what it covers.
+The panel shows the one selected element or flow: its description and scope,
+its security properties, and its threats. With several selected it says how
+many and offers no fields. Focus threats moves focus to "Add a threat".
+Selecting alone never moves focus into the panel. **Widen pane** widens it and
+**Restore pane width** returns it to normal, for the rest of the session. The
+panel covers the diagram rather than shrinking it, so pan to reach what it
+covers.
 
 Close threats, or Escape, closes the panel and returns focus to the element,
 which stays selected. A second Escape clears the selection. The panel stays
@@ -314,6 +315,18 @@ creates an assumption that applies to the model and links no threat. Link
 existing lists the assumptions that do not yet apply to the model. Unlink stops
 an assumption applying to the model, and removes it only where it links no
 threat.
+
+### Description and scope
+
+The top of the panel holds the selected element's **Description**, **Out of
+scope** and **Reason out of scope**, above its security properties and its
+threats, for every element and flow, a Note included. Each field commits when
+you leave it, as one undo step. Out of scope offers Yes and No. The reason
+shows while Out of scope is Yes or while the element holds a reason, and the
+two are independent: clearing Out of scope keeps the reason. Text the model
+cannot hold stays in the field with the refused character named, as in a
+threat's fields, until you correct or clear it, and survives closing the panel
+and selecting something else.
 
 ### Security properties
 
