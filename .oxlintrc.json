@@ -76,6 +76,33 @@
           }
         ]
       }
+    },
+    {
+      // CODING.md, Build targets.
+      "files": ["apps/cli/**"],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "checkGlobalObject": true,
+            "globalObjects": ["global"],
+            "globals": [
+              {
+                "name": "localStorage",
+                "message": "node leaves this undefined, though @types/node declares it and the deno-compiled executable defines it (CODING.md, Build targets)."
+              },
+              {
+                "name": "sessionStorage",
+                "message": "node leaves this undefined, though @types/node declares it and the deno-compiled executable defines it (CODING.md, Build targets)."
+              },
+              {
+                "name": "importScripts",
+                "message": "node leaves this undefined, though lib.webworker declares it and no runtime's main thread defines it either (CODING.md, Build targets)."
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   // Generated output; node_modules is ignored by default.
