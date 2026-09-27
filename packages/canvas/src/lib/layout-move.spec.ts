@@ -1,5 +1,6 @@
 import { attached, elementId, flowBetween } from '@saerskriven/model/fixtures';
 import { flowLabelPlacements } from './flow-labels.js';
+import { shiftedBy } from './geometry.js';
 import { handlePositions, type NodeBox } from './handles.js';
 import {
   flowLabelFollows,
@@ -108,34 +109,35 @@ describe('reanchoredFlow', () => {
     );
   });
 
-  it('translates the path, name and badge when both boxes move together', () => {
-    const offset = { x: 80, y: 120 };
-    const moved = reanchoredFlow(
-      badged,
-      nodeBoxAt(offset.x, offset.y),
-      nodeBoxAt(400 + offset.x, offset.y),
-    );
-    expect(moved.source).toEqual({
-      x: badged.source.x + offset.x,
-      y: badged.source.y + offset.y,
-    });
-    expect(moved.target).toEqual({
-      x: badged.target.x + offset.x,
-      y: badged.target.y + offset.y,
-    });
-    expect(moved.label.name.at).toEqual({
-      x: badged.label.name.at.x + offset.x,
-      y: badged.label.name.at.y + offset.y,
-    });
-    expect(moved.label.badge).toEqual(
-      badged.label.badge === undefined
-        ? undefined
-        : {
-            x: badged.label.badge.x + offset.x,
-            y: badged.label.badge.y + offset.y,
-          },
-    );
-  });
+  const offset = { x: 80, y: 120 };
+
+  it.each([
+    ['without', undefined],
+    ['with', offset],
+  ])(
+    'translates the path, name and badge once when both boxes move together, %s the group offset',
+    (_, groupOffset) => {
+      const moved = reanchoredFlow(
+        badged,
+        nodeBoxAt(offset.x, offset.y),
+        nodeBoxAt(400 + offset.x, offset.y),
+        groupOffset,
+      );
+      expect([
+        moved.source,
+        moved.target,
+        moved.label.name.at,
+        moved.label.badge,
+      ]).toEqual(
+        [
+          badged.source,
+          badged.target,
+          badged.label.name.at,
+          badged.label.badge,
+        ].map((point) => shiftedBy(point, offset)),
+      );
+    },
+  );
 
   it('keeps a free end where it is, no box carrying one', () => {
     const loose = layoutOf(
@@ -216,21 +218,7 @@ describe('layoutDuringMove', () => {
       name: 'Static',
     };
     const settled = layoutOf(twoBoxDiagram(movingFlow, [staticFlow]));
-    const rightNode = settled.nodes.find(
-      (node) => node.id === elementId('el-right'),
-    );
-    if (rightNode === undefined) {
-      throw new Error('No right node in the layout');
-    }
-    const boxes = new Map([
-      [
-        elementId('el-right'),
-        {
-          position: { x: 400, y: 200 },
-          size: rightNode.size,
-        },
-      ],
-    ]);
+    const boxes = new Map([[elementId('el-right'), nodeBoxAt(400, 200)]]);
 
     const moved = layoutDuringMove(
       settled,
@@ -275,13 +263,7 @@ describe('layoutDuringMove', () => {
     const boxes = new Map(
       settled.nodes.map((node) => [
         node.id,
-        {
-          position: {
-            x: node.position.x + offset.x,
-            y: node.position.y + offset.y,
-          },
-          size: node.size,
-        },
+        { position: shiftedBy(node.position, offset), size: node.size },
       ]),
     );
 
@@ -293,14 +275,10 @@ describe('layoutDuringMove', () => {
     );
 
     expect(moved.edges[0].waypoints).toEqual([{ x: 310, y: 225 }]);
-    expect(moved.edges[0].source).toEqual({
-      x: settled.edges[0].source.x + offset.x,
-      y: settled.edges[0].source.y + offset.y,
-    });
-    expect(moved.edges[0].target).toEqual({
-      x: settled.edges[0].target.x + offset.x,
-      y: settled.edges[0].target.y + offset.y,
-    });
+    expect([moved.edges[0].source, moved.edges[0].target]).toEqual([
+      shiftedBy(settled.edges[0].source, offset),
+      shiftedBy(settled.edges[0].target, offset),
+    ]);
   });
 
   it('moves selected free ends with their flow', () => {
