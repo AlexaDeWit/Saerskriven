@@ -2,7 +2,9 @@ import { elementId } from '@saerskriven/model/fixtures';
 import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { everyGlyphLayout, nodeNamed, specMarks } from './canvas.fixtures.js';
+import { shiftedBy } from './geometry.js';
 import { handleSides } from './handles.js';
+import { svgNumber } from './numbers.js';
 import type { ResizeLabels } from './resize-controls.js';
 import {
   resizeControlPositions,
@@ -120,6 +122,31 @@ const nodesWith = (moved: string, by: number): CanvasFlowNode[] =>
       ? { ...node, position: { x: node.position.x, y: node.position.y + by } }
       : node,
   );
+
+const everyNodeSelectedAt = (offset: {
+  readonly x: number;
+  readonly y: number;
+}): CanvasFlowNode[] =>
+  toReactFlowNodes(everyGlyphLayout).map((node) => ({
+    ...node,
+    position: shiftedBy(node.position, offset),
+    selected: true,
+  }));
+
+const flowLabelPlace = (markup: string): readonly string[] => {
+  const name = markup.slice(
+    markup.indexOf(`class="${canvasClassNames.flowLabel}"`),
+  );
+  const badge = markup.slice(
+    markup.indexOf(`class="${canvasClassNames.badge}"`),
+  );
+  return [
+    ...(/^[^>]*? x="([^"]+)" y="([^"]+)"/u.exec(name)?.slice(1) ?? []),
+    ...(/^[^>]*? transform="translate\(([^,]+), ([^)]+)\)"/u
+      .exec(badge)
+      ?.slice(1) ?? []),
+  ];
+};
 
 const curveNode = everyGlyphLayout.nodes.find(
   (node) => node.kind === 'boundary-curve',
@@ -293,7 +320,7 @@ describe('CanvasEdgeBody', () => {
       node.id === elementId('el-note')
         ? {
             ...node,
-            position: { x: node.position.x + 40, y: node.position.y + 25 },
+            position: shiftedBy(node.position, { x: 40, y: 25 }),
             selected: true,
           }
         : node,
@@ -302,6 +329,24 @@ describe('CanvasEdgeBody', () => {
 
     expect(edgeMarkup(data, nodes, true)).toContain(
       'd="M 200 100 L 280 125 L 280 120"',
+    );
+  });
+
+  it("moves a selected flow's name and badge with its group once", () => {
+    const offset = { x: 40, y: 25 };
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
+    const atRest = flowLabelPlace(
+      edgeMarkup(data, everyNodeSelectedAt({ x: 0, y: 0 }), true),
+    );
+    const moved = flowLabelPlace(
+      edgeMarkup(data, everyNodeSelectedAt(offset), true),
+    );
+
+    expect(atRest).toHaveLength(4);
+    expect(moved).toEqual(
+      atRest.map((coordinate, index) =>
+        svgNumber(Number(coordinate) + (index % 2 === 0 ? offset.x : offset.y)),
+      ),
     );
   });
 
@@ -420,13 +465,7 @@ describe('layoutAtReactFlowNodes', () => {
     const movedNodes = [elementId('el-client'), elementId('el-api')];
     const nodes = toReactFlowNodes(everyGlyphLayout).map((node) =>
       node.id === movedNodes[0]
-        ? {
-            ...node,
-            position: {
-              x: node.position.x + offset.x,
-              y: node.position.y + offset.y,
-            },
-          }
+        ? { ...node, position: shiftedBy(node.position, offset) }
         : node,
     );
     const edge = everyGlyphLayout.edges[0];
@@ -437,17 +476,11 @@ describe('layoutAtReactFlowNodes', () => {
     ]);
 
     expect(moved.edges[0].waypoints).toEqual(
-      edge.waypoints.map((point) => ({
-        x: point.x + offset.x,
-        y: point.y + offset.y,
-      })),
+      edge.waypoints.map((point) => shiftedBy(point, offset)),
     );
     expect(
       moved.nodes.find((node) => node.id === movedNodes[1])?.position,
-    ).toEqual({
-      x: nodeNamed('el-api').position.x + offset.x,
-      y: nodeNamed('el-api').position.y + offset.y,
-    });
+    ).toEqual(shiftedBy(nodeNamed('el-api').position, offset));
   });
 
   it('ignores React Flow anchors that name no diagram node', () => {
