@@ -78,14 +78,14 @@
       }
     },
     {
-      // @types/node and lib.webworker admit these where the CLI's own
-      // runtime, node, leaves them undefined (CODING.md, Build targets).
+      // CODING.md, Build targets.
       "files": ["apps/cli/**"],
       "rules": {
         "no-restricted-globals": [
           "error",
           {
             "checkGlobalObject": true,
+            "globalObjects": ["global"],
             "globals": [
               {
                 "name": "localStorage",

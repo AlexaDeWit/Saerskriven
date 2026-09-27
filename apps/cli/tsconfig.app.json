@@ -10,11 +10,9 @@
     // run, and nothing orders the two targets (CODING.md, Build targets).
     "outDir": "out-tsc/app",
     "tsBuildInfoFile": "out-tsc/app/tsconfig.app.tsbuildinfo",
-    // @types/node declares the Web Storage globals, so localStorage
-    // type-checks in this program although node leaves it undefined. The
-    // es2022 lib the base config sets refuses document and window, but no lib
-    // setting reaches localStorage. A no-restricted-globals override in
-    // .oxlintrc.json refuses it instead (CODING.md, Build targets).
+    // The es2022 lib the base config sets refuses document and window.
+    // types: node admits the Web Storage globals, which .oxlintrc.json
+    // refuses (CODING.md, Build targets).
     "types": ["node"],
     "rootDir": "src"
   },

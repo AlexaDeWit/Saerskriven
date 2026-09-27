@@ -172,11 +172,11 @@ against the typecheck, so the typecheck emits its declarations under
 info file that records it as written, which the next `tsc --build` reports
 as TS6305.
 
-`@types/node` declares the Web Storage globals unconditionally and
-`apps/cli/tsconfig.esbuild.json`'s `lib.webworker` declares `importScripts`,
-so `localStorage`, `sessionStorage` and `importScripts` type-check in the
-CLI's programs though the CLI's own runtime, node, leaves all three
-undefined. The deno-compiled executable defines the Web Storage pair
+`@types/node` declares the Web Storage globals unconditionally, so
+`localStorage` and `sessionStorage` type-check in both of the CLI's
+programs, and the build program's `lib.webworker` also admits
+`importScripts`. Node, the CLI's development and test runtime, leaves all
+three undefined. The deno-compiled executable defines the Web Storage pair
 ([Building the executables](docs/build.md) covers the split), but no
 runtime's main thread defines the worker-only `importScripts`. A
 `no-restricted-globals` override in `.oxlintrc.json` refuses all three in
