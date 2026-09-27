@@ -112,10 +112,10 @@ test('the field stands where the name was drawn and holds the whole of it', asyn
   await nodeNamed(page, placeholder.store).dblclick();
   await nameField(page, 'Store').fill(longName);
   await nameField(page, 'Store').press('Enter');
-  const renamed = nodeNamed(page, new RegExp(`^${longName}, store`, 'u'));
+  const renamed = nodeNamed(page, `${longName}, store`);
   await expect(renamed).toBeFocused();
 
-  await renamed.dblclick();
+  await renamed.press('Enter');
 
   const field = nameField(page, longName);
   await expect(field).toBeFocused();
