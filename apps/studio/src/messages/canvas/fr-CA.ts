@@ -90,6 +90,12 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
     'Éléments : {elements}. Menaces : {threats}. Liens externes exclus : {excluded}.',
   'copy-source-fields':
     'Les champs du format source hors du modèle ne sont pas copiés.',
+  'cut-threat-counts': {
+    one: 'Menaces copiées : {copied}, dont {removed} supprimée avec son dernier élément.',
+    many: 'Menaces copiées : {copied}, dont {removed} de menaces supprimées avec leur dernier élément.',
+    other:
+      'Menaces copiées : {copied}, dont {removed} supprimées avec leur dernier élément.',
+  },
   'cut-remains':
     'Une menace qui ne reste rattachée à rien est supprimée, et une menace rattachée ailleurs reste au registre. Les autres flux rattachés gardent des extrémités libres.',
   'cut-abandoned':

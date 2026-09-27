@@ -53,8 +53,9 @@ export type DiagramInput = z.input<typeof diagramSchema>;
  * mitigations, and assumptions. Every array may be empty: a model saves
  * before it is drawn or analyzed. `lastIssuedThreatNumber` is the highest
  * threat number the model has ever issued, 0 before the first, and it
- * counts removed threats: a number names one threat permanently, so
- * removing a threat leaves a gap that is never filled. Cross-record checks
+ * counts removed threats: removing a threat leaves a gap no new threat
+ * fills, and only a pasted threat carrying that number can take it back
+ * (`insertFragment`). Cross-record checks
  * (id and threat-number uniqueness, reference resolution, and no threat
  * number above the last issued) are parseModel's refinements, so this
  * schema alone accepts duplicates, dangling ids, and a mark below a threat

@@ -78,8 +78,9 @@ export function addThreat(
  * Returns a new model without the threat named by `threatId`. Every
  * mitigation and assumption loses its link to it, and a record whose last
  * reference it was goes with it: an assumption that applies to the model
- * stays. The removed threat's number stays spent, so the gap it leaves is
- * permanent. Fails when the threat is unknown.
+ * stays. No new threat takes the removed threat's number, though a paste
+ * can restore a threat under it (`insertFragment`). Fails when the
+ * threat is unknown.
  */
 export function removeThreat(
   model: Model,

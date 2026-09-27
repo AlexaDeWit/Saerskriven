@@ -69,6 +69,7 @@ export const canvasMessages = {
     excluded: 'number',
   }),
   'copy-source-fields': text(),
+  'cut-threat-counts': plural('removed', { copied: 'number' }),
   'cut-remains': text(),
   'cut-abandoned': text(),
   'records-counts': text({ linked: 'number', cloned: 'number' }),

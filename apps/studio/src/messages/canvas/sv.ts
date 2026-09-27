@@ -83,6 +83,11 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     'Objekt: {elements}. Hot: {threats}. Uteslutna externa länkar: {excluded}.',
   'copy-source-fields':
     'Fält från källformatet som ligger utanför modellen kopieras inte.',
+  'cut-threat-counts': {
+    one: 'Kopierade hot: {copied}, varav {removed} togs bort med sitt sista objekt.',
+    other:
+      'Kopierade hot: {copied}, varav {removed} togs bort med sina sista objekt.',
+  },
   'cut-remains':
     'Ett hot som blir utan koppling tas bort, och ett hot som är kopplat någon annanstans finns kvar i registret. Andra anslutna flöden behåller fria ändar.',
   'cut-abandoned': 'Markeringen ändrades under kopieringen. Inget klipptes ut.',
