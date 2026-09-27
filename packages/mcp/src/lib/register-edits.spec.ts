@@ -10,13 +10,14 @@ import {
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { applyEdits, modelEditSchema } from './edits.js';
+import type { RegisterEdit } from './register-edits.js';
 
 const reworded = 'Reworded on review.';
 
 type Held = {
   readonly key: 'threats' | 'mitigations' | 'assumptions';
-  readonly op: string;
-  readonly field: string;
+  readonly op: Extract<RegisterEdit['op'], `set_${string}_details`>;
+  readonly field: 'threat' | 'mitigation' | 'assumption';
   readonly id: string;
   readonly texts: readonly string[];
 };
@@ -27,7 +28,7 @@ const heldThreat: Held = {
   key: 'threats',
   op: 'set_threat_details',
   field: 'threat',
-  id: 'threat-model-drift',
+  id: 'threat-tamper-payment',
   texts: ['title', 'description'],
 };
 

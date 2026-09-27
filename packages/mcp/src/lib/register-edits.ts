@@ -32,12 +32,9 @@ import {
   unlinkAssumption,
   unlinkAssumptionFromModel,
   unlinkMitigation,
-  type Assumption,
   type AssumptionId,
-  type Mitigation,
   type MitigationId,
   type Model,
-  type Threat,
   type ThreatId,
 } from '@saerskriven/model';
 import { Either } from 'effect';
@@ -276,52 +273,41 @@ export function applyRegisterEdit(
   }
 }
 
-function withThreat(
-  model: Model,
-  threatId: ThreatId,
-  change: (held: Threat) => Threat,
-): Either.Either<Model, OperationFailure> {
-  return Either.flatMap(
-    heldIn(model.threats, threatId, () =>
-      OperationFailure.UnknownThreat({ threatId }),
-    ),
-    (held) => replaceThreat(model, change(held)),
-  );
-}
+const withThreat = patching(
+  (model) => model.threats,
+  (threatId: ThreatId) => OperationFailure.UnknownThreat({ threatId }),
+  replaceThreat,
+);
 
-function withMitigation(
-  model: Model,
-  mitigationId: MitigationId,
-  change: (held: Mitigation) => Mitigation,
-): Either.Either<Model, OperationFailure> {
-  return Either.flatMap(
-    heldIn(model.mitigations, mitigationId, () =>
-      OperationFailure.UnknownMitigation({ mitigationId }),
-    ),
-    (held) => replaceMitigation(model, change(held)),
-  );
-}
+const withMitigation = patching(
+  (model) => model.mitigations,
+  (mitigationId: MitigationId) =>
+    OperationFailure.UnknownMitigation({ mitigationId }),
+  replaceMitigation,
+);
 
-function withAssumption(
-  model: Model,
-  assumptionId: AssumptionId,
-  change: (held: Assumption) => Assumption,
-): Either.Either<Model, OperationFailure> {
-  return Either.flatMap(
-    heldIn(model.assumptions, assumptionId, () =>
-      OperationFailure.UnknownAssumption({ assumptionId }),
-    ),
-    (held) => replaceAssumption(model, change(held)),
-  );
-}
+const withAssumption = patching(
+  (model) => model.assumptions,
+  (assumptionId: AssumptionId) =>
+    OperationFailure.UnknownAssumption({ assumptionId }),
+  replaceAssumption,
+);
 
-function heldIn<Held extends { readonly id: string }>(
-  records: readonly Held[],
+function patching<Held extends { readonly id: string }>(
+  select: (model: Model) => readonly Held[],
+  unknown: (id: Held['id']) => OperationFailure,
+  replace: (model: Model, next: Held) => Either.Either<Model, OperationFailure>,
+): (
+  model: Model,
   id: Held['id'],
-  unknown: () => OperationFailure,
-): Either.Either<Held, OperationFailure> {
-  return Either.fromNullable(
-    records.find((record) => record.id === id),
-    unknown,
-  );
+  change: (held: Held) => Held,
+) => Either.Either<Model, OperationFailure> {
+  return (model, id, change) =>
+    Either.flatMap(
+      Either.fromNullable(
+        select(model).find((record) => record.id === id),
+        () => unknown(id),
+      ),
+      (held) => replace(model, change(held)),
+    );
 }
