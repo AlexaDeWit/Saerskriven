@@ -217,12 +217,14 @@ export const forgedLine = 'forged: nothing in this model needs review';
 
 /**
  * A disposable root whose default model gives its threat and its second
- * diagram ids that carry a line feed and then {@link forgedLine}.
+ * diagram ids, its mitigation a title and prose, and its assumption prose,
+ * that each carry a line feed and then {@link forgedLine}.
  */
 export function forgedIdsTree(): ModelWorkspace {
   const [threat] = editableModel.threats;
   const [drawn, empty] = editableModel.diagrams;
-  const forgedThreat = `${threat.id}\n${forgedLine}`;
+  const forged = (text: string) => `${text}\n${forgedLine}`;
+  const forgedThreat = forged(threat.id);
   const relinked = <Linked extends { readonly threats: readonly string[] }>(
     record: Linked,
   ): Linked => ({
@@ -233,10 +235,17 @@ export function forgedIdsTree(): ModelWorkspace {
     saerskrivenYamlCodec.write(
       parsedFixture({
         ...editableModel,
-        diagrams: [drawn, { ...empty, id: `${empty.id}\n${forgedLine}` }],
+        diagrams: [drawn, { ...empty, id: forged(empty.id) }],
         threats: [{ ...threat, id: forgedThreat }],
-        mitigations: editableModel.mitigations.map(relinked),
-        assumptions: editableModel.assumptions.map(relinked),
+        mitigations: editableModel.mitigations.map((mitigation) => ({
+          ...relinked(mitigation),
+          title: forged(mitigation.title),
+          prose: forged(mitigation.prose),
+        })),
+        assumptions: editableModel.assumptions.map((assumption) => ({
+          ...relinked(assumption),
+          prose: forged(assumption.prose),
+        })),
       }),
     ).output,
   );

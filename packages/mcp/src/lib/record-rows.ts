@@ -9,20 +9,26 @@ import {
 } from '@saerskriven/model';
 import { z } from 'zod';
 import { quotedList } from './reading.js';
+import type { ResponseFormat } from './search.js';
 
-const mitigationRowSchema = mitigationSchema.extend({
-  kind: z.literal('mitigation'),
-  prose: mitigationSchema.shape.prose.optional(),
-});
+const recordContextSchema = z.object({ unlinked: z.boolean() });
 
-const assumptionRowSchema = assumptionSchema.extend({
-  kind: z.literal('assumption'),
-  prose: assumptionSchema.shape.prose.optional(),
-});
+const mitigationRowSchema = mitigationSchema
+  .extend({
+    kind: z.literal('mitigation'),
+    prose: mitigationSchema.shape.prose.optional(),
+  })
+  .extend(recordContextSchema.shape);
+
+const assumptionRowSchema = assumptionSchema
+  .extend({ kind: z.literal('assumption') })
+  .extend(recordContextSchema.shape);
 
 /**
  * One mitigation or assumption as a record search carries it: the whole
- * record under its kind, with `prose` left out of a concise row.
+ * record under its kind, with `unlinked` true where it is linked to nothing.
+ * A concise row leaves out a mitigation's `prose` and keeps an assumption's,
+ * which is the only text an assumption has.
  */
 export const recordRowSchema = z.discriminatedUnion('kind', [
   mitigationRowSchema,
@@ -32,27 +38,30 @@ export const recordRowSchema = z.discriminatedUnion('kind', [
 /** One record as a record search carries it. */
 export type RecordRow = z.infer<typeof recordRowSchema>;
 
-/** A whole mitigation or assumption under its kind, the detailed row of a record search. */
+/** A whole mitigation or assumption under its kind, as a record search filters it. */
 export type KindedRecord =
   | (Mitigation & { readonly kind: 'mitigation' })
   | (Assumption & { readonly kind: 'assumption' });
 
-/** The identifying fields of one record: every field but its prose. */
-export function recordRow(record: KindedRecord): RecordRow {
-  return record.kind === 'mitigation'
-    ? {
+/**
+ * One record as a search in `format` carries it: the whole record, less a
+ * mitigation's prose where the search is concise, and whether it is linked
+ * to nothing.
+ */
+export function recordRow(
+  record: KindedRecord,
+  format: ResponseFormat,
+): RecordRow {
+  const unlinked = linkedToNothing(record);
+  return record.kind === 'assumption' || format === 'detailed'
+    ? { ...record, unlinked }
+    : {
         kind: record.kind,
         id: record.id,
         title: record.title,
         status: record.status,
         threats: record.threats,
-      }
-    : {
-        kind: record.kind,
-        id: record.id,
-        status: record.status,
-        threats: record.threats,
-        appliesToModel: record.appliesToModel,
+        unlinked,
       };
 }
 
@@ -60,7 +69,7 @@ export function recordRow(record: KindedRecord): RecordRow {
  * Whether a record is linked to nothing: a mitigation linking no threat, or
  * an assumption linking no threat that does not apply to the model.
  */
-export function linkedToNothing(record: RecordRow): boolean {
+export function linkedToNothing(record: KindedRecord): boolean {
   return record.kind === 'mitigation'
     ? !mitigationHasReference(record)
     : !assumptionHasReference(record);
@@ -84,42 +93,43 @@ export function renderMitigation(
 }
 
 /**
- * One assumption as the line a text result carries: its id, status and
- * prose. Read on a threat, the line also says where the assumption applies
- * to the model.
+ * One assumption as the line a text result carries: its id, its status
+ * with any `qualifiers` after it, and its prose.
  */
 export function renderAssumption(
   assumption: Assumption,
-  readOn: 'threat' | 'model',
+  qualifiers: readonly string[] = [],
 ): string {
-  const scope =
-    readOn === 'threat' && assumption.appliesToModel
-      ? ['also applies to the model']
-      : [];
-  return `${recordHeading(assumption, scope)}: ${escapedForTerminal(assumption.prose)}`;
+  return `${recordHeading(assumption, qualifiers)}: ${escapedForTerminal(assumption.prose)}`;
+}
+
+/**
+ * The qualifier an assumption read on a threat carries where it also
+ * applies to the model, for {@link renderAssumption}.
+ */
+export function threatReadQualifiers(
+  assumption: Pick<Assumption, 'appliesToModel'>,
+): readonly string[] {
+  return assumption.appliesToModel ? ['also applies to the model'] : [];
 }
 
 /**
  * One record of a record search as the lines its text result carries: its
- * kind and heading, which says where an assumption applies to the model and
- * where the record is linked to nothing, then the threats it links. A
- * detailed row adds the prose, as {@link renderMitigation} and
- * {@link renderAssumption} place it.
+ * kind and the lines of its renderer, whose heading says where an
+ * assumption applies to the model and where the record is linked to
+ * nothing, then the threats it links. A mitigation's prose, where the row
+ * carries it, comes after the threats and one level deeper.
  */
 export function renderRecord(row: RecordRow): readonly string[] {
   const qualifiers = [
     ...(row.kind === 'assumption' && row.appliesToModel
       ? ['applies to the model']
       : []),
-    ...(linkedToNothing(row) ? ['linked to nothing'] : []),
+    ...(row.unlinked ? ['linked to nothing'] : []),
   ];
   const threats = `    threats: ${quotedList(row.threats)}`;
   if (row.kind === 'assumption') {
-    const heading = recordHeading(row, qualifiers);
-    return [
-      `  assumption ${row.prose === undefined ? heading : `${heading}: ${escapedForTerminal(row.prose)}`}`,
-      threats,
-    ];
+    return [`  assumption ${renderAssumption(row, qualifiers)}`, threats];
   }
   const [heading = '', ...prose] = renderMitigation(
     { ...row, prose: row.prose ?? '' },
@@ -128,7 +138,7 @@ export function renderRecord(row: RecordRow): readonly string[] {
   return [
     `  mitigation ${heading}`,
     threats,
-    ...prose.map((line) => `  ${line}`),
+    ...prose.map((line) => `    ${line}`),
   ];
 }
 

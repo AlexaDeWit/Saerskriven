@@ -25,7 +25,11 @@ import {
   reportedReading,
   type ModelReading,
 } from './reading.js';
-import { renderAssumption, renderMitigation } from './record-rows.js';
+import {
+  renderAssumption,
+  renderMitigation,
+  threatReadQualifiers,
+} from './record-rows.js';
 import {
   flagsDescription,
   renderCategory,
@@ -104,7 +108,8 @@ export function renderThreatRecord(result: GetThreatResult): readonly string[] {
     ),
     'assumptions:',
     ...result.assumptions.map(
-      (assumption) => `  ${renderAssumption(assumption, 'threat')}`,
+      (assumption) =>
+        `  ${renderAssumption(assumption, threatReadQualifiers(assumption))}`,
     ),
   ];
 }

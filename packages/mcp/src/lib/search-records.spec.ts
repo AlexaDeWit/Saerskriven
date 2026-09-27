@@ -17,6 +17,13 @@ const search = (args: Parameters<typeof searchRecords>[1]) =>
 const idsOf = (args: Parameters<typeof searchRecords>[1]) =>
   search(args).records.map(({ kind, id }) => `${kind} ${id}`);
 
+const forgedIn = (format: 'concise' | 'detailed') =>
+  forgedLinesIn(
+    renderRecordSearch(
+      answerOf(searchRecords(forgedIdsTree(), { response_format: format })),
+    ),
+  );
+
 const linkedToTheThreat = [
   'mitigation mitigation-tls',
   'assumption assumption-managed-db',
@@ -92,6 +99,17 @@ describe('what saer_search_records finds', () => {
     ]);
   });
 
+  it('marks the records linked to nothing in every row, in both forms', () => {
+    const marked = (format: 'concise' | 'detailed') =>
+      search({ response_format: format })
+        .records.filter(({ unlinked }) => unlinked)
+        .map(({ kind, id }) => `${kind} ${id}`);
+    expect({
+      concise: marked('concise'),
+      detailed: marked('detailed'),
+    }).toEqual({ concise: linkedToNothing, detailed: linkedToNothing });
+  });
+
   it('looks for its query in the title and the prose of each record', () => {
     expect(idsOf({ query: 'SIGNING', response_format: 'concise' })).toEqual([
       'mitigation mitigation-rotate-keys',
@@ -106,7 +124,7 @@ describe('what saer_search_records finds', () => {
 });
 
 describe('the text of a record search', () => {
-  it('names each record, its links, and the records linked to nothing', () => {
+  it('names each record, its text, its links, and the records linked to nothing', () => {
     const found = search({ response_format: 'concise' });
     expect(renderRecordSearch(found)).toEqual([
       'file: model.yaml',
@@ -116,27 +134,6 @@ describe('the text of a record search', () => {
       'records:',
       '  mitigation "mitigation-tls" (proposed): TLS on the order flow',
       '    threats: "threat-tamper-order"',
-      '  mitigation "mitigation-rotate-keys" (implemented, linked to nothing): Rotate the signing keys',
-      '    threats: none',
-      '  assumption "assumption-managed-db" (valid)',
-      '    threats: "threat-tamper-order"',
-      '  assumption "assumption-reviewed" (valid, applies to the model)',
-      '    threats: "threat-tamper-order"',
-      '  assumption "assumption-hand-written" (valid, applies to the model)',
-      '    threats: none',
-      '  assumption "assumption-staging-wiped" (invalidated, linked to nothing)',
-      '    threats: none',
-    ]);
-  });
-
-  it('adds the prose of each record where detail is asked for', () => {
-    const found = search({ response_format: 'detailed' });
-    expect(renderRecordSearch(found).slice(3)).toEqual([
-      'matches: 6',
-      'records:',
-      '  mitigation "mitigation-tls" (proposed): TLS on the order flow',
-      '    threats: "threat-tamper-order"',
-      '    Terminate TLS at the perimeter and pin the certificate.',
       '  mitigation "mitigation-rotate-keys" (implemented, linked to nothing): Rotate the signing keys',
       '    threats: none',
       '  assumption "assumption-managed-db" (valid): The order database encrypts its disks.',
@@ -150,27 +147,54 @@ describe('the text of a record search', () => {
     ]);
   });
 
-  it('leaves the prose out of a concise row and carries it in a detailed one', () => {
-    const prose = (format: 'concise' | 'detailed') =>
-      search({ id: 'mitigation-tls', response_format: format }).records.map(
-        (record) => record.prose,
+  it('adds the prose of each mitigation beneath its labels where detail is asked for', () => {
+    const found = search({ response_format: 'detailed' });
+    expect(renderRecordSearch(found).slice(3)).toEqual([
+      'matches: 6',
+      'records:',
+      '  mitigation "mitigation-tls" (proposed): TLS on the order flow',
+      '    threats: "threat-tamper-order"',
+      '      Terminate TLS at the perimeter and pin the certificate.',
+      '  mitigation "mitigation-rotate-keys" (implemented, linked to nothing): Rotate the signing keys',
+      '    threats: none',
+      '  assumption "assumption-managed-db" (valid): The order database encrypts its disks.',
+      '    threats: "threat-tamper-order"',
+      '  assumption "assumption-reviewed" (valid, applies to the model): The order database encrypts its disks.',
+      '    threats: "threat-tamper-order"',
+      '  assumption "assumption-hand-written" (valid, applies to the model): This model is kept true by hand.',
+      '    threats: none',
+      '  assumption "assumption-staging-wiped" (invalidated, linked to nothing): The staging copy is wiped every night.',
+      '    threats: none',
+    ]);
+  });
+
+  it("leaves a mitigation's prose out of a concise row and keeps an assumption's", () => {
+    const proseOf = (format: 'concise' | 'detailed') =>
+      search({ threat: '1', response_format: format }).records.map(
+        ({ kind, prose }) => `${kind} ${prose ?? 'none'}`,
       );
-    expect({ concise: prose('concise'), detailed: prose('detailed') }).toEqual({
-      concise: [undefined],
-      detailed: ['Terminate TLS at the perimeter and pin the certificate.'],
+    expect({
+      concise: proseOf('concise'),
+      detailed: proseOf('detailed'),
+    }).toEqual({
+      concise: [
+        'mitigation none',
+        'assumption The order database encrypts its disks.',
+        'assumption The order database encrypts its disks.',
+      ],
+      detailed: [
+        'mitigation Terminate TLS at the perimeter and pin the certificate.',
+        'assumption The order database encrypts its disks.',
+        'assumption The order database encrypts its disks.',
+      ],
     });
   });
 
-  it('forges no line out of a threat id carrying a line feed', () => {
-    expect(
-      forgedLinesIn(
-        renderRecordSearch(
-          answerOf(
-            searchRecords(forgedIdsTree(), { response_format: 'concise' }),
-          ),
-        ),
-      ),
-    ).toEqual([]);
+  it('forges no line out of a threat id, a title or prose carrying a line feed, in either form', () => {
+    expect({
+      concise: forgedIn('concise'),
+      detailed: forgedIn('detailed'),
+    }).toEqual({ concise: [], detailed: [] });
   });
 });
 

@@ -19,7 +19,11 @@ import {
 import { Either } from 'effect';
 import { z } from 'zod';
 import { quotedList } from './reading.js';
-import { renderAssumption, renderMitigation } from './record-rows.js';
+import {
+  renderAssumption,
+  renderMitigation,
+  threatReadQualifiers,
+} from './record-rows.js';
 
 const threatRowSchema = z.object({
   number: z.int().positive(),
@@ -151,7 +155,8 @@ function detailLines(row: ThreatDetail): readonly string[] {
       return [`mitigation ${heading}`, ...prose];
     }),
     ...(row.assumptions ?? []).map(
-      (assumption) => `assumption ${renderAssumption(assumption, 'threat')}`,
+      (assumption) =>
+        `assumption ${renderAssumption(assumption, threatReadQualifiers(assumption))}`,
     ),
   ];
 }
