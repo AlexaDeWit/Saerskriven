@@ -98,6 +98,35 @@ describe('what a refused edit leaves on disk', () => {
       lines: 2,
     },
     {
+      name: 'the model refuses a details edit after one of each it applied',
+      file: modelFile,
+      revision: (attempted) => revisionIn(attempted, modelFile),
+      edits: [
+        {
+          op: 'set_threat_details',
+          threat: 'threat-tamper-order',
+          title: 'Order tampering on the way to the API',
+        },
+        {
+          op: 'set_mitigation_details',
+          mitigation: 'mitigation-tls',
+          prose: 'Terminate TLS at the API.',
+        },
+        {
+          op: 'set_assumption_details',
+          assumption: 'assumption-managed-db',
+          prose: 'The order database encrypts its backups.',
+        },
+        {
+          op: 'set_assumption_details',
+          assumption: 'assumption-absent',
+          prose: 'Nothing to reword.',
+        },
+      ],
+      phrase: 'index 3',
+      lines: 2,
+    },
+    {
       name: 'the revision no longer matches the file',
       file: modelFile,
       revision: () => staleRevision,

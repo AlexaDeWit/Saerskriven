@@ -146,9 +146,10 @@ title nor text, or record shared by several threats or linked to none, that the
 text cannot give back. Nor does it keep the scope of a trust boundary or a
 text note, or a text note's name, so a write reports each one it drops.
 
-`saer_create` writes a new model in the native YAML format at version 2, and
-`saer_import` converts an OTM or TM-BOM file into one ([import](import.md)).
-Both refuse a path that is already taken.
+`saer_create` writes a new model in the native YAML format at version 2, with
+the `title` it is given and any of `owner`, `description` and `contributors`,
+each left out written empty. `saer_import` converts an OTM or TM-BOM file into
+one ([import](import.md)). Both refuse a path that is already taken.
 
 A read refuses a file past 8 MiB in UTF-8, and `saer_edit`, `saer_create` and
 `saer_import` all refuse a write whose output would be past that size, leaving
@@ -254,20 +255,32 @@ the threat, and every element it attaches to has to be one the model holds.
 `replace_threat` takes the whole threat and replaces every field of the one
 with its id but the number. `set_threat_status`, `set_threat_severity` and
 `set_threat_category` change that one field and keep the rest, the category
-given with its methodology. `attach_threat` and `detach_threat` take a threat
-id and an element id, and attaching an element the threat already carries, or
-detaching one it does not, changes nothing. `remove_threat` removes the threat
-and its links from every record.
+given with its methodology. `set_threat_details` changes any of `title` and
+`description` and keeps the rest, so one text changes without a copy of the
+whole threat. `attach_threat` and `detach_threat` take a threat id and an
+element id, and attaching an element the threat already carries, or detaching
+one it does not, changes nothing. `remove_threat` removes the threat and its
+links from every record.
+
+```json
+{
+  "op": "set_threat_details",
+  "threat": "threat-2",
+  "description": "A replayed order is accepted a second time."
+}
+```
 
 #### Mitigations and assumptions
 
 A mitigation is added on at least one threat, and an assumption on at least one
 threat or applying to the model. `add_mitigation` and `replace_mitigation` take
 the whole mitigation, and `replace_assumption` the whole assumption,
-`appliesToModel` included. `add_assumption` starts an assumption `unconfirmed`
-and not applying to the model where those fields are left out.
-`link_mitigation`, `unlink_mitigation`, `link_assumption` and
-`unlink_assumption` take the record id and a threat id,
+`appliesToModel` included. `set_mitigation_details` changes any of a
+mitigation's `title` and `prose`, and `set_assumption_details` an assumption's
+`prose`, each keeping every other field and link of the record.
+`add_assumption` starts an assumption `unconfirmed` and not applying to the
+model where those fields are left out. `link_mitigation`, `unlink_mitigation`,
+`link_assumption` and `unlink_assumption` take the record id and a threat id,
 `link_assumption_to_model` and `unlink_assumption_from_model` take the
 assumption id, and `set_mitigation_status` and `set_assumption_status` change
 the status alone. `remove_mitigation` and `remove_assumption` take the record
@@ -285,6 +298,11 @@ id.
     "op": "set_mitigation_status",
     "mitigation": "mitigation-tls",
     "status": "implemented"
+  },
+  {
+    "op": "set_assumption_details",
+    "assumption": "assumption-hosting",
+    "prose": "The service runs in one region."
   }
 ]
 ```
@@ -323,9 +341,6 @@ studio does them:
 
 - Copying elements. The studio copies, cuts and pastes a selection, and no op
   here does.
-- Changing one field of a threat's title and description, a mitigation's title
-  and prose, or an assumption's prose on its own. `replace_threat`,
-  `replace_mitigation` and `replace_assumption` take the whole record.
 - A dry run. A batch the model accepts is written.
 
 ## Resources and prompts

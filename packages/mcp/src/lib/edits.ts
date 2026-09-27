@@ -1,66 +1,34 @@
 import {
   OperationFailure,
   acceptedTextSchema,
-  addAssumption,
   addDiagram,
   addElement,
-  addMitigation,
-  addThreat,
-  assumptionIdSchema,
-  assumptionSchema,
-  assumptionStatusSchema,
-  attachThreat,
-  detachThreat,
   diagramIdSchema,
   droppedRecords,
   droppedThreats,
   editNote,
   elementDetailsChangeSchema,
   elementIdSchema,
-  linkAssumption,
-  linkAssumptionToModel,
-  linkMitigation,
-  mitigationIdSchema,
-  mitigationSchema,
-  mitigationStatusSchema,
   modelMetadataChangeSchema,
   moveElement,
-  nextThreatNumber,
   pointSchema,
   reconnectFlow,
-  removeAssumption,
   removeDiagram,
   removeElement,
-  removeMitigation,
-  removeThreat,
   renameDiagram,
   renameElement,
-  replaceAssumption,
-  replaceMitigation,
-  replaceThreat,
   resizeElement,
-  setAssumptionStatus,
   setFlowDirection,
   setFlowWaypoints,
-  setMitigationStatus,
   setModelMetadata,
   setElementDetails,
   setElementProperties,
-  severitySchema,
   sideSchema,
   sizeSchema,
-  threatCategorySchema,
-  threatIdSchema,
-  threatSchema,
-  threatStatusSchema,
-  unlinkAssumption,
-  unlinkAssumptionFromModel,
-  unlinkMitigation,
   waypointsSchema,
   type Model,
   type RecordReference,
   type Threat,
-  type ThreatId,
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
@@ -71,51 +39,28 @@ import {
   editedProperties,
   propertyEditSchema,
 } from './element-edits.js';
-import { describeOperationFailure } from './operation-failure.js';
+import {
+  describeOperationFailure,
+  unappliedEdit,
+} from './operation-failure.js';
+import {
+  applyRegisterEdit,
+  isRegisterEdit,
+  registerEditSchemas,
+} from './register-edits.js';
 
 const elementEditSchema = z.object({
   element: elementIdSchema.describe('The id of the element to edit.'),
-});
-
-const threatEditSchema = z.object({
-  threat: threatIdSchema.describe('The id of the threat to edit.'),
 });
 
 const diagramEditSchema = z.object({
   diagram: diagramIdSchema.describe('The id of the diagram.'),
 });
 
-const threatFieldsSchema = threatSchema.omit({ number: true });
-
-const mitigationEditSchema = z.object({
-  mitigation: mitigationIdSchema.describe('The id of the mitigation to edit.'),
-});
-
-const assumptionEditSchema = z.object({
-  assumption: assumptionIdSchema.describe('The id of the assumption to edit.'),
-});
-
-const linkedThreatSchema = z.object({
-  threat: threatIdSchema.describe(
-    'The threat the link is made to or taken from.',
-  ),
-});
-
-const addedAssumptionSchema = assumptionSchema.extend({
-  status: assumptionStatusSchema
-    .default('unconfirmed')
-    .describe('Left out, the assumption starts `unconfirmed`.'),
-  appliesToModel: z
-    .boolean()
-    .default(false)
-    .describe(
-      'Whether the assumption applies to the model as a whole. Left out, it does not.',
-    ),
-});
-
 /**
  * `add_*` and `replace_*` edits take whole records. Every other edit changes
- * only what it names.
+ * only what it names. The threat, mitigation and assumption variants are
+ * {@link registerEditSchemas}.
  */
 export const modelEditSchema = z.discriminatedUnion('op', [
   z.object({
@@ -176,74 +121,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
         'The side of the endpoint the flow fastens to. Left out, the renderer chooses.',
       ),
   }),
-  z.object({ op: z.literal('add_threat'), threat: threatFieldsSchema }),
-  z.object({ op: z.literal('replace_threat'), threat: threatFieldsSchema }),
-  threatEditSchema.extend({ op: z.literal('remove_threat') }),
-  threatEditSchema.extend({
-    op: z.literal('attach_threat'),
-    element: elementIdSchema,
-  }),
-  threatEditSchema.extend({
-    op: z.literal('detach_threat'),
-    element: elementIdSchema,
-  }),
-  threatEditSchema.extend({
-    op: z.literal('set_threat_status'),
-    status: threatStatusSchema,
-  }),
-  threatEditSchema.extend({
-    op: z.literal('set_threat_severity'),
-    severity: severitySchema,
-  }),
-  threatEditSchema.extend({
-    op: z.literal('set_threat_category'),
-    category: threatCategorySchema,
-  }),
-  z.object({ op: z.literal('add_mitigation'), mitigation: mitigationSchema }),
-  z.object({
-    op: z.literal('replace_mitigation'),
-    mitigation: mitigationSchema,
-  }),
-  z.object({
-    op: z.literal('remove_mitigation'),
-    mitigation: mitigationIdSchema,
-  }),
-  mitigationEditSchema
-    .extend(linkedThreatSchema.shape)
-    .extend({ op: z.literal('link_mitigation') }),
-  mitigationEditSchema
-    .extend(linkedThreatSchema.shape)
-    .extend({ op: z.literal('unlink_mitigation') }),
-  mitigationEditSchema.extend({
-    op: z.literal('set_mitigation_status'),
-    status: mitigationStatusSchema,
-  }),
-  z.object({
-    op: z.literal('add_assumption'),
-    assumption: addedAssumptionSchema,
-  }),
-  z.object({
-    op: z.literal('replace_assumption'),
-    assumption: assumptionSchema,
-  }),
-  z.object({
-    op: z.literal('remove_assumption'),
-    assumption: assumptionIdSchema,
-  }),
-  assumptionEditSchema
-    .extend(linkedThreatSchema.shape)
-    .extend({ op: z.literal('link_assumption') }),
-  assumptionEditSchema
-    .extend(linkedThreatSchema.shape)
-    .extend({ op: z.literal('unlink_assumption') }),
-  assumptionEditSchema.extend({ op: z.literal('link_assumption_to_model') }),
-  assumptionEditSchema.extend({
-    op: z.literal('unlink_assumption_from_model'),
-  }),
-  assumptionEditSchema.extend({
-    op: z.literal('set_assumption_status'),
-    status: assumptionStatusSchema,
-  }),
+  ...registerEditSchemas,
   diagramEditSchema.extend({
     op: z.literal('add_diagram'),
     title: acceptedTextSchema,
@@ -346,6 +224,9 @@ function applyEdit(
   model: Model,
   edit: ModelEdit,
 ): Either.Either<Model, OperationFailure> {
+  if (isRegisterEdit(edit)) {
+    return applyRegisterEdit(model, edit);
+  }
   switch (edit.op) {
     case 'add_element':
       return addElement(
@@ -379,65 +260,6 @@ function applyEdit(
         edit.endpoint,
         edit.anchor,
       );
-    case 'add_threat':
-      return addThreat(model, {
-        ...edit.threat,
-        number: nextThreatNumber(model),
-      });
-    case 'replace_threat':
-      return withThreat(model, edit.threat.id, (held) => ({
-        ...edit.threat,
-        number: held.number,
-      }));
-    case 'remove_threat':
-      return removeThreat(model, edit.threat);
-    case 'attach_threat':
-      return attachThreat(model, edit.threat, edit.element);
-    case 'detach_threat':
-      return detachThreat(model, edit.threat, edit.element);
-    case 'set_threat_status':
-      return withThreat(model, edit.threat, (held) => ({
-        ...held,
-        status: edit.status,
-      }));
-    case 'set_threat_severity':
-      return withThreat(model, edit.threat, (held) => ({
-        ...held,
-        severity: edit.severity,
-      }));
-    case 'set_threat_category':
-      return withThreat(model, edit.threat, (held) => ({
-        ...held,
-        category: edit.category,
-      }));
-    case 'add_mitigation':
-      return addMitigation(model, edit.mitigation);
-    case 'replace_mitigation':
-      return replaceMitigation(model, edit.mitigation);
-    case 'remove_mitigation':
-      return removeMitigation(model, edit.mitigation);
-    case 'link_mitigation':
-      return linkMitigation(model, edit.mitigation, edit.threat);
-    case 'unlink_mitigation':
-      return unlinkMitigation(model, edit.mitigation, edit.threat);
-    case 'set_mitigation_status':
-      return setMitigationStatus(model, edit.mitigation, edit.status);
-    case 'add_assumption':
-      return addAssumption(model, edit.assumption);
-    case 'replace_assumption':
-      return replaceAssumption(model, edit.assumption);
-    case 'remove_assumption':
-      return removeAssumption(model, edit.assumption);
-    case 'link_assumption':
-      return linkAssumption(model, edit.assumption, edit.threat);
-    case 'unlink_assumption':
-      return unlinkAssumption(model, edit.assumption, edit.threat);
-    case 'link_assumption_to_model':
-      return linkAssumptionToModel(model, edit.assumption);
-    case 'unlink_assumption_from_model':
-      return unlinkAssumptionFromModel(model, edit.assumption);
-    case 'set_assumption_status':
-      return setAssumptionStatus(model, edit.assumption, edit.status);
     case 'add_diagram':
       return addDiagram(model, {
         id: edit.diagram,
@@ -451,27 +273,8 @@ function applyEdit(
     case 'set_model_metadata':
       return setModelMetadata(model, edit);
     default:
-      return unapplied(edit);
+      return unappliedEdit(edit);
   }
-}
-
-function unapplied(_edit: never): Either.Either<Model, OperationFailure> {
-  return Either.left(
-    OperationFailure.InvalidFragment({
-      issues: [{ path: ['op'], detail: { code: 'operation-unknown' } }],
-    }),
-  );
-}
-
-function withThreat(
-  model: Model,
-  threatId: ThreatId,
-  change: (held: z.infer<typeof threatSchema>) => z.infer<typeof threatSchema>,
-): Either.Either<Model, OperationFailure> {
-  const held = model.threats.find((candidate) => candidate.id === threatId);
-  return held === undefined
-    ? Either.left(OperationFailure.UnknownThreat({ threatId }))
-    : replaceThreat(model, change(held));
 }
 
 function placementIndex(model: Model, diagramId: string): number {
