@@ -52,7 +52,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
     ChangedThreatNumber: ({ threatId, number }) =>
       `Threat ${quotedForTerminal(threatId)} cannot take number ${String(number)}, and no edit renumbers a threat.`,
     InvalidFlowEndpoint: ({ side, reference }) =>
-      `The flow's ${side} names ${quotedForTerminal(reference)}, which is no actor, process or store of its diagram.`,
+      `The flow's ${side} names ${quotedForTerminal(reference)}, and a flow end attaches only to an actor, process or store of its own diagram, never to the element its other end is attached to.`,
     NotResizable: ({ elementId }) =>
       `Element ${quotedForTerminal(elementId)} has no size to set.`,
     NotTextElement: ({ elementId }) =>

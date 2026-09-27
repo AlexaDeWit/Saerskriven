@@ -1,6 +1,7 @@
 import { Either } from 'effect';
 import {
   diagramIndexOf,
+  emptyNameFailure,
   flowEndpointFailure,
   invalidRelationships,
   locatedDiagram,
@@ -20,6 +21,7 @@ export type AddDiagramFailure = Extract<
     _tag:
       | 'DuplicateDiagramId'
       | 'DuplicateElementId'
+      | 'EmptyName'
       | 'InvalidFlowEndpoint'
       | 'InvalidElementRelationship'
       | 'EmptyTitle'
@@ -39,7 +41,11 @@ export type RemoveDiagramFailure = Extract<
   { _tag: 'UnknownDiagram' | 'DiagramNotEmpty' }
 >;
 
-/** Appends a diagram with a valid title, new element IDs and valid local endpoint and boundary references. */
+/**
+ * Appends a diagram with a valid title, new element IDs, element names that
+ * are more than white space, flow ends `reconnectFlow` would accept, and
+ * valid local boundary references.
+ */
 export function addDiagram(
   model: Model,
   diagram: Diagram,
@@ -66,6 +72,7 @@ export function addDiagram(
   const known = elementsById(diagram.elements);
   for (const element of diagram.elements) {
     const failure =
+      emptyNameFailure(element) ??
       flowEndpointFailure(element, diagram) ??
       invalidRelationships(element, known);
     if (failure !== undefined) {

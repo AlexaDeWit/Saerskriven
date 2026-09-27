@@ -17,6 +17,21 @@ export function seededModel(
   return parseModel(draft);
 }
 
+/**
+ * Leaves every element of the draft unnamed and attaches its flow to one
+ * trust boundary at both ends, which parse accepts and the edit operations
+ * refuse: a draft for {@link seededModel}.
+ */
+export function unnamedWithLoopedFlow(draft: typeof validModelFixture): void {
+  for (const element of draft.diagrams[0].elements) {
+    element.name = '';
+    if (element.kind === 'flow') {
+      element.source = { kind: 'attached', element: 'element-perimeter' };
+      element.target = { kind: 'attached', element: 'element-perimeter' };
+    }
+  }
+}
+
 /** The issues a parse reported, empty where it reported none. */
 export function issuesOf(
   result: Either.Either<Model, ParseFailure>,

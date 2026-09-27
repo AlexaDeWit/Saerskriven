@@ -19,8 +19,8 @@ import {
   resizeElement,
   setElementDetails,
 } from './element-operations.js';
-import { elementSchema } from './elements.js';
-import { validModelFixture } from './model.fixtures.js';
+import { elementSchema, type Element } from './elements.js';
+import { seededModel, validModelFixture } from './model.fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
   cache,
@@ -34,9 +34,16 @@ import {
   withNote,
   writeFlow,
 } from './operations.fixtures.js';
-import { parseModel } from './parse.js';
+import { parseModel, type Model } from './parse.js';
 
 const secured = parsedFixture(securityModelFixture);
+
+const readWith = (...added: readonly Element[]): Model =>
+  Either.getOrThrow(
+    seededModel((draft) => {
+      draft.diagrams[0].elements.push(...added);
+    }),
+  );
 
 describe('addElement', () => {
   it('adds a node to the named diagram', () => {
@@ -128,6 +135,49 @@ describe('addElement', () => {
       }),
     );
   });
+
+  it.each([
+    ['a canvas note', withNote, 'element-note'],
+    ['a trust boundary', validModel, 'element-perimeter'],
+    ['another flow', validModel, 'element-order-flow'],
+  ] as const)(
+    'refuses a flow ending on %s, as reconnectFlow does',
+    (_, model, target) => {
+      const flow = elementSchema.parse({
+        ...flowInput,
+        target: { kind: 'attached', element: target },
+      });
+      expect(errorOf(addElement(model, mainDiagram, flow))).toEqual(
+        OperationFailure.InvalidFlowEndpoint({
+          side: 'target',
+          reference: elementId(target),
+        }),
+      );
+    },
+  );
+
+  it('refuses a flow whose two ends attach to one element, naming its source', () => {
+    const loop = elementSchema.parse({
+      ...flowInput,
+      target: flowInput.source,
+    });
+    expect(errorOf(addElement(validModel, mainDiagram, loop))).toEqual(
+      OperationFailure.InvalidFlowEndpoint({
+        side: 'source',
+        reference: elementId('element-api'),
+      }),
+    );
+  });
+
+  it.each(['', ' \t\n'])(
+    'refuses the name %j, as renameElement does',
+    (name) => {
+      expect(
+        errorOf(addElement(validModel, mainDiagram, { ...cache, name })),
+      ).toEqual(OperationFailure.EmptyName({ elementId: cache.id }));
+    },
+  );
+
   it('refuses cross-diagram references and checks new elements and diagrams', () => {
     const boundary = secured.diagrams[0].elements[4];
     const outside = parsedFixture({
@@ -286,11 +336,9 @@ describe('removeElement', () => {
       source: { kind: 'attached', element: 'element-spur-flow' },
       target: { kind: 'free', position: { x: 640, y: 480 } },
     });
-    const seeded = [spur, tap].reduce(
-      (model, flow) => modelOf(addElement(model, mainDiagram, flow)),
-      validModel,
+    const next = modelOf(
+      removeElement(readWith(spur, tap), elementId('element-spur-flow')),
     );
-    const next = modelOf(removeElement(seeded, elementId('element-spur-flow')));
     expect(flowIn(next, 'element-tap-flow').source).toEqual({
       kind: 'free',
       position: { x: 500, y: 500 },
@@ -304,12 +352,11 @@ describe('removeElement', () => {
       source: { kind: 'attached', element: 'element-write-flow' },
       target: { kind: 'free', position: { x: 700, y: 300 } },
     });
-    const seeded = [writeFlow, meter].reduce(
-      (model, flow) => modelOf(addElement(model, mainDiagram, flow)),
-      validModel,
-    );
     const next = modelOf(
-      removeElement(seeded, elementId('element-write-flow')),
+      removeElement(
+        readWith(writeFlow, meter),
+        elementId('element-write-flow'),
+      ),
     );
     expect(flowIn(next, 'element-meter-flow').source).toEqual({
       kind: 'free',

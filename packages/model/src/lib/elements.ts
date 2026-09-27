@@ -152,7 +152,10 @@ export type TrustBoundary = z.infer<typeof trustBoundarySchema>;
 /** Trust boundary element as {@link trustBoundarySchema} accepts it. */
 export type TrustBoundaryInput = z.input<typeof trustBoundarySchema>;
 
-/** Element-specific security facts are optional. A canvas note carries no threats. */
+/**
+ * Element-specific security facts are optional, and a canvas note carries
+ * none, though a threat attaches to a note as to any other kind.
+ */
 export const elementSchema = z.discriminatedUnion('kind', [
   actorSchema,
   processSchema,

@@ -1,11 +1,11 @@
 import { Either } from 'effect';
-import type { Element } from './elements.js';
+import type { Element, FlowEndpoint } from './elements.js';
 import type { DiagramId, ElementId } from './ids.js';
 import type { Diagram } from './model.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
-import { elementIdsIn, endpointViolationsOf } from './references.js';
 import { relationshipIssues } from './relationships.js';
+import { isEmptyName } from './text.js';
 
 /** The failure for an element id the model does not hold. */
 export type UnknownElementFailure = Extract<
@@ -95,20 +95,56 @@ export function withElement(
   }));
 }
 
-/** The first endpoint of a flow `diagram` cannot anchor, or undefined. */
+type InvalidFlowEndpointFailure = Extract<
+  OperationFailure,
+  { _tag: 'InvalidFlowEndpoint' }
+>;
+
+const flowAnchorKinds = new Set<Element['kind']>(['actor', 'process', 'store']);
+
+/**
+ * The refusal of a flow's `side` end, or undefined where the edit operations
+ * accept it: free, or attached to an actor, process or store of `diagram`
+ * that `other`, the flow's other end, is not attached to. Parse does not
+ * apply this rule, so a flow read from a file can already break it.
+ */
+export function flowEndFailure(
+  diagram: Diagram,
+  side: 'source' | 'target',
+  end: FlowEndpoint,
+  other: FlowEndpoint,
+): InvalidFlowEndpointFailure | undefined {
+  if (end.kind === 'free') {
+    return undefined;
+  }
+  const anchor = diagram.elements.find((element) => element.id === end.element);
+  return anchor !== undefined &&
+    flowAnchorKinds.has(anchor.kind) &&
+    !(other.kind === 'attached' && other.element === end.element)
+    ? undefined
+    : OperationFailure.InvalidFlowEndpoint({ side, reference: end.element });
+}
+
+/** The refusal of a flow's first end, source first, that {@link flowEndFailure} refuses in `diagram`. */
 export function flowEndpointFailure(
   element: Element,
   diagram: Diagram,
-): Extract<OperationFailure, { _tag: 'InvalidFlowEndpoint' }> | undefined {
-  if (element.kind !== 'flow') {
-    return undefined;
-  }
-  const violation = endpointViolationsOf(element, elementIdsIn(diagram)).at(0);
-  return violation
-    ? OperationFailure.InvalidFlowEndpoint({
-        side: violation.side,
-        reference: violation.reference,
-      })
+): InvalidFlowEndpointFailure | undefined {
+  return element.kind === 'flow'
+    ? (flowEndFailure(diagram, 'source', element.source, element.target) ??
+        flowEndFailure(diagram, 'target', element.target, element.source))
+    : undefined;
+}
+
+/**
+ * The refusal of an element whose name is empty or white space alone, or
+ * undefined. Parse accepts such a name, so a file can already hold one.
+ */
+export function emptyNameFailure(
+  element: Element,
+): Extract<OperationFailure, { _tag: 'EmptyName' }> | undefined {
+  return isEmptyName(element.name)
+    ? OperationFailure.EmptyName({ elementId: element.id })
     : undefined;
 }
 

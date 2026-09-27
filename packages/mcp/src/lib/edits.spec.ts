@@ -138,6 +138,13 @@ describe('what a refused edit reads as', () => {
     });
   }
 
+  it('words a refused flow end by the whole rule, which every such refusal breaks', () => {
+    const refusal = refusalOf(failures.InvalidFlowEndpoint);
+
+    expect(refusal).toContain('an actor, process or store of its own diagram');
+    expect(refusal).toContain('never to the element its other end');
+  });
+
   it('names the edit of the batch that was refused', () => {
     expect(
       renderRefusedEdit({ index: 3, failure: failures.EmptyName })[0],

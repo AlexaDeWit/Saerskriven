@@ -272,7 +272,7 @@ export function newNote(id: string, text: string): Element {
   return {
     kind: 'text',
     id: elementId(id),
-    name: '',
+    name: 'Note',
     description: '',
     outOfScope: false,
     reasonOutOfScope: '',

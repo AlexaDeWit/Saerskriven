@@ -296,7 +296,7 @@ for (const runner of runners) {
                         id: 'flow',
                         name: 'Traffic',
                         source: { kind: 'attached', element: 'caller' },
-                        target: { kind: 'attached', element: 'caller' },
+                        target: { kind: 'free', position: { x: 300, y: 100 } },
                         bidirectional: true,
                         protocol: '',
                         isEncrypted: false,
