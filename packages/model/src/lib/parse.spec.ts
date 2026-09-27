@@ -1,7 +1,12 @@
 import { Either, Option } from 'effect';
 import { z } from 'zod';
 import { floodingEntries } from './issue-flood.fixtures.js';
-import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
+import {
+  issuesOf,
+  seededModel,
+  unnamedWithLoopedFlow,
+  validModelFixture,
+} from './model.fixtures.js';
 import { issueFloodCode, type ParseIssueDetail } from './parse-issue.js';
 import { boundedParse, parseModel, schemaFailureIssues } from './parse.js';
 
@@ -56,18 +61,7 @@ describe('parseModel', () => {
   });
 
   it('keeps an unnamed element and a flow on one boundary at both ends, which only an edit refuses', () => {
-    const issues = issuesOf(
-      seededModel((draft) => {
-        for (const element of draft.diagrams[0].elements) {
-          element.name = '';
-          if (element.kind === 'flow') {
-            element.source = { kind: 'attached', element: 'element-perimeter' };
-            element.target = { kind: 'attached', element: 'element-perimeter' };
-          }
-        }
-      }),
-    );
-    expect(issues).toEqual([]);
+    expect(issuesOf(seededModel(unnamedWithLoopedFlow))).toEqual([]);
   });
 
   it('strips a key no schema declares rather than refusing the model', () => {

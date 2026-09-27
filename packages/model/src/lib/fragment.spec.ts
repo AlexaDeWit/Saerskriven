@@ -7,7 +7,11 @@ import {
   securityModelFixture,
   validModel,
 } from '../fixtures.js';
-import { validModelFixture } from './model.fixtures.js';
+import {
+  seededModel,
+  unnamedWithLoopedFlow,
+  validModelFixture,
+} from './model.fixtures.js';
 import {
   fragmentRecordCounts,
   insertFragment,
@@ -194,6 +198,23 @@ describe('remapFragment and insertFragment', () => {
   it('rejects a fragment whose ids the model already holds', () => {
     const { fresh, inserted } = whole();
     expect(Either.isLeft(insertFragment(inserted, diagram, fresh))).toBe(true);
+  });
+
+  it('pastes an unnamed element and a flow on one boundary at both ends, which only an edit refuses', () => {
+    const source = Either.getOrThrow(seededModel(unnamedWithLoopedFlow));
+    const fragment = Either.getOrThrow(
+      selectionFragment(
+        source,
+        diagram,
+        source.diagrams[0].elements.map((element) => element.id),
+      ),
+    );
+    const remapped = Either.getOrThrow(
+      remapFragment(fragment, 'pasted', { x: 0, y: 0 }, validModel),
+    );
+    expect(Either.isRight(insertFragment(validModel, diagram, remapped))).toBe(
+      true,
+    );
   });
 
   it('refuses a missing diagram, and returns the model itself for an empty fragment', () => {

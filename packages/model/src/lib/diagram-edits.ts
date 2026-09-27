@@ -5,6 +5,7 @@ import type { Diagram } from './model.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import { relationshipIssues } from './relationships.js';
+import { isEmptyName } from './text.js';
 
 /** The failure for an element id the model does not hold. */
 export type UnknownElementFailure = Extract<
@@ -124,7 +125,7 @@ export function flowEndFailure(
     : OperationFailure.InvalidFlowEndpoint({ side, reference: end.element });
 }
 
-/** The first end of a flow, source first, that {@link flowEndFailure} refuses in `diagram`. */
+/** The refusal of a flow's first end, source first, that {@link flowEndFailure} refuses in `diagram`. */
 export function flowEndpointFailure(
   element: Element,
   diagram: Diagram,
@@ -132,6 +133,18 @@ export function flowEndpointFailure(
   return element.kind === 'flow'
     ? (flowEndFailure(diagram, 'source', element.source, element.target) ??
         flowEndFailure(diagram, 'target', element.target, element.source))
+    : undefined;
+}
+
+/**
+ * The refusal of an element whose name is empty or white space alone, or
+ * undefined. Parse accepts such a name, so a file can already hold one.
+ */
+export function emptyNameFailure(
+  element: Element,
+): Extract<OperationFailure, { _tag: 'EmptyName' }> | undefined {
+  return isEmptyName(element.name)
+    ? OperationFailure.EmptyName({ elementId: element.id })
     : undefined;
 }
 

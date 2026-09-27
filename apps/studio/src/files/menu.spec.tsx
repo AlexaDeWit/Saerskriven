@@ -16,7 +16,7 @@ import {
   unmountedSurface,
 } from '../commands/binding.js';
 import { Action } from '../store/actions.js';
-import { isDirty } from '../store/selectors.js';
+import { elementById, isDirty } from '../store/selectors.js';
 import { initialState, nameOf, placeholderModel } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
@@ -362,6 +362,7 @@ describe('what the studio says about the file', () => {
       dispatch(Action.AddElement({ diagramId: mainDiagram, element: note }));
       dispatch(Action.Select({ elementIds: [note.id] }));
     });
+    expect(elementById(modelStore.getState(), note.id)?.kind).toBe('text');
 
     await openMenu(user);
 

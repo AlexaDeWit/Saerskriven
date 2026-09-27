@@ -20,7 +20,7 @@ import {
   setElementDetails,
 } from './element-operations.js';
 import { elementSchema, type Element } from './elements.js';
-import { validModelFixture } from './model.fixtures.js';
+import { seededModel, validModelFixture } from './model.fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
   cache,
@@ -39,13 +39,11 @@ import { parseModel, type Model } from './parse.js';
 const secured = parsedFixture(securityModelFixture);
 
 const readWith = (...added: readonly Element[]): Model =>
-  parsedFixture({
-    ...validModel,
-    diagrams: validModel.diagrams.map((diagram) => ({
-      ...diagram,
-      elements: [...diagram.elements, ...added],
-    })),
-  });
+  Either.getOrThrow(
+    seededModel((draft) => {
+      draft.diagrams[0].elements.push(...added);
+    }),
+  );
 
 describe('addElement', () => {
   it('adds a node to the named diagram', () => {
@@ -179,6 +177,7 @@ describe('addElement', () => {
       ).toEqual(OperationFailure.EmptyName({ elementId: cache.id }));
     },
   );
+
   it('refuses cross-diagram references and checks new elements and diagrams', () => {
     const boundary = secured.diagrams[0].elements[4];
     const outside = parsedFixture({

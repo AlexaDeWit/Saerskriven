@@ -127,6 +127,17 @@ describe('addDiagram', () => {
     ).toBe('InvalidFlowEndpoint');
   });
 
+  it('refuses an element whose name is white space, as addElement does', () => {
+    expect(
+      errorOf(
+        addDiagram(validModel, {
+          ...secondOfElements,
+          elements: [{ ...cache, name: ' ' }],
+        }),
+      ),
+    ).toEqual(OperationFailure.EmptyName({ elementId: cache.id }));
+  });
+
   it('refuses a flow ending on another flow of the diagram, as addElement does', () => {
     const onFlow = elementSchema.parse({
       ...flowInput,

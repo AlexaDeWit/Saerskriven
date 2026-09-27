@@ -1,6 +1,7 @@
 import { Either } from 'effect';
 import {
   diagramIndexOf,
+  emptyNameFailure,
   flowEndpointFailure,
   invalidRelationships,
   locatedElement,
@@ -103,13 +104,9 @@ export function addElement(
           OperationFailure.DuplicateElementId({ elementId: element.id }),
         );
       }
-      if (isEmptyName(element.name)) {
-        return Either.left(
-          OperationFailure.EmptyName({ elementId: element.id }),
-        );
-      }
       const diagram = model.diagrams[diagramIndex];
       const failure =
+        emptyNameFailure(element) ??
         flowEndpointFailure(element, diagram) ??
         invalidRelationships(
           element,
