@@ -56,7 +56,12 @@ import {
 } from './edits.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
-import { edgeLabel, nodeLabel, resizeLabels, useBadgeMarks } from './names.js';
+import {
+  nameFieldLabel,
+  nodeNameFieldLabel,
+  resizeLabels,
+  useBadgeMarks,
+} from './names.js';
 import styles from './inline-editing.module.css';
 
 type InlineFieldProps = {
@@ -291,9 +296,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         >
           <InlineField
             elementId={node.id}
-            label={(speak) =>
-              speak('fields.name-of', { element: nodeLabel(node, speak) })
-            }
+            label={nodeNameFieldLabel(node)}
             onCommit={commitRename}
             refuse={refusedName}
             room={
@@ -345,9 +348,7 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
           >
             <InlineField
               elementId={edge.id}
-              label={(speak) =>
-                speak('fields.name-of', { element: edgeLabel(edge, speak) })
-              }
+              label={nameFieldLabel(edge.name, 'flow')}
               onCommit={commitRename}
               refuse={refusedName}
               textStyle={edge.label.name.textStyle}

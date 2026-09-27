@@ -1,9 +1,9 @@
 import type { Element, ElementDetailsChange } from '@saerskriven/model';
 import { resetAnnouncements } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
+import type { Said } from '../messages/said.js';
 import { ProseField, type RefusedDraft } from '../ui/text-field.js';
 import { RequiredBooleanProperty } from './element-property-fields.js';
-import { elementLabel } from './threats.js';
 
 /** The element details that can hold a refused draft. */
 export type DetailField = 'description' | 'reasonOutOfScope';
@@ -14,6 +14,15 @@ export type DetailField = 'description' | 'reasonOutOfScope';
  */
 export function showsReason(element: Element): boolean {
   return element.outOfScope || element.reasonOutOfScope !== '';
+}
+
+/** The accessible name of an element's description field, worded for its kind, with its name where it has one. */
+export function descriptionLabel(element: Element): Said {
+  const { name, kind } = element;
+  return (speak) =>
+    name === ''
+      ? speak(`fields.description-of-${kind}`)
+      : speak(`fields.description-of-${kind}-named`, { name });
 }
 
 /**
@@ -53,11 +62,7 @@ export function ElementDetails({
       <ProseField
         compact
         held={held('description')}
-        label={(speak) =>
-          speak('fields.description-of', {
-            element: elementLabel(element, speak),
-          })
-        }
+        label={descriptionLabel(element)}
         onChange={resetAnnouncements}
         onCommit={commitText('description')}
         onRefused={onRefused('description')}

@@ -7,8 +7,14 @@ import {
   requestFlow,
 } from './canvas.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
-import { accessibleNames } from './names.js';
-import { actorElement, processElement } from '../store/store.fixtures.js';
+import { inLocale } from '../messages/messages.fixtures.js';
+import { accessibleNames, nameFieldLabel } from './names.js';
+import {
+  actorElement,
+  namedElements,
+  namelessElements,
+  processElement,
+} from '../store/store.fixtures.js';
 
 const { t } = activeTranslator();
 
@@ -127,4 +133,31 @@ describe('accessibleNames', () => {
   it('names every element the layout draws', () => {
     expect(names.size).toBe(layout.nodes.length + layout.edges.length);
   });
+});
+
+const nameFields = (elements: typeof namedElements) =>
+  elements.flatMap(([title, { name, kind }]) =>
+    kind === 'text' ? [] : [[title, name, kind] as const],
+  );
+
+describe('nameFieldLabel', () => {
+  const french = inLocale('fr-CA');
+
+  it.each(nameFields(namelessElements))(
+    'words the field of a %s in the message of its kind, which French contracts onto the article',
+    (_, name, kind) => {
+      expect(nameFieldLabel(name, kind)(french)).toBe(
+        french(`fields.name-of-${kind}`),
+      );
+    },
+  );
+
+  it.each(nameFields(namedElements))(
+    'words the field of a %s in the named message of its kind, so no "de" lands before the name',
+    (_, name, kind) => {
+      expect(nameFieldLabel(name, kind)(french)).toBe(
+        french(`fields.name-of-${kind}-named`, { name }),
+      );
+    },
+  );
 });

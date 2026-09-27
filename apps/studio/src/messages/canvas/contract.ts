@@ -8,6 +8,10 @@ const position = { x: 'number', y: 'number' } as const;
 
 const element = { element: 'text' } as const;
 
+const numbered = { number: 'number' } as const;
+
+const numberedName = { number: 'number', name: 'text' } as const;
+
 /**
  * What the canvas says: its announcements, the clipboard's reports, and the
  * accessible text React Flow and the resize controls take from the studio.
@@ -42,10 +46,32 @@ export const canvasMessages = {
   'target-pinned': text({ flow: 'text', side: 'text' }),
   'undo-done': text(),
   'redo-done': text(),
-  'threat-deleted': text({ number: 'number' }),
-  'threat-attached': text({ number: 'number', element: 'text' }),
-  'threat-detached': text({ number: 'number', element: 'text' }),
-  'threat-detach-removed': text({ number: 'number' }),
+  'threat-deleted': text(numbered),
+  'threat-attached-to-actor': text(numbered),
+  'threat-attached-to-actor-named': text(numberedName),
+  'threat-attached-to-process': text(numbered),
+  'threat-attached-to-process-named': text(numberedName),
+  'threat-attached-to-store': text(numbered),
+  'threat-attached-to-store-named': text(numberedName),
+  'threat-attached-to-text': text(numbered),
+  'threat-attached-to-text-named': text(numberedName),
+  'threat-attached-to-flow': text(numbered),
+  'threat-attached-to-flow-named': text(numberedName),
+  'threat-attached-to-trust-boundary': text(numbered),
+  'threat-attached-to-trust-boundary-named': text(numberedName),
+  'threat-detached-from-actor': text(numbered),
+  'threat-detached-from-actor-named': text(numberedName),
+  'threat-detached-from-process': text(numbered),
+  'threat-detached-from-process-named': text(numberedName),
+  'threat-detached-from-store': text(numbered),
+  'threat-detached-from-store-named': text(numberedName),
+  'threat-detached-from-text': text(numbered),
+  'threat-detached-from-text-named': text(numberedName),
+  'threat-detached-from-flow': text(numbered),
+  'threat-detached-from-flow-named': text(numberedName),
+  'threat-detached-from-trust-boundary': text(numbered),
+  'threat-detached-from-trust-boundary-named': text(numberedName),
+  'threat-detach-removed': text(numbered),
   'record-named': text({ kind: 'text', label: 'text' }),
   'record-unlinked': text({ record: 'text' }),
   'record-removed': text({ record: 'text' }),

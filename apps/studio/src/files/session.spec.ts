@@ -5,9 +5,9 @@ import {
 } from '@saerskriven/formats';
 import { mitigationIdSchema } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
-import { translator, type Locale } from '@saerskriven/i18n';
+import type { Locale } from '@saerskriven/i18n';
 import { activeTranslator, chooseLanguage } from '../messages/locale.js';
-import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { FileLifecycle } from '../store/state.js';
 import {
@@ -67,9 +67,7 @@ const openedForeign = FileLifecycle.Opened({
 const untitledFile = 'threat-model';
 
 const untitledFileIn = (locale: Locale): string =>
-  translator(studioMessages, studioCatalogues, locale).t(
-    'defaults.untitled-file',
-  );
+  inLocale(locale)('defaults.untitled-file');
 
 describe('openedBy', () => {
   it('opens a text the native codec claims, keeping the document it read', () => {

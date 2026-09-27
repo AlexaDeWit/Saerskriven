@@ -372,20 +372,8 @@ function RecordRow<Held extends ThreatRecord>({
       : t(part === 'title' ? 'fields.title' : 'fields.description');
   const fieldProps = (part: RecordPart) => ({
     held: heldIn(part),
-    label: (speak: Speaker): string => {
-      const named = speak('fields.record-name', {
-        kind: speak(kind.title),
-        number: position,
-      });
-      return kind.parts.length === 1
-        ? named
-        : speak(
-            part === 'title'
-              ? 'fields.record-title-field'
-              : 'fields.record-prose-field',
-            { name: named },
-          );
-    },
+    label: (speak: Speaker): string =>
+      speak(kind.partField(part), { number: position }),
     shownLabel: shownLabel(part),
     onChange,
     onCommit: onCommit(part),
@@ -417,7 +405,7 @@ function RecordRow<Held extends ThreatRecord>({
         )}
         <div className={styles.recordState}>
           <EnumField
-            label={t('fields.record-status-field', { name })}
+            label={t(kind.statusField, { number: position })}
             labelOf={(status) => t(kind.statusMessage(status))}
             onCommit={onStatus}
             options={kind.statuses}

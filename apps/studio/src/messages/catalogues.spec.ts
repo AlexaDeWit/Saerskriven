@@ -1,5 +1,6 @@
-import { catalogueReport, locales, translator } from '@saerskriven/i18n';
-import { studioCatalogues, studioMessages } from './catalogues.js';
+import { catalogueReport, locales } from '@saerskriven/i18n';
+import { studioCatalogues } from './catalogues.js';
+import { inLocale } from './messages.fixtures.js';
 
 const report = catalogueReport(studioCatalogues);
 
@@ -11,7 +12,7 @@ describe('the studio catalogues', () => {
   it.each(locales)(
     'word the either-chord separator in %s between its two chords and nowhere else',
     (locale) => {
-      const { t } = translator(studioMessages, studioCatalogues, locale);
+      const t = inLocale(locale);
       const separator = t('commands.either-chord', { first: '', second: '' });
 
       expect(t('commands.either-chord', { first: 'A', second: 'B' })).toBe(

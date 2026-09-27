@@ -50,9 +50,44 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'undo-done': 'Ångrade.',
   'redo-done': 'Gjorde om.',
   'threat-deleted': 'Hot {number} togs bort.',
-  'threat-attached': 'Hot {number} kopplades till {element}.',
-  'threat-detached':
-    'Hot {number} kopplades bort från {element}. Det ligger kvar på sina övriga objekt.',
+  'threat-attached-to-actor': 'Hot {number} kopplades till aktören.',
+  'threat-attached-to-actor-named': 'Hot {number} kopplades till {name}.',
+  'threat-attached-to-process': 'Hot {number} kopplades till processen.',
+  'threat-attached-to-process-named': 'Hot {number} kopplades till {name}.',
+  'threat-attached-to-store': 'Hot {number} kopplades till datalagret.',
+  'threat-attached-to-store-named': 'Hot {number} kopplades till {name}.',
+  'threat-attached-to-text': 'Hot {number} kopplades till texten.',
+  'threat-attached-to-text-named': 'Hot {number} kopplades till {name}.',
+  'threat-attached-to-flow': 'Hot {number} kopplades till flödet.',
+  'threat-attached-to-flow-named': 'Hot {number} kopplades till {name}.',
+  'threat-attached-to-trust-boundary':
+    'Hot {number} kopplades till förtroendegränsen.',
+  'threat-attached-to-trust-boundary-named':
+    'Hot {number} kopplades till {name}.',
+  'threat-detached-from-actor':
+    'Hot {number} kopplades bort från aktören. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-actor-named':
+    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-process':
+    'Hot {number} kopplades bort från processen. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-process-named':
+    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-store':
+    'Hot {number} kopplades bort från datalagret. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-store-named':
+    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-text':
+    'Hot {number} kopplades bort från texten. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-text-named':
+    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-flow':
+    'Hot {number} kopplades bort från flödet. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-flow-named':
+    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-trust-boundary':
+    'Hot {number} kopplades bort från förtroendegränsen. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-trust-boundary-named':
+    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
   'threat-detach-removed':
     'Hot {number} togs bort. Det var inte kopplat till något annat. Ångra återställer det.',
   'record-named': '{kind} ”{label}”',

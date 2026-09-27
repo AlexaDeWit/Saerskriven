@@ -11,9 +11,11 @@ import {
   assumptionId,
   diagramId,
   elementId,
+  elementIn,
   mitigationId,
   parsedFixture,
   threatId,
+  validModel,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import {
@@ -281,6 +283,32 @@ export function newNote(id: string, text: string): Element {
     size: { width: 200, height: 40 },
   };
 }
+
+/**
+ * A nameless process and a nameless trust boundary, each under the words a
+ * spec title gives it: a masculine and a feminine kind in French, which a
+ * message putting "de" or "à" before an element words apart.
+ */
+export const namelessElements: readonly (readonly [string, Element])[] = [
+  ['nameless process', newProcess('process-unnamed', '')],
+  [
+    'nameless trust boundary',
+    { ...elementIn(validModel, 'element-perimeter'), name: '' },
+  ],
+];
+
+/**
+ * {@link namelessElements} named, and a store whose name starts with a vowel,
+ * which French would elide "de" before.
+ */
+export const namedElements: readonly (readonly [string, Element])[] = [
+  ['named process', newProcess('process-named', 'Studio')],
+  ['named trust boundary', elementIn(validModel, 'element-perimeter')],
+  [
+    'store whose name starts with a vowel',
+    { ...sampleElement(storeElement), name: 'Entrepôt de commandes' },
+  ],
+];
 
 /** A snapshot as recovery storage hands one back, parsed through the load path's schema. */
 export function restorableSnapshot(

@@ -48,9 +48,44 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'undo-done': 'Undo completed.',
   'redo-done': 'Redo completed.',
   'threat-deleted': 'Threat {number} deleted.',
-  'threat-attached': 'Attached threat {number} to {element}.',
-  'threat-detached':
-    'Detached threat {number} from {element}. It stays on its other elements.',
+  'threat-attached-to-actor': 'Attached threat {number} to the actor.',
+  'threat-attached-to-actor-named': 'Attached threat {number} to {name}.',
+  'threat-attached-to-process': 'Attached threat {number} to the process.',
+  'threat-attached-to-process-named': 'Attached threat {number} to {name}.',
+  'threat-attached-to-store': 'Attached threat {number} to the store.',
+  'threat-attached-to-store-named': 'Attached threat {number} to {name}.',
+  'threat-attached-to-text': 'Attached threat {number} to the text.',
+  'threat-attached-to-text-named': 'Attached threat {number} to {name}.',
+  'threat-attached-to-flow': 'Attached threat {number} to the flow.',
+  'threat-attached-to-flow-named': 'Attached threat {number} to {name}.',
+  'threat-attached-to-trust-boundary':
+    'Attached threat {number} to the trust boundary.',
+  'threat-attached-to-trust-boundary-named':
+    'Attached threat {number} to {name}.',
+  'threat-detached-from-actor':
+    'Detached threat {number} from the actor. It stays on its other elements.',
+  'threat-detached-from-actor-named':
+    'Detached threat {number} from {name}. It stays on its other elements.',
+  'threat-detached-from-process':
+    'Detached threat {number} from the process. It stays on its other elements.',
+  'threat-detached-from-process-named':
+    'Detached threat {number} from {name}. It stays on its other elements.',
+  'threat-detached-from-store':
+    'Detached threat {number} from the store. It stays on its other elements.',
+  'threat-detached-from-store-named':
+    'Detached threat {number} from {name}. It stays on its other elements.',
+  'threat-detached-from-text':
+    'Detached threat {number} from the text. It stays on its other elements.',
+  'threat-detached-from-text-named':
+    'Detached threat {number} from {name}. It stays on its other elements.',
+  'threat-detached-from-flow':
+    'Detached threat {number} from the flow. It stays on its other elements.',
+  'threat-detached-from-flow-named':
+    'Detached threat {number} from {name}. It stays on its other elements.',
+  'threat-detached-from-trust-boundary':
+    'Detached threat {number} from the trust boundary. It stays on its other elements.',
+  'threat-detached-from-trust-boundary-named':
+    'Detached threat {number} from {name}. It stays on its other elements.',
   'threat-detach-removed':
     'Removed threat {number}. It was attached to nothing else. Undo restores it.',
   'record-named': '{kind} “{label}”',

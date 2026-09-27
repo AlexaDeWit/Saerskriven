@@ -23,6 +23,7 @@ import {
   severityMessages,
 } from '../messages/enum-labels.js';
 import { useLanguage } from '../messages/locale.js';
+import type { Said } from '../messages/said.js';
 
 const elementKindOf = {
   actor: 'actor',
@@ -58,7 +59,12 @@ export function accessibleNames(
   ]);
 }
 
-/** What an element is called in a sentence: its name, or its kind while it has none. */
+/**
+ * What an element is called in a sentence: its name, or its kind while it has
+ * none. A message that puts "de" or "à" before the element does not take this
+ * label: it words each kind itself and takes the name alone, as
+ * {@link nameFieldLabel} does.
+ */
 export function kindLabel(
   name: string,
   kind: Element['kind'],
@@ -67,9 +73,25 @@ export function kindLabel(
   return name === '' ? t(articleKindMessages[kind]) : name;
 }
 
-/** {@link kindLabel} for one drawn element. */
-export function nodeLabel(node: CanvasNode, t: StudioTranslator['t']): string {
-  return kindLabel(node.name, elementKindOf[node.kind], t);
+/**
+ * The accessible name of an element's name field, worded for its kind, with
+ * its name where it has one. A text note has no name field.
+ */
+export function nameFieldLabel(
+  name: string,
+  kind: Exclude<Element['kind'], 'text'>,
+): Said {
+  return (speak) =>
+    name === ''
+      ? speak(`fields.name-of-${kind}`)
+      : speak(`fields.name-of-${kind}-named`, { name });
+}
+
+/** {@link nameFieldLabel} for one drawn element. */
+export function nodeNameFieldLabel(
+  node: Exclude<CanvasNode, { readonly kind: 'text' }>,
+): Said {
+  return nameFieldLabel(node.name, elementKindOf[node.kind]);
 }
 
 const marksByLocale: { readonly [L in Locale]: BadgeMarks } = {
@@ -92,7 +114,7 @@ export function resizeLabels(
   node: CanvasNode,
   t: StudioTranslator['t'],
 ): ResizeLabels {
-  const element = nodeLabel(node, t);
+  const element = kindLabel(node.name, elementKindOf[node.kind], t);
   return {
     top: t('canvas.resize-top', { element }),
     right: t('canvas.resize-right', { element }),
@@ -103,11 +125,6 @@ export function resizeLabels(
     'bottom-right': t('canvas.resize-bottom-right', { element }),
     'bottom-left': t('canvas.resize-bottom-left', { element }),
   };
-}
-
-/** {@link kindLabel} for one drawn flow. */
-export function edgeLabel(edge: CanvasEdge, t: StudioTranslator['t']): string {
-  return kindLabel(edge.name, 'flow', t);
 }
 
 function nodeName(

@@ -11,11 +11,17 @@ import {
   currentAnnouncement,
   resetAnnouncements,
 } from '../canvas/announcements.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { elementById } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
-import { newNote } from '../store/store.fixtures.js';
+import {
+  namedElements,
+  namelessElements,
+  newNote,
+} from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { descriptionLabel } from './element-details.js';
 import {
   ElementPropertiesEditor,
   type ElementPropertyDrafts,
@@ -206,3 +212,27 @@ describe(
   },
   editorTimeout,
 );
+
+describe('descriptionLabel', () => {
+  const french = inLocale('fr-CA');
+
+  it.each(namelessElements)(
+    'words the field of a %s in the message of its kind, which French contracts onto the article',
+    (_, element) => {
+      expect(descriptionLabel(element)(french)).toBe(
+        french(`fields.description-of-${element.kind}`),
+      );
+    },
+  );
+
+  it.each(namedElements)(
+    'words the field of a %s in the named message of its kind, so no "de" lands before the name',
+    (_, element) => {
+      expect(descriptionLabel(element)(french)).toBe(
+        french(`fields.description-of-${element.kind}-named`, {
+          name: element.name,
+        }),
+      );
+    },
+  );
+});

@@ -31,6 +31,7 @@ import styles from './threat-panel.module.css';
 import {
   attachableThreats,
   attachedThreats,
+  attachSaid,
   detachSaid,
   elementLabel,
   freshThreat,
@@ -164,13 +165,7 @@ export function ThreatPanel({
     if (attached?.elements.includes(on.id) !== true) {
       return false;
     }
-    const attachedNumber = attached.number;
-    announce((speak) =>
-      speak('canvas.threat-attached', {
-        number: attachedNumber,
-        element: elementLabel(on, speak),
-      }),
-    );
+    announce(attachSaid(attached, on));
     return true;
   };
 

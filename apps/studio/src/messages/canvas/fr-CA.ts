@@ -54,9 +54,50 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'undo-done': 'Annulation effectuée.',
   'redo-done': 'Rétablissement effectué.',
   'threat-deleted': 'Menace {number} supprimée.',
-  'threat-attached': 'Menace {number} rattachée à {element}.',
-  'threat-detached':
-    'Menace {number} détachée de {element}. Elle reste sur ses autres éléments.',
+  'threat-attached-to-actor': 'Menace {number} rattachée à l’acteur.',
+  'threat-attached-to-actor-named':
+    'Menace {number} rattachée à l’acteur « {name} ».',
+  'threat-attached-to-process': 'Menace {number} rattachée au processus.',
+  'threat-attached-to-process-named':
+    'Menace {number} rattachée au processus « {name} ».',
+  'threat-attached-to-store':
+    'Menace {number} rattachée au magasin de données.',
+  'threat-attached-to-store-named':
+    'Menace {number} rattachée au magasin de données « {name} ».',
+  'threat-attached-to-text': 'Menace {number} rattachée au texte.',
+  'threat-attached-to-text-named':
+    'Menace {number} rattachée au texte « {name} ».',
+  'threat-attached-to-flow': 'Menace {number} rattachée au flux.',
+  'threat-attached-to-flow-named':
+    'Menace {number} rattachée au flux « {name} ».',
+  'threat-attached-to-trust-boundary':
+    'Menace {number} rattachée à la frontière de confiance.',
+  'threat-attached-to-trust-boundary-named':
+    'Menace {number} rattachée à la frontière de confiance « {name} ».',
+  'threat-detached-from-actor':
+    'Menace {number} détachée de l’acteur. Elle reste sur ses autres éléments.',
+  'threat-detached-from-actor-named':
+    'Menace {number} détachée de l’acteur « {name} ». Elle reste sur ses autres éléments.',
+  'threat-detached-from-process':
+    'Menace {number} détachée du processus. Elle reste sur ses autres éléments.',
+  'threat-detached-from-process-named':
+    'Menace {number} détachée du processus « {name} ». Elle reste sur ses autres éléments.',
+  'threat-detached-from-store':
+    'Menace {number} détachée du magasin de données. Elle reste sur ses autres éléments.',
+  'threat-detached-from-store-named':
+    'Menace {number} détachée du magasin de données « {name} ». Elle reste sur ses autres éléments.',
+  'threat-detached-from-text':
+    'Menace {number} détachée du texte. Elle reste sur ses autres éléments.',
+  'threat-detached-from-text-named':
+    'Menace {number} détachée du texte « {name} ». Elle reste sur ses autres éléments.',
+  'threat-detached-from-flow':
+    'Menace {number} détachée du flux. Elle reste sur ses autres éléments.',
+  'threat-detached-from-flow-named':
+    'Menace {number} détachée du flux « {name} ». Elle reste sur ses autres éléments.',
+  'threat-detached-from-trust-boundary':
+    'Menace {number} détachée de la frontière de confiance. Elle reste sur ses autres éléments.',
+  'threat-detached-from-trust-boundary-named':
+    'Menace {number} détachée de la frontière de confiance « {name} ». Elle reste sur ses autres éléments.',
   'threat-detach-removed':
     'Menace {number} supprimée. Elle n’était rattachée à rien d’autre. Annuler la rétablit.',
   'record-named': '{kind} « {label} »',

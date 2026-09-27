@@ -44,6 +44,19 @@ person's text in the reader's quotation marks, and an element without a name
 is called by its kind (`enums.the-actor` and the like), so an announcement
 takes either as one noun phrase.
 
+In French that noun phrase never follows _de_ or _à_, which contract onto a
+kind's article (_du processus_, _au flux_), and _de_ elides before a name
+that starts with a vowel. A message that puts either before an element has two
+messages for each kind instead: one naming the kind alone, and one naming the
+kind before the name in quotation marks, as `fields.name-of-process` (_Nom du
+processus_) and `fields.name-of-process-named` (_Nom du processus
+« Studio »_) do. en-CA and sv word both the way they word the element
+anywhere else. A record's fields are named for its kind with its number in the
+same way, as `fields.assumption-status-field` (_État de l’hypothèse 1_) is. A
+flow's accessible name reads _depuis_ its source in French, because the
+source is a name, a bare kind or _un point libre_, and _de_ would elide before
+any of them that starts with a vowel.
+
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`
 adds beside them. `parseIssueLine` places either at its path. OTM and TM-BOM
