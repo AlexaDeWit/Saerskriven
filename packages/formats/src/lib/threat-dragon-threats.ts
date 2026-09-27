@@ -9,6 +9,7 @@ import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
+import { strayKindSchema, type StrayKind } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
@@ -145,17 +146,13 @@ function elementKinds(model: Model): ReadonlyMap<string, Element['kind']> {
   );
 }
 
-const hostKinds = [
-  'actor',
-  'process',
-  'store',
-  'flow',
-] as const satisfies readonly Element['kind'][];
-
-type HostKind = (typeof hostKinds)[number];
-
-function canHost(kind: Element['kind'] | undefined): kind is HostKind {
-  return hostKinds.some((host) => host === kind);
+function canHost(
+  kind: Element['kind'] | undefined,
+): kind is Exclude<Element['kind'], StrayKind> {
+  return (
+    kind !== undefined &&
+    !strayKindSchema.options.some((stray) => stray === kind)
+  );
 }
 
 function strayAttachments(
@@ -235,7 +232,7 @@ function projectThreat(
 function strayAttachment(
   threat: ThreatId,
   element: string,
-  kind: Exclude<Element['kind'], HostKind> | undefined,
+  kind: StrayKind | undefined,
 ): Divergence {
   return {
     subject: { kind: 'threat', id: threat },

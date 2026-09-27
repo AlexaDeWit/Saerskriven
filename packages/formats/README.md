@@ -46,10 +46,9 @@ and the terminal escaping of `renderDivergences` are in
 
 An entry names its subject, its reason and a `detail`: a code from a closed
 set with the data that code needs, in
-[`divergence-detail.ts`](src/lib/divergence-detail.ts). A parameter is a path,
-an identifier, a count, a format name or a text a person wrote, passed through
-as it stands, so a reader phrases the entry in its own language. This package
-imports no translation code. `divergenceDetailText` words each code in
+[`divergence-detail.ts`](src/lib/divergence-detail.ts), whose schema says what
+a parameter may hold. A reader phrases the entry in its own language, and this
+package imports no translation code. `divergenceDetailText` words each code in
 English, and `renderDivergences` builds the report the CLI and the MCP server
 print from it, so that English is an interface.
 

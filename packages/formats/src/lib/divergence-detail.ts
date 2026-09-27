@@ -2,6 +2,20 @@ import { carrying, coded, elementKindSchema } from '@saerskriven/model';
 import { z } from 'zod';
 
 /**
+ * The element kinds Threat Dragon nests no threat under, which a
+ * `threat-attachment-stray` names.
+ */
+export const strayKindSchema = elementKindSchema.exclude([
+  'actor',
+  'process',
+  'store',
+  'flow',
+]);
+
+/** An element kind Threat Dragon nests no threat under. */
+export type StrayKind = z.infer<typeof strayKindSchema>;
+
+/**
  * What one divergence is about, as a code and the data the code needs. A
  * parameter is a path, an identifier, a count, a format name, an element kind
  * or a text a person wrote, carried as it stands, so a reader in any language
@@ -37,9 +51,7 @@ export const divergenceDetailSchema = z.discriminatedUnion('code', [
   carrying('cell-discarded', { shape: z.string() }),
   carrying('threat-attachment-stray', {
     element: z.string(),
-    kind: elementKindSchema
-      .exclude(['actor', 'process', 'store', 'flow'])
-      .optional(),
+    kind: strayKindSchema.optional(),
   }),
   coded('threat-unplaceable'),
   carrying('threat-split-across-elements', { count: z.number() }),

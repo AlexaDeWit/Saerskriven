@@ -147,6 +147,32 @@ describe('placing the threats of a model under the cells that host them', () => 
   });
 });
 
+describe('a threat on a text note', () => {
+  const onNote = parsedFixture({
+    ...richerThanFormatFixture,
+    threats: [{ ...threat(1), elements: ['element-note', 'element-ledger'] }],
+    mitigations: [],
+    assumptions: [],
+  });
+
+  it('is reported as a stray attachment to a text', () => {
+    expect(planThreats(onNote, undefined).divergences).toContainEqual({
+      subject: { kind: 'threat', id: 'threat-1' },
+      detail: {
+        code: 'threat-attachment-stray',
+        parameters: { element: 'element-note', kind: 'text' },
+      },
+      reason: 'unrepresentable',
+    });
+  });
+
+  it('is nested under the cells that host threats alone', () => {
+    expect([...planThreats(onNote, undefined).byCell.keys()]).toEqual([
+      'element-ledger',
+    ]);
+  });
+});
+
 describe('the high-water mark a plan writes', () => {
   it('repeats what the file declared where every number is already in it', () => {
     expect(

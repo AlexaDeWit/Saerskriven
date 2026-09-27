@@ -4,14 +4,9 @@ import {
   type DivergenceCode,
   type DivergenceDetail,
 } from '@saerskriven/formats';
-import {
-  catalogueTemplates,
-  templateParts,
-  translator,
-  type Locale,
-} from '@saerskriven/i18n';
+import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
 import { codesOf, type Element } from '@saerskriven/model';
-import { studioCatalogues, studioMessages } from '../catalogues.js';
+import { studioCatalogues } from '../catalogues.js';
 import { activeTranslator, chooseLanguage } from '../locale.js';
 import { divergenceDetail, divergenceLine } from './text.js';
 
@@ -254,9 +249,6 @@ describe('the divergence mapping', () => {
   });
 });
 
-const inLocale = (locale: Locale) =>
-  translator(studioMessages, studioCatalogues, locale).t;
-
 const reshapedTo = (kind: Element['kind']): DivergenceDetail => ({
   code: 'cell-reshaped',
   parameters: { shape: 'reshaped-from', kind },
@@ -271,10 +263,12 @@ describe('the element kind a divergence names', () => {
   ] as const)(
     'words in %s the %s a reshaped cell now draws through the message of that kind',
     (locale, kind) => {
-      const t = inLocale(locale);
+      chooseLanguage(locale);
 
-      expect(divergenceDetail(t, reshapedTo(kind))).toBe(
-        t(`divergence.cell-reshaped-${kind}`, { shape: 'reshaped-from' }),
+      expect(described(reshapedTo(kind))).toBe(
+        activeTranslator().t(`divergence.cell-reshaped-${kind}`, {
+          shape: 'reshaped-from',
+        }),
       );
     },
   );
@@ -287,14 +281,14 @@ describe('the element kind a divergence names', () => {
   ] as const)(
     'words in %s a threat attached to a %s through the message of that kind',
     (locale, kind) => {
-      const t = inLocale(locale);
       const stray: DivergenceDetail = {
         code: 'threat-attachment-stray',
         parameters: { element: 'stray-element', kind },
       };
+      chooseLanguage(locale);
 
-      expect(divergenceDetail(t, stray)).toBe(
-        t(`divergence.threat-attachment-stray-${kind}`, {
+      expect(described(stray)).toBe(
+        activeTranslator().t(`divergence.threat-attachment-stray-${kind}`, {
           element: 'stray-element',
         }),
       );
