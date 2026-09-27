@@ -1,10 +1,12 @@
 import {
+  readLimits,
   saerskrivenYamlCodec,
   type RetainedSource,
 } from '@saerskriven/formats';
 import type { DiagramId, Model } from '@saerskriven/model';
 import { committedText, floodingEntries } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
+import { reasonOf } from '../reason.js';
 import { studioVersion } from '../version.js';
 import { FileLifecycle } from './state.js';
 import {
@@ -47,13 +49,15 @@ function loadStored(raw: string) {
   return localRecoveryStorage(() => memory.backend).load();
 }
 
-const rejectionOf = (raw: string): RecoveryProblem => {
-  const loaded = loadStored(raw);
-  if (Either.isRight(loaded)) {
-    throw new Error('The stored snapshot loaded, and this expects a refusal');
-  }
-  return loaded.left.problem;
-};
+const rejectedAs = (problem: RecoveryProblem) =>
+  Either.left(RecoveryStorageFailure.Rejected({ problem }));
+
+const parserReason = (raw: string): string =>
+  Either.getOrThrow(
+    Either.flip(
+      Either.try({ try: () => JSON.parse(raw) as unknown, catch: reasonOf }),
+    ),
+  );
 
 const expectedRestore = (
   present: Model,
@@ -222,25 +226,30 @@ describe('local recovery storage', () => {
   });
 
   it('rejects a version 1 snapshot, saying an earlier release wrote it', () => {
-    const older = rejectionOf(version1Snapshot);
-
     expect(loadStored(version1Snapshot)).toEqual(
-      Either.left(RecoveryStorageFailure.Rejected({ problem: older })),
-    );
-    expect(older).toEqual(
-      RecoveryProblem.EarlierRelease({ writer: undefined }),
-    );
-    expect(rejectionOf('{')).toMatchObject({ _tag: 'Thrown' });
-    expect(rejectionOf(JSON.stringify({ ...current, version: 3 }))).toEqual(
-      RecoveryProblem.Unsupported(),
+      rejectedAs(RecoveryProblem.EarlierRelease({ writer: undefined })),
     );
   });
 
   it.each([
-    ['malformed JSON', '{'],
+    [
+      'malformed JSON',
+      '{',
+      RecoveryProblem.Thrown({ reason: parserReason('{') }),
+    ],
+    [
+      'a nesting past the depth bound',
+      committedText('adversarial/deep-nesting.json'),
+      RecoveryProblem.PastBound({
+        limit: 'maxNestingDepth',
+        bound: readLimits.maxNestingDepth,
+        observed: readLimits.maxNestingDepth + 1,
+      }),
+    ],
     [
       'an unsupported later version',
       JSON.stringify({ ...current, version: 3 }),
+      RecoveryProblem.Unsupported(),
     ],
     [
       'a document the model refuses',
@@ -254,8 +263,13 @@ describe('local recovery storage', () => {
           })),
         },
       }),
+      RecoveryProblem.Unsupported(),
     ],
-    ['an invalid document', JSON.stringify({ ...current, document: {} })],
+    [
+      'an invalid document',
+      JSON.stringify({ ...current, document: {} }),
+      RecoveryProblem.Unsupported(),
+    ],
     [
       'an invalid retained source',
       JSON.stringify({
@@ -266,11 +280,10 @@ describe('local recovery storage', () => {
           source: { format: 'threat-dragon', document: {} },
         },
       }),
+      RecoveryProblem.Unsupported(),
     ],
-  ])('rejects %s without throwing', (_case, raw) => {
-    expect(loadStored(raw)).toEqual(
-      Either.left(expect.objectContaining({ _tag: 'Rejected' })),
-    );
+  ])('rejects %s, naming what stopped it', (_case, raw, problem) => {
+    expect(loadStored(raw)).toEqual(rejectedAs(problem));
   });
 
   it('reports disabled storage for load, replace, and clear', () => {
@@ -323,8 +336,8 @@ describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', ()
   ])(
     'rejects a version 2 snapshot flooded in %s as any refusal of its version',
     (_layer, document) => {
-      expect(rejectionOf(JSON.stringify({ ...current, document }))).toEqual(
-        RecoveryProblem.Unsupported(),
+      expect(loadStored(JSON.stringify({ ...current, document }))).toEqual(
+        rejectedAs(RecoveryProblem.Unsupported()),
       );
     },
   );
@@ -345,8 +358,8 @@ describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', ()
       },
     });
 
-    expect(rejectionOf(flooded)).toEqual(
-      RecoveryProblem.EarlierRelease({ writer: undefined }),
+    expect(loadStored(flooded)).toEqual(
+      rejectedAs(RecoveryProblem.EarlierRelease({ writer: undefined })),
     );
   });
 });
