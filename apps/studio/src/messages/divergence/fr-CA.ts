@@ -36,13 +36,25 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
     'le nom « {name} », alors que le format ne garde qu’un texte pour une note et aucun nom à côté',
   'scope-marking-dropped':
     'le marquage hors périmètre, que le format ne note que sur les éléments auxquels une menace se rattache',
-  'cell-reshaped':
-    'ce que la source portait sur la cellule {shape} de cet identifiant, qui dessine maintenant un {kind}',
+  'cell-reshaped-actor':
+    'ce que la source portait sur la cellule {shape} de cet identifiant, qui dessine maintenant un acteur',
+  'cell-reshaped-process':
+    'ce que la source portait sur la cellule {shape} de cet identifiant, qui dessine maintenant un processus',
+  'cell-reshaped-store':
+    'ce que la source portait sur la cellule {shape} de cet identifiant, qui dessine maintenant un magasin de données',
+  'cell-reshaped-text':
+    'ce que la source portait sur la cellule {shape} de cet identifiant, qui dessine maintenant un texte',
+  'cell-reshaped-flow':
+    'ce que la source portait sur la cellule {shape} de cet identifiant, qui dessine maintenant un flux',
+  'cell-reshaped-trust-boundary':
+    'ce que la source portait sur la cellule {shape} de cet identifiant, qui dessine maintenant une frontière de confiance',
   'diagram-name-numbered':
     'le nom, le format numérotant un diagramme au lieu de le nommer, écrit comme {number}',
   'cell-discarded': 'la cellule {shape} que contenait le document source',
-  'threat-attachment-stray':
-    'le rattachement à {kind} « {element} », le format n’imbriquant une menace que sous un acteur, un processus, un magasin de données ou un flux',
+  'threat-attachment-stray-text':
+    'le rattachement au texte « {element} », le format n’imbriquant une menace que sous un acteur, un processus, un magasin de données ou un flux',
+  'threat-attachment-stray-trust-boundary':
+    'le rattachement à la frontière de confiance « {element} », le format n’imbriquant une menace que sous un acteur, un processus, un magasin de données ou un flux',
   'threat-attachment-stray-unknown':
     'le rattachement à l’inconnu « {element} », le format n’imbriquant une menace que sous un acteur, un processus, un magasin de données ou un flux',
   'threat-unplaceable':

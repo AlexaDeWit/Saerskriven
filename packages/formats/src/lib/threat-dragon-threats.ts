@@ -9,6 +9,7 @@ import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
+import { strayKindSchema, type StrayKind } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
@@ -93,14 +94,8 @@ export function planThreats(
   const issued: number[] = [];
   const written: Threat[] = [];
   for (const threat of model.threats) {
-    const placed: string[] = [];
-    for (const id of threat.elements) {
-      if (canHost(kinds, id)) {
-        placed.push(id);
-      } else {
-        divergences.push(strayAttachment(threat.id, id, kinds.get(id)));
-      }
-    }
+    const placed = threat.elements.filter((id) => canHost(kinds.get(id)));
+    divergences.push(...strayAttachments(threat, kinds));
     if (placed.length === 0) {
       divergences.push(unplaceable(threat.id));
       continue;
@@ -151,15 +146,23 @@ function elementKinds(model: Model): ReadonlyMap<string, Element['kind']> {
   );
 }
 
-const hostKinds: ReadonlySet<Element['kind'] | undefined> = new Set<
-  Element['kind'] | undefined
->(['actor', 'process', 'store', 'flow']);
-
 function canHost(
+  kind: Element['kind'] | undefined,
+): kind is Exclude<Element['kind'], StrayKind> {
+  return (
+    kind !== undefined &&
+    !strayKindSchema.options.some((stray) => stray === kind)
+  );
+}
+
+function strayAttachments(
+  threat: Threat,
   kinds: ReadonlyMap<string, Element['kind']>,
-  id: string,
-): boolean {
-  return hostKinds.has(kinds.get(id));
+): readonly Divergence[] {
+  return threat.elements.flatMap((id) => {
+    const kind = kinds.get(id);
+    return canHost(kind) ? [] : [strayAttachment(threat.id, id, kind)];
+  });
 }
 
 function highWaterMark(
@@ -229,7 +232,7 @@ function projectThreat(
 function strayAttachment(
   threat: ThreatId,
   element: string,
-  kind: Element['kind'] | undefined,
+  kind: StrayKind | undefined,
 ): Divergence {
   return {
     subject: { kind: 'threat', id: threat },

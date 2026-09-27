@@ -6,11 +6,16 @@ const name = { name: 'text' } as const;
 
 const mark = { from: 'text', raised: 'text' } as const;
 
+const shape = { shape: 'text' } as const;
+
+const element = { element: 'text' } as const;
+
 /**
  * What a codec or an import reports it could not carry, one message per
  * divergence code, with the subject and the reason each line names. A
  * parameter is data the codec passed through, so no message joins English
- * fragments.
+ * fragments. A code naming an element kind has a message for each kind it
+ * can name, so no locale composes an article onto the kind.
  */
 export const divergenceMessages = {
   line: text({ subject: 'text', detail: 'text', reason: 'text' }),
@@ -37,11 +42,17 @@ export const divergenceMessages = {
   'threat-discarded': text({ title: 'text' }),
   'note-name-dropped': text(name),
   'scope-marking-dropped': text(),
-  'cell-reshaped': text({ shape: 'text', kind: 'text' }),
+  'cell-reshaped-actor': text(shape),
+  'cell-reshaped-process': text(shape),
+  'cell-reshaped-store': text(shape),
+  'cell-reshaped-text': text(shape),
+  'cell-reshaped-flow': text(shape),
+  'cell-reshaped-trust-boundary': text(shape),
   'diagram-name-numbered': text({ number: 'text' }),
-  'cell-discarded': text({ shape: 'text' }),
-  'threat-attachment-stray': text({ element: 'text', kind: 'text' }),
-  'threat-attachment-stray-unknown': text({ element: 'text' }),
+  'cell-discarded': text(shape),
+  'threat-attachment-stray-text': text(element),
+  'threat-attachment-stray-trust-boundary': text(element),
+  'threat-attachment-stray-unknown': text(element),
   'threat-unplaceable': text(),
   'threat-split-across-elements': plural('count'),
   'threat-category-unnamed': text({

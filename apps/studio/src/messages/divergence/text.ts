@@ -52,7 +52,9 @@ export function divergenceDetail(t: Speaker, detail: DivergenceDetail): string {
     case 'scope-marking-dropped':
       return t('divergence.scope-marking-dropped');
     case 'cell-reshaped':
-      return t('divergence.cell-reshaped', detail.parameters);
+      return t(`divergence.cell-reshaped-${detail.parameters.kind}`, {
+        shape: detail.parameters.shape,
+      });
     case 'diagram-name-numbered':
       return t('divergence.diagram-name-numbered', {
         number: String(detail.parameters.number),
@@ -60,14 +62,10 @@ export function divergenceDetail(t: Speaker, detail: DivergenceDetail): string {
     case 'cell-discarded':
       return t('divergence.cell-discarded', detail.parameters);
     case 'threat-attachment-stray':
-      return detail.parameters.kind === undefined
-        ? t('divergence.threat-attachment-stray-unknown', {
-            element: detail.parameters.element,
-          })
-        : t('divergence.threat-attachment-stray', {
-            element: detail.parameters.element,
-            kind: detail.parameters.kind,
-          });
+      return t(
+        `divergence.threat-attachment-stray-${detail.parameters.kind ?? 'unknown'}`,
+        { element: detail.parameters.element },
+      );
     case 'threat-unplaceable':
       return t('divergence.threat-unplaceable');
     case 'threat-split-across-elements':
