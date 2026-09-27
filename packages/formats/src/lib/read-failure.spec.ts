@@ -116,6 +116,24 @@ describe('why a read produced nothing', () => {
     ]);
   });
 
+  it('carries the reason a wire parse threw', () => {
+    expect(
+      renderReadFailure(
+        ReadFailure.InvalidWireDocument({
+          issues: [
+            {
+              path: [],
+              detail: {
+                code: 'schema-threw',
+                parameters: { reason: 'TypeError: the schema gave out' },
+              },
+            },
+          ],
+        }),
+      ),
+    ).toContain('(root): the parse stopped: TypeError: the schema gave out');
+  });
+
   it('serializes a failure to its plain tagged shape', () => {
     const failure = ReadFailure.InvalidWireDocument({ issues: [] });
     expect(JSON.parse(JSON.stringify(failure)) as unknown).toEqual({

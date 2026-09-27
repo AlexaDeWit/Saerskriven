@@ -1,5 +1,5 @@
 import { Either } from 'effect';
-import type { ReadFailure } from './codec.js';
+import { ReadFailure } from './codec.js';
 import { readFailureIssues } from './codec.fixtures.js';
 import { adversarialText, corpusTexts } from './corpus.fixtures.js';
 import {
@@ -18,6 +18,7 @@ import {
   oneThreatYamlV1,
 } from './saerskriven-yaml.fixtures.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
+import { saerskrivenYamlVersionsSchema } from './saerskriven-yaml-migration.js';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { readLimits } from './read-limits.js';
 import { featureCompleteText } from './threat-dragon.fixtures.js';
@@ -228,6 +229,46 @@ describe('a file a codec claimed and then refused', () => {
     expect(failure).toMatchObject({ _tag: 'InvalidWireDocument' });
     expect(issuePaths(failure)).toContain('detail.diagrams.0.cells.0.id');
   });
+});
+
+describe('a file whose wire schema threw', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    {
+      format: 'Threat Dragon',
+      schema: threatDragonCodec.wire,
+      text: threatDragonMinimal,
+    },
+    {
+      format: 'Saerskriven YAML',
+      schema: saerskrivenYamlVersionsSchema,
+      text: minimalYamlV1,
+    },
+  ])(
+    'answers a $format file with the defect and its reason rather than a claim by nobody',
+    ({ schema, text }) => {
+      vi.spyOn(schema, 'safeParse').mockImplementation(() => {
+        throw new TypeError('the schema gave out');
+      });
+
+      expect(outcome(text)).toEqual(
+        ReadFailure.InvalidWireDocument({
+          issues: [
+            {
+              path: [],
+              detail: {
+                code: 'schema-threw',
+                parameters: { reason: 'TypeError: the schema gave out' },
+              },
+            },
+          ],
+        }),
+      );
+    },
+  );
 });
 
 describe('a file from a release neither codec models', () => {

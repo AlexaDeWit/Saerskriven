@@ -9,6 +9,7 @@ import {
   type ReadResult,
   type WriteResult,
 } from './codec.js';
+import type { WireIssueDetail } from './import-issue-detail.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
@@ -59,13 +60,15 @@ export const DetectionFailure = Data.taggedEnum<DetectionFailure>();
  * mapping, or when its wire schema refuses the document below the root keys
  * that name the format. It declines malformed syntax and a refusal at or
  * above a naming key, so a file that lost `summary` whole is no format's,
- * while one that lost `summary.title` is a broken Threat Dragon file. A
- * claimed failure is returned as that codec's own, and an
- * `ExceededReadLimit` stops detection outright, since the next codec would
- * pay the same cost. A refusal with more issues than the wire schema could
- * gather is claimed too, since the schema found them by walking into the
- * document. A file from an unmodelled release, such as a
- * `formatVersion` other than 1 and 2, is claimed by nobody.
+ * while one that lost `summary.title` is a broken Threat Dragon file. Two
+ * root issues are claimed all the same: a flood of more issues than the wire
+ * schema could gather, since the schema found them by walking into the
+ * document, and a wire parse that threw, so the schema's defect and its
+ * reason reach the reader in place of a claim by nobody. A claimed failure
+ * is returned as that codec's own, and an `ExceededReadLimit` stops
+ * detection outright, since the next codec would pay the same cost. A file
+ * from an unmodelled release, such as a `formatVersion` other than 1 and 2,
+ * is claimed by nobody.
  */
 export function readAnyFormat(
   text: string,
@@ -190,6 +193,11 @@ function attempt<Name extends FormatName, WireSchema extends z.ZodType<object>>(
   };
 }
 
+const stoppedParseCodes: ReadonlySet<WireIssueDetail['code']> = new Set([
+  issueFloodCode,
+  'schema-threw',
+]);
+
 function verdictOn(
   failure: ReadFailure,
   discriminators: readonly DiscriminatorPath[],
@@ -198,7 +206,7 @@ function verdictOn(
     ExceededReadLimit: (): Verdict => 'bounded',
     MalformedText: (): Verdict => 'declined',
     InvalidWireDocument: ({ issues }): Verdict =>
-      issues.some((issue) => issue.detail.code === issueFloodCode) ||
+      issues.some((issue) => stoppedParseCodes.has(issue.detail.code)) ||
       !issues.some((issue) =>
         discriminators.some((discriminator) =>
           atOrAbove(issue.path, discriminator),
