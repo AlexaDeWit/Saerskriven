@@ -6,6 +6,7 @@ import {
 import type { DiagramId, Model } from '@saerskriven/model';
 import { committedText, floodingEntries } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
+import { reasonOf } from '../reason.js';
 import { studioVersion } from '../version.js';
 import { FileLifecycle } from './state.js';
 import {
@@ -48,13 +49,15 @@ function loadStored(raw: string) {
   return localRecoveryStorage(() => memory.backend).load();
 }
 
-const rejectionOf = (raw: string): RecoveryProblem => {
-  const loaded = loadStored(raw);
-  if (Either.isRight(loaded)) {
-    throw new Error('The stored snapshot loaded, and this expects a refusal');
-  }
-  return loaded.left.problem;
-};
+const rejectedAs = (problem: RecoveryProblem) =>
+  Either.left(RecoveryStorageFailure.Rejected({ problem }));
+
+const parserReason = (raw: string): string =>
+  Either.getOrThrow(
+    Either.flip(
+      Either.try({ try: () => JSON.parse(raw) as unknown, catch: reasonOf }),
+    ),
+  );
 
 const expectedRestore = (
   present: Model,
@@ -224,21 +227,16 @@ describe('local recovery storage', () => {
 
   it('rejects a version 1 snapshot, saying an earlier release wrote it', () => {
     expect(loadStored(version1Snapshot)).toEqual(
-      Either.left(
-        RecoveryStorageFailure.Rejected({
-          problem: RecoveryProblem.EarlierRelease({ writer: undefined }),
-        }),
-      ),
-    );
-  });
-
-  it('rejects malformed JSON, carrying what the parser raised', () => {
-    expect(loadStored('{')).toMatchObject(
-      Either.left({ _tag: 'Rejected', problem: { _tag: 'Thrown' } }),
+      rejectedAs(RecoveryProblem.EarlierRelease({ writer: undefined })),
     );
   });
 
   it.each([
+    [
+      'malformed JSON',
+      '{',
+      RecoveryProblem.Thrown({ reason: parserReason('{') }),
+    ],
     [
       'a nesting past the depth bound',
       committedText('adversarial/deep-nesting.json'),
@@ -285,9 +283,7 @@ describe('local recovery storage', () => {
       RecoveryProblem.Unsupported(),
     ],
   ])('rejects %s, naming what stopped it', (_case, raw, problem) => {
-    expect(loadStored(raw)).toEqual(
-      Either.left(RecoveryStorageFailure.Rejected({ problem })),
-    );
+    expect(loadStored(raw)).toEqual(rejectedAs(problem));
   });
 
   it('reports disabled storage for load, replace, and clear', () => {
@@ -340,8 +336,8 @@ describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', ()
   ])(
     'rejects a version 2 snapshot flooded in %s as any refusal of its version',
     (_layer, document) => {
-      expect(rejectionOf(JSON.stringify({ ...current, document }))).toEqual(
-        RecoveryProblem.Unsupported(),
+      expect(loadStored(JSON.stringify({ ...current, document }))).toEqual(
+        rejectedAs(RecoveryProblem.Unsupported()),
       );
     },
   );
@@ -362,8 +358,8 @@ describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', ()
       },
     });
 
-    expect(rejectionOf(flooded)).toEqual(
-      RecoveryProblem.EarlierRelease({ writer: undefined }),
+    expect(loadStored(flooded)).toEqual(
+      rejectedAs(RecoveryProblem.EarlierRelease({ writer: undefined })),
     );
   });
 });
