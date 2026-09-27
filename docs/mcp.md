@@ -249,6 +249,26 @@ they were.
 boundary and keeps its position. A flow and a curve boundary have no size, and
 it refuses both.
 
+`set_boundary_shape` replaces a trust boundary's `shape` with a box, a
+`position` and a `size`, or a curve through at least two `waypoints`, whichever
+of the two it had, so it reshapes a curve and turns a box into a curve or back.
+The boundary's declared `containedElements` and `crossingFlows` stay as they
+were. It refuses an element that is not a trust boundary.
+
+```json
+{
+  "op": "set_boundary_shape",
+  "element": "boundary-id",
+  "shape": {
+    "kind": "curve",
+    "waypoints": [
+      { "x": 40, "y": 320 },
+      { "x": 760, "y": 340 }
+    ]
+  }
+}
+```
+
 #### Flows
 
 `set_flow_waypoints` replaces a flow's bends with the points given, in order,
@@ -257,8 +277,13 @@ bidirectional or one way, and the flow keeps its id and the threats attached
 to it. `reconnect_flow` attaches the `source` or `target` end to an actor,
 process or store of the flow's own diagram, never to the element the other end
 is attached to. Its optional `anchor` names the side the end fastens to, and
-where it is left out the renderer chooses. All three refuse an element that is
-not a flow.
+where it is left out the renderer chooses. `set_flow_end_position` frees the
+`source` or `target` end at a canvas `position`, or moves an end that is free
+already, and the other end may be free as well. `reverse_flow` swaps the two
+ends, each with its pinned side or its position, and reverses the bends, so
+the flow runs the other way along the same route and keeps its id, whether it
+is bidirectional, and the threats attached to it. All five refuse an element
+that is not a flow.
 
 #### Diagrams
 
@@ -349,15 +374,6 @@ studio does them:
 - Changing an element's kind. `set_element_properties` refuses a `kind` other
   than the element's own.
 - Changing the id of an element, diagram, threat, mitigation or assumption.
-- Reversing a flow. `reconnect_flow` refuses an end on the element the other
-  end is attached to, so trading the two ends takes a third actor, process or
-  store to hold one end in between.
-- Detaching one end of a flow to a canvas position. `reconnect_flow` only
-  attaches, an end goes free only when its element is removed, and
-  `move_element` shifts a free end only with the rest of its flow.
-- Reshaping a curve boundary, or turning a box boundary into a curve or back.
-  `move_element` shifts a curve whole, `resize_element` refuses one, and
-  `set_flow_waypoints` takes a flow alone.
 
 `saer_edit` also lacks these:
 

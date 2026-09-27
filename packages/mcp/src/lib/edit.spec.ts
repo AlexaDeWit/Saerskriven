@@ -3,6 +3,7 @@ import {
   OperationFailure,
   elementsAcross,
   type AssumptionStatus,
+  type BoundaryShapeInput,
 } from '@saerskriven/model';
 import { assumptionId, elementId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
@@ -40,6 +41,14 @@ const addedMitigation = (
 });
 
 const dragonThreat = 'threat-tampering';
+
+const perimeterCurve: BoundaryShapeInput = {
+  kind: 'curve',
+  waypoints: [
+    { x: 280, y: 40 },
+    { x: 800, y: 60 },
+  ],
+};
 
 const attempt = () => {
   const tree = editableTree();
@@ -121,6 +130,32 @@ describe('what a refused edit leaves on disk', () => {
           op: 'set_assumption_details',
           assumption: 'assumption-absent',
           prose: 'Nothing to reword.',
+        },
+      ],
+      phrase: 'index 3',
+      lines: 2,
+    },
+    {
+      name: 'the model refuses a boundary shape on a flow after the flow and boundary edits it applied',
+      file: modelFile,
+      revision: (attempted) => revisionIn(attempted, modelFile),
+      edits: [
+        {
+          op: 'set_flow_end_position',
+          element: 'element-order-flow',
+          side: 'source',
+          position: { x: 60, y: 200 },
+        },
+        { op: 'reverse_flow', element: 'element-order-flow' },
+        {
+          op: 'set_boundary_shape',
+          element: 'element-perimeter',
+          shape: perimeterCurve,
+        },
+        {
+          op: 'set_boundary_shape',
+          element: 'element-order-flow',
+          shape: perimeterCurve,
         },
       ],
       phrase: 'index 3',
@@ -805,6 +840,48 @@ describe('what the flow direction and metadata ops write', () => {
       ).toEqual([]);
     });
   }
+});
+
+describe('what the flow end, reversal and boundary shape ops write', () => {
+  it('frees one end of a flow, reverses it and turns a box boundary into a curve, in one batch', () => {
+    const attempted = attempt();
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+      {
+        op: 'set_flow_waypoints',
+        element: 'element-order-flow',
+        waypoints: [
+          { x: 200, y: 140 },
+          { x: 240, y: 200 },
+        ],
+      },
+      {
+        op: 'set_flow_end_position',
+        element: 'element-order-flow',
+        side: 'source',
+        position: { x: 60, y: 200 },
+      },
+      { op: 'reverse_flow', element: 'element-order-flow' },
+      {
+        op: 'set_boundary_shape',
+        element: 'element-perimeter',
+        shape: perimeterCurve,
+      },
+    ]);
+    const elements = elementsAcross(heldModel(attempted)?.diagrams ?? []);
+    expect(
+      elements.find((element) => element.id === 'element-order-flow'),
+    ).toMatchObject({
+      source: { kind: 'free', position: { x: 280, y: 160 } },
+      target: { kind: 'free', position: { x: 60, y: 200 } },
+      waypoints: [
+        { x: 240, y: 200 },
+        { x: 200, y: 140 },
+      ],
+    });
+    expect(
+      elements.find((element) => element.id === 'element-perimeter'),
+    ).toMatchObject({ shape: perimeterCurve });
+  });
 });
 
 describe('what set_element_details writes', () => {

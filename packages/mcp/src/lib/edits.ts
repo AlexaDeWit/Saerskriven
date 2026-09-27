@@ -3,6 +3,7 @@ import {
   acceptedTextSchema,
   addDiagram,
   addElement,
+  boundaryShapeSchema,
   diagramIdSchema,
   droppedRecords,
   droppedThreats,
@@ -18,7 +19,10 @@ import {
   renameDiagram,
   renameElement,
   resizeElement,
+  reverseFlow,
+  setBoundaryShape,
   setFlowDirection,
+  setFlowEndPosition,
   setFlowWaypoints,
   setModelMetadata,
   setElementDetails,
@@ -87,6 +91,12 @@ export const modelEditSchema = z.discriminatedUnion('op', [
     size: sizeSchema,
   }),
   elementEditSchema.extend({
+    op: z.literal('set_boundary_shape'),
+    shape: boundaryShapeSchema.describe(
+      'A box with its position and size, or a curve through at least two points, replacing the shape the trust boundary has whichever of the two it is.',
+    ),
+  }),
+  elementEditSchema.extend({
     op: z.literal('rename_element'),
     name: acceptedTextSchema,
   }),
@@ -121,6 +131,14 @@ export const modelEditSchema = z.discriminatedUnion('op', [
         'The side of the endpoint the flow fastens to. Left out, the renderer chooses.',
       ),
   }),
+  elementEditSchema.extend({
+    op: z.literal('set_flow_end_position'),
+    side: z.enum(['source', 'target']),
+    position: pointSchema.describe(
+      'The canvas position the end is freed at, or moved to where it is free already.',
+    ),
+  }),
+  elementEditSchema.extend({ op: z.literal('reverse_flow') }),
   ...registerEditSchemas,
   diagramEditSchema.extend({
     op: z.literal('add_diagram'),
@@ -242,6 +260,8 @@ function applyEdit(
       return moveElement(model, edit.element, edit.offset);
     case 'resize_element':
       return resizeElement(model, edit.element, edit.size);
+    case 'set_boundary_shape':
+      return setBoundaryShape(model, edit.element, edit.shape);
     case 'rename_element':
       return renameElement(model, edit.element, edit.name);
     case 'edit_note':
@@ -260,6 +280,10 @@ function applyEdit(
         edit.endpoint,
         edit.anchor,
       );
+    case 'set_flow_end_position':
+      return setFlowEndPosition(model, edit.element, edit.side, edit.position);
+    case 'reverse_flow':
+      return reverseFlow(model, edit.element);
     case 'add_diagram':
       return addDiagram(model, {
         id: edit.diagram,

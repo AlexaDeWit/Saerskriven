@@ -68,6 +68,7 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
   'op-not-resizable': 'Objekt {id} har ingen storlek att ange.',
   'op-not-note': 'Objekt {id} är inte en anteckning på arbetsytan.',
   'op-not-flow': 'Objekt {id} är inte ett flöde.',
+  'op-not-trust-boundary': 'Objekt {id} är inte en förtroendegräns.',
   'op-empty-name': 'Objekt {id} kan inte lämnas utan namn.',
   'op-element-character':
     'Texten för objekt {id} innehåller ett tecken som modellen inte godtar.',

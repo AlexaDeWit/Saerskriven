@@ -108,6 +108,9 @@ const failures: ByTag<OperationFailure> = {
   NotFlowElement: OperationFailure.NotFlowElement({
     elementId: elementId('element-api'),
   }),
+  NotTrustBoundaryElement: OperationFailure.NotTrustBoundaryElement({
+    elementId: elementId('element-api'),
+  }),
   EmptyName: OperationFailure.EmptyName({
     elementId: elementId('element-api'),
   }),
