@@ -181,11 +181,13 @@ both ends or one again, and the flow keeps its source and target either way.
 ## Names and Note text
 
 Double-click an element or flow, or press Enter or F2 with one selected, to edit
-its name where the diagram draws it. A double click edits and does not zoom.
-Enter commits and Escape keeps the old name, and leaving the field commits too.
-A name the model cannot hold stays in the field with the refused character
-named under it, until you correct it or press Escape. In a Note, Enter adds a
-line, and Command+Enter on macOS or Control+Enter elsewhere commits.
+its name where the diagram draws it. A double click edits and does not zoom,
+and the threat panel its first click opens over the element does not take the
+second. Enter commits and Escape keeps the old name, and leaving the field
+commits too. A name the model cannot hold stays in the field with the refused
+character named under it, until you correct it or press Escape. In a Note,
+Enter adds a line, and Command+Enter on macOS or Control+Enter elsewhere
+commits.
 
 ## Copy, cut, paste and duplicate
 

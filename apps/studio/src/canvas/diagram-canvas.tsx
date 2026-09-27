@@ -53,6 +53,7 @@ import {
   type DiagramNode,
 } from './nodes.js';
 import { editingEdgeTypes, editingNodeTypes } from './inline-editing.js';
+import { usePaneShield } from './pane-shield.js';
 import { PlacementPreview } from './placement-preview.js';
 import { usePlacement } from './placement.js';
 import { currentTool } from './tools.js';
@@ -174,12 +175,16 @@ export function DiagramCanvas({
   const { mode } = placement;
 
   const liveEdges = useLiveEdges(layout, graph, selection, elements, positions);
+  const paneShield = usePaneShield(elements);
 
   const onConnect = (connection: Connection): void => {
     applyConnection(connection, elements);
   };
 
   const onPointerDownCapture = (event: PointerEvent<HTMLDivElement>): void => {
+    if (paneShield.pointerDown(event)) {
+      return;
+    }
     backgroundSelection.down(event);
     liveEdges.rebase();
     boxSelection.pointerDown(event, mode.active);
@@ -254,6 +259,11 @@ export function DiagramCanvas({
   const firstClickBeforeSelectionPan = useRef<ElementId | undefined>(undefined);
 
   const onCanvasClickCapture = (event: MouseEvent<HTMLDivElement>): void => {
+    const shielded = paneShield.click(event);
+    if (shielded !== undefined) {
+      beginEditingText(shielded);
+      return;
+    }
     if (
       !(event.target instanceof Element) ||
       event.target.closest('input, textarea, button') !== null

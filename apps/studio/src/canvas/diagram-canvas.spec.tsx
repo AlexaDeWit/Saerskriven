@@ -26,6 +26,7 @@ import {
   requestFlow,
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
+import { placementClickDistance } from './elements.js';
 import { currentLayout } from './layout.js';
 import {
   actorElement,
@@ -66,6 +67,15 @@ const readerBox = () => {
 
 const resizeControl = (from: string): HTMLElement =>
   screen.getByRole('button', { name: `Resize Reader from ${from}` });
+
+const press = {
+  button: 0,
+  clientX: 40,
+  clientY: 40,
+  isPrimary: true,
+  pointerId: 1,
+  pointerType: 'mouse',
+};
 
 const nodeDescriptionText = (): string | null | undefined =>
   document.querySelector('[id^="react-flow__node-desc"]')?.textContent;
@@ -473,6 +483,42 @@ describe('DiagramCanvas', () => {
     expect(document.getElementById(description)?.textContent).toContain(
       spelled(contextualEntry('edit-canvas-text')),
     );
+  });
+
+  it('keeps the second press of a double-click out of the panel the first press opened, and edits the element', () => {
+    render(<DiagramCanvas />);
+    fireEvent.pointerDown(reader(), press);
+    fireEvent.click(reader(), { detail: 1 });
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+    const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+
+    fireEvent.pointerDown(scope, press);
+    fireEvent.click(scope, { detail: 2 });
+
+    expect(scope.getAttribute('aria-expanded')).toBe('false');
+    expect(modelStore.getState().inlineEditor).toEqual({
+      kind: 'name',
+      elementId: actorElement,
+    });
+  });
+
+  it('leaves a press on the panel that moved as far as a drag to the panel', () => {
+    render(<DiagramCanvas />);
+    fireEvent.pointerDown(reader(), press);
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+    const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+
+    fireEvent.pointerDown(scope, {
+      ...press,
+      clientX: press.clientX + placementClickDistance,
+    });
+
+    expect(scope.getAttribute('aria-expanded')).toBe('true');
+    expect(modelStore.getState().inlineEditor).toBeUndefined();
   });
 
   it('leaves a click on a canvas control out of the rename gesture', () => {
