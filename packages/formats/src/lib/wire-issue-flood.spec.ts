@@ -66,31 +66,47 @@ const refusalOf = (
   return Either.isLeft(result) && result.left;
 };
 
-describe('a document with more invalid entries than zod 4.6.2 gathers on V8', () => {
-  it.each(floodedReads)(
-    'refuses a $format read as one root wire issue',
-    ({ read, text }) => {
-      expect(refusalOf(read, text)).toMatchObject({
-        _tag: 'InvalidWireDocument',
+/**
+ * The OTM and TM-BOM reads run the flood through `importModel`'s full
+ * wire-to-model validation before zod's issue list overflows, and the
+ * Saerskriven YAML model read below does comparable work. That reached
+ * 10.3 s on a contended CI runner (#595), about half that unloaded, already
+ * at the ten second root ceiling (#199). Three times that ceiling leaves
+ * headroom for a busier runner still.
+ */
+const floodTimeoutMs = 30_000;
+
+describe(
+  'a document with more invalid entries than zod 4.6.2 gathers on V8',
+  { timeout: floodTimeoutMs },
+  () => {
+    it.each(floodedReads)(
+      'refuses a $format read as one root wire issue',
+      ({ read, text }) => {
+        expect(refusalOf(read, text)).toMatchObject({
+          _tag: 'InvalidWireDocument',
+          issues: [{ path: [], detail: { code: issueFloodCode } }],
+        });
+      },
+    );
+
+    it('refuses a Saerskriven YAML file valid on the wire as one root model issue', () => {
+      const wire = saerskrivenYamlV2WireSchema.parse(
+        parse(featureCompleteYaml),
+      );
+      const text = JSON.stringify({
+        ...wire,
+        threats: wire.threats.map((threat, index) =>
+          index === 0 ? { ...threat, elements: floodingEntries('a') } : threat,
+        ),
+      });
+
+      expect(
+        refusalOf((flooded) => saerskrivenYamlCodec.read(flooded), text),
+      ).toMatchObject({
+        _tag: 'InvalidModel',
         issues: [{ path: [], detail: { code: issueFloodCode } }],
       });
-    },
-  );
-
-  it('refuses a Saerskriven YAML file valid on the wire as one root model issue', () => {
-    const wire = saerskrivenYamlV2WireSchema.parse(parse(featureCompleteYaml));
-    const text = JSON.stringify({
-      ...wire,
-      threats: wire.threats.map((threat, index) =>
-        index === 0 ? { ...threat, elements: floodingEntries('a') } : threat,
-      ),
     });
-
-    expect(
-      refusalOf((flooded) => saerskrivenYamlCodec.read(flooded), text),
-    ).toMatchObject({
-      _tag: 'InvalidModel',
-      issues: [{ path: [], detail: { code: issueFloodCode } }],
-    });
-  });
-});
+  },
+);
