@@ -1,6 +1,5 @@
-import { translator } from '@saerskriven/i18n';
-import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { activeTranslator } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import {
   bare,
   character,
@@ -15,9 +14,6 @@ import {
 } from './shortcuts.js';
 
 const { t } = activeTranslator();
-
-const inLocale = (locale: 'fr-CA' | 'sv') =>
-  translator(studioMessages, studioCatalogues, locale).t;
 
 const save: Chord = { modifiers: ['Mod'], key: 's' };
 const saveAs: Chord = { modifiers: ['Mod', 'Shift'], key: 's' };

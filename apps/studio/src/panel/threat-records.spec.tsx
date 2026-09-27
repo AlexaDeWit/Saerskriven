@@ -15,6 +15,8 @@ import {
   recordQuoteLength,
   resetAnnouncements,
 } from '../canvas/announcements.js';
+import { chooseLanguage } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { present, undoable } from '../store/store.fixtures.js';
 import {
@@ -23,6 +25,7 @@ import {
   recordedThreat,
   showThreatEditor,
 } from './panel.fixtures.js';
+import type { RecordFieldMessage } from './records.js';
 import type { RefusedField } from './refusals.js';
 import { button, describedNumbers, textbox } from '../ui/ui.fixtures.js';
 
@@ -344,6 +347,66 @@ describe(
           { name: 'Assumption 1' },
         ),
       ).toBeDefined();
+    });
+
+    describe('in French', () => {
+      const french = inLocale('fr-CA');
+      const card = (kind: 'enums.mitigation' | 'enums.assumption') =>
+        within(
+          screen.getByRole('group', {
+            name: french('fields.record-name', {
+              kind: french(kind),
+              number: 1,
+            }),
+          }),
+        );
+      const first = (field: RecordFieldMessage): string =>
+        french(field, { number: 1 });
+
+      beforeEach(() => {
+        act(() => {
+          chooseLanguage('fr-CA');
+        });
+      });
+
+      afterEach(() => {
+        act(() => {
+          chooseLanguage('en-CA');
+        });
+        globalThis.localStorage.clear();
+      });
+
+      it('names each field after its kind of record and the record\'s number, so no "de" lands before the record\'s name', () => {
+        showThreatEditor({ threat: recordedThreat(firstThreat) });
+        const mitigation = card('enums.mitigation');
+        const assumption = card('enums.assumption');
+
+        expect(
+          mitigation.getByRole('textbox', {
+            name: first('fields.mitigation-title-field'),
+          }),
+        ).toHaveProperty('value', 'Read-only share links');
+        expect(
+          mitigation.getByRole('textbox', {
+            name: first('fields.mitigation-prose-field'),
+          }),
+        ).toHaveProperty('value', '');
+        expect(
+          mitigation.getByRole('combobox', {
+            name: first('fields.mitigation-status-field'),
+          }),
+        ).toBeDefined();
+        expect(
+          assumption.getByRole('textbox', {
+            name: first('fields.assumption-prose-field'),
+          }),
+        ).toHaveProperty('value', 'Every editor is signed in.');
+        expect(
+          assumption.getByRole('combobox', {
+            name: first('fields.assumption-status-field'),
+          }),
+        ).toBeDefined();
+      });
     });
 
     it('changes a status in place as one undo step that moves no threat status', async () => {

@@ -1,4 +1,3 @@
-import { translator } from '@saerskriven/i18n';
 import { replaceThreat, type Model, type Threat } from '@saerskriven/model';
 import { elementId, threatId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
@@ -6,6 +5,7 @@ import { Action } from '../store/actions.js';
 import { initialState, type State } from '../store/state.js';
 import {
   actorElement,
+  namedElements,
   namelessElements,
   newProcess,
   processElement,
@@ -13,8 +13,8 @@ import {
   sampleModel,
   sampleThreat,
 } from '../store/store.fixtures.js';
-import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { activeTranslator } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import {
   attachedThreats,
   attachSaid,
@@ -95,7 +95,7 @@ describe('attachedThreats', () => {
 
 const { t } = activeTranslator();
 
-const french = translator(studioMessages, studioCatalogues, 'fr-CA').t;
+const french = inLocale('fr-CA');
 
 describe('elementLabel', () => {
   it('is what the element is called', () => {
@@ -115,7 +115,7 @@ describe('attachSaid', () => {
   const { number } = sampleThreat;
 
   it.each(namelessElements)(
-    'words a nameless %s in a message of its kind, which French contracts onto the article',
+    'words a %s in the message of its kind, which French contracts onto the article',
     (_, on) => {
       expect(attachSaid(sampleThreat, on)(french)).toBe(
         french(`canvas.threat-attached-to-${on.kind}`, { number }),
@@ -123,11 +123,17 @@ describe('attachSaid', () => {
     },
   );
 
-  it('names a named element', () => {
-    expect(attachSaid(sampleThreat, sampleElement(actorElement))(french)).toBe(
-      french('canvas.threat-attached', { number, name: 'Reader' }),
-    );
-  });
+  it.each(namedElements)(
+    'words a %s in the named message of its kind, so no "à" lands before the name',
+    (_, on) => {
+      expect(attachSaid(sampleThreat, on)(french)).toBe(
+        french(`canvas.threat-attached-to-${on.kind}-named`, {
+          number,
+          name: on.name,
+        }),
+      );
+    },
+  );
 });
 
 describe('detachSaid', () => {
@@ -144,21 +150,27 @@ describe('detachSaid', () => {
     );
   });
 
-  it('names the element where the threat stays on its others', () => {
-    const kept: Threat = { ...onTwo, elements: [processElement] };
-
-    expect(detachSaid(onTwo, reader, kept)?.(french)).toBe(
-      french('canvas.threat-detached', { number, name: 'Reader' }),
-    );
-  });
-
   it.each(namelessElements)(
-    'words a nameless %s in a message of its kind where the threat stays on its others, which French contracts onto the article',
+    'words a %s in the message of its kind where the threat stays on its others, which French contracts onto the article',
     (_, detached) => {
       const kept: Threat = { ...onTwo, elements: [actorElement] };
 
       expect(detachSaid(onTwo, detached, kept)?.(french)).toBe(
         french(`canvas.threat-detached-from-${detached.kind}`, { number }),
+      );
+    },
+  );
+
+  it.each(namedElements)(
+    'words a %s in the named message of its kind where the threat stays on its others, so no "de" lands before the name',
+    (_, detached) => {
+      const kept: Threat = { ...onTwo, elements: [actorElement] };
+
+      expect(detachSaid(onTwo, detached, kept)?.(french)).toBe(
+        french(`canvas.threat-detached-from-${detached.kind}-named`, {
+          number,
+          name: detached.name,
+        }),
       );
     },
   );

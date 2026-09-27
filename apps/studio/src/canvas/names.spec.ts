@@ -1,5 +1,4 @@
 import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
-import { translator } from '@saerskriven/i18n';
 import type { Model } from '@saerskriven/model';
 import {
   canvasModel,
@@ -7,11 +6,12 @@ import {
   probeFlow,
   requestFlow,
 } from './canvas.fixtures.js';
-import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { activeTranslator } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { accessibleNames, nameFieldLabel } from './names.js';
 import {
   actorElement,
+  namedElements,
   namelessElements,
   processElement,
 } from '../store/store.fixtures.js';
@@ -135,21 +135,29 @@ describe('accessibleNames', () => {
   });
 });
 
-describe('nameFieldLabel', () => {
-  const french = translator(studioMessages, studioCatalogues, 'fr-CA').t;
+const nameFields = (elements: typeof namedElements) =>
+  elements.flatMap(([title, { name, kind }]) =>
+    kind === 'text' ? [] : [[title, name, kind] as const],
+  );
 
-  it.each(namelessElements)(
-    'words the field of a nameless %s in a message of its kind, which French contracts onto the article',
-    (_, { kind }) => {
-      expect(nameFieldLabel('', kind, french)).toBe(
+describe('nameFieldLabel', () => {
+  const french = inLocale('fr-CA');
+
+  it.each(nameFields(namelessElements))(
+    'words the field of a %s in the message of its kind, which French contracts onto the article',
+    (_, name, kind) => {
+      expect(nameFieldLabel(name, kind)(french)).toBe(
         french(`fields.name-of-${kind}`),
       );
     },
   );
 
-  it('words the field of a named element after its name', () => {
-    expect(nameFieldLabel('Studio', 'process', french)).toBe(
-      french('fields.name-of', { name: 'Studio' }),
-    );
-  });
+  it.each(nameFields(namedElements))(
+    'words the field of a %s in the named message of its kind, so no "de" lands before the name',
+    (_, name, kind) => {
+      expect(nameFieldLabel(name, kind)(french)).toBe(
+        french(`fields.name-of-${kind}-named`, { name }),
+      );
+    },
+  );
 });

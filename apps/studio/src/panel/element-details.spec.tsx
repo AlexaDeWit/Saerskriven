@@ -1,7 +1,5 @@
-import { translator } from '@saerskriven/i18n';
 import {
   elementId,
-  elementIn,
   parsedFixture,
   softHyphen,
   validModelFixture,
@@ -13,11 +11,15 @@ import {
   currentAnnouncement,
   resetAnnouncements,
 } from '../canvas/announcements.js';
-import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { elementById } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
-import { namelessElements, newNote } from '../store/store.fixtures.js';
+import {
+  namedElements,
+  namelessElements,
+  newNote,
+} from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { descriptionLabel } from './element-details.js';
 import {
@@ -212,10 +214,10 @@ describe(
 );
 
 describe('descriptionLabel', () => {
-  const french = translator(studioMessages, studioCatalogues, 'fr-CA').t;
+  const french = inLocale('fr-CA');
 
   it.each(namelessElements)(
-    'words the field of a nameless %s in a message of its kind, which French contracts onto the article',
+    'words the field of a %s in the message of its kind, which French contracts onto the article',
     (_, element) => {
       expect(descriptionLabel(element)(french)).toBe(
         french(`fields.description-of-${element.kind}`),
@@ -223,9 +225,14 @@ describe('descriptionLabel', () => {
     },
   );
 
-  it('words the field of a named element after its name', () => {
-    expect(descriptionLabel(elementIn(base, 'element-api'))(french)).toBe(
-      french('fields.description-of', { name: 'Order API' }),
-    );
-  });
+  it.each(namedElements)(
+    'words the field of a %s in the named message of its kind, so no "de" lands before the name',
+    (_, element) => {
+      expect(descriptionLabel(element)(french)).toBe(
+        french(`fields.description-of-${element.kind}-named`, {
+          name: element.name,
+        }),
+      );
+    },
+  );
 });

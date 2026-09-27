@@ -33,6 +33,14 @@ export type RecordFieldName =
 
 type RecordNoun = 'mitigation' | 'assumption';
 
+/** A message naming one of a record's fields by the record's number, worded for its kind. */
+export type RecordFieldMessage =
+  | 'fields.mitigation-title-field'
+  | 'fields.mitigation-prose-field'
+  | 'fields.mitigation-status-field'
+  | 'fields.assumption-prose-field'
+  | 'fields.assumption-status-field';
+
 /**
  * One kind of record as a record group edits it. A fresh or restored record
  * links nothing until a {@link RecordTarget} attaches it.
@@ -44,6 +52,8 @@ export type RecordKind<Held extends ThreatRecord> = {
   readonly heading: 'terms.mitigations' | 'terms.assumptions';
   readonly statusMessage: (status: Held['status']) => RecordStatusMessage;
   readonly parts: readonly RecordPart[];
+  readonly partField: (part: RecordPart) => RecordFieldMessage;
+  readonly statusField: RecordFieldMessage;
   readonly statuses: readonly Held['status'][];
   readonly held: (model: Model) => readonly Held[];
   readonly fresh: () => Held;
@@ -88,6 +98,11 @@ export const mitigationKind: RecordKind<Mitigation> = {
   heading: 'terms.mitigations',
   statusMessage: (status) => mitigationStatusMessages[status],
   parts: ['title', 'prose'],
+  partField: (part) =>
+    part === 'title'
+      ? 'fields.mitigation-title-field'
+      : 'fields.mitigation-prose-field',
+  statusField: 'fields.mitigation-status-field',
   statuses: mitigationStatusSchema.options,
   held: (model) => model.mitigations,
   fresh: freshMitigation,
@@ -116,6 +131,8 @@ export const assumptionKind: RecordKind<Assumption> = {
   heading: 'terms.assumptions',
   statusMessage: (status) => assumptionStatusMessages[status],
   parts: ['prose'],
+  partField: () => 'fields.assumption-prose-field',
+  statusField: 'fields.assumption-status-field',
   statuses: assumptionStatusSchema.options,
   held: (model) => model.assumptions,
   fresh: freshAssumption,

@@ -23,6 +23,7 @@ import {
   severityMessages,
 } from '../messages/enum-labels.js';
 import { useLanguage } from '../messages/locale.js';
+import type { Said } from '../messages/said.js';
 
 const elementKindOf = {
   actor: 'actor',
@@ -60,8 +61,8 @@ export function accessibleNames(
 
 /**
  * What an element is called in a sentence: its name, or its kind while it has
- * none. A message that puts a preposition before the element words each kind
- * itself instead, as {@link nameFieldLabel} does.
+ * none. A message that puts "de" or "à" before the element takes neither and
+ * words each kind itself, as {@link nameFieldLabel} does.
  */
 export function kindLabel(
   name: string,
@@ -72,26 +73,24 @@ export function kindLabel(
 }
 
 /**
- * The accessible name of an element's name field. An element without a name
- * has a message of its own for its kind, since French contracts the
- * preposition onto the kind's article.
+ * The accessible name of an element's name field, worded for its kind, with
+ * its name where it has one. A text note has no name field.
  */
 export function nameFieldLabel(
   name: string,
-  kind: Element['kind'],
-  t: StudioTranslator['t'],
-): string {
-  return name === ''
-    ? t(`fields.name-of-${kind}`)
-    : t('fields.name-of', { name });
+  kind: Exclude<Element['kind'], 'text'>,
+): Said {
+  return (speak) =>
+    name === ''
+      ? speak(`fields.name-of-${kind}`)
+      : speak(`fields.name-of-${kind}-named`, { name });
 }
 
 /** {@link nameFieldLabel} for one drawn element. */
 export function nodeNameFieldLabel(
-  node: CanvasNode,
-  t: StudioTranslator['t'],
-): string {
-  return nameFieldLabel(node.name, elementKindOf[node.kind], t);
+  node: Exclude<CanvasNode, { readonly kind: 'text' }>,
+): Said {
+  return nameFieldLabel(node.name, elementKindOf[node.kind]);
 }
 
 const marksByLocale: { readonly [L in Locale]: BadgeMarks } = {

@@ -16,13 +16,13 @@ export function showsReason(element: Element): boolean {
   return element.outOfScope || element.reasonOutOfScope !== '';
 }
 
-/** The accessible name of an element's description field, after its name or its kind. */
+/** The accessible name of an element's description field, worded for its kind, with its name where it has one. */
 export function descriptionLabel(element: Element): Said {
   const { name, kind } = element;
   return (speak) =>
     name === ''
       ? speak(`fields.description-of-${kind}`)
-      : speak('fields.description-of', { name });
+      : speak(`fields.description-of-${kind}-named`, { name });
 }
 
 /**

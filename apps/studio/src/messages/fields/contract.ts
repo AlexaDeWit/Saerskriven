@@ -1,21 +1,25 @@
 import { text } from '@saerskriven/i18n';
 
-/**
- * What a control is called, drawn or spoken, across the panel and the canvas.
- * A control named after an element takes the element's name, and has a
- * message of its own for each kind of element that has none, so no locale
- * composes a preposition onto the kind's article.
- */
+const named = { name: 'text' } as const;
+
+const numbered = { number: 'number' } as const;
+
+/** What a control is called, drawn or spoken, across the panel and the canvas. */
 export const fieldMessages = {
   title: text(),
   description: text(),
-  'description-of': text({ name: 'text' }),
   'description-of-actor': text(),
+  'description-of-actor-named': text(named),
   'description-of-process': text(),
+  'description-of-process-named': text(named),
   'description-of-store': text(),
+  'description-of-store-named': text(named),
   'description-of-text': text(),
+  'description-of-text-named': text(named),
   'description-of-flow': text(),
+  'description-of-flow-named': text(named),
   'description-of-trust-boundary': text(),
+  'description-of-trust-boundary-named': text(named),
   'out-of-scope': text(),
   'reason-out-of-scope': text(),
   category: text(),
@@ -23,17 +27,22 @@ export const fieldMessages = {
   status: text(),
   'diagram-title': text(),
   'note-text': text(),
-  'name-of': text({ name: 'text' }),
   'name-of-actor': text(),
+  'name-of-actor-named': text(named),
   'name-of-process': text(),
+  'name-of-process-named': text(named),
   'name-of-store': text(),
-  'name-of-text': text(),
+  'name-of-store-named': text(named),
   'name-of-flow': text(),
+  'name-of-flow-named': text(named),
   'name-of-trust-boundary': text(),
+  'name-of-trust-boundary-named': text(named),
   'record-name': text({ kind: 'text', number: 'number' }),
-  'record-title-field': text({ name: 'text' }),
-  'record-prose-field': text({ name: 'text' }),
-  'record-status-field': text({ name: 'text' }),
+  'mitigation-title-field': text(numbered),
+  'mitigation-prose-field': text(numbered),
+  'mitigation-status-field': text(numbered),
+  'assumption-prose-field': text(numbered),
+  'assumption-status-field': text(numbered),
   'add-record': text({ kind: 'text' }),
   'existing-record': text({ kind: 'text' }),
   'link-existing-record': text({ kind: 'text' }),

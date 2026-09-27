@@ -287,13 +287,26 @@ export function newNote(id: string, text: string): Element {
 /**
  * A nameless process and a nameless trust boundary, each under the words a
  * spec title gives it: a masculine and a feminine kind in French, which a
- * message putting a preposition before an element words apart.
+ * message putting "de" or "à" before an element words apart.
  */
 export const namelessElements: readonly (readonly [string, Element])[] = [
-  ['process', newProcess('process-unnamed', '')],
+  ['nameless process', newProcess('process-unnamed', '')],
   [
-    'trust boundary',
+    'nameless trust boundary',
     { ...elementIn(validModel, 'element-perimeter'), name: '' },
+  ],
+];
+
+/**
+ * {@link namelessElements} named, and a store whose name starts with a vowel,
+ * which French would elide "de" before.
+ */
+export const namedElements: readonly (readonly [string, Element])[] = [
+  ['named process', newProcess('process-named', 'Studio')],
+  ['named trust boundary', elementIn(validModel, 'element-perimeter')],
+  [
+    'store whose name starts with a vowel',
+    { ...sampleElement(storeElement), name: 'Entrepôt de commandes' },
   ],
 ];
 

@@ -296,7 +296,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         >
           <InlineField
             elementId={node.id}
-            label={(speak) => nodeNameFieldLabel(node, speak)}
+            label={nodeNameFieldLabel(node)}
             onCommit={commitRename}
             refuse={refusedName}
             room={
@@ -348,7 +348,7 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
           >
             <InlineField
               elementId={edge.id}
-              label={(speak) => nameFieldLabel(edge.name, 'flow', speak)}
+              label={nameFieldLabel(edge.name, 'flow')}
               onCommit={commitRename}
               refuse={refusedName}
               textStyle={edge.label.name.textStyle}
