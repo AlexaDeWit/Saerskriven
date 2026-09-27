@@ -1,4 +1,5 @@
 import { readAnyFormat } from '@saerskriven/formats';
+import { softHyphen } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -51,6 +52,42 @@ describe('starting a model', () => {
         lastIssuedThreatNumber: 0,
       }),
     );
+  });
+
+  it('writes the description and contributors the call gave it', () => {
+    const tree = editableTree();
+    const metadata = {
+      title: 'Payments',
+      owner: 'Alexandra de Wit',
+      description: 'Card payments from checkout to settlement.',
+      contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
+    };
+    created(tree.root, { file: 'new-model.yaml', ...metadata });
+    const read = readAnyFormat(
+      readFileSync(join(tree.root, 'new-model.yaml'), 'utf8'),
+    );
+    expect(Either.getOrUndefined(read)?.model.metadata).toEqual(metadata);
+  });
+
+  it.each([
+    {
+      field: 'description',
+      metadata: { description: `Card${softHyphen}payments` },
+    },
+    {
+      field: 'contributors',
+      metadata: {
+        contributors: ['Alexandra de Wit', `Jonas${softHyphen}Lindqvist`],
+      },
+    },
+  ])('refuses a refused character in the $field', ({ metadata }) => {
+    expect(
+      createArgumentsSchema.safeParse({
+        file: 'new-model.yaml',
+        title: 'Payments',
+        ...metadata,
+      }).success,
+    ).toBe(false);
   });
 
   it('refuses a path already holding a file, leaving its bytes alone', () => {

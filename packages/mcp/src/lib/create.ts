@@ -1,21 +1,35 @@
-import { acceptedTextSchema, emptyModel, type Model } from '@saerskriven/model';
+import {
+  emptyModel,
+  modelMetadataSchema,
+  type Model,
+} from '@saerskriven/model';
 import type { Either } from 'effect';
 import { z } from 'zod';
 import { createdModel, readBoundPhrase, type WriteReport } from './write.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_create` takes: where the file goes and what the model is called. */
+const metadata = modelMetadataSchema.shape;
+
+/** What `saer_create` takes: where the file goes and the model's metadata. */
 export const createArgumentsSchema = z.object({
   file: z
     .string()
     .describe(
       'Where to write the new model, as a path relative to the server root. The call is refused when a file is already there, so this never replaces one.',
     ),
-  title: acceptedTextSchema.describe('What the model is called.'),
-  owner: acceptedTextSchema
+  title: metadata.title.describe('What the model is called.'),
+  owner: metadata.owner
     .optional()
     .describe(
       'Who answers for the model. Left out, the field is written empty, and saer_edit sets it later with set_model_metadata.',
+    ),
+  description: metadata.description
+    .optional()
+    .describe('What the model covers. Left out, the field is written empty.'),
+  contributors: metadata.contributors
+    .optional()
+    .describe(
+      'Who worked on the model, one name per entry. Left out, the list is written empty.',
     ),
 });
 
@@ -27,11 +41,11 @@ export type CreateResult = WriteReport;
 
 /** What `saer_create` tells a client it is for. */
 export const createDescription = [
-  'Write a new Saerskriven threat model file: the native YAML format at version 2, the title and owner this call gives it, and no diagram, threat, mitigation or assumption yet.',
+  'Write a new Saerskriven threat model file: the native YAML format at version 2, the title this call gives it and any of the owner, description and contributors, and no diagram, threat, mitigation or assumption yet.',
   'Pass `file` as the path to write, relative to the server root. A path already holding a file is refused rather than replaced: to change a model that exists, read it and call saer_edit.',
   'The result carries the `revision` of the file it wrote, which is the handle the first saer_edit on it has to quote back, so a create and an edit run in one turn without a read between them.',
   `A model past ${readBoundPhrase}, is refused and not written, since the server could not open it again.`,
-  'Fill the model in with saer_edit: add a diagram first, then the elements, then the threats that attach to them. Mitigations and assumptions are added to threats with the record ops, and an assumption about the model as a whole is added applying to the model. Its set_model_metadata op sets the title, owner, description and contributors.',
+  'Fill the model in with saer_edit: add a diagram first, then the elements, then the threats that attach to them. Mitigations and assumptions are added to threats with the record ops, and an assumption about the model as a whole is added applying to the model. Its set_model_metadata op changes the title, owner, description and contributors later.',
 ].join(' ');
 
 /**
@@ -42,17 +56,17 @@ export function createModel(
   workspace: ModelWorkspace,
   args: CreateArguments,
 ): Either.Either<CreateResult, readonly string[]> {
-  return createdModel(workspace, args.file, titled(args), []);
+  return createdModel(workspace, args.file, described(args), []);
 }
 
-function titled(args: CreateArguments): Model {
+function described(args: CreateArguments): Model {
   return {
     ...emptyModel,
     metadata: {
       title: args.title,
       owner: args.owner ?? '',
-      description: '',
-      contributors: [],
+      description: args.description ?? '',
+      contributors: args.contributors ?? [],
     },
   };
 }

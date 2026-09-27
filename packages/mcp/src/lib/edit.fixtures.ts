@@ -353,6 +353,16 @@ export const editVariants: readonly {
     ],
   },
   {
+    op: 'set_threat_details',
+    edits: [
+      {
+        op: 'set_threat_details',
+        threat: 'threat-tamper-order',
+        description: 'An order can be altered on its way to the API.',
+      },
+    ],
+  },
+  {
     op: 'add_mitigation',
     edits: [
       {
@@ -414,6 +424,16 @@ export const editVariants: readonly {
         op: 'set_mitigation_status',
         mitigation: 'mitigation-tls',
         status: 'implemented',
+      },
+    ],
+  },
+  {
+    op: 'set_mitigation_details',
+    edits: [
+      {
+        op: 'set_mitigation_details',
+        mitigation: 'mitigation-tls',
+        title: 'TLS with a pinned certificate',
       },
     ],
   },
@@ -498,6 +518,16 @@ export const editVariants: readonly {
         op: 'set_assumption_status',
         assumption: 'assumption-managed-db',
         status: 'invalidated',
+      },
+    ],
+  },
+  {
+    op: 'set_assumption_details',
+    edits: [
+      {
+        op: 'set_assumption_details',
+        assumption: 'assumption-managed-db',
+        prose: 'The order database encrypts its disks and its backups.',
       },
     ],
   },
