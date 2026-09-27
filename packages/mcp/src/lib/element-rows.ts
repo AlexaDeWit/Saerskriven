@@ -48,6 +48,9 @@ export const elementResultSchema = z.union([
   elementRowSchema,
 ]);
 
+/** One end of a flow, as an edit names it and a drawing reports it. */
+export const flowEndSchema = z.enum(['source', 'target']);
+
 /** One element of a diagram, paired with the diagram that owns it. */
 export type ElementOnDiagram = {
   readonly element: Element;

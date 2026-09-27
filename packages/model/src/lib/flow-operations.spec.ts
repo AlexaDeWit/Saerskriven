@@ -364,6 +364,30 @@ describe('reverseFlow', () => {
     },
   );
 
+  it('reverses the bends of a flow whose two ends are alike', () => {
+    const end = { kind: 'free', position: { x: 5, y: 5 } };
+    const looped = modelWith({
+      elements: [
+        flowBetween(end, end, [
+          { x: 40, y: 10 },
+          { x: 80, y: 60 },
+        ]),
+      ],
+    });
+    const before = flowIn(looped, 'el-flow');
+    expect(
+      flowIn(modelOf(reverseFlow(looped, elementId('el-flow'))), 'el-flow'),
+    ).toEqual({
+      ...before,
+      source: end,
+      target: end,
+      waypoints: [
+        { x: 80, y: 60 },
+        { x: 40, y: 10 },
+      ],
+    });
+  });
+
   it('refuses missing elements and other element kinds', () => {
     expect(
       errorOf(reverseFlow(validModel, elementId('element-api')))?._tag,
@@ -374,14 +398,16 @@ describe('reverseFlow', () => {
   });
 });
 
-operationContract({
-  reverseFlow: {
-    input: validModel,
-    run: (model) => reverseFlow(model, orderFlow),
-  },
-  'setFlowEndPosition freeing the second end': {
-    input: validModel,
-    run: (model) =>
-      setFlowEndPosition(model, orderFlow, 'source', { x: 10, y: 20 }),
-  },
+describe('flow operations', () => {
+  operationContract({
+    reverseFlow: {
+      input: validModel,
+      run: (model) => reverseFlow(model, orderFlow),
+    },
+    'setFlowEndPosition freeing the second end': {
+      input: validModel,
+      run: (model) =>
+        setFlowEndPosition(model, orderFlow, 'source', { x: 10, y: 20 }),
+    },
+  });
 });

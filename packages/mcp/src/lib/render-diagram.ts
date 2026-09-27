@@ -23,6 +23,7 @@ import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
+import { flowEndSchema } from './element-rows.js';
 import { fileArgumentSchema } from './inspect.js';
 import {
   readNamed,
@@ -91,7 +92,7 @@ export type RenderDiagramArguments = z.infer<
 
 const unplacedSchema = z.object({
   flow: elementIdSchema,
-  side: z.enum(['source', 'target']),
+  side: flowEndSchema,
   element: elementIdSchema,
 });
 

@@ -843,7 +843,7 @@ describe('what the flow direction and metadata ops write', () => {
 });
 
 describe('what the flow end, reversal and boundary shape ops write', () => {
-  it('frees one end of a flow, reverses it and turns a box boundary into a curve, in one batch', () => {
+  it('reverses a flow, frees its attached end and moves its free one, and turns a box boundary into a curve, in one batch', () => {
     const attempted = attempt();
     attempted.edit(modelFile, revisionIn(attempted, modelFile), [
       {
@@ -854,13 +854,19 @@ describe('what the flow end, reversal and boundary shape ops write', () => {
           { x: 240, y: 200 },
         ],
       },
+      { op: 'reverse_flow', element: 'element-order-flow' },
+      {
+        op: 'set_flow_end_position',
+        element: 'element-order-flow',
+        side: 'target',
+        position: { x: 60, y: 200 },
+      },
       {
         op: 'set_flow_end_position',
         element: 'element-order-flow',
         side: 'source',
-        position: { x: 60, y: 200 },
+        position: { x: 300, y: 180 },
       },
-      { op: 'reverse_flow', element: 'element-order-flow' },
       {
         op: 'set_boundary_shape',
         element: 'element-perimeter',
@@ -871,7 +877,7 @@ describe('what the flow end, reversal and boundary shape ops write', () => {
     expect(
       elements.find((element) => element.id === 'element-order-flow'),
     ).toMatchObject({
-      source: { kind: 'free', position: { x: 280, y: 160 } },
+      source: { kind: 'free', position: { x: 300, y: 180 } },
       target: { kind: 'free', position: { x: 60, y: 200 } },
       waypoints: [
         { x: 240, y: 200 },

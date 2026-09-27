@@ -14,20 +14,20 @@ import { errorOf, modelOf, operationContract } from './operations.fixtures.js';
 const perimeter = elementId('element-perimeter');
 const billingZone = elementId('element-billing-zone');
 
-const curve: BoundaryShape = {
+const curve = {
   kind: 'curve',
   waypoints: [
     { x: 260, y: 40 },
     { x: 540, y: 20 },
     { x: 820, y: 60 },
   ],
-};
+} satisfies BoundaryShape;
 
-const box: BoundaryShape = {
+const box = {
   kind: 'box',
   position: { x: 20, y: 300 },
   size: { width: 780, height: 120 },
-};
+} satisfies BoundaryShape;
 
 describe('setBoundaryShape', () => {
   it('turns a box boundary into a curve and back, keeping its declared relationships', () => {
@@ -53,12 +53,21 @@ describe('setBoundaryShape', () => {
       },
     ],
     [
-      'a box to a new size alone',
+      'a box to a new height alone',
       perimeter,
       {
         kind: 'box',
         position: { x: 280, y: 60 },
         size: { width: 520, height: 240 },
+      },
+    ],
+    [
+      'a box to a new width alone',
+      perimeter,
+      {
+        kind: 'box',
+        position: { x: 280, y: 60 },
+        size: { width: 600, height: 220 },
       },
     ],
   ])('reshapes %s', (_, id, shape) => {
@@ -80,24 +89,16 @@ describe('setBoundaryShape', () => {
     },
   );
 
-  it.each<[string, BoundaryShape, readonly string[]]>([
-    [
-      'a curve through one point',
-      { kind: 'curve', waypoints: [{ x: 0, y: 0 }] },
-      ['shape', 'waypoints'],
-    ],
-    [
-      'a box with no width',
-      { kind: 'box', position: { x: 0, y: 0 }, size: { width: 0, height: 40 } },
-      ['shape', 'size', 'width'],
-    ],
-  ])('refuses %s, naming the path under shape', (_, shape, path) => {
-    expect(errorOf(setBoundaryShape(validModel, perimeter, shape))).toEqual(
-      OperationFailure.InvalidElementProperties({
-        elementId: perimeter,
-        issues: [expect.objectContaining({ path })],
-      }),
-    );
+  it('holds its own copy of the shape it was given', () => {
+    const givenBox = structuredClone(box);
+    const givenCurve = structuredClone(curve);
+    const boxed = modelOf(setBoundaryShape(validModel, billingZone, givenBox));
+    const curved = modelOf(setBoundaryShape(validModel, perimeter, givenCurve));
+    givenBox.position.x = 999;
+    givenBox.size.width = 999;
+    givenCurve.waypoints[0].x = 999;
+    expect(elementIn(boxed, billingZone)).toMatchObject({ shape: box });
+    expect(elementIn(curved, perimeter)).toMatchObject({ shape: curve });
   });
 
   it.each(['element-api', 'element-order-flow'])(

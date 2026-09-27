@@ -43,6 +43,7 @@ import {
   editedProperties,
   propertyEditSchema,
 } from './element-edits.js';
+import { flowEndSchema } from './element-rows.js';
 import {
   describeOperationFailure,
   unappliedEdit,
@@ -121,7 +122,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   }),
   elementEditSchema.extend({
     op: z.literal('reconnect_flow'),
-    side: z.enum(['source', 'target']),
+    side: flowEndSchema,
     endpoint: elementIdSchema.describe(
       'The actor, process or store the end moves to.',
     ),
@@ -133,7 +134,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   }),
   elementEditSchema.extend({
     op: z.literal('set_flow_end_position'),
-    side: z.enum(['source', 'target']),
+    side: flowEndSchema,
     position: pointSchema.describe(
       'The canvas position the end is freed at, or moved to where it is free already.',
     ),
