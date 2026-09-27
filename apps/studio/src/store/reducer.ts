@@ -14,6 +14,7 @@ import {
   unlinkAssumptionFromModel,
   unlinkMitigation,
   addElement,
+  setElementDetails,
   setElementProperties,
   insertFragment,
   renameDiagram,
@@ -55,6 +56,8 @@ export function reduce(state: State, action: Action): State {
   return Action.$match(action, {
     SetElementProperties: ({ elementId, properties }) =>
       edited(state, setElementProperties(state.present, elementId, properties)),
+    SetElementDetails: ({ elementId, change }) =>
+      edited(state, setElementDetails(state.present, elementId, change)),
     InsertFragment: ({ diagramId, fragment }) =>
       edited(state, insertFragment(state.present, diagramId, fragment)),
     ReconnectFlow: ({ elementId, side, endpointId, anchor }) =>

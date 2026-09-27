@@ -3,6 +3,7 @@ import {
   emptyModel,
   OperationFailure,
   type DiagramId,
+  type ElementDetailsChange,
 } from '@saerskriven/model';
 import {
   assumptionId,
@@ -14,7 +15,7 @@ import {
 } from '@saerskriven/model/fixtures';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
-import { activeDiagramId } from './selectors.js';
+import { activeDiagramId, elementById } from './selectors.js';
 import {
   FileLifecycle,
   StudioFailure,
@@ -84,6 +85,10 @@ const applied: ActionsByTag<ModelActionTag> = {
   SetElementProperties: Action.SetElementProperties({
     elementId: processElement,
     properties: { kind: 'process', isWebApplication: true },
+  }),
+  SetElementDetails: Action.SetElementDetails({
+    elementId: processElement,
+    change: { description: 'Edits the models.' },
   }),
   AddDiagram: Action.AddDiagram({
     diagram: { id: secondDiagram, title: 'Second', elements: [] },
@@ -212,6 +217,10 @@ const refused: ActionsByTag<ModelActionTag> = {
   SetElementProperties: Action.SetElementProperties({
     elementId: processElement,
     properties: { kind: 'actor', providesAuthentication: true },
+  }),
+  SetElementDetails: Action.SetElementDetails({
+    elementId: elementId('element-missing'),
+    change: { outOfScope: true },
   }),
   AddDiagram: Action.AddDiagram({
     diagram: { id: mainDiagram, title: 'Again', elements: [] },
@@ -647,6 +656,63 @@ describe('the model metadata', () => {
         }),
       ),
     ).toBe(start);
+  });
+});
+
+describe('the element details', () => {
+  const details = (state: State) => {
+    const element = elementById(state, noteElement);
+    return {
+      description: element?.description,
+      outOfScope: element?.outOfScope,
+      reasonOutOfScope: element?.reasonOutOfScope,
+    };
+  };
+  const detailed = (state: State, change: ElementDetailsChange) =>
+    reduce(state, Action.SetElementDetails({ elementId: noteElement, change }));
+
+  it('commits the description, the flag and the reason on a note as one undo step each', () => {
+    const described = detailed(noteStart, { description: 'Draft only.' });
+    const flagged = detailed(described, { outOfScope: true });
+    const reasoned = detailed(flagged, { reasonOutOfScope: 'Not deployed.' });
+    expect(details(reasoned)).toEqual({
+      description: 'Draft only.',
+      outOfScope: true,
+      reasonOutOfScope: 'Not deployed.',
+    });
+    expect(reasoned.past).toHaveLength(3);
+    expect(reduce(reasoned, Action.Undo()).present).toBe(flagged.present);
+  });
+
+  it('keeps the reason when the flag clears, and the flag when the reason changes', () => {
+    const outOfScope = detailed(noteStart, {
+      outOfScope: true,
+      reasonOutOfScope: 'Not deployed.',
+    });
+    expect(details(detailed(outOfScope, { outOfScope: false }))).toMatchObject({
+      outOfScope: false,
+      reasonOutOfScope: 'Not deployed.',
+    });
+    expect(
+      details(detailed(outOfScope, { reasonOutOfScope: '' })),
+    ).toMatchObject({ outOfScope: true, reasonOutOfScope: '' });
+  });
+
+  it('keeps history alone for a value the element already holds', () => {
+    expect(detailed(noteStart, { outOfScope: false })).toBe(noteStart);
+  });
+
+  it('records a refused character or an unknown element as the model names it, leaving the model alone', () => {
+    const refusedReason = detailed(noteStart, {
+      reasonOutOfScope: `Not${softHyphen}deployed`,
+    });
+    expect(refusedReason.present).toBe(noteStart.present);
+    expect(refusedReason.lastFailure).toMatchObject({
+      failure: { _tag: 'RefusedCharacter' },
+    });
+    expect(
+      reduce(noteStart, refused.SetElementDetails).lastFailure,
+    ).toMatchObject({ failure: { _tag: 'UnknownElement' } });
   });
 });
 

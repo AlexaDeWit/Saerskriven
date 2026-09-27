@@ -11,6 +11,7 @@ import type {
   Diagram,
   DiagramId,
   Element,
+  ElementDetailsChange,
   ElementId,
   ElementProperties,
   Mitigation,
@@ -33,6 +34,10 @@ export type Action = Data.TaggedEnum<{
   SetElementProperties: {
     readonly elementId: ElementId;
     readonly properties: ElementProperties;
+  };
+  SetElementDetails: {
+    readonly elementId: ElementId;
+    readonly change: ElementDetailsChange;
   };
   AddElement: { readonly diagramId: DiagramId; readonly element: Element };
   InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };
