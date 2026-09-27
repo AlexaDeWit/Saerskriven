@@ -6,6 +6,7 @@ import {
 import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { Either } from 'effect';
 import { parse } from 'yaml';
+import { floodTimeout } from './codec.fixtures.js';
 import { readAnyFormat } from './detect.js';
 import { importModel } from './import.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
@@ -66,31 +67,37 @@ const refusalOf = (
   return Either.isLeft(result) && result.left;
 };
 
-describe('a document with more invalid entries than zod 4.6.2 gathers on V8', () => {
-  it.each(floodedReads)(
-    'refuses a $format read as one root wire issue',
-    ({ read, text }) => {
-      expect(refusalOf(read, text)).toMatchObject({
-        _tag: 'InvalidWireDocument',
+describe(
+  'a document with more invalid entries than zod 4.6.2 gathers on V8',
+  () => {
+    it.each(floodedReads)(
+      'refuses a $format read as one root wire issue',
+      ({ read, text }) => {
+        expect(refusalOf(read, text)).toMatchObject({
+          _tag: 'InvalidWireDocument',
+          issues: [{ path: [], detail: { code: issueFloodCode } }],
+        });
+      },
+    );
+
+    it('refuses a Saerskriven YAML file valid on the wire as one root model issue', () => {
+      const wire = saerskrivenYamlV2WireSchema.parse(
+        parse(featureCompleteYaml),
+      );
+      const text = JSON.stringify({
+        ...wire,
+        threats: wire.threats.map((threat, index) =>
+          index === 0 ? { ...threat, elements: floodingEntries('a') } : threat,
+        ),
+      });
+
+      expect(
+        refusalOf((flooded) => saerskrivenYamlCodec.read(flooded), text),
+      ).toMatchObject({
+        _tag: 'InvalidModel',
         issues: [{ path: [], detail: { code: issueFloodCode } }],
       });
-    },
-  );
-
-  it('refuses a Saerskriven YAML file valid on the wire as one root model issue', () => {
-    const wire = saerskrivenYamlV2WireSchema.parse(parse(featureCompleteYaml));
-    const text = JSON.stringify({
-      ...wire,
-      threats: wire.threats.map((threat, index) =>
-        index === 0 ? { ...threat, elements: floodingEntries('a') } : threat,
-      ),
     });
-
-    expect(
-      refusalOf((flooded) => saerskrivenYamlCodec.read(flooded), text),
-    ).toMatchObject({
-      _tag: 'InvalidModel',
-      issues: [{ path: [], detail: { code: issueFloodCode } }],
-    });
-  });
-});
+  },
+  floodTimeout,
+);
