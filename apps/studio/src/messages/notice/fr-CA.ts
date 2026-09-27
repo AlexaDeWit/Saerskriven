@@ -29,8 +29,6 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
     '{limit} : la limite est de {bound}, l’instantané a atteint {observed}.',
   'snapshot-unsupported':
     'L’instantané enregistré est mal formé ou non pris en charge.',
-  'snapshot-invalid': 'L’instantané enregistré n’est pas valide.',
-  'snapshot-model-invalid': 'Le modèle enregistré n’est pas valide.',
   'snapshot-earlier-release':
     'Une version antérieure de Saerskriven a enregistré cette session sous une forme que cette version ne peut pas restaurer.',
   'snapshot-release':

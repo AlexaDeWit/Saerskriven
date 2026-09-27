@@ -26,8 +26,6 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
     '{limit}: gränsen är {bound}, ögonblicksbilden nådde {observed}.',
   'snapshot-unsupported':
     'Den sparade ögonblicksbilden är felformad eller stöds inte.',
-  'snapshot-invalid': 'Den sparade ögonblicksbilden är inte giltig.',
-  'snapshot-model-invalid': 'Den sparade modellen är inte giltig.',
   'snapshot-earlier-release':
     'En tidigare version av Saerskriven sparade den här sessionen, i en form som den här versionen inte kan återställa.',
   'snapshot-release':

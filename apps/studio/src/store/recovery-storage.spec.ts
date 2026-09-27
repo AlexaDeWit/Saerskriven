@@ -1,4 +1,5 @@
 import {
+  readLimits,
   saerskrivenYamlCodec,
   type RetainedSource,
 } from '@saerskriven/formats';
@@ -222,25 +223,35 @@ describe('local recovery storage', () => {
   });
 
   it('rejects a version 1 snapshot, saying an earlier release wrote it', () => {
-    const older = rejectionOf(version1Snapshot);
-
     expect(loadStored(version1Snapshot)).toEqual(
-      Either.left(RecoveryStorageFailure.Rejected({ problem: older })),
+      Either.left(
+        RecoveryStorageFailure.Rejected({
+          problem: RecoveryProblem.EarlierRelease({ writer: undefined }),
+        }),
+      ),
     );
-    expect(older).toEqual(
-      RecoveryProblem.EarlierRelease({ writer: undefined }),
-    );
-    expect(rejectionOf('{')).toMatchObject({ _tag: 'Thrown' });
-    expect(rejectionOf(JSON.stringify({ ...current, version: 3 }))).toEqual(
-      RecoveryProblem.Unsupported(),
+  });
+
+  it('rejects malformed JSON, carrying what the parser raised', () => {
+    expect(loadStored('{')).toMatchObject(
+      Either.left({ _tag: 'Rejected', problem: { _tag: 'Thrown' } }),
     );
   });
 
   it.each([
-    ['malformed JSON', '{'],
+    [
+      'a nesting past the depth bound',
+      committedText('adversarial/deep-nesting.json'),
+      RecoveryProblem.PastBound({
+        limit: 'maxNestingDepth',
+        bound: readLimits.maxNestingDepth,
+        observed: readLimits.maxNestingDepth + 1,
+      }),
+    ],
     [
       'an unsupported later version',
       JSON.stringify({ ...current, version: 3 }),
+      RecoveryProblem.Unsupported(),
     ],
     [
       'a document the model refuses',
@@ -254,8 +265,13 @@ describe('local recovery storage', () => {
           })),
         },
       }),
+      RecoveryProblem.Unsupported(),
     ],
-    ['an invalid document', JSON.stringify({ ...current, document: {} })],
+    [
+      'an invalid document',
+      JSON.stringify({ ...current, document: {} }),
+      RecoveryProblem.Unsupported(),
+    ],
     [
       'an invalid retained source',
       JSON.stringify({
@@ -266,10 +282,11 @@ describe('local recovery storage', () => {
           source: { format: 'threat-dragon', document: {} },
         },
       }),
+      RecoveryProblem.Unsupported(),
     ],
-  ])('rejects %s without throwing', (_case, raw) => {
+  ])('rejects %s, naming what stopped it', (_case, raw, problem) => {
     expect(loadStored(raw)).toEqual(
-      Either.left(expect.objectContaining({ _tag: 'Rejected' })),
+      Either.left(RecoveryStorageFailure.Rejected({ problem })),
     );
   });
 

@@ -58,7 +58,7 @@ no target writes them. They are read as follows:
 | `otm/example.json`                        | `packages/wire-otm`, `packages/formats`, `packages/mcp`, `apps/studio`, `apps/studio-e2e`   |
 | `tmbom/example.json`                      | `packages/wire-tmbom`, `packages/formats`, `packages/mcp`                                   |
 | `tmbom/vault-invalid-zones.json`          | `packages/formats`                                                                          |
-| `adversarial/deep-nesting.json`           | `packages/formats`, `apps/cli`                                                              |
+| `adversarial/deep-nesting.json`           | `packages/formats`, `apps/cli`, `apps/studio`                                               |
 | `adversarial/typst-injection.yaml`        | `apps/cli`                                                                                  |
 | every other `adversarial/` payload        | `packages/formats`                                                                          |
 
