@@ -61,11 +61,11 @@ A diagram's threats are the ones referencing an element drawn on it, which
 element is on no diagram.
 
 A threat number never moves: the model carries the highest number it has ever
-issued, so a removed threat leaves a gap and `nextThreatNumber` never hands its
-number back. A paste is the one way a number returns: `insertFragment` lets a
-pasted threat keep a number no threat in the model holds, so cut then paste
-restores a threat under its own number, and it never leaves the last issued
-number below one it kept.
+issued or kept by a paste, so a removed threat leaves a gap and
+`nextThreatNumber` never hands its number back. A paste is the one way a number
+returns: `insertFragment` lets a pasted threat keep a number no threat in the
+model holds, so cut then paste restores a threat under its own number, and it
+never leaves the last issued number below one it kept.
 
 `removeDiagram` refuses a diagram that still owns elements. A cascade would
 delete records the caller never named, which no other operation does, so a

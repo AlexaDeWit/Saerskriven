@@ -121,15 +121,14 @@ export function remapFragment(
 
 /**
  * Inserts one copied graph atomically. A pasted threat keeps its number when
- * no threat in the model holds it, the first in fragment order winning a
- * number several carry, so a cut then paste restores a threat's number. Every
- * other pasted threat takes a new number above the last issued and every
- * kept one, so the last issued number never ends below a pasted number. A
- * copied record identical to one the model holds adds its pasted threat
- * links to that record, which keeps its own `appliesToModel`. Every other
- * copied record linked to a pasted threat is added as a clone, an assumption
- * with no model link. An element, threat or record ID the model holds, other
- * than an identical record's, refuses the insertion.
+ * no threat in the model holds it, so a cut then paste restores a threat's
+ * number. Every other pasted threat takes a new number above the last issued
+ * and every kept one, so the last issued number never ends below a pasted
+ * number. A copied record identical to one the model holds adds its pasted
+ * threat links to that record, which keeps its own `appliesToModel`. Every
+ * other copied record linked to a pasted threat is added as a clone, an
+ * assumption with no model link. An element, threat or record ID the model
+ * holds, other than an identical record's, refuses the insertion.
  */
 export function insertFragment(
   model: Model,

@@ -248,9 +248,9 @@ only a diagram with no elements left, so remove its elements with
 #### Threats
 
 A threat carries no number in an edit: the model issues one when a threat is
-added and keeps it when the threat is replaced, so a number names one threat
-for the life of the model and no edit renumbers. `add_threat` takes the rest of
-the threat, and every element it attaches to has to be one the model holds.
+added and keeps it when the threat is replaced, so no edit renumbers a threat,
+and no two threats hold one number. `add_threat` takes the rest of the threat,
+and every element it attaches to has to be one the model holds.
 `replace_threat` takes the whole threat and replaces every field of the one
 with its id but the number. `set_threat_status`, `set_threat_severity` and
 `set_threat_category` change that one field and keep the rest, the category

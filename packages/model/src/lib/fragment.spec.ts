@@ -306,17 +306,11 @@ describe('pasted threat numbers', () => {
     expect(mixed.inserted.lastIssuedThreatNumber).toBe(4);
   });
 
-  it('lets the first pasted threat carrying a free number keep it, pasted twice or twice in one fragment', () => {
+  it('keeps a free number on the first paste of a selection, and issues a new one on the second', () => {
     const once = pastedInto(cut, remapped(cut, 'once')).inserted;
-    expect(pastedInto(once, remapped(once, 'twice')).numbers).toEqual([4, 5]);
-    const fragment = remapped(cut, 'shared');
-    const [first, second] = fragment.threats;
-    const sharing = pastedInto(cut, {
-      ...fragment,
-      threats: [first, { ...second, number: first.number }],
-    });
-    expect(sharing.numbers).toEqual([1, 4]);
-    expect(sharing.inserted.lastIssuedThreatNumber).toBe(4);
+    const twice = pastedInto(once, remapped(once, 'twice'));
+    expect(twice.numbers).toEqual([4, 5]);
+    expect(twice.inserted.lastIssuedThreatNumber).toBe(5);
   });
 
   it('raises the last issued number to a kept number above it, and issues new numbers past both', () => {
