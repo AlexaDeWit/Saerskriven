@@ -1,5 +1,6 @@
 import { Either, Option } from 'effect';
 import { z } from 'zod';
+import { floodingEntries } from './issue-flood.fixtures.js';
 import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
 import { issueFloodCode, type ParseIssueDetail } from './parse-issue.js';
 import { boundedParse, parseModel, schemaFailureIssues } from './parse.js';
@@ -293,7 +294,7 @@ describe('boundedParse', () => {
   it('refuses a model with more invalid entries than zod 4.6.2 gathers on V8', () => {
     const flooded = {
       ...validModelFixture,
-      threats: [{ elements: Array.from({ length: 135_000 }, () => 1) }],
+      threats: [{ elements: floodingEntries(1) }],
     };
 
     const parsed = parseModel(flooded);

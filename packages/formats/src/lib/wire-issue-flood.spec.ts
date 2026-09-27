@@ -1,4 +1,8 @@
 import { issueFloodCode } from '@saerskriven/model';
+import {
+  floodingEntries,
+  floodingEntryCount,
+} from '@saerskriven/model/fixtures';
 import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { Either } from 'effect';
 import { parse } from 'yaml';
@@ -8,10 +12,10 @@ import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { featureCompleteYaml } from './saerskriven-yaml.fixtures.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
-const issues = 135_000;
-
-const entries = (entry: string, issuesEach: number): string =>
-  Array.from({ length: issues / issuesEach }, () => entry).join(',');
+const entries = (entry: string, issuesEach: number): string => {
+  const length = floodingEntryCount / issuesEach;
+  return Array.from({ length }, () => entry).join(',');
+};
 
 const threatDragonFlood = `{"summary":{"title":"t"},"detail":{"diagrams":[{"cells":[${entries('1', 1)}]}]}}`;
 
@@ -78,9 +82,7 @@ describe('a document with more invalid entries than zod 4.6.2 gathers on V8', ()
     const text = JSON.stringify({
       ...wire,
       threats: wire.threats.map((threat, index) =>
-        index === 0
-          ? { ...threat, elements: Array.from({ length: issues }, () => 'a') }
-          : threat,
+        index === 0 ? { ...threat, elements: floodingEntries('a') } : threat,
       ),
     });
 

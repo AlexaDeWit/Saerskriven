@@ -37,6 +37,10 @@ export {
   modelWith,
   threatOf,
 } from './lib/builders.fixtures.js';
+export {
+  floodingEntries,
+  floodingEntryCount,
+} from './lib/issue-flood.fixtures.js';
 export { validModelFixture } from './lib/model.fixtures.js';
 export { modelInputArbitrary } from './lib/model-input.fixtures.js';
 export { parseIssueSamples } from './lib/parse-issue.fixtures.js';

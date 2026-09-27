@@ -3,7 +3,7 @@ import {
   type RetainedSource,
 } from '@saerskriven/formats';
 import type { DiagramId, Model } from '@saerskriven/model';
-import { committedText } from '@saerskriven/model/fixtures';
+import { committedText, floodingEntries } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { studioVersion } from '../version.js';
 import { FileLifecycle } from './state.js';
@@ -81,9 +81,6 @@ const version1Fields = {
 const version1Snapshot = JSON.stringify(version1Fields);
 
 const current = recoverySnapshot(sampleModel, false, FileLifecycle.NoFile());
-
-const flood = <Entry>(entry: Entry): Entry[] =>
-  Array.from({ length: 135_000 }, () => entry);
 
 describe('local recovery storage', () => {
   it('loads nothing when the namespaced key is absent', () => {
@@ -311,7 +308,7 @@ describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', ()
   it.each([
     [
       'the stored document',
-      { ...current.document, threats: [{ elements: flood(1) }] },
+      { ...current.document, threats: [{ elements: floodingEntries(1) }] },
     ],
     [
       'the model the document maps to',
@@ -319,7 +316,7 @@ describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', ()
         ...current.document,
         threats: current.document.threats.map((threat) => ({
           ...threat,
-          elements: flood('a'),
+          elements: floodingEntries('a'),
         })),
       },
     ],
@@ -342,7 +339,7 @@ describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', ()
           format: 'threat-dragon',
           document: {
             summary: { title: 'Flooded' },
-            detail: { diagrams: [{ cells: flood(1) }] },
+            detail: { diagrams: [{ cells: floodingEntries(1) }] },
           },
         },
       },
