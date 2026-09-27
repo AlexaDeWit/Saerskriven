@@ -50,7 +50,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
     ReusedThreatNumber: ({ number }) =>
       `Threat number ${String(number)} was issued already, and a number is issued once.`,
     ChangedThreatNumber: ({ threatId, number }) =>
-      `Threat ${quotedForTerminal(threatId)} cannot take number ${String(number)}, a number naming one threat for the life of the model.`,
+      `Threat ${quotedForTerminal(threatId)} cannot take number ${String(number)}, and no edit renumbers a threat.`,
     InvalidFlowEndpoint: ({ side, reference }) =>
       `The flow's ${side} names ${quotedForTerminal(reference)}, and a flow end attaches only to an actor, process or store of its own diagram, never to the element its other end is attached to.`,
     NotResizable: ({ elementId }) =>

@@ -18,11 +18,19 @@ import {
   resetDiagramRenaming,
   showDiagram,
 } from '../canvas/diagrams.js';
+import {
+  canvasModel,
+  flaggedCanvasModel,
+  openCanvas,
+  recordingClipboard,
+  requestFlow,
+} from '../canvas/canvas.fixtures.js';
 import { copySelected } from '../canvas/clipboard.js';
 import { describeRemoval } from '../canvas/edits.js';
 import { toggleSnap } from '../canvas/snap.js';
 import { numbersIn } from '../ui/ui.fixtures.js';
 import { activeDiagramId } from '../store/selectors.js';
+import { actorElement, processElement } from '../store/store.fixtures.js';
 import {
   StudioFailure,
   initialState,
@@ -107,6 +115,44 @@ describe.each(locales)('the %s vertical slice', (locale) => {
       activeTranslator().t('canvas.copy-nothing-selected'),
     );
   });
+
+  it.each([
+    {
+      removed: 'none',
+      model: flaggedCanvasModel({
+        'threat-tampering': { elements: [actorElement, processElement] },
+      }),
+      selection: [actorElement],
+      counts: { copied: 1, removed: 0 },
+    },
+    {
+      removed: 'some',
+      model: canvasModel,
+      selection: [requestFlow],
+      counts: { copied: 3, removed: 2 },
+    },
+    {
+      removed: 'all',
+      model: canvasModel,
+      selection: [actorElement, requestFlow],
+      counts: { copied: 3, removed: 3 },
+    },
+  ])(
+    'counts a cut that removes $removed of the threats it copies',
+    async ({ model, selection, counts }) => {
+      recordingClipboard();
+      openCanvas(selection, model);
+
+      await copySelected(true);
+
+      expect(modelStore.getState().present.threats).toHaveLength(
+        model.threats.length - counts.removed,
+      );
+      expect(currentAnnouncement().message).toContain(
+        activeTranslator().t('canvas.cut-threat-counts', counts),
+      );
+    },
+  );
 
   it('counts a removal at zero, one and many, choosing the plural form by count', () => {
     const { t } = activeTranslator();

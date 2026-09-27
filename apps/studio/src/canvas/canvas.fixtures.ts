@@ -235,3 +235,24 @@ export const primaryPointer = <
   stopPropagation: vi.fn<() => void>(),
   ...targets,
 });
+
+/**
+ * Replaces `navigator.clipboard` with one that holds its text in memory,
+ * starting from `existing clipboard`, and returns its spied methods and a
+ * reader for what it holds.
+ */
+export const recordingClipboard = () => {
+  let text = 'existing clipboard';
+  const api = {
+    writeText: vi.fn<(value: string) => Promise<void>>((value) => {
+      text = value;
+      return Promise.resolve();
+    }),
+    readText: vi.fn<() => Promise<string>>(() => Promise.resolve(text)),
+  };
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: api,
+  });
+  return { ...api, text: () => text };
+};

@@ -20,15 +20,15 @@ both the file and the model.
 YAML, UTF-8, one document, a mapping at the root with seven keys in this
 order:
 
-| Key                      | What it holds                                                             |
-| ------------------------ | ------------------------------------------------------------------------- |
-| `formatVersion`          | `2`, exactly                                                              |
-| `metadata`               | Title, owner, description, contributors                                   |
-| `assumptions`            | What the analysis rests on, linked to threats by id, and `appliesToModel` |
-| `diagrams`               | The diagrams, each owning its elements and their geometry                 |
-| `mitigations`            | Mitigating work, addressing threats by id                                 |
-| `threats`                | The threats, each attached to elements by id                              |
-| `lastIssuedThreatNumber` | The highest threat number ever issued, counting removed ones              |
+| Key                      | What it holds                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `formatVersion`          | `2`, exactly                                                                    |
+| `metadata`               | Title, owner, description, contributors                                         |
+| `assumptions`            | What the analysis rests on, linked to threats by id, and `appliesToModel`       |
+| `diagrams`               | The diagrams, each owning its elements and their geometry                       |
+| `mitigations`            | Mitigating work, addressing threats by id                                       |
+| `threats`                | The threats, each attached to elements by id                                    |
+| `lastIssuedThreatNumber` | The highest threat number ever issued or kept by a paste, counting removed ones |
 
 Every key is required unless the schema marks it optional, and every list may
 be empty. Nothing is defaulted: a model saves before it is drawn, and it does so
@@ -201,8 +201,8 @@ produce the same file, so a diff shows the edit and nothing else.
   order the model records were built in, with the tag of a tagged union
   first.
 - **Threats** are written in number order. A threat number is unique across
-  the model and is never reissued, so ordering by it is total and it holds
-  each threat's position in the file steady as the model is edited.
+  the model and no edit changes it, so ordering by it is total and holds each
+  threat's position in the file steady as the model is edited.
 - **Diagrams, elements, mitigations and assumptions** keep the order the
   model holds them in. Diagrams and elements are drawn in that order, so it
   is information rather than incidental. Mitigations and assumptions have

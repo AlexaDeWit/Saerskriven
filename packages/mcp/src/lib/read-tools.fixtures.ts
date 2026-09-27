@@ -163,26 +163,48 @@ export function keptReasonTree(): ModelWorkspace {
 }
 
 /**
- * A disposable root whose default model holds an assumption of each scope
- * after the editable fixture's own, which links a threat alone: one that
- * applies to the model and links the threat, and one that applies to the
- * model and links nothing.
+ * A disposable root whose default model holds a record of each link scope.
+ * The editable fixture's own mitigation and assumption each link a threat
+ * alone. After them come an assumption that applies to the model and links
+ * the threat, one that applies to the model and links nothing, and a
+ * mitigation and an assumption linked to nothing at all, which a file can
+ * hold and no edit leaves behind.
  */
-export function assumptionScopesTree(): ModelWorkspace {
-  const [held] = editableModel.assumptions;
+export function recordLinksTree(): ModelWorkspace {
+  const [mitigation] = editableModel.mitigations;
+  const [assumption] = editableModel.assumptions;
   return treeHolding(
     saerskrivenYamlCodec.write(
       parsedFixture({
         ...editableModel,
+        mitigations: [
+          ...editableModel.mitigations,
+          {
+            ...mitigation,
+            id: 'mitigation-rotate-keys',
+            title: 'Rotate the signing keys',
+            prose: '',
+            status: 'implemented',
+            threats: [],
+          },
+        ],
         assumptions: [
           ...editableModel.assumptions,
-          { ...held, id: 'assumption-reviewed', appliesToModel: true },
+          { ...assumption, id: 'assumption-reviewed', appliesToModel: true },
           {
-            ...held,
+            ...assumption,
             id: 'assumption-hand-written',
             prose: 'This model is kept true by hand.',
             threats: [],
             appliesToModel: true,
+          },
+          {
+            ...assumption,
+            id: 'assumption-staging-wiped',
+            prose: 'The staging copy is wiped every night.',
+            status: 'invalidated',
+            threats: [],
+            appliesToModel: false,
           },
         ],
       }),
@@ -195,12 +217,14 @@ export const forgedLine = 'forged: nothing in this model needs review';
 
 /**
  * A disposable root whose default model gives its threat and its second
- * diagram ids that carry a line feed and then {@link forgedLine}.
+ * diagram ids, its mitigation a title and prose, and its assumption prose,
+ * that each carry a line feed and then {@link forgedLine}.
  */
 export function forgedIdsTree(): ModelWorkspace {
   const [threat] = editableModel.threats;
   const [drawn, empty] = editableModel.diagrams;
-  const forgedThreat = `${threat.id}\n${forgedLine}`;
+  const forged = (text: string) => `${text}\n${forgedLine}`;
+  const forgedThreat = forged(threat.id);
   const relinked = <Linked extends { readonly threats: readonly string[] }>(
     record: Linked,
   ): Linked => ({
@@ -211,10 +235,17 @@ export function forgedIdsTree(): ModelWorkspace {
     saerskrivenYamlCodec.write(
       parsedFixture({
         ...editableModel,
-        diagrams: [drawn, { ...empty, id: `${empty.id}\n${forgedLine}` }],
+        diagrams: [drawn, { ...empty, id: forged(empty.id) }],
         threats: [{ ...threat, id: forgedThreat }],
-        mitigations: editableModel.mitigations.map(relinked),
-        assumptions: editableModel.assumptions.map(relinked),
+        mitigations: editableModel.mitigations.map((mitigation) => ({
+          ...relinked(mitigation),
+          title: forged(mitigation.title),
+          prose: forged(mitigation.prose),
+        })),
+        assumptions: editableModel.assumptions.map((assumption) => ({
+          ...relinked(assumption),
+          prose: forged(assumption.prose),
+        })),
       }),
     ).output,
   );
@@ -289,6 +320,38 @@ export function crowdedTree(): ModelWorkspace {
 
 /** How many threats {@link crowdedTree} holds, past every search limit. */
 export const crowdedThreats = 60;
+
+/**
+ * A disposable root holding a model of more records than a concise listing
+ * carries: {@link crowdedRecords} mitigations and as many assumptions, each
+ * linked to the editable fixture's one threat.
+ */
+export function crowdedRecordsTree(): ModelWorkspace {
+  const [mitigation] = editableModel.mitigations;
+  const [assumption] = editableModel.assumptions;
+  const numbered = Array.from(
+    { length: crowdedRecords },
+    (unused, index) => index + 1,
+  );
+  return treeHolding(
+    saerskrivenYamlCodec.write(
+      parsedFixture({
+        ...editableModel,
+        mitigations: numbered.map((number) => ({
+          ...mitigation,
+          id: `mitigation-${String(number)}`,
+        })),
+        assumptions: numbered.map((number) => ({
+          ...assumption,
+          id: `assumption-${String(number)}`,
+        })),
+      }),
+    ).output,
+  );
+}
+
+/** How many records of each kind {@link crowdedRecordsTree} holds. */
+export const crowdedRecords = 30;
 
 /**
  * A disposable root whose default model holds a flow ending on another flow.
