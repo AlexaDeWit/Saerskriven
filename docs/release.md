@@ -17,10 +17,10 @@ Commits](https://www.conventionalcommits.org/) subjects on `main` since the
 last `v*` tag and derives the bump from them. A one-commit pull request
 squashes under that commit's subject, and a pull request with more than one
 commit squashes under its title, so **that string decides the version
-bump**: a `fix:` subject is a patch, `feat:` a minor, and a `!` or a
-`BREAKING CHANGE:` footer a major. While the workspace is on a `0.x` line nx
-shifts each of those down one step, so a breaking change moves the minor and
-a feature the patch.
+bump**: a `fix:` subject is a patch, `feat:` a minor, and a `!` in it or a
+`BREAKING CHANGE:` footer in any of the pull request's commits a major.
+While the workspace is on a `0.x` line nx shifts each of those down one
+step, so a breaking change moves the minor and a feature the patch.
 
 ## Why a person runs most of it
 
@@ -97,8 +97,10 @@ release page. Then run `pnpm check`, as for any change.
 ### 2. Land it on main (owner, no credentials)
 
 Open a pull request in the usual way and merge it once the gate is green. Give
-it a `chore(release): v<version>` title: it is the squash subject, and a
-`chore` subject asks for no further bump.
+the commit and the pull request the subject `chore(release): v<version>`, so
+the squash subject is that string either way
+([what decides the version](#what-decides-the-version)). A `chore` subject
+asks for no further bump.
 
 ### 3. Rehearse the guarded release (owner, GitHub CLI)
 
