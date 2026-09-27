@@ -126,6 +126,28 @@ describe('addDiagram', () => {
       )?._tag,
     ).toBe('InvalidFlowEndpoint');
   });
+
+  it('refuses a flow ending on another flow of the diagram, as addElement does', () => {
+    const onFlow = elementSchema.parse({
+      ...flowInput,
+      id: 'element-third-flow',
+      source: { kind: 'attached', element: 'element-second-store' },
+      target: { kind: 'attached', element: 'element-second-flow' },
+    });
+    expect(
+      errorOf(
+        addDiagram(validModel, {
+          ...secondOfElements,
+          elements: [...secondOfElements.elements, onFlow],
+        }),
+      ),
+    ).toEqual(
+      OperationFailure.InvalidFlowEndpoint({
+        side: 'target',
+        reference: elementId('element-second-flow'),
+      }),
+    );
+  });
 });
 
 describe('renameDiagram', () => {

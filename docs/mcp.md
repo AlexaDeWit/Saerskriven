@@ -168,7 +168,11 @@ optional security facts and declared boundary relationships of its kind. An
 actor, process, store or text note takes a `placement`: a position and size,
 or `"auto"` for the next place on the shared grid. Left out, `description` and
 `reasonOutOfScope` are empty and `outOfScope` is false, and a flow has no bends
-and runs one way.
+and runs one way. It refuses a name with nothing in it but white space, as
+`rename_element` does, and a flow end attached to anything but an actor,
+process or store of the diagram, or to the element the flow's other end is
+attached to, as `reconnect_flow` does. A file that already holds either, as an
+imported one can, still opens.
 
 `set_element_properties` patches the security facts of an actor, process,
 store or flow, and the declared boundary relationships of a flow or trust

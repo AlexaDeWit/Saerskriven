@@ -16,9 +16,9 @@ export type EndpointViolation = {
 
 /**
  * The violations among one flow's attached endpoints, checked against the
- * element ids of the diagram meant to hold it. The self check runs first,
- * so a candidate flow not yet in the diagram reports a self anchor as such
- * rather than as absent.
+ * element ids of the diagram holding it, which include the flow's own. This
+ * is the rule parse applies, and the edit operations hold a new end to a
+ * stricter one.
  */
 export function endpointViolationsOf(
   flow: Flow,

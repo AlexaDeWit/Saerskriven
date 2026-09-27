@@ -38,6 +38,7 @@ export type AddElementFailure = Extract<
     _tag:
       | 'UnknownDiagram'
       | 'DuplicateElementId'
+      | 'EmptyName'
       | 'InvalidFlowEndpoint'
       | 'InvalidElementRelationship';
   }
@@ -84,7 +85,11 @@ export type SetElementPropertiesFailure = Extract<
   }
 >;
 
-/** Requires an existing diagram, a new ID and valid local endpoint and boundary references. */
+/**
+ * Requires an existing diagram, a new ID, a name that is more than white
+ * space, flow ends `reconnectFlow` would accept, and valid local boundary
+ * references.
+ */
 export function addElement(
   model: Model,
   diagramId: DiagramId,
@@ -96,6 +101,11 @@ export function addElement(
       if (elementIdsAcross(model.diagrams).has(element.id)) {
         return Either.left(
           OperationFailure.DuplicateElementId({ elementId: element.id }),
+        );
+      }
+      if (isEmptyName(element.name)) {
+        return Either.left(
+          OperationFailure.EmptyName({ elementId: element.id }),
         );
       }
       const diagram = model.diagrams[diagramIndex];

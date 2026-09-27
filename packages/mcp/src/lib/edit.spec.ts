@@ -4,7 +4,7 @@ import {
   elementsAcross,
   type AssumptionStatus,
 } from '@saerskriven/model';
-import { assumptionId } from '@saerskriven/model/fixtures';
+import { assumptionId, elementId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -255,6 +255,74 @@ const backupsIn = (attempted: ReturnType<typeof attempt>) =>
   heldModel(attempted)?.assumptions.find(
     ({ id }) => id === 'assumption-backups',
   );
+
+const addedFlowTo = (target: string): EditInput => ({
+  op: 'add_element',
+  diagram: 'diagram-main',
+  element: {
+    kind: 'flow',
+    id: 'element-audit-flow',
+    name: 'Audit record',
+    source: { kind: 'attached', element: 'element-api' },
+    target: { kind: 'attached', element: target },
+  },
+});
+
+describe('what add_element refuses', () => {
+  it.each<{
+    readonly name: string;
+    readonly edit: EditInput;
+    readonly failure: OperationFailure;
+  }>([
+    {
+      name: 'an element whose name is white space',
+      edit: {
+        op: 'add_element',
+        diagram: 'diagram-main',
+        element: {
+          kind: 'actor',
+          id: 'element-auditor',
+          name: ' ',
+          placement: 'auto',
+        },
+      },
+      failure: OperationFailure.EmptyName({
+        elementId: elementId('element-auditor'),
+      }),
+    },
+    {
+      name: 'a flow ending on a text note',
+      edit: addedFlowTo('element-note'),
+      failure: OperationFailure.InvalidFlowEndpoint({
+        side: 'target',
+        reference: elementId('element-note'),
+      }),
+    },
+    {
+      name: 'a flow whose two ends attach to one element',
+      edit: addedFlowTo('element-api'),
+      failure: OperationFailure.InvalidFlowEndpoint({
+        side: 'source',
+        reference: elementId('element-api'),
+      }),
+    },
+  ])(
+    'refuses $name as the model does, and writes nothing',
+    ({ edit, failure }) => {
+      const attempted = attempt();
+      const before = attempted.bytes(modelFile);
+      const refused = attempted.edit(
+        modelFile,
+        revisionIn(attempted, modelFile),
+        [edit],
+      );
+      expect(attempted.bytes(modelFile)).toEqual(before);
+      expect(Either.isLeft(refused) ? refused.left[1] : undefined).toEqual(
+        describeOperationFailure(failure),
+      );
+    },
+  );
+});
 
 describe('what add_assumption writes', () => {
   it('refuses an assumption that links no threat and does not apply to the model, and writes nothing', () => {

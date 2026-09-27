@@ -55,6 +55,21 @@ describe('parseModel', () => {
     ).toEqual([['assumption-managed-db', []]]);
   });
 
+  it('keeps an unnamed element and a flow on one boundary at both ends, which only an edit refuses', () => {
+    const issues = issuesOf(
+      seededModel((draft) => {
+        for (const element of draft.diagrams[0].elements) {
+          element.name = '';
+          if (element.kind === 'flow') {
+            element.source = { kind: 'attached', element: 'element-perimeter' };
+            element.target = { kind: 'attached', element: 'element-perimeter' };
+          }
+        }
+      }),
+    );
+    expect(issues).toEqual([]);
+  });
+
   it('strips a key no schema declares rather than refusing the model', () => {
     expect(
       Either.getOrNull(parseModel(plantEverywhere(validModelFixture))),
