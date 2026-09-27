@@ -38,7 +38,8 @@ const pointEdit: ElementEdit<CurveBoundary, PointTarget> = {
 
 /**
  * The selected trust boundary curve's points: a preview of one moved, and
- * the edits that move one or remove one while the curve keeps two.
+ * the edits that move one or remove one while the curve keeps two. `remove`
+ * says whether a point went.
  */
 export function useCurvePoints() {
   const points = useElementDraft(pointEdit);
@@ -46,13 +47,13 @@ export function useCurvePoints() {
   return {
     ...points,
     boundary,
-    remove: (index: number): void => {
+    remove: (index: number): boolean => {
       if (boundary?.shape.waypoints[index] === undefined) {
-        return;
+        return false;
       }
       if (boundary.shape.waypoints.length <= fewestCurvePoints) {
         announce((t) => t('canvas.point-kept'));
-        return;
+        return false;
       }
       dispatch(
         Action.SetBoundaryShape({
@@ -72,6 +73,7 @@ export function useCurvePoints() {
           boundary: spokenElement(t, boundary),
         }),
       );
+      return true;
     },
   };
 }

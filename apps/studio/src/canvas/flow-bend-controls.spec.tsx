@@ -12,6 +12,7 @@ import {
   probeFlow,
   requestFlow,
 } from './canvas.fixtures.js';
+import { currentAnnouncement } from './announcements.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { currentLayout } from './layout.js';
 import {
@@ -371,6 +372,20 @@ describe('DiagramCanvas, the ends of a flow', () => {
       past: [],
       lastFailure: undefined,
     });
+  });
+
+  it('keeps a focused free end, and its flow, on Delete or Backspace, and says so', () => {
+    openCanvas([probeFlow]);
+    render(<DiagramCanvas />);
+    targetEnd().focus();
+    press('Delete');
+    press('Backspace');
+    expect(target(probeFlow)).toEqual({
+      kind: 'free',
+      position: { x: 500, y: 200 },
+    });
+    expect(modelStore.getState().past).toEqual([]);
+    expect(currentAnnouncement().message).not.toBe('');
   });
 
   it('moves a free end by arrow key and by dragging, one undo step each, and offers it no actions', () => {

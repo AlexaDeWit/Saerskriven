@@ -143,6 +143,8 @@ test('a curve boundary drags where its outline crosses a disabled handle', async
   const boundary = nodeNamed(page, /^New trust boundary curve/u);
   await expect(boundary).toHaveClass(/selected/u);
   await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(boundary).not.toHaveClass(/selected/u);
 
   await dragFromBoundaryHandle(page, boundary, 'top');
 });

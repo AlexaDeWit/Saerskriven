@@ -174,9 +174,11 @@ describe('SelectionControls', () => {
     act(() => {
       runCommand(commandById('reconnect-target'), recordingSurface().surface);
     });
-    fireEvent.change(screen.getByRole('combobox', { name: 'Target' }), {
-      target: { value: '' },
-    });
+    const targets = screen.getByRole('combobox', { name: 'Target' });
+    expect(within(targets).getAllByRole('option').at(0)).toBe(
+      screen.getByRole('option', { name: 'Free point' }),
+    );
+    fireEvent.change(targets, { target: { value: '' } });
     expect(screen.queryByRole('combobox', { name: 'Side' })).toBeNull();
     expect(
       screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Y' }).value,

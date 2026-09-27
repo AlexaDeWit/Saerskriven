@@ -57,6 +57,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'target-freed': 'Lossade måländen på {flow}.',
   'source-moved': 'Flyttade källänden på {flow}.',
   'target-moved': 'Flyttade måländen på {flow}.',
+  'free-end-kept': 'En fri flödesände ligger kvar där den är.',
   'position-invalid': 'Ange ändliga koordinater.',
   'undo-done': 'Ångrade.',
   'redo-done': 'Gjorde om.',

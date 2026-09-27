@@ -111,6 +111,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
     'Fäst flödesänden med fokus vid sidan som pilen pekar mot',
   'key-release-flow-end': 'Låt flödesänden med fokus följa sin sträckning',
   'key-move-free-end': 'Flytta den fria flödesänden med fokus {units} enheter',
+  'key-keep-free-end': 'Behåll den fria flödesänden med fokus där den är',
   'key-move-curve-point': 'Flytta kurvpunkten med fokus {units} enheter',
   'key-remove-curve-point': 'Ta bort kurvpunkten med fokus',
   'key-cancel-curve-point': 'Avbryt ändringen av kurvpunkten',

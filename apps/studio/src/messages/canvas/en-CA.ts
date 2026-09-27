@@ -55,6 +55,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'target-freed': 'Detached the target of {flow}.',
   'source-moved': 'Moved the source of {flow}.',
   'target-moved': 'Moved the target of {flow}.',
+  'free-end-kept': 'A free flow end stays where it is.',
   'position-invalid': 'Enter finite coordinates.',
   'undo-done': 'Undo completed.',
   'redo-done': 'Redo completed.',

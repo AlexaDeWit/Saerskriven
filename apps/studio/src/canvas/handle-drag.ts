@@ -38,10 +38,13 @@ type Gesture<Held> = {
 const dragThreshold = 3;
 
 /**
- * A primary-pointer drag of one handle, holding `Held` for it. It previews
- * once the pointer passes the drag threshold, commits on release, and
- * cancels on a release back where it started. A pointer or a release that
- * arrives after `context` changed is ignored.
+ * A primary-pointer drag of one handle, holding `Held` for it. `down` starts
+ * one on a primary press and says whether it did. It previews once the
+ * pointer passes the drag threshold, commits on release, and cancels on a
+ * release back where it started. A pointer or a release that arrives after
+ * `context` changed is ignored. `drop` abandons a drag in flight, and
+ * `endedDrag` answers once whether the next click closes a drag, released or
+ * dropped, rather than pressing the handle.
  */
 export function useHandleDrag<Held>(
   context: unknown,
@@ -67,7 +70,6 @@ export function useHandleDrag<Held>(
     at: view.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
   });
   return {
-    /** Starts a drag on a primary press, reporting whether it did. */
     down: (event: HandlePointer, held: Held): boolean => {
       if (event.button !== 0 || !event.isPrimary) {
         return false;
@@ -113,16 +115,13 @@ export function useHandleDrag<Held>(
         on.commit(started.held, span(event, started));
       }
     },
-    /** Whether a drag is in flight. */
     active: (): boolean => gesture.current !== undefined,
-    /** Drops a drag in flight, whose closing click is then {@link endedDrag}. */
     drop: (): void => {
       if (gesture.current !== undefined) {
         dragged.current = true;
       }
       gesture.current = undefined;
     },
-    /** Whether a click closes a drag rather than pressing a handle, which it answers once. */
     endedDrag: (): boolean => {
       const ended = dragged.current;
       dragged.current = false;

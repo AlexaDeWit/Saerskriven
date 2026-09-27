@@ -103,6 +103,7 @@ export const commandMessages = {
   'key-pin-flow-end': text(),
   'key-release-flow-end': text(),
   'key-move-free-end': text({ units: 'number' }),
+  'key-keep-free-end': text(),
   'key-move-curve-point': text({ units: 'number' }),
   'key-remove-curve-point': text(),
   'key-cancel-curve-point': text(),

@@ -54,6 +54,7 @@ export const canvasMessages = {
   'target-freed': text(flow),
   'source-moved': text(flow),
   'target-moved': text(flow),
+  'free-end-kept': text(),
   'position-invalid': text(),
   'undo-done': text(),
   'redo-done': text(),

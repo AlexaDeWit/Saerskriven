@@ -53,9 +53,15 @@ export function CurvePointControls({
   };
   const remove = (index: number): void => {
     setOpen(undefined);
-    points.remove(index);
-    handBack();
+    if (points.remove(index)) {
+      handBack();
+    } else {
+      document
+        .querySelector<HTMLElement>(`[data-curve-point="${String(index)}"]`)
+        ?.focus();
+    }
   };
+  const chosen = open?.context === points.context ? open.index : undefined;
   const keyDown = useEffectEvent((event: KeyboardEvent): void => {
     if (
       boundary === undefined ||
@@ -67,7 +73,7 @@ export function CurvePointControls({
     }
     if (
       pressesContextualShortcut('cancel-curve-point', event, hostPlatform) &&
-      (drag.active() || open !== undefined)
+      (drag.active() || chosen !== undefined)
     ) {
       event.preventDefault();
       event.stopPropagation();
@@ -121,7 +127,6 @@ export function CurvePointControls({
     x: node.position.x + point.x,
     y: node.position.y + point.y,
   }));
-  const chosen = open?.context === points.context ? open.index : undefined;
   const beside = chosen === undefined ? undefined : shown.at(chosen);
   return (
     <ViewportPortal>

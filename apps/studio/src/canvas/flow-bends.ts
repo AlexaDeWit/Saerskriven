@@ -45,7 +45,13 @@ export type FreeTarget = {
   readonly point: Point;
 };
 
-/** Where a dragged or nudged end of a flow lands. */
+/**
+ * Where a dragged or nudged end of a flow lands. Released within the element
+ * it is attached to, it pins that element's nearest side. Released on another
+ * actor, process or store, it attaches there. Released on empty canvas, a
+ * trust boundary's interior included, it goes free. Released on the element
+ * the other end holds, or on a Note, it lands nowhere.
+ */
 export type EndTarget = AnchorTarget | AttachTarget | FreeTarget;
 
 type RouteTarget = BendTarget | EndTarget;

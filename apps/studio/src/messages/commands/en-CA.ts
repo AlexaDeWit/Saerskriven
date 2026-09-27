@@ -109,6 +109,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
     'Pin the focused flow end to the side the arrow points at',
   'key-release-flow-end': 'Let the focused flow end follow its route',
   'key-move-free-end': 'Move the focused free flow end by {units} units',
+  'key-keep-free-end': 'Keep the focused free flow end where it is',
   'key-move-curve-point': 'Move the focused curve point by {units} units',
   'key-remove-curve-point': 'Remove the focused curve point',
   'key-cancel-curve-point': 'Cancel the curve point edit',

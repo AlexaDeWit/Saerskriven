@@ -66,13 +66,15 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(currentAnnouncement().message).toContain('Perimeter');
   });
 
-  it('removes a focused point by Delete, keeping the boundary and its last two points', () => {
+  it('removes a focused point by Delete, keeping the boundary, its last two points and the focus', () => {
     render(<DiagramCanvas />);
     point(2).focus();
     press('Delete');
     expect(waypoints()).toEqual([boundaryCurve[0], boundaryCurve[2]]);
     point(1).focus();
     press('Backspace');
+    expect(document.activeElement).toBe(point(1));
+    press('Delete');
     expect(waypoints()).toEqual([boundaryCurve[0], boundaryCurve[2]]);
     expect(modelStore.getState().past).toHaveLength(1);
     expect(currentAnnouncement().message).not.toBe('');
@@ -90,6 +92,19 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     fireEvent.click(remove);
     expect(waypoints()).toEqual([boundaryCurve[0], boundaryCurve[1]]);
     expect(screen.queryByRole('group', { name: 'Point actions' })).toBeNull();
+    fireEvent.click(point(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove point' }));
+    expect(waypoints()).toEqual([boundaryCurve[0], boundaryCurve[1]]);
+    expect(document.activeElement).toBe(point(2));
+  });
+
+  it('leaves Escape to the page once the actions it would close are gone', () => {
+    render(<DiagramCanvas />);
+    fireEvent.click(point(3));
+    point(2).focus();
+    press('ArrowUp');
+    expect(screen.queryByRole('group', { name: 'Point actions' })).toBeNull();
+    expect(fireEvent.keyDown(point(2), { key: 'Escape' })).toBe(true);
   });
 
   it('moves a dragged point on release alone, as one undo step', () => {

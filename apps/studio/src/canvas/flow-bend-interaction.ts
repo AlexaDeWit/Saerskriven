@@ -366,8 +366,13 @@ function flowEndKey(
     );
     if (point !== undefined) {
       bends.commit({ kind: 'free', end, point });
+      return true;
     }
-    return point !== undefined;
+    if (pressesContextualShortcut('keep-free-end', event, hostPlatform)) {
+      announce((t) => t('canvas.free-end-kept'));
+      return true;
+    }
+    return false;
   }
   const side = sideOfArrow.get(event.key);
   if (
@@ -456,13 +461,6 @@ function draggedTarget(
       );
 }
 
-/**
- * Where an end released at `point` lands: a side of the element it is
- * attached to, when released within that element, another actor, process or
- * store released onto, or free on empty canvas. Nothing where the element
- * under it is one the end may not attach to: the element the other end
- * holds, or a Note.
- */
 function landing(
   flow: Flow,
   nodes: readonly CanvasNode[],

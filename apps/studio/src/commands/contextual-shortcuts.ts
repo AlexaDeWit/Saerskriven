@@ -112,6 +112,13 @@ const table = {
     shortcuts: shiftedArrowKeys,
     when: 'commands.key-when-free-end-handle',
   },
+  'keep-free-end': {
+    id: 'keep-free-end',
+    label: 'commands.key-keep-free-end',
+    group: 'commands.group-flow-route',
+    shortcuts: [bare('Delete'), bare('Backspace')],
+    when: 'commands.key-when-free-end-handle',
+  },
   'focus-canvas-item': {
     id: 'focus-canvas-item',
     label: 'commands.key-focus-canvas-item',

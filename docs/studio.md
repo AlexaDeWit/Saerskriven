@@ -176,15 +176,16 @@ expects.
   pinned side is saved, and a Threat Dragon file carries it as a port.
 - A free end has a handle too. Drag it, or focus it and press an arrow key to
   move it five units or twenty with Shift, and drop it on an actor, process or
-  store to attach it there.
+  store to attach it there. Delete or Backspace on it leaves the end where it
+  is and says so: select the flow itself to delete it.
 
 While one flow is selected with the Select tool and no name or note is open for
 editing, the **Reconnect flow** card pinned at the top left, under the chrome
 card, holds **Change flow source**, **Change flow target**, **Toggle
 bidirectional flow** and **Reverse flow**. The first two choose another actor,
 process or store for one end, with a side to pin it to or Automatic, or Free
-point, which frees the end at the X and Y typed, starting from where the end is
-drawn. Toggle bidirectional flow draws an arrowhead at both ends or one again,
+point, first in the list, which frees the end at the X and Y typed, starting
+from where the end is drawn. Toggle bidirectional flow draws an arrowhead at both ends or one again,
 and the flow keeps its source and target either way. Reverse flow swaps the
 source and the target and runs the bends the other way, so the flow keeps its
 route, its threats and whether it runs both ways.
@@ -195,7 +196,8 @@ While one trust boundary is selected with the Select tool and no name is open
 for editing, the **Trust boundary** card, in the Reconnect flow card's place,
 holds **Switch boundary shape**. It turns a box into the arch the Trust boundary
 curve tool draws in that box, and a curve into the box around its points, at
-least ten units each way. A box turned into a curve and back is the same box.
+least ten units each way. A box at least ten units each way, turned into a
+curve and back, is the same box.
 The boundary keeps its name, its threats and the elements and flows it declares.
 
 A selected trust boundary curve carries a handle on each of its points. Drag a

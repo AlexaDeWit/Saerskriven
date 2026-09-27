@@ -112,6 +112,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
     'Fixer l’extrémité ciblée du flux au côté indiqué par la flèche',
   'key-release-flow-end': 'Laisser l’extrémité ciblée suivre son tracé',
   'key-move-free-end': 'Déplacer l’extrémité libre ciblée de {units} unités',
+  'key-keep-free-end': 'Garder l’extrémité libre ciblée où elle est',
   'key-move-curve-point': 'Déplacer le point de courbe ciblé de {units} unités',
   'key-remove-curve-point': 'Retirer le point de courbe ciblé',
   'key-cancel-curve-point': 'Annuler la modification du point de courbe',
