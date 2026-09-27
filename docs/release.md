@@ -14,11 +14,13 @@ disagree.
 
 `nx release` writes that number. It reads the [Conventional
 Commits](https://www.conventionalcommits.org/) subjects on `main` since the
-last `v*` tag and derives the bump from them. Merges are squashed with the
-pull request's title as the subject, so **PR titles decide version bumps**: a
-`fix:` title is a patch, `feat:` a minor, and a `!` or a `BREAKING CHANGE:`
-footer a major. While the workspace is on a `0.x` line nx shifts each of those
-down one step, so a breaking change moves the minor and a feature the patch.
+last `v*` tag and derives the bump from them. A one-commit pull request
+squashes under that commit's subject, and a pull request with more than one
+commit squashes under its title, so **that string decides the version
+bump**: a `fix:` subject is a patch, `feat:` a minor, and a `!` or a
+`BREAKING CHANGE:` footer a major. While the workspace is on a `0.x` line nx
+shifts each of those down one step, so a breaking change moves the minor and
+a feature the patch.
 
 ## Why a person runs most of it
 
