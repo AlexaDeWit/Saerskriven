@@ -90,8 +90,9 @@ commitment. A weekend of rework is not serious commitment. Two more rules:
 - **Use [Conventional Commits](https://www.conventionalcommits.org/)**.
   Subjects are `type(scope): summary`. `type` is one of `feat`, `fix`,
   `docs`, `chore`, `ci`, `refactor`, `test`, `build`, `perf`. The scope is
-  optional. Keep the summary short and imperative. A merge squashes to the
-  pull request title, so **the title decides the version bump**
+  optional. Keep the summary short and imperative. A one-commit pull request
+  squashes under that commit's subject and a multi-commit one under the pull
+  request title, so **that string decides the version bump**
   ([what decides the version](docs/release.md#what-decides-the-version)).
 - **Commits are GPG-signed, DCO signed off, and AI-disclosed** (see above).
 - **A dependency that moves to another source repository** is declared with a

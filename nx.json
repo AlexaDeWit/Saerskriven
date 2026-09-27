@@ -265,7 +265,7 @@
   // The workspace version authority (issue #50). One fixed group, so every
   // manifest carries the same number and the CLI can stamp it without asking
   // which package it belongs to. The bump comes from the conventional-commit
-  // subjects since the last tag, which for a squash merge is the PR title.
+  // subjects since the last tag (docs/release.md, What decides the version).
   //
   // Nothing here touches git: the repository's rulesets let no actor push to
   // main outside a pull request, and every tag needs a signature with no
