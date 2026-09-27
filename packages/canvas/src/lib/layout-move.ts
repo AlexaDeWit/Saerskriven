@@ -89,9 +89,10 @@ export function flowWithFollowedLabel(
 }
 
 /**
- * A flow re-anchored to the boxes its ends are on, shifted first by
- * `flowOffset`. An end with no box keeps its point. The label and badge
- * follow their segment without the diagram-wide search.
+ * A flow re-anchored to the boxes its ends are on, its waypoints and free
+ * ends shifted first by `flowOffset`. An end with no box keeps its point. The
+ * label and badge follow their segment from `edge` to the re-anchored path,
+ * without the diagram-wide search, so they move with the path once.
  */
 export function reanchoredFlow(
   edge: CanvasEdge,
@@ -107,9 +108,9 @@ export function reanchoredFlow(
   return {
     ...anchored,
     label: movedFlowLabel(
-      shifted.label,
-      shifted.badge,
-      edgePoints(shifted),
+      edge.label,
+      edge.badge,
+      edgePoints(edge),
       edgePoints(anchored),
     ),
   };
@@ -239,7 +240,10 @@ function endpointAt(
     : { kind: 'node', element, box };
 }
 
-function shiftedFlow(edge: CanvasEdge, offset: Point): CanvasEdge {
+function shiftedFlow(
+  edge: CanvasEdgeGeometry,
+  offset: Point,
+): CanvasEdgeGeometry {
   return {
     ...edge,
     source:
@@ -251,16 +255,6 @@ function shiftedFlow(edge: CanvasEdge, offset: Point): CanvasEdge {
         ? shiftedBy(edge.target, offset)
         : edge.target,
     waypoints: edge.waypoints.map((point) => shiftedBy(point, offset)),
-    label: {
-      name: {
-        ...edge.label.name,
-        at: shiftedBy(edge.label.name.at, offset),
-      },
-      badge:
-        edge.label.badge === undefined
-          ? undefined
-          : shiftedBy(edge.label.badge, offset),
-    },
   };
 }
 
