@@ -182,8 +182,8 @@ both ends or one again, and the flow keeps its source and target either way.
 
 Double-click an element or flow, or press Enter or F2 with one selected, to edit
 its name where the diagram draws it. A double click edits and does not zoom,
-and the threat panel its first click opens over the element does not take the
-second. Enter commits and Escape keeps the old name, and leaving the field
+and a quick one still edits where its first click opens the threat panel over
+the element. Enter commits and Escape keeps the old name, and leaving the field
 commits too. A name the model cannot hold stays in the field with the refused
 character named under it, until you correct it or press Escape. In a Note,
 Enter adds a line, and Command+Enter on macOS or Control+Enter elsewhere
@@ -427,3 +427,5 @@ navigation keys do not.
 - The model's owner and contributors are not edited in the studio.
 - Markdown in a description is edited as source, with no preview.
 - An element under the panel cannot be clicked. The keyboard still reaches it.
+- On a touch screen, a double tap on an element the panel opens over can land
+  in the panel, since two taps rarely fall as close together as two clicks.

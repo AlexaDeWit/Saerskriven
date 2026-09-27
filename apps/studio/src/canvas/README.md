@@ -95,9 +95,11 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   goes only when a rename opens on another element.
 - **A double-click edits the element its first press landed on**, even where
   the pane opens over that element in between. `pane-shield.ts` stops a second
-  press that lands in the pane within `doublePressInterval` (500 ms) and
-  `placementClickDistance` of the first, so no pane control acts on it, and
-  its click opens the element's text instead.
+  primary press in the select tool that lands in the pane within
+  `doublePressInterval` (500 ms) and `placementClickDistance` of the first, so
+  no pane control acts on it, and its pointer click opens the element's text
+  instead. A cancelled press, a blurred window and a keyboard activation let
+  the shield go.
 - **The announcement speaks only where the next focus does not show the
   result.** An action whose result the focused control or React Flow's own
   message already reports, such as a placement, a rename or a keyboard move,

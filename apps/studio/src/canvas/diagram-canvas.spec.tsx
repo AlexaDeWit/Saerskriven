@@ -504,6 +504,58 @@ describe('DiagramCanvas', () => {
     });
   });
 
+  it('lets a keyboard activation after a shielded press reach its button', () => {
+    render(<DiagramCanvas />);
+    const threats = modelStore.getState().present.threats.length;
+    fireEvent.pointerDown(reader(), press);
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+    fireEvent.pointerDown(
+      screen.getByRole('combobox', { name: 'Out of scope' }),
+      press,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
+      detail: 0,
+    });
+
+    expect(modelStore.getState().present.threats).toHaveLength(threats + 1);
+    expect(modelStore.getState().inlineEditor).toBeUndefined();
+  });
+
+  it('lets go of a shielded press the browser cancelled', () => {
+    render(<DiagramCanvas />);
+    const threats = modelStore.getState().present.threats.length;
+    fireEvent.pointerDown(reader(), press);
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+    const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+    fireEvent.pointerDown(scope, press);
+    fireEvent.pointerCancel(scope, press);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
+      detail: 1,
+    });
+
+    expect(modelStore.getState().present.threats).toHaveLength(threats + 1);
+    expect(modelStore.getState().inlineEditor).toBeUndefined();
+  });
+
+  it('arms nothing on a first press with another button', () => {
+    render(<DiagramCanvas />);
+    fireEvent.pointerDown(reader(), { ...press, button: 2 });
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+    const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+
+    fireEvent.pointerDown(scope, press);
+
+    expect(scope.getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('leaves a press on the panel that moved as far as a drag to the panel', () => {
     render(<DiagramCanvas />);
     fireEvent.pointerDown(reader(), press);

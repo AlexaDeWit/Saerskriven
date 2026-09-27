@@ -21,6 +21,7 @@ import { hostPlatform, type ChordEvent } from '../commands/shortcuts.js';
 import { announce } from './announcements.js';
 import { bendInsertionEvent } from './bend-insertion.js';
 import { focusElement } from './edits.js';
+import { pointerDistance } from './elements.js';
 import type { AnchorTarget, BendTarget, FlowBends } from './flow-bends.js';
 
 /** Which end of a flow a handle stands for. */
@@ -476,10 +477,6 @@ function openActions(
   if (mode?.kind !== 'choose') {
     setMode(next);
   }
-}
-
-function pointerDistance(event: BendPointer, start: Point): number {
-  return Math.hypot(event.clientX - start.x, event.clientY - start.y);
 }
 
 function endBox(

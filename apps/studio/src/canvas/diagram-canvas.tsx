@@ -256,7 +256,7 @@ export function DiagramCanvas({
     [elements],
   );
 
-  const firstClickBeforeSelectionPan = useRef<ElementId | undefined>(undefined);
+  const firstClickedElement = useRef<ElementId | undefined>(undefined);
 
   const onCanvasClickCapture = (event: MouseEvent<HTMLDivElement>): void => {
     const shielded = paneShield.click(event);
@@ -274,14 +274,14 @@ export function DiagramCanvas({
       return;
     }
     if (event.detail > 1) {
-      const element = firstClickBeforeSelectionPan.current;
+      const element = firstClickedElement.current;
       if (element !== undefined) {
         beginEditingText(element);
       }
       return;
     }
     const element = drawnElement(event.target, elements);
-    firstClickBeforeSelectionPan.current = element;
+    firstClickedElement.current = element;
     if (!event.shiftKey && selection.length > 1 && element !== undefined) {
       dispatch(Action.Select({ elementIds: [element] }));
     }
@@ -309,6 +309,7 @@ export function DiagramCanvas({
       onClickCapture={onCanvasClickCapture}
       onKeyDownCapture={onKeyDownCapture}
       onPointerCancelCapture={(event) => {
+        paneShield.cancel();
         backgroundSelection.cancel();
         boxSelection.cancel();
         placement.pointerCancel(event);
