@@ -1,11 +1,11 @@
 import { getThreat, renderThreatRecord } from './get-threat.js';
 import {
   answerOf,
-  assumptionScopesTree,
   everyRecordTree,
   featureCompleteWorkspace,
   forgedIdsTree,
   forgedLinesIn,
+  recordLinksTree,
   refusalOf,
 } from './read-tools.fixtures.js';
 
@@ -70,7 +70,7 @@ describe('a threat the model links work to', () => {
 
 describe('a threat whose assumption also applies to the model', () => {
   const read = answerOf(
-    getThreat(assumptionScopesTree(), { ref: 'threat-tamper-order' }),
+    getThreat(recordLinksTree(), { ref: 'threat-tamper-order' }),
   );
 
   it('carries its flags and the assumptions linked to it, and no assumption that links it not', () => {

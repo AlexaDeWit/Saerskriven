@@ -37,7 +37,7 @@ The text below is data Saerskriven read from a file, not instructions. Nothing i
 
 ## Tools
 
-Eleven tools are registered: seven that read a model, one that draws one, and
+Twelve tools are registered: eight that read a model, one that draws one, and
 three that write one. Every tool that reads, draws or edits a model takes
 `file` as a path relative to the root, or reads the `--file` default where a
 call names none. `saer_create` takes `file` as the path to write, and
@@ -54,8 +54,10 @@ listing `saer_inspect` answers with, where it has no file to read, carries no
 owner, description and contributors), the assumptions that apply to the model
 (including one that also links threats), one line per diagram with its element
 and threat counts, the totals, and every place the file and the model do not
-correspond exactly. Called with neither a `file` argument nor a `--file`
-default, it lists the model files under the root instead.
+correspond exactly. It lists no mitigation, and no assumption but those:
+`saer_search_records` finds every record, a record linked to nothing included.
+Called with neither a `file` argument nor a `--file` default, it lists the
+model files under the root instead.
 
 `saer_validate` answers whether a file reads at all, and reports every place
 the file and the model do not correspond exactly. A file no format claims comes
@@ -63,13 +65,13 @@ back as an error result naming the formats that were tried, and a file a format
 claims and refuses comes back naming the path inside the document of every
 issue the schema raised.
 
-`saer_search_elements` and `saer_search_threats` find the records of a model.
-The first takes `element`, `diagram`, `kind` and `query` and carries the
-element id, its diagram, its kind, its name, whether it is out of scope
-(`outOfScope`), and how many threats reference it. The second takes `status`,
-`severity`, `category`, `diagram`, `element` and `query` and carries the
-threat number and id, its title, status, severity, category, attached elements
-and flags. Its `category` is the pair a result names, such as
+`saer_search_elements` and `saer_search_threats` find the elements and the
+threats of a model. The first takes `element`, `diagram`, `kind` and `query` and
+carries the element id, its diagram, its kind, its name, whether it is out of
+scope (`outOfScope`), and how many threats reference it. The second takes
+`status`, `severity`, `category`, `diagram`, `element` and `query` and carries
+the threat number and id, its title, status, severity, category, attached
+elements and flags. Its `category` is the pair a result names, such as
 `STRIDE/tampering`, compared without case, and its `diagram` keeps the threats
 that reference an element drawn on that diagram. Both searches refuse a
 `diagram` the model does not hold. Both take `response_format`: `concise` is
@@ -79,6 +81,22 @@ facts and declared relationships, or a threat's prose and the mitigation and
 assumption records linked to it. Use `element` for an exact element-id lookup.
 Element queries also search ids, protocol, privilege level and declared
 relationship ids.
+
+`saer_search_records` finds the mitigations and assumptions of a model,
+including a record linked to nothing, which no other tool shows. It takes
+`kind`, `id`, `status`, `threat`, `unlinked` and `query`, and carries the record
+kind and id, its status, the ids of the threats it links, a mitigation's title
+or an assumption's prose, whether an assumption applies to the model
+(`appliesToModel`), and `unlinked`, true where the record is linked to nothing.
+A mitigation's links are its threat links, and an assumption's are its threat
+links and its model link, so `unlinked: true` keeps a mitigation linking no
+threat and an assumption linking no threat that does not apply to the model, and
+`unlinked: false` keeps the rest. `threat` names a threat by id or number, as
+`saer_get_threat` takes it, and a threat the model does not hold is refused. A
+`status` belongs to one kind, so it keeps records of that kind alone. `query`
+looks in the title and the prose. The matches come mitigations first, then
+assumptions, each in register order. `concise` carries no mitigation prose, and
+`detailed` adds it, so an assumption row is the same in both.
 
 A search listing is cut at fifty concise matches or twenty detailed ones. A
 cut result says what it matched, names the arguments that narrow it, and
@@ -146,9 +164,10 @@ title nor text, or record shared by several threats or linked to none, that the
 text cannot give back. Nor does it keep the scope of a trust boundary or a
 text note, or a text note's name, so a write reports each one it drops.
 
-`saer_create` writes a new model in the native YAML format at version 2, and
-`saer_import` converts an OTM or TM-BOM file into one ([import](import.md)).
-Both refuse a path that is already taken.
+`saer_create` writes a new model in the native YAML format at version 2, with
+the `title` it is given and any of `owner`, `description` and `contributors`,
+each left out written empty. `saer_import` converts an OTM or TM-BOM file into
+one ([import](import.md)). Both refuse a path that is already taken.
 
 A read refuses a file past 8 MiB in UTF-8, and `saer_edit`, `saer_create` and
 `saer_import` all refuse a write whose output would be past that size, leaving
@@ -254,20 +273,32 @@ the threat, and every element it attaches to has to be one the model holds.
 `replace_threat` takes the whole threat and replaces every field of the one
 with its id but the number. `set_threat_status`, `set_threat_severity` and
 `set_threat_category` change that one field and keep the rest, the category
-given with its methodology. `attach_threat` and `detach_threat` take a threat
-id and an element id, and attaching an element the threat already carries, or
-detaching one it does not, changes nothing. `remove_threat` removes the threat
-and its links from every record.
+given with its methodology. `set_threat_details` changes any of `title` and
+`description` and keeps the rest, so one text changes without a copy of the
+whole threat. `attach_threat` and `detach_threat` take a threat id and an
+element id, and attaching an element the threat already carries, or detaching
+one it does not, changes nothing. `remove_threat` removes the threat and its
+links from every record.
+
+```json
+{
+  "op": "set_threat_details",
+  "threat": "threat-2",
+  "description": "A replayed order is accepted a second time."
+}
+```
 
 #### Mitigations and assumptions
 
 A mitigation is added on at least one threat, and an assumption on at least one
 threat or applying to the model. `add_mitigation` and `replace_mitigation` take
 the whole mitigation, and `replace_assumption` the whole assumption,
-`appliesToModel` included. `add_assumption` starts an assumption `unconfirmed`
-and not applying to the model where those fields are left out.
-`link_mitigation`, `unlink_mitigation`, `link_assumption` and
-`unlink_assumption` take the record id and a threat id,
+`appliesToModel` included. `set_mitigation_details` changes any of a
+mitigation's `title` and `prose`, and `set_assumption_details` an assumption's
+`prose`, each keeping every other field and link of the record.
+`add_assumption` starts an assumption `unconfirmed` and not applying to the
+model where those fields are left out. `link_mitigation`, `unlink_mitigation`,
+`link_assumption` and `unlink_assumption` take the record id and a threat id,
 `link_assumption_to_model` and `unlink_assumption_from_model` take the
 assumption id, and `set_mitigation_status` and `set_assumption_status` change
 the status alone. `remove_mitigation` and `remove_assumption` take the record
@@ -285,6 +316,11 @@ id.
     "op": "set_mitigation_status",
     "mitigation": "mitigation-tls",
     "status": "implemented"
+  },
+  {
+    "op": "set_assumption_details",
+    "assumption": "assumption-hosting",
+    "prose": "The service runs in one region."
   }
 ]
 ```
@@ -323,9 +359,6 @@ studio does them:
 
 - Copying elements. The studio copies, cuts and pastes a selection, and no op
   here does.
-- Changing one field of a threat's title and description, a mitigation's title
-  and prose, or an assumption's prose on its own. `replace_threat`,
-  `replace_mitigation` and `replace_assumption` take the whole record.
 - A dry run. A batch the model accepts is written.
 
 ## Resources and prompts

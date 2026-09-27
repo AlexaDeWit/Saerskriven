@@ -128,7 +128,11 @@ type ReadBound = Omit<
 
 /**
  * What stopped a snapshot, as data the failure notice words. `Thrown` carries
- * the text a browser or the JSON parser raised, which no code describes.
+ * text no code describes: what a browser or the JSON parser raised, or what
+ * the snapshot schema threw. A snapshot the schema refuses answers as its
+ * envelope says, `EarlierRelease` below the current version and
+ * `Unsupported` otherwise, whether the stored document or the model it maps
+ * to was refused and however many issues the refusal gathered.
  */
 export type RecoveryProblem = Data.TaggedEnum<{
   Thrown: { readonly reason: string };
@@ -252,7 +256,7 @@ function parseRecoverySnapshot(
       RecoveryStorageFailure.Rejected({
         problem: SchemaFailure.$match(failure, {
           Refused: () => refusal(value),
-          IssueFlood: () => RecoveryProblem.InvalidSnapshot(),
+          IssueFlood: () => refusal(value),
           Threw: ({ reason }) => RecoveryProblem.Thrown({ reason }),
         }),
       }),

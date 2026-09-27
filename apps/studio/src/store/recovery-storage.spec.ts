@@ -3,7 +3,7 @@ import {
   type RetainedSource,
 } from '@saerskriven/formats';
 import type { DiagramId, Model } from '@saerskriven/model';
-import { committedText } from '@saerskriven/model/fixtures';
+import { committedText, floodingEntries } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { studioVersion } from '../version.js';
 import { FileLifecycle } from './state.js';
@@ -71,12 +71,14 @@ const expectedRestore = (
 
 const snapshotBeforeVersion2 = committedText('studio/recovery-v0.4.0.json');
 
-const version1Snapshot = JSON.stringify({
+const version1Fields = {
   version: 1,
   present: sampleModel,
   dirty: false,
   file: { _tag: 'NoFile' },
-});
+};
+
+const version1Snapshot = JSON.stringify(version1Fields);
 
 const current = recoverySnapshot(sampleModel, false, FileLifecycle.NoFile());
 
@@ -271,18 +273,6 @@ describe('local recovery storage', () => {
     );
   });
 
-  it('rejects a snapshot with more invalid entries than zod 4.6.2 gathers on V8 as invalid', () => {
-    const flooded = JSON.stringify({
-      ...current,
-      document: {
-        ...current.document,
-        threats: [{ elements: Array.from({ length: 135_000 }, () => 1) }],
-      },
-    });
-
-    expect(rejectionOf(flooded)).toEqual(RecoveryProblem.InvalidSnapshot());
-  });
-
   it('reports disabled storage for load, replace, and clear', () => {
     const refused = localRecoveryStorage(() => {
       throw new Error('storage disabled');
@@ -311,5 +301,52 @@ describe('local recovery storage', () => {
 
     expect(Either.isRight(storage.clear())).toBe(true);
     expect(memory.values.has(recoveryStorageKey)).toBe(false);
+  });
+});
+
+describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', () => {
+  it.each([
+    [
+      'the stored document',
+      { ...current.document, threats: [{ elements: floodingEntries(1) }] },
+    ],
+    [
+      'the model the document maps to',
+      {
+        ...current.document,
+        threats: current.document.threats.map((threat) => ({
+          ...threat,
+          elements: floodingEntries('a'),
+        })),
+      },
+    ],
+  ])(
+    'rejects a version 2 snapshot flooded in %s as any refusal of its version',
+    (_layer, document) => {
+      expect(rejectionOf(JSON.stringify({ ...current, document }))).toEqual(
+        RecoveryProblem.Unsupported(),
+      );
+    },
+  );
+
+  it('rejects a flooded version 1 snapshot, saying an earlier release wrote it', () => {
+    const flooded = JSON.stringify({
+      ...version1Fields,
+      file: {
+        _tag: 'Opened',
+        name: 'model.json',
+        source: {
+          format: 'threat-dragon',
+          document: {
+            summary: { title: 'Flooded' },
+            detail: { diagrams: [{ cells: floodingEntries(1) }] },
+          },
+        },
+      },
+    });
+
+    expect(rejectionOf(flooded)).toEqual(
+      RecoveryProblem.EarlierRelease({ writer: undefined }),
+    );
   });
 });

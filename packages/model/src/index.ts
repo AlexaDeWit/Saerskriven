@@ -70,7 +70,9 @@ export {
   elementsAcross,
 } from './lib/references.js';
 export {
+  assumptionHasReference,
   droppedRecords,
+  mitigationHasReference,
   recordReferenceSchema,
   recordsLinkedTo,
   type RecordReference,

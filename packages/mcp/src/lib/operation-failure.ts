@@ -3,8 +3,10 @@ import {
   OperationFailure,
   issueLine,
   parseIssueText,
+  type Model,
   type ParseIssue,
 } from '@saerskriven/model';
+import { Either } from 'effect';
 
 /** What the model said about a refused edit, as one line of a result. */
 export function describeOperationFailure(failure: OperationFailure): string {
@@ -66,6 +68,20 @@ export function describeOperationFailure(failure: OperationFailure): string {
     RefusedContributorCharacter: ({ contributor, at }) =>
       `Entry ${String(contributor)} of the contributors carries a character the model does not accept, at index ${String(at)}.`,
   });
+}
+
+/**
+ * The refusal for an edit no case of a switch applies. The parameter is
+ * `never`, so only a switch that handles every op compiles against it.
+ */
+export function unappliedEdit(
+  _edit: never,
+): Either.Either<Model, OperationFailure> {
+  return Either.left(
+    OperationFailure.InvalidFragment({
+      issues: [{ path: ['op'], detail: { code: 'operation-unknown' } }],
+    }),
+  );
 }
 
 function issueLines(issues: readonly ParseIssue[]): string {

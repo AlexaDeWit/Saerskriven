@@ -1,10 +1,12 @@
 import { Either } from 'effect';
 import { z } from 'zod';
+import type { Assumption } from './assumptions.js';
 import {
   assumptionIdSchema,
   mitigationIdSchema,
   type ThreatId,
 } from './ids.js';
+import type { Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import { unknownThreatIn } from './references.js';
@@ -61,8 +63,26 @@ export type RecordRegister<
   readonly referenced: (record: RecordIn<Key>) => boolean;
 };
 
-const threatLinked = (record: { readonly threats: readonly string[] }) =>
-  record.threats.length > 0;
+/**
+ * Whether a mitigation has a reference: a threat link. An edit that takes
+ * the last one away culls the mitigation, and a file can hold one with none.
+ */
+export function mitigationHasReference(
+  mitigation: Pick<Mitigation, 'threats'>,
+): boolean {
+  return mitigation.threats.length > 0;
+}
+
+/**
+ * Whether an assumption has a reference: a threat link or its model link. An
+ * edit that takes the last one away culls the assumption, and a file can
+ * hold one with none.
+ */
+export function assumptionHasReference(
+  assumption: Pick<Assumption, 'threats' | 'appliesToModel'>,
+): boolean {
+  return assumption.appliesToModel || assumption.threats.length > 0;
+}
 
 /** The mitigation register. A mitigation's references are its threat links. */
 export const mitigationRegister: RecordRegister<
@@ -82,7 +102,7 @@ export const mitigationRegister: RecordRegister<
     OperationFailure.RecordWithoutThreat({
       record: { kind: 'mitigation', id },
     }),
-  referenced: threatLinked,
+  referenced: mitigationHasReference,
 };
 
 /** The assumption register. An assumption's references are its threat links and its model link. */
@@ -104,8 +124,7 @@ export const assumptionRegister: RecordRegister<
     OperationFailure.DuplicateAssumptionId({ assumptionId }),
   unreferenced: (assumptionId) =>
     OperationFailure.AssumptionWithoutReference({ assumptionId }),
-  referenced: (assumption) =>
-    assumption.appliesToModel || threatLinked(assumption),
+  referenced: assumptionHasReference,
 };
 
 /**

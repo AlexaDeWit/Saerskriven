@@ -1,4 +1,4 @@
-import { linkAssumptionToModel, OperationFailure } from '@saerskriven/model';
+import { OperationFailure } from '@saerskriven/model';
 import {
   assumptionId,
   diagramId,
@@ -9,7 +9,7 @@ import {
   validModelFixture,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { applyEdits, modelEditSchema, renderRefusedEdit } from './edits.js';
+import { applyEdits, renderRefusedEdit } from './edits.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {
   readonly [Tag in Union['_tag']]: Extract<Union, { readonly _tag: Tag }>;
@@ -152,65 +152,6 @@ describe('what a refused edit reads as', () => {
         OperationFailure.UnknownElement({ elementId: elementId('one\ntwo') }),
       ),
     ).toContain('"one\\u000atwo"');
-  });
-});
-
-describe('replace_assumption', () => {
-  const managedDb = assumptionId('assumption-managed-db');
-  const modelWide = Either.getOrThrow(
-    linkAssumptionToModel(
-      parsedFixture({
-        ...validModelFixture,
-        assumptions: validModelFixture.assumptions.map((assumption) => ({
-          ...assumption,
-          threats: [],
-        })),
-      }),
-      managedDb,
-    ),
-  );
-  const replacing = (appliesToModel: boolean) =>
-    Either.getOrThrow(
-      applyEdits(modelWide, [
-        {
-          op: 'replace_assumption',
-          assumption: {
-            id: managedDb,
-            prose: 'Reworded.',
-            status: 'valid',
-            threats: [],
-            appliesToModel,
-          },
-        },
-      ]),
-    );
-
-  it('keeps the model link a replacement states', () => {
-    const applied = replacing(true);
-    expect(applied.model.assumptions).toEqual([
-      { ...modelWide.assumptions[0], prose: 'Reworded.' },
-    ]);
-    expect(applied.culled).toEqual([]);
-  });
-
-  it('culls an assumption whose replacement takes away its model link and links no threat', () => {
-    const applied = replacing(false);
-    expect(applied.model.assumptions).toEqual([]);
-    expect(applied.culled).toEqual([{ kind: 'assumption', id: managedDb }]);
-  });
-
-  it('is refused where it leaves the model link unstated', () => {
-    expect(
-      modelEditSchema.safeParse({
-        op: 'replace_assumption',
-        assumption: {
-          id: managedDb,
-          prose: 'Reworded.',
-          status: 'valid',
-          threats: [],
-        },
-      }).success,
-    ).toBe(false);
   });
 });
 
