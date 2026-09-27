@@ -9,11 +9,17 @@ import { elementLabel } from './threats.js';
 export type DetailField = 'description' | 'reasonOutOfScope';
 
 /**
+ * Whether the reason field shows: while the flag is set or the element holds a
+ * reason, so it never hides text a file holds.
+ */
+export function showsReason(element: Element): boolean {
+  return element.outOfScope || element.reasonOutOfScope !== '';
+}
+
+/**
  * An element's description, out-of-scope flag and reason, for every kind. Each
  * field commits a change naming it alone, and text the element already holds
- * commits nothing. The reason shows while the flag is set or the element holds
- * a reason, so it never hides text a file holds. Clearing the flag drops a
- * refused reason draft along with the field it was typed in.
+ * commits nothing.
  */
 export function ElementDetails({
   element,
@@ -61,14 +67,11 @@ export function ElementDetails({
       <RequiredBooleanProperty
         label={t('fields.out-of-scope')}
         onCommit={(outOfScope) => {
-          if (!outOfScope && element.reasonOutOfScope === '') {
-            onRefused('reasonOutOfScope')(undefined);
-          }
           onCommit({ outOfScope });
         }}
         value={element.outOfScope}
       />
-      {(element.outOfScope || element.reasonOutOfScope !== '') && (
+      {showsReason(element) && (
         <ProseField
           compact
           held={held('reasonOutOfScope')}

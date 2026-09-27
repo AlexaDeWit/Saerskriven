@@ -6,7 +6,7 @@ export const fieldsSv = catalogue(fieldMessages)('sv')({
   description: 'Beskrivning',
   'description-of': 'Beskrivning av {element}',
   'out-of-scope': 'Utanför omfattningen',
-  'reason-out-of-scope': 'Skäl till att vara utanför omfattningen',
+  'reason-out-of-scope': 'Skäl till att objektet är utanför omfattningen',
   category: 'Kategori',
   severity: 'Allvarlighetsgrad',
   status: 'Status',

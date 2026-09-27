@@ -80,8 +80,10 @@ earlier wording stands.
   and its reason says why. [Threat Dragon's French][td-fr] writes `hors du
 domaine visé` and `raison de l'exclusion du domaine visé`. The studio kept
   `hors périmètre` and `utanför omfattningen`, which its divergence notices
-  already used, and words the reason on Threat Dragon's pattern: fr `raison de
-l’exclusion du périmètre`, sv `skäl till att vara utanför omfattningen`.
+  already used. The French reason follows Threat Dragon's pattern, `raison de
+l’exclusion du périmètre`, and the Swedish one gives the clause a subject,
+  `skäl till att objektet är utanför omfattningen`, with `objekt` as the
+  studio's Swedish word for an element.
 
 ### Severity levels
 

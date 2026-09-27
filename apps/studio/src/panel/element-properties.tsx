@@ -14,7 +14,11 @@ import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import type { RefusedDraft } from '../ui/text-field.js';
-import { ElementDetails, type DetailField } from './element-details.js';
+import {
+  ElementDetails,
+  showsReason,
+  type DetailField,
+} from './element-details.js';
 import {
   BooleanProperty,
   TextProperty,
@@ -153,8 +157,13 @@ function propertyValue(
   element: Element | undefined,
   field: string,
 ): string | undefined {
-  if (field === 'description' || field === 'reasonOutOfScope') {
-    return element?.[field];
+  if (field === 'description') {
+    return element?.description;
+  }
+  if (field === 'reasonOutOfScope') {
+    return element !== undefined && showsReason(element)
+      ? element.reasonOutOfScope
+      : undefined;
   }
   if (field === 'protocol' && element?.kind === 'flow') {
     return element.protocol;

@@ -36,6 +36,10 @@ const current = (id: string) =>
   elementById(modelStore.getState(), elementId(id));
 const undoable = () => modelStore.getState().past.length;
 const field = (name: string) => screen.getByRole('textbox', { name });
+const disclosure = () =>
+  screen
+    .getByRole('button', { name: 'Security properties' })
+    .getAttribute('aria-expanded');
 const show = (id: string, drafts?: ElementPropertyDrafts) =>
   render(<ElementPropertiesEditor drafts={drafts} elementId={elementId(id)} />);
 
@@ -142,17 +146,23 @@ describe(
         'Managed by the cloud provider.',
       );
       expect(undoable()).toBe(0);
-      expect(
-        screen
-          .getByRole('button', { name: 'Security properties' })
-          .getAttribute('aria-expanded'),
-      ).toBe('false');
+      expect(disclosure()).toBe('false');
       shown.unmount();
       show('element-db', drafts);
       expect(field(reason)).toHaveProperty(
         'value',
         `Managed by the cloud provider.${softHyphen}`,
       );
+      expect(disclosure()).toBe('false');
+      await user.click(
+        screen.getByRole('button', { name: 'Security properties' }),
+      );
+      expect(disclosure()).toBe('true');
+      await user.click(
+        screen.getByRole('button', { name: 'Security properties' }),
+      );
+      expect(disclosure()).toBe('false');
+      expect(field(reason).getAttribute('aria-invalid')).toBe('true');
       await user.type(field(reason), '{Backspace}');
       await user.tab();
       expect(field(reason).getAttribute('aria-invalid')).toBe('false');
@@ -172,6 +182,26 @@ describe(
       expect(drafts.get(elementId('element-api'))?.size).toBe(0);
       await chooseFrom('Out of scope', 'Yes');
       expect(field(reason)).toHaveProperty('value', '');
+    });
+
+    it('drops a refused reason when an undo hides its field, so a redo shows no refusal', async () => {
+      const drafts: ElementPropertyDrafts = new Map();
+      const user = userEvent.setup();
+      show('element-api', drafts);
+      await chooseFrom('Out of scope', 'Yes');
+      await user.type(field(reason), `Hosted${softHyphen}`);
+      await user.tab();
+      expect(field(reason).getAttribute('aria-invalid')).toBe('true');
+      act(() => {
+        dispatch(Action.Undo());
+      });
+      expect(screen.queryByRole('textbox', { name: reason })).toBeNull();
+      expect(drafts.get(elementId('element-api'))?.size).toBe(0);
+      act(() => {
+        dispatch(Action.Redo());
+      });
+      expect(field(reason)).toHaveProperty('value', '');
+      expect(field(reason).getAttribute('aria-invalid')).toBe('false');
     });
   },
   editorTimeout,

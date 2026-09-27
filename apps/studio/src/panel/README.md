@@ -62,10 +62,11 @@ changes. A model arriving with the same ids is a different sitting and starts
 on what the model says. The file is identified by its name, the state carrying
 nothing else that tells two sittings apart, so a save under another name starts
 the drafts afresh as an open does. Drafts in an element's description, reason
-and security properties use the same lifetime. The security properties'
-controls mount on first opening and stay mounted through later collapses, and
-only a security property's draft holds that disclosure open. The overlay skips
-renders its canvas parent makes during a drag.
+and security properties use the same lifetime, and a reason's draft also goes
+when its field hides, whatever hid it. The security properties' controls mount
+on first opening and stay mounted through later collapses, and only a security
+property's draft holds that disclosure open. The overlay skips renders its
+canvas parent makes during a drag.
 
 ## Drawing a threat
 
