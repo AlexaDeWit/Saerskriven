@@ -1,3 +1,29 @@
+## 0.7.0 (2026-09-27)
+
+### 🚀 Features
+
+- **mcp:** set an element's description and scope in place ([#568](https://github.com/AlexaDeWit/Saerskriven/pull/568))
+- **mcp:** page the searches and carry every read field in text ([#569](https://github.com/AlexaDeWit/Saerskriven/pull/569))
+- **mcp:** patch a record's text in place and fill metadata on create ([#575](https://github.com/AlexaDeWit/Saerskriven/pull/575))
+- **mcp:** find mitigations and assumptions with saer_search_records ([#576](https://github.com/AlexaDeWit/Saerskriven/pull/576))
+- **model:** parse issues carry a code and typed parameters ([#549](https://github.com/AlexaDeWit/Saerskriven/pull/549))
+- **model,mcp:** reverse a flow, reshape a boundary, and set one end of a flow ([#584](https://github.com/AlexaDeWit/Saerskriven/pull/584))
+- **model,studio:** keep a pasted threat's free number, and count what a cut removes ([#578](https://github.com/AlexaDeWit/Saerskriven/pull/578), [#555](https://github.com/AlexaDeWit/Saerskriven/issues/555))
+- **studio:** attach and detach a threat's elements from the panel ([#560](https://github.com/AlexaDeWit/Saerskriven/pull/560))
+- **studio:** show and edit an element's description and scope ([#581](https://github.com/AlexaDeWit/Saerskriven/pull/581))
+
+### 🩹 Fixes
+
+- **canvas:** move a selected flow's label and badge once in a group drag ([#586](https://github.com/AlexaDeWit/Saerskriven/pull/586))
+- **formats,studio:** claim a parse that threw, answer a flood by its envelope ([#574](https://github.com/AlexaDeWit/Saerskriven/pull/574))
+- **model,mcp:** add_element refuses the names and flow ends rename and reconnect refuse ([#579](https://github.com/AlexaDeWit/Saerskriven/pull/579))
+- **studio:** name a French element's kind before any "de" or "à", and word record fields per kind ([#587](https://github.com/AlexaDeWit/Saerskriven/pull/587))
+- **studio,formats:** word the element kind in two divergence messages ([#589](https://github.com/AlexaDeWit/Saerskriven/pull/589))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.6.0 (2026-09-20)
 
 ### 🚀 Features
