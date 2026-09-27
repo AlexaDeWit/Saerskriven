@@ -73,6 +73,15 @@ export function renderReading(reading: Reading): readonly string[] {
   ];
 }
 
+/**
+ * Foreign texts as one line of a text result lists them: each quoted as
+ * {@link quotedForTerminal} quotes it and joined by commas, or `none` where
+ * there are none.
+ */
+export function quotedList(texts: readonly string[]): string {
+  return texts.length === 0 ? 'none' : texts.map(quotedForTerminal).join(', ');
+}
+
 /** The reading's own fields, as every read result of this server carries them. */
 export function reportedReading(reading: ModelReading): Reading {
   return {

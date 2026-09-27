@@ -1,4 +1,4 @@
-import { escapedForTerminal, quotedForTerminal } from '@saerskriven/formats';
+import { escapedForTerminal } from '@saerskriven/formats';
 import {
   assumptionSchema,
   mitigationSchema,
@@ -7,7 +7,6 @@ import {
   threatFlagSchema,
   threatFlags,
   threatSchema,
-  type Model,
   type Threat,
 } from '@saerskriven/model';
 import { Either } from 'effect';
@@ -26,13 +25,13 @@ import {
   reportedReading,
   type ModelReading,
 } from './reading.js';
+import { renderAssumption, renderMitigation } from './record-rows.js';
 import {
   flagsDescription,
-  renderAssumption,
   renderCategory,
   renderFlags,
-  renderMitigation,
   threatHeadingLine,
+  threatNamed,
 } from './threat-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
@@ -80,7 +79,7 @@ export function getThreat(
   args: GetThreatArguments,
 ): Either.Either<GetThreatResult, readonly string[]> {
   return Either.flatMap(readNamed(workspace, args.file), (reading) =>
-    Either.map(threatOf(reading.model, args.ref), (threat) =>
+    Either.map(threatNamed(reading.model, args.ref), (threat) =>
       recorded(reading, threat),
     ),
   );
@@ -108,21 +107,6 @@ export function renderThreatRecord(result: GetThreatResult): readonly string[] {
       (assumption) => `  ${renderAssumption(assumption, 'threat')}`,
     ),
   ];
-}
-
-function threatOf(
-  model: Model,
-  ref: string,
-): Either.Either<Threat, readonly string[]> {
-  const found =
-    model.threats.find((threat) => threat.id === ref) ??
-    model.threats.find((threat) => String(threat.number) === ref);
-  return found === undefined
-    ? Either.left([
-        `The model holds no threat ${quotedForTerminal(ref)}, by number or by id.`,
-        `It holds ${String(model.threats.length)} threats. Call saer_search_threats for their numbers.`,
-      ])
-    : Either.right(found);
 }
 
 function recorded(reading: ModelReading, threat: Threat): GetThreatResult {

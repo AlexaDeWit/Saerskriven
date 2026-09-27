@@ -39,6 +39,7 @@ export const registeredTools: readonly string[] = [
   'saer_register',
   'saer_search_elements',
   'saer_search_threats',
+  'saer_search_records',
   'saer_get_threat',
   'saer_render_diagram',
   'saer_edit',
