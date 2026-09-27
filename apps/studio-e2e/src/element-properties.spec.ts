@@ -5,6 +5,7 @@ import {
   chooseByKeyboard,
   chooseInPanel,
   openFile,
+  panelField,
   savedModel,
   selectByKeyboard,
   storefront,
@@ -152,6 +153,58 @@ test('edits every element kind and preserves security facts through save, undo, 
       exact: true,
     }),
   ).toContainText('Shop network');
+});
+
+test('edits the description and scope of a process and a note through undo, save and reload', async ({
+  page,
+}) => {
+  await openFile(page, twoDiagramsFile);
+  await selectByKeyboard(page, storefront.webShop);
+  const description = panelField(page, 'textbox', 'Description of Web shop');
+  const flag = panelField(page, 'combobox', 'Out of scope');
+  const reason = panelField(page, 'textbox', 'Reason out of scope');
+  await description.fill('Takes orders from the browser.');
+  await description.press('Tab');
+  await expect(flag).toBeFocused();
+  await expect(flag).toContainText('No');
+  await expect(reason).toHaveCount(0);
+  await chooseInPanel(page, 'Out of scope', 'Yes');
+  await reason.fill('Run by the payment provider.');
+  await reason.press('Tab');
+  await chooseInPanel(page, 'Out of scope', 'No');
+  await expect(reason).toHaveValue('Run by the payment provider.');
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(flag).toContainText('Yes');
+
+  await selectByKeyboard(page, /^Card note, text/u);
+  await expect(
+    threatPanel(page).getByRole('button', { name: 'Security properties' }),
+  ).toHaveCount(0);
+  const note = panelField(page, 'textbox', 'Description of Card note');
+  await note.fill('Agreed with the payments team.');
+  await note.press('Tab');
+  await chooseInPanel(page, 'Out of scope', 'Yes');
+
+  const elements = (await savedModel(page)).diagrams[0].elements;
+  expect(
+    elements.find((element) => element.id === 'el-web-shop'),
+  ).toMatchObject({
+    description: 'Takes orders from the browser.',
+    outOfScope: true,
+    reasonOutOfScope: 'Run by the payment provider.',
+  });
+  expect(
+    elements.find((element) => element.id === 'el-card-note'),
+  ).toMatchObject({
+    description: 'Agreed with the payments team.',
+    outOfScope: true,
+    reasonOutOfScope: '',
+  });
+  await page.reload();
+  await canvasSettled(page);
+  await selectByKeyboard(page, storefront.webShop);
+  await expect(description).toHaveValue('Takes orders from the browser.');
+  await expect(reason).toHaveValue('Run by the payment provider.');
 });
 
 test('shows recorded and absent states at wide and narrow widths with accessible keyboard controls', async ({

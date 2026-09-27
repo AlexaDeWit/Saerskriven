@@ -4,6 +4,9 @@ import { fieldMessages } from './contract.js';
 export const fieldsEnCA = catalogue(fieldMessages)('en-CA')({
   title: 'Title',
   description: 'Description',
+  'description-of': 'Description of {element}',
+  'out-of-scope': 'Out of scope',
+  'reason-out-of-scope': 'Reason out of scope',
   category: 'Category',
   severity: 'Severity',
   status: 'Status',

@@ -16,6 +16,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `live-edges.ts`, `box-selection.ts`, `background-selection.ts`        | Hooks for a drag's flows, a selection box extended to flows, and a stationary background press                                     |
 | `tools.ts`, `elements.ts`, `placement.tsx`, `placement-preview.tsx`   | The active mode outside the model store, the elements a tool places, the pointer and Enter gestures, and the draft drawn meanwhile |
 | `edits.ts`                                                            | One function per edit a control asks for                                                                                           |
+| `pane-shield.ts`                                                      | Keeping a double-click's second press out of a pane its first press opened                                                         |
 | `connecting.ts`, `flow-target-chooser.tsx`                            | The flow a start-flow command holds until a target is chosen, and the listbox that chooses it                                      |
 | `inline-editing.tsx`                                                  | The inline name and Note editors, and the node and edge bodies that mount them                                                     |
 | `selection-controls.tsx`, `selection-control.ts`                      | The controls over a selection, and the event a command opens one of them through                                                   |
@@ -92,6 +93,13 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   nothing, on the panel's [commit rule](../panel/README.md#the-commit-rule). A
   refused name keeps its field open wherever the selection goes, and its draft
   goes only when a rename opens on another element.
+- **A double-click edits the element its first press landed on**, even where
+  the pane opens over that element in between. `pane-shield.ts` stops a second
+  primary press in the select tool that lands in the pane within
+  `doublePressInterval` (500 ms) and `placementClickDistance` of the first, so
+  no pane control acts on it, and its pointer click opens the element's text
+  instead. A cancelled press, a blurred window and a keyboard activation let
+  the shield go.
 - **The announcement speaks only where the next focus does not show the
   result.** An action whose result the focused control or React Flow's own
   message already reports, such as a placement, a rename or a keyboard move,

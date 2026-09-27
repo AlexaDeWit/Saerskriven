@@ -805,7 +805,10 @@ test('a long element name leaves the pane heading and editor reachable', async (
   await expect(titleField(page)).toBeFocused();
   await titleField(page).fill('A threat under a long element name');
   await titleField(page).press('Enter');
-  const description = panel.getByRole('textbox', { name: 'Description' });
+  const description = panel.getByRole('textbox', {
+    name: 'Description',
+    exact: true,
+  });
   await description.fill('The editor remains reachable.');
   await panel.getByRole('button', { name: 'Close threats' }).click();
   await expect(panel).toHaveCount(0);

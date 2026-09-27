@@ -1,4 +1,9 @@
-import type { Element, ElementId, ElementProperties } from '@saerskriven/model';
+import type {
+  Element,
+  ElementDetailsChange,
+  ElementId,
+  ElementProperties,
+} from '@saerskriven/model';
 import { Collapsible } from 'radix-ui';
 import { useEffect, useState } from 'react';
 import {
@@ -10,6 +15,11 @@ import { Action } from '../store/actions.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import type { RefusedDraft } from '../ui/text-field.js';
 import {
+  ElementDetails,
+  showsReason,
+  type DetailField,
+} from './element-details.js';
+import {
   BooleanProperty,
   TextProperty,
   RelationshipProperty,
@@ -18,10 +28,20 @@ import styles from './element-properties.module.css';
 
 type PropertyDraft = RefusedDraft & { readonly value: string | undefined };
 
+const detailFields: ReadonlySet<string> = new Set<DetailField>([
+  'description',
+  'reasonOutOfScope',
+]);
+
 /** Refused property drafts persist across selection changes and panel closing. */
 export type ElementPropertyDrafts = Map<ElementId, Map<string, PropertyDraft>>;
 
-/** Edits the selected element's security facts through the model store's history and validation. */
+/**
+ * Edits the selected element's description and scope, and for every kind but
+ * a note its security facts, through the model store's history and
+ * validation. The security facts sit in a disclosure that stays open while
+ * one of them holds a refused draft.
+ */
 export function ElementPropertiesEditor({
   elementId,
   drafts,
@@ -40,8 +60,10 @@ export function ElementPropertiesEditor({
   const [refusals, setRefusals] = useState(
     () => drafts?.get(elementId) ?? new Map<string, PropertyDraft>(),
   );
-  const [open, setOpen] = useState(refusals.size > 0);
-  const [hasOpened, setHasOpened] = useState(refusals.size > 0);
+  const [open, setOpen] = useState(() => holdsSecurityDraft(refusals));
+  const [hasOpened, setHasOpened] = useState(() =>
+    holdsSecurityDraft(refusals),
+  );
   const current = new Map(
     [...refusals].filter(
       ([field, draft]) => propertyValue(element, field) === draft.value,
@@ -53,16 +75,16 @@ export function ElementPropertiesEditor({
   useEffect(() => {
     drafts?.set(elementId, refusals);
   }, [drafts, elementId, refusals]);
-  if (
-    element === undefined ||
-    element.kind === 'text' ||
-    diagram === undefined
-  ) {
+  if (element === undefined || diagram === undefined) {
     return null;
   }
   const commit = (properties: ElementProperties) => {
     resetAnnouncements();
     dispatch(Action.SetElementProperties({ elementId, properties }));
+  };
+  const commitDetails = (change: ElementDetailsChange) => {
+    resetAnnouncements();
+    dispatch(Action.SetElementDetails({ elementId, change }));
   };
   const refused = (field: string) => (draft: RefusedDraft | undefined) => {
     if (draft === undefined && !refusals.has(field)) {
@@ -73,46 +95,76 @@ export function ElementPropertiesEditor({
       next.delete(field);
     } else {
       next.set(field, { ...draft, value: propertyValue(element, field) });
-      setOpen(true);
+      if (!detailFields.has(field)) {
+        setOpen(true);
+      }
       announceRefusal(draft, refusals.get(field)?.text);
     }
     setRefusals(next);
   };
   return (
-    <Collapsible.Root
-      className={styles.properties}
-      open={open}
-      onOpenChange={(next) => {
-        if (next) {
-          setHasOpened(true);
-        }
-        setOpen(next || current.size > 0);
-      }}
-    >
-      <Collapsible.Trigger className={styles.trigger}>
-        {t('panel.security-properties')}{' '}
-        <span aria-hidden="true">{open ? '▴' : '▾'}</span>
-      </Collapsible.Trigger>
-      <Collapsible.Content className={styles.content} forceMount hidden={!open}>
-        <p className={styles.hint}>{t('panel.not-recorded-hint')}</p>
-        {hasOpened && (
-          <PropertyFields
-            element={element}
-            elements={diagram.elements}
-            commit={commit}
-            refused={refused}
-            drafts={current}
-          />
-        )}
-      </Collapsible.Content>
-    </Collapsible.Root>
+    <>
+      <ElementDetails
+        element={element}
+        held={(field) => current.get(field)?.text}
+        onCommit={commitDetails}
+        onRefused={refused}
+      />
+      {element.kind !== 'text' && (
+        <Collapsible.Root
+          className={styles.properties}
+          open={open}
+          onOpenChange={(next) => {
+            if (next) {
+              setHasOpened(true);
+            }
+            setOpen(next || holdsSecurityDraft(current));
+          }}
+        >
+          <Collapsible.Trigger className={styles.trigger}>
+            {t('panel.security-properties')}{' '}
+            <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+          </Collapsible.Trigger>
+          <Collapsible.Content
+            className={styles.content}
+            forceMount
+            hidden={!open}
+          >
+            <p className={styles.hint}>{t('panel.not-recorded-hint')}</p>
+            {hasOpened && (
+              <PropertyFields
+                element={element}
+                elements={diagram.elements}
+                commit={commit}
+                refused={refused}
+                drafts={current}
+              />
+            )}
+          </Collapsible.Content>
+        </Collapsible.Root>
+      )}
+    </>
   );
+}
+
+function holdsSecurityDraft(
+  drafts: ReadonlyMap<string, PropertyDraft>,
+): boolean {
+  return [...drafts.keys()].some((field) => !detailFields.has(field));
 }
 
 function propertyValue(
   element: Element | undefined,
   field: string,
 ): string | undefined {
+  if (field === 'description') {
+    return element?.description;
+  }
+  if (field === 'reasonOutOfScope') {
+    return element !== undefined && showsReason(element)
+      ? element.reasonOutOfScope
+      : undefined;
+  }
   if (field === 'protocol' && element?.kind === 'flow') {
     return element.protocol;
   }

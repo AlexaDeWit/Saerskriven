@@ -4,6 +4,9 @@ import { fieldMessages } from './contract.js';
 export const fieldsSv = catalogue(fieldMessages)('sv')({
   title: 'Titel',
   description: 'Beskrivning',
+  'description-of': 'Beskrivning av {element}',
+  'out-of-scope': 'Utanför omfattningen',
+  'reason-out-of-scope': 'Skäl till att objektet är utanför omfattningen',
   category: 'Kategori',
   severity: 'Allvarlighetsgrad',
   status: 'Status',

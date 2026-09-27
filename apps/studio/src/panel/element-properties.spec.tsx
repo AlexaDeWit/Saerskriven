@@ -351,19 +351,19 @@ describe(
     it('mounts fields on first opening and retains them through later collapses', async () => {
       const user = userEvent.setup();
       render(<ElementPropertiesEditor elementId={elementId('element-api')} />);
-      expect(screen.queryAllByRole('combobox', { hidden: true })).toHaveLength(
+      const trigger = screen.getByRole('button', {
+        name: 'Security properties',
+      });
+      const content = within(trigger.parentElement ?? trigger);
+      expect(content.queryAllByRole('combobox', { hidden: true })).toHaveLength(
         0,
       );
-      await user.click(
-        screen.getByRole('button', { name: 'Security properties' }),
-      );
-      const controls = screen.getAllByRole('combobox', { hidden: true });
+      await user.click(trigger);
+      const controls = content.getAllByRole('combobox', { hidden: true });
       expect(controls.length).toBeGreaterThan(0);
-      await user.click(
-        screen.getByRole('button', { name: 'Security properties' }),
-      );
-      expect(screen.queryAllByRole('combobox')).toHaveLength(0);
-      expect(screen.getAllByRole('combobox', { hidden: true })).toEqual(
+      await user.click(trigger);
+      expect(content.queryAllByRole('combobox')).toHaveLength(0);
+      expect(content.getAllByRole('combobox', { hidden: true })).toEqual(
         controls,
       );
     });

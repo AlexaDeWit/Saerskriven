@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, type PointerEvent } from 'react';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
-import { placementClickDistance } from './elements.js';
+import { placementClickDistance, pointerDistance } from './elements.js';
 import { currentConnecting } from './connecting.js';
 import { currentTool } from './tools.js';
 
@@ -61,8 +61,7 @@ export function useBackgroundSelection() {
       const start = press.current;
       if (
         start !== undefined &&
-        Math.hypot(event.clientX - start.x, event.clientY - start.y) >=
-          placementClickDistance
+        pointerDistance(event, start) >= placementClickDistance
       ) {
         cancel();
       }
@@ -74,8 +73,7 @@ export function useBackgroundSelection() {
         start === undefined ||
         start.pointerId !== event.pointerId ||
         start.transition !== currentTool().transition ||
-        Math.hypot(event.clientX - start.x, event.clientY - start.y) >=
-          placementClickDistance ||
+        pointerDistance(event, start) >= placementClickDistance ||
         !(event.target instanceof Element) ||
         !event.target.matches('.react-flow__pane') ||
         modelStore.getState().selection.length === 0

@@ -4,6 +4,9 @@ import { fieldMessages } from './contract.js';
 export const fieldsFrCA = catalogue(fieldMessages)('fr-CA')({
   title: 'Titre',
   description: 'Description',
+  'description-of': 'Description de {element}',
+  'out-of-scope': 'Hors périmètre',
+  'reason-out-of-scope': 'Raison de l’exclusion du périmètre',
   category: 'Catégorie',
   severity: 'Gravité',
   status: 'État',

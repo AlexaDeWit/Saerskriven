@@ -57,6 +57,14 @@ const nominalSizes = {
 /** The screen-pixel movement below which a placement remains a click. */
 export const placementClickDistance = 4;
 
+/** How far, in screen pixels, a pointer is from where a press started. */
+export function pointerDistance(
+  pointer: { readonly clientX: number; readonly clientY: number },
+  start: Point,
+): number {
+  return Math.hypot(pointer.clientX - start.x, pointer.clientY - start.y);
+}
+
 /** The default size of an element placed by a click or by Enter. */
 export function defaultSize(kind: ElementTool): Size {
   return nominalSizes[kind];
