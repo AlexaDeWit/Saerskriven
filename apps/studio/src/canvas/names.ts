@@ -61,8 +61,9 @@ export function accessibleNames(
 
 /**
  * What an element is called in a sentence: its name, or its kind while it has
- * none. A message that puts "de" or "à" before the element takes neither and
- * words each kind itself, as {@link nameFieldLabel} does.
+ * none. A message that puts "de" or "à" before the element does not take this
+ * label: it words each kind itself and takes the name alone, as
+ * {@link nameFieldLabel} does.
  */
 export function kindLabel(
   name: string,

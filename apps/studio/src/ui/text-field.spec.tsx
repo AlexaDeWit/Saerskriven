@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { activeTranslator, chooseLanguage } from '../messages/locale.js';
+import { activeTranslator } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import type { Said } from '../messages/said.js';
 
 import {
@@ -39,11 +40,7 @@ describe('refusedText', () => {
   it('names the field in the language the refusal is read in, not the one it was made in', () => {
     const refusal = refusedText(title, `ab${softHyphen}c`);
     const english = refusal?.said(t);
-
-    chooseLanguage('sv');
-    const { t: swedish } = activeTranslator();
-    chooseLanguage('en-CA');
-    globalThis.localStorage.clear();
+    const swedish = inLocale('sv');
 
     expect(refusal?.said(swedish)).toContain(swedish('fields.title'));
     expect(refusal?.said(swedish)).not.toBe(english);
