@@ -108,11 +108,13 @@ export function GeometryEditor({
   );
 }
 
-function numeric(value: string): number {
+/** A typed number, where an empty field is no number at all. */
+export function numeric(value: string): number {
   return value.trim() === '' ? Number.NaN : Number(value);
 }
 
-function NumberField({
+/** A number input between Decrease and Increase buttons that step it by one. */
+export function NumberField({
   label,
   value,
   change,

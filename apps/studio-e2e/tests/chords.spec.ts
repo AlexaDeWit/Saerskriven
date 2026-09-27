@@ -28,6 +28,9 @@ const asChordCall = (chord: string): string => {
   if (held.includes('Control')) {
     return `mod('${key}', 'other')`;
   }
+  if (!held.includes('ControlOrMeta')) {
+    return `shift('${key}')`;
+  }
   return held.includes('Shift') ? `modShift('${key}')` : `mod('${key}')`;
 };
 

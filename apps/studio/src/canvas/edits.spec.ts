@@ -1,5 +1,5 @@
 import { emptyModel, type Flow, type Model } from '@saerskriven/model';
-import { elementId } from '@saerskriven/model/fixtures';
+import { elementId, elementIn } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
@@ -19,8 +19,10 @@ import {
 import { activeTranslator } from '../messages/locale.js';
 import { currentLayout } from './layout.js';
 import {
+  boundaryCurve,
   boundaryElement,
   canvasModel,
+  curvedCanvasModel,
   flaggedCanvasModel,
   openCanvas,
   probeFlow,
@@ -35,7 +37,9 @@ import {
   removalCascade,
   removeSelected,
   resizeNode,
+  reverseSelectedFlow,
   selectAll,
+  toggleBoundaryShape,
 } from './edits.js';
 import { freshElement } from './elements.js';
 import { numbersIn } from '../ui/ui.fixtures.js';
@@ -286,6 +290,81 @@ describe('connectElements', () => {
 
     expect(modelStore.getState().past).toHaveLength(0);
     expect(currentAnnouncement().message).toBe('');
+  });
+});
+
+describe('reverseSelectedFlow', () => {
+  it('swaps the ends of the selected flow as one undo step and names it', () => {
+    openCanvas([probeFlow]);
+
+    reverseSelectedFlow();
+
+    expect(elementIn(modelStore.getState().present, probeFlow)).toMatchObject({
+      source: { kind: 'free', position: { x: 500, y: 200 } },
+      target: { kind: 'attached', element: processElement },
+    });
+    expect(modelStore.getState().past).toEqual([canvasModel]);
+    expect(currentAnnouncement().message).toContain('Reads a file');
+  });
+
+  it('leaves a selection that is not one flow alone', () => {
+    openCanvas([actorElement]);
+
+    reverseSelectedFlow();
+
+    expect(modelStore.getState().past).toHaveLength(0);
+    expect(currentAnnouncement().message).toBe('');
+  });
+});
+
+describe('toggleBoundaryShape', () => {
+  it('turns the selected box into the arch the curve tool draws in it, and back, one undo step each', () => {
+    openCanvas([boundaryElement]);
+
+    toggleBoundaryShape();
+
+    expect(
+      elementIn(modelStore.getState().present, boundaryElement),
+    ).toMatchObject({
+      shape: {
+        kind: 'curve',
+        waypoints: [
+          { x: -20, y: 80 },
+          { x: 210, y: -20 },
+          { x: 440, y: 80 },
+        ],
+      },
+    });
+    expect(currentAnnouncement().message).toContain('Perimeter');
+
+    toggleBoundaryShape();
+
+    expect(modelStore.getState().present).toStrictEqual(canvasModel);
+    expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it('turns a curve into the box around its points', () => {
+    openCanvas([boundaryElement], curvedCanvasModel);
+
+    toggleBoundaryShape();
+
+    expect(
+      elementIn(modelStore.getState().present, boundaryElement),
+    ).toMatchObject({
+      shape: {
+        kind: 'box',
+        position: { x: boundaryCurve[0].x, y: boundaryCurve[1].y },
+        size: { width: 460, height: 100 },
+      },
+    });
+  });
+
+  it('leaves a selection that is not one trust boundary alone', () => {
+    openCanvas([requestFlow]);
+
+    toggleBoundaryShape();
+
+    expect(modelStore.getState().past).toHaveLength(0);
   });
 });
 

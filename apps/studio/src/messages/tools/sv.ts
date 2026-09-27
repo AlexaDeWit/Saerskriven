@@ -17,6 +17,7 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   'flow-target': 'Flödets mål',
   'choose-flow-target': 'Välj ett mål för flödet',
   'reconnect-flow': 'Koppla om flödet',
+  'trust-boundary': 'Förtroendegräns',
   'flow-endpoint': 'Flödets ände',
   'select-node-geometry': 'Markera en nod för att ändra dess geometri.',
   'select-one-flow': 'Markera ett enda flöde för att koppla om det.',
@@ -34,6 +35,7 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   target: 'Mål',
   side: 'Sida',
   automatic: 'Automatiskt',
+  'free-position': 'Fri punkt',
   'flow-route': 'Flödets sträckning',
   'bend-actions': 'Åtgärder för knäckpunkten',
   'flow-end-actions': 'Åtgärder för flödesänden',
@@ -46,11 +48,18 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   'bend-handle-help':
     'Dra eller använd piltangenterna för att flytta. Klicka för åtgärder. Delete tar bort knäckpunkten.',
   'flow-end-handle-help':
-    'Dra till en annan sida av sitt objekt. Piltangenterna fäster en sida, Delete låter den följa sträckningen. Klicka för åtgärder.',
+    'Dra till en annan sida av sitt objekt, till ett annat objekt för att fästa den där eller till tom yta för att lossa den. Piltangenterna fäster en sida, Delete låter den följa sträckningen. Klicka för åtgärder.',
+  'free-end-handle-help':
+    'Dra eller använd piltangenterna för att flytta. Släpp den på en aktör, en process eller ett datalager för att fästa den där.',
+  'curve-point-numbered': 'Punkt {number}',
+  'curve-point-actions': 'Åtgärder för punkten',
+  'remove-curve-point': 'Ta bort punkten',
+  'curve-point-handle-help':
+    'Dra eller använd piltangenterna för att flytta. Klicka för åtgärder. Delete tar bort punkten så länge kurvan behåller två.',
   'bend-choose-help':
     'Segment {number}: Vänster/Höger för att välja, Retur för att lägga till. Eller klicka på ett segment.',
   'bend-place-help':
     'Piltangenterna flyttar knäckpunkten. Retur bekräftar, Esc avbryter. Eller klicka på målet.',
   'bend-idle-help':
-    'Dra i linjen för att lägga till en knäckpunkt. Dra en knäckpunkt för att flytta den. Dra en ände till en annan sida av sitt objekt. Klicka på ett handtag för åtgärder.',
+    'Dra i linjen för att lägga till en knäckpunkt. Dra en knäckpunkt för att flytta den. Dra en ände till en annan sida, ett annat objekt eller tom yta. Klicka på ett handtag för åtgärder.',
 });

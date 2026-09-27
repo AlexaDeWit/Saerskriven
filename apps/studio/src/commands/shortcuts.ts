@@ -21,6 +21,7 @@ const chordKeys = [
   'n',
   'o',
   'p',
+  'r',
   's',
   't',
   'v',
@@ -116,6 +117,8 @@ export type CommandMessageId = Extract<StudioMessageId, `commands.${string}`>;
 
 type DistanceLabelId =
   | 'commands.key-move-bend'
+  | 'commands.key-move-free-end'
+  | 'commands.key-move-curve-point'
   | 'commands.key-move-selection'
   | 'commands.key-resize-selection';
 

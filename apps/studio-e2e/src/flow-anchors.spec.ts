@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
+import { registeredChords } from './chords.fixtures.js';
 import {
   boxOf,
   dragOnto,
+  dragTo,
   drawnBy,
+  emptyCanvasPoint,
   handlesOf,
   lineOf,
   turnsOf,
@@ -15,11 +18,25 @@ import {
   placeholder,
   readBack,
   savedFile,
+  savedModel,
   selectByKeyboard,
 } from './studio.fixtures.js';
 
 const sourceEnd = (page: import('@playwright/test').Page) =>
   page.getByRole('button', { name: 'Flow source end', exact: true });
+
+const targetEnd = (page: import('@playwright/test').Page) =>
+  page.getByRole('button', { name: 'Flow target end', exact: true });
+
+const savedFlow = async (page: import('@playwright/test').Page) =>
+  (await savedModel(page)).diagrams[0].elements.find(
+    (element) => element.kind === 'flow',
+  );
+
+const freeTargetX = (flow: Awaited<ReturnType<typeof savedFlow>>): number =>
+  flow?.kind === 'flow' && flow.target.kind === 'free'
+    ? flow.target.position.x
+    : Number.NaN;
 
 test('pins a flow end to a side by keyboard and by dragging, releases it, and saves the pin', async ({
   page,
@@ -74,4 +91,52 @@ test('a flow becomes bidirectional by its command, draws two arrowheads, and sav
   await expect(arrows).toHaveCount(2);
   const written = await savedFile(page);
   expect(written.text).toContain('bidirectional: true');
+});
+
+test('a flow reverses by its chord and its command, one undo step each, and saves the swap', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const flow = await selectByKeyboard(page, placeholder.records);
+  await expect(flow).toHaveAccessibleName(/from Actor to Store/u);
+  await page.keyboard.press(registeredChords['reverse-flow'][0]);
+  await expect(flow).toHaveAccessibleName(/from Store to Actor/u);
+  await page
+    .getByRole('region', { name: 'Reconnect flow' })
+    .getByRole('button', { name: 'Reverse flow', exact: true })
+    .click();
+  await expect(flow).toHaveAccessibleName(/from Actor to Store/u);
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(flow).toHaveAccessibleName(/from Store to Actor/u);
+  expect(await savedFlow(page)).toMatchObject({
+    source: { kind: 'attached', element: 'placeholder-store' },
+    target: { kind: 'attached', element: 'placeholder-actor' },
+  });
+});
+
+test('a flow end dragged onto empty canvas goes free there, moves by arrow key, and attaches where it is dropped on an element', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const flow = await selectByKeyboard(page, placeholder.records);
+  const original = await drawnBy(lineOf(page, placeholder.records));
+  await dragTo(page, targetEnd(page), await emptyCanvasPoint(page));
+  await expect(flow).toHaveAccessibleName(/from Actor to a free point/u);
+  const freed = await savedFlow(page);
+  expect(freed).toMatchObject({ target: { kind: 'free' } });
+  await targetEnd(page).focus();
+  await page.keyboard.press('ArrowRight');
+  expect(freeTargetX(await savedFlow(page)) - freeTargetX(freed)).toBeCloseTo(
+    5,
+  );
+  await dragOnto(page, targetEnd(page), nodeNamed(page, placeholder.actor));
+  await expect(flow).toHaveAccessibleName(/from Actor to a free point/u);
+  await dragOnto(page, targetEnd(page), nodeNamed(page, placeholder.store));
+  await expect(flow).toHaveAccessibleName(/from Actor to Store/u);
+  await expect(lineOf(page, placeholder.records)).toHaveAttribute(
+    'd',
+    original,
+  );
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(flow).toHaveAccessibleName(/from Actor to a free point/u);
 });

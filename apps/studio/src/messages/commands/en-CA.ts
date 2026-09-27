@@ -20,6 +20,8 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'label-reconnect-source': 'Change flow source',
   'label-reconnect-target': 'Change flow target',
   'label-toggle-flow-direction': 'Toggle bidirectional flow',
+  'label-reverse-flow': 'Reverse flow',
+  'label-toggle-boundary-shape': 'Switch boundary shape',
   'label-align-left': 'Align left',
   'label-align-centre': 'Align centres',
   'label-align-right': 'Align right',
@@ -106,6 +108,11 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'key-pin-flow-end':
     'Pin the focused flow end to the side the arrow points at',
   'key-release-flow-end': 'Let the focused flow end follow its route',
+  'key-move-free-end': 'Move the focused free flow end by {units} units',
+  'key-keep-free-end': 'Keep the focused free flow end where it is',
+  'key-move-curve-point': 'Move the focused curve point by {units} units',
+  'key-remove-curve-point': 'Remove the focused curve point',
+  'key-cancel-curve-point': 'Cancel the curve point edit',
   'key-focus-canvas-item': 'Move focus between canvas items',
   'key-select-canvas-item': 'Select the focused item',
   'key-edit-canvas-text': 'Edit the selected canvas text',
@@ -130,7 +137,11 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'key-when-bend-handle-or-position':
     'A bend handle has focus or a bend position is being chosen',
   'key-when-existing-bend-handle': 'An existing bend handle has focus',
-  'key-when-flow-end-handle': 'A flow end handle has focus',
+  'key-when-flow-end-handle': 'An attached flow end handle has focus',
+  'key-when-free-end-handle': 'A free flow end handle has focus',
+  'key-when-curve-point-handle': 'A curve point handle has focus',
+  'key-when-curve-point-gesture':
+    'A curve point drag or its actions are active',
   'key-when-canvas-focus': 'Focus is on the canvas',
   'key-when-not-only-selected':
     'The focused item is not the only selected item',

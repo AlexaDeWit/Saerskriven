@@ -17,9 +17,13 @@ import {
 } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
-import { announce, quotedName } from './announcements.js';
-import { flowEnds, freshBoundaryCurve, freshFlow } from './elements.js';
-import { articleKindMessages } from '../messages/enum-labels.js';
+import { announce, spokenElement } from './announcements.js';
+import {
+  flowEnds,
+  freshBoundaryCurve,
+  freshFlow,
+  switchedShape,
+} from './elements.js';
 import { sentences, type Speaker } from '../messages/said.js';
 import { currentLayout } from './layout.js';
 import { elementIds } from './nodes.js';
@@ -77,11 +81,44 @@ export function toggleFlowDirection(): void {
   if (
     changedModel(Action.SetFlowDirection({ elementId: flow.id, bidirectional }))
   ) {
-    const { name } = flow;
     announce((t) =>
       t(bidirectional ? 'canvas.flow-both-ways' : 'canvas.flow-one-way', {
-        flow: quotedName(t, name, t(articleKindMessages.flow)),
+        flow: spokenElement(t, flow),
       }),
+    );
+  }
+}
+
+/** Swaps the selected flow's source and target, and reverses its bends, as one undo step. */
+export function reverseSelectedFlow(): void {
+  const flow = selectedElementRecord(modelStore.getState());
+  if (
+    flow?.kind === 'flow' &&
+    changedModel(Action.ReverseFlow({ elementId: flow.id }))
+  ) {
+    announce((t) =>
+      t('canvas.flow-reversed', { flow: spokenElement(t, flow) }),
+    );
+  }
+}
+
+/** Turns the selected trust boundary from a box into a curve, or back, as one undo step. */
+export function toggleBoundaryShape(): void {
+  const boundary = selectedElementRecord(modelStore.getState());
+  if (boundary?.kind !== 'trust-boundary') {
+    return;
+  }
+  const shape = switchedShape(boundary.shape);
+  if (
+    changedModel(Action.SetBoundaryShape({ elementId: boundary.id, shape }))
+  ) {
+    announce((t) =>
+      t(
+        shape.kind === 'curve'
+          ? 'canvas.boundary-curved'
+          : 'canvas.boundary-boxed',
+        { boundary: spokenElement(t, boundary) },
+      ),
     );
   }
 }
@@ -141,13 +178,7 @@ export function describeRemoval(
   return sentences(
     'count' in removed
       ? t('canvas.removed-elements', removed)
-      : t('canvas.removed-named', {
-          name: quotedName(
-            t,
-            removed.name,
-            t(articleKindMessages[removed.kind]),
-          ),
-        }),
+      : t('canvas.removed-named', { name: spokenElement(t, removed) }),
     t('canvas.flows-detached', { count: cascade.flows }),
     t('canvas.threat-links-dropped', { count: cascade.threatLinks }),
     t('canvas.threats-removed', { count: cascade.threats }),

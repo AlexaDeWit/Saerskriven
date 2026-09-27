@@ -8,6 +8,8 @@ export const registeredChords = {
   'reconnect-source': ['ControlOrMeta+Shift+1'],
   'reconnect-target': ['ControlOrMeta+Shift+2'],
   'toggle-flow-direction': ['ControlOrMeta+Shift+3'],
+  'reverse-flow': ['Shift+r'],
+  'toggle-boundary-shape': ['Shift+b'],
   'align-left': ['ControlOrMeta+Shift+ArrowLeft'],
   'align-centre': ['ControlOrMeta+Shift+h'],
   'align-right': ['ControlOrMeta+Shift+ArrowRight'],

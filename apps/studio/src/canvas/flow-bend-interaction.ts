@@ -1,28 +1,33 @@
 import {
-  keyboardResizeStep,
+  isBoundary,
   nearestHandleSide,
-  shiftedKeyboardResizeStep,
   type CanvasEdge,
+  type CanvasNode,
   type NodeBox,
 } from '@saerskriven/canvas';
-import type { Point, Side } from '@saerskriven/model';
+import type { Flow, Point, Side } from '@saerskriven/model';
 import { useReactFlow } from '@xyflow/react';
-import {
-  useEffect,
-  useEffectEvent,
-  useRef,
-  useState,
-  type PointerEvent,
-  type RefObject,
-} from 'react';
+import { useEffect, useEffectEvent, useState, type RefObject } from 'react';
 import { keyboardOwner } from '../commands/binding.js';
 import { pressesContextualShortcut } from '../commands/contextual-shortcuts.js';
-import { hostPlatform, type ChordEvent } from '../commands/shortcuts.js';
+import { hostPlatform } from '../commands/shortcuts.js';
 import { announce } from './announcements.js';
 import { bendInsertionEvent } from './bend-insertion.js';
 import { focusElement } from './edits.js';
-import { pointerDistance } from './elements.js';
-import type { AnchorTarget, BendTarget, FlowBends } from './flow-bends.js';
+import { isFlowEnd } from './elements.js';
+import type {
+  AnchorTarget,
+  BendTarget,
+  EndTarget,
+  FlowBends,
+} from './flow-bends.js';
+import {
+  draggedPoint,
+  nudgedPoint,
+  useHandleDrag,
+  type DragSpan,
+  type HandlePointer,
+} from './handle-drag.js';
 
 /** Which end of a flow a handle stands for. */
 export type FlowEnd = AnchorTarget['end'];
@@ -33,19 +38,14 @@ type BendMode =
   | { readonly kind: 'actions'; readonly index: number }
   | { readonly kind: 'end-actions'; readonly end: FlowEnd };
 
-type Held =
-  | BendTarget
-  | { readonly kind: 'end'; readonly end: FlowEnd; readonly box: NodeBox };
-
-type Gesture = {
-  readonly context: FlowBends['context'];
-  readonly held: Held;
-  readonly start: Point;
-  readonly pointerId: number;
-  readonly moved: boolean;
+type HeldEnd = {
+  readonly kind: 'end';
+  readonly end: FlowEnd;
+  readonly origin: Point;
+  readonly box: NodeBox | undefined;
 };
 
-const dragThreshold = 3;
+type Held = BendTarget | HeldEnd;
 
 const controlSelector = 'button, input, textarea, [data-bend-toolbar]';
 
@@ -56,17 +56,6 @@ const sideOfArrow: ReadonlyMap<string, Side> = new Map([
   ['ArrowLeft', 'left'],
 ]);
 
-type BendPointer = Pick<
-  PointerEvent<HTMLButtonElement | SVGPathElement>,
-  | 'button'
-  | 'clientX'
-  | 'clientY'
-  | 'currentTarget'
-  | 'isPrimary'
-  | 'pointerId'
-  | 'stopPropagation'
->;
-
 /** Binds route gestures while preserving the settled model until commit. */
 export function useFlowBendInteraction(
   bends: FlowBends,
@@ -74,8 +63,6 @@ export function useFlowBendInteraction(
   toolbar: RefObject<HTMLFieldSetElement | null>,
 ) {
   const view = useReactFlow();
-  const gesture = useRef<Gesture | undefined>(undefined);
-  const suppressClick = useRef(false);
   const [mode, setMode] = useState<BendMode | undefined>();
   const [owner, setOwner] = useState(bends.context);
   if (owner !== bends.context) {
@@ -83,16 +70,34 @@ export function useFlowBendInteraction(
     setMode(undefined);
   }
 
+  const drag = useHandleDrag<Held>(bends.context, {
+    preview: (held, span) => {
+      const target = draggedTarget(bends, held, span);
+      if (target === undefined) {
+        bends.cancel();
+      } else {
+        bends.preview(target);
+      }
+    },
+    commit: (held, span) => {
+      const target = draggedTarget(bends, held, span);
+      if (target === undefined) {
+        cancel();
+      } else {
+        commit(target);
+      }
+    },
+    cancel: () => {
+      cancel();
+    },
+  });
   const handBack = (): void => {
     if (bends.flow !== undefined) {
       focusElement(bends.flow.id);
     }
   };
   const cancel = (focus = true): void => {
-    if (gesture.current !== undefined) {
-      suppressClick.current = true;
-    }
-    gesture.current = undefined;
+    drag.drop();
     setMode(undefined);
     bends.cancel();
     if (focus) {
@@ -108,7 +113,7 @@ export function useFlowBendInteraction(
     bends.preview(target);
     announce((t) => t('tools.bend-place-help'));
   };
-  const commit = (target: BendTarget | AnchorTarget): void => {
+  const commit = (target: BendTarget | EndTarget): void => {
     bends.commit(target);
     setMode(undefined);
     handBack();
@@ -144,7 +149,7 @@ export function useFlowBendInteraction(
     }
     if (
       pressesContextualShortcut('cancel-bend', event, hostPlatform) &&
-      (mode !== undefined || gesture.current !== undefined)
+      (mode !== undefined || drag.active())
     ) {
       event.preventDefault();
       event.stopPropagation();
@@ -170,7 +175,7 @@ export function useFlowBendInteraction(
           ? placingKey(event, mode.target, bends, setMode, commit)
           : event.target.closest('[data-flow-end]') === null
             ? bendHandleKey(event, event.target, bends, remove)
-            : flowEndKey(event, event.target, pinEnd);
+            : flowEndKey(event, event.target, bends, pinEnd);
     if (!handled) {
       return;
     }
@@ -178,8 +183,7 @@ export function useFlowBendInteraction(
     event.stopPropagation();
   });
   const clicked = useEffectEvent((event: globalThis.MouseEvent): void => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
+    if (drag.endedDrag()) {
       if (
         event.target instanceof Element &&
         event.target.closest(
@@ -256,50 +260,14 @@ export function useFlowBendInteraction(
     };
   }, []);
 
-  const movedTarget = (
-    event: BendPointer,
-    started: Gesture,
-  ): BendTarget | AnchorTarget => {
-    const from = view.screenToFlowPosition(started.start);
-    const at = view.screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
-    if (started.held.kind === 'end') {
-      return {
-        kind: 'anchor',
-        end: started.held.end,
-        side: nearestHandleSide(started.held.box, at),
-      };
-    }
-    return {
-      ...started.held,
-      point: {
-        x: started.held.point.x + at.x - from.x,
-        y: started.held.point.y + at.y - from.y,
-      },
-    };
-  };
-  const down = (event: BendPointer, held: Held): void => {
+  const down = (event: HandlePointer, held: Held): void => {
     if (
-      mode?.kind === 'place' ||
-      mode?.kind === 'choose' ||
-      event.button !== 0 ||
-      !event.isPrimary
+      mode?.kind !== 'place' &&
+      mode?.kind !== 'choose' &&
+      drag.down(event, held)
     ) {
-      return;
+      setMode(undefined);
     }
-    suppressClick.current = false;
-    setMode(undefined);
-    gesture.current = {
-      context: bends.context,
-      held,
-      start: { x: event.clientX, y: event.clientY },
-      pointerId: event.pointerId,
-      moved: false,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.stopPropagation();
   };
   return {
     mode,
@@ -314,53 +282,18 @@ export function useFlowBendInteraction(
       openActions(mode, { kind: 'end-actions', end }, commit, setMode);
     },
     down,
-    downEnd: (event: BendPointer, end: FlowEnd): void => {
-      if (edge === undefined) {
-        return;
-      }
-      const box = endBox(bends, edge, end);
-      if (box !== undefined) {
-        down(event, { kind: 'end', end, box });
-      }
-    },
-    move: (event: BendPointer): void => {
-      const started = gesture.current;
-      if (
-        started === undefined ||
-        started.context !== bends.context ||
-        started.pointerId !== event.pointerId
-      ) {
-        return;
-      }
-      if (
-        !started.moved &&
-        pointerDistance(event, started.start) < dragThreshold
-      ) {
-        return;
-      }
-      gesture.current = { ...started, moved: true };
-      bends.preview(movedTarget(event, started));
-    },
-    up: (event: BendPointer): void => {
-      const started = gesture.current;
-      if (
-        started === undefined ||
-        started.context !== bends.context ||
-        started.pointerId !== event.pointerId
-      ) {
-        return;
-      }
-      gesture.current = undefined;
-      event.currentTarget.releasePointerCapture(event.pointerId);
-      if (started.moved) {
-        suppressClick.current = true;
-        if (pointerDistance(event, started.start) < dragThreshold) {
-          cancel();
-        } else {
-          commit(movedTarget(event, started));
-        }
+    downEnd: (event: HandlePointer, end: FlowEnd): void => {
+      if (edge !== undefined) {
+        down(event, {
+          kind: 'end',
+          end,
+          origin: end === 'source' ? edge.source : edge.target,
+          box: endBox(bends, edge, end),
+        });
       }
     },
+    move: drag.move,
+    up: drag.up,
   };
 }
 
@@ -397,7 +330,7 @@ function placingKey(
   setMode: (mode: BendMode) => void,
   commit: (target: BendTarget) => void,
 ): boolean {
-  const point = nudgedBend(target.point, event);
+  const point = nudgedPoint(target.point, event, 'move-bend', 'move-bend-far');
   if (point !== undefined) {
     const moved = { ...target, point };
     setMode({ kind: 'place', target: moved });
@@ -415,6 +348,7 @@ function placingKey(
 function flowEndKey(
   event: KeyboardEvent,
   target: Element,
+  bends: FlowBends,
   pinEnd: (end: FlowEnd, side: Side | undefined) => void,
 ): boolean {
   const end =
@@ -422,6 +356,24 @@ function flowEndKey(
     'target'
       ? 'target'
       : 'source';
+  const endpoint = bends.flow?.[end];
+  if (endpoint?.kind === 'free') {
+    const point = nudgedPoint(
+      endpoint.position,
+      event,
+      'move-free-end',
+      'move-free-end-far',
+    );
+    if (point !== undefined) {
+      bends.commit({ kind: 'free', end, point });
+      return true;
+    }
+    if (pressesContextualShortcut('keep-free-end', event, hostPlatform)) {
+      announce((t) => t('canvas.free-end-kept'));
+      return true;
+    }
+    return false;
+  }
   const side = sideOfArrow.get(event.key);
   if (
     side !== undefined &&
@@ -452,7 +404,7 @@ function bendHandleKey(
   if (point === undefined) {
     return false;
   }
-  const moved = nudgedBend(point, event);
+  const moved = nudgedPoint(point, event, 'move-bend', 'move-bend-far');
   if (moved !== undefined) {
     bends.commit({ kind: 'move', index, point: moved });
     return true;
@@ -491,6 +443,56 @@ function endBox(
     : { position: node.position, size: node.size };
 }
 
+function draggedTarget(
+  bends: FlowBends,
+  held: Held,
+  span: DragSpan,
+): BendTarget | EndTarget | undefined {
+  if (held.kind !== 'end') {
+    return { ...held, point: draggedPoint(held.point, span) };
+  }
+  return bends.flow === undefined
+    ? undefined
+    : landing(
+        bends.flow,
+        bends.layout.nodes,
+        held,
+        draggedPoint(held.origin, span),
+      );
+}
+
+function landing(
+  flow: Flow,
+  nodes: readonly CanvasNode[],
+  held: HeldEnd,
+  point: Point,
+): EndTarget | undefined {
+  const { end, box } = held;
+  if (box !== undefined && within(box, point)) {
+    return { kind: 'anchor', end, side: nearestHandleSide(box, point) };
+  }
+  const under = nodes
+    .filter((node) => !isBoundary(node) && within(node, point))
+    .at(-1);
+  if (under === undefined) {
+    return { kind: 'free', end, point };
+  }
+  const other = flow[end === 'source' ? 'target' : 'source'];
+  const attachable =
+    isFlowEnd(under) &&
+    (other.kind !== 'attached' || other.element !== under.id);
+  return attachable ? { kind: 'attach', end, element: under.id } : undefined;
+}
+
+function within(box: NodeBox, point: Point): boolean {
+  return (
+    point.x >= box.position.x &&
+    point.x <= box.position.x + box.size.width &&
+    point.y >= box.position.y &&
+    point.y <= box.position.y + box.size.height
+  );
+}
+
 function segmentBend(edge: CanvasEdge, index: number): BendTarget {
   const points = [edge.source, ...edge.waypoints, edge.target];
   const from = points[index];
@@ -500,24 +502,4 @@ function segmentBend(edge: CanvasEdge, index: number): BendTarget {
     index,
     point: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 },
   };
-}
-
-function nudgedBend(point: Point, event: ChordEvent): Point | undefined {
-  const far = pressesContextualShortcut('move-bend-far', event, hostPlatform);
-  if (!far && !pressesContextualShortcut('move-bend', event, hostPlatform)) {
-    return undefined;
-  }
-  const step = far ? shiftedKeyboardResizeStep : keyboardResizeStep;
-  switch (event.key) {
-    case 'ArrowLeft':
-      return { x: point.x - step, y: point.y };
-    case 'ArrowRight':
-      return { x: point.x + step, y: point.y };
-    case 'ArrowUp':
-      return { x: point.x, y: point.y - step };
-    case 'ArrowDown':
-      return { x: point.x, y: point.y + step };
-    default:
-      return undefined;
-  }
 }

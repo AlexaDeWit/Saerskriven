@@ -1,6 +1,8 @@
 import {
   reconnectFlow,
+  setFlowEndPosition,
   setFlowWaypoints,
+  type ElementId,
   type Flow,
   type Model,
   type OperationFailure,
@@ -8,16 +10,12 @@ import {
   type Side,
 } from '@saerskriven/model';
 import { Either } from 'effect';
-import { useMemo, useState } from 'react';
 import { Action } from '../store/actions.js';
-import { selectedElement, selectedElementRecord } from '../store/selectors.js';
-import type { State } from '../store/state.js';
-import { dispatch, modelStore, useModelStore } from '../store/store.js';
-import { articleKindMessages, sideMessages } from '../messages/enum-labels.js';
-import type { Said, Speaker } from '../messages/said.js';
-import { announce, quotedName } from './announcements.js';
-import { currentLayout } from './layout.js';
-import { currentTool, useTool } from './tools.js';
+import { dispatch } from '../store/store.js';
+import { sideMessages } from '../messages/enum-labels.js';
+import type { Said } from '../messages/said.js';
+import { announce, spokenElement } from './announcements.js';
+import { useElementDraft, type ElementEdit } from './element-draft.js';
 
 /** An insertion slot or an existing bend in source-to-target order. */
 export type BendTarget = {
@@ -33,82 +31,45 @@ export type AnchorTarget = {
   readonly side: Side | undefined;
 };
 
-type RouteTarget = BendTarget | AnchorTarget;
-
-type RouteDraft = RouteTarget & {
-  readonly state: State;
-  readonly transition: number;
-  readonly flow: Flow;
+/** One end of a flow attached to another element, where it follows the route. */
+export type AttachTarget = {
+  readonly kind: 'attach';
+  readonly end: 'source' | 'target';
+  readonly element: ElementId;
 };
 
-/** Owns a transient route preview, a bend or an end's side, and commits one edit per gesture. */
+/** One end of a flow free at a canvas position. */
+export type FreeTarget = {
+  readonly kind: 'free';
+  readonly end: 'source' | 'target';
+  readonly point: Point;
+};
+
+/**
+ * Where a dragged or nudged end of a flow lands. Released within the element
+ * it is attached to, it pins that element's nearest side. Released on another
+ * actor, process or store, it attaches there. Released on empty canvas, a
+ * trust boundary's interior included, it goes free. Released on the element
+ * the other end holds, or on a Note, it lands nowhere.
+ */
+export type EndTarget = AnchorTarget | AttachTarget | FreeTarget;
+
+type RouteTarget = BendTarget | EndTarget;
+
+const routeEdit: ElementEdit<Flow, RouteTarget> = {
+  subject: (element) => (element.kind === 'flow' ? element : undefined),
+  edited: editedRoute,
+  action: routeAction,
+  said: routeAnnouncement,
+};
+
+/** Owns a transient route preview, a bend or an end, and commits one edit per gesture. */
 export function useFlowBends() {
-  const state = useModelStore((value) => value);
-  const tool = useTool();
-  const [held, setHeld] = useState<RouteDraft | undefined>();
-  const element = selectedElementRecord(state);
-  const flow =
-    tool.active === 'select' &&
-    state.inlineEditor === undefined &&
-    element?.kind === 'flow'
-      ? element
-      : undefined;
-  const context = useMemo(
-    () => ({ flow, model: state.present, transition: tool.transition }),
-    [flow, state.present, tool.transition],
-  );
-  const draft = held !== undefined && currentDraft(held) ? held : undefined;
-  if (held !== undefined && draft === undefined) {
-    setHeld(undefined);
-  }
-  const outcome = useMemo(
-    () =>
-      draft === undefined
-        ? undefined
-        : editedRoute(state.present, draft.flow, draft),
-    [state.present, draft],
-  );
-  const present =
-    outcome !== undefined && Either.isRight(outcome)
-      ? outcome.right
-      : state.present;
-
-  const commit = (target: RouteTarget): void => {
-    if (
-      flow === undefined ||
-      modelStore.getState().present !== state.present ||
-      selectedElement(modelStore.getState()) !== flow.id ||
-      currentTool().transition !== tool.transition ||
-      (held !== undefined && !currentDraft(held))
-    ) {
-      return;
-    }
-    const action = routeAction(flow, target);
-    if (action === undefined) {
-      return;
-    }
-    const before = modelStore.getState().present;
-    dispatch(action);
-    setHeld(undefined);
-    if (modelStore.getState().present !== before) {
-      announce(routeAnnouncement(flow, target));
-    }
-  };
-
+  const route = useElementDraft(routeEdit);
+  const flow = route.subject;
   return {
-    context,
+    ...route,
     flow,
-    draft,
-    layout: currentLayout({ present, activeDiagram: state.activeDiagram }),
-    preview: (target: RouteTarget): void => {
-      if (flow !== undefined) {
-        setHeld({ ...target, state, transition: tool.transition, flow });
-      }
-    },
-    commit,
-    cancel: (): void => {
-      setHeld(undefined);
-    },
     remove: (index: number): void => {
       if (flow === undefined || flow.waypoints[index] === undefined) {
         return;
@@ -119,12 +80,11 @@ export function useFlowBends() {
           waypoints: flow.waypoints.filter((_point, at) => at !== index),
         }),
       );
-      setHeld(undefined);
-      const { name } = flow;
+      route.cancel();
       announce((t) =>
         t('canvas.bend-removed', {
           number: index + 1,
-          flow: flowName(t, name),
+          flow: spokenElement(t, flow),
         }),
       );
     },
@@ -147,70 +107,92 @@ function editedRoute(
   flow: Flow,
   target: RouteTarget,
 ): Either.Either<Model, OperationFailure> {
-  if (target.kind !== 'anchor') {
-    return setFlowWaypoints(model, flow.id, editedBends(flow, target));
+  if (target.kind === 'anchor') {
+    const end = flow[target.end];
+    return end.kind === 'attached'
+      ? reconnectFlow(model, flow.id, target.end, end.element, target.side)
+      : Either.right(model);
   }
-  const end = flow[target.end];
-  return end.kind === 'attached'
-    ? reconnectFlow(model, flow.id, target.end, end.element, target.side)
-    : Either.right(model);
+  if (target.kind === 'attach') {
+    return reconnectFlow(model, flow.id, target.end, target.element);
+  }
+  if (target.kind === 'free') {
+    return setFlowEndPosition(model, flow.id, target.end, target.point);
+  }
+  return setFlowWaypoints(model, flow.id, editedBends(flow, target));
 }
 
 function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
-  if (target.kind !== 'anchor') {
-    return Action.SetFlowWaypoints({
+  if (target.kind === 'anchor') {
+    const end = flow[target.end];
+    return end.kind === 'attached'
+      ? Action.ReconnectFlow({
+          elementId: flow.id,
+          side: target.end,
+          endpointId: end.element,
+          anchor: target.side,
+        })
+      : undefined;
+  }
+  if (target.kind === 'attach') {
+    return Action.ReconnectFlow({
       elementId: flow.id,
-      waypoints: editedBends(flow, target),
+      side: target.end,
+      endpointId: target.element,
     });
   }
-  const end = flow[target.end];
-  return end.kind === 'attached'
-    ? Action.ReconnectFlow({
-        elementId: flow.id,
-        side: target.end,
-        endpointId: end.element,
-        anchor: target.side,
-      })
-    : undefined;
+  if (target.kind === 'free') {
+    return Action.SetFlowEndPosition({
+      elementId: flow.id,
+      side: target.end,
+      position: target.point,
+    });
+  }
+  return Action.SetFlowWaypoints({
+    elementId: flow.id,
+    waypoints: editedBends(flow, target),
+  });
 }
 
 function routeAnnouncement(flow: Flow, target: RouteTarget): Said {
-  const { name } = flow;
   return (t) => {
-    const named = flowName(t, name);
-    if (target.kind !== 'anchor') {
-      return t(
-        target.kind === 'insert' ? 'canvas.bend-added' : 'canvas.bend-moved',
-        { number: target.index + 1, flow: named },
-      );
+    const named = spokenElement(t, flow);
+    if (target.kind === 'anchor') {
+      const source = target.end === 'source';
+      return target.side === undefined
+        ? t(source ? 'canvas.source-released' : 'canvas.target-released', {
+            flow: named,
+          })
+        : t(source ? 'canvas.source-pinned' : 'canvas.target-pinned', {
+            flow: named,
+            side: t(sideMessages[target.side]),
+          });
     }
-    if (target.side === undefined) {
+    if (target.kind === 'attach') {
       return t(
         target.end === 'source'
-          ? 'canvas.source-released'
-          : 'canvas.target-released',
-        { flow: named },
+          ? 'canvas.source-changed'
+          : 'canvas.target-changed',
       );
     }
+    if (target.kind === 'free') {
+      return freeEndSaid(flow, target.end)(t);
+    }
     return t(
-      target.end === 'source' ? 'canvas.source-pinned' : 'canvas.target-pinned',
-      { flow: named, side: t(sideMessages[target.side]) },
+      target.kind === 'insert' ? 'canvas.bend-added' : 'canvas.bend-moved',
+      { number: target.index + 1, flow: named },
     );
   };
 }
 
-function flowName(t: Speaker, name: string): string {
-  return quotedName(t, name, t(articleKindMessages.flow));
-}
-
-function currentDraft(draft: RouteDraft): boolean {
-  const state = modelStore.getState();
-  const tool = currentTool();
-  return (
-    state.present === draft.state.present &&
-    selectedElement(state) === draft.flow.id &&
-    state.inlineEditor === draft.state.inlineEditor &&
-    tool.active === 'select' &&
-    tool.transition === draft.transition
-  );
+/** What freeing one end of `flow`, or moving it where it is already free, says. */
+export function freeEndSaid(flow: Flow, end: 'source' | 'target'): Said {
+  const moved = flow[end].kind === 'free';
+  return (t) => {
+    const named = { flow: spokenElement(t, flow) };
+    if (end === 'source') {
+      return t(moved ? 'canvas.source-moved' : 'canvas.source-freed', named);
+    }
+    return t(moved ? 'canvas.target-moved' : 'canvas.target-freed', named);
+  };
 }

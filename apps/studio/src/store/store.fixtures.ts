@@ -5,6 +5,7 @@ import {
   type Element,
   type ElementId,
   type Model,
+  type Point,
   type Threat,
 } from '@saerskriven/model';
 import {
@@ -256,7 +257,11 @@ export function sampleElement(id: ElementId): Element {
 }
 
 /** A process the specs add, named by the caller so ids stay distinct. */
-export function newProcess(id: string, name: string): Element {
+export function newProcess(
+  id: string,
+  name: string,
+  position: Point = { x: 0, y: 200 },
+): Element {
   return {
     kind: 'process',
     id: elementId(id),
@@ -264,7 +269,7 @@ export function newProcess(id: string, name: string): Element {
     description: '',
     outOfScope: false,
     reasonOutOfScope: '',
-    position: { x: 0, y: 200 },
+    position,
     size: { width: 120, height: 60 },
   };
 }

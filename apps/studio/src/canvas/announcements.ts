@@ -1,3 +1,5 @@
+import type { Element } from '@saerskriven/model';
+import { articleKindMessages } from '../messages/enum-labels.js';
 import { activeTranslator, useTranslator } from '../messages/locale.js';
 import type { Said, Speaker } from '../messages/said.js';
 import { onCanvasOrPanelChange } from '../store/store.js';
@@ -75,6 +77,14 @@ export function quoted(t: Speaker, text: string, bound: number): string {
 /** An element's own name quoted to {@link nameQuoteLength}, or `unnamed` while it has none. */
 export function quotedName(t: Speaker, name: string, unnamed: string): string {
   return name === '' ? unnamed : quoted(t, name, nameQuoteLength);
+}
+
+/** {@link quotedName} for an element, called by its kind while it has no name. */
+export function spokenElement(
+  t: Speaker,
+  element: Pick<Element, 'name' | 'kind'>,
+): string {
+  return quotedName(t, element.name, t(articleKindMessages[element.kind]));
 }
 
 /** Clears the announcement and its sequence. */

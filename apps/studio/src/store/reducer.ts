@@ -30,7 +30,10 @@ import {
   renameElement,
   replaceThreat,
   resizeElement,
+  reverseFlow,
+  setBoundaryShape,
   setFlowDirection,
+  setFlowEndPosition,
   setFlowWaypoints,
   OperationFailure,
   type Diagram,
@@ -67,6 +70,15 @@ export function reduce(state: State, action: Action): State {
       ),
     SetFlowDirection: ({ elementId, bidirectional }) =>
       edited(state, setFlowDirection(state.present, elementId, bidirectional)),
+    SetFlowEndPosition: ({ elementId, side, position }) =>
+      edited(
+        state,
+        setFlowEndPosition(state.present, elementId, side, position),
+      ),
+    ReverseFlow: ({ elementId }) =>
+      edited(state, reverseFlow(state.present, elementId)),
+    SetBoundaryShape: ({ elementId, shape }) =>
+      edited(state, setBoundaryShape(state.present, elementId, shape)),
     ArrangeElements: ({ moves }) =>
       edited(
         state,

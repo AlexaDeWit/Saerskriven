@@ -18,6 +18,7 @@ export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   'flow-target': 'Destination du flux',
   'choose-flow-target': 'Choisir une destination de flux',
   'reconnect-flow': 'Reconnecter le flux',
+  'trust-boundary': 'Frontière de confiance',
   'flow-endpoint': 'Extrémité du flux',
   'select-node-geometry': 'Sélectionnez un nœud pour modifier sa géométrie.',
   'select-one-flow': 'Sélectionnez un seul flux pour le reconnecter.',
@@ -35,6 +36,7 @@ export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   target: 'Destination',
   side: 'Côté',
   automatic: 'Automatique',
+  'free-position': 'Point libre',
   'flow-route': 'Tracé du flux',
   'bend-actions': 'Actions du coude',
   'flow-end-actions': 'Actions de l’extrémité du flux',
@@ -47,11 +49,18 @@ export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   'bend-handle-help':
     'Faites glisser ou utilisez les touches fléchées pour déplacer. Cliquez pour les actions. Suppr retire ce coude.',
   'flow-end-handle-help':
-    'Faites glisser vers un autre côté de son élément. Les touches fléchées fixent un côté, Suppr la laisse suivre le tracé. Cliquez pour les actions.',
+    'Faites glisser vers un autre côté de son élément, sur un autre élément pour l’y rattacher, ou sur le canevas vide pour la détacher. Les touches fléchées fixent un côté, Suppr la laisse suivre le tracé. Cliquez pour les actions.',
+  'free-end-handle-help':
+    'Faites glisser ou utilisez les touches fléchées pour déplacer. Déposez-la sur un acteur, un processus ou un magasin de données pour l’y rattacher.',
+  'curve-point-numbered': 'Point {number}',
+  'curve-point-actions': 'Actions du point',
+  'remove-curve-point': 'Retirer le point',
+  'curve-point-handle-help':
+    'Faites glisser ou utilisez les touches fléchées pour déplacer. Cliquez pour les actions. Suppr retire ce point tant que la courbe en garde deux.',
   'bend-choose-help':
     'Segment {number} : Gauche/Droite pour choisir, Entrée pour ajouter. Ou cliquez un segment.',
   'bend-place-help':
     'Les touches fléchées déplacent le coude. Entrée confirme, Échap annule. Ou cliquez sa destination.',
   'bend-idle-help':
-    'Tirez la ligne pour ajouter un coude. Faites glisser un coude pour le déplacer. Faites glisser une extrémité vers un autre côté de son élément. Cliquez une poignée pour les actions.',
+    'Tirez la ligne pour ajouter un coude. Faites glisser un coude pour le déplacer. Faites glisser une extrémité vers un autre côté, un autre élément ou le canevas vide. Cliquez une poignée pour les actions.',
 });

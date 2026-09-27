@@ -17,6 +17,7 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   'flow-target': 'Flow target',
   'choose-flow-target': 'Choose a flow target',
   'reconnect-flow': 'Reconnect flow',
+  'trust-boundary': 'Trust boundary',
   'flow-endpoint': 'Flow endpoint',
   'select-node-geometry': 'Select a node to edit its geometry.',
   'select-one-flow': 'Select one flow to reconnect it.',
@@ -34,6 +35,7 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   target: 'Target',
   side: 'Side',
   automatic: 'Automatic',
+  'free-position': 'Free point',
   'flow-route': 'Flow route',
   'bend-actions': 'Bend actions',
   'flow-end-actions': 'Flow end actions',
@@ -46,11 +48,18 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   'bend-handle-help':
     'Drag or use arrow keys to move. Click for actions. Delete removes this bend.',
   'flow-end-handle-help':
-    'Drag to another side of its element. Arrow keys pin a side, Delete lets it follow the route. Click for actions.',
+    'Drag to another side of its element, onto another element to attach it, or onto empty canvas to free it. Arrow keys pin a side, Delete lets it follow the route. Click for actions.',
+  'free-end-handle-help':
+    'Drag or use arrow keys to move. Drop it on an actor, process or store to attach it.',
+  'curve-point-numbered': 'Point {number}',
+  'curve-point-actions': 'Point actions',
+  'remove-curve-point': 'Remove point',
+  'curve-point-handle-help':
+    'Drag or use arrow keys to move. Click for actions. Delete removes this point while the curve keeps two.',
   'bend-choose-help':
     'Segment {number}: Left/Right to choose, Enter to add. Or click a segment.',
   'bend-place-help':
     'Arrow keys move the bend. Enter confirms, Esc cancels. Or click its destination.',
   'bend-idle-help':
-    'Pull the line to add a bend. Drag a bend to move it. Drag an end to another side of its element. Click a handle for actions.',
+    'Pull the line to add a bend. Drag a bend to move it. Drag an end to another side, another element or empty canvas. Click a handle for actions.',
 });
