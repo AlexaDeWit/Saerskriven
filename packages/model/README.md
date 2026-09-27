@@ -60,9 +60,12 @@ A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no
 element is on no diagram.
 
-A threat number is issued once and never moves: the model carries the highest
-number it has ever issued, so a removed threat leaves a permanent gap and
-`nextThreatNumber` never hands its number back.
+A threat number never moves: the model carries the highest number it has ever
+issued or kept by a paste, so a removed threat leaves a gap and
+`nextThreatNumber` never hands its number back. A paste is the one way a number
+returns: `insertFragment` lets a pasted threat keep a number no threat in the
+model holds, so cut then paste restores a threat under its own number, and it
+never leaves the last issued number below one it kept.
 
 `removeDiagram` refuses a diagram that still owns elements. A cascade would
 delete records the caller never named, which no other operation does, so a
@@ -117,7 +120,7 @@ the edit stays through any of them: `parseModel` keeps it, an unrelated
 `removeElement` keeps it, and a `replaceThreat` that leaves it unattached
 keeps it too, whatever else it changes. `droppedThreats` names the threats
 one model holds and another does not, the way `droppedRecords` does for
-records. A culled threat's number stays spent.
+records. No new threat takes a culled threat's number.
 
 `threatFlags` derives the flags a threat's records raise, as
 `threatFlagSchema` values: `mitigated-without-implemented-work` for a

@@ -89,7 +89,7 @@ export const searchThreatsDescription = [
   'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `status`, `severity`, `category`, `diagram` and `element` each keep only the threats matching them. `query` is text looked for, without case, in the title, the description, and the title and prose of each mitigation linked to the threat.',
   '`response_format` is `concise` by default and carries no record text. `detailed` adds the description and the linked mitigation and assumption records of each threat, which is the bulk of a register, so filter before asking for it.',
   '`offset` skips that many matches, for the next page of a listing cut at its limit, which names the offset to pass.',
-  'This tool never writes. A threat number names one threat for the life of a model, so a number read here stays the handle for that threat.',
+  'This tool never writes. No edit renumbers a threat, and no two threats hold one number, so a number read here stays the handle for that threat as long as the model holds that threat.',
 ].join(' ');
 
 /**

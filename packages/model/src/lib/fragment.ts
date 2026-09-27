@@ -79,8 +79,9 @@ export function selectionFragment(
 
 /**
  * Remaps every ID under a fresh prefix and translates copied geometry. A
- * mitigation or assumption `target` holds an identical record of keeps its
- * id, so {@link insertFragment} links to that record instead of cloning it.
+ * mitigation or assumption of which `target` holds an identical record keeps
+ * its id, so {@link insertFragment} links to that record instead of cloning
+ * it. Threat numbers stay as copied for {@link insertFragment} to settle.
  */
 export function remapFragment(
   fragment: Model,
@@ -119,10 +120,13 @@ export function remapFragment(
 }
 
 /**
- * Inserts one copied graph atomically and issues new threat numbers. A
- * copied record identical to one the model holds adds its pasted threat
- * links to that record, which keeps its own `appliesToModel`. Every other
- * copied record linked to a pasted threat is added as a clone, an
+ * Inserts one copied graph atomically. A pasted threat keeps its number when
+ * no threat in the model holds it, so a cut then paste restores a threat's
+ * number. Every other pasted threat takes a new number above the last issued
+ * and every kept one, so the last issued number never ends below a pasted
+ * number. A copied record identical to one the model holds adds its pasted
+ * threat links to that record, which keeps its own `appliesToModel`. Every
+ * other copied record linked to a pasted threat is added as a clone, an
  * assumption with no model link. An element, threat or record ID the model
  * holds, other than an identical record's, refuses the insertion.
  */
@@ -142,51 +146,27 @@ export function insertFragment(
   const { mitigations, assumptions } = pastedRecords(model, fragment);
   const graph: Model = {
     ...model,
+    ...numberedThreats(model, fragment.threats),
     diagrams: model.diagrams.map((diagram) =>
       diagram.id === diagramId
         ? { ...diagram, elements: [...diagram.elements, ...elements] }
         : diagram,
     ),
-    threats: [
-      ...model.threats,
-      ...fragment.threats.map((threat, index) => ({
-        ...threat,
-        number: model.lastIssuedThreatNumber + index + 1,
-      })),
-    ],
-    lastIssuedThreatNumber:
-      model.lastIssuedThreatNumber + fragment.threats.length,
   };
-  const links: ((
-    current: Model,
-  ) => Either.Either<Model, InsertFragmentFailure>)[] = [
-    ...mitigations.linked.flatMap(({ id, threats }) =>
-      threats.map(
-        (threatId) => (current: Model) => linkMitigation(current, id, threatId),
-      ),
-    ),
-    ...assumptions.linked.flatMap(({ id, threats }) =>
-      threats.map(
-        (threatId) => (current: Model) => linkAssumption(current, id, threatId),
-      ),
-    ),
-  ];
-  const linked = links.reduce<Either.Either<Model, InsertFragmentFailure>>(
-    (result, link) => Either.flatMap(result, link),
-    Either.right(graph),
-  );
-  return Either.flatMap(linked, (withLinks) =>
-    checkedFragment({
-      ...withLinks,
-      mitigations: [...withLinks.mitigations, ...mitigations.cloned],
-      assumptions: [
-        ...withLinks.assumptions,
-        ...assumptions.cloned.map((item) => ({
-          ...item,
-          appliesToModel: false,
-        })),
-      ],
-    }),
+  return Either.flatMap(
+    linkedRecords(graph, mitigations.linked, assumptions.linked),
+    (withLinks) =>
+      checkedFragment({
+        ...withLinks,
+        mitigations: [...withLinks.mitigations, ...mitigations.cloned],
+        assumptions: [
+          ...withLinks.assumptions,
+          ...assumptions.cloned.map((item) => ({
+            ...item,
+            appliesToModel: false,
+          })),
+        ],
+      }),
   );
 }
 
@@ -203,6 +183,63 @@ export function fragmentRecordCounts(
     linked: mitigations.linked.length + assumptions.linked.length,
     cloned: mitigations.cloned.length + assumptions.cloned.length,
   };
+}
+
+function numberedThreats(
+  model: Model,
+  pasted: Model['threats'],
+): Pick<Model, 'threats' | 'lastIssuedThreatNumber'> {
+  const claimed = new Set(model.threats.map(({ number }) => number));
+  const renumbered: number[] = [];
+  for (const [index, { number }] of pasted.entries()) {
+    if (claimed.has(number)) {
+      renumbered.push(index);
+    } else {
+      claimed.add(number);
+    }
+  }
+  const floor = [...claimed].reduce(
+    (highest, number) => Math.max(highest, number),
+    model.lastIssuedThreatNumber,
+  );
+  const issued = new Map(
+    renumbered.map((index, offset) => [index, floor + offset + 1]),
+  );
+  return {
+    threats: [
+      ...model.threats,
+      ...pasted.map((threat, index) => ({
+        ...threat,
+        number: issued.get(index) ?? threat.number,
+      })),
+    ],
+    lastIssuedThreatNumber: floor + renumbered.length,
+  };
+}
+
+function linkedRecords(
+  graph: Model,
+  mitigations: readonly Mitigation[],
+  assumptions: readonly Assumption[],
+): Either.Either<Model, InsertFragmentFailure> {
+  const links: ((
+    current: Model,
+  ) => Either.Either<Model, InsertFragmentFailure>)[] = [
+    ...mitigations.flatMap(({ id, threats }) =>
+      threats.map(
+        (threatId) => (current: Model) => linkMitigation(current, id, threatId),
+      ),
+    ),
+    ...assumptions.flatMap(({ id, threats }) =>
+      threats.map(
+        (threatId) => (current: Model) => linkAssumption(current, id, threatId),
+      ),
+    ),
+  ];
+  return links.reduce<Either.Either<Model, InsertFragmentFailure>>(
+    (result, link) => Either.flatMap(result, link),
+    Either.right(graph),
+  );
 }
 
 function closedSelection(
