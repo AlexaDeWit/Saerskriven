@@ -144,6 +144,14 @@ const callArguments = (
       ],
     ],
     [
+      'saer_search_records',
+      [
+        { file: modelFile },
+        { file: modelFile, response_format: 'detailed' },
+        { file: modelFile, threat: '9999' },
+      ],
+    ],
+    [
       'saer_get_threat',
       [
         { file: modelFile, ref: '1' },

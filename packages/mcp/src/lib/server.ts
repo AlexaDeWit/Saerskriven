@@ -91,6 +91,13 @@ import {
   searchElementsResultSchema,
 } from './search-elements.js';
 import {
+  renderRecordSearch,
+  searchRecords,
+  searchRecordsArgumentsSchema,
+  searchRecordsDescription,
+  searchRecordsResultSchema,
+} from './search-records.js';
+import {
   renderThreatSearch,
   searchThreats,
   searchThreatsArgumentsSchema,
@@ -244,6 +251,18 @@ function queryTools(
     },
     (args) =>
       toolResult(searchThreats(options.workspace, args), renderThreatSearch),
+  );
+  server.registerTool(
+    'saer_search_records',
+    {
+      title: 'Find mitigations and assumptions of a threat model',
+      description: searchRecordsDescription,
+      inputSchema: searchRecordsArgumentsSchema,
+      outputSchema: searchRecordsResultSchema,
+      annotations: reads,
+    },
+    (args) =>
+      toolResult(searchRecords(options.workspace, args), renderRecordSearch),
   );
   server.registerTool(
     'saer_get_threat',

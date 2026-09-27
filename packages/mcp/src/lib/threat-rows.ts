@@ -11,14 +11,19 @@ import {
   threatFlags,
   threatIdSchema,
   threatStatusSchema,
-  type Assumption,
-  type Mitigation,
   type Model,
   type Threat,
   type ThreatCategory,
   type ThreatFlag,
 } from '@saerskriven/model';
+import { Either } from 'effect';
 import { z } from 'zod';
+import { quotedList } from './reading.js';
+import {
+  renderAssumption,
+  renderMitigation,
+  threatReadQualifiers,
+} from './record-rows.js';
 
 const threatRowSchema = z.object({
   number: z.int().positive(),
@@ -88,6 +93,26 @@ export function renderCategory(category: ThreatCategory): string {
 }
 
 /**
+ * The threat `ref` names by id, or else by its number as digits, or the
+ * lines refusing a ref that names no threat of the model. An id is tried
+ * first, so a model whose threat ids are digits is read by id.
+ */
+export function threatNamed(
+  model: Model,
+  ref: string,
+): Either.Either<Threat, readonly string[]> {
+  const found =
+    model.threats.find((threat) => threat.id === ref) ??
+    model.threats.find((threat) => String(threat.number) === ref);
+  return found === undefined
+    ? Either.left([
+        `The model holds no threat ${quotedForTerminal(ref)}, by number or by id.`,
+        `It holds ${String(model.threats.length)} threats. Call saer_search_threats for their numbers.`,
+      ])
+    : Either.right(found);
+}
+
+/**
  * The line a text result names one threat by: its number, its id and its
  * title. The caller supplies whatever precedes it, an indent or a word.
  */
@@ -108,35 +133,6 @@ export function renderThreat(row: ThreatDetail): readonly string[] {
   ];
 }
 
-/**
- * One mitigation as the lines a text result carries: its id, status and
- * title, then its prose indented beneath where it has any.
- */
-export function renderMitigation(mitigation: Mitigation): readonly string[] {
-  return [
-    `${quotedForTerminal(mitigation.id)} (${mitigation.status}): ${escapedForTerminal(mitigation.title)}`,
-    ...(mitigation.prose === ''
-      ? []
-      : [`  ${escapedForTerminal(mitigation.prose)}`]),
-  ];
-}
-
-/**
- * One assumption as the line a text result carries: its id, status and
- * prose. Read on a threat, the line also says where the assumption applies
- * to the model.
- */
-export function renderAssumption(
-  assumption: Assumption,
-  readOn: 'threat' | 'model',
-): string {
-  const scope =
-    readOn === 'threat' && assumption.appliesToModel
-      ? ', also applies to the model'
-      : '';
-  return `${quotedForTerminal(assumption.id)} (${assumption.status}${scope}): ${escapedForTerminal(assumption.prose)}`;
-}
-
 /** What a flag on a threat read means, for the descriptions of the tools that read one. */
 export const flagsDescription =
   "A flag says where a threat and its records disagree, for you to act on: `mitigated-without-implemented-work` is a `mitigated` threat with no linked mitigation `implemented` or `verified`, and `rests-on-invalidated-assumption` is a threat with a linked `invalidated` assumption. Flags are derived from threat links on every read, so an assumption's model link raises none, and a flag never changes a threat status.";
@@ -149,7 +145,7 @@ export function renderFlags(flags: readonly ThreatFlag[]): string {
 function detailLines(row: ThreatDetail): readonly string[] {
   return [
     `status ${row.status}, severity ${row.severity}, category ${renderCategory(row.category)}`,
-    `elements: ${row.elements.length === 0 ? 'none' : row.elements.map(quotedForTerminal).join(', ')}`,
+    `elements: ${quotedList(row.elements)}`,
     renderFlags(row.flags),
     ...(row.description === undefined || row.description.length === 0
       ? []
@@ -159,7 +155,8 @@ function detailLines(row: ThreatDetail): readonly string[] {
       return [`mitigation ${heading}`, ...prose];
     }),
     ...(row.assumptions ?? []).map(
-      (assumption) => `assumption ${renderAssumption(assumption, 'threat')}`,
+      (assumption) =>
+        `assumption ${renderAssumption(assumption, threatReadQualifiers(assumption))}`,
     ),
   ];
 }

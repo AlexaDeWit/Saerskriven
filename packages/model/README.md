@@ -98,7 +98,8 @@ status a record already has return the model they were given. A replace is
 whole-record replacement, as editing a threat is.
 
 Culling is edit-triggered. A mitigation's references are its threat links, and
-an assumption's are its threat links and its model link. `removeThreat`, an
+an assumption's are its threat links and its model link, which
+`mitigationHasReference` and `assumptionHasReference` read. `removeThreat`, an
 unlink, `unlinkAssumptionFromModel`, and a replace that take a record from one
 or more references to none remove the record in the same operation, so one
 undo step restores both. A record that already had no reference, which a file

@@ -1,11 +1,11 @@
 import { Either } from 'effect';
 import { inspect, renderInspection } from './inspect.js';
 import {
-  assumptionScopesTree,
   everyRecordTree,
   forgedIdsTree,
   forgedLinesIn,
   forgedPathTree,
+  recordLinksTree,
 } from './read-tools.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import { openWorkspace } from './workspace.js';
@@ -70,7 +70,7 @@ describe('the metadata an inspection names', () => {
 });
 
 describe('the assumptions an inspection lists', () => {
-  const scoped = Either.getOrThrow(inspect(assumptionScopesTree(), {}));
+  const scoped = Either.getOrThrow(inspect(recordLinksTree(), {}));
 
   it('lists every assumption that applies to the model, and none that does not', () => {
     expect(
