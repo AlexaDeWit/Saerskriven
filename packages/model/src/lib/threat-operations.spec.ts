@@ -8,7 +8,13 @@ import {
 } from '../fixtures.js';
 import { threatRegisterFixture } from './model.fixtures.js';
 import { OperationFailure } from './operation-failures.js';
-import { errorOf, modelOf, operationContract } from './operations.fixtures.js';
+import {
+  errorOf,
+  modelOf,
+  note,
+  operationContract,
+  withNote,
+} from './operations.fixtures.js';
 import type { Model } from './parse.js';
 import {
   addThreat,
@@ -265,6 +271,12 @@ describe('attachThreat', () => {
       'element-checkout',
       'element-ledger',
     ]);
+  });
+
+  it('links a canvas note, as it does any other kind', () => {
+    const [threat] = withNote.threats;
+    const next = modelOf(attachThreat(withNote, threat.id, note.id));
+    expect(threatIn(next, threat.id).elements).toContain(note.id);
   });
 
   it('changes nothing when the element is already linked', () => {

@@ -1,6 +1,7 @@
 import { Either } from 'effect';
 import { elementId, flowIn, validModel } from '../fixtures.js';
 import { addElement } from './element-operations.js';
+import { elementSchema } from './elements.js';
 import {
   reconnectFlow,
   setFlowDirection,
@@ -9,6 +10,7 @@ import {
 import { OperationFailure } from './operation-failures.js';
 import {
   errorOf,
+  flowInput,
   mainDiagram,
   modelOf,
   note,
@@ -86,6 +88,32 @@ describe('reconnectFlow', () => {
       ).toBe(tag);
     },
   );
+
+  it('takes a target exactly where addElement takes a new flow ending there', () => {
+    const drawn = modelOf(addElement(withNote, mainDiagram, writeFlow));
+    const ends = [
+      ...drawn.diagrams[0].elements.map(({ id }) => id),
+      elementId('missing'),
+    ];
+    const reconnects = (end: string) =>
+      Either.isRight(
+        reconnectFlow(drawn, writeFlow.id, 'target', elementId(end)),
+      );
+    const adds = (end: string) =>
+      Either.isRight(
+        addElement(
+          drawn,
+          mainDiagram,
+          elementSchema.parse({
+            ...flowInput,
+            id: 'element-probe-flow',
+            target: { kind: 'attached', element: end },
+          }),
+        ),
+      );
+    expect(ends.filter(reconnects)).toEqual(['element-customer', 'element-db']);
+    expect(ends.filter(adds)).toEqual(ends.filter(reconnects));
+  });
 
   it('pins an end to a side of the element it already names, and releases it', () => {
     const id = elementId('element-order-flow');

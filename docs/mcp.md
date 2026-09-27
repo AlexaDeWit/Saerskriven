@@ -186,7 +186,11 @@ optional security facts and declared boundary relationships of its kind. An
 actor, process, store or text note takes a `placement`: a position and size,
 or `"auto"` for the next place on the shared grid. Left out, `description` and
 `reasonOutOfScope` are empty and `outOfScope` is false, and a flow has no bends
-and runs one way.
+and runs one way. It refuses a name with nothing in it but white space, as
+`rename_element` does, and a flow end attached to anything but an actor,
+process or store of the diagram, or to the element the flow's other end is
+attached to, as `reconnect_flow` does. A file that already holds either, as an
+imported one can, still opens.
 
 `set_element_properties` patches the security facts of an actor, process,
 store or flow, and the declared boundary relationships of a flow or trust
@@ -267,9 +271,9 @@ only a diagram with no elements left, so remove its elements with
 #### Threats
 
 A threat carries no number in an edit: the model issues one when a threat is
-added and keeps it when the threat is replaced, so a number names one threat
-for the life of the model and no edit renumbers. `add_threat` takes the rest of
-the threat, and every element it attaches to has to be one the model holds.
+added and keeps it when the threat is replaced, so no edit renumbers a threat,
+and no two threats hold one number. `add_threat` takes the rest of the threat,
+and every element it attaches to has to be one the model holds.
 `replace_threat` takes the whole threat and replaces every field of the one
 with its id but the number. `set_threat_status`, `set_threat_severity` and
 `set_threat_category` change that one field and keep the rest, the category

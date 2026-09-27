@@ -196,15 +196,17 @@ between copied elements, the threats attached to them, and the mitigations and
 assumptions those threats link. The copy goes to the system clipboard as
 Saerskriven YAML. Cut removes the selection once the copy is written, and
 removes nothing if the model or the selection changed meanwhile. A threat the
-cut leaves attached to no element goes with it, and pasting brings it back as a
-copy under a new id and a new number, the cut threat's own number staying
-spent. Paste and Duplicate add the copy with new ids and threat numbers, offset
-by a grid interval each time. A pasted mitigation or assumption identical to one the
-model already holds links the pasted threats to that record, and every other
-record is added as a new one. A pasted assumption does not apply to the model.
-The status line counts what was linked and added, and the links left behind.
-Duplicate leaves the clipboard alone. Text fields keep their own clipboard
-keys.
+cut leaves attached to no element goes with it, and the notice counts the
+threats copied and how many of them went. Paste and Duplicate add the copy with
+new ids, offset by a grid interval each time. A pasted threat keeps its number
+when no threat in the model holds it, so pasting after a cut restores a removed
+threat under its own number. Otherwise it takes a new number, as a copy or a
+duplicate does while its original stays. A pasted mitigation or assumption
+identical to one the model already holds links the pasted threats to that
+record, and every other record is added as a new one. A pasted assumption does
+not apply to the model. The status line counts what was linked and added, and
+the links left behind. Duplicate leaves the clipboard alone. Text fields keep
+their own clipboard keys.
 
 Paste reads the clipboard within the same size, depth and alias bounds as a
 file, and anything that is not a Saerskriven selection makes no edit. A

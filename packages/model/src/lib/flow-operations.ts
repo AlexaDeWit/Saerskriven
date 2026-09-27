@@ -1,5 +1,10 @@
 import { Either } from 'effect';
-import { locatedElement, withElement, type Located } from './diagram-edits.js';
+import {
+  flowEndFailure,
+  locatedElement,
+  withElement,
+  type Located,
+} from './diagram-edits.js';
 import type { Flow, FlowEndpoint } from './elements.js';
 import type { Point, Side } from './geometry.js';
 import type { ElementId } from './ids.js';
@@ -37,10 +42,10 @@ export function setFlowWaypoints(
 }
 
 /**
- * Reattaches an endpoint inside its diagram. The new endpoint must be an
- * actor, process or store in the flow's diagram, and one the flow's other end
- * does not already attach to, so a flow never connects an element to itself.
- * An absent anchor releases its pinned side.
+ * Reattaches an endpoint inside its diagram, where `addElement` would accept
+ * the end: on an actor, process or store in the flow's diagram that the
+ * flow's other end does not already attach to, so a flow never connects an
+ * element to itself. An absent anchor releases its pinned side.
  */
 export function reconnectFlow(
   model: Model,
@@ -53,18 +58,15 @@ export function reconnectFlow(
     locatedFlow(model, elementId),
     (located): Either.Either<Model, ReconnectFlowFailure> => {
       const flow = located.element;
-      const endpoint = model.diagrams[located.diagramIndex].elements.find(
-        (element) => element.id === endpointId,
+      const next = attachedEndpoint(endpointId, anchor);
+      const refusal = flowEndFailure(
+        model.diagrams[located.diagramIndex],
+        side,
+        next,
+        side === 'source' ? flow.target : flow.source,
       );
-      const other = side === 'source' ? flow.target : flow.source;
-      if (
-        endpoint === undefined ||
-        !['actor', 'process', 'store'].includes(endpoint.kind) ||
-        (other.kind === 'attached' && other.element === endpointId)
-      ) {
-        return Either.left(
-          OperationFailure.InvalidFlowEndpoint({ side, reference: endpointId }),
-        );
+      if (refusal !== undefined) {
+        return Either.left(refusal);
       }
       const previous = flow[side];
       return Either.right(
@@ -72,10 +74,7 @@ export function reconnectFlow(
           previous.element === endpointId &&
           previous.side === anchor
           ? model
-          : withElement(model, located.diagramIndex, {
-              ...flow,
-              [side]: attachedEndpoint(endpointId, anchor),
-            }),
+          : withElement(model, located.diagramIndex, { ...flow, [side]: next }),
       );
     },
   );

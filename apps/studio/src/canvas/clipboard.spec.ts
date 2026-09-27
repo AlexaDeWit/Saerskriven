@@ -23,7 +23,12 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { numbersIn } from '../ui/ui.fixtures.js';
-import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
+import {
+  canvasModel,
+  openCanvas,
+  recordingClipboard,
+  requestFlow,
+} from './canvas.fixtures.js';
 import { copySelected, duplicateSelected, pasteSelected } from './clipboard.js';
 
 const pastePrefix = vi.hoisted(() => ({
@@ -44,22 +49,6 @@ vi.mock('@saerskriven/model', async (importOriginal) => {
 const canvasElements = canvasModel.diagrams[0].elements.length;
 
 const marker = '# Saerskriven selection v1\n';
-
-function recordingClipboard() {
-  let text = 'existing clipboard';
-  const api = {
-    writeText: vi.fn<(value: string) => Promise<void>>((value) => {
-      text = value;
-      return Promise.resolve();
-    }),
-    readText: vi.fn<() => Promise<string>>(() => Promise.resolve(text)),
-  };
-  Object.defineProperty(navigator, 'clipboard', {
-    configurable: true,
-    value: api,
-  });
-  return { ...api, text: () => text };
-}
 
 const version1Selection = `${marker}formatVersion: 1
 metadata:
@@ -275,6 +264,11 @@ describe('pasteSelected', () => {
     expect(new Set(elements.map((element) => element.id)).size).toBe(
       canvasElements + 6,
     );
+    expect(
+      after.present.threats
+        .slice(canvasModel.threats.length)
+        .map((threat) => threat.number),
+    ).toEqual([4, 5, 6, 7, 8, 9]);
     expect(after.past).toHaveLength(2);
   });
 
@@ -458,7 +452,7 @@ describe('pasteSelected', () => {
     expect(modelStore.getState().present).toBe(edited);
   });
 
-  it('brings a threat the cut removed back as a copy, its old number staying spent', async () => {
+  it('restores a threat the cut removed under its own number, and a second paste under a new one, each one undo step', async () => {
     recordingClipboard();
     await copySelected(true);
     const cut = modelStore.getState().present;
@@ -466,14 +460,28 @@ describe('pasteSelected', () => {
 
     await pasteSelected();
 
-    const after = modelStore.getState().present;
-    expect(after.diagrams[0].elements).toHaveLength(canvasElements);
-    const pasted = after.threats.at(-1);
+    const restored = modelStore.getState().present;
+    expect(restored.diagrams[0].elements).toHaveLength(canvasElements);
+    const pasted = restored.threats.at(-1);
     expect(pasted?.id).not.toBe(firstThreat);
-    expect(pasted?.number).toBe(canvasModel.lastIssuedThreatNumber + 1);
-    expect(after.lastIssuedThreatNumber).toBe(
+    expect(pasted?.number).toBe(sampleThreat.number);
+    expect(restored.lastIssuedThreatNumber).toBe(
+      canvasModel.lastIssuedThreatNumber,
+    );
+
+    await pasteSelected();
+
+    const again = modelStore.getState().present;
+    expect(again.threats.at(-1)?.number).toBe(
       canvasModel.lastIssuedThreatNumber + 1,
     );
+    expect(again.lastIssuedThreatNumber).toBe(
+      canvasModel.lastIssuedThreatNumber + 1,
+    );
+    dispatch(Action.Undo());
+    expect(modelStore.getState().present).toBe(restored);
+    dispatch(Action.Undo());
+    expect(modelStore.getState().present).toBe(cut);
   });
 
   it('pastes a clone of a record culled after copying', async () => {
@@ -510,6 +518,9 @@ describe('duplicateSelected', () => {
     expect(copy?.id).not.toBe(actorElement);
     expect(after.present.threats.at(-1)?.elements).toEqual([copy?.id]);
     expect(after.present.threats.at(-1)?.id).not.toBe(firstThreat);
+    expect(after.present.threats.at(-1)?.number).toBe(
+      canvasModel.lastIssuedThreatNumber + 1,
+    );
     expect(writeText).not.toHaveBeenCalled();
     dispatch(Action.Undo());
     expect(modelStore.getState().present).toBe(canvasModel);

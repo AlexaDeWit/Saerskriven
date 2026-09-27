@@ -138,8 +138,6 @@ export type RecoveryProblem = Data.TaggedEnum<{
   Thrown: { readonly reason: string };
   PastBound: ReadBound;
   Unsupported: {};
-  InvalidSnapshot: {};
-  InvalidModel: {};
   EarlierRelease: { readonly writer: string | undefined };
 }>;
 
@@ -283,7 +281,7 @@ function readProblem(failure: ReadFailure): RecoveryProblem {
     ExceededReadLimit: ({ limit, bound, observed }) =>
       RecoveryProblem.PastBound({ limit, bound, observed }),
     MalformedText: ({ message }) => RecoveryProblem.Thrown({ reason: message }),
-    InvalidWireDocument: () => RecoveryProblem.InvalidSnapshot(),
-    InvalidModel: () => RecoveryProblem.InvalidModel(),
+    InvalidWireDocument: () => RecoveryProblem.Unsupported(),
+    InvalidModel: () => RecoveryProblem.Unsupported(),
   });
 }

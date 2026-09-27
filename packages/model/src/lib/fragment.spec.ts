@@ -1,13 +1,22 @@
 import { Either } from 'effect';
 import {
+  boxAt,
   diagramId,
   elementId,
   flowIn,
+  modelWith,
   parsedFixture,
   securityModelFixture,
+  threatId,
+  threatOf,
   validModel,
 } from '../fixtures.js';
-import { validModelFixture } from './model.fixtures.js';
+import { removeElement } from './element-operations.js';
+import {
+  seededModel,
+  unnamedWithLoopedFlow,
+  validModelFixture,
+} from './model.fixtures.js';
 import {
   fragmentRecordCounts,
   insertFragment,
@@ -16,6 +25,7 @@ import {
 } from './fragment.js';
 import { unlinkMitigation } from './mitigation-operations.js';
 import { parseModel, type Model } from './parse.js';
+import { removeThreat } from './threat-operations.js';
 
 const diagram = diagramId('diagram-main');
 
@@ -34,7 +44,7 @@ function pasted(source: Model, target: Model) {
   return { inserted, counts, threat };
 }
 
-function modelWith(
+function withRecords(
   records: Pick<typeof validModelFixture, 'mitigations' | 'assumptions'>,
 ): Model {
   return parsedFixture({ ...validModelFixture, ...records });
@@ -177,7 +187,7 @@ describe('remapFragment and insertFragment', () => {
     });
   });
 
-  it('issues each pasted threat a number after the last issued', () => {
+  it('issues a new number past the last issued to each pasted threat whose number the model holds', () => {
     const { fragment, inserted } = whole();
     expect(
       inserted.threats
@@ -194,6 +204,23 @@ describe('remapFragment and insertFragment', () => {
   it('rejects a fragment whose ids the model already holds', () => {
     const { fresh, inserted } = whole();
     expect(Either.isLeft(insertFragment(inserted, diagram, fresh))).toBe(true);
+  });
+
+  it('pastes an unnamed element and a flow on one boundary at both ends, which only an edit refuses', () => {
+    const source = Either.getOrThrow(seededModel(unnamedWithLoopedFlow));
+    const fragment = Either.getOrThrow(
+      selectionFragment(
+        source,
+        diagram,
+        source.diagrams[0].elements.map((element) => element.id),
+      ),
+    );
+    const remapped = Either.getOrThrow(
+      remapFragment(fragment, 'pasted', { x: 0, y: 0 }, validModel),
+    );
+    expect(Either.isRight(insertFragment(validModel, diagram, remapped))).toBe(
+      true,
+    );
   });
 
   it('refuses a missing diagram, and returns the model itself for an empty fragment', () => {
@@ -249,6 +276,85 @@ describe('remapFragment and insertFragment', () => {
   });
 });
 
+describe('pasted threat numbers', () => {
+  const drawn = diagramId('d');
+  const cutElement = elementId('el-a');
+  const source = modelWith({
+    elements: [boxAt('el-a', 0, 0), boxAt('el-b', 200, 0)],
+    threats: [
+      threatOf({ number: 1, elements: ['el-a'] }),
+      threatOf({ number: 2, elements: ['el-b'] }),
+      threatOf({ number: 3, elements: ['el-a'] }),
+    ],
+  });
+  const cut = Either.getOrThrow(removeElement(source, cutElement));
+
+  function remapped(target: Model, prefix: string, from = source): Model {
+    const fragment = Either.getOrThrow(
+      selectionFragment(from, drawn, [cutElement]),
+    );
+    return Either.getOrThrow(
+      remapFragment(fragment, prefix, { x: 20, y: 20 }, target),
+    );
+  }
+
+  function pastedInto(target: Model, fragment: Model) {
+    const inserted = Either.getOrThrow(insertFragment(target, drawn, fragment));
+    expect(Either.isRight(parseModel(inserted))).toBe(true);
+    return {
+      numbers: inserted.threats
+        .slice(target.threats.length)
+        .map(({ number }) => number),
+      inserted,
+    };
+  }
+
+  it('keeps the number of a pasted threat no threat in the model holds', () => {
+    const { numbers, inserted } = pastedInto(cut, remapped(cut, 'restored'));
+    expect(numbers).toEqual([1, 3]);
+    expect(inserted.lastIssuedThreatNumber).toBe(3);
+  });
+
+  it('issues a new number past the last issued where the model holds a pasted number', () => {
+    const copied = pastedInto(source, remapped(source, 'copied'));
+    expect(copied.numbers).toEqual([4, 5]);
+    expect(copied.inserted.lastIssuedThreatNumber).toBe(5);
+    const partlyHeld = Either.getOrThrow(
+      removeThreat(source, threatId('threat-1')),
+    );
+    const mixed = pastedInto(partlyHeld, remapped(partlyHeld, 'mixed'));
+    expect(mixed.numbers).toEqual([1, 4]);
+    expect(mixed.inserted.lastIssuedThreatNumber).toBe(4);
+  });
+
+  it('keeps a free number on the first paste of a selection, and issues a new one on the second', () => {
+    const once = pastedInto(cut, remapped(cut, 'once')).inserted;
+    const twice = pastedInto(once, remapped(once, 'twice'));
+    expect(twice.numbers).toEqual([4, 5]);
+    expect(twice.inserted.lastIssuedThreatNumber).toBe(5);
+  });
+
+  it('raises the last issued number to a kept number above it, and issues new numbers past both', () => {
+    const target = modelWith({
+      elements: [boxAt('el-a', 0, 0)],
+      threats: [threatOf({ number: 1, elements: ['el-a'] })],
+    });
+    const from = modelWith({
+      elements: [boxAt('el-a', 0, 0)],
+      threats: [
+        threatOf({ number: 1, elements: ['el-a'] }),
+        threatOf({ number: 7, elements: ['el-a'] }),
+      ],
+    });
+    const { numbers, inserted } = pastedInto(
+      target,
+      remapped(target, 'ahead', from),
+    );
+    expect(numbers).toEqual([8, 7]);
+    expect(inserted.lastIssuedThreatNumber).toBe(8);
+  });
+});
+
 describe('pasting records', () => {
   it('links a pasted threat to identical records the model holds', () => {
     const { inserted, counts, threat } = pasted(validModel, validModel);
@@ -268,7 +374,7 @@ describe('pasting records', () => {
   ])(
     'clones a mitigation whose %s changed between copy and paste',
     (_, edit) => {
-      const edited = modelWith({
+      const edited = withRecords({
         mitigations: [{ ...mitigation, ...edit }],
         assumptions: validModelFixture.assumptions,
       });
@@ -320,7 +426,7 @@ describe('pasting records', () => {
     ]);
     const cloned = pasted(
       validModel,
-      modelWith({ mitigations: [], assumptions: [] }),
+      withRecords({ mitigations: [], assumptions: [] }),
     );
     expect(cloned.inserted.mitigations).toEqual([
       {
@@ -340,7 +446,7 @@ describe('pasting records', () => {
   });
 
   it('links to a model-scoped assumption that keeps its model link, and clones one without it', () => {
-    const modelWide = modelWith({
+    const modelWide = withRecords({
       mitigations: [],
       assumptions: [{ ...assumption, appliesToModel: true }],
     });
@@ -350,7 +456,7 @@ describe('pasting records', () => {
     ]);
     const cloned = pasted(
       modelWide,
-      modelWith({ mitigations: [], assumptions: [] }),
+      withRecords({ mitigations: [], assumptions: [] }),
     );
     expect(cloned.inserted.assumptions).toEqual([
       {
@@ -363,7 +469,7 @@ describe('pasting records', () => {
   });
 
   it('links an assumption whose only difference is the model link', () => {
-    const modelWide = modelWith({
+    const modelWide = withRecords({
       mitigations: [],
       assumptions: [{ ...assumption, appliesToModel: true }],
     });
@@ -375,11 +481,11 @@ describe('pasting records', () => {
   });
 
   it('pastes no model-scoped assumption that no copied threat links', () => {
-    const modelWide = modelWith({
+    const modelWide = withRecords({
       mitigations: validModelFixture.mitigations,
       assumptions: [{ ...assumption, threats: [], appliesToModel: true }],
     });
-    const empty = modelWith({ mitigations: [], assumptions: [] });
+    const empty = withRecords({ mitigations: [], assumptions: [] });
     const { inserted } = pasted(modelWide, empty);
     expect(inserted.assumptions).toEqual([]);
   });
@@ -391,7 +497,7 @@ describe('pasting records', () => {
     const remapped = Either.getOrThrow(
       remapFragment(fragment, 'pasted', { x: 0, y: 0 }, validModel),
     );
-    const edited = modelWith({
+    const edited = withRecords({
       mitigations: [{ ...mitigation, prose: 'Edited.' }],
       assumptions: validModelFixture.assumptions,
     });
@@ -414,7 +520,7 @@ describe('pasting records', () => {
         },
       ],
     });
-    const empty = modelWith({ mitigations: [], assumptions: [] });
+    const empty = withRecords({ mitigations: [], assumptions: [] });
     const remapped = Either.getOrThrow(
       remapFragment(crafted, 'pasted', { x: 0, y: 0 }, empty),
     );

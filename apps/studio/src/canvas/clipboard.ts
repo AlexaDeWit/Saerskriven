@@ -19,7 +19,12 @@ import { FileLifecycle, type State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { describeOperation } from '../ui/failure-notice.js';
 import { announce } from './announcements.js';
-import { focusCanvas, focusElement, removeSelected } from './edits.js';
+import {
+  focusCanvas,
+  focusElement,
+  removalCascade,
+  removeSelected,
+} from './edits.js';
 
 const marker = '# Saerskriven selection v1\n';
 let lastPaste = '';
@@ -63,16 +68,19 @@ export async function copySelected(cut = false): Promise<void> {
     announce(refusal(written.left));
     return;
   }
+  const { report } = copy.right;
   if (
     cut &&
     modelStore.getState().present === state.present &&
     sameSelection(modelStore.getState().selection, state.selection)
   ) {
+    const removed = removalCascade(state.present, state.selection).threats;
     removeSelected();
     announce((t) =>
       sentences(
         t('canvas.cut'),
-        copyReport(t, copy.right.report),
+        copyReport(t, report),
+        t('canvas.cut-threat-counts', { copied: report.threats, removed }),
         t('canvas.cut-remains'),
       ),
     );
@@ -81,7 +89,7 @@ export async function copySelected(cut = false): Promise<void> {
     announce((t) =>
       sentences(
         t('canvas.copied'),
-        copyReport(t, copy.right.report),
+        copyReport(t, report),
         cut ? t('canvas.cut-abandoned') : '',
       ),
     );

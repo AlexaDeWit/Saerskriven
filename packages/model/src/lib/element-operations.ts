@@ -1,6 +1,7 @@
 import { Either } from 'effect';
 import {
   diagramIndexOf,
+  emptyNameFailure,
   flowEndpointFailure,
   invalidRelationships,
   locatedElement,
@@ -38,6 +39,7 @@ export type AddElementFailure = Extract<
     _tag:
       | 'UnknownDiagram'
       | 'DuplicateElementId'
+      | 'EmptyName'
       | 'InvalidFlowEndpoint'
       | 'InvalidElementRelationship';
   }
@@ -84,7 +86,11 @@ export type SetElementPropertiesFailure = Extract<
   }
 >;
 
-/** Requires an existing diagram, a new ID and valid local endpoint and boundary references. */
+/**
+ * Requires an existing diagram, a new ID, a name that is more than white
+ * space, flow ends `reconnectFlow` would accept, and valid local boundary
+ * references.
+ */
 export function addElement(
   model: Model,
   diagramId: DiagramId,
@@ -100,6 +106,7 @@ export function addElement(
       }
       const diagram = model.diagrams[diagramIndex];
       const failure =
+        emptyNameFailure(element) ??
         flowEndpointFailure(element, diagram) ??
         invalidRelationships(
           element,

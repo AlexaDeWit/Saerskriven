@@ -52,14 +52,15 @@ export type DiagramInput = z.input<typeof diagramSchema>;
  * The structural shape of a threat model root: metadata, diagrams, threats,
  * mitigations, and assumptions. Every array may be empty: a model saves
  * before it is drawn or analyzed. `lastIssuedThreatNumber` is the highest
- * threat number the model has ever issued, 0 before the first, and it
- * counts removed threats: a number names one threat permanently, so
- * removing a threat leaves a gap that is never filled. Cross-record checks
- * (id and threat-number uniqueness, reference resolution, and no threat
- * number above the last issued) are parseModel's refinements, so this
- * schema alone accepts duplicates, dangling ids, and a mark below a threat
- * it holds. Internal to the package: parseModel is the only exported way a
- * Model value comes into existence.
+ * threat number the model has ever issued or kept by a paste, 0 before the
+ * first, and it counts removed threats: removing a threat leaves a gap no
+ * new threat fills, and only a pasted threat carrying that number can take
+ * it back (`insertFragment`). Cross-record checks (id and threat-number
+ * uniqueness, reference resolution, and no threat number above the last
+ * issued) are parseModel's refinements, so this schema alone accepts
+ * duplicates, dangling ids, and a mark below a threat it holds. Internal to
+ * the package: parseModel is the only exported way a Model value comes into
+ * existence.
  */
 export const modelSchema = z.object({
   metadata: modelMetadataSchema,
