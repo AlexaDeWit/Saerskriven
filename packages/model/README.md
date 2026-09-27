@@ -47,7 +47,8 @@ forbids instead of resting on this rule.
 
 Operations are pure functions returning new models: graph edits (add, remove,
 move, resize, rename, edit Note text, set description and scope, reconnect,
-set flow route and direction, set security properties), diagram edits (add,
+set flow route and direction, free or move one flow end, reverse a flow, set a
+trust boundary's shape, set security properties), diagram edits (add,
 rename, remove), a metadata edit, fragment edits (copy, remap, insert), and
 register edits for threats (add, remove, replace, attach, detach), mitigations
 and assumptions (add, replace, remove, link, unlink, set status). Coverage

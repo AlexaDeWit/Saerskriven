@@ -48,6 +48,11 @@ export function resized(element: Element, size: Size): Element | undefined {
   return { ...element, size };
 }
 
+/** Whether two canvas points coincide. */
+export function samePoint(left: Point, right: Point): boolean {
+  return left.x === right.x && left.y === right.y;
+}
+
 function centreOf(position: Point, size: Size): Point {
   return {
     x: position.x + size.width / 2,

@@ -138,6 +138,9 @@ export function describeOperation(
     NotFlowElement: ({ elementId }) => [
       t('notice.op-not-flow', { id: elementId }),
     ],
+    NotTrustBoundaryElement: ({ elementId }) => [
+      t('notice.op-not-trust-boundary', { id: elementId }),
+    ],
     EmptyName: ({ elementId }) => [
       t('notice.op-empty-name', { id: elementId }),
     ],

@@ -67,6 +67,7 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
   'op-not-resizable': 'Element {id} has no size to set.',
   'op-not-note': 'Element {id} is not a canvas note.',
   'op-not-flow': 'Element {id} is not a flow.',
+  'op-not-trust-boundary': 'Element {id} is not a trust boundary.',
   'op-empty-name': 'Element {id} cannot be left without a name.',
   'op-element-character':
     'The text for element {id} carries a character the model does not accept.',

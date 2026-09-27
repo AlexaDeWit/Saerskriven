@@ -53,6 +53,7 @@ export type OperationFailure = Data.TaggedEnum<{
   NotResizable: { readonly elementId: ElementId };
   NotTextElement: { readonly elementId: ElementId };
   NotFlowElement: { readonly elementId: ElementId };
+  NotTrustBoundaryElement: { readonly elementId: ElementId };
   EmptyName: { readonly elementId: ElementId };
   RefusedCharacter: {
     readonly elementId: ElementId;

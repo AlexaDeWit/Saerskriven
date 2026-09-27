@@ -76,6 +76,8 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
   'op-not-resizable': 'L’élément {id} n’a pas de taille à définir.',
   'op-not-note': 'L’élément {id} n’est pas une note du canevas.',
   'op-not-flow': 'L’élément {id} n’est pas un flux.',
+  'op-not-trust-boundary':
+    'L’élément {id} n’est pas une frontière de confiance.',
   'op-empty-name': 'L’élément {id} ne peut pas rester sans nom.',
   'op-element-character':
     'Le texte de l’élément {id} contient un caractère que le modèle n’accepte pas.',

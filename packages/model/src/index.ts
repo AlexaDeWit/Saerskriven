@@ -43,6 +43,7 @@ export * from './lib/empty.js';
 export * from './lib/operation-failures.js';
 export * from './lib/element-operations.js';
 export * from './lib/flow-operations.js';
+export * from './lib/boundary-operations.js';
 export * from './lib/diagram-operations.js';
 export {
   addThreat,

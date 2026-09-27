@@ -418,6 +418,9 @@ navigation keys do not.
 
 - Removing and reordering diagrams is not offered.
 - Nothing pans to a newly connected flow, or out from under the panel.
+- A flow cannot be reversed or have one end freed at a canvas position, and a
+  trust boundary cannot be reshaped or turned between a box and a curve.
+  [`saer_edit`](mcp.md#writing) makes all three.
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model properties. The
   model's explicit record removal has no control.

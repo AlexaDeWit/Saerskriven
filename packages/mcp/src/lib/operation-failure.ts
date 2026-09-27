@@ -59,6 +59,8 @@ export function describeOperationFailure(failure: OperationFailure): string {
       `Element ${quotedForTerminal(elementId)} is not a canvas note.`,
     NotFlowElement: ({ elementId }) =>
       `Element ${quotedForTerminal(elementId)} is not a flow.`,
+    NotTrustBoundaryElement: ({ elementId }) =>
+      `Element ${quotedForTerminal(elementId)} is not a trust boundary.`,
     EmptyName: ({ elementId }) =>
       `Element ${quotedForTerminal(elementId)} cannot be left without a name.`,
     RefusedCharacter: ({ elementId, at }) =>

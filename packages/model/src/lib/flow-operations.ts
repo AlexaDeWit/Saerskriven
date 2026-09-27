@@ -5,10 +5,11 @@ import {
   withElement,
   type Located,
 } from './diagram-edits.js';
+import { samePoint } from './element-geometry.js';
 import type { Flow, FlowEndpoint } from './elements.js';
 import type { Point, Side } from './geometry.js';
 import type { ElementId } from './ids.js';
-import { sameItems } from './lists.js';
+import { reversed, sameItems } from './lists.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 
@@ -80,6 +81,28 @@ export function reconnectFlow(
   );
 }
 
+/**
+ * Frees one end of a flow at a canvas position, or moves an end already free,
+ * preserving the model for an end already free there. The other end may be
+ * free too, as `addElement` accepts.
+ */
+export function setFlowEndPosition(
+  model: Model,
+  elementId: ElementId,
+  side: 'source' | 'target',
+  position: Point,
+): Either.Either<Model, FlowEditFailure> {
+  return Either.map(locatedFlow(model, elementId), (located) => {
+    const held = located.element[side];
+    return held.kind === 'free' && samePoint(held.position, position)
+      ? model
+      : withElement(model, located.diagramIndex, {
+          ...located.element,
+          [side]: { kind: 'free', position: { ...position } },
+        });
+  });
+}
+
 /** Makes a flow bidirectional or one-way, preserving the model where it already is. */
 export function setFlowDirection(
   model: Model,
@@ -94,6 +117,31 @@ export function setFlowDirection(
           bidirectional,
         }),
   );
+}
+
+/**
+ * Swaps a flow's two ends and reverses its bends, so it runs the other way
+ * along the same route. Each end keeps its pinned side or its position. A
+ * flow that reads the same both ways, its ends alike and its bends a
+ * palindrome, returns the same model.
+ */
+export function reverseFlow(
+  model: Model,
+  elementId: ElementId,
+): Either.Either<Model, FlowEditFailure> {
+  return Either.map(locatedFlow(model, elementId), (located) => {
+    const flow = located.element;
+    const waypoints = reversed(flow.waypoints);
+    return sameEndpoint(flow.source, flow.target) &&
+      sameItems(flow.waypoints, waypoints, samePoint)
+      ? model
+      : withElement(model, located.diagramIndex, {
+          ...flow,
+          source: flow.target,
+          target: flow.source,
+          waypoints,
+        });
+  });
 }
 
 function locatedFlow(
@@ -121,6 +169,13 @@ function attachedEndpoint(
     : { kind: 'attached', element, side };
 }
 
-function samePoint(left: Point, right: Point): boolean {
-  return left.x === right.x && left.y === right.y;
+function sameEndpoint(left: FlowEndpoint, right: FlowEndpoint): boolean {
+  if (left.kind === 'free' || right.kind === 'free') {
+    return (
+      left.kind === 'free' &&
+      right.kind === 'free' &&
+      samePoint(left.position, right.position)
+    );
+  }
+  return left.element === right.element && left.side === right.side;
 }

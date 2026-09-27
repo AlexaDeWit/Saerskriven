@@ -1,10 +1,20 @@
 import { Either } from 'effect';
-import { elementId, flowIn, validModel } from '../fixtures.js';
+import {
+  attached,
+  boxAt,
+  elementId,
+  flowBetween,
+  flowIn,
+  modelWith,
+  validModel,
+} from '../fixtures.js';
 import { addElement } from './element-operations.js';
 import { elementSchema } from './elements.js';
 import {
   reconnectFlow,
+  reverseFlow,
   setFlowDirection,
+  setFlowEndPosition,
   setFlowWaypoints,
 } from './flow-operations.js';
 import { OperationFailure } from './operation-failures.js';
@@ -14,9 +24,13 @@ import {
   mainDiagram,
   modelOf,
   note,
+  operationContract,
   withNote,
   writeFlow,
 } from './operations.fixtures.js';
+
+const orderFlow = elementId('element-order-flow');
+const customer = elementId('element-customer');
 
 describe('setFlowWaypoints', () => {
   const before = modelOf(addElement(validModel, mainDiagram, writeFlow));
@@ -166,5 +180,234 @@ describe('setFlowDirection', () => {
     expect(
       errorOf(setFlowDirection(validModel, elementId('missing'), true))?._tag,
     ).toBe('UnknownElement');
+  });
+});
+
+describe('setFlowEndPosition', () => {
+  it('frees an attached end at the position though the other end is free, keeping the bends and the threat links', () => {
+    const before = flowIn(validModel, orderFlow);
+    const position = { x: 10, y: 20 };
+    const next = modelOf(
+      setFlowEndPosition(validModel, orderFlow, 'source', position),
+    );
+    expect(flowIn(next, orderFlow)).toEqual({
+      ...before,
+      source: { kind: 'free', position: { x: 10, y: 20 } },
+    });
+    expect(next.threats).toBe(validModel.threats);
+    position.x = 999;
+    expect(flowIn(next, orderFlow).source).toEqual({
+      kind: 'free',
+      position: { x: 10, y: 20 },
+    });
+  });
+
+  it('frees a pinned end, leaving no side behind', () => {
+    const pinned = modelOf(
+      reconnectFlow(validModel, orderFlow, 'source', customer, 'bottom'),
+    );
+    expect(
+      flowIn(
+        modelOf(
+          setFlowEndPosition(pinned, orderFlow, 'source', { x: 0, y: 0 }),
+        ),
+        orderFlow,
+      ).source,
+    ).toEqual({ kind: 'free', position: { x: 0, y: 0 } });
+  });
+
+  it('moves an end already free, and keeps the model where the end already is', () => {
+    const before = flowIn(validModel, orderFlow);
+    expect(before.target).toEqual({
+      kind: 'free',
+      position: { x: 280, y: 160 },
+    });
+    expect(
+      modelOf(
+        setFlowEndPosition(validModel, orderFlow, 'target', {
+          x: 280,
+          y: 160,
+        }),
+      ),
+    ).toBe(validModel);
+    expect(
+      flowIn(
+        modelOf(
+          setFlowEndPosition(validModel, orderFlow, 'target', {
+            x: 300,
+            y: 180,
+          }),
+        ),
+        orderFlow,
+      ),
+    ).toEqual({
+      ...before,
+      target: { kind: 'free', position: { x: 300, y: 180 } },
+    });
+  });
+
+  it('refuses missing elements and other element kinds', () => {
+    expect(
+      errorOf(
+        setFlowEndPosition(validModel, elementId('element-api'), 'source', {
+          x: 0,
+          y: 0,
+        }),
+      ),
+    ).toEqual(
+      OperationFailure.NotFlowElement({ elementId: elementId('element-api') }),
+    );
+    expect(
+      errorOf(
+        setFlowEndPosition(validModel, elementId('missing'), 'target', {
+          x: 0,
+          y: 0,
+        }),
+      )?._tag,
+    ).toBe('UnknownElement');
+  });
+});
+
+describe('reverseFlow', () => {
+  const bends = [
+    { x: 200, y: 140 },
+    { x: 240, y: 200 },
+    { x: 260, y: 150 },
+  ];
+  const pinnedWithBends = modelOf(
+    setFlowWaypoints(
+      modelOf(
+        reconnectFlow(validModel, orderFlow, 'source', customer, 'bottom'),
+      ),
+      orderFlow,
+      bends,
+    ),
+  );
+
+  it('swaps the ends with their pinned side and position and reverses the bends, keeping the threat links', () => {
+    const before = flowIn(pinnedWithBends, orderFlow);
+    const reversed = modelOf(reverseFlow(pinnedWithBends, orderFlow));
+    expect(flowIn(reversed, orderFlow)).toEqual({
+      ...before,
+      source: { kind: 'free', position: { x: 280, y: 160 } },
+      target: { kind: 'attached', element: customer, side: 'bottom' },
+      waypoints: [
+        { x: 260, y: 150 },
+        { x: 240, y: 200 },
+        { x: 200, y: 140 },
+      ],
+    });
+    expect(reversed.threats).toBe(pinnedWithBends.threats);
+    const back = modelOf(reverseFlow(reversed, orderFlow));
+    expect(back).not.toBe(reversed);
+    expect(back).toEqual(pinnedWithBends);
+  });
+
+  it.each([
+    ['whose one bend reads the same both ways', validModel, orderFlow],
+    [
+      'between two elements, with no bends',
+      modelWith({
+        elements: [
+          boxAt('element-a', 0, 0),
+          boxAt('element-b', 300, 0),
+          flowBetween(attached('element-a'), attached('element-b'), []),
+        ],
+      }),
+      elementId('el-flow'),
+    ],
+    [
+      'looped on one element from two sides',
+      modelWith({
+        elements: [
+          boxAt('element-a', 0, 0),
+          flowBetween(
+            { ...attached('element-a'), side: 'top' },
+            { ...attached('element-a'), side: 'bottom' },
+            [],
+          ),
+        ],
+      }),
+      elementId('el-flow'),
+    ],
+  ])('swaps the ends of a flow %s', (_, model, id) => {
+    const before = flowIn(model, id);
+    expect(flowIn(modelOf(reverseFlow(model, id)), id)).toEqual({
+      ...before,
+      source: before.target,
+      target: before.source,
+    });
+  });
+
+  it.each([
+    [
+      'attached to one element at both ends',
+      attached('element-a'),
+      [
+        { x: 10, y: 10 },
+        { x: 40, y: 60 },
+        { x: 10, y: 10 },
+      ],
+    ],
+    [
+      'free at one point at both ends',
+      { kind: 'free', position: { x: 5, y: 5 } },
+      [],
+    ],
+  ])(
+    'returns the same model for a flow %s, with bends that read the same both ways',
+    (_, end, waypoints) => {
+      const looped = modelWith({
+        elements: [boxAt('element-a', 0, 0), flowBetween(end, end, waypoints)],
+      });
+      expect(modelOf(reverseFlow(looped, elementId('el-flow')))).toBe(looped);
+    },
+  );
+
+  it('reverses the bends of a flow whose two ends are alike', () => {
+    const end = { kind: 'free', position: { x: 5, y: 5 } };
+    const looped = modelWith({
+      elements: [
+        flowBetween(end, end, [
+          { x: 40, y: 10 },
+          { x: 80, y: 60 },
+        ]),
+      ],
+    });
+    const before = flowIn(looped, 'el-flow');
+    expect(
+      flowIn(modelOf(reverseFlow(looped, elementId('el-flow'))), 'el-flow'),
+    ).toEqual({
+      ...before,
+      source: end,
+      target: end,
+      waypoints: [
+        { x: 80, y: 60 },
+        { x: 40, y: 10 },
+      ],
+    });
+  });
+
+  it('refuses missing elements and other element kinds', () => {
+    expect(
+      errorOf(reverseFlow(validModel, elementId('element-api')))?._tag,
+    ).toBe('NotFlowElement');
+    expect(errorOf(reverseFlow(validModel, elementId('missing')))?._tag).toBe(
+      'UnknownElement',
+    );
+  });
+});
+
+describe('flow operations', () => {
+  operationContract({
+    reverseFlow: {
+      input: validModel,
+      run: (model) => reverseFlow(model, orderFlow),
+    },
+    'setFlowEndPosition freeing the second end': {
+      input: validModel,
+      run: (model) =>
+        setFlowEndPosition(model, orderFlow, 'source', { x: 10, y: 20 }),
+    },
   });
 });

@@ -219,6 +219,22 @@ export const editVariants: readonly {
     ],
   },
   {
+    op: 'set_boundary_shape',
+    edits: [
+      {
+        op: 'set_boundary_shape',
+        element: 'element-perimeter',
+        shape: {
+          kind: 'curve',
+          waypoints: [
+            { x: 280, y: 40 },
+            { x: 800, y: 60 },
+          ],
+        },
+      },
+    ],
+  },
+  {
     op: 'rename_element',
     edits: [
       { op: 'rename_element', element: 'element-db', name: 'Order store' },
@@ -279,6 +295,21 @@ export const editVariants: readonly {
         anchor: 'left',
       },
     ],
+  },
+  {
+    op: 'set_flow_end_position',
+    edits: [
+      {
+        op: 'set_flow_end_position',
+        element: 'element-order-flow',
+        side: 'source',
+        position: { x: 60, y: 200 },
+      },
+    ],
+  },
+  {
+    op: 'reverse_flow',
+    edits: [{ op: 'reverse_flow', element: 'element-order-flow' }],
   },
   { op: 'add_threat', edits: [secondThreat] },
   {

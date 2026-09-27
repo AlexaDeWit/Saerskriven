@@ -146,6 +146,9 @@ const operationFailures: ByTag<OperationFailure> = {
   NotFlowElement: OperationFailure.NotFlowElement({
     elementId: elementId('element-process'),
   }),
+  NotTrustBoundaryElement: OperationFailure.NotTrustBoundaryElement({
+    elementId: elementId('element-process'),
+  }),
   EmptyName: OperationFailure.EmptyName({
     elementId: elementId('element-unnamed'),
   }),
@@ -317,6 +320,21 @@ describe.each(locales)('a failure a %s reader is shown', (locale) => {
         }),
       ).details[0],
     );
+  });
+
+  it('words a shape edit on an element that is not a trust boundary by its own sentence, keeping the id', () => {
+    const said = activeTranslator().t;
+    const described = describeFailure(
+      said,
+      StudioFailure.Operation({
+        failure: operationFailures.NotTrustBoundaryElement,
+      }),
+    );
+
+    expect(described.details).toEqual([
+      said('notice.op-not-trust-boundary', { id: 'element-process' }),
+    ]);
+    expect(described.details[0]).toContain('element-process');
   });
 
   it('keeps the text a browser raised, and the release that wrote a snapshot', () => {
