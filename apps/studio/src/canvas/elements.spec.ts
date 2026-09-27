@@ -1,4 +1,4 @@
-import { layoutDiagram } from '@saerskriven/canvas';
+import { layoutDiagram, minimumNodeExtent } from '@saerskriven/canvas';
 import { addElement } from '@saerskriven/model';
 import { Either } from 'effect';
 import { canvasModel } from './canvas.fixtures.js';
@@ -12,6 +12,7 @@ import {
   freshFlow,
   placeholderNames,
   pointerPlacement,
+  switchedShape,
 } from './elements.js';
 import {
   actorElement,
@@ -179,5 +180,44 @@ describe('flowEnds', () => {
       actorElement,
       processElement,
     ]);
+  });
+});
+
+describe('switchedShape', () => {
+  const box = {
+    kind: 'box',
+    position: { x: 10, y: 20 },
+    size: { width: 200, height: 60 },
+  } as const;
+
+  it('turns a box into the arch the curve tool places in it', () => {
+    expect(switchedShape(box)).toEqual({
+      kind: 'curve',
+      waypoints: [
+        { x: 10, y: 80 },
+        { x: 110, y: 20 },
+        { x: 210, y: 80 },
+      ],
+    });
+  });
+
+  it('turns a curve back into the box it was drawn in', () => {
+    expect(switchedShape(switchedShape(box))).toEqual(box);
+  });
+
+  it('grows a curve that spans less than the minimum extent about its middle', () => {
+    expect(
+      switchedShape({
+        kind: 'curve',
+        waypoints: [
+          { x: 0, y: 50 },
+          { x: 100, y: 50 },
+        ],
+      }),
+    ).toEqual({
+      kind: 'box',
+      position: { x: 0, y: 50 - minimumNodeExtent / 2 },
+      size: { width: 100, height: minimumNodeExtent },
+    });
   });
 });

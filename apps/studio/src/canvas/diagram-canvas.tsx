@@ -43,6 +43,8 @@ import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { useBoxSelection } from './box-selection.js';
 import { applyConnection, betweenTwoElements } from './changes.js';
 import { beginEditingText, drawnElement, removeSelected } from './edits.js';
+import { CurvePointControls } from './curve-point-controls.js';
+import { useCurvePoints } from './curve-points.js';
 import { useFlowBends } from './flow-bends.js';
 import { FlowBendControls } from './flow-bend-controls.js';
 import { useLiveEdges } from './live-edges.js';
@@ -61,6 +63,7 @@ import { FitOnOpen } from './view-commands.js';
 import { zoomLimits } from './viewport.js';
 import { ZoomCluster } from './zoom-cluster.js';
 import {
+  BoundaryShapeCommands,
   SelectionControls,
   FlowEndpointCommands,
 } from './selection-controls.js';
@@ -151,7 +154,8 @@ export function DiagramCanvas({
   const snapping = useSnap();
   const backgroundSelection = useBackgroundSelection();
   const bends = useFlowBends();
-  const { layout } = bends;
+  const points = useCurvePoints();
+  const layout = points.draft === undefined ? bends.layout : points.layout;
   const model = useModelStore((state) => state.present);
   const selection = useModelStore(selectedElements);
   const selected = useModelStore(selectedElement);
@@ -381,11 +385,13 @@ export function DiagramCanvas({
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <PlacementPreview preview={placement.preview} />
         <FlowBendControls bends={bends} />
+        <CurvePointControls points={points} />
         <FitOnOpen />
         <ZoomCluster />
       </ReactFlow>
       <SelectionControls />
       <FlowEndpointCommands />
+      <BoundaryShapeCommands />
       <ThreatOverlay onCover={setPanelCover} />
     </div>
   );

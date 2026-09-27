@@ -20,8 +20,11 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `connecting.ts`, `flow-target-chooser.tsx`                            | The flow a start-flow command holds until a target is chosen, and the listbox that chooses it                                      |
 | `inline-editing.tsx`                                                  | The inline name and Note editors, and the node and edge bodies that mount them                                                     |
 | `selection-controls.tsx`, `selection-control.ts`                      | The controls over a selection, and the event a command opens one of them through                                                   |
-| `geometry-editor.tsx`, `endpoint-editor.tsx`, `side-labels.ts`        | The Position and size form, the flow end form, and the words each side is called                                                   |
-| `flow-bends.ts`, `flow-bend-interaction.ts`, `flow-bend-controls.tsx` | A flow's bend and end-side previews and model edits, their pointer and keyboard gestures, and their controls                       |
+| `geometry-editor.tsx`, `endpoint-editor.tsx`                          | The Position and size form, and the flow end form                                                                                  |
+| `element-draft.ts`                                                    | The preview of an edit to the selected element, and its commit as one dispatch                                                     |
+| `handle-drag.ts`, `handle-actions.tsx`, `handles.module.css`          | A handle's pointer drag and arrow-key step, the actions a clicked handle opens, and their styles                                   |
+| `flow-bends.ts`, `flow-bend-interaction.ts`, `flow-bend-controls.tsx` | A flow's bend and end previews and model edits, their pointer and keyboard gestures, and their controls                            |
+| `curve-points.ts`, `curve-point-controls.tsx`                         | A trust boundary curve's point previews and model edits, and the handles and actions that make them                                |
 | `bend-insertion.ts`                                                   | The event connecting the Add bend command to the mounted bend controls                                                             |
 | `clipboard.ts`, `arrangement.ts`, `snap.ts`                           | Copy, cut, paste and duplicate, align and distribute, and the snap setting                                                         |
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |

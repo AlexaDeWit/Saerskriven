@@ -1,4 +1,5 @@
 import type { CanvasNode } from '@saerskriven/canvas';
+import { fireEvent } from '@testing-library/react';
 import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
 import {
   assumptionId,
@@ -148,6 +149,26 @@ const document = {
  */
 export const canvasModel: Model = parsedFixture(document);
 
+/** The three points {@link curvedCanvasModel} draws its trust boundary through. */
+export const boundaryCurve = [
+  { x: -20, y: 80 },
+  { x: 200, y: -20 },
+  { x: 440, y: 80 },
+] as const;
+
+/** {@link canvasModel} with its trust boundary drawn as a curve through {@link boundaryCurve}. */
+export const curvedCanvasModel: Model = parsedFixture({
+  ...document,
+  diagrams: document.diagrams.map((diagram) => ({
+    ...diagram,
+    elements: diagram.elements.map((element) =>
+      element.id === boundaryElement
+        ? { ...element, shape: { kind: 'curve', waypoints: boundaryCurve } }
+        : element,
+    ),
+  })),
+});
+
 type ThreatRework = {
   readonly status?: ThreatStatus;
   readonly elements?: readonly string[];
@@ -235,6 +256,50 @@ export const primaryPointer = <
   stopPropagation: vi.fn<() => void>(),
   ...targets,
 });
+
+/** Fires a primary pointer event of `type` at a screen point on `element`. */
+export function pointerOn(
+  element: Element,
+  type: string,
+  x: number,
+  y: number,
+): void {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    clientX: x,
+    clientY: y,
+    button: 0,
+  });
+  Object.defineProperties(event, {
+    isPrimary: { value: true },
+    pointerId: { value: 1 },
+  });
+  fireEvent(element, event);
+}
+
+/**
+ * Drags a canvas handle from where it is drawn so that the point it stands
+ * for lands on `to`, in model units at the viewport's zoom, and releases it
+ * there, or cancels the pointer there while `release` is false.
+ */
+export function dragHandle(
+  handle: HTMLElement,
+  to: Point,
+  release = true,
+): void {
+  const from = {
+    x: Number.parseFloat(handle.style.left),
+    y: Number.parseFloat(handle.style.top),
+  };
+  const transform =
+    window.document.querySelector<HTMLElement>('.react-flow__viewport')?.style
+      .transform ?? '';
+  const zoom = Number(/scale\(([^)]+)\)/u.exec(transform)?.[1] ?? 1);
+  const at = { x: (to.x - from.x) * zoom, y: (to.y - from.y) * zoom };
+  pointerOn(handle, 'pointerdown', 0, 0);
+  pointerOn(handle, 'pointermove', at.x, at.y);
+  pointerOn(handle, release ? 'pointerup' : 'pointercancel', at.x, at.y);
+}
 
 /**
  * Replaces `navigator.clipboard` with one that holds its text in memory,

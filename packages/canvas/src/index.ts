@@ -54,6 +54,7 @@ export {
 export { type ResizeLabels } from './lib/resize-controls.js';
 export {
   keyboardResizeStep,
+  minimumNodeExtent,
   resizeControlPositions,
   resizeKeys,
   shiftedKeyboardResizeStep,

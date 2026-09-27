@@ -20,6 +20,8 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-reconnect-source': 'Byt flödets källa',
   'label-reconnect-target': 'Byt flödets mål',
   'label-toggle-flow-direction': 'Växla dubbelriktat flöde',
+  'label-reverse-flow': 'Vänd flödet',
+  'label-toggle-boundary-shape': 'Byt gränsens form',
   'label-align-left': 'Justera vänster',
   'label-align-centre': 'Justera centrum',
   'label-align-right': 'Justera höger',
@@ -108,6 +110,10 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'key-pin-flow-end':
     'Fäst flödesänden med fokus vid sidan som pilen pekar mot',
   'key-release-flow-end': 'Låt flödesänden med fokus följa sin sträckning',
+  'key-move-free-end': 'Flytta den fria flödesänden med fokus {units} enheter',
+  'key-move-curve-point': 'Flytta kurvpunkten med fokus {units} enheter',
+  'key-remove-curve-point': 'Ta bort kurvpunkten med fokus',
+  'key-cancel-curve-point': 'Avbryt ändringen av kurvpunkten',
   'key-focus-canvas-item': 'Flytta fokus mellan objekt på arbetsytan',
   'key-select-canvas-item': 'Markera objektet med fokus',
   'key-edit-canvas-text': 'Redigera den markerade texten på arbetsytan',
@@ -135,7 +141,11 @@ export const commandsSv = catalogue(commandMessages)('sv')({
     'Ett knäckpunktshandtag har fokus eller en knäckpunktsposition håller på att väljas',
   'key-when-existing-bend-handle':
     'Ett befintligt knäckpunktshandtag har fokus',
-  'key-when-flow-end-handle': 'Ett handtag för en flödesände har fokus',
+  'key-when-flow-end-handle': 'Ett handtag för en fäst flödesände har fokus',
+  'key-when-free-end-handle': 'Ett handtag för en fri flödesände har fokus',
+  'key-when-curve-point-handle': 'Ett kurvpunktshandtag har fokus',
+  'key-when-curve-point-gesture':
+    'En dragning eller åtgärderna för en kurvpunkt är aktiva',
   'key-when-canvas-focus': 'Fokus ligger på arbetsytan',
   'key-when-not-only-selected':
     'Objektet med fokus är inte det enda markerade objektet',

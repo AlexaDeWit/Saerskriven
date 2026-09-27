@@ -1,12 +1,12 @@
 import { polylinePath } from '@saerskriven/canvas';
-import { sides, type Side } from '@saerskriven/model';
+import { sides } from '@saerskriven/model';
 import {
   Panel,
   useReactFlow,
   useViewport,
   ViewportPortal,
 } from '@xyflow/react';
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useRef } from 'react';
 import { CommandButton } from '../commands/command-button.js';
 import { beginEditingText } from './edits.js';
 import { applyChanges } from './changes.js';
@@ -16,9 +16,10 @@ import {
   type FlowEnd,
 } from './flow-bend-interaction.js';
 import type { FlowBends } from './flow-bends.js';
+import { besideHandle, HandleActions, onHandle } from './handle-actions.js';
 import { sideMessages } from '../messages/enum-labels.js';
 import { useTranslator } from '../messages/locale.js';
-import styles from './flow-bend-controls.module.css';
+import styles from './handles.module.css';
 
 const flowEnds: readonly FlowEnd[] = ['source', 'target'];
 
@@ -34,6 +35,8 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
     return null;
   }
   const { mode } = interaction;
+  const pinned = (end: FlowEnd) =>
+    end === 'source' ? edge.sourcePin : edge.targetPin;
   const points = [edge.source, ...edge.waypoints, edge.target];
   const actionable =
     mode?.kind === 'actions' ? bends.flow.waypoints[mode.index] : undefined;
@@ -121,11 +124,7 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
             }}
             onPointerMove={interaction.move}
             onPointerUp={interaction.up}
-            style={{
-              left: point.x,
-              top: point.y,
-              transform: `translate(-50%, -50%) scale(${String(1 / zoom)})`,
-            }}
+            style={onHandle(point, zoom)}
             title={t('tools.bend-handle-help')}
             type="button"
           >
@@ -133,11 +132,9 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
           </button>
         ))}
         {flowEnds.map((end) => {
-          const element =
-            end === 'source' ? edge.sourceElement : edge.targetElement;
-          if (element === undefined) {
-            return null;
-          }
+          const attached =
+            (end === 'source' ? edge.sourceElement : edge.targetElement) !==
+            undefined;
           const point = end === 'source' ? edge.source : edge.target;
           return (
             <button
@@ -151,7 +148,9 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
               key={end}
               onClick={(event) => {
                 event.stopPropagation();
-                interaction.endActions(end);
+                if (attached) {
+                  interaction.endActions(end);
+                }
               }}
               onDoubleClick={(event) => {
                 event.stopPropagation();
@@ -164,12 +163,12 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
               }}
               onPointerMove={interaction.move}
               onPointerUp={interaction.up}
-              style={{
-                left: point.x,
-                top: point.y,
-                transform: `translate(-50%, -50%) scale(${String(1 / zoom)})`,
-              }}
-              title={t('tools.flow-end-handle-help')}
+              style={onHandle(point, zoom)}
+              title={t(
+                attached
+                  ? 'tools.flow-end-handle-help'
+                  : 'tools.free-end-handle-help',
+              )}
               type="button"
             >
               <span aria-hidden="true">◆</span>
@@ -177,42 +176,59 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
           );
         })}
         {mode?.kind === 'end-actions' && (
-          <EndActions
-            pinned={mode.end === 'source' ? edge.sourcePin : edge.targetPin}
-            onChoose={(side) => {
-              interaction.pinEnd(mode.end, side);
-            }}
+          <HandleActions
+            actions={[
+              {
+                label: t('tools.follow-route'),
+                pressed: pinned(mode.end) === undefined,
+                run: () => {
+                  interaction.pinEnd(mode.end, undefined);
+                },
+              },
+              ...sides.map((side) => ({
+                label: t(sideMessages[side]),
+                pressed: pinned(mode.end) === side,
+                run: () => {
+                  interaction.pinEnd(mode.end, side);
+                },
+              })),
+            ]}
+            label={t('tools.flow-end-actions')}
             onClose={() => {
               interaction.cancel();
             }}
-            style={{
-              left: (mode.end === 'source' ? edge.source : edge.target).x,
-              top: (mode.end === 'source' ? edge.source : edge.target).y,
-              transform: `translate(20px, 20px) scale(${String(1 / zoom)})`,
-            }}
+            style={besideHandle(
+              mode.end === 'source' ? edge.source : edge.target,
+              zoom,
+            )}
           />
         )}
         {actionable !== undefined && mode?.kind === 'actions' && (
-          <BendActions
+          <HandleActions
+            actions={[
+              {
+                label: t('tools.remove-bend'),
+                run: () => {
+                  interaction.remove(mode.index);
+                },
+              },
+              {
+                label: t('tools.move-bend'),
+                run: () => {
+                  interaction.place({
+                    kind: 'move',
+                    index: mode.index,
+                    point: actionable,
+                  });
+                  toolbar.current?.focus();
+                },
+              },
+            ]}
+            label={t('tools.bend-actions')}
             onClose={() => {
               interaction.cancel();
             }}
-            onMove={() => {
-              interaction.place({
-                kind: 'move',
-                index: mode.index,
-                point: actionable,
-              });
-              toolbar.current?.focus();
-            }}
-            onRemove={() => {
-              interaction.remove(mode.index);
-            }}
-            style={{
-              left: actionable.x,
-              top: actionable.y,
-              transform: `translate(20px, 20px) scale(${String(1 / zoom)})`,
-            }}
+            style={besideHandle(actionable, zoom)}
           />
         )}
       </ViewportPortal>
@@ -233,97 +249,11 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
               }}
               type="button"
             >
-              Cancel
+              {t('tools.cancel')}
             </button>
           )}
         </fieldset>
       </Panel>
     </>
-  );
-}
-
-function BendActions({
-  onMove,
-  onRemove,
-  onClose,
-  style,
-}: {
-  readonly onMove: () => void;
-  readonly onRemove: () => void;
-  readonly onClose: () => void;
-  readonly style: CSSProperties;
-}) {
-  const first = useRef<HTMLButtonElement>(null);
-  const { t } = useTranslator();
-  useEffect(() => {
-    first.current?.focus();
-  }, []);
-  return (
-    <fieldset
-      aria-label={t('tools.bend-actions')}
-      className={`${styles.actions} nodrag nopan`}
-      style={style}
-    >
-      <button onClick={onRemove} ref={first} type="button">
-        {t('tools.remove-bend')}
-      </button>
-      <button onClick={onMove} type="button">
-        {t('tools.move-bend')}
-      </button>
-      <button onClick={onClose} type="button">
-        {t('tools.close')}
-      </button>
-    </fieldset>
-  );
-}
-
-function EndActions({
-  pinned,
-  onChoose,
-  onClose,
-  style,
-}: {
-  readonly pinned: Side | undefined;
-  readonly onChoose: (side: Side | undefined) => void;
-  readonly onClose: () => void;
-  readonly style: CSSProperties;
-}) {
-  const first = useRef<HTMLButtonElement>(null);
-  const { t } = useTranslator();
-  useEffect(() => {
-    first.current?.focus();
-  }, []);
-  return (
-    <fieldset
-      aria-label={t('tools.flow-end-actions')}
-      className={`${styles.actions} nodrag nopan`}
-      style={style}
-    >
-      <button
-        aria-pressed={pinned === undefined}
-        onClick={() => {
-          onChoose(undefined);
-        }}
-        ref={first}
-        type="button"
-      >
-        {t('tools.follow-route')}
-      </button>
-      {sides.map((side) => (
-        <button
-          aria-pressed={pinned === side}
-          key={side}
-          onClick={() => {
-            onChoose(side);
-          }}
-          type="button"
-        >
-          {t(sideMessages[side])}
-        </button>
-      ))}
-      <button onClick={onClose} type="button">
-        {t('tools.close')}
-      </button>
-    </fieldset>
   );
 }

@@ -1,10 +1,25 @@
+import type { ElementId } from '@saerskriven/model';
+import { elementIn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { laidOutNode, openCanvas, requestFlow } from './canvas.fixtures.js';
+import {
+  dragHandle,
+  laidOutNode,
+  noteElement,
+  openCanvas,
+  pointerOn,
+  probeFlow,
+  requestFlow,
+} from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { currentLayout } from './layout.js';
-import { actorElement } from '../store/store.fixtures.js';
+import {
+  actorElement,
+  mainDiagram,
+  newProcess,
+  processElement,
+} from '../store/store.fixtures.js';
 
 const press = (key: string, shiftKey = false): void => {
   fireEvent.keyDown(document.activeElement ?? document.body, { key, shiftKey });
@@ -19,30 +34,22 @@ const add = (): void => {
   fireEvent.click(screen.getByRole('button', { name: 'Add bend' }));
 };
 
-function pointerOn(element: Element, type: string, x: number, y: number): void {
-  const event = new MouseEvent(type, {
-    bubbles: true,
-    clientX: x,
-    clientY: y,
-    button: 0,
-  });
-  Object.defineProperties(event, {
-    isPrimary: { value: true },
-    pointerId: { value: 1 },
-  });
-  fireEvent(element, event);
-}
-
 const bend = () => screen.getByRole('button', { name: 'Bend 1' });
 
 const sourceEnd = () => screen.getByRole('button', { name: 'Flow source end' });
 
-const source = () => {
-  const flow = modelStore
-    .getState()
-    .present.diagrams[0].elements.find((element) => element.id === requestFlow);
-  return flow?.kind === 'flow' ? flow.source : undefined;
+const targetEnd = () => screen.getByRole('button', { name: 'Flow target end' });
+
+const endOf = (id: ElementId, end: 'source' | 'target') => {
+  const flow = elementIn(modelStore.getState().present, id);
+  return flow.kind === 'flow' ? flow[end] : undefined;
 };
+
+const source = () => endOf(requestFlow, 'source');
+
+const target = (id: ElementId) => endOf(id, 'target');
+
+const extra = { x: 300, y: 120 };
 
 beforeEach(() => {
   openCanvas([requestFlow]);
@@ -299,24 +306,98 @@ describe('DiagramCanvas, the ends of a flow', () => {
     ).toBeNull();
   });
 
-  it('pins a flow end to the side it is dragged to, on release alone', () => {
+  it('pins a flow end to the side of its own element it is released within', () => {
     render(<DiagramCanvas />);
     const before = modelStore.getState().present;
-    const reader = laidOutNode(actorElement);
-    pointerOn(sourceEnd(), 'pointerdown', 100, 100);
-    pointerOn(
-      sourceEnd(),
-      'pointermove',
-      100 + reader.position.x + reader.size.width,
-      100 + reader.position.y + reader.size.height / 2,
-    );
+    dragHandle(sourceEnd(), { x: 60, y: 55 }, false);
     expect(modelStore.getState().present).toBe(before);
-    pointerOn(
-      sourceEnd(),
-      'pointerup',
-      100 + reader.position.x + reader.size.width,
-      100 + reader.position.y + reader.size.height / 2,
-    );
-    expect(source()).toMatchObject({ side: 'right' });
+    dragHandle(sourceEnd(), { x: 60, y: 55 });
+    expect(source()).toEqual({
+      kind: 'attached',
+      element: actorElement,
+      side: 'bottom',
+    });
+  });
+
+  it('frees a flow end released on empty canvas, inside a trust boundary too, at the drop point, as one undo step', () => {
+    render(<DiagramCanvas />);
+    const handle = sourceEnd();
+    pointerOn(handle, 'pointerdown', 0, 0);
+    pointerOn(handle, 'pointermove', 0, 60);
+    expect(Number.parseFloat(sourceEnd().style.top)).toBeGreaterThan(60);
+    expect(modelStore.getState().past).toEqual([]);
+    pointerOn(handle, 'pointercancel', 0, 60);
+    dragHandle(sourceEnd(), { x: 200, y: 70 });
+    const freed = source();
+    expect(freed?.kind).toBe('free');
+    expect(freed?.kind === 'free' && freed.position.x).toBeCloseTo(200);
+    expect(freed?.kind === 'free' && freed.position.y).toBeCloseTo(70);
+    expect(modelStore.getState().past).toHaveLength(1);
+    expect(
+      screen.queryByRole('button', { name: 'Flow source end' }),
+    ).not.toBeNull();
+  });
+
+  it('attaches a flow end released on another element, following the route there', () => {
+    act(() => {
+      dispatch(
+        Action.AddElement({
+          diagramId: mainDiagram,
+          element: newProcess('extra-node', 'Extra', extra),
+        }),
+      );
+    });
+    render(<DiagramCanvas />);
+    dragHandle(sourceEnd(), { x: extra.x + 60, y: extra.y + 30 });
+    expect(source()).toEqual({ kind: 'attached', element: 'extra-node' });
+    expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it('leaves a flow end released on the element its other end holds, or on a Note, where it was', () => {
+    render(<DiagramCanvas />);
+    const before = modelStore.getState();
+    const studio = laidOutNode(processElement);
+    dragHandle(sourceEnd(), {
+      x: studio.position.x + studio.size.width / 2,
+      y: studio.position.y + studio.size.height / 2,
+    });
+    const note = laidOutNode(noteElement);
+    dragHandle(sourceEnd(), {
+      x: note.position.x + note.size.width / 2,
+      y: note.position.y + note.size.height / 2,
+    });
+    expect(modelStore.getState()).toMatchObject({
+      present: before.present,
+      past: [],
+      lastFailure: undefined,
+    });
+  });
+
+  it('moves a free end by arrow key and by dragging, one undo step each, and offers it no actions', () => {
+    openCanvas([probeFlow]);
+    render(<DiagramCanvas />);
+    const end = targetEnd();
+    fireEvent.click(end);
+    expect(
+      screen.queryByRole('group', { name: 'Flow end actions' }),
+    ).toBeNull();
+    end.focus();
+    press('ArrowLeft');
+    press('ArrowDown', true);
+    expect(target(probeFlow)).toEqual({
+      kind: 'free',
+      position: { x: 495, y: 220 },
+    });
+    expect(modelStore.getState().past).toHaveLength(2);
+    const reader = laidOutNode(actorElement);
+    dragHandle(targetEnd(), {
+      x: reader.position.x + reader.size.width / 2,
+      y: reader.position.y + reader.size.height / 2,
+    });
+    expect(target(probeFlow)).toEqual({
+      kind: 'attached',
+      element: actorElement,
+    });
+    expect(modelStore.getState().past).toHaveLength(3);
   });
 });

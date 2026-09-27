@@ -95,6 +95,23 @@ const table = {
     shortcuts: [bare('Delete'), bare('Backspace')],
     when: 'commands.key-when-flow-end-handle',
   },
+  'move-free-end': {
+    id: 'move-free-end',
+    label: { id: 'commands.key-move-free-end', units: keyboardResizeStep },
+    group: 'commands.group-flow-route',
+    shortcuts: arrowKeys,
+    when: 'commands.key-when-free-end-handle',
+  },
+  'move-free-end-far': {
+    id: 'move-free-end-far',
+    label: {
+      id: 'commands.key-move-free-end',
+      units: shiftedKeyboardResizeStep,
+    },
+    group: 'commands.group-flow-route',
+    shortcuts: shiftedArrowKeys,
+    when: 'commands.key-when-free-end-handle',
+  },
   'focus-canvas-item': {
     id: 'focus-canvas-item',
     label: 'commands.key-focus-canvas-item',
@@ -156,6 +173,37 @@ const table = {
     group: 'commands.group-canvas-editing',
     shortcuts: shiftedArrowKeys,
     when: 'commands.key-when-resize-control-focus',
+  },
+  'move-curve-point': {
+    id: 'move-curve-point',
+    label: { id: 'commands.key-move-curve-point', units: keyboardResizeStep },
+    group: 'commands.group-canvas-editing',
+    shortcuts: arrowKeys,
+    when: 'commands.key-when-curve-point-handle',
+  },
+  'move-curve-point-far': {
+    id: 'move-curve-point-far',
+    label: {
+      id: 'commands.key-move-curve-point',
+      units: shiftedKeyboardResizeStep,
+    },
+    group: 'commands.group-canvas-editing',
+    shortcuts: shiftedArrowKeys,
+    when: 'commands.key-when-curve-point-handle',
+  },
+  'remove-curve-point': {
+    id: 'remove-curve-point',
+    label: 'commands.key-remove-curve-point',
+    group: 'commands.group-canvas-editing',
+    shortcuts: [bare('Delete'), bare('Backspace')],
+    when: 'commands.key-when-curve-point-handle',
+  },
+  'cancel-curve-point': {
+    id: 'cancel-curve-point',
+    label: 'commands.key-cancel-curve-point',
+    group: 'commands.group-canvas-editing',
+    shortcuts: escapeKey,
+    when: 'commands.key-when-curve-point-gesture',
   },
   'place-at-centre': {
     id: 'place-at-centre',

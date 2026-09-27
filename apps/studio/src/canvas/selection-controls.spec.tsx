@@ -4,12 +4,14 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { elementIn } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
+  BoundaryShapeCommands,
   SelectionControls,
   FlowEndpointCommands,
 } from './selection-controls.js';
@@ -21,9 +23,16 @@ import {
   actorElement,
   mainDiagram,
   newProcess,
+  processElement,
   sampleModel,
 } from '../store/store.fixtures.js';
-import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
+import {
+  boundaryElement,
+  canvasModel,
+  openCanvas,
+  requestFlow,
+} from './canvas.fixtures.js';
+import { currentLayout } from './layout.js';
 
 const flowOf = () =>
   modelStore
@@ -155,6 +164,52 @@ describe('SelectionControls', () => {
       element: actorElement,
     });
   });
+
+  it('frees the chosen endpoint at a typed position, starting from where it is drawn', () => {
+    openCanvas([requestFlow]);
+    const drawn = currentLayout(modelStore.getState()).edges.find(
+      (edge) => edge.id === requestFlow,
+    )?.target;
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('reconnect-target'), recordingSurface().surface);
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Target' }), {
+      target: { value: '' },
+    });
+    expect(screen.queryByRole('combobox', { name: 'Side' })).toBeNull();
+    expect(
+      screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Y' }).value,
+    ).toBe(String(drawn?.y));
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
+      target: { value: '520' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
+    expect(elementIn(modelStore.getState().present, requestFlow)).toMatchObject(
+      {
+        source: { kind: 'attached', element: actorElement },
+        target: { kind: 'free', position: { x: 520, y: drawn?.y } },
+      },
+    );
+    expect(modelStore.getState().past).toEqual([canvasModel]);
+  });
+
+  it('keeps a free endpoint whose position is not a number in the form', () => {
+    openCanvas([requestFlow]);
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('reconnect-source'), recordingSurface().surface);
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
+      target: { value: '' },
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
+    expect(modelStore.getState().present).toBe(canvasModel);
+    expect(screen.getByRole('region', { name: 'Flow endpoint' })).toBeDefined();
+  });
 });
 
 describe('FlowEndpointCommands', () => {
@@ -210,5 +265,55 @@ describe('FlowEndpointCommands', () => {
     );
     expect(flowOf()).toMatchObject({ bidirectional: false });
     expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it('reverses a flow as one undo step', () => {
+    openCanvas([requestFlow]);
+    render(<FlowEndpointCommands />);
+    fireEvent.click(screen.getByRole('button', { name: 'Reverse flow' }));
+    expect(flowOf()).toMatchObject({
+      source: { kind: 'attached', element: processElement },
+      target: { kind: 'attached', element: actorElement },
+    });
+    expect(modelStore.getState().past).toEqual([canvasModel]);
+  });
+});
+
+const shapeOf = () => {
+  const boundary = elementIn(modelStore.getState().present, boundaryElement);
+  return boundary.kind === 'trust-boundary' ? boundary.shape.kind : undefined;
+};
+
+describe('BoundaryShapeCommands', () => {
+  it('switches the selected boundary between a box and a curve as one undo step each', () => {
+    openCanvas([boundaryElement]);
+    render(<BoundaryShapeCommands />);
+    const card = screen.getByRole('region', { name: 'Trust boundary' });
+    fireEvent.click(
+      within(card).getByRole('button', { name: 'Switch boundary shape' }),
+    );
+    expect(shapeOf()).toBe('curve');
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Switch boundary shape' }),
+    );
+    expect(shapeOf()).toBe('box');
+    expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it('stands only while one trust boundary is selected with the Select tool', () => {
+    openCanvas([requestFlow]);
+    const { rerender } = render(<BoundaryShapeCommands />);
+    expect(screen.queryByRole('region', { name: 'Trust boundary' })).toBeNull();
+    act(() => {
+      dispatch(Action.Select({ elementIds: [boundaryElement] }));
+    });
+    rerender(<BoundaryShapeCommands />);
+    expect(
+      screen.getByRole('region', { name: 'Trust boundary' }),
+    ).toBeDefined();
+    act(() => {
+      selectTool('hand');
+    });
+    expect(screen.queryByRole('region', { name: 'Trust boundary' })).toBeNull();
   });
 });

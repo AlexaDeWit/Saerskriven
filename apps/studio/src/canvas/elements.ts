@@ -1,5 +1,6 @@
 import {
   boxElementStrokeInsets,
+  minimumNodeExtent,
   type BoxElementKind,
   type CanvasLayout,
   type CanvasNode,
@@ -7,6 +8,7 @@ import {
 } from '@saerskriven/canvas';
 import {
   generateElementId,
+  type BoundaryShape,
   type Element,
   type ElementId,
   type Point,
@@ -39,9 +41,13 @@ export const placeholderNames = {
 
 /** The actors, processes and stores that a flow can connect. */
 export function flowEnds(layout: CanvasLayout): CanvasNode[] {
-  return layout.nodes.filter(
-    (node) =>
-      node.kind === 'actor' || node.kind === 'process' || node.kind === 'store',
+  return layout.nodes.filter(isFlowEnd);
+}
+
+/** Whether a flow can end on `node`: an actor, a process or a store. */
+export function isFlowEnd(node: CanvasNode): boolean {
+  return (
+    node.kind === 'actor' || node.kind === 'process' || node.kind === 'store'
   );
 }
 
@@ -196,6 +202,25 @@ export function freshBoundaryCurve(waypoints: readonly Point[]): Element {
   };
 }
 
+/**
+ * A trust boundary's other shape: the arch the curve tool places in a box, or
+ * the box around a curve's points, grown about their middle to
+ * `minimumNodeExtent` on an axis they span less of. A box at least that
+ * extent each way comes back from its arch as the same box.
+ */
+export function switchedShape(shape: BoundaryShape): BoundaryShape {
+  if (shape.kind === 'box') {
+    return { kind: 'curve', waypoints: arch(shape.position, shape.size) };
+  }
+  const across = spanOf(shape.waypoints.map((point) => point.x));
+  const down = spanOf(shape.waypoints.map((point) => point.y));
+  return {
+    kind: 'box',
+    position: { x: across.start, y: down.start },
+    size: { width: across.extent, height: down.extent },
+  };
+}
+
 /** A new flow attached at both ends, with a fresh id and no waypoints. */
 export function freshFlow(source: ElementId, target: ElementId): Element {
   return {
@@ -224,6 +249,16 @@ function arch(position: Point, size: Size): Point[] {
     { x: position.x + size.width / 2, y: position.y },
     { x: position.x + size.width, y: position.y + size.height },
   ];
+}
+
+function spanOf(values: readonly number[]): {
+  readonly start: number;
+  readonly extent: number;
+} {
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const extent = Math.max(high - low, minimumNodeExtent);
+  return { start: (low + high - extent) / 2, extent };
 }
 
 function insideStroke(kind: BoxElementKind, outer: NodeBox): NodeBox {

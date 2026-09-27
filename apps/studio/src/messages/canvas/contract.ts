@@ -4,6 +4,10 @@ const flow = { flow: 'text' } as const;
 
 const bend = { number: 'number', flow: 'text' } as const;
 
+const boundary = { boundary: 'text' } as const;
+
+const point = { number: 'number', boundary: 'text' } as const;
+
 const position = { x: 'number', y: 'number' } as const;
 
 const element = { element: 'text' } as const;
@@ -27,6 +31,12 @@ export const canvasMessages = {
   'target-changed': text(),
   'flow-both-ways': text(flow),
   'flow-one-way': text(flow),
+  'flow-reversed': text(flow),
+  'boundary-curved': text(boundary),
+  'boundary-boxed': text(boundary),
+  'point-moved': text(point),
+  'point-removed': text(point),
+  'point-kept': text(),
   'removed-named': text({ name: 'text' }),
   'removed-elements': plural('count'),
   'flows-detached': plural('count'),
@@ -40,6 +50,11 @@ export const canvasMessages = {
   'target-released': text(flow),
   'source-pinned': text({ flow: 'text', side: 'text' }),
   'target-pinned': text({ flow: 'text', side: 'text' }),
+  'source-freed': text(flow),
+  'target-freed': text(flow),
+  'source-moved': text(flow),
+  'target-moved': text(flow),
+  'position-invalid': text(),
   'undo-done': text(),
   'redo-done': text(),
   'threat-deleted': text({ number: 'number' }),

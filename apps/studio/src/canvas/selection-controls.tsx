@@ -1,3 +1,4 @@
+import type { Element } from '@saerskriven/model';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { CommandButton } from '../commands/command-button.js';
 import { useTranslator } from '../messages/locale.js';
@@ -74,15 +75,10 @@ export function SelectionControls() {
   );
 }
 
-/** Endpoint commands available beside a selected flow. */
+/** Endpoint and direction commands available beside a selected flow. */
 export function FlowEndpointCommands() {
-  const state = useModelStore((value) => value);
-  const flow = selectedElementRecord(state);
-  const tool = useTool();
   const { t } = useTranslator();
-  return flow?.kind === 'flow' &&
-    state.inlineEditor === undefined &&
-    tool.active === 'select' ? (
+  return useSelectedKind() === 'flow' ? (
     <section
       aria-label={t('tools.reconnect-flow')}
       className={styles.endpoints}
@@ -91,8 +87,31 @@ export function FlowEndpointCommands() {
       <CommandButton command="reconnect-source" />
       <CommandButton command="reconnect-target" />
       <CommandButton command="toggle-flow-direction" />
+      <CommandButton command="reverse-flow" />
     </section>
   ) : null;
+}
+
+/** The shape command available beside a selected trust boundary, in the flow commands' place. */
+export function BoundaryShapeCommands() {
+  const { t } = useTranslator();
+  return useSelectedKind() === 'trust-boundary' ? (
+    <section
+      aria-label={t('tools.trust-boundary')}
+      className={styles.endpoints}
+      data-pane=""
+    >
+      <CommandButton command="toggle-boundary-shape" />
+    </section>
+  ) : null;
+}
+
+function useSelectedKind(): Element['kind'] | undefined {
+  const state = useModelStore((value) => value);
+  const tool = useTool();
+  return state.inlineEditor === undefined && tool.active === 'select'
+    ? selectedElementRecord(state)?.kind
+    : undefined;
 }
 
 function SelectionEditor({

@@ -8,6 +8,7 @@ import type {
   Assumption,
   AssumptionId,
   AssumptionStatus,
+  BoundaryShape,
   Diagram,
   DiagramId,
   Element,
@@ -56,6 +57,16 @@ export type Action = Data.TaggedEnum<{
   SetFlowDirection: {
     readonly elementId: ElementId;
     readonly bidirectional: boolean;
+  };
+  SetFlowEndPosition: {
+    readonly elementId: ElementId;
+    readonly side: 'source' | 'target';
+    readonly position: Point;
+  };
+  ReverseFlow: { readonly elementId: ElementId };
+  SetBoundaryShape: {
+    readonly elementId: ElementId;
+    readonly shape: BoundaryShape;
   };
   RemoveElement: { readonly elementId: ElementId };
   RemoveElements: { readonly elementIds: readonly ElementId[] };

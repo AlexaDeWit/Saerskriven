@@ -20,6 +20,8 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-reconnect-source': 'Changer la source du flux',
   'label-reconnect-target': 'Changer la destination du flux',
   'label-toggle-flow-direction': 'Basculer le flux bidirectionnel',
+  'label-reverse-flow': 'Inverser le flux',
+  'label-toggle-boundary-shape': 'Changer la forme de la frontière',
   'label-align-left': 'Aligner à gauche',
   'label-align-centre': 'Aligner les centres',
   'label-align-right': 'Aligner à droite',
@@ -109,6 +111,10 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'key-pin-flow-end':
     'Fixer l’extrémité ciblée du flux au côté indiqué par la flèche',
   'key-release-flow-end': 'Laisser l’extrémité ciblée suivre son tracé',
+  'key-move-free-end': 'Déplacer l’extrémité libre ciblée de {units} unités',
+  'key-move-curve-point': 'Déplacer le point de courbe ciblé de {units} unités',
+  'key-remove-curve-point': 'Retirer le point de courbe ciblé',
+  'key-cancel-curve-point': 'Annuler la modification du point de courbe',
   'key-focus-canvas-item': 'Déplacer le focus entre les éléments du canevas',
   'key-select-canvas-item': 'Sélectionner l’élément ciblé',
   'key-edit-canvas-text': 'Modifier le texte sélectionné sur le canevas',
@@ -136,7 +142,13 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'key-when-bend-handle-or-position':
     'Une poignée de coude a le focus ou une position de coude est en cours de choix',
   'key-when-existing-bend-handle': 'Une poignée de coude existante a le focus',
-  'key-when-flow-end-handle': 'Une poignée d’extrémité de flux a le focus',
+  'key-when-flow-end-handle':
+    'Une poignée d’extrémité de flux rattachée a le focus',
+  'key-when-free-end-handle':
+    'Une poignée d’extrémité de flux libre a le focus',
+  'key-when-curve-point-handle': 'Une poignée de point de courbe a le focus',
+  'key-when-curve-point-gesture':
+    'Un glissement ou les actions d’un point de courbe sont actifs',
   'key-when-canvas-focus': 'Le focus est sur le canevas',
   'key-when-not-only-selected':
     'L’élément ciblé n’est pas le seul élément sélectionné',

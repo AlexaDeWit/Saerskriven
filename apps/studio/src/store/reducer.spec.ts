@@ -57,6 +57,28 @@ const noteModel = {
   })),
 };
 const noteStart = initialState(noteModel);
+const boundaryElement = elementId('boundary-edge');
+const boundaryStart = initialState(
+  reduce(
+    start,
+    Action.AddElement({
+      diagramId: mainDiagram,
+      element: {
+        kind: 'trust-boundary',
+        id: boundaryElement,
+        name: 'Edge',
+        description: '',
+        outOfScope: false,
+        reasonOutOfScope: '',
+        shape: {
+          kind: 'box',
+          position: { x: -20, y: -20 },
+          size: { width: 360, height: 100 },
+        },
+      },
+    }),
+  ).present,
+);
 type StudioActionTag =
   | 'Undo'
   | 'Redo'
@@ -142,6 +164,23 @@ const applied: ActionsByTag<ModelActionTag> = {
   SetFlowDirection: Action.SetFlowDirection({
     elementId: elementId('placeholder-flow'),
     bidirectional: true,
+  }),
+  SetFlowEndPosition: Action.SetFlowEndPosition({
+    elementId: elementId('placeholder-flow'),
+    side: 'target',
+    position: { x: 400, y: 200 },
+  }),
+  ReverseFlow: Action.ReverseFlow({ elementId: elementId('placeholder-flow') }),
+  SetBoundaryShape: Action.SetBoundaryShape({
+    elementId: boundaryElement,
+    shape: {
+      kind: 'curve',
+      waypoints: [
+        { x: -20, y: 80 },
+        { x: 160, y: -20 },
+        { x: 340, y: 80 },
+      ],
+    },
   }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-added'), number: 2 },
@@ -282,6 +321,20 @@ const refused: ActionsByTag<ModelActionTag> = {
   SetFlowDirection: Action.SetFlowDirection({
     elementId: processElement,
     bidirectional: true,
+  }),
+  SetFlowEndPosition: Action.SetFlowEndPosition({
+    elementId: processElement,
+    side: 'source',
+    position: { x: 0, y: 0 },
+  }),
+  ReverseFlow: Action.ReverseFlow({ elementId: processElement }),
+  SetBoundaryShape: Action.SetBoundaryShape({
+    elementId: processElement,
+    shape: {
+      kind: 'box',
+      position: { x: 0, y: 0 },
+      size: { width: 10, height: 10 },
+    },
   }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-reused'), number: 1 },
@@ -436,9 +489,14 @@ function stateFor(action: Action): State {
   }
   if (
     Action.$is('SetFlowWaypoints')(action) ||
-    Action.$is('SetFlowDirection')(action)
+    Action.$is('SetFlowDirection')(action) ||
+    Action.$is('SetFlowEndPosition')(action) ||
+    Action.$is('ReverseFlow')(action)
   ) {
     return initialState(placeholderModel);
+  }
+  if (Action.$is('SetBoundaryShape')(action)) {
+    return boundaryStart;
   }
   if (Action.$is('UnlinkAssumptionFromModel')(action)) {
     return modelScopedStart;
@@ -493,6 +551,36 @@ describe('an operation the model refuses', () => {
   it('clears the failure on the next edit that lands', () => {
     const stuck = reduce(start, refused.AddElement);
     expect(reduce(stuck, applied.AddElement).lastFailure).toBeUndefined();
+  });
+});
+
+describe('the flow end, direction and boundary shape edits', () => {
+  const flow = elementId('placeholder-flow');
+
+  it('free one end of a flow at the position given', () => {
+    const edited = reduce(
+      stateFor(applied.SetFlowEndPosition),
+      applied.SetFlowEndPosition,
+    );
+    expect(elementById(edited, flow)).toMatchObject({
+      source: { kind: 'attached', element: 'placeholder-actor' },
+      target: { kind: 'free', position: { x: 400, y: 200 } },
+    });
+  });
+
+  it('swap the two ends of a flow', () => {
+    const edited = reduce(stateFor(applied.ReverseFlow), applied.ReverseFlow);
+    expect(elementById(edited, flow)).toMatchObject({
+      source: { kind: 'attached', element: 'placeholder-store' },
+      target: { kind: 'attached', element: 'placeholder-actor' },
+    });
+  });
+
+  it('give a trust boundary the shape given', () => {
+    const edited = reduce(boundaryStart, applied.SetBoundaryShape);
+    expect(elementById(edited, boundaryElement)).toMatchObject({
+      shape: applied.SetBoundaryShape.shape,
+    });
   });
 });
 

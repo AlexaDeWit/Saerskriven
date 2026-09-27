@@ -15,7 +15,9 @@ import {
 import {
   removeSelected,
   renameSelected,
+  reverseSelectedFlow,
   selectAll,
+  toggleBoundaryShape,
   toggleFlowDirection,
 } from '../canvas/edits.js';
 import { openSelectionControl } from '../canvas/selection-control.js';
@@ -36,6 +38,7 @@ import {
   escapeChord,
   mod,
   modShift,
+  shift,
   type CommandMessageId,
   type ShortcutEntry,
 } from './shortcuts.js';
@@ -269,6 +272,18 @@ export const commandTable = {
     label: 'commands.label-toggle-flow-direction',
     shortcuts: [modShift('3')],
     run: toggleFlowDirection,
+  }),
+  'reverse-flow': editCommand({
+    id: 'reverse-flow',
+    label: 'commands.label-reverse-flow',
+    shortcuts: [shift('r')],
+    run: reverseSelectedFlow,
+  }),
+  'toggle-boundary-shape': editCommand({
+    id: 'toggle-boundary-shape',
+    label: 'commands.label-toggle-boundary-shape',
+    shortcuts: [shift('b')],
+    run: toggleBoundaryShape,
   }),
   'align-left': editCommand({
     id: 'align-left',
