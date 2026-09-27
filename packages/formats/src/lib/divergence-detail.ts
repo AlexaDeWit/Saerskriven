@@ -1,12 +1,12 @@
-import { carrying, coded } from '@saerskriven/model';
+import { carrying, coded, elementKindSchema } from '@saerskriven/model';
 import { z } from 'zod';
 
 /**
  * What one divergence is about, as a code and the data the code needs. A
- * parameter is a path, an identifier, a count, a format name or a text a
- * person wrote, carried as it stands, so a reader in any language phrases the
- * entry itself. A text parameter is unbounded where its value comes from a
- * foreign file, whose vocabulary the model does not decide.
+ * parameter is a path, an identifier, a count, a format name, an element kind
+ * or a text a person wrote, carried as it stands, so a reader in any language
+ * phrases the entry itself. A text parameter is unbounded where its value
+ * comes from a foreign file, whose vocabulary the model does not decide.
  */
 export const divergenceDetailSchema = z.discriminatedUnion('code', [
   carrying('release-restamped', { from: z.string(), written: z.string() }),
@@ -32,12 +32,14 @@ export const divergenceDetailSchema = z.discriminatedUnion('code', [
   carrying('threat-discarded', { title: z.string() }),
   carrying('note-name-dropped', { name: z.string() }),
   coded('scope-marking-dropped'),
-  carrying('cell-reshaped', { shape: z.string(), kind: z.string() }),
+  carrying('cell-reshaped', { shape: z.string(), kind: elementKindSchema }),
   carrying('diagram-name-numbered', { number: z.number() }),
   carrying('cell-discarded', { shape: z.string() }),
   carrying('threat-attachment-stray', {
     element: z.string(),
-    kind: z.string().optional(),
+    kind: elementKindSchema
+      .exclude(['actor', 'process', 'store', 'flow'])
+      .optional(),
   }),
   coded('threat-unplaceable'),
   carrying('threat-split-across-elements', { count: z.number() }),

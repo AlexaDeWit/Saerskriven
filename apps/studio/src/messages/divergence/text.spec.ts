@@ -1,11 +1,17 @@
 import {
   divergenceDetailSchema,
   type Divergence,
+  type DivergenceCode,
   type DivergenceDetail,
 } from '@saerskriven/formats';
-import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
-import { codesOf } from '@saerskriven/model';
-import { studioCatalogues } from '../catalogues.js';
+import {
+  catalogueTemplates,
+  templateParts,
+  translator,
+  type Locale,
+} from '@saerskriven/i18n';
+import { codesOf, type Element } from '@saerskriven/model';
+import { studioCatalogues, studioMessages } from '../catalogues.js';
 import { activeTranslator, chooseLanguage } from '../locale.js';
 import { divergenceDetail, divergenceLine } from './text.js';
 
@@ -35,13 +41,13 @@ const samples: readonly DivergenceDetail[] = [
   { code: 'scope-marking-dropped' },
   {
     code: 'cell-reshaped',
-    parameters: { shape: 'reshaped-from', kind: 'reshaped-to' },
+    parameters: { shape: 'reshaped-from', kind: 'process' },
   },
   { code: 'diagram-name-numbered', parameters: { number: 19 } },
   { code: 'cell-discarded', parameters: { shape: 'discarded-cell-shape' } },
   {
     code: 'threat-attachment-stray',
-    parameters: { element: 'stray-element', kind: 'stray-kind' },
+    parameters: { element: 'stray-element', kind: 'trust-boundary' },
   },
   { code: 'threat-unplaceable' },
   { code: 'threat-split-across-elements', parameters: { count: 21 } },
@@ -120,6 +126,15 @@ const absences: readonly DivergenceDetail[] = [
   },
 ];
 
+const kindEntries: Partial<Record<DivergenceCode, string>> = {
+  'cell-reshaped': 'divergence.cell-reshaped-process',
+  'threat-attachment-stray':
+    'divergence.threat-attachment-stray-trust-boundary',
+};
+
+const entryOf = ({ code }: DivergenceDetail): string =>
+  kindEntries[code] ?? `divergence.${code}`;
+
 const declaredCodes = codesOf(divergenceDetailSchema);
 
 const described = (detail: DivergenceDetail): string =>
@@ -153,11 +168,12 @@ describe('the divergence mapping', () => {
     );
   });
 
-  it.each(samples)('reads %j from the entry its own code names', (detail) => {
-    expect(readsFrom(`divergence.${detail.code}`, described(detail))).toBe(
-      true,
-    );
-  });
+  it.each(samples)(
+    'reads %j from the entry its own code and element kind name',
+    (detail) => {
+      expect(readsFrom(entryOf(detail), described(detail))).toBe(true);
+    },
+  );
 
   it.each([
     [absences[0], 'divergence.threat-attachment-stray-unknown'],
@@ -190,7 +206,7 @@ describe('the divergence mapping', () => {
     [samples.find(({ code }) => code === 'cell-reshaped'), 'reshaped-from'],
     [
       samples.find(({ code }) => code === 'threat-attachment-stray'),
-      'stray-kind',
+      'stray-element',
     ],
     [
       samples.find(({ code }) => code === 'mitigation-status-dropped'),
@@ -236,4 +252,52 @@ describe('the divergence mapping', () => {
       activeTranslator().t('divergence.reason-undeclared'),
     );
   });
+});
+
+const inLocale = (locale: Locale) =>
+  translator(studioMessages, studioCatalogues, locale).t;
+
+const reshapedTo = (kind: Element['kind']): DivergenceDetail => ({
+  code: 'cell-reshaped',
+  parameters: { shape: 'reshaped-from', kind },
+});
+
+describe('the element kind a divergence names', () => {
+  it.each([
+    ['fr-CA', 'process'],
+    ['fr-CA', 'trust-boundary'],
+    ['en-CA', 'actor'],
+    ['sv', 'store'],
+  ] as const)(
+    'words in %s the %s a reshaped cell now draws through the message of that kind',
+    (locale, kind) => {
+      const t = inLocale(locale);
+
+      expect(divergenceDetail(t, reshapedTo(kind))).toBe(
+        t(`divergence.cell-reshaped-${kind}`, { shape: 'reshaped-from' }),
+      );
+    },
+  );
+
+  it.each([
+    ['fr-CA', 'text'],
+    ['fr-CA', 'trust-boundary'],
+    ['en-CA', 'trust-boundary'],
+    ['sv', 'trust-boundary'],
+  ] as const)(
+    'words in %s a threat attached to a %s through the message of that kind',
+    (locale, kind) => {
+      const t = inLocale(locale);
+      const stray: DivergenceDetail = {
+        code: 'threat-attachment-stray',
+        parameters: { element: 'stray-element', kind },
+      };
+
+      expect(divergenceDetail(t, stray)).toBe(
+        t(`divergence.threat-attachment-stray-${kind}`, {
+          element: 'stray-element',
+        }),
+      );
+    },
+  );
 });

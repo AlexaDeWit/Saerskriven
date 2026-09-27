@@ -35,13 +35,25 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
     'namnet ”{name}”, eftersom formatet har en enda text för en anteckning och inget namn vid sidan av',
   'scope-marking-dropped':
     'markeringen utanför omfattningen, som formatet bara noterar på de element ett hot knyts till',
-  'cell-reshaped':
-    'det källan bar på cellen {shape} med detta id, som nu ritar en {kind}',
+  'cell-reshaped-actor':
+    'det källan bar på cellen {shape} med detta id, som nu ritar en aktör',
+  'cell-reshaped-process':
+    'det källan bar på cellen {shape} med detta id, som nu ritar en process',
+  'cell-reshaped-store':
+    'det källan bar på cellen {shape} med detta id, som nu ritar ett datalager',
+  'cell-reshaped-text':
+    'det källan bar på cellen {shape} med detta id, som nu ritar en text',
+  'cell-reshaped-flow':
+    'det källan bar på cellen {shape} med detta id, som nu ritar ett flöde',
+  'cell-reshaped-trust-boundary':
+    'det källan bar på cellen {shape} med detta id, som nu ritar en förtroendegräns',
   'diagram-name-numbered':
     'namnet, eftersom formatet numrerar ett diagram i stället för att namnge det, skrivet som {number}',
   'cell-discarded': 'cellen {shape} som källdokumentet innehöll',
-  'threat-attachment-stray':
-    'kopplingen till {kind} ”{element}”, eftersom formatet bara lägger ett hot under en aktör, en process, ett datalager eller ett flöde',
+  'threat-attachment-stray-text':
+    'kopplingen till texten ”{element}”, eftersom formatet bara lägger ett hot under en aktör, en process, ett datalager eller ett flöde',
+  'threat-attachment-stray-trust-boundary':
+    'kopplingen till förtroendegränsen ”{element}”, eftersom formatet bara lägger ett hot under en aktör, en process, ett datalager eller ett flöde',
   'threat-attachment-stray-unknown':
     'kopplingen till det okända ”{element}”, eftersom formatet bara lägger ett hot under en aktör, en process, ett datalager eller ett flöde',
   'threat-unplaceable':

@@ -36,13 +36,25 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
     'the name "{name}", which the format has one text for a note and no name beside it',
   'scope-marking-dropped':
     'the out-of-scope marking, which the format records on the elements a threat attaches to alone',
-  'cell-reshaped':
-    'what the source held on the {shape} cell of this id, which now draws a {kind}',
+  'cell-reshaped-actor':
+    'what the source held on the {shape} cell of this id, which now draws an actor',
+  'cell-reshaped-process':
+    'what the source held on the {shape} cell of this id, which now draws a process',
+  'cell-reshaped-store':
+    'what the source held on the {shape} cell of this id, which now draws a store',
+  'cell-reshaped-text':
+    'what the source held on the {shape} cell of this id, which now draws a text',
+  'cell-reshaped-flow':
+    'what the source held on the {shape} cell of this id, which now draws a flow',
+  'cell-reshaped-trust-boundary':
+    'what the source held on the {shape} cell of this id, which now draws a trust boundary',
   'diagram-name-numbered':
     'the name, which the format numbers a diagram rather than naming one, written as {number}',
   'cell-discarded': 'the {shape} cell the source document held',
-  'threat-attachment-stray':
-    'the attachment to the {kind} "{element}", which the format nests a threat under an actor, a process, a store, or a flow alone',
+  'threat-attachment-stray-text':
+    'the attachment to the text "{element}", which the format nests a threat under an actor, a process, a store, or a flow alone',
+  'threat-attachment-stray-trust-boundary':
+    'the attachment to the trust boundary "{element}", which the format nests a threat under an actor, a process, a store, or a flow alone',
   'threat-attachment-stray-unknown':
     'the attachment to the unknown "{element}", which the format nests a threat under an actor, a process, a store, or a flow alone',
   'threat-unplaceable':
