@@ -16,6 +16,7 @@ import { modelStore } from '../store/store.js';
 import {
   applyChanges,
   applyConnection,
+  sideOfHandle,
   betweenTwoElements,
   gestureSelection,
   moveActions,
@@ -245,6 +246,16 @@ describe('betweenTwoElements', () => {
   });
 });
 
+describe('sideOfHandle', () => {
+  it('names the side of a handle id, and none for anything else', () => {
+    expect(sideOfHandle('top')).toBe('top');
+    expect(sideOfHandle('left')).toBe('left');
+    expect(sideOfHandle(null)).toBeUndefined();
+    expect(sideOfHandle(undefined)).toBeUndefined();
+    expect(sideOfHandle('centre')).toBeUndefined();
+  });
+});
+
 describe('applyConnection', () => {
   it('draws the flow a settled connection asks for', () => {
     openCanvas();
@@ -263,11 +274,34 @@ describe('applyConnection', () => {
     expect(flowDrawn()?.source).toEqual({
       kind: 'attached',
       element: actorElement,
+      side: 'right',
     });
     expect(flowDrawn()?.target).toEqual({
       kind: 'attached',
       element: processElement,
+      side: 'left',
     });
+  });
+
+  it('leaves an end automatic where the drop named no handle', () => {
+    openCanvas();
+
+    applyConnection(
+      {
+        source: actorElement,
+        target: processElement,
+        sourceHandle: 'bottom',
+        targetHandle: null,
+      },
+      elements,
+    );
+
+    expect(flowDrawn()?.source).toMatchObject({ side: 'bottom' });
+    expect(flowDrawn()?.target).toEqual({
+      kind: 'attached',
+      element: processElement,
+    });
+    expect(modelStore.getState().past).toHaveLength(1);
   });
 
   it('draws nothing for an end that names no element of the diagram', () => {

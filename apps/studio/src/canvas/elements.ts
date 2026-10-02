@@ -12,6 +12,7 @@ import {
   type Element,
   type ElementId,
   type Point,
+  type Side,
   type Size,
 } from '@saerskriven/model';
 import { activeTranslator } from '../messages/locale.js';
@@ -221,16 +222,32 @@ export function switchedShape(shape: BoundaryShape): BoundaryShape {
   };
 }
 
+/** The sides a new flow's ends are pinned to. An end without one follows the route. */
+export interface FlowSides {
+  readonly source?: Side | undefined;
+  readonly target?: Side | undefined;
+}
+
 /** A new flow attached at both ends, with a fresh id and no waypoints. */
-export function freshFlow(source: ElementId, target: ElementId): Element {
+export function freshFlow(
+  source: ElementId,
+  target: ElementId,
+  sides: FlowSides = {},
+): Element {
   return {
     kind: 'flow',
     ...namedElement(activeTranslator().t('defaults.new-flow')),
-    source: { kind: 'attached', element: source },
-    target: { kind: 'attached', element: target },
+    source: attachedEnd(source, sides.source),
+    target: attachedEnd(target, sides.target),
     waypoints: [],
     bidirectional: false,
   };
+}
+
+function attachedEnd(element: ElementId, side: Side | undefined) {
+  return side === undefined
+    ? ({ kind: 'attached', element } as const)
+    : ({ kind: 'attached', element, side } as const);
 }
 
 function namedElement(name: string) {

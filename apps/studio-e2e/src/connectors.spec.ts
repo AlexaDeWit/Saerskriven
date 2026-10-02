@@ -1,6 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { registeredChords } from './chords.fixtures.js';
-import { dragTo, emptyCanvasPoint } from './canvas.fixtures.js';
+import {
+  boxOf,
+  dragBy,
+  dragOnto,
+  dragTo,
+  drawnBy,
+  emptyCanvasPoint,
+  handlesOf,
+  lineOf,
+  turnsOf,
+} from './canvas.fixtures.js';
 import {
   handleOn,
   menuItem,
@@ -58,6 +68,37 @@ test('a drag released over empty canvas draws nothing and costs no undo step', a
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
   await openMenu(page);
   await expect(menuItem(page, 'Undo')).toHaveAttribute('aria-disabled', 'true');
+});
+
+test('a flow drawn between two handles keeps those sides when an element moves past where the automatic side would flip', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = nodeNamed(page, placeholder.actor);
+  const store = nodeNamed(page, placeholder.store);
+  await actor.hover();
+  await dragOnto(page, handleOn(actor, 'right'), handleOn(store, 'left'));
+  const drawn = lineOf(page, /^New flow, flow/u);
+  await expect(drawn).toHaveCount(1);
+
+  await selectNode(page, placeholder.actor);
+  const [from, to] = await Promise.all([
+    actor.boundingBox(),
+    store.boundingBox(),
+  ]);
+  expect(from).not.toBeNull();
+  expect(to).not.toBeNull();
+  await dragBy(page, actor, {
+    x: (to?.x ?? 0) - (from?.x ?? 0),
+    y: 250,
+  });
+
+  await expect.poll(async () => (await boxOf(actor)).y).toBeGreaterThan(100);
+  const route = turnsOf(await drawnBy(drawn));
+  const [, actorRight] = handlesOf(await boxOf(actor));
+  const [, , , storeLeft] = handlesOf(await boxOf(store));
+  expect(route[0]).toEqual(actorRight);
+  expect(route.at(-1)).toEqual(storeLeft);
 });
 
 test('the start-flow chord draws a flow from the selected element', async ({

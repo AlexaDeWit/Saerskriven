@@ -166,6 +166,11 @@ expects.
   with Shift, and Enter commits. Escape, Tab or leaving the browser window
   cancels it without an edit.
 - A focused bend moves with the arrow keys, and Delete or Backspace removes it.
+- A flow drawn from one element's handle to another's keeps the sides of the
+  two handles: moving either element leaves it on those sides. Dropped on
+  something that names no side, an end follows the route. Follow the route on
+  an end returns it to following the route. A flow made from the keyboard, by
+  an import, or through the MCP server follows the route at both ends.
 - An end handle sits where the flow meets its element. Drag it to another side
   of that element to pin the end there, onto another actor, process or store
   to attach the end there, following the route, or onto empty canvas to free
