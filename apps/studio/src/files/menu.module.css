@@ -36,6 +36,7 @@
 
 .switcher,
 .titleField {
+  box-sizing: border-box;
   inline-size: 100%;
   padding: var(--saer-space-2) var(--saer-space-3);
   border: 0;
