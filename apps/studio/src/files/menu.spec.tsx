@@ -700,7 +700,7 @@ describe('opening', () => {
 describe('saving', () => {
   it('writes the model through the codec and marks it saved', async () => {
     const user = userEvent.setup();
-    const bridge = specBridge();
+    const bridge = specBridge({ picker: false });
     mounted(bridge);
     edit();
 

@@ -7,6 +7,7 @@ import {
   savedModel,
   selectByKeyboard,
   storefront,
+  withoutPickers,
 } from './studio.fixtures.js';
 
 const warehouseFloor = /^Warehouse floor, trust boundary/u;
@@ -27,6 +28,7 @@ const shapeNamed = (model: Model, name: string) =>
 test('a trust boundary curve moves a point by arrow key and by dragging, and removes one, one undo step each', async ({
   page,
 }) => {
+  await page.addInitScript(withoutPickers);
   await openTwoDiagrams(page);
   await page.keyboard.press(registeredChords['next-diagram'][0]);
   await selectByKeyboard(page, warehouseFloor);
@@ -55,6 +57,7 @@ test('a trust boundary curve moves a point by arrow key and by dragging, and rem
 test('a trust boundary switches between a box and a curve by its chord and its command, and saves each shape', async ({
   page,
 }) => {
+  await page.addInitScript(withoutPickers);
   await openTwoDiagrams(page);
   await selectByKeyboard(page, storefront.shopNetwork);
   await expect(pointHandles(page)).toHaveCount(0);

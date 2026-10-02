@@ -47,17 +47,24 @@ the React Flow attribution, and any other build says `development`.
 **Open** reads a Threat Dragon v2 JSON or Saerskriven YAML file, whatever its
 extension. **Save** writes back in the format the file was read as. Where the
 browser offers the File System Access API, Save writes to the file that was
-opened. Elsewhere, Firefox and Safari among them, Save downloads the file, and
-**Save as** turns into a list of formats in the menu, with the file's own
-format where the item stood. Saving in another format than the file was read
-as is where a loss report comes from, since only the file's own format keeps
-what Saerskriven does not model. A read reports too, when the file carries keys
-the format's schema does not declare.
+opened or last saved as, without asking. With no such file, as for a new model
+or an import, Save asks where in the browser's save picker, proposing the same
+name and formats as **Save as**, and later Saves write to the file chosen there.
+Dismissing the picker, from Save or Save as, leaves the work unsaved in every
+tab. Elsewhere, Firefox and Safari among them, Save downloads the file under its
+name, and **Save as** turns into a list of formats in the menu, with the file's
+own format where the item stood. The page cannot tell whether a download went
+through, so a download counts as saved even where the browser's own download
+dialog was cancelled. Saving in another format than the file was read as is
+where a loss report comes from, since only the file's own format keeps what
+Saerskriven does not model. A read reports too, when the file carries keys the
+format's schema does not declare.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
-second press confirms. A failed open keeps the current model, but its next Save
-downloads native YAML rather than writing to either file.
+second press confirms. A failed open keeps the current model but lets go of its
+file, so its next Save treats it as a new model rather than writing to either
+file.
 
 **Import** converts an OTM or TM-BOM file into an unsaved native model
 ([importing a foreign model](import.md)). **Export** writes the diagram on
@@ -71,13 +78,15 @@ and stands until dismissed or until a later export.
 The studio keeps the current session in the browser's local storage. A reload
 restores the model, whether it was saved, the file's name and format, and the
 diagram on screen, without the undo history, the selection or an open field.
-The browser's file handle does not survive, so the next Save downloads a copy.
+The browser's file handle does not survive, so the next Save asks where to
+write, or downloads a copy where the browser cannot ask.
 While unsaved work has not reached that storage, closing the tab asks first.
 
 Every studio tab in one browser profile shows the same model. An edit, an undo,
 an open or a save in one tab reaches the others, while each tab keeps its own
 selection and diagram on screen. Once another tab has changed the model, Save
-in this tab downloads a copy rather than writing back to the file.
+in this tab asks where to write, or downloads a copy, rather than writing back
+to the file.
 
 ## Diagrams
 
