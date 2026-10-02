@@ -86,8 +86,16 @@ test(
     const field = await screenBoxOf(diagramTitleField(page));
     expect(field.x).toBeCloseTo(title.x, 0);
     expect(field.y).toBeCloseTo(title.y, 0);
+    expect(field.width).toBeCloseTo(title.width, 0);
     const after = await screenBoxOf(chromeCard(page));
     expect(after.width).toBeCloseTo(before.width, 0);
+    expect(field.x + field.width).toBeLessThanOrEqual(after.x + after.width);
+
+    await diagramTitleField(page).fill('A long diagram title '.repeat(12));
+    const typed = await screenBoxOf(chromeCard(page));
+    expect(typed.width).toBeCloseTo(before.width, 0);
+    const grown = await screenBoxOf(diagramTitleField(page));
+    expect(grown.x + grown.width).toBeLessThanOrEqual(typed.x + typed.width);
   },
 );
 
