@@ -94,8 +94,14 @@ test(
     await diagramTitleField(page).fill('A long diagram title '.repeat(12));
     const typed = await screenBoxOf(chromeCard(page));
     expect(typed.width).toBeCloseTo(before.width, 0);
-    const grown = await screenBoxOf(diagramTitleField(page));
-    expect(grown.x + grown.width).toBeLessThanOrEqual(typed.x + typed.width);
+    const filled = await screenBoxOf(diagramTitleField(page));
+    expect(filled.width).toBeCloseTo(field.width, 0);
+    expect(filled.x + filled.width).toBeLessThanOrEqual(typed.x + typed.width);
+    expect(
+      await diagramTitleField(page).evaluate(
+        (input) => input.scrollWidth > input.clientWidth,
+      ),
+    ).toBe(true);
   },
 );
 
