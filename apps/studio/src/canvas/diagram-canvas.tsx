@@ -73,6 +73,10 @@ import styles from './diagram-canvas.module.css';
 
 const panMouseButtons: number[] = [1];
 
+/** Control zooms with scroll everywhere, and Command joins it on Apple platforms. */
+const zoomActivationKeys =
+  hostPlatform === 'apple' ? ['Meta', 'Control'] : 'Control';
+
 const itemKeys = [
   'select-canvas-item',
   'edit-canvas-text',
@@ -363,6 +367,7 @@ export function DiagramCanvas({
         onSelectionEnd={boxSelection.onSelectionEnd}
         onSelectionStart={boxSelection.onSelectionStart}
         panActivationKeyCode={null}
+        zoomActivationKeyCode={zoomActivationKeys}
         panOnDrag={
           mode.active === 'hand'
             ? true

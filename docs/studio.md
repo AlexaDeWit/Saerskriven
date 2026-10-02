@@ -265,7 +265,8 @@ threat panel. The zoom controls show the current percentage, and pressing it
 resets the zoom to 100%. Selecting or dropping an element does not move the
 view.
 
-Scrolling pans in both directions and a trackpad pinch zooms. A touch drag pans
+Scrolling pans in both directions and a trackpad pinch zooms. Holding Control
+(or Command on macOS) turns scrolling into zoom. A touch drag pans
 in Select. A mouse drag in Select draws a selection box, while a middle-button
 drag, Hand or held Space pans.
 

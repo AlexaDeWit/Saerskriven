@@ -50,6 +50,63 @@ test('scroll pans while a modified scroll keeps pinch zoom', async ({
   await expect.poll(() => viewportZoom(page)).not.toBe(zoom);
 });
 
+test.describe('on macOS', () => {
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  });
+
+  test('holding Control during scroll momentum switches to zoom', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'platform', { value: 'MacIntel' });
+      Object.defineProperty(navigator, 'userAgentData', {
+        value: { platform: 'macOS' },
+      });
+    });
+    await openPlaceholder(page);
+    const at = await emptyCanvasPoint(page);
+    await page.mouse.move(at.x, at.y);
+    const zoom = await viewportZoom(page);
+    const start = await viewportTransform(page);
+
+    await page.mouse.wheel(0, 60);
+    await page.mouse.wheel(0, 60);
+    await expect.poll(() => viewportTransform(page)).not.toBe(start);
+    expect(await viewportZoom(page)).toBe(zoom);
+
+    await page.keyboard.down('Control');
+    await page.evaluate(
+      async ({ x, y }) => {
+        const pane = document.querySelector('.react-flow__pane');
+        for (let tick = 0; tick < 5; tick += 1) {
+          pane?.dispatchEvent(
+            new WheelEvent('wheel', {
+              deltaY: 30,
+              ctrlKey: false,
+              bubbles: true,
+              cancelable: true,
+              clientX: x,
+              clientY: y,
+            }),
+          );
+          await new Promise((resolve) => setTimeout(resolve, 16));
+        }
+      },
+      { x: at.x, y: at.y },
+    );
+    await expect.poll(() => viewportZoom(page)).not.toBe(zoom);
+    await page.keyboard.up('Control');
+
+    const zoomed = await viewportZoom(page);
+    const panned = await viewportTransform(page);
+    await page.mouse.wheel(0, 60);
+    await expect.poll(() => viewportTransform(page)).not.toBe(panned);
+    expect(await viewportZoom(page)).toBe(zoomed);
+  });
+});
+
 test('middle-button dragging pans without zooming or clearing selection', async ({
   page,
 }) => {
