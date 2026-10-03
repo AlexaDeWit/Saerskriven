@@ -10,9 +10,10 @@ server-side state. How it is built is in the READMEs under
 The canvas fills the window. One card centred at the top holds the menu
 button, the diagram switcher joined to it, and the tool modes. The threat panel
 floats over the right edge while something is selected, and the zoom controls
-float at the bottom right. Notices hang under the card: a refused edit or file,
-and what a save or an open could not keep. Each stands until you dismiss it or
-the state it describes resolves. None is removed by a timer.
+float at the bottom right. Notices hang under the card: a refused edit, file or
+link, what a save or an open could not keep, and the link Share copied. Each
+stands until you dismiss it or the state it describes resolves. None is removed
+by a timer.
 
 A status line under the card says what an action did wherever the control
 that has focus does not already show it, such as a deletion, a refusal, a
@@ -87,6 +88,28 @@ title is cut to 80 characters, and an empty one reads as the untitled diagram.
 Diagrams with the same title propose the same name. An export that could not
 place a flow endpoint says so after it writes. A refused PDF or PNG export writes nothing
 and stands until dismissed or until a later export.
+
+**Share as link** copies to the clipboard a link holding the whole model, for a
+chat, a ticket or an email, and reports how long the link is. Anyone who holds
+the link can read the whole model, and nothing can take it back, since the
+model is in the link itself. The model travels after the link's `#`, which the
+browser never sends to a server, so it stays out of server logs and `Referer`
+headers. It still lands in browser history, in browser sync and in every chat
+log the link passes through. A link holds at most 1,048,576 characters, the
+most Firefox opens, and a model whose link would be longer is refused with a
+pointer to Save, so it can be shared as a file instead. The report stands until
+dismissed or until a later Share.
+
+Opening a link, in a new tab or pasted into the address bar of an open one,
+loads the model it holds as an unsaved model named after its title. Over
+unsaved work, the menu opens with Share as link turned into Discard changes and
+open the link, and Cancel under it, as Open asks. A session whose stored
+recovery snapshot could not be read counts as unsaved work until the studio
+next writes one, since loading the link would replace it. Either answer, or
+closing the menu, takes the link out of the address, so a reload neither asks
+again nor loads it over later edits. A link that was cut off, is too long,
+holds no model, or was written by a later release opens nothing, and the notice
+says which.
 
 The studio keeps the current session in the browser's local storage. A reload
 restores the model, whether it was saved, the file's name and format, and the

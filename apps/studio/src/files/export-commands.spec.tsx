@@ -27,7 +27,7 @@ import {
   specRenders,
   type SpecBridge,
 } from './files.fixtures.js';
-import { RenderAssetFailure } from './render-assets.js';
+import { AssetFailure } from '../asset-failure.js';
 
 const worded = (notice: ExportNotice | undefined) =>
   notice === undefined
@@ -41,9 +41,7 @@ const session = (bridge: SpecBridge, renders = specRenders()) =>
   renderHook(() => useExportCommands(bridge, renders)).result;
 
 const unavailable = () =>
-  Promise.resolve(
-    Either.left(RenderAssetFailure.Unavailable({ reason: 'offline' })),
-  );
+  Promise.resolve(Either.left(AssetFailure.Unavailable({ reason: 'offline' })));
 
 const headlineOf = async (
   run: (commands: ReturnType<typeof useExportCommands>['commands']) => void,
@@ -356,7 +354,7 @@ describe('the studio exports', () => {
         draw,
         pngAssets: () =>
           Promise.resolve(
-            Either.left(RenderAssetFailure.FaceMissing({ face: drawingFace })),
+            Either.left(AssetFailure.FaceMissing({ face: drawingFace })),
           ),
       }),
     );
@@ -466,7 +464,7 @@ describe('the studio exports', () => {
         compile,
         pdfAssets: () =>
           Promise.resolve(
-            Either.left(RenderAssetFailure.Unavailable({ reason: 'offline' })),
+            Either.left(AssetFailure.Unavailable({ reason: 'offline' })),
           ),
       }),
     );

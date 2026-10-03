@@ -14,7 +14,12 @@ import {
   secondDiagram,
   twoDiagramModel,
 } from './store.fixtures.js';
-import { activeDiagramId, isDirty, needsCloseGuard } from './selectors.js';
+import {
+  activeDiagramId,
+  holdsUnsavedWork,
+  isDirty,
+  needsCloseGuard,
+} from './selectors.js';
 import {
   RecoveryProblem,
   RecoveryStorageFailure,
@@ -194,6 +199,45 @@ describe('session recovery', () => {
     expect(state.present).toBe(placeholderModel);
     expect(state.lastFailure?._tag).toBe('StoredRecoveryRejected');
   });
+
+  it.each([
+    RecoveryStorageFailure.Rejected({ problem: RecoveryProblem.Unsupported() }),
+    RecoveryStorageFailure.Unavailable({
+      problem: RecoveryProblem.Thrown({ reason: 'Storage is off.' }),
+    }),
+  ])(
+    'counts a snapshot it could not read at startup ($_tag) as unsaved work until a write replaces it',
+    (failure) => {
+      let replacements = 0;
+      const storage: RecoveryStorage = {
+        ...loaded(),
+        load: () => Either.left(failure),
+        replace: () => {
+          replacements += 1;
+          return replacements === 1
+            ? Either.left(
+                RecoveryStorageFailure.Unavailable({
+                  problem: RecoveryProblem.Thrown({ reason: 'Quota reached.' }),
+                }),
+              )
+            : Either.right(undefined);
+        },
+      };
+      const runtime = createModelStore(storage, silent, sampleModel);
+      const unread = (): boolean =>
+        runtime.modelStore.getState().recoveryUnread;
+
+      expect(isDirty(runtime.modelStore.getState())).toBe(false);
+      expect(holdsUnsavedWork(runtime.modelStore.getState())).toBe(true);
+      runtime.dispatch(Action.DismissFailure());
+      expect(holdsUnsavedWork(runtime.modelStore.getState())).toBe(true);
+      runtime.dispatch(addedProcess);
+      expect(unread()).toBe(true);
+      runtime.dispatch(Action.Undo());
+      expect(unread()).toBe(false);
+      expect(holdsUnsavedWork(runtime.modelStore.getState())).toBe(false);
+    },
+  );
 
   it('replaces recovery before publishing a recoverable state change', () => {
     let runtime: ReturnType<typeof createModelStore>;

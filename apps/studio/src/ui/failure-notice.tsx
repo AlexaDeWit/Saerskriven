@@ -1,16 +1,19 @@
 import {
   DetectionFailure,
   ReadFailure,
+  readLimits,
   type WireIssue,
 } from '@saerskriven/formats';
+import { ShareLinkFailure } from '@saerskriven/formats/share-link';
 import { OperationFailure } from '@saerskriven/model';
+import { assetFailureLine } from '../asset-failure.js';
 import { parseIssueLine } from '../messages/issues/text.js';
 import { useTranslator } from '../messages/locale.js';
 import { Message } from '../messages/message.js';
 import type { Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import { RecoveryProblem } from '../store/recovery-storage.js';
-import { StudioFailure } from '../store/state.js';
+import { LinkFailure, StudioFailure } from '../store/state.js';
 import { dispatch } from '../store/store.js';
 import { DetailLines, type NoticeText } from './detail-lines.js';
 import styles from './failure-notice.module.css';
@@ -36,6 +39,10 @@ export function describeFailure(
       headline: t('notice.file-unreachable'),
       details: [reason],
     }),
+    Link: ({ failure: refusal }) => ({
+      headline: t('notice.link-refused'),
+      details: linkFailureLines(t, refusal),
+    }),
     StoredRecoveryRejected: ({ problem }) => ({
       headline: t('notice.recovery-rejected'),
       details: [describeRecovery(t, problem)],
@@ -44,6 +51,45 @@ export function describeFailure(
       headline: t('notice.recovery-unavailable'),
       details: [describeRecovery(t, problem)],
     }),
+  });
+}
+
+/**
+ * Why a link was not written or opened, as the lines under a notice's
+ * headline: the cause named from the failure's tag, then the module's or the
+ * browser's own text, or the read's detail lines, where there are any.
+ */
+export function linkFailureLines(
+  t: Speaker,
+  failure: LinkFailure,
+): readonly string[] {
+  return LinkFailure.$match(failure, {
+    Codec: ({ failure: refusal }) =>
+      ShareLinkFailure.$match(refusal, {
+        TooLong: ({ length, limit }) => [
+          t('notice.link-too-long', { length, limit }),
+        ],
+        PastReadBound: ({ size }) => [
+          t('notice.link-past-read-bound', {
+            size,
+            bound: readLimits.maxTextBytes,
+          }),
+        ],
+        NotAShareLink: () => [t('notice.link-not-a-link')],
+        UnknownEncoding: ({ prefix }) => [
+          t('notice.link-encoding', { prefix }),
+        ],
+        Malformed: () => [t('notice.link-cut-off')],
+        Unusable: ({ sentence }) => [t('notice.link-module'), sentence],
+      }),
+    Read: ({ failure: refusal }) =>
+      ReadFailure.$is('ExceededReadLimit')(refusal)
+        ? [t('notice.link-too-large'), t('notice.read-limit-detail', refusal)]
+        : [t('notice.link-not-a-model'), ...readDetails(t, refusal)],
+    Module: ({ failure: refusal }) => [
+      t('notice.link-module'),
+      assetFailureLine(t, refusal),
+    ],
   });
 }
 
@@ -218,24 +264,26 @@ function describeRead(
         headline: t('notice.no-format-claimed', { name }),
         details: [t('notice.formats-tried', { formats: failure.tried })],
       }
-    : ReadFailure.$match(failure, {
-        ExceededReadLimit: (bound) => ({
-          headline: t('notice.read-limit', { name }),
-          details: [t('notice.read-limit-detail', bound)],
-        }),
-        MalformedText: ({ message }) => ({
-          headline: t('notice.malformed-text', { name }),
-          details: [message],
-        }),
-        InvalidWireDocument: ({ issues }) => ({
-          headline: t('notice.invalid-document', { name }),
-          details: issueLines(t, issues),
-        }),
-        InvalidModel: ({ issues }) => ({
-          headline: t('notice.invalid-model', { name }),
-          details: issueLines(t, issues),
-        }),
-      });
+    : {
+        headline: t(readHeadlines[failure._tag], { name }),
+        details: readDetails(t, failure),
+      };
+}
+
+const readHeadlines = {
+  ExceededReadLimit: 'notice.read-limit',
+  MalformedText: 'notice.malformed-text',
+  InvalidWireDocument: 'notice.invalid-document',
+  InvalidModel: 'notice.invalid-model',
+} as const satisfies Record<ReadFailure['_tag'], string>;
+
+function readDetails(t: Speaker, failure: ReadFailure): readonly string[] {
+  return ReadFailure.$match(failure, {
+    ExceededReadLimit: (bound) => [t('notice.read-limit-detail', bound)],
+    MalformedText: ({ message }) => [message],
+    InvalidWireDocument: ({ issues }) => issueLines(t, issues),
+    InvalidModel: ({ issues }) => issueLines(t, issues),
+  });
 }
 
 function describeRecovery(t: Speaker, problem: RecoveryProblem): string {

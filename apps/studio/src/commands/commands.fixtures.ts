@@ -28,6 +28,7 @@ export function recordingSurface(): RecordingSurface {
         exportTypst: note('exportTypst'),
         exportPdf: note('exportPdf'),
         exportPng: note('exportPng'),
+        share: note('share'),
         close: note('close'),
       },
       reference: { toggle: note('toggleReference') },

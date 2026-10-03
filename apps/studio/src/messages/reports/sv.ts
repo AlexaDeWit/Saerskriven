@@ -22,6 +22,17 @@ export const reportsSv = catalogue(reportMessages)('sv')({
   'compile-refused': 'Saerskriven kunde inte kompilera PDF-filen.',
   'no-pdf': 'Typst-kompilatorn gav ingen PDF.',
   'draw-refused': 'Saerskriven kunde inte rita PNG-bilden.',
+  shared: {
+    one: 'Länken till modellen finns i urklipp, {length} tecken lång.',
+    other: 'Länken till modellen finns i urklipp, {length} tecken lång.',
+  },
+  'shared-disclosure': 'Alla som har länken kan läsa hela modellen.',
+  'share-too-large':
+    'Modellen är för stor för en länk. Spara den som en fil för att dela den.',
+  'share-refused': 'Saerskriven kunde inte skriva länken.',
+  'share-clipboard-refused':
+    'Webbläsaren lät inte Saerskriven lägga länken i urklipp.',
+  'dismiss-share': 'Dölj länkrapporten',
   unplaced:
     'En flödesände anger ett objekt som arbetsytan inte ritar som en ruta, så flödet finns inte med i ritningen.',
   'unplaced-source': 'Källan för flöde {flow} anger {element}.',

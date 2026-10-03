@@ -19,6 +19,7 @@ import {
 import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { AssetFailure } from '../asset-failure.js';
 import { activeLocale, activeTranslator } from '../messages/locale.js';
 import { activeDiagram, severalDiagrams } from '../store/selectors.js';
 import type { FileLifecycle, State } from '../store/state.js';
@@ -26,12 +27,8 @@ import { modelStore, onCanvasOrPanelChange } from '../store/store.js';
 import { SaveOutcome, type FileBridge, type SaveFileType } from './bridge.js';
 import { browserFileBridge } from './browser-bridge.js';
 import { ExportNotice, isRefusal } from './export-notice.js';
-import {
-  loadPdfAssets,
-  loadPngAssets,
-  type RenderAssetFailure,
-} from './render-assets.js';
-import { diagramFileTitle, proposedExportName } from './session.js';
+import { loadPdfAssets, loadPngAssets } from './render-assets.js';
+import { fileTitle, proposedExportName } from './session.js';
 
 type UnplacedFlow = SvgDocument['unplaced'][number];
 
@@ -90,13 +87,9 @@ type ExportCommands = {
 
 /** The asset loaders and projections the PDF and PNG exports run, which a spec replaces. */
 export type RenderExports = {
-  readonly pdfAssets: () => Promise<
-    Either.Either<PdfAssets, RenderAssetFailure>
-  >;
+  readonly pdfAssets: () => Promise<Either.Either<PdfAssets, AssetFailure>>;
   readonly compile: typeof compilePdf;
-  readonly pngAssets: () => Promise<
-    Either.Either<ResvgAssets, RenderAssetFailure>
-  >;
+  readonly pngAssets: () => Promise<Either.Either<ResvgAssets, AssetFailure>>;
   readonly draw: typeof renderPng;
 };
 
@@ -296,7 +289,7 @@ async function drawn(
 
 function fileTitleOf(state: State, diagram: Diagram): string | undefined {
   return severalDiagrams(state)
-    ? diagramFileTitle(
+    ? fileTitle(
         diagram.title,
         activeTranslator().t('defaults.untitled-diagram'),
       )
@@ -316,7 +309,7 @@ function noticeFrom(
 }
 
 function assetNotice(
-  failure: RenderAssetFailure,
+  failure: AssetFailure,
   reader: 'compiler' | 'rasterizer',
 ): ExportNotice {
   return ExportNotice.AssetsUnavailable({ reader, failure });

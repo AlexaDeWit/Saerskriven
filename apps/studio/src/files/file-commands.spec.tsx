@@ -9,7 +9,7 @@ import {
 } from '../store/state.js';
 import { isDirty } from '../store/selectors.js';
 import { modelStore } from '../store/store.js';
-import type { StoreSync, SyncedState } from '../store/sync.js';
+import type { StoreSync } from '../store/sync.js';
 import {
   foreignSource,
   nativeSource,
@@ -27,6 +27,7 @@ import {
 import { browserFileBridge } from './browser-bridge.js';
 import { useFileSession } from './file-commands.js';
 import {
+  anotherTab,
   chosenFile,
   deferred,
   dismissal,
@@ -54,23 +55,6 @@ const session = (
   renders?: RenderExports,
   sync?: Pick<StoreSync, 'watch'>,
 ) => renderHook(() => useFileSession(bridge, renders, sync)).result;
-
-function anotherTab() {
-  let follow: ((state: SyncedState) => void) | undefined;
-  return {
-    sync: {
-      watch: (next: (state: SyncedState) => void) => {
-        follow = next;
-        return () => undefined;
-      },
-    },
-    reaches: (state: SyncedState) => {
-      act(() => {
-        follow?.(state);
-      });
-    },
-  };
-}
 
 type Asked = { suggestedName: string; types: readonly SaveFileType[] };
 

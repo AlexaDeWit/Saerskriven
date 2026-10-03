@@ -14,6 +14,7 @@ import { useTranslator } from '../messages/locale.js';
 import {
   canRedo,
   canUndo,
+  holdsUnsavedWork,
   isDirty,
   needsCloseGuard,
   renameable,
@@ -38,9 +39,9 @@ import { formatFiles, formatOf, formatsFrom } from './session.js';
 
 type UnsavedChangesCommandProps = {
   readonly asking: boolean;
+  readonly asksFirst: boolean;
   readonly cancel: () => void;
   readonly command: CommandId;
-  readonly dirty: boolean;
   readonly proceed: () => void;
   readonly question: DiscardQuestion;
 };
@@ -48,13 +49,14 @@ type UnsavedChangesCommandProps = {
 type DiscardQuestion =
   | 'menu.discard-and-open'
   | 'menu.discard-and-import'
+  | 'menu.discard-and-open-link'
   | 'menu.discard-and-new';
 
 function UnsavedChangesCommand({
   asking,
+  asksFirst,
   cancel,
   command,
-  dirty,
   proceed,
   question,
 }: UnsavedChangesCommandProps) {
@@ -65,7 +67,7 @@ function UnsavedChangesCommand({
       <RegisteredMenuCommand
         asking={asking ? { question: t(question), answer: proceed } : undefined}
         entry={commandById(command)}
-        keepOpen={dirty && !asking}
+        keepOpen={asksFirst && !asking}
       />
       {asking && <MenuItem onChoose={cancel}>{t('menu.cancel')}</MenuItem>}
     </>
@@ -105,6 +107,7 @@ export function StudioMenu({
   triggerRef,
 }: StudioMenuProps) {
   const dirty = useModelStore(isDirty);
+  const unsaved = useModelStore(holdsUnsavedWork);
   const guarded = useModelStore(needsCloseGuard);
   const [open, setOpen] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
@@ -113,11 +116,18 @@ export function StudioMenu({
   useCloseGuard(guarded);
   useAsking(session.opening, dirty, setOpen, session.cancelOpen);
   useAsking(session.importing, dirty, setOpen, session.cancelImport);
+  useAsking(session.linking, unsaved, setOpen, session.cancelLink);
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
   useChoosing(session.choosing, setOpen);
 
-  const { attachPicker, cancelOpen, cancelChoice, cancelClose, receive } =
-    session;
+  const {
+    attachPicker,
+    cancelOpen,
+    cancelChoice,
+    cancelClose,
+    cancelLink,
+    receive,
+  } = session;
 
   return (
     <div className={styles.bar} ref={bar}>
@@ -128,6 +138,7 @@ export function StudioMenu({
           if (!next) {
             cancelOpen();
             session.cancelImport();
+            cancelLink();
             cancelClose();
             cancelChoice();
           }
@@ -245,16 +256,20 @@ function FileMenu({
   readonly session: FileSession;
 }) {
   const file = useModelStore((state) => state.file);
+  const unsaved = useModelStore(holdsUnsavedWork);
   const {
     asksFormat,
     cancelOpen,
     cancelClose,
+    cancelLink,
     chooseFormat,
     choosing,
     closing,
     commands,
     confirmOpen,
     confirmClose,
+    confirmLink,
+    linking,
     opening,
   } = session;
   const { t } = useTranslator();
@@ -269,9 +284,9 @@ function FileMenu({
       </DropdownMenu.Label>
       <UnsavedChangesCommand
         asking={askingOpen}
+        asksFirst={dirty}
         cancel={cancelOpen}
         command="open"
-        dirty={dirty}
         proceed={confirmOpen}
         question="menu.discard-and-open"
       />
@@ -312,18 +327,26 @@ function FileMenu({
           ))}
       <UnsavedChangesCommand
         asking={session.importing && dirty}
+        asksFirst={dirty}
         cancel={session.cancelImport}
         command="import"
-        dirty={dirty}
         proceed={session.confirmImport}
         question="menu.discard-and-import"
       />
       <ExportMenu />
       <UnsavedChangesCommand
+        asking={linking && unsaved}
+        asksFirst={false}
+        cancel={cancelLink}
+        command="share"
+        proceed={confirmLink}
+        question="menu.discard-and-open-link"
+      />
+      <UnsavedChangesCommand
         asking={askingClose}
+        asksFirst={dirty}
         cancel={cancelClose}
         command="close-file"
-        dirty={dirty}
         proceed={confirmClose}
         question="menu.discard-and-new"
       />

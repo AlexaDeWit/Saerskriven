@@ -9,6 +9,7 @@ export const menuMessages = {
   cancel: text(),
   'discard-and-open': text(),
   'discard-and-import': text(),
+  'discard-and-open-link': text(),
   'discard-and-new': text(),
   'save-as-format': text({ format: 'text' }),
   'file-state-dirty': text({ name: 'text', format: 'text' }),

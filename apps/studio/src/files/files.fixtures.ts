@@ -6,6 +6,7 @@ import { Either } from 'effect';
 import { statSync } from 'node:fs';
 import { addedProcess, sampleModel } from '../store/store.fixtures.js';
 import { dispatch } from '../store/store.js';
+import type { SyncedState } from '../store/sync.js';
 import {
   OpenOutcome,
   SaveOutcome,
@@ -89,6 +90,27 @@ export const edit = (): void => {
     dispatch(addedProcess);
   });
 };
+
+/**
+ * A tab sync whose other tab a spec drives: `reaches` hands the session that
+ * tab's result, as the channel would.
+ */
+export function anotherTab() {
+  let follow: ((state: SyncedState) => void) | undefined;
+  return {
+    sync: {
+      watch: (next: (state: SyncedState) => void) => {
+        follow = next;
+        return () => undefined;
+      },
+    },
+    reaches: (state: SyncedState) => {
+      act(() => {
+        follow?.(state);
+      });
+    },
+  };
+}
 
 /**
  * Stubs the object URL calls and the anchor click a download goes through, and

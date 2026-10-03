@@ -24,8 +24,8 @@ import {
   formatsFrom,
   openedBy,
   proposedName,
-  diagramFileTitle,
-  diagramTitleLimit,
+  fileTitle,
+  fileTitleLimit,
   proposedExportName,
   openReport,
   reportLines,
@@ -279,19 +279,16 @@ describe('naming', () => {
     ['Översikt Schéma', 'Översikt Schéma'],
     ['', 'Namnlöst'],
     ['  . ', 'Namnlöst'],
-  ])('cleans the diagram title %j to %j', (title, expected) => {
-    expect(diagramFileTitle(title, 'Namnlöst')).toBe(expected);
+  ])('cleans the title %j to %j', (title, expected) => {
+    expect(fileTitle(title, 'Namnlöst')).toBe(expected);
   });
 
   it('cuts a long title at the limit and trims what the cut leaves at the end', () => {
-    const cut = diagramFileTitle(
-      '\u{1d504}'.repeat(diagramTitleLimit + 20),
-      'x',
+    const cut = fileTitle('\u{1d504}'.repeat(fileTitleLimit + 20), 'x');
+    expect(Array.from(cut)).toHaveLength(fileTitleLimit);
+    expect(fileTitle(`${'a'.repeat(fileTitleLimit - 1)} b`, 'x')).toBe(
+      'a'.repeat(fileTitleLimit - 1),
     );
-    expect(Array.from(cut)).toHaveLength(diagramTitleLimit);
-    expect(
-      diagramFileTitle(`${'a'.repeat(diagramTitleLimit - 1)} b`, 'x'),
-    ).toBe('a'.repeat(diagramTitleLimit - 1));
   });
 
   it('offers every registered format, the one the file is in first', () => {

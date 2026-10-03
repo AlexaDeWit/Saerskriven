@@ -12,6 +12,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-export-pdf': 'Modèle en PDF',
   'label-export-png': 'Diagramme en PNG',
   'label-close-file': 'Nouveau modèle',
+  'label-share': 'Partager par lien',
   'label-copy': 'Copier',
   'label-cut': 'Couper',
   'label-paste': 'Coller',
@@ -63,6 +64,8 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'when-outside-text-fields': 'Hors des champs de texte',
   'when-import':
     'Convertir un fichier OTM ou TM-BOM en un nouveau modèle natif',
+  'when-share':
+    'Copier dans le presse-papiers un lien qui contient tout le modèle, depuis le menu Fichier',
   'when-anywhere': 'Partout dans le studio',
   'when-file-menu': 'Depuis le menu Fichier',
   'when-view-menu': 'Depuis le menu Affichage',

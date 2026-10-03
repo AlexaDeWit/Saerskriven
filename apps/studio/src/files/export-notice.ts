@@ -1,11 +1,8 @@
 import type { SvgDocument } from '@saerskriven/render';
 import { Data } from 'effect';
+import { assetFailureLine, type AssetFailure } from '../asset-failure.js';
 import type { Speaker } from '../messages/said.js';
 import type { NoticeText } from '../ui/detail-lines.js';
-import {
-  RenderAssetFailure,
-  type RenderAssetFailure as RenderAssetFailureType,
-} from './render-assets.js';
 
 type UnplacedFlow = SvgDocument['unplaced'][number];
 
@@ -20,7 +17,7 @@ export type ExportNotice = Data.TaggedEnum<{
   WriteRefused: { readonly reason: string };
   AssetsUnavailable: {
     readonly reader: 'compiler' | 'rasterizer';
-    readonly failure: RenderAssetFailureType;
+    readonly failure: AssetFailure;
   };
   CompileRefused: { readonly sentences: readonly string[] };
   NoPdf: {};
@@ -62,7 +59,7 @@ export function describeExportNotice(
           ? 'reports.compiler-unavailable'
           : 'reports.rasterizer-unavailable',
       ),
-      details: [assetDetail(t, failure)],
+      details: [assetFailureLine(t, failure)],
     }),
     CompileRefused: ({ sentences }) => ({
       headline: t('reports.compile-refused'),
@@ -73,14 +70,5 @@ export function describeExportNotice(
       headline: t('reports.draw-refused'),
       details: [sentence],
     }),
-  });
-}
-
-function assetDetail(t: Speaker, failure: RenderAssetFailureType): string {
-  return RenderAssetFailure.$match(failure, {
-    Unavailable: ({ reason }) => reason,
-    Answered: ({ url, status }) =>
-      t('reports.asset-answered', { url, status: String(status) }),
-    FaceMissing: ({ face }) => t('reports.face-missing', { face }),
   });
 }

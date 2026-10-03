@@ -26,6 +26,7 @@ host provides.
 | `sync.ts`              | The tab sync channel                                                                                                                      |
 | `development-model.ts` | The model a development session injects, read in development builds only                                                                  |
 | `../reason.ts`         | A thrown or rejected value as text, shared by the store, the file modules and the error boundary, so the store imports nothing from files |
+| `../asset-failure.ts`  | Why a build asset did not load, which a refused share link carries into `lastFailure`, kept out of files for the same reason              |
 
 ## The shape
 
@@ -67,6 +68,8 @@ host provides.
   the three, never on a clock.
 - `selectors.ts` derives what views show. `isDirty` is `present !== saved` by
   identity, so undoing back to the saved point clears it with no bookkeeping.
+  `holdsUnsavedWork` adds a recovery snapshot that could not be read at startup
+  to that, for a shared link, whose landing would overwrite it.
   `modelAsOpened` is the present model while both stacks are empty, which is
   how the canvas tells a model that arrived from one that was edited
   ([the canvas](../canvas/README.md#the-view)). `windowTitle` names the browser
@@ -134,7 +137,10 @@ stacks, the selection, whether the model's properties are shown, rename state,
 and the last failure. Startup bounds and parses the stored text before its
 schema validates the version, document, file data, and retained source.
 Missing data opens the placeholder without a report, and rejected data opens it
-and records `StoredRecoveryRejected`.
+and records `StoredRecoveryRejected`. A snapshot that was rejected, or that
+storage would not hand over, also sets `recoveryUnread`, which stays set
+through a dismissal of the notice and a failed write and clears at the first
+recovery write that lands, since that write is what replaces the snapshot.
 
 A successful write marks the state recoverable. A failed write records
 `RecoveryUnavailable` and leaves that mark false, and a later recoverable change

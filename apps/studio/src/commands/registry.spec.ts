@@ -47,7 +47,7 @@ const press = (
 });
 
 describe('the command registry', () => {
-  it('leaves the import, export and diagram-switcher commands without shortcuts', () => {
+  it('leaves the import, export, share and diagram-switcher commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
@@ -59,6 +59,7 @@ describe('the command registry', () => {
       'export-typst',
       'export-pdf',
       'export-png',
+      'share',
       'new-diagram',
       'rename-diagram',
     ]);
@@ -192,6 +193,7 @@ describe('runCommand', () => {
       'export-typst',
       'export-pdf',
       'export-png',
+      'share',
       'zoom-in',
       'fit-to-view',
       'shortcut-reference',
@@ -210,6 +212,7 @@ describe('runCommand', () => {
       'exportTypst',
       'exportPdf',
       'exportPng',
+      'share',
       'zoomIn',
       'fitToView',
       'toggleReference',

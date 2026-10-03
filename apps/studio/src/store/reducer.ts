@@ -201,6 +201,10 @@ export function reduce(state: State, action: Action): State {
       file: operation === 'open' ? FileLifecycle.NoFile() : state.file,
       lastFailure: StudioFailure.File({ reason }),
     }),
+    LinkRefused: ({ failure }) => ({
+      ...state,
+      lastFailure: StudioFailure.Link({ failure }),
+    }),
     DismissFailure: () =>
       state.lastFailure === undefined
         ? state

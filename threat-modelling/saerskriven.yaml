@@ -792,6 +792,12 @@ mitigations:
     status: implemented
     threats:
       - th-share-link
+  - id: th-share-disclosure-mitigation
+    title: ""
+    prose: Partly held. Share in the studio reports the link's length beside a line saying that anyone who holds the link can read the whole model, and the report stands until it is dismissed, so the person sharing reads it before the link leaves their hands. `docs/studio.md` says the same, and names where the link is kept. The model travels in the URL fragment, which a browser never sends in a request, so it stays out of the hosting server's logs and out of the `Referer` header of anything the studio loads or links to, where a query string would reach both. What is left is the residual. Browser history and browser sync keep the whole address, fragment included, a chat, a ticket or an email keeps the link for as long as its log is kept, and no link can be revoked, since the model is in the link itself. The studio takes the fragment out of the address once a link loads or its question is answered, which keeps a reload from loading it again and is not relied on to take it out of browser history. Medium, because what is disclosed is a model the person chose to share, to the places they chose to put it.
+    status: proposed
+    threats:
+      - th-share-disclosure
 threats:
   - id: th-oversize
     number: 1
@@ -1090,4 +1096,15 @@ threats:
     description: A share link carries a whole model in its URL fragment, compressed, and anyone can send one in a chat, a ticket or an email. A few kilobytes of brotli inflate to gigabytes, so decompression alone can cost more than any file the reader accepts, and a link decoded along a path of its own would skip the read limits and the format migrations a file passes through.
     elements:
       - el-read
-lastIssuedThreatNumber: 26
+  - id: th-share-disclosure
+    number: 27
+    title: A share link discloses the whole model wherever the link is kept
+    category:
+      methodology: STRIDE
+      category: information-disclosure
+    severity: medium
+    status: open
+    description: A share link carries the whole model, every threat, mitigation and assumption in it, and nothing can revoke it. Browser history keeps every address a tab visits, browser sync copies that history to every device the profile reaches, and a chat, a ticket or an email keeps the link for as long as its log is kept, so the model is readable by anyone who later reaches any of them.
+    elements:
+      - el-write
+lastIssuedThreatNumber: 27

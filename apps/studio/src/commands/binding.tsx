@@ -19,6 +19,7 @@ export const unmountedSurface: CommandSurface = {
     exportTypst: nothing,
     exportPdf: nothing,
     exportPng: nothing,
+    share: nothing,
     close: nothing,
   },
   reference: { toggle: nothing },

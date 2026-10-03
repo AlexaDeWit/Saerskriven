@@ -9,6 +9,7 @@ export type FileCommands = {
   exportTypst(): void;
   exportPdf(): void;
   exportPng(): void;
+  share(): void;
   close(): void;
 };
 
