@@ -1,12 +1,17 @@
 import { DropdownMenu } from 'radix-ui';
 import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
-import { announceRefusal } from '../canvas/announcements.js';
+import { announceRefusal, announceUndrawn } from '../canvas/announcements.js';
 import {
   endRenamingDiagram,
   renameActiveDiagram,
+  retitleActiveDiagram,
+  stepDiagram,
   switchDiagram,
   useDiagramRenaming,
 } from '../canvas/diagrams.js';
+import { commandForKey } from '../commands/binding.js';
+import type { CommandId } from '../commands/registry.js';
+import { hostPlatform } from '../commands/shortcuts.js';
 import { activeDiagram } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { useTranslator } from '../messages/locale.js';
@@ -20,9 +25,11 @@ import { RadioChoices } from './radio-choices.js';
  * The title of the diagram on screen, opening a list of diagrams to switch
  * to with New diagram and Rename diagram. The title field closes when the
  * diagram on screen changes under it. Enter and Escape return focus to the
- * button, and a blur commits and leaves focus where it went.
- * A choice draws no status line: focus returns to the button, which names
- * the diagram.
+ * button, and a blur commits and leaves focus where it went. A choice and a
+ * title committed with Enter draw no status line, since the button that
+ * takes focus names the diagram, and a title committed by a blur draws one.
+ * The button takes the two diagram step chords itself, so a step made with
+ * focus on it is said without being drawn.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);
@@ -71,6 +78,7 @@ export function DiagramSwitcher() {
         })}
         className={styles.switcher}
         data-testid="diagram-switcher"
+        onKeyDown={stepUndrawn}
         ref={trigger}
       >
         {active?.title ?? t('menu.no-diagram')}
@@ -102,6 +110,20 @@ export function DiagramSwitcher() {
   );
 }
 
+const steps: Partial<Record<CommandId, 'next' | 'previous'>> = {
+  'next-diagram': 'next',
+  'previous-diagram': 'previous',
+};
+
+function stepUndrawn(event: KeyboardEvent<HTMLButtonElement>): void {
+  const command = commandForKey(event.nativeEvent, hostPlatform);
+  const direction = command === undefined ? undefined : steps[command.id];
+  if (direction !== undefined) {
+    event.preventDefault();
+    stepDiagram(direction, announceUndrawn);
+  }
+}
+
 type TitleFieldProps = {
   readonly title: string;
   readonly onClose: (by: 'keyboard' | 'blur') => void;
@@ -111,13 +133,18 @@ function TitleField({ title, onClose }: TitleFieldProps) {
   const field = useRef<HTMLInputElement>(null);
   const refusalId = useId();
   const settled = useRef(false);
+  const leaving = useRef(false);
   const { t } = useTranslator();
   const draft = useTextDraft(
     (speak) => speak('fields.diagram-title'),
     title,
     undefined,
     (text) => {
-      renameActiveDiagram(text);
+      if (leaving.current) {
+        renameActiveDiagram(text);
+      } else {
+        retitleActiveDiagram(text);
+      }
     },
     announceRefusal,
     refusedName,
@@ -151,6 +178,7 @@ function TitleField({ title, onClose }: TitleFieldProps) {
     if (settled.current) {
       return;
     }
+    leaving.current = true;
     draft.commit();
     close('blur');
   };

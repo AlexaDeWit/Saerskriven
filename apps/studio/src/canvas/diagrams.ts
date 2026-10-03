@@ -14,6 +14,7 @@ import {
   endAnnouncement,
   excerpt,
   nameQuoteLength,
+  type Announcer,
 } from './announcements.js';
 import { focusElement } from './edits.js';
 
@@ -33,13 +34,20 @@ export function switchDiagram(diagramId: DiagramId): Diagram | undefined {
   return shown;
 }
 
-/** Puts the diagram `diagramId` names on screen and says so in the status line, where it was not already. */
-export function showDiagram(diagramId: DiagramId): boolean {
+/**
+ * Puts the diagram `diagramId` names on screen and says so, where it was not
+ * already. `announcer` says it: the status line draws it unless a caller
+ * hands in `announceUndrawn`.
+ */
+export function showDiagram(
+  diagramId: DiagramId,
+  announcer: Announcer = announce,
+): boolean {
   const shown = switchDiagram(diagramId);
   if (shown === undefined) {
     return false;
   }
-  sayShown(shown);
+  say('canvas.diagram-shown', shown, announcer);
   return true;
 }
 
@@ -61,13 +69,19 @@ export function revealElement(elementId: ElementId): boolean {
   dispatch(Action.Select({ elementIds: [elementId] }));
   focusElement(elementId);
   if (shown !== undefined) {
-    sayShown(shown);
+    say('canvas.diagram-shown', shown);
   }
   return true;
 }
 
-/** Shows the next or previous diagram in the model's order, wrapping at either end. */
-export function stepDiagram(direction: 'next' | 'previous'): boolean {
+/**
+ * Shows the next or previous diagram in the model's order, wrapping at either
+ * end, and says which as {@link showDiagram} does.
+ */
+export function stepDiagram(
+  direction: 'next' | 'previous',
+  announcer: Announcer = announce,
+): boolean {
   const state = modelStore.getState();
   const diagrams = state.present.diagrams;
   const current = activeDiagramId(state);
@@ -77,7 +91,7 @@ export function stepDiagram(direction: 'next' | 'previous'): boolean {
   }
   const step = direction === 'next' ? 1 : diagrams.length - 1;
   const target = diagrams[(at + step) % diagrams.length];
-  return target === undefined ? false : showDiagram(target.id);
+  return target === undefined ? false : showDiagram(target.id, announcer);
 }
 
 /**
@@ -94,26 +108,33 @@ export function createDiagram(): boolean {
   if (!changedModel(Action.AddDiagram({ diagram }))) {
     return false;
   }
-  const title = excerpt(diagram.title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-added', { title }));
+  say('canvas.diagram-added', diagram);
   beginRenamingDiagram();
   return true;
 }
 
-/** Retitles the diagram on screen as one undo step, skipping an unchanged title. */
-export function renameActiveDiagram(title: string): boolean {
-  const state = modelStore.getState();
-  const diagram = activeDiagram(state);
+/**
+ * Retitles the diagram on screen as one undo step without saying so, skipping
+ * an unchanged title. It returns the diagram as retitled, or `undefined`
+ * where nothing changed.
+ */
+export function retitleActiveDiagram(title: string): Diagram | undefined {
+  const diagram = activeDiagram(modelStore.getState());
   if (diagram === undefined || diagram.title === title) {
-    return false;
+    return undefined;
   }
   dispatch(Action.RenameDiagram({ diagramId: diagram.id, title }));
-  const renamed = activeDiagram(modelStore.getState());
-  if (renamed === undefined || renamed.title !== title) {
+  const retitled = activeDiagram(modelStore.getState());
+  return retitled?.title === title ? retitled : undefined;
+}
+
+/** Retitles the diagram on screen and says so in the status line, where the title changed. */
+export function renameActiveDiagram(title: string): boolean {
+  const renamed = retitleActiveDiagram(title);
+  if (renamed === undefined) {
     return false;
   }
-  const excerpted = excerpt(title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-renamed', { title: excerpted }));
+  say('canvas.diagram-renamed', renamed);
   return true;
 }
 
@@ -144,9 +165,16 @@ export function resetDiagramRenaming(): void {
   setRenaming(undefined);
 }
 
-function sayShown(diagram: Diagram): void {
+function say(
+  message:
+    | 'canvas.diagram-shown'
+    | 'canvas.diagram-added'
+    | 'canvas.diagram-renamed',
+  diagram: Pick<Diagram, 'title'>,
+  announcer: Announcer = announce,
+): void {
   const title = excerpt(diagram.title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-shown', { title }));
+  announcer((t) => t(message, { title }));
 }
 
 function setRenaming(next: DiagramId | undefined): void {

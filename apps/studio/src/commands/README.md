@@ -112,7 +112,9 @@ wherever a person is. Three rules decide whether a press is the studio's:
 
 - **A press a control has already acted on is not.** It arrives with its
   default prevented, which is how one Delete removes one element while the
-  canvas still binds that key itself (`../canvas/diagram-canvas.tsx`).
+  canvas still binds that key itself (`../canvas/diagram-canvas.tsx`), and how
+  the diagram switcher runs a diagram step pressed on its own button
+  ([said without being drawn](../canvas/README.md#rules-for-changes)).
 - **A press an open overlay owns is not.** A listbox or a menu is handling the
   same keys, Escape and every letter of its typeahead among them.
 - **A press typed into a control that takes characters is not**, unless the
