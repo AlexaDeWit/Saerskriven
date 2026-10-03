@@ -6,6 +6,8 @@ import {
 } from '@saerskriven/model/fixtures';
 import { act, render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -39,7 +41,9 @@ async function open(id: string, drafts?: ElementPropertyDrafts) {
     <ElementPropertiesEditor elementId={elementId(id)} drafts={drafts} />,
   );
   await userEvent.click(
-    screen.getByRole('button', { name: 'Security properties' }),
+    screen.getByRole('button', {
+      name: activeTranslator().t('panel.security-properties'),
+    }),
   );
   return shown;
 }
@@ -159,6 +163,7 @@ describe(
         'Crossed trust boundaries',
         'trustBoundaryIds',
         'Service perimeter',
+        'element-perimeter',
         'Order API',
       ],
       [
@@ -166,6 +171,7 @@ describe(
         'Contained elements',
         'containedElements',
         'Order API',
+        'element-api',
         'Service perimeter',
       ],
       [
@@ -173,11 +179,12 @@ describe(
         'Crossing flows',
         'crossingFlows',
         'Submit order',
+        'element-order-flow',
         'Order API',
       ],
     ])(
       'edits %s %s from valid targets and preserves recorded empty lists',
-      async (id, label, field, allowed, excluded) => {
+      async (id, label, field, allowed, allowedId, excluded) => {
         const user = userEvent.setup();
         await open(id);
         await chooseFrom(`${label} recording`, 'Recorded');
@@ -194,13 +201,7 @@ describe(
         await user.click(
           group.getByRole('button', { name: 'Add relationship' }),
         );
-        expect(current(id)).toHaveProperty(field, [
-          allowed === 'Order API'
-            ? 'element-api'
-            : allowed === 'Service perimeter'
-              ? 'element-perimeter'
-              : 'element-order-flow',
-        ]);
+        expect(current(id)).toHaveProperty(field, [allowedId]);
         await user.click(
           group.getByRole('button', { name: 'Add relationship' }),
         );
@@ -418,6 +419,65 @@ describe(
           .getAttribute('aria-invalid'),
       ).toBe('true');
       expect(current('element-api')).toHaveProperty('privilegeLevel', '');
+    });
+
+    describe('in French', () => {
+      const french = inLocale('fr-CA');
+
+      beforeEach(() => {
+        act(() => {
+          chooseLanguage('fr-CA');
+        });
+      });
+
+      afterEach(() => {
+        act(() => {
+          chooseLanguage('en-CA');
+        });
+        globalThis.localStorage.clear();
+      });
+
+      it.each([
+        ['element-api', 'privilege-level'],
+        ['element-order-flow', 'protocol'],
+      ] as const)(
+        'words the recording of %s %s in the message of that field, so no "de" lands before its label',
+        async (id, fact) => {
+          await open(id);
+          await chooseFrom(
+            french(`fields.recording-of-${fact}`),
+            french('enums.recorded'),
+          );
+          expect(
+            screen.getByRole('textbox', { name: french(`fields.${fact}`) }),
+          ).toBeDefined();
+        },
+      );
+
+      it.each([
+        ['element-order-flow', 'crossed-trust-boundaries'],
+        ['element-perimeter', 'contained-elements'],
+        ['element-perimeter', 'crossing-flows'],
+      ] as const)(
+        'words the recording of and the addition to %s %s in the messages of that relationship, so no "de" or "à" lands before its label',
+        async (id, relationship) => {
+          await open(id);
+          await chooseFrom(
+            french(`fields.recording-of-${relationship}`),
+            french('enums.recorded'),
+          );
+          const group = within(
+            screen.getByRole('group', {
+              name: french(`fields.${relationship}`),
+            }),
+          );
+          expect(
+            group.getByRole('combobox', {
+              name: french(`fields.add-to-${relationship}`),
+            }),
+          ).toBeDefined();
+        },
+      );
     });
   },
   editorTimeout,
