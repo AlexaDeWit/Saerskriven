@@ -225,9 +225,7 @@ export function ThreatList({
       );
       if (changed && threatIn(threatId) === undefined) {
         announce(removedSaid(threat));
-        requestAnimationFrame(() => {
-          leave(threatId);
-        });
+        leave(threatId);
       }
     };
 

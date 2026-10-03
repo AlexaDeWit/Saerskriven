@@ -33,7 +33,7 @@ export function AttachmentGroup({
   const diagrams = useModelStore((state) => state.present.diagrams);
   const { t } = useTranslator();
   const group = useRef<HTMLFieldSetElement>(null);
-  const modelLink = useRef<HTMLDivElement>(null);
+  const modelLink = useRef<HTMLButtonElement>(null);
   const detached = useRef<number | undefined>(undefined);
   const attachments = threatAttachments(diagrams, threat, t);
   const attachable = attachableElements(diagrams, threat, t);
@@ -47,24 +47,19 @@ export function AttachmentGroup({
     const rows = group.current?.querySelectorAll<HTMLElement>(
       '[data-detach-element]',
     );
-    (
-      rows?.[index] ??
-      rows?.[index - 1] ??
-      modelLink.current?.querySelector<HTMLElement>('[role="combobox"]')
-    )?.focus();
+    (rows?.[index] ?? rows?.[index - 1] ?? modelLink.current)?.focus();
   });
 
   return (
     <fieldset className={styles.records} ref={group}>
       <legend>{t('panel.attached-elements')}</legend>
       <div className={styles.recordBody}>
-        <div ref={modelLink}>
-          <RequiredBooleanProperty
-            label={t('fields.applies-to-whole-model')}
-            onCommit={onModelLink}
-            value={threat.appliesToModel}
-          />
-        </div>
+        <RequiredBooleanProperty
+          label={t('fields.applies-to-whole-model')}
+          onCommit={onModelLink}
+          ref={modelLink}
+          value={threat.appliesToModel}
+        />
         {attachments.length > 0 && (
           <ul className={styles.attachments}>
             {attachments.map(({ id, label, detach }, index) => (

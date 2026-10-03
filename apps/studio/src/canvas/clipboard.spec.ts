@@ -600,7 +600,7 @@ describe('duplicateSelected', () => {
     expect(modelStore.getState().present).toBe(canvasModel);
   });
 
-  it('counts no excluded link for a threat the duplicate is attached to, or for its records, where a copy of the same selection counts each', async () => {
+  it('counts no excluded link for a threat the duplicate is attached to, for its records, or for a record it shares with a copied threat, where a copy of the same selection counts each', async () => {
     const { t } = activeTranslator();
     recordingClipboard();
     const model = parsedFixture({
@@ -617,8 +617,14 @@ describe('duplicateSelected', () => {
           number: 2,
           elements: [storeElement],
         },
+        {
+          ...sampleThreat,
+          id: 'ordinary-threat',
+          number: 3,
+          elements: [actorElement],
+        },
       ],
-      lastIssuedThreatNumber: 2,
+      lastIssuedThreatNumber: 3,
       mitigations: [
         {
           id: 'shared-mitigation',
@@ -626,6 +632,13 @@ describe('duplicateSelected', () => {
           prose: 'Shared',
           status: 'proposed',
           threats: [firstThreat, 'external-threat'],
+        },
+        {
+          id: 'both-mitigation',
+          title: 'Review',
+          prose: 'On the held threat and the copied one',
+          status: 'proposed',
+          threats: [firstThreat, 'ordinary-threat'],
         },
       ],
     });
@@ -635,14 +648,14 @@ describe('duplicateSelected', () => {
     );
 
     expect(await announcedBy(() => copySelected())).toContain(
-      t('canvas.copy-counts', { elements: 1, threats: 1, excluded: 3 }),
+      t('canvas.copy-counts', { elements: 1, threats: 2, excluded: 3 }),
     );
 
     duplicateSelected();
 
     const duplicated = currentAnnouncement().message;
     expect(duplicated).toContain(
-      t('canvas.copy-counts', { elements: 1, threats: 1, excluded: 0 }),
+      t('canvas.copy-counts', { elements: 1, threats: 2, excluded: 0 }),
     );
     expect(duplicated).toContain(t('canvas.threats-attached', { attached: 1 }));
     expect(modelStore.getState().present.threats[0]).toMatchObject({

@@ -1,5 +1,5 @@
 import type { Model, Threat } from '@saerskriven/model';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   currentAnnouncement,
@@ -270,12 +270,39 @@ describe(
       expect(currentAnnouncement().message).toBe(
         t('canvas.threat-detach-removed', { number: 1 }),
       );
-      await waitFor(() => {
-        expect(document.activeElement).toBe(summary(/A reader sees/u));
-      });
+      expect(document.activeElement).toBe(summary(/A reader sees/u));
       expect(undoable()).toBe(3);
       undo();
       expect(present()).toBe(kept);
+    });
+
+    it('ends the key press that chooses No with the removal, leaving the next threat closed under focus and the notice standing', async () => {
+      const user = userEvent.setup();
+      const { t } = activeTranslator();
+      act(() => {
+        dispatch(Action.LinkThreatToModel({ threatId: firstThreat }));
+        dispatch(
+          Action.DetachThreat({
+            threatId: firstThreat,
+            elementId: recordedModel.threats[0].elements[0],
+          }),
+        );
+      });
+      showPanel();
+      await user.click(summary(/A reader edits/u));
+      resetAnnouncements();
+
+      screen.getByRole('combobox', { name: wholeModel }).focus();
+      await user.keyboard('{Enter}');
+      await user.keyboard('{ArrowDown}{Enter}');
+
+      const next = summary(/A reader sees/u);
+      expect(listed()).toEqual([secondThreat]);
+      expect(document.activeElement).toBe(next);
+      expect(next.getAttribute('aria-expanded')).toBe('false');
+      expect(currentAnnouncement().message).toBe(
+        t('canvas.threat-detach-removed', { number: 1 }),
+      );
     });
 
     it('keeps a threat on its elements when its model link goes, and says nothing', async () => {

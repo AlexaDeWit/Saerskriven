@@ -297,7 +297,8 @@ function externalLinkCount(
       .reduce(
         (count, record) =>
           count +
-          record.threats.filter((id) => !copiedThreats.has(id)).length +
+          record.threats.filter((id) => !copiedThreats.has(id) && !held.has(id))
+            .length +
           (record.appliesToModel === true ? 1 : 0),
         0,
       );
