@@ -1,4 +1,4 @@
-import { boxOfPoints } from '@saerskriven/canvas';
+import { boxOfPoints, resizableAxes } from '@saerskriven/canvas';
 import { pointSchema, sizeSchema } from '@saerskriven/model';
 import { useId, useState, type FormEvent } from 'react';
 import { useTranslator } from '../messages/locale.js';
@@ -23,6 +23,7 @@ export function GeometryEditor({
   );
   const single =
     nodes.length === 1 && state.selection.length === 1 ? nodes[0] : undefined;
+  const axes = single === undefined ? undefined : resizableAxes(single);
   const bounds = boxOfPoints(nodes.map((node) => node.position));
   const [position, setPosition] = useState({
     x: String(bounds?.minX ?? 0),
@@ -85,8 +86,9 @@ export function GeometryEditor({
           }}
         />
       ))}
-      {single !== undefined &&
-        (['width', 'height'] as const).map((axis) => (
+      {(['width', 'height'] as const)
+        .filter((axis) => axes?.[axis] === true)
+        .map((axis) => (
           <NumberField
             key={axis}
             label={t(axis === 'width' ? 'tools.width' : 'tools.height')}

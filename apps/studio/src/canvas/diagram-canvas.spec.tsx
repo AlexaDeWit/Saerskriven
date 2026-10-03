@@ -367,7 +367,8 @@ describe('DiagramCanvas', () => {
     expect(points.map((point) => point.x)).toEqual(
       boundaryCurve.map((point) => point.x),
     );
-    expect(points.map((point) => Math.round(point.y))).toEqual([80, -40, 80]);
+    expect([points[0]?.y, points[2]?.y]).toEqual([80, 80]);
+    expect(points[1]?.y).toBeCloseTo(-40);
     expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
   });
 

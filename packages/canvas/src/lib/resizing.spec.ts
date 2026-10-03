@@ -249,6 +249,33 @@ describe('scaledCurvePoints', () => {
     ]);
   });
 
+  it('keeps the exact coordinates of the side the box keeps, whatever the scale', () => {
+    const arch = [
+      { x: 0, y: 300 },
+      { x: 200, y: 340 },
+      { x: 400, y: 300 },
+    ];
+    const settled = curveNode(arch);
+    const fromLeft = scaledCurvePoints(arch, {
+      position: { x: settled.position.x - 111, y: settled.position.y },
+      size: { width: settled.size.width + 111, height: settled.size.height },
+    });
+    expect(fromLeft.at(-1)?.x).toBe(400);
+    const uneven = [
+      { x: 0.1, y: 0.3 },
+      { x: 50.7, y: 20.9 },
+    ];
+    const fractional = curveNode(uneven);
+    const fromRight = scaledCurvePoints(uneven, {
+      position: fractional.position,
+      size: {
+        width: fractional.size.width + 37,
+        height: fractional.size.height,
+      },
+    });
+    expect(fromRight.at(0)?.x).toBe(0.1);
+  });
+
   it('keeps the exact coordinates of an axis the box leaves as it is', () => {
     const uneven = [
       { x: 0.1, y: 0.3 },

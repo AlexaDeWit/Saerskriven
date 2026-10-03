@@ -56,6 +56,7 @@ export { type ResizeLabels } from './lib/resize-controls.js';
 export {
   keyboardResizeStep,
   minimumNodeExtent,
+  resizableAxes,
   resizeControlPositions,
   resizeKeys,
   scaledCurvePoints,

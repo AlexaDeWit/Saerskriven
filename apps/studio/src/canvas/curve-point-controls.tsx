@@ -1,4 +1,4 @@
-import { useViewport, ViewportPortal } from '@xyflow/react';
+import { useStore, useViewport, ViewportPortal } from '@xyflow/react';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { keyboardOwner } from '../commands/binding.js';
 import { pressesContextualShortcut } from '../commands/contextual-shortcuts.js';
@@ -15,7 +15,11 @@ type OpenActions = {
   readonly index: number;
 };
 
-/** A handle on each point of the selected trust boundary curve, and the actions of the one clicked. */
+/**
+ * A handle on each point of the selected trust boundary curve, and the
+ * actions of the one clicked. The handles stand aside while React Flow drags
+ * or resizes the curve, whose points they would otherwise leave behind.
+ */
 export function CurvePointControls({
   points,
 }: {
@@ -25,6 +29,11 @@ export function CurvePointControls({
   const { t } = useTranslator();
   const [open, setOpen] = useState<OpenActions | undefined>();
   const { boundary } = points;
+  const gesture = useStore((state) => {
+    const drawn =
+      boundary === undefined ? undefined : state.nodeLookup.get(boundary.id);
+    return drawn?.dragging === true || drawn?.resizing === true;
+  });
   const handBack = (): void => {
     if (boundary !== undefined) {
       focusElement(boundary.id);
@@ -120,7 +129,7 @@ export function CurvePointControls({
   const node = points.layout.nodes.find(
     (candidate) => candidate.id === boundary?.id,
   );
-  if (boundary === undefined || node?.kind !== 'boundary-curve') {
+  if (boundary === undefined || node?.kind !== 'boundary-curve' || gesture) {
     return null;
   }
   const shown = node.waypoints.map((point) => ({

@@ -74,8 +74,8 @@ test('a trust boundary curve scales from a corner and from Position and size, ke
   expect(dragged.threatened).toContain('boundary-records');
   expect(dragged.points).toHaveLength(3);
   expectNear(dragged.points[0], { x: -40 / zoom, y: 300 - 30 / zoom });
-  expect(dragged.points[1]?.y).toBeCloseTo(340);
-  expect(dragged.points[2]?.x).toBeCloseTo(400);
+  expect(dragged.points[1]?.y).toBe(340);
+  expect(dragged.points[2]?.x).toBe(400);
   await undoneToSettled(page);
 
   await boundary.focus();

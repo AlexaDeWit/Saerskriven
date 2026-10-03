@@ -104,6 +104,49 @@ describe('SelectionControls', () => {
     });
   });
 
+  it('shows only the width of a trust boundary curve along one level line, and scales it along the line', () => {
+    const level = [
+      { x: -20, y: 80 },
+      { x: 440, y: 80 },
+    ];
+    const levelModel = {
+      ...curvedCanvasModel,
+      diagrams: curvedCanvasModel.diagrams.map((diagram) => ({
+        ...diagram,
+        elements: diagram.elements.map((element) =>
+          element.id === boundaryElement && element.kind === 'trust-boundary'
+            ? {
+                ...element,
+                shape: { kind: 'curve' as const, waypoints: level },
+              }
+            : element,
+        ),
+      })),
+    };
+    openCanvas([boundaryElement], levelModel);
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('edit-geometry'), recordingSurface().surface);
+    });
+    expect(screen.queryByRole('spinbutton', { name: 'Height' })).toBeNull();
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), {
+      target: { value: String(laidOutNode(boundaryElement).size.width + 460) },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
+    expect(modelStore.getState().past).toEqual([levelModel]);
+    expect(
+      elementIn(modelStore.getState().present, boundaryElement),
+    ).toMatchObject({
+      shape: {
+        kind: 'curve',
+        waypoints: [
+          { x: -20, y: 80 },
+          { x: 900, y: 80 },
+        ],
+      },
+    });
+  });
+
   it('retains invalid dimensions and cancels by Escape without history', () => {
     render(<SelectionControls />);
     act(() => {

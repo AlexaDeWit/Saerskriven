@@ -71,6 +71,13 @@ export function shiftedBy(point: Point, offset: Point): Point {
   return { x: point.x + offset.x, y: point.y + offset.y };
 }
 
+/** Whether two canvas coordinates differ by no more than the rounding of the arithmetic that produced them. */
+export function sameCoordinate(one: number, other: number): boolean {
+  return Math.abs(one - other) <= coordinateTolerance;
+}
+
+const coordinateTolerance = 1e-6;
+
 /** Whether two boxes share any area, an edge or a corner. */
 export function boxesOverlap(one: Box, other: Box): boolean {
   return (

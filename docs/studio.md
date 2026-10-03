@@ -224,16 +224,17 @@ A selected trust boundary curve carries a handle on each of its points. Drag a
 point, or focus it and press an arrow key to move it five units or twenty with
 Shift. Click a point for Remove point, or press Delete or Backspace with the
 point focused. A curve keeps at least two points. Escape drops a point drag
-before its release.
+before its release. The point handles stand aside while the curve itself is
+moved or scaled.
 
 A selected curve also carries a box's side lines and corner handles around its
 points, each corner handle just outside its corner so that a point there keeps
 its own handle. Dragging a control, or pressing an arrow key on a focused one,
 scales every point against the opposite side or corner as one undo step, and
-the boundary keeps its name and its threats. A curve whose points all lie on
-one horizontal or vertical line has only the two side lines that lengthen it.
-Width and height in Position and size scale the points the same way, to no
-less than ten units.
+the boundary keeps its name and its threats. Width and height in Position and
+size scale the points the same way, to no less than ten units. A curve whose
+points all lie on one horizontal or vertical line has only the two side lines
+that lengthen it, and the form shows only the width or the height that does.
 
 ## Names and Note text
 
