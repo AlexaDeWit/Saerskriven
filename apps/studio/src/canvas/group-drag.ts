@@ -1,6 +1,5 @@
 import {
   gridSpacing,
-  type CanvasBounds,
   type CanvasFlowEdge,
   type CanvasLayout,
   type CanvasNode,
@@ -8,15 +7,20 @@ import {
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange, ReactFlowInstance } from '@xyflow/react';
 import {
+  useEffect,
+  useEffectEvent,
   useRef,
   type MouseEvent,
   type PointerEvent,
   type RefObject,
 } from 'react';
+import { sameSelection } from '../store/selection.js';
+import { selectedElements } from '../store/selectors.js';
+import { modelStore } from '../store/store.js';
 import { currentConnecting } from './connecting.js';
 import { drawnElement } from './edits.js';
 import { placementClickDistance, pointerDistance } from './elements.js';
-import { selectionBounds } from './layout.js';
+import { insideBounds, selectionBounds } from './layout.js';
 import type { DiagramNode } from './nodes.js';
 import { currentSnap } from './snap.js';
 import { currentTool } from './tools.js';
@@ -51,23 +55,10 @@ type Press = {
   readonly pointerId: number;
   readonly start: Point;
   readonly from: Point;
+  readonly selection: readonly ElementId[];
   readonly nodes: readonly CanvasNode[];
   readonly dragging: boolean;
 };
-
-/** Whether `point` lies inside `bounds` grown by `padding` on every side. */
-export function insideBounds(
-  point: Point,
-  bounds: CanvasBounds,
-  padding: number,
-): boolean {
-  return (
-    point.x >= bounds.x - padding &&
-    point.x <= bounds.x + bounds.width + padding &&
-    point.y >= bounds.y - padding &&
-    point.y <= bounds.y + bounds.height + padding
-  );
-}
 
 /**
  * Whether a press on `target` can drag the selection: one on empty canvas, a
@@ -101,8 +92,10 @@ export function passesToSelection(
  * drags the element under the pointer, and `mouseDown` stops the mouse event
  * that follows it. Past the click distance each move hands `moveNodes` the
  * position changes React Flow's own drag reports, with the first selected
- * node on the grid while snapping is on, and the release settles them. A
- * shorter press leaves its click to the canvas. `cancel` puts a drag back.
+ * node on the grid while snapping is on, and the release settles them and
+ * focuses the canvas. A shorter press leaves its click to the canvas.
+ * `cancel` puts a drag back, as a blurred window and a selection that changes
+ * during the press do.
  */
 export function useGroupDrag(
   view: RefObject<GroupDragView | null>,
@@ -145,6 +138,30 @@ export function useGroupDrag(
     }
   };
 
+  const ongoing = (event: GroupDragPointer): Press | undefined => {
+    const current = press.current;
+    if (current === undefined || current.pointerId !== event.pointerId) {
+      return undefined;
+    }
+    if (
+      !sameSelection(current.selection, selectedElements(modelStore.getState()))
+    ) {
+      cancel();
+      return undefined;
+    }
+    return current;
+  };
+
+  const blurred = useEffectEvent((): void => {
+    cancel();
+  });
+  useEffect(() => {
+    window.addEventListener('blur', blurred);
+    return () => {
+      window.removeEventListener('blur', blurred);
+    };
+  }, []);
+
   return {
     cancel,
     down(event: GroupDragPointer): boolean {
@@ -181,6 +198,7 @@ export function useGroupDrag(
         pointerId: event.pointerId,
         start,
         from,
+        selection,
         nodes,
         dragging: false,
       };
@@ -192,10 +210,9 @@ export function useGroupDrag(
       }
     },
     move(event: GroupDragPointer): void {
-      const current = press.current;
+      const current = ongoing(event);
       if (
         current === undefined ||
-        current.pointerId !== event.pointerId ||
         (!current.dragging &&
           pointerDistance(event, current.start) < placementClickDistance)
       ) {
@@ -208,9 +225,15 @@ export function useGroupDrag(
       moveNodes(positionChanges(current.nodes, offsetAt(current, event), true));
     },
     up(event: GroupDragPointer): void {
-      const current = press.current;
-      if (current !== undefined && current.pointerId === event.pointerId) {
-        settle(current, offsetAt(current, event));
+      const current = ongoing(event);
+      if (current === undefined) {
+        return;
+      }
+      settle(current, offsetAt(current, event));
+      if (current.dragging) {
+        event.currentTarget
+          .querySelector<HTMLElement>('.react-flow')
+          ?.focus({ preventScroll: true });
       }
     },
   };

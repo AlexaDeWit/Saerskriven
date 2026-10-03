@@ -15,6 +15,7 @@ import { announce } from './announcements.js';
 import { bendInsertionEvent } from './bend-insertion.js';
 import { focusElement } from './edits.js';
 import { isFlowEnd } from './elements.js';
+import { insideBounds } from './layout.js';
 import type {
   AnchorTarget,
   BendTarget,
@@ -468,11 +469,18 @@ function landing(
   point: Point,
 ): EndTarget | undefined {
   const { end, box } = held;
-  if (box !== undefined && within(box, point)) {
+  if (
+    box !== undefined &&
+    insideBounds(point, { ...box.position, ...box.size })
+  ) {
     return { kind: 'anchor', end, side: nearestHandleSide(box, point) };
   }
   const under = nodes
-    .filter((node) => !isBoundary(node) && within(node, point))
+    .filter(
+      (node) =>
+        !isBoundary(node) &&
+        insideBounds(point, { ...node.position, ...node.size }),
+    )
     .at(-1);
   if (under === undefined) {
     return { kind: 'free', end, point };
@@ -482,15 +490,6 @@ function landing(
     isFlowEnd(under) &&
     (other.kind !== 'attached' || other.element !== under.id);
   return attachable ? { kind: 'attach', end, element: under.id } : undefined;
-}
-
-function within(box: NodeBox, point: Point): boolean {
-  return (
-    point.x >= box.position.x &&
-    point.x <= box.position.x + box.size.width &&
-    point.y >= box.position.y &&
-    point.y <= box.position.y + box.size.height
-  );
 }
 
 function segmentBend(edge: CanvasEdge, index: number): BendTarget {

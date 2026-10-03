@@ -112,11 +112,12 @@ held.
 
 A click selects one element or flow. Shift-click, or Shift+Enter on a focused
 element, adds or removes it. Select all selects every element and flow the
-diagram draws. A drag in Select that starts on empty canvas outside the bounds
-of the selection draws a box that takes every element and flow wholly inside
-it. The box stays inside the current view, so pan first to reach elements
-outside it. A flow whose end names something the canvas cannot draw it to is
-not drawn, so neither Select all nor a box selects it.
+diagram draws. A drag in Select that starts on empty canvas draws a box that
+takes every element and flow wholly inside it, unless it starts inside the
+bounds of a selection that holds an element, which moves the selection instead.
+The box stays inside the current view, so pan first to reach elements outside
+it. A flow whose end names something the canvas cannot draw it to is not drawn,
+so neither Select all nor a box selects it.
 
 A click or tap on empty canvas clears the selection, and a pan keeps it. Select
 a trust boundary by its outline, its name or its controls: the space inside a
@@ -124,14 +125,15 @@ boundary that is not selected is empty canvas.
 
 ## Moving, resizing and arranging
 
-Drag any selected element to move the whole selection. A drag that starts
-anywhere else inside the bounds of the selection, a few pixels around them
-included, moves the selection too: on empty canvas, inside a selected trust
-boundary, or on an element the selection leaves out. A click there without a
-drag clears the selection, or selects that element alone. With Shift held, or
-by touch, a press there acts as it does outside the selection. An arrow key
-moves the selection five model units, and Shift+arrow twenty. A flow does not
-move on its own, but a moved group carries its bends and free ends along.
+Drag any selected element to move the whole selection. Where the selection
+holds an element, a drag that starts anywhere else inside the bounds of the
+selection, a few pixels around them included, moves the selection too: on empty
+canvas, inside a selected trust boundary, or on an element the selection leaves
+out. A click there without a drag clears the selection, or selects that element
+alone. With Shift held, or by touch, a press there acts as it does outside the
+selection. An arrow key moves the selection five model units, and Shift+arrow
+twenty. A flow does not move on its own, but a moved group carries its bends
+and free ends along.
 
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
@@ -272,8 +274,8 @@ view.
 
 Scrolling pans in both directions and a trackpad pinch zooms. A touch drag pans
 in Select. A mouse drag in Select draws a selection box, or moves the selection
-where it starts inside the bounds of the selection, while a middle-button drag,
-Hand or held Space pans.
+where it starts inside the bounds of a selection that holds an element, while a
+middle-button drag, Hand or held Space pans.
 
 ## The threat panel
 

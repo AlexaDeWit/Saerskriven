@@ -4,7 +4,7 @@ import {
   type CanvasBounds,
   type CanvasLayout,
 } from '@saerskriven/canvas';
-import type { DiagramId, ElementId, Model } from '@saerskriven/model';
+import type { DiagramId, ElementId, Model, Point } from '@saerskriven/model';
 import { activeDiagram } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 
@@ -50,5 +50,19 @@ export function selectionBounds(
   return drawnBounds(
     layout.nodes.filter((node) => selected.has(node.id)),
     layout.edges.filter((edge) => selected.has(edge.id)),
+  );
+}
+
+/** Whether `point` lies inside `bounds`, grown by `padding` on every side. */
+export function insideBounds(
+  point: Point,
+  bounds: CanvasBounds,
+  padding = 0,
+): boolean {
+  return (
+    point.x >= bounds.x - padding &&
+    point.x <= bounds.x + bounds.width + padding &&
+    point.y >= bounds.y - padding &&
+    point.y <= bounds.y + bounds.height + padding
   );
 }

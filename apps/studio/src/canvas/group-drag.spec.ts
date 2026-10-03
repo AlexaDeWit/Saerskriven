@@ -1,17 +1,17 @@
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange } from '@xyflow/react';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { actorElement, processElement } from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
 import {
   boundaryElement,
   laidOutNode,
+  noteElement,
   openCanvas,
   primaryPointer,
   requestFlow,
 } from './canvas.fixtures.js';
 import {
-  insideBounds,
   passesToSelection,
   selectionBoundsPadding,
   useGroupDrag,
@@ -21,7 +21,13 @@ import { elementIds, type DiagramNode } from './nodes.js';
 import { toggleSnap } from './snap.js';
 import { selectTool } from './tools.js';
 
+const canvas = document.createElement('div');
+canvas.className = 'react-flow';
+canvas.tabIndex = -1;
+
 const container = document.createElement('div');
+container.append(canvas);
+document.body.append(container);
 
 const pane = document.createElement('div');
 pane.className = 'react-flow__pane';
@@ -91,20 +97,6 @@ const betweenActorAndProcess = { x: 200, y: 40 };
 
 beforeEach(() => {
   openCanvas(group);
-});
-
-describe('insideBounds', () => {
-  const bounds = { x: 0, y: 0, width: 100, height: 50 };
-
-  it('takes a point inside the bounds or within the padding around them', () => {
-    expect(insideBounds({ x: 50, y: 25 }, bounds, 0)).toBe(true);
-    expect(insideBounds({ x: -3, y: 53 }, bounds, 4)).toBe(true);
-  });
-
-  it('leaves a point beyond the padding out', () => {
-    expect(insideBounds({ x: -5, y: 25 }, bounds, 4)).toBe(false);
-    expect(insideBounds({ x: 50, y: 55 }, bounds, 4)).toBe(false);
-  });
 });
 
 describe('passesToSelection', () => {
@@ -229,6 +221,57 @@ describe('useGroupDrag', () => {
 
     expect(before.stopPropagation).not.toHaveBeenCalled();
     expect(during.stopPropagation).toHaveBeenCalled();
+  });
+
+  it('focuses the canvas once a drag settles, and leaves focus to a click', () => {
+    const { drag } = renderGroupDrag();
+    const element = drawn(noteElement);
+    element.tabIndex = 0;
+    document.body.append(element);
+    element.focus();
+
+    drag.current.down(pressAt(betweenActorAndProcess, element));
+    drag.current.up(pressAt(betweenActorAndProcess, element));
+    expect(document.activeElement).toBe(element);
+    drag.current.down(pressAt(betweenActorAndProcess, element));
+    drag.current.move(pressAt({ x: 230, y: 60 }));
+    drag.current.up(pressAt({ x: 230, y: 60 }));
+
+    expect(document.activeElement).toBe(canvas);
+    element.remove();
+  });
+
+  it('puts a drag back once the selection changes under it, as Escape to Select does', () => {
+    const { drag, moveNodes } = renderGroupDrag();
+
+    drag.current.down(pressAt(betweenActorAndProcess));
+    drag.current.move(pressAt({ x: 230, y: 50 }));
+    act(() => {
+      selectTool('select');
+    });
+    drag.current.move(pressAt({ x: 260, y: 90 }));
+    drag.current.up(pressAt({ x: 260, y: 90 }));
+
+    expect(moveNodes).toHaveBeenCalledTimes(2);
+    expect(moveNodes).toHaveBeenLastCalledWith(
+      movedTo(group, { x: 0, y: 0 }, false),
+    );
+  });
+
+  it('puts a drag back when the window loses focus', () => {
+    const { drag, moveNodes } = renderGroupDrag();
+
+    drag.current.down(pressAt(betweenActorAndProcess));
+    drag.current.move(pressAt({ x: 230, y: 50 }));
+    act(() => {
+      window.dispatchEvent(new Event('blur'));
+    });
+    drag.current.up(pressAt({ x: 230, y: 50 }));
+
+    expect(moveNodes).toHaveBeenCalledTimes(2);
+    expect(moveNodes).toHaveBeenLastCalledWith(
+      movedTo(group, { x: 0, y: 0 }, false),
+    );
   });
 
   it('puts a cancelled drag back where it started', () => {
