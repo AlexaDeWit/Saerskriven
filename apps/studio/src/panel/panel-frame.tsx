@@ -1,10 +1,9 @@
 import { ArrowRightIcon, Cross1Icon, WidthIcon } from '@radix-ui/react-icons';
 import { Tooltip } from 'radix-ui';
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
-import { keyboardOwner } from '../commands/binding.js';
+import { useId, useRef, type ReactNode } from 'react';
+import { closingOn } from '../commands/binding.js';
 import {
   describeContextualShortcuts,
-  pressesContextualShortcut,
   type ContextualShortcutId,
 } from '../commands/contextual-shortcuts.js';
 import { hostPlatform } from '../commands/shortcuts.js';
@@ -71,17 +70,6 @@ export function PanelFrame({
     { alsoParent: true },
   );
 
-  const closing = (event: KeyboardEvent<HTMLElement>): void => {
-    if (
-      !pressesContextualShortcut(closeShortcut, event, hostPlatform) ||
-      keyboardOwner(event.target) === 'overlay'
-    ) {
-      return;
-    }
-    event.preventDefault();
-    onClose();
-  };
-
   const frame = (
     <section
       aria-describedby={keyboardDescriptionId}
@@ -91,7 +79,7 @@ export function PanelFrame({
       data-testid={testId}
       data-wide={wide}
       ref={panel}
-      onKeyDownCapture={closing}
+      onKeyDownCapture={closingOn(closeShortcut, onClose)}
     >
       <VisuallyHidden id={keyboardDescriptionId}>
         {describeContextualShortcuts([closeShortcut], hostPlatform, t)}
@@ -129,7 +117,12 @@ export function PanelFrame({
           <Cross1Icon aria-hidden="true" />
         </button>
       </header>
-      {tabs !== undefined && <PanelTabList threatCount={tabs.threatCount} />}
+      {tabs !== undefined && (
+        <PanelTabList
+          threatCount={tabs.threatCount}
+          threatsTab={tabs.threatsTab}
+        />
+      )}
       <div className={styles.body}>{children}</div>
     </section>
   );

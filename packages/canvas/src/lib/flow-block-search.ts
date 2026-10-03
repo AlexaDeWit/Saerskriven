@@ -193,19 +193,15 @@ function obstaclesNearRuns(search: BlockSearch): NearRuns {
     ) +
     margin;
   const ends = search.ends.map(lineObstacle);
-  const near = (
-    run: LineRun,
-    obstacles: readonly Obstacle[],
-    within: number,
-  ): Obstacle[] =>
-    obstacles.filter((obstacle) => runPassesNear(run, obstacle.box, within));
   const onLineReach = Math.max(onLine.halfWidth, onLine.halfHeight) + margin;
   return {
-    others: search.runs.map((run) => near(run, search.others, onLineReach)),
+    others: search.runs.map((run) =>
+      obstaclesNearRun(run, search.others, onLineReach),
+    ),
     beside: search.runs.map((run) => {
       const all = [
-        ...near(run, search.others, reach),
-        ...near(run, search.own, reach),
+        ...obstaclesNearRun(run, search.others, reach),
+        ...obstaclesNearRun(run, search.own, reach),
       ];
       const projected = all.map((obstacle) =>
         projectedOnRun(run, obstacle.box),
@@ -233,8 +229,18 @@ function obstaclesNearRuns(search: BlockSearch): NearRuns {
         ),
       );
     }),
-    ends: search.runs.map((run) => near(run, ends, onLineReach)),
+    ends: search.runs.map((run) => obstaclesNearRun(run, ends, onLineReach)),
   };
+}
+
+function obstaclesNearRun(
+  run: LineRun,
+  obstacles: readonly Obstacle[],
+  within: number,
+): Obstacle[] {
+  return obstacles.filter((obstacle) =>
+    runPassesNear(run, obstacle.box, within),
+  );
 }
 
 function spotsOnRun(spots: readonly LineSpot[], run: number): SpotsOnRun {

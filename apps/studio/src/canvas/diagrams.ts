@@ -2,6 +2,7 @@ import {
   generateDiagramId,
   type Diagram,
   type DiagramId,
+  type ElementId,
 } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
@@ -14,6 +15,7 @@ import {
   excerpt,
   nameQuoteLength,
 } from './announcements.js';
+import { focusElement } from './edits.js';
 
 /**
  * Puts the diagram `diagramId` on screen without saying so, and ends any
@@ -37,8 +39,30 @@ export function showDiagram(diagramId: DiagramId): boolean {
   if (shown === undefined) {
     return false;
   }
-  const title = excerpt(shown.title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-shown', { title }));
+  sayShown(shown);
+  return true;
+}
+
+/**
+ * Shows the diagram drawing `elementId`, selects the element and focuses it,
+ * and says the diagram's title where another was on screen. It answers
+ * whether the model holds the element.
+ */
+export function revealElement(elementId: ElementId): boolean {
+  const diagram = modelStore
+    .getState()
+    .present.diagrams.find((held) =>
+      held.elements.some(({ id }) => id === elementId),
+    );
+  if (diagram === undefined) {
+    return false;
+  }
+  const shown = switchDiagram(diagram.id);
+  dispatch(Action.Select({ elementIds: [elementId] }));
+  focusElement(elementId);
+  if (shown !== undefined) {
+    sayShown(shown);
+  }
   return true;
 }
 
@@ -118,6 +142,11 @@ export function useDiagramRenaming(): DiagramId | undefined {
 /** Puts the switcher back to its button, for specs. */
 export function resetDiagramRenaming(): void {
   setRenaming(undefined);
+}
+
+function sayShown(diagram: Diagram): void {
+  const title = excerpt(diagram.title, nameQuoteLength);
+  announce((t) => t('canvas.diagram-shown', { title }));
 }
 
 function setRenaming(next: DiagramId | undefined): void {

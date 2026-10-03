@@ -1,5 +1,5 @@
 import { Tabs } from 'radix-ui';
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement, ReactNode, Ref } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import styles from './threat-panel.module.css';
 
@@ -8,11 +8,12 @@ const panelTabs = ['threats', 'details'] as const;
 /** Which of a panel's two tabs shows: the subject's threats or its own fields. */
 export type PanelTab = (typeof panelTabs)[number];
 
-/** The tab shown, the call that shows another, and the count the Threats tab carries. */
+/** The tab shown, the call that shows another, the count the Threats tab carries, and a ref to that tab. */
 export type PanelTabsProps = {
   readonly tab: PanelTab;
   readonly onTab: (tab: PanelTab) => void;
   readonly threatCount: number;
+  readonly threatsTab?: Ref<HTMLButtonElement>;
 };
 
 /**
@@ -42,14 +43,13 @@ export function PanelTabs({
 /** The Threats tab, carrying its count, and the Details tab. */
 export function PanelTabList({
   threatCount,
-}: {
-  readonly threatCount: number;
-}) {
+  threatsTab,
+}: Pick<PanelTabsProps, 'threatCount' | 'threatsTab'>) {
   const { t } = useTranslator();
 
   return (
     <Tabs.List className={styles.tabList}>
-      <Tabs.Trigger className={styles.tab} value="threats">
+      <Tabs.Trigger className={styles.tab} ref={threatsTab} value="threats">
         {t('panel.threats')} <span className={styles.count}>{threatCount}</span>
       </Tabs.Trigger>
       <Tabs.Trigger className={styles.tab} value="details">

@@ -133,11 +133,11 @@ export function recordDownloads(): readonly string[] {
       static override revokeObjectURL(): void {}
     },
   );
-  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-    function (this: HTMLAnchorElement) {
-      downloads.push(this.download);
-    },
-  );
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    downloads.push(this.download);
+  });
   return downloads;
 }
 

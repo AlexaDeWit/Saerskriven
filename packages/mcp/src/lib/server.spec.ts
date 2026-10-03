@@ -202,6 +202,58 @@ const featureCompleteSession = (era: Era): Pick<McpSession, 'client'> => {
   };
 };
 
+const readingsOf = async (
+  client: Client,
+  revision: string,
+): Promise<readonly CalledTool[]> => {
+  const tools = (await client.listTools()).tools;
+  const calls = tools.flatMap((tool) =>
+    (callArguments(revision).get(tool.name) ?? []).map(
+      (args) => [tool.name, args] as const,
+    ),
+  );
+  return Promise.all(
+    calls.map(async ([name, args]) => {
+      const result = await client.callTool({ name, arguments: args });
+      const read = proseOf(result);
+      return {
+        name,
+        result,
+        read: {
+          prose: read.prose.map((text) => text.split('\n')[0] ?? ''),
+          links: read.links,
+          unread: read.unread,
+        },
+      };
+    }),
+  );
+};
+
+const overEveryCall = async (era: Era): Promise<readonly CalledTool[]> => {
+  const writable = editableTree();
+  const revision = revisionOf(readFileSync(join(writable.root, modelFile)));
+  const defaulted = await session({
+    root: writable.root,
+    file: modelFile,
+    era,
+    rasterizer,
+    brotli,
+  });
+  const listing = await session({
+    root: workspaceTree().root,
+    era,
+    rasterizer,
+    brotli,
+  });
+  const called = [
+    ...(await readingsOf(defaulted.client, revision)),
+    ...(await readingsOf(listing.client, revision)),
+  ];
+  await defaulted.end();
+  await listing.end();
+  return called;
+};
+
 for (const era of eras) {
   describe(`a ${era} client of the server object`, () => {
     const fixture = featureCompleteSession(era);
@@ -477,64 +529,10 @@ for (const era of eras) {
     });
 
     describe('the line that says a result is data', () => {
-      const readingsOf = async (
-        client: Client,
-        revision: string,
-      ): Promise<readonly CalledTool[]> => {
-        const tools = (await client.listTools()).tools;
-        const calls = tools.flatMap((tool) =>
-          (callArguments(revision).get(tool.name) ?? []).map(
-            (args) => [tool.name, args] as const,
-          ),
-        );
-        return Promise.all(
-          calls.map(async ([name, args]) => {
-            const result = await client.callTool({ name, arguments: args });
-            const read = proseOf(result);
-            return {
-              name,
-              result,
-              read: {
-                prose: read.prose.map((text) => text.split('\n')[0] ?? ''),
-                links: read.links,
-                unread: read.unread,
-              },
-            };
-          }),
-        );
-      };
-
-      const overEveryCall = async (): Promise<readonly CalledTool[]> => {
-        const writable = editableTree();
-        const revision = revisionOf(
-          readFileSync(join(writable.root, modelFile)),
-        );
-        const defaulted = await session({
-          root: writable.root,
-          file: modelFile,
-          era,
-          rasterizer,
-          brotli,
-        });
-        const listing = await session({
-          root: workspaceTree().root,
-          era,
-          rasterizer,
-          brotli,
-        });
-        const called = [
-          ...(await readingsOf(defaulted.client, revision)),
-          ...(await readingsOf(listing.client, revision)),
-        ];
-        await defaulted.end();
-        await listing.end();
-        return called;
-      };
-
       let called: readonly CalledTool[];
 
       beforeAll(async () => {
-        called = await overEveryCall();
+        called = await overEveryCall(era);
       });
 
       it('gives every tool the server offers a row in the call table', async () => {
@@ -819,10 +817,10 @@ describe('a modern client of the server object, over what no era changes', () =>
     });
   });
 
-  describe('a file outside the root', () => {
-    const outside = (file: string) =>
-      fixture.client.callTool({ name: 'saer_inspect', arguments: { file } });
+  const outside = (file: string) =>
+    fixture.client.callTool({ name: 'saer_inspect', arguments: { file } });
 
+  describe('a file outside the root', () => {
     it('is refused as a tool result rather than as a protocol error', async () => {
       const result = await outside('../outside.yaml');
       expect(result.isError).toBe(true);

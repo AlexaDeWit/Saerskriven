@@ -578,6 +578,12 @@ const spoofedPatient = t('divergence.subject-threat', {
   title: 'Spoofed patient',
 });
 
+const unmapped = (threat: string): Divergence =>
+  fromSource({
+    code: 'otm-threat-status-unmapped',
+    parameters: { status: 'under-review', threat },
+  });
+
 describe('the record an import made from the source record a line names', () => {
   it('names an OTM threat by the lowest-numbered threat its occurrences became, once with the count', () => {
     const split: DivergenceDetail = {
@@ -597,11 +603,6 @@ describe('the record an import made from the source record a line names', () => 
   });
 
   it('names each threat whose OTM status it could not map by the threat the import made for that occurrence', () => {
-    const unmapped = (threat: string): Divergence =>
-      fromSource({
-        code: 'otm-threat-status-unmapped',
-        parameters: { status: 'under-review', threat },
-      });
     const detail = t('divergence.otm-threat-status-unmapped', {
       status: 'under-review',
     });

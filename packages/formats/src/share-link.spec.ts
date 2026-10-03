@@ -332,13 +332,14 @@ describe.skipIf(brotliUnbuilt)('a link read on the path a file takes', () => {
   });
 });
 
-describe.skipIf(brotliUnbuilt)('a link that was cut off or changed', () => {
-  const fragment = async () => fragmentOf(await linkOf(featureComplete));
+const featureCompleteFragment = async () =>
+  fragmentOf(await linkOf(featureComplete));
 
+describe.skipIf(brotliUnbuilt)('a link that was cut off or changed', () => {
   it.each([1, 2, 3, 4, 1000])(
     'refuses a link that lost %i characters from its end as cut off',
     async (lost) => {
-      const cut = (await fragment()).slice(0, -lost);
+      const cut = (await featureCompleteFragment()).slice(0, -lost);
       expect(
         malformedMessage(await readShareLink(cut, brotliWasm())),
       ).toContain('cut off');
@@ -353,7 +354,10 @@ describe.skipIf(brotliUnbuilt)('a link that was cut off or changed', () => {
   ])('refuses a link holding %s', async (_what, change) => {
     expect(
       malformedMessage(
-        await readShareLink(change(await fragment()), brotliWasm()),
+        await readShareLink(
+          change(await featureCompleteFragment()),
+          brotliWasm(),
+        ),
       ),
     ).toContain('cut off');
   });

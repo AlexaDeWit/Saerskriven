@@ -9,6 +9,7 @@ import {
 import { IconCommandButton } from '../commands/command-button.js';
 import type { CommandId } from '../commands/registry.js';
 import { useTranslator } from '../messages/locale.js';
+import { leaveThreatRegister } from '../panel/threat-register-state.js';
 import { selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { modelStore, useModelStore } from '../store/store.js';
@@ -32,7 +33,11 @@ type OpenControl = {
   readonly transition: number;
 };
 
-/** The non-modal position, size, and endpoint editors reached through registered commands. */
+/**
+ * The non-modal position, size, and endpoint editors reached through
+ * registered commands. One that opens closes the threat register, which
+ * would cover it.
+ */
 export function SelectionControls() {
   const state = useModelStore((value) => value);
   const tool = useTool();
@@ -47,6 +52,7 @@ export function SelectionControls() {
         current.inlineEditor === undefined &&
         currentTool().active === 'select'
       ) {
+        leaveThreatRegister();
         setHeld({ kind, state: current, transition: currentTool().transition });
       }
     };

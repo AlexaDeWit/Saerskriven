@@ -392,7 +392,7 @@ function EditMenu() {
         ))}
       </Submenu>
       <MenuCommand command="rename" disabled={!renamable} />
-      <MenuCommand command="model-properties" />
+      <MenuCommand command="model-panel" />
     </DropdownMenu.Group>
   );
 }
@@ -407,6 +407,7 @@ function ViewMenu() {
       <DropdownMenu.Label className={styles.heading}>
         {t('commands.group-view')}
       </DropdownMenu.Label>
+      <MenuCommand command="threat-register" />
       <MenuCommand command="fit-selection" disabled={nothing} />
       <MenuCommand command="snap-to-grid">
         {t(snapping ? 'menu.snap-on' : 'menu.snap-off')}

@@ -58,7 +58,11 @@ const pressing = (chord: Chord, platform: Platform) => {
 
 const press = (
   key: string,
-  modifiers: { readonly ctrlKey?: boolean; readonly shiftKey?: boolean } = {},
+  modifiers: {
+    readonly ctrlKey?: boolean;
+    readonly metaKey?: boolean;
+    readonly shiftKey?: boolean;
+  } = {},
 ) => ({
   key,
   ctrlKey: false,
@@ -131,6 +135,23 @@ describe('the command registry', () => {
     expect(taken).toEqual([]);
   });
 
+  it('fits the selection on Shift+F, leaves a bare F to Start a flow, and frees Mod+Shift+0', () => {
+    for (const platform of platforms) {
+      const mod = {
+        ctrlKey: platform === 'other',
+        metaKey: platform === 'apple',
+      };
+      expect(commandFor(press('F', { shiftKey: true }), platform)?.id).toBe(
+        'fit-selection',
+      );
+      expect(commandFor(press('f'), platform)?.id).toBe('start-flow');
+      expect(
+        commandFor(press('0', { ...mod, shiftKey: true }), platform),
+      ).toBeUndefined();
+      expect(commandFor(press('0', mod), platform)?.id).toBe('fit-to-view');
+    }
+  });
+
   it('files every command under its own id', () => {
     for (const command of commands) {
       expect(commandById(command.id)).toBe(command);
@@ -168,6 +189,8 @@ describe('commandFor', () => {
     { key: '6', modifiers: {}, command: 'boundary-curve-tool' },
     { key: '7', modifiers: {}, command: 'note-tool' },
     { key: 't', modifiers: {}, command: 'focus-threats' },
+    { key: 'r', modifiers: {}, command: 'threat-register' },
+    { key: 'R', modifiers: { shiftKey: true }, command: 'reverse-flow' },
     { key: 'S', modifiers: { shiftKey: true }, command: 'reconnect-source' },
     { key: 'T', modifiers: { shiftKey: true }, command: 'reconnect-target' },
     {
@@ -185,7 +208,7 @@ describe('commandFor', () => {
     },
   );
 
-  it('gives M to Model properties alone, unshifted and unmodified, on either platform', () => {
+  it('gives M to the model panel alone, unshifted and unmodified, on either platform', () => {
     const unmodified = press('m');
     for (const platform of platforms) {
       expect(
@@ -196,10 +219,10 @@ describe('commandFor', () => {
             ),
           )
           .map((command) => command.id),
-      ).toEqual(['model-properties']);
-      expect(commandFor(unmodified, platform)?.id).toBe('model-properties');
+      ).toEqual(['model-panel']);
+      expect(commandFor(unmodified, platform)?.id).toBe('model-panel');
       expect(commandFor({ ...unmodified, key: 'M' }, platform)?.id).toBe(
-        'model-properties',
+        'model-panel',
       );
       expect(
         commandFor({ ...unmodified, key: 'M', shiftKey: true }, platform),
@@ -298,19 +321,19 @@ describe('runCommand', () => {
     release();
   });
 
-  it('opens the model properties with a selection cleared, and closes them when they show', () => {
+  it('opens the model panel with a selection cleared, and closes it when it shows', () => {
     const recording = recordingSurface();
     modelStore.setState(initialState(sampleModel), true);
     dispatch(Action.Select({ elementIds: [actorElement] }));
 
-    runCommand(commandById('model-properties'), recording.surface);
+    runCommand(commandById('model-panel'), recording.surface);
     expect(modelStore.getState()).toMatchObject({
       selection: [],
-      modelProperties: true,
+      modelPanel: true,
     });
 
-    runCommand(commandById('model-properties'), recording.surface);
-    expect(modelStore.getState().modelProperties).toBe(false);
+    runCommand(commandById('model-panel'), recording.surface);
+    expect(modelStore.getState().modelPanel).toBe(false);
     expect(modelStore.getState().past).toEqual([]);
     expect(recording.asked).toEqual([]);
   });

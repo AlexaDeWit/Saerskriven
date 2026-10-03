@@ -14,15 +14,20 @@ import {
   storeElement,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { activeTranslator } from '../messages/locale.js';
 import { recordedThreat } from './panel.fixtures.js';
 import { ThreatSummary } from './threat-summary.js';
 
-const showSummary = (threat: Threat, on: ElementId = actorElement): void => {
+const showSummaryOn = (on: ElementId | undefined, threat: Threat): void => {
   render(
     <button type="button">
       <ThreatSummary on={on} threat={threat} />
     </button>,
   );
+};
+
+const showSummary = (threat: Threat, on: ElementId = actorElement): void => {
+  showSummaryOn(on, threat);
 };
 
 const trigger = (): HTMLElement => screen.getByRole('button');
@@ -41,8 +46,8 @@ const nameOf = (): string => {
   return found;
 };
 
-const alsoOn = (): string | undefined =>
-  trigger().querySelector('[data-also-on]')?.textContent ?? undefined;
+const elementsLine = (): string | undefined =>
+  trigger().querySelector('[data-on-elements]')?.textContent ?? undefined;
 
 const raised = (): string[] =>
   [...trigger().querySelectorAll<HTMLElement>('[data-flag]')].map(
@@ -84,7 +89,7 @@ describe('ThreatSummary', () => {
 
   it('names the other elements the threat is on, and only when there are any', () => {
     showSummary(recordedThreat(firstThreat));
-    expect(alsoOn()).toBeUndefined();
+    expect(elementsLine()).toBeUndefined();
     cleanup();
 
     showSummary({
@@ -92,10 +97,28 @@ describe('ThreatSummary', () => {
       elements: [actorElement, storeElement, processElement],
     });
 
-    expect(alsoOn()).toContain('Studio');
-    expect(alsoOn()).toContain('Models');
-    expect(alsoOn()).not.toContain('Reader');
+    expect(elementsLine()).toContain('Studio');
+    expect(elementsLine()).toContain('Models');
+    expect(elementsLine()).not.toContain('Reader');
     expect(named('Models')).not.toBeNull();
+  });
+
+  it('names every element the threat is on where no element shows it, and says so where it is on none', () => {
+    const { t } = activeTranslator();
+    showSummaryOn(undefined, {
+      ...recordedThreat(firstThreat),
+      elements: [actorElement, processElement],
+    });
+
+    expect(elementsLine()).toBe(
+      t('panel.on-elements', { list: ['Reader', 'Studio'] }),
+    );
+    cleanup();
+
+    showSummaryOn(undefined, { ...recordedThreat(firstThreat), elements: [] });
+
+    expect(elementsLine()).toBe(t('panel.on-no-element'));
+    expect(named(t('panel.on-no-element'))).not.toBeNull();
   });
 
   it('marks an assumption that applies to the model only on the threats it links', () => {

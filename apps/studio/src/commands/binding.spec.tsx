@@ -129,6 +129,9 @@ describe('commandForKey', () => {
     const field = holder.firstElementChild ?? holder;
 
     expect(commandForKey(press(field, { key: 'a' }), 'other')).toBeUndefined();
+    expect(
+      commandForKey(press(field, { key: 'F', shiftKey: true }), 'other'),
+    ).toBeUndefined();
     expect(commandForKey(press(field, { key: 't' }), 'other')).toBeUndefined();
     expect(
       commandForKey(press(field, { key: 'a', ctrlKey: true }), 'other'),

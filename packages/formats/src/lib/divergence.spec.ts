@@ -51,6 +51,15 @@ describe('divergences', () => {
   });
 });
 
+const rendered = (id: string): string =>
+  renderDivergences([
+    entry(
+      { kind: 'element', id: elementIdSchema.parse(id) },
+      undeclared('ports'),
+      'unrepresentable',
+    ),
+  ]);
+
 describe('renderDivergences', () => {
   it('says so where nothing diverged', () => {
     expect(renderDivergences([])).toBe('No divergence recorded.');
@@ -124,14 +133,6 @@ describe('renderDivergences', () => {
   });
 
   it('escapes a backslash, so no id renders as another', () => {
-    const rendered = (id: string): string =>
-      renderDivergences([
-        entry(
-          { kind: 'element', id: elementIdSchema.parse(id) },
-          undeclared('ports'),
-          'unrepresentable',
-        ),
-      ]);
     expect(rendered('a\\u000ab')).toBe(
       'element "a\\\\u000ab": the key ports (no place in the format)',
     );

@@ -30,6 +30,7 @@ describe('contentHeight', () => {
         withScrollHeight(
           {
             boxSizing: 'border-box',
+            borderStyle: 'solid',
             borderTopWidth: '1px',
             borderBottomWidth: '2px',
           },

@@ -6,6 +6,7 @@ export const panelSv = catalogue(panelMessages)('sv')({
   'unlabelled-flow': 'Flöde {ends}',
   details: 'Detaljer',
   'close-threats': 'Stäng hoten',
+  'close-model': 'Stäng modellpanelen',
   'widen-pane': 'Bredda panelen',
   'restore-pane-width': 'Återställ panelens bredd',
   'several-selected': {
@@ -15,6 +16,7 @@ export const panelSv = catalogue(panelMessages)('sv')({
   },
   'add-threat': 'Lägg till ett hot',
   'no-threats': 'Inga hot är införda på det här objektet.',
+  'no-model-threats': 'Inga hot är införda i den här modellen.',
   'delete-threat': 'Ta bort hot {number}',
   'threat-spread': {
     one: 'Det här hotet nämner {count} objekt. Tas det bort försvinner det från alla.',
@@ -26,6 +28,8 @@ export const panelSv = catalogue(panelMessages)('sv')({
   'summary-status': 'Status: {status}',
   'summary-category': 'Kategori: {category}',
   'also-on-elements': 'Även på {list}',
+  'on-elements': 'På {list}',
+  'on-no-element': 'På inget objekt',
   'security-properties': 'Säkerhetsegenskaper',
   'not-recorded-hint':
     'Ej angivet betyder att inget säkerhetspåstående är sparat.',
@@ -56,4 +60,10 @@ export const panelSv = catalogue(panelMessages)('sv')({
   },
   'detail-applies-to-model': 'gäller modellen',
   'detail-no-elements': 'kopplat till inget objekt',
+  'close-register': 'Stäng hotregistret',
+  'register-number': 'Nummer',
+  'register-number-short': 'Nr',
+  'register-elements': 'Objekt',
+  'no-element': 'Inget objekt',
+  'untitled-threat': 'Hot {number}',
 });

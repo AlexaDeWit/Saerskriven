@@ -56,13 +56,12 @@ type FocusRequest =
     };
 
 /**
- * The records of one kind linked to one target, a threat or the model. Add
- * opens an empty row that becomes a record on its first commit and goes when
- * left empty. A row that returns while the group is mounted takes its old
- * slot back. On a threat the heading counts the records, every record starts
- * folded and one opened stays open while the group is mounted, and a new
- * record is marked and announced as added once it is kept. The model's
- * records are cards, open, as they were before threats folded theirs.
+ * The records of one kind linked to one target, a threat or the model, under
+ * a heading that counts them. Add opens an empty row that becomes a record on
+ * its first commit and goes when left empty, and a new record is marked and
+ * announced as added once it is kept. Every record starts folded, and one
+ * opened stays open while the group is mounted. A row that returns while the
+ * group is mounted takes its old slot back.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,
@@ -111,7 +110,7 @@ export function RecordGroup<Held extends ThreatRecord>({
     ),
   );
   const isOpen = (record: Held): boolean =>
-    !target.inThreat || isDraft(record) || opened.has(record.id);
+    isDraft(record) || opened.has(record.id);
   const stale = [...refusals.keys(), held?.field ?? '']
     .filter((field) => isRecordField(field, kind.noun))
     .find(
@@ -171,12 +170,10 @@ export function RecordGroup<Held extends ThreatRecord>({
           .some(({ id }) => id === next.id)
       ) {
         setDraft(undefined);
-        if (target.inThreat) {
-          setOpened((current) => withId(current, next.id));
-          setAdded((current) => withId(current, next.id));
-          const { addedSaid } = kind;
-          announce((speak) => speak(addedSaid, { number: position }));
-        }
+        setOpened((current) => withId(current, next.id));
+        setAdded((current) => withId(current, next.id));
+        const { addedSaid } = kind;
+        announce((speak) => speak(addedSaid, { number: position }));
       }
     };
 
@@ -247,13 +244,8 @@ export function RecordGroup<Held extends ThreatRecord>({
   return (
     <fieldset className={styles.records} ref={group}>
       <legend>
-        {t(target.heading)}
-        {target.inThreat && (
-          <>
-            {' '}
-            <span className={styles.count}>{records.length}</span>
-          </>
-        )}
+        {t(target.heading)}{' '}
+        <span className={styles.count}>{records.length}</span>
       </legend>
       <div className={styles.recordBody} onBlur={tracked} onFocus={tracked}>
         {rows.map((record, index) => (
@@ -266,11 +258,10 @@ export function RecordGroup<Held extends ThreatRecord>({
               threats,
               translator,
             )}
-            foldable={target.inThreat && !isDraft(record)}
+            foldable={!isDraft(record)}
             held={held}
             key={record.id}
             kind={kind}
-            layout={target.inThreat ? 'section' : 'card'}
             name={t('fields.record-name', {
               kind: t(kind.title),
               number: index + 1,

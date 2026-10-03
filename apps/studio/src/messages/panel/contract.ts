@@ -1,16 +1,18 @@
 import { plural, text } from '@saerskriven/i18n';
 
-/** The threat panel, the model's properties, and the record groups. */
+/** The threat panel, the model panel, the record groups, and the threat register. */
 export const panelMessages = {
   threats: text(),
   'unlabelled-flow': text({ ends: 'text' }),
   details: text(),
   'close-threats': text(),
+  'close-model': text(),
   'widen-pane': text(),
   'restore-pane-width': text(),
   'several-selected': plural('count'),
   'add-threat': text(),
   'no-threats': text(),
+  'no-model-threats': text(),
   'delete-threat': text({ number: 'number' }),
   'threat-spread': plural('count'),
   'attached-elements': text(),
@@ -18,6 +20,8 @@ export const panelMessages = {
   'summary-status': text({ status: 'text' }),
   'summary-category': text({ category: 'text' }),
   'also-on-elements': text({ list: 'list' }),
+  'on-elements': text({ list: 'list' }),
+  'on-no-element': text(),
   'security-properties': text(),
   'not-recorded-hint': text(),
   'no-relationships': text(),
@@ -38,4 +42,10 @@ export const panelMessages = {
   'detail-threats': plural('count', { list: 'list' }),
   'detail-applies-to-model': text(),
   'detail-no-elements': text(),
+  'close-register': text(),
+  'register-number': text(),
+  'register-number-short': text(),
+  'register-elements': text(),
+  'no-element': text(),
+  'untitled-threat': text({ number: 'number' }),
 } as const;

@@ -6,6 +6,7 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   'unlabelled-flow': 'Flux {ends}',
   details: 'Détails',
   'close-threats': 'Fermer les menaces',
+  'close-model': 'Fermer le volet du modèle',
   'widen-pane': 'Élargir le volet',
   'restore-pane-width': 'Rétablir la largeur du volet',
   'several-selected': {
@@ -16,6 +17,7 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   },
   'add-threat': 'Ajouter une menace',
   'no-threats': 'Aucune menace n’est consignée sur cet élément.',
+  'no-model-threats': 'Aucune menace n’est consignée dans ce modèle.',
   'delete-threat': 'Supprimer la menace {number}',
   'threat-spread': {
     one: 'Cette menace nomme {count} élément. La supprimer la retire de tous.',
@@ -28,6 +30,8 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   'summary-status': 'État : {status}',
   'summary-category': 'Catégorie : {category}',
   'also-on-elements': 'Aussi sur {list}',
+  'on-elements': 'Sur {list}',
+  'on-no-element': 'Sur aucun élément',
   'security-properties': 'Propriétés de sécurité',
   'not-recorded-hint':
     'Non consigné signifie qu’aucune affirmation de sécurité n’est enregistrée.',
@@ -61,4 +65,10 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   },
   'detail-applies-to-model': 's’applique au modèle',
   'detail-no-elements': 'rattachée à aucun élément',
+  'close-register': 'Fermer le registre des menaces',
+  'register-number': 'Numéro',
+  'register-number-short': 'Nº',
+  'register-elements': 'Éléments',
+  'no-element': 'Aucun élément',
+  'untitled-threat': 'Menace {number}',
 });

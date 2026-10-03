@@ -27,16 +27,18 @@ import {
   undoable,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { chooseFrom, editorTimeout } from './panel.fixtures.js';
-import type { HeldDraft } from './element-threats.js';
+import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
+import type { HeldDraft } from './threat-list.js';
 import { ThreatPanel, type ThreatPanelProps } from './threat-panel.js';
 import {
   addControl,
   button,
   describedNumbers,
+  detailsTab,
   noop,
   numbersIn,
   textbox,
+  threatsTab,
 } from '../ui/ui.fixtures.js';
 import { elementIn, softHyphen, threatId } from '@saerskriven/model/fixtures';
 import { canvasModel, requestFlow } from '../canvas/canvas.fixtures.js';
@@ -75,12 +77,6 @@ const titleField = (): HTMLElement =>
 
 const severityOf = (): string =>
   screen.getByRole('combobox', { name: 'Severity' }).textContent ?? '';
-
-const threatsTab = (): HTMLElement =>
-  screen.getByRole('tab', { name: /^Threats \d+$/u });
-
-const detailsTab = (): HTMLElement =>
-  screen.getByRole('tab', { name: 'Details' });
 
 const threatsInStore = (): number =>
   modelStore.getState().present.threats.length;
@@ -129,12 +125,8 @@ const withReviewedThreats = (): void => {
   );
 };
 
-const listedThreats = (): readonly (string | undefined)[] =>
-  [
-    ...screen
-      .getByTestId('threat-panel')
-      .querySelectorAll<HTMLElement>('[data-threat-item]'),
-  ].map((item) => item.dataset['threatItem']);
+const listed = (): readonly (string | undefined)[] =>
+  listedThreats(screen.getByTestId('threat-panel'));
 
 const addThreat = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(addControl());
@@ -269,6 +261,19 @@ describe(
       expect(document.activeElement).toBe(button('Detach Studio'));
     });
 
+    it('takes a threat off the list when the detach takes the element shown, keeping it on its other element, with focus on the add control', async () => {
+      const user = userEvent.setup();
+      shareThreat();
+      showPanel(actorElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await user.click(button('Detach Reader'));
+
+      expect(present().threats[0].elements).toEqual([processElement]);
+      expect(listed()).toEqual([]);
+      expect(document.activeElement).toBe(addControl());
+    });
+
     it('removes the threat when the detach takes its last element, and one undo brings it back', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
@@ -392,7 +397,7 @@ describe(
       withReviewedThreats();
       showPanel(actorElement);
 
-      expect(listedThreats()).toEqual([
+      expect(listed()).toEqual([
         'threat-open-critical',
         'threat-open-low',
         'threat-accepted-critical',
@@ -404,7 +409,7 @@ describe(
       const user = userEvent.setup();
       withReviewedThreats();
       showPanel(actorElement);
-      const shown = listedThreats();
+      const shown = listed();
 
       act(() => {
         dispatch(
@@ -415,10 +420,10 @@ describe(
       });
       await addThreat(user);
 
-      expect(listedThreats()).toEqual([...shown, present().threats.at(-1)?.id]);
+      expect(listed()).toEqual([...shown, present().threats.at(-1)?.id]);
       cleanup();
       showPanel(actorElement);
-      expect(listedThreats().slice(0, 2)).toEqual([
+      expect(listed().slice(0, 2)).toEqual([
         'threat-open-critical',
         'threat-mitigated-high',
       ]);

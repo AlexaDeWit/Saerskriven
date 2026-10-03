@@ -558,20 +558,31 @@ threat's status.
 A new or returning row joins the end of the group while the group is open, so
 the rows you are reading keep their place.
 
-### Model properties
+### The model panel
 
-**Model properties** shows the model's Title, Description, and the assumptions
-that apply to the whole model, in the panel's place, with focus in Title. It
-clears the selection, and whether it is shown belongs to each tab. Selecting
-anything brings the threat panel back. Escape, Close model properties, or
+**Model**, in the menu or M, shows the model panel in the threat panel's place,
+headed by the model's title, on two tabs: **Threats**, which carries the
+model's threat count, and **Details**. It opens on Threats with focus on that
+tab, and clears the selection. Whether it is shown belongs to each browser tab.
+Selecting anything brings the threat panel back. Escape, Close model panel, or
 running the command again closes it and moves focus to the canvas.
 
-Its assumptions group works as a threat's does, bound to the model, but its
-records stay open as cards with labelled fields, and its heading carries no
-count. Add creates an assumption that applies to the model and links no threat.
-Link existing lists the assumptions that do not yet apply to the model. Unlink
-stops an assumption applying to the model, and removes it only where it links no
-threat.
+Threats lists every threat in the model, a threat on no element included, in
+the order above and with the same summaries. Each summary adds a line naming
+the elements the threat is on, or "On no element". A threat opens and is
+edited as on an element's panel. There is no Add a threat or Attach existing
+threat here, so add a threat on an element. A detach that leaves the threat on
+another element keeps it in the list, and detaching its last element removes
+it, as on an element's panel. Focus then moves to the threat that takes its
+place, or to the Threats tab.
+
+Details holds the model's Title and Description, then the assumptions that
+apply to the whole model. The assumptions group works as a threat's does, bound
+to the model, and a folded assumption names the threats it is also on by
+number. Add creates an assumption that applies to the model and links no
+threat. Link existing lists the assumptions that do not yet apply to the model.
+Unlink stops an assumption applying to the model, and removes it only where it
+links no threat.
 
 ### Description and scope
 
@@ -585,6 +596,13 @@ field with the refused character named, as in a threat's fields, until you
 correct or clear it, and survives closing the panel and selecting something
 else.
 
+On the canvas and in exported drawings, an element out of scope has its
+outline dashed and drawn in the muted ink. A flow out of scope has its line
+dashed and drawn in the muted ink, and its arrowhead filled with it. Names and
+badges are drawn as they are in scope. The dash is not a colour, so it survives
+forced colours. A Note, which has no outline, is not marked, and a trust
+boundary, already dashed, is marked by a shorter dash alone.
+
 ### Security properties
 
 Select one actor, process, store, flow or trust boundary, show its Details tab,
@@ -595,6 +613,42 @@ crosses, a boundary's contained elements and crossing flows) offer valid targets
 in the same diagram, keep their order and any repeated entry until you edit
 them, and Not recorded removes the list itself. The fields' meaning is in
 [the format](saerskriven-yaml.md#security-facts).
+
+## The threat register
+
+**Threat register**, in the View menu or R outside a form field, opens a table
+of every threat in the model over the canvas, left of the panel, with focus on
+its first row. It has the panel's top and height, and keeps room for the
+panel while none is open, so the panel opens beside it. Where the window
+leaves too little room beside the panel, as on a phone, the register takes
+the window's width and hides the panel under it until it closes, and the
+table scrolls sideways inside it. R while the register is open moves focus back into it, to the row
+last chosen.
+
+Each row gives a threat's number, title, elements, severity and status. The
+rows are in the threat list's order, by how much risk is still live, and hold
+that order while the register stays open: an edit updates its row in place
+and a new threat joins the end. A threat on no element reads "No element".
+There is no filter or search.
+
+Choosing a row by its title opens that threat on the model panel's Threats
+tab, landed at the top as if it were opened there, and shows the model panel
+where something else was in its place. The register stays open with the row
+marked and focus on its title, and the status line says which threat opened.
+A threat holding refused text in the model panel stays open there, and
+another row chosen meanwhile is not marked.
+
+Each element name in a row selects that element, on whichever diagram draws
+it, and closes the register, with focus on the element.
+
+Escape, or Close threat register, closes it and leaves the model panel open.
+Focus moves to the threat open in the model panel, or to its Threats tab where
+none is, and without the model panel back to where it was before the register
+opened.
+
+The register covers the cards over a selection, such as Reconnect flow, which
+Tab skips while it is open. Position and size, Change flow source and Change
+flow target close the register as they open their card.
 
 ## Keyboard
 
@@ -629,12 +683,13 @@ outside one, and none works while focus is inside an open menu or list.
 | Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange       |
 | Align centres, Align middles           | Mod+Shift+H, Mod+Shift+V                     | Menu, Arrange       |
 | Distribute horizontally, vertically    | Mod+Shift+D, Mod+Shift+B                     | Menu, Arrange       |
-| Model properties                       | M                                            | Menu                |
+| Model                                  | M                                            | Menu                |
+| Threat register                        | R                                            | Menu                |
 | Focus threats                          | T                                            | Keyboard only       |
 | Start a flow                           | F                                            | Keyboard only       |
 | Add bend                               | `+`                                          | Flow route toolbar  |
 | Snap to grid                           | Mod+Shift+G                                  | Menu                |
-| Fit selection                          | Mod+Shift+0                                  | Menu, zoom controls |
+| Fit selection                          | Shift+F                                      | Menu, zoom controls |
 | Fit to view                            | Mod+0                                        | Zoom controls       |
 | Zoom in, Zoom out                      | Mod+= or Mod++, Mod+-                        | Zoom controls       |
 | Reset zoom to 100%                     | Mod+1                                        | Zoom controls       |
@@ -651,7 +706,9 @@ Enter on a focused element selects it, and a second Enter edits its name.
 ## Accessibility
 
 Tab reaches the card, then the diagram's flows and elements, every flow before
-every element, then the panel.
+every element, then the threat register while it is open, then the panel. Where
+the register covers the panel, in a window under 55rem, Tab skips the panel
+until the register closes.
 
 Every element and flow is a tab stop whose accessible name comes from the
 model: its name, its kind, what its badge says, and each flag its threats
@@ -683,10 +740,11 @@ navigation keys do not.
 - Removing and reordering diagrams is not offered.
 - Nothing pans to a newly connected flow, or out from under the panel.
 - Records have no list of their own: a mitigation is reached through its
-  threats, and an assumption through its threats or the model properties. The
-  model's explicit record removal has no control.
-- Link existing and Attach existing have no search or filter, and the threat
-  list has no filter or search, and no order but the one above.
+  threats, and an assumption through its threats or the model panel's Details.
+  The model's explicit record removal has no control.
+- Link existing and Attach existing have no search or filter, and neither the
+  threat list nor the threat register has a filter, a search, or an order but
+  the one above.
 - A threat's id and number cannot be edited.
 - A custom methodology cannot be created in the studio. A threat that arrived
   with one shows it and can be moved to a listed category.

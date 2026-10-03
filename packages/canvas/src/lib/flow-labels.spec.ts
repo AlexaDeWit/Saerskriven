@@ -375,6 +375,14 @@ const fanNames = [
   'list the tokens',
 ];
 
+const slid = (edge: CanvasEdge): number => {
+  const centre = centreOf(backingOf(edge));
+  return Math.hypot(
+    centre.x - (edge.source.x + edge.target.x) / 2,
+    centre.y - (edge.source.y + edge.target.y) / 2,
+  );
+};
+
 describe('flows fanning out of one element', () => {
   const pitch = 30;
   const layout = layoutOf(
@@ -404,14 +412,6 @@ describe('flows fanning out of one element', () => {
       ],
     }),
   );
-  const slid = (edge: CanvasEdge): number => {
-    const centre = centreOf(backingOf(edge));
-    return Math.hypot(
-      centre.x - (edge.source.x + edge.target.x) / 2,
-      centre.y - (edge.source.y + edge.target.y) / 2,
-    );
-  };
-
   it('leave from one point', () => {
     const [first, ...rest] = layout.edges;
     expect(rest.map((edge) => edge.source)).toEqual(
