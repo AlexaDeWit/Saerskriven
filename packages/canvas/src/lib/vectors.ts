@@ -3,7 +3,9 @@ import type { Segment } from './geometry.js';
 
 /** The squared distance between two points. */
 export function squaredDistance(from: Point, to: Point): number {
-  return (from.x - to.x) ** 2 + (from.y - to.y) ** 2;
+  const x = from.x - to.x;
+  const y = from.y - to.y;
+  return x * x + y * y;
 }
 
 /**

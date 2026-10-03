@@ -115,11 +115,9 @@ export function boxesOverlap(one: Box, other: Box): boolean {
 export function boxMeetsEllipse(box: Box, ellipse: Ellipse): boolean {
   const nearestX = Math.min(Math.max(ellipse.centre.x, box.minX), box.maxX);
   const nearestY = Math.min(Math.max(ellipse.centre.y, box.minY), box.maxY);
-  return (
-    ((nearestX - ellipse.centre.x) / ellipse.radiusX) ** 2 +
-      ((nearestY - ellipse.centre.y) / ellipse.radiusY) ** 2 <=
-    1
-  );
+  const x = (nearestX - ellipse.centre.x) / ellipse.radiusX;
+  const y = (nearestY - ellipse.centre.y) / ellipse.radiusY;
+  return x * x + y * y <= 1;
 }
 
 /**

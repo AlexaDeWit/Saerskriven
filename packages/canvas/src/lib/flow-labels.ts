@@ -61,10 +61,18 @@ export const shownLineAtEnds = 12;
 export const besideGap = 4;
 
 /**
- * How far past {@link besideGap} a block beside a line may step out, in two
- * equal steps, so its backing stays within 16 units of the line it names.
+ * How far past {@link besideGap} a block beside a line steps out, in two
+ * equal steps, before it tries further out: its backing stays within 16
+ * units of the run it hangs beside wherever a clear spot that close exists.
  */
 export const besideReach = 12;
+
+/**
+ * The standoffs a block beside a line tries once none within
+ * {@link besideReach} is clear on either side, out to the 44 units the first
+ * placement reached.
+ */
+export const fartherStandoffs = [24, 34, 44] as const;
 
 /**
  * Where every flow of one diagram hangs its block of badge and name, one
@@ -142,10 +150,9 @@ type Scene = {
 
 const onLineTolerance = 1e-6;
 
-const besideStandoffs = [
-  besideGap,
-  besideGap + besideReach / 2,
-  besideGap + besideReach,
+const besideBands = [
+  [besideGap, besideGap + besideReach / 2, besideGap + besideReach],
+  fartherStandoffs,
 ];
 
 const blocksByName = new Map<string, readonly FlowBlock[]>();
@@ -295,7 +302,7 @@ function placedFlow(
     ],
     own: [...scene.lines[index], ...scene.arrowheads[index]],
     ends: endRunsOf(flow),
-    standoffs: besideStandoffs,
+    bands: besideBands,
   });
 }
 

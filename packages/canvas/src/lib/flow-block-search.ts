@@ -29,7 +29,8 @@ export type Obstacle =
  * What placing one flow's block reads. `others` is everything drawn but the
  * flow's own line and arrowheads, which are `own`. `ends` are the stretches
  * of the flow's own line a block on the line leaves showing. A block beside
- * the line stands off it by each of `standoffs`, nearest first.
+ * the line stands off it by each standoff of each of `bands`, a band tried
+ * on both sides before the next, nearest first.
  */
 export type BlockSearch = {
   readonly runs: readonly LineRun[];
@@ -38,7 +39,7 @@ export type BlockSearch = {
   readonly others: readonly Obstacle[];
   readonly own: readonly Obstacle[];
   readonly ends: readonly Segment[];
-  readonly standoffs: readonly number[];
+  readonly bands: readonly (readonly number[])[];
 };
 
 /** A box as an obstacle. */
@@ -71,11 +72,12 @@ export function ellipseObstacle(ellipse: Ellipse): Obstacle {
 
 /**
  * The block a flow's search settles on: on the line at each spot in turn,
- * then beside it on the fixed side and then the other, each shape widest
- * first, at each standoff nearest first, at each spot in turn. The first
- * candidate covering nothing wins, a candidate on the line counting only
- * where it leaves `ends` uncovered, and where none is clear the first of
- * those covering the fewest obstacles.
+ * then beside it band by band, on the fixed side and then the other, each
+ * shape widest first, at each standoff nearest first, at each spot in turn.
+ * The first candidate covering nothing wins, a candidate on the line counting
+ * only where it leaves `ends` uncovered and one beside it only where the
+ * block's corner nearest the run lies alongside the run, and where none is
+ * clear the first of those covering the fewest obstacles.
  *
  * A block hung one way slides along a run in a straight line, so it meets a
  * box or a straight run of line over one interval of the run, which the
@@ -110,6 +112,7 @@ export function searchedBlock(search: BlockSearch): FlowLabelPlacement {
 type Hanging = {
   readonly block: FlowBlock;
   readonly shape: number;
+  readonly band: number;
   readonly side: number;
   readonly standoff: number;
 };
@@ -121,7 +124,7 @@ type SpotsOnRun = {
 
 type NearRuns = {
   readonly others: readonly (readonly Obstacle[])[];
-  readonly beside: readonly (readonly (readonly Obstacle[])[])[];
+  readonly beside: readonly (readonly (readonly (readonly Obstacle[])[])[])[];
   readonly ends: readonly (readonly Obstacle[])[];
 };
 
@@ -152,11 +155,19 @@ const spotsByRun = memoizedByIdentity((spots: readonly LineSpot[]) => {
 });
 
 function* hangingsOf(search: BlockSearch): Generator<Hanging> {
-  yield { block: search.shapes[0], shape: 0, side: onTheLine, standoff: 0 };
-  for (const side of [1, -1]) {
-    for (const [shape, block] of search.shapes.entries()) {
-      for (const standoff of search.standoffs) {
-        yield { block, shape, side, standoff };
+  yield {
+    block: search.shapes[0],
+    shape: 0,
+    band: 0,
+    side: onTheLine,
+    standoff: 0,
+  };
+  for (const [band, standoffs] of search.bands.entries()) {
+    for (const side of [1, -1]) {
+      for (const [shape, block] of search.shapes.entries()) {
+        for (const standoff of standoffs) {
+          yield { block, shape, band, side, standoff };
+        }
       }
     }
   }
@@ -164,10 +175,8 @@ function* hangingsOf(search: BlockSearch): Generator<Hanging> {
 
 function obstaclesNearRuns(search: BlockSearch): NearRuns {
   const [onLine] = search.shapes;
-  const nearest = Math.min(...search.standoffs);
-  const farthest = Math.max(...search.standoffs);
   const reach =
-    farthest +
+    Math.max(...search.bands.flat()) +
     Math.max(
       ...search.shapes.map(
         (block) =>
@@ -175,7 +184,8 @@ function obstaclesNearRuns(search: BlockSearch): NearRuns {
           block.halfHeight +
           Math.max(block.halfWidth, block.halfHeight),
       ),
-    );
+    ) +
+    margin;
   const ends = search.ends.map(lineObstacle);
   const near = (
     run: LineRun,
@@ -183,31 +193,41 @@ function obstaclesNearRuns(search: BlockSearch): NearRuns {
     within: number,
   ): Obstacle[] =>
     obstacles.filter((obstacle) => runPassesNear(run, obstacle.box, within));
-  const along = Math.max(onLine.halfWidth, onLine.halfHeight);
+  const onLineReach = Math.max(onLine.halfWidth, onLine.halfHeight) + margin;
   return {
-    others: search.runs.map((run) => near(run, search.others, along)),
+    others: search.runs.map((run) => near(run, search.others, onLineReach)),
     beside: search.runs.map((run) => {
       const all = [
         ...near(run, search.others, reach),
         ...near(run, search.own, reach),
       ];
-      return [1, -1].flatMap((sign) =>
-        search.shapes.map((block) => {
-          const across = acrossReach(block, run.direction);
-          return all.filter((obstacle) =>
-            meetsBand(
-              run,
-              obstacle.box,
-              sign,
-              nearest,
-              farthest + 2 * across,
-              alongReach(block, run.direction),
-            ),
-          );
-        }),
+      const projected = all.map((obstacle) =>
+        projectedOnRun(run, obstacle.box),
+      );
+      return search.bands.map((standoffs) =>
+        [1, -1].flatMap((sign) =>
+          search.shapes.map((block) => {
+            const low = Math.min(...standoffs) - margin;
+            const high =
+              Math.max(...standoffs) +
+              2 * acrossReach(block, run.direction) +
+              margin;
+            const ahead = alongReach(block, run.direction) + margin;
+            return all.filter((_obstacle, at) => {
+              const { across, acrossSpread, along, alongSpread } =
+                projected[at];
+              return (
+                sign * across + acrossSpread >= low &&
+                sign * across - acrossSpread <= high &&
+                along + alongSpread >= -ahead &&
+                along - alongSpread <= run.length + ahead
+              );
+            });
+          }),
+        ),
       );
     }),
-    ends: search.runs.map((run) => near(run, ends, along)),
+    ends: search.runs.map((run) => near(run, ends, onLineReach)),
   };
 }
 
@@ -245,6 +265,18 @@ function measureCosts(
       x: run.segment.from.x + offset.x,
       y: run.segment.from.y + offset.y,
     };
+    const corner = onLine ? 0 : nearCornerAlong(hanging, run.direction);
+    let lowest = 0;
+    while (lowest < order.length && alongs[lowest] + corner < 0) {
+      lowest += 1;
+    }
+    let highest = order.length - 1;
+    while (highest >= lowest && alongs[highest] + corner > run.length) {
+      highest -= 1;
+    }
+    if (lowest > highest) {
+      continue;
+    }
     const counted = new Int32Array(order.length + 1);
     const refused = new Int32Array(order.length + 1);
     const range = new Float64Array(2);
@@ -253,8 +285,11 @@ function measureCosts(
         if (!reachOf(obstacle, origin, run.direction, hanging.block, range)) {
           continue;
         }
-        const first = firstAtLeast(alongs, range[0]);
-        const last = firstAtLeast(alongs, range[1], true) - 1;
+        const first = Math.max(lowest, firstAtLeast(alongs, range[0]));
+        const last = Math.min(
+          highest,
+          firstAtLeast(alongs, range[1], true) - 1,
+        );
         if (obstacle.kind !== 'ellipse') {
           if (first <= last) {
             into[first] += 1;
@@ -279,7 +314,7 @@ function measureCosts(
       tally(near.others[index], counted);
       tally(near.ends[index], refused);
     } else {
-      const lists = near.beside[index];
+      const lists = near.beside[index][hanging.band];
       tally(
         lists[
           (sideOf(run.direction, hanging.side) > 0 ? 0 : 1) *
@@ -291,10 +326,10 @@ function measureCosts(
     }
     let covering = 0;
     let refusing = 0;
-    for (const [step, at] of order.entries()) {
+    for (let step = lowest; step <= highest; step += 1) {
       covering += counted[step];
       refusing += refused[step];
-      costs[at] = refusing > 0 ? unmeasured : covering;
+      costs[order[step]] = refusing > 0 ? unmeasured : covering;
     }
   }
 }
@@ -304,17 +339,21 @@ function firstAtLeast(
   value: number,
   past = false,
 ): number {
-  let low = 0;
-  let high = alongs.length;
-  while (low < high) {
-    const middle = Math.floor((low + high) / 2);
-    if (past ? alongs[middle] <= value : alongs[middle] < value) {
-      low = middle + 1;
-    } else {
-      high = middle;
-    }
+  const count = alongs.length;
+  const before = (at: number): boolean =>
+    past ? alongs[at] <= value : alongs[at] < value;
+  const spacing = count > 1 ? (alongs[count - 1] - alongs[0]) / (count - 1) : 1;
+  let at = Math.min(
+    count,
+    Math.max(0, Math.ceil((value - alongs[0]) / spacing)),
+  );
+  while (at < count && before(at)) {
+    at += 1;
   }
-  return low;
+  while (at > 0 && !before(at - 1)) {
+    at -= 1;
+  }
+  return at;
 }
 
 function reachOf(
@@ -411,6 +450,14 @@ function placedAt(
   );
 }
 
+function nearCornerAlong(hanging: Hanging, direction: Point): number {
+  const normal = scaledBy(fixedSide(direction), hanging.side);
+  return (
+    -Math.sign(normal.x) * hanging.block.halfWidth * direction.x -
+    Math.sign(normal.y) * hanging.block.halfHeight * direction.y
+  );
+}
+
 function sideOf(direction: Point, side: number): number {
   const fixed = fixedSide(direction);
   return side * (fixed.y * direction.x - fixed.x * direction.y);
@@ -430,32 +477,28 @@ function alongReach(block: FlowBlock, direction: Point): number {
   );
 }
 
-function meetsBand(
+function projectedOnRun(
   run: LineRun,
   box: Box,
-  sign: number,
-  low: number,
-  high: number,
-  along: number,
-): boolean {
-  const { direction, length } = run;
+): {
+  readonly across: number;
+  readonly acrossSpread: number;
+  readonly along: number;
+  readonly alongSpread: number;
+} {
+  const { direction } = run;
   const { from } = run.segment;
   const x = (box.minX + box.maxX) / 2 - from.x;
   const y = (box.minY + box.maxY) / 2 - from.y;
   const width = (box.maxX - box.minX) / 2;
   const height = (box.maxY - box.minY) / 2;
-  const across = sign * (direction.x * y - direction.y * x);
-  const acrossSpread =
-    Math.abs(direction.y) * width + Math.abs(direction.x) * height;
-  const ahead = direction.x * x + direction.y * y;
-  const aheadSpread =
-    Math.abs(direction.x) * width + Math.abs(direction.y) * height;
-  return (
-    across + acrossSpread >= low - margin &&
-    across - acrossSpread <= high + margin &&
-    ahead + aheadSpread >= -along - margin &&
-    ahead - aheadSpread <= length + along + margin
-  );
+  return {
+    across: direction.x * y - direction.y * x,
+    acrossSpread:
+      Math.abs(direction.y) * width + Math.abs(direction.x) * height,
+    along: direction.x * x + direction.y * y,
+    alongSpread: Math.abs(direction.x) * width + Math.abs(direction.y) * height,
+  };
 }
 
 function blockBox(block: FlowBlock, at: Point, offset: Point): Box {

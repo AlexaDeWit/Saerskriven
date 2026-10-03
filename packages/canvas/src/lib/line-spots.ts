@@ -99,7 +99,6 @@ export function spotsOutward(
     0,
     ...away,
   ];
-  let index = 0;
   const ascending = offsets.map((offset): LineSpot => {
     if (offset === 0) {
       return {
@@ -109,21 +108,11 @@ export function spotsOutward(
         offset,
       };
     }
-    const reached = middle + offset;
-    while (
-      index < runs.length - 1 &&
-      (runs[index].length === 0 ||
-        reached > runs[index].start + runs[index].length)
-    ) {
-      index += 1;
-    }
-    const run = runs[index];
-    const fraction =
-      run.length === 0 ? 0.5 : (reached - run.start) / run.length;
+    const { index, fraction } = runAtLength(runs, middle + offset);
     return {
-      at: alongSegment(run.segment, fraction),
+      at: alongSegment(runs[index].segment, fraction),
       run: index,
-      along: run.length * fraction,
+      along: runs[index].length * fraction,
       offset,
     };
   });

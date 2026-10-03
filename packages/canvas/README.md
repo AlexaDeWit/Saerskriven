@@ -44,14 +44,14 @@ line, which it breaks, starting at the middle of the line's longest run. Where
 it would cover a shape, a name, a badge, another block, another flow's line or
 a trust boundary's line, it slides along its own line to the nearest clear
 spot, leaving some line and every arrowhead showing at both ends. Where no spot
-on the line is clear, it goes beside the line, within 16 units of it so it
-still reads as the line's: above a run nearer horizontal, right of one nearer
-vertical, wrapping the name onto up to three lines where that helps, and on
-the other side only where that side is blocked. Where nothing is clear it
-takes the spot that covers the fewest things, so no name is dropped. The
-search ([`flow-block-search.ts`](src/lib/flow-block-search.ts)) measures each
-way of hanging a block along a run in one sweep over the obstacles near that
-run, rather than testing every obstacle at every spot. Flows are
+on the line is clear, it goes beside the line, alongside the run it hangs
+beside: above a run nearer horizontal, right of one nearer vertical, wrapping
+the name onto up to three lines where that helps, and on the other side only
+where that side is blocked. It stays within 16 units of that run wherever a
+spot that close is clear on either side, so it still reads as the line's, and
+only then steps out as far as 44. Where nothing is clear it takes the spot
+that covers the fewest things, so no name is dropped. The search is
+[`flow-block-search.ts`](src/lib/flow-block-search.ts). Flows are
 placed in id order from the model alone, so the studio and the headless render
 agree. During a drag, `flowLabelPlacementsDuringMove` keeps the block of every
 flow the drag leaves alone and places a moving flow's block by the same rules.

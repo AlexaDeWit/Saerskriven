@@ -23,6 +23,7 @@ import type { FlowLabelPlacement } from './flow-blocks.js';
 import {
   besideGap,
   besideReach,
+  fartherStandoffs,
   flowLabelPlacements,
   flowLabelPlacementsDuringMove,
   movedFlowLabel,
@@ -240,6 +241,45 @@ describe('the flow blocks of a whole diagram', () => {
         (edge) => onItsLine(edge) && endsCovered(edge),
       );
       expect(covered.map((edge) => edge.name)).toEqual([]);
+    },
+  );
+});
+
+const distanceToBox = (point: Point, box: Box): number =>
+  Math.hypot(
+    Math.max(box.minX - point.x, 0, point.x - box.maxX),
+    Math.max(box.minY - point.y, 0, point.y - box.maxY),
+  );
+
+const gapToLine = (edge: CanvasEdge): number => {
+  const block = backingOf(edge);
+  const corners = [
+    { x: block.minX, y: block.minY },
+    { x: block.maxX, y: block.minY },
+    { x: block.maxX, y: block.maxY },
+    { x: block.minX, y: block.maxY },
+  ];
+  return Math.min(
+    ...linesOf(edge).map((line) =>
+      segmentMeetsBox(line, block)
+        ? 0
+        : Math.min(
+            distanceToBox(line.from, block),
+            distanceToBox(line.to, block),
+            ...corners.map((corner) => projectedOn(line, corner).distance),
+          ),
+    ),
+  );
+};
+
+describe('the blocks beside their lines in the committed diagrams', () => {
+  it.each(scenes)(
+    'stand within 16 units of the line they name on $name',
+    ({ layout }) => {
+      const far = layout.edges.filter(
+        (edge) => !onItsLine(edge) && gapToLine(edge) > besideGap + besideReach,
+      );
+      expect(far.map((edge) => edge.name)).toEqual([]);
     },
   );
 });
@@ -470,12 +510,26 @@ describe('a short flow', () => {
     expect(collisionsIn(layout)).toEqual([]);
   });
 
-  it('keeps a block it cannot clear beside its line, over as few things as it can', () => {
+  it('steps out past 16 units only where nothing nearer is clear', () => {
     const layout = twoBoxes(40);
     const short = layout.edges[0];
     const block = backingOf(short);
-    expect(line - block.maxY).toBeGreaterThanOrEqual(besideGap);
-    expect(line - block.maxY).toBeLessThanOrEqual(besideGap + besideReach);
+    expect(line - block.maxY).toBeGreaterThan(besideGap + besideReach);
+    expect(line - block.maxY).toBeLessThanOrEqual(
+      Math.max(...fartherStandoffs),
+    );
+    expect(collisionsIn(layout)).toEqual([]);
+  });
+
+  it('keeps a block it cannot clear beside its line, over as few things as it can', () => {
+    const tall = 80;
+    const layout = twoBoxes(40, [], tall * 2);
+    const short = layout.edges[0];
+    const block = backingOf(short);
+    expect(tall - block.maxY).toBeGreaterThanOrEqual(besideGap);
+    expect(tall - block.maxY).toBeLessThanOrEqual(
+      Math.max(...fartherStandoffs),
+    );
     expect(coveredBy(layout, short)).toHaveLength(1);
   });
 
@@ -523,6 +577,28 @@ describe('a short flow', () => {
     );
     expect(collisionsIn(layout)).toEqual([]);
   });
+
+  it.each([40, 60])(
+    'clears two actors of the default size %i apart by stepping out further',
+    (gap) => {
+      const layout = layoutOf(
+        modelWith({
+          elements: [
+            boxAt('el-left', 0, 0, 'actor', { width: 120, height: 60 }),
+            boxAt('el-right', 120 + gap, 0, 'actor', {
+              width: 120,
+              height: 60,
+            }),
+            flowFrom('el-short', 'el-left', 'el-right', 'Book appointment'),
+          ],
+        }),
+      );
+      const [short] = layout.edges;
+      expect(onItsLine(short)).toBe(false);
+      expect(backingOf(short).maxY).toBeLessThanOrEqual(30 - besideGap);
+      expect(collisionsIn(layout)).toEqual([]);
+    },
+  );
 
   it('uses the other side only where the fixed side is blocked', () => {
     const layout = twoBoxes(
