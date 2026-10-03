@@ -69,7 +69,7 @@ issue the schema raised.
 threats of a model. The first takes `element`, `diagram`, `kind` and `query` and
 carries the element id, its diagram, its kind, its name, whether it is out of
 scope (`outOfScope`), and how many threats reference it. A flow left
-unlabelled keeps its empty `name` and adds `namedFromEnds`, which names it from
+unlabelled keeps its stored `name` and adds `namedFromEnds`, which names it from
 its ends: `Flow from Shopper to Web shop`, `Flow between Shopper and Web shop`
 for a flow that runs both ways, and `a free point` for an end attached to
 nothing. Its text line shows that name. Every element row carries it the same
@@ -192,7 +192,7 @@ optional security facts and declared boundary relationships of its kind. An
 actor, process, store or text note takes a `placement`: a position and size,
 or `"auto"` for the next place on the shared grid. Left out, `description` and
 `reasonOutOfScope` are empty and `outOfScope` is false, and a flow has no bends
-and runs one way. It refuses a name with nothing in it but white space on
+and runs one way. It refuses an empty name, or one of white space alone, on
 every kind but a flow, as `rename_element` does, and a flow end attached to
 anything but an actor, process or store of the diagram, or to the element the
 flow's other end is attached to, as `reconnect_flow` does. A file that
@@ -229,9 +229,10 @@ independent: setting `outOfScope` to false keeps the reason.
 }
 ```
 
-`rename_element` changes the name alone, on any kind, and refuses a name with
-nothing in it but white space, except on a flow: `""`, or white space alone,
-leaves a flow unlabelled, stored as an empty name, as `add_element` does.
+`rename_element` changes the name alone, on any kind, and refuses an empty
+name, or one of white space alone, on every kind but a flow: on a flow, `""`
+or white space alone leaves it unlabelled, stored as an empty name, as
+`add_element` does.
 `edit_note` changes a text note's text alone, empty text included, and refuses
 any other kind. `set_element_properties`, `set_element_details`,
 `rename_element` and `edit_note` leave the element at its place in its

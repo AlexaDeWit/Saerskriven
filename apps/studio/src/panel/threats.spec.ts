@@ -222,6 +222,22 @@ describe('the element lists of a threat', () => {
     ]);
   });
 
+  it('detach a flow left unlabelled under its numbered label where only normalization tells it from a name', () => {
+    const lookalike = Either.getOrThrow(
+      renameElement(unlabelledCanvas, probeFlow, 'Flow from Reader to Studio '),
+    );
+    expect(
+      threatAttachments(
+        lookalike.diagrams,
+        { ...onFlow, elements: [requestFlow, probeFlow] },
+        t,
+      ).map(({ detach }) => detach),
+    ).toEqual([
+      'Detach 1: Flow from Reader to Studio',
+      'Detach 2: Flow from Reader to Studio ',
+    ]);
+  });
+
   it('detach a named element under its name', () => {
     expect(
       threatAttachments(canvasModel.diagrams, onFlow, t).map(

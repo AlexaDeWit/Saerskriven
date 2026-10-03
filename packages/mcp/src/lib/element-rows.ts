@@ -23,7 +23,7 @@ const elementContextSchema = z.object({
   namedFromEnds: acceptedTextSchema
     .optional()
     .describe(
-      'For a flow left unlabelled, whose name is empty: the flow named from its ends, such as "Flow from Shopper to Web shop".',
+      'For a flow left unlabelled, whose name is empty or white space alone: the flow named from its ends, such as "Flow from Shopper to Web shop".',
     ),
 });
 
