@@ -1,4 +1,8 @@
+import type { Point, Size } from '@saerskriven/model';
+import { boundsOfPoints } from './bounds.js';
 import { sameNodeBox, type NodeBox } from './handles.js';
+import type { CanvasNode } from './layout.js';
+import { boundaryStrokeWidth } from './stylesheet.js';
 
 /** Positions of the four side controls and four corner controls. */
 export const resizeControlPositions = [
@@ -79,6 +83,83 @@ export function resizeBoxOnControlAxes(
     };
   }
   return resized;
+}
+
+/**
+ * The controls that resize `node`: every position, less those on a boundary
+ * curve that would stretch an axis its points do not span.
+ */
+export function resizeControlsOf(
+  node: CanvasNode,
+): readonly ResizeControlPosition[] {
+  if (node.kind !== 'boundary-curve') {
+    return resizeControlPositions;
+  }
+  const span = boundsOfPoints(node.waypoints);
+  return resizeControlPositions.filter(
+    (control) =>
+      (span.width > 0 || horizontalEdge(control) === undefined) &&
+      (span.height > 0 || verticalEdge(control) === undefined),
+  );
+}
+
+/** `node` drawn at `size`, a boundary curve's points scaled with it in the node's own coordinates. */
+export function nodeAtSize(node: CanvasNode, size: Size): CanvasNode {
+  return node.kind === 'boundary-curve'
+    ? {
+        ...node,
+        size,
+        waypoints: scaledCurvePoints(node.waypoints, {
+          position: { x: 0, y: 0 },
+          size,
+        }),
+      }
+    : { ...node, size };
+}
+
+/**
+ * Boundary curve points scaled so the curve laid out from them fills `box`,
+ * whose sides the layout places one boundary stroke outside the points. Each
+ * point keeps its place across the points' span. An axis shrinks to
+ * `minimumNodeExtent` and no further, or not at all where it already spans
+ * less, an axis the points do not span only moves, and an axis `box` leaves
+ * as it is keeps its coordinates.
+ */
+export function scaledCurvePoints(
+  points: readonly Point[],
+  box: NodeBox,
+): Point[] {
+  const bounds = boundsOfPoints(points);
+  const across = scaledAxis(
+    bounds.x,
+    bounds.width,
+    box.position.x,
+    box.size.width,
+  );
+  const down = scaledAxis(
+    bounds.y,
+    bounds.height,
+    box.position.y,
+    box.size.height,
+  );
+  return points.map((point) => ({ x: across(point.x), y: down(point.y) }));
+}
+
+function scaledAxis(
+  start: number,
+  span: number,
+  boxStart: number,
+  boxExtent: number,
+): (value: number) => number {
+  const margin = boundaryStrokeWidth;
+  const current = span + margin * 2;
+  if (boxStart === start - margin && boxExtent === current) {
+    return (value) => value;
+  }
+  const extent =
+    Math.max(boxExtent, Math.min(current, minimumNodeExtent)) - margin * 2;
+  const factor = span === 0 ? 1 : extent / span;
+  return (value) => boxStart + margin + (value - start) * factor;
 }
 
 function resizeOnHorizontalAxis(

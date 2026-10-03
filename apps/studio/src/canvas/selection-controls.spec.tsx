@@ -29,6 +29,8 @@ import {
 import {
   boundaryElement,
   canvasModel,
+  curvedCanvasModel,
+  laidOutNode,
   openCanvas,
   requestFlow,
 } from './canvas.fixtures.js';
@@ -70,6 +72,36 @@ describe('SelectionControls', () => {
     expect(
       screen.queryByRole('region', { name: 'Position and size' }),
     ).toBeNull();
+  });
+
+  it("shows a trust boundary curve's width and height and scales its points to them as one edit", () => {
+    openCanvas([boundaryElement], curvedCanvasModel);
+    const node = laidOutNode(boundaryElement);
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('edit-geometry'), recordingSurface().surface);
+    });
+    const height = screen.getByRole<HTMLInputElement>('spinbutton', {
+      name: 'Height',
+    });
+    expect(height.value).toBe(String(node.size.height));
+    fireEvent.change(height, {
+      target: { value: String(node.size.height + 100) },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
+    expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
+    expect(
+      elementIn(modelStore.getState().present, boundaryElement),
+    ).toMatchObject({
+      shape: {
+        kind: 'curve',
+        waypoints: [
+          { x: -20, y: 180 },
+          { x: 200, y: -20 },
+          { x: 440, y: 180 },
+        ],
+      },
+    });
   });
 
   it('retains invalid dimensions and cancels by Escape without history', () => {

@@ -34,6 +34,7 @@ import {
 import { svgNumber } from './numbers.js';
 import { polylinePath, smoothPath } from './paths.js';
 import { ResizeControls, type ResizeLabels } from './resize-controls.js';
+import { nodeAtSize } from './resizing.js';
 import { canvasClassNames, canvasInteractionClassNames } from './stylesheet.js';
 import { interactionWidths } from './tokens.js';
 
@@ -72,9 +73,10 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * passes `connectionMode={ConnectionMode.Loose}` for a flow to end on one.
  * The drawing is hidden from assistive technology, so the mounting canvas
  * gives the node its accessible name. `textVisible` false leaves the glyph's
- * text out, for a canvas with a text editor over it. A selected element the
- * model can resize carries the resize controls, named from `resizeLabels`.
- * The badge letters `marks` and draws last, in an SVG layer classed
+ * text out, for a canvas with a text editor over it. A selected element
+ * carries the resize controls, named from `resizeLabels`, and while `resizing`
+ * draws at the extent React Flow reports, a boundary curve's points scaled
+ * with it. The badge letters `marks` and draws last, in an SVG layer classed
  * `canvasInteractionClassNames.badgeLayer`, so a canvas can stack it above the
  * selection frame.
  */
@@ -110,7 +112,7 @@ export function CanvasNodeBody({
     shownSize.width === data.node.size.width &&
     shownSize.height === data.node.size.height
       ? data.node
-      : { ...data.node, size: shownSize };
+      : nodeAtSize(data.node, shownSize);
   return (
     <>
       <svg
@@ -138,7 +140,7 @@ export function CanvasNodeBody({
           style={controlsVisible ? undefined : { visibility: 'hidden' }}
         />
       ))}
-      {selected && resizableKinds.has(data.node.kind) ? (
+      {selected ? (
         <ResizeControls
           labels={resizeLabels}
           node={data.node}
@@ -365,14 +367,6 @@ const anchorExtent = 1;
 const boundaryZIndex = -1;
 
 const nodeZIndex = 0;
-
-const resizableKinds = new Set<CanvasNodeKind>([
-  'actor',
-  'process',
-  'store',
-  'text',
-  'boundary-box',
-]);
 
 const handlePlacement = {
   top: Position.Top,

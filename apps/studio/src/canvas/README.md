@@ -68,7 +68,8 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   subscribe at all.
 - **A gesture reaches the store once, when it settles.** A single move
   dispatches `MoveElement`, a group move `MoveElements` with one shared offset,
-  a resize one `ResizeElement`. During a drag each flow reads its endpoint
+  a resize one `ResizeElement`, or one `SetBoundaryShape` with a trust boundary
+  curve's points scaled to the new box. During a drag each flow reads its endpoint
   nodes, and the collision search for names and badges runs when the pointer
   pauses and once more on pointer-up.
 - **Settle against the store's selection, not a render's.** React Flow reports
@@ -145,7 +146,9 @@ round connection handle at each midpoint. A threat badge draws over the
 selection frame and the side lines and under every control's hit area. The
 top-right resize handle keeps clear of the badge at every zoom, and on an
 element too narrow for that it stops beside the top-left handle and can meet
-the badge ([the canvas package](../../../../packages/canvas/README.md)).
+the badge ([the canvas package](../../../../packages/canvas/README.md)). A
+trust boundary curve's corner handles sit outside its corners instead, clear of
+the badge and of the handle on a point there.
 
 Focus is the app's ring (`--saer-focus-ring`) and selection the frame and
 weights above, drawn apart so they stack. Both are an outline or a border

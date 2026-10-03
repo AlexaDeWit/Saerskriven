@@ -34,7 +34,6 @@ export function GeometryEditor({
   });
   const [refused, setRefused] = useState(false);
   const { t } = useTranslator();
-  const resizable = single !== undefined && single.kind !== 'boundary-curve';
   if (bounds === undefined) {
     return (
       <>
@@ -55,12 +54,12 @@ export function GeometryEditor({
       width: numeric(size.width),
       height: numeric(size.height),
     });
-    if (!at.success || (resizable && !extent.success)) {
+    if (!at.success || (single !== undefined && !extent.success)) {
       setRefused(true);
       announce((speak) => speak('canvas.geometry-invalid'));
       return;
     }
-    if (single !== undefined && resizable && extent.success) {
+    if (single !== undefined && extent.success) {
       resizeNode(single, { position: at.data, size: extent.data });
     } else {
       const offset = { x: at.data.x - bounds.minX, y: at.data.y - bounds.minY };
@@ -86,7 +85,7 @@ export function GeometryEditor({
           }}
         />
       ))}
-      {resizable &&
+      {single !== undefined &&
         (['width', 'height'] as const).map((axis) => (
           <NumberField
             key={axis}

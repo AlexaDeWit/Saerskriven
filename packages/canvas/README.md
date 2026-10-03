@@ -120,7 +120,10 @@ nothing. A flow end at a free position rides on an anchor node named by
 diagram out at the node positions React Flow holds during a gesture.
 [`resizing.ts`](src/lib/resizing.ts): `resizeKeys`, `keyboardResizeStep` and
 `shiftedKeyboardResizeStep` are the keyboard resize the node body's controls
-use, one control per `resizeControlPositions` entry.
+use, one control per `resizeControlPositions` entry, less those a boundary
+curve's points give nothing to stretch. `scaledCurvePoints` fits a curve's
+points to a resized box, for the node body's live drawing and for the edit the
+mounting canvas commits.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
 each node its accessible name, hands `CanvasNodeBody` the `resizeLabels` its

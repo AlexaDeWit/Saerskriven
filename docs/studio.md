@@ -148,9 +148,9 @@ and free ends along.
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
 side fixed. Focus a control and press an arrow key to move that edge five
-units, or twenty with Shift. An element is at least ten units wide and high. A
-trust boundary curve has no side lines or corner handles, and is reshaped by its
-points instead ([Trust boundaries](#trust-boundaries)).
+units, or twenty with Shift. An element is at least ten units wide and high. On
+a trust boundary curve the same controls scale its points
+([Trust boundaries](#trust-boundaries)).
 
 Position and size opens an editor for exact coordinates and dimensions, and
 Apply commits the whole form as one edit. Cancel or Escape leaves the model
@@ -225,6 +225,15 @@ point, or focus it and press an arrow key to move it five units or twenty with
 Shift. Click a point for Remove point, or press Delete or Backspace with the
 point focused. A curve keeps at least two points. Escape drops a point drag
 before its release.
+
+A selected curve also carries a box's side lines and corner handles around its
+points, each corner handle just outside its corner so that a point there keeps
+its own handle. Dragging a control, or pressing an arrow key on a focused one,
+scales every point against the opposite side or corner as one undo step, and
+the boundary keeps its name and its threats. A curve whose points all lie on
+one horizontal or vertical line has only the two side lines that lengthen it.
+Width and height in Position and size scale the points the same way, to no
+less than ten units.
 
 ## Names and Note text
 

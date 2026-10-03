@@ -12,6 +12,7 @@ import {
 } from './resizing.js';
 import { canvasClassNames, canvasInteractionClassNames } from './stylesheet.js';
 import type { CanvasNode } from './layout.js';
+import { resizeHandle } from './tokens.js';
 import {
   CanvasEdgeBody,
   CanvasFreeEndBody,
@@ -251,11 +252,31 @@ describe('CanvasNodeBody', () => {
     );
   });
 
-  it('offers none on a boundary curve, which the model gives no extent', () => {
-    expect(curveNode).toBeDefined();
-    expect(curveNode && bodyMarkup(curveNode, true)).not.toContain(
-      'react-flow__resize-control',
+  it('offers a selected boundary curve every control, its corner handles outside the corners', () => {
+    assert.isDefined(curveNode);
+    const markup = bodyMarkup(curveNode, true);
+    expect(markup.match(/react-flow__resize-control/gu)).toHaveLength(8);
+    const outside = `calc(-100% - ${String(resizeHandle.curveGap)}px)`;
+    expect(markup).toContain(`translate:${outside} ${outside}`);
+    expect(markup).toContain(
+      `translate:${String(resizeHandle.curveGap)}px ${String(resizeHandle.curveGap)}px`,
     );
+  });
+
+  it("draws a curve's points scaled to the transient extent React Flow reports", () => {
+    assert.isDefined(curveNode);
+    const settled = bodyMarkup(curveNode);
+    const stretched = bodyMarkup(
+      curveNode,
+      false,
+      false,
+      true,
+      { width: 484, height: curveNode.size.height },
+      true,
+    );
+    expect(settled).toContain(' 242 2"');
+    expect(stretched).not.toContain(' 242 2"');
+    expect(stretched.match(/d="M 2 2 [^"]* 482 2"/gu)).toHaveLength(2);
   });
 
   it('gives each boundary outline a wider invisible pointer target', () => {

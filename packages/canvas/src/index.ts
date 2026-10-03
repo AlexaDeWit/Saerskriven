@@ -9,6 +9,7 @@ export {
 } from './lib/glyphs.js';
 export {
   nearestHandleSide,
+  sameNodeBox,
   type HandleSide,
   type NodeBox,
 } from './lib/handles.js';
@@ -57,6 +58,7 @@ export {
   minimumNodeExtent,
   resizeControlPositions,
   resizeKeys,
+  scaledCurvePoints,
   shiftedKeyboardResizeStep,
   type ResizeControlPosition,
 } from './lib/resizing.js';
