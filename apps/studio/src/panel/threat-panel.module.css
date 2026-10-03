@@ -246,11 +246,11 @@
 }
 
 .category,
-.alsoOn {
+.onElements {
   color: var(--saer-colour-text-muted);
 }
 
-.alsoOn {
+.onElements {
   font-size: var(--saer-font-size);
   font-weight: normal;
 }
@@ -380,13 +380,6 @@
   border: 0;
 }
 
-.recordCard {
-  padding: var(--saer-space-2) var(--saer-space-3);
-  border: 1px solid var(--saer-colour-border);
-  border-radius: var(--saer-radius);
-  background: var(--saer-colour-surface-raised);
-}
-
 .record + .record {
   padding-block-start: var(--saer-space-2);
   border-block-start: 1px solid var(--saer-colour-border);
@@ -457,10 +450,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--saer-space-2);
-}
-
-.recordState [role='combobox'] {
-  min-inline-size: 9rem;
 }
 
 .recordHead [role='combobox'] {
@@ -555,14 +544,14 @@
 }
 
 .item[data-state='open'] .summary > :first-child,
-.item[data-state='open'] .alsoOn {
+.item[data-state='open'] .onElements {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.item[data-state='open'] .alsoOn {
+.item[data-state='open'] .onElements {
   -webkit-line-clamp: 1;
 }
 
@@ -573,12 +562,11 @@
   padding: var(--saer-space-3);
 }
 
-/* At phone width the panel, the threat item and a model record card would
-   each take a full inset from the room the fields have, so all three narrow. */
+/* At phone width the panel and the threat item would each take a full
+   inset from the room the fields have, so both narrow. */
 @media (max-width: 30rem) {
   .body,
-  .content,
-  .recordCard {
+  .content {
     padding-inline: var(--saer-space-2);
   }
 }

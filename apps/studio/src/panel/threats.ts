@@ -23,15 +23,15 @@ import type { Choice } from './pick-existing.js';
 
 const threatFields = threatSchema.keyof().options;
 
-/** What an open panel shows: one or several selected elements, or the model's own properties. */
+/** What an open panel shows: one or several selected elements, or the model. */
 export type PanelSubject =
   | { readonly kind: 'element'; readonly element: Element }
   | { readonly kind: 'several'; readonly count: number }
   | { readonly kind: 'model' };
 
-/** What the panel is bound to, and nothing while nothing is selected and the model's properties are hidden. */
+/** What the panel is bound to, and nothing while nothing is selected and the model panel is closed. */
 export function panelSubject(state: State): PanelSubject | undefined {
-  if (state.modelProperties) {
+  if (state.modelPanel) {
     return { kind: 'model' };
   }
   const selected = state.selection;
@@ -58,6 +58,11 @@ export function attachedThreats(state: State): readonly Threat[] {
     : state.present.threats.filter((threat) =>
         threat.elements.includes(selected),
       );
+}
+
+/** Every threat in the model, in register order, whatever it names. */
+export function modelThreats(state: State): readonly Threat[] {
+  return state.present.threats;
 }
 
 function unlabelledFlowEnds(

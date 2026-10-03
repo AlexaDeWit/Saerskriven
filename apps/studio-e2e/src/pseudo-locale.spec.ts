@@ -112,10 +112,15 @@ const exceptions: readonly {
   },
 ];
 
+const joinsData = (parts: readonly string[]): boolean =>
+  parts.some(
+    (_, last) =>
+      userData.has(spaced(parts.slice(0, last + 1).join(' and '))) &&
+      (last + 1 === parts.length || joinsData(parts.slice(last + 1))),
+  );
+
 const isDatum = (item: string): boolean =>
-  formattedNumber.test(item) ||
-  userData.has(item) ||
-  item.split(listConjunction).every((part) => userData.has(part.trim()));
+  formattedNumber.test(item) || joinsData(item.split(listConjunction));
 
 const isData = (piece: string): boolean =>
   isDatum(piece.replace(/,$/u, '')) ||
@@ -246,8 +251,17 @@ test('the pseudo-locale shows no app text outside the catalogues', async ({
   await page.keyboard.press('Escape');
 
   await menuButton(page).click();
-  await menuItem(page, pseudoText('Model properties')).click();
-  await scanned(page, 'in the model properties', found);
+  await menuItem(page, pseudoText('Model')).click();
+  const model = page.getByRole('region', {
+    name: pseudoText('Model'),
+    exact: true,
+  });
+  await expect(model).toBeVisible();
+  await scanned(page, 'on the model panel Threats tab', found);
+  await model
+    .getByRole('tab', { name: pseudoText('Details'), exact: true })
+    .click();
+  await scanned(page, 'on the model panel Details tab', found);
 
   await selectNode(page, /^Web shop, /u);
   const threats = page.getByRole('region', { name: pseudoText('Threats') });

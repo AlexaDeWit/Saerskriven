@@ -66,7 +66,7 @@ test(
     await selectNode(page, twoDiagrams.second.drawn);
     const picker = threatSummary(page, /Picker overrides a dispatch hold/u);
     await expandThreat(page, /Picker overrides a dispatch hold/u);
-    await expect(picker.locator('[data-also-on]')).toContainText('Picker');
+    await expect(picker.locator('[data-on-elements]')).toContainText('Picker');
 
     const reservation = recordToggle(page, 'Reservation expiry');
     await expect(reservation).toHaveAttribute('aria-expanded', 'false');

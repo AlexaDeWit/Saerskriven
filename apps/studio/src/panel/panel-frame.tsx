@@ -129,7 +129,12 @@ export function PanelFrame({
           <Cross1Icon aria-hidden="true" />
         </button>
       </header>
-      {tabs !== undefined && <PanelTabList threatCount={tabs.threatCount} />}
+      {tabs !== undefined && (
+        <PanelTabList
+          threatCount={tabs.threatCount}
+          threatsTab={tabs.threatsTab}
+        />
+      )}
       <div className={styles.body}>{children}</div>
     </section>
   );

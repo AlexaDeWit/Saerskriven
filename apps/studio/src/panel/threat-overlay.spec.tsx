@@ -10,21 +10,23 @@ import {
   sampleModel,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { focusThreatPanel, toggleModelProperties } from './panel-focus.js';
+import { focusThreatPanel, toggleModelPanel } from './panel-focus.js';
 import { ThreatOverlay } from './threat-overlay.js';
 import { addControl } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 
 const panel = () => screen.queryByRole('region', { name: 'Threats' });
 
-const showModelProperties = (): void => {
+const showModelPanel = (): void => {
   act(() => {
-    dispatch(Action.ShowModelProperties());
+    dispatch(Action.ShowModelPanel());
   });
 };
 
-const modelProperties = () =>
-  screen.queryByRole('region', { name: 'Model properties' });
+const modelPanel = () => screen.queryByRole('region', { name: 'Model' });
+
+const modelThreatsTab = (): HTMLElement =>
+  screen.getByRole('tab', { name: /^Threats \d+$/u });
 
 const description = (): HTMLElement =>
   screen.getByRole('textbox', { name: 'Description' });
@@ -215,30 +217,30 @@ describe('ThreatOverlay', () => {
       'Pasted prose',
     );
   });
-  it('shows the model properties in place of the selection panel, clearing the selection, and opens them with nothing selected', () => {
+  it('shows the model panel in place of the selection panel, clearing the selection, and opens it with nothing selected', () => {
     render(<ThreatOverlay />);
     act(() => {
-      dispatch(Action.ShowModelProperties());
+      dispatch(Action.ShowModelPanel());
     });
-    expect(modelProperties()).not.toBeNull();
+    expect(modelPanel()).not.toBeNull();
     act(() => {
-      dispatch(Action.HideModelProperties());
+      dispatch(Action.HideModelPanel());
     });
     select();
 
     act(() => {
-      dispatch(Action.ShowModelProperties());
+      dispatch(Action.ShowModelPanel());
     });
 
     expect(panel()).toBeNull();
-    expect(modelProperties()).not.toBeNull();
+    expect(modelPanel()).not.toBeNull();
     expect(modelStore.getState().selection).toEqual([]);
   });
 
-  it('widens the model properties pane, and keeps a refused draft through closing and opening them again', async () => {
+  it('widens the model panel, and keeps a refused draft through closing and opening it again', async () => {
     const user = userEvent.setup();
     render(<ThreatOverlay />);
-    showModelProperties();
+    showModelPanel();
     await user.click(screen.getByRole('button', { name: 'Widen pane' }));
     expect(
       screen
@@ -246,13 +248,15 @@ describe('ThreatOverlay', () => {
         .getAttribute('aria-pressed'),
     ).toBe('true');
 
+    await user.click(screen.getByRole('tab', { name: 'Details' }));
     await user.click(screen.getByRole('textbox', { name: 'Description' }));
     await user.keyboard(`Pasted${softHyphen}prose`);
     await user.click(screen.getByRole('textbox', { name: 'Title' }));
     act(() => {
-      dispatch(Action.HideModelProperties());
+      dispatch(Action.HideModelPanel());
     });
-    showModelProperties();
+    showModelPanel();
+    await user.click(screen.getByRole('tab', { name: 'Details' }));
 
     expect(
       screen
@@ -264,16 +268,16 @@ describe('ThreatOverlay', () => {
   it('gives way to the selection panel when an element is selected', () => {
     render(<ThreatOverlay />);
     act(() => {
-      dispatch(Action.ShowModelProperties());
+      dispatch(Action.ShowModelPanel());
     });
 
     select();
 
-    expect(modelProperties()).toBeNull();
+    expect(modelPanel()).toBeNull();
     expect(panel()).not.toBeNull();
   });
 
-  it('closes the model properties on Escape and on Close, handing focus to the canvas each time', async () => {
+  it('closes the model panel on Escape and on Close, handing focus to the canvas each time', async () => {
     const user = userEvent.setup();
     render(
       <>
@@ -281,56 +285,53 @@ describe('ThreatOverlay', () => {
         <ThreatOverlay />
       </>,
     );
-    showModelProperties();
-    await user.click(screen.getByRole('textbox', { name: 'Title' }));
+    showModelPanel();
+    await user.click(modelThreatsTab());
     await user.keyboard('{Escape}');
     expect(document.activeElement).toBe(screen.getByTestId('canvas'));
 
-    showModelProperties();
-    await user.click(
-      screen.getByRole('button', { name: 'Close model properties' }),
-    );
-    expect(modelProperties()).toBeNull();
+    showModelPanel();
+    await user.click(screen.getByRole('button', { name: 'Close model panel' }));
+    expect(modelPanel()).toBeNull();
     expect(document.activeElement).toBe(screen.getByTestId('canvas'));
   });
 
-  it('focuses Title when the toggle opens the model properties, and hands focus to the canvas when it closes them', () => {
+  it('focuses the Threats tab when the toggle opens the model panel, and hands focus to the canvas when it closes it', () => {
     render(
       <>
         <div className="react-flow" data-testid="canvas" tabIndex={-1} />
         <ThreatOverlay />
       </>,
     );
-    showModelProperties();
+    showModelPanel();
     expect(document.activeElement).toBe(document.body);
 
     act(() => {
-      toggleModelProperties();
+      toggleModelPanel();
     });
-    expect(modelProperties()).toBeNull();
+    expect(modelPanel()).toBeNull();
     expect(document.activeElement).toBe(screen.getByTestId('canvas'));
 
     act(() => {
-      toggleModelProperties();
+      toggleModelPanel();
     });
-    expect(document.activeElement).toBe(
-      screen.getByRole('textbox', { name: 'Title' }),
-    );
+    expect(document.activeElement).toBe(modelThreatsTab());
+    expect(modelThreatsTab().getAttribute('aria-selected')).toBe('true');
   });
 
-  it('closes the model properties on Escape, which Focus threats does not open again', async () => {
+  it('closes the model panel on Escape, which Focus threats does not open again', async () => {
     const user = userEvent.setup();
     render(<ThreatOverlay />);
     act(() => {
-      dispatch(Action.ShowModelProperties());
+      dispatch(Action.ShowModelPanel());
     });
     expect(focusThreatPanel()).toBe(false);
 
-    await user.click(screen.getByRole('textbox', { name: 'Title' }));
+    await user.click(modelThreatsTab());
     await user.keyboard('{Escape}');
 
-    expect(modelProperties()).toBeNull();
-    expect(modelStore.getState().modelProperties).toBe(false);
+    expect(modelPanel()).toBeNull();
+    expect(modelStore.getState().modelPanel).toBe(false);
   });
 
   it('skips field rendering for canvas-only parent updates and still follows model edits', async () => {

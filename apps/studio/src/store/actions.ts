@@ -128,8 +128,8 @@ export type Action = Data.TaggedEnum<{
   Redo: {};
   SelectDiagram: { readonly diagramId: DiagramId };
   Select: { readonly elementIds: readonly ElementId[] };
-  ShowModelProperties: {};
-  HideModelProperties: {};
+  ShowModelPanel: {};
+  HideModelPanel: {};
   InlineEditing: { readonly editor: InlineEditor | undefined };
   Opened: {
     readonly model: Model;

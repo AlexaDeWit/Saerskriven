@@ -15,7 +15,7 @@ import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
  * through `userEvent`, which commits and rerenders at every step. Three runs
  * on a host at load average 37 to 55 put the worst at 9.1 s against the 10 s
  * root, and which test tops out moves between runs, so the bound is the
- * suite's rather than one test's. The model properties, threat records,
+ * suite's rather than one test's. The model panel, threat records,
  * element properties and element details suites drive their fields and
  * listboxes the same way. At load average near 2.5 the element properties
  * suite's worst takes 0.65 s against the editor and panel suites' 0.35 s.

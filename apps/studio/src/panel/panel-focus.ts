@@ -4,7 +4,7 @@ import { dispatch, modelStore } from '../store/store.js';
 
 let take: (() => boolean) | undefined;
 
-let titleRequested = false;
+let focusRequested = false;
 
 let historyStep: (() => () => void) | undefined;
 
@@ -24,29 +24,30 @@ export function focusThreatPanel(): boolean {
 }
 
 /**
- * Opens the model's properties with focus in their Title, clearing the canvas
- * selection, or closes them with focus on the canvas where they already show.
+ * Opens the model panel on its Threats tab with focus on that tab, clearing
+ * the canvas selection, or closes it with focus on the canvas where it
+ * already shows.
  */
-export function toggleModelProperties(): void {
-  if (modelStore.getState().modelProperties) {
-    hideModelProperties();
+export function toggleModelPanel(): void {
+  if (modelStore.getState().modelPanel) {
+    hideModelPanel();
     return;
   }
-  titleRequested = true;
-  dispatch(Action.ShowModelProperties());
+  focusRequested = true;
+  dispatch(Action.ShowModelPanel());
 }
 
-/** Closes the model's properties and hands focus to the canvas. */
-export function hideModelProperties(): void {
-  dispatch(Action.HideModelProperties());
+/** Closes the model panel and hands focus to the canvas. */
+export function hideModelPanel(): void {
+  dispatch(Action.HideModelPanel());
   focusCanvas();
 }
 
-/** Focuses the Title through `focusTitle` where {@link toggleModelProperties} opened the panel now mounting. */
-export function takeModelPropertiesFocus(focusTitle: () => void): void {
-  if (titleRequested) {
-    titleRequested = false;
-    focusTitle();
+/** Focuses the Threats tab through `focusTab` where {@link toggleModelPanel} opened the panel now mounting. */
+export function takeModelPanelFocus(focusTab: () => void): void {
+  if (focusRequested) {
+    focusRequested = false;
+    focusTab();
   }
 }
 

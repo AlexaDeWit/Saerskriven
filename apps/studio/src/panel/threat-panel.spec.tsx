@@ -28,7 +28,7 @@ import {
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { chooseFrom, editorTimeout } from './panel.fixtures.js';
-import type { HeldDraft } from './element-threats.js';
+import type { HeldDraft } from './threat-list.js';
 import { ThreatPanel, type ThreatPanelProps } from './threat-panel.js';
 import {
   addControl,

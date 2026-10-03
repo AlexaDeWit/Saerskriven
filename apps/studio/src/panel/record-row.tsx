@@ -25,16 +25,13 @@ export type HeldText = Pick<RefusedField, 'field' | 'text' | 'status'>;
 
 /**
  * One row of a record group: its record, how the row is drawn, and what its
- * controls report. A `section` row is a threat's, and a `card` row the
- * model's, which keeps its labelled fields over a status row. `foldable`
- * rows draw a toggle in place of the name, and `elsewhere` and
- * `elsewhereCounted` are the open and folded lines saying where else the
- * record is.
+ * controls report. `foldable` rows draw a toggle in place of the name, and
+ * `elsewhere` and `elsewhereCounted` are the open and folded lines saying
+ * where else the record is.
  */
 export type RecordRowProps<Held extends ThreatRecord> = {
   readonly kind: RecordKind<Held>;
   readonly record: Held;
-  readonly layout: 'section' | 'card';
   readonly name: string;
   readonly position: number;
   readonly draft: boolean;
@@ -62,12 +59,11 @@ export type RecordRowProps<Held extends ThreatRecord> = {
  * other threats. Open, its name row carries the toggle that folds it, the
  * Added mark once a new record is kept, the status and Unlink (Discard
  * while it is not yet kept), and its fields follow without labels of their
- * own. A card shows its labelled fields, then its status and Unlink.
+ * own.
  */
 export function RecordRow<Held extends ThreatRecord>({
   kind,
   record,
-  layout,
   name,
   position,
   draft,
@@ -96,13 +92,12 @@ export function RecordRow<Held extends ThreatRecord>({
     kind.parts.length === 1
       ? undefined
       : t(part === 'title' ? 'fields.title' : 'fields.description');
-  const card = layout === 'card';
   const fieldProps = (part: RecordPart) => ({
     held: heldIn(part),
     label: (speak: Speaker): string =>
       speak(kind.partField(part), { number: position }),
-    shownLabel: card ? (partName(part) ?? '') : '',
-    placeholder: card ? undefined : partName(part),
+    shownLabel: '',
+    placeholder: partName(part),
     onChange,
     onCommit: onCommit(part),
     onRefused: (refusal: RefusedDraft | undefined) => {
@@ -155,30 +150,6 @@ export function RecordRow<Held extends ThreatRecord>({
       <ProseField compact key={part} {...fieldProps(part)} />
     ),
   );
-
-  if (card) {
-    return (
-      <div
-        className={styles.recordCard}
-        data-record-row={record.id}
-        onBlur={draft ? onBlur : undefined}
-      >
-        <fieldset className={styles.recordFields}>
-          <legend>{name}</legend>
-          {fields}
-          <div className={styles.recordState}>
-            {status}
-            {remove}
-          </div>
-          {elsewhere !== undefined && (
-            <p className={styles.shared} id={sharedId}>
-              {elsewhere}
-            </p>
-          )}
-        </fieldset>
-      </div>
-    );
-  }
 
   return (
     <div

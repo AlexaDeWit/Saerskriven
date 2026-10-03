@@ -22,7 +22,7 @@ import {
 } from './studio.fixtures.js';
 
 const modelPanel = (page: Page): Locator =>
-  page.getByRole('region', { name: 'Model properties' });
+  page.getByRole('region', { name: 'Model', exact: true });
 
 const modelField = (
   page: Page,
@@ -33,12 +33,35 @@ const modelField = (
 const modelControl = (page: Page, name: string): Locator =>
   modelPanel(page).getByRole('button', { name, exact: true });
 
+const threatsTab = (page: Page): Locator =>
+  modelPanel(page).getByRole('tab', { name: /^Threats \d+$/u });
+
+const detailsTab = (page: Page): Locator =>
+  modelPanel(page).getByRole('tab', { name: 'Details', exact: true });
+
+const foldedRecord = (page: Page, text: string): Locator =>
+  modelPanel(page).getByRole('button', {
+    name: text,
+    exact: true,
+    expanded: false,
+  });
+
+const modelThreat = (page: Page, title: RegExp): Locator =>
+  modelPanel(page).getByRole('button', { name: title });
+
 const existingAssumption = (page: Page): Locator =>
   modelField(page, 'combobox', 'Existing assumption');
 
-const openModelProperties = async (page: Page): Promise<void> => {
-  await runFromMenu(page, 'Model properties');
+const refundAbuse = /Refund policy abused/u;
+
+const openModelPanel = async (page: Page): Promise<void> => {
+  await runFromMenu(page, 'Model');
   await expect(modelPanel(page)).toBeVisible();
+};
+
+const showModelDetails = async (page: Page): Promise<void> => {
+  await detailsTab(page).click();
+  await expect(detailsTab(page)).toHaveAttribute('aria-selected', 'true');
 };
 
 const replaceText = async (field: Locator, text: string): Promise<void> => {
@@ -62,14 +85,14 @@ const onScreenUnscrolled = async (
   expect(scrolls, 'the page or the panel scrolls horizontally').toBe(false);
 };
 
-test('Model properties takes the selection panel location and clears the selection, and a selection brings the selection panel back', async ({
+test('the model panel takes the selection panel location and clears the selection, and a selection brings the selection panel back', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
   const node = await selectNode(page, storefront.shopper);
   const threats = await screenBoxOf(threatPanel(page));
 
-  await openModelProperties(page);
+  await openModelPanel(page);
 
   await expect(threatPanel(page)).toHaveCount(0);
   await expect(node).not.toHaveClass(/selected/u);
@@ -82,47 +105,106 @@ test('Model properties takes the selection panel location and clears the selecti
   await expect(threatPanel(page)).toBeVisible();
 });
 
-test('Model properties opened from the menu by keyboard focuses Title, Escape, Close or the menu item again closes it with focus on the canvas', async ({
+test('M opens the model panel on Threats, listing every threat with one on no element, which opens and is edited in place', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  const [shortcut] = registeredChords['model-panel'];
+
+  await page.keyboard.press(shortcut);
+
+  await expect(threatsTab(page)).toBeFocused();
+  await expect(threatsTab(page)).toHaveAttribute('aria-selected', 'true');
+  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(
+    modelPanel(page).getByRole('heading', { name: 'Two diagrams' }),
+  ).toBeVisible();
+  await expect(modelPanel(page).locator('[data-threat-item]')).toHaveCount(10);
+  await expect(modelControl(page, 'Add a threat')).toHaveCount(0);
+  const loose = modelThreat(page, refundAbuse);
+  await expect(loose).toHaveAccessibleName(/On no element$/u);
+  await expect(modelThreat(page, storefront.takeover)).toHaveAccessibleName(
+    /On Shopper and /u,
+  );
+
+  await page.keyboard.press('Tab');
+  await expect(modelThreat(page, storefront.takeover)).toBeFocused();
+  await loose.click();
+  await expect(loose).toHaveAttribute('aria-expanded', 'true');
+  await expect(modelField(page, 'textbox', 'Title')).toHaveValue(
+    'Refund policy abused',
+  );
+  await chooseInPanel(page, 'Severity', 'Critical', modelPanel(page));
+  await expect(loose).toContainText('Critical');
+
+  await runFromMenu(page, 'Undo');
+  await expect(loose).toContainText('Low');
+  expect(await undoOffered(page)).toBe(false);
+});
+
+test("detaching a threat's last element from the model's list removes the threat, and one undo brings it back", async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await openModelPanel(page);
+  const callback = modelThreat(page, /Forged payment callback/u);
+  await callback.click();
+  await expect(callback).toHaveAttribute('aria-expanded', 'true');
+
+  await modelPanel(page)
+    .getByRole('group', { name: 'Attached elements', exact: true })
+    .getByRole('button', { name: /^Detach /u })
+    .click();
+
+  await expect(callback).toHaveCount(0);
+  await expect(threatsTab(page)).toHaveText(/9/u);
+  await expect(editAnnouncement(page)).toContainText('7');
+
+  await runFromMenu(page, 'Undo');
+  await expect(callback).toBeVisible();
+  await expect(threatsTab(page)).toHaveText(/10/u);
+});
+
+test('the model panel opened from the menu by keyboard focuses its Threats tab, and Escape, Close or the menu item again closes it with focus on the canvas', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
 
   await menuButton(page).focus();
   await page.keyboard.press('Enter');
-  const item = menuItem(page, 'Model properties');
+  const item = menuItem(page, 'Model');
   await item.focus();
   await page.keyboard.press('Enter');
-  await expect(modelField(page, 'textbox', 'Title')).toBeFocused();
+  await expect(threatsTab(page)).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(modelPanel(page)).toHaveCount(0);
   await expect(canvasSurface(page)).toBeFocused();
 
-  await openModelProperties(page);
-  await modelControl(page, 'Close model properties').click();
+  await openModelPanel(page);
+  await modelControl(page, 'Close model panel').click();
   await expect(modelPanel(page)).toHaveCount(0);
   await expect(canvasSurface(page)).toBeFocused();
 
-  await openModelProperties(page);
-  await runFromMenu(page, 'Model properties');
+  await openModelPanel(page);
+  await runFromMenu(page, 'Model');
   await expect(modelPanel(page)).toHaveCount(0);
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(canvasSurface(page)).toBeFocused();
 });
 
-test('M opens Model properties with focus in Title, types into Title, and closes them again from outside a text field', async ({
+test('M types into Title on Details, and closes the model panel again from outside a text field', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
-  const node = await selectNode(page, storefront.shopper);
-  const [shortcut] = registeredChords['model-properties'];
-
+  const [shortcut] = registeredChords['model-panel'];
   await page.keyboard.press(shortcut);
-  const title = modelField(page, 'textbox', 'Title');
-  await expect(title).toBeFocused();
-  await expect(threatPanel(page)).toHaveCount(0);
-  await expect(node).not.toHaveClass(/selected/u);
+  await expect(threatsTab(page)).toBeFocused();
 
+  await showModelDetails(page);
+  const title = modelField(page, 'textbox', 'Title');
   const before = await title.inputValue();
+  await title.focus();
   await page.keyboard.press('End');
   await page.keyboard.press(shortcut);
   await expect(title).toHaveValue(`${before}m`);
@@ -136,14 +218,15 @@ test('M opens Model properties with focus in Title, types into Title, and closes
   expect(await undoOffered(page)).toBe(false);
 
   await page.keyboard.press(shortcut);
-  await expect(modelField(page, 'textbox', 'Title')).toBeFocused();
+  await expect(threatsTab(page)).toBeFocused();
 });
 
 test('the title and the description commit as one undo step each, and Tab runs from Title through Description to the assumptions group', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
-  await openModelProperties(page);
+  await openModelPanel(page);
+  await showModelDetails(page);
   const title = modelField(page, 'textbox', 'Title');
   const description = modelField(page, 'textbox', 'Description');
   const before = {
@@ -155,15 +238,22 @@ test('the title and the description commit as one undo step each, and Tab runs f
   await page.keyboard.press('Tab');
   await expect(description).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(modelField(page, 'textbox', 'Assumption 1')).toBeFocused();
+  await expect(
+    foldedRecord(
+      page,
+      'The payment provider holds its own card data certification.',
+    ),
+  ).toBeFocused();
   await expect(
     modelPanel(page).getByRole('group', {
-      name: 'Assumptions that apply to the model',
-      exact: true,
+      name: /^Assumptions that apply to the model 2$/u,
     }),
   ).toBeVisible();
 
   await replaceText(title, 'Two diagrams, retitled');
+  await expect(
+    modelPanel(page).getByRole('heading', { name: 'Two diagrams, retitled' }),
+  ).toBeVisible();
   await replaceText(description, 'A small shop.');
 
   await runFromMenu(page, 'Undo');
@@ -180,7 +270,8 @@ test(
   async ({ page }) => {
     await openTwoDiagrams(page);
     expect(await undoOffered(page)).toBe(false);
-    await openModelProperties(page);
+    await openModelPanel(page);
+    await showModelDetails(page);
 
     const add = modelControl(page, 'Add assumption');
     await onScreenUnscrolled(page, add);
@@ -191,8 +282,8 @@ test(
 
     await page.keyboard.type('The model is kept true by hand.');
     await page.keyboard.press('Tab');
+    await expect(add).toBeFocused();
     const status = modelField(page, 'combobox', 'Assumption 3 status');
-    await expect(status).toBeFocused();
     await expect(status).toContainText(/unconfirmed/iu);
     await onScreenUnscrolled(page, status);
     await onScreenUnscrolled(page, modelControl(page, 'Unlink assumption 3'));
@@ -226,13 +317,16 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await page.keyboard.press('Tab');
   await expect(panelControl(page, 'Add assumption')).toBeFocused();
 
-  await openModelProperties(page);
+  await openModelPanel(page);
+  await showModelDetails(page);
   await chooseInPanel(page, 'Existing assumption', rotate, modelPanel(page));
   await modelControl(page, 'Link existing assumption').click();
-  await expect(modelField(page, 'textbox', 'Assumption 3')).toHaveValue(rotate);
+  await expect(foldedRecord(page, rotate)).toBeFocused();
   expect(await offeredToLink(page, existingAssumption(page), rotate)).toBe(
     false,
   );
+  await foldedRecord(page, rotate).click();
+  await expect(modelField(page, 'textbox', 'Assumption 3')).toHaveValue(rotate);
   await expect(
     modelControl(page, 'Unlink assumption 3'),
   ).toHaveAccessibleDescription(/1/u);
@@ -256,7 +350,9 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await unlinkHere.click();
   await expect(panelField(page, 'textbox', 'Assumption 1')).toHaveCount(0);
 
-  await openModelProperties(page);
+  await openModelPanel(page);
+  await showModelDetails(page);
+  await foldedRecord(page, rotate).click();
   const kept = modelField(page, 'textbox', 'Assumption 3');
   await expect(kept).toHaveValue(rotate);
   await expect(
@@ -285,31 +381,35 @@ test('an older assumption linked after an added one lands after it, and leaves a
   await page.keyboard.press('Tab');
   await expect(panelControl(page, 'Add assumption')).toBeFocused();
 
-  await openModelProperties(page);
+  await openModelPanel(page);
+  await showModelDetails(page);
   await modelControl(page, 'Add assumption').click();
   await page.keyboard.type(added);
   await page.keyboard.press('Tab');
-  await expect(
-    modelField(page, 'combobox', 'Assumption 3 status'),
-  ).toBeFocused();
+  await expect(modelControl(page, 'Add assumption')).toBeFocused();
   await chooseInPanel(page, 'Existing assumption', older, modelPanel(page));
   await modelControl(page, 'Link existing assumption').click();
 
+  const rows = modelPanel(page).locator('[data-record-row]');
   const first = modelField(page, 'textbox', 'Assumption 3');
-  const second = modelField(page, 'textbox', 'Assumption 4');
+  const second = rows.nth(3).getByRole('button', {
+    name: older,
+    exact: true,
+    expanded: false,
+  });
+  await expect(rows).toHaveCount(4);
   await expect(first).toHaveValue(added);
-  await expect(second).toHaveValue(older);
   await expect(second).toBeFocused();
 
   await runFromMenu(page, 'Undo');
-  await expect(second).toHaveCount(0);
+  await expect(rows).toHaveCount(3);
   await expect(first).toHaveValue(added);
   await runFromMenu(page, 'Redo');
   await expect(first).toHaveValue(added);
-  await expect(second).toHaveValue(older);
+  await expect(second).toBeVisible();
 });
 
-test('model properties edited in one tab reach another, which keeps its own selection and open panel', async ({
+test('the model edited in one tab reaches another, which keeps its own selection and open panel', async ({
   context,
   page,
 }) => {
@@ -318,7 +418,8 @@ test('model properties edited in one tab reach another, which keeps its own sele
   await openTwoDiagrams(other);
   const selected = await selectNode(other, storefront.catalogue);
 
-  await openModelProperties(page);
+  await openModelPanel(page);
+  await showModelDetails(page);
   await replaceText(
     modelField(page, 'textbox', 'Title'),
     'Two diagrams, shared',
@@ -326,9 +427,7 @@ test('model properties edited in one tab reach another, which keeps its own sele
   await modelControl(page, 'Add assumption').click();
   await page.keyboard.type('Both tabs read one model.');
   await page.keyboard.press('Tab');
-  await expect(
-    modelField(page, 'combobox', 'Assumption 3 status'),
-  ).toBeFocused();
+  await expect(modelControl(page, 'Add assumption')).toBeFocused();
 
   await expect.poll(() => undoOffered(other)).toBe(true);
   await expect(selected).toHaveClass(/selected/u);
@@ -337,13 +436,15 @@ test('model properties edited in one tab reach another, which keeps its own sele
   ).toBeVisible();
   await expect(modelPanel(other)).toHaveCount(0);
 
-  await openModelProperties(other);
+  await openModelPanel(other);
+  await expect(
+    modelPanel(other).getByRole('heading', { name: 'Two diagrams, shared' }),
+  ).toBeVisible();
+  await showModelDetails(other);
   await expect(modelField(other, 'textbox', 'Title')).toHaveValue(
     'Two diagrams, shared',
   );
-  await expect(modelField(other, 'textbox', 'Assumption 3')).toHaveValue(
-    'Both tabs read one model.',
-  );
+  await expect(foldedRecord(other, 'Both tabs read one model.')).toBeVisible();
   await replaceText(
     modelField(other, 'textbox', 'Description'),
     'Edited in the other tab.',
@@ -359,19 +460,18 @@ test('model properties edited in one tab reach another, which keeps its own sele
 });
 
 test(
-  'the Model properties header stays usable while an unlink announcement shows',
+  'the model panel header stays usable while an unlink announcement shows',
   { tag: '@phone' },
   async ({ page }) => {
     await openTwoDiagrams(page);
-    await openModelProperties(page);
+    await openModelPanel(page);
+    await showModelDetails(page);
     await modelControl(page, 'Add assumption').click();
     await page.keyboard.insertText(
       'Every caller of the proxy presents a token that it scopes to one tenant, and the proxy never forwards it.',
     );
     await page.keyboard.press('Tab');
-    await expect(
-      modelField(page, 'combobox', 'Assumption 3 status'),
-    ).toBeFocused();
+    await expect(modelControl(page, 'Add assumption')).toBeFocused();
 
     const unlink = modelControl(page, 'Unlink assumption 3');
     await onScreen(unlink);
@@ -386,7 +486,7 @@ test(
     await expect(modelControl(page, 'Restore pane width')).toBeVisible();
     await expect(said).not.toBeEmpty();
 
-    const close = modelControl(page, 'Close model properties');
+    const close = modelControl(page, 'Close model panel');
     await onScreen(close);
     await close.click();
     await expect(modelPanel(page)).toHaveCount(0);

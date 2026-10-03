@@ -53,7 +53,7 @@ export type InlineEditor = {
 /**
  * The model, history, transient view state, file, and recovery status.
  * `activeDiagram` is undefined until a diagram is chosen, and
- * `modelProperties` is whether the panel shows the model's own properties.
+ * `modelPanel` is whether the panel shows the model rather than the selection.
  */
 export type State = {
   readonly present: Model;
@@ -62,7 +62,7 @@ export type State = {
   readonly saved: Model;
   readonly activeDiagram: DiagramId | undefined;
   readonly selection: readonly ElementId[];
-  readonly modelProperties: boolean;
+  readonly modelPanel: boolean;
   readonly inlineEditor: InlineEditor | undefined;
   readonly file: FileLifecycle;
   readonly lastFailure: StudioFailure | undefined;
@@ -168,7 +168,7 @@ export function initialState(model: Model): State {
     saved: model,
     activeDiagram: undefined,
     selection: [],
-    modelProperties: false,
+    modelPanel: false,
     inlineEditor: undefined,
     file: FileLifecycle.NoFile(),
     lastFailure: undefined,

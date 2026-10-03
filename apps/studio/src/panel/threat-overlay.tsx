@@ -1,32 +1,31 @@
 import type { ElementPropertyDrafts } from './element-properties.js';
-import type { ElementId } from '@saerskriven/model';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { focusElement } from '../canvas/edits.js';
 import { selectedElements } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
-import { ModelPropertiesPanel } from './model-properties.js';
-import { hideModelProperties, panelFocusHandler } from './panel-focus.js';
-import type { HeldDraft } from './element-threats.js';
+import { ModelPanel } from './model-panel.js';
+import { hideModelPanel, panelFocusHandler } from './panel-focus.js';
 import type { RefusedField } from './refusals.js';
+import type { HeldDrafts } from './threat-list.js';
 import { ThreatPanel } from './threat-panel.js';
 import { openFileName, panelSubject } from './threats.js';
 
 type Held = {
   readonly file: string | undefined;
-  readonly drafts: Map<ElementId, HeldDraft>;
+  readonly drafts: HeldDrafts;
   readonly propertyDrafts: ElementPropertyDrafts;
   readonly model: RefusedField | undefined;
 };
 
 const freshHeld = (file: string | undefined): Held => ({
   file,
-  drafts: new Map<ElementId, HeldDraft>(),
+  drafts: new Map(),
   propertyDrafts: new Map(),
   model: undefined,
 });
 
-/** Draws the pane for the selection or the model's properties, retaining drafts and pane width across both. Canvas-only parent renders do not rerender the pane. */
+/** Draws the pane for the selection or the model, retaining drafts and pane width across both. Canvas-only parent renders do not rerender the pane. */
 export const ThreatOverlay = memo(function ThreatOverlay({
   onCover,
 }: {
@@ -88,10 +87,11 @@ export const ThreatOverlay = memo(function ThreatOverlay({
 
   if (subject.kind === 'model') {
     return (
-      <ModelPropertiesPanel
+      <ModelPanel
+        drafts={held.drafts}
         held={held.model}
         onHeld={heldModel}
-        onClose={hideModelProperties}
+        onClose={hideModelPanel}
         onCover={onCover}
         onToggleWidth={() => {
           setWide((value) => !value);

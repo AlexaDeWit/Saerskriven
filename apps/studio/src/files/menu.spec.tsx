@@ -42,7 +42,7 @@ import {
 } from './files.fixtures.js';
 import { chooseLanguage } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
-import { toggleModelProperties } from '../panel/panel-focus.js';
+import { toggleModelPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
@@ -51,6 +51,9 @@ type User = ReturnType<typeof userEvent.setup>;
 
 const burger = (): HTMLElement =>
   screen.getByRole('button', { name: /^Menu/u });
+
+const threatsTab = (): HTMLElement =>
+  screen.getByRole('tab', { name: /^Threats \d+$/u });
 
 const item = (name: string | RegExp): HTMLElement =>
   screen.getByRole('menuitem', { name });
@@ -291,9 +294,7 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     expect(item('Save').getAttribute('aria-keyshortcuts')).toBe('Control+S');
-    expect(item('Model properties').getAttribute('aria-keyshortcuts')).toBe(
-      'M',
-    );
+    expect(item('Model').getAttribute('aria-keyshortcuts')).toBe('M');
 
     await user.hover(item('Export'));
     expect(
@@ -385,22 +386,22 @@ describe('what the studio says about the file', () => {
     });
   });
 
-  it('shows the model properties from the menu, clearing the selection', async () => {
+  it('shows the model panel from the menu, clearing the selection', async () => {
     const user = userEvent.setup();
     mounted(specBridge());
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
     });
 
-    await choose(user, 'Model properties');
+    await choose(user, 'Model');
 
     expect(modelStore.getState()).toMatchObject({
       selection: [],
-      modelProperties: true,
+      modelPanel: true,
     });
   });
 
-  it('hands focus to the model properties Title as the menu closes on Model properties, and only that once', async () => {
+  it('hands focus to the model panel Threats tab as the menu closes on Model, and only that once', async () => {
     const user = userEvent.setup();
     render(
       <>
@@ -409,13 +410,11 @@ describe('what the studio says about the file', () => {
       </>,
     );
 
-    await choose(user, 'Model properties');
+    await choose(user, 'Model');
 
     await waitFor(() => {
       expect(screen.queryByRole('menu')).toBeNull();
-      expect(document.activeElement).toBe(
-        screen.getByRole('textbox', { name: 'Title' }),
-      );
+      expect(document.activeElement).toBe(threatsTab());
     });
     await openMenu(user);
     await user.keyboard('{Escape}');
@@ -424,7 +423,7 @@ describe('what the studio says about the file', () => {
     });
   });
 
-  it('leaves focus on the Title that Model properties took before the closed menu returned focus to its button', async () => {
+  it('leaves focus on the Threats tab that Model took before the closed menu returned focus to its button', async () => {
     const user = userEvent.setup();
     render(
       <>
@@ -437,17 +436,17 @@ describe('what the studio says about the file', () => {
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull();
     act(() => {
-      toggleModelProperties();
+      toggleModelPanel();
     });
-    const title = screen.getByRole('textbox', { name: 'Title' });
-    expect(document.activeElement).toBe(title);
+    const tab = threatsTab();
+    expect(document.activeElement).toBe(tab);
     await act(async () => {
       await new Promise((settled) => {
         setTimeout(settled, 10);
       });
     });
 
-    expect(document.activeElement).toBe(title);
+    expect(document.activeElement).toBe(tab);
   });
 
   it('guards the tab only after the latest recovery write fails', () => {

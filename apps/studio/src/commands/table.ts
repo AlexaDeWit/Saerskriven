@@ -26,7 +26,7 @@ import { selectTool, type Tool } from '../canvas/tools.js';
 import {
   focusThreatPanel,
   stepHistory,
-  toggleModelProperties,
+  toggleModelPanel,
 } from '../panel/panel-focus.js';
 import { Action } from '../store/actions.js';
 import { severalDiagrams } from '../store/selectors.js';
@@ -383,13 +383,13 @@ export const commandTable = {
     when: 'commands.when-one-renameable-item',
     run: renameSelected,
   }),
-  'model-properties': command({
-    id: 'model-properties',
-    label: 'commands.label-model-properties',
+  'model-panel': command({
+    id: 'model-panel',
+    label: 'commands.label-model-panel',
     group: 'commands.group-edit',
     shortcuts: [bare('m')],
-    when: 'commands.when-model-properties',
-    run: toggleModelProperties,
+    when: 'commands.when-model-panel',
+    run: toggleModelPanel,
   }),
   'focus-threats': command({
     id: 'focus-threats',

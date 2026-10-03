@@ -152,16 +152,13 @@ type NumberedThreat = Pick<Threat, 'id' | 'number'>;
 /**
  * What one record group's records are linked to: a threat, or for
  * assumptions the model. `elsewhere` says which other threats hold a record,
- * and `elsewhereCounted` says how many, for a folded row. `inThreat` is true
- * for a group in an expanded threat, whose heading counts its records and
- * whose records are sections that start folded, where the model's are cards.
+ * and `elsewhereCounted` says how many, for a folded row.
  */
 export type RecordTarget<Held extends ThreatRecord> = {
   readonly heading:
     | 'terms.mitigations'
     | 'terms.assumptions'
     | 'terms.model-assumptions';
-  readonly inThreat: boolean;
   readonly holds: (record: Held) => boolean;
   readonly attach: (record: Held) => Held;
   readonly link: (record: Held) => Action;
@@ -185,7 +182,6 @@ export function threatTarget<Held extends ThreatRecord>(
 ): RecordTarget<Held> {
   return {
     heading: kind.heading,
-    inThreat: true,
     holds: (record) => record.threats.includes(threatId),
     attach: (record) => ({ ...record, threats: [threatId] }),
     link: (record) => kind.link(record, threatId),
@@ -206,7 +202,6 @@ export function threatTarget<Held extends ThreatRecord>(
 /** The assumptions that apply to the model. */
 export const modelTarget: RecordTarget<Assumption> = {
   heading: 'terms.model-assumptions',
-  inThreat: false,
   holds: (assumption) => assumption.appliesToModel,
   attach: (assumption) => ({ ...assumption, appliesToModel: true }),
   link: ({ id }) => Action.LinkAssumptionToModel({ assumptionId: id }),
@@ -214,7 +209,7 @@ export const modelTarget: RecordTarget<Assumption> = {
   elsewhere: (assumption, threats, translator) =>
     joined([alsoOn(assumption, threats, translator)]),
   elsewhereCounted: (assumption, threats, translator) =>
-    joined([alsoOnCount(assumption, threats, translator)]),
+    joined([alsoOn(assumption, threats, translator)]),
 };
 
 /** The text of one part of a record. */
