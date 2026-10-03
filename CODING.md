@@ -31,8 +31,8 @@ One other function throws on purpose. `svgNumber` in
 `packages/canvas/src/lib/numbers.ts` raises a `RangeError` for a number that
 is not finite, which no schema admits and only arithmetic produces. A render
 cannot hand React a failure as a value, so the throw ends at each app's
-outermost boundary: the studio's error boundary, `runCli`, and the MCP
-server's handlers.
+outermost boundary: the studio's error boundary, `runCli`, and the MCP SDK's
+dispatch around the server's handlers, which answers with an error result.
 
 An operation with no value to return is typed `Either<void, E>`, never a
 bare `void`. Narrowing such a parameter to `void` is not the simplification

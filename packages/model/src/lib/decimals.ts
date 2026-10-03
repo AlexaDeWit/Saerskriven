@@ -33,8 +33,7 @@ export function decimalsOf(value: number): Decimals {
  * instead. A count outside {@link decimalsSchema} is held to its range, so no
  * count throws. A number that is not finite is written as `Infinity`,
  * `-Infinity` or `NaN`, which {@link storedNumber} reads back as the number
- * itself, so a caller that must have a plain number refuses one first, as the
- * canvas package's `svgNumber` does.
+ * itself, so a caller that must have a plain number refuses one first.
  */
 export function fixedNumber(value: number, decimals: Decimals): string {
   const fixed = value.toFixed(counted(decimals));
