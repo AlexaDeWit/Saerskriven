@@ -196,12 +196,12 @@ leaving the text commits it before Discard can be reached.
 
 Control names carry the kind and the row's position ("Mitigation 2 title",
 "Unlink mitigation 2", "Link existing mitigation"), and positions renumber when
-a row above is unlinked. The card's group name already says which record a
-control belongs to, so the drawn text is shorter and begins the name or is
-contained in it: Add, Link, Unlink and Discard, and the Title and Description
-placeholders of a record's fields, which draw no label. Link stays
-on the Tab path while no record is chosen (`aria-disabled`, with a description
-saying to choose one).
+a row above is unlinked. A group's heading and the name an open row draws
+already say what a control belongs to, so the drawn text is shorter and begins
+the name or is contained in it: Add, Link, Unlink and Discard, and the Title
+and Description placeholders of a record's fields, which draw no label. Link
+stays on the Tab path while no record is chosen (`aria-disabled`, with a
+description saying to choose one).
 
 A record's fold toggle draws the headline, the record's title or the first line
 of its text, while folded and the record's name while open. Its accessible name
@@ -209,6 +209,11 @@ is both in either state ("Mitigation 1, Rate limit logins",
 `fields.record-toggle`), or the record's name alone where it has no headline,
 so opening the record changes the toggle's expanded state and not what it is
 called.
+
+Each row is a group. A row that draws a toggle is a group with no name, so a
+screen reader says the record's name once, on the toggle. The empty row draws
+no toggle, and its group takes the record's name ("Mitigation 2"), since
+nothing else there says it.
 
 ## Attachments
 

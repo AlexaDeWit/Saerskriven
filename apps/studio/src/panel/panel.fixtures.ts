@@ -47,6 +47,18 @@ export const listedThreats = (
   );
 
 /**
+ * The row of the record whose toggle is named `toggle`: the group with no
+ * name of its own that holds that toggle. A row that draws no toggle is found
+ * by its group name instead.
+ */
+export const recordRow = (toggle: string): HTMLElement => {
+  const control = screen.getByRole('button', { name: toggle });
+  return screen.getByRole('group', {
+    name: (name, group) => name === '' && group.contains(control),
+  });
+};
+
+/**
  * A threat {@link recordedModel} holds, the first where it holds no such id,
  * with its status replaced where one is given.
  */

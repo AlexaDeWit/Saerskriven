@@ -24,6 +24,7 @@ import {
 import {
   editorTimeout,
   recordedThreat,
+  recordRow,
   showThreatEditor,
 } from './panel.fixtures.js';
 
@@ -33,20 +34,22 @@ const readOnly = 'Mitigation 1, Read-only share links';
 
 const signedIn = 'Assumption 1, Every editor is signed in.';
 
+const expiring = 'Assumption 2, Share links expire.';
+
 const folded = (name: string): HTMLElement =>
   screen.getByRole('button', { name, expanded: false });
 
 const opened = (name: string): HTMLElement =>
   screen.getByRole('button', { name, expanded: true });
 
-const record = (name: string): HTMLElement =>
+const newRow = (name: string): HTMLElement =>
   screen.getByRole('group', { name });
 
-const lineOf = (name: string): string | undefined =>
-  record(name).querySelector('p')?.textContent ?? undefined;
+const lineOf = (toggle: string): string | undefined =>
+  recordRow(toggle).querySelector('p')?.textContent ?? undefined;
 
-const addedMark = (name: string): Element | null =>
-  record(name).querySelector('[data-added]');
+const addedMark = (row: HTMLElement): Element | null =>
+  row.querySelector('[data-added]');
 
 const threatSummary = (): HTMLElement =>
   screen.getByRole('button', { name: /A reader edits/u });
@@ -110,6 +113,33 @@ describe(
       expect(folded('Mitigation 1').textContent).toBe('Mitigation 1');
     });
 
+    it('is a group with no name of its own where it draws a toggle, so its name is said once', () => {
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
+
+      expect(
+        within(recordRow(readOnly)).getByRole('combobox', {
+          name: 'Mitigation 1 status',
+        }),
+      ).toBeDefined();
+      expect(screen.queryByRole('group', { name: 'Mitigation 1' })).toBeNull();
+    });
+
+    it('keeps its name as a group where it draws no toggle, and hands it to the toggle once it is kept', async () => {
+      const user = userEvent.setup();
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await user.click(button('Add mitigation'));
+
+      const row = newRow('Mitigation 2');
+      expect(
+        within(row).queryByRole('button', { name: 'Mitigation 2' }),
+      ).toBeNull();
+
+      await user.keyboard('Sign every share link{Enter}');
+
+      expect(recordRow('Mitigation 2, Sign every share link')).toBe(row);
+      expect(screen.queryByRole('group', { name: 'Mitigation 2' })).toBeNull();
+    });
+
     it('reads the start of its text where it has no title', () => {
       act(() => {
         dispatch(
@@ -144,12 +174,12 @@ describe(
 
     it('counts the other threats a folded record is on, on a line of its own', () => {
       showThreatEditor({ threat: recordedThreat(firstThreat) });
-      expect(lineOf('Mitigation 1')).toBeUndefined();
+      expect(lineOf(readOnly)).toBeUndefined();
       linkToSecondThreat();
 
       expect(describedNumbers(folded(readOnly))).toEqual([1]);
       expect(
-        lineOf('Mitigation 1')?.startsWith(
+        lineOf(readOnly)?.startsWith(
           t('panel.also-on-other-threats', { count: 1 }),
         ),
       ).toBe(true);
@@ -168,7 +198,7 @@ describe(
         'Read-only share links',
       );
       expect(button('Unlink mitigation 1')).toBeDefined();
-      expect(numbersIn(lineOf('Mitigation 1'))).toEqual([2]);
+      expect(numbersIn(lineOf(readOnly))).toEqual([2]);
 
       await user.click(toggle);
 
@@ -248,18 +278,18 @@ describe(
       const user = userEvent.setup();
       showThreatEditor({ threat: recordedThreat(firstThreat) });
       await user.click(button('Add mitigation'));
-      const row = record('Mitigation 2');
+      const row = newRow('Mitigation 2');
       expect(
         within(row).getByRole('button', { name: 'Discard mitigation 2' }),
       ).toBeDefined();
-      expect(addedMark('Mitigation 2')).toBeNull();
+      expect(addedMark(row)).toBeNull();
       expect(
         screen.getByRole('group', { name: 'Mitigations 1' }),
       ).toBeDefined();
 
       await user.keyboard('Sign every share link{Enter}');
 
-      expect(addedMark('Mitigation 2')).not.toBeNull();
+      expect(addedMark(row)).not.toBeNull();
       expect(
         within(row).getByRole('button', { name: 'Unlink mitigation 2' }),
       ).toBeDefined();
@@ -283,8 +313,8 @@ describe(
 
       await user.tab();
 
-      expect(opened('Assumption 2, Share links expire.')).toBeDefined();
-      expect(addedMark('Assumption 2')).not.toBeNull();
+      expect(opened(expiring)).toBeDefined();
+      expect(addedMark(recordRow(expiring))).not.toBeNull();
       expect(currentAnnouncement().message).toBe(
         t('canvas.assumption-added', { number: 2 }),
       );
@@ -292,8 +322,8 @@ describe(
       await user.click(threatSummary());
       await user.click(threatSummary());
 
-      expect(folded('Assumption 2, Share links expire.')).toBeDefined();
-      expect(addedMark('Assumption 2')).toBeNull();
+      expect(folded(expiring)).toBeDefined();
+      expect(addedMark(recordRow(expiring))).toBeNull();
     });
   },
   editorTimeout,
