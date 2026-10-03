@@ -26,6 +26,7 @@ import {
   type ModelReading,
 } from './reading.js';
 import {
+  appliesToModelQualifier,
   renderAssumption,
   renderMitigation,
   threatReadQualifiers,
@@ -65,7 +66,7 @@ export type GetThreatResult = z.infer<typeof getThreatResultSchema>;
 
 /** What `saer_get_threat` tells a client it is for. */
 export const getThreatDescription = [
-  'Read one threat of a Saerskriven threat model in full: the whole record, the flags its records raise, the elements it attaches to, the mitigation records addressing it, and the assumption records its analysis rests on, each assumption saying whether it also applies to the model.',
+  'Read one threat of a Saerskriven threat model in full: the whole record, which says whether the threat applies to the model as a whole (`appliesToModel`), the flags its records raise, the elements it attaches to, the mitigation records addressing it, and the assumption records its analysis rests on, each assumption saying whether it also applies to the model.',
   flagsDescription,
   'Use this once you know which threat you mean. Find that threat with saer_search_threats, which takes the filters and carries the numbers, and use saer_register where you want every threat rather than one.',
   'Pass `ref` as the threat number or the threat id. Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model.',
@@ -100,6 +101,7 @@ export function renderThreatRecord(result: GetThreatResult): readonly string[] {
     `category: ${renderCategory(threat.category)}`,
     renderFlags(result.flags),
     `description: ${escapedForTerminal(threat.description)}`,
+    `${appliesToModelQualifier}: ${threat.appliesToModel ? 'yes' : 'no'}`,
     'elements:',
     ...result.elements.flatMap(renderElement),
     'mitigations:',

@@ -20,6 +20,7 @@ import { Either } from 'effect';
 import { z } from 'zod';
 import { quotedList } from './reading.js';
 import {
+  appliesToModelQualifier,
   renderAssumption,
   renderMitigation,
   threatReadQualifiers,
@@ -33,6 +34,9 @@ const threatRowSchema = z.object({
   severity: severitySchema,
   category: threatCategorySchema,
   elements: z.array(elementIdSchema),
+  appliesToModel: z
+    .boolean()
+    .describe('Whether the threat applies to the model as a whole.'),
   flags: z.array(threatFlagSchema),
 });
 
@@ -60,6 +64,7 @@ export function threatRow(threat: Threat, model: Model): ThreatDetail {
     severity: threat.severity,
     category: threat.category,
     elements: threat.elements,
+    appliesToModel: threat.appliesToModel,
     flags: threatFlags(model, threat),
   };
 }
@@ -124,7 +129,8 @@ export function threatHeadingLine(
 
 /**
  * One threat as the lines a text result carries: a heading line naming it,
- * and one indented line per field the row carries past the heading.
+ * and one indented line per field the row carries past the heading. The
+ * first of them ends by saying where the threat applies to the model.
  */
 export function renderThreat(row: ThreatDetail): readonly string[] {
   return [
@@ -144,7 +150,12 @@ export function renderFlags(flags: readonly ThreatFlag[]): string {
 
 function detailLines(row: ThreatDetail): readonly string[] {
   return [
-    `status ${row.status}, severity ${row.severity}, category ${renderCategory(row.category)}`,
+    [
+      `status ${row.status}`,
+      `severity ${row.severity}`,
+      `category ${renderCategory(row.category)}`,
+      ...(row.appliesToModel ? [appliesToModelQualifier] : []),
+    ].join(', '),
     `elements: ${quotedList(row.elements)}`,
     renderFlags(row.flags),
     ...(row.description === undefined || row.description.length === 0

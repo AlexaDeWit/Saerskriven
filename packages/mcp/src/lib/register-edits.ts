@@ -12,6 +12,7 @@ import {
   linkAssumption,
   linkAssumptionToModel,
   linkMitigation,
+  linkThreatToModel,
   mitigationIdSchema,
   mitigationSchema,
   mitigationStatusSchema,
@@ -32,6 +33,7 @@ import {
   unlinkAssumption,
   unlinkAssumptionFromModel,
   unlinkMitigation,
+  unlinkThreatFromModel,
   type AssumptionId,
   type MitigationId,
   type Model,
@@ -45,9 +47,15 @@ const threatEditSchema = z.object({
   threat: threatIdSchema.describe('The id of the threat to edit.'),
 });
 
-const threatFieldsSchema = threatSchema.omit({
-  number: true,
-  appliesToModel: true,
+const replacedThreatSchema = threatSchema.omit({ number: true });
+
+const addedThreatSchema = replacedThreatSchema.extend({
+  appliesToModel: z
+    .boolean()
+    .default(false)
+    .describe(
+      'Whether the threat applies to the model as a whole. Left out, it does not.',
+    ),
 });
 
 const mitigationEditSchema = z.object({
@@ -93,8 +101,8 @@ const assumptionDetailsSchema = assumptionSchema
  * order it lists them.
  */
 export const registerEditSchemas = [
-  z.object({ op: z.literal('add_threat'), threat: threatFieldsSchema }),
-  z.object({ op: z.literal('replace_threat'), threat: threatFieldsSchema }),
+  z.object({ op: z.literal('add_threat'), threat: addedThreatSchema }),
+  z.object({ op: z.literal('replace_threat'), threat: replacedThreatSchema }),
   threatEditSchema.extend({ op: z.literal('remove_threat') }),
   threatEditSchema.extend({
     op: z.literal('attach_threat'),
@@ -104,6 +112,8 @@ export const registerEditSchemas = [
     op: z.literal('detach_threat'),
     element: elementIdSchema,
   }),
+  threatEditSchema.extend({ op: z.literal('link_threat_to_model') }),
+  threatEditSchema.extend({ op: z.literal('unlink_threat_from_model') }),
   threatEditSchema.extend({
     op: z.literal('set_threat_status'),
     status: threatStatusSchema,
@@ -189,8 +199,8 @@ export function isRegisterEdit(edit: {
 /**
  * Applies one threat, mitigation or assumption edit. An edit that patches a
  * held record hands the patched record to that record's replace operation.
- * A threat edit carries no model link: an added threat has none, and a
- * replaced one keeps the link it holds.
+ * A threat edit carries no number: an added threat takes the next one, and a
+ * replaced one keeps the number it holds.
  */
 export function applyRegisterEdit(
   model: Model,
@@ -201,13 +211,11 @@ export function applyRegisterEdit(
       return addThreat(model, {
         ...edit.threat,
         number: nextThreatNumber(model),
-        appliesToModel: false,
       });
     case 'replace_threat':
       return withThreat(model, edit.threat.id, (held) => ({
         ...edit.threat,
         number: held.number,
-        appliesToModel: held.appliesToModel,
       }));
     case 'remove_threat':
       return removeThreat(model, edit.threat);
@@ -215,6 +223,10 @@ export function applyRegisterEdit(
       return attachThreat(model, edit.threat, edit.element);
     case 'detach_threat':
       return detachThreat(model, edit.threat, edit.element);
+    case 'link_threat_to_model':
+      return linkThreatToModel(model, edit.threat);
+    case 'unlink_threat_from_model':
+      return unlinkThreatFromModel(model, edit.threat);
     case 'set_threat_status':
       return withThreat(model, edit.threat, (held) => ({
         ...held,
