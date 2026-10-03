@@ -613,6 +613,18 @@ export const offeredToLink = async (
 export const focusedOption = (page: Page): Locator =>
   page.locator('[role="option"]:focus');
 
+/** The cue a listbox draws at an edge its options run on past. */
+export const scrollCue = (page: Page, edge: 'earlier' | 'later'): Locator =>
+  page.locator(`[data-scroll-cue="${edge}"]`);
+
+/** Presses ArrowDown until the listbox has scrolled off its start and shows its "earlier" cue. */
+export const scrolledOffItsStart = async (page: Page): Promise<void> => {
+  await expect(async () => {
+    await page.keyboard.press('ArrowDown');
+    await expect(scrollCue(page, 'earlier')).toBeVisible({ timeout: 100 });
+  }).toPass({ intervals: [0], timeout: 5_000 });
+};
+
 /** Retries arrow navigation until focus moves, accounting for Radix restoring focus after popup positioning. */
 export const stepThroughOptions = async (
   page: Page,

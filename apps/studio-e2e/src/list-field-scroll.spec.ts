@@ -6,12 +6,11 @@ import {
   openTwoDiagrams,
   panelField,
   scrollPaneTo,
+  scrollCue,
+  scrolledOffItsStart,
   selectNode,
   storefront,
 } from './studio.fixtures.js';
-
-const scrollCue = (page: Page, edge: 'earlier' | 'later'): Locator =>
-  page.locator(`[data-scroll-cue="${edge}"]`);
 
 const labelOf = async (option: Locator): Promise<string> =>
   (await option.locator('[data-option-label]').textContent()) ?? '';
@@ -40,13 +39,6 @@ const reachedItsEnd = async (page: Page): Promise<void> => {
   await expect(last(page)).toBeInViewport({ ratio: 1 });
   await expect(scrollCue(page, 'later')).toHaveCount(0);
   await expect(scrollCue(page, 'earlier')).toBeVisible();
-};
-
-const scrolledOffItsStart = async (page: Page): Promise<void> => {
-  await expect(async () => {
-    await page.keyboard.press('ArrowDown');
-    await expect(scrollCue(page, 'earlier')).toBeVisible({ timeout: 100 });
-  }).toPass({ intervals: [0], timeout: 5_000 });
 };
 
 test(
