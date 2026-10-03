@@ -103,10 +103,14 @@ export function ElementThreats({
     }
   }, [draft, drafts, element]);
 
-  const restore = useCallback((threatId: ThreatId) => {
-    setExpanded(threatId);
-    setFocus({ kind: 'title', threatId });
-  }, []);
+  const restore = useCallback(
+    (threatId: ThreatId) => {
+      setExpanded(threatId);
+      scroll.land(threatId);
+      setFocus({ kind: 'title', threatId });
+    },
+    [scroll],
+  );
 
   useHistoryFocus(addControl, restore);
 
@@ -239,8 +243,10 @@ export function ElementThreats({
         <Accordion.Root
           className={styles.list}
           collapsible
+          onBlur={scroll.leave}
           onFocus={scroll.follow}
           onKeyDown={scroll.tab}
+          onPointerDown={scroll.press}
           onValueChange={expand}
           ref={list}
           type="single"

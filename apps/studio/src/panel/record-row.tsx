@@ -187,9 +187,10 @@ export function RecordRow<Held extends ThreatRecord>({
       onBlur={draft ? onBlur : undefined}
     >
       <fieldset aria-label={name} className={styles.recordFields}>
-        <div className={styles.recordHead}>
+        <div className={styles.recordHead} data-folded={open ? undefined : ''}>
           {foldable ? (
             <button
+              aria-describedby={line === undefined ? undefined : sharedId}
               aria-expanded={open}
               className={styles.recordToggle}
               data-record-toggle=""
@@ -220,7 +221,7 @@ export function RecordRow<Held extends ThreatRecord>({
           </div>
         </div>
         {line !== undefined && (
-          <p className={styles.shared} id={open ? sharedId : undefined}>
+          <p className={styles.shared} id={sharedId}>
             {line}
           </p>
         )}

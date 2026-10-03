@@ -15,7 +15,7 @@ import {
   recordQuoteLength,
   resetAnnouncements,
 } from '../canvas/announcements.js';
-import { chooseLanguage } from '../messages/locale.js';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { present, undoable } from '../store/store.fixtures.js';
@@ -397,7 +397,9 @@ describe(
       expect(precedes(status, unlink)).toBe(true);
       expect(precedes(unlink, title)).toBe(true);
       expect(record.querySelector('label')).toBeNull();
-      expect(title.getAttribute('placeholder')).toBe('Title');
+      expect(title.getAttribute('placeholder')).toBe(
+        activeTranslator().t('fields.title'),
+      );
     });
 
     it('names each record card as a group holding its controls, and keeps their names', async () => {

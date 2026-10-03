@@ -9,22 +9,22 @@ a person can do with it is in
 
 ## Modules
 
-| Module                                                  | What it holds                                                                                                                                          |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `threat-overlay.tsx`                                    | The mount: which panel to draw, the drafts and pane width it retains across both, and the keyboard                                                     |
-| `panel-frame.tsx`, `panel-tabs.tsx`                     | The pane either panel draws: width control, heading, close control, Escape, the coverage it reports, and the Threats and Details tabs                  |
-| `threat-panel.tsx`, `element-threats.tsx`               | The panel for a selection, and its Threats tab: add, attach, delete and the threat list                                                                |
-| `threat-editor.tsx`, `threat-scroll.ts`                 | One expanded threat, and where an opened threat and a field Tab reaches land in the scrolling body                                                     |
-| `threat-summary.tsx`, `threat-marks.tsx`                | A collapsed threat's summary, which is also its accordion trigger's accessible name, and its severity, status and flag marks                           |
-| `threat-records.tsx`, `record-row.tsx`, `records.ts`    | One record group, one record folded or open, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
-| `shown-order.ts`                                        | Holding the order a list mounted in, which the threat list and each record group keep while they are open                                              |
-| `threat-attachments.tsx`                                | The elements one threat names, with the controls that attach and detach them                                                                           |
-| `pick-existing.tsx`                                     | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
-| `model-properties.tsx`                                  | The panel for the model: title, description and the model's assumptions                                                                                |
-| `element-properties.tsx`, `element-property-fields.tsx` | The element's own fields on Details: its details, then its security properties, and their field kinds                                                  |
-| `element-details.tsx`                                   | An element's description, out-of-scope flag and reason, for every kind, a note included                                                                |
-| `threats.ts`                                            | `panelSubject` and `attachedThreats`, the selectors the panel binds to, and what each picker offers                                                    |
-| `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`   | Refused drafts, option labels a person can tell apart, and the focus channel                                                                           |
+| Module                                                             | What it holds                                                                                                                                          |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `threat-overlay.tsx`                                               | The mount: which panel to draw, the drafts and pane width it retains across both, and the keyboard                                                     |
+| `panel-frame.tsx`, `panel-tabs.tsx`                                | The pane either panel draws: width control, heading, close control, Escape, the coverage it reports, and the Threats and Details tabs                  |
+| `threat-panel.tsx`, `element-threats.tsx`                          | The panel for a selection, and its Threats tab: add, attach, delete and the threat list                                                                |
+| `threat-editor.tsx`, `threat-scroll.ts`                            | One expanded threat, and where an opened threat and a field Tab reaches land in the scrolling body                                                     |
+| `threat-summary.tsx`, `threat-marks.tsx`                           | A collapsed threat's summary, which is also its accordion trigger's accessible name, and its severity, status and flag marks                           |
+| `threat-records.tsx`, `record-row.tsx`, `records.ts`               | One record group, one record folded or open, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
+| `shown-order.ts`                                                   | Holding the order a list mounted in, which the threat list and each record group keep while they are open                                              |
+| `threat-attachments.tsx`                                           | The elements one threat names, with the controls that attach and detach them                                                                           |
+| `pick-existing.tsx`                                                | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
+| `model-properties.tsx`                                             | The panel for the model: title, description and the model's assumptions                                                                                |
+| `element-properties.tsx`, `element-property-fields.tsx`            | The element's own fields on Details: its details, then its security properties, and their field kinds                                                  |
+| `element-details.tsx`                                              | An element's description, out-of-scope flag and reason, for every kind, a note included                                                                |
+| `threats.ts`                                                       | `panelSubject` and `attachedThreats`, the selectors the panel binds to, and what each picker offers                                                    |
+| `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`, `marked.ts` | Refused drafts, option labels a person can tell apart, the focus channel, and finding a record row or threat item by its id                            |
 
 The panel is mounted from `../canvas/diagram-canvas.tsx`, inside the canvas
 container, which is what makes it an overlay on the diagram rather than a
@@ -78,7 +78,8 @@ register. Its severity, status and category read from the catalogue too, so no
 stored value is drawn as its own label. Its severity marker uses the canvas
 tone class. Each status and each flag mark has a glyph shape of its own, so
 every mark stays distinct in forced colours, where open also keeps its outline
-and weight. The whole summary is the accordion control's accessible name, in
+and weight. Beside Status in an open threat a flag mark drops its outline, the
+only outlines there being the fields' own, and keeps its weight. The whole summary is the accordion control's accessible name, in
 drawn order, and it holds no control of its own. Its values are drawn without
 their field names, which a screen reader still hears ("Severity: High"), so the
 drawn label is hidden from assistive technology and the named one is
@@ -123,9 +124,8 @@ are. A row that goes while it holds focus leaves focus in its group.
 The empty row carries its status control and a Discard control in its name row
 from the start, so nothing moves when it becomes a record and a click on Add or
 Link existing lands where it was aimed. A pointer press on Discard keeps focus
-in the text,
-so typed text is discarded rather than committed. Keyboard focus leaving the
-text commits it before Discard can be reached.
+in the text, so typed text is discarded rather than committed. Keyboard focus
+leaving the text commits it before Discard can be reached.
 
 Control names carry the kind and the row's position ("Mitigation 2 title",
 "Unlink mitigation 2", "Link existing mitigation"), and positions renumber when

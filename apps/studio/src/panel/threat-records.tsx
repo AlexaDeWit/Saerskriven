@@ -13,6 +13,7 @@ import {
 } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { markedWithin } from './marked.js';
 import { PickExisting } from './pick-existing.js';
 import { RecordRow, type HeldText } from './record-row.js';
 import {
@@ -146,7 +147,7 @@ export function RecordGroup<Held extends ThreatRecord>({
     const lost = focusedRow.current;
     if (
       lost !== undefined &&
-      rowOf(group.current, lost) === undefined &&
+      markedWithin(group.current, 'recordRow', lost) === undefined &&
       !(group.current?.contains(document.activeElement) ?? false)
     ) {
       focusedRow.current = undefined;
@@ -366,21 +367,12 @@ export function RecordGroup<Held extends ThreatRecord>({
   );
 }
 
-function rowOf(
-  group: HTMLFieldSetElement | null,
-  recordId: string,
-): HTMLElement | undefined {
-  return [...(group?.querySelectorAll<HTMLElement>(rowSelector) ?? [])].find(
-    (row) => row.dataset['recordRow'] === recordId,
-  );
-}
-
 function focusTarget(
   group: HTMLFieldSetElement | null,
   focus: FocusRequest,
 ): HTMLElement | null | undefined {
   if (focus.kind === 'text' || focus.kind === 'row') {
-    const row = rowOf(group, focus.recordId);
+    const row = markedWithin(group, 'recordRow', focus.recordId);
     return (
       (focus.kind === 'row'
         ? row?.querySelector<HTMLElement>('[data-record-toggle]')

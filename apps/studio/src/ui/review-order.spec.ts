@@ -51,20 +51,16 @@ describe('the review order', () => {
     ]);
   });
 
-  it('breaks a tie on the id, whatever order the threats arrive in', () => {
+  it('breaks a tie on the threat number, whatever order the threats arrive in', () => {
     const tied = [
-      threat('threat-b', 'open', 'high'),
-      threat('threat-c', 'open', 'high'),
-      threat('threat-a', 'open', 'high'),
+      { ...threat('threat-a', 'open', 'high'), number: 24 },
+      { ...threat('threat-b', 'open', 'high'), number: 1 },
+      { ...threat('threat-c', 'open', 'high'), number: 3 },
     ];
 
-    expect(idsOf(inReviewOrder(tied))).toEqual([
-      'threat-a',
-      'threat-b',
-      'threat-c',
-    ]);
-    expect(idsOf(inReviewOrder([tied[2], tied[1], tied[0]]))).toEqual(
-      idsOf(inReviewOrder(tied)),
-    );
+    expect(inReviewOrder(tied).map(({ number }) => number)).toEqual([1, 3, 24]);
+    expect(
+      inReviewOrder([tied[2], tied[0], tied[1]]).map(({ number }) => number),
+    ).toEqual([1, 3, 24]);
   });
 });

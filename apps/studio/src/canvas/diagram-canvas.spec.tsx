@@ -580,12 +580,14 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
 
-      fireEvent.pointerDown(scope, press);
-      fireEvent.click(scope, { detail: 2 });
+      fireEvent.pointerDown(existing, press);
+      fireEvent.click(existing, { detail: 2 });
 
-      expect(scope.getAttribute('aria-expanded')).toBe('false');
+      expect(existing.getAttribute('aria-expanded')).toBe('false');
       expect(modelStore.getState().inlineEditor).toEqual({
         kind: 'name',
         elementId: actorElement,
@@ -599,9 +601,11 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
-      fireEvent.pointerDown(scope, press);
-      expect(scope.getAttribute('aria-expanded')).toBe('false');
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
+      fireEvent.pointerDown(existing, press);
+      expect(existing.getAttribute('aria-expanded')).toBe('false');
 
       fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
         detail: 0,
@@ -618,10 +622,12 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
-      fireEvent.pointerDown(scope, press);
-      expect(scope.getAttribute('aria-expanded')).toBe('false');
-      fireEvent.pointerCancel(scope, press);
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
+      fireEvent.pointerDown(existing, press);
+      expect(existing.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.pointerCancel(existing, press);
 
       fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
         detail: 1,
@@ -637,11 +643,13 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
 
-      fireEvent.pointerDown(scope, press);
+      fireEvent.pointerDown(existing, press);
 
-      expect(scope.getAttribute('aria-expanded')).toBe('true');
+      expect(existing.getAttribute('aria-expanded')).toBe('true');
     });
 
     it('leaves a press on the panel that moved as far as a drag to the panel', () => {
@@ -650,14 +658,16 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
 
-      fireEvent.pointerDown(scope, {
+      fireEvent.pointerDown(existing, {
         ...press,
         clientX: press.clientX + placementClickDistance,
       });
 
-      expect(scope.getAttribute('aria-expanded')).toBe('true');
+      expect(existing.getAttribute('aria-expanded')).toBe('true');
       expect(modelStore.getState().inlineEditor).toBeUndefined();
     });
   });

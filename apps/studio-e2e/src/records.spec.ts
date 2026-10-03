@@ -38,6 +38,8 @@ const describedNumbers = (control: Locator): Promise<readonly number[]> =>
     ).map(Number),
   );
 
+const middle = (box: Box): number => box.y + box.height / 2;
+
 const recordToggle = (page: Page, headline: string): Locator =>
   threatPanel(page).getByRole('button', { name: headline, exact: true });
 
@@ -88,6 +90,34 @@ test(
     await expect(reservation).toHaveAttribute('aria-expanded', 'false');
   },
 );
+
+test('a kept record keeps its toggle, Added mark, status and Unlink on one name row at the default pane width', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
+  await panelControl(page, 'Add mitigation').click();
+  await page.keyboard.type('Strip caller tokens at the edge');
+  await page.keyboard.press('Enter');
+
+  const record = threatPanel(page).getByRole('group', {
+    name: 'Mitigation 2',
+    exact: true,
+  });
+  await expect(record.locator('[data-added]')).toBeVisible();
+  const toggle = await screenBoxOf(record.locator('[data-record-toggle]'));
+  const added = await screenBoxOf(record.locator('[data-added]'));
+  expect(added.x - (toggle.x + toggle.width)).toBeLessThanOrEqual(12);
+  for (const control of [
+    record.getByRole('combobox', { name: 'Mitigation 2 status' }),
+    record.getByRole('button', { name: 'Unlink mitigation 2' }),
+  ]) {
+    expect(
+      Math.abs(middle(await screenBoxOf(control)) - middle(toggle)),
+    ).toBeLessThanOrEqual(4);
+  }
+});
 
 test(
   'a mitigation added from the empty row is one undo step, and its status changes in place',

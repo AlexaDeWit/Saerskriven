@@ -1,11 +1,12 @@
 import {
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   type FocusEvent,
-  type KeyboardEvent,
   type RefObject,
 } from 'react';
+import { markedWithin } from './marked.js';
 import styles from './threat-panel.module.css';
 
 /** Where a header sits in a scrolling body, measured from the top of the body's viewport. */
@@ -84,16 +85,6 @@ function scrollingBody(
     : { body, top: body.getBoundingClientRect().top + body.clientTop };
 }
 
-function itemOf(
-  list: RefObject<HTMLElement | null>,
-  threatId: string,
-): HTMLElement | undefined {
-  return [
-    ...(list.current?.querySelectorAll<HTMLElement>('[data-threat-item]') ??
-      []),
-  ].find((item) => item.dataset['threatItem'] === threatId);
-}
-
 function labelsOf(field: HTMLElement): readonly HTMLLabelElement[] {
   return field instanceof HTMLInputElement ||
     field instanceof HTMLTextAreaElement ||
@@ -123,12 +114,14 @@ function nextField(
   );
 }
 
-/** The calls the threat list makes to place an opened threat and a focused field. */
+/** The calls the threat list makes to place an opened threat and a focused field, each the same across renders. */
 export type ThreatScroll = {
   readonly land: (threatId: string) => void;
   readonly keep: (threatId: string) => void;
   readonly follow: (event: FocusEvent<HTMLElement>) => void;
-  readonly tab: (event: KeyboardEvent<HTMLElement>) => void;
+  readonly tab: (event: { readonly key: string }) => void;
+  readonly leave: (event: FocusEvent<HTMLElement>) => void;
+  readonly press: () => void;
 };
 
 function openHeader(
@@ -147,10 +140,12 @@ function openHeader(
  * header where it was, each in the next animation frame, because Radix
  * removes collapsed content in a layout effect of its own. `follow`, for the
  * list's focus events, keeps a field Tab reached clear of the open threat's
- * pinned summary, with room for the next field below it, and `tab`, for its
- * key presses, marks the Tab it follows. The body's scroll padding is kept
- * to the pinned summary's height, so the browser's own scrolling stops
- * below it too.
+ * pinned summary, with room for the next field below it. `tab`, for the
+ * list's key presses, marks the Tab it follows, and `leave` (focus leaving
+ * the list) and `press` (a pointer press) forget it, so a Tab out of the list
+ * moves nothing when focus comes back another way. The body's scroll padding
+ * is kept to the pinned summary's height, so the browser's own scrolling
+ * stops below it too.
  */
 export function useThreatScroll(
   list: RefObject<HTMLElement | null>,
@@ -176,81 +171,97 @@ export function useThreatScroll(
     [],
   );
 
-  const later = (place: () => void): void => {
-    if (frame.current !== undefined) {
-      cancelAnimationFrame(frame.current);
-    }
-    frame.current = requestAnimationFrame(() => {
-      frame.current = undefined;
-      place();
-    });
-  };
+  return useMemo(() => {
+    const later = (place: () => void): void => {
+      if (frame.current !== undefined) {
+        cancelAnimationFrame(frame.current);
+      }
+      frame.current = requestAnimationFrame(() => {
+        frame.current = undefined;
+        place();
+      });
+    };
 
-  return {
-    land: (threatId) => {
-      later(() => {
-        const item = itemOf(list, threatId);
+    return {
+      land: (threatId) => {
+        later(() => {
+          const item = markedWithin(list.current, 'threatItem', threatId);
+          const scrolling = scrollingBody(list);
+          if (item === undefined || scrolling === undefined) {
+            return;
+          }
+          scrolling.body.scrollTop +=
+            item.getBoundingClientRect().top - scrolling.top;
+        });
+      },
+      keep: (threatId) => {
+        const header = markedWithin(
+          list.current,
+          'threatItem',
+          threatId,
+        )?.querySelector<HTMLElement>(`.${styles.header}`);
         const scrolling = scrollingBody(list);
-        if (item === undefined || scrolling === undefined) {
+        if (
+          header === null ||
+          header === undefined ||
+          scrolling === undefined
+        ) {
           return;
         }
-        scrolling.body.scrollTop +=
-          item.getBoundingClientRect().top - scrolling.top;
-      });
-    },
-    keep: (threatId) => {
-      const header = itemOf(list, threatId)?.querySelector<HTMLElement>(
-        `.${styles.header}`,
-      );
-      const scrolling = scrollingBody(list);
-      if (header === null || header === undefined || scrolling === undefined) {
-        return;
-      }
-      const was = header.getBoundingClientRect().top - scrolling.top;
-      later(() => {
-        if (!header.isConnected) {
+        const was = header.getBoundingClientRect().top - scrolling.top;
+        later(() => {
+          if (!header.isConnected) {
+            return;
+          }
+          const { body, top } = scrolling;
+          const drawn = header.getBoundingClientRect();
+          body.scrollTop = keptScroll({
+            offset: drawn.top - top + body.scrollTop,
+            height: drawn.height,
+            was,
+            viewport: body.clientHeight,
+          });
+        });
+      },
+      follow: (event) => {
+        const field = event.target;
+        if (!tabbed.current) {
+          return;
+        }
+        tabbed.current = false;
+        const item = field.closest<HTMLElement>('[data-threat-item]');
+        const header = item?.querySelector<HTMLElement>(`.${styles.header}`);
+        const scrolling = scrollingBody(list);
+        if (
+          item?.dataset['state'] !== 'open' ||
+          header === null ||
+          header === undefined ||
+          header.contains(field) ||
+          scrolling === undefined
+        ) {
           return;
         }
         const { body, top } = scrolling;
-        const drawn = header.getBoundingClientRect();
-        body.scrollTop = keptScroll({
-          offset: drawn.top - top + body.scrollTop,
-          height: drawn.height,
-          was,
-          viewport: body.clientHeight,
+        body.scrollTop = fieldScroll({
+          scrolled: body.scrollTop,
+          top: top + header.offsetHeight,
+          bottom: top + body.clientHeight,
+          fieldTop: labelTop(field),
+          fieldBottom: field.getBoundingClientRect().bottom,
+          next: nextField(body, field)?.getBoundingClientRect().bottom,
         });
-      });
-    },
-    follow: (event) => {
-      const field = event.target;
-      if (!tabbed.current) {
-        return;
-      }
-      tabbed.current = false;
-      const item = field.closest<HTMLElement>('[data-threat-item]');
-      const header = item?.querySelector<HTMLElement>(`.${styles.header}`);
-      const scrolling = scrollingBody(list);
-      if (
-        item?.dataset['state'] !== 'open' ||
-        header === null ||
-        header === undefined ||
-        header.contains(field) ||
-        scrolling === undefined
-      ) {
-        return;
-      }
-      const { body, top } = scrolling;
-      body.scrollTop = fieldScroll({
-        scrolled: body.scrollTop,
-        top: top + header.offsetHeight,
-        bottom: top + body.clientHeight,
-        fieldTop: labelTop(field),
-        fieldBottom: field.getBoundingClientRect().bottom,
-        next: nextField(body, field)?.getBoundingClientRect().bottom,
-      });
-    },
-    tab: (event) => {
-      tabbed.current = event.key === 'Tab';
-    },
-  };
+      },
+      tab: (event) => {
+        tabbed.current = event.key === 'Tab';
+      },
+      leave: (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          tabbed.current = false;
+        }
+      },
+      press: () => {
+        tabbed.current = false;
+      },
+    };
+  }, [list]);
 }

@@ -217,6 +217,7 @@
   align-items: center;
   gap: var(--saer-space-1) var(--saer-space-2);
   font-size: var(--saer-font-size);
+  font-weight: normal;
 }
 
 .severity,
@@ -251,6 +252,7 @@
 
 .alsoOn {
   font-size: var(--saer-font-size);
+  font-weight: normal;
 }
 
 .flag {
@@ -296,6 +298,11 @@
 
 .flags:empty {
   display: none;
+}
+
+.flags .flag {
+  padding-inline: 0;
+  border-color: transparent;
 }
 
 .attachments {
@@ -389,8 +396,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--saer-space-2);
+  gap: var(--saer-space-2) var(--saer-space-1);
+}
+
+.recordHead[data-folded] {
+  flex-wrap: nowrap;
+}
+
+.recordHead > .recordState {
+  margin-inline-start: auto;
 }
 
 .recordName {
@@ -399,7 +413,7 @@
 
 .recordToggle {
   display: inline-flex;
-  flex: 1 1 8rem;
+  flex: 0 1 auto;
   align-items: center;
   gap: var(--saer-space-1);
   min-inline-size: 0;
@@ -447,6 +461,14 @@
 
 .recordState [role='combobox'] {
   min-inline-size: 9rem;
+}
+
+.recordHead [role='combobox'] {
+  min-inline-size: 8rem;
+}
+
+.recordHead .unlink {
+  padding-inline: var(--saer-space-2);
 }
 
 .unlink {

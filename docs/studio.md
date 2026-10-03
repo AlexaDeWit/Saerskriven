@@ -346,11 +346,10 @@ tabs: **Threats**, which carries the element's threat count, and **Details**,
 which holds its description, scope and security properties. Every selection
 opens on Threats, and the arrow keys move between the tabs. With several
 selected the panel says how many and offers no fields. Focus threats shows the
-Threats tab and moves focus to "Add a threat". Selecting alone never moves
-focus into the panel. **Widen pane** widens it and
-**Restore pane width** returns it to normal, for the rest of the session. The
-panel covers the diagram rather than shrinking it, so pan to reach what it
-covers.
+Threats tab and moves focus to "Add a threat". Selecting alone never moves focus
+into the panel. **Widen pane** widens it and **Restore pane width** returns it
+to normal, for the rest of the session. The panel covers the diagram rather than
+shrinking it, so pan to reach what it covers.
 
 Close threats, or Escape, closes the panel and returns focus to the element,
 which stays selected. A second Escape clears the selection. The panel stays
@@ -362,15 +361,16 @@ element first. Choose one, then Attach. The threat opens expanded unless
 another threat is holding a refused draft, which keeps the open one where it
 is, and an undo takes the attachment back.
 
-Each threat's summary is two lines: its number and title, then its severity,
-its status with a glyph of its own, its category, and a mark for each flag it
+Each threat's summary is two lines: its number and title, then its severity, its
+status with a glyph of its own, its category, and a mark for each flag it
 raises. Open is the one status drawn as a filled pill. A third line names the
 other elements the threat is on, where there are any. Threats are listed by how
 much risk is still live: open, accepted risk, transferred, mitigated, avoided,
-eliminated, then not applicable, each status from critical down to undecided.
-The order is set when the panel opens or the selection moves, and holds while
-the panel stays open, so a threat whose status changes keeps its place and a
-new one joins the end. The Status picker lists the statuses in the same order.
+eliminated, then not applicable, each status from critical down to undecided and
+equal threats by number. The order is set when the panel opens or the selection
+moves, and holds while the panel stays open, so a threat whose status changes
+keeps its place and a new one joins the end. The Status picker lists the
+statuses in the same order.
 
 Expand one threat at a time to edit it. Opening a threat scrolls it to the top
 of the panel, and its summary stays pinned there while any of the threat is in
@@ -442,23 +442,22 @@ running the command again closes it and moves focus to the canvas.
 
 Its assumptions group works as a threat's does, bound to the model, but its
 records stay open as cards with labelled fields, and its heading carries no
-count. Add
-creates an assumption that applies to the model and links no threat. Link
-existing lists the assumptions that do not yet apply to the model. Unlink stops
-an assumption applying to the model, and removes it only where it links no
+count. Add creates an assumption that applies to the model and links no threat.
+Link existing lists the assumptions that do not yet apply to the model. Unlink
+stops an assumption applying to the model, and removes it only where it links no
 threat.
 
 ### Description and scope
 
 The **Details** tab holds the selected element's **Description**, **Out of
 scope** and **Reason out of scope**, above its security properties, for every
-element and flow, a Note included. Each field commits when
-you leave it, as one undo step. Out of scope offers Yes and No. The reason
-shows while Out of scope is Yes or while the element holds a reason, and the
-two are independent: clearing Out of scope keeps the reason. Text the model
-cannot hold stays in the field with the refused character named, as in a
-threat's fields, until you correct or clear it, and survives closing the panel
-and selecting something else.
+element and flow, a Note included. Each field commits when you leave it, as one
+undo step. Out of scope offers Yes and No. The reason shows while Out of scope
+is Yes or while the element holds a reason, and the two are independent:
+clearing Out of scope keeps the reason. Text the model cannot hold stays in the
+field with the refused character named, as in a threat's fields, until you
+correct or clear it, and survives closing the panel and selecting something
+else.
 
 ### Security properties
 

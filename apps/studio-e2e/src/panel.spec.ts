@@ -365,6 +365,9 @@ test('undoing a threat just added from the keyboard hands focus to Add a threat,
   await page.keyboard.press(registeredChords.redo[0]);
 
   await expect(titleField(page)).toBeFocused();
+  await expect
+    .poll(() => atPaneTop(page, threatSummary(page, /New threat/u)))
+    .toBe(true);
 });
 
 test('an element the panel would cover stays where it was drawn', async ({

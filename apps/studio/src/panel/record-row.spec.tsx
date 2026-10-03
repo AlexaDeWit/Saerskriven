@@ -1,4 +1,4 @@
-import { softHyphen } from '@saerskriven/model/fixtures';
+import { mitigationId, softHyphen } from '@saerskriven/model/fixtures';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -15,7 +15,12 @@ import {
   secondThreat,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { button, numbersIn, textbox } from '../ui/ui.fixtures.js';
+import {
+  button,
+  describedNumbers,
+  numbersIn,
+  textbox,
+} from '../ui/ui.fixtures.js';
 import {
   editorTimeout,
   recordedThreat,
@@ -115,7 +120,7 @@ describe(
       expect(lineOf('Mitigation 1')).toBeUndefined();
       linkToSecondThreat();
 
-      expect(folded('Read-only share links')).toBeDefined();
+      expect(describedNumbers(folded('Read-only share links'))).toEqual([1]);
       expect(
         lineOf('Mitigation 1')?.startsWith(
           t('panel.also-on-other-threats', { count: 1 }),
@@ -187,6 +192,27 @@ describe(
       expect(
         screen.getByDisplayValue(`Read-only${softHyphen} share links`),
       ).toBe(textbox('Mitigation 1 title'));
+    });
+
+    it("hands focus to the next record's toggle when the one above it is unlinked while that one is folded", async () => {
+      const user = userEvent.setup();
+      act(() => {
+        dispatch(
+          Action.AddMitigation({
+            mitigation: {
+              ...recordedModel.mitigations[0],
+              id: mitigationId('mitigation-rotated'),
+              title: 'Rotate share links',
+            },
+          }),
+        );
+      });
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await user.click(folded('Read-only share links'));
+
+      await user.click(button('Unlink mitigation 1'));
+
+      expect(document.activeElement).toBe(folded('Rotate share links'));
     });
 
     it('marks a new record Added once Return keeps it, with Unlink in place of Discard, the heading counting it and the change announced', async () => {
