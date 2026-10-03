@@ -6,7 +6,14 @@ import {
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import type { FileCommands } from '../commands/surface.js';
 import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
@@ -57,10 +64,22 @@ type PlannedSave = {
   readonly written: WriteResult;
 };
 
-/** File commands, export commands, notices, and menu questions. */
+type ShownReport = {
+  readonly report: LossReport | undefined;
+  readonly sequence: number;
+};
+
+const noReport: ShownReport = { report: undefined, sequence: 0 };
+
+/**
+ * File commands, export commands, notices, and menu questions.
+ * `reportSequence` moves each time `report` is replaced, so a component keyed
+ * on it draws every report as new nodes.
+ */
 export type FileSession = {
   readonly commands: FileCommands;
   readonly report: LossReport | undefined;
+  readonly reportSequence: number;
   readonly opening: boolean;
   readonly closing: boolean;
   readonly choosing: boolean;
@@ -96,7 +115,10 @@ export function useFileSession(
   sync: Pick<StoreSync, 'watch'> = browserStoreSync,
   links: ShareLinks = browserShareLinks,
 ): FileSession {
-  const [report, setReport] = useState<LossReport | undefined>(undefined);
+  const [{ report, sequence: reportSequence }, setReport] = useReducer(
+    replacedReport,
+    noReport,
+  );
   const [opening, setOpening] = useState(false);
   const [closing, setClosing] = useState(false);
   const [choosing, setChoosing] = useState(false);
@@ -309,6 +331,7 @@ export function useFileSession(
     () => ({
       commands,
       report,
+      reportSequence,
       opening,
       closing,
       choosing,
@@ -351,8 +374,18 @@ export function useFileSession(
       openFile,
       receive,
       report,
+      reportSequence,
     ],
   );
+}
+
+function replacedReport(
+  shown: ShownReport,
+  report: LossReport | undefined,
+): ShownReport {
+  return report === undefined && shown.report === undefined
+    ? shown
+    : { report, sequence: shown.sequence + 1 };
 }
 
 function untitledFileStem(): string {

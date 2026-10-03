@@ -105,6 +105,50 @@ const reportLists = (): readonly Element[] => [
 const reportHeadings = (): readonly (string | null | undefined)[] =>
   reportLists().map((list) => list.previousElementSibling?.textContent);
 
+const textsIn = (nodes: readonly Node[]): readonly (string | null)[] =>
+  nodes
+    .filter((node) => node instanceof Element)
+    .flatMap((node) => [node, ...node.querySelectorAll('*')])
+    .filter((element) => element.matches('p, li'))
+    .map(({ textContent }) => textContent);
+
+const reportGainsOver = async (
+  step: () => Promise<void>,
+): Promise<readonly Node[]> => {
+  const gained: Node[] = [];
+  const keep = (records: readonly MutationRecord[]): void => {
+    gained.push(...records.flatMap(({ addedNodes }) => [...addedNodes]));
+  };
+  const observer = new MutationObserver(keep);
+  observer.observe(screen.getByTestId('loss-report'), {
+    childList: true,
+    subtree: true,
+  });
+  await step();
+  keep(observer.takeRecords());
+  observer.disconnect();
+  return gained;
+};
+
+const readOnlyFiles = [
+  { path: 'otm/example.json', format: 'OTM' },
+  { path: 'tmbom/example.json', format: 'TM-BOM' },
+] as const;
+
+const receiveReadOnly = async ({
+  path,
+  format,
+}: (typeof readOnlyFiles)[number]): Promise<void> => {
+  fireEvent.change(screen.getByTestId('file-input'), {
+    target: { files: [vendoredFile(path)] },
+  });
+  await waitFor(() => {
+    expect(screen.getByTestId('loss-report').textContent).toContain(
+      inLocale('en-CA')('reports.opened-read-only', { format }),
+    );
+  });
+};
+
 function Menu({
   bridge,
   runs,
@@ -688,10 +732,7 @@ describe('opening', () => {
     expect(reportEntries()).toEqual([]);
   });
 
-  it.each([
-    { path: 'otm/example.json', format: 'OTM' },
-    { path: 'tmbom/example.json', format: 'TM-BOM' },
-  ])(
+  it.each(readOnlyFiles)(
     'opens $path as a new model under a notice naming $format',
     async ({ path, format }) => {
       const user = userEvent.setup();
@@ -741,6 +782,37 @@ describe('opening', () => {
       expect(notShown.textContent).not.toContain(t(conversion));
     },
   );
+
+  it('draws the report of each file opened in a row as new nodes, once: its notice, then each heading over its lines', async () => {
+    mounted(specBridge());
+    const t = inLocale('en-CA');
+
+    for (const file of readOnlyFiles) {
+      const gained = await reportGainsOver(() => receiveReadOnly(file));
+
+      expect(reportHeadings()).toEqual([
+        t('reports.converted'),
+        t('reports.opened'),
+      ]);
+      expect(textsIn(gained)).toEqual(
+        textsIn([screen.getByTestId('loss-report')]),
+      );
+    }
+  });
+
+  it('keeps focus on Dismiss while the next file replaces the report over it', async () => {
+    mounted(specBridge());
+    const [first, second] = readOnlyFiles;
+    await receiveReadOnly(first);
+    const dismiss = screen.getByRole('button', {
+      name: inLocale('en-CA')('reports.dismiss-report'),
+    });
+    dismiss.focus();
+
+    await receiveReadOnly(second);
+
+    expect(document.activeElement).toBe(dismiss);
+  });
 
   it('opens a format Saerskriven writes under no new-model notice', async () => {
     const user = userEvent.setup();

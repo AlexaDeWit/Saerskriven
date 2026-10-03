@@ -17,7 +17,9 @@ import { describeShareNotice } from './share-notice.js';
  * something is refused, costs the model a key, opens as a new model, or is
  * shared, and each is worded on render, so a change of language rewords a
  * standing report. The crossing report draws one heading for each part of it
- * that has a line.
+ * that has a line. A report that replaces another is drawn as new nodes above
+ * the same Dismiss button, so the live region says its notice and headings
+ * although the last report had the same ones, and focus on the button holds.
  */
 export function FileReports({ session }: { readonly session: FileSession }) {
   const { t } = useTranslator();
@@ -28,6 +30,7 @@ export function FileReports({ session }: { readonly session: FileSession }) {
     dismissShareNotice,
     exportNotice,
     report,
+    reportSequence,
     shareNotice,
   } = session;
   const exported =
@@ -47,19 +50,21 @@ export function FileReports({ session }: { readonly session: FileSession }) {
       >
         {report !== undefined && (
           <>
-            {report.readOnlyFormat !== undefined && (
-              <p className={styles.notice}>
-                {t('reports.opened-read-only', {
-                  format: formatNames[report.readOnlyFormat],
-                })}
-              </p>
-            )}
-            {reportSections(t, report).map(({ heading, lines }) => (
-              <Fragment key={heading}>
-                <p className={styles.headline}>{t(heading)}</p>
-                <DetailLines className={styles.lines} lines={lines} />
-              </Fragment>
-            ))}
+            <Fragment key={reportSequence}>
+              {report.readOnlyFormat !== undefined && (
+                <p className={styles.notice}>
+                  {t('reports.opened-read-only', {
+                    format: formatNames[report.readOnlyFormat],
+                  })}
+                </p>
+              )}
+              {reportSections(t, report).map(({ heading, lines }) => (
+                <Fragment key={heading}>
+                  <p className={styles.headline}>{t(heading)}</p>
+                  <DetailLines className={styles.lines} lines={lines} />
+                </Fragment>
+              ))}
+            </Fragment>
             <Dismiss
               label={t('reports.dismiss-report')}
               onClick={dismissReport}
