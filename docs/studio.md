@@ -689,7 +689,7 @@ outside one, and none works while focus is inside an open menu or list.
 | Start a flow                           | F                                            | Keyboard only       |
 | Add bend                               | `+`                                          | Flow route toolbar  |
 | Snap to grid                           | Mod+Shift+G                                  | Menu                |
-| Fit selection                          | Mod+Shift+0                                  | Menu, zoom controls |
+| Fit selection                          | Shift+F                                      | Menu, zoom controls |
 | Fit to view                            | Mod+0                                        | Zoom controls       |
 | Zoom in, Zoom out                      | Mod+= or Mod++, Mod+-                        | Zoom controls       |
 | Reset zoom to 100%                     | Mod+1                                        | Zoom controls       |

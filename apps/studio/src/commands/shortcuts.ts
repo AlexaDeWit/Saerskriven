@@ -133,7 +133,11 @@ export const reservedChords = {
     modShift('q', 'apple'),
     modShift('?', 'apple'),
   ],
-  windows: [mod('Escape', 'other'), modShift('Escape', 'other')],
+  windows: [
+    mod('Escape', 'other'),
+    modShift('Escape', 'other'),
+    modShift('0', 'other'),
+  ],
   browsers: [
     mod('n'),
     modShift('n'),

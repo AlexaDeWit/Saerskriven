@@ -450,7 +450,7 @@ export const commandTable = {
   'fit-selection': viewCommand({
     id: 'fit-selection',
     label: 'commands.label-fit-selection',
-    shortcuts: [modShift('0')],
+    shortcuts: [shift('f')],
     when: 'commands.when-selection-outside-fields',
     operation: 'fitSelection',
   }),

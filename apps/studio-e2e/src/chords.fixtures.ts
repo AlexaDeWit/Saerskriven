@@ -21,7 +21,7 @@ export const registeredChords = {
   'snap-to-grid': ['ControlOrMeta+Shift+g'],
   'threat-register': ['r'],
   'reset-zoom': ['ControlOrMeta+1'],
-  'fit-selection': ['ControlOrMeta+Shift+0'],
+  'fit-selection': ['Shift+f'],
   'next-diagram': ['PageDown'],
   'previous-diagram': ['PageUp'],
   'new-diagram': [],
