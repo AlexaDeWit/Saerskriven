@@ -158,7 +158,9 @@ out. A click there without a drag clears the selection, or selects that element
 alone. With Shift held, or by touch, a press there acts as it does outside the
 selection. An arrow key moves the selection five model units, and Shift+arrow
 twenty. A flow does not move on its own, but a moved group carries its bends
-and free ends along.
+and free ends along. Pressing Escape, or leaving the browser window, before the
+release puts every dragged element back where it was, with no undo step. Escape
+also clears the selection, as it does anywhere.
 
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
@@ -512,7 +514,12 @@ canvas does not pan to bring it out.
 
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves
-focus to the canvas.
+focus to the canvas. Escape clears the selection and leaves focus on the
+element or flow that had it. From a resize control, a bend or end handle, a
+point handle or the route toolbar, it moves focus to the selected element or
+flow, and so does the second Escape on an icon of the Reconnect flow or Trust
+boundary card, once the first has closed its tooltip. Straight after a box
+selection, Escape moves focus to the canvas.
 
 React Flow gives the canvas `role="application"`, which turns off a screen
 reader's browse mode there: Tab reaches every element, but the reader's own

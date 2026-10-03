@@ -1,5 +1,10 @@
 import type { CanvasFlowEdge, CanvasNode } from '@saerskriven/canvas';
-import { sideSchema, type ElementId, type Side } from '@saerskriven/model';
+import {
+  sideSchema,
+  type ElementId,
+  type Point,
+  type Side,
+} from '@saerskriven/model';
 import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
 import { Action } from '../store/actions.js';
 import { sameSelection } from '../store/selection.js';
@@ -124,6 +129,23 @@ export function gestureSelection(
     }),
   );
   return resized.size === 0 ? selection : [...resized];
+}
+
+/** No offset at all, which settles a node where the model has it. */
+export const unmoved: Point = { x: 0, y: 0 };
+
+/** The position changes that carry `nodes` by `offset` from where the model has them. */
+export function positionChanges(
+  nodes: readonly CanvasNode[],
+  offset: Point,
+  dragging: boolean,
+): NodeChange<DiagramNode>[] {
+  return nodes.map((node) => ({
+    id: node.id,
+    type: 'position',
+    position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
+    dragging,
+  }));
 }
 
 /** React Flow's connection test: a flow runs between two different elements. */
