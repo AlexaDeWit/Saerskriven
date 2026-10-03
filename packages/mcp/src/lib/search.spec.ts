@@ -73,17 +73,14 @@ describe('one page of a listing', () => {
   });
 });
 
-describe('the counts a text result opens with', () => {
-  const rendered = (
-    offset: number | undefined,
-    format: 'concise' | 'detailed',
-  ) =>
-    renderCounts(
-      limitedRows(listing, { response_format: format, offset }).counts,
-      format,
-      narrowing,
-    );
+const rendered = (offset: number | undefined, format: 'concise' | 'detailed') =>
+  renderCounts(
+    limitedRows(listing, { response_format: format, offset }).counts,
+    format,
+    narrowing,
+  );
 
+describe('the counts a text result opens with', () => {
   it('names the count alone for a whole listing', () => {
     expect(
       renderCounts(

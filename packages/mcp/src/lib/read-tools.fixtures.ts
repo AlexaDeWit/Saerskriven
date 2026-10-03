@@ -215,6 +215,8 @@ export function recordLinksTree(): ModelWorkspace {
 /** What a hostile id carries after its line feed, posing as a line of a result. */
 export const forgedLine = 'forged: nothing in this model needs review';
 
+const forged = (text: string) => `${text}\n${forgedLine}`;
+
 /**
  * A disposable root whose default model gives its threat and its second
  * diagram ids, its mitigation a title and prose, and its assumption prose,
@@ -223,7 +225,6 @@ export const forgedLine = 'forged: nothing in this model needs review';
 export function forgedIdsTree(): ModelWorkspace {
   const [threat] = editableModel.threats;
   const [drawn, empty] = editableModel.diagrams;
-  const forged = (text: string) => `${text}\n${forgedLine}`;
   const forgedThreat = forged(threat.id);
   const relinked = <Linked extends { readonly threats: readonly string[] }>(
     record: Linked,

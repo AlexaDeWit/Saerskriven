@@ -751,18 +751,19 @@ describe('the model metadata', () => {
   });
 });
 
-describe('the element details', () => {
-  const details = (state: State) => {
-    const element = elementById(state, noteElement);
-    return {
-      description: element?.description,
-      outOfScope: element?.outOfScope,
-      reasonOutOfScope: element?.reasonOutOfScope,
-    };
+const details = (state: State) => {
+  const element = elementById(state, noteElement);
+  return {
+    description: element?.description,
+    outOfScope: element?.outOfScope,
+    reasonOutOfScope: element?.reasonOutOfScope,
   };
-  const detailed = (state: State, change: ElementDetailsChange) =>
-    reduce(state, Action.SetElementDetails({ elementId: noteElement, change }));
+};
 
+const detailed = (state: State, change: ElementDetailsChange) =>
+  reduce(state, Action.SetElementDetails({ elementId: noteElement, change }));
+
+describe('the element details', () => {
   it('commits the description, the flag and the reason on a note as one undo step each', () => {
     const described = detailed(noteStart, { description: 'Draft only.' });
     const flagged = detailed(described, { outOfScope: true });

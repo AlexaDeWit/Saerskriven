@@ -186,16 +186,6 @@ export function ThreatList({
     announce((speak) => speak('canvas.threat-deleted', { number: deleted }));
   };
 
-  const attach = (threatId: ThreatId, target: Element): boolean => {
-    dispatch(Action.AttachThreat({ threatId, elementId: target.id }));
-    const attached = threatIn(threatId);
-    if (attached?.elements.includes(target.id) !== true) {
-      return false;
-    }
-    announce(attachSaid(attached, target, presentElements()));
-    return true;
-  };
-
   const detach =
     (threat: Threat) =>
     (elementId: ElementId): void => {
@@ -355,6 +345,16 @@ function AddThreat({
       )}
     </div>
   );
+}
+
+function attach(threatId: ThreatId, target: Element): boolean {
+  dispatch(Action.AttachThreat({ threatId, elementId: target.id }));
+  const attached = threatIn(threatId);
+  if (attached?.elements.includes(target.id) !== true) {
+    return false;
+  }
+  announce(attachSaid(attached, target, presentElements()));
+  return true;
 }
 
 function threatIn(threatId: ThreatId): Threat | undefined {

@@ -357,23 +357,23 @@ describe.skipIf(brotliUnbuilt)('a refused link', () => {
   });
 });
 
-describe.skipIf(brotliUnbuilt)('Share', () => {
-  const shareNotice = async (
-    result: ReturnType<typeof session>,
-  ): Promise<ShareNotice> => {
-    act(() => {
-      result.current.commands.share();
-    });
-    await waitFor(() => {
-      expect(result.current.shareNotice).toBeDefined();
-    }, settled);
-    const notice = result.current.shareNotice;
-    if (notice === undefined) {
-      throw new Error('Share reported nothing.');
-    }
-    return notice;
-  };
+const shareNotice = async (
+  result: ReturnType<typeof session>,
+): Promise<ShareNotice> => {
+  act(() => {
+    result.current.commands.share();
+  });
+  await waitFor(() => {
+    expect(result.current.shareNotice).toBeDefined();
+  }, settled);
+  const notice = result.current.shareNotice;
+  if (notice === undefined) {
+    throw new Error('Share reported nothing.');
+  }
+  return notice;
+};
 
+describe.skipIf(brotliUnbuilt)('Share', () => {
   it('puts a link to this page on the clipboard, reporting its length, and the link reads back as the model', async () => {
     const clipboard = recordingClipboard();
     const { links, loads } = specLinks();

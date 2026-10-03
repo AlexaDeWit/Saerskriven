@@ -788,14 +788,14 @@ const tlsOn = (threat: string): EditInput => ({
   },
 });
 
-describe('the records a batch culls and adds back', () => {
-  const culledBy = (edits: readonly EditInput[]) => {
-    const attempted = attempt();
-    return Either.getOrUndefined(
-      attempted.edit(modelFile, revisionIn(attempted, modelFile), edits),
-    )?.culled;
-  };
+const culledBy = (edits: readonly EditInput[]) => {
+  const attempted = attempt();
+  return Either.getOrUndefined(
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), edits),
+  )?.culled;
+};
 
+describe('the records a batch culls and adds back', () => {
   it('names a record a removed threat culled, though a later edit adds it back', () => {
     expect(
       culledBy([
@@ -914,10 +914,10 @@ describe('what the flow end, reversal and boundary shape ops write', () => {
   });
 });
 
-describe('what set_element_details writes', () => {
-  const elementsIn = (attempted: ReturnType<typeof attempt>, file: string) =>
-    elementsAcross(heldModel(attempted, file)?.diagrams ?? []);
+const elementsIn = (attempted: ReturnType<typeof attempt>, file: string) =>
+  elementsAcross(heldModel(attempted, file)?.diagrams ?? []);
 
+describe('what set_element_details writes', () => {
   for (const [file, id] of [
     [modelFile, 'element-db'],
     [dragonFile, 'store-archive'],

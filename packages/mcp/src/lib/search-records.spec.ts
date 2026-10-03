@@ -35,6 +35,11 @@ const linkedToNothing = [
   'assumption assumption-staging-wiped',
 ];
 
+const marked = (format: 'concise' | 'detailed') =>
+  search({ response_format: format })
+    .records.filter(({ unlinked }) => unlinked)
+    .map(({ kind, id }) => `${kind} ${id}`);
+
 describe('what saer_search_records finds', () => {
   it('matches every record, those linked to nothing included, mitigations first', () => {
     expect(idsOf({ response_format: 'concise' })).toEqual([
@@ -100,10 +105,6 @@ describe('what saer_search_records finds', () => {
   });
 
   it('marks the records linked to nothing in every row, in both forms', () => {
-    const marked = (format: 'concise' | 'detailed') =>
-      search({ response_format: format })
-        .records.filter(({ unlinked }) => unlinked)
-        .map(({ kind, id }) => `${kind} ${id}`);
     expect({
       concise: marked('concise'),
       detailed: marked('detailed'),
@@ -122,6 +123,11 @@ describe('what saer_search_records finds', () => {
     ]);
   });
 });
+
+const proseOf = (format: 'concise' | 'detailed') =>
+  search({ threat: '1', response_format: format }).records.map(
+    ({ kind, prose }) => `${kind} ${prose ?? 'none'}`,
+  );
 
 describe('the text of a record search', () => {
   it('names each record, its text, its links, and the records linked to nothing', () => {
@@ -169,10 +175,6 @@ describe('the text of a record search', () => {
   });
 
   it("leaves a mitigation's prose out of a concise row and keeps an assumption's", () => {
-    const proseOf = (format: 'concise' | 'detailed') =>
-      search({ threat: '1', response_format: format }).records.map(
-        ({ kind, prose }) => `${kind} ${prose ?? 'none'}`,
-      );
     expect({
       concise: proseOf('concise'),
       detailed: proseOf('detailed'),
