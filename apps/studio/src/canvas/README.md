@@ -32,7 +32,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
 | `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
 | `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them            |
-| `toolbox.tsx`, `zoom-cluster.tsx`                                     | The tool modes on the chrome card, and the zoom controls                                                                           |
+| `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                 |
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
 (`../app/chrome.tsx`), and hangs `canvas-announcement.tsx` and
