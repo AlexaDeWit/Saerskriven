@@ -23,11 +23,12 @@ import {
  * or resize is in flight. On each change a flow whose block no longer follows
  * its segment is placed again, clear of the blocks every other flow keeps
  * where it was, and every block is placed afresh once the gesture ends. A
- * resize ends only on a node React Flow reported as resizing: it also reports
- * an end, with the extent it measured, for a press on a resize control that
- * resized nothing, and the flows keep their layout through that. The nodes
- * fold back onto the model's own as soon as the model moves. `rebase` takes
- * the settled layout's flows as the base for the next gesture.
+ * resize ends only on a node that is resizing on screen: React Flow also
+ * reports an end, with the extent it measured, for a press on a resize control
+ * that resized nothing, and the flows keep their layout through that. The
+ * nodes fold back onto the model's own as soon as the model or the selection
+ * moves, which forgets a resize that never got its end. `rebase` takes the
+ * settled layout's flows as the base for the next gesture.
  */
 export function useLiveEdges(
   layout: CanvasLayout,
@@ -40,7 +41,6 @@ export function useLiveEdges(
   const [folded, setFolded] = useState<DiagramNode[]>(graph.nodes);
   const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
   const edgeBases = useRef<ReadonlyMap<string, CanvasEdge>>(new Map());
-  const resizing = useRef(new Set<string>());
 
   if (folded !== graph.nodes) {
     setFolded(graph.nodes);
@@ -57,7 +57,20 @@ export function useLiveEdges(
     onNodesChange: (changes: NodeChange<DiagramNode>[]): void => {
       const next = applyNodeChanges(changes, onScreen);
       setOnScreen(next);
-      const { active, finished } = followGesture(changes, resizing.current);
+      const active = changes.some(
+        (change) =>
+          (change.type === 'position' && change.dragging === true) ||
+          (change.type === 'dimensions' && change.resizing === true),
+      );
+      const finished = changes.some(
+        (change) =>
+          (change.type === 'position' && change.dragging === false) ||
+          (change.type === 'dimensions' &&
+            change.resizing === false &&
+            onScreen.some(
+              (node) => node.id === change.id && node.resizing === true,
+            )),
+      );
       if (active || finished) {
         const live = layoutAtReactFlowNodes(
           layout,
@@ -81,24 +94,4 @@ export function useLiveEdges(
       applyChanges(changes, elements, positions);
     },
   };
-}
-
-function followGesture(
-  changes: readonly NodeChange<DiagramNode>[],
-  resizing: Set<string>,
-): { readonly active: boolean; readonly finished: boolean } {
-  let active = false;
-  let finished = false;
-  for (const change of changes) {
-    if (change.type === 'position') {
-      active ||= change.dragging === true;
-      finished ||= change.dragging === false;
-    } else if (change.type === 'dimensions' && change.resizing === true) {
-      resizing.add(change.id);
-      active = true;
-    } else if (change.type === 'dimensions' && change.resizing === false) {
-      finished = resizing.delete(change.id) || finished;
-    }
-  }
-  return { active, finished };
 }

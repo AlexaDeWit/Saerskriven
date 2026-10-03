@@ -3,6 +3,7 @@ import {
   canvasInteractionClassNames,
   flowEndNodeId,
 } from '@saerskriven/canvas';
+import { touchEvent } from '@saerskriven/canvas/fixtures';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
 import { elementIn } from '@saerskriven/model/fixtures';
@@ -30,6 +31,7 @@ import {
   curvedCanvasModel,
   flaggedCanvasModel,
   laidOutNode,
+  mouseOn,
   noteElement,
   openCanvas,
   probeFlow,
@@ -84,6 +86,11 @@ const probeFreeEnd = () =>
 
 const resizeControl = (from: string): HTMLElement =>
   screen.getByRole('button', { name: `Resize Reader from ${from}` });
+
+const readerGlyphWidth = (): string | null | undefined =>
+  reader().querySelector('svg')?.getAttribute('width');
+
+const finger = (clientX: number) => ({ identifier: 1, clientX, clientY: 100 });
 
 const press = {
   button: 0,
@@ -509,6 +516,30 @@ describe('DiagramCanvas', () => {
       dispatch(Action.Undo());
     });
     expect(readerBox()).toEqual(before);
+  });
+
+  it('puts back a touch resize whose element is deselected under it, with no undo step, and a still press after it records nothing', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    const settled = readerGlyphWidth();
+
+    fireEvent(resizeControl('right'), touchEvent('touchstart', finger(100)));
+    fireEvent(resizeControl('right'), touchEvent('touchmove', finger(160)));
+    expect(readerGlyphWidth()).not.toBe(settled);
+    act(() => {
+      dispatch(Action.Select({ elementIds: [] }));
+    });
+
+    expect(readerGlyphWidth()).toBe(settled);
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+    mouseOn(resizeControl('right'), 'mousedown', 100);
+    mouseOn(window, 'mouseup', 100);
+
+    expect(readerGlyphWidth()).toBe(settled);
+    expect(modelStore.getState().past).toHaveLength(0);
   });
 
   it('clears a selected flow when the pointer lands on nothing', () => {

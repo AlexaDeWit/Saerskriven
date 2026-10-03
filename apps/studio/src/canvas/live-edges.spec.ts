@@ -171,4 +171,22 @@ describe('useLiveEdges', () => {
 
     expect(flowsOf(result.current.edges)).toEqual(layout.edges);
   });
+
+  it('forgets a resize that never ended once the nodes fold back, so a later end re-lays nothing', () => {
+    const { result, rerender } = renderHook(
+      (drawn) => useLiveEdges(layout, drawn, moving, elements, positions),
+      { initialProps: graph },
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true));
+    });
+    rerender(diagramGraph(layout, model, [], t));
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(measured, false));
+    });
+
+    expect(flowsOf(result.current.edges)).toEqual(layout.edges);
+  });
 });
