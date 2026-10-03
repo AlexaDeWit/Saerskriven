@@ -44,8 +44,22 @@ const openWithFlagOnlyStore = async (page: Page): Promise<void> => {
   await openModelDocument(page, JSON.parse(text));
 };
 
-const selectClear = async (page: Page, name: RegExp): Promise<Locator> => {
-  await openWithFlagOnlyStore(page);
+const openWithShortFlaggedApi = async (page: Page): Promise<void> => {
+  const text = committedText('every-glyph.model.json')
+    .replace('"elements": ["el-probe"]', '"elements": ["el-api"]')
+    .replace(
+      '"size": { "width": 120, "height": 120 }',
+      '"size": { "width": 120, "height": 40 }',
+    );
+  await openModelDocument(page, JSON.parse(text));
+};
+
+const selectClear = async (
+  page: Page,
+  name: RegExp,
+  open = openWithFlagOnlyStore,
+): Promise<Locator> => {
+  await open(page);
   const node = await selectNode(page, name);
   await threatPanel(page)
     .getByRole('button', { name: 'Close threats', exact: true })
@@ -63,6 +77,15 @@ const badgeShapes = `.${canvasClassNames.badge} circle, .${canvasClassNames.badg
 const badgeInk = (node: Locator) => inkBoxOf(node.locator(badgeShapes));
 
 const badgeFace = (node: Locator): Locator => node.locator(badgeShapes).first();
+
+const zoomOutTo = async (page: Page, zoom: number): Promise<void> => {
+  const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
+  for (let step = 0; step < 10 && (await viewportZoom(page)) > zoom; step++) {
+    await zoomOut.click();
+    await canvasSettled(page);
+  }
+  expect(await viewportZoom(page)).toBeLessThanOrEqual(zoom);
+};
 
 const expectHandlesOnCornersClearOfBadge = async (
   node: Locator,
@@ -90,6 +113,23 @@ const expectHandlesOnCornersClearOfBadge = async (
     expect(boxesOverlap(square, ink)).toBe(false);
   }
 };
+
+test(
+  'a short element keeps every corner handle clear of the flag stacked under its selected badge, at low zoom as well',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const node = await selectClear(
+      page,
+      /^Order API, process/u,
+      openWithShortFlaggedApi,
+    );
+    await expect(node.locator(`.${canvasClassNames.badgeFlag}`)).toHaveCount(1);
+
+    await expectHandlesOnCornersClearOfBadge(node);
+    await zoomOutTo(page, lowZoom);
+    await expectHandlesOnCornersClearOfBadge(node);
+  },
+);
 
 for (const [badge, element, name, counts] of cases) {
   test(
@@ -130,19 +170,7 @@ for (const [badge, element, name, counts] of cases) {
       });
 
       await test.step('at low zoom every corner handle still sits on its corner, clear of the badge', async () => {
-        const zoomOut = page.getByRole('button', {
-          name: 'Zoom out',
-          exact: true,
-        });
-        for (
-          let step = 0;
-          step < 10 && (await viewportZoom(page)) > lowZoom;
-          step++
-        ) {
-          await zoomOut.click();
-          await canvasSettled(page);
-        }
-        expect(await viewportZoom(page)).toBeLessThanOrEqual(lowZoom);
+        await zoomOutTo(page, lowZoom);
         await expectHandlesOnCornersClearOfBadge(node);
       });
     },

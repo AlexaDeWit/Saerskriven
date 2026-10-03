@@ -153,8 +153,8 @@ its element is selected, the badge steps out past the top-right corner
 node's z-index of 1 draws it above its neighbours. A selected boundary box
 stays at -1, so its badge draws in React Flow's viewport portal, where the
 badge layer's z-index lifts it above the nodes around it. Scaled up at low
-zoom, the top-right resize handle grows inward from the right side, so it
-never reaches the stepped-out badge. `selectionBounds` measures a selection
+zoom, the two right-hand corner handles grow inward from the right side, so
+neither reaches the stepped-out badge. `selectionBounds` measures a selection
 with each badge where it is drawn, for Fit selection and the group drag's
 bounds. A trust boundary curve's corner handles sit outside its corners
 instead, clear of the badge on its corner and of the handle on a point there.
