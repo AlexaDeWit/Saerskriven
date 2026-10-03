@@ -72,8 +72,15 @@ export const fieldsSv = catalogue(fieldMessages)('sv')({
   'contained-elements-lower': 'innehållna objekt',
   'crossing-flows': 'Korsande flöden',
   'crossing-flows-lower': 'korsande flöden',
-  'recording-of': 'Angivande av {label}',
+  'recording-of-privilege-level': 'Angivande av Behörighetsnivå',
+  'recording-of-protocol': 'Angivande av Protokoll',
+  'recording-of-crossed-trust-boundaries':
+    'Angivande av Korsade förtroendegränser',
+  'recording-of-contained-elements': 'Angivande av Innehållna objekt',
+  'recording-of-crossing-flows': 'Angivande av Korsande flöden',
   'relationship-item': '{label} {number}',
   'remove-relationship': 'Ta bort {label} {number}',
-  'add-to-relationship': 'Lägg till i {label}',
+  'add-to-crossed-trust-boundaries': 'Lägg till i korsade förtroendegränser',
+  'add-to-contained-elements': 'Lägg till i innehållna objekt',
+  'add-to-crossing-flows': 'Lägg till i korsande flöden',
 });
