@@ -42,9 +42,6 @@ const folded = (name: string): HTMLElement =>
 const opened = (name: string): HTMLElement =>
   screen.getByRole('button', { name, expanded: true });
 
-const newRow = (name: string): HTMLElement =>
-  screen.getByRole('group', { name });
-
 const lineOf = (toggle: string): string | undefined =>
   recordRow(toggle).querySelector('p')?.textContent ?? undefined;
 
@@ -113,23 +110,34 @@ describe(
       expect(folded('Mitigation 1').textContent).toBe('Mitigation 1');
     });
 
-    it('is a group with no name of its own where it draws a toggle, so its name is said once', () => {
+    it('is a group with no name of its own, kept or new', async () => {
+      const user = userEvent.setup();
       showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await user.click(button('Add assumption'));
 
+      expect(
+        screen.queryAllByRole('group', {
+          name: /^(?:Mitigation|Assumption) \d+$/u,
+        }),
+      ).toEqual([]);
       expect(
         within(recordRow(readOnly)).getByRole('combobox', {
           name: 'Mitigation 1 status',
         }),
       ).toBeDefined();
-      expect(screen.queryByRole('group', { name: 'Mitigation 1' })).toBeNull();
+      expect(
+        within(recordRow('Assumption 2', 'textbox')).getByRole('combobox', {
+          name: 'Assumption 2 status',
+        }),
+      ).toBeDefined();
     });
 
-    it('keeps its name as a group where it draws no toggle, and hands it to the toggle once it is kept', async () => {
+    it('is the same group once Return keeps a new record and it draws its toggle', async () => {
       const user = userEvent.setup();
       showThreatEditor({ threat: recordedThreat(firstThreat) });
       await user.click(button('Add mitigation'));
 
-      const row = newRow('Mitigation 2');
+      const row = recordRow('Mitigation 2 title', 'textbox');
       expect(
         within(row).queryByRole('button', { name: 'Mitigation 2' }),
       ).toBeNull();
@@ -137,7 +145,6 @@ describe(
       await user.keyboard('Sign every share link{Enter}');
 
       expect(recordRow('Mitigation 2, Sign every share link')).toBe(row);
-      expect(screen.queryByRole('group', { name: 'Mitigation 2' })).toBeNull();
     });
 
     it('reads the start of its text where it has no title', () => {
@@ -278,7 +285,7 @@ describe(
       const user = userEvent.setup();
       showThreatEditor({ threat: recordedThreat(firstThreat) });
       await user.click(button('Add mitigation'));
-      const row = newRow('Mitigation 2');
+      const row = recordRow('Mitigation 2 title', 'textbox');
       expect(
         within(row).getByRole('button', { name: 'Discard mitigation 2' }),
       ).toBeDefined();
