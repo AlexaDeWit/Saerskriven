@@ -52,6 +52,7 @@ export const fieldsSv = catalogue(fieldMessages)('sv')({
   'attach-existing-element': 'Koppla befintligt objekt',
   'choose-existing-element-first': 'Välj först ett befintligt objekt.',
   'detach-element': 'Koppla bort {element}',
+  'detach-unlabelled-flow': 'Koppla bort flödet {ends}',
   'provides-authentication': 'Tillhandahåller autentisering',
   'handles-card-payments': 'Hanterar kortbetalningar',
   'handles-goods-or-services': 'Hanterar varor eller tjänster',

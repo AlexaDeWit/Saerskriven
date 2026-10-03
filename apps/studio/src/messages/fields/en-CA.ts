@@ -52,6 +52,7 @@ export const fieldsEnCA = catalogue(fieldMessages)('en-CA')({
   'attach-existing-element': 'Attach existing element',
   'choose-existing-element-first': 'Choose an existing element first.',
   'detach-element': 'Detach {element}',
+  'detach-unlabelled-flow': 'Detach Flow {ends}',
   'provides-authentication': 'Provides authentication',
   'handles-card-payments': 'Handles card payments',
   'handles-goods-or-services': 'Handles goods or services',

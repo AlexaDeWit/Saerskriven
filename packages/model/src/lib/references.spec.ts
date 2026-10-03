@@ -12,6 +12,7 @@ import {
   elementsById,
   flowEndName,
   flowEnds,
+  unlabelledFlow,
 } from './references.js';
 
 const model: Model = parsedFixture({
@@ -160,5 +161,20 @@ describe('flowEndName', () => {
     ['a free end by the word given', { kind: 'free' }, 'loose'],
   ] as const)('calls %s', (_, end, called) => {
     expect(flowEndName(end, 'loose')).toBe(called);
+  });
+});
+
+describe('unlabelledFlow', () => {
+  const flow = flowIn(model, 'element-order-flow');
+
+  it.each(['', ' \t'])('is a flow named %j', (name) => {
+    expect(unlabelledFlow({ ...flow, name })).toEqual({ ...flow, name });
+  });
+
+  it('is nothing for a flow with a name or another kind with none', () => {
+    expect(unlabelledFlow(flow)).toBeUndefined();
+    expect(
+      unlabelledFlow({ ...elementIn(model, 'element-customer'), name: '' }),
+    ).toBeUndefined();
   });
 });

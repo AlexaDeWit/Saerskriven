@@ -5,6 +5,7 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   threats: 'Menaces',
   'threats-on': 'Menaces sur {element}',
   'unlabelled-flow': 'Flux {ends}',
+  'threats-on-unlabelled-flow': 'Menaces sur le flux {ends}',
   'close-threats': 'Fermer les menaces',
   'widen-pane': 'Élargir le volet',
   'restore-pane-width': 'Rétablir la largeur du volet',

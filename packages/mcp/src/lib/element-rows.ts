@@ -8,6 +8,7 @@ import {
   elementsById,
   flowEndName,
   flowEnds,
+  unlabelledFlow,
   type Diagram,
   type Element,
   type FlowEndpoint,
@@ -174,11 +175,12 @@ function namedFromEnds(
   element: Element,
   diagram: Diagram,
 ): { readonly namedFromEnds?: string } {
-  if (element.kind !== 'flow' || element.name !== '') {
+  const flow = unlabelledFlow(element);
+  if (flow === undefined) {
     return {};
   }
   const { source, target, bidirectional } = flowEnds(
-    element,
+    flow,
     elementsById(diagram.elements),
   );
   const from = flowEndName(source, 'a free point');

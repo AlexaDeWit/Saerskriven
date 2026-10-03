@@ -2,6 +2,7 @@ import { Data, Either } from 'effect';
 import type { Element, Flow, FlowEndpoint } from './elements.js';
 import type { ElementId, ThreatId } from './ids.js';
 import type { Diagram } from './model.js';
+import { isEmptyName } from './text.js';
 import type { Threat } from './threats.js';
 
 /**
@@ -55,6 +56,17 @@ export type FlowEnds = {
   readonly target: FlowEnd;
   readonly bidirectional: boolean;
 };
+
+/**
+ * `element` where it is a flow left unlabelled, which a reader names by its
+ * ends, and undefined otherwise. A name of white space alone counts, since a
+ * file or a paste can still hold one.
+ */
+export function unlabelledFlow(element: Element): Flow | undefined {
+  return element.kind === 'flow' && isEmptyName(element.name)
+    ? element
+    : undefined;
+}
 
 /** The ends of `flow`, each attached one looked up in `elements`. */
 export function flowEnds(

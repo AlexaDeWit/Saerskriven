@@ -7,6 +7,7 @@ import {
   inNumberOrder,
   recordsLinkedTo,
   threatFlags,
+  unlabelledFlow,
   type Assumption,
   type Element,
   type ElementId,
@@ -458,8 +459,9 @@ function elementName(
   { elements, messages }: SectionContext,
 ): string {
   const element = elements.get(id);
-  if (element?.kind === 'flow' && element.name === '') {
-    const { source, target, bidirectional } = flowEnds(element, elements);
+  const flow = element === undefined ? undefined : unlabelledFlow(element);
+  if (flow !== undefined) {
+    const { source, target, bidirectional } = flowEnds(flow, elements);
     const free = messages.t('register.free-point');
     return messages.t(
       bidirectional ? 'register.flow-between' : 'register.flow-from-to',

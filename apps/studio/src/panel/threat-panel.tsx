@@ -24,6 +24,7 @@ import {
   announceRefusal,
   resetAnnouncements,
 } from '../canvas/announcements.js';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { elementById } from '../store/selectors.js';
@@ -45,6 +46,7 @@ import {
   nextNumber,
   threatAfterDeleting,
   threatCommitter,
+  unlabelledFlowEnds,
   type PanelSubject,
 } from './threats.js';
 
@@ -233,13 +235,7 @@ export function ThreatPanel({
       heading={
         element === undefined
           ? t('panel.threats')
-          : t('panel.threats-on', {
-              element: elementLabel(
-                element,
-                elementsById(elementsAcross(diagrams)),
-                t,
-              ),
-            })
+          : threatsHeading(element, elementsById(elementsAcross(diagrams)), t)
       }
       label={t('panel.threats')}
       onClose={onClose}
@@ -328,6 +324,17 @@ function threatIn(threatId: ThreatId): Threat | undefined {
   return modelStore
     .getState()
     .present.threats.find((threat) => threat.id === threatId);
+}
+
+function threatsHeading(
+  element: Element,
+  elements: ReadonlyMap<ElementId, Element>,
+  t: StudioTranslator['t'],
+): string {
+  const ends = unlabelledFlowEnds(element, elements, t);
+  return ends === undefined
+    ? t('panel.threats-on', { element: elementLabel(element, elements, t) })
+    : t('panel.threats-on-unlabelled-flow', { ends });
 }
 
 function presentElements(): ReadonlyMap<ElementId, Element> {

@@ -72,7 +72,9 @@ scope (`outOfScope`), and how many threats reference it. A flow left
 unlabelled keeps its empty `name` and adds `namedFromEnds`, which names it from
 its ends: `Flow from Shopper to Web shop`, `Flow between Shopper and Web shop`
 for a flow that runs both ways, and `a free point` for an end attached to
-nothing. Its text line shows that name. The second takes
+nothing. Its text line shows that name. Every element row carries it the same
+way: the rows of `saer_coverage`, the elements `saer_get_threat` lists, and the
+element the `stride_pass` prompt lays out. The second takes
 `status`, `severity`, `category`, `diagram`, `element` and `query` and carries
 the threat number and id, its title, status, severity, category, attached
 elements and flags. Its `category` is the pair a result names, such as

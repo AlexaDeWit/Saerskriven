@@ -72,6 +72,7 @@ export {
   elementsById,
   flowEndName,
   flowEnds,
+  unlabelledFlow,
   type FlowEnd,
   type FlowEnds,
 } from './lib/references.js';

@@ -129,12 +129,12 @@ function diagramOf(
   });
 }
 
-function onUnlabelled(flow: object): Model {
+function onUnlabelled(flow: object, name = ''): Model {
   return modelWith({
     elements: [
       boxAt('el-a', 0, 0, 'process', undefined, 'Gateway'),
       boxAt('el-b', 300, 0, 'store', undefined, 'Ledger'),
-      { ...flow, id: 'el-flow', name: '' },
+      { ...flow, id: 'el-flow', name },
     ],
     threats: [threatOf({ number: 1, elements: ['el-flow'] })],
   });
@@ -498,6 +498,15 @@ describe('a threat section', () => {
     expect(renderRegister(onUnlabelled(flow), 'en-CA')).toContain(
       `- **Elements**: ${named}`,
     );
+  });
+
+  it('names a flow a file holds under white space alone from its ends', () => {
+    expect(
+      renderRegister(
+        onUnlabelled(flowFrom('el-flow', 'el-a', 'el-b'), ' '),
+        'en-CA',
+      ),
+    ).toContain('- **Elements**: Flow from Gateway to Ledger');
   });
 
   it("names a flow left unlabelled in the register's language", () => {

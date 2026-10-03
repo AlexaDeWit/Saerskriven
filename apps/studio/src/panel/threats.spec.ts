@@ -125,6 +125,19 @@ const unlabelled = (model: Model, ...flows: readonly ElementId[]): Model =>
 
 const unlabelledCanvas = unlabelled(canvasModel, requestFlow, probeFlow);
 
+const spacedCanvas: Model = {
+  ...canvasModel,
+  diagrams: canvasModel.diagrams.map((diagram) => ({
+    ...diagram,
+    elements: diagram.elements.map((element) =>
+      element.id === requestFlow ? { ...element, name: ' ' } : element,
+    ),
+  })),
+};
+
+const fromReaderToStudio = (speak: typeof t): string =>
+  speak('tools.flow-from-to', { source: 'Reader', target: 'Studio' });
+
 const labelIn = (model: Model, id: ElementId, speak = t): string =>
   elementLabel(
     elementIn(model, id),
@@ -173,12 +186,13 @@ describe('elementLabel', () => {
 
   it('words the ends in the language shown', () => {
     expect(labelIn(unlabelledCanvas, requestFlow, french)).toBe(
-      french('panel.unlabelled-flow', {
-        ends: french('tools.flow-from-to', {
-          source: 'Reader',
-          target: 'Studio',
-        }),
-      }),
+      french('panel.unlabelled-flow', { ends: fromReaderToStudio(french) }),
+    );
+  });
+
+  it('names a flow a file holds under white space alone by its ends', () => {
+    expect(labelIn(spacedCanvas, requestFlow)).toBe(
+      'Flow from Reader to Studio',
     );
   });
 });
@@ -187,11 +201,33 @@ describe('the element lists of a threat', () => {
   const [, onFlow] = unlabelledCanvas.threats;
 
   it('list a flow left unlabelled by its ends, with no id', () => {
+    expect(threatAttachments(unlabelledCanvas.diagrams, onFlow, t)).toEqual([
+      {
+        id: requestFlow,
+        label: 'Flow from Reader to Studio',
+        detach: 'Detach Flow from Reader to Studio',
+      },
+    ]);
+  });
+
+  it('detach a flow left unlabelled under the message each language words around its ends', () => {
     expect(
-      threatAttachments(unlabelledCanvas.diagrams, onFlow, t).map(
-        ({ label }) => label,
+      threatAttachments(unlabelledCanvas.diagrams, onFlow, french).map(
+        ({ detach }) => detach,
       ),
-    ).toEqual(['Flow from Reader to Studio']);
+    ).toEqual([
+      french('fields.detach-unlabelled-flow', {
+        ends: fromReaderToStudio(french),
+      }),
+    ]);
+  });
+
+  it('detach a named element under its name', () => {
+    expect(
+      threatAttachments(canvasModel.diagrams, onFlow, t).map(
+        ({ detach }) => detach,
+      ),
+    ).toEqual(['Detach Opens a model']);
   });
 
   it('offer a flow left unlabelled by its ends', () => {
@@ -217,6 +253,16 @@ describe('the element lists of a threat', () => {
         .filter(({ id }) => id === requestFlow || id === probeFlow)
         .map(({ text }) => text.suffix),
     ).toEqual([`(${requestFlow})`, `(${probeFlow})`]);
+    expect(
+      threatAttachments(
+        twin.diagrams,
+        { ...onFlow, elements: [requestFlow, probeFlow] },
+        t,
+      ).map(({ detach }) => detach),
+    ).toEqual([
+      `Detach Flow from Reader to Studio (${requestFlow})`,
+      `Detach Flow from Reader to Studio (${probeFlow})`,
+    ]);
   });
 });
 
@@ -238,10 +284,23 @@ describe('attachSaid', () => {
     expect(attachSaid(sampleThreat, flow, elements)(french)).toBe(
       french('canvas.threat-attached-to-flow', {
         number,
-        ends: french('tools.flow-from-to', {
-          source: 'Reader',
-          target: 'Studio',
-        }),
+        ends: fromReaderToStudio(french),
+      }),
+    );
+  });
+
+  it('words a flow a file holds under white space alone with its ends', () => {
+    const elements = elementsById(elementsAcross(spacedCanvas.diagrams));
+    expect(
+      attachSaid(
+        sampleThreat,
+        elementIn(spacedCanvas, requestFlow),
+        elements,
+      )(t),
+    ).toBe(
+      t('canvas.threat-attached-to-flow', {
+        number,
+        ends: fromReaderToStudio(t),
       }),
     );
   });
@@ -302,10 +361,7 @@ describe('detachSaid', () => {
     ).toBe(
       french('canvas.threat-detached-from-flow', {
         number: onFlow.number,
-        ends: french('tools.flow-from-to', {
-          source: 'Reader',
-          target: 'Studio',
-        }),
+        ends: fromReaderToStudio(french),
       }),
     );
   });

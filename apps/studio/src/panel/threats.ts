@@ -4,6 +4,7 @@ import {
   generateThreatId,
   nextThreatNumber,
   threatSchema,
+  unlabelledFlow,
   type Diagram,
   type Element,
   type ElementId,
@@ -60,20 +61,34 @@ export function attachedThreats(state: State): readonly Threat[] {
 }
 
 /**
+ * Where a flow left unlabelled runs, "from A to B", and undefined for any
+ * other element. `elements` holds the elements its ends attach to, keyed by
+ * id.
+ */
+export function unlabelledFlowEnds(
+  element: Element,
+  elements: ReadonlyMap<ElementId, Element>,
+  t: StudioTranslator['t'],
+): string | undefined {
+  const flow = unlabelledFlow(element);
+  return flow === undefined
+    ? undefined
+    : flowEndsText(flowEnds(flow, elements), t);
+}
+
+/**
  * What the panel calls an element: as {@link kindLabel} words it, and a flow
- * left unlabelled by its ends, "Flow from A to B". `elements` holds the
- * elements its ends attach to, keyed by id.
+ * left unlabelled by its ends, "Flow from A to B".
  */
 export function elementLabel(
   element: Element,
   elements: ReadonlyMap<ElementId, Element>,
   t: StudioTranslator['t'],
 ): string {
-  return element.kind === 'flow' && element.name === ''
-    ? t('panel.unlabelled-flow', {
-        ends: flowEndsText(flowEnds(element, elements), t),
-      })
-    : kindLabel(element.name, element.kind, t);
+  const ends = unlabelledFlowEnds(element, elements, t);
+  return ends === undefined
+    ? kindLabel(element.name, element.kind, t)
+    : t('panel.unlabelled-flow', { ends });
 }
 
 /**
@@ -93,7 +108,7 @@ export function labelledElement(
   return {
     id: element.id,
     label: elementLabel(element, elements, t),
-    unnamed: element.name === '' && element.kind !== 'flow',
+    unnamed: element.name === '' && unlabelledFlow(element) === undefined,
   };
 }
 
@@ -186,20 +201,41 @@ export function detachSaid(
   return elementSaid('detached-from', number, detached, elements);
 }
 
-/** The elements one threat names, in diagram order, under labels a person can tell apart. */
+/**
+ * The elements one threat names, in diagram order, under labels a person can
+ * tell apart, each with the accessible name of its Detach control. A flow
+ * left unlabelled is detached under its own message, which each language
+ * words around the flow's ends.
+ */
 export function threatAttachments(
   diagrams: readonly Diagram[],
   threat: Threat,
   t: StudioTranslator['t'],
-): readonly { readonly id: ElementId; readonly label: string }[] {
+): readonly {
+  readonly id: ElementId;
+  readonly label: string;
+  readonly detach: string;
+}[] {
   return distinctTexts(
     diagrams.flatMap((diagram) => {
       const elements = elementsById(diagram.elements);
       return diagram.elements
         .filter((element) => threat.elements.includes(element.id))
-        .map((element) => labelledElement(element, elements, t));
+        .map((element) => ({
+          ...labelledElement(element, elements, t),
+          ends: unlabelledFlowEnds(element, elements, t),
+        }));
     }),
-  ).map(([{ id }, text]) => ({ id, label: optionName(text) }));
+  ).map(([{ id, label, ends }, text]) => ({
+    id,
+    label: optionName(text),
+    detach:
+      ends === undefined || text.label !== label
+        ? t('fields.detach-element', { element: optionName(text) })
+        : t('fields.detach-unlabelled-flow', {
+            ends: optionName({ label: ends, suffix: text.suffix }),
+          }),
+  }));
 }
 
 /** The number the next threat added here takes, which the model issues. */
@@ -250,7 +286,7 @@ function elementSaid(
   elements: ReadonlyMap<ElementId, Element>,
 ): Said {
   const { name } = element;
-  if (name !== '') {
+  if (name !== '' && unlabelledFlow(element) === undefined) {
     return (speak) =>
       speak(`canvas.threat-${change}-${element.kind}-named`, { number, name });
   }

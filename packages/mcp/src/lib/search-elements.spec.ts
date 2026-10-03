@@ -1,6 +1,11 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { renameElement, threatCountByElement } from '@saerskriven/model';
-import { elementId, validModel } from '@saerskriven/model/fixtures';
+import {
+  elementId,
+  parsedFixture,
+  validModel,
+  validModelFixture,
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import {
   answerOf,
@@ -232,6 +237,31 @@ describe('the row of a flow left unlabelled', () => {
       );
     },
   );
+
+  it('names a flow a file holds under white space alone from its ends', () => {
+    const spaced = treeHolding(
+      saerskrivenYamlCodec.write(
+        parsedFixture({
+          ...validModelFixture,
+          diagrams: validModelFixture.diagrams.map((diagram) => ({
+            ...diagram,
+            elements: diagram.elements.map((element) =>
+              element.id === 'element-order-flow'
+                ? { ...element, name: ' ' }
+                : element,
+            ),
+          })),
+        }),
+      ).output,
+    );
+    const [row] = answerOf(
+      searchElements(spaced, { kind: 'flow', response_format: 'concise' }),
+    ).elements;
+    expect(row).toMatchObject({
+      name: ' ',
+      namedFromEnds: 'Flow from Customer to a free point',
+    });
+  });
 
   it('names a flow with a name by its name alone', () => {
     expect(

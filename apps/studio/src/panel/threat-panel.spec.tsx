@@ -1,4 +1,5 @@
-import type { ElementId, Threat } from '@saerskriven/model';
+import { renameElement, type ElementId, type Threat } from '@saerskriven/model';
+import { Either } from 'effect';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -34,7 +35,8 @@ import {
   numbersIn,
   textbox,
 } from '../ui/ui.fixtures.js';
-import { softHyphen, threatId } from '@saerskriven/model/fixtures';
+import { elementIn, softHyphen, threatId } from '@saerskriven/model/fixtures';
+import { canvasModel, requestFlow } from '../canvas/canvas.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
 
 const panelProps = (
@@ -251,6 +253,32 @@ describe(
       ).toBeDefined();
       expect(
         screen.getByRole('button', { name: /A reader edits/u }),
+      ).toBeDefined();
+    });
+
+    it('names a flow left unlabelled from its ends in its heading', () => {
+      const unlabelled = Either.getOrThrow(
+        renameElement(canvasModel, requestFlow, ''),
+      );
+      modelStore.setState(
+        { ...initialState(unlabelled), selection: [requestFlow] },
+        true,
+      );
+      render(
+        <ThreatPanel
+          {...panelProps({
+            subject: {
+              kind: 'element',
+              element: elementIn(unlabelled, requestFlow),
+            },
+          })}
+        />,
+      );
+
+      expect(
+        screen.getByRole('heading', {
+          name: 'Threats on the flow from Reader to Studio',
+        }),
       ).toBeDefined();
     });
 
