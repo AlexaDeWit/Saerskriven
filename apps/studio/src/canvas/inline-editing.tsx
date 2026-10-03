@@ -292,8 +292,8 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
             fold();
           } else {
             resizeNode(node, box);
+            itemMoved();
           }
-          itemMoved();
         }}
         resizeLabels={resizeLabels(node, t)}
         resizing={resizing}

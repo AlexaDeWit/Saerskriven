@@ -542,6 +542,8 @@ describe('DiagramCanvas', () => {
     openCanvas([actorElement]);
     render(<DiagramCanvas />);
     const settled = readerGlyphWidth();
+    const told = vi.fn<() => void>();
+    const release = followItemMoves(told);
 
     touchResizeReader();
     expect(readerGlyphWidth()).not.toBe(settled);
@@ -550,6 +552,8 @@ describe('DiagramCanvas', () => {
     });
 
     expect(readerGlyphWidth()).toBe(settled);
+    expect(told).not.toHaveBeenCalled();
+    release();
 
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
@@ -564,6 +568,8 @@ describe('DiagramCanvas', () => {
     openCanvas([actorElement]);
     render(<DiagramCanvas />);
     const settled = [readerGlyphWidth(), reader().style.width];
+    const told = vi.fn<() => void>();
+    const release = followItemMoves(told);
 
     touchResizeReader();
     expect(reader().style.width).not.toBe(settled[1]);
@@ -573,6 +579,8 @@ describe('DiagramCanvas', () => {
     );
 
     expect([readerGlyphWidth(), reader().style.width]).toEqual(settled);
+    expect(told).not.toHaveBeenCalled();
+    release();
 
     stillPressReader();
 
