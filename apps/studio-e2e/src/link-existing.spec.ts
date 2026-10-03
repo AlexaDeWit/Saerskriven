@@ -2,12 +2,11 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   expandThreat,
   focusedOption,
-  openTwoDiagrams,
+  openShopperTakeover,
   panelControl,
   panelField,
   runFromMenu,
   selectByKeyboard,
-  selectNode,
   storefront,
   threatPanel,
 } from './studio.fixtures.js';
@@ -36,9 +35,7 @@ const linkedRow = (page: Page): Locator =>
     .locator('[data-record-toggle]');
 
 const openPicker = async (page: Page) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   const trigger = panelField(page, 'combobox', 'Existing mitigation');
   await trigger.scrollIntoViewIfNeeded();
   await expect(trigger).toBeInViewport({ ratio: 1 });
@@ -119,9 +116,7 @@ test('two mitigations whose first lines match past the cut stay told apart in th
 }) => {
   const shared =
     'Callers forward a bearer token that the proxy holds in memory for the life of the request, and the proxy never writes it to a log, a span or a cache.';
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   for (const row of [2, 3]) {
     await panelControl(page, 'Add mitigation').click();
     await page.keyboard.insertText(shared);

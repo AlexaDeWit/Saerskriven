@@ -10,6 +10,7 @@ import {
   menuItem,
   nodeNamed,
   offeredToLink,
+  openShopperTakeover,
   openTwoDiagrams,
   panelControl,
   panelField,
@@ -322,9 +323,7 @@ test(
 test("applying a threat's assumption to the model keeps its threat link, and each unlink culls it only from its last reference", async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   const threatStatus = await panelField(
     page,
     'combobox',
@@ -396,9 +395,7 @@ test('an older assumption linked after an added one lands after it, and leaves a
 }) => {
   const older = 'Callers rotate their tokens.';
   const added = 'The model is kept true by hand.';
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   await panelControl(page, 'Add assumption').click();
   await page.keyboard.type(older);
   await page.keyboard.press('Tab');
