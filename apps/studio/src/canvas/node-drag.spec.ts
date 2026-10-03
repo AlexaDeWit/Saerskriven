@@ -1,4 +1,5 @@
 import type { GestureInput } from '@saerskriven/canvas';
+import { ViewKeepingMouseEvent } from '@saerskriven/canvas/fixtures';
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange } from '@xyflow/react';
 import { act, renderHook } from '@testing-library/react';
@@ -12,13 +13,6 @@ import { nodesById, type DiagramNode } from './nodes.js';
 import { selectTool } from './tools.js';
 
 const pair = [actorElement, processElement];
-
-class ViewKeepingMouseEvent extends MouseEvent {
-  constructor(type: string, { view, ...init }: MouseEventInit = {}) {
-    super(type, init);
-    Object.defineProperty(this, 'view', { value: view });
-  }
-}
 
 const renderNodeDrag = () => {
   const moveNodes =

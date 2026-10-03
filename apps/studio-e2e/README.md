@@ -46,6 +46,20 @@ pnpm nx e2e @saerskriven/studio-e2e -- \
   --project=chromium --project=phone --no-deps --shard=1/4
 ```
 
+`firefox` and `webkit` run what `chromium` runs, in the other two engines the
+studio supports. They exist only where `SAERSKRIVEN_E2E_OTHER_ENGINES` is `1`,
+so a plain run and a pull request leave them out. Run them inside
+`nix develop .#nightly`, the shell that gives the flake's WebKit an EGL driver
+on a host that is not NixOS:
+
+```sh
+SAERSKRIVEN_E2E_OTHER_ENGINES=1 pnpm nx e2e @saerskriven/studio-e2e -- \
+  --project=webkit --no-deps src/files.spec.ts
+```
+
+CI runs both on `main` once a night, outside the gate
+([Nightly browsers](../../.agents/orchestration.md#nightly-browsers)).
+
 The Pages build uses a separate Vite cache to avoid reloading the development
 page during tests. Its output and the Playwright reports stay under this
 project's ignored `test-output/` directory.
@@ -53,8 +67,9 @@ project's ignored `test-output/` directory.
 A failed test keeps its trace and error context under
 `test-output/playwright/output/`, except in `frame-time`, which records no
 trace. A CI job that fails or times out uploads that directory for 14 days,
-as `playwright-output-shard-<n>` from a shard leg and
-`playwright-output-pages-floor` from the floor job. Open a trace with
+as `playwright-output-shard-<n>` from a shard leg,
+`playwright-output-pages-floor` from the floor job, and
+`playwright-output-<engine>` from a nightly leg. Open a trace with
 `pnpm exec playwright show-trace <trace.zip>`.
 
 A local run writes the HTML report under `test-output/playwright/report/`. In
@@ -79,8 +94,8 @@ The browser suite does not check the browser-owned `beforeunload` prompt.
 The file-menu unit specs cover its registration. Dedicated boundary deletion
 coverage is absent. The canvas package owns detailed glyph and stylesheet
 checks. Automated accessibility checks do not replace manual screen-reader
-review. The configured browser projects use Chromium only, the phone one
-through a device preset rather than another engine.
+review. A pull request runs Chromium only, the phone project through a device
+preset rather than another engine, and Firefox and WebKit run nightly.
 
 Current interaction limitations live in
 [Using the studio](../../docs/studio.md#current-limitations).

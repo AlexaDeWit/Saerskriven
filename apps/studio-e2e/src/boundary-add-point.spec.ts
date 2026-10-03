@@ -4,6 +4,7 @@ import { registeredChords } from './chords.fixtures.js';
 import {
   centreOf,
   dragBy,
+  pointHandles,
   reachesAt,
   viewportZoom,
 } from './canvas.fixtures.js';
@@ -24,9 +25,6 @@ const settledPoints = [
 
 const point = (page: Page, number: number) =>
   page.getByRole('button', { name: `Point ${String(number)}`, exact: true });
-
-const pointHandles = (page: Page) =>
-  page.getByRole('button', { name: /^Point \d+$/u });
 
 const midpoint = (page: Page, segment: number) =>
   page.locator(`[data-curve-segment="${String(segment)}"]`);

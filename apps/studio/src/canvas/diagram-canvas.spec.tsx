@@ -3,6 +3,7 @@ import {
   canvasInteractionClassNames,
   flowEndNodeId,
 } from '@saerskriven/canvas';
+import { finger, mouseEvent, touchEvent } from '@saerskriven/canvas/fixtures';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
 import { decimalsOf } from '@saerskriven/model';
@@ -90,6 +91,19 @@ const probeFreeEnd = () =>
 
 const resizeControl = (from: string): HTMLElement =>
   screen.getByRole('button', { name: `Resize Reader from ${from}` });
+
+const readerGlyphWidth = (): string | null | undefined =>
+  reader().querySelector('svg')?.getAttribute('width');
+
+const touchResizeReader = (): void => {
+  fireEvent(resizeControl('right'), touchEvent('touchstart', finger(1, 100)));
+  fireEvent(resizeControl('right'), touchEvent('touchmove', finger(1, 160)));
+};
+
+const stillPressReader = (): void => {
+  fireEvent(resizeControl('right'), mouseEvent('mousedown', 100));
+  fireEvent(window, mouseEvent('mouseup', 100));
+};
 
 const press = {
   button: 0,
@@ -570,6 +584,56 @@ describe('DiagramCanvas', () => {
       dispatch(Action.Undo());
     });
     expect(readerBox()).toEqual(before);
+  });
+
+  it('puts back a touch resize whose element is deselected under it, with no undo step, and a still press after it records nothing', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    const settled = readerGlyphWidth();
+    const told = vi.fn<() => void>();
+    const release = followItemMoves(told);
+
+    touchResizeReader();
+    expect(readerGlyphWidth()).not.toBe(settled);
+    act(() => {
+      dispatch(Action.Select({ elementIds: [] }));
+    });
+
+    expect(readerGlyphWidth()).toBe(settled);
+    expect(told).not.toHaveBeenCalled();
+    release();
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+    stillPressReader();
+
+    expect(readerGlyphWidth()).toBe(settled);
+    expect(modelStore.getState().past).toHaveLength(0);
+  });
+
+  it('puts back a touch resize that is cancelled, with no undo step, and a still press after it records nothing', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    const settled = [readerGlyphWidth(), reader().style.width];
+    const told = vi.fn<() => void>();
+    const release = followItemMoves(told);
+
+    touchResizeReader();
+    expect(reader().style.width).not.toBe(settled[1]);
+    fireEvent(
+      resizeControl('right'),
+      touchEvent('touchcancel', finger(1, 160)),
+    );
+
+    expect([readerGlyphWidth(), reader().style.width]).toEqual(settled);
+    expect(told).not.toHaveBeenCalled();
+    release();
+
+    stillPressReader();
+
+    expect([readerGlyphWidth(), reader().style.width]).toEqual(settled);
+    expect(modelStore.getState().past).toHaveLength(0);
   });
 
   it('clears a selected flow when the pointer lands on nothing', () => {

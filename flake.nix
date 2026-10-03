@@ -138,6 +138,23 @@
           # playwright's host-distribution check does not apply.
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
         };
+
+        # The store's WebKit carries libglvnd and no EGL driver, and that
+        # libglvnd looks for one under /run/opengl-driver, which only NixOS
+        # has. On any other host, a GitHub runner among them, WebKit launches
+        # and then opens no page ("Could not create WPE EGL display"). Naming
+        # Mesa's vendor file hands it a driver from the same pinned set, and
+        # software rendering keeps the result off whatever GPU the host has.
+        webkitEglEnv = {
+          __EGL_VENDOR_LIBRARY_FILENAMES =
+            "${pkgs.mesa}/share/glvnd/egl_vendor.d/50_mesa.json";
+          LIBGL_ALWAYS_SOFTWARE = "1";
+        };
+
+        ciShell = shellEnv // playwrightEnv // denortEnv // {
+          name = "saerskriven-ci";
+          buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
+        };
       in {
         packages.denort-cache = denortCache;
         # No dev shell carries these closures: the Rust toolchain is large and
@@ -158,9 +175,16 @@
 
         devShells = {
           # The shell every CI job enters: one closure, one cache entry.
-          ci = pkgs.mkShell (shellEnv // playwrightEnv // denortEnv // {
-            name = "saerskriven-ci";
-            buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
+          ci = pkgs.mkShell ciShell;
+
+          # The shell the nightly Firefox and WebKit legs enter (#679): ci
+          # plus the EGL driver WebKit needs. Mesa and its LLVM add about
+          # 800 MiB to a closure, so they stay out of ci, whose closure and
+          # cache entry every pull request job pays for (owner ruling,
+          # 2026-10-03). It is built on ci's own attribute set, so the two
+          # differ by that driver and nothing else.
+          nightly = pkgs.mkShell (ciShell // webkitEglEnv // {
+            name = "saerskriven-nightly";
           });
 
           # The shell for humans. Currently identical to ci; interactive-only

@@ -1,3 +1,4 @@
+import { mouseEvent } from '@saerskriven/canvas/fixtures';
 import { elementIn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Action } from '../store/actions.js';
@@ -10,7 +11,6 @@ import {
   clickSuppressionLifted,
   curvedCanvasModel,
   dragHandle,
-  mouseOn,
   openCanvas,
   pointerOn,
   requestFlow,
@@ -90,11 +90,11 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     }).parentElement;
     assert.isNotNull(control);
 
-    mouseOn(control, 'mouseDown', 100);
-    mouseOn(window, 'mouseMove', 160);
+    fireEvent(control, mouseEvent('mousedown', 100));
+    fireEvent(window, mouseEvent('mousemove', 160));
     expect(pointCount()).toBe(0);
     expect(midpointCount()).toBe(0);
-    mouseOn(window, 'mouseUp', 160);
+    fireEvent(window, mouseEvent('mouseup', 160));
 
     expect(pointCount()).toBe(boundaryCurve.length);
     expect(midpointCount()).toBe(boundaryCurve.length - 1);

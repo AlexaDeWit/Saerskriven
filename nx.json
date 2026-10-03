@@ -20,6 +20,9 @@
       "{workspaceRoot}/workspace-version.mts",
       { "json": "{workspaceRoot}/package.json", "fields": ["version"] }
     ],
+    // A project's own test setup module, which `production` leaves out. A
+    // project that loads another project's names this input for that project.
+    "testSetup": ["{projectRoot}/src/test-setup.[jt]s"],
     "testFixtures": [
       "{workspaceRoot}/test-data/**/*",
       "{workspaceRoot}/threat-modelling/**/*"
@@ -59,6 +62,9 @@
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.typ",
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.pdf.sha256"
     ],
+    // The fixtures the tools projects under scripts share. The file sits
+    // outside both project roots, so each names it here and in its tsconfig.
+    "toolsFixtures": ["{workspaceRoot}/scripts/tools.fixtures.mts"],
     // Root configuration imported by the studio's Vite configuration.
     "viteGlobals": ["testConfiguration", "{workspaceRoot}/vite.shared.mts"]
   },
@@ -191,8 +197,21 @@
         {
           "env": "CI"
         },
+        // Set to 1, it adds the Firefox and WebKit projects to the Playwright
+        // config.
+        {
+          "env": "SAERSKRIVEN_E2E_OTHER_ENGINES"
+        },
         {
           "env": "PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS"
+        },
+        // What the nightly dev shell adds for WebKit (flake.nix). A WebKit
+        // run that passed there would fail where they are unset.
+        {
+          "env": "__EGL_VENDOR_LIBRARY_FILENAMES"
+        },
+        {
+          "env": "LIBGL_ALWAYS_SOFTWARE"
         },
         {
           "env": "PAGES_BASE_PATH"

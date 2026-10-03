@@ -98,9 +98,11 @@ compiles do.
 
 The fixture helpers every suite shares live on the `@saerskriven/model/fixtures`
 subpath, those for a suite that runs a flake-built WebAssembly module on
-`@saerskriven/wasm/fixtures`, and the built brotli module on
-`@saerskriven/formats/fixtures`. Only a spec, a test, or a fixture module
-imports a fixture helper. A fixtures subpath resolves to source, so every project that
+`@saerskriven/wasm/fixtures`, the built brotli module on
+`@saerskriven/formats/fixtures`, and the mouse and touch events a jsdom suite
+presses a mounted canvas with on `@saerskriven/canvas/fixtures`. Only a spec,
+a test, or a fixture module imports a fixture helper. A fixtures subpath
+resolves to source, so every project that
 depends on its package reaches it, and nothing structural stops a downstream
 production module: the typecheck resolves it like any other entry point and the
 layer matrix reasons about projects rather than entry points, so a studio bundle
@@ -108,6 +110,16 @@ carrying a fixture-derived value passes both. A relative import of a package's
 own fixtures module compiles too, since an import pulls in a module the lib
 tsconfig excludes. The `no-restricted-imports` override in `.oxlintrc.json`
 refuses both forms from every file but a spec, a test, or a fixture module.
+
+A browser API that jsdom leaves out, and that the specs of more than one
+project reach, is stubbed in one setup module, which its package exports as a
+subpath and each of those projects names in its own `setupFiles`.
+`@saerskriven/canvas/test-setup` stubs `ResizeObserver`: the canvas project
+loads it by its own path, and the studio by the subpath, ahead of the studio's
+own setup module. Only test configuration loads a setup subpath. The lint
+refuses a production module that imports one for its side effect, as it refuses
+any import that binds nothing, and nothing refuses one that imports it
+dynamically.
 
 ## Prose register
 
