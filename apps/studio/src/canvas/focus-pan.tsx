@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import { useEffect } from 'react';
 import { drawnSelector } from './edits.js';
-import { followKeyboardMoves } from './move-message.js';
+import { followKeyboardMoves, selectionFrameSelector } from './move-message.js';
 
 /** How long the pan takes, in milliseconds, so the eye can follow the view moving. */
 export const focusPanDuration = 500;
@@ -21,14 +21,15 @@ export type PannedView = Pick<ReactFlowInstance, 'getViewport' | 'setViewport'>;
 
 const ringedSelector = `${drawnSelector}, .react-flow__resize-control > button`;
 
+const movedSelector = `${ringedSelector}, ${selectionFrameSelector}`;
+
 /**
  * Whether a key press puts the keyboard in charge of where focus goes, which
- * it stays until the next pointer press: Tab, with Shift or without.
+ * it stays until the next pointer press: Tab, with Shift or without, and with
+ * Alt, the chord that reaches every item in Safari.
  */
 export function armsFocusPan(event: KeyboardEvent): boolean {
-  return (
-    event.key === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey
-  );
+  return event.key === 'Tab' && !event.ctrlKey && !event.metaKey;
 }
 
 /**
@@ -53,24 +54,30 @@ export function offsetIntoView(ring: Box, viewport: Box): Point | undefined {
  * `focusPanDuration`, or at once where `instant` says so or the call asks
  * for it, as the follow of a held arrow key does to keep up. No offset stops
  * a pan still on its way, so the view rests where the newest item was
- * measured.
+ * measured. A pan is on its way until `view` answers that it arrived.
  */
 export function viewPanner(
   view: PannedView,
   instant: () => boolean,
 ): (offset: Point | undefined, atOnce?: boolean) => void {
   let heading: Viewport | undefined;
+  const headFor = async (arriving: Viewport, duration: number) => {
+    heading = arriving;
+    await view.setViewport(arriving, { duration, interpolate: 'linear' });
+    if (heading === arriving) {
+      heading = undefined;
+    }
+  };
   return (offset, atOnce = false) => {
     const live = view.getViewport();
     const underWay =
       heading !== undefined && (heading.x !== live.x || heading.y !== live.y);
     heading = undefined;
     if (offset !== undefined) {
-      heading = { x: live.x + offset.x, y: live.y + offset.y, zoom: live.zoom };
-      void view.setViewport(heading, {
-        duration: atOnce || instant() ? 0 : focusPanDuration,
-        interpolate: 'linear',
-      });
+      void headFor(
+        { x: live.x + offset.x, y: live.y + offset.y, zoom: live.zoom },
+        atOnce || instant() ? 0 : focusPanDuration,
+      );
     } else if (underWay) {
       void view.setViewport(live);
     }
@@ -86,7 +93,8 @@ export function viewPanner(
  * flow drawn by pointer is focused. The call waits for the next frame, when
  * what the key press changed is drawn, and is dropped if focus has moved on
  * by then. Focus the browser hands back to the item that held it when the
- * window lost focus is no move. Answers the function that stops listening.
+ * window lost focus is no move, until a key arms again. Answers the function
+ * that stops listening.
  */
 export function onKeyboardFocus(
   surface: HTMLElement,
@@ -96,7 +104,10 @@ export function onKeyboardFocus(
   let heldByWindow: Element | null = null;
   let settling = 0;
   const keyed = (event: KeyboardEvent): void => {
-    keyboardInCharge ||= armsFocusPan(event);
+    if (armsFocusPan(event)) {
+      keyboardInCharge = true;
+      heldByWindow = null;
+    }
   };
   const pressed = (): void => {
     keyboardInCharge = false;
@@ -136,12 +147,13 @@ export function onKeyboardFocus(
 }
 
 /**
- * Calls `moved` with the drawn element or resize control that holds focus
- * inside `surface` once an arrow key has moved the selection, on the next
- * frame, when the move is drawn, and with whether the key is being held
- * down. `KeyboardMoveMessage` says when, whatever stores the move, so a
- * pointer drag never calls it and no Tab press has to come first. Answers the
- * function that stops listening.
+ * Calls `moved` with what holds focus inside `surface` once an arrow key has
+ * moved the selection: the drawn element, its resize control, or the frame
+ * React Flow draws around a box selection, whose box is the whole group's.
+ * It calls on the next frame, when the move is drawn, and says whether the
+ * key is being held down. `KeyboardMoveMessage` says when, whatever stores
+ * the move, so a pointer drag never calls it and no Tab press has to come
+ * first. Answers the function that stops listening.
  */
 export function onKeyboardMove(
   surface: HTMLElement,
@@ -155,7 +167,7 @@ export function onKeyboardMove(
       if (
         target !== null &&
         surface.contains(target) &&
-        target.matches(ringedSelector)
+        target.matches(movedSelector)
       ) {
         moved(target, held);
       }
@@ -170,8 +182,9 @@ export function onKeyboardMove(
 /**
  * Pans the canvas the least that brings the focused item's ring into the
  * viewport, where Tab puts focus on an item outside it or an arrow key moves
- * the focused element out of it. What lies over the canvas plays no part.
- * Mounted inside `ReactFlow`, where its store is in reach.
+ * the focused element, or the box selection, out of it. What lies over the
+ * canvas plays no part. Mounted inside `ReactFlow`, where its store is in
+ * reach.
  */
 export function FocusPan(): null {
   const flow = useReactFlow();
@@ -205,12 +218,15 @@ function shiftInto(
   low: number,
   high: number,
 ): number {
+  if (from >= low && to <= high) {
+    return 0;
+  }
   const near = low + ringMargin;
   const far = high - ringMargin;
   if (to - from > far - near) {
     return from > near ? near - from : to < far ? far - to : 0;
   }
-  return from < low ? near - from : to > high ? far - to : 0;
+  return from < low ? near - from : far - to;
 }
 
 function prefersReducedMotion(): boolean {

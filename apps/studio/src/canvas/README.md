@@ -202,34 +202,38 @@ viewport, React Flow's container box. Nothing over the canvas plays a part: a
 ring under a pane is inside the viewport and stays where it is. It stands in
 for React Flow's `autoPanOnNodeFocus`, which stays off because it centres a
 node. Two things ask for the pan. `onKeyboardFocus` keeps the input modality
-itself: a key press that `armsFocusPan` answers, Tab with Shift or without,
-puts the keyboard in charge until the next `pointerdown`, both heard in the
-capture phase on the window. `:focus-visible` is not that test, because
-Chromium and Safari keep it for a script focus after any earlier key press, so
-an element placed by pointer and then named would pan. A `focusin` on React
-Flow's container counts while the keyboard is in charge and its target is an
-element, flow or resize control that matches `:focus-visible`. Focus the
-browser hands back when the window regains it is not a move. `onKeyboardMove`
-lends `KeyboardMoveMessage` the handler it calls once an arrow key has moved
-the selection, so the follow needs no Tab first, knows nothing of how the move
-is stored, and never hears of a pointer drag. Both measure on the next frame,
-when what the key press changed is drawn.
+itself: a key press that `armsFocusPan` answers, Tab with Shift, Alt or
+neither, puts the keyboard in charge until the next `pointerdown`, both heard
+in the capture phase on the window. Alt is there for Safari, where Option+Tab
+is the chord that reaches every item, and no browser spec runs it.
+`:focus-visible` is not that test, because Chromium and Safari keep it for a
+script focus after any earlier key press, so an element placed by pointer and
+then named would pan. A `focusin` on React Flow's container counts while the
+keyboard is in charge and its target is an element, flow or resize control that
+matches `:focus-visible`. Focus the browser hands back when the window regains
+it is not a move. `onKeyboardMove` lends `KeyboardMoveMessage` the handler it
+calls once an arrow key has moved the selection, so the follow needs no Tab
+first, knows nothing of how the move is stored, and never hears of a pointer
+drag. It measures whatever holds focus then: the element, its resize control,
+or the frame React Flow draws around a box selection, whose box is the whole
+group's. That frame is no tab stop, so only the move path takes it. Both paths
+measure on the next frame, when what the key press changed is drawn.
 
-`offsetIntoView` works in screen pixels, from the item's box with its
-outline's reach and the container's box: no move for a ring wholly inside,
-otherwise on each axis the least that puts the ring `ringMargin` inside the
-border it had crossed. A ring too long for the viewport on an axis moves the
-least that fills the viewport with it, and not at all once it spans the
-viewport. `viewPanner` hands the move to React Flow's `setViewport` as a
-`focusPanDuration` transition, interpolated linearly because React Flow's
-default zooms out and back over a pan. It has no duration under reduced
-motion, nor for the repeat of a held arrow key, since a transition restarted
-at each repeat falls behind the element. Each item is measured from where the
-view is at that moment and replaces a pan still running, and one needing no
-move stops it, so two pans never run against each other. A scroll, a drag or a
-zoom interrupts the transition inside d3-zoom, and nothing asks for the view
-again until focus or the element moves. The pan touches React Flow's store
-alone, so it is no edit, no undo step and nothing another tab hears of.
+`offsetIntoView` works in screen pixels, from the item's box with its outline's
+reach and the container's box: no move for a ring wholly inside, otherwise on
+each axis the least that puts the ring `ringMargin` inside the border it had
+crossed. A ring too long for the viewport on an axis moves the least that fills
+the viewport with it, and not at all once it spans the viewport. `viewPanner`
+hands the move to React Flow's `setViewport` as a `focusPanDuration`
+transition, interpolated linearly because React Flow's default zooms out and
+back over a pan. It has no duration under reduced motion, nor for the repeat of
+a held arrow key, since a transition restarted at each repeat falls behind the
+element. Each item is measured from where the view is at that moment and
+replaces a pan still running, and one needing no move stops it, so two pans
+never run against each other. A scroll, a drag or a zoom interrupts the
+transition inside d3-zoom, and nothing asks for the view again until focus or
+the element moves. The pan touches React Flow's store alone, so it is no edit,
+no undo step and nothing another tab hears of.
 
 ## Accessibility
 

@@ -97,7 +97,7 @@ test('selecting an element at the edge does not snap the viewport to centre it',
   await expect.poll(() => viewportTransform(page)).toBe(before);
 });
 
-test('focusing an off-screen element does not pan the viewport', async ({
+test('a script focus on an off-screen element, with no Tab before it, does not pan the viewport', async ({
   page,
 }) => {
   await openTwoDiagrams(page);

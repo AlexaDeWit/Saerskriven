@@ -277,14 +277,13 @@ out. A click there without a drag clears the selection, or selects that element
 alone. With Shift held, or by touch, a press there acts as it does outside the
 selection. An arrow key moves the selection five model units, and Shift+arrow
 twenty, or one grid interval and four with Snap to grid on, snapped as a drag
-is. A flow does not move on its own, but a moved group carries its bends
-and free ends along. After each arrow key a screen reader hears where Position
-and size now places the selection, in the figures it shows, and the view
-follows an element the key moves out of the viewport
-([Accessibility](#accessibility)). Pressing Escape,
-or leaving the browser window, before the release puts every dragged element
-back where it was, with no undo step. Escape also clears the selection, as it
-does anywhere.
+is. A flow does not move on its own, but a moved group carries its bends and
+free ends along. After each arrow key a screen reader hears where Position and
+size now places the selection, in the figures it shows, and the view follows
+what the key moves out of the viewport: the focused element, or a box selection
+as a whole ([Accessibility](#accessibility)). Pressing Escape, or leaving the
+browser window, before the release puts every dragged element back where it
+was, with no undo step. Escape also clears the selection, as it does anywhere.
 
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
@@ -748,17 +747,20 @@ shortest distance that brings the whole ring inside, to the border it had
 crossed. Tab steers the view this way from the press until the next press of a
 mouse button, a finger or a pen, so a key that returns focus meanwhile, such as
 Escape from a resize control back to its element, pans the same way, and no
-pointer action does. An arrow key that moves the selected element out of the
-viewport is followed the same way, with no Tab needed, and a held arrow key is
-followed at each step.
+pointer action does. An arrow key that moves the selection out of the viewport
+is followed the same way, with no Tab needed, and a held arrow key is followed
+at each step. What is followed is whatever holds focus: the focused element, or
+after a box selection the frame around the whole group. Where several elements
+were selected one at a time with Shift, only the focused one is followed, and
+the others can leave the viewport.
 
 The pan takes about half a second, or is a single step where the system asks
 for reduced motion or an arrow key is held. It keeps the zoom and never centres
 the item, and scrolling, dragging or zooming while it runs takes the view over.
-An item larger than the viewport is moved the least that fills the viewport
-with it, its nearer edge at the border, and not at all once it spans the
-viewport. Resizing with an arrow key, and an arrow key on a bend, a flow end or
-a curve point, do not move the view.
+For an item larger than the viewport, the view moves the least that fills the
+viewport with the item, its nearer edge at the border, and not at all once the
+item spans the viewport. Resizing with an arrow key, and an arrow key on a
+bend, a flow end or a curve point, do not move the view.
 
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves
@@ -776,10 +778,9 @@ navigation keys do not.
 ## Current limitations
 
 - Removing and reordering diagrams is not offered.
-- The view moves only for an item outside the viewport that Tab reaches or an
-  arrow key moves ([Accessibility](#accessibility)): not for one under a pane,
-  and not for a pointer action such as drawing a flow or dropping an element at
-  the edge.
+- The view is not brought to an item under a pane, nor to one a pointer action
+  leaves outside the viewport, such as a newly drawn flow
+  ([Accessibility](#accessibility)).
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model panel's Details.
   The model's explicit record removal has no control.

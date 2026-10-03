@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
+  boxSelect,
   boxesOverlap,
   canvasContainer,
   canvasSettled,
@@ -26,6 +27,8 @@ import {
 const firstFlow = /^Submit order, flow/u;
 
 const actor = /^Customer\sbrowser, actor/u;
+
+const process = /^Order API, process/u;
 
 const store = /^Order database, store/u;
 
@@ -285,6 +288,33 @@ test('an arrow-key move that pushes an element past the right edge and then the 
   expect(bottom).toBeLessThan(justInside);
   expect(down.y).toBeLessThan(across.y);
   expect(down.x).toBe(across.x);
+});
+
+test('an arrow-key move that pushes a box selection past the right edge is followed, and its frame and every element in it are back inside', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  await canvasSettled(page);
+  await boxSelect(page, [nodeNamed(page, process), nodeNamed(page, store)]);
+  const frame = page.locator('.react-flow__nodesselection-rect');
+  await expect(frame).toBeFocused();
+  const step = farStep * (await viewportZoom(page));
+  const start = offsetIn(await viewportTransform(page));
+
+  await pressTimes(
+    page,
+    'Shift+ArrowRight',
+    Math.ceil((await edgeGaps(page, frame)).right / step) + 2,
+  );
+  await canvasSettled(page);
+
+  const { right } = await edgeGaps(page, frame);
+  expect(right).toBeGreaterThanOrEqual(0);
+  expect(right).toBeLessThan(justInside);
+  expect(offsetIn(await viewportTransform(page)).x).toBeLessThan(start.x);
+  for (const name of [process, store]) {
+    expect(await insideTheViewport(page, nodeNamed(page, name))).toBe(true);
+  }
 });
 
 test('a pointer drag that carries an element past the edge leaves the view where it is', async ({

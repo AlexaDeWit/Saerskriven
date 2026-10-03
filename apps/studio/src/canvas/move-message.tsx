@@ -17,6 +17,9 @@ import { currentLayout, selectionPosition } from './layout.js';
 /** Hands on a keydown that has already passed React Flow's own key handlers. */
 export type KeyboardMoveReport = (event: KeyboardEvent) => void;
 
+/** The frame React Flow draws around a box selection, which takes focus and the arrow keys that move the group. */
+export const selectionFrameSelector = '.react-flow__nodesselection-rect';
+
 const follower = handlerSlot<(held: boolean) => void>();
 
 /**
@@ -112,8 +115,7 @@ function movedBySelectionKey(event: KeyboardEvent): boolean {
   return (
     isResizeKey(event.key) &&
     event.target instanceof Element &&
-    event.target.closest(
-      '.react-flow__node, .react-flow__nodesselection-rect',
-    ) !== null
+    event.target.closest(`.react-flow__node, ${selectionFrameSelector}`) !==
+      null
   );
 }
