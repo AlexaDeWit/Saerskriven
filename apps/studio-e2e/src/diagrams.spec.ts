@@ -89,6 +89,9 @@ test('a switcher choice ends the line a chord drew', async ({ page }) => {
   );
 
   await openSwitcher(page);
+  await expect(page.getByTestId('canvas-announcement')).toContainText(
+    secondTitle.slice(0, 12),
+  );
   await diagramChoice(page, firstTitle).click();
 
   await expect(diagramSwitcher(page)).toHaveAccessibleName(

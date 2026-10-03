@@ -89,9 +89,7 @@ export function DiagramSwitcher() {
                 label: diagram.title,
               }))}
               label={t('menu.diagram')}
-              onChoose={(diagramId) => {
-                switchDiagram(diagramId);
-              }}
+              onChoose={switchDiagram}
               value={active.id}
             />
             <DropdownMenu.Separator className={styles.rule} />

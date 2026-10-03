@@ -1,34 +1,43 @@
-import { generateDiagramId, type DiagramId } from '@saerskriven/model';
+import {
+  generateDiagramId,
+  type Diagram,
+  type DiagramId,
+} from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { activeTranslator } from '../messages/locale.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
-import { announce, clear, excerpt, nameQuoteLength } from './announcements.js';
+import {
+  announce,
+  endAnnouncement,
+  excerpt,
+  nameQuoteLength,
+} from './announcements.js';
 
 /**
- * Puts the diagram `diagramId` on screen without saying so, and ends the
- * status line of the diagram it replaces. It returns whether the diagram
- * changed.
+ * Puts the diagram `diagramId` on screen without saying so, and ends any
+ * status line still showing. It returns the diagram now on screen, or
+ * `undefined` where nothing changed.
  */
-export function switchDiagram(diagramId: DiagramId): boolean {
+export function switchDiagram(diagramId: DiagramId): Diagram | undefined {
   const before = activeDiagramId(modelStore.getState());
   dispatch(Action.SelectDiagram({ diagramId }));
-  const shown = activeDiagramId(modelStore.getState());
-  if (shown === undefined || shown === before) {
-    return false;
+  const shown = activeDiagram(modelStore.getState());
+  if (shown === undefined || shown.id === before) {
+    return undefined;
   }
-  clear();
-  return true;
+  endAnnouncement();
+  return shown;
 }
 
 /** Puts the diagram `diagramId` names on screen and says so in the status line, where it was not already. */
 export function showDiagram(diagramId: DiagramId): boolean {
-  if (!switchDiagram(diagramId)) {
+  const shown = switchDiagram(diagramId);
+  if (shown === undefined) {
     return false;
   }
-  const shown = activeDiagram(modelStore.getState());
-  const title = excerpt(shown?.title ?? '', nameQuoteLength);
+  const title = excerpt(shown.title, nameQuoteLength);
   announce((t) => t('canvas.diagram-shown', { title }));
   return true;
 }

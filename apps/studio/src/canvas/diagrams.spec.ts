@@ -50,18 +50,16 @@ describe('showDiagram', () => {
 
 describe('switchDiagram', () => {
   it('puts the diagram on screen and leaves the status line empty', () => {
-    expect(switchDiagram(secondDiagram)).toBe(true);
+    expect(switchDiagram(secondDiagram)?.id).toBe(secondDiagram);
     expect(shown()).toBe(secondDiagram);
     expect(currentAnnouncement().message).toBe('');
   });
 
   it('reports no change for the diagram already on screen', () => {
-    expect(switchDiagram(mainDiagram)).toBe(false);
+    expect(switchDiagram(mainDiagram)).toBeUndefined();
   });
-});
 
-describe('switchDiagram after a step', () => {
-  it('ends the line the step drew', () => {
+  it('ends the line a step drew', () => {
     stepDiagram('next');
     expect(currentAnnouncement().message).not.toBe('');
     switchDiagram(mainDiagram);
