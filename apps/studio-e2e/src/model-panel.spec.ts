@@ -300,6 +300,17 @@ test(
     await openTwoDiagrams(page);
     await openModelPanel(page);
     await showDetails(page, modelPanel(page));
+    const headline = foldedRecord(
+      page,
+      'The payment provider holds its own card data certification.',
+    );
+    await expect(headline).toBeVisible();
+    expect(
+      await headline
+        .locator('span')
+        .evaluate((line) => line.scrollWidth > line.clientWidth),
+      'the first line is too long for its row',
+    ).toBe(true);
 
     const lines = await modelField(page, 'combobox', 'Assumption 1 status')
       .locator('[data-option-label]')

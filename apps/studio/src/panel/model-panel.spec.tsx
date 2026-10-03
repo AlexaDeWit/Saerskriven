@@ -23,7 +23,7 @@ import { recordingSurface } from '../commands/commands.fixtures.js';
 import { commandById, runCommand } from '../commands/registry.js';
 import { activeTranslator } from '../messages/locale.js';
 import { ModelPanel } from './model-panel.js';
-import { chooseFrom, editorTimeout } from './panel.fixtures.js';
+import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 import type { HeldDrafts } from './threat-list.js';
 import { freshThreat } from './threats.js';
@@ -99,12 +99,8 @@ const openAssumption = async (
 const summary = (title: RegExp): HTMLElement =>
   screen.getByRole('button', { name: title });
 
-const listedThreats = (): readonly (string | undefined)[] =>
-  [
-    ...screen
-      .getByRole('region', { name: 'Model' })
-      .querySelectorAll<HTMLElement>('[data-threat-item]'),
-  ].map((item) => item.dataset['threatItem']);
+const listed = (): readonly (string | undefined)[] =>
+  listedThreats(screen.getByRole('region', { name: 'Model' }));
 
 const looseThreat = threatId('threat-loose');
 
@@ -185,7 +181,7 @@ describe(
       withLooseThreat();
       showPanel();
 
-      expect(listedThreats()).toEqual([
+      expect(listed()).toEqual([
         looseThreat,
         firstThreat,
         secondThreat,
@@ -256,7 +252,7 @@ describe(
       const user = userEvent.setup();
       withLooseThreat();
       showPanel();
-      const shown = listedThreats();
+      const shown = listed();
       await user.click(summary(/A substituted dependency/u));
 
       await chooseFrom('Existing element', 'Studio');
@@ -265,7 +261,7 @@ describe(
       expect(
         present().threats.find(({ id }) => id === looseThreat)?.elements,
       ).toEqual([processElement]);
-      expect(listedThreats()).toEqual(shown);
+      expect(listed()).toEqual(shown);
       expect(numbersIn(currentAnnouncement().message)).toEqual([3]);
     });
 
@@ -280,13 +276,13 @@ describe(
         );
       });
       showPanel();
-      const shown = listedThreats();
+      const shown = listed();
       await user.click(summary(/A reader edits/u));
 
       await user.click(button('Detach Reader'));
 
       expect(present().threats[0].elements).toEqual([processElement]);
-      expect(listedThreats()).toEqual(shown);
+      expect(listed()).toEqual(shown);
       expect(document.activeElement).toBe(button('Detach Studio'));
     });
 
@@ -299,7 +295,7 @@ describe(
       await user.click(button('Detach Reader'));
 
       expect(present().threats.map(({ id }) => id)).toEqual([secondThreat]);
-      expect(listedThreats()).toEqual([secondThreat]);
+      expect(listed()).toEqual([secondThreat]);
       expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
       expect(document.activeElement).toBe(summary(/A reader sees/u));
       expect(undoable()).toBe(1);

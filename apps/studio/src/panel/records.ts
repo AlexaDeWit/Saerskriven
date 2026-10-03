@@ -151,8 +151,11 @@ type NumberedThreat = Pick<Threat, 'id' | 'number'>;
 
 /**
  * What one record group's records are linked to: a threat, or for
- * assumptions the model. `elsewhere` says which other threats hold a record,
- * and `elsewhereCounted` says how many, for a folded row.
+ * assumptions the model. `elsewhere` is an open row's line: the other threats
+ * holding the record by number, and on a threat whether it also applies to
+ * the model. `elsewhereCounted` is a folded row's line: how many other
+ * threats hold the record, or on the model, which is no threat, their
+ * numbers.
  */
 export type RecordTarget<Held extends ThreatRecord> = {
   readonly heading:
@@ -199,6 +202,12 @@ export function threatTarget<Held extends ThreatRecord>(
   };
 }
 
+const onThreats: RecordTarget<Assumption>['elsewhere'] = (
+  assumption,
+  threats,
+  translator,
+) => joined([alsoOn(assumption, threats, translator)]);
+
 /** The assumptions that apply to the model. */
 export const modelTarget: RecordTarget<Assumption> = {
   heading: 'terms.model-assumptions',
@@ -206,10 +215,8 @@ export const modelTarget: RecordTarget<Assumption> = {
   attach: (assumption) => ({ ...assumption, appliesToModel: true }),
   link: ({ id }) => Action.LinkAssumptionToModel({ assumptionId: id }),
   unlink: ({ id }) => Action.UnlinkAssumptionFromModel({ assumptionId: id }),
-  elsewhere: (assumption, threats, translator) =>
-    joined([alsoOn(assumption, threats, translator)]),
-  elsewhereCounted: (assumption, threats, translator) =>
-    joined([alsoOn(assumption, threats, translator)]),
+  elsewhere: onThreats,
+  elsewhereCounted: onThreats,
 };
 
 /** The text of one part of a record. */
