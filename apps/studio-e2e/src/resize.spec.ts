@@ -5,7 +5,7 @@ import {
   type Locator,
   type Page,
 } from '@playwright/test';
-import { boxAt, modelWith } from '@saerskriven/model/fixtures';
+import { boxAt, curveBoundary, modelWith } from '@saerskriven/model/fixtures';
 import {
   type Box,
   boxOf,
@@ -13,7 +13,10 @@ import {
   dragBy,
   onScreen,
   type Point,
+  pointHandles,
   pressOn,
+  reachesAt,
+  screenBoxOf,
   touchCancel,
   touchDown,
   touchDrag,
@@ -27,6 +30,7 @@ import {
   openPlaceholder,
   placeholder,
   runFromMenu,
+  selectByKeyboard,
   selectNode,
   toolButton,
   undoOffered,
@@ -42,6 +46,20 @@ const kiosk = {
 
 const kioskModel = modelWith({
   elements: [boxAt('el-kiosk', 0, 0, 'actor', kiosk.size, kiosk.name)],
+});
+
+const perimeter = {
+  name: 'Perimeter',
+  drawn: /^Perimeter, trust boundary/u,
+  points: [
+    { x: 0, y: 0 },
+    { x: 60, y: 40 },
+    { x: 120, y: 0 },
+  ],
+} as const;
+
+const perimeterModel = modelWith({
+  elements: [curveBoundary('el-perimeter', perimeter.points, perimeter.name)],
 });
 
 const sideCases = [
@@ -307,6 +325,43 @@ test('a second finger on another control resizes nothing while the first holds t
   expect((await boxOf(node)).height).toBe(before.height);
   await runFromMenu(page, 'Undo');
   await expect.poll(() => boxOf(node)).toEqual(before);
+  expect(await undoOffered(page)).toBe(false);
+  await session.detach();
+});
+
+test('a second finger on the border of a corner handle leaves the resize under the first as it is', async ({
+  page,
+}) => {
+  const session = await touchSession(page);
+  await openModelDocument(page, perimeterModel);
+  const curve = await selectByKeyboard(page, perimeter.drawn);
+  await expect(pointHandles(page)).toHaveCount(perimeter.points.length);
+  const right = sideControl(curve, 'right', perimeter.name);
+  await onScreen(right);
+  const from = await centreOf(right);
+  const held = { x: from.x + touchDragged, y: from.y };
+
+  await touchDown(session, from, held);
+  await expect(pointHandles(page)).toHaveCount(0);
+  const button = sideControl(curve, 'bottom left corner', perimeter.name);
+  const corner = button.locator('..');
+  const drawn = await screenBoxOf(corner);
+  const border = {
+    x: Math.round(drawn.x + (await viewportZoom(page)) / 2),
+    y: Math.round(drawn.y + drawn.height / 2),
+  };
+  expect(await reachesAt(corner, border)).toBe(true);
+  expect(await reachesAt(button, border)).toBe(false);
+  await touchFingers(session, 'touchStart', [
+    [1, held],
+    [2, border],
+  ]);
+  await touchFingers(session, 'touchEnd', [[2, border]]);
+
+  await expect(pointHandles(page)).toHaveCount(0);
+  await touchUp(session);
+  await expect(pointHandles(page)).toHaveCount(perimeter.points.length);
+  await runFromMenu(page, 'Undo');
   expect(await undoOffered(page)).toBe(false);
   await session.detach();
 });

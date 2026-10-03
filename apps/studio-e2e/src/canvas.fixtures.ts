@@ -33,6 +33,10 @@ export const elementNodes = (page: Page): Locator =>
 export const viewportTransform = async (page: Page): Promise<string> =>
   (await page.locator('.react-flow__viewport').getAttribute('style')) ?? '';
 
+/** The handles on the points of the selected trust boundary curve. */
+export const pointHandles = (page: Page): Locator =>
+  page.getByRole('button', { name: /^Point \d+$/u });
+
 /** The scale React Flow applies to model coordinates. */
 export const viewportZoom = async (page: Page): Promise<number> =>
   Number(/scale\(([\d.]+)\)/u.exec(await viewportTransform(page))?.[1]);
@@ -497,21 +501,17 @@ export const touchDown = async (
   }
 };
 
+const withNoFingerLeft =
+  (type: 'touchEnd' | 'touchCancel') =>
+  async (session: CDPSession): Promise<void> => {
+    await session.send('Input.dispatchTouchEvent', { type, touchPoints: [] });
+  };
+
 /** Lifts every finger still down. */
-export const touchUp = async (session: CDPSession): Promise<void> => {
-  await session.send('Input.dispatchTouchEvent', {
-    type: 'touchEnd',
-    touchPoints: [],
-  });
-};
+export const touchUp = withNoFingerLeft('touchEnd');
 
 /** Cancels every finger still down, which the page sees as `touchcancel`. */
-export const touchCancel = async (session: CDPSession): Promise<void> => {
-  await session.send('Input.dispatchTouchEvent', {
-    type: 'touchCancel',
-    touchPoints: [],
-  });
-};
+export const touchCancel = withNoFingerLeft('touchCancel');
 
 /**
  * Sends one touch event about the fingers named, each under its own id, so a
