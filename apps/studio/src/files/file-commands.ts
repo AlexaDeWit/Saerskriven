@@ -4,6 +4,7 @@ import {
   type FormatName,
   type WriteResult,
 } from '@saerskriven/formats';
+import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FileCommands } from '../commands/surface.js';
@@ -43,6 +44,7 @@ import {
 } from './session.js';
 
 type PlannedSave = {
+  readonly model: Model;
   readonly target: SaveTarget;
   readonly written: WriteResult;
 };
@@ -134,7 +136,7 @@ export function useFileSession(
       }
       dispatch(action);
       if (Action.$is('Opened')(action) || Action.$is('Imported')(action)) {
-        setReport(openReport(action.divergences, intent));
+        setReport(openReport(action));
       }
     },
     [],
@@ -165,7 +167,7 @@ export function useFileSession(
       }
       dispatch(action);
       if (SaveOutcome.$is('Written')(result.outcome)) {
-        setReport(saveReport(planned.written.divergences));
+        setReport(saveReport(planned.model, planned.written.divergences));
       }
     },
     [],
@@ -365,6 +367,7 @@ function untitledFileStem(): string {
 function planSave(state: State, format: FormatName): PlannedSave {
   const target = saveTarget(state.file, format, untitledFileStem());
   return {
+    model: state.present,
     target,
     written: writeThrough(state.present, target.source),
   };

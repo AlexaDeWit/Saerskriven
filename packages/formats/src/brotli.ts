@@ -1,5 +1,13 @@
+import {
+  answered,
+  instantiated,
+  isUnsigned,
+  mostUnsigned,
+  written,
+  type Answered,
+  type BoundaryModule,
+} from '@saerskriven/wasm';
 import { Data, Either } from 'effect';
-import { promisePerBytes } from './lib/promise-per-bytes.js';
 
 /**
  * Why a compression or a decompression produced no bytes: `_tag`
@@ -24,29 +32,11 @@ export type BrotliFailure = Data.TaggedEnum<{
  */
 export const BrotliFailure = Data.taggedEnum<BrotliFailure>();
 
-const written = 0;
-
 const pastMaximum = 1;
 
-const mostBytes = 4_294_967_295;
+const calls = ['compress', 'decompress'] as const;
 
-const calls = ['input', 'compress', 'decompress', 'output', 'output_length'];
-
-type Codec = {
-  readonly memory: WebAssembly.Memory;
-  readonly input: (length: number) => number;
-  readonly compress: () => number;
-  readonly decompress: (maximum: number) => number;
-  readonly output: () => number;
-  readonly output_length: () => number;
-};
-
-type Answer = {
-  readonly status: number;
-  readonly bytes: Uint8Array;
-};
-
-const compiled = promisePerBytes<WebAssembly.Module>();
+type Codec = BoundaryModule<(typeof calls)[number]>;
 
 /**
  * Compresses bytes to one brotli stream at quality 11 with no custom
@@ -64,11 +54,11 @@ export async function compressBrotli(
   bytes: Uint8Array,
   wasm: Uint8Array,
 ): Promise<Either.Either<Uint8Array, BrotliFailure>> {
-  const started = await instantiated(wasm);
+  const started = await instantiatedCodec(wasm);
   return Either.flatMap(started, (module) =>
     Either.map(
-      answered(module, bytes, () => module.compress()),
-      (answer) => answer.bytes,
+      run(module, bytes, () => module.compress()),
+      (answer) => answer.output,
     ),
   );
 }
@@ -91,84 +81,53 @@ export async function decompressBrotli(
   wasm: Uint8Array,
   maximum: number,
 ): Promise<Either.Either<Uint8Array, BrotliFailure>> {
-  if (!Number.isInteger(maximum) || maximum < 0 || maximum > mostBytes) {
+  if (!isUnsigned(maximum)) {
     return Either.left(
       BrotliFailure.Unusable({
-        sentence: `a maximum of ${maximum} is not a byte count from 0 to ${mostBytes}`,
+        sentence: `a maximum of ${maximum} is not a byte count from 0 to ${mostUnsigned}`,
       }),
     );
   }
-  const started = await instantiated(wasm);
+  const started = await instantiatedCodec(wasm);
   return Either.flatMap(started, (module) =>
     Either.flatMap(
-      answered(module, bytes, () => module.decompress(maximum)),
+      run(module, bytes, () => module.decompress(maximum)),
       (answer) => decoded(answer, maximum),
     ),
   );
 }
 
-async function instantiated(
+async function instantiatedCodec(
   wasm: Uint8Array,
 ): Promise<Either.Either<Codec, BrotliFailure>> {
-  try {
-    const { exports } = await WebAssembly.instantiate(
-      await compiled(wasm, () => WebAssembly.compile(new Uint8Array(wasm))),
-    );
-    return codes(exports)
-      ? Either.right(exports)
-      : Either.left(
-          BrotliFailure.Unusable({
-            sentence: 'the module exports no brotli codec',
-          }),
-        );
-  } catch (error) {
-    return Either.left(BrotliFailure.Unusable({ sentence: sentenceOf(error) }));
-  }
-}
-
-function codes(
-  exports: WebAssembly.Exports,
-): exports is WebAssembly.Exports & Codec {
-  return (
-    exports['memory'] instanceof WebAssembly.Memory &&
-    calls.every((name) => typeof exports[name] === 'function')
+  return Either.mapLeft(
+    await instantiated(wasm, calls, 'the module exports no brotli codec'),
+    unusable,
   );
 }
 
-function answered(
+function run(
   module: Codec,
   bytes: Uint8Array,
   call: () => number,
-): Either.Either<Answer, BrotliFailure> {
-  try {
-    const input = module.input(bytes.length) >>> 0;
-    new Uint8Array(module.memory.buffer, input, bytes.length).set(bytes);
-    const status = call();
-    const output = module.output() >>> 0;
-    const length = module.output_length() >>> 0;
-    return Either.right({
-      status,
-      bytes: new Uint8Array(module.memory.buffer, output, length).slice(),
-    });
-  } catch (error) {
-    return Either.left(BrotliFailure.Unusable({ sentence: sentenceOf(error) }));
-  }
+): Either.Either<Answered<number>, BrotliFailure> {
+  return Either.mapLeft(answered(module, bytes, call), unusable);
 }
 
 function decoded(
-  answer: Answer,
+  answer: Answered<number>,
   maximum: number,
 ): Either.Either<Uint8Array, BrotliFailure> {
-  if (answer.status === written) {
-    return Either.right(answer.bytes);
+  if (answer.value === written) {
+    return Either.right(answer.output);
   }
   return Either.left(
-    answer.status === pastMaximum
+    answer.value === pastMaximum
       ? BrotliFailure.PastMaximum({ maximum })
       : BrotliFailure.Malformed(),
   );
 }
 
-function sentenceOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+function unusable(sentence: string): BrotliFailure {
+  return BrotliFailure.Unusable({ sentence });
 }

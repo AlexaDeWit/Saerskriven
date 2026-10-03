@@ -5,10 +5,6 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": true,
-    // The brotli subpath instantiates a WebAssembly module, which only lib.dom
-    // and lib.webworker declare. webworker is the narrower of the two, as in
-    // packages/render/tsconfig.lib.json.
-    "lib": ["webworker", "es2022"],
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
@@ -24,10 +20,13 @@
       "path": "../wire-threat-dragon/tsconfig.lib.json"
     },
     {
+      "path": "../wire-saerskriven-yaml-v2/tsconfig.lib.json"
+    },
+    {
       "path": "../wire-saerskriven-yaml/tsconfig.lib.json"
     },
     {
-      "path": "../wire-saerskriven-yaml-v2/tsconfig.lib.json"
+      "path": "../wasm/tsconfig.lib.json"
     },
     {
       "path": "../model/tsconfig.lib.json"

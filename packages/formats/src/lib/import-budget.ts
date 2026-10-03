@@ -2,6 +2,40 @@ import type { ReadFailure } from './codec.js';
 import { exceededReadLimit, readLimits } from './read-limits.js';
 
 /**
+ * The kinds of imported record a divergence names by its source id: an OTM
+ * threat or mitigation definition, made one record per occurrence, and a
+ * TM-BOM control.
+ */
+export type SourceNamedKind = 'otm-threat' | 'otm-mitigation' | 'tmbom-control';
+
+/**
+ * The id an import gives a record of `kind` made from `parts` of its source:
+ * the kind, the number of parts, and each part with every character outside
+ * `[A-Za-z0-9]` escaped, joined by `-`.
+ */
+export function importedId(kind: string, parts: readonly string[]): string {
+  return `${kind}-${String(parts.length)}-${parts.map(escapedPart).join('-')}`;
+}
+
+/**
+ * Whether `id` is one {@link importedId} gave a record of `kind` whose first
+ * source part is `source`, so a reader finds the records an import made from
+ * the source record a divergence names.
+ */
+export function importedFrom(
+  id: string,
+  kind: SourceNamedKind,
+  source: string,
+): boolean {
+  const head = `${kind}-`;
+  if (!id.startsWith(head)) {
+    return false;
+  }
+  const [count, first, ...rest] = id.slice(head.length).split('-');
+  return count === String(rest.length + 1) && first === escapedPart(source);
+}
+
+/**
  * One import's `maxImportTextUnits` budget, charged before any text is
  * built. Once a charge fails, `failure` holds the refusal and every later
  * charge yields nothing. `id` escapes every character outside `[A-Za-z0-9]`,
@@ -45,20 +79,18 @@ export function importBudget() {
         2 +
         Math.max(0, parts.length - 1) +
         parts.reduce((total, part) => total + part.length * 6, 0);
-      if (!reserve(units)) {
-        return '';
-      }
-      const encoded = parts.map((part) =>
-        part.replace(
-          /[^A-Za-z0-9]/g,
-          (unit) => `_${unit.charCodeAt(0).toString(16)}_`,
-        ),
-      );
-      return `${kind}-${String(parts.length)}-${encoded.join('-')}`;
+      return reserve(units) ? importedId(kind, parts) : '';
     },
     reservePath: (path: readonly string[]): boolean =>
       reserve(
         8 + path.reduce((total, segment) => total + 4 * segment.length + 1, 0),
       ),
   };
+}
+
+function escapedPart(part: string): string {
+  return part.replace(
+    /[^A-Za-z0-9]/g,
+    (unit) => `_${unit.charCodeAt(0).toString(16)}_`,
+  );
 }

@@ -146,6 +146,105 @@ export const onScreen = async (target: Locator): Promise<void> => {
   expect(reached, 'the control is covered').toBe(true);
 };
 
+const ringReach = 16;
+
+/**
+ * The share of `target`'s outline along which a focus ring comes on screen
+ * when `focus` moves keyboard focus there from `away`. Two screenshots are
+ * read in CSS pixels, one with focus on `away` and one after `focus`: at each
+ * pixel along each side of `target`, whether a pixel up to 16 pixels across
+ * that side, short of its middle, changed between them. Anything drawn over
+ * the ring leaves its pixels as they were, and so does a part of it off the
+ * viewport.
+ */
+export const focusRingShown = async (
+  target: Locator,
+  away: Locator,
+  focus: () => Promise<void>,
+): Promise<number> => {
+  const page = target.page();
+  const shown = await screenBoxOf(target);
+  const clip = {
+    x: Math.max(Math.floor(shown.x) - ringReach, 0),
+    y: Math.max(Math.floor(shown.y) - ringReach, 0),
+    width: Math.ceil(shown.width) + 2 * ringReach,
+    height: Math.ceil(shown.height) + 2 * ringReach,
+  };
+  await away.focus();
+  const before = await page.screenshot({ clip, scale: 'css' });
+  await focus();
+  await expect(target).toBeFocused();
+  const after = await page.screenshot({ clip, scale: 'css' });
+  return page.evaluate(
+    async ({ images, origin, box, across }) => {
+      const [from, to] = await Promise.all(
+        images.map(async (png) => {
+          const image = new Image();
+          image.src = `data:image/png;base64,${png}`;
+          await image.decode();
+          const canvas = new OffscreenCanvas(image.width, image.height);
+          const context = canvas.getContext('2d');
+          context?.drawImage(image, 0, 0);
+          return (
+            context?.getImageData(0, 0, image.width, image.height) ??
+            new ImageData(1, 1)
+          );
+        }),
+      );
+      const fromWidth = from?.width ?? 0;
+      const toWidth = to?.width ?? 0;
+      const width = Math.min(fromWidth, toWidth);
+      const height = Math.min(from?.height ?? 0, to?.height ?? 0);
+      const changed = (x: number, y: number): boolean => {
+        const column = Math.round(x - origin.x);
+        const row = Math.round(y - origin.y);
+        if (column < 0 || column >= width || row < 0 || row >= height) {
+          return false;
+        }
+        const was = (row * fromWidth + column) * 4;
+        const is = (row * toWidth + column) * 4;
+        return (
+          [0, 1, 2].reduce(
+            (sum, channel) =>
+              sum +
+              Math.abs(
+                (from?.data[was + channel] ?? 0) -
+                  (to?.data[is + channel] ?? 0),
+              ),
+            0,
+          ) > 48
+        );
+      };
+      const offsets = (extent: number): number[] =>
+        Array.from(
+          { length: across + Math.floor(Math.min(across, extent / 2)) + 1 },
+          (_, step) => step - across,
+        );
+      const down = offsets(box.height);
+      const along = offsets(box.width);
+      const right = box.x + box.width;
+      const bottom = box.y + box.height;
+      const sides = [
+        ...Array.from({ length: Math.floor(box.width) }, (_, step) => [
+          down.some((offset) => changed(box.x + step, box.y + offset)),
+          down.some((offset) => changed(box.x + step, bottom - offset)),
+        ]),
+        ...Array.from({ length: Math.floor(box.height) }, (_, step) => [
+          along.some((offset) => changed(box.x + offset, box.y + step)),
+          along.some((offset) => changed(right - offset, box.y + step)),
+        ]),
+      ].flat();
+      return sides.filter(Boolean).length / Math.max(sides.length, 1);
+    },
+    {
+      images: [before.toString('base64'), after.toString('base64')],
+      origin: { x: clip.x, y: clip.y },
+      box: shown,
+      across: ringReach,
+    },
+  );
+};
+
 /** How far every ancestor of `target` is scrolled, summed, so a scroll anywhere above it shows. */
 export const scrolledAbove = (target: Locator): Promise<number> =>
   target.evaluate((element) => {

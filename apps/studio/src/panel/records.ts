@@ -14,6 +14,10 @@ import {
 } from '@saerskriven/model';
 import type { z } from 'zod';
 import type { StudioTranslator } from '../messages/catalogues.js';
+import {
+  assumptionStatusMessages,
+  mitigationStatusMessages,
+} from '../messages/enum-labels.js';
 import { sentences } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import type { OptionText } from '../ui/enum-field.js';
@@ -71,24 +75,8 @@ export type RecordKind<Held extends ThreatRecord> = {
 
 /** The catalogue label of one record status, of either kind. */
 export type RecordStatusMessage =
-  | 'terms.mitigation-proposed'
-  | 'terms.mitigation-implemented'
-  | 'terms.mitigation-verified'
-  | 'terms.assumption-unconfirmed'
-  | 'terms.assumption-valid'
-  | 'terms.assumption-invalidated';
-
-const mitigationStatusMessages = {
-  proposed: 'terms.mitigation-proposed',
-  implemented: 'terms.mitigation-implemented',
-  verified: 'terms.mitigation-verified',
-} as const satisfies Record<Mitigation['status'], RecordStatusMessage>;
-
-const assumptionStatusMessages = {
-  unconfirmed: 'terms.assumption-unconfirmed',
-  valid: 'terms.assumption-valid',
-  invalidated: 'terms.assumption-invalidated',
-} as const satisfies Record<Assumption['status'], RecordStatusMessage>;
+  | (typeof mitigationStatusMessages)[keyof typeof mitigationStatusMessages]
+  | (typeof assumptionStatusMessages)[keyof typeof assumptionStatusMessages];
 
 /** Mitigations, which start `proposed`. */
 export const mitigationKind: RecordKind<Mitigation> = {

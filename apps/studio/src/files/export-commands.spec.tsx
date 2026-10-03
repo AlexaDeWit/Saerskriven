@@ -323,7 +323,7 @@ describe('the studio exports', () => {
 
   it.each([
     ResvgFailure.Refused({ sentence: 'no long edge' }),
-    ResvgFailure.Unusable({ sentence: 'the module reserved none' }),
+    ResvgFailure.Unusable({ sentence: 'unreachable' }),
   ])(
     'reports a rasterizer refusal and writes nothing, $_tag',
     async (failure) => {

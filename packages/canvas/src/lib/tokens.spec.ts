@@ -93,6 +93,19 @@ describe.each(palettes)('$name', ({ palette }) => {
     ).toEqual([]);
   });
 
+  it('rings the cursor row at the ratio of a mark against its tint and both list grounds, and keeps both inks legible on the tint', () => {
+    expect(
+      below(palette, [
+        ...pairsOf(
+          ['actionPrimary'],
+          ['actionTint', 'surfaceApp', 'surfacePanel'],
+          markFloor,
+        ),
+        ...pairsOf(['textPrimary', 'textSecondary'], ['actionTint'], textFloor),
+      ]),
+    ).toEqual([]);
+  });
+
   it('rules the graph paper at a weight nothing is read off, above its ground and far under the 3 a mark needs, so darkening it to a control weight fails here', () => {
     const ruled = contrastRatio(palette.gridLine, palette.surfaceCanvas);
     expect(ruled).toBeGreaterThanOrEqual(gridFloor);

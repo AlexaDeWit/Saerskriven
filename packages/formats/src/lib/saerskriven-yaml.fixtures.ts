@@ -1,12 +1,14 @@
-import type { ModelInput } from '@saerskriven/model';
+import { inNumberOrder, type Model, type ModelInput } from '@saerskriven/model';
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
 import {
   committedText,
   repositoryRoot,
   testDataPath,
 } from '@saerskriven/model/fixtures';
+import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 
 const featureCompletePath = testDataPath('saerskriven/feature-complete.yaml');
 
@@ -1014,6 +1016,19 @@ export const nativeFixtures: readonly NativeFixture[] = [
     text: readFileSync(saerskrivenModelPath, 'utf8'),
   },
 ];
+
+/** What the native read makes of a text, throwing where it refuses one. */
+export const readOrThrow = (text: string) =>
+  Either.getOrThrow(saerskrivenYamlCodec.read(text));
+
+/**
+ * `model` with its threats in number order, the order a native write puts
+ * them in, so a model compares with what its native write reads back as.
+ */
+export const withThreatsInNumberOrder = (model: Model): Model => ({
+  ...model,
+  threats: inNumberOrder(model.threats),
+});
 
 /**
  * How long a property over `modelInputArbitrary` is given, past the root

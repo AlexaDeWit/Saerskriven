@@ -1,6 +1,8 @@
+import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import { useCallback, useId, useState } from 'react';
 import { Select } from 'radix-ui';
 
+import cursor from './cursor-row.module.css';
 import styles from './enum-field.module.css';
 
 /**
@@ -48,7 +50,7 @@ function Listed({
   return (
     <Select.Item
       aria-describedby={text.detail === undefined ? undefined : detailId}
-      className={styles.item}
+      className={`${styles.item} ${cursor.row}`}
       value={value}
       tabIndex={tabStop ? 0 : -1}
     >
@@ -107,7 +109,8 @@ type EnumFieldProps<Value extends string> = {
  * and `shownLabel` replaces the drawn label, an empty one drawing none. With
  * no `value` the trigger shows `placeholder`. `labelOf` is required, so a
  * stored value is never drawn as its own label. The overlay stays in the
- * containing landmark and is placed within the box the field scrolls in.
+ * containing landmark and is placed within the box the field scrolls in,
+ * with a cue at each edge its options run on past.
  */
 export function EnumField<Value extends string>({
   label,
@@ -162,6 +165,12 @@ export function EnumField<Value extends string>({
           collisionBoundary={boundary}
           position="popper"
         >
+          <Select.ScrollUpButton
+            className={styles.earlier}
+            data-scroll-cue="earlier"
+          >
+            <ChevronUpIcon aria-hidden="true" />
+          </Select.ScrollUpButton>
           <Select.Viewport className={styles.viewport}>
             {groupOf === undefined
               ? options.map(item)
@@ -172,6 +181,12 @@ export function EnumField<Value extends string>({
                   </Select.Group>
                 ))}
           </Select.Viewport>
+          <Select.ScrollDownButton
+            className={styles.later}
+            data-scroll-cue="later"
+          >
+            <ChevronDownIcon aria-hidden="true" />
+          </Select.ScrollDownButton>
         </Select.Content>
       </Select.Root>
     </div>
