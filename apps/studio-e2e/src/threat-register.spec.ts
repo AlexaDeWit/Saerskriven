@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { softHyphen } from '@saerskriven/model/fixtures';
 import { edgesOf, onScreen } from './canvas.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
@@ -36,6 +37,13 @@ const modelPanel = (page: Page): Locator =>
 const modelSummary = (page: Page, title: RegExp): Locator =>
   modelPanel(page).getByRole('button', { name: title });
 
+const modelThreatsTab = (page: Page): Locator =>
+  modelPanel(page).getByRole('tab', { name: /^Threats \d+$/u });
+
+const denied = 'Shopper denies placing an order';
+
+const refund = 'Refund policy abused';
+
 const atModelPaneTop = async (page: Page, target: Locator): Promise<boolean> =>
   Math.abs(
     (await edgesOf(target)).top -
@@ -71,22 +79,19 @@ test('R opens the register left of the panel, a chosen row opens its threat land
     '2',
     '6',
   ]);
-  await expect(
-    row(page, 'Refund policy abused').getByRole('cell').nth(1),
-  ).toHaveText('No element');
+  await expect(row(page, refund).getByRole('cell').nth(1)).toHaveText(
+    'No element',
+  );
   const beside = await edgesOf(threatPanel(page));
   const drawn = await edgesOf(register(page));
   expect(drawn.right).toBeLessThan(beside.left);
   expect(drawn.top).toBeCloseTo(beside.top, 0);
 
-  const denied = 'Shopper denies placing an order';
   await chooser(page, denied).click();
 
   const opened = modelSummary(page, storefront.orderDenied);
   await expect(opened).toHaveAttribute('aria-expanded', 'true');
-  await expect(
-    modelPanel(page).getByRole('tab', { name: /^Threats \d+$/u }),
-  ).toHaveAttribute('aria-selected', 'true');
+  await expect(modelThreatsTab(page)).toHaveAttribute('aria-selected', 'true');
   await expect.poll(() => atModelPaneTop(page, opened)).toBe(true);
   await expect(register(page)).toBeVisible();
   await expect(chooser(page, denied)).toHaveAttribute('aria-current', 'true');
@@ -231,7 +236,6 @@ test(
   async ({ page }) => {
     await openTwoDiagrams(page);
     await pressR(page);
-    const denied = 'Shopper denies placing an order';
 
     await chooser(page, denied).click();
 
@@ -247,6 +251,67 @@ test(
 
     await expect(chooser(page, denied)).toHaveAttribute('aria-current', 'true');
     await expect(chooser(page, denied)).toBeFocused();
+  },
+);
+
+test(
+  'a row the model panel refuses closes a register that hides it, with focus on the field holding the refused text, and the register opens again with no row marked',
+  { tag: '@phone-only' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    await pressR(page);
+    await chooser(page, denied).click();
+    const held = modelPanel(page).getByRole('textbox', {
+      name: 'Description',
+      exact: true,
+    });
+    await held.fill(`Draft${softHyphen}text`);
+    await held.press('Tab');
+    await expect(held).toHaveAttribute('aria-invalid', 'true');
+
+    await pressR(page);
+    await chooser(page, refund).click();
+
+    await expect(register(page)).toHaveCount(0);
+    await expect(held).toBeFocused();
+    await expect(held).toHaveValue(`Draft${softHyphen}text`);
+    await expect(held).toHaveAttribute('aria-invalid', 'true');
+    await onScreen(held);
+    await expect(modelSummary(page, storefront.refundAbuse)).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+
+    await test.step('no row is marked as the register opens again, and a row refused from the Details tab shows Threats', async () => {
+      await showDetails(page, modelPanel(page));
+      await runFromMenu(page, 'Threat register');
+      await expect(register(page)).toBeVisible();
+      await expect(register(page).locator('[aria-current]')).toHaveCount(0);
+
+      await chooser(page, refund).click();
+
+      await expect(register(page)).toHaveCount(0);
+      await expect(modelThreatsTab(page)).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(held).toBeFocused();
+      await expect(held).toHaveValue(`Draft${softHyphen}text`);
+    });
+
+    await test.step('a row refused while the model panel is closed opens the panel on the refused text', async () => {
+      await modelPanel(page)
+        .getByRole('button', { name: 'Close model panel', exact: true })
+        .click();
+      await expect(modelPanel(page)).toHaveCount(0);
+      await runFromMenu(page, 'Threat register');
+
+      await chooser(page, refund).click();
+
+      await expect(register(page)).toHaveCount(0);
+      await expect(held).toBeFocused();
+      await expect(held).toHaveValue(`Draft${softHyphen}text`);
+    });
   },
 );
 
@@ -272,7 +337,7 @@ test(
 
     expect(await inModelPanel()).toBe(false);
 
-    await chooser(page, 'Refund policy abused').focus();
+    await chooser(page, refund).focus();
     await page.keyboard.press('Escape');
     await expect(register(page)).toHaveCount(0);
     await expect(covered).toBeVisible();

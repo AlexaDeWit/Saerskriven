@@ -9,7 +9,11 @@ import type {
   ThreatDragonDocument,
   ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
-import { strayKindSchema, type StrayKind } from './divergence-detail.js';
+import {
+  strayKindSchema,
+  type DivergenceDetail,
+  type StrayKind,
+} from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import {
@@ -58,9 +62,12 @@ export type ThreatPlan = {
  * The model's threats as Threat Dragon nests them. A threat naming several
  * elements is written under each, reported as `split` unless the source
  * already nested it under all of them. An attachment to a trust boundary or a
- * note, and a threat with no cell to go under, are `unrepresentable`. A
- * category Threat Dragon's own labels do not name, such as PLOT4ai's, is
- * `narrowed`, since the label reaches the file and reads back as custom.
+ * note, and a threat with no cell to go under, are `unrepresentable`. So is
+ * the model link of a threat that is written, reported once for the threat
+ * however many cells hold it. A threat that applies to the model and has no
+ * cell to go under is reported as any other threat with none is. A category
+ * Threat Dragon's own labels do not name, such as PLOT4ai's, is `narrowed`,
+ * since the label reaches the file and reads back as custom.
  *
  * A threat the source holds under a cell is merged onto that copy in the
  * cell's own order, keeping the source's status, severity and category
@@ -94,17 +101,10 @@ export function planThreats(
   const issued: number[] = [];
   const written: Threat[] = [];
   for (const threat of model.threats) {
-    const placed = threat.elements.filter((id) => canHost(kinds.get(id)));
-    divergences.push(...strayAttachments(threat, kinds));
-    if (placed.length === 0) {
-      divergences.push(unplaceable(threat.id));
+    const { cells, unheld } = placementOf(threat, kinds, nested);
+    divergences.push(...unheld);
+    if (cells.length === 0) {
       continue;
-    }
-    if (
-      placed.length > 1 &&
-      !placed.every((id) => nested.get(id)?.has(threat.id) === true)
-    ) {
-      divergences.push(split(threat.id, placed.length));
     }
     written.push(threat);
     if (!carried.has(threat.number)) {
@@ -115,7 +115,7 @@ export function planThreats(
       divergences.push(unnamedCategory(threat));
     }
     const text = mitigationText(threat, model);
-    for (const id of placed) {
+    for (const id of cells) {
       const list = byCell.get(id) ?? [];
       list.push(
         projectThreat(threat, nested.get(id)?.get(threat.id), category, text),
@@ -155,14 +155,50 @@ function canHost(
   );
 }
 
-function strayAttachments(
+function placementOf(
   threat: Threat,
   kinds: ReadonlyMap<string, Element['kind']>,
-): readonly Divergence[] {
-  return threat.elements.flatMap((id) => {
-    const kind = kinds.get(id);
-    return canHost(kind) ? [] : [strayAttachment(threat.id, id, kind)];
+  nested: ReadonlyMap<string, ReadonlyMap<string, ThreatDragonThreat>>,
+): {
+  readonly cells: readonly string[];
+  readonly unheld: readonly Divergence[];
+} {
+  const cells = threat.elements.filter((id) => canHost(kinds.get(id)));
+  const noPlace = (detail: DivergenceDetail): Divergence => ({
+    subject: { kind: 'threat', id: threat.id },
+    detail,
+    reason: 'unrepresentable',
   });
+  const stray = threat.elements.flatMap((element) => {
+    const kind = kinds.get(element);
+    return canHost(kind)
+      ? []
+      : [
+          noPlace({
+            code: 'threat-attachment-stray',
+            parameters: { element, kind },
+          }),
+        ];
+  });
+  if (cells.length === 0) {
+    return {
+      cells,
+      unheld: [...stray, noPlace({ code: 'threat-unplaceable' })],
+    };
+  }
+  const divided =
+    cells.length > 1 &&
+    !cells.every((id) => nested.get(id)?.has(threat.id) === true);
+  return {
+    cells,
+    unheld: [
+      ...stray,
+      ...(threat.appliesToModel
+        ? [noPlace({ code: 'threat-model-link-dropped' })]
+        : []),
+      ...(divided ? [split(threat.id, cells.length)] : []),
+    ],
+  };
 }
 
 function highWaterMark(
@@ -226,29 +262,6 @@ function projectThreat(
         : fromSeverity(threat.severity),
     description: threat.description,
     mitigation,
-  };
-}
-
-function strayAttachment(
-  threat: ThreatId,
-  element: string,
-  kind: StrayKind | undefined,
-): Divergence {
-  return {
-    subject: { kind: 'threat', id: threat },
-    detail: {
-      code: 'threat-attachment-stray',
-      parameters: { element, kind },
-    },
-    reason: 'unrepresentable',
-  };
-}
-
-function unplaceable(threat: ThreatId): Divergence {
-  return {
-    subject: { kind: 'threat', id: threat },
-    detail: { code: 'threat-unplaceable' },
-    reason: 'unrepresentable',
   };
 }
 

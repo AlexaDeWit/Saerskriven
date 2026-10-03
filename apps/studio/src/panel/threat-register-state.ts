@@ -7,6 +7,8 @@ import {
   focusModelPanel,
   hiddenInModelPanel,
   openInModelPanel,
+  showModelThreats,
+  type ListFocus,
 } from './panel-focus.js';
 
 let open = false;
@@ -44,9 +46,11 @@ export function openThreatRegister(): void {
 /**
  * Opens the threat of a row chosen in the register on the model panel, whose
  * list calls `opened` once it has. Where the register hides that panel under
- * it, the register then closes as {@link closeThreatRegister} closes it, and
- * carries the choice to its next opening. The panel is committed before it
- * is read, so this is called from an event handler alone.
+ * it, the register then closes. On an opened threat it closes as
+ * {@link closeThreatRegister} closes it, and carries the choice to its next
+ * opening. On a threat the list refused it carries nothing, and focus lands
+ * on the field holding the refused text. The panel is committed before it is
+ * read, so this is called from an event handler alone.
  */
 export function chooseInThreatRegister(
   threatId: ThreatId,
@@ -55,9 +59,13 @@ export function chooseInThreatRegister(
   flushSync(() => {
     openInModelPanel({ threatId, opened });
   });
-  if (hiddenInModelPanel(threatId)) {
+  const hidden = hiddenInModelPanel(threatId);
+  if (hidden === 'opened') {
     closeThreatRegister();
     carried = threatId;
+  }
+  if (hidden === 'refused') {
+    closeOnto('refusal');
   }
 }
 
@@ -77,16 +85,7 @@ export function carriedChoice(): ThreatId | undefined {
  * so it is called from an event handler alone.
  */
 export function closeThreatRegister(): void {
-  const returning = opener;
-  flushSync(leaveThreatRegister);
-  if (focusModelPanel()) {
-    return;
-  }
-  if (returning?.isConnected === true) {
-    returning.focus();
-  } else {
-    focusCanvas();
-  }
+  closeOnto('summary');
 }
 
 /** Closes the register where it is open, and leaves focus to the caller. */
@@ -126,6 +125,24 @@ export function useThreatRegisterOpen(): boolean {
 export function resetThreatRegister(): void {
   leaveThreatRegister();
   carried = undefined;
+}
+
+function closeOnto(on: ListFocus): void {
+  const returning = opener;
+  flushSync(() => {
+    leaveThreatRegister();
+    if (on === 'refusal') {
+      showModelThreats();
+    }
+  });
+  if (focusModelPanel(on)) {
+    return;
+  }
+  if (returning?.isConnected === true) {
+    returning.focus();
+  } else {
+    focusCanvas();
+  }
 }
 
 function moveTo(next: boolean): void {

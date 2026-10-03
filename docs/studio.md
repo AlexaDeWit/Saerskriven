@@ -18,8 +18,11 @@ by a timer.
 A status line under the card says what an action did wherever the control
 that has focus does not already show it, such as a deletion, a refusal, a
 paste or an Undo. It ends at the next action that changes the canvas or the
-panel. A diagram chosen in the switcher draws no line, since focus returns to
-the switcher, which names it. PageDown and PageUp do draw it.
+panel. A diagram chosen in the switcher, or renamed there with Enter, draws no
+line, since focus returns to the switcher, which names it. PageDown and PageUp
+pressed with focus on the switcher draw none either, and a screen reader is
+still told the diagram. Pressed anywhere else they draw the line, and so does
+a rename ended by leaving the field.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
 persists across reloads. **Language** beside it selects English (Canada),
@@ -70,7 +73,11 @@ own format where the item stood. The page cannot tell whether a download went
 through, so a download counts as saved even where the browser's own download
 dialog was cancelled. Saving in another format than the file was read as is
 where most of a save's report, **Not kept by this save**, comes from, since
-only the file's own format keeps what Saerskriven does not model. Opening a
+only the file's own format keeps what Saerskriven does not model. A Threat
+Dragon file holds a threat only under an actor, a process, a store or a flow:
+a threat that applies to the whole model is saved under those it is on, with
+its attachment to the whole model reported as not kept, and a threat on none of
+them is reported whole and not saved. Opening a
 file reports too, under two headings, each shown only when it has a line.
 **Converted on opening** comes first and lists what the model holds in another
 form or place than the file had it, so it can still be found in the studio: an
@@ -92,9 +99,11 @@ matters.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
-second press confirms. A failed open keeps the current model but lets go of its
-file, so its next Save treats it as a new model rather than writing to either
-file.
+second press confirms. A stored session the studio could not read at startup,
+or left in storage undrawn as described below, counts as unsaved work until the
+studio next stores one, since either command would replace it. A failed open
+keeps the current model but lets go of its file, so its next Save treats it as
+a new model rather than writing to either file.
 
 **Export** writes the diagram on screen as SVG or PNG, the register as
 Markdown, or the whole model as Typst or PDF. An export proposes the open
@@ -122,13 +131,13 @@ dismissed or until a later Share.
 Opening a link, in a new tab or pasted into the address bar of an open one,
 loads the model it holds as an unsaved model named after its title. Over
 unsaved work, the menu opens with Share as link turned into Discard changes and
-open the link, focused, and Cancel under it, as Open asks. A session whose
-stored recovery snapshot could not be read counts as unsaved work until the
-studio next writes one, since loading the link would replace it. Either answer,
-or closing the menu, takes the link out of the address, so a reload neither
-asks again nor loads it over later edits. A link that was cut off, is too long,
-holds no model, or was written by a later release opens nothing, and the notice
-says which.
+open the link, focused, and Cancel under it, as Open asks. A stored session
+that was not read or not drawn counts as unsaved work here as it does for
+Open, since loading the link would replace it. Either answer, or closing the
+menu, takes the link out of the address, so a reload neither asks again nor
+loads it over later edits. A link that was cut off, is too long, holds no
+model, or was written by a later release opens nothing, and the notice says
+which.
 
 The studio keeps the current session in the browser's local storage. A reload
 restores the model, whether it was saved, the file's name and format, and the
@@ -136,6 +145,12 @@ diagram on screen, without the undo history, the selection or an open field.
 The browser's file handle does not survive, so the next Save asks where to
 write, or downloads a copy where the browser cannot ask.
 While unsaved work has not reached that storage, closing the tab asks first.
+
+If a tab's last start did not finish drawing the stored session, its next
+start leaves that session in storage and opens the Untitled model a new
+session starts on, under a notice saying so. A reload after that tries the
+stored session again. Until then the first edit replaces the stored session
+without asking, while Open, New model and a shared link ask first.
 
 Every studio tab in one browser profile shows the same model. An edit, an undo,
 an open or a save in one tab reaches the others, while each tab keeps its own
@@ -170,7 +185,8 @@ identity.
 
 Each threat occurrence becomes a separate threat with its own status and
 mitigations. This preserves different treatments on different components.
-Threat definitions without occurrences become threats on no element. Known
+Threat definitions without occurrences become threats on no element, which
+are not read as applying to the whole model. Known
 threat statuses map to the corresponding core treatment. Unknown statuses
 remain in the description and are read as open. Each mitigation an occurrence
 names becomes a record linked to that occurrence's threat. Mitigations marked
@@ -205,7 +221,8 @@ inferred. Shared data identity and other data-set properties are reported as
 losses.
 
 Threats preserve their declared component attachments and event descriptions.
-They are read as open, with undecided severity and an unspecified category.
+A threat that declares no affected component applies to the whole model.
+Threats are read as open, with undecided severity and an unspecified category.
 Separate risk records and threat personas are reported as omissions.
 Controls become mitigations linked to the threats they name. Active controls
 become implemented mitigations. Suggested controls become proposed
@@ -277,12 +294,13 @@ out. A click there without a drag clears the selection, or selects that element
 alone. With Shift held, or by touch, a press there acts as it does outside the
 selection. An arrow key moves the selection five model units, and Shift+arrow
 twenty, or one grid interval and four with Snap to grid on, snapped as a drag
-is. A flow does not move on its own, but a moved group carries its bends
-and free ends along. After each arrow key a screen reader hears where Position
-and size now places the selection, in the figures it shows. Pressing Escape,
-or leaving the browser window, before the release puts every dragged element
-back where it was, with no undo step. Escape also clears the selection, as it
-does anywhere.
+is. A flow does not move on its own, but a moved group carries its bends and
+free ends along. After each arrow key a screen reader hears where Position and
+size now places the selection, in the figures it shows, and the view follows
+what the key moves out of the viewport: the focused element, or a box selection
+as a whole ([Accessibility](#accessibility)). Pressing Escape, or leaving the
+browser window, before the release puts every dragged element back where it
+was, with no undo step. Escape also clears the selection, as it does anywhere.
 
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
@@ -424,15 +442,17 @@ between copied elements, the threats attached to them, and the mitigations and
 assumptions those threats link. The copy goes to the system clipboard as
 Saerskriven YAML. Cut removes the selection once the copy is written, and
 removes nothing if the model or the selection changed meanwhile. A threat the
-cut leaves attached to no element goes with it, and the notice counts the
-threats copied and how many of them went. Paste and Duplicate add the copy with
+cut leaves attached to no element goes with it, unless a file marks it as
+applying to the whole model, and the notice counts the threats copied and how
+many of them went. Paste and Duplicate add the copy with
 new ids, offset by a grid interval each time. A pasted threat keeps its number
 when no threat in the model holds it, so pasting after a cut restores a removed
 threat under its own number. Otherwise it takes a new number, as a copy or a
 duplicate does while its original stays. A pasted mitigation or assumption
 identical to one the model already holds links the pasted threats to that
 record, and every other record is added as a new one. A pasted assumption does
-not apply to the model. The status line counts what was linked and added, and
+not apply to the model, and neither does a pasted threat, whatever its original
+does. The status line counts what was linked and added, and
 the links left behind. Duplicate leaves the clipboard alone. Text fields keep
 their own clipboard keys.
 
@@ -448,7 +468,8 @@ Delete or Backspace removes the selection from anywhere in the studio outside a
 form field (a text box or a drop-down list). A flow attached to a removed
 element loses that end and keeps the other, and a threat loses the link. A
 threat the deletion leaves attached to no element goes with it, together with
-the mitigations and assumptions left on no threat. The notice counts the flows
+the mitigations and assumptions left on no threat, unless a file marks the
+threat as applying to the whole model. The notice counts the flows
 detached, the links dropped from the threats that stay, and the threats
 removed, so a threat that goes is reported once. One Delete stays one undo
 step, whatever it took.
@@ -463,7 +484,9 @@ Opening a model, or switching to another diagram, fits the diagram to the
 window. **Fit to view** and **Fit selection** fit the area left of the open
 threat panel. The zoom controls show the current percentage, and pressing it
 resets the zoom to 100%. Selecting or dropping an element does not move the
-view.
+view. Tab onto an item outside the viewport, and an arrow key that moves the
+selected element out of it, bring the item back inside by the shortest pan
+([Accessibility](#accessibility)).
 
 Scrolling pans in both directions and a trackpad pinch zooms. Holding Control
 (or Command on macOS) turns scrolling into zoom. A touch drag pans in Select. A
@@ -525,8 +548,9 @@ row of names each with its own Detach control, and an **Attach existing
 element** picker under them that offers the elements it does not name. Attach
 and Detach are one undo step each.
 
-Detaching the last element removes the threat, with the mitigations and
-assumptions left on no threat, and the notice says so. There is no
+Detaching the last element removes the threat, unless a file marks it as
+applying to the whole model, with the mitigations and assumptions left on no
+threat, and the notice says so. There is no
 confirmation: Undo brings the threat back with everything the removal took, as
 unlinking a record's last threat does. Detaching the element whose panel you
 are reading takes the threat off that panel, so focus moves to the threat that
@@ -579,7 +603,8 @@ the elements the threat is on, or "On no element". A threat opens and is
 edited as on an element's panel. There is no Add a threat or Attach existing
 threat here, so add a threat on an element. A detach that leaves the threat on
 another element keeps it in the list, and detaching its last element removes
-it, as on an element's panel. Focus then moves to the threat that takes its
+it, unless a file marks it as applying to the whole model, as on an element's
+panel. Focus then moves to the threat that takes its
 place, or to the Threats tab.
 
 Details holds the model's Title and Description, then the assumptions that
@@ -650,7 +675,9 @@ Where the register hides the panel under it, choosing a row closes the
 register instead, and focus moves to that threat in the model panel, as it
 does on Escape. The register then opens with that row marked and focus on
 it, until it is closed another way. A row chosen while another threat holds
-refused text leaves the register open.
+refused text also closes the register, with focus on the field holding that
+text. The chosen threat does not open, and the register next opens with no
+row marked.
 
 Each element name in a row selects that element, on whichever diagram draws
 it, and closes the register, with focus on the element.
@@ -732,9 +759,36 @@ heavier line, and focus is a separate ring, so neither depends on colour and
 both survive forced colours. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
 
-A focused element or resize control that lies under the threat panel or the
-Reconnect flow or Trust boundary card shows its ring under that pane, and the
-canvas does not pan to bring it out.
+A focused element or resize control that lies under the threat panel, the
+threat register or the Reconnect flow or Trust boundary card shows its ring
+under that pane, and the canvas does not move for it. What lies over the canvas
+plays no part in where the view goes.
+
+The view does move to bring an item into the viewport, the canvas's own area.
+It pans the shortest distance that brings the item's whole focus ring inside,
+to the border it had crossed, when:
+
+- Tab or Shift+Tab puts focus on an element, a flow, a resize control, or a
+  bend, flow end or curve point handle that lies partly or wholly outside.
+- A key returns focus to such an item while Tab still steers, as Escape from a
+  resize control does. Tab steers from the press until the next press of a
+  mouse button, a finger or a pen.
+- An arrow key moves the selection out of the viewport. No Tab is needed.
+- An arrow key on a resize control carries that control out of the viewport.
+- An arrow key moves a focused bend, free flow end or curve point out of it.
+
+What is followed is whatever holds focus. A box selection is followed as a
+whole, by the frame around it. With several elements picked one at a time with
+Shift, only the focused one is followed, and the others can leave the viewport.
+
+The pan takes about half a second. It is a single step where the system asks
+for reduced motion, and for each repeat of a held arrow key. It keeps the zoom
+and never centres the item. Scrolling, dragging or zooming while it runs takes
+the view over. For an item larger than the viewport, the view moves the least
+that fills the viewport with the item, its nearer edge at the border.
+
+No pointer action is followed. Nor is a bend being placed from the route
+toolbar with the arrow keys, since focus is on the toolbar then.
 
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves
@@ -752,7 +806,9 @@ navigation keys do not.
 ## Current limitations
 
 - Removing and reordering diagrams is not offered.
-- Nothing pans to a newly connected flow, or out from under the panel.
+- The view is not brought to an item under a pane, nor to one a pointer action
+  leaves outside the viewport, such as a newly drawn flow
+  ([Accessibility](#accessibility)).
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model panel's Details.
   The model's explicit record removal has no control.

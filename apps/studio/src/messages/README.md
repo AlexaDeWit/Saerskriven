@@ -80,6 +80,24 @@ takes, as `fields.recording-of-protocol` (_Consignation du protocole_) and
 `fields.add-to-crossing-flows` (_Ajouter aux flux qui la franchissent_) do,
 and the control picks the message by the label's key.
 
+A verb or an adjective beside a label takes a message per label too. A label
+standing alone opens with a capital and carries no article, and a phrase needs
+the noun's article, its definite form or an adjective that agrees with it:
+`tools.decrease-width` (_Diminuer la largeur_, _Minska bredden_),
+`fields.unlink-assumption` (_Délier l’hypothèse 1_),
+`fields.existing-assumption` (_Hypothèse existante_, _Befintligt antagande_)
+and `fields.remove-from-crossed-trust-boundaries` (_Retirer la frontière de
+confiance franchie 1_), which names the one item the control removes. A
+composition stays where one template words every label it takes in all three
+languages, as `fields.add-record` does.
+
+A row of a relationship list takes a message per relationship as well. It
+names the one item in the singular with its number, as
+`fields.item-of-contained-elements` (_Contained element 2_, _Élément
+contenu 2_, _Innehållet objekt 2_) does, while the list's heading stays
+plural. Each language sets the number where its phrase takes it:
+`fields.item-of-crossing-flows` is _Flux 2 qui la franchit_.
+
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`
 adds beside them. `parseIssueLine` places either at its path. OTM and TM-BOM

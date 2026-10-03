@@ -17,8 +17,9 @@ const featureCompletePath = testDataPath('saerskriven/feature-complete.yaml');
  * hand to use every construct the wire schema declares, in the writer's
  * canonical form: each element kind with every security fact it can state,
  * both endpoint kinds and a side of each name, both boundary shapes, a threat
- * in every status, severity and category, a mitigation in every status, and
- * an assumption in every status, one of them applying to the model.
+ * in every status, severity and category, one of them applying to the model,
+ * a mitigation in every status, and an assumption in every status, one of
+ * them applying to the model.
  */
 export const featureCompleteYaml: string = committedText(
   'saerskriven/feature-complete.yaml',
@@ -324,6 +325,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'A booking asks for a name and a birth date alone.',
       elements: ['actor-patient'],
+      appliesToModel: false,
     },
     {
       id: 'threat-repudiation',
@@ -337,6 +339,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'mitigated',
       description: 'No-show fees are disputed.',
       elements: ['actor-patient'],
+      appliesToModel: false,
     },
     {
       id: 'threat-tampering',
@@ -350,6 +353,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'transferred',
       description: 'The fee travels in a form field.',
       elements: ['process-booking', 'flow-request'],
+      appliesToModel: false,
     },
     {
       id: 'threat-elevation',
@@ -363,6 +367,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'avoided',
       description: 'One account serves bookings and settings.',
       elements: ['process-booking'],
+      appliesToModel: false,
     },
     {
       id: 'threat-denial',
@@ -376,6 +381,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'accepted-risk',
       description: 'Nothing limits bookings per patient.',
       elements: ['process-booking'],
+      appliesToModel: false,
     },
     {
       id: 'threat-disclosure',
@@ -389,6 +395,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'eliminated',
       description: 'Backups were copied to a shared drive.',
       elements: ['store-appointments'],
+      appliesToModel: false,
     },
     {
       id: 'threat-cia-confidentiality',
@@ -402,6 +409,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'not-applicable',
       description: 'The form travels over TLS.',
       elements: ['flow-request'],
+      appliesToModel: false,
     },
     {
       id: 'threat-cia-integrity',
@@ -415,6 +423,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'Nothing signs a confirmed booking.',
       elements: ['flow-request'],
+      appliesToModel: false,
     },
     {
       id: 'threat-cia-availability',
@@ -428,6 +437,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'mitigated',
       description: 'Releases take the only host offline.',
       elements: ['flow-request'],
+      appliesToModel: false,
     },
     {
       id: 'threat-die-confidentiality',
@@ -441,6 +451,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'The sync runs without TLS.',
       elements: ['flow-sync'],
+      appliesToModel: false,
     },
     {
       id: 'threat-die-integrity',
@@ -454,6 +465,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'mitigated',
       description: 'The last write wins.',
       elements: ['flow-sync'],
+      appliesToModel: false,
     },
     {
       id: 'threat-die-availability',
@@ -467,6 +479,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'accepted-risk',
       description: 'The sync locks the table.',
       elements: ['flow-sync'],
+      appliesToModel: false,
     },
     {
       id: 'threat-die-distributed',
@@ -480,6 +493,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'The store has no replica.',
       elements: ['store-appointments'],
+      appliesToModel: false,
     },
     {
       id: 'threat-die-immutable',
@@ -493,6 +507,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'transferred',
       description: 'Past bookings are editable.',
       elements: ['flow-sync'],
+      appliesToModel: false,
     },
     {
       id: 'threat-die-ephemeral',
@@ -506,6 +521,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'avoided',
       description: 'The sync uses a long-lived key.',
       elements: ['flow-sync'],
+      appliesToModel: false,
     },
     {
       id: 'threat-linkability',
@@ -519,6 +535,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'The same patient number is used at every clinic.',
       elements: ['process-records', 'actor-clerk'],
+      appliesToModel: false,
     },
     {
       id: 'threat-identifiability',
@@ -532,6 +549,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'mitigated',
       description: 'The log keeps the full name.',
       elements: ['process-records'],
+      appliesToModel: false,
     },
     {
       id: 'threat-non-repudiation',
@@ -545,6 +563,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'not-applicable',
       description: 'Requests are not signed.',
       elements: ['process-records'],
+      appliesToModel: false,
     },
     {
       id: 'threat-detectability',
@@ -558,6 +577,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'A hit is slower than a miss.',
       elements: ['process-records'],
+      appliesToModel: false,
     },
     {
       id: 'threat-data-disclosure',
@@ -571,6 +591,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'eliminated',
       description: 'Copies were made page by page.',
       elements: ['process-records'],
+      appliesToModel: false,
     },
     {
       id: 'threat-unawareness',
@@ -584,6 +605,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'accepted-risk',
       description: 'No notice describes the request log.',
       elements: ['process-records'],
+      appliesToModel: false,
     },
     {
       id: 'threat-non-compliance',
@@ -597,6 +619,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'transferred',
       description: 'Nobody reviews the archive.',
       elements: ['boundary-records'],
+      appliesToModel: false,
     },
     {
       id: 'threat-oversight',
@@ -610,6 +633,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'Unpaid bookings are cancelled on a schedule.',
       elements: ['process-booking'],
+      appliesToModel: false,
     },
     {
       id: 'threat-bias',
@@ -623,6 +647,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'accepted-risk',
       description: 'Reminders go by text message alone.',
       elements: [],
+      appliesToModel: false,
     },
     {
       id: 'threat-cybersecurity',
@@ -636,6 +661,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'Training data is taken from the live store.',
       elements: ['store-appointments'],
+      appliesToModel: false,
     },
     {
       id: 'threat-governance',
@@ -649,6 +675,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'mitigated',
       description: 'Nothing names who answers for a booking.',
       elements: ['store-appointments'],
+      appliesToModel: false,
     },
     {
       id: 'threat-ethics',
@@ -662,6 +689,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'Refusals carry no reason.',
       elements: ['actor-clerk'],
+      appliesToModel: false,
     },
     {
       id: 'threat-privacy',
@@ -675,6 +703,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'mitigated',
       description: 'The reason field is never cleared.',
       elements: ['store-appointments'],
+      appliesToModel: false,
     },
     {
       id: 'threat-safety',
@@ -688,6 +717,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'Schedules go into the paper bin.',
       elements: ['note-hours'],
+      appliesToModel: false,
     },
     {
       id: 'threat-transparency',
@@ -701,6 +731,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'not-applicable',
       description: 'The schedule is internal.',
       elements: [],
+      appliesToModel: true,
     },
     {
       id: 'threat-card',
@@ -715,6 +746,7 @@ export const featureCompleteYamlModel: ModelInput = {
       status: 'open',
       description: 'Found in a Cornucopia session.',
       elements: ['actor-clerk'],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: 42,
@@ -904,6 +936,7 @@ export const frozenV021Model: ModelInput = {
       description:
         'An attacker who compromises Pilot could use its standing container credentials.',
       elements: [pilot],
+      appliesToModel: false,
     },
     {
       id: '4b73d786-865e-43fc-b1bd-0e0bc75cae03',
@@ -915,6 +948,7 @@ export const frozenV021Model: ModelInput = {
       description:
         'A maliciously crafted or unexpectedly massive OSV payload from upstream could cause Pilot to exhaust memory or crash during JSON parsing.',
       elements: [pilot],
+      appliesToModel: false,
     },
     {
       id: 'c87367bd-fc3f-4792-94b6-8db459011823',
@@ -926,6 +960,7 @@ export const frozenV021Model: ModelInput = {
       description:
         'An attacker who gains control of osv.dev can push malicious vulnerability records. Those records trigger false positives, or fast-lane a malicious remediation package. The attack is strongest when the attacker also publishes a malicious package.',
       elements: [pilot],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: 102,

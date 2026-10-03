@@ -458,6 +458,7 @@ threats:
     elements:
       - el-payment
       - el-charge
+    appliesToModel: true
   - id: th-order-denied
     number: 6
     title: Shopper denies placing an order

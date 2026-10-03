@@ -29,7 +29,7 @@ import {
   recordedModel,
   sampleModel,
 } from '../store/store.fixtures.js';
-import { SaveOutcome } from './bridge.js';
+import { SaveOutcome, type ChosenFile } from './bridge.js';
 import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
@@ -37,12 +37,16 @@ import {
   chosenFile,
   edit,
   fragmentOf,
+  heldInRecovery,
   paste,
   sampleNativeText,
   specBridge,
   type SpecBridge,
   specLinks,
   specRenders,
+  startUnread,
+  storedSession,
+  unreadSessions,
   vendoredFile,
 } from './files.fixtures.js';
 import { chooseLanguage } from '../messages/locale.js';
@@ -100,6 +104,54 @@ const reportLists = (): readonly Element[] => [
 
 const reportHeadings = (): readonly (string | null | undefined)[] =>
   reportLists().map((list) => list.previousElementSibling?.textContent);
+
+const textsIn = (nodes: readonly Node[]): readonly (string | null)[] =>
+  nodes
+    .filter((node) => node instanceof Element)
+    .flatMap((node) => [node, ...node.querySelectorAll('*')])
+    .filter((element) => element.matches('p, li'))
+    .map(({ textContent }) => textContent);
+
+const reportGainsOver = async (
+  step: () => Promise<void>,
+): Promise<readonly Node[]> => {
+  const gained: Node[] = [];
+  const keep = (records: readonly MutationRecord[]): void => {
+    gained.push(...records.flatMap(({ addedNodes }) => [...addedNodes]));
+  };
+  const observer = new MutationObserver(keep);
+  observer.observe(screen.getByTestId('loss-report'), {
+    childList: true,
+    subtree: true,
+  });
+  await step();
+  keep(observer.takeRecords());
+  observer.disconnect();
+  return gained;
+};
+
+const readOnlyFiles = [
+  { path: 'otm/example.json', format: 'OTM' },
+  { path: 'tmbom/example.json', format: 'TM-BOM' },
+] as const;
+
+const receive = (file: ChosenFile): void => {
+  fireEvent.change(screen.getByTestId('file-input'), {
+    target: { files: [file] },
+  });
+};
+
+const receiveReadOnly = async ({
+  path,
+  format,
+}: (typeof readOnlyFiles)[number]): Promise<void> => {
+  receive(vendoredFile(path));
+  await waitFor(() => {
+    expect(screen.getByTestId('loss-report').textContent).toContain(
+      inLocale('en-CA')('reports.opened-read-only', { format }),
+    );
+  });
+};
 
 function Menu({
   bridge,
@@ -632,9 +684,7 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(specBridge());
 
-    fireEvent.change(screen.getByTestId('file-input'), {
-      target: { files: [chosenFile('model.yaml', sampleNativeText)] },
-    });
+    receive(chosenFile('model.yaml', sampleNativeText));
     await openMenu(user);
 
     await waitFor(() => {
@@ -684,10 +734,7 @@ describe('opening', () => {
     expect(reportEntries()).toEqual([]);
   });
 
-  it.each([
-    { path: 'otm/example.json', format: 'OTM' },
-    { path: 'tmbom/example.json', format: 'TM-BOM' },
-  ])(
+  it.each(readOnlyFiles)(
     'opens $path as a new model under a notice naming $format',
     async ({ path, format }) => {
       const user = userEvent.setup();
@@ -737,6 +784,54 @@ describe('opening', () => {
       expect(notShown.textContent).not.toContain(t(conversion));
     },
   );
+
+  it('draws the report of each file opened in a row as new nodes, once: its notice, then each heading over its lines', async () => {
+    mounted(specBridge());
+    const t = inLocale('en-CA');
+
+    for (const file of readOnlyFiles) {
+      const gained = await reportGainsOver(() => receiveReadOnly(file));
+
+      expect(reportHeadings()).toEqual([
+        t('reports.converted'),
+        t('reports.opened'),
+      ]);
+      expect(textsIn(gained)).toEqual(
+        textsIn([screen.getByTestId('loss-report')]),
+      );
+    }
+  });
+
+  it('draws the report of the same file opened twice in a row as new nodes the second time too', async () => {
+    mounted(specBridge());
+    const [file] = readOnlyFiles;
+    await receiveReadOnly(file);
+    const region = screen.getByTestId('loss-report');
+    const standing = region.firstElementChild;
+
+    const gained = await reportGainsOver(async () => {
+      receive(vendoredFile(file.path));
+      await waitFor(() => {
+        expect(region.firstElementChild).not.toBe(standing);
+      });
+    });
+
+    expect(textsIn(gained)).toEqual(textsIn([region]));
+  });
+
+  it('keeps focus on Dismiss while the next file replaces the report over it', async () => {
+    mounted(specBridge());
+    const [first, second] = readOnlyFiles;
+    await receiveReadOnly(first);
+    const dismiss = screen.getByRole('button', {
+      name: inLocale('en-CA')('reports.dismiss-report'),
+    });
+    dismiss.focus();
+
+    await receiveReadOnly(second);
+
+    expect(document.activeElement).toBe(dismiss);
+  });
 
   it('opens a format Saerskriven writes under no new-model notice', async () => {
     const user = userEvent.setup();
@@ -795,7 +890,7 @@ describe('opening', () => {
     expect(reportEntries()).toEqual([]);
   });
 
-  it('leaves the report standing when the next open is refused, nothing having crossed', async () => {
+  it('leaves the report standing, saying none of it again, when the next open is refused, nothing having crossed', async () => {
     const user = userEvent.setup();
     mounted(
       specBridge({
@@ -807,15 +902,16 @@ describe('opening', () => {
       expect(reportEntries().length > 0).toBe(true);
     });
 
-    fireEvent.change(screen.getByTestId('file-input'), {
-      target: { files: [chosenFile('notes.txt', 'no threat model here')] },
+    const gained = await reportGainsOver(async () => {
+      receive(chosenFile('notes.txt', 'no threat model here'));
+      await waitFor(() => {
+        expect(screen.getByTestId('failure-notice').textContent).toContain(
+          'notes.txt',
+        );
+      });
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('failure-notice').textContent).toContain(
-        'notes.txt',
-      );
-    });
+    expect(textsIn(gained)).toEqual([]);
     expect(reportEntries().length > 0).toBe(true);
   });
 
@@ -1085,6 +1181,78 @@ describe('closing', () => {
     expect(item('New model')).toBeDefined();
   });
 });
+
+describe.each(unreadSessions)(
+  'over a stored session %s, with nothing edited',
+  (_how, problem) => {
+    it('asks before Open, keeps the session stored on Cancel, and opens once confirmed', async () => {
+      const user = userEvent.setup();
+      startUnread(problem);
+      const posted = vi.spyOn(BroadcastChannel.prototype, 'postMessage');
+      mounted(
+        specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }),
+      );
+
+      await choose(user, 'Open');
+
+      expect(item('Discard changes and open')).toBeDefined();
+      expect(modelStore.getState().file._tag).toBe('NoFile');
+
+      await user.click(item('Cancel'));
+
+      expect(heldInRecovery()).toBe(storedSession);
+      expect(posted).not.toHaveBeenCalled();
+
+      await choose(user, 'Open');
+      await user.click(item('Discard changes and open'));
+
+      await waitFor(() => {
+        expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
+      });
+      expect(heldInRecovery()).not.toBe(storedSession);
+    });
+
+    it('asks before New model, keeps the session stored on Cancel, and clears it once confirmed', async () => {
+      const user = userEvent.setup();
+      startUnread(problem);
+      const posted = vi.spyOn(BroadcastChannel.prototype, 'postMessage');
+      mounted(specBridge());
+
+      await choose(user, 'New model');
+
+      expect(item('Discard changes and create new model')).toBeDefined();
+
+      await user.click(item('Cancel'));
+
+      expect(heldInRecovery()).toBe(storedSession);
+      expect(posted).not.toHaveBeenCalled();
+
+      await choose(user, 'New model');
+      await user.click(item('Discard changes and create new model'));
+
+      expect(heldInRecovery()).toBeNull();
+      expect(modelStore.getState().recoveryUnread).toBe(false);
+    });
+
+    it('opens the menu on the question when a chord asks, and marks no unsaved changes on the button', async () => {
+      const user = userEvent.setup();
+      startUnread(problem);
+      mounted(specBridge());
+
+      expect(burger().getAttribute('aria-label')).toBe('Menu');
+
+      await user.keyboard('{Control>}O{/Control}');
+
+      expect(
+        await screen.findByRole('menuitem', {
+          name: 'Discard changes and open',
+        }),
+      ).toBeDefined();
+      expect(burger().getAttribute('aria-label')).toBe('Menu');
+      expect(state()).toContain('no unsaved changes');
+    });
+  },
+);
 
 describe.skipIf(brotliUnbuilt)('a shared link', () => {
   afterEach(() => {

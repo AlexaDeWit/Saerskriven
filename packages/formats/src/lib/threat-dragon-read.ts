@@ -331,6 +331,7 @@ function toThreat(entry: ThreatEntry): {
       status: status.value,
       description: threat.description,
       elements: [...entry.elements],
+      appliesToModel: false,
     },
     text: threat.mitigation,
     notes: [

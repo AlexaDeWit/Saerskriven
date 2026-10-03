@@ -53,6 +53,7 @@ const threat = (number: number): ModelInput['threats'][number] => ({
   status: 'open',
   description: '',
   elements: ['cell-1'],
+  appliesToModel: false,
 });
 
 const emptyDocument: ThreatDragonDocument = {
@@ -143,6 +144,84 @@ describe('placing the threats of a model under the cells that host them', () => 
       ['element-ledger', ['threat-split']],
       ['element-vault', ['threat-split']],
       ['element-clerk', ['threat-privacy']],
+    ]);
+  });
+});
+
+const onModel = (
+  fields: Partial<ModelInput['threats'][number]>,
+): ModelInput['threats'][number] => ({
+  ...threat(1),
+  appliesToModel: true,
+  ...fields,
+});
+
+const withNoPlace = (
+  code: 'threat-unplaceable' | 'threat-model-link-dropped',
+  id = 'threat-1',
+) =>
+  ({
+    subject: { kind: 'threat', id },
+    detail: { code },
+    reason: 'unrepresentable',
+  }) as const;
+
+describe('a threat that applies to the model', () => {
+  it('is not written where it names no element, and is reported once, as any threat on none is', () => {
+    const plan = planThreats(model([onModel({ elements: [] })], 1), undefined);
+    expect([...plan.byCell]).toEqual([]);
+    expect(plan.divergences).toEqual([withNoPlace('threat-unplaceable')]);
+  });
+
+  it('is written under its element as a threat without the link is, and the link is reported as having no place', () => {
+    const plan = planThreats(model([onModel({})], 1), undefined);
+    expect(plan.byCell).toEqual(
+      planThreats(model([threat(1)], 1), undefined).byCell,
+    );
+    expect([...plan.byCell.keys()]).toEqual(['cell-1']);
+    expect(plan.divergences).toEqual([
+      withNoPlace('threat-model-link-dropped'),
+    ]);
+  });
+
+  it('has the link reported once for the threat, beside the split, where two cells hold a copy', () => {
+    const onTwo = parsedFixture({
+      ...richerThanFormatFixture,
+      threats: [onModel({ elements: ['element-ledger', 'element-vault'] })],
+      mitigations: [],
+      assumptions: [],
+    });
+    const plan = planThreats(onTwo, undefined);
+    expect([...plan.byCell.keys()]).toEqual([
+      'element-ledger',
+      'element-vault',
+    ]);
+    expect(plan.divergences).toEqual([
+      withNoPlace('threat-model-link-dropped'),
+      {
+        subject: { kind: 'threat', id: 'threat-1' },
+        detail: {
+          code: 'threat-split-across-elements',
+          parameters: { count: 2 },
+        },
+        reason: 'split',
+      },
+    ]);
+  });
+
+  it('has the link reported once, and no split, by a merge onto a file that already nests the threat under both its cells', () => {
+    const read = threatDragonReading(JSON.stringify(complementFixture));
+    const marked = {
+      ...read.model,
+      threats: read.model.threats.map((held) =>
+        held.id === 'threat-linkability'
+          ? { ...held, appliesToModel: true }
+          : held,
+      ),
+    };
+    expect(planThreats(read.model, read.source).divergences).toEqual([]);
+    expect(planThreats(marked, read.source).divergences).toEqual([
+      withNoPlace('threat-model-link-dropped', 'threat-linkability'),
     ]);
   });
 });

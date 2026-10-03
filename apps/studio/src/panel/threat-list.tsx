@@ -26,6 +26,7 @@ import { elementById } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
+import { refusedFieldSelector } from '../ui/text-field.js';
 import { marked, markedWithin } from './marked.js';
 import {
   arrivingThreat,
@@ -74,7 +75,9 @@ type ListControls = {
  * the model, the drafts the overlay retains, and the control focus goes to
  * where no threat is left to take it: Add a threat on an element, which the
  * list draws on that ref, and the Threats tab on the model. The model's list
- * calls `onRequested` before it opens a threat asked for from outside it.
+ * calls `onRequested` before it opens a threat asked for from outside it, and
+ * before focus lands on the refused text a threat register choice closes
+ * onto.
  */
 export type ThreatListProps = {
   readonly element: Element | undefined;
@@ -418,9 +421,11 @@ function useRequestedThreats({
     if (!listsModel) {
       return undefined;
     }
+    const refuses = (threatId: ThreatId): boolean =>
+      held !== undefined && held.threatId !== threatId;
     return modelListHandler({
       open: ({ threatId, opened }) => {
-        if (held !== undefined && held.threatId !== threatId) {
+        if (refuses(threatId)) {
           return;
         }
         onRequested?.();
@@ -428,26 +433,42 @@ function useRequestedThreats({
         scroll.land(threatId);
         opened();
       },
-      focus: () => {
-        const summary = markedWithin(
-          list.current,
-          'threatItem',
-          expanded,
-        )?.querySelector<HTMLElement>(`.${styles.disclosure}`);
+      showTab: () => {
+        onRequested?.();
+      },
+      focus: (on) => {
+        const target =
+          (on === 'refusal'
+            ? list.current?.querySelector<HTMLElement>(refusedFieldSelector)
+            : undefined) ??
+          markedWithin(
+            list.current,
+            'threatItem',
+            expanded,
+          )?.querySelector<HTMLElement>(`.${styles.disclosure}`);
         if (
-          summary !== undefined &&
-          summary !== null &&
-          summary.closest('[hidden]') === null
+          target !== undefined &&
+          target !== null &&
+          target.closest('[hidden]') === null
         ) {
-          summary.focus();
+          target.focus();
         } else {
           home.current?.focus();
         }
       },
-      hidden: (threatId) =>
-        threatId === expanded &&
-        list.current !== null &&
-        getComputedStyle(list.current).visibility === 'hidden',
+      hidden: (threatId) => {
+        const drawn = list.current;
+        if (drawn === null || getComputedStyle(drawn).visibility !== 'hidden') {
+          return undefined;
+        }
+        if (
+          refuses(threatId) &&
+          drawn.querySelector(refusedFieldSelector) !== null
+        ) {
+          return 'refused';
+        }
+        return threatId === expanded ? 'opened' : undefined;
+      },
     });
   }, [expanded, held, home, list, listsModel, onRequested, scroll, show]);
 }

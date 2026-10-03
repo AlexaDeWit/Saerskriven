@@ -1052,6 +1052,7 @@ threats:
     status: mitigated
     description: "A threat modelling tool that ships executables is worth attacking through its build rather than through its parser. A moved action tag, a dependency resolved at install time, or an unpinned toolchain is enough. This threat names the build rather than any element on the diagrams above, and it names substitution alone: an upstream release that is hostile when it is published is threat 25."
     elements: []
+    appliesToModel: true
   - id: th-pdf-html
     number: 23
     title: Raw HTML in prose reaches Saerskriven's own PDF composition
@@ -1085,6 +1086,7 @@ threats:
     status: open
     description: A pin makes a dependency unable to change under the build. It does not make the dependency trustworthy at the moment it was pinned. An attacker who reaches a package or an action at its source publishes a release, Renovate proposes the bump like any other, and the pin then holds the compromised version steady.
     elements: []
+    appliesToModel: true
   - id: th-share-link
     number: 26
     title: A hostile share link escapes the bounds a file read keeps

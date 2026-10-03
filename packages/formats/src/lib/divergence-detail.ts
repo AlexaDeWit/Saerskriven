@@ -59,6 +59,7 @@ export const divergenceDetailSchema = z.discriminatedUnion('code', [
     kind: strayKindSchema.optional(),
   }),
   coded('threat-unplaceable'),
+  coded('threat-model-link-dropped'),
   carrying('threat-split-across-elements', { count: z.number() }),
   carrying('threat-category-unnamed', {
     methodology: z.string(),
@@ -151,6 +152,8 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
       return `the attachment to the ${detail.parameters.kind === undefined ? 'unknown' : kindNouns[detail.parameters.kind].noun} "${detail.parameters.element}", which the format nests a threat under an actor, a process, a store, or a flow alone`;
     case 'threat-unplaceable':
       return 'the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under';
+    case 'threat-model-link-dropped':
+      return 'the link to the whole model, which the format has nowhere to hold, so the threat is written under the cells it names alone';
     case 'threat-split-across-elements':
       return `the one record, written once under each of the ${detail.parameters.count} elements it names`;
     case 'threat-category-unnamed':

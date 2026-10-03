@@ -22,7 +22,7 @@ host provides.
 | `store.ts`             | The store, `dispatch`, `useModelStore` and the canvas-or-panel change subscription                                                        |
 | `selectors.ts`         | What views derive from the state                                                                                                          |
 | `selection.ts`         | `sameSelection`, the comparison the reducer uses to keep an unchanged selection's array identity                                          |
-| `recovery-storage.ts`  | The recovery snapshot                                                                                                                     |
+| `recovery-storage.ts`  | The recovery snapshot and the restore mark                                                                                                |
 | `sync.ts`              | The tab sync channel                                                                                                                      |
 | `development-model.ts` | The model a development session injects, read in development builds only                                                                  |
 | `../reason.ts`         | A thrown or rejected value as text, shared by the store, the file modules and the error boundary, so the store imports nothing from files |
@@ -71,8 +71,9 @@ host provides.
   the three, never on a clock.
 - `selectors.ts` derives what views show. `isDirty` is `present !== saved` by
   identity, so undoing back to the saved point clears it with no bookkeeping.
-  `holdsUnsavedWork` adds a recovery snapshot that could not be read at startup
-  to that, for a shared link, whose landing would overwrite it.
+  `holdsUnsavedWork` adds a recovery snapshot that startup could not read or
+  left unrestored to that, for Open, New model and a shared link, each of which
+  would overwrite or clear it.
   `modelAsOpened` is the present model while both stacks are empty, which is
   how the canvas tells a model that arrived from one that was edited
   ([the canvas](../canvas/README.md#the-view)). `windowTitle` names the browser
@@ -143,6 +144,29 @@ and records `StoredRecoveryRejected`. A snapshot that was rejected, or that
 storage would not hand over, also sets `recoveryUnread`, which stays set
 through a dismissal of the notice and a failed write and clears at the first
 recovery write that lands, since that write is what replaces the snapshot.
+
+The snapshot is written before the model it holds is drawn, so a start cannot
+assume the studio can draw what it restores. A start that restores a snapshot
+first raises the restore mark, a flag under `saerskriven:studio:restoring` in
+the tab's `sessionStorage`. A reload of the tab keeps it, a tab duplicated from
+this one starts with a copy of it, and any other tab starts without it.
+`useRestoreSettled` (`../app/restore-settled.ts`) lowers it once the studio's
+first draw has stood for two animation frames, and leaves it raised where the
+error boundary took over before then. A tab that is hidden as it first draws
+has no frames, so there the mark also comes down after one second. A tab that
+is shown waits on its frames alone, however long its first draw takes, and one
+hidden between its first draw and its second frame keeps the mark until it is
+shown again. A start that reads a snapshot and finds the mark raised takes it
+that the last start in this tab did not draw the session: the draw threw, never
+returned or ran the tab out of memory, or the tab was reloaded or closed before
+the mark came down. It does not restore: it lowers the mark, leaves the
+snapshot where it is, opens the placeholder, records `StoredRecoveryRejected`
+with the problem `RestoreUnfinished`, and sets `recoveryUnread`, as a start
+that could not read its snapshot does. The next reload finds the mark lowered
+and tries the restore again, which gives a tab that was only reloaded while it
+drew its session back. A start with no snapshot, or with one it could not read,
+never raises the mark, and neither does following another tab. Storage that
+throws reads as a lowered mark and skips a write.
 
 A successful write marks the state recoverable. A failed write records
 `RecoveryUnavailable` and leaves that mark false, and a later recoverable change

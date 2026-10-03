@@ -8,7 +8,6 @@ import {
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
-  expandThreat,
   featureCompleteFile,
   handleOn,
   menuButton,
@@ -18,14 +17,15 @@ import {
   openFallback,
   openMenu,
   openPlaceholder,
+  openShopperTakeover,
   openText,
   openTwoDiagrams,
   panelField,
   placeByClick,
   placeholder,
   savedFromMenu,
-  selectNode,
-  storefront,
+  tabTo,
+  twoDiagrams,
 } from './studio.fixtures.js';
 
 test('the studio page carries no axe-core accessibility violation', async ({
@@ -140,6 +140,19 @@ test('the studio carries no violation while it says what an edit did', async ({
 
   await audit(page, 'showing a removed element');
 });
+test('the studio carries no violation while it says a diagram step without drawing it', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+
+  await tabTo(page, diagramSwitcher(page), menuButton(page));
+  await page.keyboard.press(registeredChords['next-diagram'][0]);
+  await expect(page.getByRole('status')).toContainText(
+    twoDiagrams.second.title,
+  );
+
+  await audit(page, 'saying a diagram step without drawing it');
+});
 test('the studio carries no violation with the menu open', async ({ page }) => {
   await openFallback(page);
 
@@ -188,9 +201,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 test('the open Link existing listbox carries no violation with long record labels', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   await panelField(page, 'combobox', 'Existing mitigation').click();
   await expect(page.getByRole('listbox')).toBeVisible();
 

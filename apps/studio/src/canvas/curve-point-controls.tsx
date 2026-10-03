@@ -18,6 +18,7 @@ import {
   type HandlePointer,
 } from './handle-drag.js';
 import styles from './handles.module.css';
+import { itemMoved } from './move-message.js';
 import type { WaypointTarget } from './waypoints.js';
 
 type OpenActions = {
@@ -131,6 +132,7 @@ export function CurvePointControls({
     );
     if (moved !== undefined) {
       points.commit({ kind: 'move', index, point: moved });
+      itemMoved();
     } else if (
       pressesContextualShortcut('remove-curve-point', event, hostPlatform)
     ) {

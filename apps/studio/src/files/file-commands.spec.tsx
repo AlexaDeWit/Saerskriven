@@ -33,11 +33,15 @@ import {
   dismissal,
   edit,
   handleFor,
+  heldInRecovery,
   openPicker,
   recordDownloads,
   sampleNativeText,
   specBridge,
   specRenders,
+  startUnread,
+  storedSession,
+  unreadSessions,
   unreadableFile,
   vendoredFile,
 } from './files.fixtures.js';
@@ -1123,4 +1127,81 @@ describe('useFileSession', () => {
     });
     expect(result.current.opening).toBe(false);
   });
+
+  describe.each(unreadSessions)(
+    'over a stored session %s, with nothing edited',
+    (_how, problem) => {
+      it('holds an open until the question is answered, and Cancel leaves the session stored and tells no other tab', async () => {
+        startUnread(problem);
+        const posted = vi.spyOn(BroadcastChannel.prototype, 'postMessage');
+        const result = session(
+          specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }),
+        );
+
+        act(() => {
+          result.current.commands.open();
+        });
+
+        expect(result.current.opening).toBe(true);
+        expect(modelStore.getState().file._tag).toBe('NoFile');
+
+        act(() => {
+          result.current.cancelOpen();
+        });
+
+        expect(result.current.opening).toBe(false);
+        expect(heldInRecovery()).toBe(storedSession);
+        expect(posted).not.toHaveBeenCalled();
+
+        act(() => {
+          result.current.commands.open();
+        });
+        await act(async () => {
+          result.current.confirmOpen();
+          await Promise.resolve();
+        });
+
+        await waitFor(() => {
+          expect(modelStore.getState().file).toMatchObject({
+            _tag: 'Opened',
+            name: 'model.yaml',
+          });
+        });
+        expect(heldInRecovery()).not.toBe(storedSession);
+        expect(posted).toHaveBeenCalled();
+      });
+
+      it('holds New model until the question is answered, and Cancel leaves the session stored and tells no other tab', () => {
+        startUnread(problem);
+        const posted = vi.spyOn(BroadcastChannel.prototype, 'postMessage');
+        const bridge = specBridge();
+        const result = session(bridge);
+
+        act(() => {
+          result.current.commands.close();
+        });
+
+        expect(result.current.closing).toBe(true);
+        expect(bridge.releases.count).toBe(0);
+
+        act(() => {
+          result.current.cancelClose();
+        });
+
+        expect(result.current.closing).toBe(false);
+        expect(heldInRecovery()).toBe(storedSession);
+        expect(posted).not.toHaveBeenCalled();
+
+        act(() => {
+          result.current.commands.close();
+        });
+        act(() => {
+          result.current.confirmClose();
+        });
+
+        expect(heldInRecovery()).toBeNull();
+        expect(bridge.releases.count).toBe(1);
+      });
+    },
+  );
 });

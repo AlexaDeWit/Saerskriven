@@ -33,14 +33,17 @@ export function boxOfPoints(points: readonly Point[]): Box | undefined {
   if (points.length === 0) {
     return undefined;
   }
-  const xs = points.map((point) => point.x);
-  const ys = points.map((point) => point.y);
-  return {
-    minX: Math.min(...xs),
-    minY: Math.min(...ys),
-    maxX: Math.max(...xs),
-    maxY: Math.max(...ys),
-  };
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of points) {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+  return { minX, minY, maxX, maxY };
 }
 
 /** The straight runs between the given points, in the order they are given. */

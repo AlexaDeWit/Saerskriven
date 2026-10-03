@@ -49,6 +49,7 @@ import { CurvePointControls } from './curve-point-controls.js';
 import { useCurvePoints } from './curve-points.js';
 import { useFlowBends } from './flow-bends.js';
 import { FlowBendControls } from './flow-bend-controls.js';
+import { FocusPan } from './focus-pan.js';
 import { useGroupDrag } from './group-drag.js';
 import { selectToolOnItem } from './item-focus.js';
 import { NodeFold, useLiveEdges } from './live-edges.js';
@@ -425,6 +426,7 @@ export function DiagramCanvas({
         <FlowBendControls bends={bends} />
         <CurvePointControls points={points} />
         <FitOnOpen />
+        <FocusPan />
         <KeyboardMoveMessage ref={keyboardMove} />
         <ZoomCluster />
       </ReactFlow>

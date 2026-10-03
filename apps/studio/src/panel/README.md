@@ -110,13 +110,19 @@ it has opened the threat, which is when the register marks the row and the
 status says so. A list holding a refused draft on another threat refuses, as
 it refuses a collapse.
 
-A choice is committed (`flushSync`) and then asks the list whether it has that
-threat open where styles hide it (`hiddenInModelPanel`), which reads the
-panel's computed visibility. Under the register's media query it does, and the
-register closes by its own close, so focus lands as it does on Escape, and
-carries the choice to its next opening, which marks that row. The width
-stays in the stylesheet alone, and a refused choice opens nothing, so it
-closes nothing. Any other close forgets the carried choice.
+A choice is committed (`flushSync`) and then asks the list what it did with
+that threat where styles hide it (`hiddenInModelPanel`), which reads the
+panel's computed visibility, so the width stays in the stylesheet alone. Under
+the register's media query the list answers, and the register closes by its
+own close. On an opened threat focus lands as it does on Escape, and the
+choice is carried to the register's next opening, which marks that row. On a
+refused one the commit that closes the register shows the Threats tab, focus
+lands on the field holding the refused text, found by its `aria-invalid`
+(`focusModelPanel('refusal')`), and nothing is carried. The list answers a
+refusal only while such a field is drawn, so the register never closes onto a
+threat with no field to land on. Where both panes show the list answers
+nothing, and a refused choice opens and closes nothing. Any other close
+forgets the carried choice.
 
 The register keeps the order it opened in for the reason the list does, and
 with the same `useShownOrder`. The table's columns follow the exported
@@ -190,12 +196,12 @@ leaving the text commits it before Discard can be reached.
 
 Control names carry the kind and the row's position ("Mitigation 2 title",
 "Unlink mitigation 2", "Link existing mitigation"), and positions renumber when
-a row above is unlinked. The card's group name already says which record a
-control belongs to, so the drawn text is shorter and begins the name or is
-contained in it: Add, Link, Unlink and Discard, and the Title and Description
-placeholders of a record's fields, which draw no label. Link stays
-on the Tab path while no record is chosen (`aria-disabled`, with a description
-saying to choose one).
+a row above is unlinked. A group's heading and the name an open row draws
+already say what a control belongs to, so the drawn text is shorter and begins
+the name or is contained in it: Add, Link, Unlink and Discard, and the Title
+and Description placeholders of a record's fields, which draw no label. Link
+stays on the Tab path while no record is chosen (`aria-disabled`, with a
+description saying to choose one).
 
 A record's fold toggle draws the headline, the record's title or the first line
 of its text, while folded and the record's name while open. Its accessible name
@@ -203,6 +209,10 @@ is both in either state ("Mitigation 1, Rate limit logins",
 `fields.record-toggle`), or the record's name alone where it has no headline,
 so opening the record changes the toggle's expanded state and not what it is
 called.
+
+Each row is a group. A row that draws a toggle is a group with no name, so a
+screen reader says the record's name once, on the toggle. The empty row draws
+no toggle, and its group takes the record's name ("Mitigation 2").
 
 ## Attachments
 
@@ -212,11 +222,13 @@ no element first, since a file can be read with one and nothing else reaches
 them. The expanded threat attaches and detaches elements of its own. Both go
 through `AttachThreat` and `DetachThreat`, never through a `ReplaceThreat`
 carrying a shorter list: the model culls a threat on the detach that takes its
-last element, and a replacement naming no element does not.
+last element, unless the threat applies to the model, and a replacement naming
+no element does not.
 
 The list owns both dispatches because a detach can take the threat off the
 list, off the element whose panel it is or, with its last element, off the
-model, which leaves the group unmounted with nowhere to put focus. The model's
+model (a threat that applies to the model stays, on no element), which leaves
+the group unmounted with nowhere to put focus. The model's
 list keeps a threat a detach leaves on another element, and the threat's
 elements line follows. The group asks only for the next row when it survives. A
 detach that removes the threat says so in the shared status, as an unlinked

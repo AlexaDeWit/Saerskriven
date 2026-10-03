@@ -1,25 +1,19 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { edgesOf } from './canvas.fixtures.js';
 import {
-  expandThreat,
   focusedOption,
-  openTwoDiagrams,
+  openShopperTakeover,
   panelField,
   scrollPaneTo,
-  selectNode,
-  storefront,
+  scrollCue,
+  scrolledOffItsStart,
 } from './studio.fixtures.js';
-
-const scrollCue = (page: Page, edge: 'earlier' | 'later'): Locator =>
-  page.locator(`[data-scroll-cue="${edge}"]`);
 
 const labelOf = async (option: Locator): Promise<string> =>
   (await option.locator('[data-option-label]').textContent()) ?? '';
 
 const openNearTopEdge = async (page: Page): Promise<Locator> => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   const field = panelField(page, 'combobox', 'Category');
   expect(await scrollPaneTo(field, 'top')).toBe(true);
   return field;
@@ -40,13 +34,6 @@ const reachedItsEnd = async (page: Page): Promise<void> => {
   await expect(last(page)).toBeInViewport({ ratio: 1 });
   await expect(scrollCue(page, 'later')).toHaveCount(0);
   await expect(scrollCue(page, 'earlier')).toBeVisible();
-};
-
-const scrolledOffItsStart = async (page: Page): Promise<void> => {
-  await expect(async () => {
-    await page.keyboard.press('ArrowDown');
-    await expect(scrollCue(page, 'earlier')).toBeVisible({ timeout: 100 });
-  }).toPass({ intervals: [0], timeout: 5_000 });
 };
 
 test(

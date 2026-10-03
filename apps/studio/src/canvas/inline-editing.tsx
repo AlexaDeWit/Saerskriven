@@ -57,6 +57,7 @@ import {
   stopInlineEditing,
 } from './edits.js';
 import { NodeFold } from './live-edges.js';
+import { itemMoved } from './move-message.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
 import {
@@ -292,6 +293,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
           } else {
             resizeNode(node, box);
           }
+          itemMoved();
         }}
         resizeLabels={resizeLabels(node, t)}
         resizing={resizing}

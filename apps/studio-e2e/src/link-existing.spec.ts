@@ -2,12 +2,11 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   expandThreat,
   focusedOption,
-  openTwoDiagrams,
+  openShopperTakeover,
   panelControl,
   panelField,
   runFromMenu,
   selectByKeyboard,
-  selectNode,
   storefront,
   threatPanel,
 } from './studio.fixtures.js';
@@ -30,15 +29,11 @@ const offered = {
   },
 } as const;
 
-const linkedRow = (page: Page): Locator =>
-  threatPanel(page)
-    .getByRole('group', { name: 'Mitigation 2', exact: true })
-    .locator('[data-record-toggle]');
+const linkedToggle = (page: Page): Locator =>
+  threatPanel(page).getByRole('button', { name: /^Mitigation 2(?:,|$)/u });
 
 const openPicker = async (page: Page) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   const trigger = panelField(page, 'combobox', 'Existing mitigation');
   await trigger.scrollIntoViewIfNeeded();
   await expect(trigger).toBeInViewport({ ratio: 1 });
@@ -50,7 +45,7 @@ test(
   { tag: '@phone' },
   async ({ page }) => {
     const trigger = await openPicker(page);
-    const linked = linkedRow(page);
+    const linked = linkedToggle(page);
 
     for (const [place, { name, toggle }] of Object.entries(offered)) {
       await test.step(place, async () => {
@@ -86,7 +81,7 @@ test('the keyboard links the last mitigation offered', async ({ page }) => {
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
 
-  const linked = linkedRow(page);
+  const linked = linkedToggle(page);
   await expect(linked).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(
@@ -119,9 +114,7 @@ test('two mitigations whose first lines match past the cut stay told apart in th
 }) => {
   const shared =
     'Callers forward a bearer token that the proxy holds in memory for the life of the request, and the proxy never writes it to a log, a span or a cache.';
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   for (const row of [2, 3]) {
     await panelControl(page, 'Add mitigation').click();
     await page.keyboard.insertText(shared);

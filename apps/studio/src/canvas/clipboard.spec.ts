@@ -121,6 +121,22 @@ async function announcedBy(run: () => Promise<void>): Promise<string> {
   return after.message;
 }
 
+async function excludedCopying(
+  appliesToModel: boolean,
+): Promise<number | undefined> {
+  modelStore.setState(
+    {
+      ...initialState({
+        ...sampleModel,
+        threats: [{ ...sampleThreat, appliesToModel }],
+      }),
+      selection: [actorElement],
+    },
+    true,
+  );
+  return numbersIn(await announcedBy(() => copySelected())).at(-1);
+}
+
 beforeEach(() => {
   openCanvas([actorElement]);
 });
@@ -198,6 +214,12 @@ describe('copySelected', () => {
     const fromNative = await announcedBy(() => copySelected());
     expect(numbersIn(fromNative)).toEqual(numbersIn(fromThreatDragon));
     expect(fromNative).not.toBe(fromThreatDragon);
+  });
+
+  it('counts the model link a copied threat leaves behind among the excluded links', async () => {
+    recordingClipboard();
+    expect(await excludedCopying(false)).toBe(0);
+    expect(await excludedCopying(true)).toBe(1);
   });
 
   it('does not cut a selection that changes while clipboard writing is pending', async () => {

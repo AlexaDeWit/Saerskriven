@@ -215,6 +215,7 @@ const threatSchema = z.object({
   status: threatStatusSchema,
   description: z.string(),
   elements: z.array(idSchema),
+  appliesToModel: z.boolean().optional(),
 });
 
 const mitigationSchema = z.object({

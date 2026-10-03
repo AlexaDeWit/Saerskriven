@@ -14,9 +14,11 @@ import {
   expandThreat,
   nodeNamed,
   offeredToLink,
+  openShopperTakeover,
   openTwoDiagrams,
   panelControl,
   panelField,
+  recordRow,
   runFromMenu,
   scrollPaneTo,
   selectByKeyboard,
@@ -67,10 +69,7 @@ test(
 
     const reservation = panelControl(page, 'Mitigation 1, Reservation expiry');
     await expect(reservation).toHaveAttribute('aria-expanded', 'false');
-    const record = threatPanel(page).getByRole('group', {
-      name: 'Mitigation 1',
-      exact: true,
-    });
+    const record = recordRow(page, 'Mitigation 1, Reservation expiry');
     await expect(record.locator('p')).toContainText('1');
     await chooseInPanel(page, 'Mitigation 1 status', 'Implemented');
     await expect(reservation).toHaveAttribute('aria-expanded', 'false');
@@ -96,9 +95,7 @@ test('a folded record with a long headline leaves its status whole, as tall as a
   await expandThreat(page, storefront.basketPrice);
 
   const statuses = [1, 2].map((number) =>
-    threatPanel(page)
-      .getByRole('group', { name: `Mitigation ${String(number)}`, exact: true })
-      .getByRole('combobox'),
+    panelField(page, 'combobox', `Mitigation ${String(number)} status`),
   );
   await expect(statuses[0]).toBeVisible();
   const heights = await Promise.all(
@@ -111,17 +108,15 @@ test('a folded record with a long headline leaves its status whole, as tall as a
 test('a kept record keeps its toggle, Added mark, status and Unlink on one name row at the default pane width', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Strip caller tokens at the edge');
   await page.keyboard.press('Enter');
 
-  const record = threatPanel(page).getByRole('group', {
-    name: 'Mitigation 2',
-    exact: true,
-  });
+  const record = recordRow(
+    page,
+    'Mitigation 2, Strip caller tokens at the edge',
+  );
   await expect(record.locator('[data-added]')).toBeVisible();
   const toggle = await screenBoxOf(record.locator('[data-record-toggle]'));
   const added = await screenBoxOf(record.locator('[data-added]'));
@@ -183,9 +178,7 @@ test(
 test('Tab out of a new record keeps it and reaches Add, and undoing the record from its status keeps focus in its group', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
 
   await panelControl(page, 'Add assumption').click();
   await page.keyboard.type('Callers rotate their tokens.');
@@ -204,9 +197,7 @@ test('Tab out of a new record keeps it and reaches Add, and undoing the record f
 test('a click on Add right after typing in a new row keeps the record and opens the next row', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
 
   const add = panelControl(page, 'Add mitigation');
   await add.click();
@@ -222,9 +213,7 @@ test('a click on Add right after typing in a new row keeps the record and opens 
 test('Shift+Tab from Existing reaches Add after a new row became a record', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Bound every upstream response');
   await page.keyboard.press('Tab');
@@ -247,9 +236,7 @@ test(
   'Discard on a new row with typed text leaves no record and nothing to undo',
   { tag: '@phone' },
   async ({ page, isMobile }) => {
-    await openTwoDiagrams(page);
-    await selectNode(page, storefront.shopper);
-    await expandThreat(page, storefront.takeover);
+    await openShopperTakeover(page);
 
     const add = panelControl(page, 'Add mitigation');
     await add.click();
@@ -268,9 +255,7 @@ test(
 test('leaving the empty row leaves no record and nothing to undo', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
 
   const add = panelControl(page, 'Add assumption');
   await add.click();
@@ -286,9 +271,7 @@ test('leaving the empty row leaves no record and nothing to undo', async ({
 test('a linked record names the other threats that hold it by number, and unlinking culls it only from its last threat', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
 
   const bound = 'Bound every upstream response';
   await panelControl(page, 'Add mitigation').click();
@@ -344,9 +327,7 @@ test(
   'unlinking a record with a long first line announces a bounded name, and the pane header stays usable under it',
   { tag: '@phone' },
   async ({ page }) => {
-    await openTwoDiagrams(page);
-    await selectNode(page, storefront.shopper);
-    await expandThreat(page, storefront.takeover);
+    await openShopperTakeover(page);
     await panelControl(page, 'Add mitigation').click();
     await page.keyboard.insertText(
       'The shop signs every basket token with a key that it rotates each day, and it refuses a basket whose token was signed with a key it has retired.',
@@ -377,9 +358,7 @@ test(
   'the pane and its record fields stay where they are when an unlink is announced and when the next keystroke clears it',
   { tag: '@phone' },
   async ({ page }) => {
-    await openTwoDiagrams(page);
-    await selectNode(page, storefront.shopper);
-    await expandThreat(page, storefront.takeover);
+    await openShopperTakeover(page);
     await panelControl(page, 'Add mitigation').click();
     await page.keyboard.type('Strip caller tokens at the edge');
     await page.keyboard.press('Tab');
@@ -426,9 +405,7 @@ test(
   'an unlink keeps the pane scrolled where it was while the next Unlink is on screen',
   { tag: '@phone' },
   async ({ page }) => {
-    await openTwoDiagrams(page);
-    await selectNode(page, storefront.shopper);
-    await expandThreat(page, storefront.takeover);
+    await openShopperTakeover(page);
     await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
     await addRecord(
       page,
@@ -457,9 +434,7 @@ test(
   "an unlink at the pane's lower edge puts the next record's Unlink in its place, scrolling nothing",
   { tag: '@phone' },
   async ({ page }) => {
-    await openTwoDiagrams(page);
-    await selectNode(page, storefront.shopper);
-    await expandThreat(page, storefront.takeover);
+    await openShopperTakeover(page);
     await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
     await addRecord(
       page,

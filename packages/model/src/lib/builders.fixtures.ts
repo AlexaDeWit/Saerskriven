@@ -86,7 +86,7 @@ export const curveBoundary = (
 
 /**
  * A threat under `threat-<number>`: an open, medium STRIDE tampering threat
- * on no element unless the fields say otherwise.
+ * on no element and with no model link unless the fields say otherwise.
  */
 export const threatOf = (
   fields: { readonly number: number } & Partial<ThreatInput>,
@@ -99,6 +99,7 @@ export const threatOf = (
     status: 'open',
     description: '',
     elements: [],
+    appliesToModel: false,
     ...fields,
   });
 

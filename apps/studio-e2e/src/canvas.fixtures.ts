@@ -153,13 +153,15 @@ export const onScreen = async (target: Locator): Promise<void> => {
 const ringReach = 16;
 
 /**
- * The share of `target`'s outline along which a focus ring comes on screen
- * when `focus` moves keyboard focus there from `away`. Two screenshots are
- * read in CSS pixels, one with focus on `away` and one after `focus`: at each
- * pixel along each side of `target`, whether a pixel up to 16 pixels across
- * that side, short of its middle, changed between them. Anything drawn over
- * the ring leaves its pixels as they were, and so does a part of it off the
- * viewport.
+ * The share of `target`'s outline along which a focus ring is on screen once
+ * `focus` has moved keyboard focus there and the view has come to rest, which
+ * is where a pan to the target leaves it. Two screenshots are read in CSS
+ * pixels, one with focus on `target` and one after it has gone to `away`: at
+ * each pixel along each side of `target`, whether a pixel up to 16 pixels
+ * across that side, short of its middle, differs between them. Anything drawn
+ * over the ring leaves its pixels as they were, and so does a part of it off
+ * the viewport. The view is held to stay where it rested from the first
+ * screenshot to the second. Focus is left on `away`.
  */
 export const focusRingShown = async (
   target: Locator,
@@ -167,6 +169,10 @@ export const focusRingShown = async (
   focus: () => Promise<void>,
 ): Promise<number> => {
   const page = target.page();
+  await focus();
+  await expect(target).toBeFocused();
+  await canvasSettled(page);
+  const rested = await viewportTransform(page);
   const shown = await screenBoxOf(target);
   const clip = {
     x: Math.max(Math.floor(shown.x) - ringReach, 0),
@@ -174,11 +180,13 @@ export const focusRingShown = async (
     width: Math.ceil(shown.width) + 2 * ringReach,
     height: Math.ceil(shown.height) + 2 * ringReach,
   };
+  const after = await page.screenshot({ clip, scale: 'css' });
   await away.focus();
   const before = await page.screenshot({ clip, scale: 'css' });
-  await focus();
-  await expect(target).toBeFocused();
-  const after = await page.screenshot({ clip, scale: 'css' });
+  expect(
+    await viewportTransform(page),
+    'the view moved while the ring was measured',
+  ).toBe(rested);
   return page.evaluate(
     async ({ images, origin, box, across }) => {
       const [from, to] = await Promise.all(

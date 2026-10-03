@@ -7,10 +7,15 @@ import { developmentModel } from './development-model.js';
 import { reduce } from './reducer.js';
 import {
   browserRecoveryStorage,
+  browserRestoreMark,
+  inertRestoreMark,
+  RecoveryProblem,
   RecoveryStorageFailure,
   recoverySnapshot,
   restoredState,
+  type RecoverySnapshot,
   type RecoveryStorage,
+  type RestoreMark,
 } from './recovery-storage.js';
 import {
   StudioFailure,
@@ -30,14 +35,19 @@ type ModelStoreRuntime = {
 /**
  * Creates a store that restores and replaces one recovery snapshot and
  * publishes every changed result to the other tabs. A followed result is
- * theirs already, so following neither writes nor publishes.
+ * theirs already, so following neither writes nor publishes. A start that
+ * restores raises `mark`, and one that finds it raised opens `fallback` and
+ * leaves the snapshot alone.
  */
 export function createModelStore(
   storage: RecoveryStorage,
   sync: StoreSync,
   fallback = placeholderModel,
+  mark = inertRestoreMark,
 ): ModelStoreRuntime {
-  const modelStore = createStore<State>(() => startState(storage, fallback));
+  const modelStore = createStore<State>(() =>
+    startState(storage, fallback, mark),
+  );
 
   const dispatch = (
     action: Action,
@@ -73,6 +83,7 @@ const runtime = createModelStore(
   browserRecoveryStorage,
   browserStoreSync,
   developmentModel() ?? placeholderModel,
+  browserRestoreMark,
 );
 
 /** The studio's one vanilla model store. */
@@ -111,20 +122,42 @@ export function useModelStore<Selected>(
   return useStore(modelStore, select);
 }
 
-function startState(storage: RecoveryStorage, fallback: Model): State {
+function startState(
+  storage: RecoveryStorage,
+  fallback: Model,
+  mark: RestoreMark,
+): State {
   return storage.load().pipe(
     Either.match({
-      onLeft: (failure) => ({
-        ...initialState(fallback),
-        lastFailure: startupFailure(failure),
-        recoveryUnread: true,
-      }),
+      onLeft: (failure) => unreadStart(fallback, startupFailure(failure)),
       onRight: (snapshot) =>
         snapshot === undefined
           ? initialState(fallback)
-          : restoredState(snapshot),
+          : restoreStart(snapshot, fallback, mark),
     }),
   );
+}
+
+function restoreStart(
+  snapshot: RecoverySnapshot,
+  fallback: Model,
+  mark: RestoreMark,
+): State {
+  if (mark.raised()) {
+    mark.lower();
+    return unreadStart(
+      fallback,
+      StudioFailure.StoredRecoveryRejected({
+        problem: RecoveryProblem.RestoreUnfinished(),
+      }),
+    );
+  }
+  mark.raise();
+  return restoredState(snapshot);
+}
+
+function unreadStart(fallback: Model, lastFailure: StudioFailure): State {
+  return { ...initialState(fallback), lastFailure, recoveryUnread: true };
 }
 
 function settled(

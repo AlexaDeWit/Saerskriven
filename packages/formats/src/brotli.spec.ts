@@ -1,4 +1,5 @@
 import { committedText } from '@saerskriven/model/fixtures';
+import { called, instantiated, mostUnsigned } from '@saerskriven/wasm';
 import { moduleWhoseEveryCall, trapping } from '@saerskriven/wasm/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
@@ -260,5 +261,21 @@ describe.skipIf(brotliUnbuilt)('a stream the decoder refuses', () => {
     expect(
       refusalOf(await decompressBrotli(stream, brotliWasm(), model.length)),
     ).toEqual(BrotliFailure.Malformed());
+  });
+});
+
+describe.skipIf(brotliUnbuilt)('one instance called more than once', () => {
+  it('answers no output after a call that trapped, where an earlier call wrote one', async () => {
+    const module = Either.getOrThrow(
+      await instantiated(
+        brotliWasm(),
+        ['compress'],
+        'the module exports no brotli codec',
+      ),
+    );
+    Either.getOrThrow(called(module, model, () => module.compress()));
+    expect(module.output_length()).toBeGreaterThan(0);
+    expect(() => module.input(mostUnsigned)).toThrow(WebAssembly.RuntimeError);
+    expect(module.output_length()).toBe(0);
   });
 });

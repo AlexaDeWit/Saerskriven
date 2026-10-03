@@ -37,6 +37,7 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
     'dess koppling till förtroendegränsen ”{name}”',
   'threat-attachment-stray-unknown':
     'dess koppling till ett element som saknas',
+  'threat-model-link-dropped': 'dess koppling till hela modellen',
   'threat-category-unnamed':
     'dess kategori, en egen kategori när filen öppnas igen',
   'mitigation-records-merged': {

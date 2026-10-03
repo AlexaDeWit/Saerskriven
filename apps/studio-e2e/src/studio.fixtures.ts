@@ -26,6 +26,22 @@ export const refusedYaml = ['formatVersion: 1', 'diagrams: none'].join('\n');
 export const recoverySnapshot = (page: Page): Promise<string | null> =>
   page.evaluate((key) => localStorage.getItem(key), recoveryStorageKey);
 
+/**
+ * Stores `snapshot` as the recovery snapshot before every start of the studio
+ * in `page`, as an earlier session would have left it.
+ */
+export const withRecoverySnapshot = async (
+  page: Page,
+  snapshot: string,
+): Promise<void> => {
+  await page.addInitScript(
+    ({ key, stored }) => {
+      localStorage.setItem(key, stored);
+    },
+    { key: recoveryStorageKey, stored: snapshot },
+  );
+};
+
 /** What the placeholder model draws, by the names assistive technology has for them. */
 export const placeholder = {
   actor: /^Actor, actor/u,
@@ -33,7 +49,7 @@ export const placeholder = {
   records: /^Records, flow/u,
 } as const;
 
-/** Elements of the two-diagram model's storefront diagram by accessible name, and threats on them by title. */
+/** Elements of the two-diagram model's storefront diagram by accessible name, and threats by title: those on them, and `refundAbuse` on no element. */
 export const storefront = {
   shopper: /^Shopper, actor/u,
   webShop: /^Web shop, process/u,
@@ -43,6 +59,7 @@ export const storefront = {
   takeover: /Account takeover/u,
   basketPrice: /Basket price changed/u,
   orderDenied: /Shopper denies placing an order/u,
+  refundAbuse: /Refund policy abused/u,
 } as const;
 
 /** What the two-diagram model's diagrams are called, and an element drawn on each. */
@@ -512,6 +529,16 @@ export const panelField = (
 export const panelControl = (page: Page, name: string): Locator =>
   threatPanel(page).getByRole('button', { name, exact: true });
 
+/**
+ * The row of the panel's record whose toggle is named `toggle`: the group
+ * with no name of its own that holds that toggle. A row that draws no toggle
+ * is found by its group name instead.
+ */
+export const recordRow = (page: Page, toggle: string): Locator =>
+  threatPanel(page)
+    .getByRole('group', { name: /^$/u })
+    .filter({ has: page.getByRole('button', { name: toggle, exact: true }) });
+
 /** Closes the threat panel by keyboard from its Close threats button, leaving the pointer where it was, and waits for it to go. */
 export const closeThreats = async (page: Page): Promise<void> => {
   await panelControl(page, 'Close threats').focus();
@@ -555,6 +582,13 @@ export const expandThreat = async (
   const summary = threatSummary(page, title);
   await summary.click();
   await expect(summary).toHaveAttribute('aria-expanded', 'true');
+};
+
+/** Opens the two-diagram model with the shopper selected and its takeover threat expanded. */
+export const openShopperTakeover = async (page: Page): Promise<void> => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
 };
 
 /** Adds a record through the panel's Add control, typing its first field and, when given, a mitigation's description, each left by Tab. */
@@ -611,6 +645,18 @@ export const offeredToLink = async (
 /** Follows real listbox focus because Radix marks aria-selected only for an already selected focused option. */
 export const focusedOption = (page: Page): Locator =>
   page.locator('[role="option"]:focus');
+
+/** The cue a listbox draws at an edge its options run on past. */
+export const scrollCue = (page: Page, edge: 'earlier' | 'later'): Locator =>
+  page.locator(`[data-scroll-cue="${edge}"]`);
+
+/** Presses ArrowDown until the listbox has scrolled off its start and shows its "earlier" cue. */
+export const scrolledOffItsStart = async (page: Page): Promise<void> => {
+  await expect(async () => {
+    await page.keyboard.press('ArrowDown');
+    await expect(scrollCue(page, 'earlier')).toBeVisible({ timeout: 100 });
+  }).toPass({ intervals: [0], timeout: 5_000 });
+};
 
 /** Retries arrow navigation until focus moves, accounting for Radix restoring focus after popup positioning. */
 export const stepThroughOptions = async (

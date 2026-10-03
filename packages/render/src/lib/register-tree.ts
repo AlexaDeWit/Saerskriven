@@ -127,7 +127,9 @@ type SectionContext = Wording & {
  * lists the threat's fields and flags, its prose, then its mitigations and
  * assumptions in model order, each led by its status. A record linked to
  * several threats appears under each, and a record linked to none appears
- * nowhere unless it is an assumption that applies to the model.
+ * nowhere unless it is an assumption that applies to the model. A threat that
+ * applies to the model names the whole model ahead of its elements, in the
+ * overview and in its section.
  *
  * Prose is parsed as Markdown and spliced in as nodes, its headings demoted
  * below the section's and its raw HTML kept as written. Prose nested past
@@ -449,9 +451,15 @@ function isParent(node: Nodes): node is Parents {
 }
 
 function elementNames(threat: Threat, context: SectionContext): string {
-  return threat.elements.length === 0
+  const names = [
+    ...(threat.appliesToModel
+      ? [context.messages.t('register.whole-model')]
+      : []),
+    ...threat.elements.map((id) => elementName(id, context)),
+  ];
+  return names.length === 0
     ? context.messages.t('register.none')
-    : threat.elements.map((id) => elementName(id, context)).join(', ');
+    : names.join(', ');
 }
 
 function elementName(
