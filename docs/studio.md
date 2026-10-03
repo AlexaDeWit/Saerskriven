@@ -103,8 +103,11 @@ The card's second row holds Select, Actor, Process, Store, Trust boundary,
 Trust boundary curve, Note and Hand. A tooltip names each tool's shortcuts.
 
 - A click with an element tool places its default size under the pointer, and
-  a drag draws the box between opposite corners. A process takes the shorter
-  axis of the drag. A drag under four screen pixels places the default.
+  a drag draws the box between opposite corners. A drag under four screen
+  pixels places the default.
+- A process draws an ellipse filling its box, a circle when the box is square.
+  Its name wraps to the width of the rectangle inside the ellipse, so a wider
+  process takes more of its name on each line.
 - Enter places the default at the centre of the view.
 - A placed element arrives selected with a placeholder name ("New actor", "New
   flow"), and its name field opens where it fits. A Note opens its text.

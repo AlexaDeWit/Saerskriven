@@ -2,52 +2,59 @@ import type { Size } from '@saerskriven/model';
 import { badgeBox, placedBadgeAnchor } from './badges.js';
 import {
   boxesOverlap,
-  boxMeetsCircle,
+  boxMeetsEllipse,
   segmentMeetsBox,
   segmentsOfBox,
   segmentsOfPolyline,
   shiftedBy,
   type Box,
-  type Circle,
+  type Ellipse,
   type Segment,
 } from './geometry.js';
-import { nodeBox } from './handles.js';
+import { nodeBox, type NodeBox } from './handles.js';
 import type { CanvasNode } from './layout.js';
 import { memoizedByIdentity } from './memoized.js';
 import { controlPolygon } from './paths.js';
 import { flowLabelClearance } from './typography.js';
 
-/** What a label is held clear of: boxes, circles and straight runs of line. */
+/** What a label is held clear of: boxes, ellipses and straight runs of line. */
 export type Solids = {
   readonly boxes: Box[];
-  readonly circles: readonly Circle[];
+  readonly ellipses: readonly Ellipse[];
   readonly lines: readonly Segment[];
 };
 
 /**
- * The circle a process's glyph draws, in the node's own coordinates, which is
- * also the shape label placement charges a label for.
+ * The ellipse a process's glyph draws, filling its box in the node's own
+ * coordinates, which is also the shape label placement charges a label for.
  */
-export function processCircle(size: Size): Circle {
+export function processEllipse(size: Size): Ellipse {
   return {
     centre: { x: size.width / 2, y: size.height / 2 },
-    radius: Math.min(size.width, size.height) / 2,
+    radiusX: size.width / 2,
+    radiusY: size.height / 2,
   };
+}
+
+/** {@link processEllipse} in diagram coordinates, for a placed process. */
+export function placedProcessEllipse(box: NodeBox): Ellipse {
+  const ellipse = processEllipse(box.size);
+  return { ...ellipse, centre: shiftedBy(ellipse.centre, box.position) };
 }
 
 /**
  * The shape a node's glyph draws, in diagram coordinates: a trust boundary's
  * outline as lines, since a label inside one is where it belongs, a process's
- * circle, and every other kind's box.
+ * ellipse, and every other kind's box.
  */
 export const nodeOutline = memoizedByIdentity((node: CanvasNode): Solids => {
   if (node.kind === 'boundary-box') {
-    return { boxes: [], circles: [], lines: segmentsOfBox(nodeBox(node)) };
+    return { boxes: [], ellipses: [], lines: segmentsOfBox(nodeBox(node)) };
   }
   if (node.kind === 'boundary-curve') {
     return {
       boxes: [],
-      circles: [],
+      ellipses: [],
       lines: segmentsOfPolyline(
         controlPolygon(node.waypoints).map((point) =>
           shiftedBy(point, node.position),
@@ -56,9 +63,9 @@ export const nodeOutline = memoizedByIdentity((node: CanvasNode): Solids => {
     };
   }
   if (node.kind === 'process') {
-    return { boxes: [], circles: [placedCircle(node)], lines: [] };
+    return { boxes: [], ellipses: [placedProcessEllipse(node)], lines: [] };
   }
-  return { boxes: [nodeBox(node)], circles: [], lines: [] };
+  return { boxes: [nodeBox(node)], ellipses: [], lines: [] };
 });
 
 /** The box of a node's badge in diagram coordinates, or none. */
@@ -76,7 +83,7 @@ export function elementSolids(nodes: readonly CanvasNode[]): Solids {
       ...outlines.flatMap((outline) => outline.boxes),
       ...nodes.flatMap(ownBadgeBox),
     ],
-    circles: outlines.flatMap((outline) => outline.circles),
+    ellipses: outlines.flatMap((outline) => outline.ellipses),
     lines: [],
   };
 }
@@ -100,8 +107,8 @@ export function boxCollisions(
       return collisions;
     }
   }
-  for (const circle of solids.circles) {
-    collisions += boxMeetsCircle(box, circle) ? 1 : 0;
+  for (const ellipse of solids.ellipses) {
+    collisions += boxMeetsEllipse(box, ellipse) ? 1 : 0;
     if (collisions >= stopAt) {
       return collisions;
     }
@@ -122,13 +129,5 @@ export function grownByClearance(box: Box): Box {
     minY: box.minY - flowLabelClearance,
     maxX: box.maxX + flowLabelClearance,
     maxY: box.maxY + flowLabelClearance,
-  };
-}
-
-function placedCircle(node: CanvasNode): Circle {
-  const circle = processCircle(node.size);
-  return {
-    centre: shiftedBy(circle.centre, node.position),
-    radius: circle.radius,
   };
 }

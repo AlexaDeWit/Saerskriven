@@ -44,21 +44,14 @@ const boxTools = [
 ] as const;
 
 const previewedBoxTools = [
-  ['Actor', /^New actor, actor/u, `.${canvasClassNames.actor}`, 1, false],
-  [
-    'Process',
-    /^New process, process/u,
-    `.${canvasClassNames.process}`,
-    1,
-    true,
-  ],
-  ['Store', /^New store, store/u, `.${canvasClassNames.store}`, 2, false],
+  ['Actor', /^New actor, actor/u, `.${canvasClassNames.actor}`, 1],
+  ['Process', /^New process, process/u, `.${canvasClassNames.process}`, 1],
+  ['Store', /^New store, store/u, `.${canvasClassNames.store}`, 2],
   [
     'Trust boundary',
     /^New trust boundary, trust boundary/u,
     `.${canvasClassNames.boundaryBox}`,
     1,
-    false,
   ],
 ] as const;
 
@@ -280,7 +273,7 @@ test('a flow is drawn by keyboard alone, from the selected element', async ({
   await expect(editAnnouncement(page)).toBeEmpty();
 });
 
-for (const [tool, named, shape, shapeCount, square] of previewedBoxTools) {
+for (const [tool, named, shape, shapeCount] of previewedBoxTools) {
   test(`the ${tool} drag previews and commits its geometry`, async ({
     page,
   }) => {
@@ -299,7 +292,7 @@ for (const [tool, named, shape, shapeCount, square] of previewedBoxTools) {
     const drawn = await inkBoxOf(draft.locator(shape));
     expect(drawn.x).toBeCloseTo(from.x, 0);
     expect(drawn.y).toBeCloseTo(from.y, 0);
-    expect(drawn.width).toBeCloseTo(square ? 80 : 160, 0);
+    expect(drawn.width).toBeCloseTo(160, 0);
     expect(drawn.height).toBeCloseTo(80, 0);
     await page.mouse.up();
 

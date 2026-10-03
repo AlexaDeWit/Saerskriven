@@ -36,6 +36,7 @@ describe('placement geometry', () => {
 
   it.each([
     ['actor', { x: 21, y: 31 }, { width: 158, height: 58 }],
+    ['process', { x: 21, y: 31 }, { width: 158, height: 58 }],
     ['store', { x: 20, y: 31.25 }, { width: 160, height: 57.5 }],
     ['boundary-box', { x: 21, y: 31 }, { width: 158, height: 58 }],
   ] as const)(
@@ -47,45 +48,14 @@ describe('placement geometry', () => {
         position,
         size,
       });
+      expect(
+        draggedPlacement(kind, { x: 20, y: 90 }, { x: 180, y: 30 }),
+      ).toEqual({
+        position,
+        size,
+      });
     },
   );
-
-  it('takes the shorter side for a process', () => {
-    expect(
-      draggedPlacement('process', { x: 100, y: 100 }, { x: 20, y: 40 }),
-    ).toEqual({
-      position: { x: 41, y: 41 },
-      size: { width: 58, height: 58 },
-    });
-  });
-
-  it.each([
-    [
-      { x: 180, y: 160 },
-      { x: 120, y: 100 },
-      { x: 121, y: 101 },
-    ],
-    [
-      { x: 100, y: 160 },
-      { x: 160, y: 100 },
-      { x: 101, y: 101 },
-    ],
-    [
-      { x: 180, y: 100 },
-      { x: 120, y: 160 },
-      { x: 121, y: 101 },
-    ],
-    [
-      { x: 100, y: 100 },
-      { x: 160, y: 160 },
-      { x: 101, y: 101 },
-    ],
-  ])('anchors a process in every drag direction', (from, to, position) => {
-    expect(draggedPlacement('process', from, to)).toEqual({
-      position,
-      size: { width: 58, height: 58 },
-    });
-  });
 
   it('keeps a long, thin drag as its pointer rectangle', () => {
     expect(draggedPlacement('store', { x: 0, y: 0 }, { x: 50, y: 0 })).toEqual({

@@ -1,9 +1,18 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
-import { canvasContainer, halfwayAlong, lineOf } from './canvas.fixtures.js';
 import {
+  canvasContainer,
+  dragBy,
+  halfwayAlong,
+  lineOf,
+  screenBoxOf,
+  type Box,
+} from './canvas.fixtures.js';
+import {
+  nameField,
   nodeNamed,
   openPlaceholder,
+  placeByClick,
   placeholder,
   selectNode,
 } from './studio.fixtures.js';
@@ -39,6 +48,19 @@ const outlineOf = async (node: Locator): Promise<number> =>
 const weightOf = async (line: Locator): Promise<number> =>
   lengthOf(await line.evaluate((path) => getComputedStyle(path).strokeWidth));
 
+const processOutlineBox = (node: Locator): Promise<Box> =>
+  node.locator(`.${canvasClassNames.process}`).evaluate((shape) => {
+    const { x, y, width, height } = shape.getBoundingClientRect();
+    return { x, y, width, height };
+  });
+
+const expectSpanned = (outline: Box, frame: Box): void => {
+  expect(outline.x).toBeCloseTo(frame.x, 0);
+  expect(outline.y).toBeCloseTo(frame.y, 0);
+  expect(outline.width).toBeCloseTo(frame.width, 0);
+  expect(outline.height).toBeCloseTo(frame.height, 0);
+};
+
 const drawFlow = async (page: Page): Promise<Locator> => {
   await selectNode(page, placeholder.actor);
   await page.keyboard.press(registeredChords['start-flow'][0]);
@@ -66,6 +88,33 @@ test('a selected element is framed heavier than the line it is drawn with, and s
       (element) => getComputedStyle(element, '::after').borderTopStyle,
     ),
   ).toBe('dashed');
+});
+
+test('a selected process draws its outline out to its frame on both axes, wide or tall', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const node = await placeByClick(page, 'Process', /^New process, process/u);
+  await nameField(page, 'New process').press('Enter');
+  await expect(node).toHaveClass(/selected/u);
+
+  const wide = await screenBoxOf(node);
+  expect(wide.width).toBeGreaterThan(wide.height);
+  expectSpanned(await processOutlineBox(node), wide);
+
+  await dragBy(
+    page,
+    node.getByRole('button', {
+      name: 'Resize New process from bottom',
+      exact: true,
+    }),
+    { x: 0, y: wide.width },
+  );
+  await expect
+    .poll(async () => (await screenBoxOf(node)).height)
+    .toBeGreaterThan(wide.width);
+  const tall = await screenBoxOf(node);
+  expectSpanned(await processOutlineBox(node), tall);
 });
 
 test('an element under the pointer shows those same handles, and hides them once it is left', async ({

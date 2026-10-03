@@ -88,11 +88,14 @@ describe('ElementGlyph, taking its extent from the model', () => {
     );
   });
 
-  it('draws a process as the circle inscribed in the model box', () => {
-    const node = nodeNamed('el-api');
-    expect(glyphOf('el-api')).toContain(
-      `cx="${node.size.width / 2}" cy="${node.size.height / 2}" ` +
-        `r="${Math.min(node.size.width, node.size.height) / 2}"`,
+  it('draws a process as the ellipse filling the model box', () => {
+    expect(
+      renderToStaticMarkup(
+        <BoxElementGlyph kind="process" size={{ width: 120, height: 60 }} />,
+      ),
+    ).toContain(
+      `<ellipse class="${canvasClassNames.shape} ${canvasClassNames.process}" ` +
+        'cx="60" cy="30" rx="60" ry="30"',
     );
   });
 

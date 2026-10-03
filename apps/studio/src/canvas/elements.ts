@@ -90,37 +90,20 @@ export function centredPlacement(kind: ElementTool, centre: Point): NodeBox {
   };
 }
 
-/**
- * An element sized between opposite corners. A process takes the shorter
- * side.
- */
+/** An element sized between opposite corners. */
 export function draggedPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
   to: Point,
 ): NodeBox {
-  const width = Math.max(Math.abs(to.x - from.x), 1);
-  const height = Math.max(Math.abs(to.y - from.y), 1);
-  if (kind === 'note') {
-    return {
-      position: { x: Math.min(from.x, to.x), y: Math.min(from.y, to.y) },
-      size: { width, height },
-    };
-  }
-  if (kind === 'process') {
-    const side = Math.min(width, height);
-    return insideStroke(kind, {
-      position: {
-        x: to.x < from.x ? from.x - side : from.x,
-        y: to.y < from.y ? from.y - side : from.y,
-      },
-      size: { width: side, height: side },
-    });
-  }
-  return insideStroke(kind, {
+  const dragged = {
     position: { x: Math.min(from.x, to.x), y: Math.min(from.y, to.y) },
-    size: { width, height },
-  });
+    size: {
+      width: Math.max(Math.abs(to.x - from.x), 1),
+      height: Math.max(Math.abs(to.y - from.y), 1),
+    },
+  };
+  return kind === 'note' ? dragged : insideStroke(kind, dragged);
 }
 
 /** The geometry a completed pointer press asks an element tool to place. */

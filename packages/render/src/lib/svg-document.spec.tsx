@@ -258,13 +258,15 @@ function ownBox(element: Element): Box | undefined {
       [x + attribute(element, 'width'), y + attribute(element, 'height')],
     ]);
   }
-  if (element.tagName === 'circle') {
-    const radius = attribute(element, 'r');
+  if (element.tagName === 'circle' || element.tagName === 'ellipse') {
+    const circle = element.tagName === 'circle';
+    const radiusX = attribute(element, circle ? 'r' : 'rx');
+    const radiusY = attribute(element, circle ? 'r' : 'ry');
     const cx = attribute(element, 'cx');
     const cy = attribute(element, 'cy');
     return boxOfPoints([
-      [cx - radius, cy - radius],
-      [cx + radius, cy + radius],
+      [cx - radiusX, cy - radiusY],
+      [cx + radiusX, cy + radiusY],
     ]);
   }
   if (element.tagName === 'line') {

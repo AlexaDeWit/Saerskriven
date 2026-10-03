@@ -1,6 +1,6 @@
 import {
   boxesOverlap,
-  boxMeetsCircle,
+  boxMeetsEllipse,
   boxOfPoints,
   cornersOfBox,
   segmentMeetsBox,
@@ -8,12 +8,18 @@ import {
   segmentsOfPolyline,
   shiftedBy,
   type Box,
-  type Circle,
+  type Ellipse,
 } from './geometry.js';
 
 const unitBox: Box = { minX: 0, minY: 0, maxX: 100, maxY: 100 };
 
-const unitCircle: Circle = { centre: { x: 50, y: 50 }, radius: 50 };
+const wideBox: Box = { minX: 0, minY: 0, maxX: 200, maxY: 100 };
+
+const wideEllipse: Ellipse = {
+  centre: { x: 100, y: 50 },
+  radiusX: 100,
+  radiusY: 50,
+};
 
 describe('boxOfPoints', () => {
   it('holds every point it is given', () => {
@@ -86,23 +92,44 @@ describe('boxesOverlap', () => {
   });
 });
 
-describe('boxMeetsCircle', () => {
-  it('meets a box the circle reaches into', () => {
+describe('boxMeetsEllipse', () => {
+  it('meets a box the ellipse reaches into along its longer axis', () => {
     expect(
-      boxMeetsCircle({ minX: 40, minY: -50, maxX: 60, maxY: 10 }, unitCircle),
+      boxMeetsEllipse(
+        { minX: 180, minY: 40, maxX: 220, maxY: 60 },
+        wideEllipse,
+      ),
     ).toBe(true);
   });
 
   it('counts a box its edge only touches', () => {
     expect(
-      boxMeetsCircle({ minX: 100, minY: 40, maxX: 120, maxY: 60 }, unitCircle),
+      boxMeetsEllipse(
+        { minX: 200, minY: 40, maxX: 220, maxY: 60 },
+        wideEllipse,
+      ),
     ).toBe(true);
   });
 
-  it('leaves a box in the corner of its bounding square clear', () => {
-    const corner: Box = { minX: 90, minY: 90, maxX: 100, maxY: 100 };
-    expect(boxesOverlap(corner, unitBox)).toBe(true);
-    expect(boxMeetsCircle(corner, unitCircle)).toBe(false);
+  it('measures each axis in its own radius', () => {
+    expect(
+      boxMeetsEllipse(
+        { minX: 150, minY: 80, maxX: 160, maxY: 90 },
+        wideEllipse,
+      ),
+    ).toBe(true);
+    expect(
+      boxMeetsEllipse(
+        { minX: 95, minY: 105, maxX: 105, maxY: 110 },
+        wideEllipse,
+      ),
+    ).toBe(false);
+  });
+
+  it('leaves a box in the corner of its bounding box clear', () => {
+    const corner: Box = { minX: 180, minY: 90, maxX: 200, maxY: 100 };
+    expect(boxesOverlap(corner, wideBox)).toBe(true);
+    expect(boxMeetsEllipse(corner, wideEllipse)).toBe(false);
   });
 });
 
