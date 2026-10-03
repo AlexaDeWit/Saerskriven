@@ -109,6 +109,71 @@ The CLI build copies the module into `apps/cli/dist/assets`, and the studio
 build emits it as a hashed asset of the website. Both refuse a build that has
 no module.
 
+## The brotli module
+
+The `brotli-wasm` project builds a WebAssembly module out of the `brotli` crate
+([`dropbox/rust-brotli`](https://github.com/dropbox/rust-brotli)), which share
+links compress with (#604). It holds an encoder, at quality 11 with no custom
+dictionary so any standard brotli decoder reads its output, and a decoder that
+refuses a stream at the first byte past a maximum the caller names. The
+encoder's window is the smallest that covers the input, capped at 24 bits,
+because its memory follows the window and a larger one shortens no link. The
+crate and the three under it are pinned by
+[`nix/brotli-wasm/Cargo.lock`](../nix/brotli-wasm/Cargo.lock) and its checksums
+and compiled with no network, on the rasterizer's terms
+[above](#the-svg-rasterizer): one nx target runs `nix build .#brotli-wasm` to a
+fixed out-link under `dist/brotli-wasm`, every target that carries the module
+depends on it, and CI's Nix-store cache keeps the module and not the toolchain.
+
+```sh
+pnpm nx run brotli-wasm:build          # the module alone
+pnpm nx test @saerskriven/formats      # builds it on the way
+```
+
+The module's Rust holds no `unsafe` code (owner rulings, 2026-10-02), and it is
+two crates. The logic crate,
+[`nix/brotli-wasm/codec`](../nix/brotli-wasm/codec), holds the encoder, the
+decoder and the input and output buffers Rust owns. Its root forbids the
+`unsafe_code` lint, which rustc enforces in every module and included file of
+that crate and lets no attribute lower. The export crate's
+[`src/lib.rs`](../nix/brotli-wasm/src/lib.rs) is the export table. It allows
+the lint, because rustc refuses an exported function under `forbid`, and each
+export in it passes its parameters to the boundary function of the same name.
+The caller writes and copies bytes at the addresses those exports answer, so no
+address the caller holds is read in Rust.
+
+Two scripts check what rustc cannot, and #640 points the rasterizer's build at
+both. [`nix/unsafe-ban.sh`](../nix/unsafe-ban.sh) runs before the compile and
+refuses the build, naming the rule, unless:
+
+- the logic crate's root opens with its forbid, and its manifest sets the lint
+  no other way and declares no `[lib]` section or build script
+- every line of the export table is a `//!` line, a blank line, the one
+  allowance, the one `use` of the logic crate's boundary, or a line of an
+  export in that shape
+- the export crate depends on the logic crate alone, with no build script,
+  patch or replacement
+- no resolved dependency feature is named `unsafe` or `ffi-api`, read from
+  `cargo tree -e features` in the sandbox
+- no RUSTFLAGS or rustc wrapper variable is set, and no Cargo configuration on
+  Cargo's search path caps lints, forces a warning or wraps rustc
+
+[`nix/wasm-surface.sh`](../nix/wasm-surface.sh) runs on the built module, with
+wabt's `wasm-objdump`, and refuses it unless it imports nothing and exports
+exactly `memory`, the five calls, and the two linker globals rustc always
+exports, `__data_end` and `__heap_base`.
+
+The flake names the path in `SAERSKRIVEN_BROTLI_WASM`.
+`@saerskriven/formats/brotli` takes the module as bytes from its caller, and
+`brotliWasmAsset` on the `@saerskriven/formats/build-assets` subpath locates it
+through the variable. The codec's spec skips where the variable is unset or
+empty, which is what running outside the flake shell looks like, and fails
+inside the shell when the module is not at the path the variable names.
+
+The studio's build resolves `virtual:saerskriven-brotli-wasm?url` to the module
+as a hashed asset, so a page can fetch it only when it needs it. The CLI does
+not carry it.
+
 ## The runtime inside an executable
 
 About 33 MB of every executable is the denort runtime `deno compile` embeds.

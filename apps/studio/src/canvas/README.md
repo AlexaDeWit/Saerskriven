@@ -26,8 +26,9 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `geometry-editor.tsx`, `endpoint-editor.tsx`                          | The Position and size form, and the flow end form                                                                                  |
 | `element-draft.ts`                                                    | The preview of an edit to the selected element, and its commit as one dispatch                                                     |
 | `handle-drag.ts`, `handle-actions.tsx`, `handles.module.css`          | A handle's pointer drag and arrow-key step, the actions a clicked handle opens, and their styles                                   |
+| `waypoints.ts`                                                        | A point inserted into or moved along a flow's bends or a curve's points                                                            |
 | `flow-bends.ts`, `flow-bend-interaction.ts`, `flow-bend-controls.tsx` | A flow's bend and end previews and model edits, their pointer and keyboard gestures, and their controls                            |
-| `curve-points.ts`, `curve-point-controls.tsx`                         | A trust boundary curve's point previews and model edits, and the handles and actions that make them                                |
+| `curve-points.ts`, `curve-point-controls.tsx`                         | A trust boundary curve's point previews and model edits, which midpoints it shows, and the handles and actions that make them      |
 | `bend-insertion.ts`                                                   | The event connecting the Add bend command to the mounted bend controls                                                             |
 | `clipboard.ts`, `arrangement.ts`, `snap.ts`                           | Copy, cut, paste and duplicate, align and distribute, and the snap setting                                                         |
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
