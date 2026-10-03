@@ -63,14 +63,6 @@ describe('ResizeControls', () => {
 
   beforeEach(() => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe(): void {}
-        unobserve(): void {}
-        disconnect(): void {}
-      },
-    );
     root = createRoot(document.body.appendChild(document.createElement('div')));
     act(() => {
       root.render(<ReactFlow nodes={nodes} nodeTypes={nodeTypes} />);

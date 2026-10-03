@@ -25,6 +25,9 @@ export const cacheDir = (projectRoot: string): string =>
 const everySpec =
   '{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}';
 
+// The browser APIs jsdom leaves out that every jsdom project's specs reach.
+const jsdomSetup = join(workspaceRoot, 'vitest.jsdom-setup.mts');
+
 export const sharedTest = (
   projectRoot: string,
   environment: 'node' | 'jsdom',
@@ -43,8 +46,10 @@ export const sharedTest = (
   globals: true,
   environment,
   include,
-  // Paths relative to the project root, for the browser APIs jsdom leaves out.
-  setupFiles,
+  // A jsdom project loads the root setup first. The rest are paths relative
+  // to the project root, for the browser APIs that project's own specs reach.
+  setupFiles:
+    environment === 'jsdom' ? [jsdomSetup, ...setupFiles] : setupFiles,
   reporters: ['default'],
   coverage: {
     reportsDirectory: join(projectRoot, 'test-output/vitest/coverage'),

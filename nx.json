@@ -14,9 +14,11 @@
       { "env": "LANG" },
       { "env": "LC_ALL" }
     ],
-    // Root configuration imported by Vitest configurations.
+    // Root configuration imported by Vitest configurations, and the setup file
+    // they load into every jsdom project.
     "testConfiguration": [
       "{workspaceRoot}/vitest.shared.mts",
+      "{workspaceRoot}/vitest.jsdom-setup.mts",
       "{workspaceRoot}/workspace-version.mts",
       { "json": "{workspaceRoot}/package.json", "fields": ["version"] }
     ],
