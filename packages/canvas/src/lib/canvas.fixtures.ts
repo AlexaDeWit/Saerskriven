@@ -21,6 +21,8 @@ import {
   type CanvasNode,
 } from './layout.js';
 import { placedProcessEllipse } from './obstacles.js';
+import type { ResizeLabels } from './resize-controls.js';
+import type { ResizeControlPosition } from './resizing.js';
 import { placedTextCorners } from './text-placement.js';
 
 /** One diagram of a model laid out, the first by default. */
@@ -69,6 +71,22 @@ export const specMarks: BadgeMarks = {
     critical: 'c',
   },
   flag: 'f',
+};
+
+/** Resize control names unlike any locale's: the node's name, then the control's position. */
+export const specResizeLabels = (node: CanvasNode): ResizeLabels => {
+  const named = (position: ResizeControlPosition): string =>
+    `${node.name} ${position}`;
+  return {
+    top: named('top'),
+    right: named('right'),
+    bottom: named('bottom'),
+    left: named('left'),
+    'top-left': named('top-left'),
+    'top-right': named('top-right'),
+    'bottom-right': named('bottom-right'),
+    'bottom-left': named('bottom-left'),
+  };
 };
 
 /** The every-glyph node under the id, throwing where the layout has none. */
