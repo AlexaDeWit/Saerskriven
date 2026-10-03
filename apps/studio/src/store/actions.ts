@@ -1,6 +1,7 @@
 import type {
   DetectionFailure,
   Divergence,
+  ImportFormat,
   ReadFailure,
   RetainedSource,
 } from '@saerskriven/formats';
@@ -140,9 +141,9 @@ export type Action = Data.TaggedEnum<{
   Imported: {
     readonly model: Model;
     readonly name: string;
+    readonly format: ImportFormat;
     readonly divergences: readonly Divergence[];
   };
-  ImportFailed: { readonly name: string; readonly failure: ReadFailure };
   Saved: { readonly name: string; readonly source: RetainedSource };
   Closed: {};
   Followed: { readonly state: SyncedState };
@@ -151,7 +152,7 @@ export type Action = Data.TaggedEnum<{
     readonly failure: ReadFailure | DetectionFailure;
   };
   FileRefused: {
-    readonly operation: 'open' | 'save' | 'import';
+    readonly operation: 'open' | 'save';
     readonly reason: string;
   };
   DismissFailure: {};

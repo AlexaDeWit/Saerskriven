@@ -44,9 +44,9 @@ export {
   type SourceNamedKind,
 } from './lib/import-budget.js';
 export {
-  importFormatOf,
   importFormatSchema,
   importModel,
+  readOrImport,
   type ImportFormat,
   type ImportResult,
 } from './lib/import.js';

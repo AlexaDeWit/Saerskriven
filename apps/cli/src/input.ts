@@ -1,14 +1,12 @@
 import {
-  DetectionFailure,
   exceededReadLimit,
   hasDiverged,
-  importFormatOf,
-  importModel,
-  parseYaml,
   readAnyFormat,
+  readOrImport,
   renderDivergences,
   renderReadFailure,
   type DetectedRead,
+  type DetectionFailure,
   type Divergence,
   type ImportResult,
   type ReadFailure,
@@ -40,14 +38,7 @@ export function readModel(
 export function readConvertible(
   file: string,
 ): Either.Either<DetectedRead | ImportResult, CommandOutcome> {
-  return readWith(file, (text) =>
-    Either.orElse(readAnyFormat(text), (failure) =>
-      DetectionFailure.$is('NoFormatClaimed')(failure) &&
-      namesImportFormat(text)
-        ? importModel(text)
-        : Either.left(failure),
-    ),
-  );
+  return readWith(file, readOrImport);
 }
 
 /**
@@ -87,10 +78,6 @@ function withinSizeBound(file: string): Either.Either<void, CommandOutcome> {
       describeReadFailure(exceededReadLimit('maxTextBytes', observed)),
     ),
   );
-}
-
-function namesImportFormat(text: string): boolean {
-  return Either.isRight(Either.flatMap(parseYaml(text), importFormatOf));
 }
 
 function describeReadFailure(failure: ReadFailure | DetectionFailure): string {

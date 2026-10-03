@@ -27,7 +27,6 @@ export const registeredChords = {
   'rename-diagram': [],
 
   open: ['ControlOrMeta+o'],
-  import: [],
   save: ['ControlOrMeta+s'],
   'save-as': ['ControlOrMeta+Shift+s'],
   'export-diagram': [],

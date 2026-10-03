@@ -168,6 +168,7 @@ describe('what the menu offers', () => {
     for (const name of ['Open', 'Save', 'Save as', 'Export', 'New model']) {
       expect(item(name)).toBeDefined();
     }
+    expect(screen.queryByRole('menuitem', { name: 'Import' })).toBeNull();
     expect(items.filter((entry) => entry.hasAttribute('href'))).toHaveLength(1);
     const submenus = items.filter(
       (entry) => entry.getAttribute('aria-haspopup') === 'menu',
@@ -635,6 +636,48 @@ describe('opening', () => {
     });
     expect(bridge.writes[0].text).not.toContain('unknownRoot');
     expect(reportEntries()).toEqual([]);
+  });
+
+  it.each([
+    { path: 'otm/example.json', format: 'OTM' },
+    { path: 'tmbom/example.json', format: 'TM-BOM' },
+  ])(
+    'opens $path as a new model under a notice naming $format',
+    async ({ path, format }) => {
+      const user = userEvent.setup();
+      mounted(specBridge({ offers: vendoredFile(path) }));
+
+      await choose(user, 'Open');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loss-report').textContent).toContain(
+          inLocale('en-CA')('reports.opened-read-only', { format }),
+        );
+      });
+      expect(nameOf(modelStore.getState().file)).toBe('example.yaml');
+      expect(isDirty(modelStore.getState())).toBe(true);
+    },
+  );
+
+  it('opens a format Saerskriven writes under no new-model notice', async () => {
+    const user = userEvent.setup();
+    mounted(
+      specBridge({
+        offers: chosenFile('feature-complete.json', await withUndeclaredKeys()),
+      }),
+    );
+
+    await choose(user, 'Open');
+
+    await waitFor(() => {
+      expect(reportEntries().length > 0).toBe(true);
+    });
+    const t = inLocale('en-CA');
+    for (const format of ['OTM', 'TM-BOM', 'Threat Dragon JSON']) {
+      expect(screen.getByTestId('loss-report').textContent).not.toContain(
+        t('reports.opened-read-only', { format }),
+      );
+    }
   });
 
   it('re-words a standing report when the language changes', async () => {
