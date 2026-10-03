@@ -1,20 +1,15 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import {
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { parse } from 'yaml';
+import { test } from 'node:test';
 import { z } from 'zod';
+import {
+  temporaryWorkspace,
+  workflow,
+  workspaceRoot,
+} from '../tools.fixtures.mts';
 
-const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url));
 const title = 'Nightly browser run is red in Firefox or WebKit';
 const runUrl = 'https://github.com/example/studio/actions/runs/42';
 const commit = 'a'.repeat(40);
@@ -66,18 +61,11 @@ type Night = Readonly<{
   open?: readonly Readonly<{ number: number; title: string }>[] | 'unreadable';
 }>;
 
-const directories: string[] = [];
-afterEach(() => {
-  for (const directory of directories.splice(0))
-    rmSync(directory, { recursive: true, force: true });
-});
-
 const night = (
   reports: Reports,
   { args = [], browsersResult = 'success', open = [] }: Night = {},
 ) => {
-  const directory = mkdtempSync(join(tmpdir(), 'nightly-report-'));
-  directories.push(directory);
+  const directory = temporaryWorkspace();
   mkdirSync(join(directory, 'bin'));
   mkdirSync(join(directory, 'reports'));
   writeFileSync(join(directory, 'bin/gh'), fakeGh, { mode: 0o755 });
@@ -225,39 +213,27 @@ void test('a listing that fails opens nothing, so no second tracking issue appea
   assert.deepEqual(writes, []);
 });
 
-const workflowSchema = z.object({
-  on: z.record(z.string(), z.unknown()),
-  permissions: z.record(z.string(), z.string()),
-  jobs: z.record(
-    z.string(),
-    z.object({
-      if: z.string().optional(),
-      permissions: z.record(z.string(), z.string()),
-    }),
-  ),
-});
-const workflowText = (name: string) =>
-  readFileSync(join(workspaceRoot, '.github/workflows', name), 'utf8');
-const nightly = workflowSchema.parse(
-  parse(workflowText('nightly-browsers.yml')),
-);
+const nightly = workflow('nightly-browsers.yml');
 
 void test('the nightly run starts on a schedule or by hand, and the gate never names its engines', () => {
   assert.deepEqual(Object.keys(nightly.on).toSorted(), [
     'schedule',
     'workflow_dispatch',
   ]);
-  assert.equal(
-    workflowText('ci.yml').includes('SAERSKRIVEN_E2E_OTHER_ENGINES'),
-    false,
+  const gate = readFileSync(
+    join(workspaceRoot, '.github/workflows/ci.yml'),
+    'utf8',
   );
+  assert.equal(gate.includes('SAERSKRIVEN_E2E_OTHER_ENGINES'), false);
 });
 
 void test('only the report job may write, to issues alone, and only for a run on main', () => {
   assert.deepEqual(nightly.permissions, {});
   assert.deepEqual(
     Object.entries(nightly.jobs)
-      .filter(([, job]) => Object.values(job.permissions).includes('write'))
+      .filter(([, job]) =>
+        Object.values(job.permissions ?? {}).includes('write'),
+      )
       .map(([name]) => name),
     ['report'],
   );

@@ -5,5 +5,5 @@
     "lib": ["ES2023"],
     "noEmit": true
   },
-  "include": ["*.mts"]
+  "include": ["*.mts", "../tools.fixtures.mts"]
 }

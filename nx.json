@@ -59,6 +59,9 @@
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.typ",
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.pdf.sha256"
     ],
+    // The fixtures the tools projects under scripts share. The file sits
+    // outside both project roots, so each names it here and in its tsconfig.
+    "toolsFixtures": ["{workspaceRoot}/scripts/tools.fixtures.mts"],
     // Root configuration imported by the studio's Vite configuration.
     "viteGlobals": ["testConfiguration", "{workspaceRoot}/vite.shared.mts"]
   },

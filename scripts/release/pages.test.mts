@@ -1,24 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import {
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, test } from 'node:test';
+import { test } from 'node:test';
 import { z } from 'zod';
-import { workspaceRoot } from './release.fixtures.mts';
-
-const directories: string[] = [];
-afterEach(() => {
-  for (const directory of directories.splice(0))
-    rmSync(directory, { recursive: true, force: true });
-});
+import { temporaryWorkspace, workspaceRoot } from '../tools.fixtures.mts';
 
 const commit = 'a'.repeat(40);
 const repository = 'example/studio';
@@ -53,8 +39,7 @@ const scenario = () => ({
 });
 
 const fixture = (state = scenario()) => {
-  const directory = mkdtempSync(join(tmpdir(), 'studio-pages-'));
-  directories.push(directory);
+  const directory = temporaryWorkspace();
   const bin = join(directory, 'bin');
   mkdirSync(bin);
   const stateFile = join(directory, 'state.json');

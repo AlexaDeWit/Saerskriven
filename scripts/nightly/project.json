@@ -5,8 +5,9 @@
   "sourceRoot": "scripts/nightly",
   "targets": {
     "lint": {
+      "inputs": ["...", "toolsFixtures"],
       "options": {
-        "command": "oxlint scripts/nightly"
+        "command": "oxlint scripts/nightly scripts/tools.fixtures.mts"
       }
     },
     "test": {
@@ -15,6 +16,7 @@
       "inputs": [
         "default",
         "sharedGlobals",
+        "toolsFixtures",
         "{workspaceRoot}/.github/workflows/nightly-browsers.yml",
         "{workspaceRoot}/.github/workflows/ci.yml",
         "{workspaceRoot}/flake.lock",
@@ -36,6 +38,7 @@
       "cache": true,
       "inputs": [
         "default",
+        "toolsFixtures",
         "{workspaceRoot}/tsconfig.base.json",
         {
           "externalDependencies": ["typescript", "yaml", "zod"]
