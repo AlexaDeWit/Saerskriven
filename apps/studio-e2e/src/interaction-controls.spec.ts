@@ -182,7 +182,7 @@ test('geometry fields support movement and resizing, cancellation, and one undo 
   });
   await test.step('Escape from a field cancels the edit', async () => {
     await actor.focus();
-    await page.keyboard.press('ControlOrMeta+Shift+p');
+    await page.keyboard.press(registeredChords['edit-geometry'][0]);
     await panel.getByRole('spinbutton', { name: 'X', exact: true }).fill('900');
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCount(0);
@@ -190,7 +190,7 @@ test('geometry fields support movement and resizing, cancellation, and one undo 
   });
 
   await test.step('Escape from a geometry button keeps the selection and returns focus', async () => {
-    await page.keyboard.press('ControlOrMeta+Shift+p');
+    await page.keyboard.press(registeredChords['edit-geometry'][0]);
     await expect(
       panel.getByRole('spinbutton', { name: 'X', exact: true }),
     ).toBeFocused();
@@ -210,7 +210,7 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
   await page.keyboard.press('ControlOrMeta+d');
   await expect(page.locator('.react-flow__node')).toHaveCount(3);
   await selectByKeyboard(page, placeholder.records);
-  await page.keyboard.press('ControlOrMeta+Shift+1');
+  await page.keyboard.press(registeredChords['reconnect-source'][0]);
   const panel = page.getByRole('region', { name: 'Flow endpoint' });
   const source = panel.getByRole('combobox', { name: 'Source' });
   await expect(source).toBeFocused();
@@ -293,7 +293,7 @@ for (const { fixture, duplicated, retargeted } of [
     await selectByKeyboard(page, duplicated);
     await page.keyboard.press('ControlOrMeta+d');
     await expect(editAnnouncement(page)).not.toBeEmpty();
-    await page.keyboard.press('ControlOrMeta+Shift+p');
+    await page.keyboard.press(registeredChords['edit-geometry'][0]);
     const geometry = page.getByRole('region', { name: 'Position and size' });
     await geometry
       .getByRole('button', { name: 'Increase X', exact: true })
@@ -303,7 +303,7 @@ for (const { fixture, duplicated, retargeted } of [
       .click();
     await geometry.getByRole('button', { name: 'Apply geometry' }).click();
     await selectByKeyboard(page, retargeted);
-    await page.keyboard.press('ControlOrMeta+Shift+2');
+    await page.keyboard.press(registeredChords['reconnect-target'][0]);
     const endpoint = page.getByRole('region', { name: 'Flow endpoint' });
     const target = endpoint.getByRole('combobox', { name: 'Target' });
     await target.selectOption({ index: 0 });
@@ -337,7 +337,7 @@ test('snapping is optional and preserves manual placement when disabled', async 
 test('endpoint typeahead keeps its keyboard ownership', async ({ page }) => {
   await openPlaceholder(page);
   await selectByKeyboard(page, placeholder.records);
-  await page.keyboard.press('ControlOrMeta+Shift+1');
+  await page.keyboard.press(registeredChords['reconnect-source'][0]);
   const select = page.getByRole('combobox', { name: 'Source' });
   await expect(select).toBeFocused();
   await page.keyboard.press('a');
