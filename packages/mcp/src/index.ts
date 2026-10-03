@@ -1,6 +1,7 @@
 export { type RasterizerAssets } from './lib/render-diagram.js';
 export { revisionOf } from './lib/revision.js';
 export { createSaerskrivenServer, serverName } from './lib/server.js';
+export { type BrotliModule } from './lib/share-link.js';
 export {
   WriteFailure,
   createdFile,

@@ -293,7 +293,7 @@ describe(
         { id: firstMitigation, threats: [firstThreat, secondThreat] },
       ]);
       const linked = screen.getByRole('button', {
-        name: 'Read-only share links',
+        name: 'Mitigation 1, Read-only share links',
         expanded: false,
       });
       expect(document.activeElement).toBe(linked);
@@ -615,7 +615,9 @@ describe(
 
       expect(assumptionRows()).toEqual([added, firstAssumption]);
       expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: 'Every editor is signed in.' }),
+        screen.getByRole('button', {
+          name: 'Assumption 2, Every editor is signed in.',
+        }),
       );
 
       act(() => {
@@ -687,7 +689,10 @@ describe(
 
       expect(assumptionRows()).toEqual([firstAssumption, added]);
       expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: 'Assumption 1', expanded: true }),
+        screen.getByRole('button', {
+          name: 'Assumption 1, Every editor is signed in.',
+          expanded: true,
+        }),
       );
     });
 

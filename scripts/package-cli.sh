@@ -208,11 +208,24 @@ if [ "${png_header}" != '89504e470d0a1a0a' ]; then
   exit 1
 fi
 
+# The same for the embedded brotli module, which neither render reaches.
+share_link="$("${host_binary}" share "${fixture}")"
+readonly share_link
+case "${share_link}" in
+  https://*'#share=1.'?*) ;;
+  *)
+    echo "saer share printed '${share_link:0:60}', not a share link. The" >&2
+    echo "executable carries no working brotli module." >&2
+    exit 1
+    ;;
+esac
+
 echo "saer --version reports ${reported}, saer validate ${fixture}"
-echo "reports ${summary}, saer render writes a PDF and a PNG, and"
-echo "every target compiled twice to the same bytes"
+echo "reports ${summary}, saer render writes a PDF and a PNG, saer share"
+echo "writes a link, and every target compiled twice to the same bytes"
 
 # Log input hashes to locate differences when rebuilding a release.
 sha256sum -- "${bundle}" "${assets}"/*.ttf \
-  "${assets}"/LICENSE.liberation-fonts.txt "${assets}/saerskriven_resvg.wasm"
+  "${assets}"/LICENSE.liberation-fonts.txt "${assets}/saerskriven_resvg.wasm" \
+  "${assets}/saerskriven_brotli.wasm"
 cat -- "${out_dir}/SHA256SUMS"

@@ -85,15 +85,16 @@ const showDetails = async (
   await user.click(detailsTab());
 };
 
+const foldedAssumption = (): HTMLElement =>
+  screen.getByRole('button', {
+    name: `Assumption 1, ${recordedModel.assumptions[0].prose}`,
+    expanded: false,
+  });
+
 const openAssumption = async (
   user: ReturnType<typeof userEvent.setup>,
 ): Promise<void> => {
-  await user.click(
-    screen.getByRole('button', {
-      name: recordedModel.assumptions[0].prose,
-      expanded: false,
-    }),
-  );
+  await user.click(foldedAssumption());
 };
 
 const summary = (title: RegExp): HTMLElement =>
@@ -470,11 +471,7 @@ describe(
       expect(
         screen.queryByRole('combobox', { name: 'Existing assumption' }),
       ).toBeNull();
-      const folded = screen.getByRole('button', {
-        name: recordedModel.assumptions[0].prose,
-        expanded: false,
-      });
-      expect(describedNumbers(folded)).toEqual([1]);
+      expect(describedNumbers(foldedAssumption())).toEqual([1]);
       expect(screen.queryByRole('textbox', { name: 'Assumption 1' })).toBe(
         null,
       );

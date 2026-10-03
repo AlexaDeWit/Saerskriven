@@ -1,4 +1,4 @@
-import type { Size } from '@saerskriven/model';
+import type { Point, Size } from '@saerskriven/model';
 import { badgeBox, placedBadgeAnchor } from './badges.js';
 import {
   boxesOverlap,
@@ -15,6 +15,7 @@ import { nodeBox, type NodeBox } from './handles.js';
 import type { CanvasNode } from './layout.js';
 import { memoizedByIdentity } from './memoized.js';
 import { controlPolygon } from './paths.js';
+import { noteFrameOffset } from './tokens.js';
 
 /** What a label is held clear of: boxes, ellipses and straight runs of line. */
 export type Solids = {
@@ -42,9 +43,30 @@ export function placedProcessEllipse(box: NodeBox): Ellipse {
 }
 
 /**
+ * The frame an out-of-scope note's glyph draws, its box grown by
+ * `noteFrameOffset` on every side, or nothing for any other node. It is in
+ * diagram coordinates unless a caller names the position the box sits at.
+ */
+export function noteFrame(
+  node: CanvasNode,
+  position: Point = node.position,
+): Box | undefined {
+  if (node.kind !== 'text' || !node.outOfScope) {
+    return undefined;
+  }
+  const box = nodeBox({ position, size: node.size });
+  return {
+    minX: box.minX - noteFrameOffset,
+    minY: box.minY - noteFrameOffset,
+    maxX: box.maxX + noteFrameOffset,
+    maxY: box.maxY + noteFrameOffset,
+  };
+}
+
+/**
  * The shape a node's glyph draws, in diagram coordinates: a trust boundary's
  * outline as lines, since a label inside one is where it belongs, a process's
- * ellipse, and every other kind's box.
+ * ellipse, an out-of-scope note's frame, and every other kind's box.
  */
 export const nodeOutline = memoizedByIdentity((node: CanvasNode): Solids => {
   if (node.kind === 'boundary-box') {
@@ -64,7 +86,11 @@ export const nodeOutline = memoizedByIdentity((node: CanvasNode): Solids => {
   if (node.kind === 'process') {
     return { boxes: [], ellipses: [placedProcessEllipse(node)], lines: [] };
   }
-  return { boxes: [nodeBox(node)], ellipses: [], lines: [] };
+  return {
+    boxes: [noteFrame(node) ?? nodeBox(node)],
+    ellipses: [],
+    lines: [],
+  };
 });
 
 /** The box of a node's badge in diagram coordinates, or none. */

@@ -37,12 +37,15 @@ const modelControl = (page: Page, name: string): Locator =>
 const threatsTab = (page: Page): Locator =>
   modelPanel(page).getByRole('tab', { name: /^Threats \d+$/u });
 
-const foldedRecord = (page: Page, text: string): Locator =>
+const foldedRecord = (page: Page, name: string): Locator =>
   modelPanel(page).getByRole('button', {
-    name: text,
+    name,
     exact: true,
     expanded: false,
   });
+
+const cardCertification =
+  'Assumption 1, The payment provider holds its own card data certification.';
 
 const modelThreat = (page: Page, title: RegExp): Locator =>
   modelPanel(page).getByRole('button', { name: title });
@@ -231,12 +234,7 @@ test('the title and the description commit as one undo step each, and Tab runs f
   await page.keyboard.press('Tab');
   await expect(description).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(
-    foldedRecord(
-      page,
-      'The payment provider holds its own card data certification.',
-    ),
-  ).toBeFocused();
+  await expect(foldedRecord(page, cardCertification)).toBeFocused();
   await expect(
     modelPanel(page).getByRole('group', {
       name: /^Assumptions that apply to the model 2$/u,
@@ -300,10 +298,7 @@ test(
     await openTwoDiagrams(page);
     await openModelPanel(page);
     await showDetails(page, modelPanel(page));
-    const headline = foldedRecord(
-      page,
-      'The payment provider holds its own card data certification.',
-    );
+    const headline = foldedRecord(page, cardCertification);
     await expect(headline).toBeVisible();
     expect(
       await headline
@@ -345,11 +340,11 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await showDetails(page, modelPanel(page));
   await chooseInPanel(page, 'Existing assumption', rotate, modelPanel(page));
   await modelControl(page, 'Link existing assumption').click();
-  await expect(foldedRecord(page, rotate)).toBeFocused();
+  await expect(foldedRecord(page, `Assumption 3, ${rotate}`)).toBeFocused();
   expect(await offeredToLink(page, existingAssumption(page), rotate)).toBe(
     false,
   );
-  await foldedRecord(page, rotate).click();
+  await foldedRecord(page, `Assumption 3, ${rotate}`).click();
   await expect(modelField(page, 'textbox', 'Assumption 3')).toHaveValue(rotate);
   await expect(
     modelControl(page, 'Unlink assumption 3'),
@@ -367,7 +362,11 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
     threatStatus ?? '',
   );
   await threatPanel(page)
-    .getByRole('button', { name: rotate, expanded: false })
+    .getByRole('button', {
+      name: `Assumption 1, ${rotate}`,
+      exact: true,
+      expanded: false,
+    })
     .click();
   const unlinkHere = panelControl(page, 'Unlink assumption 1');
   await expect(unlinkHere).not.toHaveAccessibleDescription('');
@@ -376,7 +375,7 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
 
   await openModelPanel(page);
   await showDetails(page, modelPanel(page));
-  await foldedRecord(page, rotate).click();
+  await foldedRecord(page, `Assumption 3, ${rotate}`).click();
   const kept = modelField(page, 'textbox', 'Assumption 3');
   await expect(kept).toHaveValue(rotate);
   await expect(
@@ -417,7 +416,7 @@ test('an older assumption linked after an added one lands after it, and leaves a
   const rows = modelPanel(page).locator('[data-record-row]');
   const first = modelField(page, 'textbox', 'Assumption 3');
   const second = rows.nth(3).getByRole('button', {
-    name: older,
+    name: `Assumption 4, ${older}`,
     exact: true,
     expanded: false,
   });
@@ -468,7 +467,9 @@ test('the model edited in one tab reaches another, which keeps its own selection
   await expect(modelField(other, 'textbox', 'Title')).toHaveValue(
     'Two diagrams, shared',
   );
-  await expect(foldedRecord(other, 'Both tabs read one model.')).toBeVisible();
+  await expect(
+    foldedRecord(other, 'Assumption 3, Both tabs read one model.'),
+  ).toBeVisible();
   await replaceText(
     modelField(other, 'textbox', 'Description'),
     'Edited in the other tab.',

@@ -46,7 +46,8 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   'threat-status-unmapped': 'its status "{status}"',
   'threat-severity-unmapped': 'its severity "{severity}"',
   'threat-category-eop-suit': 'its Elevation of Privilege card',
-  'threat-category-unmapped': 'its category "{category}"',
+  'threat-category-unmapped':
+    'its category "{category}", read as a custom category',
   'key-undeclared': 'Key {path}: not read',
   'assumption-element-links-dropped': 'its links to elements',
   'otm-threat-split': 'copied for another occurrence',

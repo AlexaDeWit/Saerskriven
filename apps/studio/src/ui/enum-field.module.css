@@ -24,9 +24,6 @@
   background: var(--saer-colour-surface);
   color: var(--saer-colour-text);
   font: inherit;
-  /* The chosen value reads in the model's own vocabulary; only the case is
-     presentation, so the accessible name stays the value itself. */
-  text-transform: capitalize;
 }
 
 .trigger:focus-visible {
@@ -141,7 +138,6 @@
   padding: var(--saer-space-2) var(--saer-space-3);
   border-radius: var(--saer-radius);
   color: var(--saer-colour-text);
-  text-transform: capitalize;
   user-select: none;
 }
 

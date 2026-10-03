@@ -65,8 +65,3 @@
   color: var(--saer-colour-text-muted);
   overflow-wrap: anywhere;
 }
-
-.properties [role='combobox'],
-.properties [role='option'] {
-  text-transform: none;
-}

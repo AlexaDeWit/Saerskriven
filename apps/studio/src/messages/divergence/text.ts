@@ -67,6 +67,57 @@ type ReportedDetail =
       };
     };
 
+/**
+ * The headings an open report lists its lines under, in the order it shows
+ * them. Conversions come first: they are few and explain the model on screen,
+ * where the fields a foreign file leaves unread can run past a hundred.
+ */
+export const openSections = ['converted', 'not-shown'] as const;
+
+/**
+ * One heading of an open report. `converted`: the model holds the value in
+ * another form or another place than the file had it, so a person finds it
+ * in the studio. A kind that converts and also loses falls here where the
+ * value can still be found. `not-shown`: the model has no place for the
+ * value, or holds it less exactly with nothing in the model saying so.
+ */
+export type OpenSection = (typeof openSections)[number];
+
+const openPlacements = {
+  'assumption-unrecorded': 'save-only',
+  'note-name-dropped': 'save-only',
+  'scope-marking-dropped': 'save-only',
+  'threat-attachment-stray': 'save-only',
+  'threat-unplaceable': 'save-only',
+  'threat-split-across-elements': 'save-only',
+  'threat-category-unnamed': 'save-only',
+  'mitigation-records-merged': 'save-only',
+  'mitigation-title-merged': 'save-only',
+  'mitigation-empty-dropped': 'save-only',
+  'mitigation-status-dropped': 'save-only',
+  'mitigation-unlinked': 'save-only',
+  'mitigation-split-across-threats': 'save-only',
+  'threat-status-unmapped': 'not-shown',
+  'threat-severity-unmapped': 'not-shown',
+  'threat-category-eop-suit': 'not-shown',
+  'threat-category-unmapped': 'converted',
+  'key-undeclared': 'not-shown',
+  'assumption-element-links-dropped': 'not-shown',
+  'otm-threat-split': 'converted',
+  'otm-threat-status-unmapped': 'converted',
+  'otm-mitigation-split': 'converted',
+  'otm-mitigation-status-retained': 'converted',
+  'otm-mitigation-unlinked': 'converted',
+  'otm-assets-as-descriptions': 'converted',
+  'otm-components-as-processes': 'converted',
+  'tmbom-control-proposed': 'converted',
+  'tmbom-control-unlinked': 'converted',
+  'tmbom-flow-fields-as-prose': 'converted',
+  'tmbom-data-set-as-prose': 'converted',
+  'tmbom-data-set-dropped': 'not-shown',
+  'field-not-retained': 'not-shown',
+} as const satisfies Record<ReportedDetail['code'], OpenSection | 'save-only'>;
+
 /** A divergence a studio report shows, its detail one the catalogue words. */
 export type ReportedDivergence = Omit<Divergence, 'detail'> & {
   readonly detail: ReportedDetail;
@@ -93,13 +144,22 @@ export function reportedDivergence(
 }
 
 /**
+ * The heading an open report lists `divergence` under. A code only a save
+ * records has no place of its own there and falls under `not-shown`.
+ */
+export function openSectionOf({ detail }: ReportedDivergence): OpenSection {
+  const placed = openPlacements[detail.code];
+  return placed === 'save-only' ? 'not-shown' : placed;
+}
+
+/**
  * Each loss as a line in the reader's language: its subject as `model` shows
- * it, then what was lost, and a sentence where saving back keeps it. Losses
- * that read the same make one line with their count. An import names the
- * threat a divergence carries, or the mitigation copy on it, or else the first
- * record made from the source record it names, and a subject `model` does
- * not hold leaves the line to the detail, which a code about the model alone
- * words with its own subject.
+ * it, then what was lost or what it became, and a sentence where saving back
+ * keeps it. Losses that read the same make one line with their count. An
+ * import names the threat a divergence carries, or the mitigation copy on it,
+ * or else the first record made from the source record it names. A subject
+ * `model` does not hold leaves the line to the detail, which a code about
+ * the model alone words with its own subject.
  */
 export function lossLines(
   t: Speaker,

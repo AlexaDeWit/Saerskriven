@@ -29,6 +29,10 @@ import {
 
 const { t } = activeTranslator();
 
+const readOnly = 'Mitigation 1, Read-only share links';
+
+const signedIn = 'Assumption 1, Every editor is signed in.';
+
 const folded = (name: string): HTMLElement =>
   screen.getByRole('button', { name, expanded: false });
 
@@ -69,8 +73,8 @@ describe(
     it('starts folded to its title and its status, with no field and no Unlink', () => {
       showThreatEditor({ threat: recordedThreat(firstThreat) });
 
-      expect(folded('Read-only share links')).toBeDefined();
-      expect(folded('Every editor is signed in.')).toBeDefined();
+      expect(folded(readOnly)).toBeDefined();
+      expect(folded(signedIn)).toBeDefined();
       expect(
         screen.getByRole('combobox', { name: 'Mitigation 1 status' }),
       ).toBeDefined();
@@ -81,6 +85,29 @@ describe(
         screen.queryByRole('button', { name: 'Unlink mitigation 1' }),
       ).toBeNull();
       expect(screen.queryByRole('button', { name: /open all/iu })).toBeNull();
+    });
+
+    it('names its toggle by its name and headline folded and open, drawing the headline folded and the name open', async () => {
+      const user = userEvent.setup();
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      expect(folded(readOnly).textContent).toBe('Read-only share links');
+
+      await user.click(folded(readOnly));
+
+      expect(opened(readOnly).textContent).toBe('Mitigation 1');
+    });
+
+    it('names its toggle by its name alone where it has no title and no text', () => {
+      modelStore.setState(
+        initialState({
+          ...recordedModel,
+          mitigations: [{ ...recordedModel.mitigations[0], title: '' }],
+        }),
+        true,
+      );
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
+
+      expect(folded('Mitigation 1').textContent).toBe('Mitigation 1');
     });
 
     it('reads the start of its text where it has no title', () => {
@@ -97,7 +124,7 @@ describe(
       });
       showThreatEditor({ threat: recordedThreat(firstThreat) });
 
-      expect(folded('Links carry a scope.')).toBeDefined();
+      expect(folded('Mitigation 1, Links carry a scope.')).toBeDefined();
     });
 
     it('changes its status while folded, staying folded', async () => {
@@ -112,7 +139,7 @@ describe(
       expect(modelStore.getState().present.mitigations[0].status).toBe(
         'implemented',
       );
-      expect(folded('Read-only share links')).toBeDefined();
+      expect(folded(readOnly)).toBeDefined();
     });
 
     it('counts the other threats a folded record is on, on a line of its own', () => {
@@ -120,7 +147,7 @@ describe(
       expect(lineOf('Mitigation 1')).toBeUndefined();
       linkToSecondThreat();
 
-      expect(describedNumbers(folded('Read-only share links'))).toEqual([1]);
+      expect(describedNumbers(folded(readOnly))).toEqual([1]);
       expect(
         lineOf('Mitigation 1')?.startsWith(
           t('panel.also-on-other-threats', { count: 1 }),
@@ -133,9 +160,9 @@ describe(
       linkToSecondThreat();
       showThreatEditor({ threat: recordedThreat(firstThreat) });
 
-      await user.click(folded('Read-only share links'));
+      await user.click(folded(readOnly));
 
-      const toggle = opened('Mitigation 1');
+      const toggle = opened(readOnly);
       expect(textbox('Mitigation 1 title')).toHaveProperty(
         'value',
         'Read-only share links',
@@ -145,7 +172,7 @@ describe(
 
       await user.click(toggle);
 
-      expect(folded('Read-only share links')).toBeDefined();
+      expect(folded(readOnly)).toBeDefined();
       expect(
         screen.queryByRole('textbox', { name: 'Mitigation 1 title' }),
       ).toBeNull();
@@ -154,29 +181,29 @@ describe(
     it('stays open until its threat closes, and shows folded when the threat opens again', async () => {
       const user = userEvent.setup();
       showThreatEditor({ threat: recordedThreat(firstThreat) });
-      await user.click(folded('Read-only share links'));
-      await user.click(folded('Every editor is signed in.'));
+      await user.click(folded(readOnly));
+      await user.click(folded(signedIn));
 
       await user.click(threatSummary());
       await user.click(threatSummary());
 
-      expect(folded('Read-only share links')).toBeDefined();
-      expect(folded('Every editor is signed in.')).toBeDefined();
+      expect(folded(readOnly)).toBeDefined();
+      expect(folded(signedIn)).toBeDefined();
     });
 
     it('will not fold while one of its fields holds a refused draft', async () => {
       const user = userEvent.setup();
       showThreatEditor({ threat: recordedThreat(firstThreat) });
-      await user.click(folded('Read-only share links'));
+      await user.click(folded(readOnly));
       await user.click(textbox('Mitigation 1 title'));
       await user.keyboard(`{End}${softHyphen}`);
 
-      await user.click(opened('Mitigation 1'));
+      await user.click(opened(readOnly));
 
       expect(textbox('Mitigation 1 title').getAttribute('aria-invalid')).toBe(
         'true',
       );
-      expect(opened('Mitigation 1')).toBeDefined();
+      expect(opened(readOnly)).toBeDefined();
     });
 
     it('opens on a draft held for it', () => {
@@ -208,11 +235,13 @@ describe(
         );
       });
       showThreatEditor({ threat: recordedThreat(firstThreat) });
-      await user.click(folded('Read-only share links'));
+      await user.click(folded(readOnly));
 
       await user.click(button('Unlink mitigation 1'));
 
-      expect(document.activeElement).toBe(folded('Rotate share links'));
+      expect(document.activeElement).toBe(
+        folded('Mitigation 1, Rotate share links'),
+      );
     });
 
     it('marks a new record Added once Return keeps it, with Unlink in place of Discard, the heading counting it and the change announced', async () => {
@@ -254,7 +283,7 @@ describe(
 
       await user.tab();
 
-      expect(opened('Assumption 2')).toBeDefined();
+      expect(opened('Assumption 2, Share links expire.')).toBeDefined();
       expect(addedMark('Assumption 2')).not.toBeNull();
       expect(currentAnnouncement().message).toBe(
         t('canvas.assumption-added', { number: 2 }),
@@ -263,7 +292,7 @@ describe(
       await user.click(threatSummary());
       await user.click(threatSummary());
 
-      expect(folded('Share links expire.')).toBeDefined();
+      expect(folded('Assumption 2, Share links expire.')).toBeDefined();
       expect(addedMark('Assumption 2')).toBeNull();
     });
   },

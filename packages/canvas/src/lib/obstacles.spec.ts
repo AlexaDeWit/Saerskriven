@@ -1,9 +1,10 @@
 import type { Point } from '@saerskriven/model';
 import { boxAt, modelWith } from '@saerskriven/model/fixtures';
-import { layoutOf } from './canvas.fixtures.js';
+import { layoutOf, nodeNamed } from './canvas.fixtures.js';
 import { boxesOverlap, type Box } from './geometry.js';
 import { handlePositions, handleSides, nodeBox } from './handles.js';
 import { boxCollisions, nodeOutline, processEllipse } from './obstacles.js';
+import { noteFrameOffset } from './tokens.js';
 
 const [process] = layoutOf(
   modelWith({
@@ -57,5 +58,24 @@ describe("a process's outline", () => {
         nodeOutline(process),
       ),
     ).toBe(1);
+  });
+});
+
+describe("a note's outline", () => {
+  const note = nodeNamed('el-scope-note');
+  const box = nodeBox(note);
+  const besideItsBox = pointBox({
+    x: box.maxX + noteFrameOffset,
+    y: box.minY,
+  });
+
+  it('charges a label for the frame drawn outside its box while it is out of scope', () => {
+    expect(boxCollisions(besideItsBox, nodeOutline(note))).toBe(1);
+  });
+
+  it('leaves a label beside its box clear once it is in scope', () => {
+    expect(
+      boxCollisions(besideItsBox, nodeOutline({ ...note, outOfScope: false })),
+    ).toBe(0);
   });
 });
