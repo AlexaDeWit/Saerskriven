@@ -29,6 +29,7 @@ import {
   nativeFixtures,
   propertyTimeout,
   twoDiagramsYaml,
+  withThreatsInNumberOrder,
 } from './saerskriven-yaml.fixtures.js';
 import { threatStatusesToModel } from './saerskriven-yaml-vocabulary.js';
 import { unusedConstructs } from './wire-coverage.fixtures.js';
@@ -50,10 +51,6 @@ const documentedExample = description.slice(
   exampleStart,
   description.indexOf('```', exampleStart),
 );
-
-function withThreatsInNumberOrder(model: Model): Model {
-  return { ...model, threats: inNumberOrder(model.threats) };
-}
 
 function statusesOf(
   records: readonly {

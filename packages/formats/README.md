@@ -84,6 +84,18 @@ inflates without bound: decoding stops at the first byte past it.
 [Building the executables](../../docs/build.md#the-brotli-module) describes the
 module and the variable `@saerskriven/formats/build-assets` locates it through.
 
+## Share links
+
+`writeShareLink(model, base, wasm)` and `readShareLink(fragment, wasm)`, on the
+`@saerskriven/formats/share-link` subpath ([`share-link.ts`](src/share-link.ts)),
+write a model as a share link and read one back through `saerskrivenYamlCodec`.
+`isShareLinkFragment` tells a share link's fragment from any other, and
+`shareLinkLimit` is the most characters a link holds. A refusal is a
+`ShareLinkFailure`, or on a read the codec's own `ReadFailure`. The subpath
+keeps the brotli module out of the main entry.
+[The Saerskriven YAML format](../../docs/saerskriven-yaml.md#share-links) sets
+out the link format and its compatibility contract.
+
 ## Fixtures
 
 Each format this package reads keeps one feature-complete fixture, hand

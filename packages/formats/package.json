@@ -21,6 +21,11 @@
       "import": "./src/build-assets.ts",
       "default": "./src/build-assets.ts"
     },
+    "./share-link": {
+      "types": "./src/share-link.ts",
+      "import": "./src/share-link.ts",
+      "default": "./src/share-link.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
