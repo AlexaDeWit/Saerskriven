@@ -6,7 +6,8 @@ import {
 } from '@saerskriven/model/fixtures';
 import { act, render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { activeTranslator, chooseLanguage } from '../messages/locale.js';
+import { activeTranslator } from '../messages/locale.js';
+import { withLanguage } from '../messages/locale.fixtures.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
@@ -423,19 +424,38 @@ describe(
 
     describe('in French', () => {
       const french = inLocale('fr-CA');
+      const relationships = [
+        [
+          'element-order-flow',
+          'crossed-trust-boundaries',
+          'Retirer la frontière de confiance franchie 1',
+        ],
+        [
+          'element-perimeter',
+          'contained-elements',
+          'Retirer l’élément contenu 1',
+        ],
+        [
+          'element-perimeter',
+          'crossing-flows',
+          'Retirer le flux 1 qui la franchit',
+        ],
+      ] as const;
+      const recorded = async (
+        relationship: (typeof relationships)[number][1],
+      ) => {
+        await chooseFrom(
+          french(`fields.recording-of-${relationship}`),
+          french('enums.recorded'),
+        );
+        return within(
+          screen.getByRole('group', {
+            name: french(`fields.${relationship}`),
+          }),
+        );
+      };
 
-      beforeEach(() => {
-        act(() => {
-          chooseLanguage('fr-CA');
-        });
-      });
-
-      afterEach(() => {
-        act(() => {
-          chooseLanguage('en-CA');
-        });
-        globalThis.localStorage.clear();
-      });
+      withLanguage('fr-CA');
 
       it.each([
         ['element-api', 'privilege-level'],
@@ -454,27 +474,49 @@ describe(
         },
       );
 
-      it.each([
-        ['element-order-flow', 'crossed-trust-boundaries'],
-        ['element-perimeter', 'contained-elements'],
-        ['element-perimeter', 'crossing-flows'],
-      ] as const)(
+      it.each(relationships)(
         'words the recording of and the addition to %s %s in the messages of that relationship, so no "de" or "à" lands before its label',
         async (id, relationship) => {
           await open(id);
-          await chooseFrom(
-            french(`fields.recording-of-${relationship}`),
-            french('enums.recorded'),
-          );
-          const group = within(
-            screen.getByRole('group', {
-              name: french(`fields.${relationship}`),
-            }),
-          );
+          const group = await recorded(relationship);
           expect(
             group.getByRole('combobox', {
               name: french(`fields.add-to-${relationship}`),
             }),
+          ).toBeDefined();
+        },
+      );
+
+      it.each(relationships)(
+        'names the removal of the first of %s %s after that one item, with its article',
+        async (id, relationship, removal) => {
+          await open(id);
+          const group = await recorded(relationship);
+          await userEvent.click(
+            group.getByRole('button', {
+              name: french('panel.add-relationship'),
+            }),
+          );
+          expect(group.getByRole('button', { name: removal })).toBeDefined();
+        },
+      );
+    });
+
+    describe('in Swedish', () => {
+      withLanguage('sv');
+
+      it.each([
+        ['element-api', 'Angivande av behörighetsnivå'],
+        ['element-order-flow', 'Angivande av protokoll'],
+        ['element-order-flow', 'Angivande av korsade förtroendegränser'],
+        ['element-perimeter', 'Angivande av innehållna objekt'],
+        ['element-perimeter', 'Angivande av korsande flöden'],
+      ])(
+        'names a recording control of %s "%s", its label in lower case',
+        async (id, recording) => {
+          await open(id);
+          expect(
+            screen.getByRole('combobox', { name: recording }),
           ).toBeDefined();
         },
       );

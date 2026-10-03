@@ -125,6 +125,7 @@ const document = {
       status: 'open',
       description: '',
       elements: [requestFlow],
+      appliesToModel: false,
     },
     {
       id: 'threat-repudiation',
@@ -135,6 +136,7 @@ const document = {
       status: 'open',
       description: '',
       elements: [requestFlow],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: 3,

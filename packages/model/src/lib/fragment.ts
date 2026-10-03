@@ -45,8 +45,8 @@ export type InsertFragmentFailure = Extract<
 
 /**
  * Copies a selection and its flow endpoints, with related records restricted
- * to the copied graph. A copied assumption leaves its model link behind,
- * since that link belongs to the source model.
+ * to the copied graph. A copied threat or assumption leaves its model link
+ * behind, since that link belongs to the source model.
  */
 export function selectionFragment(
   model: Model,
@@ -63,6 +63,7 @@ export function selectionFragment(
         .map((threat) => ({
           ...threat,
           elements: threat.elements.filter((id) => included.has(id)),
+          appliesToModel: false,
         }));
       const threatIds = new Set(threats.map((threat) => threat.id));
       return checkedFragment({
@@ -123,15 +124,16 @@ export function remapFragment(
 }
 
 /**
- * Inserts one copied graph atomically. A pasted threat keeps its number when
- * no threat in the model holds it, so a cut then paste restores a threat's
- * number. Every other pasted threat takes a new number above the last issued
- * and every kept one, so the last issued number never ends below a pasted
- * number. A copied record identical to one the model holds adds its pasted
- * threat links to that record, which keeps its own `appliesToModel`. Every
- * other copied record linked to a pasted threat is added as a clone, an
- * assumption with no model link. An element, threat or record ID the model
- * holds, other than an identical record's, refuses the insertion.
+ * Inserts one copied graph atomically. A pasted threat is added with no
+ * model link. It keeps its number when no threat in the model holds it, so a
+ * cut then paste restores a threat's number. Every other pasted threat takes
+ * a new number above the last issued and every kept one, so the last issued
+ * number never ends below a pasted number. A copied record identical to one
+ * the model holds adds its pasted threat links to that record, which keeps
+ * its own `appliesToModel`. Every other copied record linked to a pasted
+ * threat is added as a clone, an assumption with no model link. An element,
+ * threat or record ID the model holds, other than an identical record's,
+ * refuses the insertion.
  */
 export function insertFragment(
   model: Model,
@@ -214,6 +216,7 @@ function numberedThreats(
       ...pasted.map((threat, index) => ({
         ...threat,
         number: issued.get(index) ?? threat.number,
+        appliesToModel: false,
       })),
     ],
     lastIssuedThreatNumber: floor + renumbered.length,

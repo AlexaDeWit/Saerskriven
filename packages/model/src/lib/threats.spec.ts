@@ -9,6 +9,7 @@ const threat = {
   status: 'open',
   description: 'An order can be altered between the customer and the API.',
   elements: ['element-api'],
+  appliesToModel: false,
 };
 
 describe('threatStatusSchema', () => {

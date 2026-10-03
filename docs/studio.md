@@ -449,15 +449,17 @@ between copied elements, the threats attached to them, and the mitigations and
 assumptions those threats link. The copy goes to the system clipboard as
 Saerskriven YAML. Cut removes the selection once the copy is written, and
 removes nothing if the model or the selection changed meanwhile. A threat the
-cut leaves attached to no element goes with it, and the notice counts the
-threats copied and how many of them went. Paste and Duplicate add the copy with
+cut leaves attached to no element goes with it, unless a file marks it as
+applying to the whole model, and the notice counts the threats copied and how
+many of them went. Paste and Duplicate add the copy with
 new ids, offset by a grid interval each time. A pasted threat keeps its number
 when no threat in the model holds it, so pasting after a cut restores a removed
 threat under its own number. Otherwise it takes a new number, as a copy or a
 duplicate does while its original stays. A pasted mitigation or assumption
 identical to one the model already holds links the pasted threats to that
 record, and every other record is added as a new one. A pasted assumption does
-not apply to the model. The status line counts what was linked and added, and
+not apply to the model, and neither does a pasted threat, whatever its original
+does. The status line counts what was linked and added, and
 the links left behind. Duplicate leaves the clipboard alone. Text fields keep
 their own clipboard keys.
 
@@ -473,7 +475,8 @@ Delete or Backspace removes the selection from anywhere in the studio outside a
 form field (a text box or a drop-down list). A flow attached to a removed
 element loses that end and keeps the other, and a threat loses the link. A
 threat the deletion leaves attached to no element goes with it, together with
-the mitigations and assumptions left on no threat. The notice counts the flows
+the mitigations and assumptions left on no threat, unless a file marks the
+threat as applying to the whole model. The notice counts the flows
 detached, the links dropped from the threats that stay, and the threats
 removed, so a threat that goes is reported once. One Delete stays one undo
 step, whatever it took.
@@ -550,8 +553,9 @@ row of names each with its own Detach control, and an **Attach existing
 element** picker under them that offers the elements it does not name. Attach
 and Detach are one undo step each.
 
-Detaching the last element removes the threat, with the mitigations and
-assumptions left on no threat, and the notice says so. There is no
+Detaching the last element removes the threat, unless a file marks it as
+applying to the whole model, with the mitigations and assumptions left on no
+threat, and the notice says so. There is no
 confirmation: Undo brings the threat back with everything the removal took, as
 unlinking a record's last threat does. Detaching the element whose panel you
 are reading takes the threat off that panel, so focus moves to the threat that
@@ -604,7 +608,8 @@ the elements the threat is on, or "On no element". A threat opens and is
 edited as on an element's panel. There is no Add a threat or Attach existing
 threat here, so add a threat on an element. A detach that leaves the threat on
 another element keeps it in the list, and detaching its last element removes
-it, as on an element's panel. Focus then moves to the threat that takes its
+it, unless a file marks it as applying to the whole model, as on an element's
+panel. Focus then moves to the threat that takes its
 place, or to the Threats tab.
 
 Details holds the model's Title and Description, then the assumptions that

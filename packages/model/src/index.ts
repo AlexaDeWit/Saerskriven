@@ -57,14 +57,17 @@ export {
   attachThreat,
   detachThreat,
   droppedThreats,
+  linkThreatToModel,
   nextThreatNumber,
   removeThreat,
   replaceThreat,
+  unlinkThreatFromModel,
   type AddThreatFailure,
   type AttachThreatFailure,
   type DetachThreatFailure,
   type RemoveThreatFailure,
   type ReplaceThreatFailure,
+  type ThreatModelLinkFailure,
 } from './lib/threat-operations.js';
 export * from './lib/mitigation-operations.js';
 export * from './lib/assumption-operations.js';
@@ -89,6 +92,7 @@ export {
   mitigationHasReference,
   recordReferenceSchema,
   recordsLinkedTo,
+  threatHasReference,
   type RecordReference,
 } from './lib/records.js';
 export * from './lib/threat-flags.js';

@@ -105,7 +105,7 @@ export function GeometryEditor({
       {(['x', 'y'] as const).map((axis) => (
         <NumberField
           key={axis}
-          label={t(axis === 'x' ? 'tools.axis-x' : 'tools.axis-y')}
+          quantity={`axis-${axis}`}
           value={position[axis]}
           change={(value) => {
             setPosition({ ...position, [axis]: value });
@@ -117,7 +117,7 @@ export function GeometryEditor({
         .map((axis) => (
           <NumberField
             key={axis}
-            label={t(axis === 'width' ? 'tools.width' : 'tools.height')}
+            quantity={axis}
             value={size[axis]}
             change={(value) => {
               setSize({ ...size, [axis]: value });
@@ -145,22 +145,23 @@ export function numeric(value: string): number {
  * keeping the decimals the field is written with.
  */
 export function NumberField({
-  label,
+  quantity,
   value,
   change,
 }: {
-  readonly label: string;
+  readonly quantity: 'axis-x' | 'axis-y' | 'width' | 'height';
   readonly value: string;
   readonly change: (value: string) => void;
 }) {
   const inputId = useId();
   const { t } = useTranslator();
+  const label = t(`tools.${quantity}`);
   return (
     <div className={styles.field}>
       <label htmlFor={inputId}>{label}</label>
       <span>
         <button
-          aria-label={t('tools.decrease', { label })}
+          aria-label={t(`tools.decrease-${quantity}`)}
           onClick={() => {
             change(stepped(value, -1));
           }}
@@ -179,7 +180,7 @@ export function NumberField({
           }}
         />
         <button
-          aria-label={t('tools.increase', { label })}
+          aria-label={t(`tools.increase-${quantity}`)}
           onClick={() => {
             change(stepped(value, 1));
           }}

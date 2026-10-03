@@ -125,8 +125,7 @@ export function RecordRow<Held extends ThreatRecord>({
   const remove = (
     <button
       aria-describedby={elsewhere === undefined ? undefined : sharedId}
-      aria-label={t(draft ? 'fields.discard-record' : 'fields.unlink-record', {
-        kind: t(kind.nounMessage),
+      aria-label={t(`fields.${draft ? 'discard' : 'unlink'}-${kind.noun}`, {
         number: position,
       })}
       className={styles.unlink}

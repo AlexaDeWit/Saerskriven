@@ -42,11 +42,12 @@ export const severitySchema = z.enum([
 export type Severity = z.infer<typeof severitySchema>;
 
 /**
- * One threat, attached to any number of elements by id. `description` is
- * markdown prose, and a threat's mitigations are records that link it.
- * Threat numbers must be unique across the model and element ids must
- * resolve. parseModel enforces both, so this schema alone accepts duplicates
- * and dangling ids.
+ * One threat. It applies to the model, to the elements it names by id, or to
+ * both. `appliesToModel` is a stored reference, never inferred from an empty
+ * `elements` list. `description` is markdown prose, and a threat's
+ * mitigations are records that link it. Threat numbers must be unique across
+ * the model and element ids must resolve. parseModel enforces both, so this
+ * schema alone accepts duplicates and dangling ids.
  */
 export const threatSchema = z.object({
   id: threatIdSchema,
@@ -57,6 +58,7 @@ export const threatSchema = z.object({
   status: threatStatusSchema,
   description: acceptedTextSchema,
   elements: z.array(elementIdSchema),
+  appliesToModel: z.boolean(),
 });
 
 /** Threat record. */

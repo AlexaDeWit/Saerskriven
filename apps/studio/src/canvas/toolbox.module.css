@@ -83,6 +83,8 @@
 }
 
 .content {
+  box-sizing: border-box;
+  max-block-size: var(--radix-select-content-available-height);
   padding: var(--saer-space-1);
 }
 

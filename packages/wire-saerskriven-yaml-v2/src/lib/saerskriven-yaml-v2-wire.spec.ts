@@ -91,6 +91,14 @@ describe('the Saerskriven YAML version 2 wire schema', () => {
     ]);
   });
 
+  it('reads a threat that states its model link, a key the release before left out', () => {
+    const threats = [{ ...document.threats[0], appliesToModel: true }];
+    expect(parsedOf({ ...document, threats })).toEqual({
+      ...document,
+      threats,
+    });
+  });
+
   it('drops the threat mitigation text and the assumption element links', () => {
     expect(
       parsedOf({

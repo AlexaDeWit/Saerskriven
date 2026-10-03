@@ -6,8 +6,10 @@ import {
   assumptionRegister,
   culledAfter,
   mitigationRegister,
+  threatHasReference,
   withId,
   withoutId,
+  type UnknownThreatFailure,
 } from './records.js';
 import { elementIdsAcross, unknownElementIn } from './references.js';
 import type { Threat } from './threats.js';
@@ -19,10 +21,7 @@ export type AddThreatFailure = Extract<
 >;
 
 /** The failure {@link removeThreat} can produce. */
-export type RemoveThreatFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownThreat' }
->;
+export type RemoveThreatFailure = UnknownThreatFailure;
 
 /** The failures {@link replaceThreat} can produce. */
 export type ReplaceThreatFailure = Extract<
@@ -40,6 +39,9 @@ export type AttachThreatFailure = ThreatLinkFailure;
 
 /** The failures {@link detachThreat} can produce. */
 export type DetachThreatFailure = ThreatLinkFailure;
+
+/** The failure {@link linkThreatToModel} and {@link unlinkThreatFromModel} can produce. */
+export type ThreatModelLinkFailure = UnknownThreatFailure;
 
 /**
  * Appends `threat` to the register and advances the last issued number to
@@ -86,10 +88,7 @@ export function removeThreat(
   model: Model,
   threatId: ThreatId,
 ): Either.Either<Model, RemoveThreatFailure> {
-  if (!model.threats.some((threat) => threat.id === threatId)) {
-    return Either.left(OperationFailure.UnknownThreat({ threatId }));
-  }
-  return Either.right(
+  return Either.map(heldThreat(model, threatId), () =>
     withoutThreatLinks(
       {
         ...model,
@@ -102,17 +101,18 @@ export function removeThreat(
 
 /**
  * `model` with `relink` applied to every threat, the threats that leaves
- * attached to none removed, and {@link removeThreat}'s cascade run for each
- * of them. A threat that was attached to no element before the relink
- * stays, so a file read with one keeps it. This is the package's own
- * helper, not part of its public surface: outside it, {@link droppedThreats}
- * is how a caller learns what a cull took.
+ * with no reference removed, and {@link removeThreat}'s cascade run for each
+ * of them. A threat's references are the ones {@link threatHasReference}
+ * reads. A threat that had none before the relink stays, so a file read
+ * with one keeps it. This is the package's own helper, not part of its
+ * public surface: outside it, {@link droppedThreats} is how a caller learns
+ * what a cull took.
  */
 export function withCulledThreats(
   model: Model,
   relink: (threat: Threat) => Threat,
 ): Model {
-  const kept = culledAfter(model.threats, attached, relink);
+  const kept = culledAfter(model.threats, threatHasReference, relink);
   const keptIds = new Set(kept.map((threat) => threat.id));
   return model.threats
     .filter((threat) => !keptIds.has(threat.id))
@@ -133,9 +133,9 @@ export function droppedThreats(before: Model, after: Model): Threat[] {
 
 /**
  * Swaps the threat carrying `threat.id` for `threat` in place, culling it
- * where the swap takes its last element attachment away, with the cascade
+ * where the swap takes its last reference away, with the cascade
  * {@link removeThreat} carries. Every field but the id and the number is the
- * caller's to change. A threat already attached to nothing keeps that
+ * caller's to change. A threat that already had no reference keeps that
  * standing whatever else the replacement changes. Fails on an unknown
  * threat, a changed number, or a link to an element the model does not hold.
  */
@@ -143,28 +143,24 @@ export function replaceThreat(
   model: Model,
   threat: Threat,
 ): Either.Either<Model, ReplaceThreatFailure> {
-  const replaced = model.threats.find(
-    (candidate) => candidate.id === threat.id,
-  );
-  if (!replaced) {
-    return Either.left(OperationFailure.UnknownThreat({ threatId: threat.id }));
-  }
-  if (replaced.number !== threat.number) {
-    return Either.left(
-      OperationFailure.ChangedThreatNumber({
-        threatId: threat.id,
-        number: threat.number,
-      }),
-    );
-  }
-  const unlinkable = unknownElementIn(model.diagrams, threat.elements);
-  if (unlinkable) {
-    return Either.left(
-      OperationFailure.UnknownElement({ elementId: unlinkable }),
-    );
-  }
-  return Either.right(
-    withCulledThreats(model, (held) => (held.id === threat.id ? threat : held)),
+  return Either.flatMap(
+    heldThreat(model, threat.id),
+    (replaced): Either.Either<Model, ReplaceThreatFailure> => {
+      if (replaced.number !== threat.number) {
+        return Either.left(
+          OperationFailure.ChangedThreatNumber({
+            threatId: threat.id,
+            number: threat.number,
+          }),
+        );
+      }
+      const unlinkable = unknownElementIn(model.diagrams, threat.elements);
+      return unlinkable
+        ? Either.left(
+            OperationFailure.UnknownElement({ elementId: unlinkable }),
+          )
+        : Either.right(withThreat(model, threat));
+    },
   );
 }
 
@@ -186,23 +182,46 @@ export function attachThreat(
 }
 
 /**
- * Unlinks the element from the threat, removing the threat where it was its
- * last attachment, with {@link removeThreat}'s cascade. Detaching an element
- * the threat does not carry changes nothing. Fails when either id names
- * nothing. {@link droppedThreats} says whether the threat went.
+ * Unlinks the element from the threat, removing the threat where that was
+ * its last reference, with {@link removeThreat}'s cascade. A threat that
+ * applies to the model stays, attached to nothing. Detaching an element the
+ * threat does not carry changes nothing. Fails when either id names nothing.
+ * {@link droppedThreats} says whether the threat went.
  */
 export function detachThreat(
   model: Model,
   threatId: ThreatId,
   elementId: ElementId,
 ): Either.Either<Model, DetachThreatFailure> {
-  return Either.map(linkableThreat(model, threatId, elementId), () =>
-    withCulledThreats(model, (held) =>
-      held.id === threatId
-        ? { ...held, elements: withoutId(held.elements, elementId) }
-        : held,
-    ),
+  return Either.map(linkableThreat(model, threatId, elementId), (threat) =>
+    withThreat(model, {
+      ...threat,
+      elements: withoutId(threat.elements, elementId),
+    }),
   );
+}
+
+/**
+ * Applies the threat to the model. A threat that already applies returns
+ * the model it was given.
+ */
+export function linkThreatToModel(
+  model: Model,
+  threatId: ThreatId,
+): Either.Either<Model, ThreatModelLinkFailure> {
+  return withModelLink(model, threatId, true);
+}
+
+/**
+ * Takes the model link away from the threat, removing the threat where it
+ * names no element, with {@link removeThreat}'s cascade. A threat that does
+ * not apply returns the model it was given.
+ */
+export function unlinkThreatFromModel(
+  model: Model,
+  threatId: ThreatId,
+): Either.Either<Model, ThreatModelLinkFailure> {
+  return withModelLink(model, threatId, false);
 }
 
 /**
@@ -213,15 +232,32 @@ export function nextThreatNumber(model: Model): number {
   return model.lastIssuedThreatNumber + 1;
 }
 
-const attached = (threat: Threat): boolean => threat.elements.length > 0;
+function heldThreat(
+  model: Model,
+  threatId: ThreatId,
+): Either.Either<Threat, UnknownThreatFailure> {
+  return Either.fromNullable(
+    model.threats.find((candidate) => candidate.id === threatId),
+    () => OperationFailure.UnknownThreat({ threatId }),
+  );
+}
 
 function withThreat(model: Model, next: Threat): Model {
-  return {
-    ...model,
-    threats: model.threats.map((threat) =>
-      threat.id === next.id ? next : threat,
-    ),
-  };
+  return withCulledThreats(model, (threat) =>
+    threat.id === next.id ? next : threat,
+  );
+}
+
+function withModelLink(
+  model: Model,
+  threatId: ThreatId,
+  appliesToModel: boolean,
+): Either.Either<Model, ThreatModelLinkFailure> {
+  return Either.map(heldThreat(model, threatId), (held) =>
+    held.appliesToModel === appliesToModel
+      ? model
+      : withThreat(model, { ...held, appliesToModel }),
+  );
 }
 
 function withoutThreatLinks(model: Model, threatId: ThreatId): Model {
@@ -251,11 +287,11 @@ function linkableThreat(
   threatId: ThreatId,
   elementId: ElementId,
 ): Either.Either<Threat, ThreatLinkFailure> {
-  const threat = model.threats.find((candidate) => candidate.id === threatId);
-  if (!threat) {
-    return Either.left(OperationFailure.UnknownThreat({ threatId }));
-  }
-  return elementIdsAcross(model.diagrams).has(elementId)
-    ? Either.right(threat)
-    : Either.left(OperationFailure.UnknownElement({ elementId }));
+  return Either.flatMap(
+    heldThreat(model, threatId),
+    (threat): Either.Either<Threat, ThreatLinkFailure> =>
+      elementIdsAcross(model.diagrams).has(elementId)
+        ? Either.right(threat)
+        : Either.left(OperationFailure.UnknownElement({ elementId })),
+  );
 }

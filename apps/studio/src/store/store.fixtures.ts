@@ -161,6 +161,7 @@ const document = {
       status: 'open',
       description: '',
       elements: [actorElement],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: 1,

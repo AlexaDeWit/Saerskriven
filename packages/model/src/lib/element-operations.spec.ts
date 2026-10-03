@@ -344,6 +344,19 @@ describe('removeElement', () => {
     expect(next.threats).toEqual([]);
   });
 
+  it('keeps a threat that applies to the model when the deleted element was its last', () => {
+    const draft = structuredClone(validModelFixture);
+    draft.threats[0].appliesToModel = true;
+    const modelWide = parsedFixture(draft);
+    const next = ['element-api', 'element-order-flow'].reduce(
+      (model, id) => modelOf(removeElement(model, elementId(id))),
+      modelWide,
+    );
+    expect(next.threats).toEqual([{ ...modelWide.threats[0], elements: [] }]);
+    expect(next.mitigations).toEqual(modelWide.mitigations);
+    expect(next.assumptions).toEqual(modelWide.assumptions);
+  });
+
   it('keeps a threat that was already attached to no element', () => {
     const draft = structuredClone(validModelFixture);
     draft.threats[0].elements = [];

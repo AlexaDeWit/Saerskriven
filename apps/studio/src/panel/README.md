@@ -218,11 +218,13 @@ no element first, since a file can be read with one and nothing else reaches
 them. The expanded threat attaches and detaches elements of its own. Both go
 through `AttachThreat` and `DetachThreat`, never through a `ReplaceThreat`
 carrying a shorter list: the model culls a threat on the detach that takes its
-last element, and a replacement naming no element does not.
+last element, unless the threat applies to the model, and a replacement naming
+no element does not.
 
 The list owns both dispatches because a detach can take the threat off the
 list, off the element whose panel it is or, with its last element, off the
-model, which leaves the group unmounted with nowhere to put focus. The model's
+model (a threat that applies to the model stays, on no element), which leaves
+the group unmounted with nowhere to put focus. The model's
 list keeps a threat a detach leaves on another element, and the threat's
 elements line follows. The group asks only for the next row when it survives. A
 detach that removes the threat says so in the shared status, as an unlinked

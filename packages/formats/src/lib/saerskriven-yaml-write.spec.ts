@@ -72,6 +72,7 @@ const backwards: Model = {
   mitigations: featureComplete.mitigations,
   lastIssuedThreatNumber: featureComplete.lastIssuedThreatNumber,
   threats: featureComplete.threats.map((threat) => ({
+    appliesToModel: threat.appliesToModel,
     elements: threat.elements,
     description: threat.description,
     status: threat.status,

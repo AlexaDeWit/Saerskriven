@@ -558,6 +558,13 @@ export const expandThreat = async (
   await expect(summary).toHaveAttribute('aria-expanded', 'true');
 };
 
+/** Opens the two-diagram model with the shopper selected and its takeover threat expanded. */
+export const openShopperTakeover = async (page: Page): Promise<void> => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
+};
+
 /** Adds a record through the panel's Add control, typing its first field and, when given, a mitigation's description, each left by Tab. */
 export const addRecord = async (
   page: Page,
@@ -612,6 +619,18 @@ export const offeredToLink = async (
 /** Follows real listbox focus because Radix marks aria-selected only for an already selected focused option. */
 export const focusedOption = (page: Page): Locator =>
   page.locator('[role="option"]:focus');
+
+/** The cue a listbox draws at an edge its options run on past. */
+export const scrollCue = (page: Page, edge: 'earlier' | 'later'): Locator =>
+  page.locator(`[data-scroll-cue="${edge}"]`);
+
+/** Presses ArrowDown until the listbox has scrolled off its start and shows its "earlier" cue. */
+export const scrolledOffItsStart = async (page: Page): Promise<void> => {
+  await expect(async () => {
+    await page.keyboard.press('ArrowDown');
+    await expect(scrollCue(page, 'earlier')).toBeVisible({ timeout: 100 });
+  }).toPass({ intervals: [0], timeout: 5_000 });
+};
 
 /** Retries arrow navigation until focus moves, accounting for Radix restoring focus after popup positioning. */
 export const stepThroughOptions = async (
