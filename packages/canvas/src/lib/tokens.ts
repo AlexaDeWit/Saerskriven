@@ -22,7 +22,10 @@ export type Palette = {
   readonly surfaceProcess: Colour;
   /** Names, outlines and arrowheads: the pencil the diagram is drawn with. */
   readonly textPrimary: Colour;
-  /** Notes, flow names, boundary dashes, and muted text in the chrome. */
+  /**
+   * Notes, flow names, boundary dashes, an out-of-scope outline, and muted
+   * text in the chrome.
+   */
   readonly textSecondary: Colour;
   /** Every hairline, the outline that identifies a control among them. */
   readonly border: Colour;
@@ -110,6 +113,17 @@ export const darkPalette = {
   toneLow: '#6B8A82',
   toneNeutral: '#9A9185',
 } as const satisfies Palette;
+
+/**
+ * The roles an out-of-scope element is drawn in. Its outline, with a flow's
+ * line and arrowhead, steps back to the muted ink, and its dash marks it out
+ * of scope. Its name keeps the ink of an in-scope name. Nothing about it is
+ * faded, so each ink holds the ratio measured for its role.
+ */
+export const outOfScopeInk = {
+  name: 'textPrimary',
+  outline: 'textSecondary',
+} as const satisfies Record<'name' | 'outline', keyof Palette>;
 
 /**
  * The type the studio's chrome is set in. Every value is a CSS length or a

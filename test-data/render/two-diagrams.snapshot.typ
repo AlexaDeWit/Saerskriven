@@ -35,12 +35,6 @@ align(center + horizon)[
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
-.saer-diagram-out-of-scope {
-  opacity: 0.5;
-}
-.saer-diagram-out-of-scope .saer-diagram-shape {
-  stroke-dasharray: 6 4;
-}
 .saer-diagram-label {
   fill: #38342E;
   font-size: 10px;
@@ -70,6 +64,16 @@ align(center + horizon)[
 .saer-diagram-flow-backing {
   fill: #F9F6F0;
   stroke: none;
+}
+.saer-diagram-out-of-scope .saer-diagram-shape {
+  stroke: #6B655C;
+  stroke-dasharray: 6 4;
+}
+.saer-diagram-out-of-scope .saer-diagram-flow-arrow {
+  fill: #6B655C;
+}
+.saer-diagram-out-of-scope .saer-diagram-label {
+  fill: #38342E;
 }
 .saer-diagram-badge {
   stroke: #FAF8F2;
@@ -164,12 +168,6 @@ align(center + horizon)[
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
-.saer-diagram-out-of-scope {
-  opacity: 0.5;
-}
-.saer-diagram-out-of-scope .saer-diagram-shape {
-  stroke-dasharray: 6 4;
-}
 .saer-diagram-label {
   fill: #38342E;
   font-size: 10px;
@@ -199,6 +197,16 @@ align(center + horizon)[
 .saer-diagram-flow-backing {
   fill: #F9F6F0;
   stroke: none;
+}
+.saer-diagram-out-of-scope .saer-diagram-shape {
+  stroke: #6B655C;
+  stroke-dasharray: 6 4;
+}
+.saer-diagram-out-of-scope .saer-diagram-flow-arrow {
+  fill: #6B655C;
+}
+.saer-diagram-out-of-scope .saer-diagram-label {
+  fill: #38342E;
 }
 .saer-diagram-badge {
   stroke: #FAF8F2;

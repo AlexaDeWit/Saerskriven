@@ -3,6 +3,7 @@ import {
   contrastRatio,
   darkPalette,
   lightPalette,
+  outOfScopeInk,
   tokenStylesheet,
   type Palette,
 } from './tokens.js';
@@ -90,6 +91,15 @@ describe.each(palettes)('$name', ({ palette }) => {
         palette,
         pairsOf([...tones, 'border', 'actionPrimary'], surfaces, markFloor),
       ),
+    ).toEqual([]);
+  });
+
+  it("letters an out-of-scope element's name at the ratio text asks, and draws its outline at the ratio a mark asks, on every surface", () => {
+    expect(
+      below(palette, [
+        ...pairsOf([outOfScopeInk.name], surfaces, textFloor),
+        ...pairsOf([outOfScopeInk.outline], surfaces, markFloor),
+      ]),
     ).toEqual([]);
   });
 

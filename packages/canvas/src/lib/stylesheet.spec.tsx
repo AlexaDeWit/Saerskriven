@@ -11,6 +11,7 @@ import {
   themedCanvasStylesheet,
   wrappedTextStyles,
 } from './stylesheet.js';
+import { outOfScopeInk, paletteProperty } from './tokens.js';
 
 const declared = new Set<string>(Object.values(canvasClassNames));
 
@@ -119,6 +120,44 @@ describe('themedCanvasStylesheet', () => {
   it('styles the classes the resolved sheet does, with every colour left to a custom property', () => {
     expect(classesStyledBy(themedCanvasStylesheet)).toEqual(selected);
     expect(themedCanvasStylesheet).not.toMatch(/#[0-9A-Fa-f]{3,8}/u);
+  });
+});
+
+describe('an out-of-scope element', () => {
+  const outOfScope = `.${canvasClassNames.outOfScope} `;
+  const rules = themedCanvasStylesheet
+    .split('}')
+    .map((rule) => rule.trim())
+    .filter((rule) => rule.startsWith(outOfScope));
+  const ruleFor = (className: string): string | undefined =>
+    rules.find((rule) => rule.startsWith(`${outOfScope}.${className} {`));
+
+  it('is faded by neither sheet, so each ink is drawn at the ratio the palette measures for it', () => {
+    expect(
+      [sheet, themedCanvasStylesheet].filter((styles) =>
+        styles.includes('opacity'),
+      ),
+    ).toEqual([]);
+  });
+
+  it('has its outline, line, arrowhead and name drawn in its own inks, its badge, note and flow name as in scope', () => {
+    expect(classesStyledBy(rules.join('\n'))).toEqual(
+      new Set([
+        canvasClassNames.outOfScope,
+        canvasClassNames.shape,
+        canvasClassNames.flowArrow,
+        canvasClassNames.label,
+      ]),
+    );
+    expect(ruleFor(canvasClassNames.shape)).toContain(
+      `stroke: ${paletteProperty(outOfScopeInk.outline)};`,
+    );
+    expect(ruleFor(canvasClassNames.flowArrow)).toContain(
+      `fill: ${paletteProperty(outOfScopeInk.outline)};`,
+    );
+    expect(ruleFor(canvasClassNames.label)).toContain(
+      `fill: ${paletteProperty(outOfScopeInk.name)};`,
+    );
   });
 });
 

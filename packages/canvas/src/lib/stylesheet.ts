@@ -7,6 +7,7 @@ import {
 import {
   canvasType,
   lightPalette,
+  outOfScopeInk,
   paletteProperty,
   strokeWidths,
   type Colour,
@@ -121,12 +122,6 @@ const sheetFrom = (
   stroke-width: ${boundaryStrokeWidth};
   stroke-dasharray: 8 6;
 }
-.${canvasClassNames.outOfScope} {
-  opacity: 0.5;
-}
-.${canvasClassNames.outOfScope} .${canvasClassNames.shape} {
-  stroke-dasharray: 6 4;
-}
 .${wrappedTextStyles.label.className} {
   fill: ${colour('textPrimary')};
   font-size: ${wrappedTextStyles.label.fontSize}px;
@@ -156,6 +151,16 @@ const sheetFrom = (
 .${canvasClassNames.flowBacking} {
   fill: ${colour('surfaceCanvas')};
   stroke: none;
+}
+.${canvasClassNames.outOfScope} .${canvasClassNames.shape} {
+  stroke: ${colour(outOfScopeInk.outline)};
+  stroke-dasharray: 6 4;
+}
+.${canvasClassNames.outOfScope} .${canvasClassNames.flowArrow} {
+  fill: ${colour(outOfScopeInk.outline)};
+}
+.${canvasClassNames.outOfScope} .${wrappedTextStyles.label.className} {
+  fill: ${colour(outOfScopeInk.name)};
 }
 .${canvasClassNames.badge} {
   stroke: ${colour('badgeGround')};
