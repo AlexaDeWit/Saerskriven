@@ -432,20 +432,31 @@ threat's status.
 A new or returning row joins the end of the group while the group is open, so
 the rows you are reading keep their place.
 
-### Model properties
+### The model panel
 
-**Model properties** shows the model's Title, Description, and the assumptions
-that apply to the whole model, in the panel's place, with focus in Title. It
-clears the selection, and whether it is shown belongs to each tab. Selecting
-anything brings the threat panel back. Escape, Close model properties, or
+**Model**, in the menu or M, shows the model panel in the threat panel's place,
+headed by the model's title, on two tabs: **Threats**, which carries the
+model's threat count, and **Details**. It opens on Threats with focus on that
+tab, and clears the selection. Whether it is shown belongs to each browser tab.
+Selecting anything brings the threat panel back. Escape, Close model panel, or
 running the command again closes it and moves focus to the canvas.
 
-Its assumptions group works as a threat's does, bound to the model, but its
-records stay open as cards with labelled fields, and its heading carries no
-count. Add creates an assumption that applies to the model and links no threat.
-Link existing lists the assumptions that do not yet apply to the model. Unlink
-stops an assumption applying to the model, and removes it only where it links no
-threat.
+Threats lists every threat in the model, a threat on no element included, in
+the order above and with the same summaries. Each summary adds a line naming
+the elements the threat is on, or "On no element". A threat opens and is
+edited as on an element's panel. There is no Add a threat or Attach existing
+threat here, so add a threat on an element. A detach that leaves the threat on
+another element keeps it in the list, and detaching its last element removes
+it, as on an element's panel. Focus then moves to the threat that takes its
+place, or to the Threats tab.
+
+Details holds the model's Title and Description, then the assumptions that
+apply to the whole model. The assumptions group works as a threat's does, bound
+to the model, and a folded assumption names the threats it is also on by
+number. Add creates an assumption that applies to the model and links no
+threat. Link existing lists the assumptions that do not yet apply to the model.
+Unlink stops an assumption applying to the model, and removes it only where it
+links no threat.
 
 ### Description and scope
 
@@ -503,7 +514,7 @@ outside one, and none works while focus is inside an open menu or list.
 | Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange       |
 | Align centres, Align middles           | Mod+Shift+H, Mod+Shift+V                     | Menu, Arrange       |
 | Distribute horizontally, vertically    | Mod+Shift+D, Mod+Shift+B                     | Menu, Arrange       |
-| Model properties                       | M                                            | Menu                |
+| Model                                  | M                                            | Menu                |
 | Focus threats                          | T                                            | Keyboard only       |
 | Start a flow                           | F                                            | Keyboard only       |
 | Add bend                               | `+`                                          | Flow route toolbar  |
@@ -552,8 +563,8 @@ navigation keys do not.
 - Removing and reordering diagrams is not offered.
 - Nothing pans to a newly connected flow, or out from under the panel.
 - Records have no list of their own: a mitigation is reached through its
-  threats, and an assumption through its threats or the model properties. The
-  model's explicit record removal has no control.
+  threats, and an assumption through its threats or the model panel's Details.
+  The model's explicit record removal has no control.
 - Link existing and Attach existing have no search or filter, and the threat
   list has no filter or search, and no order but the one above.
 - A threat's id and number cannot be edited.

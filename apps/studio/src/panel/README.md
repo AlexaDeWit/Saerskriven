@@ -3,8 +3,8 @@
 The threats of whatever is selected, edited where they are read. The canvas
 selects, the panel follows, and an edit leaves as a store action, so the
 badges on the diagram and the panel are two views of one model with nothing
-synchronizing them. The same location shows the model's own properties. What
-a person can do with it is in
+synchronizing them. The same location shows the model: every threat it holds,
+and its own fields. What a person can do with it is in
 [Using the studio](../../../../docs/studio.md#the-threat-panel).
 
 ## Modules
@@ -13,33 +13,35 @@ a person can do with it is in
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `threat-overlay.tsx`                                               | The mount: which panel to draw, the drafts and pane width it retains across both, and the keyboard                                                     |
 | `panel-frame.tsx`, `panel-tabs.tsx`                                | The pane either panel draws: width control, heading, close control, Escape, the coverage it reports, and the Threats and Details tabs                  |
-| `threat-panel.tsx`, `element-threats.tsx`                          | The panel for a selection, and its Threats tab: add, attach, delete and the threat list                                                                |
+| `threat-panel.tsx`                                                 | The panel for a selection                                                                                                                              |
+| `threat-list.tsx`                                                  | The Threats tab either panel draws: add and attach on an element, then the threat list, and where focus goes after each change                         |
 | `threat-editor.tsx`, `threat-scroll.ts`                            | One expanded threat, and where an opened threat and a field Tab reaches land in the scrolling body                                                     |
 | `threat-summary.tsx`, `threat-marks.tsx`                           | A collapsed threat's summary, which is also its accordion trigger's accessible name, and its severity, status and flag marks                           |
 | `threat-records.tsx`, `record-row.tsx`, `records.ts`               | One record group, one record folded or open, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
 | `shown-order.ts`                                                   | Holding the order a list mounted in, which the threat list and each record group keep while they are open                                              |
 | `threat-attachments.tsx`                                           | The elements one threat names, with the controls that attach and detach them                                                                           |
 | `pick-existing.tsx`                                                | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
-| `model-properties.tsx`                                             | The panel for the model: title, description and the model's assumptions                                                                                |
+| `model-panel.tsx`                                                  | The panel for the model: every threat on Threats, and its title, description and assumptions on Details                                                |
 | `element-properties.tsx`, `element-property-fields.tsx`            | The element's own fields on Details: its details, then its security properties, and their field kinds                                                  |
 | `element-details.tsx`                                              | An element's description, out-of-scope flag and reason, for every kind, a note included                                                                |
-| `threats.ts`                                                       | `panelSubject` and `attachedThreats`, the selectors the panel binds to, and what each picker offers                                                    |
+| `threats.ts`                                                       | `panelSubject`, `attachedThreats` and `modelThreats`, the selectors the panel binds to, and what each picker offers                                    |
 | `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`, `marked.ts` | Refused drafts, option labels a person can tell apart, the focus channel, and finding a record row or threat item by its id                            |
 
 The panel is mounted from `../canvas/diagram-canvas.tsx`, inside the canvas
 container, which is what makes it an overlay on the diagram rather than a
 column taken off it. It is on the page only while something is selected or the
-model's properties are shown, so the panel is the only place a threat is added
-from. It is held clear of the zoom cluster rather than drawn over it, and
-opening it resizes nothing: the fit commands use the coverage the pane reports
-([the canvas](../canvas/README.md#the-view)). Its default width comes from
+model panel is shown, so the panel is the only place a threat is added from. It
+is held clear of the zoom cluster rather than drawn over it, and opening it
+resizes nothing: the fit commands use the coverage the pane reports ([the
+canvas](../canvas/README.md#the-view)). Its default width comes from
 `panelCover` in the canvas tokens, projected as `--saer-panel-cover`.
 
 ## What it holds
 
 The panel holds no copy of model state. `panelSubject` returns one element, a
-count of several, the model while its properties are shown, or nothing, and
-`attachedThreats` returns threats only for a single selection. A flow is an
+count of several, the model while the model panel is shown, or nothing. The
+threat list reads `attachedThreats`, the threats of a single selection, on an
+element's panel and `modelThreats`, every threat, on the model's. A flow is an
 element here because it carries threats. The panel's own state is which tab
 shows, which threat is expanded, the order the list mounted in, which records
 are open, where focus is being sent, and the draft a field holds after a
@@ -47,26 +49,31 @@ refusal.
 
 Focus is sent through `panel-focus.ts`, a channel of its own rather than a
 field of the store, because focus belongs in neither the model nor its undo
-stacks. Focus threats and undo and redo use it: an undo that takes away the
-threat holding focus sends focus to "Add a threat", a redo there sends it back
-to the restored title, and anywhere else focus stays where it is.
+stacks. Focus threats, the M command, and undo and redo use it. Each list has a
+home control, "Add a threat" on an element and the Threats tab on the model,
+which has no add of its own. M focuses the model's. An undo that takes away the
+threat holding focus sends focus home, a redo there sends it back to the
+restored title, and anywhere else focus stays where it is. A deleted threat's
+focus goes home too where no threat is left to take it.
 
 The pane claims the first Escape, closing and returning focus to the element,
 so one press never also clears the selection. An open listbox inside the pane
 is handling Escape itself, and the press is left to it. What is closed is the
 element rather than the panel: it stays closed while it is the selection,
-whatever is then moved, resized or undone on it.
+whatever is then moved, resized or undone on it. The model panel, which clears
+the selection as it opens, closes outright and hands focus to the canvas.
 
-Refused drafts are held per element in the overlay, which outlives the panel.
-A draft goes when its text is settled, by a correction or an edit landing
-under it, when the threat it named leaves the element, or when the file
-changes. A model arriving with the same ids is a different sitting and starts
-on what the model says. The file is identified by its name, the state carrying
-nothing else that tells two sittings apart, so a save under another name starts
-the drafts afresh as an open does. Drafts in an element's description, reason
-and security properties use the same lifetime, and a reason's draft also goes
-when its field hides, whatever hid it. The security properties' controls mount
-on first opening and stay mounted through later collapses, and only a security
+Refused drafts are held per list in the overlay, which outlives the panel: an
+element's under its id and the model's under no element (`HeldDrafts`). A draft
+goes when its text is settled, by a correction or an edit landing under it,
+when the threat it named leaves the list, or when the file changes. A model
+arriving with the same ids is a different sitting and starts on what the model
+says. The file is identified by its name, the state carrying nothing else that
+tells two sittings apart, so a save under another name starts the drafts afresh
+as an open does. Drafts in an element's description, reason and security
+properties use the same lifetime, and a reason's draft also goes when its field
+hides, whatever hid it. The security properties' controls mount on first
+opening and stay mounted through later collapses, and only a security
 property's draft holds that disclosure open. The overlay skips renders its
 canvas parent makes during a drag.
 
@@ -79,12 +86,18 @@ stored value is drawn as its own label. Its severity marker uses the canvas
 tone class. Each status and each flag mark has a glyph shape of its own, so
 every mark stays distinct in forced colours, where open also keeps its outline
 and weight. Beside Status in an open threat a flag mark drops its outline, the
-only outlines there being the fields' own, and keeps its weight. The whole summary is the accordion control's accessible name, in
-drawn order, and it holds no control of its own. Its values are drawn without
-their field names, which a screen reader still hears ("Severity: High"), so the
-drawn label is hidden from assistive technology and the named one is
-visually hidden. The model's properties head their assumptions group with
-`terms.model-assumptions`.
+only outlines there being the fields' own, and keeps its weight. The whole
+summary is the accordion control's accessible name, in drawn order, and it
+holds no control of its own. Its values are drawn without their field names,
+which a screen reader still hears ("Severity: High"), so the drawn label is
+hidden from assistive technology and the named one is visually hidden. The
+model panel heads its assumptions group with `terms.model-assumptions`.
+
+The summary's elements line depends on the list. On an element's panel it
+names the threat's other elements and is left out where there are none, since
+the panel's heading already names the one shown. On the model's list, which
+shows no element, it names every element the threat is on, or says it is on
+none, so a threat on no element reads as one.
 
 The list sorts with `inReviewOrder` from `../ui/review-order.ts`, which also
 orders the Status picker. Both are presentation: the model's status tuple keeps
@@ -94,17 +107,18 @@ its order.
 
 A record has meaning on a threat, and an assumption also on the model, so
 records get no panel, list or tab of their own. The threat editor and the
-model's properties draw the same group, bound through a `RecordTarget` that
+model panel's Details draw the same group, bound through a `RecordTarget` that
 heads the group, says which records it shows, attaches a new record, links,
 unlinks, and says where else a record is referenced.
 
-A threat's groups count their records in their heading and start every record
-folded to a toggle and its status, while the model's group keeps its records as
-open cards with labelled fields and no count (`RecordTarget.inThreat`). A record
+Every group counts its records in its heading and starts every record folded to
+a toggle and its status, on a threat and on the model alike. A folded record on
+a threat counts the other threats holding it, and on the model, which is no
+threat to be other than, names them by number as an open record does. A record
 opened stays open while the group is mounted, which is until its threat
-collapses, and one whose field holds a refused draft will not fold, since
-folding would unmount the draft. A new row that becomes a record is marked Added
-until then, opens, and is announced by kind and number
+collapses or the model panel closes, and one whose field holds a refused draft
+will not fold, since folding would unmount the draft. A new row that becomes a
+record is marked Added until then, opens, and is announced by kind and number
 (`canvas.mitigation-added`), so a kept record says so where the focused field
 reads nothing new.
 
@@ -146,12 +160,14 @@ through `AttachThreat` and `DetachThreat`, never through a `ReplaceThreat`
 carrying a shorter list: the model culls a threat on the detach that takes its
 last element, and a replacement naming no element does not.
 
-The panel owns both dispatches because a detach can take the threat off the
-element whose panel it is, which leaves the group unmounted with nowhere to
-put focus. The group asks only for the next row when it survives. A detach
-that removes the threat says so in the shared status, as an unlinked record
-does, and needs no confirmation because one undo brings the threat back with
-everything the removal took.
+The list owns both dispatches because a detach can take the threat off the
+list, off the element whose panel it is or, with its last element, off the
+model, which leaves the group unmounted with nowhere to put focus. The model's
+list keeps a threat a detach leaves on another element, and the threat's
+elements line follows. The group asks only for the next row when it survives. A
+detach that removes the threat says so in the shared status, as an unlinked
+record does, and needs no confirmation because one undo brings the threat back
+with everything the removal took.
 
 ## The commit rule
 
@@ -163,8 +179,8 @@ record. A listbox commits the value chosen. A text field commits what it holds
 when it is left, and a title on Enter as well, rather than on every keystroke,
 which would make an undo stack of single characters. A commit that changes
 nothing dispatches nothing: a model operation can return a new model whatever
-it was asked to do, so the store would push an undo entry and mark the file dirty
-over an edit nobody made.
+it was asked to do, so the store would push an undo entry and mark the file
+dirty over an edit nobody made.
 
 Text carrying a character the model's character set does not accept is not
 committed at all, because the alternative is a model on screen that no codec

@@ -73,11 +73,10 @@ host provides.
   tab with `nameOf` the file ahead of the product name, so the tab and the menu
   cannot disagree. `showingPlaceholder` identifies the untouched opening state.
 
-The active diagram, the selection, whether the model's properties are shown,
-the inline editor, the last refusal, and the file lifecycle stay out of the
-undo stacks. `ShowModelProperties` shows the model's properties and clears the
-selection, a `Select` naming an element hides them, and
-`HideModelProperties` hides them. `activeDiagram` names the diagram on screen,
+The active diagram, the selection, whether the model panel is shown, the
+inline editor, the last refusal, and the file lifecycle stay out of the undo
+stacks. `ShowModelPanel` shows the model panel and clears the selection, a
+`Select` naming an element hides it, and `HideModelPanel` hides it. `activeDiagram` names the diagram on screen,
 and nothing until one has been chosen. `SelectDiagram` sets it, clears the
 selection and closes the editor, since both belong to the diagram left, and
 moves neither the model nor the history. The `activeDiagram` selector falls
@@ -130,7 +129,7 @@ reason a malformed or unsupported snapshot gets, and the placeholder opens.
 
 `dispatch` writes each changed recoverable field before it publishes the new
 state, and the reducer performs no storage work. The snapshot excludes the
-stacks, the selection, whether the model's properties are shown, rename state,
+stacks, the selection, whether the model panel is shown, rename state,
 and the last failure. Startup bounds and parses the stored text before its
 schema validates the version, document, file data, and retained source.
 Missing data opens the placeholder without a report, and rejected data opens it
@@ -150,7 +149,7 @@ never delivers back to the sender, and the other tabs fold it into `Followed`.
 The message is the model, both stacks, the saved point, the file and whether
 the recovery storage holds it, sent by structured clone, which keeps the
 references the stacks and the identity-based dirty check share. Selection, an
-open field, the diagram on screen and whether the model's properties are shown
+open field, the diagram on screen and whether the model panel is shown
 stay with the tab that made them, the first two trimmed to the elements the
 adopted model still draws and the diagram falling back to the first where the
 adopted model lacks it. A diagram switch writes the shared snapshot, so a
