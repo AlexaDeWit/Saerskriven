@@ -3,6 +3,7 @@ import { Either } from 'effect';
 import { runCli, writeOutcome, type CliStreams } from './cli.js';
 import { convert } from './convert.js';
 import { render, renderOptionsSchema } from './render.js';
+import { share } from './share.js';
 import { validate } from './validate.js';
 import { cliVersion } from './version.js';
 
@@ -132,6 +133,19 @@ describe('the arguments as the outcome they ask for', () => {
     await expect(
       runCli(['convert', model, '--to', 'threat-dragon', '--out', '-']),
     ).resolves.toEqual(convert(model, { to: 'threat-dragon', out: '-' }));
+  });
+
+  it('hands share the file it was given', async () => {
+    const absent = testDataPath('absent.json');
+    await expect(runCli(['share', absent])).resolves.toEqual(
+      await share(absent),
+    );
+  });
+
+  it('documents share and the file it takes in share --help', async () => {
+    const outcome = await runCli(['share', '--help']);
+    expect(outcome.code).toEqual(0);
+    expect(outcome.out).toContain('Usage: saer share [options] <file>');
   });
 
   it.each(['otm', 'tmbom'])(

@@ -10,13 +10,17 @@ import {
   type RetainedSource,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
+import { Either } from 'effect';
 import { formatNames } from '../format-names.js';
 import type { StudioMessageId } from '../messages/catalogues.js';
-import { Either } from 'effect';
 import {
   lossLines,
+  openSectionOf,
+  openSections,
   reportedDivergence,
   type Loss,
+  type OpenSection,
+  type ReportedDivergence,
 } from '../messages/divergence/text.js';
 import type { Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
@@ -229,10 +233,10 @@ export function savedBy(
 type LossOccasion = 'open' | 'save';
 
 /**
- * What one open or save lost that a person reads, and the model each line
- * names its subject from: the one opened or saved. `readOnlyFormat` is the
- * format of an opened file Saerskriven does not write, which opened as a new
- * model.
+ * What one open or save lost or converted that a person reads, and the model
+ * each line names its subject from: the one opened or saved. `readOnlyFormat`
+ * is the format of an opened file Saerskriven does not write, which opened as
+ * a new model.
  */
 export type LossReport = {
   readonly occasion: LossOccasion;
@@ -241,27 +245,54 @@ export type LossReport = {
   readonly readOnlyFormat?: ImportFormat;
 };
 
-/** The message each occasion introduces its losses with. */
-export const reportHeadlines = {
-  open: 'reports.opened',
-  save: 'reports.saved',
-} as const satisfies Record<LossOccasion, StudioMessageId>;
+const openHeadings = {
+  converted: 'reports.converted',
+  'not-shown': 'reports.opened',
+} as const satisfies Record<OpenSection, StudioMessageId>;
+
+const savedHeading = 'reports.saved' satisfies StudioMessageId;
+
+/** One heading of a report, as the message that words it, and the lines under it. */
+export type ReportSection = {
+  readonly heading: (typeof openHeadings)[OpenSection] | typeof savedHeading;
+  readonly lines: readonly string[];
+};
 
 /**
- * A report's lines in the caller's language, one per loss. The caller
- * supplies the translator so a component rewords a standing report on a
- * change of locale.
+ * A report as headings with their lines in the caller's language, and no
+ * heading without a line. A save has one heading. An open has one for what
+ * the read converted and one for what the studio does not show, and lines
+ * that read the same are counted under their own heading. The caller supplies
+ * the translator so a component rewords a standing report on a change of
+ * locale.
  */
-export function reportLines(
+export function reportSections(
   t: Speaker,
-  { model, losses }: LossReport,
-): readonly string[] {
-  return lossLines(t, model, losses);
+  { occasion, model, losses }: LossReport,
+): readonly ReportSection[] {
+  const under = (
+    heading: ReportSection['heading'],
+    listed: readonly Loss[],
+  ): ReportSection[] =>
+    listed.length === 0
+      ? []
+      : [{ heading, lines: lossLines(t, model, listed) }];
+  return occasion === 'save'
+    ? under(savedHeading, losses)
+    : openSections.flatMap((section) =>
+        under(
+          openHeadings[section],
+          losses.filter(
+            ({ divergence }) => openSectionOf(divergence) === section,
+          ),
+        ),
+      );
 }
 
 /**
  * What a read lost, naming the model it produced. An open of a format
- * Saerskriven writes says which losses saving back to the same file keeps.
+ * Saerskriven writes says which losses saving back to the same file keeps,
+ * among those it lists as not shown: a conversion is on screen already.
  * One of a format it only reads keeps none, and always reports, since its
  * notice stands whatever it lost.
  */
@@ -272,8 +303,11 @@ export function openReport(
     ? reported(
         'open',
         read.model,
-        lossesOf(read.divergences, (divergence) =>
-          keptByWriteBack(read.source.format, divergence),
+        lossesOf(
+          read.divergences,
+          (divergence, shown) =>
+            openSectionOf(shown) === 'not-shown' &&
+            keptByWriteBack(read.source.format, divergence),
         ),
       )
     : {
@@ -326,13 +360,13 @@ function reported(
 
 function lossesOf(
   divergences: readonly Divergence[],
-  keeps: (divergence: Divergence) => boolean,
+  keeps: (divergence: Divergence, shown: ReportedDivergence) => boolean,
 ): readonly Loss[] {
   return divergences.flatMap((divergence): Loss[] => {
     const shown = reportedDivergence(divergence);
     return shown === undefined
       ? []
-      : [{ divergence: shown, kept: keeps(divergence) }];
+      : [{ divergence: shown, kept: keeps(divergence, shown) }];
   });
 }
 

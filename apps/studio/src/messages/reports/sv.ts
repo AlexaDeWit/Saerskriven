@@ -3,6 +3,7 @@ import { reportMessages } from './contract.js';
 
 export const reportsSv = catalogue(reportMessages)('sv')({
   region: 'Filrapporter',
+  converted: 'Konverterades vid öppningen:',
   opened: 'Visas inte i studion:',
   'opened-read-only':
     'En {format}-fil öppnas som en ny modell. Saerskriven skriver inte {format}, så Spara skapar en Saerskriven-fil. Den öppnade filen lämnas som den är.',

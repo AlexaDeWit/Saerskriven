@@ -8,6 +8,7 @@ import {
   getThreatResultSchema,
   imagesOf,
   mediaTypesOf,
+  occurrencesIn,
   pngMagic,
   promptProseOf,
   proseOf,
@@ -20,6 +21,8 @@ import {
   resourceProseOf,
   searchElementsResultSchema,
   searchThreatsResultSchema,
+  shareLinkOf,
+  shareLinkResultSchema,
   structuredOf,
   textOf,
   type McpSession,
@@ -34,6 +37,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { readAnyFormat } from '@saerskriven/formats';
+import { hostedStudioUrl } from '@saerskriven/formats/share-link';
 import { Either } from 'effect';
 import { join } from 'node:path';
 import {
@@ -48,6 +52,7 @@ import {
   titleOf,
   type Runner,
 } from './runners.fixtures.js';
+import { modelIn, modelOf } from './share.fixtures.js';
 
 const dragonFile = 'test-data/threat-dragon/feature-complete.json';
 
@@ -84,6 +89,7 @@ const calls = async (session: McpSession) => {
     session.client.callTool({ name, arguments: args });
   const inspected = await call('saer_inspect');
   const drawn = await call('saer_render_diagram', { diagram: 'Booking' });
+  const shared = await call('saer_share_link');
   const searched = await call('saer_search_threats', {
     status: 'open',
     severity: 'high',
@@ -123,6 +129,7 @@ const calls = async (session: McpSession) => {
     results: [
       inspected,
       drawn,
+      shared,
       searched,
       held,
       edited,
@@ -132,6 +139,7 @@ const calls = async (session: McpSession) => {
     ],
     inspected: readingOf(inspected),
     drawn,
+    shared,
     searched: structuredOf(searched, searchThreatsResultSchema),
     held: threat,
     edited,
@@ -151,7 +159,7 @@ for (const runner of runners) {
       ),
       () => {
         for (const era of eras) {
-          it(`inspects, draws, searches, edits a threat and reads it back in the ${era} era`, async () => {
+          it(`inspects, draws, shares, searches, edits a threat and reads it back in the ${era} era`, async () => {
             const run = await scripted(opener, runner, era);
             const written = editOf(run.edited);
             const [image] = imagesOf(run.drawn);
@@ -183,6 +191,19 @@ for (const runner of runners) {
             expect(mediaTypesOf(run.drawn)).toEqual(['image/png']);
             expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
             expect(Math.max(drawn.image.width, drawn.image.height)).toBe(1568);
+            const link = shareLinkOf(run.shared);
+            expect(link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
+            expect(occurrencesIn(run.shared, link)).toBe(1);
+            expect(proseOf(run.shared).prose.at(-1)?.split('\n')).toEqual([
+              dataNotInstructions,
+              link,
+            ]);
+            expect(
+              structuredOf(run.shared, shareLinkResultSchema).length,
+            ).toEqual(link.length);
+            expect(await modelIn(link)).toEqual(
+              modelOf(dragonBytes.toString('utf8')),
+            );
             expect(run.searched.threats.length).toBeGreaterThan(0);
             expect(run.searched.response_format).toEqual('detailed');
             expect(

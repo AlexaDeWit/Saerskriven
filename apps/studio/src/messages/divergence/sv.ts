@@ -48,7 +48,8 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   'threat-status-unmapped': 'dess status ”{status}”',
   'threat-severity-unmapped': 'dess allvarlighetsgrad ”{severity}”',
   'threat-category-eop-suit': 'dess kort i Elevation of Privilege',
-  'threat-category-unmapped': 'dess kategori ”{category}”',
+  'threat-category-unmapped':
+    'dess kategori ”{category}”, läst som en egen kategori',
   'key-undeclared': 'Nyckel {path}: inte läst',
   'assumption-element-links-dropped': 'dess länkar till element',
   'otm-threat-split': 'kopierat för en annan förekomst',

@@ -52,7 +52,8 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   'threat-status-unmapped': 'son état « {status} »',
   'threat-severity-unmapped': 'sa gravité « {severity} »',
   'threat-category-eop-suit': 'sa carte Elevation of Privilege',
-  'threat-category-unmapped': 'sa catégorie « {category} »',
+  'threat-category-unmapped':
+    'sa catégorie « {category} », lue comme une catégorie personnalisée',
   'key-undeclared': 'Clé {path} : non lue',
   'assumption-element-links-dropped': 'ses liens vers des éléments',
   'otm-threat-split': 'copiée pour une autre occurrence',

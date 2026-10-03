@@ -7,6 +7,10 @@ import {
 } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import {
+  brotliWasmAsset,
+  brotliWasmFile,
+} from '@saerskriven/formats/build-assets';
+import {
   fontsVariable,
   resvgWasmAsset,
   resvgWasmFile,
@@ -52,13 +56,15 @@ const refuse = (sentence: string): never => {
   process.exit(1);
 };
 
-// Inside the flake shell the variable is always set, so the sentence
-// build-assets returns for the rasterizer names a missing file and no command.
-// The studio's build configuration appends the same recovery.
-const refuseRasterizer = (sentence: string): never =>
-  refuse(
-    `${sentence} Run pnpm nx build resvg-wasm, which every target carrying the module depends on.`,
-  );
+// Inside the flake shell a module's variable is always set, so the sentence
+// build-assets returns for it names a missing file and no command. The
+// studio's build configuration appends the same recovery.
+const refuseUnbuilt =
+  (project: string) =>
+  (sentence: string): never =>
+    refuse(
+      `${sentence} Run pnpm nx build ${project}, which every target carrying the module depends on.`,
+    );
 
 const fontsDirectory = (): string => {
   const configured = process.env[fontsVariable];
@@ -94,11 +100,11 @@ const licenceIn = (fonts: string): string => {
 };
 
 // Everything the executable carries beside its bundle, gathered in
-// dist/assets: the fonts and their licence and the SVG rasterizer out of the
-// flake, and the Typst WebAssembly module out of node_modules. esbuild
-// inlines JavaScript and nothing else, so all of it arrives as files.
-// src/assets.ts reaches them through import.meta.dirname, and `deno compile
-// --include` puts the same directory inside an executable
+// dist/assets: the fonts and their licence, the SVG rasterizer and the brotli
+// module out of the flake, and the Typst WebAssembly module out of
+// node_modules. esbuild inlines JavaScript and nothing else, so all of it
+// arrives as files. src/assets.ts reaches them through import.meta.dirname,
+// and `deno compile --include` puts the same directory inside an executable
 // (scripts/package-cli.sh). A file that is neither inlined nor included does
 // not exist for a user who has only the executable.
 const runtimeAssets = (): readonly RuntimeAsset[] => {
@@ -110,7 +116,8 @@ const runtimeAssets = (): readonly RuntimeAsset[] => {
     })),
     { from: licenceIn(fonts), to: licenceName },
     { from: typstWasmModule, to: basename(typstWasmModule) },
-    { from: resvgWasmAsset(refuseRasterizer), to: resvgWasmFile },
+    { from: resvgWasmAsset(refuseUnbuilt('resvg-wasm')), to: resvgWasmFile },
+    { from: brotliWasmAsset(refuseUnbuilt('brotli-wasm')), to: brotliWasmFile },
   ];
 };
 

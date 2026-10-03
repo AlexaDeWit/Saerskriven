@@ -3,6 +3,7 @@ import { reportMessages } from './contract.js';
 
 export const reportsEnCA = catalogue(reportMessages)('en-CA')({
   region: 'File reports',
+  converted: 'Converted on opening:',
   opened: 'Not shown in the studio:',
   'opened-read-only':
     '{format} opens as a new model. Saerskriven does not write {format}, so Save makes a Saerskriven file. The opened file stays as it is.',

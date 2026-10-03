@@ -8,6 +8,7 @@ import {
 import { copyFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  builtAssets,
   danglingReferenceYaml,
   fixtureFile,
   renderGolden,
@@ -32,8 +33,6 @@ const options = (given: Partial<RenderOptions>): RenderOptions => ({
   ...given,
 });
 
-const assets = join(repositoryRoot, 'apps/cli/dist/assets');
-
 const bytesOf = (out: string | Uint8Array): Uint8Array =>
   typeof out === 'string' ? Buffer.from(out, 'utf8') : out;
 
@@ -44,7 +43,7 @@ const written = async (
 ) => {
   const out = join(directory, name);
   return {
-    outcome: await render(file, options({ ...given, out }), assets),
+    outcome: await render(file, options({ ...given, out }), builtAssets),
     bytes: () => readFileSync(out),
     text: () => readFileSync(out, 'utf8'),
   };
@@ -93,7 +92,7 @@ describe('render', () => {
     const outcome = await render(
       twoDiagrams,
       options({ format: 'png', out: '-', ...storefront }),
-      assets,
+      builtAssets,
     );
     expect(outcome.code).toBe(0);
     expect(outcome.out).toBeInstanceOf(Uint8Array);
@@ -105,7 +104,7 @@ describe('render', () => {
   it('refuses an install with the module and no font face', async () => {
     const bare = scratchDirectory('bare');
     copyFileSync(
-      join(assets, 'saerskriven_resvg.wasm'),
+      join(builtAssets, 'saerskriven_resvg.wasm'),
       join(bare, 'saerskriven_resvg.wasm'),
     );
     const outcome = await render(
@@ -123,11 +122,11 @@ describe('render', () => {
   it('refuses an install whose faces the drawing is not lettered in', async () => {
     const bare = scratchDirectory('mono');
     copyFileSync(
-      join(assets, 'saerskriven_resvg.wasm'),
+      join(builtAssets, 'saerskriven_resvg.wasm'),
       join(bare, 'saerskriven_resvg.wasm'),
     );
     copyFileSync(
-      join(assets, 'LiberationMono-Regular.ttf'),
+      join(builtAssets, 'LiberationMono-Regular.ttf'),
       join(bare, 'LiberationMono-Regular.ttf'),
     );
     const outcome = await render(
@@ -282,7 +281,7 @@ describe('render', () => {
       const outcome = await render(
         twoDiagrams,
         options({ format: 'pdf', out: '-' }),
-        assets,
+        builtAssets,
       );
       expect(outcome.code).toBe(0);
       expect(outcome.out).toBeInstanceOf(Uint8Array);
@@ -306,7 +305,7 @@ describe('render', () => {
   it('refuses an install with the module and no font face, and writes nothing', async () => {
     const bareAssets = scratchDirectory('render-no-font');
     copyFileSync(
-      join(assets, 'typst_ts_web_compiler_bg.wasm'),
+      join(builtAssets, 'typst_ts_web_compiler_bg.wasm'),
       join(bareAssets, 'typst_ts_web_compiler_bg.wasm'),
     );
     const outcome = await render(

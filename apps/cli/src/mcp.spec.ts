@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { fakeAssets, scratchDirectory } from './cli.fixtures.js';
 import {
+  brotliIn,
   mcpOptionsSchema,
   processHost,
   rasterizerIn,
@@ -49,22 +50,30 @@ describe('what the mcp subcommand is given', () => {
 
 const disposable = (): string => fakeAssets(scratchDirectory('mcp'));
 
-describe('the rasterizer one server reads', () => {
-  it('answers every render from bytes read once, the directory gone', () => {
+const loaders: readonly [
+  string,
+  (assets: string) => () => Either.Either<unknown, string>,
+][] = [
+  ['rasterizer', rasterizerIn],
+  ['brotli module', brotliIn],
+];
+
+describe.each(loaders)('the %s one server reads', (_what, readIn) => {
+  it('answers every call from bytes read once, the directory gone', () => {
     const directory = disposable();
-    const rasterizer = rasterizerIn(directory);
-    const first = rasterizer();
+    const read = readIn(directory);
+    const first = read();
     rmSync(directory, { recursive: true, force: true });
     expect(Either.isRight(first)).toBe(true);
-    expect(rasterizer()).toEqual(first);
+    expect(read()).toEqual(first);
   });
 
   it('re-reads a directory it could not read rather than holding the refusal', () => {
     const directory = scratchDirectory('mcp-bare');
-    const rasterizer = rasterizerIn(directory);
-    expect(Either.isLeft(rasterizer())).toBe(true);
+    const read = readIn(directory);
+    expect(Either.isLeft(read())).toBe(true);
     fakeAssets(directory);
-    expect(Either.isRight(rasterizer())).toBe(true);
+    expect(Either.isRight(read())).toBe(true);
   });
 });
 
