@@ -1,21 +1,27 @@
 import { expect, test, type Locator } from '@playwright/test';
+import { boxAt, modelWith } from '@saerskriven/model/fixtures';
 import {
   type Box,
   boxOf,
   dragBy,
+  onScreen,
   type Point,
   pressOn,
   viewportZoom,
 } from './canvas.fixtures.js';
 import {
+  openModelDocument,
   openPlaceholder,
   placeholder,
   runFromMenu,
   selectNode,
   toolButton,
+  undoOffered,
 } from './studio.fixtures.js';
 
 const pointerTolerance = 1;
+
+const fractionalSize = { width: 112.5, height: 80 };
 
 const sideCases = [
   ['top', { x: 0, y: -40 }, 'height'],
@@ -144,6 +150,28 @@ test('a no-op resize at the minimum leaves later geometry settled', async ({
   expect(Number(await node.locator('svg').first().getAttribute('width'))).toBe(
     (await boxOf(node)).width,
   );
+});
+
+test('a press on a control without movement records no edit at a fractional size', async ({
+  page,
+}) => {
+  await openModelDocument(
+    page,
+    modelWith({
+      elements: [boxAt('el-actor', 0, 0, 'actor', fractionalSize, 'Actor')],
+    }),
+  );
+  const node = await selectNode(page, placeholder.actor);
+  const before = await boxOf(node);
+  expect(before.width).toBe(fractionalSize.width);
+  const right = sideControl(node, 'right');
+  await onScreen(right);
+
+  await pressOn(page, right);
+  await page.mouse.up();
+
+  expect(await undoOffered(page)).toBe(false);
+  expect(await boxOf(node)).toEqual(before);
 });
 
 test('a corner resizes both axes in one undo step', async ({ page }) => {
