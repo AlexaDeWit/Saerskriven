@@ -212,8 +212,7 @@ called.
 
 Each row is a group. A row that draws a toggle is a group with no name, so a
 screen reader says the record's name once, on the toggle. The empty row draws
-no toggle, and its group takes the record's name ("Mitigation 2"), since
-nothing else there says it.
+no toggle, and its group takes the record's name ("Mitigation 2").
 
 ## Attachments
 
