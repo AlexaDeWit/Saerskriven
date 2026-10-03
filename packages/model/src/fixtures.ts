@@ -137,6 +137,29 @@ export const sha256Of = (bytes: Uint8Array): string =>
   createHash('sha256').update(bytes).digest('hex');
 
 /**
+ * `model` with its description replaced by `bytes` of SHAKE256 output as
+ * base64, which no compressor shortens, so a share link of it is about as long
+ * as that text whatever the rest of the model holds.
+ */
+export const incompressibleModel = (model: Model, bytes: number): Model => ({
+  ...model,
+  metadata: {
+    ...model.metadata,
+    description: createHash('shake256', { outputLength: bytes })
+      .update('share-link')
+      .digest('base64'),
+  },
+});
+
+/**
+ * How long a spec that writes a share link past the length a link holds is
+ * given, past the root `vitest.shared.mts` sets. Such a link takes over a
+ * megabyte of {@link incompressibleModel}'s text, which brotli at quality 11
+ * spends a second on where the host is idle and four where it is contended.
+ */
+export const oversizedLinkTimeout = 30_000;
+
+/**
  * Reads and parses a committed model under `test-data`. The read happens at
  * the call, so importing this entry reads no file. A consumer lists the file
  * among its nx test inputs.

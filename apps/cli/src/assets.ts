@@ -6,6 +6,8 @@ import { join } from 'node:path';
 
 const fontFile = /\.ttf$/u;
 
+const loadedModules = new Map<string, Uint8Array>();
+
 const loaded = new Map<string, WasmAssets>();
 
 /**
@@ -26,40 +28,61 @@ export type WasmAssets = {
 };
 
 /**
- * The module named `wasmModule` in `directory` and every `.ttf` beside it,
- * never the host's own fonts. The faces come in name order with `leading`
- * first, as `ledBy` from the `png` subpath orders them. A directory with no
- * face is refused, since a compiler or renderer given none draws no text. A
+ * The module named `name` in `directory`, as bytes. A successful read is
+ * cached per path, so every call answers the one array the compile cache in
+ * `@saerskriven/wasm` is keyed by, and a refusal is read again on the next
+ * call.
+ */
+export function wasmModule(
+  directory: string,
+  name: string,
+): Either.Either<Uint8Array, string> {
+  const path = join(directory, name);
+  const known = loadedModules.get(path);
+  if (known !== undefined) {
+    return Either.right(known);
+  }
+  const found = Either.try({
+    try: (): Uint8Array => readFileSync(path),
+    catch: reasonOf,
+  });
+  if (Either.isRight(found)) {
+    loadedModules.set(path, found.right);
+  }
+  return found;
+}
+
+/**
+ * The module named `name` in `directory` and every `.ttf` beside it, never
+ * the host's own fonts. The faces come in name order with `leading` first, as
+ * `ledBy` from the `png` subpath orders them. A directory with no face is
+ * refused, since a compiler or renderer given none draws no text. A
  * successful read is cached per directory, module and leading face, and a
  * refusal is read again on the next call.
  */
 export function wasmAssets(
   directory: string,
-  wasmModule: string,
+  name: string,
   leading?: string,
 ): Either.Either<WasmAssets, string> {
-  const key = `${directory}\0${wasmModule}\0${leading ?? ''}`;
+  const key = `${directory}\0${name}\0${leading ?? ''}`;
   const known = loaded.get(key);
   return known === undefined
-    ? read(key, directory, wasmModule, leading)
+    ? read(key, directory, name, leading)
     : Either.right(known);
 }
 
 function read(
   key: string,
   directory: string,
-  wasmModule: string,
+  name: string,
   leading: string | undefined,
 ): Either.Either<WasmAssets, string> {
-  const found = Either.flatMap(
-    Either.try({
-      try: () => ({
-        wasm: readFileSync(join(directory, wasmModule)),
-        faces: facesIn(directory),
-      }),
-      catch: reasonOf,
-    }),
-    (listed) => lettered(listed, directory, leading),
+  const found = Either.flatMap(wasmModule(directory, name), (wasm) =>
+    Either.flatMap(
+      Either.try({ try: () => facesIn(directory), catch: reasonOf }),
+      (faces) => lettered({ wasm, faces }, directory, leading),
+    ),
   );
   if (Either.isRight(found)) {
     loaded.set(key, found.right);

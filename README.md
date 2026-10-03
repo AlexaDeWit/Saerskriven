@@ -188,11 +188,12 @@ saer render threat-model.yaml --format pdf --out threat-model.pdf
 saer render threat-model.yaml --format svg --out -
 saer convert threat-model.yaml --to saerskriven-yaml --out threat-model.yaml
 saer convert threat-model.yaml --to threat-dragon --out threat-model.json
+saer share threat-model.yaml
 ```
 
-`validate`, `render` and `convert` read Threat Dragon v2 JSON and Saerskriven
-YAML, and the content decides which: the file name is never consulted, so a
-model saved under any extension reads.
+`validate`, `render`, `convert` and `share` read Threat Dragon v2 JSON and
+Saerskriven YAML, and the content decides which: the file name is never
+consulted, so a model saved under any extension reads.
 
 `validate` prints one line naming the format and what the model holds, and
 warns on standard error wherever the file and the model do not correspond
@@ -241,11 +242,24 @@ TM-BOM are read only, so `--to` refuses them. Whatever the read and the write
 did not carry exactly goes to standard error as a warning, and the command
 still writes the document and exits 0.
 
-| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                                                                                |
-| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                                                                          |
-| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, `mcp --http` cannot listen on its port, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter or the PNG rasterizer refusing the document or an install missing the files they read. |
+`share` prints one line on standard output: a link to the hosted studio at
+`https://saerskriven.com/` that opens the model in a browser, as the studio's
+[Share as link](docs/studio.md#files) writes one. The link carries the whole
+model, so anyone who holds it can read every threat, mitigation and assumption
+in it, and nothing can take it back once it is sent. The model travels after
+the link's `#`, which a browser never sends to a server. What the read did not
+carry exactly goes to standard error as a warning, as `validate` reports it,
+and is not in the link. A link holds at most 1,048,576 characters, the most
+Firefox opens, and a model whose link would be longer gets no link and exit
+code 2, with a message giving both lengths: send the file itself instead. The
+executable carries the brotli module the link is compressed with, so `share`
+needs no network. No flag points a link at another host.
+
+| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                                                                                                                              |
+| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, `mcp --http` cannot listen on its port, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter or the PNG rasterizer refusing the document, a share link longer than a link may hold, or an install missing the files a projection reads. |
 
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.

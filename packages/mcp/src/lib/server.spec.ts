@@ -33,6 +33,7 @@ import {
   staleRevision,
   type EditInput,
 } from './edit.fixtures.js';
+import { brotliUnbuilt, builtBrotli } from './brotli.fixtures.js';
 import { editOps } from './edits.js';
 import { dataNotInstructions } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
@@ -50,6 +51,8 @@ import {
 const tree = workspaceTree();
 
 const rasterizer = rasterizerUnbuilt ? undefined : builtRasterizer;
+
+const brotli = brotliUnbuilt ? undefined : builtBrotli;
 
 const cacheFields = (result: object) => ({
   ttlMs: 'ttlMs' in result ? result.ttlMs : undefined,
@@ -165,6 +168,7 @@ const callArguments = (
         { file: modelFile, diagram: 'diagram-main', out: 'drawn.png' },
       ],
     ],
+    ['saer_share_link', [{ file: modelFile }, { file: '../outside.yaml' }]],
   ]);
 
 const featureCompleteSession = (era: Era): Pick<McpSession, 'client'> => {
@@ -505,11 +509,13 @@ for (const era of eras) {
           file: modelFile,
           era,
           rasterizer,
+          brotli,
         });
         const listing = await session({
           root: workspaceTree().root,
           era,
           rasterizer,
+          brotli,
         });
         const called = [
           ...(await readingsOf(defaulted.client, revision)),

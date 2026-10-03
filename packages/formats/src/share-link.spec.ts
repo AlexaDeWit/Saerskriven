@@ -1,7 +1,9 @@
 import type { Model } from '@saerskriven/model';
-import { parsedFixture } from '@saerskriven/model/fixtures';
+import {
+  incompressibleModel,
+  parsedFixture,
+} from '@saerskriven/model/fixtures';
 import { Either, Option } from 'effect';
-import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { brotliUnbuilt, brotliWasm } from './brotli.fixtures.js';
@@ -19,14 +21,13 @@ import {
 import { saerskrivenYamlCodec } from './lib/saerskriven-yaml.js';
 import { threatDragonReading } from './lib/threat-dragon.fixtures.js';
 import {
+  hostedStudioUrl,
   isShareLinkFragment,
   readShareLink,
   ShareLinkFailure,
   shareLinkLimit,
   writeShareLink,
 } from './share-link.js';
-
-const studio = 'https://saerskriven.com/';
 
 const marker = '#share=1.';
 
@@ -61,7 +62,7 @@ const densityCeilings: Readonly<Record<string, number>> = {
   'threat-dragon/demo/v2-threat-model.json': 0.22,
 };
 
-const linkOf = async (model: Model, base = studio): Promise<string> =>
+const linkOf = async (model: Model, base = hostedStudioUrl): Promise<string> =>
   Either.getOrThrow(await writeShareLink(model, base, brotliWasm()));
 
 const fragmentOf = (link: string): string => new URL(link).hash;
@@ -86,14 +87,13 @@ const holding = (bytes: Uint8Array): string =>
     params: { [constants.BROTLI_PARAM_QUALITY]: 4 },
   }).toString('base64url')}`;
 
-const incompressible = (bytes: number): Model => ({
-  ...featureComplete,
-  metadata: {
-    ...featureComplete.metadata,
-    description: createHash('shake256', { outputLength: bytes })
-      .update('share-link')
-      .digest('base64'),
-  },
+const incompressible = (bytes: number): Model =>
+  incompressibleModel(featureComplete, bytes);
+
+describe('the hosted studio', () => {
+  it('is reached over https alone', () => {
+    expect(new URL(hostedStudioUrl).protocol).toBe('https:');
+  });
 });
 
 describe('a fragment', () => {
@@ -177,7 +177,7 @@ describe('a module that will not do the work', () => {
     expect(
       Option.getOrUndefined(
         Either.getLeft(
-          await writeShareLink(featureComplete, studio, notAModule),
+          await writeShareLink(featureComplete, hostedStudioUrl, notAModule),
         ),
       )?._tag,
     ).toBe('Unusable');
@@ -197,7 +197,7 @@ describe.skipIf(brotliUnbuilt)('every fixture as a link', () => {
     'reads the $name back as the same model, within its density ceiling',
     async ({ name, model }) => {
       const link = await linkOf(model);
-      expect(link.startsWith(`${studio}${marker}`)).toBe(true);
+      expect(link.startsWith(`${hostedStudioUrl}${marker}`)).toBe(true);
       const density =
         payloadOf(link).length / Buffer.byteLength(savedText(model));
       expect(density).toBeLessThanOrEqual(densityCeilings[name] ?? 0);
@@ -217,8 +217,11 @@ describe.skipIf(brotliUnbuilt)('every fixture as a link', () => {
   });
 
   it('replaces a fragment the base already carries', async () => {
-    const link = await linkOf(featureComplete, `${studio}#security-properties`);
-    expect(link.startsWith(`${studio}${marker}`)).toBe(true);
+    const link = await linkOf(
+      featureComplete,
+      `${hostedStudioUrl}#security-properties`,
+    );
+    expect(link.startsWith(`${hostedStudioUrl}${marker}`)).toBe(true);
   });
 });
 
@@ -247,7 +250,7 @@ describe('a model past the read bound', () => {
       },
     };
     const refusal = Option.getOrUndefined(
-      Either.getLeft(await writeShareLink(model, studio, noModule)),
+      Either.getLeft(await writeShareLink(model, hostedStudioUrl, noModule)),
     );
     expect(refusal?._tag).toBe('PastReadBound');
     expect(
@@ -260,7 +263,7 @@ describe.skipIf(brotliUnbuilt)('the limit', () => {
   it('counts the base URL, writing an incompressible link of exactly the limit and refusing one character more', async () => {
     const model = incompressible(75_000);
     const fragment = fragmentOf(await linkOf(model));
-    const padded = `${studio}${'x'.repeat(shareLinkLimit - studio.length - fragment.length)}`;
+    const padded = `${hostedStudioUrl}${'x'.repeat(shareLinkLimit - hostedStudioUrl.length - fragment.length)}`;
     expect(await linkOf(model, padded)).toHaveLength(shareLinkLimit);
     expect(await writeShareLink(model, `${padded}x`, brotliWasm())).toEqual(
       Either.left(

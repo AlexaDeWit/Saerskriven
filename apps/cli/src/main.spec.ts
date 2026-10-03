@@ -1,3 +1,4 @@
+import { hostedStudioUrl } from '@saerskriven/formats/share-link';
 import { repositoryRoot, sha256Of } from '@saerskriven/model/fixtures';
 import { spawnSync } from 'node:child_process';
 import { closeSync, existsSync, openSync, readFileSync } from 'node:fs';
@@ -15,6 +16,7 @@ import {
   text,
   titleOf,
 } from './runners.fixtures.js';
+import { modelIn, modelOf } from './share.fixtures.js';
 import { cliVersion } from './version.js';
 
 type Scenario = {
@@ -145,6 +147,20 @@ for (const runner of runners) {
         expect(streamed.code).toEqual(0);
         expect(sha256Of(streamed.out)).toEqual(
           sha256Of(renderGolden('two-diagrams-storefront.snapshot.png')),
+        );
+      });
+
+      it('prints a share link on one line, which reads back as the model of the file', async () => {
+        const shared = text(runner, ['share', twoDiagrams]);
+        const [link, rest] = shared.out.split('\n');
+        expect({ code: shared.code, err: shared.err, rest }).toEqual({
+          code: 0,
+          err: '',
+          rest: '',
+        });
+        expect(link?.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
+        expect(await modelIn(link ?? '')).toEqual(
+          modelOf(readFileSync(join(repositoryRoot, twoDiagrams), 'utf8')),
         );
       });
 

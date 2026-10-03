@@ -160,7 +160,8 @@ only its JavaScript, because the fonts and modules beside the bundle decide
 what a render writes, the `resvg-wasm` build stores the rasterizer module
 that the CLI's build, the studio's build and test, and `@saerskriven/render`'s
 test each hash, and the `brotli-wasm` build stores the brotli module that the
-studio's build and test and `@saerskriven/formats`'s test each hash.
+CLI's build, the studio's build and test, and the tests of
+`@saerskriven/formats` and `@saerskriven/mcp` each hash.
 
 A leaf target that extends a `targetDefaults` or plugin-inferred array opens it
 with the spread token `"..."`. Without it the leaf array replaces the default,

@@ -105,6 +105,13 @@ import {
   searchThreatsResultSchema,
 } from './search-threats.js';
 import {
+  renderShareLink,
+  shareLink,
+  shareLinkDescription,
+  shareLinkResultSchema,
+  type BrotliModule,
+} from './share-link.js';
+import {
   stridePass,
   stridePassArgumentsSchema,
   stridePassDescription,
@@ -123,13 +130,15 @@ import type { ModelWorkspace } from './workspace.js';
 export const serverName = 'saerskriven';
 
 /**
- * What the server object needs: where it may read, which build it is, and
- * where a render finds the rasterizer module and its faces.
+ * What the server object needs: where it may read, which build it is, where a
+ * render finds the rasterizer module and its faces, and where a share link
+ * finds the brotli module.
  */
 export type SaerskrivenServerOptions = {
   readonly workspace: ModelWorkspace;
   readonly version: string;
   readonly rasterizer: RasterizerAssets;
+  readonly brotli: BrotliModule;
 };
 
 const uncached: CacheHint = { ttlMs: 0, cacheScope: 'private' };
@@ -170,6 +179,7 @@ export function createSaerskrivenServer(
   readTools(server, options);
   queryTools(server, options);
   drawingTools(server, options);
+  sharingTools(server, options);
   writeTools(server, options);
   resources(server, options);
   prompts(server, options);
@@ -295,6 +305,27 @@ function drawingTools(
       attachedToolResult(
         await renderDiagram(options.workspace, options.rasterizer, args),
         renderDrawing,
+      ),
+  );
+}
+
+function sharingTools(
+  server: McpServer,
+  options: SaerskrivenServerOptions,
+): void {
+  server.registerTool(
+    'saer_share_link',
+    {
+      title: 'Share a threat model as a link',
+      description: shareLinkDescription,
+      inputSchema: fileArgumentSchema,
+      outputSchema: shareLinkResultSchema,
+      annotations: reads,
+    },
+    async (args) =>
+      toolResult(
+        await shareLink(options.workspace, options.brotli, args),
+        renderShareLink,
       ),
   );
 }

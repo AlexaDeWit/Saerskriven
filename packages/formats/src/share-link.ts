@@ -17,6 +17,14 @@ import { saerskrivenYamlCodec } from './lib/saerskriven-yaml.js';
 export const shareLinkLimit = 1_048_576;
 
 /**
+ * The hosted studio's canonical address, the base the CLI and the MCP server
+ * write every share link on. The scheme is `https` and nothing else: a link
+ * opened over plain HTTP would run unauthenticated script with the whole
+ * model in its fragment.
+ */
+export const hostedStudioUrl = 'https://saerskriven.com/';
+
+/**
  * Why no link was written, or why a fragment read as no model. A read can
  * also fail with the native codec's own {@link ReadFailure}, carried as the
  * codec returned it.
@@ -43,6 +51,15 @@ export type ShareLinkFailure = Data.TaggedEnum<{
 
 /** Constructors and matchers for {@link ShareLinkFailure}. */
 export const ShareLinkFailure = Data.taggedEnum<ShareLinkFailure>();
+
+/** The variants of {@link ShareLinkFailure} a write can end in. */
+export type ShareLinkWriteFailure = Extract<
+  ShareLinkFailure,
+  { readonly _tag: 'TooLong' | 'PastReadBound' | 'Unusable' }
+>;
+
+/** Constructors and matchers for {@link ShareLinkWriteFailure}. */
+export const ShareLinkWriteFailure = Data.taggedEnum<ShareLinkWriteFailure>();
 
 const marker = '#share=';
 
@@ -71,7 +88,7 @@ export async function writeShareLink(
   model: Model,
   base: string,
   wasm: Uint8Array,
-): Promise<Either.Either<string, ShareLinkFailure>> {
+): Promise<Either.Either<string, ShareLinkWriteFailure>> {
   const text = encoder.encode(saerskrivenYamlCodec.write(model).output);
   if (!withinTextBytes(text.length)) {
     return Either.left(ShareLinkFailure.PastReadBound({ size: text.length }));
@@ -120,7 +137,7 @@ export async function readShareLink(
   );
 }
 
-function uncompressed(failure: BrotliFailure): ShareLinkFailure {
+function uncompressed(failure: BrotliFailure): ShareLinkWriteFailure {
   return ShareLinkFailure.Unusable({
     sentence: BrotliFailure.$is('Unusable')(failure)
       ? failure.sentence
@@ -146,7 +163,9 @@ function base64url(bytes: Uint8Array): string {
     .replaceAll('=', '');
 }
 
-function linkWithin(link: string): Either.Either<string, ShareLinkFailure> {
+function linkWithin(
+  link: string,
+): Either.Either<string, ShareLinkWriteFailure> {
   return link.length > shareLinkLimit
     ? Either.left(
         ShareLinkFailure.TooLong({

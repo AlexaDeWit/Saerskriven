@@ -107,9 +107,11 @@ module and the variable `@saerskriven/formats/build-assets` locates it through.
 `@saerskriven/formats/share-link` subpath ([`share-link.ts`](src/share-link.ts)),
 write a model as a share link and read one back through `saerskrivenYamlCodec`.
 `isShareLinkFragment` tells a share link's fragment from any other, and
-`shareLinkLimit` is the most characters a link holds. A refusal is a
-`ShareLinkFailure`, or on a read the codec's own `ReadFailure`. The subpath
-keeps the brotli module out of the main entry.
+`shareLinkLimit` is the most characters a link holds. `hostedStudioUrl` is the
+hosted studio's address, always `https`, which the CLI and the MCP server write
+their links on. A refusal is a `ShareLinkFailure`, of which a write ends in the
+three `ShareLinkWriteFailure` names, or on a read the codec's own
+`ReadFailure`. The subpath keeps the brotli module out of the main entry.
 [The Saerskriven YAML format](../../docs/saerskriven-yaml.md#share-links) sets
 out the link format and its compatibility contract.
 
