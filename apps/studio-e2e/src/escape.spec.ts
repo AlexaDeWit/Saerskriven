@@ -5,6 +5,7 @@ import {
   canvasContainer,
   canvasSettled,
   drawnBy,
+  emptyCanvasPoint,
   lineOf,
   pressOn,
   screenBoxOf,
@@ -109,6 +110,54 @@ test('a drag put back by Escape no longer pans the view at the canvas edge', asy
 
   expect(await viewportTransform(page)).toBe(held);
   await page.mouse.up();
+});
+
+test('a drag a blurred window put back stays ended through an arrow key, a pointer move and the release', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = nodeNamed(page, placeholder.actor);
+  const store = nodeNamed(page, placeholder.store);
+  await page.keyboard.press('ControlOrMeta+a');
+  const actorBefore = await boxOf(actor);
+  const storeBefore = await boxOf(store);
+  const pane = await emptyCanvasPoint(page);
+  const at = await pressOn(page, actor);
+  await page.mouse.move(at.x + 60, at.y + 40, { steps: 8 });
+  await expect
+    .poll(async () => (await boxOf(actor)).x, 'the drag is under way')
+    .not.toBe(actorBefore.x);
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('blur'));
+  });
+  await actor.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.mouse.move(pane.x, pane.y, { steps: 6 });
+  await page.mouse.up();
+
+  await expect
+    .poll(() => boxOf(actor))
+    .toEqual({ ...actorBefore, x: actorBefore.x + 5 });
+  expect(await boxOf(store)).toEqual({ ...storeBefore, x: storeBefore.x + 5 });
+});
+
+test('a press that crosses the drag threshold and moves nothing leaves the next keyboard move alone', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = nodeNamed(page, placeholder.actor);
+  const store = nodeNamed(page, placeholder.store);
+  const storeBefore = await boxOf(store);
+  const at = await pressOn(page, actor);
+  await page.mouse.move(at.x + 2, at.y, { steps: 1 });
+  await page.mouse.up();
+
+  await store.click();
+  await expect(store).toHaveClass(/selected/u);
+  await page.keyboard.press('ArrowRight');
+
+  await expect.poll(async () => (await boxOf(store)).x).toBe(storeBefore.x + 5);
 });
 
 test('Escape that clears the selection leaves focus on the element, flow or trust boundary that had it', async ({

@@ -17,13 +17,16 @@ type Drag = {
 
 /**
  * React Flow's own drag of nodes, from its `onNodeDragStart` to its
- * `onNodeDragStop`, which follows every drag it started, or to the settled
- * position change that ends it. Its changes pass to `moveNodes` until the
- * selection changes under it, as Escape does, or the window loses focus. The
- * drag is then put back where the model has its nodes now, and nothing more
- * of it reaches `moveNodes`, its release included, so it records no move.
- * `autoPan` stays off until that release. The next drag start replaces a drag
- * React Flow never ended.
+ * `onNodeDragStop`, which follows every drag it started and did not abort,
+ * or, for an aborted one, to the settled position change React Flow sends
+ * instead. Its changes pass to `moveNodes` until the selection changes under
+ * it, as Escape does, or the window loses focus. The drag is then put back
+ * where the model has its nodes now, and nothing more of it reaches
+ * `moveNodes`, its release included, so it records no move. `autoPan` stays
+ * off until that release. A blurred window also ends React Flow's mouse
+ * gesture with the window mouse release it waits for, since the real one may
+ * land outside the window. The next drag start replaces a drag React Flow
+ * never ended.
  */
 export function useNodeDrag(
   positions: ReadonlyMap<string, CanvasNode>,
@@ -61,7 +64,11 @@ export function useNodeDrag(
     }
   });
   const blurred = useEffectEvent((): void => {
+    if (drag.current === undefined) {
+      return;
+    }
     cancel();
+    window.dispatchEvent(new MouseEvent('mouseup', { view: window }));
   });
   useEffect(() => {
     const unsubscribe = modelStore.subscribe(reselected);

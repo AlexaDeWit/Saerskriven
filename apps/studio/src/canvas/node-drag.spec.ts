@@ -12,6 +12,13 @@ import { selectTool } from './tools.js';
 
 const pair = [actorElement, processElement];
 
+class ViewKeepingMouseEvent extends MouseEvent {
+  constructor(type: string, { view, ...init }: MouseEventInit = {}) {
+    super(type, init);
+    Object.defineProperty(this, 'view', { value: view });
+  }
+}
+
 const renderNodeDrag = () => {
   const moveNodes = vi.fn<(changes: NodeChange<DiagramNode>[]) => void>();
   const { result, rerender } = renderHook(() =>
@@ -70,6 +77,14 @@ const blur = (): void => {
   });
 };
 
+beforeAll(() => {
+  vi.stubGlobal('MouseEvent', ViewKeepingMouseEvent);
+});
+
+afterAll(() => {
+  vi.unstubAllGlobals();
+});
+
 beforeEach(() => {
   openCanvas(pair);
 });
@@ -112,18 +127,24 @@ describe('useNodeDrag', () => {
     expect(autoPan()).toBe(true);
   });
 
-  it('puts a drag back when the window loses focus', () => {
+  it('puts a drag back when the window loses focus, and releases the mouse gesture React Flow holds', () => {
     const { start, report, moveNodes } = renderNodeDrag();
+    const released = vi.fn<(event: MouseEvent) => void>();
+    window.addEventListener('mouseup', released);
 
+    blur();
     start(pair);
     report(movedTo(pair, { x: 20, y: 10 }, true));
     blur();
     report(movedTo(pair, { x: 20, y: 10 }, false));
+    window.removeEventListener('mouseup', released);
 
     expect(moveNodes).toHaveBeenCalledTimes(2);
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 0, y: 0 }, false),
     );
+    expect(released).toHaveBeenCalledOnce();
+    expect(released.mock.calls[0]?.[0].view).toBe(window);
   });
 
   it('puts a drag back where the model has its nodes now, when the model moved under it', () => {
@@ -188,7 +209,7 @@ describe('useNodeDrag', () => {
   });
 
   it('filters the late release of a drag the window put back, whatever is pressed before it, and lets the next keyboard move by', () => {
-    const { start, report, stop, autoPan, moveNodes } = renderNodeDrag();
+    const { start, report, autoPan, moveNodes } = renderNodeDrag();
 
     start(pair);
     report(movedTo(pair, { x: 20, y: 10 }, true));
@@ -202,7 +223,6 @@ describe('useNodeDrag', () => {
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 0, y: 0 }, false),
     );
-    stop();
     report(movedTo(pair, { x: 5, y: 0 }, false));
 
     expect(moveNodes).toHaveBeenLastCalledWith(
