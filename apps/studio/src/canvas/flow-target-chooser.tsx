@@ -8,6 +8,7 @@ import {
 } from './connecting.js';
 import { flowEnds } from './elements.js';
 import { currentLayout } from './layout.js';
+import { CappedList } from '../ui/capped-list.js';
 import cursor from '../ui/cursor-row.module.css';
 import styles from './toolbox.module.css';
 
@@ -41,19 +42,20 @@ export function FlowTargetChooser() {
       >
         <Select.Value placeholder={t('tools.choose-flow-target')} />
       </Select.Trigger>
-      <Select.Content className={styles.content} position="popper">
-        <Select.Viewport className={styles.viewport}>
-          {targets.map((node) => (
-            <Select.Item
-              className={`${styles.item} ${cursor.row}`}
-              key={node.id}
-              value={node.id}
-            >
-              <Select.ItemText>{shownName(node.id, node.name)}</Select.ItemText>
-            </Select.Item>
-          ))}
-        </Select.Viewport>
-      </Select.Content>
+      <CappedList
+        contentClassName={styles.content}
+        viewportClassName={styles.viewport}
+      >
+        {targets.map((node) => (
+          <Select.Item
+            className={`${styles.item} ${cursor.row}`}
+            key={node.id}
+            value={node.id}
+          >
+            <Select.ItemText>{shownName(node.id, node.name)}</Select.ItemText>
+          </Select.Item>
+        ))}
+      </CappedList>
     </Select.Root>
   );
 }
