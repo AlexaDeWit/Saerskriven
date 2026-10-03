@@ -325,8 +325,25 @@ export const editVariants: readonly {
           status: 'mitigated',
           description: 'An order can be altered in transit.',
           elements: ['element-api'],
+          appliesToModel: false,
         },
       },
+    ],
+  },
+  {
+    op: 'link_threat_to_model',
+    edits: [{ op: 'link_threat_to_model', threat: 'threat-tamper-order' }],
+  },
+  {
+    op: 'unlink_threat_from_model',
+    edits: [
+      { op: 'link_threat_to_model', threat: 'threat-tamper-order' },
+      {
+        op: 'detach_threat',
+        threat: 'threat-tamper-order',
+        element: 'element-api',
+      },
+      { op: 'unlink_threat_from_model', threat: 'threat-tamper-order' },
     ],
   },
   {

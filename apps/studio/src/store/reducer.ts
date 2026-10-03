@@ -5,6 +5,7 @@ import {
   linkAssumption,
   linkAssumptionToModel,
   linkMitigation,
+  linkThreatToModel,
   replaceAssumption,
   replaceMitigation,
   setAssumptionStatus,
@@ -13,6 +14,7 @@ import {
   unlinkAssumption,
   unlinkAssumptionFromModel,
   unlinkMitigation,
+  unlinkThreatFromModel,
   addElement,
   setElementDetails,
   setElementProperties,
@@ -135,6 +137,10 @@ export function reduce(state: State, action: Action): State {
       edited(state, attachThreat(state.present, threatId, elementId)),
     DetachThreat: ({ threatId, elementId }) =>
       edited(state, detachThreat(state.present, threatId, elementId)),
+    LinkThreatToModel: ({ threatId }) =>
+      edited(state, linkThreatToModel(state.present, threatId)),
+    UnlinkThreatFromModel: ({ threatId }) =>
+      edited(state, unlinkThreatFromModel(state.present, threatId)),
     AddMitigation: ({ mitigation }) =>
       edited(state, addMitigation(state.present, mitigation)),
     ReplaceMitigation: ({ mitigation }) =>

@@ -35,8 +35,10 @@ import {
 import { headingKindMessages } from '../messages/enum-labels.js';
 import { activeTranslator } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
+import { sentences } from '../messages/said.js';
 import {
   attachableElements,
+  attachableThreats,
   attachedThreats,
   attachSaid,
   detachSaid,
@@ -409,7 +411,10 @@ describe('detachSaid', () => {
       const kept: Threat = { ...onTwo, elements: [actorElement] };
 
       expect(detachSaid(onTwo, detached, kept, sampleElements)?.(french)).toBe(
-        french(`canvas.threat-detached-from-${detached.kind}`, { number }),
+        sentences(
+          french(`canvas.threat-detached-from-${detached.kind}`, { number }),
+          french('canvas.threat-stays-on-elements'),
+        ),
       );
     },
   );
@@ -430,10 +435,13 @@ describe('detachSaid', () => {
         elements,
       )?.(french),
     ).toBe(
-      french('canvas.threat-detached-from-flow', {
-        number: onFlow.number,
-        ends: fromReaderToStudio(french),
-      }),
+      sentences(
+        french('canvas.threat-detached-from-flow', {
+          number: onFlow.number,
+          ends: fromReaderToStudio(french),
+        }),
+        french('canvas.threat-stays-on-elements'),
+      ),
     );
   });
 
@@ -443,13 +451,41 @@ describe('detachSaid', () => {
       const kept: Threat = { ...onTwo, elements: [actorElement] };
 
       expect(detachSaid(onTwo, detached, kept, sampleElements)?.(french)).toBe(
-        french(`canvas.threat-detached-from-${detached.kind}-named`, {
-          number,
-          name: detached.name,
-        }),
+        sentences(
+          french(`canvas.threat-detached-from-${detached.kind}-named`, {
+            number,
+            name: detached.name,
+          }),
+          french('canvas.threat-stays-on-elements'),
+        ),
       );
     },
   );
+
+  it('says the threat still applies to the whole model where the detach leaves it on no element, and that it stays on its others where it leaves it on one', () => {
+    const modelWide: Threat = { ...sampleThreat, appliesToModel: true };
+    const detached = t('canvas.threat-detached-from-actor-named', {
+      number: sampleThreat.number,
+      name: reader.name,
+    });
+
+    expect(
+      detachSaid(
+        modelWide,
+        reader,
+        { ...modelWide, elements: [] },
+        sampleElements,
+      )?.(t),
+    ).toBe(sentences(detached, t('canvas.threat-stays-on-model')));
+    expect(
+      detachSaid(
+        { ...modelWide, elements: [actorElement, processElement] },
+        reader,
+        { ...modelWide, elements: [processElement] },
+        sampleElements,
+      )?.(t),
+    ).toBe(sentences(detached, t('canvas.threat-stays-on-elements')));
+  });
 
   it('says nothing where the detach was refused and the threat still names the element', () => {
     expect(detachSaid(onTwo, reader, onTwo, sampleElements)).toBeUndefined();
@@ -476,9 +512,40 @@ describe('freshThreat', () => {
     expect(threat.status).toBe('open');
   });
 
+  it('opens applying to the model, on no element, where the add names none', () => {
+    expect(freshThreat(7, undefined, t)).toMatchObject({
+      elements: [],
+      appliesToModel: true,
+    });
+    expect(freshThreat(7, actorElement, t).appliesToModel).toBe(false);
+  });
+
   it('takes an id of its own on every add', () => {
     expect(freshThreat(7, actorElement, t).id).not.toBe(
       freshThreat(8, actorElement, t).id,
+    );
+  });
+});
+
+const detailOf = (threat: Threat): string | undefined =>
+  attachableThreats([threat], processElement, activeTranslator())[0]?.text
+    .detail;
+
+describe('attachableThreats', () => {
+  it('says that an offered threat applies to the model, and that one with no reference hangs off nothing', () => {
+    const modelWide = detailOf({
+      ...sampleThreat,
+      elements: [],
+      appliesToModel: true,
+    });
+
+    expect(modelWide).toContain(t('panel.detail-applies-to-model'));
+    expect(modelWide).not.toContain(t('panel.detail-no-elements'));
+    expect(detailOf({ ...sampleThreat, elements: [] })).toContain(
+      t('panel.detail-no-elements'),
+    );
+    expect(detailOf(sampleThreat)).not.toContain(
+      t('panel.detail-applies-to-model'),
     );
   });
 });

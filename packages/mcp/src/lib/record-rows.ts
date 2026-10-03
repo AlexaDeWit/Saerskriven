@@ -103,6 +103,9 @@ export function renderAssumption(
   return `${recordHeading(assumption, qualifiers)}: ${escapedForTerminal(assumption.prose)}`;
 }
 
+/** What a text result says of an assumption or a threat that applies to the model. */
+export const appliesToModelQualifier = 'applies to the model';
+
 /**
  * The qualifier an assumption read on a threat carries where it also
  * applies to the model, for {@link renderAssumption}.
@@ -123,7 +126,7 @@ export function threatReadQualifiers(
 export function renderRecord(row: RecordRow): readonly string[] {
   const qualifiers = [
     ...(row.kind === 'assumption' && row.appliesToModel
-      ? ['applies to the model']
+      ? [appliesToModelQualifier]
       : []),
     ...(row.unlinked ? ['linked to nothing'] : []),
   ];

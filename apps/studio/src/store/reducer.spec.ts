@@ -213,6 +213,10 @@ const applied: ActionsByTag<ModelActionTag> = {
     threatId: firstThreat,
     elementId: actorElement,
   }),
+  LinkThreatToModel: Action.LinkThreatToModel({ threatId: firstThreat }),
+  UnlinkThreatFromModel: Action.UnlinkThreatFromModel({
+    threatId: firstThreat,
+  }),
   AddMitigation: Action.AddMitigation({
     mitigation: {
       ...heldMitigation,
@@ -377,6 +381,12 @@ const refused: ActionsByTag<ModelActionTag> = {
     threatId: threatId('threat-missing'),
     elementId: actorElement,
   }),
+  LinkThreatToModel: Action.LinkThreatToModel({
+    threatId: threatId('threat-missing'),
+  }),
+  UnlinkThreatFromModel: Action.UnlinkThreatFromModel({
+    threatId: threatId('threat-missing'),
+  }),
   AddMitigation: Action.AddMitigation({
     mitigation: { ...heldMitigation, threats: [] },
   }),
@@ -436,6 +446,10 @@ const recordActions = new Set<Action['_tag']>([
 
 const modelScopedStart = initialState(
   reduce(recordedStart, applied.LinkAssumptionToModel).present,
+);
+
+const modelWideStart = initialState(
+  reduce(recordedStart, applied.LinkThreatToModel).present,
 );
 
 const withHistory: State = {
@@ -528,6 +542,9 @@ function stateFor(action: Action): State {
   }
   if (Action.$is('UnlinkAssumptionFromModel')(action)) {
     return modelScopedStart;
+  }
+  if (Action.$is('UnlinkThreatFromModel')(action)) {
+    return modelWideStart;
   }
   if (recordActions.has(action._tag)) {
     return recordedStart;
@@ -818,6 +835,45 @@ describe('a threat', () => {
     expect(replaced.present.assumptions).toEqual([]);
     expect(replaced.past).toHaveLength(1);
     expect(reduce(replaced, Action.Undo()).present).toBe(recordedStart.present);
+  });
+});
+
+const held = (state: State) =>
+  state.present.threats.find((threat) => threat.id === firstThreat);
+
+describe('a threat that applies to the model', () => {
+  it('keeps its elements when it is applied to the model, and stays on them when its model link goes', () => {
+    expect(held(modelWideStart)).toEqual({
+      ...sampleThreat,
+      appliesToModel: true,
+    });
+    expect(held(reduce(modelWideStart, applied.UnlinkThreatFromModel))).toEqual(
+      sampleThreat,
+    );
+  });
+
+  it('stays in the model when its only element goes, and goes with its model link after that, one undo bringing it back with what it culled', () => {
+    const detached = reduce(modelWideStart, applied.DetachThreat);
+    expect(held(detached)).toEqual({
+      ...sampleThreat,
+      elements: [],
+      appliesToModel: true,
+    });
+    expect(detached.present.mitigations).toEqual([heldMitigation]);
+
+    const removed = reduce(detached, applied.UnlinkThreatFromModel);
+    expect(held(removed)).toBeUndefined();
+    expect(removed.present.mitigations).toEqual([]);
+    expect(reduce(removed, Action.Undo()).present).toBe(detached.present);
+  });
+
+  it('keeps history alone for a link it already holds, or an unlink of one it does not', () => {
+    expect(reduce(modelWideStart, applied.LinkThreatToModel)).toBe(
+      modelWideStart,
+    );
+    expect(reduce(recordedStart, applied.UnlinkThreatFromModel)).toBe(
+      recordedStart,
+    );
   });
 });
 

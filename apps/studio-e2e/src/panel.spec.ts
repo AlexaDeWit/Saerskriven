@@ -600,6 +600,7 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   await expect(panelField(page, 'combobox', 'Status')).toBeFocused();
 
   for (const [group, role, control] of [
+    ['Attached elements', 'combobox', 'Applies to the whole model'],
     ['Attached elements', 'button', 'Detach Label printer'],
     ['Attached elements', 'combobox', 'Existing element'],
     ['Attached elements', 'button', 'Attach existing element'],

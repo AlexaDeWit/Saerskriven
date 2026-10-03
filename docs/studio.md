@@ -474,18 +474,31 @@ between copied elements, the threats attached to them, and the mitigations and
 assumptions those threats link. The copy goes to the system clipboard as
 Saerskriven YAML. Cut removes the selection once the copy is written, and
 removes nothing if the model or the selection changed meanwhile. A threat the
-cut leaves attached to no element goes with it, unless a file marks it as
-applying to the whole model, and the notice counts the threats copied and how
-many of them went. Paste and Duplicate add the copy with
-new ids, offset by a grid interval each time. A pasted threat keeps its number
-when no threat in the model holds it, so pasting after a cut restores a removed
-threat under its own number. Otherwise it takes a new number, as a copy or a
-duplicate does while its original stays. A pasted mitigation or assumption
-identical to one the model already holds links the pasted threats to that
-record, and every other record is added as a new one. A pasted assumption does
-not apply to the model, and neither does a pasted threat, whatever its original
-does. The status line counts what was linked and added, and
-the links left behind. Duplicate leaves the clipboard alone. Text fields keep
+cut leaves on no element goes with it, and a threat that applies to the whole
+model stays. The notice counts the threats copied and how many of them went.
+
+Paste and Duplicate add the copy with new ids, offset by a grid interval each
+time. A pasted threat keeps its number when no threat in the model holds it,
+so pasting after a cut restores a removed threat under its own number.
+Otherwise it takes a new number, as a copy or a duplicate does while its
+original stays. A pasted mitigation or assumption identical to one the model
+already holds links the pasted threats to that record, and every other record
+is added as a new one. A pasted assumption does not apply to the model, and
+neither does a pasted threat.
+
+A threat that applies to the whole model is not copied while the model still
+holds it as it was copied: under the same number, with the same title,
+category, description, severity and status. The pasted elements are attached
+to that threat, so cutting an element and pasting it leaves one threat under
+its number, and a copy of the element joins the same threat. Its mitigations
+and assumptions stay as the model holds them. Where the threat was edited or
+removed meanwhile, or no longer applies to the whole model, the paste adds a
+copy that does not, as for any other threat.
+
+The status line counts the records linked and added, the threats attached in
+place of being copied where there are any, and on a copy, a cut or a duplicate
+the links left behind. A duplicate counts none for a threat it is attached to,
+which keeps them all. Duplicate leaves the clipboard alone. Text fields keep
 their own clipboard keys.
 
 Paste reads the clipboard within the same size, depth and alias bounds as a
@@ -499,12 +512,11 @@ Threat Dragon file's extra keys, are not copied, and the status line says so.
 Delete or Backspace removes the selection from anywhere in the studio outside a
 form field (a text box or a drop-down list). A flow attached to a removed
 element loses that end and keeps the other, and a threat loses the link. A
-threat the deletion leaves attached to no element goes with it, together with
-the mitigations and assumptions left on no threat, unless a file marks the
-threat as applying to the whole model. The notice counts the flows
-detached, the links dropped from the threats that stay, and the threats
-removed, so a threat that goes is reported once. One Delete stays one undo
-step, whatever it took.
+threat the deletion leaves on no element goes with it, together with the
+mitigations and assumptions left on no threat, and a threat that applies to
+the whole model stays. The notice counts the flows detached, the links dropped
+from the threats that stay, and the threats removed, so a threat that goes is
+reported once. One Delete stays one undo step, whatever it took.
 
 Every edit is one undo step: a placement, a drag, a resize, a committed field,
 a paste. Selecting, panning, zooming and switching diagrams add no undo step
@@ -550,8 +562,9 @@ is, and an undo takes the attachment back.
 
 Each threat's summary is two lines: its number and title, then its severity, its
 status with a glyph of its own, its category, and a mark for each flag it
-raises. Open is the one status drawn as a filled pill. A third line names the
-other elements the threat is on, where there are any. Threats are listed by how
+raises. Open is the one status drawn as a filled pill. A threat that applies
+to the whole model says so on a third line, and the line after names the other
+elements the threat is on, where there are any. Threats are listed by how
 much risk is still live: open, accepted risk, transferred, mitigated, avoided,
 eliminated, then not applicable, each status from critical down to undecided and
 equal threats by number. The order is set when the panel opens or the selection
@@ -575,18 +588,23 @@ says beside its delete control.
 
 ### Attached elements
 
-An expanded threat lists the elements it names, across every diagram, as one
-row of names each with its own Detach control, and an **Attach existing
-element** picker under them that offers the elements it does not name. Attach
-and Detach are one undo step each.
+A threat applies to the whole model, to the elements it names, or to both, as
+an assumption applies to the model, to threats, or to both. An expanded threat
+says which under **Attached elements**. **Applies to the whole model** offers
+Yes and No. Under it are the elements the threat names, across every diagram,
+as one row of names each with its own Detach control, and an **Attach existing
+element** picker that offers the elements it does not name. Each change is one
+undo step.
 
-Detaching the last element removes the threat, unless a file marks it as
-applying to the whole model, with the mitigations and assumptions left on no
-threat, and the notice says so. There is no
-confirmation: Undo brings the threat back with everything the removal took, as
-unlinking a record's last threat does. Detaching the element whose panel you
-are reading takes the threat off that panel, so focus moves to the threat that
-takes its place, or to Add a threat.
+The change that leaves a threat on nothing removes it: detaching its last
+element while it does not apply to the whole model, or choosing No while it
+names no element. The mitigations and assumptions left on no threat go with
+it, and the notice says so. There is no confirmation: Undo brings the threat
+back with everything the removal took, as unlinking a record's last threat
+does. A threat that applies to the whole model stays when its last element is
+detached, and the notice says that it still applies. Detaching the element
+whose panel you are reading takes the threat off that panel, so focus moves to
+the threat that takes its place, or to Add a threat.
 
 ### Mitigations and assumptions
 
@@ -630,14 +648,16 @@ Selecting anything brings the threat panel back. Escape, Close model panel, or
 running the command again closes it and moves focus to the canvas.
 
 Threats lists every threat in the model, a threat on no element included, in
-the order above and with the same summaries. Each summary adds a line naming
-the elements the threat is on, or "On no element". A threat opens and is
-edited as on an element's panel. There is no Add a threat or Attach existing
-threat here, so add a threat on an element. A detach that leaves the threat on
-another element keeps it in the list, and detaching its last element removes
-it, unless a file marks it as applying to the whole model, as on an element's
-panel. Focus then moves to the threat that takes its
-place, or to the Threats tab.
+the order above and with the same summaries. A threat that applies to the
+whole model reads "Applies to the whole model", each summary names every
+element its threat is on, and a threat on neither reads "On no element".
+**Add a threat** creates a threat that applies to the whole model and names no
+element, opened with focus in its title. There is no Attach existing threat
+here. A threat opens and is edited as on an element's panel. A detach that
+leaves the threat on another element, or on the whole model, keeps it in the
+list, and the change that leaves it on nothing removes it, as on an element's
+panel. Focus then moves to the threat that takes its place, or to the Threats
+tab.
 
 Details holds the model's Title and Description, then the assumptions that
 apply to the whole model. The assumptions group works as a threat's does, bound
@@ -693,7 +713,9 @@ back into it, to the row last chosen.
 Each row gives a threat's number, title, elements, severity and status. The
 rows are in the threat list's order, by how much risk is still live, and hold
 that order while the register stays open: an edit updates its row in place
-and a new threat joins the end. A threat on no element reads "No element".
+and a new threat joins the end. A threat that applies to the whole model
+leads its elements with "The whole model", and a threat on neither reads "No
+element".
 There is no filter or search.
 
 Choosing a row by its title opens that threat on the model panel's Threats

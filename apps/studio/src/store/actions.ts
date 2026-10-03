@@ -117,6 +117,8 @@ export type Action = Data.TaggedEnum<{
   ReplaceThreat: { readonly threat: Threat };
   AttachThreat: { readonly threatId: ThreatId; readonly elementId: ElementId };
   DetachThreat: { readonly threatId: ThreatId; readonly elementId: ElementId };
+  LinkThreatToModel: { readonly threatId: ThreatId };
+  UnlinkThreatFromModel: { readonly threatId: ThreatId };
   AddMitigation: { readonly mitigation: Mitigation };
   ReplaceMitigation: { readonly mitigation: Mitigation };
   LinkMitigation: {

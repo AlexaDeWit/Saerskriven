@@ -60,9 +60,8 @@ export type RecordRowProps<Held extends ThreatRecord> = {
  * Added mark once a new record is kept, the status and Unlink (Discard
  * while it is not yet kept), and its fields follow without labels of their
  * own. The toggle is named alike in both states, by the record's name and
- * its headline. The row is a group, which has no name where it draws a
- * toggle, so the record's name is said once, and which takes the record's
- * name where it draws none.
+ * its headline. The row is a group with no name: its toggle, or a new row's
+ * fields, already carry the record's name.
  */
 export function RecordRow<Held extends ThreatRecord>({
   kind,
@@ -159,10 +158,7 @@ export function RecordRow<Held extends ThreatRecord>({
       data-record-row={record.id}
       onBlur={draft ? onBlur : undefined}
     >
-      <fieldset
-        aria-label={foldable ? undefined : name}
-        className={styles.recordFields}
-      >
+      <fieldset className={styles.recordFields}>
         <div className={styles.recordHead} data-folded={open ? undefined : ''}>
           {foldable ? (
             <RecordToggle

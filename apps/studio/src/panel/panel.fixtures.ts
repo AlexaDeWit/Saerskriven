@@ -47,12 +47,16 @@ export const listedThreats = (
   );
 
 /**
- * The row of the record whose toggle is named `toggle`: the group with no
- * name of its own that holds that toggle. A row that draws no toggle is found
- * by its group name instead.
+ * The row of the record holding the control `named`: the group with no name
+ * of its own around it. The control is the row's toggle unless `role` says
+ * otherwise, as for a new row, which draws no toggle and is found by its
+ * first field.
  */
-export const recordRow = (toggle: string): HTMLElement => {
-  const control = screen.getByRole('button', { name: toggle });
+export const recordRow = (
+  named: string,
+  role: 'button' | 'textbox' = 'button',
+): HTMLElement => {
+  const control = screen.getByRole(role, { name: named });
   return screen.getByRole('group', {
     name: (name, group) => name === '' && group.contains(control),
   });
@@ -91,6 +95,7 @@ export const showThreatEditor = (
     onRefusal: noop,
     onAttach: noop,
     onDetach: noop,
+    onModelLink: noop,
     onDelete: noop,
     onFocused: noop,
     ...overrides,
