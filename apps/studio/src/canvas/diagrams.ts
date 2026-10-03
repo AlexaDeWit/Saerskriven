@@ -4,28 +4,31 @@ import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { activeTranslator } from '../messages/locale.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
-import { announce, excerpt, nameQuoteLength } from './announcements.js';
+import { announce, clear, excerpt, nameQuoteLength } from './announcements.js';
 
 /**
- * Puts the diagram `diagramId` on screen without saying so. It returns the
- * title of the diagram now shown, cut to {@link nameQuoteLength}, or
- * `undefined` where nothing changed.
+ * Puts the diagram `diagramId` on screen without saying so, and ends the
+ * status line of the diagram it replaces. It returns whether the diagram
+ * changed.
  */
-export function switchDiagram(diagramId: DiagramId): string | undefined {
+export function switchDiagram(diagramId: DiagramId): boolean {
   const before = activeDiagramId(modelStore.getState());
   dispatch(Action.SelectDiagram({ diagramId }));
-  const shown = activeDiagram(modelStore.getState());
-  return shown === undefined || shown.id === before
-    ? undefined
-    : excerpt(shown.title, nameQuoteLength);
+  const shown = activeDiagramId(modelStore.getState());
+  if (shown === undefined || shown === before) {
+    return false;
+  }
+  clear();
+  return true;
 }
 
 /** Puts the diagram `diagramId` names on screen and says so in the status line, where it was not already. */
 export function showDiagram(diagramId: DiagramId): boolean {
-  const title = switchDiagram(diagramId);
-  if (title === undefined) {
+  if (!switchDiagram(diagramId)) {
     return false;
   }
+  const shown = activeDiagram(modelStore.getState());
+  const title = excerpt(shown?.title ?? '', nameQuoteLength);
   announce((t) => t('canvas.diagram-shown', { title }));
   return true;
 }

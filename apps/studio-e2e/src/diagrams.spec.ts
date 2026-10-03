@@ -77,10 +77,24 @@ test('the switcher lists the diagrams by title, and a choice draws the one chose
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
     `Diagram: ${secondTitle}`,
   );
+  await expect(diagramSwitcher(page)).toBeFocused();
   await expect(page.getByTestId('canvas-announcement')).toHaveText('');
-  await expect(page.getByTestId('diagram-chosen')).toContainText(
+});
+
+test('a switcher choice ends the line a chord drew', async ({ page }) => {
+  await openTwoDiagrams(page);
+  await page.keyboard.press(registeredChords['next-diagram'][0]);
+  await expect(page.getByTestId('canvas-announcement')).toContainText(
     secondTitle.slice(0, 12),
   );
+
+  await openSwitcher(page);
+  await diagramChoice(page, firstTitle).click();
+
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    `Diagram: ${firstTitle}`,
+  );
+  await expect(page.getByTestId('canvas-announcement')).toHaveText('');
 });
 
 test('the next and previous chords step through the diagrams and wrap', async ({

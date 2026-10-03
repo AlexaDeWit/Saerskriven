@@ -17,9 +17,8 @@ the state it describes resolves. None is removed by a timer.
 A status line under the card says what an action did wherever the control
 that has focus does not already show it, such as a deletion, a refusal, a
 paste or an Undo. It ends at the next action that changes the canvas or the
-panel. A diagram chosen in the switcher draws no line, because the switcher
-shows its title, and a screen reader hears it through a hidden status region.
-PageDown and PageUp from the canvas do draw the line.
+panel. A diagram chosen in the switcher draws no line, since focus returns to
+the switcher, which names it. PageDown and PageUp do draw it.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
 persists across reloads. **Language** beside it selects English (Canada),

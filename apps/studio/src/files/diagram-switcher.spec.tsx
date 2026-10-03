@@ -77,18 +77,19 @@ describe('the diagram switcher', () => {
     expect(modelStore.getState().past).toEqual([]);
   });
 
-  it('says a choice in a hidden status region and not in the status line', async () => {
+  it('draws no status line for a choice and returns focus to the button naming it', async () => {
     const user = userEvent.setup();
     modelStore.setState(initialState(twoDiagramModel), true);
     mounted();
 
-    expect(screen.getByRole('status').textContent).toBe('');
     await user.click(switcher('Diagram: Main'));
     await screen.findByRole('menu');
     await user.click(choice('Second'));
 
-    expect(screen.getByRole('status').textContent).toContain('Second');
     expect(currentAnnouncement().message).toBe('');
+    await waitFor(() => {
+      expect(document.activeElement).toBe(switcher('Diagram: Second'));
+    });
   });
 
   it('offers only a new diagram while the model holds none', async () => {

@@ -112,7 +112,8 @@ function worded(held: Held, t: Speaker): Announcement {
   };
 }
 
-function clear(): void {
+/** Ends the announcement now showing, leaving its sequence. */
+export function clear(): void {
   if (current.said === undefined) {
     return;
   }
