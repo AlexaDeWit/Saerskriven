@@ -12,7 +12,8 @@ export type ThreatRequest = {
 
 /**
  * What a model panel that styles hide did with a threat asked for: opened
- * it, or refused it for the refused text another threat holds.
+ * it, or refused it for the refused text another threat holds. A refusal is
+ * answered only while a field shows that text.
  */
 export type HiddenChoice = 'opened' | 'refused';
 

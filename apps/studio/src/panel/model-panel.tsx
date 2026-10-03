@@ -34,7 +34,8 @@ type ModelPanelProps = HeldMetadata & {
  * a Threats tab, which it opens on, and the model's own fields on Details,
  * where Title and Description each commit one `SetModelMetadata` naming that
  * field alone. The Threats tab takes focus where the M command opened the
- * panel, and shows again for a threat asked for from outside the panel.
+ * panel, and shows again for a threat asked for from outside the panel, and
+ * for the refused text a threat register choice closes onto.
  */
 export function ModelPanel({
   held,

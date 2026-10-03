@@ -13,8 +13,7 @@ import {
   currentAnnouncement,
   resetAnnouncements,
 } from '../canvas/announcements.js';
-import { recordingSurface } from '../commands/commands.fixtures.js';
-import { commandById, runCommand } from '../commands/registry.js';
+import { runRegistered } from '../commands/commands.fixtures.js';
 import { severityMessages, statusMessages } from '../messages/enum-labels.js';
 import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
@@ -113,9 +112,7 @@ const showStudio = (): void => {
 };
 
 const openRegister = (): void => {
-  act(() => {
-    runCommand(commandById('threat-register'), recordingSurface().surface);
-  });
+  runRegistered('threat-register');
 };
 
 const hidePanesUnderTheRegister = (): (() => void) => {
@@ -590,6 +587,77 @@ describe(
         expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
       },
     );
+
+    it('closes onto a refused record field as onto any other, and onto the first refused field where a threat holds several', async () => {
+      const user = userEvent.setup();
+      hidePanesUnderTheRegister();
+      showStudio();
+      openRegister();
+      await user.click(chooser(looseThreat));
+      await user.click(
+        within(modelPanel()).getByRole('button', { name: 'Add assumption' }),
+      );
+      await user.keyboard(`Assumed${softHyphen}prose`);
+      await user.click(screen.getByRole('button', { name: 'Opener' }));
+      const assumed = within(modelPanel()).getByRole('textbox', {
+        name: 'Assumption 1',
+      });
+      expect(assumed.getAttribute('aria-invalid')).toBe('true');
+      openRegister();
+
+      await user.click(chooser(mitigatedThreat));
+
+      expect(registerShown()).toBeNull();
+      expect(document.activeElement).toBe(assumed);
+
+      const description = within(modelPanel()).getByRole('textbox', {
+        name: 'Description',
+      });
+      await user.click(description);
+      await user.keyboard(`Pasted${softHyphen}prose`);
+      await user.click(screen.getByRole('button', { name: 'Opener' }));
+      openRegister();
+
+      await user.click(chooser(mitigatedThreat));
+
+      expect(registerShown()).toBeNull();
+      expect(assumed.getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(description);
+    });
+
+    it('stays open over a hidden model panel that refuses the chosen row while no field shows the refused text, as after a redo opens another threat', async () => {
+      const user = userEvent.setup();
+      hidePanesUnderTheRegister();
+      act(() => {
+        dispatch(
+          Action.AddThreat({
+            threat: {
+              ...base,
+              id: threatId('threat-added'),
+              number: 4,
+              title: 'An added threat',
+            },
+          }),
+        );
+      });
+      await showStudioHoldingARefusedDraft(user);
+      modelSummary(/An added threat/u).focus();
+      runRegistered('undo');
+      runRegistered('redo');
+      expect(
+        modelSummary(/An added threat/u).getAttribute('aria-expanded'),
+      ).toBe('true');
+      expect(
+        within(modelPanel()).queryByDisplayValue(`Pasted${softHyphen}prose`),
+      ).toBeNull();
+      openRegister();
+
+      await user.click(chooser(mitigatedThreat));
+
+      expect(register()).toBeDefined();
+      expect(document.activeElement).toBe(chooser(mitigatedThreat));
+      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
+    });
 
     it('closes on the row of the threat holding the refused text as on any other, with focus on its summary and the row marked as it opens again', async () => {
       const user = userEvent.setup();

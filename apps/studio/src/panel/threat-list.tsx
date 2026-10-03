@@ -75,7 +75,9 @@ type ListControls = {
  * the model, the drafts the overlay retains, and the control focus goes to
  * where no threat is left to take it: Add a threat on an element, which the
  * list draws on that ref, and the Threats tab on the model. The model's list
- * calls `onRequested` before it opens a threat asked for from outside it.
+ * calls `onRequested` before it opens a threat asked for from outside it, and
+ * before focus lands on the refused text a threat register choice closes
+ * onto.
  */
 export type ThreatListProps = {
   readonly element: Element | undefined;
@@ -455,13 +457,14 @@ function useRequestedThreats({
         }
       },
       hidden: (threatId) => {
-        if (
-          list.current === null ||
-          getComputedStyle(list.current).visibility !== 'hidden'
-        ) {
+        const drawn = list.current;
+        if (drawn === null || getComputedStyle(drawn).visibility !== 'hidden') {
           return undefined;
         }
-        if (refuses(threatId)) {
+        if (
+          refuses(threatId) &&
+          drawn.querySelector(refusedFieldSelector) !== null
+        ) {
           return 'refused';
         }
         return threatId === expanded ? 'opened' : undefined;
