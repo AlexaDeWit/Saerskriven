@@ -35,7 +35,7 @@ export const fieldsSv = catalogue(fieldMessages)('sv')({
   'name-of-trust-boundary-named': 'Namn på {name}',
   'record-name': '{kind} {number}',
   'record-toggle': '{name}, {headline}',
-  'mitigation-title-field': 'Titel för åtgärd {number}',
+  'mitigation-title-field': 'Titel på åtgärd {number}',
   'mitigation-prose-field': 'Beskrivning av åtgärd {number}',
   'mitigation-status-field': 'Status för åtgärd {number}',
   'assumption-prose-field': 'Antagande {number}',

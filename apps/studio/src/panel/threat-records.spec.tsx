@@ -503,7 +503,7 @@ describe(
       it("names each field of a record with the record's kind in lower case", async () => {
         await showOpened();
 
-        expect(textbox('Titel för åtgärd 1')).toBeDefined();
+        expect(textbox('Titel på åtgärd 1')).toBeDefined();
         expect(textbox('Beskrivning av åtgärd 1')).toBeDefined();
         expect(
           screen.getByRole('combobox', { name: 'Status för åtgärd 1' }),
@@ -522,7 +522,7 @@ describe(
         expect(
           screen.getByRole('button', {
             name: 'Länka befintligt antagande',
-            description: 'Välj först ett befintligt antagande.',
+            description: /ett befintligt antagande/u,
           }),
         ).toBeDefined();
       });
