@@ -200,5 +200,4 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'shortcut-summary': '{label} : {keys}. {when}.',
   'button-shortcut': 'Raccourci : {chord}',
   'icon-description': '{description} Raccourci : {chord}',
-  'export-diagram-named': 'Diagramme en SVG : {title}',
 });

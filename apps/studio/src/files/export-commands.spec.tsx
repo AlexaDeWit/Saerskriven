@@ -11,7 +11,6 @@ import { initialState, FileLifecycle } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   foreignSource,
-  mainDiagram,
   recordedModel,
   sampleModel,
 } from '../store/store.fixtures.js';
@@ -113,13 +112,21 @@ afterEach(() => {
   globalThis.localStorage.clear();
 });
 
+const severalDiagrams = (title: string) => ({
+  ...sampleModel,
+  diagrams: [
+    sampleModel.diagrams[0],
+    { id: diagramId('other'), title, elements: [] },
+  ],
+});
+
 describe('the studio exports', () => {
   it('writes every text projection directly from render under the file name', async () => {
     const bridge = specBridge();
     const result = session(bridge);
 
     act(() => {
-      result.current.commands.diagram(mainDiagram);
+      result.current.commands.diagram();
       result.current.commands.register();
       result.current.commands.typst();
     });
@@ -182,7 +189,7 @@ describe('the studio exports', () => {
       const result = session(bridge, specRenders({ compile, draw }));
 
       act(() => {
-        result.current.commands.diagram(mainDiagram);
+        result.current.commands.diagram();
         result.current.commands.register();
         result.current.commands.typst();
         result.current.commands.pdf();
@@ -368,6 +375,18 @@ describe('the studio exports', () => {
     expect(bridge.writes).toEqual([]);
   });
 
+  it('writes no SVG from a model holding no diagram', () => {
+    modelStore.setState(openedState({ ...sampleModel, diagrams: [] }), true);
+    const bridge = specBridge();
+    const result = session(bridge);
+
+    act(() => {
+      result.current.commands.diagram();
+    });
+
+    expect(bridge.writes).toEqual([]);
+  });
+
   it('draws no PNG from a model holding no diagram', async () => {
     modelStore.setState(openedState({ ...sampleModel, diagrams: [] }), true);
     const bridge = specBridge();
@@ -395,7 +414,7 @@ describe('the studio exports', () => {
         if (command === 'png') {
           result.current.commands.png();
         } else {
-          result.current.commands.diagram(mainDiagram);
+          result.current.commands.diagram();
         }
       });
 
@@ -569,7 +588,7 @@ describe('the studio exports', () => {
     const result = session(bridge);
     const exported = async (): Promise<void> => {
       act(() => {
-        result.current.commands.diagram(mainDiagram);
+        result.current.commands.diagram();
       });
       await waitFor(() => {
         expect(refused(result.current.notice)).toBe(false);
@@ -641,41 +660,6 @@ describe('the studio exports', () => {
     });
   });
 
-  it('uses the only diagram when the registry supplies no id', async () => {
-    const bridge = specBridge();
-    const result = session(bridge);
-
-    act(() => {
-      result.current.commands.diagram();
-    });
-
-    await waitFor(() => {
-      expect(bridge.writes[0]?.name).toBe('model.svg');
-    });
-  });
-
-  it('writes nothing when no diagram or id chooses one', () => {
-    modelStore.setState(
-      openedState({
-        ...sampleModel,
-        diagrams: [
-          sampleModel.diagrams[0],
-          { id: diagramId('other'), title: 'Other', elements: [] },
-        ],
-      }),
-      true,
-    );
-    const bridge = specBridge();
-    const result = session(bridge);
-
-    act(() => {
-      result.current.commands.diagram();
-      result.current.commands.diagram(diagramId('missing'));
-    });
-
-    expect(bridge.writes).toEqual([]);
-  });
-
   it('uses Untitled when the model has no open file', async () => {
     modelStore.setState(initialState(sampleModel), true);
     const bridge = specBridge();
@@ -687,6 +671,59 @@ describe('the studio exports', () => {
 
     await waitFor(() => {
       expect(bridge.writes[0]?.name).toBe('Untitled.md');
+    });
+  });
+
+  describe('with several diagrams', () => {
+    it.each(['diagram', 'png'] as const)(
+      'names the %s export after the open diagram, cleaned for a file name',
+      async (command) => {
+        modelStore.setState(
+          {
+            ...openedState(severalDiagrams('Pay / refund: "v2"')),
+            activeDiagram: diagramId('other'),
+          },
+          true,
+        );
+        const bridge = specBridge();
+        const result = session(bridge);
+
+        act(() => {
+          result.current.commands[command]();
+        });
+
+        await waitFor(() => {
+          expect(bridge.writes).toHaveLength(1);
+        });
+        expect(bridge.writes[0].name).toBe(
+          `model - Pay _ refund_ _v2_.${command === 'png' ? 'png' : 'svg'}`,
+        );
+      },
+    );
+
+    it('names an empty title the untitled diagram and leaves whole-model exports alone', async () => {
+      modelStore.setState(
+        {
+          ...openedState(severalDiagrams('')),
+          activeDiagram: diagramId('other'),
+        },
+        true,
+      );
+      const bridge = specBridge();
+      const result = session(bridge);
+
+      act(() => {
+        result.current.commands.diagram();
+        result.current.commands.register();
+      });
+
+      await waitFor(() => {
+        expect(bridge.writes).toHaveLength(2);
+      });
+      expect(bridge.writes.map((write) => write.name)).toEqual([
+        'model - Untitled diagram.svg',
+        'model.md',
+      ]);
     });
   });
 });

@@ -1,5 +1,5 @@
 import type { Locale } from '@saerskriven/i18n';
-import type { DiagramId } from '@saerskriven/model';
+import type { Diagram } from '@saerskriven/model';
 import {
   renderRegister,
   renderSvg,
@@ -20,7 +20,7 @@ import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { activeLocale, activeTranslator } from '../messages/locale.js';
-import { activeDiagram } from '../store/selectors.js';
+import { activeDiagram, severalDiagrams } from '../store/selectors.js';
 import type { FileLifecycle, State } from '../store/state.js';
 import { modelStore, onCanvasOrPanelChange } from '../store/store.js';
 import { SaveOutcome, type FileBridge, type SaveFileType } from './bridge.js';
@@ -31,7 +31,7 @@ import {
   loadPngAssets,
   type RenderAssetFailure,
 } from './render-assets.js';
-import { proposedExportName } from './session.js';
+import { diagramFileTitle, proposedExportName } from './session.js';
 
 type UnplacedFlow = SvgDocument['unplaced'][number];
 
@@ -49,6 +49,7 @@ type ExportFile = {
 type Produced = {
   readonly content: Uint8Array;
   readonly unplaced: readonly UnplacedFlow[];
+  readonly diagramTitle?: string;
 };
 
 const exportFiles = {
@@ -80,7 +81,7 @@ const exportFiles = {
 } as const satisfies Record<string, ExportFile>;
 
 type ExportCommands = {
-  diagram(diagramId?: DiagramId): void;
+  diagram(): void;
   register(): void;
   typst(): void;
   pdf(): void;
@@ -128,6 +129,7 @@ export function useExportCommands(
       file: ExportFile,
       content: string | Uint8Array,
       unplaced: readonly UnplacedFlow[] = [],
+      diagramTitle?: string,
     ): Promise<void> => {
       const { t } = activeTranslator();
       const outcome = await bridge.exportFile(
@@ -135,6 +137,7 @@ export function useExportCommands(
           sourceFile,
           file.extension,
           t('defaults.untitled-model'),
+          diagramTitle,
         ),
         { description: t(file.description), accept: file.accept },
         content,
@@ -162,7 +165,13 @@ export function useExportCommands(
           setNotice(made.left);
           return;
         }
-        await place(state.file, file, made.right.content, made.right.unplaced);
+        await place(
+          state.file,
+          file,
+          made.right.content,
+          made.right.unplaced,
+          made.right.diagramTitle,
+        );
       };
       void run();
     },
@@ -171,16 +180,9 @@ export function useExportCommands(
 
   const commands = useMemo<ExportCommands>(
     () => ({
-      diagram: (diagramId) => {
+      diagram: () => {
         const state = modelStore.getState();
-        const diagram =
-          diagramId === undefined
-            ? state.present.diagrams.length === 1
-              ? state.present.diagrams[0]
-              : undefined
-            : state.present.diagrams.find(
-                (candidate) => candidate.id === diagramId,
-              );
+        const diagram = activeDiagram(state);
         if (diagram === undefined) {
           return;
         }
@@ -190,6 +192,7 @@ export function useExportCommands(
           exportFiles.svg,
           projection.svg,
           projection.unplaced,
+          fileTitleOf(state, diagram),
         );
       },
       register: () => {
@@ -285,9 +288,19 @@ async function drawn(
       onRight: (image: PngImage) => ({
         content: image.png,
         unplaced: image.unplaced,
+        diagramTitle: fileTitleOf(state, diagram),
       }),
     },
   );
+}
+
+function fileTitleOf(state: State, diagram: Diagram): string | undefined {
+  return severalDiagrams(state)
+    ? diagramFileTitle(
+        diagram.title,
+        activeTranslator().t('defaults.untitled-diagram'),
+      )
+    : undefined;
 }
 
 function noticeFrom(

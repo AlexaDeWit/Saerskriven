@@ -70,10 +70,14 @@ file.
 **Import** converts an OTM or TM-BOM file into an unsaved native model
 ([importing a foreign model](import.md)). **Export** writes the diagram on
 screen as SVG or PNG, the register as Markdown, or the whole model as Typst or
-PDF, with one SVG item per diagram when the model has several. An export
-proposes the open file's name with the export's extension, or `Untitled`, and
-never changes which file Save writes to. An export that could not place a flow
-endpoint says so after it writes. A refused PDF or PNG export writes nothing
+PDF. An export proposes the open file's name with the export's extension, or
+`Untitled`, and never changes which file Save writes to. When the model has
+several diagrams, the SVG and PNG names add the diagram's title, as
+`payments - Checkout.svg`: characters a file name cannot hold become `_`,
+runs of white space collapse, leading and trailing dots and spaces go, the
+title is cut to 80 characters, and an empty one reads as the untitled diagram.
+Diagrams with the same title propose the same name. An export that could not
+place a flow endpoint says so after it writes. A refused PDF or PNG export writes nothing
 and stands until dismissed or until a later export.
 
 The studio keeps the current session in the browser's local storage. A reload

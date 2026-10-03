@@ -1,12 +1,10 @@
-import type { DiagramId } from '@saerskriven/model';
-
 /** File operations whose session guards unsaved changes before replacing the model. */
 export type FileCommands = {
   open(): void;
   import(): void;
   save(): void;
   saveAs(): void;
-  exportDiagram(diagramId?: DiagramId): void;
+  exportDiagram(): void;
   exportRegister(): void;
   exportTypst(): void;
   exportPdf(): void;

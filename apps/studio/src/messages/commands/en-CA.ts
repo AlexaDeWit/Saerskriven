@@ -187,5 +187,4 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'shortcut-summary': '{label}: {keys}. {when}.',
   'button-shortcut': 'Shortcut: {chord}',
   'icon-description': '{description} Shortcut: {chord}',
-  'export-diagram-named': 'Diagram as SVG: {title}',
 });

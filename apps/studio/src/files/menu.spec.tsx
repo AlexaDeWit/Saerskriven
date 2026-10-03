@@ -214,7 +214,7 @@ describe('what the menu offers', () => {
     }
   });
 
-  it('names each SVG entry from its diagram when the model has several', async () => {
+  it('offers one SVG entry for the open diagram when the model has several', async () => {
     const user = userEvent.setup();
     modelStore.setState(
       initialState({
@@ -236,11 +236,8 @@ describe('what the menu offers', () => {
     await user.hover(item('Export'));
 
     expect(
-      await screen.findByRole('menuitem', {
-        name: 'Diagram as SVG: Main',
-      }),
-    ).toBeDefined();
-    expect(item('Diagram as SVG: Other diagram')).toBeDefined();
+      await screen.findAllByRole('menuitem', { name: /^Diagram as SVG/u }),
+    ).toHaveLength(1);
   });
 
   it.each(['Diagram as SVG', 'Diagram as PNG'])(

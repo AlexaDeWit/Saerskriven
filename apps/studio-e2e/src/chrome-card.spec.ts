@@ -326,7 +326,7 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
   const start = await centreOf(menuItem(page, 'Export'));
   await page.mouse.move(start.x - 60, start.y);
   await page.mouse.move(start.x, start.y, { steps: 5 });
-  const svg = menuItem(page, 'Diagram as SVG: Taking an order');
+  const svg = menuItem(page, 'Diagram as SVG');
   await expect(svg).toBeVisible();
 
   const target = await centreOf(svg);
@@ -337,7 +337,7 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
   const output = await downloaded(page, () =>
     page.mouse.click(target.x, target.y),
   );
-  expect(output.name).toBe('two-diagrams.svg');
+  expect(output.name).toBe('two-diagrams - Taking an order.svg');
 });
 
 const openInShortViewport = async (page: Page): Promise<Box> => {
@@ -433,9 +433,7 @@ test.describe('at a device pixel ratio of 2', () => {
     const start = await centreOf(trigger);
     await page.mouse.move(start.x - 60, start.y);
     await page.mouse.move(start.x, start.y, { steps: 5 });
-    await expect(
-      menuItem(page, 'Diagram as SVG: Taking an order'),
-    ).toBeVisible();
+    await expect(menuItem(page, 'Diagram as SVG')).toBeVisible();
 
     const row = await screenBoxOf(trigger);
     const end = row.y + row.height + 18;
@@ -445,6 +443,6 @@ test.describe('at a device pixel ratio of 2', () => {
     await expect(page.getByRole('menu', { name: 'Export' })).toBeVisible();
 
     const output = await downloaded(page, () => page.mouse.click(start.x, end));
-    expect(output.name).toBe('two-diagrams.svg');
+    expect(output.name).toBe('two-diagrams - Taking an order.svg');
   });
 });

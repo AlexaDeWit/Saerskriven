@@ -9,11 +9,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import {
-  commandById,
-  diagramExportCommand,
-  type CommandId,
-} from '../commands/registry.js';
+import { commandById, type CommandId } from '../commands/registry.js';
 import { useTranslator } from '../messages/locale.js';
 import {
   canRedo,
@@ -390,21 +386,12 @@ function ViewMenu() {
 
 function ExportMenu() {
   const { t } = useTranslator();
-  const diagrams = useModelStore((state) => state.present.diagrams);
-  const several = diagrams.length > 1;
+  const nothing = useModelStore((state) => state.present.diagrams.length === 0);
 
   return (
     <Submenu trigger={<span>{t('menu.export')}</span>}>
-      {diagrams.length === 0 && (
-        <MenuCommand command="export-diagram" disabled />
-      )}
-      {diagrams.map((diagram) => (
-        <RegisteredMenuCommand
-          entry={diagramExportCommand(diagram, several)}
-          key={diagram.id}
-        />
-      ))}
-      <MenuCommand command="export-png" disabled={diagrams.length === 0} />
+      <MenuCommand command="export-diagram" disabled={nothing} />
+      <MenuCommand command="export-png" disabled={nothing} />
       <MenuCommand command="export-register" />
       <MenuCommand command="export-typst" />
       <MenuCommand command="export-pdf" />

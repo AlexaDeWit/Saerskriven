@@ -12,7 +12,6 @@ import { modelStore } from '../store/store.js';
 import type { StoreSync, SyncedState } from '../store/sync.js';
 import {
   foreignSource,
-  mainDiagram,
   nativeSource,
   sampleModel,
 } from '../store/store.fixtures.js';
@@ -664,7 +663,7 @@ describe('useFileSession', () => {
     const result = session(bridge, specRenders());
 
     act(() => {
-      result.current.commands.exportDiagram(mainDiagram);
+      result.current.commands.exportDiagram();
       result.current.commands.exportRegister();
       result.current.commands.exportTypst();
       result.current.commands.exportPdf();

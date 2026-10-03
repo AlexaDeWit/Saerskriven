@@ -173,5 +173,4 @@ export const commandMessages = {
   'shortcut-summary': text({ label: 'text', keys: 'text', when: 'text' }),
   'button-shortcut': text({ chord: 'text' }),
   'icon-description': text({ description: 'text', chord: 'text' }),
-  'export-diagram-named': text({ title: 'text' }),
 } as const;
