@@ -1,9 +1,7 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import {
   hostedStudioUrl,
-  renderShareLinkWriteFailure,
   shareLinkLimit,
-  ShareLinkWriteFailure,
 } from '@saerskriven/formats/share-link';
 import { unclaimedYaml } from '@saerskriven/mcp/fixtures';
 import {
@@ -15,6 +13,7 @@ import {
 import {
   brokenDocumentYaml,
   builtAssets,
+  fakeAssets,
   fixtureFile,
   scratchDirectory,
 } from './cli.fixtures.js';
@@ -81,18 +80,29 @@ describe('share', () => {
     );
     const outcome = await share(file, builtAssets);
     const [length] = /\d{7,}/u.exec(outcome.err) ?? [];
-    const refusal = renderShareLinkWriteFailure(
-      ShareLinkWriteFailure.TooLong({
-        length: Number(length),
-        limit: shareLinkLimit,
-      }),
-    );
     expect(Number(length)).toBeGreaterThan(shareLinkLimit);
     expect(outcome).toEqual({
       code: 2,
       out: '',
-      err: `error: ${refusal.join(' ')}\n`,
+      err: `error: the link would be ${String(length)} characters, past the 1048576 a share link may hold, so none was written. Send the file itself instead.\n`,
     });
+  });
+
+  it('exits 2 on one line saying the module did not run, where it will not start', async () => {
+    const outcome = await share(
+      testDataPath('saerskriven/two-diagrams.yaml'),
+      fakeAssets(scratchDirectory('share-broken')),
+    );
+    expect({ code: outcome.code, out: outcome.out }).toEqual({
+      code: 2,
+      out: '',
+    });
+    expect(
+      outcome.err.startsWith(
+        'error: the brotli module a link is compressed with did not run: ',
+      ),
+    ).toBe(true);
+    expect(outcome.err.split('\n')).toHaveLength(2);
   });
 
   it('exits 2 saying why where the install carries no brotli module', async () => {

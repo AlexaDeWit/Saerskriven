@@ -601,7 +601,7 @@ for (const era of eras) {
     });
 
     describe.skipIf(brotliUnbuilt)('a share link through a client', () => {
-      it('carries the link once in the whole result, alone in the block after the text', async () => {
+      it('carries the link once in the whole result, alone on the line after the data line of a block of its own', async () => {
         const writable = editableTree();
         const run = await session({ root: writable.root, era, brotli });
         const result = await run.client.callTool({
@@ -617,9 +617,13 @@ for (const era of eras) {
         expect(structuredOf(result, shareLinkResultSchema).length).toEqual(
           link.length,
         );
+        expect(proseOf(result).prose.map((text) => text.split('\n'))).toEqual([
+          expect.arrayContaining([dataNotInstructions]),
+          [dataNotInstructions, link],
+        ]);
         expect(
           proseOf(result).prose.map((text) => text.split('\n')[0]),
-        ).toEqual([dataNotInstructions]);
+        ).toEqual([dataNotInstructions, dataNotInstructions]);
       });
     });
 

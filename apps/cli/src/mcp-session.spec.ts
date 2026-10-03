@@ -194,6 +194,10 @@ for (const runner of runners) {
             const link = shareLinkOf(run.shared);
             expect(link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
             expect(occurrencesIn(run.shared, link)).toBe(1);
+            expect(proseOf(run.shared).prose.at(-1)?.split('\n')).toEqual([
+              dataNotInstructions,
+              link,
+            ]);
             expect(
               structuredOf(run.shared, shareLinkResultSchema).length,
             ).toEqual(link.length);

@@ -10,6 +10,7 @@ import {
 import { inNumberOrder } from '@saerskriven/model';
 import { incompressibleModel, validModel } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
+import type { CallToolResult } from '@modelcontextprotocol/server';
 import { occurrencesIn, shareLinkOf } from '../fixtures.js';
 import { brokenBrotli, builtBrotli } from './brotli.fixtures.js';
 import {
@@ -21,6 +22,7 @@ import {
   treeHolding,
   unreadableTree,
 } from './read-tools.fixtures.js';
+import { dataNotInstructions } from './preface.js';
 import { readNamed } from './reading.js';
 import { noBrotli } from './server.fixtures.js';
 import {
@@ -38,8 +40,13 @@ const workspace = featureCompleteWorkspace();
 
 const linkIn = (shared: SharedLink): string => {
   const [block] = shared.blocks;
-  return block?.type === 'text' ? block.text : '';
+  return block?.type === 'text' ? (block.text.split('\n').at(-1) ?? '') : '';
 };
+
+const textsOf = (result: CallToolResult): readonly string[] =>
+  result.content.flatMap((block) =>
+    block.type === 'text' ? [block.text] : [],
+  );
 
 describe('what saer_share_link tells a client', () => {
   it('states the longest link its result can hold', () => {
@@ -103,11 +110,18 @@ describe.skipIf(brotliUnbuilt)('what saer_share_link writes', () => {
     });
   });
 
-  it('carries the link once in the whole result, in a block holding nothing else', async () => {
+  it('carries the link once in the whole result, alone on the line after the data line of a block of its own', async () => {
     const outcome = await shareLink(workspace, builtBrotli, {});
     const link = linkIn(answerOf(outcome));
     const result = attachedToolResult(outcome, renderShareLink);
-    expect(result.content.map((block) => block.type)).toEqual(['text', 'text']);
+    expect(textsOf(result).map((text) => text.split('\n')[0])).toEqual([
+      dataNotInstructions,
+      dataNotInstructions,
+    ]);
+    expect(textsOf(result)[1]?.split('\n')).toEqual([
+      dataNotInstructions,
+      link,
+    ]);
     expect(shareLinkOf(result)).toEqual(link);
     expect(occurrencesIn(result, link)).toBe(1);
   });

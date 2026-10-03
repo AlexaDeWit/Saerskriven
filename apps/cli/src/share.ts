@@ -53,11 +53,14 @@ async function linked(
     await writeShareLink(read.model, hostedStudioUrl, module.right),
     {
       onLeft: (failure) =>
-        usageError(
-          lines(`error: ${renderShareLinkWriteFailure(failure).join(' ')}`),
-        ),
+        usageError(lines(errorLine(renderShareLinkWriteFailure(failure)))),
       onRight: (link) =>
         succeeded(lines(link), describeDivergences(read.divergences)),
     },
   );
+}
+
+function errorLine(sentences: readonly string[]): string {
+  const text = sentences.join(' ');
+  return `error: ${text.charAt(0).toLowerCase()}${text.slice(1)}`;
 }

@@ -1,7 +1,6 @@
 import { Client, type Transport } from '@modelcontextprotocol/client';
 import type {
   CallToolResult,
-  ContentBlock,
   GetPromptResult,
   ReadResourceResult,
 } from '@modelcontextprotocol/server';
@@ -12,13 +11,13 @@ import {
   imageLinkDescription,
   renderDiagramResultSchema,
 } from './lib/render-diagram.js';
-import { shareLinkResultSchema } from './lib/share-link.js';
 
 export { getThreatResultSchema } from './lib/get-threat.js';
 export { dataNotInstructions } from './lib/preface.js';
-export { renderDiagramResultSchema, shareLinkResultSchema };
+export { renderDiagramResultSchema };
 export { searchElementsResultSchema } from './lib/search-elements.js';
 export { searchThreatsResultSchema } from './lib/search-threats.js';
+export { shareLinkResultSchema } from './lib/share-link.js';
 export {
   referencingYaml,
   smallYaml,
@@ -112,18 +111,13 @@ export type ResultProse = {
   readonly unread: readonly string[];
 };
 
-const shareLinkBlockOf = (result: CallToolResult): ContentBlock | undefined =>
-  shareLinkResultSchema.safeParse(result.structuredContent).success
-    ? result.content[1]
-    : undefined;
-
 /**
- * The link a `saer_share_link` result carries: the text of the block after
- * its prose, or empty text where the result is no share.
+ * The link a `saer_share_link` result carries: the last line of its last
+ * block, or empty text where that block is not text.
  */
 export function shareLinkOf(result: CallToolResult): string {
-  const block = shareLinkBlockOf(result);
-  return block?.type === 'text' ? block.text : '';
+  const block = result.content.at(-1);
+  return block?.type === 'text' ? (block.text.split('\n').at(-1) ?? '') : '';
 }
 
 /**
@@ -140,17 +134,14 @@ export function occurrencesIn(result: CallToolResult, text: string): number {
 }
 
 /**
- * Every string of prose a tool result would put in front of a model. A block
- * type the reader does not know is named in `unread`. The block holding a
- * share link is left out, since it holds a link and no prose, and
- * {@link shareLinkOf} reads it.
+ * Every string a tool result would put in front of a model. A block type the
+ * reader does not know is named in `unread`.
  */
 export function proseOf(result: CallToolResult): ResultProse {
   const prose: string[] = [];
   const links: string[] = [];
   const unread: string[] = [];
-  const shared = shareLinkBlockOf(result);
-  for (const block of result.content.filter((one) => one !== shared)) {
+  for (const block of result.content) {
     if (block.type === 'text') {
       prose.push(block.text);
     } else if (block.type === 'resource') {
