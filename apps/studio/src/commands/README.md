@@ -88,7 +88,7 @@ instead.
 Matching allows for keyboards. Ctrl+Y is an alternative Redo off macOS only,
 absent from macOS matching, labels and ARIA attributes. Backspace stands in for
 Delete on Mac keyboards. Zoom accepts the equals key or the produced plus
-character. A Mod+Shift digit chord, such as Fit selection's, also matches its
+character. A Mod+Shift digit chord also matches its
 digit key code when the event reports the punctuation the layout shifts that
 key to: `)` on a US layout, `=` on a Swedish one. `+` for Add bend accepts
 either Shift state, because layouts differ in how they produce it, while Ctrl

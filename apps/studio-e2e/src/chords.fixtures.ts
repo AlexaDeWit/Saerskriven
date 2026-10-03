@@ -20,7 +20,7 @@ export const registeredChords = {
   'distribute-vertical': ['ControlOrMeta+Shift+b'],
   'snap-to-grid': ['ControlOrMeta+Shift+g'],
   'reset-zoom': ['ControlOrMeta+1'],
-  'fit-selection': ['ControlOrMeta+Shift+0'],
+  'fit-selection': ['Shift+f'],
   'next-diagram': ['PageDown'],
   'previous-diagram': ['PageUp'],
   'new-diagram': [],
