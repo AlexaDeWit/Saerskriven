@@ -9,8 +9,8 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
+  useState,
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
@@ -58,6 +58,7 @@ type NodePress = {
     position: ResizeControlPosition,
     gestures: readonly Gesture[],
   ) => boolean;
+  readonly pressed: () => boolean;
   readonly start: (position: ResizeControlPosition, gesture: Gesture) => void;
   readonly holds: (position: ResizeControlPosition) => boolean;
   readonly resize: (position: ResizeControlPosition) => void;
@@ -84,13 +85,19 @@ type NodePress = {
  * against that render's `node`.
  *
  * One control holds the node's press at a time. Another finger on that
- * control joins the press, and a press on another control resizes nothing
- * until the press is over. A resize ends when the last finger or the mouse of
- * its press lifts, with the box it finished on. It ends put back instead, with
- * the box the node had when pressed, when a touch of its press was cancelled,
- * when its control unmounts with no mouse down on it, or when its only
- * pointer presses a control again, its own release never having come. A mouse
- * press outlives its control and ends on its release.
+ * control joins the press. Until the press is over, another pointer's press
+ * anywhere on another control starts nothing, and an arrow key on any control
+ * resizes nothing. A resize ends when the last finger or the mouse of its
+ * press lifts, with the box it finished on. It ends put back instead, with the
+ * box the node had when pressed, when a touch of its press was cancelled or
+ * when its control unmounts with no mouse down on it. A mouse press outlives
+ * its control and ends on its release.
+ *
+ * A release that never comes leaves the press held: another pointer on its
+ * control joins it, resizes the node on screen and gets no end. Its only
+ * pointer pressing a control again ends it put back and starts a new press,
+ * and a drag of that press resizes from the extent the node then has on
+ * screen, not from the box it was put back to.
  *
  * A boundary curve's corner handles sit `resizeHandle.curveGap` outside its
  * corners, clear of a handle on a point there.
@@ -130,7 +137,7 @@ function useNodePress(subject: ResizeSubject): NodePress {
     rendered.current = subject;
   });
 
-  return useMemo(() => {
+  const [nodePress] = useState((): NodePress => {
     const settle = (settled: Settled): void => {
       const held = press.current;
       if (held === undefined || held.gestures.size > 0) {
@@ -147,6 +154,7 @@ function useNodePress(subject: ResizeSubject): NodePress {
         press.current !== undefined &&
         press.current.position !== position &&
         !gestures.some((gesture) => press.current?.gestures.has(gesture)),
+      pressed: () => press.current !== undefined,
       start: (position, gesture) => {
         if (press.current?.gestures.delete(gesture) === true) {
           settle(ownBox);
@@ -183,7 +191,8 @@ function useNodePress(subject: ResizeSubject): NodePress {
         }
       },
     };
-  }, []);
+  });
+  return nodePress;
 }
 
 function ResizeControl({
@@ -246,43 +255,51 @@ function ResizeControl({
     }
     event.preventDefault();
     event.stopPropagation();
-    onResizeEnd(box);
+    if (!press.pressed()) {
+      onResizeEnd(box);
+    }
   };
 
   return (
-    <NodeResizeControl
-      minHeight={minimumNodeExtent}
-      minWidth={minimumNodeExtent}
-      onResize={resize}
-      onResizeEnd={end}
-      onResizeStart={start}
-      position={position}
-      resizeDirection={
-        position === 'left' || position === 'right'
-          ? 'horizontal'
-          : position === 'top' || position === 'bottom'
-            ? 'vertical'
-            : undefined
-      }
-      shouldResize={holds}
-      style={controlStyle(node, position, visible)}
-      variant={
-        sideControls.has(position)
-          ? ResizeControlVariant.Line
-          : ResizeControlVariant.Handle
-      }
+    <span
+      onMouseDownCapture={refuse}
+      onTouchStartCapture={refuse}
+      style={wholeControl}
     >
-      <button
-        aria-keyshortcuts={resizeControlKeys[position].join(' ')}
-        aria-label={label}
-        onKeyDown={keyDown}
-        onMouseDownCapture={refuse}
-        onTouchStartCapture={refuse}
-        type="button"
-      />
-    </NodeResizeControl>
+      <NodeResizeControl
+        minHeight={minimumNodeExtent}
+        minWidth={minimumNodeExtent}
+        onResize={resize}
+        onResizeEnd={end}
+        onResizeStart={start}
+        position={position}
+        resizeDirection={
+          position === 'left' || position === 'right'
+            ? 'horizontal'
+            : position === 'top' || position === 'bottom'
+              ? 'vertical'
+              : undefined
+        }
+        shouldResize={holds}
+        style={controlStyle(node, position, visible)}
+        variant={
+          sideControls.has(position)
+            ? ResizeControlVariant.Line
+            : ResizeControlVariant.Handle
+        }
+      >
+        <button
+          aria-keyshortcuts={resizeControlKeys[position].join(' ')}
+          aria-label={label}
+          onKeyDown={keyDown}
+          type="button"
+        />
+      </NodeResizeControl>
+    </span>
   );
 }
+
+const wholeControl: CSSProperties = { display: 'contents' };
 
 function pressing(event: MouseEvent | TouchEvent): readonly Gesture[] {
   return 'changedTouches' in event

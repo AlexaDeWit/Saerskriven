@@ -43,7 +43,8 @@ export const sharedTest = (
   globals: true,
   environment,
   include,
-  // Paths relative to the project root, for the browser APIs jsdom leaves out.
+  // Setup modules for the browser APIs jsdom leaves out, each a path relative
+  // to the project root or a package subpath.
   setupFiles,
   reporters: ['default'],
   coverage: {

@@ -202,46 +202,71 @@ describe('ResizeControls', () => {
     expect(endedBoxes()).not.toContainEqual(pressed);
   });
 
-  it('resizes nothing from a press on another control while one holds the press', () => {
-    const held = finger(1, 140);
-    const other = { identifier: 2, clientX: 100, clientY: 100 };
-    const moved = { ...other, clientY: 160 };
-    touch(control('right'), 'touchstart', finger(1, 100));
-    touch(control('right'), 'touchmove', held);
-    touch(control('bottom'), 'touchstart', other, [held, other]);
-    touch(control('right'), 'touchend', held, [other]);
-    const reported = nodesChange.mock.calls.length;
+  it.each([
+    ['its button', (found: HTMLButtonElement): Element => found],
+    [
+      'its edge beside the button',
+      (found: HTMLButtonElement): Element | null => found.parentElement,
+    ],
+  ])(
+    'starts nothing from a press on another control, on %s, while one holds the press',
+    (_, pressedOn) => {
+      const held = finger(1, 140);
+      const other = { identifier: 2, clientX: 100, clientY: 100 };
+      const moved = { ...other, clientY: 160 };
+      const second = pressedOn(control('bottom'));
+      assert.isNotNull(second);
+      touch(control('right'), 'touchstart', finger(1, 100));
+      touch(control('right'), 'touchmove', held);
+      touch(second, 'touchstart', other, [held, other]);
+      touch(control('right'), 'touchend', held, [other]);
+      const reported = nodesChange.mock.calls.length;
 
-    touch(control('bottom'), 'touchmove', moved);
-    touch(control('bottom'), 'touchend', moved);
+      touch(second, 'touchmove', moved);
+      touch(second, 'touchend', moved);
+
+      expect(resize).toHaveBeenCalledTimes(1);
+      expect(resizeEnd).toHaveBeenCalledTimes(1);
+      expect(endedBoxes()).not.toContainEqual(pressed);
+      expect(nodesChange).toHaveBeenCalledTimes(reported);
+    },
+  );
+
+  it('resizes nothing from a pointer that leaves a press another finger still holds, for another control', () => {
+    mouse(control('right'), 'mousedown', 100);
+    mouse(control('right'), 'mousemove', 140);
+    touch(control('right'), 'touchstart', finger(1, 140));
+    mouse(control('left'), 'mousedown', 100);
+    mouse(window, 'mousemove', 60);
+    mouse(window, 'mouseup', 60);
 
     expect(resize).toHaveBeenCalledTimes(1);
+    expect(resizeEnd).not.toHaveBeenCalled();
+
+    touch(control('right'), 'touchend', finger(1, 140));
+
     expect(resizeEnd).toHaveBeenCalledTimes(1);
-    expect(nodesChange).toHaveBeenCalledTimes(reported);
+    expect(endedBoxes()).not.toContainEqual(pressed);
   });
 
-  it('resizes nothing from a press that reaches another control beside its button', () => {
-    const held = finger(1, 140);
-    const other = { identifier: 2, clientX: 100, clientY: 100 };
-    const moved = { ...other, clientY: 160 };
-    const beside = control('bottom').parentElement;
-    assert.isNotNull(beside);
-    touch(control('right'), 'touchstart', finger(1, 100));
-    touch(control('right'), 'touchmove', held);
-    touch(beside, 'touchstart', other, [held, other]);
-    touch(control('right'), 'touchend', held, [other]);
-    touch(beside, 'touchmove', moved);
-    touch(beside, 'touchend', moved);
+  it('resizes nothing from an arrow key while a pointer holds the press, and resizes from one once it is over', () => {
+    mouse(control('right'), 'mousedown', 100);
+    mouse(control('right'), 'mousemove', 140);
+    act(() => {
+      control('bottom').dispatchEvent(keyDown('ArrowDown'));
+    });
 
-    expect(resize).toHaveBeenCalledTimes(1);
-    expect(resizeEnd).toHaveBeenCalledTimes(1);
-    expect(
-      nodesChange.mock.calls
-        .flat(2)
-        .filter(
-          (change) => change.type === 'dimensions' && change.resizing === true,
-        ),
-    ).toHaveLength(1);
+    expect(resizeEnd).not.toHaveBeenCalled();
+
+    mouse(control('right'), 'mouseup', 140);
+    act(() => {
+      control('bottom').dispatchEvent(keyDown('ArrowDown'));
+    });
+
+    expect(endedBoxes().map((box) => box.size.height)).toEqual([
+      client.size.height,
+      client.size.height + keyboardResizeStep,
+    ]);
   });
 
   it('lets another control resize once the press is over', () => {
