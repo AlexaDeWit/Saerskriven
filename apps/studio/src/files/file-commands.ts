@@ -22,6 +22,14 @@ import {
 } from './export-commands.js';
 import type { ExportNotice } from './export-notice.js';
 import {
+  browserShareLinks,
+  linkLanding,
+  useShareLink,
+  type LinkRead,
+  type ShareLinks,
+} from './share-link.js';
+import type { ShareNotice } from './share-notice.js';
+import {
   OpenOutcome,
   SaveOutcome,
   type ChosenFile,
@@ -32,6 +40,7 @@ import {
   formatOf,
   formatOfName,
   formatsFrom,
+  linkReport,
   openReport,
   openedBy,
   saveReport,
@@ -57,9 +66,14 @@ export type FileSession = {
   readonly choosing: boolean;
   readonly asksFormat: boolean;
   readonly exportNotice: ExportNotice | undefined;
+  readonly shareNotice: ShareNotice | undefined;
+  readonly linking: boolean;
+  readonly confirmLink: () => void;
+  readonly cancelLink: () => void;
   readonly attachPicker: (input: HTMLInputElement | null) => void;
   readonly dismissReport: () => void;
   readonly dismissExportNotice: () => void;
+  readonly dismissShareNotice: () => void;
   readonly receive: (chosen: ChosenFile | undefined) => Promise<void>;
   readonly confirmOpen: () => void;
   readonly cancelOpen: () => void;
@@ -73,12 +87,14 @@ export type FileSession = {
  * The file session: it settles handle ownership before synchronously
  * dispatching an open or a save, and following another tab's result releases
  * the handle and puts away the report and every question. A Save with no file
- * to write back to runs Save as wherever the platform can ask where.
+ * to write back to runs Save as wherever the platform can ask where. A shared
+ * link lands as an import, releasing the handle first.
  */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
   renders: RenderExports = browserRenderExports,
   sync: Pick<StoreSync, 'watch'> = browserStoreSync,
+  links: ShareLinks = browserShareLinks,
 ): FileSession {
   const [report, setReport] = useState<LossReport | undefined>(undefined);
   const [opening, setOpening] = useState(false);
@@ -87,6 +103,17 @@ export function useFileSession(
   const picker = useRef<HTMLInputElement | null>(null);
   const exporter = useExportCommands(bridge, renders);
   const exportCommands = exporter.commands;
+
+  const landLink = useCallback(
+    (read: LinkRead): void => {
+      bridge.release();
+      dispatch(linkLanding(read, untitledFileStem()));
+      setReport(linkReport(read.model, read.divergences));
+    },
+    [bridge],
+  );
+  const link = useShareLink(links, landLink);
+  const { cancel: cancelLink, share } = link;
 
   const attachPicker = useCallback((input: HTMLInputElement | null): void => {
     picker.current = input;
@@ -101,8 +128,9 @@ export function useFileSession(
         setOpening(false);
         setClosing(false);
         setChoosing(false);
+        cancelLink();
       }),
-    [bridge, sync],
+    [bridge, cancelLink, sync],
   );
 
   const closeFile = useCallback((): void => {
@@ -241,6 +269,7 @@ export function useFileSession(
       exportPng: () => {
         exportCommands.png();
       },
+      share,
       close: () => {
         if (isDirty(modelStore.getState())) {
           setClosing(true);
@@ -249,7 +278,7 @@ export function useFileSession(
         closeFile();
       },
     };
-  }, [bridge, closeFile, exportCommands, land, openFile]);
+  }, [bridge, closeFile, exportCommands, land, openFile, share]);
 
   const receive = useCallback(
     async (chosen: ChosenFile | undefined): Promise<void> => {
@@ -285,9 +314,14 @@ export function useFileSession(
       choosing,
       asksFormat: !bridge.asksWhere(),
       exportNotice: exporter.notice,
+      shareNotice: link.notice,
+      linking: link.asking,
+      confirmLink: link.confirm,
+      cancelLink,
       attachPicker,
       dismissReport,
       dismissExportNotice: exporter.dismissNotice,
+      dismissShareNotice: link.dismissNotice,
       receive,
       confirmOpen: () => {
         void openFile();
@@ -303,6 +337,7 @@ export function useFileSession(
       bridge,
       cancelChoice,
       cancelClose,
+      cancelLink,
       cancelOpen,
       chooseFormat,
       choosing,
@@ -311,6 +346,7 @@ export function useFileSession(
       commands,
       dismissReport,
       exporter,
+      link,
       opening,
       openFile,
       receive,

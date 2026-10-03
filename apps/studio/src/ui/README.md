@@ -51,7 +51,7 @@ control reads it yet or not, so the light and the dark blocks stay one list.
 
 Several properties are read by both the chrome and the diagram: the raised
 surface is a panel in the chrome and the fill inside every element outline,
-the canvas colour is the ground and the halo cut under a flow name, and the
+the canvas colour is the ground and the backing under a flow's name, and the
 two inks letter both. The actor and process washes, the badge ground and the
 severity tones are the diagram's own, and the threat summary uses the same
 tone classes as the canvas. `--saer-chrome-block-size` and

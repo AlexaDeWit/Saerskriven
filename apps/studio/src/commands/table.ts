@@ -200,6 +200,13 @@ export const commandTable = {
     when: 'commands.when-file-menu',
     operation: 'exportPng',
   }),
+  share: fileCommand({
+    id: 'share',
+    label: 'commands.label-share',
+    shortcuts: [],
+    when: 'commands.when-share',
+    operation: 'share',
+  }),
   'close-file': fileCommand({
     id: 'close-file',
     label: 'commands.label-close-file',

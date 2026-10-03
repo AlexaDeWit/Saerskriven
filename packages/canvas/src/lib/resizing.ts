@@ -39,7 +39,8 @@ export const resizeKeys = [
 
 type ResizeKey = (typeof resizeKeys)[number];
 
-const isResizeKey = (key: string): key is ResizeKey =>
+/** Whether `key` is one of the arrow keys in `resizeKeys`. */
+export const isResizeKey = (key: string): key is ResizeKey =>
   resizeKeys.some((candidate) => candidate === key);
 
 /**

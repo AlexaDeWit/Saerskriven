@@ -14,6 +14,7 @@ import { useTranslator } from '../messages/locale.js';
 import {
   canRedo,
   canUndo,
+  holdsUnsavedWork,
   isDirty,
   needsCloseGuard,
   renameable,
@@ -38,31 +39,40 @@ import { formatFiles, formatOf, formatsFrom } from './session.js';
 
 type UnsavedChangesCommandProps = {
   readonly asking: boolean;
+  readonly asksFirst: boolean;
   readonly cancel: () => void;
   readonly command: CommandId;
-  readonly dirty: boolean;
   readonly proceed: () => void;
   readonly question: DiscardQuestion;
+  readonly questionRef?: RefObject<HTMLDivElement | null>;
 };
 
-type DiscardQuestion = 'menu.discard-and-open' | 'menu.discard-and-new';
+type DiscardQuestion =
+  | 'menu.discard-and-open'
+  | 'menu.discard-and-open-link'
+  | 'menu.discard-and-new';
 
 function UnsavedChangesCommand({
   asking,
+  asksFirst,
   cancel,
   command,
-  dirty,
   proceed,
   question,
+  questionRef,
 }: UnsavedChangesCommandProps) {
   const { t } = useTranslator();
 
   return (
     <>
       <RegisteredMenuCommand
-        asking={asking ? { question: t(question), answer: proceed } : undefined}
+        asking={
+          asking
+            ? { question: t(question), answer: proceed, itemRef: questionRef }
+            : undefined
+        }
         entry={commandById(command)}
-        keepOpen={dirty && !asking}
+        keepOpen={asksFirst && !asking}
       />
       {asking && <MenuItem onChoose={cancel}>{t('menu.cancel')}</MenuItem>}
     </>
@@ -102,6 +112,7 @@ export function StudioMenu({
   triggerRef,
 }: StudioMenuProps) {
   const dirty = useModelStore(isDirty);
+  const unsaved = useModelStore(holdsUnsavedWork);
   const guarded = useModelStore(needsCloseGuard);
   const [open, setOpen] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
@@ -109,11 +120,19 @@ export function StudioMenu({
 
   useCloseGuard(guarded);
   useAsking(session.opening, dirty, setOpen, session.cancelOpen);
+  useAsking(session.linking, unsaved, setOpen, session.cancelLink);
+  const askingLink = session.linking && unsaved;
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
   useChoosing(session.choosing, setOpen);
 
-  const { attachPicker, cancelOpen, cancelChoice, cancelClose, receive } =
-    session;
+  const {
+    attachPicker,
+    cancelOpen,
+    cancelChoice,
+    cancelClose,
+    cancelLink,
+    receive,
+  } = session;
 
   return (
     <div className={styles.bar} ref={bar}>
@@ -123,6 +142,7 @@ export function StudioMenu({
           setOpen(next);
           if (!next) {
             cancelOpen();
+            cancelLink();
             cancelClose();
             cancelChoice();
           }
@@ -139,6 +159,7 @@ export function StudioMenu({
         </DropdownMenu.Trigger>
         <SubmenuEdge value={bar}>
           <MenuPanel
+            askingLink={askingLink}
             colourMode={colourMode ?? 'system'}
             dirty={dirty}
             onColourModeChange={onColourModeChange}
@@ -163,6 +184,7 @@ export function StudioMenu({
 }
 
 type MenuPanelProps = {
+  readonly askingLink: boolean;
   readonly colourMode: ColourMode;
   readonly dirty: boolean;
   readonly onColourModeChange?: (mode: ColourMode) => void;
@@ -170,6 +192,7 @@ type MenuPanelProps = {
 };
 
 function MenuPanel({
+  askingLink,
   colourMode,
   dirty,
   onColourModeChange,
@@ -185,7 +208,7 @@ function MenuPanel({
       {...panelPlacement}
       className={styles.panel}
     >
-      <FileMenu dirty={dirty} session={session} />
+      <FileMenu askingLink={askingLink} dirty={dirty} session={session} />
       <DropdownMenu.Separator className={styles.rule} />
       <AppearanceMenu mode={colourMode} onChange={onColourModeChange} />
       <LanguageMenu />
@@ -233,29 +256,40 @@ function FileState({ dirty }: { readonly dirty: boolean }) {
 }
 
 function FileMenu({
+  askingLink,
   dirty,
   session,
 }: {
+  readonly askingLink: boolean;
   readonly dirty: boolean;
   readonly session: FileSession;
 }) {
   const file = useModelStore((state) => state.file);
+  const linkQuestion = useRef<HTMLDivElement>(null);
   const {
     asksFormat,
     cancelOpen,
     cancelClose,
+    cancelLink,
     chooseFormat,
     choosing,
     closing,
     commands,
     confirmOpen,
     confirmClose,
+    confirmLink,
     opening,
   } = session;
   const { t } = useTranslator();
   const format = formatOf(file);
   const askingOpen = opening && dirty;
   const askingClose = closing && dirty;
+
+  useEffect(() => {
+    if (askingLink) {
+      linkQuestion.current?.focus();
+    }
+  }, [askingLink]);
 
   return (
     <DropdownMenu.Group>
@@ -264,9 +298,9 @@ function FileMenu({
       </DropdownMenu.Label>
       <UnsavedChangesCommand
         asking={askingOpen}
+        asksFirst={dirty}
         cancel={cancelOpen}
         command="open"
-        dirty={dirty}
         proceed={confirmOpen}
         question="menu.discard-and-open"
       />
@@ -307,10 +341,19 @@ function FileMenu({
           ))}
       <ExportMenu />
       <UnsavedChangesCommand
+        asking={askingLink}
+        asksFirst={false}
+        cancel={cancelLink}
+        command="share"
+        proceed={confirmLink}
+        question="menu.discard-and-open-link"
+        questionRef={linkQuestion}
+      />
+      <UnsavedChangesCommand
         asking={askingClose}
+        asksFirst={dirty}
         cancel={cancelClose}
         command="close-file"
-        dirty={dirty}
         proceed={confirmClose}
         question="menu.discard-and-new"
       />

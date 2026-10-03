@@ -1,102 +1,105 @@
 import type { ElementId, Point } from '@saerskriven/model';
+import { badgeExtent, type ThreatBadge } from './badges.js';
 import {
-  badgeBox,
-  badgeExtent,
-  type BadgeExtent,
-  type ThreatBadge,
-} from './badges.js';
+  boxObstacle,
+  ellipseObstacle,
+  lineObstacle,
+  searchedBlock,
+  type Obstacle,
+} from './flow-block-search.js';
+import {
+  blockAt,
+  blockCentre,
+  flowBlocks,
+  shiftedPlacement,
+  type FlowBlock,
+  type FlowLabelPlacement,
+} from './flow-blocks.js';
 import {
   boxOfPoints,
   segmentsOfPolyline,
-  type Box,
+  shiftedBy,
   type Segment,
 } from './geometry.js';
 import type { CanvasNode } from './layout.js';
+import { lineRuns, runsWithin, spotsOutward } from './line-spots.js';
 import { memoizedByIdentity } from './memoized.js';
-import {
-  boxCollisions,
-  grownByClearance,
-  nodeOutline,
-  ownBadgeBox,
-  type Solids,
-} from './obstacles.js';
-import { wrappedTextStyles } from './stylesheet.js';
-import {
-  nameBeside,
-  placedTextCorners,
-  projectedHalfExtent,
-  textPlacementCorners,
-  type TextPlacement,
-} from './text-placement.js';
-import {
-  flowLabelClearance,
-  looseLabelWidth,
-  textExtent,
-  wrapText,
-  type TextExtent,
-} from './typography.js';
+import { nodeOutline, ownBadgeBox } from './obstacles.js';
+import { arrowheadPoints, sampledCurve } from './paths.js';
+import { placedTextCorners, projectedHalfExtent } from './text-placement.js';
+import { arrowhead } from './tokens.js';
 import {
   alongSegment,
   labelNormal,
-  negated,
   offsetBy,
   projectedOn,
   scaledBy,
-  squaredDistance,
 } from './vectors.js';
 
 /**
- * Where a flow's name and badge hang. `badge` is absent for a flow no open
- * threat names.
- */
-export type FlowLabelPlacement = {
-  readonly name: TextPlacement;
-  readonly badge: Point | undefined;
-};
-
-/**
- * What placing one flow's label needs of that flow. A flow has at least the
- * one point its label hangs beside.
+ * What placing one flow's block needs of that flow. A flow has at least the
+ * one point its block hangs on.
  */
 export type FlowGeometry = {
   readonly id: ElementId;
   readonly name: string;
   readonly badge: ThreatBadge | undefined;
+  readonly bidirectional: boolean;
   readonly points: readonly [Point, ...Point[]];
 };
 
+/** How far apart the spots a block is tried at lie along a flow's line. */
+export const slideStep = 4;
+
 /**
- * Where every flow of one diagram hangs its name and badge, one placement per
- * flow in the order given.
- *
- * Each flow is offered a candidate at the midpoint and the quarter points of
- * each of its segments, on either side of the segment's normal, at three
- * standoffs a clearance apart, with the badge on the other side from the
- * name. A candidate costs one for every obstacle its name or badge box meets:
- * an element's drawn shape (a box, or a process's ellipse), name or badge, a
- * straight run of a trust boundary's outline or of any flow's line, its own
- * included, and every name or badge already placed. A badge box is tested
- * against every other badge grown by a clearance, so a badge within a
- * clearance of another costs as much as one drawn over it.
- *
- * Flows are placed in ascending id order and the cheapest candidate wins. A
- * tie goes to the candidate nearest the midpoint of the flow's longest
- * segment, then to the one beside that midpoint on the side its normal
- * names, then to the first in the order above. A flow with no clear
- * candidate takes the cheapest rather than being dropped. The search reads
- * only the model, so one diagram gives one set of placements on every run.
+ * How much of a flow's line a block on it leaves showing at each end, past
+ * any arrowhead there.
+ */
+export const shownLineAtEnds = 12;
+
+/** How far a block beside a flow's line keeps its backing off the line. */
+export const besideGap = 4;
+
+/**
+ * How far past {@link besideGap} a block beside a line steps out, in two
+ * equal steps, before it tries further out: its backing stands at most 16
+ * units off the line through the run it hangs beside, and within
+ * {@link besideSlack} more of the run as drawn, wherever a clear spot that
+ * close exists.
+ */
+export const besideReach = 12;
+
+/**
+ * How much further than its band's farthest standoff a block beside a line
+ * may lie from the run as drawn, so a block hanging past the end of a run
+ * that tilts a little counts as one past the end of a level run does.
+ */
+export const besideSlack = besideGap;
+
+/**
+ * The standoffs a block beside a line tries once none within
+ * {@link besideReach} is clear on either side, out to 44 units, nearest first.
+ */
+export const fartherStandoffs = [24, 34, 44] as const;
+
+/**
+ * Where every flow of one diagram hangs its block of badge and name, one
+ * placement per flow in the order given. Flows are placed in ascending id
+ * order, each clear of the blocks placed before it, and the placement reads
+ * only the flows and nodes given, so one diagram gives one set of
+ * placements on every run. The package README describes where a block goes.
  */
 export function flowLabelPlacements(
   flows: readonly FlowGeometry[],
   nodes: readonly CanvasNode[],
 ): FlowLabelPlacement[] {
-  return placeInIdOrder(flows, nodes, cheapestCandidate);
+  return placedInIdOrder(flows, nodes, () => undefined);
 }
 
 /**
- * {@link flowLabelPlacements} for a drag frame: a flow outside `moving` keeps
- * its `settled` placement, and a moving flow takes the clear candidate
- * nearest its midpoint rather than the cheapest.
+ * {@link flowLabelPlacements} for a drag frame: a flow outside `moving`
+ * keeps its `settled` placement, and every flow in `moving` is placed by the
+ * same rules, clear of those kept blocks.
  */
 export function flowLabelPlacementsDuringMove(
   flows: readonly FlowGeometry[],
@@ -104,23 +107,20 @@ export function flowLabelPlacementsDuringMove(
   settled: ReadonlyMap<ElementId, FlowLabelPlacement>,
   moving: ReadonlySet<ElementId>,
 ): FlowLabelPlacement[] {
-  return placeInIdOrder(flows, nodes, (flow, drawn) => {
-    const retained = moving.has(flow.id) ? undefined : settled.get(flow.id);
-    return retained === undefined
-      ? closestClearCandidate(flow, drawn)
-      : candidateFromPlacement(flow, retained);
-  });
+  return placedInIdOrder(flows, nodes, (flow) =>
+    moving.has(flow.id) ? undefined : settled.get(flow.id),
+  );
 }
 
 /**
- * Moves a settled flow label with the segment that carries it, without the
- * diagram-wide search. The nearest segment of `from` supplies the fraction,
- * side and standoff, and the matching segment of `to` the new direction. A
- * path whose segment count changed keeps the label where it was.
+ * Moves a settled block with the run of line that carries it, without the
+ * diagram-wide search. The nearest run of `from` supplies the fraction along
+ * it and, for a block beside the line, the side and the gap, and the
+ * matching run of `to` the new direction. A block on the line stays on it.
+ * A path whose run count changed keeps the block where it was.
  */
 export function movedFlowLabel(
   label: FlowLabelPlacement,
-  badge: ThreatBadge | undefined,
   from: readonly [Point, ...Point[]],
   to: readonly [Point, ...Point[]],
 ): FlowLabelPlacement {
@@ -129,373 +129,192 @@ export function movedFlowLabel(
   if (oldSegments.length === 0 || oldSegments.length !== newSegments.length) {
     return label;
   }
-  const nameRule = wrappedTextStyles[label.name.textStyle];
-  const nameExtent = textExtent(
-    wrapText(label.name.text, nameRule.fontSize, label.name.width),
-    nameRule.fontSize,
+  const centre = blockCentre(label);
+  const { backing } = label;
+  const extent =
+    backing === undefined
+      ? { width: 0, height: 0 }
+      : {
+          width: backing.maxX - backing.minX,
+          height: backing.maxY - backing.minY,
+        };
+  const moved = movedWithNearestSegment(
+    centre,
+    oldSegments,
+    newSegments,
+    (direction) => projectedHalfExtent(extent, direction),
   );
-  return {
-    name: {
-      ...label.name,
-      at: movedWithNearestSegment(
-        label.name.at,
-        oldSegments,
-        newSegments,
-        (direction) => projectedHalfExtent(nameExtent, direction),
-      ),
-    },
-    badge:
-      label.badge === undefined || badge === undefined
-        ? undefined
-        : movedWithNearestSegment(
-            label.badge,
-            oldSegments,
-            newSegments,
-            (direction) => badgeReach(badge, direction),
-          ),
-  };
+  return shiftedPlacement(label, {
+    x: moved.x - centre.x,
+    y: moved.y - centre.y,
+  });
 }
 
-type Candidate = {
-  readonly placement: FlowLabelPlacement;
-  readonly nameBox: Box | undefined;
-  readonly badgeBox: Box | undefined;
-  readonly fromMiddle: number;
+type Scene = {
+  readonly elements: readonly Obstacle[];
+  readonly lines: readonly (readonly Obstacle[])[];
+  readonly arrowheads: readonly (readonly Obstacle[])[];
 };
 
-type CandidateMetrics = {
-  readonly name: TextExtent;
-  readonly badge: BadgeExtent | undefined;
-};
+const onLineTolerance = 1e-6;
 
-type Obstacles = {
-  readonly forName: Solids;
-  readonly forBadge: Solids;
-};
+const besideBands = [
+  [besideGap, besideGap + besideReach / 2, besideGap + besideReach],
+  fartherStandoffs,
+].map((standoffs) => ({
+  standoffs,
+  within: Math.max(...standoffs) + besideSlack,
+}));
 
-type SearchStart = {
-  readonly segments: readonly Segment[];
-  readonly middle: Point;
-  readonly metrics: CandidateMetrics;
-  readonly initial: Candidate;
-};
+const blocksByName = new Map<string, readonly FlowBlock[]>();
 
-const anchorFractions = [0.5, 0.25, 0.75];
+const blocksByNameLimit = 512;
 
-const standoffSteps = [0, 1, 2];
-
-const normalSides = [1, -1];
-
-const translationNoiseTolerance = 1e-6;
-
-const flowNameExtentLimit = 256;
-
-const flowNameExtents = new Map<string, TextExtent>();
-
-const placementCandidates = new WeakMap<FlowLabelPlacement, Candidate>();
-
-const segmentsForFlow = memoizedByIdentity((flow: FlowGeometry) =>
-  segmentsOfPolyline(flow.points),
-);
-
-const ownTextBox = memoizedByIdentity((node: CanvasNode): Box[] => {
-  const box = boxOfPoints(placedTextCorners(node));
-  return box === undefined ? [] : [box];
-});
-
-function placeInIdOrder(
-  flows: readonly FlowGeometry[],
-  nodes: readonly CanvasNode[],
-  choose: (flow: FlowGeometry, drawn: Obstacles) => Candidate,
-): FlowLabelPlacement[] {
-  const ordered = flows.map((flow, index) => ({ flow, index }));
-  ordered.sort((one, other) => byIdAscending(one.flow, other.flow));
-  const placements: FlowLabelPlacement[] = [];
-  let drawn = drawnObstacles(flows, nodes);
-  for (const { flow, index } of ordered) {
-    const chosen = choose(flow, drawn);
-    placements[index] = chosen.placement;
-    drawn = withLabelPlaced(drawn, chosen);
-  }
-  return placements;
-}
-
-function byIdAscending(one: FlowGeometry, other: FlowGeometry): number {
-  if (one.id === other.id) {
-    return 0;
-  }
-  return one.id < other.id ? -1 : 1;
-}
-
-function drawnObstacles(
-  flows: readonly FlowGeometry[],
-  nodes: readonly CanvasNode[],
-): Obstacles {
-  const outlines = nodes.map(nodeOutline);
-  const boxes = [
-    ...outlines.flatMap((outline) => outline.boxes),
-    ...nodes.flatMap(ownTextBox),
-  ];
-  const badges = nodes.flatMap(ownBadgeBox);
-  const ellipses = outlines.flatMap((outline) => outline.ellipses);
-  const lines = [
-    ...outlines.flatMap((outline) => outline.lines),
-    ...flows.flatMap(segmentsForFlow),
-  ];
-  return {
-    forName: { boxes: [...boxes, ...badges], ellipses, lines },
-    forBadge: {
-      boxes: [...boxes, ...badges.map(grownByClearance)],
-      ellipses,
-      lines,
-    },
-  };
-}
-
-function withLabelPlaced(drawn: Obstacles, candidate: Candidate): Obstacles {
-  const name = candidate.nameBox === undefined ? [] : [candidate.nameBox];
-  const badge = candidate.badgeBox === undefined ? [] : [candidate.badgeBox];
-  return {
-    forName: withBoxes(drawn.forName, [...name, ...badge]),
-    forBadge: withBoxes(drawn.forBadge, [
-      ...name,
-      ...badge.map(grownByClearance),
-    ]),
-  };
-}
-
-function withBoxes(solids: Solids, boxes: readonly Box[]): Solids {
-  solids.boxes.push(...boxes);
-  return solids;
-}
-
-function cheapestCandidate(flow: FlowGeometry, drawn: Obstacles): Candidate {
-  const { segments, middle, metrics, initial } = searchStart(flow);
-  let best = initial;
-  let cost = collisionsOf(best, drawn, Number.POSITIVE_INFINITY);
-  for (const next of candidatesOf(flow, segments, middle, metrics)) {
-    const nearer =
-      next.fromMiddle < best.fromMiddle - translationNoiseTolerance;
-    if (cost === 0 && !nearer) {
-      continue;
-    }
-    const held = collisionsOf(next, drawn, cost + 1);
-    if (held < cost || (held === cost && nearer)) {
-      best = next;
-      cost = held;
-    }
-  }
-  return best;
-}
-
-function closestClearCandidate(
-  flow: FlowGeometry,
-  drawn: Obstacles,
-): Candidate {
-  const { segments, middle, metrics, initial } = searchStart(flow);
-  const candidates = candidatesByDistance([
-    initial,
-    ...candidatesOf(flow, segments, middle, metrics),
-  ]);
-  let best = initial;
-  let cost = Number.POSITIVE_INFINITY;
-  for (const next of candidates) {
-    const held = collisionsOf(next, drawn, cost);
-    if (held < cost) {
-      best = next;
-      cost = held;
-    }
-    if (cost === 0) {
-      return best;
-    }
-  }
-  return best;
-}
-
-function searchStart(flow: FlowGeometry): SearchStart {
-  const segments = segmentsForFlow(flow);
-  const home = homeSegment(flow.points, segments);
-  const middle = alongSegment(home, 0.5);
-  const metrics = candidateMetrics(flow);
-  return {
-    segments,
-    middle,
-    metrics,
-    initial: candidateAt(flow, home, 0.5, 0, 1, middle, metrics),
-  };
-}
-
-function homeSegment(
-  points: readonly [Point, ...Point[]],
-  segments: readonly Segment[],
-): Segment {
-  let longest: Segment = { from: points[0], to: points[0] };
-  let reach = 0;
-  for (const segment of segments) {
-    const span = squaredDistance(segment.from, segment.to);
-    if (span > reach + translationNoiseTolerance) {
-      longest = segment;
-      reach = span;
-    }
-  }
-  return longest;
-}
-
-function candidateMetrics(flow: FlowGeometry): CandidateMetrics {
-  return {
-    name: flowNameExtent(flow.name),
-    badge: flow.badge === undefined ? undefined : badgeExtent(flow.badge),
-  };
-}
-
-function flowNameExtent(name: string): TextExtent {
-  const cached = flowNameExtents.get(name);
+const blocksOf = memoizedByIdentity((flow: FlowGeometry) => {
+  const extent = flow.badge === undefined ? undefined : badgeExtent(flow.badge);
+  const key = `${flow.name}\u0000${extent === undefined ? '' : `${String(extent.radius)} ${String(extent.depth)}`}`;
+  const cached = blocksByName.get(key);
   if (cached !== undefined) {
     return cached;
   }
-  const fontSize = wrappedTextStyles.flowLabel.fontSize;
-  const measured = textExtent(
-    wrapText(name, fontSize, looseLabelWidth),
-    fontSize,
+  if (blocksByName.size >= blocksByNameLimit) {
+    blocksByName.clear();
+  }
+  const blocks = flowBlocks(flow.name, flow.badge);
+  blocksByName.set(key, blocks);
+  return blocks;
+});
+
+const runsOf = memoizedByIdentity((flow: FlowGeometry) =>
+  lineRuns(flow.points),
+);
+
+const spotsOf = memoizedByIdentity((flow: FlowGeometry) =>
+  spotsOutward(runsOf(flow), slideStep),
+);
+
+const linesOf = memoizedByIdentity((flow: FlowGeometry) =>
+  segmentsOfPolyline(flow.points).map(lineObstacle),
+);
+
+const arrowheadsOf = memoizedByIdentity((flow: FlowGeometry): Obstacle[] => {
+  const { points } = flow;
+  if (points.length < 2) {
+    return [];
+  }
+  const tips = [
+    arrowheadPoints(points[points.length - 1], points[points.length - 2]),
+  ];
+  if (flow.bidirectional) {
+    tips.push(arrowheadPoints(points[0], points[1]));
+  }
+  return tips.flatMap((tip) => {
+    const box = boxOfPoints(tip);
+    return box === undefined ? [] : [boxObstacle(box)];
+  });
+});
+
+const endRunsOf = memoizedByIdentity((flow: FlowGeometry): Segment[] => [
+  ...runsWithin(
+    flow.points,
+    shownLineAtEnds + (flow.bidirectional ? arrowhead.length : 0),
+  ),
+  ...runsWithin(flow.points, shownLineAtEnds + arrowhead.length, true),
+]);
+
+const drawnObstacles = memoizedByIdentity((node: CanvasNode): Obstacle[] => {
+  const text = boxOfPoints(placedTextCorners(node));
+  const outline =
+    node.kind === 'boundary-curve'
+      ? segmentsOfPolyline(
+          sampledCurve(node.waypoints).map((point) =>
+            shiftedBy(point, node.position),
+          ),
+        ).map(lineObstacle)
+      : [
+          ...nodeOutline(node).boxes.map(boxObstacle),
+          ...nodeOutline(node).ellipses.map(ellipseObstacle),
+          ...nodeOutline(node).lines.map(lineObstacle),
+        ];
+  return [
+    ...outline,
+    ...(text === undefined ? [] : [boxObstacle(text)]),
+    ...ownBadgeBox(node).map(boxObstacle),
+  ];
+});
+
+function placedInIdOrder(
+  flows: readonly FlowGeometry[],
+  nodes: readonly CanvasNode[],
+  retained: (flow: FlowGeometry) => FlowLabelPlacement | undefined,
+): FlowLabelPlacement[] {
+  const scene: Scene = {
+    elements: nodes.flatMap(drawnObstacles),
+    lines: flows.map(linesOf),
+    arrowheads: flows.map(arrowheadsOf),
+  };
+  const placements = flows.map(retained);
+  const blocks = placements.flatMap((placement) =>
+    placement?.backing === undefined ? [] : [boxObstacle(placement.backing)],
   );
-  if (flowNameExtents.size >= flowNameExtentLimit) {
-    flowNameExtents.clear();
-  }
-  flowNameExtents.set(name, measured);
-  return measured;
-}
-
-function candidatesByDistance(candidates: readonly Candidate[]): Candidate[] {
-  const ordered: Candidate[] = [];
-  for (const candidate of candidates) {
-    const index = ordered.findIndex(
-      (other) =>
-        candidate.fromMiddle < other.fromMiddle - translationNoiseTolerance,
-    );
-    if (index === -1) {
-      ordered.push(candidate);
-    } else {
-      ordered.splice(index, 0, candidate);
-    }
-  }
-  return ordered;
-}
-
-function* candidatesOf(
-  flow: FlowGeometry,
-  segments: readonly Segment[],
-  middle: Point,
-  metrics: CandidateMetrics,
-): Generator<Candidate> {
-  for (const segment of segments) {
-    for (const fraction of anchorFractions) {
-      for (const step of standoffSteps) {
-        for (const side of normalSides) {
-          yield candidateAt(
-            flow,
-            segment,
-            fraction,
-            step,
-            side,
-            middle,
-            metrics,
-          );
-        }
+  for (const index of idOrder(flows)) {
+    if (placements[index] === undefined) {
+      const chosen = placedFlow(flows[index], index, scene, blocks);
+      placements[index] = chosen;
+      if (chosen.backing !== undefined) {
+        blocks.push(boxObstacle(chosen.backing));
       }
     }
   }
+  return placements.map(
+    (placement, index) => placement ?? atLineMiddle(flows[index]),
+  );
 }
 
-function candidateAt(
+function idOrder(flows: readonly FlowGeometry[]): number[] {
+  const indices = flows.map((_flow, index) => index);
+  indices.sort((one, other) => {
+    const left = flows[one].id;
+    const right = flows[other].id;
+    if (left === right) {
+      return 0;
+    }
+    return left < right ? -1 : 1;
+  });
+  return indices;
+}
+
+function atLineMiddle(flow: FlowGeometry): FlowLabelPlacement {
+  const [middle] = spotsOf(flow);
+  return blockAt(blocksOf(flow)[0], middle.at);
+}
+
+function placedFlow(
   flow: FlowGeometry,
-  segment: Segment,
-  fraction: number,
-  step: number,
-  side: number,
-  middle: Point,
-  metrics: CandidateMetrics,
-): Candidate {
-  const anchor = alongSegment(segment, fraction);
-  const normal = scaledBy(labelNormal(segment), side);
-  const standoff = flowLabelClearance * (step + 1);
-  const name = nameBeside(
-    flow.name,
-    anchor,
-    normal,
-    standoff,
-    'flowLabel',
-    metrics.name,
-  );
-  const nameBox = boxOfPoints(textPlacementCorners(name));
-  const badge = badgeBeside(
-    flow.badge,
-    anchor,
-    negated(normal),
-    standoff,
-    metrics.badge,
-  );
-  return {
-    placement: { name, badge: badge?.at },
-    nameBox,
-    badgeBox: badge?.box,
-    fromMiddle: Math.hypot(name.at.x - middle.x, name.at.y - middle.y),
-  };
-}
-
-function candidateFromPlacement(
-  flow: FlowGeometry,
-  placement: FlowLabelPlacement,
-): Candidate {
-  const cached = placementCandidates.get(placement);
-  if (cached !== undefined) {
-    return cached;
+  index: number,
+  scene: Scene,
+  blocks: readonly Obstacle[],
+): FlowLabelPlacement {
+  const shapes = blocksOf(flow);
+  if (shapes[0].halfWidth === 0 && shapes[0].halfHeight === 0) {
+    return atLineMiddle(flow);
   }
-  const nameExtent = flowNameExtent(flow.name);
-  const candidate = {
-    placement,
-    nameBox: {
-      minX: placement.name.at.x - nameExtent.width / 2,
-      minY: placement.name.at.y - nameExtent.height / 2,
-      maxX: placement.name.at.x + nameExtent.width / 2,
-      maxY: placement.name.at.y + nameExtent.height / 2,
-    },
-    badgeBox:
-      flow.badge === undefined || placement.badge === undefined
-        ? undefined
-        : badgeBox(placement.badge, flow.badge),
-    fromMiddle: 0,
-  };
-  placementCandidates.set(placement, candidate);
-  return candidate;
-}
-
-function badgeBeside(
-  badge: ThreatBadge | undefined,
-  anchor: Point,
-  direction: Point,
-  standoff: number,
-  extent?: BadgeExtent,
-): { readonly at: Point; readonly box: Box } | undefined {
-  if (badge === undefined) {
-    return undefined;
-  }
-  const at = offsetBy(
-    anchor,
-    direction,
-    standoff + badgeReach(badge, direction, extent),
-  );
-  return { at, box: badgeBox(at, badge) };
-}
-
-function collisionsOf(
-  candidate: Candidate,
-  drawn: Obstacles,
-  stopAt: number,
-): number {
-  const names = boxCollisions(candidate.nameBox, drawn.forName, stopAt);
-  return names >= stopAt
-    ? names
-    : names + boxCollisions(candidate.badgeBox, drawn.forBadge, stopAt - names);
+  return searchedBlock({
+    runs: runsOf(flow),
+    spots: spotsOf(flow),
+    shapes,
+    others: [
+      ...scene.elements,
+      ...scene.lines.flatMap((lines, other) => (other === index ? [] : lines)),
+      ...scene.arrowheads.flatMap((heads, other) =>
+        other === index ? [] : heads,
+      ),
+      ...blocks,
+    ],
+    own: [...scene.lines[index], ...scene.arrowheads[index]],
+    ends: endRunsOf(flow),
+    bands: besideBands,
+  });
 }
 
 function movedWithNearestSegment(
@@ -506,31 +325,20 @@ function movedWithNearestSegment(
 ): Point {
   let nearest = projectedOn(from[0], point);
   let index = 0;
-  for (let candidate = 1; candidate < from.length; candidate += 1) {
-    const projected = projectedOn(from[candidate], point);
+  for (let run = 1; run < from.length; run += 1) {
+    const projected = projectedOn(from[run], point);
     if (projected.distance < nearest.distance) {
       nearest = projected;
-      index = candidate;
+      index = run;
     }
+  }
+  const foot = alongSegment(to[index], nearest.fraction);
+  if (nearest.distance <= onLineTolerance) {
+    return foot;
   }
   const side = nearest.signedDistance < 0 ? -1 : 1;
   const oldDirection = scaledBy(labelNormal(from[index]), side);
   const newDirection = scaledBy(labelNormal(to[index]), side);
   const standoff = Math.abs(nearest.signedDistance) - reach(oldDirection);
-  return offsetBy(
-    alongSegment(to[index], nearest.fraction),
-    newDirection,
-    standoff + reach(newDirection),
-  );
-}
-
-function badgeReach(
-  badge: ThreatBadge,
-  direction: Point,
-  measured?: BadgeExtent,
-): number {
-  const extent = measured ?? badgeExtent(badge);
-  const across =
-    direction.y < 0 ? extent.depth * -direction.y : extent.radius * direction.y;
-  return extent.radius * Math.abs(direction.x) + across;
+  return offsetBy(foot, newDirection, standoff + reach(newDirection));
 }

@@ -1,4 +1,8 @@
 import { DetectionFailure, ReadFailure } from '@saerskriven/formats';
+import {
+  ShareLinkFailure,
+  shareLinkLimit,
+} from '@saerskriven/formats/share-link';
 import { OperationFailure } from '@saerskriven/model';
 import {
   assumptionId,
@@ -10,11 +14,12 @@ import {
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { locales } from '@saerskriven/i18n';
+import { AssetFailure } from '../asset-failure.js';
 import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { RecoveryProblem } from '../store/recovery-storage.js';
 import { isDirty } from '../store/selectors.js';
-import { StudioFailure, initialState } from '../store/state.js';
+import { LinkFailure, StudioFailure, initialState } from '../store/state.js';
 import { sampleModel } from '../store/store.fixtures.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { FailureNotice, describeFailure } from './failure-notice.js';
@@ -175,6 +180,11 @@ const studioFailures: ByTag<StudioFailure> = {
     failure: readFailures.InvalidWireDocument,
   }),
   File: StudioFailure.File({ reason: 'The folder is read only.' }),
+  Link: StudioFailure.Link({
+    failure: LinkFailure.Codec({
+      failure: ShareLinkFailure.UnknownEncoding({ prefix: '2' }),
+    }),
+  }),
   StoredRecoveryRejected: StudioFailure.StoredRecoveryRejected({
     problem: RecoveryProblem.Unsupported(),
   }),
@@ -277,6 +287,99 @@ describe('describeFailure', () => {
     expect(described.details).toEqual([
       t('issues.line-root', { detail: t('issues.issue-flood') }),
     ]);
+  });
+});
+
+describe('a shared link that opened nothing', () => {
+  const malformed = 'The link may have been cut off on the way.';
+
+  const codecFailures: ByTag<ShareLinkFailure> = {
+    TooLong: ShareLinkFailure.TooLong({
+      length: shareLinkLimit + 1,
+      limit: shareLinkLimit,
+    }),
+    PastReadBound: ShareLinkFailure.PastReadBound({ size: 9_000_000 }),
+    NotAShareLink: ShareLinkFailure.NotAShareLink(),
+    UnknownEncoding: ShareLinkFailure.UnknownEncoding({ prefix: '2' }),
+    Malformed: ShareLinkFailure.Malformed({ message: malformed }),
+    Unusable: ShareLinkFailure.Unusable({ sentence: 'the module trapped' }),
+  };
+
+  const linked = (failure: LinkFailure) =>
+    describeFailure(t, StudioFailure.Link({ failure }));
+
+  it.each([
+    [
+      'cut off',
+      LinkFailure.Codec({ failure: codecFailures.Malformed }),
+      t('notice.link-cut-off'),
+    ],
+    [
+      'too long',
+      LinkFailure.Codec({ failure: codecFailures.TooLong }),
+      t('notice.link-too-long', {
+        length: shareLinkLimit + 1,
+        limit: shareLinkLimit,
+      }),
+    ],
+    [
+      'too large',
+      LinkFailure.Read({ failure: readFailures.ExceededReadLimit }),
+      t('notice.link-too-large'),
+    ],
+    [
+      'not a model',
+      LinkFailure.Read({ failure: readFailures.InvalidModel }),
+      t('notice.link-not-a-model'),
+    ],
+    [
+      'a newer encoding',
+      LinkFailure.Codec({ failure: codecFailures.UnknownEncoding }),
+      t('notice.link-encoding', { prefix: '2' }),
+    ],
+    [
+      'the module failing',
+      LinkFailure.Codec({ failure: codecFailures.Unusable }),
+      t('notice.link-module'),
+    ],
+    [
+      'the module not loading',
+      LinkFailure.Module({
+        failure: AssetFailure.Answered({ url: '/brotli.wasm', status: 404 }),
+      }),
+      t('notice.link-module'),
+    ],
+  ])('names a link that is %s as its cause', (_cause, failure, line) => {
+    const described = linked(failure);
+
+    expect(described.headline).toBe(t('notice.link-refused'));
+    expect(described.details[0]).toBe(line);
+  });
+
+  it("words every codec refusal from its tag and never from the codec's English message", () => {
+    for (const failure of Object.values(codecFailures)) {
+      const { details } = linked(LinkFailure.Codec({ failure }));
+
+      expect(details[0]).not.toContain(failure._tag);
+      expect(details).not.toContain(malformed);
+    }
+  });
+
+  it("keeps the module's text, the server's answer and the read's paths under the cause", () => {
+    expect(
+      linked(LinkFailure.Codec({ failure: codecFailures.Unusable })).details,
+    ).toEqual([t('notice.link-module'), 'the module trapped']);
+    expect(
+      linked(
+        LinkFailure.Module({
+          failure: AssetFailure.Answered({ url: '/brotli.wasm', status: 404 }),
+        }),
+      ).details[1],
+    ).toContain('/brotli.wasm');
+    expect(
+      linked(LinkFailure.Read({ failure: readFailures.InvalidWireDocument }))
+        .details[1],
+    ).toContain('detail.diagrams.0');
   });
 });
 

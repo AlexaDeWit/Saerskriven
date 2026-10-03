@@ -17,6 +17,18 @@ export const reportsEnCA = catalogue(reportMessages)('en-CA')({
   'compile-refused': 'Saerskriven could not compile the PDF.',
   'no-pdf': 'The Typst compiler produced no PDF.',
   'draw-refused': 'Saerskriven could not draw the PNG.',
+  shared: {
+    one: 'The link to the model is on the clipboard, {length} character long.',
+    other:
+      'The link to the model is on the clipboard, {length} characters long.',
+  },
+  'shared-disclosure': 'Anyone who holds the link can read the whole model.',
+  'share-too-large':
+    'The model is too large for a link. Save it as a file to share it.',
+  'share-refused': 'Saerskriven could not write the link.',
+  'share-clipboard-refused':
+    'The browser did not let Saerskriven put the link on the clipboard.',
+  'dismiss-share': 'Dismiss link report',
   unplaced:
     'A flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
   'unplaced-source': 'The source of flow {flow} names {element}.',
