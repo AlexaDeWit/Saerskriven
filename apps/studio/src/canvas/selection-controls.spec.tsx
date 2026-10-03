@@ -46,6 +46,11 @@ const flowOf = () =>
     .getState()
     .present.diagrams[0].elements.find((element) => element.kind === 'flow');
 
+const sourceDrawn = () =>
+  currentLayout(modelStore.getState()).edges.find(
+    (edge) => edge.id === requestFlow,
+  )?.source;
+
 const bothWaysToggle = () =>
   screen.getByRole('button', { name: 'Toggle bidirectional flow' });
 
@@ -93,13 +98,13 @@ describe('SelectionControls', () => {
       target: { value: '10.123456' },
     });
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), {
-      target: { value: '120.98765' },
+      target: { value: '120.9876543' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
 
     expect(laidOutNode(processElement)).toMatchObject({
       position: { x: 10.123456, y: 0 },
-      size: { width: 120.98765, height: 60 },
+      size: { width: 120.9876543, height: 60 },
     });
   });
 
@@ -109,6 +114,7 @@ describe('SelectionControls', () => {
       Action.MoveElements({
         elementIds: [actorElement, processElement],
         offset: { x: 40, y: 40 },
+        decimals: undefined,
       }),
     );
     render(<SelectionControls />);
@@ -339,6 +345,53 @@ describe('SelectionControls', () => {
     expect(modelStore.getState().past).toEqual([canvasModel]);
   });
 
+  it('starts a freed end at its anchor written at three decimals, and stores it as shown', () => {
+    openCanvas([requestFlow]);
+    dispatch(
+      Action.MoveElement({
+        elementId: actorElement,
+        offset: { x: -123.636, y: 0.98765 },
+        decimals: undefined,
+      }),
+    );
+    expect(sourceDrawn()).toEqual({ x: -3.6359999999999957, y: 30.98765 });
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('reconnect-source'), recordingSurface().surface);
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
+      target: { value: '' },
+    });
+
+    expect(
+      screen.getByRole<HTMLInputElement>('spinbutton', { name: 'X' }).value,
+    ).toBe('-3.636');
+    fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
+    expect(elementIn(modelStore.getState().present, requestFlow)).toMatchObject(
+      { source: { kind: 'free', position: { x: -3.636, y: 30.988 } } },
+    );
+  });
+
+  it('starts an end already free at the position it has stored, whatever its decimals', () => {
+    openCanvas([requestFlow]);
+    dispatch(
+      Action.SetFlowEndPosition({
+        elementId: requestFlow,
+        side: 'source',
+        position: { x: 12.3456789, y: 30 },
+        decimals: undefined,
+      }),
+    );
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('reconnect-source'), recordingSurface().surface);
+    });
+
+    expect(
+      screen.getByRole<HTMLInputElement>('spinbutton', { name: 'X' }).value,
+    ).toBe('12.3456789');
+  });
+
   it('keeps a free endpoint whose position is not a number in the form', () => {
     openCanvas([requestFlow]);
     render(<SelectionControls />);
@@ -363,6 +416,7 @@ describe('FlowEndpointCommands', () => {
       Action.AddElement({
         diagramId: mainDiagram,
         element: newProcess('extra-node', 'Extra'),
+        decimals: undefined,
       }),
     );
     const base = modelStore.getState().present;

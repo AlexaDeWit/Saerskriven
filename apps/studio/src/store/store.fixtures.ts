@@ -353,4 +353,5 @@ export const heldElements = (): number => elementCount(modelStore.getState());
 export const addedProcess = Action.AddElement({
   diagramId: mainDiagram,
   element: newProcess('process-added', 'Added'),
+  decimals: undefined,
 });

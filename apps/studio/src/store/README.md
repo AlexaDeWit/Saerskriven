@@ -116,9 +116,10 @@ to the model operation it calls, which rounds what it writes
 ([the model](../../../../packages/model/README.md#operations)). The actions
 are `AddElement`, `MoveElement`, `MoveElements`, `ArrangeElements`,
 `ResizeElement`, `RemoveElement`, `RemoveElements`, `SetFlowWaypoints`,
-`SetFlowEndPosition` and `SetBoundaryShape`. The store holds no count of its
-own and rounds nothing itself: an action that names none stores what the
-operation computes. Which count an edit names is the canvas's to say
+`SetFlowEndPosition` and `SetBoundaryShape`. The field is required, so an edit
+that means the operation to store what it computes says `undefined`, and one
+that forgot does not compile. The store holds no count of its own and rounds
+nothing itself. Which count an edit names is the canvas's to say
 ([the canvas](../canvas/README.md#rules-for-changes)).
 
 ## Recovery

@@ -93,11 +93,12 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   which it was, `placeElement` and `placeBoundaryCurve` for a placement, and an
   element draft's `commit` for a bend, a flow end and a curve point. A point
   the arrow keys placed is the keyboard's, and one a click or a drag placed is
-  the pointer's. Removing a bend or a curve point names no count, since it
-  writes only points already stored, and neither does the flow end form, whose
-  operation stores the typed position itself. Snap to grid acts before the
-  commit, in React Flow and in `group-drag.ts`, and a grid multiple is the same
-  number at any count.
+  the pointer's. Four edits say `undefined`: removing a bend or a curve point,
+  which writes only points already stored, drawing a flow, which writes no
+  number, and the flow end form, whose operation stores the typed position
+  itself and whose fields start from an attached end's anchor at
+  `commandDecimals`. Snap to grid acts before the commit, in React Flow and in
+  `group-drag.ts`, and a grid multiple is the same number at any count.
 - **Settle against the store's selection, not a render's.** React Flow reports
   a click that moves the selection between a node and a flow as two
   synchronous calls with no render between them.

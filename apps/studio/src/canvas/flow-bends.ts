@@ -73,6 +73,7 @@ export function useFlowBends() {
         Action.SetFlowWaypoints({
           elementId: flow.id,
           waypoints: flow.waypoints.filter((_point, at) => at !== index),
+          decimals: undefined,
         }),
       );
       route.cancel();

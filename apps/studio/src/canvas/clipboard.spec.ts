@@ -326,7 +326,11 @@ describe('pasteSelected', () => {
     clipboard.readText.mockReturnValueOnce(read.promise);
     const pending = pasteSelected();
     dispatch(
-      Action.MoveElement({ elementId: actorElement, offset: { x: 1, y: 0 } }),
+      Action.MoveElement({
+        elementId: actorElement,
+        offset: { x: 1, y: 0 },
+        decimals: undefined,
+      }),
     );
     const changed = modelStore.getState().present;
     const text = marker + saerskrivenYamlCodec.write(canvasModel).output;
@@ -553,6 +557,7 @@ describe('duplicateSelected', () => {
       Action.MoveElement({
         elementId: actorElement,
         offset: { x: 0.123456, y: 5.1 },
+        decimals: undefined,
       }),
     );
 
@@ -649,6 +654,7 @@ describe('the clipboard refusals', () => {
           Action.MoveElement({
             elementId: actorElement,
             offset: { x: 1, y: 0 },
+            decimals: undefined,
           }),
         );
         read.resolve(text);

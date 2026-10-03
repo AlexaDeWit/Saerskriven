@@ -273,6 +273,7 @@ describe('DiagramCanvas, what a route gesture stores', () => {
       Action.SetFlowWaypoints({
         elementId: requestFlow,
         waypoints: [{ x: 210.123456, y: 30.98765 }],
+        decimals: undefined,
       }),
     );
     render(<DiagramCanvas />);
@@ -292,6 +293,7 @@ describe('DiagramCanvas, what a route gesture stores', () => {
         elementId: probeFlow,
         side: 'target',
         position: { x: 500.123456, y: 200.98765 },
+        decimals: undefined,
       }),
     );
     render(<DiagramCanvas />);
@@ -308,11 +310,12 @@ describe('DiagramCanvas, what a route gesture stores', () => {
     });
   });
 
-  it('stores a bend placed by Enter at one decimal, and one placed by a click at three', () => {
+  it('stores a bend placed by Enter, or by pressing its handle while placing, at one decimal, and one placed by a click at three', () => {
     dispatch(
       Action.MoveElement({
         elementId: actorElement,
         offset: { x: 0.123456, y: 0.98765 },
+        decimals: undefined,
       }),
     );
     render(<DiagramCanvas />);
@@ -320,6 +323,14 @@ describe('DiagramCanvas, what a route gesture stores', () => {
     add();
     press('Enter');
     press('Enter');
+    expect(points()).toEqual([{ x: 210.1, y: 30.5 }]);
+    act(() => {
+      dispatch(Action.Undo());
+    });
+
+    add();
+    press('Enter');
+    fireEvent.click(bend());
     expect(points()).toEqual([{ x: 210.1, y: 30.5 }]);
 
     add();
@@ -417,6 +428,7 @@ describe('DiagramCanvas, the ends of a flow', () => {
         Action.AddElement({
           diagramId: mainDiagram,
           element: newProcess('extra-node', 'Extra', extra),
+          decimals: undefined,
         }),
       );
     });

@@ -439,6 +439,7 @@ describe('toggleBoundaryShape', () => {
           position: { x: -20.123456, y: -20.98765 },
           size: { width: 460.5558, height: 100.4444 },
         },
+        decimals: undefined,
       }),
     );
 
@@ -490,6 +491,7 @@ describe('removeSelected', () => {
         elementId: processElement,
         offset: { x: 0.123456, y: 0 },
         size: { width: 120.5558, height: 60.4444 },
+        decimals: undefined,
       }),
     );
 

@@ -384,7 +384,13 @@ describe('what the studio says about the file', () => {
     const note = newNote('text-note', 'The studio opens on this model.');
     mounted(specBridge());
     act(() => {
-      dispatch(Action.AddElement({ diagramId: mainDiagram, element: note }));
+      dispatch(
+        Action.AddElement({
+          diagramId: mainDiagram,
+          element: note,
+          decimals: undefined,
+        }),
+      );
       dispatch(Action.Select({ elementIds: [note.id] }));
     });
     expect(elementById(modelStore.getState(), note.id)?.kind).toBe('text');

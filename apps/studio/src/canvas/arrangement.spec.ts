@@ -14,6 +14,7 @@ import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
+import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { arrangeSelected } from './arrangement.js';
 import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { currentLayout } from './layout.js';
@@ -125,6 +126,40 @@ describe('arrangeSelected', () => {
     expect(
       elementIn(modelStore.getState().present, processElement),
     ).toMatchObject({ position: { x: 0.1, y: 120 } });
+  });
+
+  it('adds no undo step and says nothing for an alignment already in place, though its offsets are not exactly zero', () => {
+    const placed = [
+      { position: { x: 0.1, y: 20 }, size: { width: 120, height: 60 } },
+      { position: { x: 200.3, y: 120 }, size: { width: 80, height: 60 } },
+    ];
+    const model = {
+      ...sampleModel,
+      diagrams: sampleModel.diagrams.map((diagram) => ({
+        ...diagram,
+        elements: [actorElement, processElement].map((id, index) => ({
+          ...elementIn(sampleModel, id),
+          ...placed[index],
+        })),
+      })),
+    };
+    modelStore.setState(
+      { ...initialState(model), selection: [actorElement, processElement] },
+      true,
+    );
+
+    arrangeSelected('centre');
+    const aligned = modelStore.getState().present;
+    resetAnnouncements();
+    for (const repeat of [1, 2, 3]) {
+      arrangeSelected('centre');
+      expect(modelStore.getState().present, `press ${String(repeat)}`).toBe(
+        aligned,
+      );
+    }
+
+    expect(modelStore.getState().past).toEqual([model]);
+    expect(currentAnnouncement().message).toBe('');
   });
 
   it.each(alignments)(

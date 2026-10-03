@@ -374,6 +374,7 @@ describe('DiagramCanvas', () => {
       Action.MoveElement({
         elementId: actorElement,
         offset: { x: 28.5, y: 12.25 },
+        decimals: undefined,
       }),
     );
     render(<DiagramCanvas />);
@@ -484,6 +485,7 @@ describe('DiagramCanvas', () => {
         elementId: actorElement,
         offset: { x: 28.123456, y: 0 },
         size: { width: 120.123456, height: 60.98765 },
+        decimals: undefined,
       }),
     );
     render(<DiagramCanvas />);
@@ -502,6 +504,7 @@ describe('DiagramCanvas', () => {
       Action.MoveElement({
         elementId: actorElement,
         offset: { x: 28.123456, y: 0 },
+        decimals: undefined,
       }),
     );
     render(<DiagramCanvas />);

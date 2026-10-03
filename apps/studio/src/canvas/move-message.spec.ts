@@ -49,6 +49,7 @@ describe('movedSelectionMessage', () => {
       Action.MoveElement({
         elementId: actorElement,
         offset: { x: 28.5, y: 0 },
+        decimals: undefined,
       }),
     );
 

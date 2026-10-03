@@ -125,6 +125,7 @@ export function useCurvePoints() {
               (_point, at) => at !== index,
             ),
           },
+          decimals: undefined,
         }),
       );
       points.cancel();

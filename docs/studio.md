@@ -320,8 +320,13 @@ bends, free ends and curve points a moved group carries.
 - A command that works geometry out stores three decimals, however it is
   invoked: Align, Distribute, Duplicate, Paste, Add point, Switch boundary
   shape, and the flow ends a deleted element leaves free.
-- A number typed into Position and size or the flow end editor is stored as
-  typed. The Decrease and Increase buttons keep the decimals the field has.
+- A number typed into Position and size is stored as typed, unless another
+  field of the form shows thirteen or more decimals, as a position stored
+  before this rounding existed can. The typed number can then come out a digit
+  off in its last places. The Decrease and Increase buttons keep the decimals
+  the field has.
+- A position typed into the flow end editor is stored as typed. Where the end
+  was attached, the editor starts from its anchor written at three decimals.
 - A number that came from a file stays as it is until an edit writes it.
 - With Snap to grid on, a snapped position is a grid multiple, which the
   rounding leaves as it is.

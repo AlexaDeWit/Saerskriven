@@ -111,6 +111,7 @@ describe('FitOnOpen', () => {
         Action.MoveElement({
           elementId: actorElement,
           offset: { x: 400, y: 400 },
+          decimals: undefined,
         }),
       );
     });

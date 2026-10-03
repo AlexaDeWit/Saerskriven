@@ -84,7 +84,10 @@ export function connectElements(
     return;
   }
   const flow = freshFlow(source, target, sides);
-  added(Action.AddElement({ diagramId, element: flow }), flow.id);
+  added(
+    Action.AddElement({ diagramId, element: flow, decimals: undefined }),
+    flow.id,
+  );
 }
 
 /** Makes the selected flow bidirectional, or one-way again, as one undo step. */

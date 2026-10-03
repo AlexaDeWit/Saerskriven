@@ -118,6 +118,7 @@ describe('moveActions', () => {
       Action.MoveElement({
         elementId: actorElement,
         offset: { x: 40, y: 25 },
+        decimals: undefined,
       }),
     ]);
   });
@@ -168,6 +169,7 @@ describe('moveActions', () => {
       Action.MoveElements({
         elementIds: [actorElement, processElement, requestFlow],
         offset: { x: 40, y: 25 },
+        decimals: undefined,
       }),
     ]);
   });

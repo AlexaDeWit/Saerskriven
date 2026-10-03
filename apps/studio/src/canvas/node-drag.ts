@@ -29,9 +29,9 @@ type Drag = {
  * never ended. A change React Flow reports outside a drag passes as the
  * keyboard's: only an arrow key moves a node then. React Flow reports an
  * arrow-key move and a drag's release as the same change, so that is an
- * inference: after a drag React Flow never ended, an arrow-key move passes
- * as a pointer's, and is stored at three decimals where one was due, until
- * the next drag starts.
+ * inference: after a drag React Flow never ended, the first arrow-key move
+ * passes as a pointer's and is stored at three decimals where one was due.
+ * That change settles the drag, so the moves after it pass as the keyboard's.
  */
 export function useNodeDrag(
   positions: ReadonlyMap<string, CanvasNode>,

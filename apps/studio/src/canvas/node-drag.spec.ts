@@ -164,6 +164,7 @@ describe('useNodeDrag', () => {
         Action.MoveElement({
           elementId: actorElement,
           offset: { x: 15, y: 0 },
+          decimals: undefined,
         }),
       );
     });

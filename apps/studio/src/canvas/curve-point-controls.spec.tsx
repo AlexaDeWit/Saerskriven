@@ -55,6 +55,7 @@ const reshaped = (
       Action.SetBoundaryShape({
         elementId: boundaryElement,
         shape: { kind: 'curve', waypoints: [...waypoints] },
+        decimals: undefined,
       }),
     );
   });
