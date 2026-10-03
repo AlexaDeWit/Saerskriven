@@ -1,10 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useRef, type ComponentProps } from 'react';
+import { Accordion } from 'radix-ui';
+import { useRef } from 'react';
 import styles from './threat-panel.module.css';
 import { fieldScroll, keptScroll, useThreatScroll } from './threat-scroll.js';
-
-const Listed = (props: ComponentProps<'div'>) => <div {...props} />;
 
 function OpenThreat() {
   const list = useRef<HTMLDivElement>(null);
@@ -12,21 +11,26 @@ function OpenThreat() {
 
   return (
     <div className={styles.body} data-testid="body">
-      <Listed
+      <Accordion.Root
+        collapsible
+        defaultValue="threat"
         onBlur={scroll.leave}
         onFocus={scroll.follow}
         onKeyDown={scroll.tab}
         onPointerDown={scroll.press}
         ref={list}
+        type="single"
       >
-        <div data-state="open" data-threat-item="threat">
-          <h3 className={styles.header}>
-            <button type="button">Summary</button>
-          </h3>
-          <input aria-label="First" />
-          <input aria-label="Second" data-top="300" />
-        </div>
-      </Listed>
+        <Accordion.Item data-threat-item="threat" value="threat">
+          <Accordion.Header className={styles.header}>
+            <Accordion.Trigger>Summary</Accordion.Trigger>
+          </Accordion.Header>
+          <Accordion.Content>
+            <input aria-label="First" />
+            <input aria-label="Second" data-top="300" />
+          </Accordion.Content>
+        </Accordion.Item>
+      </Accordion.Root>
       <button type="button">Outside</button>
     </div>
   );

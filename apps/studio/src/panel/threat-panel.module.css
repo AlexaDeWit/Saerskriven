@@ -417,7 +417,7 @@
   align-items: center;
   gap: var(--saer-space-1);
   min-inline-size: 0;
-  padding: var(--saer-space-1);
+  padding: var(--saer-space-1) 0;
   border: 1px solid transparent;
   border-radius: var(--saer-radius);
   background: none;
@@ -448,7 +448,6 @@
   align-items: center;
   gap: var(--saer-space-1);
   font-size: var(--saer-font-size);
-  font-weight: 600;
 }
 
 .recordState {
@@ -463,12 +462,19 @@
   min-inline-size: 9rem;
 }
 
+/* A name row holds the record's name, its Added mark, its status and Unlink
+   on one line at the default pane width in the wider sans faces too, so its
+   controls take their content's width and a compact inset. Where a longer
+   language needs more, the status and Unlink wrap together to the row's end,
+   still above the record's fields. */
 .recordHead [role='combobox'] {
-  min-inline-size: 8rem;
+  gap: var(--saer-space-1);
+  min-inline-size: 0;
+  padding: var(--saer-space-1) var(--saer-space-2);
 }
 
 .recordHead .unlink {
-  padding-inline: var(--saer-space-2);
+  padding: var(--saer-space-1) 0;
 }
 
 .unlink {
@@ -570,14 +576,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--saer-space-3);
-  padding: var(--saer-space-3);
+  padding: var(--saer-space-3) var(--saer-space-2);
 }
 
-/* At phone width the panel, the threat item and a model record card would
-   each take a full inset from the room the fields have, so all three narrow. */
+/* At phone width the panel and a model record card would each take a full
+   inset from the room the fields have, so both narrow, as an open threat's
+   content does at every width. */
 @media (max-width: 30rem) {
   .body,
-  .content,
   .recordCard {
     padding-inline: var(--saer-space-2);
   }

@@ -13,7 +13,7 @@ import {
 } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
-import { markedWithin } from './marked.js';
+import { marked, markedWithin } from './marked.js';
 import { PickExisting } from './pick-existing.js';
 import { RecordRow, type HeldText } from './record-row.js';
 import {
@@ -54,8 +54,6 @@ type FocusRequest =
       readonly body: Element | null | undefined;
       readonly scrolled: number;
     };
-
-const rowSelector = '[data-record-row]';
 
 /**
  * The records of one kind linked to one target, a threat or the model. Add
@@ -235,10 +233,9 @@ export function RecordGroup<Held extends ThreatRecord>({
 
   const tracked = (event: FocusEvent<HTMLDivElement>): void => {
     if (event.type === 'focus') {
-      focusedRow.current =
-        document.activeElement?.closest<HTMLElement>(rowSelector)?.dataset[
-          'recordRow'
-        ];
+      focusedRow.current = document.activeElement?.closest<HTMLElement>(
+        marked.recordRow,
+      )?.dataset['recordRow'];
     } else if (
       event.target.isConnected &&
       !event.currentTarget.contains(event.relatedTarget)
@@ -383,7 +380,9 @@ function focusTarget(
   if (focus.kind === 'add') {
     return add;
   }
-  const rows = [...(group?.querySelectorAll<HTMLElement>(rowSelector) ?? [])];
+  const rows = [
+    ...(group?.querySelectorAll<HTMLElement>(marked.recordRow) ?? []),
+  ];
   const row =
     rows.at(focus.index) ??
     (focus.index > 0 ? rows.at(focus.index - 1) : undefined);
