@@ -91,6 +91,13 @@ confiance franchie 1_), which names the one item the control removes. A
 composition stays where one template words every label it takes in all three
 languages, as `fields.add-record` does.
 
+A row of a relationship list takes a message per relationship as well. It
+names the one item in the singular with its number, as
+`fields.item-of-contained-elements` (_Contained element 2_, _Élément
+contenu 2_, _Innehållet objekt 2_) does, while the list's heading stays
+plural. Each language sets the number where its phrase takes it:
+`fields.item-of-crossing-flows` is _Flux 2 qui la franchit_.
+
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`
 adds beside them. `parseIssueLine` places either at its path. OTM and TM-BOM

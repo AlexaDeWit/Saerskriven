@@ -141,11 +141,10 @@ export function RelationshipProperty({
     choices.map((element) => labelledElement(element, known, t)),
   );
   const labelOf = (id: ElementId) => labelled.get(id) ?? id;
-  const label = t(`fields.${relationship}`);
 
   return (
     <fieldset className={styles.relationship} ref={group}>
-      <legend>{label}</legend>
+      <legend>{t(`fields.${relationship}`)}</legend>
       <EnumField
         label={t(`fields.recording-of-${relationship}`)}
         labelOf={(option) => t(flagMessages[option])}
@@ -163,8 +162,7 @@ export function RelationshipProperty({
           {value.map((id, index) => (
             <div className={styles.relationshipRow} key={index}>
               <EnumField
-                label={t('fields.relationship-item', {
-                  label,
+                label={t(`fields.item-of-${relationship}`, {
                   number: index + 1,
                 })}
                 value={id}

@@ -151,7 +151,7 @@ test('edits every element kind and preserves security facts through save, undo, 
   ).toHaveValue('HTTPS');
   await expect(
     threatPanel(page).getByRole('combobox', {
-      name: 'Crossed trust boundaries 1',
+      name: 'Crossed trust boundary 1',
       exact: true,
     }),
   ).toContainText('Shop network');
@@ -317,7 +317,7 @@ test('deletion and copying update declared relationships through the editor', as
   await page.keyboard.press('Delete');
   await properties(page, storefront.shopNetwork);
   const contained = threatPanel(page).getByRole('combobox', {
-    name: 'Contained elements 1',
+    name: 'Contained element 1',
     exact: true,
   });
   await expect(contained).toHaveCount(0);
