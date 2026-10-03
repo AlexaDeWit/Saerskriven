@@ -103,6 +103,8 @@ const summary = (title: RegExp): HTMLElement =>
 const listed = (): readonly (string | undefined)[] =>
   listedThreats(screen.getByRole('region', { name: 'Model' }));
 
+const wholeModel = 'Applies to the whole model';
+
 const looseThreat = threatId('threat-loose');
 
 const mitigatedThreat = threatId('threat-mitigated');
@@ -207,13 +209,87 @@ describe(
       ).toBe(true);
     });
 
-    it('offers no add and no attach, since a threat is added on an element', () => {
+    it('adds a threat that applies to the model and names no element, opened on its title, as one undo step, and offers no attach', async () => {
+      const user = userEvent.setup();
+      const before = present();
       showPanel();
 
-      expect(screen.queryByRole('button', { name: 'Add a threat' })).toBeNull();
       expect(
         screen.queryByRole('combobox', { name: 'Existing threat' }),
       ).toBeNull();
+      await user.click(button('Add a threat'));
+
+      const added = present().threats.at(-1);
+      expect(added).toMatchObject({
+        number: before.lastIssuedThreatNumber + 1,
+        elements: [],
+        appliesToModel: true,
+      });
+      expect(listed().at(-1)).toBe(added?.id);
+      expect(document.activeElement).toBe(textbox('Title'));
+      expect(undoable()).toBe(1);
+      undo();
+      expect(present()).toBe(before);
+    });
+
+    it('applies a threat to the whole model from its attached elements, keeps it when its last element is detached and says why, and removes it when the model link goes too', async () => {
+      const user = userEvent.setup();
+      const { t } = activeTranslator();
+      showPanel();
+      await user.click(summary(/A reader edits/u));
+
+      await chooseFrom(wholeModel, t('enums.yes'));
+
+      expect(present().threats[0]).toMatchObject({
+        elements: recordedModel.threats[0].elements,
+        appliesToModel: true,
+      });
+      expect(undoable()).toBe(1);
+
+      await user.click(button('Detach Reader'));
+
+      expect(present().threats[0]).toMatchObject({
+        id: firstThreat,
+        elements: [],
+        appliesToModel: true,
+      });
+      expect(listed()).toEqual([firstThreat, secondThreat]);
+      expect(currentAnnouncement().message).toContain(
+        t('canvas.threat-stays-on-model'),
+      );
+      expect(document.activeElement).toBe(
+        screen.getByRole('combobox', { name: wholeModel }),
+      );
+      const kept = present();
+
+      await chooseFrom(wholeModel, t('enums.no'));
+
+      expect(present().threats.map(({ id }) => id)).toEqual([secondThreat]);
+      expect(present().mitigations).toEqual([]);
+      expect(listed()).toEqual([secondThreat]);
+      expect(currentAnnouncement().message).toBe(
+        t('canvas.threat-detach-removed', { number: 1 }),
+      );
+      expect(document.activeElement).toBe(summary(/A reader sees/u));
+      expect(undoable()).toBe(3);
+      undo();
+      expect(present()).toBe(kept);
+    });
+
+    it('keeps a threat on its elements when its model link goes, and says nothing', async () => {
+      const user = userEvent.setup();
+      const { t } = activeTranslator();
+      act(() => {
+        dispatch(Action.LinkThreatToModel({ threatId: firstThreat }));
+      });
+      showPanel();
+      await user.click(summary(/A reader edits/u));
+
+      await chooseFrom(wholeModel, t('enums.no'));
+
+      expect(present().threats[0]).toEqual(recordedModel.threats[0]);
+      expect(listed()).toEqual([firstThreat, secondThreat]);
+      expect(currentAnnouncement().message).toBe('');
     });
 
     it('says so where the model holds no threat', () => {

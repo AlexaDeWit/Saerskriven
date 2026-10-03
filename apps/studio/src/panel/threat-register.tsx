@@ -28,13 +28,14 @@ import { threatAttachments } from './threats.js';
  * The threat register while it is open, over the canvas area left of the
  * panel: every threat in the model as a table of number, title, elements,
  * severity and status, in review order as it opens and held while it stays
- * open, as the model panel's list is. Choosing a row opens its threat on the
- * model panel and marks the row, leaving focus there, or where the register
- * hides that panel under it, closes the register onto the threat and marks
- * the row as the register next opens. An element's name closes the register
- * and selects the element. `cover` is how much of the canvas the panel
- * covers, the default panel width standing in while no panel is open, so a
- * first choice opens the model panel without moving the register.
+ * open, as the model panel's list is. A threat that applies to the model
+ * leads its elements with the whole model. Choosing a row opens its threat
+ * on the model panel and marks the row, leaving focus there, or where the
+ * register hides that panel under it, closes the register onto the threat
+ * and marks the row as the register next opens. An element's name closes the
+ * register and selects the element. `cover` is how much of the canvas the
+ * panel covers, the default panel width standing in while no panel is open,
+ * so a first choice opens the model panel without moving the register.
  * Canvas-only parent renders do not rerender it.
  */
 export const ThreatRegister = memo(function ThreatRegister({
@@ -181,7 +182,10 @@ function RegisterRow({
 }) {
   const diagrams = useModelStore((state) => state.present.diagrams);
   const { t, locale } = useTranslator();
-  const elements = threatAttachments(diagrams, threat, t);
+  const placed: readonly Placement[] = [
+    ...(threat.appliesToModel ? [{ label: t('panel.whole-model') }] : []),
+    ...threatAttachments(diagrams, threat, t),
+  ];
 
   return (
     <tr
@@ -212,25 +216,27 @@ function RegisterRow({
         </button>
       </td>
       <td className={styles.elements}>
-        {elements.length === 0 ? (
+        {placed.length === 0 ? (
           <span className={styles.none}>{t('panel.no-element')}</span>
         ) : (
-          listed(elements, locale).map((part, index) =>
-            typeof part === 'string' ? (
-              <Fragment key={index}>{part}</Fragment>
+          listed(placed, locale).map((part, index) => {
+            const text = typeof part === 'string' ? part : part.label;
+            const id = typeof part === 'string' ? undefined : part.id;
+            return id === undefined ? (
+              <Fragment key={index}>{text}</Fragment>
             ) : (
               <button
                 className={styles.link}
-                key={part.id}
+                key={id}
                 onClick={() => {
-                  onFollow(part.id);
+                  onFollow(id);
                 }}
                 type="button"
               >
-                {part.label}
+                {text}
               </button>
-            ),
-          )
+            );
+          })
         )}
       </td>
       <td className={styles.mark}>
@@ -242,6 +248,8 @@ function RegisterRow({
     </tr>
   );
 }
+
+type Placement = { readonly label: string; readonly id?: ElementId };
 
 function listed<Item extends { readonly label: string }>(
   items: readonly Item[],

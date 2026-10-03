@@ -79,6 +79,7 @@ export const showThreatEditor = (
     onRefusal: noop,
     onAttach: noop,
     onDetach: noop,
+    onModelLink: noop,
     onDelete: noop,
     onFocused: noop,
     ...overrides,

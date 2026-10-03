@@ -235,6 +235,32 @@ describe(
       ).toEqual(['Models', 'Other reader']);
     });
 
+    it('leads the elements of a threat that applies to the model with the whole model, which is no control, and reads it alone where the threat names none', () => {
+      const { t } = activeTranslator();
+      act(() => {
+        dispatch(Action.LinkThreatToModel({ threatId: looseThreat }));
+        dispatch(Action.LinkThreatToModel({ threatId: mitigatedThreat }));
+      });
+      showStudio();
+      openRegister();
+
+      expect(rowOf(looseThreat).cells[2].textContent).toBe(
+        t('panel.whole-model'),
+      );
+      expect(within(rowOf(looseThreat)).getAllByRole('button')).toHaveLength(1);
+      expect(
+        rowOf(mitigatedThreat).cells[2].textContent?.indexOf(
+          t('panel.whole-model'),
+        ),
+      ).toBe(0);
+      expect(
+        within(rowOf(mitigatedThreat))
+          .getAllByRole('button')
+          .slice(1)
+          .map((link) => link.textContent),
+      ).toEqual(['Models', 'Other reader']);
+    });
+
     it("opens a chosen row's threat on the model panel's Threats tab, landed at the top, and marks the row with focus left on it", async () => {
       const user = userEvent.setup();
       const landed = landedAt();

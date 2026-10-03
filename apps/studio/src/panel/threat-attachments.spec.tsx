@@ -1,6 +1,7 @@
 import type { ElementId } from '@saerskriven/model';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { activeTranslator } from '../messages/locale.js';
 import { initialState } from '../store/state.js';
 import {
   actorElement,
@@ -21,16 +22,21 @@ const showAttachments = (
   handlers: {
     readonly onAttach?: (elementId: ElementId) => void;
     readonly onDetach?: (elementId: ElementId) => void;
+    readonly onModelLink?: (applies: boolean) => void;
   } = {},
+  appliesToModel = false,
 ): void => {
   render(
     <AttachmentGroup
       onAttach={handlers.onAttach ?? noop}
       onDetach={handlers.onDetach ?? noop}
-      threat={{ ...sampleThreat, elements }}
+      onModelLink={handlers.onModelLink ?? noop}
+      threat={{ ...sampleThreat, elements, appliesToModel }}
     />,
   );
 };
+
+const wholeModel = 'Applies to the whole model';
 
 describe(
   'the attachments of a threat',
@@ -90,6 +96,40 @@ describe(
       expect(
         screen.queryByRole('combobox', { name: 'Existing element' }),
       ).toBeNull();
+    });
+
+    it('says whether the threat applies to the whole model, ahead of its elements, and hands back the answer chosen', async () => {
+      const onModelLink = vi.fn<(applies: boolean) => void>();
+      const { t } = activeTranslator();
+      showAttachments([actorElement], { onModelLink });
+      const control = within(
+        screen.getByRole('group', { name: 'Attached elements' }),
+      ).getByRole('combobox', { name: wholeModel });
+
+      expect(control.textContent).toContain(t('enums.no'));
+      expect(
+        control.compareDocumentPosition(button('Detach Reader')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).not.toBe(0);
+
+      await chooseFrom(wholeModel, t('enums.yes'));
+
+      expect(onModelLink).toHaveBeenCalledExactlyOnceWith(true);
+    });
+
+    it('offers to stop a threat applying to the whole model while it names no element', async () => {
+      const onModelLink = vi.fn<(applies: boolean) => void>();
+      const { t } = activeTranslator();
+      showAttachments([], { onModelLink }, true);
+
+      expect(
+        screen.getByRole('combobox', { name: wholeModel }).textContent,
+      ).toContain(t('enums.yes'));
+      expect(screen.queryByRole('button', { name: /^Detach / })).toBeNull();
+
+      await chooseFrom(wholeModel, t('enums.no'));
+
+      expect(onModelLink).toHaveBeenCalledExactlyOnceWith(false);
     });
   },
   editorTimeout,

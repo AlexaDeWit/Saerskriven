@@ -76,30 +76,22 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
     'Attached threat {number} to the trust boundary.',
   'threat-attached-to-trust-boundary-named':
     'Attached threat {number} to {name}.',
-  'threat-detached-from-actor':
-    'Detached threat {number} from the actor. It stays on its other elements.',
-  'threat-detached-from-actor-named':
-    'Detached threat {number} from {name}. It stays on its other elements.',
-  'threat-detached-from-process':
-    'Detached threat {number} from the process. It stays on its other elements.',
-  'threat-detached-from-process-named':
-    'Detached threat {number} from {name}. It stays on its other elements.',
-  'threat-detached-from-store':
-    'Detached threat {number} from the store. It stays on its other elements.',
-  'threat-detached-from-store-named':
-    'Detached threat {number} from {name}. It stays on its other elements.',
-  'threat-detached-from-text':
-    'Detached threat {number} from the text. It stays on its other elements.',
-  'threat-detached-from-text-named':
-    'Detached threat {number} from {name}. It stays on its other elements.',
-  'threat-detached-from-flow':
-    'Detached threat {number} from the flow {ends}. It stays on its other elements.',
-  'threat-detached-from-flow-named':
-    'Detached threat {number} from {name}. It stays on its other elements.',
+  'threat-detached-from-actor': 'Detached threat {number} from the actor.',
+  'threat-detached-from-actor-named': 'Detached threat {number} from {name}.',
+  'threat-detached-from-process': 'Detached threat {number} from the process.',
+  'threat-detached-from-process-named': 'Detached threat {number} from {name}.',
+  'threat-detached-from-store': 'Detached threat {number} from the store.',
+  'threat-detached-from-store-named': 'Detached threat {number} from {name}.',
+  'threat-detached-from-text': 'Detached threat {number} from the text.',
+  'threat-detached-from-text-named': 'Detached threat {number} from {name}.',
+  'threat-detached-from-flow': 'Detached threat {number} from the flow {ends}.',
+  'threat-detached-from-flow-named': 'Detached threat {number} from {name}.',
   'threat-detached-from-trust-boundary':
-    'Detached threat {number} from the trust boundary. It stays on its other elements.',
+    'Detached threat {number} from the trust boundary.',
   'threat-detached-from-trust-boundary-named':
-    'Detached threat {number} from {name}. It stays on its other elements.',
+    'Detached threat {number} from {name}.',
+  'threat-stays-on-elements': 'It stays on its other elements.',
+  'threat-stays-on-model': 'It still applies to the whole model.',
   'threat-detach-removed':
     'Removed threat {number}. It was attached to nothing else. Undo restores it.',
   'record-named': '{kind} “{label}”',
@@ -135,8 +127,9 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
       'Threats copied: {copied}, of which {removed} were removed with their last element.',
   },
   'cut-remains':
-    'A threat left attached to nothing is removed, and one attached elsewhere stays in the register. Other attached flows retain free endpoints.',
+    'Every other threat stays in the register. Other attached flows retain free endpoints.',
   'cut-abandoned': 'The selection changed while copying. Nothing was cut.',
+  'threats-attached': 'Threats attached, not copied: {attached}.',
   'records-counts': 'Records linked: {linked}. Records cloned: {cloned}.',
   'node-moved': 'Moved the selection. New position, x: {x}, y: {y}.',
   'flow-controls': 'Canvas controls',

@@ -64,5 +64,6 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
   'register-number-short': 'No.',
   'register-elements': 'Elements',
   'no-element': 'No element',
+  'whole-model': 'The whole model',
   'untitled-threat': 'Threat {number}',
 });

@@ -90,30 +90,28 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
     'Menace {number} rattachée à la frontière de confiance.',
   'threat-attached-to-trust-boundary-named':
     'Menace {number} rattachée à la frontière de confiance « {name} ».',
-  'threat-detached-from-actor':
-    'Menace {number} détachée de l’acteur. Elle reste sur ses autres éléments.',
+  'threat-detached-from-actor': 'Menace {number} détachée de l’acteur.',
   'threat-detached-from-actor-named':
-    'Menace {number} détachée de l’acteur « {name} ». Elle reste sur ses autres éléments.',
-  'threat-detached-from-process':
-    'Menace {number} détachée du processus. Elle reste sur ses autres éléments.',
+    'Menace {number} détachée de l’acteur « {name} ».',
+  'threat-detached-from-process': 'Menace {number} détachée du processus.',
   'threat-detached-from-process-named':
-    'Menace {number} détachée du processus « {name} ». Elle reste sur ses autres éléments.',
+    'Menace {number} détachée du processus « {name} ».',
   'threat-detached-from-store':
-    'Menace {number} détachée du magasin de données. Elle reste sur ses autres éléments.',
+    'Menace {number} détachée du magasin de données.',
   'threat-detached-from-store-named':
-    'Menace {number} détachée du magasin de données « {name} ». Elle reste sur ses autres éléments.',
-  'threat-detached-from-text':
-    'Menace {number} détachée du texte. Elle reste sur ses autres éléments.',
+    'Menace {number} détachée du magasin de données « {name} ».',
+  'threat-detached-from-text': 'Menace {number} détachée du texte.',
   'threat-detached-from-text-named':
-    'Menace {number} détachée du texte « {name} ». Elle reste sur ses autres éléments.',
-  'threat-detached-from-flow':
-    'Menace {number} détachée du flux {ends}. Elle reste sur ses autres éléments.',
+    'Menace {number} détachée du texte « {name} ».',
+  'threat-detached-from-flow': 'Menace {number} détachée du flux {ends}.',
   'threat-detached-from-flow-named':
-    'Menace {number} détachée du flux « {name} ». Elle reste sur ses autres éléments.',
+    'Menace {number} détachée du flux « {name} ».',
   'threat-detached-from-trust-boundary':
-    'Menace {number} détachée de la frontière de confiance. Elle reste sur ses autres éléments.',
+    'Menace {number} détachée de la frontière de confiance.',
   'threat-detached-from-trust-boundary-named':
-    'Menace {number} détachée de la frontière de confiance « {name} ». Elle reste sur ses autres éléments.',
+    'Menace {number} détachée de la frontière de confiance « {name} ».',
+  'threat-stays-on-elements': 'Elle reste sur ses autres éléments.',
+  'threat-stays-on-model': 'Elle s’applique toujours au modèle entier.',
   'threat-detach-removed':
     'Menace {number} supprimée. Elle n’était rattachée à rien d’autre. Annuler la rétablit.',
   'record-named': '{kind} « {label} »',
@@ -156,9 +154,10 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
       'Menaces copiées : {copied}, dont {removed} supprimées avec leur dernier élément.',
   },
   'cut-remains':
-    'Une menace qui ne reste rattachée à rien est supprimée, et une menace rattachée ailleurs reste au registre. Les autres flux rattachés gardent des extrémités libres.',
+    'Toute autre menace reste au registre. Les autres flux rattachés gardent des extrémités libres.',
   'cut-abandoned':
     'La sélection a changé pendant la copie. Rien n’a été coupé.',
+  'threats-attached': 'Menaces rattachées, non copiées : {attached}.',
   'records-counts': 'Fiches liées : {linked}. Fiches clonées : {cloned}.',
   'node-moved': 'Sélection déplacée. Nouvelle position, x : {x}, y : {y}.',
   'flow-controls': 'Commandes du canevas',

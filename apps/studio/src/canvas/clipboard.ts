@@ -4,6 +4,7 @@ import {
   elementIdsAcross,
   elementsAcross,
   fragmentRecordCounts,
+  fragmentThreatCounts,
   generateElementId,
   remapFragment,
   selectionFragment,
@@ -168,6 +169,7 @@ function insertCopy(fragment: Model, distance: number, said: Said): boolean {
     state.present,
     remapped.right,
   );
+  const { attached } = fragmentThreatCounts(state.present, remapped.right);
   dispatch(Action.InsertFragment({ diagramId, fragment: remapped.right }));
   if (modelStore.getState().present === state.present) {
     return false;
@@ -181,7 +183,11 @@ function insertCopy(fragment: Model, distance: number, said: Said): boolean {
     focusElement(first);
   }
   announce((t) =>
-    sentences(said(t), t('canvas.records-counts', { linked, cloned })),
+    sentences(
+      said(t),
+      attached > 0 ? t('canvas.threats-attached', { attached }) : '',
+      t('canvas.records-counts', { linked, cloned }),
+    ),
   );
   return true;
 }

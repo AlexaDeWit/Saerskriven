@@ -65,5 +65,6 @@ export const panelSv = catalogue(panelMessages)('sv')({
   'register-number-short': 'Nr',
   'register-elements': 'Objekt',
   'no-element': 'Inget objekt',
+  'whole-model': 'Hela modellen',
   'untitled-threat': 'Hot {number}',
 });
