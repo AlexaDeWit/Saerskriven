@@ -622,8 +622,8 @@ its first row. It has the panel's top and height, and keeps room for the
 panel while none is open, so the panel opens beside it. Where the window
 leaves too little room beside the panel, as on a phone, the register takes
 the window's width and hides the panel under it until it closes, and the
-table scrolls sideways inside it. R while the register is open moves focus back into it, to the row
-last chosen.
+table scrolls sideways inside it. R while the register is open moves focus
+back into it, to the row last chosen.
 
 Each row gives a threat's number, title, elements, severity and status. The
 rows are in the threat list's order, by how much risk is still live, and hold
@@ -637,6 +637,12 @@ where something else was in its place. The register stays open with the row
 marked and focus on its title, and the status line says which threat opened.
 A threat holding refused text in the model panel stays open there, and
 another row chosen meanwhile is not marked.
+
+Where the register hides the panel under it, choosing a row closes the
+register instead, and focus moves to that threat in the model panel, as it
+does on Escape. The register then opens with that row marked and focus on
+it, until it is closed another way. A row chosen while another threat holds
+refused text leaves the register open.
 
 Each element name in a row selects that element, on whichever diagram draws
 it, and closes the register, with focus on the element.
@@ -707,8 +713,8 @@ Enter on a focused element selects it, and a second Enter edits its name.
 
 Tab reaches the card, then the diagram's flows and elements, every flow before
 every element, then the threat register while it is open, then the panel. Where
-the register covers the panel, in a window under 55rem, Tab skips the panel
-until the register closes.
+the register covers the panel, in a window too narrow for both, Tab skips the
+panel until the register closes.
 
 Every element and flow is a tab stop whose accessible name comes from the
 model: its name, its kind, what its badge says, and each flag its threats
