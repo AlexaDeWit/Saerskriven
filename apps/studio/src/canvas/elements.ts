@@ -1,5 +1,6 @@
 import {
   boxElementStrokeInsets,
+  boxOfPoints,
   minimumNodeExtent,
   type BoxElementKind,
   type CanvasLayout,
@@ -197,8 +198,12 @@ export function switchedShape(shape: BoundaryShape): BoundaryShape {
   if (shape.kind === 'box') {
     return { kind: 'curve', waypoints: arch(shape.position, shape.size) };
   }
-  const across = spanOf(shape.waypoints.map((point) => point.x));
-  const down = spanOf(shape.waypoints.map((point) => point.y));
+  const box = boxOfPoints(shape.waypoints);
+  if (box === undefined) {
+    return shape;
+  }
+  const across = spanOf(box.minX, box.maxX);
+  const down = spanOf(box.minY, box.maxY);
   return {
     kind: 'box',
     position: { x: across.start, y: down.start },
@@ -246,12 +251,13 @@ function arch(position: Point, size: Size): Point[] {
   ];
 }
 
-function spanOf(values: readonly number[]): {
+function spanOf(
+  low: number,
+  high: number,
+): {
   readonly start: number;
   readonly extent: number;
 } {
-  const low = Math.min(...values);
-  const high = Math.max(...values);
   const extent = Math.max(high - low, minimumNodeExtent);
   return { start: (low + high - extent) / 2, extent };
 }

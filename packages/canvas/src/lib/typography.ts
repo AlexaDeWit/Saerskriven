@@ -47,7 +47,10 @@ export function textExtent(
   if (lines.length === 0) {
     return { width: 0, height: 0 };
   }
-  const columns = Math.max(...lines.map((line) => columnsOf(line)));
+  const columns = lines.reduce(
+    (widest, line) => Math.max(widest, columnsOf(line)),
+    0,
+  );
   return {
     width: columns * fontSize * averageGlyphWidthRatio,
     height: (lines.length - 1) * lineHeight(fontSize) + fontSize,

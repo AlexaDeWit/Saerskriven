@@ -125,6 +125,17 @@ describe('textExtent', () => {
     expect(textExtent([], 10)).toEqual({ width: 0, height: 0 });
   });
 
+  it('measures a block of a million lines', () => {
+    const lines = Array.from({ length: 1_000_000 }, (_, index) =>
+      index === 500_000 ? 'abcd' : 'ab',
+    );
+
+    expect(textExtent(lines, 10)).toEqual({
+      width: 4 * 10 * averageGlyphWidthRatio,
+      height: (lines.length - 1) * lineHeight(10) + 10,
+    });
+  });
+
   it.each(graphemeClusters)(
     'counts $name as one column, the width of a letter',
     ({ cluster }) => {
