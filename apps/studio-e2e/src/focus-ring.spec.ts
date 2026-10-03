@@ -1,13 +1,14 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
 import { committedText } from '@saerskriven/model/fixtures';
 import { canvasSettled, focusRingShown } from './canvas.fixtures.js';
 import {
   beforeCanvas,
+  closeThreats,
   nodeNamed,
   openModelDocument,
+  selectByKeyboard,
   tabTo,
-  threatPanel,
 } from './studio.fixtures.js';
 
 const shownOnAnElement = 0.8;
@@ -50,19 +51,12 @@ const openEveryGlyph = async (page: Page): Promise<void> => {
   await canvasSettled(page);
 };
 
-const selectWithThreatsClosed = async (
-  page: Page,
-  node: Locator,
-): Promise<void> => {
-  await tabTo(page, node);
-  await page.keyboard.press('Enter');
-  await expect(node).toHaveClass(/selected/u);
-  await threatPanel(page)
-    .getByRole('button', { name: 'Close threats', exact: true })
-    .focus();
-  await page.keyboard.press('Enter');
-  await expect(threatPanel(page)).toHaveCount(0);
-  await expect(node).toBeFocused();
+const expectShown = (shown: number, least: number, what: string): void => {
+  test.info().annotations.push({
+    type: 'focus ring shown',
+    description: `${what}: ${shown.toFixed(3)} of at least ${String(least)}`,
+  });
+  expect.soft(shown, what).toBeGreaterThanOrEqual(least);
 };
 
 const expectRingOnItems = async (
@@ -75,7 +69,7 @@ const expectRingOnItems = async (
       const shown = await focusRingShown(item, beforeCanvas(page), () =>
         tabTo(page, item),
       );
-      expect.soft(shown, kind).toBeGreaterThanOrEqual(least);
+      expectShown(shown, least, kind);
       if (colour !== undefined) {
         await expect(item).toHaveCSS('outline-color', colour);
       }
@@ -99,32 +93,21 @@ for (const [scheme, palette] of schemes) {
     }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await openEveryGlyph(page);
-      const node = nodeNamed(page, name);
-      await selectWithThreatsClosed(page, node);
+      const node = await selectByKeyboard(page, name);
+      await closeThreats(page);
+      await expect(node).toBeFocused();
       const controls = node.locator('.react-flow__resize-control > button');
       await expect(controls).toHaveCount(8);
 
       for (const control of await controls.all()) {
-        const shown = await focusRingShown(
-          control,
-          beforeCanvas(page),
-          async () => {
-            await node.focus();
-            for (
-              let pressed = 0;
-              pressed < 8 &&
-              !(await control.evaluate(
-                (element) => element === document.activeElement,
-              ));
-              pressed += 1
-            ) {
-              await page.keyboard.press('Tab');
-            }
-          },
+        const shown = await focusRingShown(control, beforeCanvas(page), () =>
+          tabTo(page, control, node),
         );
-        expect
-          .soft(shown, (await control.getAttribute('aria-label')) ?? undefined)
-          .toBeGreaterThanOrEqual(shownOnAControl);
+        expectShown(
+          shown,
+          shownOnAControl,
+          (await control.getAttribute('aria-label')) ?? kind,
+        );
       }
     });
   }

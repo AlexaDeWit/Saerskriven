@@ -493,6 +493,10 @@ heavier line, and focus is a separate ring, so neither depends on colour and
 both survive forced colours. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
 
+A focused element or resize control that lies under the threat panel or the
+Reconnect flow or Trust boundary card shows its ring under that pane, and the
+canvas does not pan to bring it out.
+
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves
 focus to the canvas.

@@ -151,10 +151,11 @@ const ringReach = 16;
 /**
  * The share of `target`'s outline along which a focus ring comes on screen
  * when `focus` moves keyboard focus there from `away`. Two screenshots are
- * read, one with focus on `away` and one after `focus`: at each pixel along
- * each side of `target`, whether a pixel up to 16 pixels across that side,
- * short of its middle, changed between them. Anything drawn over the ring
- * leaves its pixels as they were.
+ * read in CSS pixels, one with focus on `away` and one after `focus`: at each
+ * pixel along each side of `target`, whether a pixel up to 16 pixels across
+ * that side, short of its middle, changed between them. Anything drawn over
+ * the ring leaves its pixels as they were, and so does a part of it off the
+ * viewport.
  */
 export const focusRingShown = async (
   target: Locator,
@@ -170,12 +171,12 @@ export const focusRingShown = async (
     height: Math.ceil(shown.height) + 2 * ringReach,
   };
   await away.focus();
-  const before = await page.screenshot({ clip });
+  const before = await page.screenshot({ clip, scale: 'css' });
   await focus();
   await expect(target).toBeFocused();
-  const after = await page.screenshot({ clip });
+  const after = await page.screenshot({ clip, scale: 'css' });
   return page.evaluate(
-    async ({ images, frame, box, across }) => {
+    async ({ images, origin, box, across }) => {
       const [from, to] = await Promise.all(
         images.map(async (png) => {
           const image = new Image();
@@ -185,23 +186,31 @@ export const focusRingShown = async (
           const context = canvas.getContext('2d');
           context?.drawImage(image, 0, 0);
           return (
-            context?.getImageData(0, 0, image.width, image.height).data ??
-            new Uint8ClampedArray()
+            context?.getImageData(0, 0, image.width, image.height) ??
+            new ImageData(1, 1)
           );
         }),
       );
+      const fromWidth = from?.width ?? 0;
+      const toWidth = to?.width ?? 0;
+      const width = Math.min(fromWidth, toWidth);
+      const height = Math.min(from?.height ?? 0, to?.height ?? 0);
       const changed = (x: number, y: number): boolean => {
-        const column = Math.round(x - frame.x);
-        const row = Math.round(y - frame.y);
-        if (column < 0 || column >= frame.width || row < 0) {
+        const column = Math.round(x - origin.x);
+        const row = Math.round(y - origin.y);
+        if (column < 0 || column >= width || row < 0 || row >= height) {
           return false;
         }
-        const at = (row * frame.width + column) * 4;
+        const was = (row * fromWidth + column) * 4;
+        const is = (row * toWidth + column) * 4;
         return (
           [0, 1, 2].reduce(
             (sum, channel) =>
               sum +
-              Math.abs((from?.[at + channel] ?? 0) - (to?.[at + channel] ?? 0)),
+              Math.abs(
+                (from?.data[was + channel] ?? 0) -
+                  (to?.data[is + channel] ?? 0),
+              ),
             0,
           ) > 48
         );
@@ -229,7 +238,7 @@ export const focusRingShown = async (
     },
     {
       images: [before.toString('base64'), after.toString('base64')],
-      frame: clip,
+      origin: { x: clip.x, y: clip.y },
       box: shown,
       across: ringReach,
     },

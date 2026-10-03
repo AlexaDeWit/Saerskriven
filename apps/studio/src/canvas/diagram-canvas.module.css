@@ -25,7 +25,7 @@
    on. An outline, unlike a shadow, paints over the element's drawing. It sits
    just inside the selection frame below, so an element both focused and
    selected shows both. */
-.canvas :global(.react-flow__node):focus-visible {
+.canvas :global(.react-flow__nodes .react-flow__node):focus-visible {
   outline: var(--saer-focus-ring);
   outline-offset: calc(
     -1 * (var(--saer-cue-selection) + var(--saer-focus-ring-width))
