@@ -25,6 +25,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'flow-reversed': 'Sens inversé : {flow}.',
   'boundary-curved': 'Forme modifiée : {boundary} est maintenant une courbe.',
   'boundary-boxed': 'Forme modifiée : {boundary} est maintenant un rectangle.',
+  'point-added': 'Point {number} ajouté sur {boundary}.',
   'point-moved': 'Point {number} déplacé sur {boundary}.',
   'point-removed': 'Point {number} retiré : {boundary}.',
   'point-kept':

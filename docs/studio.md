@@ -227,12 +227,19 @@ least ten units each way. A box at least ten units each way, turned into a
 curve and back, is the same box.
 The boundary keeps its name, its threats and the elements and flows it declares.
 
-A selected trust boundary curve carries a handle on each of its points. Drag a
-point, or focus it and press an arrow key to move it five units or twenty with
-Shift. Click a point for Remove point, or press Delete or Backspace with the
-point focused. A curve keeps at least two points. Escape drops a point drag
-before its release. The point handles stand aside while the curve itself is
-moved or scaled.
+A selected trust boundary curve carries a handle on each of its points, and a
+smaller midpoint handle halfway along the curve between each point and the
+next. Drag a point, or focus it and press an arrow key to move it five units or
+twenty with Shift. Drag a midpoint handle to pull a new point out of the curve
+there. A press anywhere else on the curve's line moves the whole boundary.
+Escape drops either drag before its release, and each edit is one undo step.
+The handles stand aside while the curve itself is moved or scaled.
+
+Click a point for Remove point and Add point, or press Delete or Backspace with
+the point focused to remove it. A curve keeps at least two points. Add point
+puts a new point halfway along the curve to the next point, or from the last
+point, halfway back to the one before it, and focuses the new point so the
+arrow keys move it.
 
 A selected curve also carries a box's side lines and corner handles around its
 points, each corner handle just outside its corner so that a point there keeps
@@ -494,8 +501,6 @@ navigation keys do not.
 
 - Removing and reordering diagrams is not offered.
 - Nothing pans to a newly connected flow, or out from under the panel.
-- A trust boundary curve takes no new point once it is drawn.
-  [`saer_edit`](mcp.md#writing) can give it any points.
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model properties. The
   model's explicit record removal has no control.

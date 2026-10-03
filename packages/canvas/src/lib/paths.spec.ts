@@ -2,6 +2,7 @@ import type { Point } from '@saerskriven/model';
 import {
   arrowheadPath,
   controlPolygon,
+  curveMidpoints,
   polylinePath,
   sampledCurve,
   smoothPath,
@@ -158,5 +159,30 @@ describe('sampledCurve', () => {
   it('gives back the points where there is nothing to smooth', () => {
     expect(sampledCurve([{ x: 5, y: 5 }])).toEqual([{ x: 5, y: 5 }]);
     expect(sampledCurve([])).toEqual([]);
+  });
+});
+
+describe('curveMidpoints', () => {
+  it('finds one point on the drawn curve halfway along each segment', () => {
+    const waypoints = [
+      { x: 0, y: 0 },
+      { x: 100, y: 40 },
+      { x: 200, y: 0 },
+    ];
+    const sampled = sampledCurve(waypoints);
+    expect(curveMidpoints(waypoints)).toEqual([sampled[32], sampled[96]]);
+  });
+
+  it('halves the chord of a curve through two points', () => {
+    expect(
+      curveMidpoints([
+        { x: 0, y: 0 },
+        { x: 60, y: 30 },
+      ]),
+    ).toEqual([{ x: 30, y: 15 }]);
+  });
+
+  it('finds no segment where there is nothing to smooth', () => {
+    expect(curveMidpoints([{ x: 5, y: 5 }])).toEqual([]);
   });
 });

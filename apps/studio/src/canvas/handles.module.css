@@ -39,6 +39,27 @@
   cursor: grab;
 }
 
+.midpoint {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  pointer-events: all;
+  touch-action: none;
+  cursor: grab;
+}
+
+.midpoint::after {
+  content: '';
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 1px solid var(--saer-colour-accent);
+  border-radius: 50%;
+  background: var(--saer-colour-surface-raised);
+}
+
 .handle:focus-visible,
 .toolbar:focus-visible,
 .toolbar button:focus-visible,

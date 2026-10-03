@@ -46,6 +46,17 @@ const clickSuppressionLifted = (): Promise<void> =>
 const pointCount = () =>
   screen.queryAllByRole('button', { name: /^Point \d+$/u }).length;
 
+const midpoint = (segment: number): HTMLElement => {
+  const handle = document.querySelector<HTMLElement>(
+    `[data-curve-segment="${String(segment)}"]`,
+  );
+  assert.isNotNull(handle);
+  return handle;
+};
+
+const midpointCount = () =>
+  document.querySelectorAll('[data-curve-segment]').length;
+
 const waypoints = () => {
   const boundary = elementIn(modelStore.getState().present, boundaryElement);
   return boundary.kind === 'trust-boundary' && boundary.shape.kind === 'curve'
@@ -77,9 +88,11 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     mouseOn(control, 'mouseDown', 100);
     mouseOn(window, 'mouseMove', 160);
     expect(pointCount()).toBe(0);
+    expect(midpointCount()).toBe(0);
     mouseOn(window, 'mouseUp', 160);
 
     expect(pointCount()).toBe(boundaryCurve.length);
+    expect(midpointCount()).toBe(boundaryCurve.length - 1);
     expect(modelStore.getState().past).toHaveLength(1);
     await clickSuppressionLifted();
   });
@@ -88,6 +101,13 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     openCanvas([boundaryElement], canvasModel);
     render(<DiagramCanvas />);
     expect(pointCount()).toBe(0);
+    expect(midpointCount()).toBe(0);
+  });
+
+  it('draws one midpoint handle to a segment, kept from assistive technology', () => {
+    render(<DiagramCanvas />);
+    expect(midpointCount()).toBe(boundaryCurve.length - 1);
+    expect(midpoint(0).getAttribute('aria-hidden')).toBe('true');
   });
 
   it('moves a focused point by arrow key, one undo step each', () => {
@@ -174,5 +194,62 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(Number.parseFloat(point(1).style.top)).toBeCloseTo(
       boundaryCurve[0].y,
     );
+  });
+
+  it('pulls a new point out of a dragged midpoint handle on release alone, as one undo step', () => {
+    render(<DiagramCanvas />);
+    const pulling = midpoint(0);
+    pointerOn(pulling, 'pointerdown', 0, 0);
+    pointerOn(pulling, 'pointermove', 0, 60);
+    expect(pointCount()).toBe(boundaryCurve.length + 1);
+    pointerOn(pulling, 'pointercancel', 0, 60);
+    expect(pointCount()).toBe(boundaryCurve.length);
+    expect(modelStore.getState().present).toBe(curvedCanvasModel);
+    dragHandle(midpoint(0), { x: 60, y: 150 });
+    const [first, pulled, ...rest] = waypoints();
+    expect([first, ...rest]).toEqual([...boundaryCurve]);
+    expect(pulled?.x).toBeCloseTo(60);
+    expect(pulled?.y).toBeCloseTo(150);
+    expect(pointCount()).toBe(boundaryCurve.length + 1);
+    expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
+    expect(currentAnnouncement().message).toContain('Perimeter');
+    fireEvent.click(midpoint(0));
+    fireEvent.click(point(1));
+    expect(screen.getByRole('group', { name: 'Point actions' })).not.toBeNull();
+    act(() => {
+      dispatch(Action.Undo());
+    });
+    expect(waypoints()).toEqual(boundaryCurve);
+  });
+
+  it('adds a point halfway to the next through Add point, focusing the new one for the arrow keys', () => {
+    render(<DiagramCanvas />);
+    fireEvent.click(point(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Add point' }));
+    expect(waypoints()).toEqual([
+      boundaryCurve[0],
+      { x: 75, y: 23.75 },
+      boundaryCurve[1],
+      boundaryCurve[2],
+    ]);
+    expect(screen.queryByRole('group', { name: 'Point actions' })).toBeNull();
+    expect(document.activeElement).toBe(point(2));
+    expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
+    press('ArrowDown');
+    expect(waypoints()[1]).toEqual({ x: 75, y: 28.75 });
+    expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it('adds a point before the last one through the Add point of the last', () => {
+    render(<DiagramCanvas />);
+    fireEvent.click(point(3));
+    fireEvent.click(screen.getByRole('button', { name: 'Add point' }));
+    expect(waypoints()).toEqual([
+      boundaryCurve[0],
+      boundaryCurve[1],
+      { x: 333.75, y: 23.75 },
+      boundaryCurve[2],
+    ]);
+    expect(document.activeElement).toBe(point(3));
   });
 });

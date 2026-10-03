@@ -1,3 +1,4 @@
+import { curveMidpoints } from '@saerskriven/canvas';
 import {
   setBoundaryShape,
   type CurveBoundaryShape,
@@ -9,37 +10,55 @@ import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
 import { announce, spokenElement } from './announcements.js';
 import { useElementDraft, type ElementEdit } from './element-draft.js';
+import { editedWaypoints, type WaypointTarget } from './waypoints.js';
 
 /** A trust boundary drawn as a curve. */
 export type CurveBoundary = TrustBoundary & {
   readonly shape: CurveBoundaryShape;
 };
 
-/** One point of a curve, by its place in the curve, at a new position. */
-export type PointTarget = { readonly index: number; readonly point: Point };
-
 const fewestCurvePoints = 2;
 
-const pointEdit: ElementEdit<CurveBoundary, PointTarget> = {
+const pointEdit: ElementEdit<CurveBoundary, WaypointTarget> = {
   subject: (element) => (isCurveBoundary(element) ? element : undefined),
   edited: (model, boundary, target) =>
-    setBoundaryShape(model, boundary.id, movedPoint(boundary, target)),
+    setBoundaryShape(model, boundary.id, editedCurve(boundary, target)),
   action: (boundary, target) =>
     Action.SetBoundaryShape({
       elementId: boundary.id,
-      shape: movedPoint(boundary, target),
+      shape: editedCurve(boundary, target),
     }),
   said: (boundary, target) => (t) =>
-    t('canvas.point-moved', {
+    t(target.kind === 'insert' ? 'canvas.point-added' : 'canvas.point-moved', {
       number: target.index + 1,
       boundary: spokenElement(t, boundary),
     }),
 };
 
 /**
- * The selected trust boundary curve's points: a preview of one moved, and
- * the edits that move one or remove one while the curve keeps two. `remove`
- * says whether a point went.
+ * Where Add point on the point at `index` puts a new one: halfway along the
+ * drawn curve to the next point, or from the last point, halfway back to the
+ * one before it. Nothing for an index the curve has no point at.
+ */
+export function addedPoint(
+  waypoints: readonly Point[],
+  index: number,
+): WaypointTarget | undefined {
+  if (index < 0 || index >= waypoints.length) {
+    return undefined;
+  }
+  const segment = Math.min(index, waypoints.length - 2);
+  const point = curveMidpoints(waypoints).at(segment);
+  return point === undefined
+    ? undefined
+    : { kind: 'insert', index: segment + 1, point };
+}
+
+/**
+ * The selected trust boundary curve's points: a preview of one inserted or
+ * moved, and the edits that insert, move or remove one while the curve keeps
+ * two. `add` inserts the {@link addedPoint} of a point and answers the index
+ * the new one takes. `remove` says whether a point went.
  */
 export function useCurvePoints() {
   const points = useElementDraft(pointEdit);
@@ -47,6 +66,17 @@ export function useCurvePoints() {
   return {
     ...points,
     boundary,
+    add: (index: number): number | undefined => {
+      const target =
+        boundary === undefined
+          ? undefined
+          : addedPoint(boundary.shape.waypoints, index);
+      if (target === undefined) {
+        return undefined;
+      }
+      points.commit(target);
+      return target.index;
+    },
     remove: (index: number): boolean => {
       if (boundary?.shape.waypoints[index] === undefined) {
         return false;
@@ -85,14 +115,12 @@ function isCurveBoundary(element: Element): element is CurveBoundary {
   return element.kind === 'trust-boundary' && element.shape.kind === 'curve';
 }
 
-function movedPoint(
+function editedCurve(
   boundary: CurveBoundary,
-  target: PointTarget,
+  target: WaypointTarget,
 ): CurveBoundaryShape {
   return {
     kind: 'curve',
-    waypoints: boundary.shape.waypoints.map((point, at) =>
-      at === target.index ? target.point : point,
-    ),
+    waypoints: editedWaypoints(boundary.shape.waypoints, target),
   };
 }

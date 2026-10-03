@@ -98,6 +98,17 @@ export function sampledCurve(points: readonly Point[]): readonly Point[] {
 }
 
 /**
+ * Where the drawn curve passes halfway between each of the given points and
+ * the next: each cubic of {@link smoothSegments} at its middle parameter, so
+ * one point per segment and none for fewer than two points.
+ */
+export function curveMidpoints(points: readonly Point[]): readonly Point[] {
+  return smoothSegments(points).map((segment, index) =>
+    onCubic(points[index], segment, 1 / 2),
+  );
+}
+
+/**
  * A smooth open curve through the given points, as the cubic segments
  * {@link smoothSegments} resolves. Fewer than two points leave nothing to
  * smooth and come back as {@link polylinePath}.

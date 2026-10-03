@@ -1,14 +1,21 @@
+import { curveMidpoints } from '@saerskriven/canvas';
 import { useStore, useViewport, ViewportPortal } from '@xyflow/react';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { keyboardOwner } from '../commands/binding.js';
 import { pressesContextualShortcut } from '../commands/contextual-shortcuts.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
-import type { CurvePoints, PointTarget } from './curve-points.js';
+import { addedPoint, type CurvePoints } from './curve-points.js';
 import { focusElement } from './edits.js';
 import { besideHandle, HandleActions, onHandle } from './handle-actions.js';
-import { draggedPoint, nudgedPoint, useHandleDrag } from './handle-drag.js';
+import {
+  draggedPoint,
+  nudgedPoint,
+  useHandleDrag,
+  type HandlePointer,
+} from './handle-drag.js';
 import styles from './handles.module.css';
+import type { WaypointTarget } from './waypoints.js';
 
 type OpenActions = {
   readonly context: CurvePoints['context'];
@@ -16,9 +23,11 @@ type OpenActions = {
 };
 
 /**
- * A handle on each point of the selected trust boundary curve, and the
- * actions of the one clicked. The handles stand aside while React Flow drags
- * or resizes the curve, whose points they would otherwise leave behind.
+ * A handle on each point of the selected trust boundary curve, a midpoint
+ * handle halfway along each segment that a drag pulls a new point out of,
+ * and the actions of the point clicked. The handles stand aside while React
+ * Flow drags or resizes the curve, whose points they would otherwise leave
+ * behind.
  */
 export function CurvePointControls({
   points,
@@ -39,7 +48,7 @@ export function CurvePointControls({
       focusElement(boundary.id);
     }
   };
-  const drag = useHandleDrag<PointTarget>(points.context, {
+  const drag = useHandleDrag<WaypointTarget>(points.context, {
     preview: (held, span) => {
       points.preview({ ...held, point: draggedPoint(held.point, span) });
     },
@@ -52,6 +61,14 @@ export function CurvePointControls({
       handBack();
     },
   });
+  const down = (
+    event: HandlePointer,
+    held: WaypointTarget | undefined,
+  ): void => {
+    if (held !== undefined && drag.down(event, held)) {
+      setOpen(undefined);
+    }
+  };
   const cancel = (focus: boolean): void => {
     drag.drop();
     setOpen(undefined);
@@ -60,14 +77,19 @@ export function CurvePointControls({
       handBack();
     }
   };
+  const add = (index: number): void => {
+    setOpen(undefined);
+    const added = points.add(index);
+    if (added !== undefined) {
+      focusPoint(added);
+    }
+  };
   const remove = (index: number): void => {
     setOpen(undefined);
     if (points.remove(index)) {
       handBack();
     } else {
-      document
-        .querySelector<HTMLElement>(`[data-curve-point="${String(index)}"]`)
-        ?.focus();
+      focusPoint(index);
     }
   };
   const chosen = open?.context === points.context ? open.index : undefined;
@@ -103,7 +125,7 @@ export function CurvePointControls({
       'move-curve-point-far',
     );
     if (moved !== undefined) {
-      points.commit({ index, point: moved });
+      points.commit({ kind: 'move', index, point: moved });
     } else if (
       pressesContextualShortcut('remove-curve-point', event, hostPlatform)
     ) {
@@ -139,6 +161,31 @@ export function CurvePointControls({
   const beside = chosen === undefined ? undefined : shown.at(chosen);
   return (
     <ViewportPortal>
+      {curveMidpoints(shown).map((point, index) => (
+        <span
+          aria-hidden="true"
+          className={`${styles.midpoint} nodrag nopan`}
+          data-curve-segment={index}
+          key={index}
+          onClick={(event) => {
+            event.stopPropagation();
+            drag.endedDrag();
+          }}
+          onDoubleClick={(event) => {
+            event.stopPropagation();
+          }}
+          onPointerCancel={() => {
+            cancel(true);
+          }}
+          onPointerDown={(event) => {
+            down(event, addedPoint(boundary.shape.waypoints, index));
+          }}
+          onPointerMove={drag.move}
+          onPointerUp={drag.up}
+          style={onHandle(point, zoom)}
+          title={t('tools.curve-midpoint-handle-help')}
+        />
+      ))}
       {shown.map((point, index) => (
         <button
           aria-label={t('tools.curve-point-numbered', { number: index + 1 })}
@@ -159,12 +206,12 @@ export function CurvePointControls({
           }}
           onPointerDown={(event) => {
             const held = boundary.shape.waypoints.at(index);
-            if (
-              held !== undefined &&
-              drag.down(event, { index, point: held })
-            ) {
-              setOpen(undefined);
-            }
+            down(
+              event,
+              held === undefined
+                ? undefined
+                : { kind: 'move', index, point: held },
+            );
           }}
           onPointerMove={drag.move}
           onPointerUp={drag.up}
@@ -184,6 +231,12 @@ export function CurvePointControls({
                 remove(chosen);
               },
             },
+            {
+              label: t('tools.add-curve-point'),
+              run: () => {
+                add(chosen);
+              },
+            },
           ]}
           label={t('tools.curve-point-actions')}
           onClose={() => {
@@ -195,4 +248,10 @@ export function CurvePointControls({
       )}
     </ViewportPortal>
   );
+}
+
+function focusPoint(index: number): void {
+  document
+    .querySelector<HTMLElement>(`[data-curve-point="${String(index)}"]`)
+    ?.focus();
 }
