@@ -110,13 +110,19 @@ it has opened the threat, which is when the register marks the row and the
 status says so. A list holding a refused draft on another threat refuses, as
 it refuses a collapse.
 
-A choice is committed (`flushSync`) and then asks the list whether it has that
-threat open where styles hide it (`hiddenInModelPanel`), which reads the
-panel's computed visibility. Under the register's media query it does, and the
-register closes by its own close, so focus lands as it does on Escape, and
-carries the choice to its next opening, which marks that row. The width
-stays in the stylesheet alone, and a refused choice opens nothing, so it
-closes nothing. Any other close forgets the carried choice.
+A choice is committed (`flushSync`) and then asks the list what it did with
+that threat where styles hide it (`hiddenInModelPanel`), which reads the
+panel's computed visibility, so the width stays in the stylesheet alone. Under
+the register's media query the list answers, and the register closes by its
+own close. On an opened threat focus lands as it does on Escape, and the
+choice is carried to the register's next opening, which marks that row. On a
+refused one the commit that closes the register shows the Threats tab, focus
+lands on the field holding the refused text, found by its `aria-invalid`
+(`focusModelPanel('refusal')`), and nothing is carried. The list answers a
+refusal only while such a field is drawn, so the register never closes onto a
+threat with no field to land on. Where both panes show the list answers
+nothing, and a refused choice opens and closes nothing. Any other close
+forgets the carried choice.
 
 The register keeps the order it opened in for the reason the list does, and
 with the same `useShownOrder`. The table's columns follow the exported

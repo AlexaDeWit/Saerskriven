@@ -33,7 +33,7 @@ export const placeholder = {
   records: /^Records, flow/u,
 } as const;
 
-/** Elements of the two-diagram model's storefront diagram by accessible name, and threats on them by title. */
+/** Elements of the two-diagram model's storefront diagram by accessible name, and threats by title: those on them, and `refundAbuse` on no element. */
 export const storefront = {
   shopper: /^Shopper, actor/u,
   webShop: /^Web shop, process/u,
@@ -43,6 +43,7 @@ export const storefront = {
   takeover: /Account takeover/u,
   basketPrice: /Basket price changed/u,
   orderDenied: /Shopper denies placing an order/u,
+  refundAbuse: /Refund policy abused/u,
 } as const;
 
 /** What the two-diagram model's diagrams are called, and an element drawn on each. */
@@ -611,6 +612,18 @@ export const offeredToLink = async (
 /** Follows real listbox focus because Radix marks aria-selected only for an already selected focused option. */
 export const focusedOption = (page: Page): Locator =>
   page.locator('[role="option"]:focus');
+
+/** The cue a listbox draws at an edge its options run on past. */
+export const scrollCue = (page: Page, edge: 'earlier' | 'later'): Locator =>
+  page.locator(`[data-scroll-cue="${edge}"]`);
+
+/** Presses ArrowDown until the listbox has scrolled off its start and shows its "earlier" cue. */
+export const scrolledOffItsStart = async (page: Page): Promise<void> => {
+  await expect(async () => {
+    await page.keyboard.press('ArrowDown');
+    await expect(scrollCue(page, 'earlier')).toBeVisible({ timeout: 100 });
+  }).toPass({ intervals: [0], timeout: 5_000 });
+};
 
 /** Retries arrow navigation until focus moves, accounting for Radix restoring focus after popup positioning. */
 export const stepThroughOptions = async (

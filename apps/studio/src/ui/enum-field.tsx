@@ -1,7 +1,7 @@
-import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import { useCallback, useId, useState } from 'react';
 import { Select } from 'radix-ui';
 
+import { CappedList } from './capped-list.js';
 import cursor from './cursor-row.module.css';
 import styles from './enum-field.module.css';
 
@@ -160,34 +160,20 @@ export function EnumField<Value extends string>({
           <Select.Value placeholder={placeholder} />
           <Select.Icon className={styles.icon}>▾</Select.Icon>
         </Select.Trigger>
-        <Select.Content
-          className={styles.content}
+        <CappedList
           collisionBoundary={boundary}
-          position="popper"
+          contentClassName={styles.content}
+          viewportClassName={styles.viewport}
         >
-          <Select.ScrollUpButton
-            className={styles.earlier}
-            data-scroll-cue="earlier"
-          >
-            <ChevronUpIcon aria-hidden="true" />
-          </Select.ScrollUpButton>
-          <Select.Viewport className={styles.viewport}>
-            {groupOf === undefined
-              ? options.map(item)
-              : grouped(options, groupOf).map(([name, members]) => (
-                  <Select.Group key={name}>
-                    <Select.Label className={styles.group}>{name}</Select.Label>
-                    {members.map(item)}
-                  </Select.Group>
-                ))}
-          </Select.Viewport>
-          <Select.ScrollDownButton
-            className={styles.later}
-            data-scroll-cue="later"
-          >
-            <ChevronDownIcon aria-hidden="true" />
-          </Select.ScrollDownButton>
-        </Select.Content>
+          {groupOf === undefined
+            ? options.map(item)
+            : grouped(options, groupOf).map(([name, members]) => (
+                <Select.Group key={name}>
+                  <Select.Label className={styles.group}>{name}</Select.Label>
+                  {members.map(item)}
+                </Select.Group>
+              ))}
+        </CappedList>
       </Select.Root>
     </div>
   );
