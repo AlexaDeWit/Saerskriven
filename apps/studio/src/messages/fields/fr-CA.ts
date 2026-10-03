@@ -84,7 +84,10 @@ export const fieldsFrCA = catalogue(fieldMessages)('fr-CA')({
     'Consignation des frontières de confiance franchies',
   'recording-of-contained-elements': 'Consignation des éléments contenus',
   'recording-of-crossing-flows': 'Consignation des flux qui la franchissent',
-  'relationship-item': '{label} {number}',
+  'item-of-crossed-trust-boundaries':
+    'Frontière de confiance franchie {number}',
+  'item-of-contained-elements': 'Élément contenu {number}',
+  'item-of-crossing-flows': 'Flux {number} qui la franchit',
   'remove-from-crossed-trust-boundaries':
     'Retirer la frontière de confiance franchie {number}',
   'remove-from-contained-elements': 'Retirer l’élément contenu {number}',
