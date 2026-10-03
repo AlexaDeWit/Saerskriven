@@ -138,8 +138,8 @@ A threat's model link is never inferred. A threat with an empty `elements`
 list applies to the model only where the file states `appliesToModel: true`,
 and version 1 has no such key, so a version 1 threat never does.
 
-Version 2 removed two keys and added one, and the v1 to v2 migration reads a
-version 1 file in three steps over its document:
+The first release of version 2 removed two keys and added one, and the v1 to
+v2 migration reads a version 1 file in three steps over its document:
 
 - An assumption links threats and nothing else, so its `elements` list has no
   version 2 key. The migration drops every id in it and reports each

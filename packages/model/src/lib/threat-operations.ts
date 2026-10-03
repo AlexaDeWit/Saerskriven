@@ -6,6 +6,7 @@ import {
   assumptionRegister,
   culledAfter,
   mitigationRegister,
+  threatHasReference,
   withId,
   withoutId,
   type UnknownThreatFailure,
@@ -101,8 +102,8 @@ export function removeThreat(
 /**
  * `model` with `relink` applied to every threat, the threats that leaves
  * with no reference removed, and {@link removeThreat}'s cascade run for each
- * of them. A threat's references are its element attachments and its model
- * link. A threat that had neither before the relink stays, so a file read
+ * of them. A threat's references are the ones {@link threatHasReference}
+ * reads. A threat that had none before the relink stays, so a file read
  * with one keeps it. This is the package's own helper, not part of its
  * public surface: outside it, {@link droppedThreats} is how a caller learns
  * what a cull took.
@@ -111,7 +112,7 @@ export function withCulledThreats(
   model: Model,
   relink: (threat: Threat) => Threat,
 ): Model {
-  const kept = culledAfter(model.threats, referenced, relink);
+  const kept = culledAfter(model.threats, threatHasReference, relink);
   const keptIds = new Set(kept.map((threat) => threat.id));
   return model.threats
     .filter((threat) => !keptIds.has(threat.id))
@@ -230,9 +231,6 @@ export function unlinkThreatFromModel(
 export function nextThreatNumber(model: Model): number {
   return model.lastIssuedThreatNumber + 1;
 }
-
-const referenced = (threat: Threat): boolean =>
-  threat.appliesToModel || threat.elements.length > 0;
 
 function heldThreat(
   model: Model,

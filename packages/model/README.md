@@ -124,18 +124,18 @@ set and clear it, and a link that is already there or an unlink of one that is
 not returns the model it was given.
 
 A threat is culled on the same terms as a record, its references being its
-element attachments and its model link. `detachThreat`, `removeElement`,
-`unlinkThreatFromModel` and `replaceThreat` remove a threat whose last
-reference they take, carrying `removeThreat`'s own cascade, so the records
-left with no threat go in the same operation and one undo step restores all
-of them. A threat that applies to the model stays when its last element goes,
-attached to nothing. A threat that had no reference before the edit stays
-through any of them: `parseModel` keeps it, an unrelated `removeElement` keeps
-it, and a `replaceThreat` that leaves it with none keeps it too, whatever else
-it changes. `addThreat` accepts a threat with no reference. `droppedThreats`
-names the threats one model holds and another does not, the way
-`droppedRecords` does for records. No new threat takes a culled threat's
-number.
+element attachments and its model link, which `threatHasReference` reads.
+`detachThreat`, `removeElement`, `unlinkThreatFromModel` and `replaceThreat`
+remove a threat whose last reference they take, carrying `removeThreat`'s own
+cascade, so the records left with no threat go in the same operation and one
+undo step restores all of them. A threat that applies to the model stays when
+its last element goes, attached to nothing. A threat that had no reference
+before the edit stays through any of them: `parseModel` keeps it, an unrelated
+`removeElement` keeps it, and a `replaceThreat` that leaves it with none keeps
+it too, whatever else it changes. `addThreat` accepts a threat with no
+reference. `droppedThreats` names the threats one model holds and another does
+not, the way `droppedRecords` does for records. No new threat takes a culled
+threat's number.
 
 `threatFlags` derives the flags a threat's records raise, as
 `threatFlagSchema` values: `mitigated-without-implemented-work` for a

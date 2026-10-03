@@ -85,6 +85,7 @@ export {
   mitigationHasReference,
   recordReferenceSchema,
   recordsLinkedTo,
+  threatHasReference,
   type RecordReference,
 } from './lib/records.js';
 export * from './lib/threat-flags.js';

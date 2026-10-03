@@ -10,6 +10,7 @@ import {
   type DiagramId,
   type ElementId,
   type Model,
+  type ModelInput,
   type OperationFailure,
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
@@ -175,7 +176,7 @@ const placeholderDocument = {
   lastIssuedThreatNumber: 1,
   mitigations: [],
   assumptions: [],
-};
+} satisfies ModelInput;
 
 /** The editable model shown before a file or recovery snapshot opens. */
 export const placeholderModel: Model = Either.getOrElse(

@@ -6,6 +6,7 @@ import {
 } from '@saerskriven/canvas';
 import {
   elementsAcross,
+  threatHasReference,
   type Element,
   type ElementId,
   type Model,
@@ -370,9 +371,11 @@ function culledThreats(model: Model, removed: ReadonlySet<ElementId>): number {
 
 function culled(threat: Threat, removed: ReadonlySet<ElementId>): boolean {
   return (
-    !threat.appliesToModel &&
-    threat.elements.length > 0 &&
-    threat.elements.every((held) => removed.has(held))
+    threatHasReference(threat) &&
+    !threatHasReference({
+      ...threat,
+      elements: threat.elements.filter((held) => !removed.has(held)),
+    })
   );
 }
 
