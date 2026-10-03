@@ -46,7 +46,7 @@ const scrolledOffItsStart = async (page: Page): Promise<void> => {
   await expect(async () => {
     await page.keyboard.press('ArrowDown');
     await expect(scrollCue(page, 'earlier')).toBeVisible({ timeout: 100 });
-  }).toPass({ intervals: [0] });
+  }).toPass({ intervals: [0], timeout: 5_000 });
 };
 
 test(

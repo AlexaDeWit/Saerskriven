@@ -7,6 +7,7 @@ import {
 } from '@saerskriven/canvas';
 import { registeredChords } from './chords.fixtures.js';
 import {
+  arrowTo,
   chromeCard,
   diagramSwitcher,
   expandThreat,
@@ -107,17 +108,6 @@ test('a list field draws the row under the keyboard or the pointer as a ringed t
   await ringedInForcedColours(page, pointed);
 });
 
-const arrowTo = async (
-  page: Page,
-  row: Locator,
-  key: 'ArrowDown' | 'ArrowUp',
-): Promise<void> => {
-  await expect(async () => {
-    await page.keyboard.press(key);
-    await expect(row).toHaveAttribute('data-highlighted', { timeout: 250 });
-  }).toPass({ intervals: [0] });
-};
-
 const openMenuByKeyboard = async (page: Page): Promise<void> => {
   await openTwoDiagrams(page);
   await openByKeyboard(menuButton(page));
@@ -155,22 +145,16 @@ const pickers: readonly {
     name: "the menu's Appearance submenu trigger",
     open: async (page) => {
       await openMenuByKeyboard(page);
-      await arrowTo(
-        page,
-        page.getByRole('menuitem', { name: /^Appearance/u }),
-        'ArrowDown',
-      );
+      await arrowTo(page, page.getByRole('menuitem', { name: /^Appearance/u }));
     },
   },
   {
     name: "the menu's project link",
     open: async (page) => {
       await openMenuByKeyboard(page);
-      await page.keyboard.press('End');
       await arrowTo(
         page,
         page.getByRole('menuitem', { name: /^View source/u }),
-        'ArrowUp',
       );
     },
   },
