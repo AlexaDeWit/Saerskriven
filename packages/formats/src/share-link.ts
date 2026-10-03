@@ -21,11 +21,13 @@ export const shareLinkLimit = 1_048_576;
  * also fail with the native codec's own {@link ReadFailure}, carried as the
  * codec returned it.
  *
- * `TooLong` is a link past {@link shareLinkLimit}, written or read.
+ * `TooLong` is a written link, or a read fragment, past
+ * {@link shareLinkLimit}.
  * `PastReadBound` is a model whose native text is past
  * `readLimits.maxTextBytes`, so no read would open its link. `NotAShareLink`
- * is a fragment that does not start `#share=`. `UnknownEncoding` names a
- * prefix this release does not decode. `Malformed` is a payload outside the
+ * is a fragment that does not start `#share=`. `UnknownEncoding` names an
+ * encoding number, one to four ASCII digits, this release does not decode.
+ * `Malformed` is a fragment with no encoding number, or a payload outside the
  * base64url alphabet, not whole base64url, or not one whole brotli stream,
  * and its message says the link may have been cut off. `Unusable` is the
  * brotli module failing the call.
@@ -45,6 +47,10 @@ export const ShareLinkFailure = Data.taggedEnum<ShareLinkFailure>();
 const marker = '#share=';
 
 const encoding = '1';
+
+const longestEncoding = 4;
+
+const nonDigit = /[^0-9]/u;
 
 const refusedCharacter = /[^A-Za-z0-9_-]/u;
 
@@ -167,11 +173,11 @@ function payloadOf(
   }
   const link = fragment.slice(marker.length);
   const dot = link.indexOf('.');
-  if (dot === -1) {
+  if (dot < 1 || dot > longestEncoding || nonDigit.test(link.slice(0, dot))) {
     return Either.left(
       ShareLinkFailure.Malformed({
         message:
-          'The link ends before its payload begins, so it may have been cut off.',
+          'The link has no encoding number before its payload, so it may have been cut off or changed on the way.',
       }),
     );
   }

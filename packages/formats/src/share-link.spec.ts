@@ -1,14 +1,19 @@
 import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { parsedFixture } from '@saerskriven/model/fixtures';
+import { Either, Option } from 'effect';
 import { createHash } from 'node:crypto';
-import { brotliCompressSync, constants } from 'node:zlib';
+import { readFileSync } from 'node:fs';
+import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { brotliUnbuilt, brotliWasm } from './brotli.fixtures.js';
 import type { ReadFailure } from './lib/codec.js';
-import { vendoredTexts } from './lib/corpus.fixtures.js';
+import { adversarialText, vendoredTexts } from './lib/corpus.fixtures.js';
 import { exceededReadLimit, readLimits } from './lib/read-limits.js';
 import {
   featureCompleteYaml,
+  frozenV021Model,
+  frozenV021Path,
   nativeFixtures,
+  readOrThrow,
   withThreatsInNumberOrder,
 } from './lib/saerskriven-yaml.fixtures.js';
 import { saerskrivenYamlCodec } from './lib/saerskriven-yaml.js';
@@ -29,34 +34,31 @@ const noModule = new Uint8Array(0);
 
 const notAModule = new Uint8Array([1, 2, 3]);
 
-const nativeModel = (text: string): Model =>
-  Either.getOrThrow(saerskrivenYamlCodec.read(text)).model;
-
-const featureComplete = nativeModel(featureCompleteYaml);
+const featureComplete = readOrThrow(featureCompleteYaml).model;
 
 const fixtures: readonly { name: string; model: Model }[] = [
   ...nativeFixtures.map(({ name, text }) => ({
     name,
-    model: nativeModel(text),
+    model: readOrThrow(text).model,
   })),
   ...vendoredTexts(['threat-dragon/demo'], (name) =>
     name.endsWith('.json'),
   ).map(({ name, text }) => ({ name, model: threatDragonReading(text).model })),
 ];
 
-const budgets: Readonly<Record<string, number>> = {
-  'feature-complete file': 4300,
-  'two-diagram file': 3000,
-  'Saerskriven model': 20_500,
-  'threat-dragon/demo/cryptocurrency-wallet.json': 3300,
-  'threat-dragon/demo/generic-cms.json': 1650,
-  'threat-dragon/demo/iot-device.json': 3300,
-  'threat-dragon/demo/online-game.json': 2800,
-  'threat-dragon/demo/payment-online.json': 2250,
-  'threat-dragon/demo/renting-car.json': 2900,
-  'threat-dragon/demo/three-tier-web-app.json': 1650,
-  'threat-dragon/demo/v2-new-model.json': 420,
-  'threat-dragon/demo/v2-threat-model.json': 4400,
+const densityCeilings: Readonly<Record<string, number>> = {
+  'feature-complete file': 0.27,
+  'two-diagram file': 0.23,
+  'Saerskriven model': 0.34,
+  'threat-dragon/demo/cryptocurrency-wallet.json': 0.18,
+  'threat-dragon/demo/generic-cms.json': 0.27,
+  'threat-dragon/demo/iot-device.json': 0.2,
+  'threat-dragon/demo/online-game.json': 0.17,
+  'threat-dragon/demo/payment-online.json': 0.21,
+  'threat-dragon/demo/renting-car.json': 0.175,
+  'threat-dragon/demo/three-tier-web-app.json': 0.28,
+  'threat-dragon/demo/v2-new-model.json': 0.69,
+  'threat-dragon/demo/v2-threat-model.json': 0.22,
 };
 
 const linkOf = async (model: Model, base = studio): Promise<string> =>
@@ -64,24 +66,35 @@ const linkOf = async (model: Model, base = studio): Promise<string> =>
 
 const fragmentOf = (link: string): string => new URL(link).hash;
 
-const refusalOf = (
-  outcome: Either.Either<unknown, ShareLinkFailure | ReadFailure>,
-): ShareLinkFailure | ReadFailure | undefined =>
-  Either.isLeft(outcome) ? outcome.left : undefined;
+const payloadOf = (link: string): string =>
+  link.slice(link.indexOf(marker) + marker.length);
+
+const savedText = (model: Model): string =>
+  saerskrivenYamlCodec.write(model).output;
 
 const malformedMessage = (
   outcome: Either.Either<unknown, ShareLinkFailure | ReadFailure>,
 ): string | undefined => {
-  const refusal = refusalOf(outcome);
+  const refusal = Option.getOrUndefined(Either.getLeft(outcome));
   return ShareLinkFailure.$is('Malformed')(refusal)
     ? refusal.message
     : undefined;
 };
 
-const zerosBomb = (): string =>
-  brotliCompressSync(new Uint8Array(8 * readLimits.maxTextBytes), {
+const holding = (bytes: Uint8Array): string =>
+  `${marker}${brotliCompressSync(bytes, {
     params: { [constants.BROTLI_PARAM_QUALITY]: 4 },
-  }).toString('base64url');
+  }).toString('base64url')}`;
+
+const incompressible = (bytes: number): Model => ({
+  ...featureComplete,
+  metadata: {
+    ...featureComplete.metadata,
+    description: createHash('shake256', { outputLength: bytes })
+      .update('share-link')
+      .digest('base64'),
+  },
+});
 
 describe('a fragment', () => {
   it.each(['#share=1.G2QA', '#share=', '#share=2.abc'])(
@@ -113,15 +126,25 @@ describe('a fragment refused before anything is decoded', () => {
     },
   );
 
-  it('refuses a prefix it does not decode, naming it', async () => {
-    expect(await readShareLink('#share=2.G2QA', noModule)).toEqual(
-      Either.left(ShareLinkFailure.UnknownEncoding({ prefix: '2' })),
-    );
-  });
+  it.each(['2', '9999'])(
+    'refuses encoding %j, which it does not decode, naming it',
+    async (prefix) => {
+      expect(await readShareLink(`#share=${prefix}.G2QA`, noModule)).toEqual(
+        Either.left(ShareLinkFailure.UnknownEncoding({ prefix })),
+      );
+    },
+  );
 
-  it.each(['#share=', '#share=1'])(
-    'refuses %j, which ends before a payload, as cut off',
-    async (fragment) => {
+  it.each([
+    ['nothing after the marker', '#share='],
+    ['an encoding and no payload', '#share=1'],
+    ['an empty encoding', '#share=.G2QA'],
+    ['five digits', '#share=12345.G2QA'],
+    ['a letter', '#share=x.G2QA'],
+    ['a million letters', `#share=${'x'.repeat(1_000_000)}.A`],
+  ])(
+    'refuses %s where the encoding number goes as cut off',
+    async (_what, fragment) => {
       expect(
         malformedMessage(await readShareLink(fragment, noModule)),
       ).toContain('cut off');
@@ -152,25 +175,32 @@ describe('a fragment refused before anything is decoded', () => {
 describe('a module that will not do the work', () => {
   it('reports a module that would not start, writing', async () => {
     expect(
-      refusalOf(await writeShareLink(featureComplete, studio, notAModule))
-        ?._tag,
+      Option.getOrUndefined(
+        Either.getLeft(
+          await writeShareLink(featureComplete, studio, notAModule),
+        ),
+      )?._tag,
     ).toBe('Unusable');
   });
 
   it('reports a module that would not start, reading', async () => {
     expect(
-      refusalOf(await readShareLink(`${marker}G2QA`, notAModule))?._tag,
+      Option.getOrUndefined(
+        Either.getLeft(await readShareLink(`${marker}G2QA`, notAModule)),
+      )?._tag,
     ).toBe('Unusable');
   });
 });
 
 describe.skipIf(brotliUnbuilt)('every fixture as a link', () => {
   it.each(fixtures)(
-    'reads the $name back as the same model, within its length budget',
+    'reads the $name back as the same model, within its density ceiling',
     async ({ name, model }) => {
       const link = await linkOf(model);
       expect(link.startsWith(`${studio}${marker}`)).toBe(true);
-      expect(link.length).toBeLessThanOrEqual(budgets[name] ?? 0);
+      const density =
+        payloadOf(link).length / Buffer.byteLength(savedText(model));
+      expect(density).toBeLessThanOrEqual(densityCeilings[name] ?? 0);
       const read = Either.getOrThrow(
         await readShareLink(fragmentOf(link), brotliWasm()),
       );
@@ -178,6 +208,13 @@ describe.skipIf(brotliUnbuilt)('every fixture as a link', () => {
       expect(read.model).toEqual(withThreatsInNumberOrder(model));
     },
   );
+
+  it('carries the bytes a save writes, as one standard brotli stream in base64url', async () => {
+    const payload = payloadOf(await linkOf(featureComplete));
+    expect(
+      brotliDecompressSync(Buffer.from(payload, 'base64url')).toString('utf8'),
+    ).toBe(savedText(featureComplete));
+  });
 
   it('replaces a fragment the base already carries', async () => {
     const link = await linkOf(featureComplete, `${studio}#security-properties`);
@@ -189,15 +226,7 @@ describe.skipIf(brotliUnbuilt)(
   'a link of hundreds of thousands of characters',
   () => {
     it('writes a link past 400,000 characters and reads it back as the same model', async () => {
-      const model: Model = {
-        ...featureComplete,
-        metadata: {
-          ...featureComplete.metadata,
-          description: createHash('shake256', { outputLength: 300_000 })
-            .update('share-link')
-            .digest('base64'),
-        },
-      };
+      const model = incompressible(300_000);
       const link = await linkOf(model);
       expect(link.length).toBeGreaterThan(400_000);
       expect(
@@ -209,7 +238,7 @@ describe.skipIf(brotliUnbuilt)(
 );
 
 describe('a model past the read bound', () => {
-  it('refuses a model whose native text is past the read bound before compressing it', async () => {
+  it('is refused before it is compressed', async () => {
     const model: Model = {
       ...featureComplete,
       metadata: {
@@ -217,7 +246,9 @@ describe('a model past the read bound', () => {
         description: 'x'.repeat(readLimits.maxTextBytes),
       },
     };
-    const refusal = refusalOf(await writeShareLink(model, studio, noModule));
+    const refusal = Option.getOrUndefined(
+      Either.getLeft(await writeShareLink(model, studio, noModule)),
+    );
     expect(refusal?._tag).toBe('PastReadBound');
     expect(
       ShareLinkFailure.$is('PastReadBound')(refusal) ? refusal.size : 0,
@@ -226,14 +257,12 @@ describe('a model past the read bound', () => {
 });
 
 describe.skipIf(brotliUnbuilt)('the limit', () => {
-  it('counts the base URL, writing a link of exactly the limit and refusing one character more', async () => {
-    const fragment = fragmentOf(await linkOf(featureComplete));
+  it('counts the base URL, writing an incompressible link of exactly the limit and refusing one character more', async () => {
+    const model = incompressible(75_000);
+    const fragment = fragmentOf(await linkOf(model));
     const padded = `${studio}${'x'.repeat(shareLinkLimit - studio.length - fragment.length)}`;
-    const atLimit = await linkOf(featureComplete, padded);
-    expect(atLimit).toHaveLength(shareLinkLimit);
-    expect(
-      await writeShareLink(featureComplete, `${padded}x`, brotliWasm()),
-    ).toEqual(
+    expect(await linkOf(model, padded)).toHaveLength(shareLinkLimit);
+    expect(await writeShareLink(model, `${padded}x`, brotliWasm())).toEqual(
       Either.left(
         ShareLinkFailure.TooLong({
           length: shareLinkLimit + 1,
@@ -241,6 +270,23 @@ describe.skipIf(brotliUnbuilt)('the limit', () => {
         }),
       ),
     );
+  });
+});
+
+describe.skipIf(brotliUnbuilt)('a link read on the path a file takes', () => {
+  it('reads a link holding the file v0.2.1 wrote as the model it describes, migrated to version 2', async () => {
+    const read = Either.getOrThrow(
+      await readShareLink(holding(readFileSync(frozenV021Path)), brotliWasm()),
+    );
+    expect(read.source.formatVersion).toBe(2);
+    expect(read.model).toStrictEqual(parsedFixture(frozenV021Model));
+  });
+
+  it('refuses a link holding a YAML alias expansion as the native read refuses the file', async () => {
+    const text = adversarialText('alias-expansion.yaml');
+    expect(
+      await readShareLink(holding(Buffer.from(text)), brotliWasm()),
+    ).toEqual(saerskrivenYamlCodec.read(text));
   });
 });
 
@@ -271,12 +317,13 @@ describe.skipIf(brotliUnbuilt)('a link that was cut off or changed', () => {
   });
 
   it('refuses a stream that inflates to bytes that are not UTF-8 as malformed text', async () => {
-    const stream = brotliCompressSync(new Uint8Array([0x66, 0xff, 0xfe]));
     expect(
-      refusalOf(
-        await readShareLink(
-          `${marker}${stream.toString('base64url')}`,
-          brotliWasm(),
+      Option.getOrUndefined(
+        Either.getLeft(
+          await readShareLink(
+            holding(new Uint8Array([0x66, 0xff, 0xfe])),
+            brotliWasm(),
+          ),
         ),
       )?._tag,
     ).toBe('MalformedText');
@@ -284,7 +331,10 @@ describe.skipIf(brotliUnbuilt)('a link that was cut off or changed', () => {
 
   it('stops decoding 64 MiB of zeros one byte past the text bound, as past the read limit', async () => {
     expect(
-      await readShareLink(`${marker}${zerosBomb()}`, brotliWasm()),
+      await readShareLink(
+        holding(new Uint8Array(8 * readLimits.maxTextBytes)),
+        brotliWasm(),
+      ),
     ).toEqual(
       Either.left(
         exceededReadLimit('maxTextBytes', readLimits.maxTextBytes + 1),

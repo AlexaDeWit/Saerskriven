@@ -92,7 +92,7 @@ diagrams:
       - kind: process
         id: el-read
         name: Codec read
-        description: readAnyFormat in packages/formats. The read limits first, then each registered codec tried by reading, then the format's wire schema, then the mapping onto the internal model through parseModel.
+        description: readAnyFormat in packages/formats. The read limits first, then each registered codec tried by reading, then the format's wire schema, then the mapping onto the internal model through parseModel. A share link takes the native codec's part of that path through readShareLink, once its fragment is decoded within the link's own bounds.
         outOfScope: false
         reasonOutOfScope: ""
         position:
@@ -788,7 +788,7 @@ mitigations:
       - th-upstream-release
   - id: th-share-link-mitigation
     title: ""
-    prose: "`readShareLink` in `@saerskriven/formats/share-link` refuses a fragment past the 1,048,576 characters a link may hold, and one holding a character outside the base64url alphabet, before it decodes any of it. It decompresses with a maximum of `readLimits.maxTextBytes`, so a stream that would inflate past 8 MiB stops at the first byte over the bound and comes back as `ExceededReadLimit`, in the memory `decompressBrotli` states. The text is then decoded as strict UTF-8 and read through `saerskrivenYamlCodec.read`, the path a file takes, so every read limit and every format migration applies to a link as it does to a file. `share-link.spec.ts` gates the bound with 64 MiB of zeros, which stop one byte past 8 MiB."
+    prose: "`readShareLink` in `@saerskriven/formats/share-link` refuses a fragment past the 1,048,576 characters a link may hold, and one holding a character outside the base64url alphabet, before it decodes any of it. It decompresses with a maximum of `readLimits.maxTextBytes`, so a stream that would inflate past 8 MiB stops at the first byte over the bound and comes back as `ExceededReadLimit`, in the memory `decompressBrotli` states. The text is then decoded as strict UTF-8 and read through `saerskrivenYamlCodec.read`, the path a file takes, so every read limit and every format migration applies to a link as it does to a file. `share-link.spec.ts` gates the bound with 64 MiB of zeros, which stop one byte past 8 MiB, and the shared path with two links: one holding the file v0.2.1 wrote, which reads migrated to version 2, and one holding `test-data/adversarial/alias-expansion.yaml`, which is refused as the native read refuses that file."
     status: implemented
     threats:
       - th-share-link

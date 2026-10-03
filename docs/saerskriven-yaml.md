@@ -228,8 +228,10 @@ subpath, which take the brotli module as bytes.
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `1`      | The text compressed as one standard brotli stream at quality 11 with no custom dictionary, then base64url without padding (RFC 4648, section 5) |
 
-Every encoding ever issued decodes for good. A later encoding takes a new
-number, and a release refuses a number it does not know as `UnknownEncoding`.
+Every encoding ever issued decodes for good. An encoding is a number of one to
+four ASCII digits, and a later encoding takes a new one. A release refuses a
+number it does not know as `UnknownEncoding`, and anything else where the
+number goes as `Malformed`.
 
 The encoding versions the wrapping, and the document's own `formatVersion`
 versions the content. A link is read through `saerskrivenYamlCodec`, the path a

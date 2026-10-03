@@ -28,6 +28,7 @@ import {
   frozenV030Path,
   nativeFixtures,
   propertyTimeout,
+  readOrThrow,
   twoDiagramsYaml,
   withThreatsInNumberOrder,
 } from './saerskriven-yaml.fixtures.js';
@@ -81,10 +82,6 @@ function textRecordsIn(model: Model, text: string) {
   return model.mitigations
     .filter(({ id }) => !held.has(id))
     .map(({ prose, status, threats }) => ({ prose, status, threats }));
-}
-
-function readOrThrow(text: string) {
-  return Either.getOrThrow(saerskrivenYamlCodec.read(text));
 }
 
 function flowsOf(model: Model): readonly Flow[] {
