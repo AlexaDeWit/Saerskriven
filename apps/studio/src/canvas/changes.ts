@@ -1,5 +1,5 @@
 import type { CanvasFlowEdge, CanvasNode } from '@saerskriven/canvas';
-import type { ElementId } from '@saerskriven/model';
+import { sideSchema, type ElementId, type Side } from '@saerskriven/model';
 import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
 import { Action } from '../store/actions.js';
 import { sameSelection } from '../store/selection.js';
@@ -131,7 +131,18 @@ export function betweenTwoElements(connection: Connection | Edge): boolean {
   return connection.source !== connection.target;
 }
 
-/** Draws the flow a settled connection asks for, where both ends name elements of the diagram. */
+/** The side a handle id names, or none for a drop that named no handle. */
+export function sideOfHandle(
+  handle: string | null | undefined,
+): Side | undefined {
+  const parsed = sideSchema.safeParse(handle);
+  return parsed.success ? parsed.data : undefined;
+}
+
+/**
+ * Draws the flow a settled connection asks for, where both ends name elements
+ * of the diagram, pinning each end to the side of the handle it met.
+ */
 export function applyConnection(
   connection: Connection,
   elements: ReadonlyMap<string, ElementId>,
@@ -139,6 +150,9 @@ export function applyConnection(
   const source = elements.get(connection.source);
   const target = elements.get(connection.target);
   if (source !== undefined && target !== undefined) {
-    connectElements(source, target);
+    connectElements(source, target, {
+      source: sideOfHandle(connection.sourceHandle),
+      target: sideOfHandle(connection.targetHandle),
+    });
   }
 }

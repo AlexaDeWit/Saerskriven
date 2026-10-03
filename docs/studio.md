@@ -157,12 +157,15 @@ the visible grid. Keyboard moves and typed coordinates are not snapped.
 
 A flow runs between actors, processes and stores. Hover an element to show its
 connection handles, then drag from a handle to a handle on another element.
-Releasing anywhere else draws nothing. A flow cannot start and end on one
-element, and cannot attach to a trust boundary, a Note or another flow.
+Releasing anywhere else draws nothing. The flow keeps the sides of the two
+handles it was drawn between, so moving either element leaves it on them. A
+flow cannot start and end on one element, and cannot attach to a trust
+boundary, a Note or another flow.
 
 From the keyboard, select an element and run Start a flow: a list of targets
 opens under the card. The arrow keys and typing choose, Enter draws the
-flow, and Escape cancels.
+flow, and Escape cancels. A flow started this way follows the route at both
+ends.
 
 Select one flow to edit its route. While one flow is selected with the Select
 tool and no name or note is open for editing, the **Flow route** toolbar at the

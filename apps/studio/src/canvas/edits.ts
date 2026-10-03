@@ -22,6 +22,7 @@ import {
   flowEnds,
   freshBoundaryCurve,
   freshFlow,
+  type FlowSides,
   switchedShape,
 } from './elements.js';
 import { sentences, type Speaker } from '../messages/said.js';
@@ -59,15 +60,19 @@ export function placeBoundaryCurve(waypoints: readonly Point[]): boolean {
   return placed(Action.AddElement({ diagramId, element }), element.id, 'name');
 }
 
-/** Draws a flow between two connectable elements. */
-export function connectElements(source: ElementId, target: ElementId): void {
+/** Draws a flow between two connectable elements, pinned to the sides given. */
+export function connectElements(
+  source: ElementId,
+  target: ElementId,
+  sides: FlowSides = {},
+): void {
   const state = modelStore.getState();
   const diagramId = activeDiagramId(state);
   const ends = new Set(flowEnds(currentLayout(state)).map((node) => node.id));
   if (diagramId === undefined || !ends.has(source) || !ends.has(target)) {
     return;
   }
-  const flow = freshFlow(source, target);
+  const flow = freshFlow(source, target, sides);
   added(Action.AddElement({ diagramId, element: flow }), flow.id);
 }
 
