@@ -26,6 +26,7 @@ import { elementById } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
+import { refusedFieldSelector } from '../ui/text-field.js';
 import { marked, markedWithin } from './marked.js';
 import {
   arrivingThreat,
@@ -418,9 +419,11 @@ function useRequestedThreats({
     if (!listsModel) {
       return undefined;
     }
+    const refuses = (threatId: ThreatId): boolean =>
+      held !== undefined && held.threatId !== threatId;
     return modelListHandler({
       open: ({ threatId, opened }) => {
-        if (held !== undefined && held.threatId !== threatId) {
+        if (refuses(threatId)) {
           return;
         }
         onRequested?.();
@@ -428,26 +431,41 @@ function useRequestedThreats({
         scroll.land(threatId);
         opened();
       },
-      focus: () => {
-        const summary = markedWithin(
-          list.current,
-          'threatItem',
-          expanded,
-        )?.querySelector<HTMLElement>(`.${styles.disclosure}`);
+      showTab: () => {
+        onRequested?.();
+      },
+      focus: (on) => {
+        const target =
+          (on === 'refusal'
+            ? list.current?.querySelector<HTMLElement>(refusedFieldSelector)
+            : undefined) ??
+          markedWithin(
+            list.current,
+            'threatItem',
+            expanded,
+          )?.querySelector<HTMLElement>(`.${styles.disclosure}`);
         if (
-          summary !== undefined &&
-          summary !== null &&
-          summary.closest('[hidden]') === null
+          target !== undefined &&
+          target !== null &&
+          target.closest('[hidden]') === null
         ) {
-          summary.focus();
+          target.focus();
         } else {
           home.current?.focus();
         }
       },
-      hidden: (threatId) =>
-        threatId === expanded &&
-        list.current !== null &&
-        getComputedStyle(list.current).visibility === 'hidden',
+      hidden: (threatId) => {
+        if (
+          list.current === null ||
+          getComputedStyle(list.current).visibility !== 'hidden'
+        ) {
+          return undefined;
+        }
+        if (refuses(threatId)) {
+          return 'refused';
+        }
+        return threatId === expanded ? 'opened' : undefined;
+      },
     });
   }, [expanded, held, home, list, listsModel, onRequested, scroll, show]);
 }

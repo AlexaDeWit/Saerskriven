@@ -11,13 +11,24 @@ export type ThreatRequest = {
 };
 
 /**
+ * What a model panel that styles hide did with a threat asked for: opened
+ * it, or refused it for the refused text another threat holds.
+ */
+export type HiddenChoice = 'opened' | 'refused';
+
+/** Where focus lands in the model panel's list: on the open threat's summary, or on the field holding refused text. */
+export type ListFocus = 'summary' | 'refusal';
+
+/**
  * What the mounted model panel's threat list answers to from outside it.
- * `hidden` is whether it has that threat open where styles hide the panel.
+ * `showTab` shows the tab the list is on, and `hidden` is what the list did
+ * with that threat where styles hide the panel.
  */
 export type ModelList = {
   readonly open: (request: ThreatRequest) => void;
-  readonly focus: () => void;
-  readonly hidden: (threatId: ThreatId) => boolean;
+  readonly showTab: () => void;
+  readonly focus: (on: ListFocus) => void;
+  readonly hidden: (threatId: ThreatId) => HiddenChoice | undefined;
 };
 
 const panelFocus = handlerSlot<() => boolean>();
@@ -94,21 +105,33 @@ export function settleArrivingThreat(): void {
   arriving = undefined;
 }
 
-/** Moves focus into the model panel where it shows, and answers whether it did. */
-export function focusModelPanel(): boolean {
+/**
+ * Moves focus into the model panel where it shows, and answers whether it
+ * did. Focus lands where `on` asks, on the open threat's summary where no
+ * field holds refused text, and on the Threats tab where no threat shows.
+ */
+export function focusModelPanel(on: ListFocus): boolean {
   const list = shownList();
-  list?.focus();
+  list?.focus(on);
   return list !== undefined;
 }
 
+/** Shows the Threats tab of the model panel where the panel shows. */
+export function showModelThreats(): void {
+  shownList()?.showTab();
+}
+
 /**
- * Whether the model panel has that threat open out of sight: hidden by the
+ * What the model panel did with that threat out of sight: hidden by the
  * styles of a pane drawn over the panel, as the threat register's hide it in
- * a window too narrow for both. The answer is read from the panel as it is
- * drawn, so it holds no width of its own.
+ * a window too narrow for both. It answers nothing where the panel shows.
+ * The answer is read from the panel as it is drawn, so it holds no width of
+ * its own.
  */
-export function hiddenInModelPanel(threatId: ThreatId): boolean {
-  return shownList()?.hidden(threatId) ?? false;
+export function hiddenInModelPanel(
+  threatId: ThreatId,
+): HiddenChoice | undefined {
+  return shownList()?.hidden(threatId);
 }
 
 /** Registers the threat panel's look at focus before an undo or redo, which returns how to settle it after. Returns the removal. */

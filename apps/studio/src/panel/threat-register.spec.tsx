@@ -96,20 +96,6 @@ const listedRows = (): readonly (string | undefined)[] =>
 const modelSummary = (title: RegExp): HTMLElement =>
   within(modelPanel()).getByRole('button', { name: title });
 
-const refuseADraft = async (
-  user: ReturnType<typeof userEvent.setup>,
-): Promise<HTMLElement> => {
-  const description = within(modelPanel()).getByRole('textbox', {
-    name: 'Description',
-  });
-  await user.click(description);
-  await user.keyboard(`Pasted${softHyphen}prose`);
-  await user.click(screen.getByRole('button', { name: 'Opener' }));
-  expect(description.getAttribute('aria-invalid')).toBe('true');
-  resetAnnouncements();
-  return description;
-};
-
 const hideModelPanel = (): void => {
   act(() => {
     dispatch(Action.HideModelPanel());
@@ -132,14 +118,34 @@ const openRegister = (): void => {
   });
 };
 
-const hidePanesUnderTheRegister = (): void => {
+const hidePanesUnderTheRegister = (): (() => void) => {
   const drawn = `.${registerStyles.register}`;
   const sheet = document.createElement('style');
   sheet.textContent = `:root:has(${drawn}) [data-pane]:not(${drawn}) { visibility: hidden; }`;
   document.head.append(sheet);
-  onTestFinished(() => {
+  const showBoth = (): void => {
     sheet.remove();
-  });
+  };
+  onTestFinished(showBoth);
+  return showBoth;
+};
+
+const refusedDescription = (): HTMLElement =>
+  within(modelPanel()).getByDisplayValue(`Pasted${softHyphen}prose`);
+
+const showStudioHoldingARefusedDraft = async (
+  user: ReturnType<typeof userEvent.setup>,
+): Promise<void> => {
+  showStudio();
+  openRegister();
+  await user.click(chooser(looseThreat));
+  await user.click(
+    within(modelPanel()).getByRole('textbox', { name: 'Description' }),
+  );
+  await user.keyboard(`Pasted${softHyphen}prose`);
+  await user.click(screen.getByRole('button', { name: 'Opener' }));
+  expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+  resetAnnouncements();
 };
 
 const landedAt = (): (() => readonly number[]) => {
@@ -435,10 +441,7 @@ describe(
 
     it('leaves a threat holding a refused draft open in the model panel, and the row chosen meanwhile unmarked and unannounced', async () => {
       const user = userEvent.setup();
-      showStudio();
-      openRegister();
-      await user.click(chooser(looseThreat));
-      await refuseADraft(user);
+      await showStudioHoldingARefusedDraft(user);
 
       await user.click(chooser(mitigatedThreat));
 
@@ -456,10 +459,7 @@ describe(
 
     it("opens the model panel on a retained refused draft rather than a row chosen while it was hidden, and on the draft's own threat where that is the row", async () => {
       const user = userEvent.setup();
-      showStudio();
-      openRegister();
-      await user.click(chooser(looseThreat));
-      await refuseADraft(user);
+      await showStudioHoldingARefusedDraft(user);
       hideModelPanel();
 
       await user.click(chooser(mitigatedThreat));
@@ -478,11 +478,7 @@ describe(
       hideModelPanel();
       await user.click(chooser(looseThreat));
 
-      expect(
-        within(modelPanel())
-          .getByRole('textbox', { name: 'Description' })
-          .getAttribute('aria-invalid'),
-      ).toBe('true');
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
       expect(numbersIn(currentAnnouncement().message)).toEqual([2]);
     });
 
@@ -536,18 +532,98 @@ describe(
       expect(document.activeElement).toBe(chooser(looseThreat));
     });
 
-    it('stays open over a hidden model panel that refuses the chosen row, which it leaves unmarked', async () => {
+    it('closes on a row a hidden model panel refuses, with focus on the field holding the refused text, and marks no row as it opens again', async () => {
       const user = userEvent.setup();
       hidePanesUnderTheRegister();
-      showStudio();
+      await showStudioHoldingARefusedDraft(user);
       openRegister();
+
+      await user.click(chooser(mitigatedThreat));
+
+      expect(registerShown()).toBeNull();
+      expect(document.activeElement).toBe(refusedDescription());
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      expect(
+        modelSummary(/A model file is read past its bounds/u).getAttribute(
+          'aria-expanded',
+        ),
+      ).toBe('false');
+      expect(currentAnnouncement().message).toBe('');
+
+      openRegister();
+
+      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
+      expect(chooser(looseThreat).getAttribute('aria-current')).toBeNull();
+    });
+
+    it.each([
+      [
+        'shows its Details tab',
+        async (user: ReturnType<typeof userEvent.setup>) => {
+          await user.click(detailsTab());
+        },
+      ],
+      ['is closed', hideModelPanel],
+      [
+        "has given way to an element's panel",
+        () => {
+          act(() => {
+            dispatch(Action.Select({ elementIds: [storeElement] }));
+          });
+          expect(screen.getByRole('region', { name: 'Threats' })).toBeDefined();
+        },
+      ],
+    ])(
+      'closes onto the refused text on the Threats tab where the model panel it hides %s',
+      async (_, leaveTheList) => {
+        const user = userEvent.setup();
+        hidePanesUnderTheRegister();
+        await showStudioHoldingARefusedDraft(user);
+        await leaveTheList(user);
+        openRegister();
+
+        await user.click(chooser(mitigatedThreat));
+
+        expect(registerShown()).toBeNull();
+        expect(threatsTab().getAttribute('aria-selected')).toBe('true');
+        expect(document.activeElement).toBe(refusedDescription());
+        expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      },
+    );
+
+    it('closes on the row of the threat holding the refused text as on any other, with focus on its summary and the row marked as it opens again', async () => {
+      const user = userEvent.setup();
+      hidePanesUnderTheRegister();
+      await showStudioHoldingARefusedDraft(user);
+      openRegister();
+
       await user.click(chooser(looseThreat));
-      await refuseADraft(user);
+
+      expect(registerShown()).toBeNull();
+      expect(document.activeElement).toBe(
+        modelSummary(/A substituted dependency/u),
+      );
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      expect(numbersIn(currentAnnouncement().message)).toEqual([2]);
+
+      openRegister();
+
+      expect(chooser(looseThreat).getAttribute('aria-current')).toBe('true');
+    });
+
+    it('stays open beside a model panel that refuses the chosen row, on the tab it showed, and keeps the row an earlier choice marked', async () => {
+      const user = userEvent.setup();
+      const showBoth = hidePanesUnderTheRegister();
+      await showStudioHoldingARefusedDraft(user);
+      await user.click(detailsTab());
+      showBoth();
       openRegister();
 
       await user.click(chooser(mitigatedThreat));
 
       expect(register()).toBeDefined();
+      expect(detailsTab().getAttribute('aria-selected')).toBe('true');
+      expect(chooser(looseThreat).getAttribute('aria-current')).toBe('true');
       expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
       expect(document.activeElement).toBe(chooser(mitigatedThreat));
       expect(currentAnnouncement().message).toBe('');
