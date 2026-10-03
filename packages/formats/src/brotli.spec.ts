@@ -27,6 +27,18 @@ const referenceStream = (bytes: Uint8Array, quality: number): Uint8Array =>
     },
   });
 
+const incompressible = (length: number): Uint8Array => {
+  const bytes = new Uint8Array(length);
+  let state = 0x9e3779b9;
+  for (let index = 0; index < length; index += 1) {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    bytes[index] = state & 0xff;
+  }
+  return bytes;
+};
+
 const zerosBomb = (): Uint8Array =>
   referenceStream(new Uint8Array(64 * mebibyte), 4);
 
@@ -105,7 +117,7 @@ const named = (name: string): number[] => {
   return [bytes.length, ...bytes];
 };
 
-const calls = ['alloc', 'dealloc', 'compress', 'decompress', 'release'];
+const calls = ['input', 'compress', 'decompress', 'output', 'output_length'];
 
 const moduleWhoseEveryCall = (body: readonly number[]): Uint8Array =>
   new Uint8Array([
@@ -123,7 +135,7 @@ const moduleWhoseEveryCall = (body: readonly number[]): Uint8Array =>
     ...section(10, [1, body.length + 2, 0, ...body, 0x0b]),
   ]);
 
-const answeringZero = [0x41, 0];
+const answeringPastMemory = [0x41, 0xff, 0xff, 0xff, 0xff, 0x07];
 
 const trapping = [0x00];
 
@@ -144,7 +156,7 @@ describe('a module that will not do the work', () => {
     );
   });
 
-  it('reports one that trapped, rather than throwing out of the call', async () => {
+  it('reports one that trapped, as an allocation it cannot make ends, rather than throwing out of the call', async () => {
     expect(
       refusalOf(
         await decompressBrotli(model, moduleWhoseEveryCall(trapping), 10),
@@ -152,16 +164,12 @@ describe('a module that will not do the work', () => {
     ).toBe('Unusable');
   });
 
-  it('reports one that reserved none of the memory asked for', async () => {
+  it('reports one that answers an address past its own memory', async () => {
     expect(
       refusalOf(
-        await compressBrotli(model, moduleWhoseEveryCall(answeringZero)),
-      ),
-    ).toEqual(
-      BrotliFailure.Unusable({
-        sentence: `the module reserved none of the ${model.length} bytes the input needs`,
-      }),
-    );
+        await compressBrotli(model, moduleWhoseEveryCall(answeringPastMemory)),
+      )?._tag,
+    ).toBe('Unusable');
   });
 
   it.each([1.5, -1, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 32])(
@@ -274,6 +282,19 @@ describe.skipIf(brotliUnbuilt)('a stream the decoder refuses', () => {
       expect(held[0]).toBeLessThan(standardWindow + 2 * maximum + 4 * mebibyte);
     },
   );
+
+  it('refuses a 9 MiB incompressible stream against 8 MiB, within the window, the stream, twice the maximum and 4 MiB', async () => {
+    const stream = referenceStream(incompressible(9 * mebibyte), 4);
+    const maximum = readLimits.maxTextBytes;
+    const [refusal, held] = await withMemory(async () =>
+      refusalOf(await decompressBrotli(stream, brotliWasm(), maximum)),
+    );
+    expect(refusal).toEqual(BrotliFailure.PastMaximum({ maximum }));
+    expect(held).toHaveLength(1);
+    expect(held[0]).toBeLessThan(
+      standardWindow + stream.length + 2 * maximum + 4 * mebibyte,
+    );
+  });
 
   it('refuses a stream that claims the large-window extension before reserving its window', async () => {
     const [refusal, held] = await withMemory(async () =>

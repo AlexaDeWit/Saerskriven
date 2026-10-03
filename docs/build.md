@@ -130,6 +130,17 @@ pnpm nx run brotli-wasm:build          # the module alone
 pnpm nx test @saerskriven/formats      # builds it on the way
 ```
 
+The module's Rust holds no `unsafe` code (owner rulings, 2026-10-02). Rust owns
+one input and one output buffer and exports their addresses, so the caller
+writes and copies bytes there and no address the caller holds is read in Rust.
+[`nix/brotli-wasm/Cargo.toml`](../nix/brotli-wasm/Cargo.toml) denies the
+`unsafe_code` lint and every logic module forbids it. `src/exports.rs` is the
+one file that allows it, for the `#[unsafe(no_mangle)]` marker Rust requires
+on an exported function and refuses under `forbid`. Each export there is a
+one-line call into the logic. [`nix/unsafe-ban.sh`](../nix/unsafe-ban.sh) runs
+before the compile and stops the build, naming the rule, where that structure
+does not hold. The rasterizer does not follow it yet (#640).
+
 The flake names the path in `SAERSKRIVEN_BROTLI_WASM`.
 `@saerskriven/formats/brotli` takes the module as bytes from its caller, and
 `brotliWasmAsset` on the `@saerskriven/formats/build-assets` subpath locates it

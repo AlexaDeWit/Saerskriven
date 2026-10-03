@@ -8,8 +8,9 @@ import { promisePerBytes } from './lib/promise-per-bytes.js';
  * maximum. `Malformed` is input that is not one whole standard brotli
  * stream: damaged, cut short, followed by more bytes, or claiming the
  * large-window extension. `Unusable` is about the call rather than the bytes:
- * a module that would not start, one that stopped partway or reserved none of
- * the memory asked for, and a maximum that is not a byte count.
+ * a module that would not start, one that stopped partway, which is how an
+ * allocation the module cannot make ends, and a maximum that is not a byte
+ * count.
  */
 export type BrotliFailure = Data.TaggedEnum<{
   PastMaximum: { readonly maximum: number };
@@ -27,27 +28,17 @@ const written = 0;
 
 const pastMaximum = 1;
 
-const unreserved = 0;
-
-const wordSize = 4;
-
-const outcomeWords = 3;
-
 const mostBytes = 4_294_967_295;
 
-const calls = ['alloc', 'dealloc', 'compress', 'decompress', 'release'];
+const calls = ['input', 'compress', 'decompress', 'output', 'output_length'];
 
 type Codec = {
   readonly memory: WebAssembly.Memory;
-  readonly alloc: (length: number) => number;
-  readonly dealloc: (pointer: number, length: number) => void;
-  readonly compress: (pointer: number, length: number) => number;
-  readonly decompress: (
-    pointer: number,
-    length: number,
-    maximum: number,
-  ) => number;
-  readonly release: (outcome: number) => void;
+  readonly input: (length: number) => number;
+  readonly compress: () => number;
+  readonly decompress: (maximum: number) => number;
+  readonly output: () => number;
+  readonly output_length: () => number;
 };
 
 type Answer = {
@@ -76,9 +67,7 @@ export async function compressBrotli(
   const started = await instantiated(wasm);
   return Either.flatMap(started, (module) =>
     Either.map(
-      answered(module, bytes, (pointer) =>
-        module.compress(pointer, bytes.length),
-      ),
+      answered(module, bytes, () => module.compress()),
       (answer) => answer.bytes,
     ),
   );
@@ -112,9 +101,7 @@ export async function decompressBrotli(
   const started = await instantiated(wasm);
   return Either.flatMap(started, (module) =>
     Either.flatMap(
-      answered(module, bytes, (pointer) =>
-        module.decompress(pointer, bytes.length, maximum),
-      ),
+      answered(module, bytes, () => module.decompress(maximum)),
       (answer) => decoded(answer, maximum),
     ),
   );
@@ -150,34 +137,19 @@ function codes(
 
 function answered(
   module: Codec,
-  input: Uint8Array,
-  call: (pointer: number) => number,
+  bytes: Uint8Array,
+  call: () => number,
 ): Either.Either<Answer, BrotliFailure> {
   try {
-    const pointer = module.alloc(input.length);
-    if (pointer === unreserved) {
-      return Either.left(
-        BrotliFailure.Unusable({
-          sentence: `the module reserved none of the ${input.length} bytes the input needs`,
-        }),
-      );
-    }
-    new Uint8Array(module.memory.buffer, pointer, input.length).set(input);
-    const outcome = call(pointer);
-    const words = new DataView(
-      module.memory.buffer,
-      outcome,
-      outcomeWords * wordSize,
-    );
-    const payload = words.getUint32(wordSize, true);
-    const length = words.getUint32(2 * wordSize, true);
-    const answer = {
-      status: words.getUint32(0, true),
-      bytes: new Uint8Array(module.memory.buffer, payload, length).slice(),
-    };
-    module.release(outcome);
-    module.dealloc(pointer, input.length);
-    return Either.right(answer);
+    const input = module.input(bytes.length) >>> 0;
+    new Uint8Array(module.memory.buffer, input, bytes.length).set(bytes);
+    const status = call();
+    const output = module.output() >>> 0;
+    const length = module.output_length() >>> 0;
+    return Either.right({
+      status,
+      bytes: new Uint8Array(module.memory.buffer, output, length).slice(),
+    });
   } catch (error) {
     return Either.left(BrotliFailure.Unusable({ sentence: sentenceOf(error) }));
   }

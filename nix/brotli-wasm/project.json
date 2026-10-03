@@ -12,6 +12,7 @@
       "inputs": [
         "{workspaceRoot}/flake.nix",
         "{workspaceRoot}/flake.lock",
+        "{workspaceRoot}/nix/unsafe-ban.sh",
         "{projectRoot}/**/*"
       ],
       "outputs": ["{workspaceRoot}/dist/brotli-wasm/lib"],

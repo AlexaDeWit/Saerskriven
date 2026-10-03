@@ -21,6 +21,12 @@ stdenv.mkDerivation {
 
   nativeBuildInputs = [ rustPlatform.cargoSetupHook cargo rustc lld ];
 
+  # The ban on unsafe Rust (#622, #640) is checked before the compile, by the
+  # one guard every Rust module's build runs.
+  preBuild = ''
+    bash ${../unsafe-ban.sh} .
+  '';
+
   buildPhase = ''
     runHook preBuild
     cargo build --release --offline --frozen --target wasm32-unknown-unknown
