@@ -14,16 +14,26 @@ const pair = [actorElement, processElement];
 
 const renderNodeDrag = () => {
   const moveNodes = vi.fn<(changes: NodeChange<DiagramNode>[]) => void>();
-  const { result } = renderHook(() =>
+  const { result, rerender } = renderHook(() =>
     useNodeDrag(nodesById(currentLayout(modelStore.getState())), moveNodes),
   );
   return {
+    start: (ids: readonly ElementId[]) => {
+      act(() => {
+        result.current.onNodeDragStart(
+          undefined,
+          undefined,
+          ids.map((id) => ({ id })),
+        );
+      });
+    },
     report: (changes: NodeChange<DiagramNode>[]) => {
       act(() => {
         result.current.onNodesChange(changes);
       });
     },
     autoPan: () => result.current.autoPan,
+    rerender,
     moveNodes,
   };
 };
@@ -49,19 +59,26 @@ const measured: NodeChange<DiagramNode> = {
   dimensions: { width: 100, height: 50 },
 };
 
+const blur = (): void => {
+  act(() => {
+    window.dispatchEvent(new Event('blur'));
+  });
+};
+
 beforeEach(() => {
   openCanvas(pair);
 });
 
 describe('useNodeDrag', () => {
   it('hands a drag, its release and a keyboard move on as React Flow reports them', () => {
-    const { report, moveNodes } = renderNodeDrag();
+    const { start, report, moveNodes } = renderNodeDrag();
     const changes = [
       movedTo(pair, { x: 20, y: 10 }, true),
       movedTo(pair, { x: 30, y: 10 }, false),
       movedTo(pair, { x: 5, y: 0 }, false),
     ];
 
+    start(pair);
     for (const change of changes) {
       report(change);
     }
@@ -70,8 +87,9 @@ describe('useNodeDrag', () => {
   });
 
   it('puts a drag back once the selection changes under it, as Escape to Select does, and drops the rest of it with autopan off', () => {
-    const { report, autoPan, moveNodes } = renderNodeDrag();
+    const { start, report, autoPan, moveNodes } = renderNodeDrag();
 
+    start(pair);
     report(movedTo(pair, { x: 20, y: 10 }, true));
     expect(autoPan()).toBe(true);
     act(() => {
@@ -90,12 +108,11 @@ describe('useNodeDrag', () => {
   });
 
   it('puts a drag back when the window loses focus', () => {
-    const { report, moveNodes } = renderNodeDrag();
+    const { start, report, moveNodes } = renderNodeDrag();
 
+    start(pair);
     report(movedTo(pair, { x: 20, y: 10 }, true));
-    act(() => {
-      window.dispatchEvent(new Event('blur'));
-    });
+    blur();
     report(movedTo(pair, { x: 20, y: 10 }, false));
 
     expect(moveNodes).toHaveBeenCalledTimes(2);
@@ -104,28 +121,76 @@ describe('useNodeDrag', () => {
     );
   });
 
-  it('keeps a drag whose pressed node React Flow selected as it started, and hands on the next drag once one is put back', () => {
+  it('puts a drag back where the model has its nodes now, when the model moved under it', () => {
+    const { start, report, rerender, moveNodes } = renderNodeDrag();
+
+    start(pair);
+    report(movedTo(pair, { x: 20, y: 10 }, true));
+    act(() => {
+      dispatch(
+        Action.MoveElement({
+          elementId: actorElement,
+          offset: { x: 15, y: 0 },
+        }),
+      );
+    });
+    rerender();
+    act(() => {
+      selectTool('select');
+    });
+
+    expect(moveNodes).toHaveBeenLastCalledWith(
+      movedTo(pair, { x: 0, y: 0 }, false),
+    );
+  });
+
+  it('keeps a drag whose pressed node React Flow selected as it started', () => {
     openCanvas();
-    const { report, moveNodes } = renderNodeDrag();
+    const { start, report, moveNodes } = renderNodeDrag();
 
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
     });
+    start([actorElement]);
     report(movedTo([actorElement], { x: 20, y: 10 }, true));
     report(movedTo([actorElement], { x: 20, y: 10 }, false));
-    report(movedTo([actorElement], { x: 10, y: 0 }, true));
-    act(() => {
-      window.dispatchEvent(new Event('blur'));
-    });
-    report(movedTo([actorElement], { x: 10, y: 0 }, false));
-    report(movedTo([actorElement], { x: 5, y: 5 }, true));
 
-    expect(moveNodes).toHaveBeenNthCalledWith(
-      2,
+    expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo([actorElement], { x: 20, y: 10 }, false),
     );
+  });
+
+  it('forgets a drag React Flow never settled at the next drag start, and at the next primary press', () => {
+    const { start, report, autoPan, moveNodes } = renderNodeDrag();
+
+    start([actorElement]);
+    report(movedTo([actorElement], { x: 20, y: 10 }, true));
+    start(pair);
+    report(movedTo(pair, { x: 5, y: 5 }, true));
+    act(() => {
+      selectTool('select');
+    });
     expect(moveNodes).toHaveBeenLastCalledWith(
-      movedTo([actorElement], { x: 5, y: 5 }, true),
+      movedTo(pair, { x: 0, y: 0 }, false),
     );
+
+    start(pair);
+    expect(autoPan()).toBe(true);
+    report(movedTo(pair, { x: 10, y: 0 }, true));
+    expect(moveNodes).toHaveBeenLastCalledWith(
+      movedTo(pair, { x: 10, y: 0 }, true),
+    );
+
+    blur();
+    act(() => {
+      window.dispatchEvent(
+        new PointerEvent('pointerdown', { isPrimary: true }),
+      );
+    });
+    report(movedTo(pair, { x: 5, y: 0 }, false));
+    expect(moveNodes).toHaveBeenLastCalledWith(
+      movedTo(pair, { x: 5, y: 0 }, false),
+    );
+    expect(autoPan()).toBe(true);
   });
 });

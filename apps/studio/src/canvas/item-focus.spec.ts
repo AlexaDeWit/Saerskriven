@@ -25,8 +25,21 @@ const frameRect = document.createElement('div');
 frameRect.tabIndex = -1;
 selectionFrame.append(frameRect);
 
-canvas.append(node, selectionFrame);
-document.body.append(canvas);
+const besideSelection = ['data-bend-index', 'data-curve-point'].map(
+  (attribute) => {
+    const handle = document.createElement('button');
+    handle.setAttribute(attribute, '0');
+    return handle;
+  },
+);
+
+const selectionCommands = document.createElement('section');
+selectionCommands.dataset['selectionCommands'] = '';
+const shapeCommand = document.createElement('button');
+selectionCommands.append(shapeCommand);
+
+canvas.append(node, selectionFrame, ...besideSelection);
+document.body.append(canvas, selectionCommands);
 
 const press = (key: string, on: HTMLElement) => {
   on.focus();
@@ -75,6 +88,16 @@ describe('selectToolOnItem', () => {
     expect(answered('v', resizeControl).ran).toBe(true);
     expect(document.activeElement).toBe(node);
     expect(modelStore.getState().selection).toEqual([]);
+  });
+
+  it('moves focus from a handle or command beside the selected element to the element', () => {
+    for (const control of [...besideSelection, shapeCommand]) {
+      openCanvas([actorElement]);
+
+      expect(answered('Escape', control).ran).toBe(true);
+      expect(document.activeElement).toBe(node);
+      expect(modelStore.getState().selection).toEqual([]);
+    }
   });
 
   it('moves focus from the frame around a box selection to the canvas', () => {

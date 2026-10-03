@@ -10,6 +10,7 @@ import {
   screenBoxOf,
   viewportTransform,
 } from './canvas.fixtures.js';
+import { registeredChords } from './chords.fixtures.js';
 import {
   canvasSurface,
   focusSettled,
@@ -22,6 +23,8 @@ import {
   storefront,
   undoOffered,
 } from './studio.fixtures.js';
+
+const warehouseFloor = /^Warehouse floor, trust boundary/u;
 
 const selected = (page: Page): Locator =>
   page.locator('.react-flow__node.selected, .react-flow__edge.selected');
@@ -143,6 +146,53 @@ test('Escape on a selected element resize control moves focus to the element', a
   await expect(control).toHaveCount(0);
   await expect(actor).not.toHaveClass(/selected/u);
   await focusSettled(actor);
+});
+
+test('Escape on a bend or end handle of the selected flow moves focus to the flow', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const flow = await selectByKeyboard(page, placeholder.records);
+  await page.keyboard.press(registeredChords['add-bend'][0]);
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+
+  for (const handle of [
+    page.getByRole('button', { name: 'Bend 1', exact: true }),
+    page.getByRole('button', { name: 'Flow source end', exact: true }),
+  ]) {
+    await handle.focus();
+
+    await page.keyboard.press('Escape');
+
+    await expect(handle).toHaveCount(0);
+    await expect(flow).not.toHaveClass(/selected/u);
+    await focusSettled(flow);
+    await page.keyboard.press('Enter');
+  }
+});
+
+test('Escape on a point handle or the shape switch of a selected curve moves focus to the trust boundary', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await page.keyboard.press(registeredChords['next-diagram'][0]);
+  const boundary = await selectByKeyboard(page, warehouseFloor);
+
+  for (const control of [
+    page.getByRole('button', { name: 'Point 1', exact: true }),
+    page.getByRole('button', { name: 'Switch boundary shape', exact: true }),
+  ]) {
+    await control.focus();
+
+    await page.keyboard.press('Escape');
+
+    await expect(control).toHaveCount(0);
+    await expect(boundary).not.toHaveClass(/selected/u);
+    await focusSettled(boundary);
+    await page.keyboard.press('Enter');
+  }
 });
 
 test('Escape after a box selection moves focus to the canvas, or keeps it on the element that has it', async ({

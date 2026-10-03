@@ -131,6 +131,9 @@ export function gestureSelection(
   return resized.size === 0 ? selection : [...resized];
 }
 
+/** No offset at all, which settles a node where the model has it. */
+export const unmoved: Point = { x: 0, y: 0 };
+
 /** The position changes that carry `nodes` by `offset` from where the model has them. */
 export function positionChanges(
   nodes: readonly CanvasNode[],

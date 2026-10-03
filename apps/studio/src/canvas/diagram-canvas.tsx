@@ -384,6 +384,7 @@ export function DiagramCanvas({
           view.current = instance;
         }}
         onKeyDown={onKeyDown}
+        onNodeDragStart={nodeDrag.onNodeDragStart}
         onNodesChange={nodeDrag.onNodesChange}
         onSelectionEnd={boxSelection.onSelectionEnd}
         onSelectionStart={boxSelection.onSelectionStart}

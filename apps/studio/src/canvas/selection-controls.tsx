@@ -83,6 +83,7 @@ export function FlowEndpointCommands() {
       aria-label={t('tools.reconnect-flow')}
       className={styles.endpoints}
       data-pane=""
+      data-selection-commands=""
     >
       <CommandButton command="reconnect-source" />
       <CommandButton command="reconnect-target" />
@@ -100,6 +101,7 @@ export function BoundaryShapeCommands() {
       aria-label={t('tools.trust-boundary')}
       className={styles.endpoints}
       data-pane=""
+      data-selection-commands=""
     >
       <CommandButton command="toggle-boundary-shape" />
     </section>
