@@ -1,5 +1,10 @@
 import { resizableAxes } from '@saerskriven/canvas';
-import { pointSchema, sizeSchema } from '@saerskriven/model';
+import {
+  decimalsOf,
+  pointSchema,
+  sizeSchema,
+  storedNumber,
+} from '@saerskriven/model';
 import { useId, useState, type FormEvent } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
@@ -8,9 +13,14 @@ import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
 import { resizeNode } from './edits.js';
 import { currentLayout, selectionPosition } from './layout.js';
+import { typedDecimals } from './stored-decimals.js';
 import styles from './selection-controls.module.css';
 
-/** The position and size form over the selected nodes, committing one move or resize on Apply. */
+/**
+ * The position and size form over the selected nodes, committing one move or
+ * resize on Apply, stored at the count {@link typedDecimals} gives its
+ * fields, so a number of six decimals or fewer is stored as typed.
+ */
 export function GeometryEditor({
   state,
   close,
@@ -62,11 +72,26 @@ export function GeometryEditor({
       return;
     }
     if (single !== undefined && extent.success) {
-      resizeNode(single, { position: at.data, size: extent.data });
+      resizeNode(
+        single,
+        { position: at.data, size: extent.data },
+        typedDecimals([
+          at.data.x,
+          at.data.y,
+          extent.data.width,
+          extent.data.height,
+        ]),
+      );
     } else {
       const offset = { x: at.data.x - origin.x, y: at.data.y - origin.y };
       if (offset.x !== 0 || offset.y !== 0) {
-        dispatch(Action.MoveElements({ elementIds: state.selection, offset }));
+        dispatch(
+          Action.MoveElements({
+            elementIds: state.selection,
+            offset,
+            decimals: typedDecimals([at.data.x, at.data.y]),
+          }),
+        );
       }
     }
     close();
@@ -115,7 +140,10 @@ export function numeric(value: string): number {
   return value.trim() === '' ? Number.NaN : Number(value);
 }
 
-/** A number input between Decrease and Increase buttons that step it by one. */
+/**
+ * A number input between Decrease and Increase buttons that step it by one,
+ * keeping the decimals the field is written with.
+ */
 export function NumberField({
   quantity,
   value,
@@ -135,7 +163,7 @@ export function NumberField({
         <button
           aria-label={t(`tools.decrease-${quantity}`)}
           onClick={() => {
-            change(String(numeric(value) - 1));
+            change(stepped(value, -1));
           }}
           type="button"
         >
@@ -154,7 +182,7 @@ export function NumberField({
         <button
           aria-label={t(`tools.increase-${quantity}`)}
           onClick={() => {
-            change(String(numeric(value) + 1));
+            change(stepped(value, 1));
           }}
           type="button"
         >
@@ -163,4 +191,9 @@ export function NumberField({
       </span>
     </div>
   );
+}
+
+function stepped(value: string, by: number): string {
+  const typed = numeric(value);
+  return String(storedNumber(typed + by, decimalsOf(typed)));
 }

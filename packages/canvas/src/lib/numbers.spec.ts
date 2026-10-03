@@ -63,4 +63,11 @@ describe('svgNumber', () => {
     );
     expect(written.filter((value) => !plainNumber.test(value))).toEqual([]);
   });
+
+  it.each([Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN])(
+    'raises a RangeError for %d, which has no plain writing',
+    (value) => {
+      expect(() => svgNumber(value)).toThrow(RangeError);
+    },
+  );
 });

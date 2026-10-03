@@ -1,3 +1,4 @@
+import type { GestureInput } from '@saerskriven/canvas';
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange } from '@xyflow/react';
 import { act, renderHook } from '@testing-library/react';
@@ -20,7 +21,8 @@ class ViewKeepingMouseEvent extends MouseEvent {
 }
 
 const renderNodeDrag = () => {
-  const moveNodes = vi.fn<(changes: NodeChange<DiagramNode>[]) => void>();
+  const moveNodes =
+    vi.fn<(changes: NodeChange<DiagramNode>[], input: GestureInput) => void>();
   const { result, rerender } = renderHook(() =>
     useNodeDrag(nodesById(currentLayout(modelStore.getState())), moveNodes),
   );
@@ -90,7 +92,7 @@ beforeEach(() => {
 });
 
 describe('useNodeDrag', () => {
-  it('hands a drag, its release and a keyboard move on as React Flow reports them', () => {
+  it("hands a drag and its release on as a pointer's and a move outside a drag as the keyboard's, as React Flow reports them", () => {
     const { start, report, moveNodes } = renderNodeDrag();
     const changes = [
       movedTo(pair, { x: 20, y: 10 }, true),
@@ -103,7 +105,11 @@ describe('useNodeDrag', () => {
       report(change);
     }
 
-    expect(moveNodes.mock.calls).toEqual(changes.map((change) => [change]));
+    expect(moveNodes.mock.calls).toEqual([
+      [changes[0], 'pointer'],
+      [changes[1], 'pointer'],
+      [changes[2], 'keyboard'],
+    ]);
   });
 
   it('puts a drag back once the selection changes under it, as Escape to Select does, and drops the rest of it with autopan off', () => {
@@ -120,9 +126,9 @@ describe('useNodeDrag', () => {
     report([...movedTo(pair, { x: 40, y: 30 }, false), measured]);
 
     expect(moveNodes.mock.calls).toEqual([
-      [movedTo(pair, { x: 20, y: 10 }, true)],
-      [movedTo(pair, { x: 0, y: 0 }, false)],
-      [[measured]],
+      [movedTo(pair, { x: 20, y: 10 }, true), 'pointer'],
+      [movedTo(pair, { x: 0, y: 0 }, false), 'pointer'],
+      [[measured], 'pointer'],
     ]);
     expect(autoPan()).toBe(true);
   });
@@ -142,6 +148,7 @@ describe('useNodeDrag', () => {
     expect(moveNodes).toHaveBeenCalledTimes(2);
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 0, y: 0 }, false),
+      'pointer',
     );
     expect(released).toHaveBeenCalledOnce();
     expect(released.mock.calls[0]?.[0].view).toBe(window);
@@ -157,6 +164,7 @@ describe('useNodeDrag', () => {
         Action.MoveElement({
           elementId: actorElement,
           offset: { x: 15, y: 0 },
+          decimals: undefined,
         }),
       );
     });
@@ -167,6 +175,7 @@ describe('useNodeDrag', () => {
 
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 0, y: 0 }, false),
+      'pointer',
     );
   });
 
@@ -183,6 +192,7 @@ describe('useNodeDrag', () => {
 
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo([actorElement], { x: 20, y: 10 }, false),
+      'pointer',
     );
   });
 
@@ -198,6 +208,7 @@ describe('useNodeDrag', () => {
     });
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 0, y: 0 }, false),
+      'pointer',
     );
 
     start(pair);
@@ -205,6 +216,7 @@ describe('useNodeDrag', () => {
     report(movedTo(pair, { x: 10, y: 0 }, true));
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 10, y: 0 }, true),
+      'pointer',
     );
   });
 
@@ -222,11 +234,13 @@ describe('useNodeDrag', () => {
     report(movedTo(pair, { x: 20, y: 10 }, false));
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 0, y: 0 }, false),
+      'pointer',
     );
     report(movedTo(pair, { x: 5, y: 0 }, false));
 
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 5, y: 0 }, false),
+      'keyboard',
     );
     expect(autoPan()).toBe(true);
   });
@@ -243,6 +257,7 @@ describe('useNodeDrag', () => {
 
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 5, y: 0 }, false),
+      'keyboard',
     );
     expect(autoPan()).toBe(true);
   });

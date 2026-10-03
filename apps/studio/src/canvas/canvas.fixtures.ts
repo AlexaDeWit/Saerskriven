@@ -1,5 +1,5 @@
 import type { CanvasNode } from '@saerskriven/canvas';
-import { fireEvent } from '@testing-library/react';
+import { createEvent, fireEvent } from '@testing-library/react';
 import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
 import {
   assumptionId,
@@ -234,6 +234,10 @@ export const laidOutNode = (id: ElementId): CanvasNode => {
   return node;
 };
 
+/** The element the store's first diagram holds last, which is the one a placement added. */
+export const lastPlaced = () =>
+  modelStore.getState().present.diagrams[0].elements.at(-1);
+
 /**
  * A primary pointer event at a screen point, as a canvas hook reads one. The
  * spec names the targets its hook reads, and another pointer where it needs
@@ -278,6 +282,31 @@ export function pointerOn(
   });
   fireEvent(element, event);
 }
+
+/**
+ * Fires a mouse event at a screen x on `target`, carrying the window as its
+ * view, which React Flow's resize gesture listens on for the moves and the
+ * release that follow a press on a resize control.
+ */
+export function mouseOn(
+  target: Element | Window,
+  type: 'mouseDown' | 'mouseMove' | 'mouseUp',
+  clientX: number,
+): void {
+  const event = createEvent[type](target, { clientX, clientY: 100 });
+  Object.defineProperty(event, 'view', { value: window });
+  fireEvent(target, event);
+}
+
+/**
+ * Resolves once the click React Flow's resize gesture swallows after its
+ * release is let through again, so a spec that ends on {@link mouseOn} awaits
+ * it rather than leave the next spec's first click swallowed.
+ */
+export const clickSuppressionLifted = (): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 
 /** Where React Flow has the canvas: the translation and zoom it gives the viewport. */
 export function viewportTransform(): Point & { readonly zoom: number } {

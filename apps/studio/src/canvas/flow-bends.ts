@@ -2,6 +2,7 @@ import {
   reconnectFlow,
   setFlowEndPosition,
   setFlowWaypoints,
+  type Decimals,
   type ElementId,
   type Flow,
   type Model,
@@ -72,6 +73,7 @@ export function useFlowBends() {
         Action.SetFlowWaypoints({
           elementId: flow.id,
           waypoints: flow.waypoints.filter((_point, at) => at !== index),
+          decimals: undefined,
         }),
       );
       route.cancel();
@@ -112,7 +114,11 @@ function editedRoute(
   );
 }
 
-function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
+function routeAction(
+  flow: Flow,
+  target: RouteTarget,
+  decimals: Decimals | undefined,
+): Action | undefined {
   if (target.kind === 'anchor') {
     const end = flow[target.end];
     return end.kind === 'attached'
@@ -136,11 +142,13 @@ function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
       elementId: flow.id,
       side: target.end,
       position: target.point,
+      decimals,
     });
   }
   return Action.SetFlowWaypoints({
     elementId: flow.id,
     waypoints: editedWaypoints(flow.waypoints, target),
+    decimals,
   });
 }
 

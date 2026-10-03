@@ -326,7 +326,11 @@ describe('pasteSelected', () => {
     clipboard.readText.mockReturnValueOnce(read.promise);
     const pending = pasteSelected();
     dispatch(
-      Action.MoveElement({ elementId: actorElement, offset: { x: 1, y: 0 } }),
+      Action.MoveElement({
+        elementId: actorElement,
+        offset: { x: 1, y: 0 },
+        decimals: undefined,
+      }),
     );
     const changed = modelStore.getState().present;
     const text = marker + saerskrivenYamlCodec.write(canvasModel).output;
@@ -548,6 +552,22 @@ describe('duplicateSelected', () => {
     expect(modelStore.getState().present).toBe(canvasModel);
   });
 
+  it('stores the copy it offsets at three decimals', () => {
+    dispatch(
+      Action.MoveElement({
+        elementId: actorElement,
+        offset: { x: 0.123456, y: 5.1 },
+        decimals: undefined,
+      }),
+    );
+
+    duplicateSelected();
+
+    expect(
+      modelStore.getState().present.diagrams[0].elements.at(-1),
+    ).toMatchObject({ position: { x: 25.123, y: 30.1 } });
+  });
+
   it('duplicates a threat linked to the records its original links', () => {
     openCanvas([actorElement], recordedModelWide);
     duplicateSelected();
@@ -634,6 +654,7 @@ describe('the clipboard refusals', () => {
           Action.MoveElement({
             elementId: actorElement,
             offset: { x: 1, y: 0 },
+            decimals: undefined,
           }),
         );
         read.resolve(text);

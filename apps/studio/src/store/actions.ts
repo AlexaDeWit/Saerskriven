@@ -10,6 +10,7 @@ import type {
   AssumptionId,
   AssumptionStatus,
   BoundaryShape,
+  Decimals,
   Diagram,
   DiagramId,
   Element,
@@ -31,7 +32,11 @@ import { Data } from 'effect';
 import type { InlineEditor, LinkFailure } from './state.js';
 import type { SyncedState } from './sync.js';
 
-/** Every state change the reducer accepts. */
+/**
+ * Every state change the reducer accepts. An edit that writes geometry carries
+ * `decimals`, the count its model operation stores at, and says `undefined`
+ * where it means the operation to store what it computes.
+ */
 export type Action = Data.TaggedEnum<{
   SetElementProperties: {
     readonly elementId: ElementId;
@@ -41,13 +46,18 @@ export type Action = Data.TaggedEnum<{
     readonly elementId: ElementId;
     readonly change: ElementDetailsChange;
   };
-  AddElement: { readonly diagramId: DiagramId; readonly element: Element };
+  AddElement: {
+    readonly diagramId: DiagramId;
+    readonly element: Element;
+    readonly decimals: Decimals | undefined;
+  };
   InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };
   ArrangeElements: {
     readonly moves: readonly {
       readonly elementId: ElementId;
       readonly offset: Point;
     }[];
+    readonly decimals: Decimals | undefined;
   };
   ReconnectFlow: {
     readonly elementId: ElementId;
@@ -63,29 +73,44 @@ export type Action = Data.TaggedEnum<{
     readonly elementId: ElementId;
     readonly side: 'source' | 'target';
     readonly position: Point;
+    readonly decimals: Decimals | undefined;
   };
   ReverseFlow: { readonly elementId: ElementId };
   SetBoundaryShape: {
     readonly elementId: ElementId;
     readonly shape: BoundaryShape;
+    readonly decimals: Decimals | undefined;
   };
-  RemoveElement: { readonly elementId: ElementId };
-  RemoveElements: { readonly elementIds: readonly ElementId[] };
-  MoveElement: { readonly elementId: ElementId; readonly offset: Point };
+  RemoveElement: {
+    readonly elementId: ElementId;
+    readonly decimals: Decimals | undefined;
+  };
+  RemoveElements: {
+    readonly elementIds: readonly ElementId[];
+    readonly decimals: Decimals | undefined;
+  };
+  MoveElement: {
+    readonly elementId: ElementId;
+    readonly offset: Point;
+    readonly decimals: Decimals | undefined;
+  };
   MoveElements: {
     readonly elementIds: readonly ElementId[];
     readonly offset: Point;
+    readonly decimals: Decimals | undefined;
   };
   ResizeElement: {
     readonly elementId: ElementId;
     readonly offset: Point;
     readonly size: Size;
+    readonly decimals: Decimals | undefined;
   };
   RenameElement: { readonly elementId: ElementId; readonly name: string };
   EditNote: { readonly elementId: ElementId; readonly text: string };
   SetFlowWaypoints: {
     readonly elementId: ElementId;
     readonly waypoints: readonly Point[];
+    readonly decimals: Decimals | undefined;
   };
   AddThreat: { readonly threat: Threat };
   RemoveThreat: { readonly threatId: ThreatId };

@@ -10,6 +10,7 @@ import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
 import { announce, spokenElement } from './announcements.js';
 import { useElementDraft, type ElementEdit } from './element-draft.js';
+import { commandDecimals } from './stored-decimals.js';
 import { editedWaypoints, type WaypointTarget } from './waypoints.js';
 
 /** A trust boundary drawn as a curve. */
@@ -31,10 +32,11 @@ const pointEdit: ElementEdit<CurveBoundary, WaypointTarget> = {
   subject: (element) => (isCurveBoundary(element) ? element : undefined),
   edited: (model, boundary, target) =>
     setBoundaryShape(model, boundary.id, editedCurve(boundary, target)),
-  action: (boundary, target) =>
+  action: (boundary, target, decimals) =>
     Action.SetBoundaryShape({
       elementId: boundary.id,
       shape: editedCurve(boundary, target),
+      decimals,
     }),
   said: (boundary, target) => (t) =>
     t(target.kind === 'insert' ? 'canvas.point-added' : 'canvas.point-moved', {
@@ -103,7 +105,7 @@ export function useCurvePoints() {
       if (target === undefined) {
         return undefined;
       }
-      points.commit(target);
+      points.commit(target, commandDecimals);
       return target.index;
     },
     remove: (index: number): boolean => {
@@ -123,6 +125,7 @@ export function useCurvePoints() {
               (_point, at) => at !== index,
             ),
           },
+          decimals: undefined,
         }),
       );
       points.cancel();

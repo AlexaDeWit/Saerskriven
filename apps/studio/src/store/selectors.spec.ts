@@ -120,6 +120,7 @@ describe('showingPlaceholder', () => {
   const added = Action.AddElement({
     diagramId: placeholderModel.diagrams[0].id,
     element: newProcess('process-added', 'Added'),
+    decimals: undefined,
   });
 
   it('holds while nothing has happened to the model the studio opens on', () => {

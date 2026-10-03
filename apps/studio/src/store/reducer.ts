@@ -36,6 +36,7 @@ import {
   setFlowEndPosition,
   setFlowWaypoints,
   OperationFailure,
+  type Decimals,
   type Diagram,
   type DiagramId,
   type ElementId,
@@ -70,54 +71,61 @@ export function reduce(state: State, action: Action): State {
       ),
     SetFlowDirection: ({ elementId, bidirectional }) =>
       edited(state, setFlowDirection(state.present, elementId, bidirectional)),
-    SetFlowEndPosition: ({ elementId, side, position }) =>
+    SetFlowEndPosition: ({ elementId, side, position, decimals }) =>
       edited(
         state,
-        setFlowEndPosition(state.present, elementId, side, position),
+        setFlowEndPosition(state.present, elementId, side, position, decimals),
       ),
     ReverseFlow: ({ elementId }) =>
       edited(state, reverseFlow(state.present, elementId)),
-    SetBoundaryShape: ({ elementId, shape }) =>
-      edited(state, setBoundaryShape(state.present, elementId, shape)),
-    ArrangeElements: ({ moves }) =>
+    SetBoundaryShape: ({ elementId, shape, decimals }) =>
+      edited(
+        state,
+        setBoundaryShape(state.present, elementId, shape, decimals),
+      ),
+    ArrangeElements: ({ moves, decimals }) =>
       edited(
         state,
         moves.reduce<Either.Either<Model, OperationFailure>>(
           (outcome, { elementId, offset }) =>
             Either.flatMap(outcome, (model) =>
-              offset.x === 0 && offset.y === 0
-                ? Either.right(model)
-                : moveElement(model, elementId, offset),
+              moveElement(model, elementId, offset, decimals),
             ),
           Either.right(state.present),
         ),
       ),
-    AddElement: ({ diagramId, element }) =>
-      edited(state, addElement(state.present, diagramId, element)),
-    RemoveElement: ({ elementId }) => removedElements(state, [elementId]),
-    RemoveElements: ({ elementIds }) => removedElements(state, elementIds),
-    MoveElement: ({ elementId, offset }) =>
-      edited(state, moveElement(state.present, elementId, offset)),
-    MoveElements: ({ elementIds, offset }) =>
+    AddElement: ({ diagramId, element, decimals }) =>
+      edited(state, addElement(state.present, diagramId, element, decimals)),
+    RemoveElement: ({ elementId, decimals }) =>
+      removedElements(state, [elementId], decimals),
+    RemoveElements: ({ elementIds, decimals }) =>
+      removedElements(state, elementIds, decimals),
+    MoveElement: ({ elementId, offset, decimals }) =>
+      edited(state, moveElement(state.present, elementId, offset, decimals)),
+    MoveElements: ({ elementIds, offset, decimals }) =>
       edited(
         state,
         editElements(state.present, elementIds, (model, elementId) =>
-          moveElement(model, elementId, offset),
+          moveElement(model, elementId, offset, decimals),
         ),
       ),
-    ResizeElement: ({ elementId, offset, size }) =>
+    ResizeElement: ({ elementId, offset, size, decimals }) =>
       edited(
         state,
-        Either.flatMap(moveElement(state.present, elementId, offset), (moved) =>
-          resizeElement(moved, elementId, size),
+        Either.flatMap(
+          moveElement(state.present, elementId, offset, decimals),
+          (moved) => resizeElement(moved, elementId, size, decimals),
         ),
       ),
     RenameElement: ({ elementId, name }) =>
       edited(state, renameElement(state.present, elementId, name)),
     EditNote: ({ elementId, text }) =>
       edited(state, editNote(state.present, elementId, text)),
-    SetFlowWaypoints: ({ elementId, waypoints }) =>
-      edited(state, setFlowWaypoints(state.present, elementId, waypoints)),
+    SetFlowWaypoints: ({ elementId, waypoints, decimals }) =>
+      edited(
+        state,
+        setFlowWaypoints(state.present, elementId, waypoints, decimals),
+      ),
     AddThreat: ({ threat }) => edited(state, addThreat(state.present, threat)),
     RemoveThreat: ({ threatId }) =>
       edited(state, removeThreat(state.present, threatId)),
@@ -273,12 +281,17 @@ function withSelection(state: State, elementIds: readonly ElementId[]): State {
 function removedElements(
   state: State,
   elementIds: readonly ElementId[],
+  decimals: Decimals | undefined,
 ): State {
   const removed = new Set(elementIds);
   if (removed.size === 0) {
     return state;
   }
-  const outcome = editElements(state.present, [...removed], removeElement);
+  const outcome = editElements(
+    state.present,
+    [...removed],
+    (model, elementId) => removeElement(model, elementId, decimals),
+  );
   const next = edited(state, outcome);
   if (Either.isLeft(outcome)) {
     return next;

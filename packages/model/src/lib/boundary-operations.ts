@@ -1,6 +1,7 @@
 import { Either } from 'effect';
 import { locatedElement, withElement } from './diagram-edits.js';
-import { samePoint } from './element-geometry.js';
+import type { Decimals } from './decimals.js';
+import { samePoint, storedShape } from './element-geometry.js';
 import type { BoundaryShape } from './elements.js';
 import type { ElementId } from './ids.js';
 import { sameItems } from './lists.js';
@@ -15,14 +16,17 @@ export type SetBoundaryShapeFailure = Extract<
 
 /**
  * Replaces a trust boundary's shape with a box or a curve, whichever of the
- * two it held, preserving the model for the shape it already has. The caller
- * supplies a schema-valid shape. The declared relationships stay as they are,
- * as through every geometry edit, so no element moves in or out.
+ * two it held, storing its position and size, or its points, at `decimals`,
+ * and preserving the model for the shape it already has, as given or as it
+ * would be stored. The caller supplies a schema-valid shape. The declared
+ * relationships stay as they are, as through every geometry edit, so no
+ * element moves in or out.
  */
 export function setBoundaryShape(
   model: Model,
   elementId: ElementId,
   shape: BoundaryShape,
+  decimals?: Decimals,
 ): Either.Either<Model, SetBoundaryShapeFailure> {
   return Either.flatMap(
     locatedElement(model, elementId),
@@ -35,13 +39,11 @@ export function setBoundaryShape(
           OperationFailure.NotTrustBoundaryElement({ elementId }),
         );
       }
+      const stored = storedShape(shape, decimals);
       return Either.right(
-        sameShape(element.shape, shape)
+        sameShape(element.shape, shape) || sameShape(element.shape, stored)
           ? model
-          : withElement(model, diagramIndex, {
-              ...element,
-              shape: copiedShape(shape),
-            }),
+          : withElement(model, diagramIndex, { ...element, shape: stored }),
       );
     },
   );
@@ -58,17 +60,4 @@ function sameShape(left: BoundaryShape, right: BoundaryShape): boolean {
     );
   }
   return sameItems(left.waypoints, right.waypoints, samePoint);
-}
-
-function copiedShape(shape: BoundaryShape): BoundaryShape {
-  return shape.kind === 'box'
-    ? {
-        kind: 'box',
-        position: { ...shape.position },
-        size: { ...shape.size },
-      }
-    : {
-        kind: 'curve',
-        waypoints: shape.waypoints.map((point) => ({ ...point })),
-      };
 }

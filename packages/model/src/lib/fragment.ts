@@ -6,6 +6,7 @@ import {
   locatedDiagram,
   type UnknownElementFailure,
 } from './diagram-edits.js';
+import type { Decimals } from './decimals.js';
 import { translatedElement } from './element-geometry.js';
 import type { Element } from './elements.js';
 import type { Point } from './geometry.js';
@@ -79,16 +80,18 @@ export function selectionFragment(
 }
 
 /**
- * Remaps every ID under a fresh prefix and translates copied geometry. A
- * mitigation or assumption of which `target` holds an identical record keeps
- * its id, so {@link insertFragment} links to that record instead of cloning
- * it. Threat numbers stay as copied for {@link insertFragment} to settle.
+ * Remaps every ID under a fresh prefix and translates copied geometry, each
+ * point it moves stored at `decimals`. A mitigation or assumption of which
+ * `target` holds an identical record keeps its id, so {@link insertFragment}
+ * links to that record instead of cloning it. Threat numbers stay as copied
+ * for {@link insertFragment} to settle.
  */
 export function remapFragment(
   fragment: Model,
   prefix: string,
   offset: Point,
   target: Model,
+  decimals?: Decimals,
 ): Either.Either<Model, RemapFragmentFailure> {
   const renamed = (id: string) => prefix + ':' + id;
   const heldMitigation = identicalIn(target.mitigations, sameMitigation);
@@ -99,7 +102,7 @@ export function remapFragment(
       ...diagram,
       id: renamed(diagram.id),
       elements: diagram.elements.map((element) =>
-        renamedElement(translatedElement(element, offset), renamed),
+        renamedElement(translatedElement(element, offset, decimals), renamed),
       ),
     })),
     threats: fragment.threats.map((item) => ({

@@ -99,7 +99,7 @@ describe('useLiveEdges', () => {
       useLiveEdges(layout, graph, moving, elements, positions),
     );
     act(() => {
-      result.current.onNodesChange(dragTo(at));
+      result.current.onNodesChange(dragTo(at), 'pointer');
     });
     act(() => {
       vi.advanceTimersByTime(300);
@@ -113,10 +113,10 @@ describe('useLiveEdges', () => {
       useLiveEdges(layout, graph, moving, elements, positions),
     );
     act(() => {
-      result.current.onNodesChange(dragTo(at));
+      result.current.onNodesChange(dragTo(at), 'pointer');
     });
     act(() => {
-      result.current.onNodesChange(dragTo(at, false));
+      result.current.onNodesChange(dragTo(at, false), 'pointer');
     });
 
     expect(labelsOf(result.current.edges)).toEqual(

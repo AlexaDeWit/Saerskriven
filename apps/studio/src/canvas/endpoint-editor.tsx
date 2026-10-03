@@ -1,6 +1,7 @@
 import {
   pointSchema,
   sides,
+  storedNumber,
   type ElementId,
   type Side,
 } from '@saerskriven/model';
@@ -15,6 +16,7 @@ import { freeEndSaid } from './flow-bends.js';
 import { NumberField, numeric } from './geometry-editor.js';
 import { currentLayout } from './layout.js';
 import { sideMessages } from '../messages/enum-labels.js';
+import { commandDecimals, mostTypedDecimals } from './stored-decimals.js';
 import { useTranslator } from '../messages/locale.js';
 import styles from './selection-controls.module.css';
 
@@ -22,7 +24,10 @@ const freePoint = '';
 
 /**
  * The form moving one end of the selected flow: to another element and side,
- * or free at a typed position, which starts where the end is drawn.
+ * or free at a typed position, which is stored as typed up to
+ * `mostTypedDecimals`. The position starts where the end is drawn: a free
+ * end's own stored position, or an attached end's anchor, which is worked out
+ * and so written at `commandDecimals`.
  */
 export function EndpointEditor({
   state,
@@ -55,9 +60,10 @@ export function EndpointEditor({
   );
   const edge = layout.edges.find((candidate) => candidate.id === flow?.id);
   const drawn = side === 'source' ? edge?.source : edge?.target;
+  const drawnAt = previous?.kind === 'free' ? undefined : commandDecimals;
   const [position, setPosition] = useState({
-    x: String(drawn?.x ?? 0),
-    y: String(drawn?.y ?? 0),
+    x: String(storedNumber(drawn?.x ?? 0, drawnAt)),
+    y: String(storedNumber(drawn?.y ?? 0, drawnAt)),
   });
   const [refused, setRefused] = useState(false);
   const { t } = useTranslator();
@@ -82,6 +88,7 @@ export function EndpointEditor({
           elementId: flow.id,
           side,
           position: at.data,
+          decimals: mostTypedDecimals,
         }),
       );
       close();

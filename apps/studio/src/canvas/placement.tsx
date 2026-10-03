@@ -153,7 +153,7 @@ export function usePlacement(
 
   const commitCurve = useCallback(
     (waypoints: readonly Point[]): void => {
-      if (placeBoundaryCurve(waypoints)) {
+      if (placeBoundaryCurve(waypoints, 'pointer')) {
         clearCurve();
         finishPlacement();
       }
@@ -166,8 +166,11 @@ export function usePlacement(
       const geometry = centredPlacement(tool, centre);
       const placed =
         tool === 'boundary-curve'
-          ? placeBoundaryCurve(defaultCurveWaypoints(centre))
-          : placeElement(freshElement(tool, geometry.position, geometry.size));
+          ? placeBoundaryCurve(defaultCurveWaypoints(centre), 'keyboard')
+          : placeElement(
+              freshElement(tool, geometry.position, geometry.size),
+              'keyboard',
+            );
       if (placed) {
         clearCurve();
         finishPlacement();
@@ -358,6 +361,7 @@ export function usePlacement(
     if (
       placeElement(
         withPlacement(started.element, geometry.position, geometry.size),
+        'pointer',
         fieldFits,
       )
     ) {

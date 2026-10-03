@@ -24,7 +24,11 @@ const start = initialState(canvasModel);
 
 const moved = reduce(
   start,
-  Action.MoveElement({ elementId: actorElement, offset: { x: 10, y: 0 } }),
+  Action.MoveElement({
+    elementId: actorElement,
+    offset: { x: 10, y: 0 },
+    decimals: undefined,
+  }),
 );
 
 describe('currentLayout', () => {

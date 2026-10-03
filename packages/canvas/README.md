@@ -128,7 +128,13 @@ alike. `xmlSafeText` replaces characters XML 1.0 forbids, and a document
 composed around these glyphs applies it to its own text. Every number
 reaching an SVG attribute goes through `svgNumber`
 ([`numbers.ts`](src/lib/numbers.ts)), so one model gives one set of bytes on
-every run and platform.
+every run and platform. The writing itself is the model package's
+`fixedNumber`, which its geometry operations round with. `svgNumber` raises a
+`RangeError` for a number that is not finite, so no attribute reads `Infinity`
+or `NaN`. A boundary curve's
+box, worked out from its points and the stroke width, is written at the most
+decimals any of them has, so Position and size in the studio shows it without
+the noise of that arithmetic.
 
 The bytes are pinned once, by the SVG goldens of
 [`packages/render`](../render/README.md#the-goldens), which draws these glyphs.
@@ -159,7 +165,9 @@ use, one control per `resizeControlPositions` entry, less those a boundary
 curve's points give nothing to stretch. `scaledCurvePoints` fits a curve's
 points to a resized box, for the node body's live drawing and for the edit the
 mounting canvas commits. `isResizeKey` tells whether a key is one of
-`resizeKeys`.
+`resizeKeys`. `GestureInput` names what a gesture is made with, a pointer or
+the keyboard, and the resize controls hand it to `onResizeEnd` beside the
+settled box.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
 each node its accessible name, hands `CanvasNodeBody` the `resizeLabels` its

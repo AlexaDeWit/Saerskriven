@@ -5,6 +5,13 @@ export {
 } from './lib/text.js';
 export * from './lib/ids.js';
 export * from './lib/geometry.js';
+export {
+  decimalsOf,
+  decimalsSchema,
+  fixedNumber,
+  storedNumber,
+  type Decimals,
+} from './lib/decimals.js';
 export * from './lib/elements.js';
 export * from './lib/element-properties.js';
 export * from './lib/categories.js';

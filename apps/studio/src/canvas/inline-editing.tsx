@@ -57,6 +57,7 @@ import {
 import { itemMoved } from './move-message.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
+import { gestureDecimals } from './stored-decimals.js';
 import {
   nameFieldLabel,
   nodeNameFieldLabel,
@@ -282,9 +283,9 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         onResize={() => {
           setResizing(true);
         }}
-        onResizeEnd={(box) => {
+        onResizeEnd={(box, input) => {
           setResizing(false);
-          resizeNode(node, box);
+          resizeNode(node, box, gestureDecimals[input]);
           itemMoved();
         }}
         resizeLabels={resizeLabels(node, t)}

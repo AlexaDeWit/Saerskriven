@@ -41,7 +41,7 @@ import {
 import { svgNumber } from './numbers.js';
 import { polylinePath, smoothPath } from './paths.js';
 import { ResizeControls, type ResizeLabels } from './resize-controls.js';
-import { nodeAtSize } from './resizing.js';
+import { nodeAtSize, type GestureInput } from './resizing.js';
 import { canvasClassNames, canvasInteractionClassNames } from './stylesheet.js';
 import { interactionWidths } from './tokens.js';
 
@@ -110,7 +110,7 @@ export function CanvasNodeBody({
   readonly marks: BadgeMarks;
   readonly resizeLabels: ResizeLabels;
   readonly onResize?: () => void;
-  readonly onResizeEnd?: (box: NodeBox) => void;
+  readonly onResizeEnd?: (box: NodeBox, input: GestureInput) => void;
   readonly resizing?: boolean;
   readonly textVisible?: boolean;
 }): ReactElement {

@@ -345,6 +345,7 @@ describe('runCommand', () => {
       Action.AddElement({
         diagramId: mainDiagram,
         element: newProcess('history-process', 'History process'),
+        decimals: undefined,
       }),
     );
     resetAnnouncements();

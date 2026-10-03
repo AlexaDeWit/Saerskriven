@@ -20,6 +20,7 @@ import { dispatch, modelStore } from '../store/store.js';
 import { writeClipboard } from '../system-clipboard.js';
 import { describeOperation } from '../ui/failure-notice.js';
 import { announce } from './announcements.js';
+import { commandDecimals } from './stored-decimals.js';
 import {
   focusCanvas,
   focusElement,
@@ -159,6 +160,7 @@ function insertCopy(fragment: Model, distance: number, said: Said): boolean {
     generateElementId(),
     { x: distance, y: distance },
     state.present,
+    commandDecimals,
   );
   if (Either.isLeft(remapped)) {
     announce((t) => t('canvas.paste-remap-failed'));

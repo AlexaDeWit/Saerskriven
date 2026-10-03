@@ -29,7 +29,7 @@ describe('useFlowBends', () => {
     ).toEqual([target.point]);
     expect(modelStore.getState()).toBe(before);
     act(() => {
-      result.current.commit(target);
+      result.current.commit(target, undefined);
     });
     const committed = modelStore.getState();
     expect(committed.past).toEqual([before.present]);
@@ -75,7 +75,7 @@ describe('useFlowBends', () => {
     const stale = result.current.commit;
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
-      stale(target);
+      stale(target, undefined);
     });
     expect(result.current.flow).toBeUndefined();
     expect(modelStore.getState().present).toBe(before.present);
