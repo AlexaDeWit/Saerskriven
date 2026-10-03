@@ -47,7 +47,7 @@ const pressR = async (page: Page): Promise<void> => {
   await page.keyboard.press(shortcut);
 };
 
-test('R opens the register left of the panel, a chosen row opens its threat landed on the model panel, and Escape leaves that panel open', async ({
+test('R opens the register left of the panel, a chosen row opens its threat landed on the model panel beside the register still open, and Escape leaves that panel open', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -88,6 +88,7 @@ test('R opens the register left of the panel, a chosen row opens its threat land
     modelPanel(page).getByRole('tab', { name: /^Threats \d+$/u }),
   ).toHaveAttribute('aria-selected', 'true');
   await expect.poll(() => atModelPaneTop(page, opened)).toBe(true);
+  await expect(register(page)).toBeVisible();
   await expect(chooser(page, denied)).toHaveAttribute('aria-current', 'true');
   await expect(chooser(page, denied)).toBeFocused();
   await expect(editAnnouncement(page)).toContainText('6');
@@ -225,12 +226,37 @@ test(
 );
 
 test(
-  'the model panel under a register as wide as the window is off the Tab path until the register closes',
+  'a chosen row closes a register that hides the model panel, with focus on its threat shown there, and is marked as the register opens again',
   { tag: '@phone-only' },
   async ({ page }) => {
     await openTwoDiagrams(page);
     await pressR(page);
-    await chooser(page, 'Refund policy abused').click();
+    const denied = 'Shopper denies placing an order';
+
+    await chooser(page, denied).click();
+
+    await expect(register(page)).toHaveCount(0);
+    const opened = modelSummary(page, storefront.orderDenied);
+    await expect(opened).toHaveAttribute('aria-expanded', 'true');
+    await expect(opened).toBeFocused();
+    await expect.poll(() => atModelPaneTop(page, opened)).toBe(true);
+    await onScreen(opened);
+    await expect(editAnnouncement(page)).toContainText('6');
+
+    await pressR(page);
+
+    await expect(chooser(page, denied)).toHaveAttribute('aria-current', 'true');
+    await expect(chooser(page, denied)).toBeFocused();
+  },
+);
+
+test(
+  'the model panel under a register as wide as the window is off the Tab path until the register closes',
+  { tag: '@phone-only' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    await runFromMenu(page, 'Model');
+    await pressR(page);
     const covered = page.getByRole('region', {
       name: 'Model',
       exact: true,
