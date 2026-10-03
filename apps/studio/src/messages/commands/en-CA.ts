@@ -36,6 +36,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'label-rename': 'Rename selection',
   'label-model-panel': 'Model',
   'label-focus-threats': 'Focus threats',
+  'label-threat-register': 'Threat register',
   'label-select-all': 'Select all',
   'label-add-bend': 'Add bend',
   'label-start-flow': 'Start a flow',
@@ -72,6 +73,8 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'when-one-renameable-item': 'One renameable canvas item is selected',
   'when-model-panel':
     'Focus is outside a text field or open menu. Opens on the Threats tab with focus on it and clears the canvas selection, or closes where already shown',
+  'when-threat-register':
+    'Focus is outside a text field or open menu. Opens over the canvas with focus on its first row, or moves focus back into it where it is already open',
   'when-one-item-outside-fields':
     'One canvas item is selected and focus is outside a text field',
   'when-outside-fields': 'Focus is outside a text field',
@@ -129,6 +132,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'key-cancel-canvas-text': 'Cancel canvas text editing',
   'key-close-threat-panel': 'Close the threat panel',
   'key-close-model-panel': 'Close the model panel',
+  'key-close-threat-register': 'Close the threat register',
   'key-close-shortcut-reference': 'Close the shortcut reference',
   'key-when-choosing-segment': 'Add bend is choosing a segment',
   'key-when-segment-or-position': 'A segment or bend position is being chosen',
@@ -161,6 +165,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
     'Focus is inside the threat panel and no listbox is open',
   'key-when-inside-model-panel':
     'Focus is inside the model panel and no listbox is open',
+  'key-when-inside-register': 'Focus is inside the threat register',
   'key-when-inside-reference': 'Focus is inside the shortcut reference',
   'reference-close': 'Close keyboard shortcuts',
   'reference-introduction':

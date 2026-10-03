@@ -36,6 +36,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-rename': 'Renommer la sélection',
   'label-model-panel': 'Modèle',
   'label-focus-threats': 'Aller aux menaces',
+  'label-threat-register': 'Registre des menaces',
   'label-select-all': 'Tout sélectionner',
   'label-add-bend': 'Ajouter un coude',
   'label-start-flow': 'Amorcer un flux',
@@ -74,6 +75,8 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
     'Un seul élément renommable du canevas est sélectionné',
   'when-model-panel':
     'Le focus est hors des champs de texte et des menus ouverts. Ouvre sur l’onglet Menaces avec le focus sur celui-ci et vide la sélection du canevas, ou referme si déjà affiché',
+  'when-threat-register':
+    'Le focus est hors des champs de texte et des menus ouverts. Ouvre le registre par-dessus le canevas avec le focus sur sa première ligne, ou y ramène le focus s’il est déjà ouvert',
   'when-one-item-outside-fields':
     'Un seul élément du canevas est sélectionné et le focus est hors des champs de texte',
   'when-outside-fields': 'Le focus est hors des champs de texte',
@@ -133,6 +136,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'key-cancel-canvas-text': 'Annuler l’édition du texte sur le canevas',
   'key-close-threat-panel': 'Fermer le volet des menaces',
   'key-close-model-panel': 'Fermer le volet du modèle',
+  'key-close-threat-register': 'Fermer le registre des menaces',
   'key-close-shortcut-reference': 'Fermer la liste des raccourcis',
   'key-when-choosing-segment':
     'Ajouter un coude est en train de choisir un segment',
@@ -174,6 +178,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
     'Le focus est dans le volet des menaces et aucune liste n’est ouverte',
   'key-when-inside-model-panel':
     'Le focus est dans le volet du modèle et aucune liste n’est ouverte',
+  'key-when-inside-register': 'Le focus est dans le registre des menaces',
   'key-when-inside-reference': 'Le focus est dans la liste des raccourcis',
   'reference-close': 'Fermer les raccourcis clavier',
   'reference-introduction':

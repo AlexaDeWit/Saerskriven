@@ -19,6 +19,7 @@ export const registeredChords = {
   'distribute-horizontal': ['ControlOrMeta+Shift+d'],
   'distribute-vertical': ['ControlOrMeta+Shift+b'],
   'snap-to-grid': ['ControlOrMeta+Shift+g'],
+  'threat-register': ['r'],
   'reset-zoom': ['ControlOrMeta+1'],
   'fit-selection': ['ControlOrMeta+Shift+0'],
   'next-diagram': ['PageDown'],

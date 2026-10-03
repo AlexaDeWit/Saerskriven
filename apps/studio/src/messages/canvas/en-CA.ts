@@ -61,6 +61,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'undo-done': 'Undo completed.',
   'redo-done': 'Redo completed.',
   'threat-deleted': 'Threat {number} deleted.',
+  'threat-opened-in-model-panel': 'Threat {number} opened in the model panel.',
   'threat-attached-to-actor': 'Attached threat {number} to the actor.',
   'threat-attached-to-actor-named': 'Attached threat {number} to {name}.',
   'threat-attached-to-process': 'Attached threat {number} to the process.',

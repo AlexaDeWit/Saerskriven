@@ -26,6 +26,7 @@ import {
   type PointerEvent,
 } from 'react';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
+import { ThreatRegister } from '../panel/threat-register.js';
 import { Action } from '../store/actions.js';
 import { keyboardOwner } from '../commands/binding.js';
 import {
@@ -175,7 +176,7 @@ export function DiagramCanvas({
     null,
   );
   const localCoverage = useState(0);
-  const [, setPanelCover] = paneCoverage ?? localCoverage;
+  const [panelCover, setPanelCover] = paneCoverage ?? localCoverage;
   const placement = usePlacement(surface, view, layout);
   const { mode } = placement;
 
@@ -410,6 +411,7 @@ export function DiagramCanvas({
       <SelectionControls />
       <FlowEndpointCommands />
       <BoundaryShapeCommands />
+      <ThreatRegister cover={panelCover} />
       <ThreatOverlay onCover={setPanelCover} />
     </div>
   );

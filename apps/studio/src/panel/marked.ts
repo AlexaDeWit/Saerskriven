@@ -1,5 +1,6 @@
 const markers = {
   recordRow: 'data-record-row',
+  registerRow: 'data-register-row',
   threatItem: 'data-threat-item',
 } as const;
 

@@ -7,6 +7,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Either } from 'effect';
@@ -44,6 +45,8 @@ import { chooseLanguage } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { toggleModelPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
+import { resetThreatRegister } from '../panel/threat-register-state.js';
+import { ThreatRegister } from '../panel/threat-register.js';
 import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
 
@@ -447,6 +450,28 @@ describe('what the studio says about the file', () => {
     });
 
     expect(document.activeElement).toBe(tab);
+  });
+
+  it('opens the threat register from the View group with focus on its first row as the menu closes', async () => {
+    const user = userEvent.setup();
+    resetThreatRegister();
+    render(
+      <>
+        <Menu bridge={specBridge()} />
+        <ThreatRegister cover={0} />
+      </>,
+    );
+
+    await choose(user, 'Threat register');
+
+    const register = screen.getByRole('region', { name: 'Threat register' });
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(document.activeElement).toBe(
+        within(register).getByRole('button', { name: /A reader edits/u }),
+      );
+    });
+    resetThreatRegister();
   });
 
   it('guards the tab only after the latest recovery write fails', () => {

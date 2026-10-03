@@ -1,0 +1,202 @@
+/* Over the canvas left of the panel, with the panel's top and height so the
+   two panes line up. The inline end is set on the element from the pane's
+   measured coverage. Where that leaves less than the minimum, the register
+   keeps the minimum from its start edge and draws over the panel. */
+.register {
+  position: absolute;
+  z-index: 3;
+  inset-block-start: var(--saer-pane-block-start);
+  inset-inline-start: var(--saer-space-3);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-inline-size: min(24rem, 100% - var(--saer-space-3) * 2);
+  /* The bare term is the zoom cluster's height, as the panel's is. */
+  max-block-size: calc(
+    100% - var(--saer-space-3) * 2 - var(--saer-pane-block-start) -
+      (2rem + var(--saer-space-1) * 2 + 2px)
+  );
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
+  overflow: hidden;
+}
+
+/* A window too narrow for the minimum beside the default panel cover
+   (472px, 24rem and three gutters) gives the register its whole width, so no
+   sliver of the panel shows beside it. */
+@media (max-width: 55rem) {
+  .register {
+    min-inline-size: calc(100% - var(--saer-space-3) * 2);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--saer-space-2);
+  padding: var(--saer-space-3);
+  border-block-end: 1px solid var(--saer-colour-border);
+}
+
+.heading {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.count {
+  color: var(--saer-colour-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: normal;
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
+}
+
+/* The header row stays pinned while the rows scroll, and the browser's own
+   scrolling stops below it. Below the width every column needs, the table
+   scrolls sideways inside the register rather than squeezing a column. */
+.body {
+  min-block-size: 0;
+  overflow: auto;
+  scroll-padding-block-start: calc(1lh + var(--saer-space-2) * 2 + 1px);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--saer-space-3);
+  color: var(--saer-colour-text-muted);
+}
+
+.table {
+  inline-size: 100%;
+  min-inline-size: 34rem;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table th,
+.table td {
+  padding: var(--saer-space-2);
+  border-block-end: 1px solid var(--saer-colour-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table th:first-child {
+  padding-inline-start: var(--saer-space-3);
+}
+
+.titleColumn {
+  inline-size: 40%;
+}
+
+.table thead th {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.row {
+  position: relative;
+}
+
+.row:hover {
+  background: var(--saer-colour-surface);
+}
+
+/* The chosen row is the threat the model panel was last opened on from
+   here: the accent's tint, and a ring inside the row, which forced colours
+   keep where they drop the tint. */
+.row[data-chosen] {
+  outline: var(--saer-focus-ring);
+  outline-offset: calc(-1 * var(--saer-focus-ring-width));
+  background: var(--saer-colour-accent-tint);
+}
+
+.number {
+  color: var(--saer-colour-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.choose {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--saer-colour-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  overflow-wrap: break-word;
+}
+
+/* The title's control reaches over the whole row, so a press anywhere on it
+   chooses the row. The element controls sit above that reach. */
+.choose::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.untitled {
+  color: var(--saer-colour-text-muted);
+  font-weight: normal;
+}
+
+.elements {
+  color: var(--saer-colour-text-muted);
+  overflow-wrap: break-word;
+}
+
+.link {
+  position: relative;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--saer-colour-text);
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.none {
+  color: var(--saer-colour-text);
+  font-weight: 600;
+}
+
+.mark {
+  white-space: nowrap;
+}
+
+.close:focus-visible,
+.choose:focus-visible,
+.link:focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
+}

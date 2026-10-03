@@ -66,6 +66,7 @@ export const canvasMessages = {
   'undo-done': text(),
   'redo-done': text(),
   'threat-deleted': text(numbered),
+  'threat-opened-in-model-panel': text(numbered),
   'threat-attached-to-actor': text(numbered),
   'threat-attached-to-actor-named': text(numberedName),
   'threat-attached-to-process': text(numbered),

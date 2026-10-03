@@ -1,5 +1,5 @@
 import type { ModelMetadataChange } from '@saerskriven/model';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   announceRefusal,
   resetAnnouncements,
@@ -32,7 +32,8 @@ type ModelPanelProps = HeldMetadata & {
 /**
  * The panel for the model, headed by its title: every threat in the model on
  * a Threats tab, which it opens on, and the model's own fields on Details.
- * The Threats tab takes focus where the M command opened the panel.
+ * The Threats tab takes focus where the M command opened the panel, and shows
+ * again for a threat asked for from outside the panel.
  */
 export function ModelPanel({
   held,
@@ -47,6 +48,9 @@ export function ModelPanel({
   const threatCount = useModelStore((state) => state.present.threats.length);
   const [tab, setTab] = useState<PanelTab>('threats');
   const threatsTab = useRef<HTMLButtonElement>(null);
+  const showThreats = useCallback(() => {
+    setTab('threats');
+  }, []);
   const { t } = useTranslator();
 
   useEffect(() => {
@@ -68,7 +72,12 @@ export function ModelPanel({
       wide={wide}
     >
       <PanelTabContent tab={tab} value="threats">
-        <ThreatList drafts={drafts} element={undefined} home={threatsTab} />
+        <ThreatList
+          drafts={drafts}
+          element={undefined}
+          home={threatsTab}
+          onRequested={showThreats}
+        />
       </PanelTabContent>
       <PanelTabContent tab={tab} value="details">
         <ModelDetails held={held} onHeld={onHeld} />

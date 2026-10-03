@@ -29,7 +29,7 @@ person typed reach a message as parameters and pass through unchanged.
 | `issues`     | What a parse refused, and the line that places an issue at its path             |
 | `menu`       | The burger menu, its submenus and the diagram switcher                          |
 | `notice`     | The failure notice, each refused operation, and a text field's refusal          |
-| `panel`      | The threat panel, the model panel and the record groups                         |
+| `panel`      | The threat panel, the model panel, the record groups and the threat register    |
 | `reports`    | File reports, export reports and the file types an export offers                |
 | `shell`      | The language control, the browser tab's name, the version, the stopped page     |
 | `terms`      | Render's words for stored values, record-group headings and badge marks         |

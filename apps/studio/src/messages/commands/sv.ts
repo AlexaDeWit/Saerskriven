@@ -36,6 +36,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-rename': 'Byt namn på markeringen',
   'label-model-panel': 'Modell',
   'label-focus-threats': 'Gå till hoten',
+  'label-threat-register': 'Hotregister',
   'label-select-all': 'Markera allt',
   'label-add-bend': 'Lägg till knäckpunkt',
   'label-start-flow': 'Starta ett flöde',
@@ -73,6 +74,8 @@ export const commandsSv = catalogue(commandMessages)('sv')({
     'Ett enda objekt på arbetsytan som kan byta namn är markerat',
   'when-model-panel':
     'Fokus ligger utanför textfält och öppna menyer. Öppnar på fliken Hot med fokus på den och tömmer markeringen på arbetsytan, eller stänger om den redan visas',
+  'when-threat-register':
+    'Fokus ligger utanför textfält och öppna menyer. Öppnar registret över arbetsytan med fokus på dess första rad, eller flyttar tillbaka fokus dit om det redan är öppet',
   'when-one-item-outside-fields':
     'Ett enda objekt på arbetsytan är markerat och fokus ligger utanför textfält',
   'when-outside-fields': 'Fokus ligger utanför textfält',
@@ -132,6 +135,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'key-cancel-canvas-text': 'Avbryt textredigering på arbetsytan',
   'key-close-threat-panel': 'Stäng hotpanelen',
   'key-close-model-panel': 'Stäng modellpanelen',
+  'key-close-threat-register': 'Stäng hotregistret',
   'key-close-shortcut-reference': 'Stäng genvägslistan',
   'key-when-choosing-segment': 'Lägg till knäckpunkt väljer ett segment',
   'key-when-segment-or-position':
@@ -167,6 +171,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
     'Fokus ligger i hotpanelen och ingen lista är öppen',
   'key-when-inside-model-panel':
     'Fokus ligger i modellpanelen och ingen lista är öppen',
+  'key-when-inside-register': 'Fokus ligger i hotregistret',
   'key-when-inside-reference': 'Fokus ligger i genvägslistan',
   'reference-close': 'Stäng tangentbordsgenvägarna',
   'reference-introduction':
