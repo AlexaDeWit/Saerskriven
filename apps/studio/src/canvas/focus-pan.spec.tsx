@@ -695,19 +695,20 @@ describe('FocusPan', () => {
     });
   });
 
-  it('follows what a key press moved or resized where it is told of it, and nothing told of after a pointer press or release', async () => {
+  it('follows what a key press moved or resized where it is told of it, and nothing told of after a pointer press, release or cancel', async () => {
     const canvas = await mounted(window1280, box(1250, 300, 100, 50));
     canvas.store.focus();
 
-    press('Enter');
-    window.dispatchEvent(new Event('pointerdown'));
-    itemMoved();
-    await nextFrame();
-    press('Enter');
-    window.dispatchEvent(new Event('pointerup'));
-    itemMoved();
-    await nextFrame();
-    expect(canvas.view()).toEqual({ x: 0, y: 0 });
+    for (const pointer of ['pointerdown', 'pointerup', 'pointercancel']) {
+      press('Enter');
+      window.dispatchEvent(new Event(pointer));
+      itemMoved();
+      await nextFrame();
+      expect({ pointer, view: canvas.view() }).toEqual({
+        pointer,
+        view: { x: 0, y: 0 },
+      });
+    }
 
     press('ArrowRight');
     itemMoved();

@@ -227,7 +227,11 @@ const followedPast = async (
   }
 };
 
-const dragBorderward = async (page: Page, handle: Locator): Promise<void> => {
+const dragBorderward = async (
+  page: Page,
+  handle: Locator,
+  beforeRelease?: () => Promise<void>,
+): Promise<void> => {
   const from = await centreOf(handle);
   const viewport = await viewportBox(page);
   await page.mouse.move(from.x, from.y);
@@ -235,6 +239,7 @@ const dragBorderward = async (page: Page, handle: Locator): Promise<void> => {
   await page.mouse.move(viewport.x + viewport.width - 2, from.y, {
     steps: 12,
   });
+  await beforeRelease?.();
   await page.mouse.up();
 };
 
@@ -450,7 +455,7 @@ test('a pointer drag of a bend handle to the border leaves the view where it is'
   expect(await viewportTransform(page)).toBe(before);
 });
 
-test('a pointer resize that carries the control to the border leaves the view where it is, though a key was pressed before', async ({
+test('a pointer resize that carries the control to the border leaves the view where it is, though a key is pressed before it and during it', async ({
   page,
 }) => {
   await openEveryGlyph(page);
@@ -461,11 +466,11 @@ test('a pointer resize that carries the control to the border leaves the view wh
   });
   const before = await viewportTransform(page);
 
-  await dragBorderward(page, control);
+  await dragBorderward(page, control, () => page.keyboard.press('Shift'));
 
   await canvasSettled(page);
-  expect(await insideTheViewport(page, control)).toBe(false);
   expect(await viewportTransform(page)).toBe(before);
+  expect(await insideTheViewport(page, control)).toBe(false);
 });
 
 test('a pointer press on an element that lies partly outside the viewport leaves the view where it is', async ({

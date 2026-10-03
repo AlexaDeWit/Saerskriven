@@ -191,11 +191,13 @@ export function onKeyboardMove(
   window.addEventListener('keydown', keyed, true);
   window.addEventListener('pointerdown', pointed, true);
   window.addEventListener('pointerup', pointed, true);
+  window.addEventListener('pointercancel', pointed, true);
   return () => {
     cancelAnimationFrame(settling);
     window.removeEventListener('keydown', keyed, true);
     window.removeEventListener('pointerdown', pointed, true);
     window.removeEventListener('pointerup', pointed, true);
+    window.removeEventListener('pointercancel', pointed, true);
     release();
   };
 }
