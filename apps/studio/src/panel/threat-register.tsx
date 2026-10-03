@@ -1,5 +1,5 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
-import type { ElementId, Threat, ThreatId } from '@saerskriven/model';
+import type { ElementId, Threat } from '@saerskriven/model';
 import { Fragment, memo, useEffect, useId, useRef, useState } from 'react';
 import { announce } from '../canvas/announcements.js';
 import { revealElement } from '../canvas/diagrams.js';
@@ -11,10 +11,11 @@ import { useModelStore } from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { marked, markedWithin } from './marked.js';
-import { openInModelPanel } from './panel-focus.js';
 import { useShownOrder } from './shown-order.js';
 import { SeverityChip, StatusMark } from './threat-marks.js';
 import {
+  carriedChoice,
+  chooseInThreatRegister,
   closeThreatRegister,
   leaveThreatRegister,
   registerFocusHandler,
@@ -28,11 +29,13 @@ import { threatAttachments } from './threats.js';
  * panel: every threat in the model as a table of number, title, elements,
  * severity and status, in review order as it opens and held while it stays
  * open, as the model panel's list is. Choosing a row opens its threat on the
- * model panel and marks the row, leaving focus there, and an element's name
- * closes the register and selects the element. `cover` is how much of the
- * canvas the panel covers, the default panel width standing in while no panel
- * is open, so a first choice opens the model panel without moving the
- * register. Canvas-only parent renders do not rerender it.
+ * model panel and marks the row, leaving focus there, or where the register
+ * hides that panel under it, closes the register onto the threat and marks
+ * the row as the register next opens. An element's name closes the register
+ * and selects the element. `cover` is how much of the canvas the panel
+ * covers, the default panel width standing in while no panel is open, so a
+ * first choice opens the model panel without moving the register.
+ * Canvas-only parent renders do not rerender it.
  */
 export const ThreatRegister = memo(function ThreatRegister({
   cover,
@@ -46,7 +49,7 @@ export const ThreatRegister = memo(function ThreatRegister({
 function Register({ cover }: { readonly cover: number }) {
   const threats = useModelStore((state) => state.present.threats);
   const shown = useShownOrder(inReviewOrder(threats));
-  const [chosen, setChosen] = useState<ThreatId | undefined>(undefined);
+  const [chosen, setChosen] = useState(carriedChoice);
   const body = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);
   const headingId = useId();
@@ -72,14 +75,11 @@ function Register({ cover }: { readonly cover: number }) {
 
   const choose = (threat: Threat): void => {
     const { number } = threat;
-    openInModelPanel({
-      threatId: threat.id,
-      opened: () => {
-        setChosen(threat.id);
-        announce((speak) =>
-          speak('canvas.threat-opened-in-model-panel', { number }),
-        );
-      },
+    chooseInThreatRegister(threat.id, () => {
+      setChosen(threat.id);
+      announce((speak) =>
+        speak('canvas.threat-opened-in-model-panel', { number }),
+      );
     });
   };
 

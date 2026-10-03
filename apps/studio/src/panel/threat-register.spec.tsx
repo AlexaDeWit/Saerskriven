@@ -35,6 +35,7 @@ import { ThreatOverlay } from './threat-overlay.js';
 import panelStyles from './threat-panel.module.css';
 import { resetThreatRegister } from './threat-register-state.js';
 import { ThreatRegister } from './threat-register.js';
+import registerStyles from './threat-register.module.css';
 
 const looseThreat = threatId('threat-loose');
 
@@ -71,6 +72,9 @@ const reviewed = [looseThreat, firstThreat, mitigatedThreat];
 
 const register = (): HTMLElement =>
   screen.getByRole('region', { name: 'Threat register' });
+
+const registerShown = (): HTMLElement | null =>
+  screen.queryByRole('region', { name: 'Threat register' });
 
 const modelPanel = (): HTMLElement =>
   screen.getByRole('region', { name: 'Model' });
@@ -125,6 +129,16 @@ const showStudio = (): void => {
 const openRegister = (): void => {
   act(() => {
     runCommand(commandById('threat-register'), recordingSurface().surface);
+  });
+};
+
+const hidePanesUnderTheRegister = (): void => {
+  const drawn = `.${registerStyles.register}`;
+  const sheet = document.createElement('style');
+  sheet.textContent = `:root:has(${drawn}) [data-pane]:not(${drawn}) { visibility: hidden; }`;
+  document.head.append(sheet);
+  onTestFinished(() => {
+    sheet.remove();
   });
 };
 
@@ -287,9 +301,7 @@ describe(
         }),
       );
 
-      expect(screen.queryByRole('region', { name: 'Threat register' })).toBe(
-        null,
-      );
+      expect(registerShown()).toBeNull();
       expect(modelStore.getState().selection).toEqual([otherElement]);
       expect(activeDiagramId(modelStore.getState())).toBe(secondDiagram);
       expect(
@@ -305,9 +317,7 @@ describe(
 
       await user.keyboard('{Escape}');
 
-      expect(screen.queryByRole('region', { name: 'Threat register' })).toBe(
-        null,
-      );
+      expect(registerShown()).toBeNull();
       expect(modelStore.getState().modelPanel).toBe(true);
       expect(document.activeElement).toBe(
         modelSummary(/A model file is read past its bounds/u),
@@ -326,9 +336,7 @@ describe(
         }),
       );
 
-      expect(screen.queryByRole('region', { name: 'Threat register' })).toBe(
-        null,
-      );
+      expect(registerShown()).toBeNull();
       expect(modelStore.getState().modelPanel).toBe(false);
       expect(document.activeElement).toBe(
         screen.getByRole('button', { name: 'Opener' }),
@@ -476,6 +484,73 @@ describe(
           .getAttribute('aria-invalid'),
       ).toBe('true');
       expect(numbersIn(currentAnnouncement().message)).toEqual([2]);
+    });
+
+    it('closes on a chosen row where it hides the model panel under it, with focus on that threat there, and marks the row as it opens again', async () => {
+      const user = userEvent.setup();
+      hidePanesUnderTheRegister();
+      showStudio();
+      openRegister();
+
+      await user.click(chooser(mitigatedThreat));
+
+      expect(registerShown()).toBeNull();
+      expect(threatsTab().getAttribute('aria-selected')).toBe('true');
+      const opened = modelSummary(/A model file is read past its bounds/u);
+      expect(opened.getAttribute('aria-expanded')).toBe('true');
+      expect(document.activeElement).toBe(opened);
+      expect(numbersIn(currentAnnouncement().message)).toEqual([3]);
+
+      openRegister();
+
+      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBe(
+        'true',
+      );
+      expect(document.activeElement).toBe(chooser(mitigatedThreat));
+
+      await user.click(chooser(looseThreat));
+
+      expect(registerShown()).toBeNull();
+      expect(document.activeElement).toBe(
+        modelSummary(/A substituted dependency/u),
+      );
+
+      openRegister();
+
+      expect(chooser(looseThreat).getAttribute('aria-current')).toBe('true');
+      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
+    });
+
+    it('forgets the row a choice closed it on once it has opened and closed another way', async () => {
+      const user = userEvent.setup();
+      hidePanesUnderTheRegister();
+      showStudio();
+      openRegister();
+      await user.click(chooser(mitigatedThreat));
+      openRegister();
+
+      await user.keyboard('{Escape}');
+      openRegister();
+
+      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
+      expect(document.activeElement).toBe(chooser(looseThreat));
+    });
+
+    it('stays open over a hidden model panel that refuses the chosen row, which it leaves unmarked', async () => {
+      const user = userEvent.setup();
+      hidePanesUnderTheRegister();
+      showStudio();
+      openRegister();
+      await user.click(chooser(looseThreat));
+      await refuseADraft(user);
+      openRegister();
+
+      await user.click(chooser(mitigatedThreat));
+
+      expect(register()).toBeDefined();
+      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
+      expect(document.activeElement).toBe(chooser(mitigatedThreat));
+      expect(currentAnnouncement().message).toBe('');
     });
 
     it('says so where the model holds no threat, with focus on Close', () => {

@@ -444,6 +444,10 @@ function useRequestedThreats({
           home.current?.focus();
         }
       },
+      hidden: (threatId) =>
+        threatId === expanded &&
+        list.current !== null &&
+        getComputedStyle(list.current).visibility === 'hidden',
     });
   }, [expanded, held, home, list, listsModel, onRequested, scroll, show]);
 }

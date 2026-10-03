@@ -22,7 +22,7 @@ and its own fields. What a person can do with it is in
 | `threat-attachments.tsx`                                           | The elements one threat names, with the controls that attach and detach them                                                                           |
 | `pick-existing.tsx`                                                | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
 | `model-panel.tsx`                                                  | The panel for the model: every threat on Threats, and its title, description and assumptions on Details                                                |
-| `threat-register.tsx`, `threat-register-state.ts`                  | The threat register over the canvas, and whether it is open, the R command that opens it, and where focus goes as it closes                            |
+| `threat-register.tsx`, `threat-register-state.ts`                  | The threat register over the canvas, and whether it is open, the R command that opens it, a choice that closes it, and where focus goes as it closes   |
 | `element-properties.tsx`, `element-property-fields.tsx`            | The element's own fields on Details: its details, then its security properties, and their field kinds                                                  |
 | `element-details.tsx`                                              | An element's description, out-of-scope flag and reason, for every kind, a note included                                                                |
 | `threats.ts`                                                       | `panelSubject`, `attachedThreats` and `modelThreats`, the selectors the panel binds to, and what each picker offers                                    |
@@ -109,6 +109,14 @@ mounts, and the list opens on that threat. Either way the list calls back once
 it has opened the threat, which is when the register marks the row and the
 status says so. A list holding a refused draft on another threat refuses, as
 it refuses a collapse.
+
+A choice is committed (`flushSync`) and then asks the list whether it has that
+threat open where styles hide it (`hiddenInModelPanel`), which reads the
+panel's computed visibility. Under the register's media query it does, and the
+register closes by its own close, so focus lands as it does on Escape, and
+carries the choice to its next opening, which marks that row. The width
+stays in the stylesheet alone, and a refused choice opens nothing, so it
+closes nothing. Any other close forgets the carried choice.
 
 The register keeps the order it opened in for the reason the list does, and
 with the same `useShownOrder`. The table's columns follow the exported

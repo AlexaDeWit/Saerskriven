@@ -10,10 +10,14 @@ export type ThreatRequest = {
   readonly opened: () => void;
 };
 
-/** What the mounted model panel's threat list answers to from outside it. */
+/**
+ * What the mounted model panel's threat list answers to from outside it.
+ * `hidden` is whether it has that threat open where styles hide the panel.
+ */
 export type ModelList = {
   readonly open: (request: ThreatRequest) => void;
   readonly focus: () => void;
+  readonly hidden: (threatId: ThreatId) => boolean;
 };
 
 const panelFocus = handlerSlot<() => boolean>();
@@ -71,8 +75,8 @@ export const modelListHandler = modelList.register;
  * opened the threat, and never where a refused draft holds another open.
  */
 export function openInModelPanel(request: ThreatRequest): void {
-  const list = modelList.current();
-  if (modelStore.getState().modelPanel && list !== undefined) {
+  const list = shownList();
+  if (list !== undefined) {
     list.open(request);
     return;
   }
@@ -92,12 +96,19 @@ export function settleArrivingThreat(): void {
 
 /** Moves focus into the model panel where it shows, and answers whether it did. */
 export function focusModelPanel(): boolean {
-  const list = modelList.current();
-  if (!modelStore.getState().modelPanel || list === undefined) {
-    return false;
-  }
-  list.focus();
-  return true;
+  const list = shownList();
+  list?.focus();
+  return list !== undefined;
+}
+
+/**
+ * Whether the model panel has that threat open out of sight: hidden by the
+ * styles of a pane drawn over the panel, as the threat register's hide it in
+ * a window too narrow for both. The answer is read from the panel as it is
+ * drawn, so it holds no width of its own.
+ */
+export function hiddenInModelPanel(threatId: ThreatId): boolean {
+  return shownList()?.hidden(threatId) ?? false;
 }
 
 /** Registers the threat panel's look at focus before an undo or redo, which returns how to settle it after. Returns the removal. */
@@ -108,4 +119,8 @@ export function stepHistory(step: () => void): void {
   const settle = historyStep.current()?.();
   step();
   settle?.();
+}
+
+function shownList(): ModelList | undefined {
+  return modelStore.getState().modelPanel ? modelList.current() : undefined;
 }
