@@ -14,6 +14,7 @@ import {
   type PannedView,
 } from './focus-pan.js';
 import {
+  itemMoved,
   KeyboardMoveMessage,
   selectionFrameSelector,
   type KeyboardMoveReport,
@@ -322,6 +323,26 @@ describe('onKeyboardFocus', () => {
     }
 
     expect(landed.mock.calls).toEqual([[node], [flow], [control]]);
+  });
+
+  it('answers focus on a bend, a flow end and a curve point handle alike', async () => {
+    const handles = [
+      'data-bend-index',
+      'data-flow-end',
+      'data-curve-point',
+    ].map((mark) => {
+      const handle = drawn('button', '', surface);
+      handle.setAttribute(mark, '0');
+      return handle;
+    });
+    press('Tab');
+
+    for (const handle of handles) {
+      focusByKeyboard(handle);
+      await nextFrame();
+    }
+
+    expect(landed.mock.calls).toEqual(handles.map((handle) => [handle]));
   });
 
   it('passes over a ringed focus until Tab is pressed, whatever other key was', async () => {
@@ -671,6 +692,29 @@ describe('FocusPan', () => {
     expect(canvas.view()).toEqual({
       x: 1280 - ringMargin - 1400,
       y: 720 - ringMargin - 880,
+    });
+  });
+
+  it('follows what a key press moved or resized where it is told of it, and nothing told of after a pointer press or release', async () => {
+    const canvas = await mounted(window1280, box(1250, 300, 100, 50));
+    canvas.store.focus();
+
+    press('Enter');
+    window.dispatchEvent(new Event('pointerdown'));
+    itemMoved();
+    await nextFrame();
+    press('Enter');
+    window.dispatchEvent(new Event('pointerup'));
+    itemMoved();
+    await nextFrame();
+    expect(canvas.view()).toEqual({ x: 0, y: 0 });
+
+    press('ArrowRight');
+    itemMoved();
+    await nextFrame();
+    expect(canvas.view()).toEqual({
+      x: 1280 - ringMargin - (1350 + 4),
+      y: 0,
     });
   });
 

@@ -17,6 +17,7 @@ import {
   nameField,
   nodeNamed,
   openEveryGlyph,
+  selectByKeyboard,
   selectNode,
   tabTo,
   threatPanel,
@@ -25,6 +26,10 @@ import {
 } from './studio.fixtures.js';
 
 const firstFlow = /^Submit order, flow/u;
+
+const flowWithAFreeEnd = /^Nightly backup probe, flow/u;
+
+const boundaryCurve = /^Edge zone, trust boundary/u;
 
 const actor = /^Customer\sbrowser, actor/u;
 
@@ -185,6 +190,54 @@ const pressTimes = async (
   }
 };
 
+const farArrow = {
+  top: 'Shift+ArrowUp',
+  right: 'Shift+ArrowRight',
+  bottom: 'Shift+ArrowDown',
+} as const;
+
+const followedPast = async (
+  page: Page,
+  item: Locator,
+  edge: keyof typeof farArrow,
+): Promise<void> => {
+  const step = farStep * (await viewportZoom(page));
+  const start = offsetIn(await viewportTransform(page));
+
+  await pressTimes(
+    page,
+    farArrow[edge],
+    Math.ceil((await edgeGaps(page, item))[edge] / step) + 2,
+  );
+  await canvasSettled(page);
+
+  const gap = (await edgeGaps(page, item))[edge];
+  expect(gap, `the ${edge} edge`).toBeGreaterThanOrEqual(0);
+  expect(gap, `the ${edge} edge`).toBeLessThan(justInside);
+  const rested = offsetIn(await viewportTransform(page));
+  if (edge === 'right') {
+    expect(rested.x).toBeLessThan(start.x);
+    expect(rested.y).toBe(start.y);
+  } else if (edge === 'bottom') {
+    expect(rested.y).toBeLessThan(start.y);
+    expect(rested.x).toBe(start.x);
+  } else {
+    expect(rested.y).toBeGreaterThan(start.y);
+    expect(rested.x).toBe(start.x);
+  }
+};
+
+const dragBorderward = async (page: Page, handle: Locator): Promise<void> => {
+  const from = await centreOf(handle);
+  const viewport = await viewportBox(page);
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(viewport.x + viewport.width - 2, from.y, {
+    steps: 12,
+  });
+  await page.mouse.up();
+};
+
 test('Tab onto a flow outside the viewport brings it just inside, by the least distance, and its ring shows', async ({
   page,
 }) => {
@@ -258,36 +311,9 @@ test('an arrow-key move that pushes an element past the right edge and then the 
   await openEveryGlyph(page);
   const item = await selectNode(page, store);
   await canvasSettled(page);
-  const step = farStep * (await viewportZoom(page));
-  const start = offsetIn(await viewportTransform(page));
 
-  await pressTimes(
-    page,
-    'Shift+ArrowRight',
-    Math.ceil((await edgeGaps(page, item)).right / step) + 2,
-  );
-  await canvasSettled(page);
-
-  const across = offsetIn(await viewportTransform(page));
-  const { right } = await edgeGaps(page, item);
-  expect(right).toBeGreaterThanOrEqual(0);
-  expect(right).toBeLessThan(justInside);
-  expect(across.x).toBeLessThan(start.x);
-  expect(across.y).toBe(start.y);
-
-  await pressTimes(
-    page,
-    'Shift+ArrowDown',
-    Math.ceil((await edgeGaps(page, item)).bottom / step) + 2,
-  );
-  await canvasSettled(page);
-
-  const down = offsetIn(await viewportTransform(page));
-  const { bottom } = await edgeGaps(page, item);
-  expect(bottom).toBeGreaterThanOrEqual(0);
-  expect(bottom).toBeLessThan(justInside);
-  expect(down.y).toBeLessThan(across.y);
-  expect(down.x).toBe(across.x);
+  await followedPast(page, item, 'right');
+  await followedPast(page, item, 'bottom');
 });
 
 test('an arrow-key move that pushes a box selection past the right edge is followed, and its frame and every element in it are back inside', async ({
@@ -298,23 +324,91 @@ test('an arrow-key move that pushes a box selection past the right edge is follo
   await boxSelect(page, [nodeNamed(page, process), nodeNamed(page, store)]);
   const frame = page.locator('.react-flow__nodesselection-rect');
   await expect(frame).toBeFocused();
-  const step = farStep * (await viewportZoom(page));
-  const start = offsetIn(await viewportTransform(page));
 
-  await pressTimes(
-    page,
-    'Shift+ArrowRight',
-    Math.ceil((await edgeGaps(page, frame)).right / step) + 2,
-  );
-  await canvasSettled(page);
+  await followedPast(page, frame, 'right');
 
-  const { right } = await edgeGaps(page, frame);
-  expect(right).toBeGreaterThanOrEqual(0);
-  expect(right).toBeLessThan(justInside);
-  expect(offsetIn(await viewportTransform(page)).x).toBeLessThan(start.x);
   for (const name of [process, store]) {
     expect(await insideTheViewport(page, nodeNamed(page, name))).toBe(true);
   }
+});
+
+test('a keyboard resize that pushes the focused control past the right edge, then another past the bottom edge, is followed', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  const item = await selectNode(page, store);
+  await canvasSettled(page);
+
+  for (const edge of ['right', 'bottom'] as const) {
+    const control = item.getByRole('button', {
+      name: `Resize Order database from ${edge}`,
+      exact: true,
+    });
+    await control.focus();
+    await followedPast(page, control, edge);
+    await expect(control).toBeFocused();
+  }
+});
+
+test('an arrow key that moves a bend, a free flow end and a curve point past the border is followed', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  for (const [owner, handle, edge] of [
+    [firstFlow, 'Bend 1', 'top'],
+    [flowWithAFreeEnd, 'Flow source end', 'right'],
+    [boundaryCurve, 'Point 2', 'bottom'],
+  ] as const) {
+    await test.step(handle, async () => {
+      await page.getByRole('button', { name: 'Fit to view' }).click();
+      await selectByKeyboard(page, owner);
+      const moved = page.getByRole('button', { name: handle, exact: true });
+      await moved.focus();
+
+      await followedPast(page, moved, edge);
+
+      await expect(moved).toBeFocused();
+    });
+  }
+});
+
+test('Tab onto a bend handle outside the viewport brings it just inside', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  await selectByKeyboard(page, firstFlow);
+  const bend = page.getByRole('button', { name: 'Bend 1', exact: true });
+  await bend.focus();
+  await pressTimes(page, farArrow.top, 6);
+  await canvasSettled(page);
+  const drawn = await screenBoxOf(bend);
+  const viewport = await viewportBox(page);
+  await scrollViewBy(page, {
+    x: 0,
+    y: viewport.y - beyondTheBorder - (drawn.y + drawn.height),
+  });
+  expect(await insideTheViewport(page, bend)).toBe(false);
+  const scrolled = await viewportTransform(page);
+
+  await page.getByRole('button', { name: 'Add bend', exact: true }).focus();
+  let rested = scrolled;
+  for (
+    let pressed = 0;
+    pressed < 20 && !(await focusedOn(bend));
+    pressed += 1
+  ) {
+    await canvasSettled(page);
+    rested = await viewportTransform(page);
+    await page.keyboard.press('Shift+Tab');
+  }
+  await expect(bend).toBeFocused();
+  await canvasSettled(page);
+
+  expect(rested, 'no earlier stop moved the view').toBe(scrolled);
+  const { top } = await edgeGaps(page, bend);
+  expect(top).toBeGreaterThanOrEqual(0);
+  expect(top).toBeLessThan(justInside);
+  expect(offsetIn(await viewportTransform(page)).x).toBe(offsetIn(scrolled).x);
 });
 
 test('a pointer drag that carries an element past the edge leaves the view where it is', async ({
@@ -338,6 +432,39 @@ test('a pointer drag that carries an element past the edge leaves the view where
   await expect(item).toHaveClass(/selected/u);
   await canvasSettled(page);
   expect(await insideTheViewport(page, item)).toBe(false);
+  expect(await viewportTransform(page)).toBe(before);
+});
+
+test('a pointer drag of a bend handle to the border leaves the view where it is', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  await selectByKeyboard(page, firstFlow);
+  const bend = page.getByRole('button', { name: 'Bend 1', exact: true });
+  const before = await viewportTransform(page);
+
+  await dragBorderward(page, bend);
+
+  await canvasSettled(page);
+  expect(await insideTheViewport(page, bend)).toBe(false);
+  expect(await viewportTransform(page)).toBe(before);
+});
+
+test('a pointer resize that carries the control to the border leaves the view where it is, though a key was pressed before', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  const item = await selectByKeyboard(page, actor);
+  const control = item.getByRole('button', {
+    name: 'Resize Customer\nbrowser from right',
+    exact: true,
+  });
+  const before = await viewportTransform(page);
+
+  await dragBorderward(page, control);
+
+  await canvasSettled(page);
+  expect(await insideTheViewport(page, control)).toBe(false);
   expect(await viewportTransform(page)).toBe(before);
 });
 

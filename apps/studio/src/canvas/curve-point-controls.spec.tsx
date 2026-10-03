@@ -21,6 +21,7 @@ import {
   viewportTransform,
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
+import { followItemMoves } from './move-message.js';
 
 const press = (key: string, shiftKey = false): void => {
   fireEvent.keyDown(document.activeElement ?? document.body, { key, shiftKey });
@@ -166,6 +167,21 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     ]);
     expect(modelStore.getState().past).toHaveLength(2);
     expect(currentAnnouncement().message).toContain('Perimeter');
+  });
+
+  it('tells the view of each arrow nudge of a focused point, and of no other key on it', () => {
+    render(<DiagramCanvas />);
+    const told = vi.fn<() => void>();
+    const release = followItemMoves(told);
+    point(2).focus();
+
+    press('ArrowUp');
+    press('ArrowRight', true);
+    expect(told).toHaveBeenCalledTimes(2);
+
+    press('Delete');
+    expect(told).toHaveBeenCalledTimes(2);
+    release();
   });
 
   it('removes a focused point by Delete, keeping the boundary, its last two points and the focus', () => {

@@ -15,6 +15,7 @@ import {
 import { currentAnnouncement } from './announcements.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { currentLayout } from './layout.js';
+import { followItemMoves } from './move-message.js';
 import {
   actorElement,
   mainDiagram,
@@ -263,6 +264,39 @@ describe('DiagramCanvas, a bend on a flow', () => {
     fireEvent.click(bend());
     fireEvent.click(screen.getByRole('button', { name: 'Remove bend' }));
     expect(points()).toEqual([]);
+  });
+});
+
+describe('DiagramCanvas, what the view is told of', () => {
+  it('hears of each arrow nudge of a focused bend, and of no other key on it', () => {
+    render(<DiagramCanvas />);
+    add();
+    press('Enter');
+    press('Enter');
+    const told = vi.fn<() => void>();
+    const release = followItemMoves(told);
+    bend().focus();
+
+    press('ArrowUp', true);
+    press('ArrowLeft');
+    expect(told).toHaveBeenCalledTimes(2);
+
+    press('Backspace');
+    expect(told).toHaveBeenCalledTimes(2);
+    release();
+  });
+
+  it('hears of an arrow nudge of a focused free end', () => {
+    openCanvas([probeFlow]);
+    render(<DiagramCanvas />);
+    const told = vi.fn<() => void>();
+    const release = followItemMoves(told);
+    targetEnd().focus();
+
+    press('ArrowLeft');
+
+    expect(told).toHaveBeenCalledOnce();
+    release();
   });
 });
 

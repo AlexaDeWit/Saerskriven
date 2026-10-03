@@ -33,9 +33,9 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `clipboard.ts`, `arrangement.ts`, `snap.ts`                           | Copy, cut, paste and duplicate, align and distribute, and the snap setting                                                         |
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
 | `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
-| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection, and the handler it tells of the move                 |
+| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection, and how the view's follower is told of a move        |
 | `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them            |
-| `focus-pan.tsx`                                                       | The shortest pan that brings the focused item's ring into the viewport, asked for by Tab focus and by an arrow-key move            |
+| `focus-pan.tsx`                                                       | The shortest pan that brings the focused item's ring into the viewport, asked for by Tab focus and by an arrow-key move or resize  |
 | `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                 |
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
@@ -209,15 +209,21 @@ is the chord that reaches every item, and no browser spec runs it.
 `:focus-visible` is not that test, because Chromium and Safari keep it for a
 script focus after any earlier key press, so an element placed by pointer and
 then named would pan. A `focusin` on React Flow's container counts while the
-keyboard is in charge and its target is an element, flow or resize control that
-matches `:focus-visible`. Focus the browser hands back when the window regains
-it is not a move. `onKeyboardMove` lends `KeyboardMoveMessage` the handler it
-calls once an arrow key has moved the selection, so the follow needs no Tab
-first, knows nothing of how the move is stored, and never hears of a pointer
-drag. It measures whatever holds focus then: the element, its resize control,
-or the frame React Flow draws around a box selection, whose box is the whole
-group's. That frame is no tab stop, so only the move path takes it. Both paths
-measure on the next frame, when what the key press changed is drawn.
+keyboard is in charge and its target is an element, a flow, a resize control,
+or a bend, flow end or curve point handle that matches `:focus-visible`. Focus
+the browser hands back when the window regains it is not a move.
+`onKeyboardMove` lends the handler that `itemMoved` in `move-message.tsx`
+calls, the one way the follow is told: by `KeyboardMoveMessage` once an arrow
+key has moved the selection, by the arrow nudge of a bend, a free flow end and
+a curve point, and by a resize as it ends. So the follow needs no Tab first and
+knows nothing of how the move is stored. A resize ends the same way by key and
+by pointer, so the handler counts only while the last input was a key press,
+which also tells it whether the key is held. It measures whatever holds focus
+then: the element, the resize control, the handle, or the frame React Flow
+draws around a box selection, whose box is the whole group's. That frame is no
+tab stop, so only the move path takes it. A bend placed from the route toolbar
+moves while the toolbar holds focus, so it is not followed. Both paths measure
+on the next frame, when what the key press changed is drawn.
 
 `offsetIntoView` works in screen pixels, from the item's box with its outline's
 reach and the container's box: no move for a ring wholly inside, otherwise on

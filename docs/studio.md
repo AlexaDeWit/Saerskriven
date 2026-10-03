@@ -741,26 +741,30 @@ under that pane, and the canvas does not move for it. What lies over the canvas
 plays no part in where the view goes.
 
 The view does move to bring an item into the viewport, the canvas's own area.
-When Tab or Shift+Tab puts focus on an element, a flow or a resize control
-whose focus ring lies partly or wholly outside the viewport, the view pans the
-shortest distance that brings the whole ring inside, to the border it had
-crossed. Tab steers the view this way from the press until the next press of a
-mouse button, a finger or a pen, so a key that returns focus meanwhile, such as
-Escape from a resize control back to its element, pans the same way, and no
-pointer action does. An arrow key that moves the selection out of the viewport
-is followed the same way, with no Tab needed, and a held arrow key is followed
-at each step. What is followed is whatever holds focus: the focused element, or
-after a box selection the frame around the whole group. Where several elements
-were selected one at a time with Shift, only the focused one is followed, and
-the others can leave the viewport.
+It pans the shortest distance that brings the item's whole focus ring inside,
+to the border it had crossed, when:
 
-The pan takes about half a second, or is a single step where the system asks
-for reduced motion or an arrow key is held. It keeps the zoom and never centres
-the item, and scrolling, dragging or zooming while it runs takes the view over.
-For an item larger than the viewport, the view moves the least that fills the
-viewport with the item, its nearer edge at the border, and not at all once the
-item spans the viewport. Resizing with an arrow key, and an arrow key on a
-bend, a flow end or a curve point, do not move the view.
+- Tab or Shift+Tab puts focus on an element, a flow, a resize control, or a
+  bend, flow end or curve point handle that lies partly or wholly outside.
+- A key returns focus to such an item while Tab still steers, as Escape from a
+  resize control does. Tab steers from the press until the next press of a
+  mouse button, a finger or a pen.
+- An arrow key moves the selection out of the viewport. No Tab is needed.
+- An arrow key on a resize control carries that control out of the viewport.
+- An arrow key moves a focused bend, free flow end or curve point out of it.
+
+What is followed is whatever holds focus. A box selection is followed as a
+whole, by the frame around it. With several elements picked one at a time with
+Shift, only the focused one is followed, and the others can leave the viewport.
+
+The pan takes about half a second. It is a single step where the system asks
+for reduced motion, and for each repeat of a held arrow key. It keeps the zoom
+and never centres the item. Scrolling, dragging or zooming while it runs takes
+the view over. For an item larger than the viewport, the view moves the least
+that fills the viewport with the item, its nearer edge at the border.
+
+No pointer action is followed. Nor is a bend being placed from the route
+toolbar with the arrow keys, since focus is on the toolbar then.
 
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves

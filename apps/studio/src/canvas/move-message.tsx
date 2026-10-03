@@ -20,17 +20,25 @@ export type KeyboardMoveReport = (event: KeyboardEvent) => void;
 /** The frame React Flow draws around a box selection, which takes focus and the arrow keys that move the group. */
 export const selectionFrameSelector = '.react-flow__nodesselection-rect';
 
-const follower = handlerSlot<(held: boolean) => void>();
+const follower = handlerSlot<() => void>();
 
 /**
- * Lends the handler `KeyboardMoveMessage` calls each time an arrow key has
- * moved the selection, with whether the press is a repeat of a key held
- * down, and answers the function that takes it back.
+ * Lends the handler `itemMoved` calls, and answers the function that takes it
+ * back.
  */
-export function followKeyboardMoves(
-  moved: (held: boolean) => void,
-): () => void {
+export function followItemMoves(moved: () => void): () => void {
   return follower.register(moved);
+}
+
+/**
+ * Tells the handler lent through `followItemMoves` that something on the
+ * canvas has just been moved or resized where it holds focus: the selection
+ * by an arrow key, a bend, a free flow end or a curve point by one, or an
+ * element by a resize. A resize ends the same way by key and by pointer, so
+ * it is the handler that tells a key press from a pointer.
+ */
+export function itemMoved(): void {
+  follower.current()?.();
 }
 
 /**
@@ -80,7 +88,7 @@ export const preMoveMessage = (): string => '';
 /**
  * Writes React Flow's live region after an arrow key within a node, or on the
  * rectangle React Flow draws around a box selection, has moved the
- * selection, and tells the handler lent through `followKeyboardMoves`. The
+ * selection, and tells the handler lent through `followItemMoves`. The
  * canvas wrapper hands `ref` each keydown once React Flow's handler has run,
  * so the store already holds the move. Mounted inside `ReactFlow`, where its
  * store is in reach.
@@ -99,7 +107,7 @@ export function KeyboardMoveMessage({
       if (!event.defaultPrevented || !movedBySelectionKey(event)) {
         return;
       }
-      follower.current()?.(event.repeat);
+      itemMoved();
       const message = movedSelectionMessage(modelStore.getState(), translator);
       if (message !== undefined) {
         said.current = freshLiveText(said.current, message);

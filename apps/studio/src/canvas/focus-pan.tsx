@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import { useEffect } from 'react';
 import { drawnSelector } from './edits.js';
-import { followKeyboardMoves, selectionFrameSelector } from './move-message.js';
+import { followItemMoves, selectionFrameSelector } from './move-message.js';
 
 /** How long the pan takes, in milliseconds, so the eye can follow the view moving. */
 export const focusPanDuration = 500;
@@ -19,7 +19,9 @@ export const ringMargin = 4;
 /** What the pan reads the view from and moves it through. */
 export type PannedView = Pick<ReactFlowInstance, 'getViewport' | 'setViewport'>;
 
-const ringedSelector = `${drawnSelector}, .react-flow__resize-control > button`;
+const handleSelector = '[data-bend-index], [data-flow-end], [data-curve-point]';
+
+const ringedSelector = `${drawnSelector}, .react-flow__resize-control > button, ${handleSelector}`;
 
 const movedSelector = `${ringedSelector}, ${selectionFrameSelector}`;
 
@@ -85,16 +87,16 @@ export function viewPanner(
 }
 
 /**
- * Calls `landed` with each drawn element, flow or resize control inside
- * `surface` that focus moves to showing its ring while the keyboard is in
- * charge: from a key press `armsFocusPan` answers until the next pointer
- * press. `:focus-visible` alone is no keyboard test, since Chromium and
- * Safari keep it for a script focus that follows any earlier key press, as a
- * flow drawn by pointer is focused. The call waits for the next frame, when
- * what the key press changed is drawn, and is dropped if focus has moved on
- * by then. Focus the browser hands back to the item that held it when the
- * window lost focus is no move, until a key arms again. Answers the function
- * that stops listening.
+ * Calls `landed` with each drawn element, flow, resize control, or bend,
+ * flow end or curve point handle inside `surface` that focus moves to
+ * showing its ring while the keyboard is in charge: from a key press
+ * `armsFocusPan` answers until the next pointer press. `:focus-visible` alone
+ * is no keyboard test, since Chromium and Safari keep it for a script focus
+ * that follows any earlier key press, as a flow drawn by pointer is focused.
+ * The call waits for the next frame, when what the key press changed is
+ * drawn, and is dropped if focus has moved on by then. Focus the browser
+ * hands back to the item that held it when the window lost focus is no move,
+ * until a key arms again. Answers the function that stops listening.
  */
 export function onKeyboardFocus(
   surface: HTMLElement,
@@ -147,20 +149,33 @@ export function onKeyboardFocus(
 }
 
 /**
- * Calls `moved` with what holds focus inside `surface` once an arrow key has
- * moved the selection: the drawn element, its resize control, or the frame
- * React Flow draws around a box selection, whose box is the whole group's.
- * It calls on the next frame, when the move is drawn, and says whether the
- * key is being held down. `KeyboardMoveMessage` says when, whatever stores
- * the move, so a pointer drag never calls it and no Tab press has to come
- * first. Answers the function that stops listening.
+ * Calls `moved` with what holds focus inside `surface` once a key press has
+ * moved or resized it: the drawn element, the resize control whose edge the
+ * key moved, a bend, flow end or curve point handle, or the frame React Flow
+ * draws around a box selection, whose box is the whole group's. `itemMoved`
+ * says when, whatever stores the move, and no Tab press has to come first.
+ * It counts only while the last input was a key press, so a pointer resize,
+ * which ends as a keyboard one does, never calls. The call comes on the next
+ * frame, when the move is drawn, and says whether the key is being held
+ * down. Answers the function that stops listening.
  */
 export function onKeyboardMove(
   surface: HTMLElement,
   moved: (target: Element, held: boolean) => void,
 ): () => void {
+  let keyHeld: boolean | undefined;
   let settling = 0;
-  const release = followKeyboardMoves((held) => {
+  const keyed = (event: KeyboardEvent): void => {
+    keyHeld = event.repeat;
+  };
+  const pointed = (): void => {
+    keyHeld = undefined;
+  };
+  const release = followItemMoves(() => {
+    const held = keyHeld;
+    if (held === undefined) {
+      return;
+    }
     cancelAnimationFrame(settling);
     settling = requestAnimationFrame(() => {
       const target = document.activeElement;
@@ -173,8 +188,14 @@ export function onKeyboardMove(
       }
     });
   });
+  window.addEventListener('keydown', keyed, true);
+  window.addEventListener('pointerdown', pointed, true);
+  window.addEventListener('pointerup', pointed, true);
   return () => {
     cancelAnimationFrame(settling);
+    window.removeEventListener('keydown', keyed, true);
+    window.removeEventListener('pointerdown', pointed, true);
+    window.removeEventListener('pointerup', pointed, true);
     release();
   };
 }
@@ -182,9 +203,9 @@ export function onKeyboardMove(
 /**
  * Pans the canvas the least that brings the focused item's ring into the
  * viewport, where Tab puts focus on an item outside it or an arrow key moves
- * the focused element, or the box selection, out of it. What lies over the
- * canvas plays no part. Mounted inside `ReactFlow`, where its store is in
- * reach.
+ * or resizes the focused item, or the box selection, out of it. What lies
+ * over the canvas plays no part. Mounted inside `ReactFlow`, where its store
+ * is in reach.
  */
 export function FocusPan(): null {
   const flow = useReactFlow();
