@@ -11,6 +11,7 @@ import {
   themedCanvasStylesheet,
   wrappedTextStyles,
 } from './stylesheet.js';
+import { outOfScopeOutline, paletteProperty } from './tokens.js';
 
 const declared = new Set<string>(Object.values(canvasClassNames));
 
@@ -36,6 +37,9 @@ const emitted = new Set<string>(
 
 const toneRule = (styles: string, className: string): string | undefined =>
   styles.split('\n').find((line) => line.startsWith(`.${className} { fill:`));
+
+const dashOf = (rule: string | undefined): string | undefined =>
+  /stroke-dasharray: (?<dash>[^;]+);/u.exec(rule ?? '')?.groups?.dash;
 
 const toned = (theme: RenderTheme): [string, string][] => [
   ...severitySchema.options.map((severity): [string, string] => [
@@ -119,6 +123,52 @@ describe('themedCanvasStylesheet', () => {
   it('styles the classes the resolved sheet does, with every colour left to a custom property', () => {
     expect(classesStyledBy(themedCanvasStylesheet)).toEqual(selected);
     expect(themedCanvasStylesheet).not.toMatch(/#[0-9A-Fa-f]{3,8}/u);
+  });
+});
+
+describe('an out-of-scope element', () => {
+  const themedRules = themedCanvasStylesheet
+    .split('}')
+    .map((rule) => rule.trim());
+  const ruleStarting = (selector: string): string | undefined =>
+    themedRules.find((rule) => rule.startsWith(selector));
+  const outOfScope = `.${canvasClassNames.outOfScope} `;
+  const rules = themedRules.filter((rule) => rule.startsWith(outOfScope));
+  const outline = ruleStarting(`${outOfScope}.${canvasClassNames.shape} {`);
+
+  it('is faded by neither sheet, so each ink is drawn at the ratio the palette measures for it', () => {
+    expect(
+      [sheet, themedCanvasStylesheet].filter((styles) =>
+        styles.includes('opacity'),
+      ),
+    ).toEqual([]);
+  });
+
+  it('has only its outline, line and arrowhead drawn in the outline ink, its name, badge, note and flow name as in scope', () => {
+    expect(classesStyledBy(rules.join('\n'))).toEqual(
+      new Set([
+        canvasClassNames.outOfScope,
+        canvasClassNames.shape,
+        canvasClassNames.flowArrow,
+      ]),
+    );
+    expect(outline).toContain(`stroke: ${paletteProperty(outOfScopeOutline)};`);
+    expect(
+      ruleStarting(`${outOfScope}.${canvasClassNames.flowArrow} {`),
+    ).toContain(`fill: ${paletteProperty(outOfScopeOutline)};`);
+  });
+
+  it("dashes its outline, which in scope is solid, in a dash apart from a trust boundary's", () => {
+    const dash = dashOf(outline);
+    const boundaryDash = dashOf(
+      ruleStarting(`.${canvasClassNames.boundaryBox},`),
+    );
+    expect(
+      dashOf(ruleStarting(`.${canvasClassNames.shape} {`)),
+    ).toBeUndefined();
+    expect(dash).toBeDefined();
+    expect(boundaryDash).toBeDefined();
+    expect(dash).not.toBe(boundaryDash);
   });
 });
 

@@ -97,6 +97,9 @@ The headless render embeds `renderCanvasStylesheet` for a theme, and the
 studio injects `themedCanvasStylesheet`, the same sheet with every colour
 read from a custom property. `wrappedTextStyles` pairs each run of text with
 its class and font size, and `severityToneClass` names each severity's tone.
+Nothing in the sheet is faded, so every ink is drawn at the ratio
+`tokens.spec.ts` measures for it, and an out-of-scope element is marked by the
+dash on its outline.
 [`render-theme.ts`](src/lib/render-theme.ts): `renderThemeSchema` and
 `defaultRenderTheme` are the theme headless output is drawn with, and
 `badgeTextColour` resolves a badge's lettering under it.
