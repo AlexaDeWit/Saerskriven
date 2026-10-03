@@ -121,6 +121,11 @@ layout over with every position and extent explicit, so React Flow measures
 nothing. A flow end at a free position rides on an anchor node named by
 `flowEndNodeId`, of type `freeEndNodeKind`. `layoutAtReactFlowNodes` lays the
 diagram out at the node positions React Flow holds during a gesture.
+`CanvasNodeBody` draws a selected node's badge at `selectedBadgeAnchor`,
+stepped out past its top-right corner and clear of a resize handle inside it.
+That is drawing only: the layout, flow name placement and every export keep the
+badge on the corner. A canvas measuring a selection as drawn passes
+`selectedBadgeAnchor` to `drawnBounds`.
 [`resizing.ts`](src/lib/resizing.ts): `resizeKeys`, `keyboardResizeStep` and
 `shiftedKeyboardResizeStep` are the keyboard resize the node body's controls
 use, one control per `resizeControlPositions` entry, less those a boundary

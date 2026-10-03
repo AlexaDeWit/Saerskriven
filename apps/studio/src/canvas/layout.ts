@@ -1,6 +1,7 @@
 import {
   drawnBounds,
   layoutDiagram,
+  selectedBadgeAnchor,
   type CanvasBounds,
   type CanvasLayout,
 } from '@saerskriven/canvas';
@@ -41,7 +42,10 @@ export function currentLayout(
   return layout;
 }
 
-/** The drawn extent of the selected elements and flows, as `drawnBounds` measures it. */
+/**
+ * The drawn extent of the selected elements and flows, as `drawnBounds`
+ * measures it, with each badge where a selected element draws it.
+ */
 export function selectionBounds(
   layout: CanvasLayout,
   selection: readonly ElementId[],
@@ -50,6 +54,7 @@ export function selectionBounds(
   return drawnBounds(
     layout.nodes.filter((node) => selected.has(node.id)),
     layout.edges.filter((edge) => selected.has(edge.id)),
+    selectedBadgeAnchor,
   );
 }
 

@@ -5,6 +5,7 @@ import {
   Position,
   useInternalNode,
   useStore,
+  ViewportPortal,
   type Edge,
   type EdgeProps,
   type InternalNode,
@@ -12,7 +13,13 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import type { ReactElement } from 'react';
-import { badgeAnchor, ThreatBadgeGlyph, type BadgeMarks } from './badges.js';
+import {
+  badgeAnchor,
+  badgeStepsOut,
+  selectedBadgeAnchor,
+  ThreatBadgeGlyph,
+  type BadgeMarks,
+} from './badges.js';
 import { edgePoints } from './flow-anchors.js';
 import { shiftedBy } from './geometry.js';
 import { ElementGlyph, FlowGlyph } from './glyphs.js';
@@ -78,7 +85,10 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
  * draws at the extent React Flow reports, a boundary curve's points scaled
  * with it. The badge letters `marks` and draws last, in an SVG layer classed
  * `canvasInteractionClassNames.badgeLayer`, so a canvas can stack it above the
- * selection frame.
+ * selection frame. A selected node draws its badge at `selectedBadgeAnchor`.
+ * A selected boundary box draws that layer in React Flow's viewport portal at
+ * the node's live position, since the boundary itself sits below every other
+ * item.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
@@ -88,6 +98,8 @@ export function CanvasNodeBody({
   marks,
   onResize,
   onResizeEnd,
+  positionAbsoluteX,
+  positionAbsoluteY,
   resizeLabels,
   resizing = false,
   selected,
@@ -113,6 +125,15 @@ export function CanvasNodeBody({
     shownSize.height === data.node.size.height
       ? data.node
       : nodeAtSize(data.node, shownSize);
+  const raised = selected && isBoundary(shownNode) && badgeStepsOut(shownNode);
+  const badge = (
+    <BadgeLayer
+      at={raised ? { x: positionAbsoluteX, y: positionAbsoluteY } : undefined}
+      marks={marks}
+      node={shownNode}
+      selected={selected}
+    />
+  );
   return (
     <>
       <svg
@@ -149,7 +170,7 @@ export function CanvasNodeBody({
           visible={controlsVisible}
         />
       ) : null}
-      <BadgeLayer marks={marks} node={shownNode} />
+      {raised ? <ViewportPortal>{badge}</ViewportPortal> : badge}
     </>
   );
 }
@@ -376,11 +397,15 @@ const handlePlacement = {
 } as const satisfies Record<HandleSide, Position>;
 
 function BadgeLayer({
+  at = { x: 0, y: 0 },
   marks,
   node,
+  selected,
 }: {
+  readonly at?: Point;
   readonly marks: BadgeMarks;
   readonly node: CanvasNode;
+  readonly selected: boolean;
 }): ReactElement | null {
   if (node.badge === undefined) {
     return null;
@@ -392,7 +417,7 @@ function BadgeLayer({
       height={svgNumber(node.size.height)}
       overflow="visible"
       pointerEvents="none"
-      style={{ position: 'absolute', left: 0, top: 0 }}
+      style={{ position: 'absolute', left: at.x, top: at.y }}
       width={svgNumber(node.size.width)}
     >
       <g
@@ -401,7 +426,7 @@ function BadgeLayer({
       >
         <ThreatBadgeGlyph
           badge={node.badge}
-          at={badgeAnchor(node.size)}
+          at={selected ? selectedBadgeAnchor(node) : badgeAnchor(node.size)}
           marks={marks}
         />
       </g>

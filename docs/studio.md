@@ -259,6 +259,12 @@ units, or twenty with Shift. An element is at least ten units wide and high. On
 a trust boundary curve the same controls scale its points
 ([Trust boundaries](#trust-boundaries)).
 
+While an element with a threat badge is selected, the badge steps out past its
+top-right corner, so the handle there stays on the corner, and it draws above
+neighbouring elements and flow names. The bounds a drag starts in and **Fit
+selection** fits include it there. Deselected, the badge sits back on the
+corner, and an export always draws it there.
+
 Position and size opens an editor for exact coordinates and dimensions, and
 Apply commits the whole form as one edit. Cancel or Escape leaves the model
 alone. **Align** (left, centres, right, top, middles, bottom) uses the outer
@@ -352,12 +358,14 @@ curve stays close to its shape.
 
 A selected curve also carries a box's side lines and corner handles around its
 points, each corner handle just outside its corner so that a point there keeps
-its own handle. Dragging a control, or pressing an arrow key on a focused one,
-scales every point against the opposite side or corner as one undo step, and
-the boundary keeps its name and its threats. Width and height in Position and
-size scale the points the same way, to no less than ten units. A curve whose
-points all lie on one horizontal or vertical line has only the two side lines
-that lengthen it, and the form shows only the width or the height that does.
+its own handle, and so that its threat badge, unlike an element's, stays on the
+corner while the curve is selected. Dragging a control, or pressing an arrow key
+on a focused one, scales every point against the opposite side or corner as one
+undo step, and the boundary keeps its name and its threats. Width and height in
+Position and size scale the points the same way, to no less than ten units. A
+curve whose points all lie on one horizontal or vertical line has only the two
+side lines that lengthen it, and the form shows only the width or the height
+that does.
 
 ## Names and Note text
 

@@ -159,12 +159,17 @@ Select rests on the arrow over the pane and nodes, a flow keeps its link
 pointer and a connection handle its crosshair. Place uses a crosshair and Hand
 uses `grab`, then `grabbing`. The side lines take the pointer away from the
 round connection handle at each midpoint. A threat badge draws over the
-selection frame and the side lines and under every control's hit area. The
-top-right resize handle keeps clear of the badge at every zoom, and on an
-element too narrow for that it stops beside the top-left handle and can meet
-the badge ([the canvas package](../../../../packages/canvas/README.md)). A
-trust boundary curve's corner handles sit outside its corners instead, clear of
-the badge and of the handle on a point there.
+selection frame and the side lines and under every control's hit area. While
+its element is selected, the badge steps out past the top-right corner
+([the canvas package](../../../../packages/canvas/README.md)), and the selected
+node's z-index of 1 draws it above its neighbours. A selected boundary box
+stays at -1, so its badge draws in React Flow's viewport portal, where the
+badge layer's z-index lifts it above the nodes around it. Scaled up at low
+zoom, the two right-hand corner handles grow inward from the right side, so
+neither reaches the stepped-out badge. `selectionBounds` measures a selection
+with each badge where it is drawn, for Fit selection and the group drag's
+bounds. A trust boundary curve's corner handles sit outside its corners
+instead, clear of the badge on its corner and of the handle on a point there.
 
 Focus is the app's ring (`--saer-focus-ring`) and selection the frame and
 weights above, drawn apart so they stack: an element's ring sits just inside
