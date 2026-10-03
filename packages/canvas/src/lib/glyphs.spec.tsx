@@ -126,7 +126,7 @@ describe('ElementGlyph, taking its extent from the model', () => {
     );
   });
 
-  it('dims an out-of-scope element', () => {
+  it('marks an out-of-scope element and no other', () => {
     expect(glyphOf('el-db')).toContain(canvasClassNames.outOfScope);
     expect(glyphOf('el-api')).not.toContain(canvasClassNames.outOfScope);
   });

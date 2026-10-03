@@ -257,7 +257,7 @@ describe('CanvasNodeBody', () => {
     );
   });
 
-  it('dims the badge layer of an out-of-scope element', () => {
+  it("marks an out-of-scope element's badge layer as its glyph is marked", () => {
     const node = nodeNamed('el-db');
     expect(node.outOfScope).toBe(true);
     const markup = bodyMarkup(node);
