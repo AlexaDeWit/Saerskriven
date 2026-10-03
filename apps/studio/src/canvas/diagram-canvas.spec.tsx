@@ -1,6 +1,7 @@
 import { canvasClassNames, flowEndNodeId } from '@saerskriven/canvas';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
+import { elementIn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
   contextualShortcuts,
@@ -18,8 +19,10 @@ import { currentAnnouncement } from './announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
+  boundaryCurve,
   boundaryElement,
   canvasModel,
+  curvedCanvasModel,
   laidOutNode,
   noteElement,
   openCanvas,
@@ -346,6 +349,28 @@ describe('DiagramCanvas', () => {
       expect(modelStore.getState().past).toHaveLength(1);
     },
   );
+
+  it("scales a trust boundary curve's points by keyboard with the opposite side fixed, as one undo step", () => {
+    openCanvas([boundaryElement], curvedCanvasModel);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(
+      screen.getByRole('button', { name: 'Resize Perimeter from top' }),
+      { key: 'ArrowUp', shiftKey: true },
+    );
+
+    const boundary = elementIn(modelStore.getState().present, boundaryElement);
+    const points =
+      boundary.kind === 'trust-boundary' && boundary.shape.kind === 'curve'
+        ? boundary.shape.waypoints
+        : [];
+    expect(points.map((point) => point.x)).toEqual(
+      boundaryCurve.map((point) => point.x),
+    );
+    expect([points[0]?.y, points[2]?.y]).toEqual([80, 80]);
+    expect(points[1]?.y).toBeCloseTo(-40);
+    expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
+  });
 
   it('shrinks in the reverse direction and undo restores the full box', () => {
     openCanvas([actorElement]);

@@ -24,6 +24,7 @@ import {
   canvasModel,
   curvedCanvasModel,
   flaggedCanvasModel,
+  laidOutNode,
   openCanvas,
   probeFlow,
   requestFlow,
@@ -485,6 +486,30 @@ describe('resizeNode', () => {
     }
 
     expect(modelStore.getState().past).toHaveLength(0);
+  });
+
+  it("scales a trust boundary curve's points against the side left in place, as one undo step that changes nothing else", () => {
+    openCanvas([boundaryElement], curvedCanvasModel);
+    const node = laidOutNode(boundaryElement);
+
+    resizeNode(node, {
+      position: node.position,
+      size: { width: node.size.width + 460, height: node.size.height },
+    });
+
+    const state = modelStore.getState();
+    expect(state.past).toEqual([curvedCanvasModel]);
+    expect(elementIn(state.present, boundaryElement)).toStrictEqual({
+      ...elementIn(curvedCanvasModel, boundaryElement),
+      shape: {
+        kind: 'curve',
+        waypoints: [
+          { x: -20, y: 80 },
+          { x: 420, y: -20 },
+          { x: 900, y: 80 },
+        ],
+      },
+    });
   });
 });
 

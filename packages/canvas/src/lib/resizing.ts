@@ -1,4 +1,9 @@
+import type { Point, Size } from '@saerskriven/model';
+import { boundsOfPoints } from './bounds.js';
+import { boxOfPoints, sameCoordinate } from './geometry.js';
 import { sameNodeBox, type NodeBox } from './handles.js';
+import type { CanvasNode } from './layout.js';
+import { boundaryStrokeWidth } from './stylesheet.js';
 
 /** Positions of the four side controls and four corner controls. */
 export const resizeControlPositions = [
@@ -79,6 +84,98 @@ export function resizeBoxOnControlAxes(
     };
   }
   return resized;
+}
+
+/** Which axes a resize of `node` can stretch: both, but on a boundary curve only those its points span. */
+export function resizableAxes(node: CanvasNode): {
+  readonly width: boolean;
+  readonly height: boolean;
+} {
+  if (node.kind !== 'boundary-curve') {
+    return { width: true, height: true };
+  }
+  const span = boundsOfPoints(node.waypoints);
+  return { width: span.width > 0, height: span.height > 0 };
+}
+
+/** The controls that resize `node`: every position, less those that would stretch an axis {@link resizableAxes} leaves out. */
+export function resizeControlsOf(
+  node: CanvasNode,
+): readonly ResizeControlPosition[] {
+  const axes = resizableAxes(node);
+  return resizeControlPositions.filter(
+    (control) =>
+      (axes.width || horizontalEdge(control) === undefined) &&
+      (axes.height || verticalEdge(control) === undefined),
+  );
+}
+
+/** `node` drawn at `size`, a boundary curve's points scaled with it in the node's own coordinates. */
+export function nodeAtSize(node: CanvasNode, size: Size): CanvasNode {
+  return node.kind === 'boundary-curve'
+    ? {
+        ...node,
+        size,
+        waypoints: scaledCurvePoints(node.waypoints, {
+          position: { x: 0, y: 0 },
+          size,
+        }),
+      }
+    : { ...node, size };
+}
+
+/**
+ * Boundary curve points scaled so the curve laid out from them fills `box`,
+ * whose sides the layout places one boundary stroke outside the points. Each
+ * point keeps its place across the points' span, and a side that `box` leaves
+ * in place keeps its points' exact coordinates. An axis shrinks to
+ * `minimumNodeExtent` and no further, or not at all where it already spans
+ * less, and an axis the points do not span only moves.
+ */
+export function scaledCurvePoints(
+  points: readonly Point[],
+  box: NodeBox,
+): Point[] {
+  const bounds = boxOfPoints(points);
+  if (bounds === undefined) {
+    return [];
+  }
+  const across = scaledAxis(
+    { low: bounds.minX, high: bounds.maxX },
+    box.position.x,
+    box.size.width,
+  );
+  const down = scaledAxis(
+    { low: bounds.minY, high: bounds.maxY },
+    box.position.y,
+    box.size.height,
+  );
+  return points.map((point) => ({ x: across(point.x), y: down(point.y) }));
+}
+
+function scaledAxis(
+  { low, high }: { readonly low: number; readonly high: number },
+  boxStart: number,
+  boxExtent: number,
+): (value: number) => number {
+  const margin = boundaryStrokeWidth;
+  const span = high - low;
+  const current = span + margin * 2;
+  const keepsStart = sameCoordinate(boxStart, low - margin);
+  const keepsEnd = sameCoordinate(boxStart + boxExtent, low - margin + current);
+  if (keepsStart && keepsEnd) {
+    return (value) => value;
+  }
+  const extent =
+    Math.max(boxExtent, Math.min(current, minimumNodeExtent)) - margin * 2;
+  const factor = span === 0 ? 1 : extent / span;
+  if (keepsStart) {
+    return (value) => low + (value - low) * factor;
+  }
+  if (keepsEnd) {
+    return (value) => high - (high - value) * factor;
+  }
+  return (value) => boxStart + margin + (value - low) * factor;
 }
 
 function resizeOnHorizontalAxis(

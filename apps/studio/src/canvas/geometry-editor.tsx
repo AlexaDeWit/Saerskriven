@@ -1,4 +1,4 @@
-import { boxOfPoints } from '@saerskriven/canvas';
+import { boxOfPoints, resizableAxes } from '@saerskriven/canvas';
 import { pointSchema, sizeSchema } from '@saerskriven/model';
 import { useId, useState, type FormEvent } from 'react';
 import { useTranslator } from '../messages/locale.js';
@@ -23,6 +23,7 @@ export function GeometryEditor({
   );
   const single =
     nodes.length === 1 && state.selection.length === 1 ? nodes[0] : undefined;
+  const axes = single === undefined ? undefined : resizableAxes(single);
   const bounds = boxOfPoints(nodes.map((node) => node.position));
   const [position, setPosition] = useState({
     x: String(bounds?.minX ?? 0),
@@ -34,7 +35,6 @@ export function GeometryEditor({
   });
   const [refused, setRefused] = useState(false);
   const { t } = useTranslator();
-  const resizable = single !== undefined && single.kind !== 'boundary-curve';
   if (bounds === undefined) {
     return (
       <>
@@ -55,12 +55,12 @@ export function GeometryEditor({
       width: numeric(size.width),
       height: numeric(size.height),
     });
-    if (!at.success || (resizable && !extent.success)) {
+    if (!at.success || (single !== undefined && !extent.success)) {
       setRefused(true);
       announce((speak) => speak('canvas.geometry-invalid'));
       return;
     }
-    if (single !== undefined && resizable && extent.success) {
+    if (single !== undefined && extent.success) {
       resizeNode(single, { position: at.data, size: extent.data });
     } else {
       const offset = { x: at.data.x - bounds.minX, y: at.data.y - bounds.minY };
@@ -86,8 +86,9 @@ export function GeometryEditor({
           }}
         />
       ))}
-      {resizable &&
-        (['width', 'height'] as const).map((axis) => (
+      {(['width', 'height'] as const)
+        .filter((axis) => axes?.[axis] === true)
+        .map((axis) => (
           <NumberField
             key={axis}
             label={t(axis === 'width' ? 'tools.width' : 'tools.height')}

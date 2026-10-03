@@ -9,7 +9,7 @@ import {
   minimumNodeExtent,
   resizeBoxByKey,
   resizeBoxOnControlAxes,
-  resizeControlPositions,
+  resizeControlsOf,
   resizeKeys,
   shiftedKeyboardResizeStep,
   type ResizeControlPosition,
@@ -21,13 +21,16 @@ export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
 
 /**
  * The resize controls of a selected node: a line control on each side, which
- * resizes one axis, and a handle at each corner, which resizes both. Each
+ * resizes one axis, and a handle at each corner, which resizes both, less
+ * those {@link resizeControlsOf} leaves off a boundary curve. Each
  * holds a button named from `labels` that resizes by arrow key in
  * model-space steps. Both routes hand `onResizeEnd` the settled position and
  * size together, so a resize from the top or left is one edit. On a node with
  * a badge, the top-right handle sits on the top edge `resizeHandle.badgeGap`
  * screen pixels left of the badge's ink at every zoom, and at full zoom it
- * stays clear of the top-left handle.
+ * stays clear of the top-left handle. A boundary curve's corner handles sit
+ * `resizeHandle.curveGap` outside its corners instead, clear of a handle on
+ * a point there.
  */
 export function ResizeControls({
   labels,
@@ -62,7 +65,7 @@ export function ResizeControls({
 
   return (
     <>
-      {resizeControlPositions.map((position) => (
+      {resizeControlsOf(node).map((position) => (
         <NodeResizeControl
           key={position}
           minHeight={minimumNodeExtent}
@@ -136,6 +139,9 @@ function controlStyle(
   visible: boolean,
 ): CSSProperties | undefined {
   const hidden: CSSProperties = visible ? {} : { visibility: 'hidden' };
+  if (node.kind === 'boundary-curve' && !sideControls.has(position)) {
+    return { ...hidden, ...outsideCorner(position) };
+  }
   const badge = position === 'top-right' ? node.badge : undefined;
   if (badge === undefined) {
     return visible ? undefined : hidden;
@@ -149,5 +155,20 @@ function controlStyle(
     left: `max(${svgNumber(beyondTopLeft)}px, calc(100% - ${svgNumber(reach)}px))`,
     translate: `calc(-100% - ${gap}) -50%`,
     transformOrigin: `calc(100% + ${gap}) 50%`,
+  };
+}
+
+function outsideCorner(position: ResizeControlPosition): CSSProperties {
+  const gap = `${svgNumber(resizeHandle.curveGap)}px`;
+  const before = {
+    shift: `calc(-100% - ${gap})`,
+    about: `calc(100% + ${gap})`,
+  };
+  const after = { shift: gap, about: `-${gap}` };
+  const across = position.endsWith('left') ? before : after;
+  const down = position.startsWith('top') ? before : after;
+  return {
+    translate: `${across.shift} ${down.shift}`,
+    transformOrigin: `${across.about} ${down.about}`,
   };
 }

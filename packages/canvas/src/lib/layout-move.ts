@@ -11,7 +11,7 @@ import {
   movedFlowLabel,
   type FlowLabelPlacement,
 } from './flow-labels.js';
-import { shiftedBy } from './geometry.js';
+import { sameCoordinate, shiftedBy } from './geometry.js';
 import { sameNodeBox, type NodeBox } from './handles.js';
 import type {
   CanvasEdge,
@@ -115,8 +115,6 @@ export function reanchoredFlow(
     ),
   };
 }
-
-const layoutCoordinateTolerance = 1e-6;
 
 function movedNodes(
   nodes: readonly CanvasNode[],
@@ -294,8 +292,4 @@ function sameFlowLabel(
         sameCoordinate(one.badge.x, other.badge.x) &&
         sameCoordinate(one.badge.y, other.badge.y)))
   );
-}
-
-function sameCoordinate(one: number, other: number): boolean {
-  return Math.abs(one - other) <= layoutCoordinateTolerance;
 }

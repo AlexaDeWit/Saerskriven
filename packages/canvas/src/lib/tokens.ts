@@ -160,12 +160,16 @@ const cueWidths = {
  * A square resize handle in the interactive canvas, in pixels at full zoom:
  * `size` is its side inside React Flow's 1px `border`, and `badgeGap` is how
  * far a handle beside a threat badge keeps from the badge's ink, on screen at
- * every zoom.
+ * every zoom. `curveGap` is how far a boundary curve's corner handle sits
+ * outside the corner on each axis, on screen at every zoom out, so a control
+ * about 30 pixels across centred on a point at that corner leaves it
+ * uncovered, and so does the badge.
  */
 export const resizeHandle = {
   size: 9,
   border: 1,
   badgeGap: 3,
+  curveGap: 12,
 } as const;
 
 /** The invisible stroke widths that make thin diagram lines easier to grab. */

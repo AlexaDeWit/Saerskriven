@@ -1,5 +1,11 @@
 import { elementIn } from '@saerskriven/model/fixtures';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { currentAnnouncement } from './announcements.js';
@@ -21,6 +27,21 @@ const press = (key: string, shiftKey = false): void => {
 
 const point = (number: number) =>
   screen.getByRole('button', { name: `Point ${String(number)}` });
+
+const mouseOn = (
+  target: Element | Window,
+  type: 'mouseDown' | 'mouseMove' | 'mouseUp',
+  clientX: number,
+): void => {
+  const event = createEvent[type](target, { clientX, clientY: 100 });
+  Object.defineProperty(event, 'view', { value: window });
+  fireEvent(target, event);
+};
+
+const clickSuppressionLifted = (): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 
 const pointCount = () =>
   screen.queryAllByRole('button', { name: /^Point \d+$/u }).length;
@@ -44,6 +65,23 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
       dispatch(Action.Select({ elementIds: [requestFlow] }));
     });
     expect(pointCount()).toBe(0);
+  });
+
+  it('stands the point handles aside while the curve is scaled, and draws them again once it settles', async () => {
+    render(<DiagramCanvas />);
+    const control = screen.getByRole('button', {
+      name: 'Resize Perimeter from right',
+    }).parentElement;
+    assert.isNotNull(control);
+
+    mouseOn(control, 'mouseDown', 100);
+    mouseOn(window, 'mouseMove', 160);
+    expect(pointCount()).toBe(0);
+    mouseOn(window, 'mouseUp', 160);
+
+    expect(pointCount()).toBe(boundaryCurve.length);
+    expect(modelStore.getState().past).toHaveLength(1);
+    await clickSuppressionLifted();
   });
 
   it('draws no point handles on a box boundary', () => {
