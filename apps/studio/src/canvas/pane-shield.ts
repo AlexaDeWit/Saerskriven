@@ -13,7 +13,7 @@ import { currentTool } from './tools.js';
 /** How soon, in milliseconds, a second press must follow the first to make a double-click: the common platform default. */
 export const doublePressInterval = 500;
 
-/** Every pane floating over the canvas: the threat or model panel, and the cards and editors of the selection. */
+/** Every pane floating over the canvas: the threat or model panel, the threat register, and the cards and editors of the selection. */
 export const paneSelector = '[data-pane]';
 
 type Press = {

@@ -728,11 +728,13 @@ letter, and a flag is a triangle marked `!`.
 When Tab, or any other key that moves focus, lands on an element, a flow or a
 resize control that a pane covers any part of, the view pans the shortest
 distance that shows the whole focus ring clear of every pane: the threat or
-model panel, the Reconnect flow or Trust boundary card, and the Position and
-size and flow end editors. The pan takes about half a second, or is a single
-step where the system asks for reduced motion. It keeps the zoom and never
-centres the element, and scrolling, dragging or zooming while it runs takes the
-view over.
+model panel, the threat register, the Reconnect flow or Trust boundary card,
+and the Position and size and flow end editors. The pan takes about half a
+second, or is a single step where the system asks for reduced motion. It keeps
+the zoom and never centres the element, and scrolling, dragging or zooming
+while it runs takes the view over. Under the open register most of the diagram
+is covered, so Tab through it moves the view at each stop that fits clear of
+the register, and the view stays where the last stop left it.
 
 The view stays where it is when the ring is already clear, when focus arrives
 by a click, a press or a tap, and when the ring fits nowhere clear of the panes
