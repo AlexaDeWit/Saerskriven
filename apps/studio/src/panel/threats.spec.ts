@@ -220,19 +220,24 @@ describe('elementHeading', () => {
   });
 
   it.each(locales)(
-    'opens with a capital in %s for an element of each kind called nothing, where its label in a sentence does not',
+    'opens with a capital in %s for an element of each kind called nothing, in the words its label in a sentence has in lower case',
     (locale) => {
       const speak = inLocale(locale);
-      const opening = (label: typeof elementLabel): readonly boolean[] =>
+      const worded = (label: typeof elementLabel): readonly string[] =>
         namelessOfEveryKind.map((element) =>
-          opensWithCapital(label(element, sampleElements, speak), locale),
+          label(element, sampleElements, speak),
         );
+      const opening = (label: typeof elementLabel): readonly boolean[] =>
+        worded(label).map((text) => opensWithCapital(text, locale));
+      const lowered = (label: typeof elementLabel): readonly string[] =>
+        worded(label).map((text) => text.toLocaleLowerCase(locale));
 
       expect(new Set(namelessOfEveryKind.map(({ kind }) => kind))).toEqual(
         new Set(Object.keys(headingKindMessages)),
       );
       expect(opening(elementHeading)).not.toContain(false);
       expect(opening(elementLabel)).not.toContain(true);
+      expect(lowered(elementHeading)).toEqual(lowered(elementLabel));
     },
   );
 
