@@ -69,6 +69,12 @@ export {
   elementIdsAcross,
   elementIdsIn,
   elementsAcross,
+  elementsById,
+  flowEndName,
+  flowEnds,
+  unlabelledFlow,
+  type FlowEnd,
+  type FlowEnds,
 } from './lib/references.js';
 export {
   assumptionHasReference,

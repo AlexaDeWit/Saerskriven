@@ -9,13 +9,18 @@ import {
   threatFlagSchema,
   threatStatusSchema,
   type Diagram,
+  type Model,
   type ThreatCategory,
 } from '@saerskriven/model';
 import {
   assumptionOf,
+  attached,
   boxAt,
+  flowBetween,
+  flowFrom,
   mitigationOf,
   modelFrom,
+  modelWith,
   repositoryRoot,
   threatOf,
 } from '@saerskriven/model/fixtures';
@@ -121,6 +126,17 @@ function diagramOf(
         element.name,
       ),
     ),
+  });
+}
+
+function onUnlabelled(flow: object, name = ''): Model {
+  return modelWith({
+    elements: [
+      boxAt('el-a', 0, 0, 'process', undefined, 'Gateway'),
+      boxAt('el-b', 300, 0, 'store', undefined, 'Ledger'),
+      { ...flow, id: 'el-flow', name },
+    ],
+    threats: [threatOf({ number: 1, elements: ['el-flow'] })],
   });
 }
 
@@ -456,6 +472,47 @@ describe('a threat section', () => {
       'en-CA',
     );
     expect(rendered).toContain('- **Elements**: el-a');
+  });
+
+  it.each([
+    [
+      'from its source to its target',
+      flowFrom('el-flow', 'el-a', 'el-b'),
+      'Flow from Gateway to Ledger',
+    ],
+    [
+      'between its ends where it runs both ways',
+      { ...flowFrom('el-flow', 'el-a', 'el-b'), bidirectional: true },
+      'Flow between Gateway and Ledger',
+    ],
+    [
+      'with an end attached to nothing as a free point',
+      flowBetween(
+        attached('el-a'),
+        { kind: 'free', position: { x: 0, y: 200 } },
+        [],
+      ),
+      'Flow from Gateway to a free point',
+    ],
+  ])('names a flow left unlabelled %s', (_, flow, named) => {
+    expect(renderRegister(onUnlabelled(flow), 'en-CA')).toContain(
+      `- **Elements**: ${named}`,
+    );
+  });
+
+  it('names a flow a file holds under white space alone from its ends', () => {
+    expect(
+      renderRegister(
+        onUnlabelled(flowFrom('el-flow', 'el-a', 'el-b'), ' '),
+        'en-CA',
+      ),
+    ).toContain('- **Elements**: Flow from Gateway to Ledger');
+  });
+
+  it("names a flow left unlabelled in the register's language", () => {
+    expect(
+      renderRegister(onUnlabelled(flowFrom('el-flow', 'el-a', 'el-b')), 'sv'),
+    ).toContain('Flöde från Gateway till Ledger');
   });
 
   it('falls back to the element id where the reference resolves to nothing', () => {

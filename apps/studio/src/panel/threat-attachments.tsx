@@ -46,11 +46,11 @@ export function AttachmentGroup({
       <legend>{t('panel.attached-elements')}</legend>
       <div className={styles.recordBody}>
         <ul className={styles.attachments}>
-          {attachments.map(({ id, label }, index) => (
+          {attachments.map(({ id, label, detach }, index) => (
             <li className={styles.attachment} key={id}>
               <span className={styles.attachmentName}>{label}</span>
               <button
-                aria-label={t('fields.detach-element', { element: label })}
+                aria-label={detach}
                 className={styles.unlink}
                 data-detach-element
                 onClick={() => {

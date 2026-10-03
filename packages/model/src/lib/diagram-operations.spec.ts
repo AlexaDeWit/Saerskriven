@@ -138,6 +138,17 @@ describe('addDiagram', () => {
     ).toEqual(OperationFailure.EmptyName({ elementId: cache.id }));
   });
 
+  it('adds a flow named with white space alone unlabelled, as addElement does', () => {
+    const [store, flow] = secondOfElements.elements;
+    const next = modelOf(
+      addDiagram(validModel, {
+        ...secondOfElements,
+        elements: [store, { ...flow, name: ' \t' }],
+      }),
+    );
+    expect(elementIn(next, 'element-second-flow').name).toBe('');
+  });
+
   it('refuses a flow ending on another flow of the diagram, as addElement does', () => {
     const onFlow = elementSchema.parse({
       ...flowInput,

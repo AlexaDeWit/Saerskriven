@@ -226,6 +226,27 @@ describe(
         expect(current(id)).toHaveProperty(field, []);
       },
     );
+    it('offers a flow left unlabelled among the crossing flows by its ends', async () => {
+      act(() => {
+        dispatch(
+          Action.RenameElement({
+            elementId: elementId('element-order-flow'),
+            name: '',
+          }),
+        );
+      });
+      const user = userEvent.setup();
+      await open('element-perimeter');
+      await chooseFrom('Crossing flows recording', 'Recorded');
+      await user.click(
+        screen.getByRole('combobox', { name: 'Add to crossing flows' }),
+      );
+      expect(
+        screen.getByRole('option', {
+          name: 'Flow from Customer to a free point',
+        }),
+      ).toBeDefined();
+    });
     it('distinguishes same-named relationship targets by ID', async () => {
       const duplicate = {
         ...base.diagrams[0].elements[1],

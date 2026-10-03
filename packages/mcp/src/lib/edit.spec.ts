@@ -291,13 +291,13 @@ const backupsIn = (attempted: ReturnType<typeof attempt>) =>
     ({ id }) => id === 'assumption-backups',
   );
 
-const addedFlowTo = (target: string): EditInput => ({
+const addedFlowTo = (target: string, name = 'Audit record'): EditInput => ({
   op: 'add_element',
   diagram: 'diagram-main',
   element: {
     kind: 'flow',
     id: 'element-audit-flow',
-    name: 'Audit record',
+    name,
     source: { kind: 'attached', element: 'element-api' },
     target: { kind: 'attached', element: target },
   },
@@ -357,6 +357,30 @@ describe('what add_element refuses', () => {
       );
     },
   );
+});
+
+describe('what a flow left unlabelled writes', () => {
+  it.each<{ readonly name: string; readonly edit: EditInput }>([
+    { name: 'add_element', edit: addedFlowTo('element-db', '') },
+    {
+      name: 'rename_element',
+      edit: { op: 'rename_element', element: 'element-audit-flow', name: '' },
+    },
+  ])('$name writes a flow with an empty name', ({ edit }) => {
+    const attempted = attempt();
+    const added = edit.op === 'add_element' ? [] : [addedFlowTo('element-db')];
+    const written = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [...added, edit],
+    );
+    expect(Either.isRight(written)).toBe(true);
+    expect(
+      elementsAcross(heldModel(attempted)?.diagrams ?? []).find(
+        ({ id }) => id === 'element-audit-flow',
+      )?.name,
+    ).toBe('');
+  });
 });
 
 describe('what add_assumption writes', () => {

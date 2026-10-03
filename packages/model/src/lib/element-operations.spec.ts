@@ -29,6 +29,7 @@ import {
   flowInput,
   mainDiagram,
   modelOf,
+  note,
   operationContract,
   storeInput,
   withNote,
@@ -37,6 +38,16 @@ import {
 import { parseModel, type Model } from './parse.js';
 
 const secured = parsedFixture(securityModelFixture);
+
+const blankNames = ['', ' \t\n'];
+
+const everyKindButFlow: readonly Element[] = [
+  elementIn(validModel, 'element-customer'),
+  elementIn(validModel, 'element-api'),
+  elementIn(validModel, 'element-db'),
+  elementIn(validModel, 'element-perimeter'),
+  note,
+];
 
 const readWith = (...added: readonly Element[]): Model =>
   Either.getOrThrow(
@@ -169,14 +180,23 @@ describe('addElement', () => {
     );
   });
 
-  it.each(['', ' \t\n'])(
-    'refuses the name %j, as renameElement does',
-    (name) => {
-      expect(
-        errorOf(addElement(validModel, mainDiagram, { ...cache, name })),
-      ).toEqual(OperationFailure.EmptyName({ elementId: cache.id }));
-    },
-  );
+  it.each(
+    everyKindButFlow.flatMap((element) =>
+      blankNames.map((name) => [element.kind, name, element] as const),
+    ),
+  )('refuses a %s named %j, as renameElement does', (_, name, element) => {
+    const unnamed = { ...element, id: elementId('element-unnamed'), name };
+    expect(errorOf(addElement(validModel, mainDiagram, unnamed))).toEqual(
+      OperationFailure.EmptyName({ elementId: unnamed.id }),
+    );
+  });
+
+  it.each(blankNames)('adds a flow named %j unlabelled', (name) => {
+    const next = modelOf(
+      addElement(validModel, mainDiagram, { ...writeFlow, name }),
+    );
+    expect(flowIn(next, 'element-write-flow').name).toBe('');
+  });
 
   it('refuses cross-diagram references and checks new elements and diagrams', () => {
     const boundary = secured.diagrams[0].elements[4];
@@ -514,20 +534,35 @@ describe('renameElement', () => {
     expect(flowIn(next, 'element-order-flow').name).toBe('Place order');
   });
 
-  it('refuses an empty name', () => {
-    expect(
-      errorOf(renameElement(validModel, elementId('element-api'), '')),
-    ).toEqual(
-      OperationFailure.EmptyName({ elementId: elementId('element-api') }),
+  it.each(
+    everyKindButFlow.flatMap((element) =>
+      blankNames.map((name) => [element.kind, name, element] as const),
+    ),
+  )('refuses to name a %s %j', (_, name, element) => {
+    expect(errorOf(renameElement(withNote, element.id, name))).toEqual(
+      OperationFailure.EmptyName({ elementId: element.id }),
     );
   });
 
-  it('refuses a name of whitespace, which draws as no name at all', () => {
-    expect(
-      errorOf(renameElement(validModel, elementId('element-api'), '   ')),
-    ).toEqual(
-      OperationFailure.EmptyName({ elementId: elementId('element-api') }),
+  it.each(blankNames)(
+    'leaves a flow renamed %j unlabelled, which draws no label',
+    (name) => {
+      const next = modelOf(
+        renameElement(validModel, elementId('element-order-flow'), name),
+      );
+      expect(flowIn(next, 'element-order-flow').name).toBe('');
+    },
+  );
+
+  it('returns the same model for the name the element already holds', () => {
+    const unlabelled = modelOf(
+      renameElement(validModel, elementId('element-order-flow'), ''),
     );
+    expect(
+      Either.getOrThrow(
+        renameElement(unlabelled, elementId('element-order-flow'), ' \t'),
+      ),
+    ).toBe(unlabelled);
   });
 
   it('refuses a character the parse boundary refuses, saying where it sits', () => {

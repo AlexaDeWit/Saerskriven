@@ -55,7 +55,10 @@ anywhere else. A record's fields are named for its kind with its number in the
 same way, as `fields.assumption-status-field` (_État de l’hypothèse 1_) is. A
 flow's accessible name reads _depuis_ its source in French, because the
 source is a name, a bare kind or _un point libre_, and _de_ would elide before
-any of them that starts with a vowel.
+any of them that starts with a vowel. A flow left unlabelled is named by its
+kind and those same ends, so `canvas.threat-attached-to-flow` takes the ends
+`tools.flow-from-to` or `tools.flow-between` words (_rattachée au flux depuis
+Shopper vers Web shop_).
 
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`

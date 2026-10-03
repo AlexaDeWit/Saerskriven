@@ -17,4 +17,7 @@ export const registerEnCA = catalogue(registerMessages)('en-CA')({
   none: 'None',
   'none-recorded': 'None recorded.',
   'no-threats': 'This model records no threats.',
+  'flow-from-to': 'Flow from {source} to {target}',
+  'flow-between': 'Flow between {source} and {target}',
+  'free-point': 'a free point',
 });

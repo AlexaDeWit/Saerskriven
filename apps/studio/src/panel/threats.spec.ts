@@ -1,6 +1,22 @@
-import { replaceThreat, type Model, type Threat } from '@saerskriven/model';
-import { elementId, threatId } from '@saerskriven/model/fixtures';
+import {
+  elementsAcross,
+  elementsById,
+  reconnectFlow,
+  renameElement,
+  replaceThreat,
+  reverseFlow,
+  setFlowDirection,
+  type ElementId,
+  type Model,
+  type Threat,
+} from '@saerskriven/model';
+import { elementId, elementIn, threatId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
+import {
+  canvasModel,
+  probeFlow,
+  requestFlow,
+} from '../canvas/canvas.fixtures.js';
 import { Action } from '../store/actions.js';
 import { initialState, type State } from '../store/state.js';
 import {
@@ -16,6 +32,7 @@ import {
 import { activeTranslator } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import {
+  attachableElements,
   attachedThreats,
   attachSaid,
   detachSaid,
@@ -24,6 +41,7 @@ import {
   nextNumber,
   panelSubject,
   threatAfterDeleting,
+  threatAttachments,
   threatCommitter,
 } from './threats.js';
 
@@ -97,17 +115,170 @@ const { t } = activeTranslator();
 
 const french = inLocale('fr-CA');
 
+const sampleElements = elementsById(elementsAcross(sampleModel.diagrams));
+
+const unlabelled = (model: Model, ...flows: readonly ElementId[]): Model =>
+  flows.reduce(
+    (held, flow) => Either.getOrThrow(renameElement(held, flow, '')),
+    model,
+  );
+
+const unlabelledCanvas = unlabelled(canvasModel, requestFlow, probeFlow);
+
+const spacedCanvas: Model = {
+  ...canvasModel,
+  diagrams: canvasModel.diagrams.map((diagram) => ({
+    ...diagram,
+    elements: diagram.elements.map((element) =>
+      element.id === requestFlow ? { ...element, name: ' ' } : element,
+    ),
+  })),
+};
+
+const fromReaderToStudio = (speak: typeof t): string =>
+  speak('tools.flow-from-to', { source: 'Reader', target: 'Studio' });
+
+const labelIn = (model: Model, id: ElementId, speak = t): string =>
+  elementLabel(
+    elementIn(model, id),
+    elementsById(elementsAcross(model.diagrams)),
+    speak,
+  );
+
 describe('elementLabel', () => {
   it('is what the element is called', () => {
-    expect(elementLabel(newProcess('process-named', 'Studio'), t)).toBe(
-      'Studio',
-    );
+    expect(
+      elementLabel(newProcess('process-named', 'Studio'), sampleElements, t),
+    ).toBe('Studio');
   });
 
   it('is what kind of element it is where it is called nothing', () => {
-    expect(elementLabel(newProcess('process-unnamed', ''), t)).toBe(
-      'the process',
+    expect(
+      elementLabel(newProcess('process-unnamed', ''), sampleElements, t),
+    ).toBe('the process');
+  });
+
+  it('names a flow left unlabelled from its source to its target', () => {
+    expect(labelIn(unlabelledCanvas, requestFlow)).toBe(
+      'Flow from Reader to Studio',
     );
+  });
+
+  it('names a flow left unlabelled between its ends where it runs both ways', () => {
+    const both = Either.getOrThrow(
+      setFlowDirection(unlabelledCanvas, requestFlow, true),
+    );
+    expect(labelIn(both, requestFlow)).toBe('Flow between Reader and Studio');
+  });
+
+  it('names an end attached to nothing a free point', () => {
+    expect(labelIn(unlabelledCanvas, probeFlow)).toBe(
+      'Flow from Studio to a free point',
+    );
+  });
+
+  it('follows an end to the element it moves to', () => {
+    const moved = Either.getOrThrow(
+      reconnectFlow(unlabelledCanvas, probeFlow, 'target', actorElement),
+    );
+    expect(labelIn(moved, probeFlow)).toBe('Flow from Studio to Reader');
+  });
+
+  it('words the ends in the language shown', () => {
+    expect(labelIn(unlabelledCanvas, requestFlow, french)).toBe(
+      french('panel.unlabelled-flow', { ends: fromReaderToStudio(french) }),
+    );
+  });
+
+  it('names a flow a file holds under white space alone by its ends', () => {
+    expect(labelIn(spacedCanvas, requestFlow)).toBe(
+      'Flow from Reader to Studio',
+    );
+  });
+});
+
+describe('the element lists of a threat', () => {
+  const [, onFlow] = unlabelledCanvas.threats;
+
+  it('list a flow left unlabelled by its ends, with no id', () => {
+    expect(threatAttachments(unlabelledCanvas.diagrams, onFlow, t)).toEqual([
+      {
+        id: requestFlow,
+        label: 'Flow from Reader to Studio',
+        detach: 'Detach Flow from Reader to Studio',
+      },
+    ]);
+  });
+
+  it('detach a flow left unlabelled under the message each language words around its ends', () => {
+    expect(
+      threatAttachments(unlabelledCanvas.diagrams, onFlow, french).map(
+        ({ detach }) => detach,
+      ),
+    ).toEqual([
+      french('fields.detach-unlabelled-flow', {
+        ends: fromReaderToStudio(french),
+      }),
+    ]);
+  });
+
+  it('detach a flow left unlabelled under its numbered label where only normalization tells it from a name', () => {
+    const lookalike = Either.getOrThrow(
+      renameElement(unlabelledCanvas, probeFlow, 'Flow from Reader to Studio '),
+    );
+    expect(
+      threatAttachments(
+        lookalike.diagrams,
+        { ...onFlow, elements: [requestFlow, probeFlow] },
+        t,
+      ).map(({ detach }) => detach),
+    ).toEqual([
+      'Detach 1: Flow from Reader to Studio',
+      'Detach 2: Flow from Reader to Studio ',
+    ]);
+  });
+
+  it('detach a named element under its name', () => {
+    expect(
+      threatAttachments(canvasModel.diagrams, onFlow, t).map(
+        ({ detach }) => detach,
+      ),
+    ).toEqual(['Detach Opens a model']);
+  });
+
+  it('offer a flow left unlabelled by its ends', () => {
+    expect(
+      attachableElements(unlabelledCanvas.diagrams, sampleThreat, t).find(
+        ({ id }) => id === probeFlow,
+      )?.text,
+    ).toEqual({
+      label: 'Flow from Studio to a free point',
+      detail: 'Main',
+    });
+  });
+
+  it('tell apart two flows left unlabelled between the same ends by their ids', () => {
+    const twin = Either.getOrThrow(
+      Either.flatMap(
+        reconnectFlow(unlabelledCanvas, probeFlow, 'target', actorElement),
+        (moved) => reverseFlow(moved, probeFlow),
+      ),
+    );
+    expect(
+      attachableElements(twin.diagrams, sampleThreat, t)
+        .filter(({ id }) => id === requestFlow || id === probeFlow)
+        .map(({ text }) => text.suffix),
+    ).toEqual([`(${requestFlow})`, `(${probeFlow})`]);
+    expect(
+      threatAttachments(
+        twin.diagrams,
+        { ...onFlow, elements: [requestFlow, probeFlow] },
+        t,
+      ).map(({ detach }) => detach),
+    ).toEqual([
+      `Detach Flow from Reader to Studio (${requestFlow})`,
+      `Detach Flow from Reader to Studio (${probeFlow})`,
+    ]);
   });
 });
 
@@ -117,16 +288,43 @@ describe('attachSaid', () => {
   it.each(namelessElements)(
     'words a %s in the message of its kind, which French contracts onto the article',
     (_, on) => {
-      expect(attachSaid(sampleThreat, on)(french)).toBe(
+      expect(attachSaid(sampleThreat, on, sampleElements)(french)).toBe(
         french(`canvas.threat-attached-to-${on.kind}`, { number }),
       );
     },
   );
 
+  it('words a flow left unlabelled in the message of its kind, with its ends', () => {
+    const flow = elementIn(unlabelledCanvas, requestFlow);
+    const elements = elementsById(elementsAcross(unlabelledCanvas.diagrams));
+    expect(attachSaid(sampleThreat, flow, elements)(french)).toBe(
+      french('canvas.threat-attached-to-flow', {
+        number,
+        ends: fromReaderToStudio(french),
+      }),
+    );
+  });
+
+  it('words a flow a file holds under white space alone with its ends', () => {
+    const elements = elementsById(elementsAcross(spacedCanvas.diagrams));
+    expect(
+      attachSaid(
+        sampleThreat,
+        elementIn(spacedCanvas, requestFlow),
+        elements,
+      )(t),
+    ).toBe(
+      t('canvas.threat-attached-to-flow', {
+        number,
+        ends: fromReaderToStudio(t),
+      }),
+    );
+  });
+
   it.each(namedElements)(
     'words a %s in the named message of its kind, so no "à" lands before the name',
     (_, on) => {
-      expect(attachSaid(sampleThreat, on)(french)).toBe(
+      expect(attachSaid(sampleThreat, on, sampleElements)(french)).toBe(
         french(`canvas.threat-attached-to-${on.kind}-named`, {
           number,
           name: on.name,
@@ -145,9 +343,9 @@ describe('detachSaid', () => {
   const { number } = onTwo;
 
   it('reports the removal where the threat went with its last element', () => {
-    expect(detachSaid(sampleThreat, reader, undefined)?.(t)).toContain(
-      String(sampleThreat.number),
-    );
+    expect(
+      detachSaid(sampleThreat, reader, undefined, sampleElements)?.(t),
+    ).toContain(String(sampleThreat.number));
   });
 
   it.each(namelessElements)(
@@ -155,18 +353,41 @@ describe('detachSaid', () => {
     (_, detached) => {
       const kept: Threat = { ...onTwo, elements: [actorElement] };
 
-      expect(detachSaid(onTwo, detached, kept)?.(french)).toBe(
+      expect(detachSaid(onTwo, detached, kept, sampleElements)?.(french)).toBe(
         french(`canvas.threat-detached-from-${detached.kind}`, { number }),
       );
     },
   );
+
+  it('words a flow left unlabelled in the message of its kind, with its ends, where the threat stays on its others', () => {
+    const [, onFlow] = unlabelledCanvas.threats;
+    const onFlowAndReader = {
+      ...onFlow,
+      elements: [requestFlow, actorElement],
+    };
+    const kept = { ...onFlow, elements: [actorElement] };
+    const elements = elementsById(elementsAcross(unlabelledCanvas.diagrams));
+    expect(
+      detachSaid(
+        onFlowAndReader,
+        elementIn(unlabelledCanvas, requestFlow),
+        kept,
+        elements,
+      )?.(french),
+    ).toBe(
+      french('canvas.threat-detached-from-flow', {
+        number: onFlow.number,
+        ends: fromReaderToStudio(french),
+      }),
+    );
+  });
 
   it.each(namedElements)(
     'words a %s in the named message of its kind where the threat stays on its others, so no "de" lands before the name',
     (_, detached) => {
       const kept: Threat = { ...onTwo, elements: [actorElement] };
 
-      expect(detachSaid(onTwo, detached, kept)?.(french)).toBe(
+      expect(detachSaid(onTwo, detached, kept, sampleElements)?.(french)).toBe(
         french(`canvas.threat-detached-from-${detached.kind}-named`, {
           number,
           name: detached.name,
@@ -176,11 +397,11 @@ describe('detachSaid', () => {
   );
 
   it('says nothing where the detach was refused and the threat still names the element', () => {
-    expect(detachSaid(onTwo, reader, onTwo)).toBeUndefined();
+    expect(detachSaid(onTwo, reader, onTwo, sampleElements)).toBeUndefined();
   });
 
   it('says nothing where the model no longer holds the element the row named', () => {
-    expect(detachSaid(onTwo, undefined, onTwo)).toBeUndefined();
+    expect(detachSaid(onTwo, undefined, onTwo, sampleElements)).toBeUndefined();
   });
 });
 

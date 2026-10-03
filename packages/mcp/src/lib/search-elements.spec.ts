@@ -1,9 +1,18 @@
-import { threatCountByElement } from '@saerskriven/model';
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { renameElement, threatCountByElement } from '@saerskriven/model';
+import {
+  elementId,
+  parsedFixture,
+  validModel,
+  validModelFixture,
+} from '@saerskriven/model/fixtures';
+import { Either } from 'effect';
 import {
   answerOf,
   everyRecordTree,
   keptReasonTree,
   refusalOf,
+  treeHolding,
   twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
 import { readNamed } from './reading.js';
@@ -200,5 +209,65 @@ describe('what a detailed element row carries per kind', () => {
       }),
     );
     expect(found.counts.matched).toBe(0);
+  });
+});
+
+describe('the row of a flow left unlabelled', () => {
+  const unlabelled = treeHolding(
+    saerskrivenYamlCodec.write(
+      Either.getOrThrow(
+        renameElement(validModel, elementId('element-order-flow'), ''),
+      ),
+    ).output,
+  );
+
+  const flows = (response_format: 'concise' | 'detailed') =>
+    answerOf(searchElements(unlabelled, { kind: 'flow', response_format }));
+
+  it.each(['concise', 'detailed'] as const)(
+    'keeps the empty name and names the flow from its ends in a %s row',
+    (format) => {
+      const [row] = flows(format).elements;
+      expect(row).toMatchObject({
+        name: '',
+        namedFromEnds: 'Flow from Customer to a free point',
+      });
+      expect(renderElementSearch(flows(format))).toContain(
+        '  element-order-flow (flow, diagram diagram-main, threats 1): Flow from Customer to a free point',
+      );
+    },
+  );
+
+  it('names a flow a file holds under white space alone from its ends', () => {
+    const spaced = treeHolding(
+      saerskrivenYamlCodec.write(
+        parsedFixture({
+          ...validModelFixture,
+          diagrams: validModelFixture.diagrams.map((diagram) => ({
+            ...diagram,
+            elements: diagram.elements.map((element) =>
+              element.id === 'element-order-flow'
+                ? { ...element, name: ' ' }
+                : element,
+            ),
+          })),
+        }),
+      ).output,
+    );
+    const [row] = answerOf(
+      searchElements(spaced, { kind: 'flow', response_format: 'concise' }),
+    ).elements;
+    expect(row).toMatchObject({
+      name: ' ',
+      namedFromEnds: 'Flow from Customer to a free point',
+    });
+  });
+
+  it('names a flow with a name by its name alone', () => {
+    expect(
+      search({ kind: 'flow', response_format: 'concise' }).elements.filter(
+        (row) => 'namedFromEnds' in row,
+      ),
+    ).toEqual([]);
   });
 });

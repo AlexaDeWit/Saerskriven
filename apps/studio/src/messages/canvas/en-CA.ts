@@ -68,7 +68,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'threat-attached-to-store-named': 'Attached threat {number} to {name}.',
   'threat-attached-to-text': 'Attached threat {number} to the text.',
   'threat-attached-to-text-named': 'Attached threat {number} to {name}.',
-  'threat-attached-to-flow': 'Attached threat {number} to the flow.',
+  'threat-attached-to-flow': 'Attached threat {number} to the flow {ends}.',
   'threat-attached-to-flow-named': 'Attached threat {number} to {name}.',
   'threat-attached-to-trust-boundary':
     'Attached threat {number} to the trust boundary.',
@@ -91,7 +91,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'threat-detached-from-text-named':
     'Detached threat {number} from {name}. It stays on its other elements.',
   'threat-detached-from-flow':
-    'Detached threat {number} from the flow. It stays on its other elements.',
+    'Detached threat {number} from the flow {ends}. It stays on its other elements.',
   'threat-detached-from-flow-named':
     'Detached threat {number} from {name}. It stays on its other elements.',
   'threat-detached-from-trust-boundary':

@@ -244,6 +244,13 @@ character named under it, until you correct it or press Escape. In a Note,
 Enter adds a line, and Command+Enter on macOS or Control+Enter elsewhere
 commits.
 
+A flow may be left unlabelled: clear its name, or leave only spaces, and commit.
+The diagram and its exports draw no label for it, and the threat panel's lists
+and notices name it from its ends instead, such as "Flow from Shopper to Web
+shop", "Flow between Shopper and Web shop" for a flow that runs both ways, or
+"a free point" for an end attached to nothing. Every other element keeps a
+name, and its field refuses an empty one.
+
 ## Copy, cut, paste and duplicate
 
 Copy takes the selected elements, the attached ends of selected flows, flows

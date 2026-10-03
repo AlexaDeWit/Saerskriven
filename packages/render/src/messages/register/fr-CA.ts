@@ -17,4 +17,7 @@ export const registerFrCA = catalogue(registerMessages)('fr-CA')({
   none: 'Aucun',
   'none-recorded': 'Rien de consigné.',
   'no-threats': 'Ce modèle ne consigne aucune menace.',
+  'flow-from-to': 'Flux depuis {source} vers {target}',
+  'flow-between': 'Flux entre {source} et {target}',
+  'free-point': 'un point libre',
 });

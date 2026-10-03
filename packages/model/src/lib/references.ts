@@ -1,7 +1,8 @@
 import { Data, Either } from 'effect';
-import type { Element, Flow } from './elements.js';
+import type { Element, Flow, FlowEndpoint } from './elements.js';
 import type { ElementId, ThreatId } from './ids.js';
 import type { Diagram } from './model.js';
+import { isEmptyName } from './text.js';
 import type { Threat } from './threats.js';
 
 /**
@@ -38,6 +39,69 @@ export function endpointViolationsOf(
         : [{ side, reference: endpoint.element, reason: 'outside-diagram' }];
     },
   );
+}
+
+/**
+ * One end of a flow as a reader names it: the element it attaches to, the id
+ * of an attached element the lookup does not hold, or a free point.
+ */
+export type FlowEnd =
+  | { readonly kind: 'element'; readonly element: Element }
+  | { readonly kind: 'missing'; readonly element: ElementId }
+  | { readonly kind: 'free' };
+
+/** A flow's two ends and whether it runs both ways, which is what names a flow left unlabelled. */
+export type FlowEnds = {
+  readonly source: FlowEnd;
+  readonly target: FlowEnd;
+  readonly bidirectional: boolean;
+};
+
+/**
+ * `element` where it is a flow left unlabelled, which a reader names by its
+ * ends, and undefined otherwise. A name of white space alone counts, since a
+ * file or a paste can still hold one.
+ */
+export function unlabelledFlow(element: Element): Flow | undefined {
+  return element.kind === 'flow' && isEmptyName(element.name)
+    ? element
+    : undefined;
+}
+
+/** The ends of `flow`, each attached one looked up in `elements`. */
+export function flowEnds(
+  flow: Flow,
+  elements: ReadonlyMap<ElementId, Element>,
+): FlowEnds {
+  const end = (endpoint: FlowEndpoint): FlowEnd => {
+    if (endpoint.kind === 'free') {
+      return { kind: 'free' };
+    }
+    const element = elements.get(endpoint.element);
+    return element === undefined
+      ? { kind: 'missing', element: endpoint.element }
+      : { kind: 'element', element };
+  };
+  return {
+    source: end(flow.source),
+    target: end(flow.target),
+    bidirectional: flow.bidirectional,
+  };
+}
+
+/**
+ * What a reader calls one end of a flow: the name of the element it attaches
+ * to, the element's id where it has no name or the lookup lacked it, or
+ * `free`, the caller's word for a free point.
+ */
+export function flowEndName(end: FlowEnd, free: string): string {
+  if (end.kind === 'free') {
+    return free;
+  }
+  if (end.kind === 'missing') {
+    return end.element;
+  }
+  return end.element.name === '' ? end.element.id : end.element.name;
 }
 
 /**

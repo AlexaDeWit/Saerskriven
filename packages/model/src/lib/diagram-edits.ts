@@ -138,14 +138,22 @@ export function flowEndpointFailure(
 
 /**
  * The refusal of an element whose name is empty or white space alone, or
- * undefined. Parse accepts such a name, so a file can already hold one.
+ * undefined. A flow may be left unlabelled, so it is never refused. Parse
+ * accepts such a name on every kind, so a file can already hold one.
  */
 export function emptyNameFailure(
   element: Element,
 ): Extract<OperationFailure, { _tag: 'EmptyName' }> | undefined {
-  return isEmptyName(element.name)
+  return element.kind !== 'flow' && isEmptyName(element.name)
     ? OperationFailure.EmptyName({ elementId: element.id })
     : undefined;
+}
+
+/** `element` as the edit operations store it: a name of white space alone held as `''`. */
+export function withStoredName(element: Element): Element {
+  return element.name !== '' && isEmptyName(element.name)
+    ? { ...element, name: '' }
+    : element;
 }
 
 /** The relationship issues of `element` against the elements of its diagram, or undefined. */

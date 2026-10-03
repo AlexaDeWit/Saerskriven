@@ -81,7 +81,8 @@ returns the same model. Geometry edits do not change these facts.
 
 `setElementDetails` changes the `description`, `outOfScope` and
 `reasonOutOfScope` of an element of any kind, a Note included, and the name
-stays with `renameElement`, which refuses an empty one.
+stays with `renameElement`, which refuses an empty one on every kind but a
+flow.
 
 A pasted fragment's mitigation or assumption is identical to a record the
 target model holds when it has the same kind, id and content: a mitigation's

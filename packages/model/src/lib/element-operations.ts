@@ -7,6 +7,7 @@ import {
   locatedElement,
   withDiagram,
   withElement,
+  withStoredName,
   type UnknownElementFailure,
 } from './diagram-edits.js';
 import { anchorPoint, resized, translatedElement } from './element-geometry.js';
@@ -29,7 +30,7 @@ import { toParseIssues } from './parse-issue.js';
 import { withoutId } from './records.js';
 import { elementIdsAcross, elementIdsIn, elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
-import { firstRefusedCharacter, isEmptyName } from './text.js';
+import { firstRefusedCharacter } from './text.js';
 import { withCulledThreats } from './threat-operations.js';
 
 /** The failures {@link addElement} can produce. */
@@ -88,8 +89,9 @@ export type SetElementPropertiesFailure = Extract<
 
 /**
  * Requires an existing diagram, a new ID, a name that is more than white
- * space, flow ends `reconnectFlow` would accept, and valid local boundary
- * references.
+ * space on every kind but a flow, flow ends `reconnectFlow` would accept, and
+ * valid local boundary references. A flow named with white space alone is
+ * stored unlabelled, as `''`.
  */
 export function addElement(
   model: Model,
@@ -118,7 +120,7 @@ export function addElement(
       return Either.right(
         withDiagram(model, diagramIndex, (held) => ({
           ...held,
-          elements: [...held.elements, element],
+          elements: [...held.elements, withStoredName(element)],
         })),
       );
     },
@@ -200,7 +202,12 @@ export function resizeElement(
   );
 }
 
-/** Renames any element, rejecting empty names and characters refused by the model. */
+/**
+ * Renames any element, rejecting characters refused by the model and, on
+ * every kind but a flow, an empty name. Clearing a flow's name, or naming it
+ * with white space alone, leaves it unlabelled as `''`. A name the element
+ * already holds returns the same model.
+ */
 export function renameElement(
   model: Model,
   elementId: ElementId,
@@ -209,18 +216,17 @@ export function renameElement(
   return Either.flatMap(
     locatedElement(model, elementId),
     (located): Either.Either<Model, RenameElementFailure> => {
-      if (isEmptyName(name)) {
-        return Either.left(OperationFailure.EmptyName({ elementId }));
+      const renamed = withStoredName({ ...located.element, name });
+      const refusal =
+        emptyNameFailure(renamed) ?? refusedCharacter(elementId, name);
+      if (refusal !== undefined) {
+        return Either.left(refusal);
       }
-      const refusal = refusedCharacter(elementId, name);
-      return refusal === undefined
-        ? Either.right(
-            withElement(model, located.diagramIndex, {
-              ...located.element,
-              name,
-            }),
-          )
-        : Either.left(refusal);
+      return Either.right(
+        renamed.name === located.element.name
+          ? model
+          : withElement(model, located.diagramIndex, renamed),
+      );
     },
   );
 }

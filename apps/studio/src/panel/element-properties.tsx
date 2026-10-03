@@ -314,6 +314,7 @@ function PropertyFields({
           choices={elements.filter(
             (candidate) => candidate.kind === 'trust-boundary',
           )}
+          elements={elements}
           onCommit={(value) => {
             commit({ kind: 'flow', trustBoundaryIds: value });
           }}
@@ -328,6 +329,7 @@ function PropertyFields({
         lowerLabel={t('fields.contained-elements-lower')}
         value={element.containedElements}
         choices={elements.filter((candidate) => candidate.id !== element.id)}
+        elements={elements}
         onCommit={(value) => {
           commit({ kind: 'trust-boundary', containedElements: value });
         }}
@@ -337,6 +339,7 @@ function PropertyFields({
         lowerLabel={t('fields.crossing-flows-lower')}
         value={element.crossingFlows}
         choices={elements.filter((candidate) => candidate.kind === 'flow')}
+        elements={elements}
         onCommit={(value) => {
           commit({ kind: 'trust-boundary', crossingFlows: value });
         }}

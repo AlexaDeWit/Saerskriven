@@ -7,14 +7,15 @@ import { locales } from '@saerskriven/i18n';
 import type { ElementId } from '@saerskriven/model';
 import { renderTerms } from '@saerskriven/render';
 import { act, fireEvent, render } from '@testing-library/react';
-import { Position, ReactFlowProvider } from '@xyflow/react';
+import { Position, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import userEvent from '@testing-library/user-event';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { elementById } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
-import { modelStore } from '../store/store.js';
+import { Action } from '../store/actions.js';
+import { dispatch, modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
-import { canvasModel, noteElement } from './canvas.fixtures.js';
+import { canvasModel, noteElement, requestFlow } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { editingEdgeTypes } from './inline-editing.js';
 import { currentLayout } from './layout.js';
@@ -50,6 +51,32 @@ const state = () => modelStore.getState();
 
 const drawnText = (elementId: ElementId, run: string): Element | null =>
   document.querySelector(`[data-id="${elementId}"] text.${run}`);
+
+const drawFlows = () => {
+  const FlowBody = editingEdgeTypes.flow;
+  return render(
+    <ReactFlowProvider>
+      <ReactFlow edges={[]} nodes={[]} />
+      <svg>
+        {toReactFlowEdges(currentLayout(modelStore.getState())).map((edge) => (
+          <FlowBody
+            data={edge.data}
+            id={edge.id}
+            key={edge.id}
+            source={edge.source}
+            sourcePosition={Position.Right}
+            sourceX={0}
+            sourceY={0}
+            target={edge.target}
+            targetPosition={Position.Left}
+            targetX={0}
+            targetY={0}
+          />
+        ))}
+      </svg>
+    </ReactFlowProvider>,
+  );
+};
 
 describe('the inline editor', () => {
   it('labels a name field with what it renames', () => {
@@ -151,6 +178,27 @@ describe('the inline editor', () => {
     });
     expect(currentAnnouncement().message.trim()).not.toBe('');
   });
+
+  it.each(['', ' \t'])(
+    'leaves a flow unlabelled for the name %j, as one undo step',
+    async (name) => {
+      const user = userEvent.setup();
+      editing(requestFlow);
+      drawFlows();
+
+      await user.clear(textbox('Name of Opens a model'));
+      await user.type(textbox('Name of Opens a model'), `${name}{Enter}`);
+
+      expect(nameOf(requestFlow)).toBe('');
+      expect(state().inlineEditor).toBeUndefined();
+
+      act(() => {
+        dispatch(Action.Undo());
+      });
+
+      expect(nameOf(requestFlow)).toBe('Opens a model');
+    },
+  );
 
   it('commits multiline note text on blur as one undo step', async () => {
     const user = userEvent.setup();
@@ -256,30 +304,7 @@ describe('a flow on the canvas', () => {
       }),
       true,
     );
-    const FlowBody = editingEdgeTypes.flow;
-    const { container } = render(
-      <ReactFlowProvider>
-        <svg>
-          {toReactFlowEdges(currentLayout(modelStore.getState())).map(
-            (edge) => (
-              <FlowBody
-                data={edge.data}
-                id={edge.id}
-                key={edge.id}
-                source={edge.source}
-                sourcePosition={Position.Right}
-                sourceX={0}
-                sourceY={0}
-                target={edge.target}
-                targetPosition={Position.Left}
-                targetX={0}
-                targetY={0}
-              />
-            ),
-          )}
-        </svg>
-      </ReactFlowProvider>,
-    );
+    const { container } = drawFlows();
     const mark = (): string | null | undefined =>
       container.querySelector(`.${canvasClassNames.badgeMark}`)?.textContent;
 
