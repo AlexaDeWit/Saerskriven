@@ -1,4 +1,8 @@
-import { canvasClassNames, flowEndNodeId } from '@saerskriven/canvas';
+import {
+  canvasClassNames,
+  canvasInteractionClassNames,
+  flowEndNodeId,
+} from '@saerskriven/canvas';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
 import { elementIn } from '@saerskriven/model/fixtures';
@@ -23,6 +27,7 @@ import {
   boundaryElement,
   canvasModel,
   curvedCanvasModel,
+  flaggedCanvasModel,
   laidOutNode,
   noteElement,
   openCanvas,
@@ -160,6 +165,35 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
 
     expect(reader().classList.contains('selected')).toBe(true);
+  });
+
+  it("raises a selected trust boundary's badge into the viewport portal at the boundary's place, and keeps it in the boundary while unselected", () => {
+    openCanvas(
+      [],
+      flaggedCanvasModel({
+        'threat-path-disclosure': { elements: [boundaryElement] },
+      }),
+    );
+    render(<DiagramCanvas />);
+    const badge = `.${canvasClassNames.badge}`;
+    const boundary = document.querySelector(`[data-id="${boundaryElement}"]`);
+    const portal = document.querySelector('.react-flow__viewport-portal');
+
+    expect(boundary?.querySelector(badge)).not.toBeNull();
+    expect(portal?.querySelector(badge)).toBeNull();
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [boundaryElement] }));
+    });
+    const raised = portal?.querySelector<SVGElement>(
+      `.${canvasInteractionClassNames.badgeLayer}`,
+    );
+    const { position } = laidOutNode(boundaryElement);
+
+    expect(boundary?.querySelector(badge)).toBeNull();
+    expect(raised?.querySelector(badge)).not.toBeNull();
+    expect(raised?.style.left).toBe(`${String(position.x)}px`);
+    expect(raised?.style.top).toBe(`${String(position.y)}px`);
   });
 
   it('selects the element that was clicked, through the store', () => {

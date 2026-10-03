@@ -11,10 +11,11 @@ import {
 import type { ReactElement } from 'react';
 import { shiftedBy, type Box } from './geometry.js';
 import type { NodeBox } from './handles.js';
+import type { CanvasNode } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { polylinePath, translate } from './paths.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
-import { badgeRadius } from './tokens.js';
+import { badgeRadius, strokeWidths } from './tokens.js';
 
 const badgeGap = 3;
 
@@ -105,6 +106,33 @@ export function badgeAnchor(size: Size): Point {
 /** {@link badgeAnchor} in diagram coordinates, for a placed node. */
 export function placedBadgeAnchor(box: NodeBox): Point {
   return shiftedBy(badgeAnchor(box.size), box.position);
+}
+
+/**
+ * Whether a node's badge steps out past its corner while the node is
+ * selected. A boundary curve's corner handles sit outside its corners, clear
+ * of a badge on the corner, so its badge stays there.
+ */
+export function badgeStepsOut(node: CanvasNode): boolean {
+  return node.badge !== undefined && node.kind !== 'boundary-curve';
+}
+
+/**
+ * Where a selected node hangs its badge, in its own coordinates. A badge that
+ * {@link badgeStepsOut} moves out along the top-right corner's diagonal by
+ * its reach, ring included, and the gap between its stacked marks, so all of
+ * it lies right of the node's right side, clear of a resize handle on that
+ * corner. The layout and every export keep the badge on {@link badgeAnchor}.
+ */
+export function selectedBadgeAnchor(node: CanvasNode): Point {
+  const corner = badgeAnchor(node.size);
+  const badge = badgeStepsOut(node) ? node.badge : undefined;
+  if (badge === undefined) {
+    return corner;
+  }
+  const step =
+    badgeExtent(badge).radius + strokeWidths.badgeRing / 2 + badgeGap;
+  return shiftedBy(corner, { x: step, y: -step });
 }
 
 /** How far a badge reaches from the point it hangs on. */
