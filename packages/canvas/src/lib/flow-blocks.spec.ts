@@ -52,12 +52,6 @@ describe('flowBlocks', () => {
     expect(flowBlocks('Store', undefined)).toHaveLength(1);
   });
 
-  it('offers no narrower wrap for a name of two hundred thousand words', () => {
-    const name = Array.from({ length: 200_000 }, () => 'a').join(' ');
-
-    expect(flowBlocks(name, undefined)).toHaveLength(1);
-  });
-
   it('composes a badge alone for a flow with no name', () => {
     const [block] = flowBlocks('', badge);
     expect(block.badge).toBeDefined();

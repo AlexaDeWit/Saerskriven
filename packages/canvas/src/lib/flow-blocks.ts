@@ -161,16 +161,14 @@ function flowBlock(
 }
 
 function longestWordColumns(name: string): number {
-  return name
-    .split(/\s+/u)
-    .reduce(
-      (longest, word) =>
-        Math.max(
-          longest,
-          Math.round(textExtent([word], fontSize).width / glyphWidth),
-        ),
-      0,
-    );
+  return Math.max(
+    0,
+    ...name
+      .split(/\s+/u)
+      .map((word) =>
+        Math.round(textExtent([word], fontSize).width / glyphWidth),
+      ),
+  );
 }
 
 function narrowestColumns(
