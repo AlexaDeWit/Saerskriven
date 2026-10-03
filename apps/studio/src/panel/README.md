@@ -109,19 +109,19 @@ generated document, and names elements by the export's rules.
 
 ## Drawing a threat
 
-The summary takes its flag wording from the studio's own catalogue, not from
-the render package's report labels, which stay English for a generated
-register. Its severity, status and category read from the catalogue too, so no
-stored value is drawn as its own label. Its severity marker uses the canvas
-tone class. Each status and each flag mark has a glyph shape of its own, so
-every mark stays distinct in forced colours, where open also keeps its outline
-and weight. Beside Status in an open threat a flag mark drops its outline, the
-only outlines there being the fields' own, and keeps its weight. The whole
-summary is the accordion control's accessible name, in drawn order, and it
-holds no control of its own. Its values are drawn without their field names,
-which a screen reader still hears ("Severity: High"), so the drawn label is
-hidden from assistive technology and the named one is visually hidden. The
-model panel heads its assumptions group with `terms.model-assumptions`.
+The summary takes its flag wording from the studio's own catalogue, not from the
+render package's report labels, which stay English for a generated register. Its
+severity, status and category read from the catalogue too, so no stored value is
+drawn as its own label. Its severity marker uses the canvas tone class. Each
+status and each flag mark has a glyph shape of its own, so every mark stays
+distinct in forced colours, where open also keeps its outline and weight. Beside
+Status in an open threat a flag mark drops its outline, the only outlines there
+being the fields' own, and keeps its weight. The whole summary is the accordion
+control's accessible name, in drawn order, and it holds no control of its own.
+Its values are drawn without their field names, which a screen reader still
+hears ("Severity: High"), so the drawn label is hidden from assistive technology
+and the named one is visually hidden. The model panel heads its assumptions
+group with `terms.model-assumptions`.
 
 The summary's elements line depends on the list. On an element's panel it
 names the threat's other elements and is left out where there are none, since

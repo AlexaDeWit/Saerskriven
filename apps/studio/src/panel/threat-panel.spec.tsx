@@ -34,9 +34,11 @@ import {
   addControl,
   button,
   describedNumbers,
+  detailsTab,
   noop,
   numbersIn,
   textbox,
+  threatsTab,
 } from '../ui/ui.fixtures.js';
 import { elementIn, softHyphen, threatId } from '@saerskriven/model/fixtures';
 import { canvasModel, requestFlow } from '../canvas/canvas.fixtures.js';
@@ -75,12 +77,6 @@ const titleField = (): HTMLElement =>
 
 const severityOf = (): string =>
   screen.getByRole('combobox', { name: 'Severity' }).textContent ?? '';
-
-const threatsTab = (): HTMLElement =>
-  screen.getByRole('tab', { name: /^Threats \d+$/u });
-
-const detailsTab = (): HTMLElement =>
-  screen.getByRole('tab', { name: 'Details' });
 
 const threatsInStore = (): number =>
   modelStore.getState().present.threats.length;
@@ -267,6 +263,19 @@ describe(
       expect(threatsInStore()).toBe(1);
       expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
       expect(document.activeElement).toBe(button('Detach Studio'));
+    });
+
+    it('takes a threat off the list when the detach takes the element shown, keeping it on its other element, with focus on the add control', async () => {
+      const user = userEvent.setup();
+      shareThreat();
+      showPanel(actorElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await user.click(button('Detach Reader'));
+
+      expect(present().threats[0].elements).toEqual([processElement]);
+      expect(listedThreats()).toEqual([]);
+      expect(document.activeElement).toBe(addControl());
     });
 
     it('removes the threat when the detach takes its last element, and one undo brings it back', async () => {

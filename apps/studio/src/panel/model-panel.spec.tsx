@@ -30,9 +30,11 @@ import { freshThreat } from './threats.js';
 import {
   button,
   describedNumbers,
+  detailsTab,
   noop,
   numbersIn,
   textbox,
+  threatsTab,
 } from '../ui/ui.fixtures.js';
 import { softHyphen, threatId } from '@saerskriven/model/fixtures';
 
@@ -76,12 +78,6 @@ const applyToModel = (): void => {
     dispatch(Action.LinkAssumptionToModel({ assumptionId: firstAssumption }));
   });
 };
-
-const threatsTab = (): HTMLElement =>
-  screen.getByRole('tab', { name: /^Threats \d+$/u });
-
-const detailsTab = (): HTMLElement =>
-  screen.getByRole('tab', { name: 'Details' });
 
 const showDetails = async (
   user: ReturnType<typeof userEvent.setup>,
@@ -166,6 +162,23 @@ describe(
       ]);
       expect(detailsTab().getAttribute('aria-selected')).toBe('false');
       expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
+    });
+
+    it('heads itself Untitled while the model has no title', () => {
+      modelStore.setState(
+        initialState({
+          ...recordedModel,
+          metadata: { ...recordedModel.metadata, title: '' },
+        }),
+        true,
+      );
+      showPanel();
+
+      expect(
+        screen.getByRole('heading', {
+          name: activeTranslator().t('defaults.untitled-model'),
+        }),
+      ).toBeDefined();
     });
 
     it('lists every threat in the model in review order, whatever element it is on', () => {

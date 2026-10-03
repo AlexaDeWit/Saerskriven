@@ -12,7 +12,7 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { focusThreatPanel, toggleModelPanel } from './panel-focus.js';
 import { ThreatOverlay } from './threat-overlay.js';
-import { addControl } from '../ui/ui.fixtures.js';
+import { addControl, detailsTab, threatsTab } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
 
 const panel = () => screen.queryByRole('region', { name: 'Threats' });
@@ -24,9 +24,6 @@ const showModelPanel = (): void => {
 };
 
 const modelPanel = () => screen.queryByRole('region', { name: 'Model' });
-
-const modelThreatsTab = (): HTMLElement =>
-  screen.getByRole('tab', { name: /^Threats \d+$/u });
 
 const description = (): HTMLElement =>
   screen.getByRole('textbox', { name: 'Description' });
@@ -68,7 +65,7 @@ describe('ThreatOverlay', () => {
     const user = userEvent.setup();
     render(<ThreatOverlay />);
     select();
-    await user.click(screen.getByRole('tab', { name: 'Details' }));
+    await user.click(detailsTab());
 
     select(processElement);
 
@@ -248,7 +245,7 @@ describe('ThreatOverlay', () => {
         .getAttribute('aria-pressed'),
     ).toBe('true');
 
-    await user.click(screen.getByRole('tab', { name: 'Details' }));
+    await user.click(detailsTab());
     await user.click(screen.getByRole('textbox', { name: 'Description' }));
     await user.keyboard(`Pasted${softHyphen}prose`);
     await user.click(screen.getByRole('textbox', { name: 'Title' }));
@@ -256,7 +253,7 @@ describe('ThreatOverlay', () => {
       dispatch(Action.HideModelPanel());
     });
     showModelPanel();
-    await user.click(screen.getByRole('tab', { name: 'Details' }));
+    await user.click(detailsTab());
 
     expect(
       screen
@@ -286,7 +283,7 @@ describe('ThreatOverlay', () => {
       </>,
     );
     showModelPanel();
-    await user.click(modelThreatsTab());
+    await user.click(threatsTab());
     await user.keyboard('{Escape}');
     expect(document.activeElement).toBe(screen.getByTestId('canvas'));
 
@@ -315,8 +312,8 @@ describe('ThreatOverlay', () => {
     act(() => {
       toggleModelPanel();
     });
-    expect(document.activeElement).toBe(modelThreatsTab());
-    expect(modelThreatsTab().getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(threatsTab());
+    expect(threatsTab().getAttribute('aria-selected')).toBe('true');
   });
 
   it('closes the model panel on Escape, which Focus threats does not open again', async () => {
@@ -327,7 +324,7 @@ describe('ThreatOverlay', () => {
     });
     expect(focusThreatPanel()).toBe(false);
 
-    await user.click(modelThreatsTab());
+    await user.click(threatsTab());
     await user.keyboard('{Escape}');
 
     expect(modelPanel()).toBeNull();
@@ -338,7 +335,7 @@ describe('ThreatOverlay', () => {
     const user = userEvent.setup();
     const shown = render(<ThreatOverlay />);
     select(processElement);
-    await user.click(screen.getByRole('tab', { name: 'Details' }));
+    await user.click(detailsTab());
     await user.click(
       screen.getByRole('button', { name: 'Security properties' }),
     );

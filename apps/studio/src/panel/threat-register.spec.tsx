@@ -20,7 +20,8 @@ import {
   twoDiagramModel,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { numbersIn } from '../ui/ui.fixtures.js';
+import { detailsTab, numbersIn, threatsTab } from '../ui/ui.fixtures.js';
+import { marked, markedWithin } from './marked.js';
 import { editorTimeout } from './panel.fixtures.js';
 import { ThreatOverlay } from './threat-overlay.js';
 import panelStyles from './threat-panel.module.css';
@@ -67,10 +68,8 @@ const modelPanel = (): HTMLElement =>
   screen.getByRole('region', { name: 'Model' });
 
 const rowOf = (id: Threat['id']): HTMLTableRowElement => {
-  const row = [
-    ...register().querySelectorAll<HTMLTableRowElement>('[data-register-row]'),
-  ].find((candidate) => candidate.dataset['registerRow'] === id);
-  if (row === undefined) {
+  const row = markedWithin(register(), 'registerRow', id);
+  if (!(row instanceof HTMLTableRowElement)) {
     throw new TypeError(`no row for ${id}`);
   }
   return row;
@@ -80,7 +79,7 @@ const chooser = (id: Threat['id']): HTMLElement =>
   within(rowOf(id)).getAllByRole('button')[0];
 
 const listedRows = (): readonly (string | undefined)[] =>
-  [...register().querySelectorAll<HTMLElement>('[data-register-row]')].map(
+  [...register().querySelectorAll<HTMLElement>(marked.registerRow)].map(
     (row) => row.dataset['registerRow'],
   );
 
@@ -201,11 +200,7 @@ describe(
 
       await user.click(chooser(mitigatedThreat));
 
-      expect(
-        within(modelPanel())
-          .getByRole('tab', { name: /^Threats \d+$/u })
-          .getAttribute('aria-selected'),
-      ).toBe('true');
+      expect(threatsTab().getAttribute('aria-selected')).toBe('true');
       expect(
         modelSummary(/A model file is read past its bounds/u).getAttribute(
           'aria-expanded',
@@ -229,9 +224,7 @@ describe(
       showStudio();
       openRegister();
       await user.click(chooser(looseThreat));
-      await user.click(
-        within(modelPanel()).getByRole('tab', { name: 'Details' }),
-      );
+      await user.click(detailsTab());
       const body = modelPanel().querySelector(`.${panelStyles.body}`);
       if (body !== null) {
         body.scrollTop = 0;
@@ -239,11 +232,7 @@ describe(
 
       await user.click(chooser(mitigatedThreat));
 
-      expect(
-        within(modelPanel())
-          .getByRole('tab', { name: /^Threats \d+$/u })
-          .getAttribute('aria-selected'),
-      ).toBe('true');
+      expect(threatsTab().getAttribute('aria-selected')).toBe('true');
       expect(
         modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
       ).toBe('false');

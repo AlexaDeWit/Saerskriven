@@ -31,9 +31,10 @@ type ModelPanelProps = HeldMetadata & {
 
 /**
  * The panel for the model, headed by its title: every threat in the model on
- * a Threats tab, which it opens on, and the model's own fields on Details.
- * The Threats tab takes focus where the M command opened the panel, and shows
- * again for a threat asked for from outside the panel.
+ * a Threats tab, which it opens on, and the model's own fields on Details,
+ * where Title and Description each commit one `SetModelMetadata` naming that
+ * field alone. The Threats tab takes focus where the M command opened the
+ * panel, and shows again for a threat asked for from outside the panel.
  */
 export function ModelPanel({
   held,
@@ -86,11 +87,6 @@ export function ModelPanel({
   );
 }
 
-/**
- * The model's title, description and the assumptions that apply to it. Each
- * text field commits one `SetModelMetadata` naming that field alone, and the
- * assumptions group is the threat editor's record group bound to the model.
- */
 function ModelDetails({ held, onHeld }: HeldMetadata) {
   const metadata = useModelStore((state) => state.present.metadata);
   const [draft, setDraft] = useState<RefusedField | undefined>(held);

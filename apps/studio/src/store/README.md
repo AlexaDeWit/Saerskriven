@@ -73,24 +73,24 @@ host provides.
   tab with `nameOf` the file ahead of the product name, so the tab and the menu
   cannot disagree. `showingPlaceholder` identifies the untouched opening state.
 
-The active diagram, the selection, whether the model panel is shown, the
-inline editor, the last refusal, and the file lifecycle stay out of the undo
-stacks. `ShowModelPanel` shows the model panel and clears the selection, a
-`Select` naming an element hides it, and `HideModelPanel` hides it. `activeDiagram` names the diagram on screen,
-and nothing until one has been chosen. `SelectDiagram` sets it, clears the
-selection and closes the editor, since both belong to the diagram left, and
-moves neither the model nor the history. The `activeDiagram` selector falls
-back to the first diagram while the model does not hold the one named, so an
-open, an undo or a redo that takes the diagram away leaves the canvas on
-something. `selection` is a unique, ordered array of element IDs, and an
-unchanged selection keeps its array identity, so repeated canvas callbacks do
-not erase the announcement for the selection change they completed. A removal
-drops every removed ID from it and closes a matching editor. `inlineEditor`
-names the element and whether the field edits its name or its Note text. It is
-in the store because a command reaches it from the keyboard. Being total, the
-reducer cannot refuse `Opened` or `Closed` over unsaved work, so those guards,
-and the one on closing the tab, belong in the view
-([the file bridge](../files/README.md)).
+The active diagram, the selection, whether the model panel is shown, the inline
+editor, the last refusal, and the file lifecycle stay out of the undo stacks.
+`ShowModelPanel` shows the model panel and clears the selection, a `Select`
+naming an element hides it, and `HideModelPanel` hides it. `activeDiagram`
+names the diagram on screen, and nothing until one has been chosen.
+`SelectDiagram` sets it, clears the selection and closes the editor, since both
+belong to the diagram left, and moves neither the model nor the history. The
+`activeDiagram` selector falls back to the first diagram while the model does
+not hold the one named, so an open, an undo or a redo that takes the diagram
+away leaves the canvas on something. `selection` is a unique, ordered array of
+element IDs, and an unchanged selection keeps its array identity, so repeated
+canvas callbacks do not erase the announcement for the selection change they
+completed. A removal drops every removed ID from it and closes a matching
+editor. `inlineEditor` names the element and whether the field edits its name
+or its Note text. It is in the store because a command reaches it from the
+keyboard. Being total, the reducer cannot refuse `Opened` or `Closed` over
+unsaved work, so those guards, and the one on closing the tab, belong in the
+view ([the file bridge](../files/README.md)).
 
 `FileLifecycle.Opened` carries the file's name and its `RetainedSource`: the
 format it was read as, and the wire document that read produced. A save merges

@@ -27,6 +27,14 @@ export const textbox = (name: string): HTMLElement =>
 export const addControl = (): HTMLElement =>
   screen.getByRole('button', { name: 'Add a threat' });
 
+/** A panel's Threats tab, whose name carries its threat count. */
+export const threatsTab = (): HTMLElement =>
+  screen.getByRole('tab', { name: /^Threats \d+$/u });
+
+/** A panel's Details tab. */
+export const detailsTab = (): HTMLElement =>
+  screen.getByRole('tab', { name: 'Details' });
+
 /** The numbers a text says, in the order it says them. */
 export const numbersIn = (text: string | null | undefined): readonly number[] =>
   (text?.match(/\d+/gu) ?? []).map(Number);

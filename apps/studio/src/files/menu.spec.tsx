@@ -47,6 +47,7 @@ import { toggleModelPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { resetThreatRegister } from '../panel/threat-register-state.js';
 import { ThreatRegister } from '../panel/threat-register.js';
+import { threatsTab } from '../ui/ui.fixtures.js';
 import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
 
@@ -54,9 +55,6 @@ type User = ReturnType<typeof userEvent.setup>;
 
 const burger = (): HTMLElement =>
   screen.getByRole('button', { name: /^Menu/u });
-
-const threatsTab = (): HTMLElement =>
-  screen.getByRole('tab', { name: /^Threats \d+$/u });
 
 const item = (name: string | RegExp): HTMLElement =>
   screen.getByRole('menuitem', { name });

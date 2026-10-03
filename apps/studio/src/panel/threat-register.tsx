@@ -21,7 +21,7 @@ import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
-import { markedWithin } from './marked.js';
+import { marked, markedWithin } from './marked.js';
 import { openInModelPanel } from './panel-focus.js';
 import { useShownOrder } from './shown-order.js';
 import { SeverityChip, StatusMark } from './threat-marks.js';
@@ -72,7 +72,7 @@ function Register({ cover }: { readonly cover: number }) {
           (chosen === undefined
             ? undefined
             : markedWithin(rows, 'registerRow', chosen)) ??
-          rows?.querySelector<HTMLElement>('[data-register-row]') ??
+          rows?.querySelector<HTMLElement>(marked.registerRow) ??
           undefined;
         const target =
           row?.querySelector<HTMLElement>(`.${styles.choose}`) ?? close.current;

@@ -8,6 +8,7 @@ import {
   openTwoDiagrams,
   runFromMenu,
   selectNode,
+  showDetails,
   storefront,
   threatPanel,
 } from './studio.fixtures.js';
@@ -124,7 +125,7 @@ test("the menu opens the register, and an element's name closes it and selects t
 test('R typed into a field stays in the field', async ({ page }) => {
   await openTwoDiagrams(page);
   await runFromMenu(page, 'Model');
-  await modelPanel(page).getByRole('tab', { name: 'Details' }).click();
+  await showDetails(page, modelPanel(page));
   const title = modelPanel(page).getByRole('textbox', {
     name: 'Title',
     exact: true,
