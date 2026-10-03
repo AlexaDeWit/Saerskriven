@@ -529,6 +529,16 @@ export const panelField = (
 export const panelControl = (page: Page, name: string): Locator =>
   threatPanel(page).getByRole('button', { name, exact: true });
 
+/**
+ * The row of the panel's record whose toggle is named `toggle`: the group
+ * with no name of its own that holds that toggle. A row that draws no toggle
+ * is found by its group name instead.
+ */
+export const recordRow = (page: Page, toggle: string): Locator =>
+  threatPanel(page)
+    .getByRole('group', { name: /^$/u })
+    .filter({ has: page.getByRole('button', { name: toggle, exact: true }) });
+
 /** Closes the threat panel by keyboard from its Close threats button, leaving the pointer where it was, and waits for it to go. */
 export const closeThreats = async (page: Page): Promise<void> => {
   await panelControl(page, 'Close threats').focus();

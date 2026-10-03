@@ -18,6 +18,7 @@ import {
   openTwoDiagrams,
   panelControl,
   panelField,
+  recordRow,
   runFromMenu,
   scrollPaneTo,
   selectByKeyboard,
@@ -68,10 +69,7 @@ test(
 
     const reservation = panelControl(page, 'Mitigation 1, Reservation expiry');
     await expect(reservation).toHaveAttribute('aria-expanded', 'false');
-    const record = threatPanel(page).getByRole('group', {
-      name: 'Mitigation 1',
-      exact: true,
-    });
+    const record = recordRow(page, 'Mitigation 1, Reservation expiry');
     await expect(record.locator('p')).toContainText('1');
     await chooseInPanel(page, 'Mitigation 1 status', 'Implemented');
     await expect(reservation).toHaveAttribute('aria-expanded', 'false');
@@ -97,9 +95,7 @@ test('a folded record with a long headline leaves its status whole, as tall as a
   await expandThreat(page, storefront.basketPrice);
 
   const statuses = [1, 2].map((number) =>
-    threatPanel(page)
-      .getByRole('group', { name: `Mitigation ${String(number)}`, exact: true })
-      .getByRole('combobox'),
+    panelField(page, 'combobox', `Mitigation ${String(number)} status`),
   );
   await expect(statuses[0]).toBeVisible();
   const heights = await Promise.all(
@@ -117,10 +113,10 @@ test('a kept record keeps its toggle, Added mark, status and Unlink on one name 
   await page.keyboard.type('Strip caller tokens at the edge');
   await page.keyboard.press('Enter');
 
-  const record = threatPanel(page).getByRole('group', {
-    name: 'Mitigation 2',
-    exact: true,
-  });
+  const record = recordRow(
+    page,
+    'Mitigation 2, Strip caller tokens at the edge',
+  );
   await expect(record.locator('[data-added]')).toBeVisible();
   const toggle = await screenBoxOf(record.locator('[data-record-toggle]'));
   const added = await screenBoxOf(record.locator('[data-added]'));

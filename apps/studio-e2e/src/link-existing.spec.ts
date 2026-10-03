@@ -29,10 +29,8 @@ const offered = {
   },
 } as const;
 
-const linkedRow = (page: Page): Locator =>
-  threatPanel(page)
-    .getByRole('group', { name: 'Mitigation 2', exact: true })
-    .locator('[data-record-toggle]');
+const linkedToggle = (page: Page): Locator =>
+  threatPanel(page).getByRole('button', { name: /^Mitigation 2(?:,|$)/u });
 
 const openPicker = async (page: Page) => {
   await openShopperTakeover(page);
@@ -47,7 +45,7 @@ test(
   { tag: '@phone' },
   async ({ page }) => {
     const trigger = await openPicker(page);
-    const linked = linkedRow(page);
+    const linked = linkedToggle(page);
 
     for (const [place, { name, toggle }] of Object.entries(offered)) {
       await test.step(place, async () => {
@@ -83,7 +81,7 @@ test('the keyboard links the last mitigation offered', async ({ page }) => {
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
 
-  const linked = linkedRow(page);
+  const linked = linkedToggle(page);
   await expect(linked).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(

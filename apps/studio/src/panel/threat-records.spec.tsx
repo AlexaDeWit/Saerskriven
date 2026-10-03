@@ -24,6 +24,7 @@ import {
   chooseFrom,
   editorTimeout,
   recordedThreat,
+  recordRow,
   showThreatEditor,
 } from './panel.fixtures.js';
 import type { RecordFieldMessage } from './records.js';
@@ -384,7 +385,7 @@ describe(
 
     it('puts a record status and Unlink in its name row, above fields that show no label of their own', async () => {
       await showOpened();
-      const record = screen.getByRole('group', { name: 'Mitigation 1' });
+      const record = recordRow('Mitigation 1, Read-only share links');
       const status = within(record).getByRole('combobox', {
         name: 'Mitigation 1 status',
       });
@@ -403,15 +404,17 @@ describe(
       );
     });
 
-    it('names each record card as a group holding its controls, and keeps their names', async () => {
+    it('draws each record card as a group holding its controls, and keeps their names', async () => {
       await showOpened();
 
-      const card = screen.getByRole('group', { name: 'Mitigation 1' });
       expect(
-        within(card).getByRole('combobox', { name: 'Mitigation 1 status' }),
+        within(recordRow('Mitigation 1, Read-only share links')).getByRole(
+          'combobox',
+          { name: 'Mitigation 1 status' },
+        ),
       ).toBeDefined();
       expect(
-        within(screen.getByRole('group', { name: 'Assumption 1' })).getByRole(
+        within(recordRow('Assumption 1, Every editor is signed in.')).getByRole(
           'textbox',
           { name: 'Assumption 1' },
         ),
@@ -420,14 +423,20 @@ describe(
 
     describe('in French', () => {
       const french = inLocale('fr-CA');
-      const card = (kind: 'enums.mitigation' | 'enums.assumption') =>
+      const card = (
+        kind: 'enums.mitigation' | 'enums.assumption',
+        headline: string,
+      ) =>
         within(
-          screen.getByRole('group', {
-            name: french('fields.record-name', {
-              kind: french(kind),
-              number: 1,
+          recordRow(
+            french('fields.record-toggle', {
+              name: french('fields.record-name', {
+                kind: french(kind),
+                number: 1,
+              }),
+              headline,
             }),
-          }),
+          ),
         );
       const first = (field: RecordFieldMessage): string =>
         french(field, { number: 1 });
@@ -436,8 +445,11 @@ describe(
 
       it('names each field after its kind of record and the record\'s number, so no "de" lands before the record\'s name', async () => {
         await showOpened();
-        const mitigation = card('enums.mitigation');
-        const assumption = card('enums.assumption');
+        const mitigation = card('enums.mitigation', 'Read-only share links');
+        const assumption = card(
+          'enums.assumption',
+          'Every editor is signed in.',
+        );
 
         expect(
           mitigation.getByRole('textbox', {
