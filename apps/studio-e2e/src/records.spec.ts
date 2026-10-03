@@ -91,6 +91,26 @@ test(
   },
 );
 
+test('a folded record with a long headline leaves its status whole, as tall as a short one', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.webShop);
+  await expandThreat(page, storefront.basketPrice);
+
+  const statuses = [1, 2].map((number) =>
+    threatPanel(page)
+      .getByRole('group', { name: `Mitigation ${String(number)}`, exact: true })
+      .getByRole('combobox'),
+  );
+  await expect(statuses[0]).toBeVisible();
+  const heights = await Promise.all(
+    statuses.map(async (status) => (await screenBoxOf(status)).height),
+  );
+
+  expect(Math.abs(heights[0] - heights[1])).toBeLessThanOrEqual(1);
+});
+
 test('a kept record keeps its toggle, Added mark, status and Unlink on one name row at the default pane width', async ({
   page,
 }) => {
