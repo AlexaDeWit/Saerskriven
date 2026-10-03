@@ -273,10 +273,11 @@ selection. An arrow key moves the selection five model units, and Shift+arrow
 twenty, or one grid interval and four with Snap to grid on, snapped as a drag
 is. A flow does not move on its own, but a moved group carries its bends
 and free ends along. After each arrow key a screen reader hears where Position
-and size now places the selection, in the figures it shows. Pressing Escape,
-or leaving the browser window, before the release puts every dragged element
-back where it was, with no undo step. Escape also clears the selection, as it
-does anywhere.
+and size now places the selection, in the figures it shows. An arrow key stores
+a position to one decimal, and a drag to three
+([what a gesture stores](#what-a-gesture-stores)). Pressing Escape, or leaving
+the browser window, before the release puts every dragged element back where it
+was, with no undo step. Escape also clears the selection, as it does anywhere.
 
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
@@ -298,6 +299,29 @@ bounds of the selected elements, and **Distribute** keeps the first and last
 elements in place and evens the gaps. Flows follow their attached ends, and
 bends and free ends stay put. **Snap to grid**, off at first, snaps dragging
 and arrow-key moves to the visible grid. Typed coordinates are not snapped.
+
+### What a gesture stores
+
+A gesture rounds the numbers it changes as it stores them: to three decimals
+when it is made with a pointer (a mouse, a pen or a touch), and to one decimal
+when it is made with the keyboard. That covers a move, a resize, a placed
+element, a bend, a free end and a point of a trust boundary curve, and the
+bends, free ends and curve points a moved group carries.
+
+- A position the gesture changes is rounded in both coordinates, a size in
+  width and height, and a flow's bends or a curve's points all together.
+- A number the gesture leaves alone keeps its stored value: an element's size
+  through a move, and its position through a resize that does not move it.
+- A number typed into Position and size or the flow end editor is not rounded,
+  and a number that came from a file stays as it is until a gesture changes it.
+- With Snap to grid on, a snapped position is a grid multiple, which the
+  rounding leaves as it is.
+- In a group moved by arrow key, each element lands on one decimal of its own,
+  so two of them can shift against each other by under a tenth of a unit.
+- A trust boundary curve stores its points. Position and size shows the box
+  around them, a boundary line's width outside the outermost points, so its
+  figures are worked out from the points and can show more decimals than the
+  points hold.
 
 ## Flows
 

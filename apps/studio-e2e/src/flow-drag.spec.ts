@@ -9,6 +9,7 @@ import {
   lineOf,
   placeOf,
   pressOn,
+  type Box,
   type Point,
 } from './canvas.fixtures.js';
 import { nodeNamed, openTwoDiagrams, storefront } from './studio.fixtures.js';
@@ -37,6 +38,13 @@ const besideOf = async (part: Locator, anchor: Locator): Promise<Point> => {
   const read = at ?? { x: Number.NaN, y: Number.NaN };
   expect(Number.isFinite(read.x) && Number.isFinite(read.y)).toBe(true);
   return read;
+};
+
+const expectHeld = (now: Box | null, inFlight: Box | null): void => {
+  expect(now).not.toBeNull();
+  for (const side of ['x', 'y', 'width', 'height'] as const) {
+    expect(now?.[side]).toBeCloseTo(inFlight?.[side] ?? Number.NaN, 2);
+  }
 };
 
 test('a flow follows the element it attaches to through a drag, at either end', async ({
@@ -90,9 +98,9 @@ test('a flow follows the element it attaches to through a drag, at either end', 
   for (const [index, line] of attached.entries()) {
     await expect(line).toHaveAttribute('d', inFlight[index]);
   }
-  expect(await badgedLabel.boundingBox()).toEqual(labelInFlight);
-  expect(await badgedBadge.boundingBox()).toEqual(badgeInFlight);
-  expect(await outwardLabel.boundingBox()).toEqual(outwardLabelInFlight);
+  expectHeld(await badgedLabel.boundingBox(), labelInFlight);
+  expectHeld(await badgedBadge.boundingBox(), badgeInFlight);
+  expectHeld(await outwardLabel.boundingBox(), outwardLabelInFlight);
 });
 
 test('a group drag carries an attached flow, its label and its badge before pointer-up', async ({

@@ -253,6 +253,13 @@ const applied: ActionsByTag<ModelActionTag> = {
   SetModelMetadata: Action.SetModelMetadata({
     change: { title: 'Retitled model' },
   }),
+  Gesture: Action.Gesture({
+    input: 'keyboard',
+    edit: Action.MoveElement({
+      elementId: processElement,
+      offset: { x: 10, y: -5 },
+    }),
+  }),
 };
 
 const refused: ActionsByTag<ModelActionTag> = {
@@ -394,6 +401,13 @@ const refused: ActionsByTag<ModelActionTag> = {
   }),
   SetModelMetadata: Action.SetModelMetadata({
     change: { description: `Pasted${softHyphen}prose` },
+  }),
+  Gesture: Action.Gesture({
+    input: 'pointer',
+    edit: Action.MoveElement({
+      elementId: elementId('element-missing'),
+      offset: { x: 1, y: 1 },
+    }),
   }),
 };
 

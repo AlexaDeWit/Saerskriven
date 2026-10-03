@@ -1,11 +1,5 @@
 import { elementIn } from '@saerskriven/model/fixtures';
-import {
-  act,
-  createEvent,
-  fireEvent,
-  render,
-  screen,
-} from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { currentAnnouncement } from './announcements.js';
@@ -13,8 +7,10 @@ import {
   boundaryCurve,
   boundaryElement,
   canvasModel,
+  clickSuppressionLifted,
   curvedCanvasModel,
   dragHandle,
+  mouseOn,
   openCanvas,
   pointerOn,
   requestFlow,
@@ -28,21 +24,6 @@ const press = (key: string, shiftKey = false): void => {
 
 const point = (number: number) =>
   screen.getByRole('button', { name: `Point ${String(number)}` });
-
-const mouseOn = (
-  target: Element | Window,
-  type: 'mouseDown' | 'mouseMove' | 'mouseUp',
-  clientX: number,
-): void => {
-  const event = createEvent[type](target, { clientX, clientY: 100 });
-  Object.defineProperty(event, 'view', { value: window });
-  fireEvent(target, event);
-};
-
-const clickSuppressionLifted = (): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
 
 const pointCount = () =>
   screen.queryAllByRole('button', { name: /^Point \d+$/u }).length;
@@ -319,10 +300,33 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(screen.queryByRole('group', { name: 'Point actions' })).toBeNull();
     expect(document.activeElement).toBe(point(2));
     expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
-    const added = waypoints()[1];
     press('ArrowDown');
-    expect(waypoints()[1]).toEqual({ x: added?.x, y: (added?.y ?? 0) + 5 });
+    expect(waypoints()[1]).toEqual({ x: 85.2, y: 23.1 });
     expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it('stores the curve at one decimal once an arrow key moves a point, and at three once a drag does', () => {
+    reshaped([
+      { x: -20.123456, y: 80.98765 },
+      { x: 200.4444, y: -20.5558 },
+      boundaryCurve[2],
+    ]);
+    render(<DiagramCanvas />);
+
+    point(2).focus();
+    press('ArrowRight');
+    expect(waypoints()).toEqual([
+      { x: -20.1, y: 81 },
+      { x: 205.4, y: -20.6 },
+      boundaryCurve[2],
+    ]);
+
+    dragHandle(point(1), { x: -40.12345, y: 100.6789 });
+    expect(waypoints()).toEqual([
+      { x: -40.123, y: 100.679 },
+      { x: 205.4, y: -20.6 },
+      boundaryCurve[2],
+    ]);
   });
 
   it('adds a point before the last one through the Add point of the last', () => {

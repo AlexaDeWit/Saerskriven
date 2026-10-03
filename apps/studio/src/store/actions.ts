@@ -5,6 +5,7 @@ import type {
   ReadFailure,
   RetainedSource,
 } from '@saerskriven/formats';
+import type { GestureInput } from '@saerskriven/canvas';
 import type {
   Assumption,
   AssumptionId,
@@ -123,6 +124,7 @@ export type Action = Data.TaggedEnum<{
   LinkAssumptionToModel: { readonly assumptionId: AssumptionId };
   UnlinkAssumptionFromModel: { readonly assumptionId: AssumptionId };
   SetModelMetadata: { readonly change: ModelMetadataChange };
+  Gesture: { readonly input: GestureInput; readonly edit: GestureEdit };
   AddDiagram: { readonly diagram: Diagram };
   RenameDiagram: { readonly diagramId: DiagramId; readonly title: string };
   Undo: {};
@@ -160,5 +162,33 @@ export type Action = Data.TaggedEnum<{
   DismissFailure: {};
 }>;
 
+/** An edit a canvas gesture commits: one that can write a position, a size or a run of points. */
+export type GestureEdit = Extract<
+  Action,
+  {
+    readonly _tag:
+      | 'AddElement'
+      | 'MoveElement'
+      | 'MoveElements'
+      | 'ReconnectFlow'
+      | 'ResizeElement'
+      | 'SetBoundaryShape'
+      | 'SetFlowEndPosition'
+      | 'SetFlowWaypoints';
+  }
+>;
+
 /** Constructors and matching helpers for store actions. */
 export const Action = Data.taggedEnum<Action>();
+
+/**
+ * `edit` as a gesture made with `input` commits it, or as it is where nothing
+ * names an input: a typed number or a command, whose numbers the store does
+ * not round.
+ */
+export function committedBy(
+  input: GestureInput | undefined,
+  edit: GestureEdit,
+): Action {
+  return input === undefined ? edit : Action.Gesture({ input, edit });
+}

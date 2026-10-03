@@ -19,6 +19,7 @@ host provides.
 | `state.ts`             | `State`, its enums, the initial state and the placeholder model                                                                           |
 | `actions.ts`           | The `Action` union                                                                                                                        |
 | `reducer.ts`           | `reduce`, the one pure function                                                                                                           |
+| `gesture-precision.ts` | The decimals a gesture's numbers are stored at, and a model with what a gesture changed rounded to them                                   |
 | `store.ts`             | The store, `dispatch`, `useModelStore` and the canvas-or-panel change subscription                                                        |
 | `selectors.ts`         | What views derive from the state                                                                                                          |
 | `selection.ts`         | `sameSelection`, the comparison the reducer uses to keep an unchanged selection's array identity                                          |
@@ -47,7 +48,9 @@ host provides.
   atomically, before history records the result. `AddDiagram` appends a
   diagram and shows it, the one edit that moves the view as well as the model.
   The other tags cover history, the diagram on screen, selection, inline
-  editing, files and failures. `DismissFailure` puts `lastFailure` away and
+  editing, files and failures. `Gesture` wraps the edit a canvas gesture
+  commits with what made it, a pointer or the keyboard
+  ([Gestures](#gestures)). `DismissFailure` puts `lastFailure` away and
   touches nothing else. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` returns to the state the studio booted in,
@@ -106,6 +109,30 @@ the model lives in and what a save merges onto, and it stays out of the stacks
 with the rest of the file: an undo moves the model, never the file. The type
 comes from `@saerskriven/formats`, where it is declared beside the detected-read
 union it mirrors, so a document cannot be filed under the wrong format.
+
+## Gestures
+
+A canvas gesture dispatches its edit inside `Gesture`, naming its input:
+`pointer` for a mouse, a pen or a touch, `keyboard` for a key. The arm reduces
+the edit, then stores what the edit changed at the decimals
+`gesture-precision.ts` holds for that input, three for a pointer and one for
+the keyboard, as one history step. `committedBy` builds the action, and hands
+back the bare edit where nothing names an input.
+
+- What an edit changed is each position, size, flow route and curve whose
+  numbers differ from the model before it, and the whole of an added element.
+  A changed position is rounded in both coordinates, a size in both extents, a
+  route or a curve in every point. A number the edit left alone keeps its
+  stored value, whatever its decimals: the size of a moved element, the
+  position of an element a resize did not move, and every other element.
+- The rounding is applied to the result, not to the edit's arguments. A move
+  carries an offset, and no offset reaches every rounded number from the stored
+  one: 5.1 less 5 is 0.09999999999999964, where the store holds 0.1.
+- A rounded size stays above zero, at the smallest step of its precision.
+- An edit dispatched bare is not rounded: a number typed into Position and
+  size or the flow end form, and a command such as Add point, Switch boundary
+  shape, align, distribute and paste. A model that arrives from a file is not
+  rounded either, since no action carries its numbers.
 
 ## Recovery
 
@@ -181,7 +208,10 @@ without history.
 ## Rules for changes
 
 - A reducer arm changes the model only by calling a `@saerskriven/model`
-  operation and folding its `Either`. Never assign into `state.present` or
+  operation and folding its `Either`. `Gesture` alone goes further, and rounds
+  what its edit's operation wrote ([Gestures](#gestures)): the model has no
+  operation that sets a position, so the arm builds the rounded elements beside
+  the ones it was handed. Never assign into `state.present` or
   into anything it holds: the stacks share those objects, so one write in
   place rewrites every snapshot at once and takes undo, redo and unsaved work
   down together. The spec that holds this clones the state with
@@ -204,5 +234,5 @@ without history.
   zustand's `useShallow` at the call site, or the component re-renders on every
   dispatch.
 - A high-frequency gesture reaches the store once, at its end. React Flow keeps
-  positions during a drag, and a drop dispatches one `MoveElement` or one
-  `MoveElements` for the full selection.
+  positions during a drag, and a drop dispatches one `Gesture` around one
+  `MoveElement`, or around one `MoveElements` for the full selection.

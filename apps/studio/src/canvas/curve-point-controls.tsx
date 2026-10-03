@@ -58,7 +58,10 @@ export function CurvePointControls({
       points.preview({ ...held, point: draggedPoint(held.point, span) });
     },
     commit: (held, span) => {
-      points.commit({ ...held, point: draggedPoint(held.point, span) });
+      points.commit(
+        { ...held, point: draggedPoint(held.point, span) },
+        'pointer',
+      );
       handBack();
     },
     cancel: () => {
@@ -130,7 +133,7 @@ export function CurvePointControls({
       'move-curve-point-far',
     );
     if (moved !== undefined) {
-      points.commit({ kind: 'move', index, point: moved });
+      points.commit({ kind: 'move', index, point: moved }, 'keyboard');
     } else if (
       pressesContextualShortcut('remove-curve-point', event, hostPlatform)
     ) {

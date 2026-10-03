@@ -281,9 +281,9 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         onResize={() => {
           setResizing(true);
         }}
-        onResizeEnd={(box) => {
+        onResizeEnd={(box, input) => {
           setResizing(false);
-          resizeNode(node, box);
+          resizeNode(node, box, input);
         }}
         resizeLabels={resizeLabels(node, t)}
         resizing={resizing}

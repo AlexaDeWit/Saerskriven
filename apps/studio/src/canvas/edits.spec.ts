@@ -25,6 +25,7 @@ import {
   curvedCanvasModel,
   flaggedCanvasModel,
   laidOutNode,
+  lastPlaced,
   openCanvas,
   probeFlow,
   requestFlow,
@@ -186,6 +187,7 @@ describe('placing an element', () => {
   it('adds the element, selects it and opens its name without repeating it', () => {
     placeElement(
       freshElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 }),
+      'pointer',
     );
 
     const state = modelStore.getState();
@@ -201,6 +203,7 @@ describe('placing an element', () => {
   it('costs one step of the undo stack, the selection beside it costing none', () => {
     placeElement(
       freshElement('process', { x: 10, y: 20 }, { width: 80, height: 80 }),
+      'pointer',
     );
 
     expect(modelStore.getState().past).toHaveLength(1);
@@ -209,6 +212,7 @@ describe('placing an element', () => {
   it('does not open a name field where the placed box cannot hold it', () => {
     placeElement(
       freshElement('actor', { x: 10, y: 20 }, { width: 100, height: 5 }),
+      'pointer',
       false,
     );
 
@@ -218,16 +222,17 @@ describe('placing an element', () => {
   });
 
   it('places a curve as one edit through the clicked waypoints', () => {
-    placeBoundaryCurve([
-      { x: 10, y: 20 },
-      { x: 80, y: 60 },
-      { x: 120, y: 20 },
-    ]);
+    placeBoundaryCurve(
+      [
+        { x: 10, y: 20 },
+        { x: 80, y: 60 },
+        { x: 120, y: 20 },
+      ],
+      'pointer',
+    );
 
     expect(modelStore.getState().past).toHaveLength(1);
-    expect(
-      modelStore.getState().present.diagrams[0].elements.at(-1),
-    ).toMatchObject({
+    expect(lastPlaced()).toMatchObject({
       kind: 'trust-boundary',
       shape: {
         kind: 'curve',
@@ -240,8 +245,55 @@ describe('placing an element', () => {
     });
   });
 
+  it.each([
+    [
+      'pointer',
+      {
+        position: { x: 10.123, y: 20.988 },
+        size: { width: 100.556, height: 50.444 },
+      },
+      [
+        { x: 10.123, y: 20.988 },
+        { x: 80.556, y: 60.444 },
+      ],
+    ],
+    [
+      'keyboard',
+      {
+        position: { x: 10.1, y: 21 },
+        size: { width: 100.6, height: 50.4 },
+      },
+      [
+        { x: 10.1, y: 21 },
+        { x: 80.6, y: 60.4 },
+      ],
+    ],
+  ] as const)(
+    'stores an element and a curve placed with the %s at the decimals that input keeps',
+    (input, box, waypoints) => {
+      placeElement(
+        freshElement(
+          'actor',
+          { x: 10.123456, y: 20.98765 },
+          { width: 100.5558, height: 50.4444 },
+        ),
+        input,
+      );
+      expect(lastPlaced()).toMatchObject(box);
+
+      placeBoundaryCurve(
+        [
+          { x: 10.123456, y: 20.98765 },
+          { x: 80.5558, y: 60.4444 },
+        ],
+        input,
+      );
+      expect(lastPlaced()).toMatchObject({ shape: { waypoints } });
+    },
+  );
+
   it('refuses an unfinished curve without an undo step', () => {
-    expect(placeBoundaryCurve([{ x: 10, y: 20 }])).toBe(false);
+    expect(placeBoundaryCurve([{ x: 10, y: 20 }], 'pointer')).toBe(false);
 
     expect(modelStore.getState().past).toHaveLength(0);
   });
@@ -251,6 +303,7 @@ describe('placing an element', () => {
 
     placeElement(
       freshElement('actor', { x: 10, y: 20 }, { width: 100, height: 50 }),
+      'pointer',
     );
 
     expect(modelStore.getState().past).toHaveLength(0);
@@ -476,6 +529,47 @@ describe('resizeNode', () => {
     });
   });
 
+  it.each([
+    [
+      'pointer',
+      {
+        position: { x: -20.123, y: -10.988 },
+        size: { width: 140.556, height: 70.444 },
+      },
+    ],
+    [
+      'keyboard',
+      {
+        position: { x: -20.1, y: -11 },
+        size: { width: 140.6, height: 70.4 },
+      },
+    ],
+    [
+      undefined,
+      {
+        position: { x: -20.123456, y: -10.98765 },
+        size: { width: 140.5558, height: 70.4444 },
+      },
+    ],
+  ] as const)(
+    'stores a resize made with the %s at the decimals that input keeps, and a typed box as typed',
+    (input, stored) => {
+      resizeNode(
+        laidOutNode(actorElement),
+        {
+          position: { x: -20.123456, y: -10.98765 },
+          size: { width: 140.5558, height: 70.4444 },
+        },
+        input,
+      );
+
+      expect(
+        elementIn(modelStore.getState().present, actorElement),
+      ).toMatchObject(stored);
+      expect(modelStore.getState().past).toHaveLength(1);
+    },
+  );
+
   it('does not commit unchanged geometry', () => {
     const node = currentLayout(modelStore.getState()).nodes.find(
       (candidate) => candidate.id === actorElement,
@@ -524,7 +618,7 @@ describe('on the diagram switched to', () => {
 
   it('places, connects and selects all within that diagram alone', () => {
     const process = freshElement('process', { x: 300, y: 0 });
-    expect(placeElement(process, false)).toBe(true);
+    expect(placeElement(process, 'pointer', false)).toBe(true);
     connectElements(otherElement, process.id);
 
     const [first, second] = modelStore.getState().present.diagrams;

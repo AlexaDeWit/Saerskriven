@@ -11,6 +11,7 @@ import {
   resizeControlsOf,
   resizeKeys,
   shiftedKeyboardResizeStep,
+  type GestureInput,
   type ResizeControlPosition,
 } from './resizing.js';
 import { resizeHandle } from './tokens.js';
@@ -24,9 +25,10 @@ export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
  * those {@link resizeControlsOf} leaves off a boundary curve. Each
  * holds a button named from `labels` that resizes by arrow key in
  * model-space steps. Both routes hand `onResizeEnd` the settled position and
- * size together, so a resize from the top or left is one edit. A boundary
- * curve's corner handles sit `resizeHandle.curveGap` outside its corners,
- * clear of a handle on a point there.
+ * size together, so a resize from the top or left is one edit, and which of
+ * the two the resize came by. A boundary curve's corner handles sit
+ * `resizeHandle.curveGap` outside its corners, clear of a handle on a point
+ * there.
  */
 export function ResizeControls({
   labels,
@@ -38,7 +40,9 @@ export function ResizeControls({
   readonly labels: ResizeLabels;
   readonly node: CanvasNode;
   readonly onResize: (() => void) | undefined;
-  readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
+  readonly onResizeEnd:
+    | ((box: NodeBox, input: GestureInput) => void)
+    | undefined;
   readonly visible: boolean;
 }): ReactElement {
   const keyDown = (
@@ -56,7 +60,7 @@ export function ResizeControls({
     }
     event.preventDefault();
     event.stopPropagation();
-    onResizeEnd(resized);
+    onResizeEnd(resized, 'keyboard');
   };
 
   return (
@@ -77,6 +81,7 @@ export function ResizeControls({
                   size: { width: resized.width, height: resized.height },
                 },
               ),
+              'pointer',
             );
           }}
           position={position}

@@ -3,6 +3,7 @@ import {
   nearestHandleSide,
   type CanvasEdge,
   type CanvasNode,
+  type GestureInput,
   type NodeBox,
 } from '@saerskriven/canvas';
 import type { Flow, Point, Side } from '@saerskriven/model';
@@ -81,7 +82,7 @@ export function useFlowBendInteraction(
       if (target === undefined) {
         cancel();
       } else {
-        commit(target);
+        commit(target, 'pointer');
       }
     },
     cancel: () => {
@@ -110,8 +111,11 @@ export function useFlowBendInteraction(
     bends.preview(target);
     announce((t) => t('tools.bend-place-help'));
   };
-  const commit = (target: WaypointTarget | EndTarget): void => {
-    bends.commit(target);
+  const commit = (
+    target: WaypointTarget | EndTarget,
+    input?: GestureInput,
+  ): void => {
+    bends.commit(target, input);
     setMode(undefined);
     handBack();
   };
@@ -213,13 +217,16 @@ export function useFlowBendInteraction(
       const index = Number(segment.getAttribute('data-bend-segment'));
       place(segmentBend(edge, index));
     } else if (mode.kind === 'place') {
-      commit({
-        ...mode.target,
-        point: view.screenToFlowPosition({
-          x: event.clientX,
-          y: event.clientY,
-        }),
-      });
+      commit(
+        {
+          ...mode.target,
+          point: view.screenToFlowPosition({
+            x: event.clientX,
+            y: event.clientY,
+          }),
+        },
+        'pointer',
+      );
     } else {
       return;
     }
@@ -325,7 +332,7 @@ function placingKey(
   target: WaypointTarget,
   bends: FlowBends,
   setMode: (mode: BendMode) => void,
-  commit: (target: WaypointTarget) => void,
+  commit: (target: WaypointTarget, input: GestureInput) => void,
 ): boolean {
   const point = nudgedPoint(target.point, event, 'move-bend', 'move-bend-far');
   if (point !== undefined) {
@@ -336,7 +343,7 @@ function placingKey(
     return true;
   }
   if (pressesContextualShortcut('commit-bend', event, hostPlatform)) {
-    commit(target);
+    commit(target, 'keyboard');
     return true;
   }
   return false;
@@ -362,7 +369,7 @@ function flowEndKey(
       'move-free-end-far',
     );
     if (point !== undefined) {
-      bends.commit({ kind: 'free', end, point });
+      bends.commit({ kind: 'free', end, point }, 'keyboard');
       return true;
     }
     if (pressesContextualShortcut('keep-free-end', event, hostPlatform)) {
@@ -403,7 +410,7 @@ function bendHandleKey(
   }
   const moved = nudgedPoint(point, event, 'move-bend', 'move-bend-far');
   if (moved !== undefined) {
-    bends.commit({ kind: 'move', index, point: moved });
+    bends.commit({ kind: 'move', index, point: moved }, 'keyboard');
     return true;
   }
   if (pressesContextualShortcut('remove-bend', event, hostPlatform)) {
@@ -416,11 +423,11 @@ function bendHandleKey(
 function openActions(
   mode: BendMode | undefined,
   next: BendMode,
-  commit: (target: WaypointTarget) => void,
+  commit: (target: WaypointTarget, input: GestureInput) => void,
   setMode: (mode: BendMode) => void,
 ): void {
   if (mode?.kind === 'place') {
-    commit(mode.target);
+    commit(mode.target, 'keyboard');
     return;
   }
   if (mode?.kind !== 'choose') {

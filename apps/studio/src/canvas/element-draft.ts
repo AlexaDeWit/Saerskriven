@@ -1,8 +1,9 @@
+import type { GestureInput } from '@saerskriven/canvas';
 import type { Element, Model, OperationFailure } from '@saerskriven/model';
 import { Either } from 'effect';
 import { useMemo, useState } from 'react';
 import type { Said } from '../messages/said.js';
-import type { Action } from '../store/actions.js';
+import { committedBy, type GestureEdit } from '../store/actions.js';
 import { selectedElement, selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
@@ -22,7 +23,10 @@ export type ElementEdit<Subject extends Element, Target extends object> = {
     subject: Subject,
     target: Target,
   ) => Either.Either<Model, OperationFailure>;
-  readonly action: (subject: Subject, target: Target) => Action | undefined;
+  readonly action: (
+    subject: Subject,
+    target: Target,
+  ) => GestureEdit | undefined;
   readonly said: (subject: Subject, target: Target) => Said;
 };
 
@@ -36,7 +40,8 @@ type Draft<Subject, Target> = Target & {
  * Previews an edit of the one selected element and commits it as one
  * dispatch. The element is `edit`'s subject while the Select tool is active
  * and no text field is open, and a preview lasts while the model, the
- * selection, the open field and the tool stay as they were.
+ * selection, the open field and the tool stay as they were. A commit names
+ * the `input` its gesture was made with, and a command's names none.
  */
 export function useElementDraft<Subject extends Element, Target extends object>(
   edit: ElementEdit<Subject, Target>,
@@ -81,7 +86,7 @@ export function useElementDraft<Subject extends Element, Target extends object>(
         setHeld({ ...target, subject, state, transition: tool.transition });
       }
     },
-    commit: (target: Target): void => {
+    commit: (target: Target, input?: GestureInput): void => {
       if (
         subject === undefined ||
         modelStore.getState().present !== state.present ||
@@ -96,7 +101,7 @@ export function useElementDraft<Subject extends Element, Target extends object>(
         return;
       }
       const before = modelStore.getState().present;
-      dispatch(action);
+      dispatch(committedBy(input, action));
       setHeld(undefined);
       if (modelStore.getState().present !== before) {
         announce(edit.said(subject, target));

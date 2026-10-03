@@ -82,6 +82,27 @@ describe('SelectionControls', () => {
     ).toBeNull();
   });
 
+  it('stores a position and a size as typed, whatever their decimals', () => {
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('edit-geometry'), recordingSurface().surface);
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
+      target: { value: '10.123456' },
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), {
+      target: { value: '120.98765' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
+
+    expect(
+      elementIn(modelStore.getState().present, actorElement),
+    ).toMatchObject({
+      position: { x: 10.123456, y: 0 },
+      size: { width: 120.98765, height: 60 },
+    });
+  });
+
   it("shows a trust boundary curve's width and height and scales its points to them as one edit", () => {
     openCanvas([boundaryElement], curvedCanvasModel);
     const node = laidOutNode(boundaryElement);
@@ -267,13 +288,13 @@ describe('SelectionControls', () => {
       screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Y' }).value,
     ).toBe(String(drawn?.y));
     fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
-      target: { value: '520' },
+      target: { value: '520.123456' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
     expect(elementIn(modelStore.getState().present, requestFlow)).toMatchObject(
       {
         source: { kind: 'attached', element: actorElement },
-        target: { kind: 'free', position: { x: 520, y: drawn?.y } },
+        target: { kind: 'free', position: { x: 520.123456, y: drawn?.y } },
       },
     );
     expect(modelStore.getState().past).toEqual([canvasModel]);

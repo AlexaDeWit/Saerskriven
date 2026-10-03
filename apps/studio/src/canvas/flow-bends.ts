@@ -10,7 +10,7 @@ import {
   type Side,
 } from '@saerskriven/model';
 import { Either } from 'effect';
-import { Action } from '../store/actions.js';
+import { Action, type GestureEdit } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
 import { sideMessages } from '../messages/enum-labels.js';
 import type { Said } from '../messages/said.js';
@@ -112,7 +112,7 @@ function editedRoute(
   );
 }
 
-function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
+function routeAction(flow: Flow, target: RouteTarget): GestureEdit | undefined {
   if (target.kind === 'anchor') {
     const end = flow[target.end];
     return end.kind === 'attached'

@@ -2,6 +2,7 @@ import {
   sameNodeBox,
   scaledCurvePoints,
   type CanvasNode,
+  type GestureInput,
   type NodeBox,
 } from '@saerskriven/canvas';
 import {
@@ -12,7 +13,7 @@ import {
   type Point,
   type Threat,
 } from '@saerskriven/model';
-import { Action } from '../store/actions.js';
+import { Action, committedBy } from '../store/actions.js';
 import {
   activeDiagramId,
   elementById,
@@ -40,29 +41,31 @@ type RemovalCascade = {
   readonly threats: number;
 };
 
-/** Places and selects one element, then opens its inline editor when asked. */
-export function placeElement(element: Element, openNameField = true): boolean {
-  const state = modelStore.getState();
-  const diagramId = activeDiagramId(state);
-  if (diagramId === undefined) {
-    return false;
-  }
+/**
+ * Places and selects one element, as the gesture made with `input` that put
+ * it there, then opens its inline editor when asked.
+ */
+export function placeElement(
+  element: Element,
+  input: GestureInput,
+  openNameField = true,
+): boolean {
   return placed(
-    Action.AddElement({ diagramId, element }),
-    element.id,
+    element,
+    input,
     element.kind === 'text' ? 'note' : openNameField ? 'name' : undefined,
   );
 }
 
-/** Places a trust-boundary curve through its committed waypoints. */
-export function placeBoundaryCurve(waypoints: readonly Point[]): boolean {
-  const state = modelStore.getState();
-  const diagramId = activeDiagramId(state);
-  if (diagramId === undefined || waypoints.length < 2) {
-    return false;
-  }
-  const element = freshBoundaryCurve(waypoints);
-  return placed(Action.AddElement({ diagramId, element }), element.id, 'name');
+/** Places a trust-boundary curve through the waypoints a gesture made with `input` committed. */
+export function placeBoundaryCurve(
+  waypoints: readonly Point[],
+  input: GestureInput,
+): boolean {
+  return (
+    waypoints.length >= 2 &&
+    placed(freshBoundaryCurve(waypoints), input, 'name')
+  );
 }
 
 /** Draws a flow between two connectable elements, pinned to the sides given. */
@@ -256,30 +259,38 @@ export function commitNote(elementId: ElementId, text: string): void {
 
 /**
  * Applies a node's new position and size as one undo step: a resize, or for a
- * trust boundary curve its points scaled to the new box.
+ * trust boundary curve its points scaled to the new box. A resize control
+ * names the `input` its gesture was made with, and a typed box names none.
  */
-export function resizeNode(node: CanvasNode, box: NodeBox): void {
+export function resizeNode(
+  node: CanvasNode,
+  box: NodeBox,
+  input?: GestureInput,
+): void {
   if (sameNodeBox(node, box)) {
     return;
   }
   const element = elementById(modelStore.getState(), node.id);
   dispatch(
-    element?.kind === 'trust-boundary' && element.shape.kind === 'curve'
-      ? Action.SetBoundaryShape({
-          elementId: element.id,
-          shape: {
-            kind: 'curve',
-            waypoints: scaledCurvePoints(element.shape.waypoints, box),
-          },
-        })
-      : Action.ResizeElement({
-          elementId: node.id,
-          offset: {
-            x: box.position.x - node.position.x,
-            y: box.position.y - node.position.y,
-          },
-          size: box.size,
-        }),
+    committedBy(
+      input,
+      element?.kind === 'trust-boundary' && element.shape.kind === 'curve'
+        ? Action.SetBoundaryShape({
+            elementId: element.id,
+            shape: {
+              kind: 'curve',
+              waypoints: scaledCurvePoints(element.shape.waypoints, box),
+            },
+          })
+        : Action.ResizeElement({
+            elementId: node.id,
+            offset: {
+              x: box.position.x - node.position.x,
+              y: box.position.y - node.position.y,
+            },
+            size: box.size,
+          }),
+    ),
   );
 }
 
@@ -383,13 +394,23 @@ function added(action: Action, elementId: ElementId): void {
 }
 
 function placed(
-  action: Action,
-  elementId: ElementId,
+  element: Element,
+  input: GestureInput,
   editor: 'name' | 'note' | undefined,
 ): boolean {
-  if (!changedModel(action)) {
+  const diagramId = activeDiagramId(modelStore.getState());
+  if (
+    diagramId === undefined ||
+    !changedModel(
+      Action.Gesture({
+        input,
+        edit: Action.AddElement({ diagramId, element }),
+      }),
+    )
+  ) {
     return false;
   }
+  const elementId = element.id;
   dispatch(Action.Select({ elementIds: [elementId] }));
   if (editor !== undefined) {
     dispatch(Action.InlineEditing({ editor: { kind: editor, elementId } }));

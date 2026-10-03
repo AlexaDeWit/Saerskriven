@@ -1,3 +1,4 @@
+import type { GestureInput } from '@saerskriven/canvas';
 import {
   addAssumption,
   addDiagram,
@@ -43,6 +44,7 @@ import {
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { Action } from './actions.js';
+import { modelAtGesturePrecision } from './gesture-precision.js';
 import { activeDiagramId, holdsDiagram } from './selectors.js';
 import { sameSelection } from './selection.js';
 import {
@@ -153,6 +155,7 @@ export function reduce(state: State, action: Action): State {
       edited(state, unlinkAssumptionFromModel(state.present, assumptionId)),
     SetModelMetadata: ({ change }) =>
       edited(state, setModelMetadata(state.present, change)),
+    Gesture: ({ input, edit }) => gestured(state, reduce(state, edit), input),
     AddDiagram: ({ diagram }) => addedDiagram(state, diagram),
     RenameDiagram: ({ diagramId, title }) =>
       edited(state, renameDiagram(state.present, diagramId, title)),
@@ -233,6 +236,15 @@ function edited(
             lastFailure: undefined,
           },
   });
+}
+
+function gestured(state: State, reduced: State, input: GestureInput): State {
+  return reduced.present === state.present
+    ? reduced
+    : {
+        ...reduced,
+        present: modelAtGesturePrecision(state.present, reduced.present, input),
+      };
 }
 
 function addedDiagram(state: State, diagram: Diagram): State {

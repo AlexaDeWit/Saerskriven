@@ -155,7 +155,9 @@ use, one control per `resizeControlPositions` entry, less those a boundary
 curve's points give nothing to stretch. `scaledCurvePoints` fits a curve's
 points to a resized box, for the node body's live drawing and for the edit the
 mounting canvas commits. `isResizeKey` tells whether a key is one of
-`resizeKeys`.
+`resizeKeys`. `GestureInput` names what a gesture is made with, a pointer or
+the keyboard, and the resize controls hand it to `onResizeEnd` beside the
+settled box.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
 each node its accessible name, hands `CanvasNodeBody` the `resizeLabels` its

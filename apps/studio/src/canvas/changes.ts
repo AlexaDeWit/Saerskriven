@@ -1,4 +1,8 @@
-import type { CanvasFlowEdge, CanvasNode } from '@saerskriven/canvas';
+import type {
+  CanvasFlowEdge,
+  CanvasNode,
+  GestureInput,
+} from '@saerskriven/canvas';
 import {
   sideSchema,
   type ElementId,
@@ -6,7 +10,7 @@ import {
   type Side,
 } from '@saerskriven/model';
 import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
-import { Action } from '../store/actions.js';
+import { Action, type GestureEdit } from '../store/actions.js';
 import { sameSelection } from '../store/selection.js';
 import { selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -18,17 +22,34 @@ export type DiagramChange =
   | NodeChange<DiagramNode>
   | EdgeChange<CanvasFlowEdge>;
 
-/** Turns what React Flow reports about a gesture into store actions and dispatches them. */
+/**
+ * Turns what React Flow reports about a gesture on its nodes into store
+ * actions and dispatches them, a move as the gesture made with `input`.
+ */
 export function applyChanges(
   changes: readonly DiagramChange[],
   elements: ReadonlyMap<string, ElementId>,
   nodes: ReadonlyMap<string, CanvasNode>,
+  input: GestureInput,
 ): void {
   const selection = selectedElements(modelStore.getState());
   for (const action of [
     ...selectionActions(changes, elements, selection),
-    ...moveActions(changes, nodes, selection),
+    ...moveActions(changes, nodes, selection).map((edit) =>
+      Action.Gesture({ input, edit }),
+    ),
   ]) {
+    dispatch(action);
+  }
+}
+
+/** Dispatches the selection React Flow reports about its flows, which it never moves. */
+export function applySelection(
+  changes: readonly DiagramChange[],
+  elements: ReadonlyMap<string, ElementId>,
+): void {
+  const selection = selectedElements(modelStore.getState());
+  for (const action of selectionActions(changes, elements, selection)) {
     dispatch(action);
   }
 }
@@ -69,7 +90,7 @@ export function moveActions(
   changes: readonly DiagramChange[],
   nodes: ReadonlyMap<string, CanvasNode>,
   selection: readonly ElementId[],
-): Action[] {
+): GestureEdit[] {
   const resizing = new Set(
     changes.flatMap((change) =>
       change.type === 'dimensions' && change.resizing === true

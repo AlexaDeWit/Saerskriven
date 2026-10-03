@@ -178,7 +178,7 @@ export function DiagramCanvas({
   const elements = useMemo(() => elementIds(layout), [layout]);
   const positions = useMemo(() => nodesById(layout), [layout]);
   const surface = useRef<HTMLDivElement>(null);
-  const boxSelection = useBoxSelection(surface, elements, positions);
+  const boxSelection = useBoxSelection(surface, elements);
   const view = useRef<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>(
     null,
   );

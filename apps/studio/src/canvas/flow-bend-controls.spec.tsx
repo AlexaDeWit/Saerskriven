@@ -11,6 +11,7 @@ import {
   pointerOn,
   probeFlow,
   requestFlow,
+  viewportTransform,
 } from './canvas.fixtures.js';
 import { currentAnnouncement } from './announcements.js';
 import { DiagramCanvas } from './diagram-canvas.js';
@@ -263,6 +264,77 @@ describe('DiagramCanvas, a bend on a flow', () => {
     fireEvent.click(bend());
     fireEvent.click(screen.getByRole('button', { name: 'Remove bend' }));
     expect(points()).toEqual([]);
+  });
+});
+
+describe('DiagramCanvas, what a route gesture stores', () => {
+  it('stores a bend at one decimal once an arrow key moves it, and at three once a drag does', () => {
+    dispatch(
+      Action.SetFlowWaypoints({
+        elementId: requestFlow,
+        waypoints: [{ x: 210.123456, y: 30.98765 }],
+      }),
+    );
+    render(<DiagramCanvas />);
+
+    bend().focus();
+    press('ArrowDown');
+    expect(points()).toEqual([{ x: 210.1, y: 36 }]);
+
+    dragHandle(bend(), { x: 240.12345, y: 80.6789 });
+    expect(points()).toEqual([{ x: 240.123, y: 80.679 }]);
+  });
+
+  it('stores a free end at one decimal once an arrow key moves it, and at three once a drag does', () => {
+    openCanvas([probeFlow]);
+    dispatch(
+      Action.SetFlowEndPosition({
+        elementId: probeFlow,
+        side: 'target',
+        position: { x: 500.123456, y: 200.98765 },
+      }),
+    );
+    render(<DiagramCanvas />);
+
+    targetEnd().focus();
+    press('ArrowLeft');
+    expect(target(probeFlow)).toMatchObject({
+      position: { x: 495.1, y: 201 },
+    });
+
+    dragHandle(targetEnd(), { x: 520.12345, y: 240.6789 });
+    expect(target(probeFlow)).toMatchObject({
+      position: { x: 520.123, y: 240.679 },
+    });
+  });
+
+  it('stores a bend placed by Enter at one decimal, and one placed by a click at three', () => {
+    dispatch(
+      Action.MoveElement({
+        elementId: actorElement,
+        offset: { x: 0.123456, y: 0.98765 },
+      }),
+    );
+    render(<DiagramCanvas />);
+
+    add();
+    press('Enter');
+    press('Enter');
+    expect(points()).toEqual([{ x: 210.1, y: 30.5 }]);
+
+    add();
+    press('Enter');
+    const pane = document.querySelector('.react-flow__pane') ?? document.body;
+    const view = viewportTransform();
+    fireEvent.pointerDown(pane);
+    fireEvent.click(pane, { clientX: 251.37, clientY: 101.73 });
+    expect(points()).toEqual([
+      {
+        x: Number(((251.37 - view.x) / view.zoom).toFixed(3)),
+        y: Number(((101.73 - view.y) / view.zoom).toFixed(3)),
+      },
+      { x: 210.1, y: 30.5 },
+    ]);
   });
 });
 
