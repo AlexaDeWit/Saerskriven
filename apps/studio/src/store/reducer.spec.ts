@@ -1,4 +1,5 @@
 import { ReadFailure } from '@saerskriven/formats';
+import { ShareLinkFailure } from '@saerskriven/formats/share-link';
 import {
   emptyModel,
   OperationFailure,
@@ -18,6 +19,7 @@ import { reduce } from './reducer.js';
 import { activeDiagramId, elementById } from './selectors.js';
 import {
   FileLifecycle,
+  LinkFailure,
   StudioFailure,
   initialState,
   placeholderModel,
@@ -88,12 +90,14 @@ type StudioActionTag =
   | 'HideModelProperties'
   | 'InlineEditing'
   | 'Imported'
+  | 'LinkOpened'
   | 'Opened'
   | 'Saved'
   | 'Closed'
   | 'Followed'
   | 'ReadFailed'
   | 'FileRefused'
+  | 'LinkRefused'
   | 'DismissFailure';
 
 type ModelActionTag = Exclude<Action['_tag'], StudioActionTag>;
@@ -440,6 +444,7 @@ const studioActions: ActionsByTag<StudioActionTag> = {
     format: 'otm',
     divergences: [],
   }),
+  LinkOpened: Action.LinkOpened({ model: emptyModel, name: 'shared.yaml' }),
   Saved: Action.Saved({ name: 'model.yaml', source: nativeSource }),
   Closed: Action.Closed(),
   Followed: Action.Followed({
@@ -457,6 +462,9 @@ const studioActions: ActionsByTag<StudioActionTag> = {
   FileRefused: Action.FileRefused({
     operation: 'open',
     reason: 'the browser said no',
+  }),
+  LinkRefused: Action.LinkRefused({
+    failure: LinkFailure.Codec({ failure: ShareLinkFailure.NotAShareLink() }),
   }),
   DismissFailure: Action.DismissFailure(),
 };
@@ -969,6 +977,9 @@ describe('the active diagram', () => {
     expect(
       reduce(switched, studioActions.Imported).activeDiagram,
     ).toBeUndefined();
+    expect(
+      reduce(switched, studioActions.LinkOpened).activeDiagram,
+    ).toBeUndefined();
     expect(reduce(switched, Action.Closed()).activeDiagram).toBeUndefined();
   });
 });
@@ -1206,6 +1217,18 @@ describe('a refusal outside the model', () => {
     expect(next.lastFailure).toEqual(
       StudioFailure.File({ reason: 'the browser said no' }),
     );
+  });
+
+  it('records why a shared link opened nothing, leaving the model and the file alone', () => {
+    const opened = reduce(withHistory, studioActions.Opened);
+    const next = reduce(opened, studioActions.LinkRefused);
+
+    expect(next.lastFailure).toEqual(
+      StudioFailure.Link({ failure: studioActions.LinkRefused.failure }),
+    );
+    expect(next.present).toBe(opened.present);
+    expect(next.saved).toBe(opened.saved);
+    expect(next.file).toBe(opened.file);
   });
 
   it('clears a stale refusal once a save lands', () => {

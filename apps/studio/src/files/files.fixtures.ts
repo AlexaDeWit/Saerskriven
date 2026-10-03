@@ -1,11 +1,19 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import {
+  brotliVariable,
+  brotliWasmAsset,
+} from '@saerskriven/formats/build-assets';
+import { writeShareLink } from '@saerskriven/formats/share-link';
+import type { Model } from '@saerskriven/model';
 import { committedText, testDataPath } from '@saerskriven/model/fixtures';
 import { renderSvg } from '@saerskriven/render';
+import { builtModule, unbuilt } from '@saerskriven/wasm/fixtures';
 import { act } from '@testing-library/react';
 import { Either } from 'effect';
 import { statSync } from 'node:fs';
 import { addedProcess, sampleModel } from '../store/store.fixtures.js';
 import { dispatch } from '../store/store.js';
+import type { SyncedState } from '../store/sync.js';
 import {
   OpenOutcome,
   SaveOutcome,
@@ -18,6 +26,8 @@ import {
   type SaveFileType,
 } from './bridge.js';
 import type { RenderExports } from './export-commands.js';
+import type { ShareLinks } from './share-link.js';
+import { writeClipboard } from '../system-clipboard.js';
 
 /**
  * The bytes a PNG file opens with, so a spec can tell one from other content
@@ -89,6 +99,27 @@ export const edit = (): void => {
     dispatch(addedProcess);
   });
 };
+
+/**
+ * A tab sync whose other tab a spec drives: `reaches` hands the session that
+ * tab's result, as the channel would.
+ */
+export function anotherTab() {
+  let follow: ((state: SyncedState) => void) | undefined;
+  return {
+    sync: {
+      watch: (next: (state: SyncedState) => void) => {
+        follow = next;
+        return () => undefined;
+      },
+    },
+    reaches: (state: SyncedState) => {
+      act(() => {
+        follow?.(state);
+      });
+    },
+  };
+}
 
 /**
  * Stubs the object URL calls and the anchor click a download goes through, and
@@ -301,3 +332,43 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
     },
   };
 }
+
+/** Whether a suite that reads or writes share links skips, outside the flake shell. */
+export const brotliUnbuilt = unbuilt(brotliVariable);
+
+/** The flake-built brotli module, read once per suite. */
+export const brotliModule = builtModule(brotliWasmAsset);
+
+/**
+ * The module loader and clipboard a session reads and writes links through:
+ * the built module, or what `module` answers, behind a spy counting loads.
+ */
+export function specLinks(
+  module: ShareLinks['module'] = () =>
+    Promise.resolve(Either.right(brotliModule())),
+) {
+  const loads = vi.fn<ShareLinks['module']>(module);
+  const links: ShareLinks = { module: loads, copy: writeClipboard };
+  return { links, loads };
+}
+
+/** The fragment of the link `model` shares from the page the spec is on. */
+export const fragmentOf = async (model: Model): Promise<string> =>
+  new URL(
+    Either.getOrThrow(
+      await writeShareLink(model, globalThis.location.href, brotliModule()),
+    ),
+  ).hash;
+
+/** Puts the page at `address` without a navigation or a `hashchange`. */
+export const visit = (address: string): void => {
+  globalThis.history.replaceState(null, '', address);
+};
+
+/** Puts a fragment in the address as a paste into the address bar does, with its `hashchange`. */
+export const paste = (fragment: string): void => {
+  act(() => {
+    visit(fragment);
+    globalThis.dispatchEvent(new HashChangeEvent('hashchange'));
+  });
+};

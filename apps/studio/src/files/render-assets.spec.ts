@@ -1,6 +1,6 @@
 import { drawingFace } from '@saerskriven/render/png';
 import { Either } from 'effect';
-import { RenderAssetFailure } from './render-assets.js';
+import { AssetFailure } from '../asset-failure.js';
 
 const response = (byte: number): Response =>
   new Response(new Uint8Array([byte]));
@@ -63,7 +63,7 @@ describe('the bytes a projection is drawn with', () => {
 
     expect(Either.isRight(await loader.loadPdfAssets())).toBe(true);
     expect(refused).toEqual(
-      Either.left(RenderAssetFailure.FaceMissing({ face: drawingFace })),
+      Either.left(AssetFailure.FaceMissing({ face: drawingFace })),
     );
   });
 
@@ -95,7 +95,7 @@ describe('the bytes a projection is drawn with', () => {
     const loader = await import('./render-assets.js');
 
     expect(await loader.loadPngAssets()).toEqual(
-      Either.left(RenderAssetFailure.Unavailable({ reason: 'offline' })),
+      Either.left(AssetFailure.Unavailable({ reason: 'offline' })),
     );
   });
 });

@@ -8,8 +8,9 @@ Two diagrams. `read-and-render` is the path a model file takes from disk
 through the codecs into a register or a diagram. `agent-and-desktop` is the
 path an agent or the desktop shell takes to the same core. The threats are the
 ones this repository has: hostile files and share links reaching the read
-limits and the wire schemas, foreign prose reaching the render paths, the
-desktop IPC bridge, and the MCP write tools.
+limits and the wire schemas, a share link disclosing the model it carries,
+foreign prose reaching the render paths, the desktop IPC bridge, and the MCP
+write tools.
 
 Every status is true to the tree:
 

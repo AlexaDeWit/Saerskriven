@@ -14,10 +14,12 @@ person sees, and what an OTM or TM-BOM file becomes, is in
 | `session.ts`                                                     | What the studio does with a file, as pure functions: read, write, and `formatFiles`                                        |
 | `file-commands.ts`                                               | The one session the app owns: file and export commands, reports, and the questions the menu asks                           |
 | `export-commands.ts`, `render-assets.ts`                         | The projections through `@saerskriven/render`, and the loader for the WebAssembly modules and faces                        |
+| `share-link.ts`, `share-notice.ts`                               | Share, reading a shared link when it arrives, the question it asks over unsaved work, and the share report                 |
 | `menu.tsx`, `menu-items.tsx`, `submenu.tsx`, `radio-choices.tsx` | The burger menu, the items it and the switcher share, the second level, and a one-of-several group                         |
 | `settings-menu.tsx`                                              | The appearance and language submenus                                                                                       |
 | `diagram-switcher.tsx`                                           | The control joined to the burger that names, switches, adds and renames diagrams                                           |
-| `file-reports.tsx`                                               | The failure notice, the crossing report and the export report, hung under the chrome card                                  |
+| `file-reports.tsx`                                               | The failure notice, the crossing report, the export report and the share report, hung under the chrome card                |
+| `../system-clipboard.ts`                                         | The one write to the system clipboard, which Copy, Cut and Share go through                                                |
 
 ## The bridge
 
@@ -65,7 +67,8 @@ A read is the size against `readLimits.maxTextBytes` first, since that bound
 keeps the parse finite, then `readOrImport`, then one action: the model, or
 the codec's or the import's own failure, which the notice renders with the
 paths it carries. A model converted from OTM or TM-BOM is `Imported`: new,
-unsaved, and with no document retained for a save to merge onto.
+unsaved, and with no document retained for a save to merge onto. A shared
+link is `LinkOpened`, which the reducer settles as it settles `Imported`.
 A write is the codec's own write for the file's format, then the bridge, then
 one action.
 
@@ -132,8 +135,8 @@ also holds the fallback picker's input and the guard on closing the tab, which
 stands only while the model is dirty and the latest recovery write is
 unconfirmed. A notice or report cannot go inside the menu, which owns items and
 groups only, so `file-reports.tsx` hangs them under the card. The crossing
-report and the export report share one named live region there, and the
-failure notice holds its own.
+report, the export report and the share report share one named live region
+there, and the failure notice holds its own.
 
 ## Exports
 
@@ -145,16 +148,18 @@ through `render-assets.ts` first, and a refusal from either reports as a notice
 and writes nothing. An export uses the bridge's picker or download path but
 never replaces the handle Save writes back to.
 
-`render-assets.ts` fetches the two WebAssembly modules and the five Liberation
-faces the Vite build emits, the faces once for both readers, and caches the
-bytes after the first successful read. Vite's `?url` import owns each module.
-The face list and the compiler's order come from the render-owned build module
-the CLI uses too, and the PNG loader leads that list with `drawingFace`,
-because the rasterizer letters a family no loaded face carries in the first
-face it was offered, and the drawings name Helvetica and Arial. A build
-carrying no such face is refused. The modules and faces load only when a PDF or
-PNG export runs, and Vite keeps the compiler's JavaScript in a separate hashed
-chunk.
+`render-assets.ts` fetches the three WebAssembly modules and the five
+Liberation faces the Vite build emits, the faces once for both readers, and
+caches the bytes after the first successful read. Vite's `?url` import owns
+each module. The face list and the compiler's order come from the
+render-owned build module the CLI uses too, and the PNG loader leads that list
+with `drawingFace`, because the rasterizer letters a family no loaded face
+carries in the first face it was offered, and the drawings name Helvetica and
+Arial. A build carrying no such face is refused. The compiler, the rasterizer
+and the faces load only when a PDF or PNG export runs, and Vite keeps the
+compiler's JavaScript in a separate hashed chunk. The brotli module a share
+link is written and read with loads only when Share runs or the address holds
+a link ([Share links](#share-links)).
 
 An export report carries a Dismiss button, and `refusal` on the report decides
 what else ends it. A written export reports informationally, so it goes at the
@@ -163,3 +168,41 @@ defines ([the store](../store/README.md#the-shape)). An export the browser, the
 asset loader or the compiler refused stands until Dismiss or a later export.
 No notice here is taken away by a timer: an error a clock removes is one a
 person reading slowly never reads.
+
+## Share links
+
+Share writes the model as a link through `@saerskriven/formats/share-link`,
+on the page's own address (`location.origin` and `location.pathname`, so a
+Pages base path stays and a query does not), and puts it on the clipboard.
+The encoding runs on the main thread, as the PDF and PNG exports do. The
+clipboard write is asked for as Share runs, before the link is written, as a
+`ClipboardItem` holding the link to come, so the press that ran Share still
+holds when the link is ready: Firefox refuses a `writeText` that follows
+seconds of work, which a model near the ceiling takes. The share
+report gives the link's length and says that anyone holding the link can read
+the whole model. A link past `shareLinkLimit`, or a model whose text is past
+the read bound, is refused with a report pointing to Save, and nothing reaches
+the clipboard. The share report stands until Dismiss or the next Share, since
+it carries the disclosure.
+
+`useShareLink` reads `location.hash` when the studio mounts and at each
+`hashchange`, so a link pasted into an open tab loads without a reload. The
+module loads only once `isShareLinkFragment` says the fragment is a link. The
+store boots from recovery synchronously and the decoding is asynchronous, so a
+link is always read after boot. A link that reads lands as `LinkOpened`, named
+after the model's title with the native extension, after the session releases
+the native handle, so the model arrives unsaved and the close guard and
+recovery hold it. What the read could not carry goes to the crossing report,
+and a refused link to the failure notice, worded from the failure's tag.
+
+The landing is published to every other tab, so the question comes first.
+While the session holds unsaved work (`holdsUnsavedWork`: unsaved changes, or
+a recovery snapshot that could not be read at startup and that nothing has
+replaced since), the Share item turns into Discard changes and open the link,
+with Cancel under it, as Open asks. Answering, Cancel, a dismissed menu, the
+model becoming clean, and following another tab each settle it.
+The fragment is removed with `history.replaceState` once the link lands, is
+refused, or the question is settled, keeping the path and the query, so a
+reload neither asks again nor loads the link over later edits. One fragment
+is read once, however often the effect runs, which is what keeps the
+development server's double effects from asking twice.

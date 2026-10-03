@@ -93,8 +93,8 @@ export function proposedName(
   return withExtension(name, formatFiles[format].extensions[0], untitled);
 }
 
-/** The longest diagram title, in characters, an export name carries. */
-export const diagramTitleLimit = 80;
+/** The longest title, in characters, a proposed file name carries. */
+export const fileTitleLimit = 80;
 
 const unusableCharacters = new Set('/\\:*?"<>|');
 
@@ -110,20 +110,20 @@ function isUnusable(character: string): boolean {
 }
 
 /**
- * A diagram title as a file name part. Each character a file name cannot hold
- * (`/ \ : * ? " < > |`, control characters, line breaks) becomes `_`, runs of
- * white space become one space, the title is cut to
- * {@link diagramTitleLimit} characters, and leading and trailing dots and
+ * A diagram's or a model's title as a file name part. Each character a file
+ * name cannot hold (`/ \ : * ? " < > |`, control characters, line breaks)
+ * becomes `_`, runs of white space become one space, the title is cut to
+ * {@link fileTitleLimit} characters, and leading and trailing dots and
  * spaces go. Letters are kept as they are, not slugged. A title with nothing
- * left becomes `untitled`, the translated untitled diagram default.
+ * left becomes `untitled`, the translated default the caller passes.
  */
-export function diagramFileTitle(title: string, untitled: string): string {
+export function fileTitle(title: string, untitled: string): string {
   const cleaned = Array.from(title, (character) =>
     isUnusable(character) ? '_' : character,
   )
     .join('')
     .replace(/\s+/gu, ' ');
-  const cut = Array.from(cleaned).slice(0, diagramTitleLimit).join('');
+  const cut = Array.from(cleaned).slice(0, fileTitleLimit).join('');
   const trimmed = cut.replace(/^[. ]+|[. ]+$/gu, '');
   return trimmed === '' ? untitled : trimmed;
 }
@@ -131,7 +131,7 @@ export function diagramFileTitle(title: string, untitled: string): string {
 /**
  * The proposed export name, derived from the open file, or `untitled` in the
  * active language while there is none. A `diagramTitle` (already cleaned by
- * {@link diagramFileTitle}) follows the stem as ` - <title>`.
+ * {@link fileTitle}) follows the stem as ` - <title>`.
  */
 export function proposedExportName(
   file: FileLifecycle,
@@ -205,6 +205,15 @@ export function openedBy(
   });
 }
 
+/**
+ * The name a model read from a shared link takes: its title as a file name
+ * part, or `untitled` where nothing is left, with the native extension, since
+ * a link holds the native format.
+ */
+export function linkFileName(title: string, untitled: string): string {
+  return `${fileTitle(title, untitled)}${formatFiles[nativeFormat].extensions[0]}`;
+}
+
 /** Uses the written name and identifies save refusals so the existing file remains available for retry. */
 export function savedBy(
   outcome: SaveOutcome,
@@ -275,13 +284,33 @@ export function openReport(
       };
 }
 
+/**
+ * What a shared link's read lost, naming the model it produced. A link has no
+ * file to save back to, so no loss is one a save keeps, and a link that lost
+ * nothing reports nothing.
+ */
+export function linkReport(
+  model: Model,
+  divergences: readonly Divergence[],
+): LossReport | undefined {
+  return unkeptReport('open', model, divergences);
+}
+
 /** What a save of `model` lost, and nothing at all where it lost nothing. */
 export function saveReport(
   model: Model,
   divergences: readonly Divergence[],
 ): LossReport | undefined {
+  return unkeptReport('save', model, divergences);
+}
+
+function unkeptReport(
+  occasion: LossOccasion,
+  model: Model,
+  divergences: readonly Divergence[],
+): LossReport | undefined {
   return reported(
-    'save',
+    occasion,
     model,
     lossesOf(divergences, () => false),
   );

@@ -10,6 +10,8 @@ const point = { number: 'number', boundary: 'text' } as const;
 
 const position = { x: 'number', y: 'number' } as const;
 
+const writtenPosition = { x: 'text', y: 'text' } as const;
+
 const element = { element: 'text' } as const;
 
 const numbered = { number: 'number' } as const;
@@ -120,7 +122,7 @@ export const canvasMessages = {
   'cut-remains': text(),
   'cut-abandoned': text(),
   'records-counts': text({ linked: 'number', cloned: 'number' }),
-  'node-moved': text(position),
+  'node-moved': text(writtenPosition),
   'flow-controls': text(),
   'toggle-interactivity': text(),
   minimap: text(),

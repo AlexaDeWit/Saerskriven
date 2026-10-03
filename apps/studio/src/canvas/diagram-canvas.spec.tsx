@@ -95,6 +95,14 @@ const press = {
 const nodeDescriptionText = (): string | null | undefined =>
   document.querySelector('[id^="react-flow__node-desc"]')?.textContent;
 
+const flowLiveMessage = (): string | null | undefined =>
+  document.querySelector('[id^="react-flow__aria-live"]')?.textContent;
+
+const writtenAsPositionAndSize = ({ x, y }: { x: number; y: number }) => ({
+  x: String(x),
+  y: String(y),
+});
+
 describe('DiagramCanvas', () => {
   beforeEach(() => {
     openCanvas();
@@ -350,6 +358,81 @@ describe('DiagramCanvas', () => {
     expect(modelStore.getState().past).toHaveLength(1);
   });
 
+  it('says where each Arrow and Shift+Arrow press put the element, in the figures Position and size shows', () => {
+    openCanvas([actorElement]);
+    dispatch(
+      Action.MoveElement({
+        elementId: actorElement,
+        offset: { x: 28.5, y: 12.25 },
+      }),
+    );
+    render(<DiagramCanvas />);
+
+    for (const chord of [
+      { key: 'ArrowRight' },
+      { key: 'ArrowRight', shiftKey: true },
+      { key: 'ArrowDown' },
+      { key: 'ArrowUp', shiftKey: true },
+      { key: 'ArrowLeft' },
+    ]) {
+      fireEvent.keyDown(reader(), chord);
+
+      expect(flowLiveMessage()).toBe(
+        t('canvas.node-moved', writtenAsPositionAndSize(readerBox().position)),
+      );
+    }
+    expect(readerBox().position).toEqual({ x: 48.5, y: -2.75 });
+  });
+
+  it('says where Position and size places a group moved from an element off its corner', () => {
+    openCanvas([actorElement, processElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(screen.getByRole('group', { name: 'Studio, process' }), {
+      key: 'ArrowDown',
+    });
+
+    expect(flowLiveMessage()).toBe(
+      t('canvas.node-moved', writtenAsPositionAndSize({ x: 0, y: 5 })),
+    );
+  });
+
+  it('says a move again where an undo between two moves puts the element in the same place', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    fireEvent.keyDown(reader(), { key: 'ArrowRight' });
+    const first = flowLiveMessage();
+
+    act(() => {
+      dispatch(Action.Undo());
+    });
+    fireEvent.keyDown(reader(), { key: 'ArrowRight' });
+
+    expect(flowLiveMessage()).not.toBe(first);
+    expect(flowLiveMessage()?.trim()).toBe(first);
+  });
+
+  it('says nothing for an arrow key on a focused element the selection leaves out', () => {
+    openCanvas([processElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(reader(), { key: 'ArrowRight' });
+
+    expect(flowLiveMessage()).toBe('');
+  });
+
+  it('says where the element went when an arrow key off a resize control axis moves it instead', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowLeft' });
+
+    expect(readerBox().position).toEqual({ x: -5, y: 0 });
+    expect(flowLiveMessage()).toBe(
+      t('canvas.node-moved', writtenAsPositionAndSize(readerBox().position)),
+    );
+  });
+
   it.each([
     [
       'top',
@@ -546,7 +629,6 @@ describe('DiagramCanvas', () => {
       chooseLanguage('fr-CA');
     });
     const { t: french } = activeTranslator();
-    const { position } = readerBox();
     fireEvent.keyDown(screen.getByRole('group', { name: /^Reader, /u }), {
       key: 'ArrowRight',
     });
@@ -560,10 +642,12 @@ describe('DiagramCanvas', () => {
         name: french('canvas.resize-top', { element: 'Reader' }),
       }),
     ).toBeDefined();
-    const moved = document.querySelector(
-      '[id^="react-flow__aria-live"]',
-    )?.textContent;
-    expect(moved).toBe(french('canvas.node-moved', position));
+    expect(flowLiveMessage()).toBe(
+      french(
+        'canvas.node-moved',
+        writtenAsPositionAndSize(readerBox().position),
+      ),
+    );
   });
 
   it('describes an element by role in a language chosen after it mounted, and a free end by none', () => {

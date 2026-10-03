@@ -3,6 +3,7 @@ import type {
   ReadFailure,
   RetainedSource,
 } from '@saerskriven/formats';
+import type { ShareLinkFailure } from '@saerskriven/formats/share-link';
 import {
   emptyModel,
   parseModel,
@@ -12,6 +13,7 @@ import {
   type OperationFailure,
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
+import type { AssetFailure } from '../asset-failure.js';
 import type { RecoveryProblem } from './recovery-storage.js';
 
 /** The file name and source stay outside model history. */
@@ -26,6 +28,23 @@ export type FileLifecycle = Data.TaggedEnum<{
  */
 export const FileLifecycle = Data.taggedEnum<FileLifecycle>();
 
+/**
+ * Why a shared link opened no model: the link codec's refusal, the native
+ * read's refusal of the text the link held, or the module that decodes links
+ * not loading.
+ */
+export type LinkFailure = Data.TaggedEnum<{
+  Codec: { readonly failure: ShareLinkFailure };
+  Read: { readonly failure: ReadFailure };
+  Module: { readonly failure: AssetFailure };
+}>;
+
+/**
+ * Constructors for {@link LinkFailure}, plus Effect's `$is` and `$match`
+ * helpers.
+ */
+export const LinkFailure = Data.taggedEnum<LinkFailure>();
+
 /** Why the studio refused an operation or could not keep its data. */
 export type StudioFailure = Data.TaggedEnum<{
   Operation: { readonly failure: OperationFailure };
@@ -34,6 +53,7 @@ export type StudioFailure = Data.TaggedEnum<{
     readonly failure: ReadFailure | DetectionFailure;
   };
   File: { readonly reason: string };
+  Link: { readonly failure: LinkFailure };
   StoredRecoveryRejected: { readonly problem: RecoveryProblem };
   RecoveryUnavailable: { readonly problem: RecoveryProblem };
 }>;
@@ -54,6 +74,8 @@ export type InlineEditor = {
  * The model, history, transient view state, file, and recovery status.
  * `activeDiagram` is undefined until a diagram is chosen, and
  * `modelProperties` is whether the panel shows the model's own properties.
+ * `recoveryUnread` is whether the snapshot found at startup could not be read
+ * and no recovery write has replaced it since.
  */
 export type State = {
   readonly present: Model;
@@ -67,6 +89,7 @@ export type State = {
   readonly file: FileLifecycle;
   readonly lastFailure: StudioFailure | undefined;
   readonly recoveryCurrent: boolean;
+  readonly recoveryUnread: boolean;
 };
 
 /** The name the placeholder model carries, before any locale is chosen. */
@@ -173,5 +196,6 @@ export function initialState(model: Model): State {
     file: FileLifecycle.NoFile(),
     lastFailure: undefined,
     recoveryCurrent: false,
+    recoveryUnread: false,
   };
 }

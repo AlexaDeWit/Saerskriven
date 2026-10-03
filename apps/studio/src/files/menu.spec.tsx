@@ -32,11 +32,15 @@ import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
   brokenThreatDragonText,
+  brotliUnbuilt,
   chosenFile,
   edit,
+  fragmentOf,
+  paste,
   sampleNativeText,
   specBridge,
   type SpecBridge,
+  specLinks,
   specRenders,
   vendoredFile,
 } from './files.fixtures.js';
@@ -46,6 +50,8 @@ import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
+import type { ShareLinks } from './share-link.js';
+import { recordingClipboard } from '../canvas/canvas.fixtures.js';
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -88,12 +94,14 @@ function Menu({
   bridge,
   runs,
   renders,
+  links,
 }: {
   readonly bridge: SpecBridge;
   readonly runs?: 'pdf';
   readonly renders?: RenderExports;
+  readonly links?: ShareLinks;
 }) {
-  const session = useFileSession(bridge, renders);
+  const session = useFileSession(bridge, renders, undefined, links);
   useEffect(() => {
     if (runs === 'pdf') {
       session.commands.exportPdf();
@@ -115,8 +123,9 @@ const mounted = (
   bridge: SpecBridge,
   renders?: RenderExports,
   runs?: 'pdf',
+  links?: ShareLinks,
 ): void => {
-  render(<Menu bridge={bridge} renders={renders} runs={runs} />);
+  render(<Menu bridge={bridge} links={links} renders={renders} runs={runs} />);
 };
 
 const asked = (): boolean =>
@@ -165,7 +174,14 @@ describe('what the menu offers', () => {
     ]) {
       expect(screen.queryByRole('menuitem', { name })).toBeNull();
     }
-    for (const name of ['Open', 'Save', 'Save as', 'Export', 'New model']) {
+    for (const name of [
+      'Open',
+      'Save',
+      'Save as',
+      'Export',
+      'Share as link',
+      'New model',
+    ]) {
       expect(item(name)).toBeDefined();
     }
     expect(screen.queryByRole('menuitem', { name: 'Import' })).toBeNull();
@@ -1004,5 +1020,128 @@ describe('closing', () => {
     await openMenu(user);
 
     expect(item('New model')).toBeDefined();
+  });
+});
+
+describe.skipIf(brotliUnbuilt)('a shared link', () => {
+  afterEach(() => {
+    globalThis.history.replaceState(null, '', '/');
+  });
+
+  it('turns Share as link into the question over unsaved work, and opens the link on the second step', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge(), undefined, undefined, specLinks().links);
+    edit();
+
+    paste(await fragmentOf(recordedModel));
+
+    const question = await screen.findByRole(
+      'menuitem',
+      { name: 'Discard changes and open the link' },
+      { timeout: 5_000 },
+    );
+    expect(item('Cancel')).toBeDefined();
+    await waitFor(() => {
+      expect(document.activeElement).toBe(question);
+    });
+    expect(modelStore.getState().present).not.toEqual(recordedModel);
+
+    await user.click(question);
+
+    expect(modelStore.getState().present.metadata).toEqual(
+      recordedModel.metadata,
+    );
+    expect(isDirty(modelStore.getState())).toBe(true);
+    expect(globalThis.location.hash).toBe('');
+  });
+
+  it('asks over a clean model whose recovery snapshot could not be read at startup', async () => {
+    modelStore.setState(
+      { ...initialState(sampleModel), recoveryUnread: true },
+      true,
+    );
+    mounted(specBridge(), undefined, undefined, specLinks().links);
+
+    paste(await fragmentOf(recordedModel));
+
+    expect(
+      await screen.findByRole(
+        'menuitem',
+        { name: 'Discard changes and open the link' },
+        { timeout: 5_000 },
+      ),
+    ).toBeDefined();
+    expect(isDirty(modelStore.getState())).toBe(false);
+    expect(modelStore.getState().present).toBe(sampleModel);
+  });
+
+  it('settles the question as Cancel when the model becomes clean, and the address drops the link', async () => {
+    mounted(specBridge(), undefined, undefined, specLinks().links);
+    edit();
+    paste(await fragmentOf(recordedModel));
+    await screen.findByRole(
+      'menuitem',
+      { name: 'Discard changes and open the link' },
+      { timeout: 5_000 },
+    );
+
+    act(() => {
+      dispatch(Action.Undo());
+    });
+
+    expect(
+      screen.queryByRole('menuitem', {
+        name: 'Discard changes and open the link',
+      }),
+    ).toBe(null);
+    expect(globalThis.location.hash).toBe('');
+    expect(modelStore.getState().present).toBe(sampleModel);
+  });
+
+  it.each([
+    ['Cancel', (user: User) => user.click(item('Cancel'))],
+    ['a dismissed menu', (user: User) => user.keyboard('{Escape}')],
+  ])(
+    'keeps the work on %s, and the address drops the link',
+    async (_answer, answer) => {
+      const user = userEvent.setup();
+      mounted(specBridge(), undefined, undefined, specLinks().links);
+      edit();
+      const before = modelStore.getState().present;
+      paste(await fragmentOf(recordedModel));
+      await screen.findByRole(
+        'menuitem',
+        { name: 'Discard changes and open the link' },
+        { timeout: 5_000 },
+      );
+
+      await answer(user);
+
+      expect(modelStore.getState().present).toBe(before);
+      expect(globalThis.location.hash).toBe('');
+      await openMenu(user);
+      expect(item('Share as link')).toBeDefined();
+    },
+  );
+
+  it('reports the link it shares, and who can read it, until dismissed', async () => {
+    const user = userEvent.setup();
+    recordingClipboard();
+    mounted(specBridge(), undefined, undefined, specLinks().links);
+
+    await choose(user, 'Share as link');
+
+    const report = await screen.findByTestId(
+      'share-report',
+      {},
+      { timeout: 5_000 },
+    );
+    expect(report.querySelectorAll('li')).toHaveLength(1);
+
+    await user.click(
+      screen.getByRole('button', { name: 'Dismiss link report' }),
+    );
+
+    expect(screen.queryByTestId('share-report')).toBe(null);
   });
 });
