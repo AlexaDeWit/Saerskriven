@@ -1,0 +1,12 @@
+[package]
+name = "saerskriven-brotli-codec"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[dependencies]
+brotli = "9.0.0"
+
+[lints.rust]
+unsafe_code = "forbid"

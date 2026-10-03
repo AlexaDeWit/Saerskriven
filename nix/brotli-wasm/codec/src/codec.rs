@@ -1,8 +1,6 @@
 //! Brotli encoding and bounded decoding over Rust's own slices, at the
 //! parameters share links use.
 
-#![forbid(unsafe_code)]
-
 use brotli::enc::encode::{BrotliEncoderOperation, BrotliEncoderStateStruct};
 use brotli::enc::{BrotliEncoderParams, StandardAlloc};
 use brotli::{BrotliDecompressStream, BrotliResult, BrotliState};

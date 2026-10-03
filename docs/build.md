@@ -130,16 +130,38 @@ pnpm nx run brotli-wasm:build          # the module alone
 pnpm nx test @saerskriven/formats      # builds it on the way
 ```
 
-The module's Rust holds no `unsafe` code (owner rulings, 2026-10-02). Rust owns
-one input and one output buffer and exports their addresses, so the caller
-writes and copies bytes there and no address the caller holds is read in Rust.
-[`nix/brotli-wasm/Cargo.toml`](../nix/brotli-wasm/Cargo.toml) denies the
-`unsafe_code` lint and every logic module forbids it. `src/exports.rs` is the
-one file that allows it, for the `#[unsafe(no_mangle)]` marker Rust requires
-on an exported function and refuses under `forbid`. Each export there is a
-one-line call into the logic. [`nix/unsafe-ban.sh`](../nix/unsafe-ban.sh) runs
-before the compile and stops the build, naming the rule, where that structure
-does not hold. The rasterizer does not follow it yet (#640).
+The module's Rust holds no `unsafe` code (owner rulings, 2026-10-02), and it is
+two crates. The logic crate,
+[`nix/brotli-wasm/codec`](../nix/brotli-wasm/codec), holds the encoder, the
+decoder and the input and output buffers Rust owns. Its root forbids the
+`unsafe_code` lint, which rustc enforces in every module and included file of
+that crate and lets no attribute lower. The export crate's
+[`src/lib.rs`](../nix/brotli-wasm/src/lib.rs) is the export table. It allows
+the lint, because rustc refuses an exported function under `forbid`, and each
+export in it passes its parameters to the boundary function of the same name.
+The caller writes and copies bytes at the addresses those exports answer, so no
+address the caller holds is read in Rust.
+
+Two scripts check what rustc cannot, and #640 points the rasterizer's build at
+both. [`nix/unsafe-ban.sh`](../nix/unsafe-ban.sh) runs before the compile and
+refuses the build, naming the rule, unless:
+
+- the logic crate's root opens with its forbid, and its manifest sets the lint
+  no other way and declares no `[lib]` section or build script
+- every line of the export table is a `//!` line, a blank line, the one
+  allowance, the one `use` of the logic crate's boundary, or a line of an
+  export in that shape
+- the export crate depends on the logic crate alone, with no build script,
+  patch or replacement
+- no resolved dependency feature is named `unsafe` or `ffi-api`, read from
+  `cargo tree -e features` in the sandbox
+- no RUSTFLAGS or rustc wrapper variable is set, and no Cargo configuration on
+  Cargo's search path caps lints, forces a warning or wraps rustc
+
+[`nix/wasm-surface.sh`](../nix/wasm-surface.sh) runs on the built module, with
+wabt's `wasm-objdump`, and refuses it unless it imports nothing and exports
+exactly `memory`, the five calls, and the two linker globals rustc always
+exports, `__data_end` and `__heap_base`.
 
 The flake names the path in `SAERSKRIVEN_BROTLI_WASM`.
 `@saerskriven/formats/brotli` takes the module as bytes from its caller, and

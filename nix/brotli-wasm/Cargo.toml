@@ -9,7 +9,10 @@ license = "Apache-2.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-brotli = "9.0.0"
+saerskriven-brotli-codec = { path = "codec" }
+
+[workspace]
+members = ["codec"]
 
 [profile.release]
 opt-level = "s"
@@ -17,6 +20,3 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
-
-[lints.rust]
-unsafe_code = "deny"

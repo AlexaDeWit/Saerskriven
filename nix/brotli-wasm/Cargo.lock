@@ -42,5 +42,12 @@ dependencies = [
 name = "saerskriven-brotli"
 version = "0.0.0"
 dependencies = [
+ "saerskriven-brotli-codec",
+]
+
+[[package]]
+name = "saerskriven-brotli-codec"
+version = "0.0.0"
+dependencies = [
  "brotli",
 ]
