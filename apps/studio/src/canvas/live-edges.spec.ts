@@ -29,6 +29,7 @@ const { t } = activeTranslator();
 const drifter = elementId('el-drifter');
 const drifterSize = { width: 120, height: 80 };
 const source = elementId('el-source');
+const target = elementId('el-target');
 const endSize = { width: 120, height: 60 };
 const grown = { width: 200, height: endSize.height };
 const measured = { width: endSize.width + 1, height: endSize.height };
@@ -67,8 +68,18 @@ const dragTo = (at: Point, dragging = true): NodeChange<DiagramNode>[] => [
   { id: drifter, type: 'position', position: at, dragging },
 ];
 
-const sized = (size: Size, resizing: boolean): NodeChange<DiagramNode>[] => [
-  { id: source, type: 'dimensions', dimensions: size, resizing },
+const sized = (
+  size: Size,
+  resizing: boolean,
+  id = source,
+): NodeChange<DiagramNode>[] => [
+  {
+    id,
+    type: 'dimensions',
+    dimensions: size,
+    resizing,
+    setAttributes: resizing,
+  },
 ];
 
 const flowsOf = (edges: readonly CanvasFlowEdge[]): CanvasEdge[] =>
@@ -169,6 +180,62 @@ describe('useLiveEdges', () => {
       result.current.onNodesChange(sized(measured, false));
     });
 
+    expect(flowsOf(result.current.edges)).toEqual(layout.edges);
+  });
+
+  it('keeps every flow where it was when React Flow ends a resize of one node while another is resizing', () => {
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true, target));
+    });
+    const during = flowsOf(result.current.edges);
+    act(() => {
+      result.current.onNodesChange(sized(measured, false));
+    });
+
+    expect(flowsOf(result.current.edges)).toEqual(during);
+  });
+
+  it('keeps a resize under way through React Flow measuring its node', () => {
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true));
+    });
+    const during = flowsOf(result.current.edges);
+    act(() => {
+      result.current.onNodesChange([
+        { id: source, type: 'dimensions', dimensions: grown },
+      ]);
+    });
+
+    expect(flowsOf(result.current.edges)).toEqual(during);
+  });
+
+  it('folds a resized node back onto the model and drops the layout of its gesture when asked to', () => {
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true));
+    });
+    expect(result.current.nodes.find((node) => node.id === source)?.width).toBe(
+      grown.width,
+    );
+    act(() => {
+      result.current.fold();
+      result.current.onNodesChange(sized(grown, false));
+    });
+
+    expect(result.current.nodes.find((node) => node.id === source)?.width).toBe(
+      endSize.width,
+    );
     expect(flowsOf(result.current.edges)).toEqual(layout.edges);
   });
 

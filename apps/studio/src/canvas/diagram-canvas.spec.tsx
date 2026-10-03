@@ -3,7 +3,7 @@ import {
   canvasInteractionClassNames,
   flowEndNodeId,
 } from '@saerskriven/canvas';
-import { touchEvent } from '@saerskriven/canvas/fixtures';
+import { finger, mouseEvent, touchEvent } from '@saerskriven/canvas/fixtures';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
 import { elementIn } from '@saerskriven/model/fixtures';
@@ -31,7 +31,6 @@ import {
   curvedCanvasModel,
   flaggedCanvasModel,
   laidOutNode,
-  mouseOn,
   noteElement,
   openCanvas,
   probeFlow,
@@ -90,7 +89,15 @@ const resizeControl = (from: string): HTMLElement =>
 const readerGlyphWidth = (): string | null | undefined =>
   reader().querySelector('svg')?.getAttribute('width');
 
-const finger = (clientX: number) => ({ identifier: 1, clientX, clientY: 100 });
+const touchResizeReader = (): void => {
+  fireEvent(resizeControl('right'), touchEvent('touchstart', finger(1, 100)));
+  fireEvent(resizeControl('right'), touchEvent('touchmove', finger(1, 160)));
+};
+
+const stillPressReader = (): void => {
+  fireEvent(resizeControl('right'), mouseEvent('mousedown', 100));
+  fireEvent(window, mouseEvent('mouseup', 100));
+};
 
 const press = {
   button: 0,
@@ -523,8 +530,7 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
     const settled = readerGlyphWidth();
 
-    fireEvent(resizeControl('right'), touchEvent('touchstart', finger(100)));
-    fireEvent(resizeControl('right'), touchEvent('touchmove', finger(160)));
+    touchResizeReader();
     expect(readerGlyphWidth()).not.toBe(settled);
     act(() => {
       dispatch(Action.Select({ elementIds: [] }));
@@ -535,10 +541,29 @@ describe('DiagramCanvas', () => {
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
     });
-    mouseOn(resizeControl('right'), 'mousedown', 100);
-    mouseOn(window, 'mouseup', 100);
+    stillPressReader();
 
     expect(readerGlyphWidth()).toBe(settled);
+    expect(modelStore.getState().past).toHaveLength(0);
+  });
+
+  it('puts back a touch resize that is cancelled, with no undo step, and a still press after it records nothing', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    const settled = [readerGlyphWidth(), reader().style.width];
+
+    touchResizeReader();
+    expect(reader().style.width).not.toBe(settled[1]);
+    fireEvent(
+      resizeControl('right'),
+      touchEvent('touchcancel', finger(1, 160)),
+    );
+
+    expect([readerGlyphWidth(), reader().style.width]).toEqual(settled);
+
+    stillPressReader();
+
+    expect([readerGlyphWidth(), reader().style.width]).toEqual(settled);
     expect(modelStore.getState().past).toHaveLength(0);
   });
 

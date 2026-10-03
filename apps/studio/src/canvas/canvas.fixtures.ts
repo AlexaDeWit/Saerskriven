@@ -1,5 +1,4 @@
 import type { CanvasNode } from '@saerskriven/canvas';
-import { ViewKeepingMouseEvent } from '@saerskriven/canvas/fixtures';
 import { fireEvent } from '@testing-library/react';
 import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
 import {
@@ -276,28 +275,6 @@ export function pointerOn(
     pointerId: { value: 1 },
   });
   fireEvent(element, event);
-}
-
-/**
- * Fires a mouse event of `type` at `clientX` on the row `clientY` 100, with
- * the window as its view, as a press on a resize control and the moves and
- * release after it need.
- */
-export function mouseOn(
-  target: Element | Window,
-  type: 'mousedown' | 'mousemove' | 'mouseup',
-  clientX: number,
-): void {
-  fireEvent(
-    target,
-    new ViewKeepingMouseEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      clientX,
-      clientY: 100,
-      view: window,
-    }),
-  );
 }
 
 /** Where React Flow has the canvas: the translation and zoom it gives the viewport. */
