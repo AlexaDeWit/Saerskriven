@@ -84,19 +84,14 @@ export async function readLink(
 }
 
 /**
- * The action a read link lands with: an import named after the model's
- * title, or `untitled` where the title leaves nothing, so the model arrives
- * unsaved.
+ * The action a read link lands with, named after the model's title, or
+ * `untitled` where the title leaves nothing. It lands as an import does, so
+ * the model arrives unsaved.
  */
-export function linkLanding(
-  read: LinkRead,
-  untitled: string,
-): Extract<Action, { readonly _tag: 'Imported' }> {
-  return Action.Imported({
+export function linkLanding(read: LinkRead, untitled: string): Action {
+  return Action.LinkOpened({
     model: read.model,
     name: linkFileName(read.model.metadata.title, untitled),
-    format: undefined,
-    divergences: read.divergences,
   });
 }
 

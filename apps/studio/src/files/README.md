@@ -68,7 +68,7 @@ keeps the parse finite, then `readOrImport`, then one action: the model, or
 the codec's or the import's own failure, which the notice renders with the
 paths it carries. A model converted from OTM or TM-BOM is `Imported`: new,
 unsaved, and with no document retained for a save to merge onto. A shared
-link lands the same way, with no format, since it holds the native one.
+link is `LinkOpened`, which the reducer settles as it settles `Imported`.
 A write is the codec's own write for the file's format, then the bridge, then
 one action.
 
@@ -189,7 +189,7 @@ it carries the disclosure.
 `hashchange`, so a link pasted into an open tab loads without a reload. The
 module loads only once `isShareLinkFragment` says the fragment is a link. The
 store boots from recovery synchronously and the decoding is asynchronous, so a
-link is always read after boot. A link that reads lands as `Imported`, named
+link is always read after boot. A link that reads lands as `LinkOpened`, named
 after the model's title with the native extension, after the session releases
 the native handle, so the model arrives unsaved and the close guard and
 recovery hold it. What the read could not carry goes to the crossing report,

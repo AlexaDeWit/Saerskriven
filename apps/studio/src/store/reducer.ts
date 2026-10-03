@@ -171,14 +171,8 @@ export function reduce(state: State, action: Action): State {
       ...initialState(model),
       file: FileLifecycle.Opened({ name, source }),
     }),
-    Imported: ({ model, name }) => ({
-      ...initialState(model),
-      saved: { ...model },
-      file: FileLifecycle.Opened({
-        name,
-        source: { format: 'saerskriven-yaml', document: undefined },
-      }),
-    }),
+    Imported: ({ model, name }) => arrivedUnsaved(model, name),
+    LinkOpened: ({ model, name }) => arrivedUnsaved(model, name),
     Saved: ({ name, source }) => ({
       ...state,
       saved: state.present,
@@ -206,6 +200,17 @@ export function reduce(state: State, action: Action): State {
         ? state
         : { ...state, lastFailure: undefined },
   });
+}
+
+function arrivedUnsaved(model: Model, name: string): State {
+  return {
+    ...initialState(model),
+    saved: { ...model },
+    file: FileLifecycle.Opened({
+      name,
+      source: { format: 'saerskriven-yaml', document: undefined },
+    }),
+  };
 }
 
 function edited(

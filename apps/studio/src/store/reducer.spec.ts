@@ -90,6 +90,7 @@ type StudioActionTag =
   | 'HideModelProperties'
   | 'InlineEditing'
   | 'Imported'
+  | 'LinkOpened'
   | 'Opened'
   | 'Saved'
   | 'Closed'
@@ -443,6 +444,7 @@ const studioActions: ActionsByTag<StudioActionTag> = {
     format: 'otm',
     divergences: [],
   }),
+  LinkOpened: Action.LinkOpened({ model: emptyModel, name: 'shared.yaml' }),
   Saved: Action.Saved({ name: 'model.yaml', source: nativeSource }),
   Closed: Action.Closed(),
   Followed: Action.Followed({
@@ -974,6 +976,9 @@ describe('the active diagram', () => {
     const switched = reduce(twoStart, show(secondDiagram));
     expect(
       reduce(switched, studioActions.Imported).activeDiagram,
+    ).toBeUndefined();
+    expect(
+      reduce(switched, studioActions.LinkOpened).activeDiagram,
     ).toBeUndefined();
     expect(reduce(switched, Action.Closed()).activeDiagram).toBeUndefined();
   });

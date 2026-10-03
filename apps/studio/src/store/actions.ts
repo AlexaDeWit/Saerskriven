@@ -141,9 +141,10 @@ export type Action = Data.TaggedEnum<{
   Imported: {
     readonly model: Model;
     readonly name: string;
-    readonly format: ImportFormat | undefined;
+    readonly format: ImportFormat;
     readonly divergences: readonly Divergence[];
   };
+  LinkOpened: { readonly model: Model; readonly name: string };
   Saved: { readonly name: string; readonly source: RetainedSource };
   Closed: {};
   Followed: { readonly state: SyncedState };

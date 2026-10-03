@@ -17,6 +17,7 @@ import { StrictMode } from 'react';
 import { AssetFailure } from '../asset-failure.js';
 import { recordingClipboard } from '../canvas/canvas.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
+import { Action } from '../store/actions.js';
 import { RecoveryProblem } from '../store/recovery-storage.js';
 import { isDirty } from '../store/selectors.js';
 import {
@@ -39,7 +40,7 @@ import {
   specBridge,
   specRenders,
 } from './files.fixtures.js';
-import { readLink, type ShareLinks } from './share-link.js';
+import { linkLanding, readLink, type ShareLinks } from './share-link.js';
 import { describeShareNotice, ShareNotice } from './share-notice.js';
 
 const brotli = builtModule(brotliWasmAsset);
@@ -482,6 +483,16 @@ describe.skipIf(unbuilt(brotliVariable))('Share', () => {
       ShareNotice.Refused({
         failure: LinkFailure.Module({ failure: answered }),
       }),
+    );
+  });
+});
+
+describe('the action a link lands with', () => {
+  it('opens the link as its own action, named after the title, rather than as an import', () => {
+    expect(
+      linkLanding({ model: shared, divergences: [] }, 'threat-model'),
+    ).toEqual(
+      Action.LinkOpened({ model: shared, name: 'Checkout_ payments.yaml' }),
     );
   });
 });

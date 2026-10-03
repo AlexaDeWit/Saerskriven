@@ -263,8 +263,7 @@ export function reportLines(
  * What a read lost, naming the model it produced. An open of a format
  * Saerskriven writes says which losses saving back to the same file keeps.
  * One of a format it only reads keeps none, and always reports, since its
- * notice stands whatever it lost. A shared link, imported with no format,
- * keeps none and reports only what it lost.
+ * notice stands whatever it lost.
  */
 export function openReport(
   read: Extract<Action, { readonly _tag: 'Opened' | 'Imported' }>,
@@ -277,18 +276,28 @@ export function openReport(
           keptByWriteBack(read.source.format, divergence),
         ),
       )
-    : read.format === undefined
-      ? reported(
-          'open',
-          read.model,
-          lossesOf(read.divergences, () => false),
-        )
-      : {
-          occasion: 'open',
-          model: read.model,
-          losses: lossesOf(read.divergences, () => false),
-          readOnlyFormat: read.format,
-        };
+    : {
+        occasion: 'open',
+        model: read.model,
+        losses: lossesOf(read.divergences, () => false),
+        readOnlyFormat: read.format,
+      };
+}
+
+/**
+ * What a shared link's read lost, naming the model it produced. A link has no
+ * file to save back to, so no loss is one a save keeps, and a link that lost
+ * nothing reports nothing.
+ */
+export function linkReport(
+  model: Model,
+  divergences: readonly Divergence[],
+): LossReport | undefined {
+  return reported(
+    'open',
+    model,
+    lossesOf(divergences, () => false),
+  );
 }
 
 /** What a save of `model` lost, and nothing at all where it lost nothing. */

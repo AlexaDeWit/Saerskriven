@@ -52,7 +52,10 @@ host provides.
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` returns to the state the studio booted in,
   placeholder model and all, so nothing of the file that was open survives for
-  a later save to merge onto.
+  a later save to merge onto. `Imported`, a model converted from a format
+  Saerskriven only reads, and `LinkOpened`, a model a shared link held, share
+  one reducer effect: the model arrives unsaved under a new name, with no
+  document retained.
 - `reducer.ts` is the one pure function, beside the private helpers its arms
   share. It is total: an operation the model refuses leaves the present and
   both stacks alone and records the refusal in `lastFailure`, so no dispatch

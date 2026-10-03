@@ -28,7 +28,12 @@ import {
   type StoredSnapshot,
 } from './recovery-storage.js';
 import type { StoreSync, SyncedState } from './sync.js';
-import { FileLifecycle, initialState, placeholderModel } from './state.js';
+import {
+  FileLifecycle,
+  initialState,
+  nameOf,
+  placeholderModel,
+} from './state.js';
 import {
   createModelStore,
   dispatch,
@@ -359,6 +364,33 @@ describe('session recovery', () => {
     expect(closed?.present).toBe(placeholderModel);
     expect(closed?.file).toEqual(FileLifecycle.NoFile());
     expect(tab.published).toHaveLength(3);
+  });
+
+  it('lands a shared link as it lands an import: unsaved, recoverable, named and published', () => {
+    const tab = tabs();
+    const runtime = createModelStore(tab.storage, tab.sync, placeholderModel);
+    const imported = createModelStore(loaded(), silent, placeholderModel);
+    const unformatted = {
+      model: sampleModel,
+      name: 'Shared.yaml',
+      divergences: [],
+    };
+
+    runtime.dispatch(
+      Action.LinkOpened({ model: sampleModel, name: 'Shared.yaml' }),
+    );
+    imported.dispatch(Action.Imported({ ...unformatted, format: 'otm' }));
+
+    const linked = runtime.modelStore.getState();
+    expect(linked.present).toBe(sampleModel);
+    expect(isDirty(linked)).toBe(true);
+    expect(linked.recoveryCurrent).toBe(true);
+    expect(nameOf(linked.file)).toBe('Shared.yaml');
+    expect(linked.file).toEqual(imported.modelStore.getState().file);
+    expect(tab.writes.replaced).toBe(1);
+    expect(tab.published).toHaveLength(1);
+    // @ts-expect-error an import names the format it was converted from
+    expect(Action.Imported(unformatted)._tag).toBe('Imported');
   });
 
   it('follows another tab without writing or publishing, since the result is already theirs', () => {

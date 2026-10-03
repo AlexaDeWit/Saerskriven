@@ -40,6 +40,7 @@ import {
   formatOf,
   formatOfName,
   formatsFrom,
+  linkReport,
   openReport,
   openedBy,
   saveReport,
@@ -105,10 +106,9 @@ export function useFileSession(
 
   const landLink = useCallback(
     (read: LinkRead): void => {
-      const landing = linkLanding(read, untitledFileStem());
       bridge.release();
-      dispatch(landing);
-      setReport(openReport(landing));
+      dispatch(linkLanding(read, untitledFileStem()));
+      setReport(linkReport(read.model, read.divergences));
     },
     [bridge],
   );
