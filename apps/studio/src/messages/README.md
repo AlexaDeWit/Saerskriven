@@ -40,13 +40,13 @@ that a studio report shows, and leaves out a code that loses nothing a person
 reads. A line names its subject as the studio shows it: a threat by number and
 title, a text or a trust boundary by its name, a mitigation by its title, and
 a record without a title by its kind and the threat it is on. An import's line
-names the record it made: the threat or mitigation copy the divergence
-carries, or else the records `importedFrom` finds for the source record it
-names. A code about the model alone words its own subject from the file's
-data. The subject and what was lost are each a complete phrase, and the
-`line` message owns their order and punctuation, as `repeated` does for the
-count of lines that read the same and `kept` for the sentence saying a save
-back keeps it. The canvas does the same with a name: `canvas.quoted` sets a
+names the record it made: the threat the divergence carries, or the mitigation
+copy on that threat, or else the first record `importedFrom` finds for the
+source record it names. A code about the model alone words its own subject
+from the file's data. The subject and what was lost are each a complete
+phrase, and the `line` message owns their order and punctuation, as
+`repeated` does for the count of lines that read the same and `kept` for the
+sentence saying a save back keeps it. The canvas does the same with a name: `canvas.quoted` sets a
 person's text in the reader's quotation marks, and an element without a name
 is called by its kind (`enums.the-actor` and the like), so an announcement
 takes either as one noun phrase.

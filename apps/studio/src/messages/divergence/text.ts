@@ -96,10 +96,10 @@ export function reportedDivergence(
  * Each loss as a line in the reader's language: its subject as `model` shows
  * it, then what was lost, and a sentence where saving back keeps it. Losses
  * that read the same make one line with their count. An import names the
- * record it made, the one a divergence carries or else the first made from
- * the source record it names, and a subject `model` does not hold leaves the
- * line to the detail, which a code about the model alone words with its own
- * subject.
+ * threat a divergence carries, or the mitigation copy on it, or else the first
+ * record made from the source record it names, and a subject `model` does
+ * not hold leaves the line to the detail, which a code about the model alone
+ * words with its own subject.
  */
 export function lossLines(
   t: Speaker,
