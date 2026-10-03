@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
 import {
   canvasSettled,
+  centreOf,
   emptyCanvasPoint,
   type Point,
   touchDrag,
@@ -59,12 +60,6 @@ test.describe('on macOS', () => {
   test('holding Control during scroll momentum switches to zoom', async ({
     page,
   }) => {
-    await page.addInitScript(() => {
-      Object.defineProperty(navigator, 'platform', { value: 'MacIntel' });
-      Object.defineProperty(navigator, 'userAgentData', {
-        value: { platform: 'macOS' },
-      });
-    });
     await openPlaceholder(page);
     const at = await emptyCanvasPoint(page);
     await page.mouse.move(at.x, at.y);
@@ -75,6 +70,8 @@ test.describe('on macOS', () => {
     await page.mouse.wheel(0, 60);
     await expect.poll(() => viewportTransform(page)).not.toBe(start);
     expect(await viewportZoom(page)).toBe(zoom);
+    const actor = nodeNamed(page, placeholder.actor);
+    const before = await centreOf(actor);
 
     await page.keyboard.down('Control');
     await page.evaluate(
@@ -98,8 +95,12 @@ test.describe('on macOS', () => {
     );
     await expect.poll(() => viewportZoom(page)).not.toBe(zoom);
     await page.keyboard.up('Control');
+    await canvasSettled(page);
 
     const zoomed = await viewportZoom(page);
+    const after = await centreOf(actor);
+    expect(after.x - at.x).toBeCloseTo(((before.x - at.x) * zoomed) / zoom, 0);
+    expect(after.y - at.y).toBeCloseTo(((before.y - at.y) * zoomed) / zoom, 0);
     const panned = await viewportTransform(page);
     await page.mouse.wheel(0, 60);
     await expect.poll(() => viewportTransform(page)).not.toBe(panned);

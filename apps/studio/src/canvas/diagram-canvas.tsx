@@ -60,7 +60,7 @@ import { PlacementPreview } from './placement-preview.js';
 import { usePlacement } from './placement.js';
 import { currentTool } from './tools.js';
 import { FitOnOpen } from './view-commands.js';
-import { zoomLimits } from './viewport.js';
+import { zoomActivationKeysFor, zoomLimits } from './viewport.js';
 import { ZoomCluster } from './zoom-cluster.js';
 import {
   BoundaryShapeCommands,
@@ -72,10 +72,6 @@ import { useBackgroundSelection } from './background-selection.js';
 import styles from './diagram-canvas.module.css';
 
 const panMouseButtons: number[] = [1];
-
-/** Control zooms with scroll everywhere, and Command joins it on Apple platforms. */
-const zoomActivationKeys =
-  hostPlatform === 'apple' ? ['Meta', 'Control'] : 'Control';
 
 const itemKeys = [
   'select-canvas-item',
@@ -367,7 +363,7 @@ export function DiagramCanvas({
         onSelectionEnd={boxSelection.onSelectionEnd}
         onSelectionStart={boxSelection.onSelectionStart}
         panActivationKeyCode={null}
-        zoomActivationKeyCode={zoomActivationKeys}
+        zoomActivationKeyCode={zoomActivationKeysFor(hostPlatform)}
         panOnDrag={
           mode.active === 'hand'
             ? true
