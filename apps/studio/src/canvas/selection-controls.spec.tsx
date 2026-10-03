@@ -82,7 +82,9 @@ describe('SelectionControls', () => {
     ).toBeNull();
   });
 
-  it('stores a position and a size as typed, whatever their decimals', () => {
+  it('does not round a typed position or size to the decimals a gesture keeps', () => {
+    openCanvas([processElement]);
+    expect(laidOutNode(processElement).position.x).not.toBe(0);
     render(<SelectionControls />);
     act(() => {
       runCommand(commandById('edit-geometry'), recordingSurface().surface);
@@ -95,12 +97,10 @@ describe('SelectionControls', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
 
-    expect(
-      elementIn(modelStore.getState().present, actorElement),
-    ).toMatchObject({
-      position: { x: 10.123456, y: 0 },
-      size: { width: 120.98765, height: 60 },
-    });
+    const { position, size } = laidOutNode(processElement);
+    expect(position.x).toBeCloseTo(10.123456, 9);
+    expect(size.width).toBeCloseTo(120.98765, 9);
+    expect([position.y, size.height]).toEqual([0, 60]);
   });
 
   it("shows a trust boundary curve's width and height and scales its points to them as one edit", () => {

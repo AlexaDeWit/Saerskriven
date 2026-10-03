@@ -1,4 +1,4 @@
-import type { GestureInput } from '@saerskriven/canvas';
+import { fixedNumber, type GestureInput } from '@saerskriven/canvas';
 import {
   elementsAcross,
   elementsById,
@@ -22,8 +22,7 @@ export const gestureDecimals = {
  * arithmetic that produced it, and never negative zero.
  */
 export function atGesturePrecision(value: number, input: GestureInput): number {
-  const rounded = Number(value.toFixed(gestureDecimals[input]));
-  return rounded === 0 ? 0 : rounded;
+  return Number(fixedNumber(value, gestureDecimals[input]));
 }
 
 /**

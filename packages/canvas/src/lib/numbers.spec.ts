@@ -1,8 +1,20 @@
-import { svgNumber } from './numbers.js';
+import { fixedNumber, svgNumber } from './numbers.js';
 
 const magnitudes = Array.from({ length: 69 }, (_, step) => 10 ** (step - 8));
 
 const plainNumber = /^-?\d+(\.\d{1,3})?$/u;
+
+describe('fixedNumber', () => {
+  it.each([
+    [128.63636363636363, 1, '128.6'],
+    [-12.25, 1, '-12.3'],
+    [-0.04, 1, '0'],
+    [119.98765, 0, '120'],
+    [0.1 + 0.2, 5, '0.3'],
+  ])('writes %d at %d decimals as %s', (value, decimals, written) => {
+    expect(fixedNumber(value, decimals)).toBe(written);
+  });
+});
 
 describe('svgNumber', () => {
   it.each([

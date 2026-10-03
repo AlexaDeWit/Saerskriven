@@ -102,6 +102,16 @@ export const enumeratedCategories = threatCategorySchema.options.flatMap(
 );
 
 /**
+ * How many decimals a number is written with, an exponent counted in, so
+ * 1.5e-7 has eight and 1e21 has none.
+ */
+export const decimalsOf = (value: number): number => {
+  const [mantissa, exponent = '0'] = String(value).split('e');
+  const written = mantissa.split('.').at(1)?.length ?? 0;
+  return Math.max(0, written - Number(exponent));
+};
+
+/**
  * A character the model's text rule refuses, invisible where a literal would
  * sit in a spec.
  */

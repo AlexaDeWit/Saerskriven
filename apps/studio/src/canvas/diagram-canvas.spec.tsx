@@ -5,7 +5,7 @@ import {
 } from '@saerskriven/canvas';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
-import { elementIn } from '@saerskriven/model/fixtures';
+import { decimalsOf, elementIn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
   contextualShortcuts,
@@ -46,7 +46,6 @@ import { selectTool } from './tools.js';
 import { currentLayout } from './layout.js';
 import {
   actorElement,
-  decimalsOf,
   heldElements,
   processElement,
 } from '../store/store.fixtures.js';

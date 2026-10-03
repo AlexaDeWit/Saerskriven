@@ -4,16 +4,20 @@ import {
   attached,
   boxAt,
   curveBoundary,
+  decimalsOf,
   elementId,
   elementIn,
   flowBetween,
   modelWith,
 } from '@saerskriven/model/fixtures';
 import { Action, type GestureEdit } from './actions.js';
-import { atGesturePrecision, gestureDecimals } from './gesture-precision.js';
+import {
+  atGesturePrecision,
+  gestureDecimals,
+  modelAtGesturePrecision,
+} from './gesture-precision.js';
 import { reduce } from './reducer.js';
 import { initialState } from './state.js';
-import { decimalsOf } from './store.fixtures.js';
 
 const inputs = ['pointer', 'keyboard'] as const;
 
@@ -143,6 +147,12 @@ describe('a gesture', () => {
     for (const id of ['process', 'store', 'flow', 'curve']) {
       expect(elementIn(moved, id)).toBe(elementIn(model, id));
     }
+  });
+
+  it('rounds nothing where no number differs, however the model before it was rebuilt', () => {
+    expect(
+      modelAtGesturePrecision(model, structuredClone(model), 'keyboard'),
+    ).toEqual(model);
   });
 
   it.each([

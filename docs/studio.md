@@ -314,6 +314,8 @@ bends, free ends and curve points a moved group carries.
   through a move, and its position through a resize that does not move it.
 - A number typed into Position and size or the flow end editor is not rounded,
   and a number that came from a file stays as it is until a gesture changes it.
+- A command stores what it works out, not rounded: Align, Distribute,
+  Duplicate, Paste, Add point and Switch boundary shape.
 - With Snap to grid on, a snapped position is a grid multiple, which the
   rounding leaves as it is.
 - In a group moved by arrow key, each element lands on one decimal of its own,

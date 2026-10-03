@@ -335,10 +335,6 @@ export function restorableSnapshot(
   return parsed.data;
 }
 
-/** How many decimals a number is written with, which a number a gesture stored is held to. */
-export const decimalsOf = (value: number): number =>
-  String(value).split('.').at(1)?.length ?? 0;
-
 /** The model the store holds now. */
 export const present = (): Model => modelStore.getState().present;
 

@@ -124,7 +124,8 @@ alike. `xmlSafeText` replaces characters XML 1.0 forbids, and a document
 composed around these glyphs applies it to its own text. Every number
 reaching an SVG attribute goes through `svgNumber`
 ([`numbers.ts`](src/lib/numbers.ts)), so one model gives one set of bytes on
-every run and platform.
+every run and platform. `fixedNumber` is the same writing at a number of
+decimals the caller names, which the studio rounds a gesture's numbers with.
 
 The bytes are pinned once, by the SVG goldens of
 [`packages/render`](../render/README.md#the-goldens), which draws these glyphs.

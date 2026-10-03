@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { Model } from '@saerskriven/model';
+import { decimalsOf } from '@saerskriven/model/fixtures';
 import { boxSelect, canvasSettled, dragBy } from './canvas.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
@@ -51,9 +52,6 @@ const actorPosition = (model: Model) =>
   model.diagrams[0].elements.flatMap((element) =>
     element.kind === 'actor' ? [element.position] : [],
   )[0];
-
-const decimalsOf = (written: number | string): number =>
-  String(written).split('.').at(1)?.length ?? 0;
 
 test('each Arrow and Shift+Arrow move says the position Position and size and the saved file then hold', async ({
   page,
@@ -109,8 +107,8 @@ test('a drag stores three decimals at most and the arrow key after it one, said 
   await page.keyboard.press('ArrowRight');
   const shown = await shownPosition(page);
   await positionAndSize(page).getByRole('button', { name: 'Cancel' }).click();
-  expect(decimalsOf(shown.x)).toBeLessThanOrEqual(1);
-  expect(decimalsOf(shown.y)).toBeLessThanOrEqual(1);
+  expect(decimalsOf(Number(shown.x))).toBeLessThanOrEqual(1);
+  expect(decimalsOf(Number(shown.y))).toBeLessThanOrEqual(1);
   await expectSaid(page, shown);
   expect(actorPosition(await savedModel(page))).toEqual({
     x: Number(shown.x),
