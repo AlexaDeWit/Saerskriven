@@ -37,6 +37,20 @@ describe('spotsOutward', () => {
     expect(Math.max(...offsets)).toBe(8);
   });
 
+  it('keeps a spot that lands on a bend on the run it ends', () => {
+    const zigzag: [Point, ...Point[]] = [
+      { x: 400, y: 320 },
+      { x: 240, y: 180 },
+      { x: 400, y: 20 },
+      { x: 80, y: 260 },
+    ];
+    const runs = lineRuns(zigzag);
+    const atBend = spotsOutward(runs, 4).find((spot) => spot.offset === -200);
+    expect(atBend?.run).toBe(1);
+    expect(atBend?.along).toBe(runs[1].length);
+    expect(atBend?.at).toEqual({ x: 400, y: 20 });
+  });
+
   it('gives a line of no length the one spot it stands at', () => {
     expect(
       spotsOutward(lineRuns([{ x: 3, y: 4 }]), 4).map((spot) => spot.at),

@@ -19,6 +19,7 @@ import {
   boxesOverlap,
   boxMeetsEllipse,
   boxOfPoints,
+  boxSegmentGap,
   segmentMeetsBox,
   segmentsOfPolyline,
   type Box,
@@ -60,12 +61,22 @@ type Settled = {
 };
 
 const testedEverywhere = (search: BlockSearch): Settled => {
-  const hangings: { block: FlowBlock; side: number; standoff: number }[] = [
-    { block: search.shapes[0], side: 0, standoff: 0 },
-    ...search.bands.flatMap((standoffs) =>
+  const hangings: {
+    block: FlowBlock;
+    side: number;
+    standoff: number;
+    within: number;
+  }[] = [
+    {
+      block: search.shapes[0],
+      side: 0,
+      standoff: 0,
+      within: Number.POSITIVE_INFINITY,
+    },
+    ...search.bands.flatMap(({ standoffs, within }) =>
       [1, -1].flatMap((side) =>
         search.shapes.flatMap((block) =>
-          standoffs.map((standoff) => ({ block, side, standoff })),
+          standoffs.map((standoff) => ({ block, side, standoff, within })),
         ),
       ),
     ),
@@ -96,17 +107,10 @@ const testedEverywhere = (search: BlockSearch): Settled => {
         hanging.block.halfWidth,
         hanging.block.halfHeight,
       );
-      const corner =
-        hanging.side === 0
-          ? 0
-          : -Math.sign(normal.x) * hanging.block.halfWidth * run.direction.x -
-            Math.sign(normal.y) * hanging.block.halfHeight * run.direction.y;
-      const cornerAt = spot.along + corner;
       if (
         (hanging.side === 0 &&
           search.ends.some((end) => segmentMeetsBox(end, box))) ||
-        cornerAt < 0 ||
-        cornerAt > run.length
+        boxSegmentGap(box, run.segment) > hanging.within
       ) {
         continue;
       }
@@ -176,8 +180,8 @@ const searchOf = (
       ...runsWithin(points, 30, true),
     ],
     bands: [
-      [4, 10, 16],
-      [24, 34, 44],
+      { standoffs: [4, 10, 16], within: 16 },
+      { standoffs: [24, 34, 44], within: 44 },
     ],
   };
 };

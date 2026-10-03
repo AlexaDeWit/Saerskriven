@@ -62,15 +62,23 @@ export const besideGap = 4;
 
 /**
  * How far past {@link besideGap} a block beside a line steps out, in two
- * equal steps, before it tries further out: its backing stays within 16
- * units of the run it hangs beside wherever a clear spot that close exists.
+ * equal steps, before it tries further out: its backing stands at most 16
+ * units off the line through the run it hangs beside, and within
+ * {@link besideSlack} more of the run as drawn, wherever a clear spot that
+ * close exists.
  */
 export const besideReach = 12;
 
 /**
+ * How much further than its band's farthest standoff a block beside a line
+ * may lie from the run as drawn, so a block hanging past the end of a run
+ * that tilts a little counts as one past the end of a level run does.
+ */
+export const besideSlack = besideGap;
+
+/**
  * The standoffs a block beside a line tries once none within
- * {@link besideReach} is clear on either side, out to the 44 units the first
- * placement reached.
+ * {@link besideReach} is clear on either side, out to 44 units, nearest first.
  */
 export const fartherStandoffs = [24, 34, 44] as const;
 
@@ -153,7 +161,10 @@ const onLineTolerance = 1e-6;
 const besideBands = [
   [besideGap, besideGap + besideReach / 2, besideGap + besideReach],
   fartherStandoffs,
-];
+].map((standoffs) => ({
+  standoffs,
+  within: Math.max(...standoffs) + besideSlack,
+}));
 
 const blocksByName = new Map<string, readonly FlowBlock[]>();
 
