@@ -1,6 +1,6 @@
 import type { Point } from '@saerskriven/model';
 import { badgeExtent, type ThreatBadge } from './badges.js';
-import { shiftedBy, type Box } from './geometry.js';
+import { boxAround, shiftedBy, type Box } from './geometry.js';
 import { wrappedTextStyles } from './stylesheet.js';
 import type { TextPlacement } from './text-placement.js';
 import {
@@ -40,12 +40,16 @@ export const blockPadding = 4;
 /** The room between a block's badge and its name. */
 export const badgeNameGap = 4;
 
+/** The most lines a narrower wrap of a flow's name may take. */
+export const narrowWrapLines = 3;
+
 /**
  * The ways a flow's block can be composed, widest first: the name wrapped
- * to the width a flow carries no box for, then to about half that, then to
- * its longest word, each kept only where it comes out narrower than the one
- * before. A narrower wrap is never narrower than the longest word, so it
- * breaks none.
+ * to the width a flow carries no box for, then, for each line more up to
+ * {@link narrowWrapLines}, to the narrowest width that wraps it into that
+ * many lines, each kept only where it comes out narrower than the one
+ * before. A narrower wrap is never narrower than the name's longest word, so
+ * it breaks none.
  */
 export function flowBlocks(
   name: string,
@@ -53,8 +57,13 @@ export function flowBlocks(
 ): readonly FlowBlock[] {
   const blocks = [flowBlock(name, badge, looseLabelWidth)];
   const word = longestWordColumns(name);
-  for (const columns of [Math.max(word, halfWidthColumns), word]) {
-    const narrower = flowBlock(name, badge, columnsWidth(columns));
+  const lines = wrapText(name, fontSize, looseLabelWidth).length;
+  for (let allowed = lines + 1; allowed <= narrowWrapLines; allowed += 1) {
+    const narrower = flowBlock(
+      name,
+      badge,
+      columnsWidth(narrowestColumns(name, word, allowed)),
+    );
     if (narrower.halfWidth < blocks[blocks.length - 1].halfWidth) {
       blocks.push(narrower);
     }
@@ -71,12 +80,7 @@ export function blockAt(block: FlowBlock, centre: Point): FlowLabelPlacement {
     backing:
       block.halfWidth === 0 && block.halfHeight === 0
         ? undefined
-        : {
-            minX: centre.x - block.halfWidth,
-            minY: centre.y - block.halfHeight,
-            maxX: centre.x + block.halfWidth,
-            maxY: centre.y + block.halfHeight,
-          },
+        : boxAround(centre, block.halfWidth, block.halfHeight),
   };
 }
 
@@ -119,7 +123,7 @@ const fontSize = wrappedTextStyles.flowLabel.fontSize;
 
 const glyphWidth = fontSize * averageGlyphWidthRatio;
 
-const halfWidthColumns = Math.floor(looseLabelWidth / 2 / glyphWidth);
+const looseColumns = Math.floor(looseLabelWidth / glyphWidth);
 
 function flowBlock(
   name: string,
@@ -165,6 +169,24 @@ function longestWordColumns(name: string): number {
         Math.round(textExtent([word], fontSize).width / glyphWidth),
       ),
   );
+}
+
+function narrowestColumns(
+  name: string,
+  shortest: number,
+  allowed: number,
+): number {
+  let low = Math.max(1, shortest);
+  let high = Math.max(low, looseColumns);
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (wrapText(name, fontSize, columnsWidth(middle)).length <= allowed) {
+      high = middle;
+    } else {
+      low = middle + 1;
+    }
+  }
+  return low;
 }
 
 function columnsWidth(columns: number): number {

@@ -2,6 +2,7 @@ import type { Point } from '@saerskriven/model';
 import {
   boxAt,
   curveBoundary,
+  flowBetween,
   elementId,
   flowFrom,
   modelWith,
@@ -21,6 +22,7 @@ import { edgePoints, flowGeometry } from './flow-anchors.js';
 import type { FlowLabelPlacement } from './flow-blocks.js';
 import {
   besideGap,
+  besideReach,
   flowLabelPlacements,
   flowLabelPlacementsDuringMove,
   movedFlowLabel,
@@ -166,12 +168,12 @@ const endsCovered = (edge: CanvasEdge): boolean => {
   ].some((run) => segmentMeetsBox(run, block));
 };
 
-const twoBoxes = (gap: number, extra: unknown[] = []) =>
+const twoBoxes = (gap: number, extra: unknown[] = [], height = 80) =>
   layoutOf(
     modelWith({
       elements: [
-        boxAt('el-left', 0, 0),
-        boxAt('el-right', 120 + gap, 0),
+        boxAt('el-left', 0, 0, 'actor', { width: 120, height }),
+        boxAt('el-right', 120 + gap, 0, 'actor', { width: 120, height }),
         flowFrom('el-short', 'el-left', 'el-right', 'Book appointment'),
         ...extra,
       ],
@@ -346,26 +348,62 @@ describe('a flow crossing a trust boundary', () => {
   });
 });
 
+const fanNames = [
+  'mint a token',
+  'read a token',
+  'refresh a token',
+  'revoke a token',
+  'list the tokens',
+];
+
 describe('flows fanning out of one element', () => {
+  const pitch = 30;
   const layout = layoutOf(
     modelWith({
       elements: [
         boxAt('el-hub', 0, 200),
-        boxAt('el-up', 480, 0),
-        boxAt('el-across', 480, 200),
-        boxAt('el-down', 480, 400),
-        flowFrom('el-a', 'el-hub', 'el-up', 'mint a token'),
-        flowFrom('el-b', 'el-hub', 'el-across', 'refresh a token'),
-        flowFrom('el-c', 'el-hub', 'el-down', 'revoke a token'),
+        ...fanNames.map((_name, row) =>
+          boxAt(
+            `el-to-${String(row)}`,
+            420,
+            240 + (row - 2) * pitch - 12,
+            'actor',
+            {
+              width: 120,
+              height: 24,
+            },
+          ),
+        ),
+        ...fanNames.map((name, row) =>
+          flowFrom(
+            `el-fan-${String(row)}`,
+            'el-hub',
+            `el-to-${String(row)}`,
+            name,
+          ),
+        ),
       ],
     }),
   );
+  const slid = (edge: CanvasEdge): number => {
+    const centre = centreOf(backingOf(edge));
+    return Math.hypot(
+      centre.x - (edge.source.x + edge.target.x) / 2,
+      centre.y - (edge.source.y + edge.target.y) / 2,
+    );
+  };
 
   it('leave from one point', () => {
     const [first, ...rest] = layout.edges;
     expect(rest.map((edge) => edge.source)).toEqual(
       rest.map(() => first.source),
     );
+  });
+
+  it('slide blocks off the middles where the lines run close', () => {
+    expect(
+      layout.edges.filter((edge) => slid(edge) > slideStep).length,
+    ).toBeGreaterThan(0);
   });
 
   it('carry each block on its own line, nothing covered', () => {
@@ -419,15 +457,26 @@ describe('two flows crossing', () => {
 
 describe('a short flow', () => {
   const line = 40;
+  const lowLine = 12;
 
   it('takes its block above a horizontal line too short to carry it', () => {
-    const layout = twoBoxes(40);
+    const layout = twoBoxes(40, [], lowLine * 2);
     const short = layout.edges[0];
     const block = backingOf(short);
     expect(onItsLine(short)).toBe(false);
-    expect(block.maxY).toBeLessThanOrEqual(line - besideGap);
+    expect(block.maxY).toBeLessThanOrEqual(lowLine - besideGap);
+    expect(lowLine - block.maxY).toBeLessThanOrEqual(besideGap + besideReach);
     expect(centreOf(block).x).toBeCloseTo(140);
     expect(collisionsIn(layout)).toEqual([]);
+  });
+
+  it('keeps a block it cannot clear beside its line, over as few things as it can', () => {
+    const layout = twoBoxes(40);
+    const short = layout.edges[0];
+    const block = backingOf(short);
+    expect(line - block.maxY).toBeGreaterThanOrEqual(besideGap);
+    expect(line - block.maxY).toBeLessThanOrEqual(besideGap + besideReach);
+    expect(coveredBy(layout, short)).toHaveLength(1);
   });
 
   it('wraps the name where that lets the block stay beside the line', () => {
@@ -439,7 +488,15 @@ describe('a short flow', () => {
       wrapText(short.label.name.text, 10, short.label.name.width),
     ).toHaveLength(2);
     expect(block.maxY).toBeLessThanOrEqual(line - besideGap);
-    expect(block.minY).toBeGreaterThan(0);
+    expect(line - block.maxY).toBeLessThanOrEqual(besideGap + besideReach);
+    expect(collisionsIn(layout)).toEqual([]);
+  });
+
+  it('keeps the name unwrapped where stepping out a little clears it', () => {
+    const layout = twoBoxes(80, [], lowLine * 2);
+    const short = layout.edges[0];
+    expect(short.label.name.width).toBe(looseLabelWidth);
+    expect(backingOf(short).maxY).toBeLessThan(0);
     expect(collisionsIn(layout)).toEqual([]);
   });
 
@@ -468,12 +525,42 @@ describe('a short flow', () => {
   });
 
   it('uses the other side only where the fixed side is blocked', () => {
-    const layout = twoBoxes(40, [
-      boxAt('el-lid', 100, -60, 'actor', { width: 80, height: 50 }),
-    ]);
+    const layout = twoBoxes(
+      40,
+      [boxAt('el-lid', 100, -60, 'actor', { width: 80, height: 50 })],
+      lowLine * 2,
+    );
     const short = layout.edges[0];
-    expect(backingOf(short).minY).toBeGreaterThanOrEqual(line + besideGap);
+    expect(backingOf(short).minY).toBeGreaterThanOrEqual(lowLine + besideGap);
     expect(collisionsIn(layout)).toEqual([]);
+  });
+});
+
+describe('a two-way flow whose middle is blocked', () => {
+  const layout = layoutOf(
+    modelWith({
+      elements: [
+        boxAt('el-wall', 50, -30, 'actor', { width: 330, height: 60 }),
+        {
+          ...flowBetween(
+            { kind: 'free', position: { x: 0, y: 0 } },
+            { kind: 'free', position: { x: 400, y: 0 } },
+            [],
+          ),
+          name: 'sync',
+          bidirectional: true,
+        },
+      ],
+    }),
+  );
+  const [sync] = layout.edges;
+
+  it('slides no nearer the source than its arrowhead and some line', () => {
+    expect(onItsLine(sync) && endsCovered(sync)).toBe(false);
+  });
+
+  it('goes beside the line where that leaves no room on it', () => {
+    expect(onItsLine(sync)).toBe(false);
   });
 });
 
@@ -510,6 +597,44 @@ describe('a flow with no clear spot anywhere', () => {
     );
     const over = edgeNamed(floored, 'over the floor');
     expect(coveredBy(floored, over)).toEqual(['el-floor']);
+  });
+});
+
+const crossingRows = 40;
+
+const crossingFans = () =>
+  modelWith({
+    elements: [
+      ...Array.from({ length: crossingRows }, (_unused, row) => [
+        boxAt(`el-left-${String(row)}`, 0, row * 120),
+        boxAt(`el-right-${String(row)}`, 900, row * 120),
+      ]).flat(),
+      ...Array.from({ length: crossingRows * 4 }, (_unused, flow) => {
+        const row = Math.floor(flow / 4);
+        const to = (row + ((flow % 4) * crossingRows) / 4) % crossingRows;
+        return flowFrom(
+          `el-batch-${String(flow).padStart(3, '0')}`,
+          `el-left-${String(row)}`,
+          `el-right-${String(to)}`,
+          `send batch ${String(row)} ${String(flow % 4)}`,
+        );
+      }),
+    ],
+  });
+
+const crossingBudget = 4000;
+
+describe('the placement on a diagram crowded with crossings', () => {
+  it('places 160 crossing flows within a generous time budget', () => {
+    const model = crossingFans();
+    const started = performance.now();
+    const layout = layoutOf(model);
+    const took = performance.now() - started;
+    expect(layout.edges).toHaveLength(crossingRows * 4);
+    expect(
+      layout.edges.filter((edge) => edge.label.backing === undefined),
+    ).toEqual([]);
+    expect(took).toBeLessThan(crossingBudget);
   });
 });
 

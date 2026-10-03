@@ -60,6 +60,20 @@ export function segmentsOfBox(box: Box): Segment[] {
   ]);
 }
 
+/** The box reaching a half width and a half height either side of a centre. */
+export function boxAround(
+  centre: Point,
+  halfWidth: number,
+  halfHeight: number,
+): Box {
+  return {
+    minX: centre.x - halfWidth,
+    minY: centre.y - halfHeight,
+    maxX: centre.x + halfWidth,
+    maxY: centre.y + halfHeight,
+  };
+}
+
 /** The four corners of a box, from its top-left corner clockwise. */
 export function cornersOfBox(box: Box): Point[] {
   return [
@@ -102,10 +116,9 @@ export function boxMeetsEllipse(box: Box, ellipse: Ellipse): boolean {
   const nearestX = Math.min(Math.max(ellipse.centre.x, box.minX), box.maxX);
   const nearestY = Math.min(Math.max(ellipse.centre.y, box.minY), box.maxY);
   return (
-    Math.hypot(
-      (nearestX - ellipse.centre.x) / ellipse.radiusX,
-      (nearestY - ellipse.centre.y) / ellipse.radiusY,
-    ) <= 1
+    ((nearestX - ellipse.centre.x) / ellipse.radiusX) ** 2 +
+      ((nearestY - ellipse.centre.y) / ellipse.radiusY) ** 2 <=
+    1
   );
 }
 

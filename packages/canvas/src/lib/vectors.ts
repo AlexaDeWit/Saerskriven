@@ -12,7 +12,7 @@ export function squaredDistance(from: Point, to: Point): number {
  */
 export function unitDirection(from: Point, to: Point): Point {
   const run = { x: to.x - from.x, y: to.y - from.y };
-  const length = Math.hypot(run.x, run.y);
+  const length = Math.sqrt(squaredDistance(from, to));
   return length === 0
     ? { x: 1, y: 0 }
     : { x: run.x / length, y: run.y / length };
@@ -72,7 +72,7 @@ export function projectedOn(
   const at = alongSegment(segment, fraction);
   const normal = labelNormal(segment);
   return {
-    distance: Math.hypot(point.x - at.x, point.y - at.y),
+    distance: Math.sqrt(squaredDistance(point, at)),
     fraction,
     signedDistance: (point.x - at.x) * normal.x + (point.y - at.y) * normal.y,
   };

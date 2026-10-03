@@ -40,6 +40,14 @@ describe('flowBlocks', () => {
     expect(widths[1]).toBeLessThan(widths[0]);
   });
 
+  it('never wraps a name narrower than three lines allow', () => {
+    const name = 'browse the catalogue and fill a basket';
+    const blocks = flowBlocks(name, undefined);
+    expect(blocks.map((block) => linesOf(name, block.name.width))).toEqual([
+      2, 3,
+    ]);
+  });
+
   it('offers no narrower wrap for a name of one word', () => {
     expect(flowBlocks('Store', undefined)).toHaveLength(1);
   });

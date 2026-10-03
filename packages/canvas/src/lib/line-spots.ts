@@ -1,44 +1,142 @@
 import type { Point } from '@saerskriven/model';
 import { segmentsOfPolyline, type Segment } from './geometry.js';
-import { alongSegment, squaredDistance } from './vectors.js';
+import { alongSegment, squaredDistance, unitDirection } from './vectors.js';
 
 /**
- * A point on a polyline: the run it lies on, that run's unit direction, and
- * its signed distance along the line from the spot a walk started at,
- * negative toward the line's first point.
+ * One straight run of a polyline: how far along the line it starts, how long
+ * it is, measured by a correctly rounded root, and its unit direction.
+ */
+export type LineRun = {
+  readonly segment: Segment;
+  readonly start: number;
+  readonly length: number;
+  readonly direction: Point;
+};
+
+/**
+ * A point on a polyline: the index of the run it lies on, how far along that
+ * run it lies, and its signed distance along the line from the spot a walk
+ * started at, negative toward the line's first point.
  */
 export type LineSpot = {
   readonly at: Point;
-  readonly segment: Segment;
-  readonly direction: Point;
+  readonly run: number;
+  readonly along: number;
   readonly offset: number;
 };
 
 /**
- * Spots a `step` apart along a polyline, walking out from the middle of its
- * longest run, the first of equal runs: that middle, then a step toward the
- * first point, a step toward the last, and so on until both ends are
- * passed. A run of no length carries no spot of its own, and a polyline of
- * no length gives the one spot at its middle.
+ * The straight runs of a polyline, one of no length for a polyline of one
+ * point.
+ */
+export function lineRuns(points: readonly Point[]): LineRun[] {
+  const segments =
+    points.length === 1
+      ? [{ from: points[0], to: points[0] }]
+      : segmentsOfPolyline(points);
+  let start = 0;
+  return segments.map((segment) => {
+    const length = Math.sqrt(squaredDistance(segment.from, segment.to));
+    const run = {
+      segment,
+      start,
+      length,
+      direction: unitDirection(segment.from, segment.to),
+    };
+    start += length;
+    return run;
+  });
+}
+
+/**
+ * The run that carries the point a length along a polyline, and how far
+ * along that run the point lies as a fraction: the first run of any length
+ * reaching that far, or the last run where none does.
+ */
+export function runAtLength(
+  runs: readonly LineRun[],
+  length: number,
+): { readonly index: number; readonly fraction: number } {
+  const found = runs.findIndex(
+    (run) => run.length > 0 && length <= run.start + run.length,
+  );
+  const index = found === -1 ? runs.length - 1 : found;
+  const run = runs[index];
+  return {
+    index,
+    fraction: run.length === 0 ? 0.5 : (length - run.start) / run.length,
+  };
+}
+
+/**
+ * Spots a `step` apart along a polyline's runs, walking out from the middle
+ * of its longest run, the first of equal runs: that middle, then a step
+ * toward the first point, a step toward the last, and so on until both ends
+ * are passed. A run of no length carries no spot of its own, and a polyline
+ * of no length gives the one spot at its middle.
  */
 export function spotsOutward(
-  points: readonly [Point, ...Point[]],
+  runs: readonly LineRun[],
   step: number,
 ): LineSpot[] {
-  const runs = measuredRuns(points);
   const home = longestRun(runs);
-  const start = home.from + home.length / 2;
-  const total = runs.reduce((sum, run) => sum + run.length, 0);
-  const spots = [spotOn(home, 0.5, 0)];
+  const middle = runs[home].start + runs[home].length / 2;
+  const last = runs[runs.length - 1];
+  const total = last.start + last.length;
+  const toward: number[] = [];
+  const away: number[] = [];
   for (let walked = step; walked <= total; walked += step) {
-    for (const offset of [-walked, walked]) {
-      const reached = start + offset;
-      if (reached >= 0 && reached <= total) {
-        spots.push(spotAtLength(runs, reached, offset));
-      }
+    if (middle - walked >= 0) {
+      toward.push(-walked);
+    }
+    if (middle + walked <= total) {
+      away.push(walked);
     }
   }
-  return spots;
+  const before = toward.length;
+  const offsets = [
+    ...toward.map((_unused, at) => toward[before - 1 - at]),
+    0,
+    ...away,
+  ];
+  let index = 0;
+  const ascending = offsets.map((offset): LineSpot => {
+    if (offset === 0) {
+      return {
+        at: alongSegment(runs[home].segment, 0.5),
+        run: home,
+        along: runs[home].length / 2,
+        offset,
+      };
+    }
+    const reached = middle + offset;
+    while (
+      index < runs.length - 1 &&
+      (runs[index].length === 0 ||
+        reached > runs[index].start + runs[index].length)
+    ) {
+      index += 1;
+    }
+    const run = runs[index];
+    const fraction =
+      run.length === 0 ? 0.5 : (reached - run.start) / run.length;
+    return {
+      at: alongSegment(run.segment, fraction),
+      run: index,
+      along: run.length * fraction,
+      offset,
+    };
+  });
+  const outward = [ascending[before]];
+  for (let apart = 1; apart < ascending.length; apart += 1) {
+    if (before - apart >= 0) {
+      outward.push(ascending[before - apart]);
+    }
+    if (before + apart < ascending.length) {
+      outward.push(ascending[before + apart]);
+    }
+  }
+  return outward;
 }
 
 /**
@@ -55,90 +153,31 @@ export function runsWithin(
     : points;
   const runs: Segment[] = [];
   let left = length;
-  for (const run of measuredRuns(ordered)) {
+  for (const run of lineRuns(ordered)) {
     if (left <= 0) {
       break;
     }
-    const kept =
+    runs.push(
       run.length <= left
         ? run.segment
         : {
             from: run.segment.from,
             to: alongSegment(run.segment, left / run.length),
-          };
-    runs.push(kept);
+          },
+    );
     left -= run.length;
   }
   return runs;
 }
 
-type MeasuredRun = {
-  readonly segment: Segment;
-  readonly from: number;
-  readonly length: number;
-  readonly direction: Point;
-};
-
 const noLength = 1e-6;
 
-function measuredRuns(points: readonly Point[]): MeasuredRun[] {
-  const segments =
-    points.length === 1
-      ? [{ from: points[0], to: points[0] }]
-      : segmentsOfPolyline(points);
-  const runs: MeasuredRun[] = [];
-  let from = 0;
-  for (const segment of segments) {
-    const length = Math.sqrt(squaredDistance(segment.from, segment.to));
-    runs.push({
-      segment,
-      from,
-      length,
-      direction:
-        length === 0
-          ? { x: 1, y: 0 }
-          : {
-              x: (segment.to.x - segment.from.x) / length,
-              y: (segment.to.y - segment.from.y) / length,
-            },
-    });
-    from += length;
-  }
-  return runs;
-}
-
-function longestRun(runs: readonly MeasuredRun[]): MeasuredRun {
-  let longest = runs[0];
-  for (const run of runs) {
-    if (run.length > longest.length + noLength) {
-      longest = run;
+function longestRun(runs: readonly LineRun[]): number {
+  let longest = 0;
+  for (const [index, run] of runs.entries()) {
+    if (run.length > runs[longest].length + noLength) {
+      longest = index;
     }
   }
   return longest;
-}
-
-function spotAtLength(
-  runs: readonly MeasuredRun[],
-  reached: number,
-  offset: number,
-): LineSpot {
-  const run =
-    runs.find(
-      (candidate) =>
-        candidate.length > 0 && reached <= candidate.from + candidate.length,
-    ) ?? runs[runs.length - 1];
-  return spotOn(
-    run,
-    run.length === 0 ? 0.5 : (reached - run.from) / run.length,
-    offset,
-  );
-}
-
-function spotOn(run: MeasuredRun, fraction: number, offset: number): LineSpot {
-  return {
-    at: alongSegment(run.segment, fraction),
-    segment: run.segment,
-    direction: run.direction,
-    offset,
-  };
 }
