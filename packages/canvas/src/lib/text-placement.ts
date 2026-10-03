@@ -6,7 +6,7 @@ import { boxCollisions, elementSolids, type Solids } from './obstacles.js';
 import { sampledCurve } from './paths.js';
 import { wrappedTextStyles, type WrappedTextStyle } from './stylesheet.js';
 import {
-  flowLabelClearance,
+  curveNameClearance,
   innerWidth,
   looseLabelWidth,
   textExtent,
@@ -151,35 +151,6 @@ export function settledCurveNames(
   );
 }
 
-/**
- * A name hung off `anchor` along `normal`, its near edge a `standoff` away
- * whichever way the normal points. `measured` saves wrapping a name whose
- * extent the caller already holds.
- */
-export function nameBeside(
-  name: string,
-  anchor: Point,
-  normal: Point,
-  standoff: number,
-  textStyle: WrappedTextStyle,
-  measured?: TextExtent,
-): TextPlacement {
-  const fontSize = wrappedTextStyles[textStyle].fontSize;
-  const extent =
-    measured ?? textExtent(wrapText(name, fontSize, looseLabelWidth), fontSize);
-  return {
-    text: name,
-    at: offsetBy(
-      anchor,
-      normal,
-      standoff + projectedHalfExtent(extent, normal),
-    ),
-    anchor: 'centre',
-    width: looseLabelWidth,
-    textStyle,
-  };
-}
-
 /** How far a block of text reaches from its centre along a unit direction. */
 export function projectedHalfExtent(extent: TextExtent, normal: Point): number {
   return (
@@ -204,13 +175,23 @@ function curveNamePlacement(node: BoundaryCurve): TextPlacement {
   const side = node.nameSide ?? convexMiddle(node.waypoints);
   const bend = bendAt(node.waypoints, side.at);
   const convex = convexNormal(bend);
-  return nameBeside(
-    node.name,
-    bend.middle,
-    side.mirrored ? negated(convex) : convex,
-    flowLabelClearance,
-    'label',
+  const normal = side.mirrored ? negated(convex) : convex;
+  const fontSize = wrappedTextStyles.label.fontSize;
+  const extent = textExtent(
+    wrapText(node.name, fontSize, looseLabelWidth),
+    fontSize,
   );
+  return {
+    text: node.name,
+    at: offsetBy(
+      bend.middle,
+      normal,
+      curveNameClearance + projectedHalfExtent(extent, normal),
+    ),
+    anchor: 'centre',
+    width: looseLabelWidth,
+    textStyle: 'label',
+  };
 }
 
 function convexMiddle(waypoints: readonly Point[]): CurveNameSide {

@@ -70,8 +70,9 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   dispatches `MoveElement`, a group move `MoveElements` with one shared offset,
   a resize one `ResizeElement`, or one `SetBoundaryShape` with a trust boundary
   curve's points scaled to the new box. During a drag each flow reads its endpoint
-  nodes, and the collision search for names and badges runs when the pointer
-  pauses and once more on pointer-up.
+  nodes, a flow whose block no longer follows its line is placed again clear of
+  the blocks the other flows keep, and every block is placed afresh on
+  pointer-up.
 - **Settle against the store's selection, not a render's.** React Flow reports
   a click that moves the selection between a node and a flow as two
   synchronous calls with no render between them.

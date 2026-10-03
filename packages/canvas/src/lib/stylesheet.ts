@@ -34,6 +34,7 @@ export const canvasClassNames = {
   flow: 'saer-diagram-flow',
   flowArrow: 'saer-diagram-flow-arrow',
   flowLabel: 'saer-diagram-flow-label',
+  flowBacking: 'saer-diagram-flow-backing',
   badge: 'saer-diagram-badge',
   badgePrimary: 'saer-diagram-badge-primary',
   badgeSecondary: 'saer-diagram-badge-secondary',
@@ -151,10 +152,10 @@ const sheetFrom = (
   font-size: ${wrappedTextStyles.flowLabel.fontSize}px;
   text-anchor: middle;
   dominant-baseline: central;
-  paint-order: stroke;
-  stroke: ${colour('surfaceCanvas')};
-  stroke-width: ${strokeWidths.labelHalo};
-  stroke-linejoin: round;
+}
+.${canvasClassNames.flowBacking} {
+  fill: ${colour('surfaceCanvas')};
+  stroke: none;
 }
 .${canvasClassNames.badge} {
   stroke: ${colour('badgeGround')};

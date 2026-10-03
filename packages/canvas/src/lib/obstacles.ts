@@ -15,7 +15,6 @@ import { nodeBox, type NodeBox } from './handles.js';
 import type { CanvasNode } from './layout.js';
 import { memoizedByIdentity } from './memoized.js';
 import { controlPolygon } from './paths.js';
-import { flowLabelClearance } from './typography.js';
 
 /** What a label is held clear of: boxes, ellipses and straight runs of line. */
 export type Solids = {
@@ -120,14 +119,4 @@ export function boxCollisions(
     }
   }
   return collisions;
-}
-
-/** A box grown by one label clearance on every side. */
-export function grownByClearance(box: Box): Box {
-  return {
-    minX: box.minX - flowLabelClearance,
-    minY: box.minY - flowLabelClearance,
-    maxX: box.maxX + flowLabelClearance,
-    maxY: box.maxY + flowLabelClearance,
-  };
 }

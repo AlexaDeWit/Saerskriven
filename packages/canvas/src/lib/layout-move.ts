@@ -5,11 +5,11 @@ import {
   flowGeometry,
   type PlacedEndpoint,
 } from './flow-anchors.js';
+import type { FlowLabelPlacement } from './flow-blocks.js';
 import {
   flowLabelPlacements,
   flowLabelPlacementsDuringMove,
   movedFlowLabel,
-  type FlowLabelPlacement,
 } from './flow-labels.js';
 import { sameCoordinate, shiftedBy } from './geometry.js';
 import { sameNodeBox, type NodeBox } from './handles.js';
@@ -24,10 +24,11 @@ import type {
  * A settled layout with its nodes at the boxes React Flow holds during a
  * gesture. A flow in `moving` shifts its waypoints and free ends by `offset`,
  * and a flow on a box that changed re-anchors its attached ends. With
- * `exactLabels` every label goes through the full search. Without it, a flow
- * whose shape changed and that is not in `moving` takes the clear candidate
- * nearest its midpoint, and every other flow keeps its label, carried along
- * its path from the edge in `labelBases` or else the settled one. An edge
+ * `exactLabels` every block is placed afresh, as the settled layout places
+ * it. Without it, a flow whose shape changed and that is not in `moving` is
+ * placed by the same rules clear of the other blocks, and every other flow
+ * keeps its block, carried along its path from the edge in `labelBases` or
+ * else the settled one. An edge
  * whose geometry and label are unchanged comes back as the settled object,
  * and the bounds stay the settled ones.
  */
@@ -67,32 +68,27 @@ export function layoutDuringMove(
   };
 }
 
-/** Whether `to` keeps the label candidate that `from` used on its old path. */
+/** Whether `to` keeps the block `from` held, carried along its new path. */
 export function flowLabelFollows(from: CanvasEdge, to: CanvasEdge): boolean {
   return sameFlowLabel(flowWithFollowedLabel(from, to).label, to.label);
 }
 
-/** The new flow geometry with its prior label candidate moved onto it. */
+/** The new flow geometry with its prior block carried onto it. */
 export function flowWithFollowedLabel(
   from: CanvasEdge,
   to: CanvasEdge,
 ): CanvasEdge {
   return {
     ...to,
-    label: movedFlowLabel(
-      from.label,
-      from.badge,
-      edgePoints(from),
-      edgePoints(to),
-    ),
+    label: movedFlowLabel(from.label, edgePoints(from), edgePoints(to)),
   };
 }
 
 /**
  * A flow re-anchored to the boxes its ends are on, its waypoints and free
  * ends shifted first by `flowOffset`. An end with no box keeps its point. The
- * label and badge follow their segment from `edge` to the re-anchored path,
- * without the diagram-wide search, so they move with the path once.
+ * block follows its segment from `edge` to the re-anchored path, without
+ * the diagram-wide search, so it moves with the path once.
  */
 export function reanchoredFlow(
   edge: CanvasEdge,
@@ -107,12 +103,7 @@ export function reanchoredFlow(
   const anchored = reanchoredGeometry(shifted, sourceBox, targetBox);
   return {
     ...anchored,
-    label: movedFlowLabel(
-      edge.label,
-      edge.badge,
-      edgePoints(edge),
-      edgePoints(anchored),
-    ),
+    label: movedFlowLabel(edge.label, edgePoints(edge), edgePoints(anchored)),
   };
 }
 
@@ -179,12 +170,7 @@ function retainedLabels(
         edge.id,
         edge === base
           ? base.label
-          : movedFlowLabel(
-              base.label,
-              base.badge,
-              edgePoints(base),
-              edgePoints(edge),
-            ),
+          : movedFlowLabel(base.label, edgePoints(base), edgePoints(edge)),
       ];
     }),
   );
@@ -281,15 +267,27 @@ function sameFlowLabel(
 ): boolean {
   return (
     one.name.text === other.name.text &&
-    sameCoordinate(one.name.at.x, other.name.at.x) &&
-    sameCoordinate(one.name.at.y, other.name.at.y) &&
+    samePoint(one.name.at, other.name.at) &&
     one.name.anchor === other.name.anchor &&
     one.name.width === other.name.width &&
     one.name.textStyle === other.name.textStyle &&
-    ((one.badge === undefined && other.badge === undefined) ||
-      (one.badge !== undefined &&
-        other.badge !== undefined &&
-        sameCoordinate(one.badge.x, other.badge.x) &&
-        sameCoordinate(one.badge.y, other.badge.y)))
+    sameWhereHeld(one.badge, other.badge, samePoint) &&
+    sameWhereHeld(one.backing, other.backing, (box, held) =>
+      samePoint({ x: box.minX, y: box.minY }, { x: held.minX, y: held.minY }),
+    )
   );
+}
+
+function samePoint(one: Point, other: Point): boolean {
+  return sameCoordinate(one.x, other.x) && sameCoordinate(one.y, other.y);
+}
+
+function sameWhereHeld<T>(
+  one: T | undefined,
+  other: T | undefined,
+  same: (one: T, other: T) => boolean,
+): boolean {
+  return one === undefined || other === undefined
+    ? one === other
+    : same(one, other);
 }

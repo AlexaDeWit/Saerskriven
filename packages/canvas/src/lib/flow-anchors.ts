@@ -61,6 +61,7 @@ export const flowGeometry = memoizedByIdentity(
     id: edge.id,
     name: edge.name,
     badge: edge.badge,
+    bidirectional: edge.bidirectional,
     points: edgePoints(edge),
   }),
 );

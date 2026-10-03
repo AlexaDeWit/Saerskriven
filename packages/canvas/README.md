@@ -35,9 +35,24 @@ changes, without the diagram-wide label search.
 
 [`text-placement.ts`](src/lib/text-placement.ts): `nodeTextPlacement` and
 `textPlacementCorners` say where an element's text hangs and what box it
-fills. [`flow-labels.ts`](src/lib/flow-labels.ts) puts every flow's name and
-badge where nothing else is drawn, deterministically, so the studio and the
-headless render agree.
+fills.
+
+[`flow-labels.ts`](src/lib/flow-labels.ts) draws a flow's badge and name as
+one block, the badge first, on a backing in the canvas ground colour
+([`flow-blocks.ts`](src/lib/flow-blocks.ts)). The block sits on the flow's
+line, which it breaks, starting at the middle of the line's longest run. Where
+it would cover a shape, a name, a badge, another block, another flow's line or
+a trust boundary's line, it slides along its own line to the nearest clear
+spot, leaving some line and every arrowhead showing at both ends. Where no spot
+on the line is clear, it goes beside the line: above a run nearer horizontal,
+right of one nearer vertical, wrapping the name narrower where that helps, and
+on the other side only where that side is blocked. Where nothing is clear it
+takes the spot that covers the fewest things, so no name is dropped. Flows are
+placed in id order from the model alone, so the studio and the headless render
+agree. During a drag, `flowLabelPlacementsDuringMove` keeps the block of every
+flow the drag leaves alone and places a moving flow's block by the same rules.
+A block cannot yet be dragged along its line and kept there, since the file
+format has no field to hold it.
 
 ## Drawing
 
