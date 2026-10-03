@@ -189,6 +189,38 @@ export const closeMenu = async (page: Page): Promise<void> => {
   await expect(page.getByRole('menu')).toHaveCount(0);
 };
 
+/** Moves a menu's keyboard focus forward to `target`, one ArrowDown per enabled row of its own menu between them. */
+export const arrowTo = async (page: Page, target: Locator): Promise<void> => {
+  const ownMenu = target.locator('xpath=ancestor::*[@role="menu"][1]');
+  await expect(ownMenu.locator('[role^="menuitem"]:focus')).toHaveCount(1);
+  const steps = await target.evaluate((element) => {
+    const menu = element.closest('[role="menu"]');
+    const items = [
+      ...(menu?.querySelectorAll('[role^="menuitem"]:not([data-disabled])') ??
+        []),
+    ].filter((item) => item.closest('[role="menu"]') === menu);
+    return (
+      items.indexOf(element) -
+      items.findIndex((item) => item === document.activeElement)
+    );
+  });
+  expect(
+    steps,
+    `arrowTo needs a forward step count toward the target, got ${steps}`,
+  ).toBeGreaterThanOrEqual(0);
+  for (let step = 0; step < steps; step += 1) {
+    const focused = await page.evaluateHandle(() => document.activeElement);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForFunction(
+      (previous) => document.activeElement !== previous,
+      focused,
+      { polling: 'raf', timeout: 2_000 },
+    );
+    await focused.dispose();
+  }
+  await expect(target).toBeFocused();
+};
+
 /** Runs one menu command, which puts the menu away as it runs. */
 export const runFromMenu = async (page: Page, name: string): Promise<void> => {
   await openMenu(page);

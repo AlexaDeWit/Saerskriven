@@ -8,6 +8,7 @@ import {
 } from './connecting.js';
 import { flowEnds } from './elements.js';
 import { currentLayout } from './layout.js';
+import cursor from '../ui/cursor-row.module.css';
 import styles from './toolbox.module.css';
 
 /** The flow target listbox under the chrome card, mounted only while a started flow waits for its target. */
@@ -43,7 +44,11 @@ export function FlowTargetChooser() {
       <Select.Content className={styles.content} position="popper">
         <Select.Viewport className={styles.viewport}>
           {targets.map((node) => (
-            <Select.Item className={styles.item} key={node.id} value={node.id}>
+            <Select.Item
+              className={`${styles.item} ${cursor.row}`}
+              key={node.id}
+              value={node.id}
+            >
               <Select.ItemText>{shownName(node.id, node.name)}</Select.ItemText>
             </Select.Item>
           ))}
