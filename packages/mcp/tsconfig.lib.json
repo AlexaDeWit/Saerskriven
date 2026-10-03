@@ -18,6 +18,9 @@
     },
     {
       "path": "../formats/tsconfig.lib.json"
+    },
+    {
+      "path": "../wasm/tsconfig.lib.json"
     }
   ],
   "exclude": [

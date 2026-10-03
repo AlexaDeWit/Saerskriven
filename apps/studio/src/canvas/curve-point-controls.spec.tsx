@@ -200,13 +200,19 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(document.activeElement).toBe(point(2));
   });
 
-  it('leaves Escape to the page once the actions it would close are gone', () => {
+  it('leaves Escape to the Select tool once the actions it would close are gone, with focus handed to the curve', () => {
     render(<DiagramCanvas />);
     fireEvent.click(point(3));
     point(2).focus();
     press('ArrowUp');
     expect(screen.queryByRole('group', { name: 'Point actions' })).toBeNull();
-    expect(fireEvent.keyDown(point(2), { key: 'Escape' })).toBe(true);
+
+    press('Escape');
+
+    expect(modelStore.getState().selection).toEqual([]);
+    expect(document.activeElement?.getAttribute('data-id')).toBe(
+      boundaryElement,
+    );
   });
 
   it('moves a dragged point on release alone, as one undo step', () => {

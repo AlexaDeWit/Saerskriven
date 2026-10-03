@@ -1,87 +1,57 @@
-import { severityToneClass } from '@saerskriven/canvas';
-import {
-  recordsLinkedTo,
-  threatFlags,
-  type Threat,
-  type ThreatFlag,
-} from '@saerskriven/model';
-import { useShallow } from 'zustand/react/shallow';
-import {
-  flagMessages,
-  severityMessages,
-  statusMessages,
-} from '../messages/enum-labels.js';
+import type { ElementId, Threat } from '@saerskriven/model';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
+import { categoryLabel } from '../ui/category-field.js';
+import { VisuallyHidden } from '../ui/visually-hidden.js';
+import { FlagMarks, SeverityChip, StatusMark } from './threat-marks.js';
 import styles from './threat-panel.module.css';
-
-const flagGlyphs = {
-  'mitigated-without-implemented-work': 'M6 1.5 11 10.5H1Z M6 5v2.5 M6 9v.01',
-  'rests-on-invalidated-assumption': 'M1.5 1.5h9v9h-9Z M4 4l4 4 M8 4 4 8',
-} as const satisfies Record<ThreatFlag, string>;
+import { threatAttachments } from './threats.js';
 
 /**
  * A collapsed threat's summary, which is also its accordion trigger's
- * accessible name: number, title, severity, status, record counts and a
- * labelled glyph per raised flag.
+ * accessible name, in drawn order. Its number and title, then its severity,
+ * status, category and a mark per raised flag, then where the threat names
+ * an element besides `on` (the element whose panel shows it), those
+ * elements.
  */
-export function ThreatSummary({ threat }: { readonly threat: Threat }) {
-  const mitigations = useModelStore(
-    (state) => recordsLinkedTo(state.present.mitigations, threat.id).length,
-  );
-  const assumptions = useModelStore(
-    (state) => recordsLinkedTo(state.present.assumptions, threat.id).length,
-  );
-  const flags = useModelStore(
-    useShallow((state) => threatFlags(state.present, threat)),
-  );
+export function ThreatSummary({
+  threat,
+  on,
+}: {
+  readonly threat: Threat;
+  readonly on: ElementId | undefined;
+}) {
+  const diagrams = useModelStore((state) => state.present.diagrams);
   const { t } = useTranslator();
+  const category = categoryLabel(threat.category, t);
+  const others = threatAttachments(diagrams, threat, t)
+    .filter(({ id }) => id !== on)
+    .map(({ label }) => label);
 
   return (
     <>
-      <span className={styles.number}>{threat.number}</span>
+      <span className={styles.number}>{threat.number}</span>{' '}
       <span className={styles.summary}>
-        <span>{threat.title}</span>
+        <span>{threat.title}</span>{' '}
         <span className={styles.metadata}>
-          <span className={styles.severity}>
-            <svg aria-hidden="true" className={styles.tone} viewBox="0 0 12 12">
-              <circle
-                className={severityToneClass[threat.severity]}
-                cx="6"
-                cy="6"
-                r="5"
-              />
-            </svg>
-            {t('panel.summary-severity', {
-              severity: t(severityMessages[threat.severity]),
-            })}
+          <SeverityChip severity={threat.severity} />{' '}
+          <StatusMark status={threat.status} />{' '}
+          <span className={styles.category}>
+            <span aria-hidden="true">{category}</span>
+            <VisuallyHidden>
+              {t('panel.summary-category', { category })}
+            </VisuallyHidden>
           </span>
-          <span>
-            {t('panel.summary-status', {
-              status: t(statusMessages[threat.status]),
-            })}
-          </span>
-          <span className={styles.counts}>
-            <span data-count="mitigations">
-              {t('panel.summary-mitigations', { count: mitigations })}
-            </span>
-            <span data-count="assumptions">
-              {t('panel.summary-assumptions', { count: assumptions })}
-            </span>
-          </span>
-          {flags.map((flag) => (
-            <span className={styles.flag} data-flag={flag} key={flag}>
-              <svg
-                aria-hidden="true"
-                className={styles.tone}
-                viewBox="0 0 12 12"
-              >
-                <path className={styles.flagGlyph} d={flagGlyphs[flag]} />
-              </svg>
-              {t(flagMessages[flag])}
-            </span>
-          ))}
+          <FlagMarks threat={threat} />
         </span>
+        {others.length > 0 && (
+          <>
+            {' '}
+            <span className={styles.alsoOn} data-also-on="">
+              {t('panel.also-on-elements', { list: others })}
+            </span>
+          </>
+        )}
       </span>
     </>
   );

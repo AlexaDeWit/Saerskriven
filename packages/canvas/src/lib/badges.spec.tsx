@@ -13,14 +13,22 @@ import {
 } from '@saerskriven/model/fixtures';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
+  badgeAnchor,
   badgeBox,
   badgeExtent,
   badgesByElement,
+  badgeStepsOut,
+  selectedBadgeAnchor,
   severityRank,
   ThreatBadgeGlyph,
   type ThreatBadge,
 } from './badges.js';
-import { everyGlyphModel, specMarks } from './canvas.fixtures.js';
+import {
+  everyGlyphLayout,
+  everyGlyphModel,
+  nodeNamed,
+  specMarks,
+} from './canvas.fixtures.js';
 import { canvasClassNames, severityToneClass } from './stylesheet.js';
 import { badgeRadius, canvasType, strokeWidths } from './tokens.js';
 import { textExtent } from './typography.js';
@@ -292,6 +300,53 @@ describe('badgeExtent', () => {
     expect(badgeExtent(counted(3, 'low', 1, true)).radius).toBe(
       badgeExtent(counted(1, 'low', 0)).radius,
     );
+  });
+});
+
+const carrying = (id: string, badge: ThreatBadge) => ({
+  ...nodeNamed(id),
+  badge,
+});
+
+describe('selectedBadgeAnchor', () => {
+  const kinds = [
+    counted(1, 'low', 0),
+    counted(3, 'high', 1, true),
+    flagOnly,
+  ] as const;
+
+  it("steps a selected element's or boundary box's badge out along its top-right corner's diagonal, ring and all just past the corner's edges", () => {
+    for (const node of ['el-api', 'el-zone'].flatMap((id) =>
+      kinds.map((badge) => carrying(id, badge)),
+    )) {
+      const at = selectedBadgeAnchor(node);
+      const ring = strokeWidths.badgeRing / 2;
+      const drawn = badgeBox(at, node.badge);
+      const clearance = drawn.minX - ring - node.size.width;
+
+      expect(badgeStepsOut(node)).toBe(true);
+      expect(at.x - node.size.width).toBe(-at.y);
+      expect(clearance).toBeGreaterThan(0);
+      expect(clearance).toBeLessThanOrEqual(strokeWidths.badgeRing);
+    }
+  });
+
+  it("keeps a boundary curve's badge on its corner, which its corner handles leave clear", () => {
+    const curve = everyGlyphLayout.nodes.find(
+      (node) => node.kind === 'boundary-curve',
+    );
+    assert.isDefined(curve);
+    expect(curve.badge).toBeDefined();
+
+    expect(badgeStepsOut(curve)).toBe(false);
+    expect(selectedBadgeAnchor(curve)).toEqual(badgeAnchor(curve.size));
+  });
+
+  it('leaves the corner alone on an element without a badge', () => {
+    const note = nodeNamed('el-note');
+
+    expect(badgeStepsOut(note)).toBe(false);
+    expect(selectedBadgeAnchor(note)).toEqual(badgeAnchor(note.size));
   });
 });
 

@@ -365,14 +365,17 @@ test('macOS uses Command shortcuts and Shift-Command-Z for redo', async ({
   const flow = nodeNamed(page, placeholder.records);
   await flow.focus();
   await page.keyboard.press('Enter');
-  await page.keyboard.press('Meta+Shift+!');
+  const unfitted = await viewportTransform(page);
+  await page.keyboard.press('Meta+Shift+)');
+  await expect.poll(() => viewportTransform(page)).not.toBe(unfitted);
+  await page.keyboard.press(registeredChords['reconnect-source'][0]);
   await expect(
     page
       .getByRole('region', { name: 'Flow endpoint' })
       .getByRole('combobox', { name: 'Source' }),
   ).toBeFocused();
   await page.keyboard.press('Escape');
-  await page.keyboard.press('Meta+Shift+@');
+  await page.keyboard.press(registeredChords['reconnect-target'][0]);
   await expect(
     page
       .getByRole('region', { name: 'Flow endpoint' })

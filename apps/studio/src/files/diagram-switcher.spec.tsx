@@ -11,7 +11,10 @@ import {
   CommandSurfaceProvider,
   unmountedSurface,
 } from '../commands/binding.js';
-import { resetAnnouncements } from '../canvas/announcements.js';
+import {
+  currentAnnouncement,
+  resetAnnouncements,
+} from '../canvas/announcements.js';
 import { resetDiagramRenaming } from '../canvas/diagrams.js';
 import { activeDiagramId } from '../store/selectors.js';
 import { initialState, untitledDiagram } from '../store/state.js';
@@ -72,6 +75,21 @@ describe('the diagram switcher', () => {
     expect(activeDiagramId(modelStore.getState())).toBe(secondDiagram);
     expect(switcher('Diagram: Second')).toBeDefined();
     expect(modelStore.getState().past).toEqual([]);
+  });
+
+  it('draws no status line for a choice and returns focus to the button naming it', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(twoDiagramModel), true);
+    mounted();
+
+    await user.click(switcher('Diagram: Main'));
+    await screen.findByRole('menu');
+    await user.click(choice('Second'));
+
+    expect(currentAnnouncement().message).toBe('');
+    await waitFor(() => {
+      expect(document.activeElement).toBe(switcher('Diagram: Second'));
+    });
   });
 
   it('offers only a new diagram while the model holds none', async () => {

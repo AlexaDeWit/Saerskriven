@@ -17,7 +17,8 @@ the state it describes resolves. None is removed by a timer.
 A status line under the card says what an action did wherever the control
 that has focus does not already show it, such as a deletion, a refusal, a
 paste or an Undo. It ends at the next action that changes the canvas or the
-panel.
+panel. A diagram chosen in the switcher draws no line, since focus returns to
+the switcher, which names it. PageDown and PageUp do draw it.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
 persists across reloads. **Language** beside it selects English (Canada),
@@ -44,22 +45,43 @@ the React Flow attribution, and any other build says `development`.
 
 ## Files
 
-**Open** reads a Threat Dragon v2 JSON or Saerskriven YAML file, whatever its
-extension. **Save** keeps the format the file was read as, unless the save
-picker is used to choose another. Where the browser offers the File System
-Access API, Save writes to the file that was opened or last saved as, without
-asking. With no such file, as for a new model or an import, Save asks where in
-the browser's save picker, proposing the same name and formats as **Save as**,
-and later Saves write to the file chosen there.
+**Open** reads a Saerskriven YAML, Threat Dragon v2 JSON, OTM or TM-BOM file,
+whatever its extension. What Save does next depends on the format:
+
+- Saerskriven YAML and Threat Dragon: **Save** writes back to the file in the
+  format it was read as, unless the save picker is used to choose another.
+- OTM and TM-BOM: Saerskriven reads these and does not write them, so the file
+  opens as a new, unsaved model under a notice saying so, and no Save ever
+  writes to it. Save makes a Saerskriven YAML file under the file's stem, as
+  `example.yaml` for `example.json`: the save picker proposes that name, and a
+  browser without one downloads under it. What each format becomes is in
+  [OTM and TM-BOM](#otm-and-tm-bom).
+
+Where the browser offers the File System Access API, Save writes to the file
+that was opened or last saved as, without asking. With no such file, as for a
+new model or an OTM or TM-BOM file, Save asks where in the browser's save
+picker, proposing the same name and formats as **Save as**, and later Saves
+write to the file chosen there.
 Dismissing the picker, from Save or Save as, leaves the work unsaved in every
 tab. Elsewhere, Firefox and Safari among them, Save downloads the file under its
 name, and **Save as** turns into a list of formats in the menu, with the file's
 own format where the item stood. The page cannot tell whether a download went
 through, so a download counts as saved even where the browser's own download
 dialog was cancelled. Saving in another format than the file was read as is
-where a loss report comes from, since only the file's own format keeps what
-Saerskriven does not model. A read reports too, when the file carries keys the
-format's schema does not declare.
+where most of a save's report, **Not kept by this save**, comes from, since
+only the file's own format keeps what Saerskriven does not model. Opening a
+file reports too, under **Not shown in the studio**: keys the format's schema
+does not declare, and values the studio holds less exactly than the file,
+such as a Threat Dragon Elevation of Privilege card, with "Saving back keeps
+it." where a save to the same file keeps them. Each line names a threat by its
+number and title, and anything else by the name the studio shows, and lines
+that read the same are shown once with their count. A report leaves out what
+loses nothing, such as a raised threat number mark, which the command line
+still prints. An OTM or TM-BOM report names what the reading converted and
+the source fields that hold a value the model has no place for. It leaves out
+a default or a layout Saerskriven supplied where the file held none, which
+`saer convert` and the MCP server still name. Nothing of that file is kept for
+a later save, so keep it where what the report names matters.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
@@ -67,18 +89,17 @@ second press confirms. A failed open keeps the current model but lets go of its
 file, so its next Save treats it as a new model rather than writing to either
 file.
 
-**Import** converts an OTM or TM-BOM file into an unsaved native model
-([importing a foreign model](import.md)). **Export** writes the diagram on
-screen as SVG or PNG, the register as Markdown, or the whole model as Typst or
-PDF. An export proposes the open file's name with the export's extension, or
-`Untitled`, and never changes which file Save writes to. When the model has
-several diagrams, the SVG and PNG names add the diagram's title, as
-`payments - Checkout.svg`: characters a file name cannot hold become `_`,
-runs of white space collapse, leading and trailing dots and spaces go, the
-title is cut to 80 characters, and an empty one reads as the untitled diagram.
-Diagrams with the same title propose the same name. An export that could not
-place a flow endpoint says so after it writes. A refused PDF or PNG export writes nothing
-and stands until dismissed or until a later export.
+**Export** writes the diagram on screen as SVG or PNG, the register as
+Markdown, or the whole model as Typst or PDF. An export proposes the open
+file's name with the export's extension, or `Untitled`, and never changes
+which file Save writes to. When the model has several diagrams, the SVG and
+PNG names add the diagram's title, as `payments - Checkout.svg`: characters a
+file name cannot hold become `_`, runs of white space collapse, leading and
+trailing dots and spaces go, the title is cut to 80 characters, and an empty
+one reads as the untitled diagram. Diagrams with the same title propose the
+same name. An export that could not place a flow endpoint says so after it
+writes. A refused PDF or PNG export writes nothing and stands until dismissed
+or until a later export.
 
 The studio keeps the current session in the browser's local storage. A reload
 restores the model, whether it was saved, the file's name and format, and the
@@ -92,6 +113,83 @@ an open or a save in one tab reaches the others, while each tab keeps its own
 selection and diagram on screen. Once another tab has changed the model, Save
 in this tab asks where to write, or downloads a copy, rather than writing back
 to the file.
+
+### OTM and TM-BOM
+
+Open reads an OTM or TM-BOM file into a new native model, and so do
+`saer convert` ([usage](../README.md#usage)) and the MCP server's
+`saer_import` ([the MCP server](mcp.md)). Content decides the format, in JSON
+or YAML syntax alike, and the reading passes the same size, depth and alias
+bounds as any other file. Ids Saerskriven generates use an ASCII alphabet the
+canvas can address.
+
+#### OTM 0.2.0
+
+Open reads a file stamped `otmVersion: 0.2.0`. All components become process
+nodes because OTM component types do not define a DFD vocabulary. Their
+original types remain in their descriptions. All graph records enter one
+diagram, using geometry from the first declared diagram representation
+where available. Missing geometry receives a deterministic layout. Additional
+representations, code references, and drawing attributes are reported as
+omissions. Invalid geometry produces a model failure.
+
+Trust zones become drawn boxes. Parent relationships and numeric trust
+ratings do not enter the core. A bidirectional dataflow becomes one
+bidirectional flow. Referenced asset names and descriptions become prose on
+the arrows and components. These copies no longer share an editable data
+identity.
+
+Each threat occurrence becomes a separate threat with its own status and
+mitigations. This preserves different treatments on different components.
+Threat definitions without occurrences become threats on no element. Known
+threat statuses map to the corresponding core treatment. Unknown statuses
+remain in the description and are read as open. Each mitigation an occurrence
+names becomes a record linked to that occurrence's threat. Mitigations marked
+implemented or verified retain that status. Other mitigation states are read
+as proposed, with the source state kept in prose and differences reported. A
+mitigation definition no occurrence names would link no threat, so it becomes
+a line of the model description holding its name and description, with a
+report line.
+
+Threat severity remains undecided. OTM numeric risk values and category
+lists have no exact core equivalent and appear in the omission report.
+Threats receive an unspecified custom category. Numeric mitigation
+reductions, asset risk assessments, tags, and extension attributes are also
+reported as omissions.
+
+#### TM-BOM 1.0.1 and 1.0.2
+
+A TM-BOM file needs a `$schema` URI naming either supported release of the
+OWASP Threat Model Library schema. The model's own `version` is not a schema
+version. Later schema versions are refused.
+
+Actors, components, data stores, and flows become their corresponding DFD
+kinds. Saerskriven generates a diagram grouped by declared trust-zone
+membership. Boxes show those zones, but membership is only drawn. Embedded
+Graphviz, Mermaid, PlantUML, and SVG sources are reported as omissions.
+Saerskriven does not execute or interpret them.
+
+Flow encryption and sensitivity values remain in the flow descriptions.
+Data-set names and descriptions appear on the stores named by their
+placements. TM-BOM has no direct data-set reference on a flow, so none is
+inferred. Shared data identity and other data-set properties are reported as
+losses.
+
+Threats preserve their declared component attachments and event descriptions.
+They are read as open, with undecided severity and an unspecified category.
+Separate risk records and threat personas are reported as omissions.
+Controls become mitigations linked to the threats they name. Active controls
+become implemented mitigations. Suggested controls become proposed
+mitigations. Other pending states remain in prose and are read as proposed.
+A control naming no threat would link no threat, so it becomes a line of the
+model description holding its title, its description and its mapped status,
+with a report line. Retired and declined controls are reported as omissions
+whether or not they name a threat.
+
+TM-BOM assumptions name no threat, so every assumption becomes an assumption
+that applies to the model, with its description as prose. Confirmed, rejected
+and unconfirmed assumptions map to the valid, invalidated and unconfirmed
+states. Topic links are reported as omissions.
 
 ## Diagrams
 
@@ -150,7 +248,9 @@ out. A click there without a drag clears the selection, or selects that element
 alone. With Shift held, or by touch, a press there acts as it does outside the
 selection. An arrow key moves the selection five model units, and Shift+arrow
 twenty. A flow does not move on its own, but a moved group carries its bends
-and free ends along.
+and free ends along. Pressing Escape, or leaving the browser window, before the
+release puts every dragged element back where it was, with no undo step. Escape
+also clears the selection, as it does anywhere.
 
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
@@ -158,6 +258,12 @@ side fixed. Focus a control and press an arrow key to move that edge five
 units, or twenty with Shift. An element is at least ten units wide and high. On
 a trust boundary curve the same controls scale its points
 ([Trust boundaries](#trust-boundaries)).
+
+While an element with a threat badge is selected, the badge steps out past its
+top-right corner, so the handle there stays on the corner, and it draws above
+neighbouring elements and flow names. The bounds a drag starts in and **Fit
+selection** fits include it there. Deselected, the badge sits back on the
+corner, and an export always draws it there.
 
 Position and size opens an editor for exact coordinates and dimensions, and
 Apply commits the whole form as one edit. Cancel or Escape leaves the model
@@ -208,23 +314,28 @@ expects.
 
 While one flow is selected with the Select tool and no name or note is open for
 editing, the **Reconnect flow** card pinned at the top left, under the chrome
-card, holds **Change flow source**, **Change flow target**, **Toggle
-bidirectional flow** and **Reverse flow**. The first two choose another actor,
+card, holds one row of icons: **Change flow source** (a dot at the start of an
+arrow), **Change flow target** (an arrow ending on a dot), **Toggle
+bidirectional flow** (a two-headed arrow, drawn pressed while the flow runs
+both ways) and **Reverse flow** (two opposed arrows). A tooltip names each
+command and its shortcut, as in the toolbox. The first two choose another actor,
 process or store for one end, with a side to pin it to or Automatic, or Free
 point, first in the list, which frees the end at the X and Y typed, starting
 from where the end is drawn. Toggle bidirectional flow draws an arrowhead at both ends or one again,
 and the flow keeps its source and target either way. Reverse flow swaps the
 source and the target and runs the bends the other way, so the flow keeps its
-route, its threats and whether it runs both ways.
+route, its threats and whether it runs both ways. Escape on a focused icon
+closes its tooltip first, and a second Escape clears the selection.
 
 ## Trust boundaries
 
 While one trust boundary is selected with the Select tool and no name is open
 for editing, the **Trust boundary** card, in the Reconnect flow card's place,
-holds **Switch boundary shape**. It turns a box into the arch the Trust boundary
-curve tool draws in that box, and a curve into the box around its points, at
-least ten units each way. A box at least ten units each way, turned into a
-curve and back, is the same box.
+holds **Switch boundary shape**, an icon of the two Trust boundary tools' shapes,
+the box over the curve, with its name and shortcut in a tooltip. It turns a box
+into the arch the Trust boundary curve tool draws in that box, and a curve into
+the box around its points, at least ten units each way. A box at least ten
+units each way, turned into a curve and back, is the same box.
 The boundary keeps its name, its threats and the elements and flows it declares.
 
 A selected trust boundary curve carries a handle on each of its points, and a
@@ -247,12 +358,14 @@ curve stays close to its shape.
 
 A selected curve also carries a box's side lines and corner handles around its
 points, each corner handle just outside its corner so that a point there keeps
-its own handle. Dragging a control, or pressing an arrow key on a focused one,
-scales every point against the opposite side or corner as one undo step, and
-the boundary keeps its name and its threats. Width and height in Position and
-size scale the points the same way, to no less than ten units. A curve whose
-points all lie on one horizontal or vertical line has only the two side lines
-that lengthen it, and the form shows only the width or the height that does.
+its own handle, and so that its threat badge, unlike an element's, stays on the
+corner while the curve is selected. Dragging a control, or pressing an arrow key
+on a focused one, scales every point against the opposite side or corner as one
+undo step, and the boundary keeps its name and its threats. Width and height in
+Position and size scale the points the same way, to no less than ten units. A
+curve whose points all lie on one horizontal or vertical line has only the two
+side lines that lengthen it, and the form shows only the width or the height
+that does.
 
 ## Names and Note text
 
@@ -328,13 +441,15 @@ middle-button drag, Hand or held Space pans.
 
 ## The threat panel
 
-The panel shows the one selected element or flow: its description and scope,
-its security properties, and its threats. With several selected it says how
-many and offers no fields. Focus threats moves focus to "Add a threat".
-Selecting alone never moves focus into the panel. **Widen pane** widens it and
-**Restore pane width** returns it to normal, for the rest of the session. The
-panel covers the diagram rather than shrinking it, so pan to reach what it
-covers.
+The panel shows the one selected element or flow, headed by its name, on two
+tabs: **Threats**, which carries the element's threat count, and **Details**,
+which holds its description, scope and security properties. Every selection
+opens on Threats, and the arrow keys move between the tabs. With several
+selected the panel says how many and offers no fields. Focus threats shows the
+Threats tab and moves focus to "Add a threat". Selecting alone never moves focus
+into the panel. **Widen pane** widens it and **Restore pane width** returns it
+to normal, for the rest of the session. The panel covers the diagram rather than
+shrinking it, so pan to reach what it covers.
 
 Close threats, or Escape, closes the panel and returns focus to the element,
 which stays selected. A second Escape clears the selection. The panel stays
@@ -346,21 +461,37 @@ element first. Choose one, then Attach. The threat opens expanded unless
 another threat is holding a refused draft, which keeps the open one where it
 is, and an undo takes the attachment back.
 
-Each threat's summary shows its number, title, severity, status, how many
-mitigations and assumptions it links, and a mark for each flag it raises.
-Expand one threat at a time to edit it. A field commits when you leave it, and
-the title also on Enter. Text the model cannot hold stays in the field with the
-refused character named, and the threat stays expanded until you correct or
-clear it. That draft survives closing the panel and selecting something else,
-until the file changes. Deleting a threat removes it from the model, and so
-from every element it names, which the item says beside its delete control.
+Each threat's summary is two lines: its number and title, then its severity, its
+status with a glyph of its own, its category, and a mark for each flag it
+raises. Open is the one status drawn as a filled pill. A third line names the
+other elements the threat is on, where there are any. Threats are listed by how
+much risk is still live: open, accepted risk, transferred, mitigated, avoided,
+eliminated, then not applicable, each status from critical down to undecided and
+equal threats by number. The order is set when the panel opens or the selection
+moves, and holds while the panel stays open, so a threat whose status changes
+keeps its place and a new one joins the end. The Status picker lists the
+statuses in the same order.
+
+Expand one threat at a time to edit it. Opening a threat scrolls it to the top
+of the panel, and its summary stays pinned there while any of the threat is in
+view. Tab keeps the field it reaches below the summary, with the next field in
+view under it. The fields run Title, Category, Description, the mitigations and
+assumptions, then Severity and Status side by side with any raised flag beside
+Status, then the attached elements and Delete. A field commits when you leave
+it, and the title also on Enter. A description starts at two lines and grows
+with its text, so the panel is the one thing that scrolls. Text the model
+cannot hold stays in the field with the refused character named, and the threat
+stays expanded until you correct or clear it. That draft survives closing the
+panel and selecting something else, until the file changes. Deleting a threat
+removes it from the model, and so from every element it names, which the item
+says beside its delete control.
 
 ### Attached elements
 
-An expanded threat lists the elements it names, across every diagram, with a
-Detach control on each and an **Attach existing element** picker under them
-that offers the elements it does not name. Attach and Detach are one undo step
-each.
+An expanded threat lists the elements it names, across every diagram, as one
+row of names each with its own Detach control, and an **Attach existing
+element** picker under them that offers the elements it does not name. Attach
+and Detach are one undo step each.
 
 Detaching the last element removes the threat, with the mitigations and
 assumptions left on no threat, and the notice says so. There is no
@@ -371,19 +502,29 @@ takes its place, or to Add a threat.
 
 ### Mitigations and assumptions
 
-An expanded threat holds a Mitigations group and an Assumptions group. Nothing
-done to a record changes a threat's status.
+An expanded threat holds a Mitigations group and an Assumptions group, each
+headed by how many records it holds. Nothing done to a record changes a
+threat's status.
 
-- **Add** opens an empty row. The record is created when a field in the row
-  commits, starting `proposed` for a mitigation or `unconfirmed` for an
-  assumption. Leaving a row with every field empty, or Discard, drops it. From
-  the keyboard, Tab out of typed text commits it, so clear the text to discard
-  it.
+- Every record starts folded to one row: its title, or the start of its text
+  where it has none, and its status, which you can change there. A record on
+  other threats adds a line saying how many ("Also on 3 other threats"), and
+  an assumption that applies to the model says so.
+- Activating the row opens the record in place: its status and Unlink in its
+  name row, the threats it is also on by number ("Also on threats 4 and 25"),
+  then its title and text, which show no label of their own. The same control
+  folds it again. An opened record stays open until its threat closes, and a
+  field holding refused text keeps it open.
+- **Add** opens an empty row with focus in its first field. The record is
+  created when a field in the row commits, Enter in a mitigation's title or
+  leaving a field that holds text, starting `proposed` for a mitigation or
+  `unconfirmed` for an assumption. It is then marked **Added** until its threat
+  closes, its Discard becomes Unlink, the group's count goes up, and a screen
+  reader hears it was added. Leaving a row with every field empty, or Discard,
+  drops it. From the keyboard, Tab out of typed text commits it, so clear the
+  text to discard it.
 - **Link existing** lists the records of that kind not on this threat. Choose
-  one, then Link.
-- A row edits the record's text and status in place. A record on other threats
-  says which ("Also on threats 4 and 25"), and an assumption that applies to
-  the model says so.
+  one, then Link, and the record joins folded.
 - **Unlink** takes the record off this threat. A record left with no threat,
   and for an assumption no model link either, is removed, and Undo brings it
   back.
@@ -399,23 +540,24 @@ clears the selection, and whether it is shown belongs to each tab. Selecting
 anything brings the threat panel back. Escape, Close model properties, or
 running the command again closes it and moves focus to the canvas.
 
-Its assumptions group works as a threat's does, bound to the model. Add
-creates an assumption that applies to the model and links no threat. Link
-existing lists the assumptions that do not yet apply to the model. Unlink stops
-an assumption applying to the model, and removes it only where it links no
+Its assumptions group works as a threat's does, bound to the model, but its
+records stay open as cards with labelled fields, and its heading carries no
+count. Add creates an assumption that applies to the model and links no threat.
+Link existing lists the assumptions that do not yet apply to the model. Unlink
+stops an assumption applying to the model, and removes it only where it links no
 threat.
 
 ### Description and scope
 
-The top of the panel holds the selected element's **Description**, **Out of
-scope** and **Reason out of scope**, above its security properties and its
-threats, for every element and flow, a Note included. Each field commits when
-you leave it, as one undo step. Out of scope offers Yes and No. The reason
-shows while Out of scope is Yes or while the element holds a reason, and the
-two are independent: clearing Out of scope keeps the reason. Text the model
-cannot hold stays in the field with the refused character named, as in a
-threat's fields, until you correct or clear it, and survives closing the panel
-and selecting something else.
+The **Details** tab holds the selected element's **Description**, **Out of
+scope** and **Reason out of scope**, above its security properties, for every
+element and flow, a Note included. Each field commits when you leave it, as one
+undo step. Out of scope offers Yes and No. The reason shows while Out of scope
+is Yes or while the element holds a reason, and the two are independent:
+clearing Out of scope keeps the reason. Text the model cannot hold stays in the
+field with the refused character named, as in a threat's fields, until you
+correct or clear it, and survives closing the panel and selecting something
+else.
 
 On the canvas and in exported drawings, an element out of scope has its
 outline dashed and drawn in the muted ink. A flow out of scope has its line
@@ -426,13 +568,13 @@ boundary, already dashed, is marked by a shorter dash alone.
 
 ### Security properties
 
-Select one actor, process, store, flow or trust boundary and expand **Security
-properties** above its threats. **Not recorded** leaves a fact unknown, and a
-flag offers Yes and No. Protocol and privilege level distinguish an empty
+Select one actor, process, store, flow or trust boundary, show its Details tab,
+and expand **Security properties**. **Not recorded** leaves a fact unknown, and
+a flag offers Yes and No. Protocol and privilege level distinguish an empty
 recorded value from Not recorded. Relationship lists (the boundaries a flow
-crosses, a boundary's contained elements and crossing flows) offer valid
-targets in the same diagram, keep their order and any repeated entry until you
-edit them, and Not recorded removes the list itself. The fields' meaning is in
+crosses, a boundary's contained elements and crossing flows) offer valid targets
+in the same diagram, keep their order and any repeated entry until you edit
+them, and Not recorded removes the list itself. The fields' meaning is in
 [the format](saerskriven-yaml.md#security-facts).
 
 ## Keyboard
@@ -460,9 +602,9 @@ outside one, and none works while focus is inside an open menu or list.
 | Select all                             | Mod+A                                        | Keyboard only       |
 | Delete selection                       | Delete or Backspace                          | Keyboard only       |
 | Rename selection                       | F2, or Enter with one selected               | Menu                |
-| Position and size                      | Mod+Shift+P                                  | Keyboard only       |
-| Change flow source, Change flow target | Mod+Shift+1, Mod+Shift+2                     | Reconnect flow card |
-| Toggle bidirectional flow              | Mod+Shift+3                                  | Reconnect flow card |
+| Position and size                      | Shift+P                                      | Keyboard only       |
+| Change flow source, Change flow target | Shift+S, Shift+T                             | Reconnect flow card |
+| Toggle bidirectional flow              | Shift+D                                      | Reconnect flow card |
 | Reverse flow                           | Shift+R                                      | Reconnect flow card |
 | Switch boundary shape                  | Shift+B                                      | Trust boundary card |
 | Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange       |
@@ -500,9 +642,18 @@ heavier line, and focus is a separate ring, so neither depends on colour and
 both survive forced colours. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
 
+A focused element or resize control that lies under the threat panel or the
+Reconnect flow or Trust boundary card shows its ring under that pane, and the
+canvas does not pan to bring it out.
+
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves
-focus to the canvas.
+focus to the canvas. Escape clears the selection and leaves focus on the
+element or flow that had it. From a resize control, a bend or end handle, a
+point handle or the route toolbar, it moves focus to the selected element or
+flow, and so does the second Escape on an icon of the Reconnect flow or Trust
+boundary card, once the first has closed its tooltip. Straight after a box
+selection, Escape moves focus to the canvas.
 
 React Flow gives the canvas `role="application"`, which turns off a screen
 reader's browse mode there: Tab reaches every element, but the reader's own
@@ -516,7 +667,7 @@ navigation keys do not.
   threats, and an assumption through its threats or the model properties. The
   model's explicit record removal has no control.
 - Link existing and Attach existing have no search or filter, and the threat
-  list has no filter, sort or search.
+  list has no filter or search, and no order but the one above.
 - A threat's id and number cannot be edited.
 - A custom methodology cannot be created in the studio. A threat that arrived
   with one shows it and can be moved to a listed category.

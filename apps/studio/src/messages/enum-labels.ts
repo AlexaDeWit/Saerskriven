@@ -1,5 +1,7 @@
 import type {
+  AssumptionStatus,
   Element,
+  MitigationStatus,
   Severity,
   Side,
   ThreatFlag,
@@ -31,6 +33,18 @@ export const statusMessages = {
   eliminated: 'terms.status-eliminated',
   'not-applicable': 'terms.status-not-applicable',
 } as const satisfies Record<ThreatStatus, LabelMessageId>;
+
+export const mitigationStatusMessages = {
+  proposed: 'terms.mitigation-proposed',
+  implemented: 'terms.mitigation-implemented',
+  verified: 'terms.mitigation-verified',
+} as const satisfies Record<MitigationStatus, LabelMessageId>;
+
+export const assumptionStatusMessages = {
+  unconfirmed: 'terms.assumption-unconfirmed',
+  valid: 'terms.assumption-valid',
+  invalidated: 'terms.assumption-invalidated',
+} as const satisfies Record<AssumptionStatus, LabelMessageId>;
 
 export const flagMessages = {
   'mitigated-without-implemented-work':

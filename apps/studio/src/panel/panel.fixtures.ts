@@ -57,6 +57,7 @@ export const showThreatEditor = (
 ): void => {
   const props: ThreatEditorProps = {
     threat: sampleThreat,
+    on: sampleThreat.elements[0],
     focus: undefined,
     held: undefined,
     onChange: noop,

@@ -1,6 +1,6 @@
+import { promisePerBytes } from '@saerskriven/wasm';
 import { Either } from 'effect';
 import { PdfFailure } from './pdf-failures.js';
-import { promisePerBytes } from './promise-per-bytes.js';
 
 export { PdfFailure } from './pdf-failures.js';
 

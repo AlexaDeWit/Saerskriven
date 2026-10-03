@@ -1,6 +1,6 @@
 import { Either } from 'effect';
 import { importModel } from './import.js';
-import { otmFixture } from './import.fixtures.js';
+import { otmFeatureComplete, otmFixture } from './import.fixtures.js';
 
 it('turns a mitigation definition no occurrence names into one description line and one report line', () => {
   const baseline = otmFixture();
@@ -175,4 +175,37 @@ it('drops the Source status line from a mitigation prose when the occurrence sta
       (entry) => entry.detail.code === 'otm-mitigation-status-retained',
     ),
   ).toHaveLength(0);
+});
+
+describe('the record a lost OTM status was read for', () => {
+  const read = Either.getOrThrow(
+    importModel(JSON.stringify(otmFeatureComplete)),
+  );
+  const threatOf = (id: string | undefined) =>
+    read.model.threats.find((threat) => threat.id === id);
+
+  it('names the threat made for the occurrence whose state it could not map', () => {
+    const [unmapped] = read.divergences.flatMap(({ detail }) =>
+      detail.code === 'otm-threat-status-unmapped' &&
+      detail.parameters.status !== undefined
+        ? [detail.parameters]
+        : [],
+    );
+
+    expect(unmapped?.status).toBe('under-review');
+    const threat = threatOf(unmapped?.threat);
+    expect(threat?.number).toBe(2);
+    expect(threat?.description).toContain('under-review');
+  });
+
+  it('names the threat whose copy of a mitigation kept its source status', () => {
+    const [retained] = read.divergences.flatMap(({ detail }) =>
+      detail.code === 'otm-mitigation-status-retained'
+        ? [detail.parameters]
+        : [],
+    );
+
+    expect(retained?.status).toBe('rejected');
+    expect(threatOf(retained?.threat)?.title).toBe('Form read in transit');
+  });
 });

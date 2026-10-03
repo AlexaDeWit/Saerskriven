@@ -153,7 +153,7 @@ describe('drawing an element over the cell the source document holds', () => {
       },
     });
     expect(renderDivergences(merged.divergences)).toBe(
-      'element "cell-1": what the source held on the store cell of this id, which now draws a actor (removed by an edit)',
+      'element "cell-1": what the source held on the store cell of this id, which now draws an actor (removed by an edit)',
     );
   });
 });

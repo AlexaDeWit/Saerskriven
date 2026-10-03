@@ -1,4 +1,5 @@
 import { DropdownMenu } from 'radix-ui';
+import cursor from '../ui/cursor-row.module.css';
 import styles from './menu.module.css';
 
 type RadioChoice<Value extends string> = {
@@ -37,7 +38,7 @@ export function RadioChoices<Value extends string>({
     >
       {choices.map((choice) => (
         <DropdownMenu.RadioItem
-          className={styles.item}
+          className={`${styles.item} ${cursor.row}`}
           key={choice.value}
           value={choice.value}
         >

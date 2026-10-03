@@ -62,7 +62,7 @@ describe(
       expect(onDetach).toHaveBeenCalledWith(processElement);
     });
 
-    it('offers the elements the threat does not name, and hands back the one chosen', async () => {
+    it('offers the elements the threat does not name below the ones it names, and hands back the one chosen', async () => {
       const user = userEvent.setup();
       const onAttach = detaches();
       showAttachments([actorElement, processElement], { onAttach });
@@ -73,6 +73,11 @@ describe(
       expect(screen.getAllByRole('option')).toHaveLength(1);
       await user.keyboard('{Escape}');
 
+      expect(
+        button('Detach Studio').compareDocumentPosition(
+          screen.getByRole('combobox', { name: 'Existing element' }),
+        ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).not.toBe(0);
       await chooseFrom('Existing element', 'Models');
       await user.click(button('Attach existing element'));
 

@@ -3,9 +3,8 @@ import { panelMessages } from './contract.js';
 
 export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   threats: 'Menaces',
-  'threats-on': 'Menaces sur {element}',
   'unlabelled-flow': 'Flux {ends}',
-  'threats-on-unlabelled-flow': 'Menaces sur le flux {ends}',
+  details: 'Détails',
   'close-threats': 'Fermer les menaces',
   'widen-pane': 'Élargir le volet',
   'restore-pane-width': 'Rétablir la largeur du volet',
@@ -27,8 +26,8 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   'attached-elements': 'Éléments rattachés',
   'summary-severity': 'Gravité : {severity}',
   'summary-status': 'État : {status}',
-  'summary-mitigations': 'Mesures : {count}',
-  'summary-assumptions': 'Hypothèses : {count}',
+  'summary-category': 'Catégorie : {category}',
+  'also-on-elements': 'Aussi sur {list}',
   'security-properties': 'Propriétés de sécurité',
   'not-recorded-hint':
     'Non consigné signifie qu’aucune affirmation de sécurité n’est enregistrée.',
@@ -41,13 +40,19 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   discard: 'Abandonner',
   unlink: 'Délier',
   attach: 'Rattacher',
-  detach: 'Détacher',
   'also-applies-to-model': 'S’applique aussi au modèle.',
   'also-on-threats': {
     one: 'Aussi sur la menace {list}.',
     many: 'Aussi sur les menaces {list}.',
     other: 'Aussi sur les menaces {list}.',
   },
+  'also-on-other-threats': {
+    one: 'Aussi sur {count} autre menace.',
+    many: 'Aussi sur {count} d’autres menaces.',
+    other: 'Aussi sur {count} autres menaces.',
+  },
+  'mitigation-added': 'Ajoutée',
+  'assumption-added': 'Ajoutée',
   'more-threats': '{count} de plus',
   'detail-threats': {
     one: 'menace {list}',

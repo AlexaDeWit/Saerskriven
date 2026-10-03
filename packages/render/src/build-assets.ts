@@ -1,3 +1,4 @@
+import { flakeModuleAsset } from '@saerskriven/wasm/build-assets';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
@@ -59,25 +60,21 @@ export function typstFontAssets(
 }
 
 /**
- * The rasterizer module a host build must carry.
- *
- * Both dev shells export the variable, and what it names is the path the
- * `resvg-wasm` project's build writes the module to rather than a store path,
- * so a target that carries the module declares a dependency on that build
- * instead of a caller pointing the variable somewhere. No shell carries the
- * module or the Rust toolchain that builds it. The caller supplies its own
- * refusal, as it does for the fonts, and names the recovery in it.
+ * The rasterizer module a host build must carry, as `flakeModuleAsset` on
+ * `@saerskriven/wasm/build-assets` locates every flake-built module. The
+ * caller supplies its own refusal, as it does for the fonts, and names the
+ * recovery in it.
  */
 export function resvgWasmAsset(refuse: (sentence: string) => never): string {
-  const module = process.env[resvgVariable];
-  if (module === undefined || module === '') {
-    refuse(
-      `${resvgVariable} is unset, so this build has no SVG rasterizer. nix build .#resvg-wasm writes one under lib/${resvgWasmFile}.`,
-    );
-  }
-  return existsSync(module)
-    ? module
-    : refuse(`${resvgVariable} names ${module}, which is not there.`);
+  return flakeModuleAsset(
+    {
+      variable: resvgVariable,
+      output: 'resvg-wasm',
+      file: resvgWasmFile,
+      holds: 'SVG rasterizer',
+    },
+    refuse,
+  );
 }
 
 function requiredFont(

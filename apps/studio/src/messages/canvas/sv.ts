@@ -108,6 +108,8 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     'Tog bort länken till {record}. Posten finns kvar på sina andra referenser.',
   'record-removed':
     'Tog bort {record}. Inget annat använde posten. Ångra återställer den.',
+  'mitigation-added': 'Åtgärd {number} tillagd.',
+  'assumption-added': 'Antagande {number} tillagt.',
   'copy-nothing-selected': 'Markera objekt att kopiera.',
   'copy-refused': 'Markeringen kunde inte kopieras.',
   'copy-too-large': 'Markeringen överskrider urklippets storleksgräns.',

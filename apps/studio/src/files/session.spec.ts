@@ -2,18 +2,20 @@ import {
   ReadFailure,
   threatDragonCodec,
   type Divergence,
+  type RetainedSource,
 } from '@saerskriven/formats';
-import { mitigationIdSchema } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
 import type { Locale } from '@saerskriven/i18n';
-import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { FileLifecycle } from '../store/state.js';
 import {
+  firstAssumption,
   foreignSource,
   nativeSource,
+  recordedModel,
   sampleModel,
+  sampleThreat,
 } from '../store/store.fixtures.js';
 import { OpenOutcome, SaveOutcome } from './bridge.js';
 import {
@@ -25,10 +27,13 @@ import {
   diagramFileTitle,
   diagramTitleLimit,
   proposedExportName,
+  openReport,
   reportLines,
+  saveReport,
   saveTarget,
   saveTypes,
   savedBy,
+  type LossReport,
 } from './session.js';
 import { brokenThreatDragonText, sampleNativeText } from './files.fixtures.js';
 
@@ -146,14 +151,32 @@ describe('openedBy', () => {
     expect(openedBy(openOutcomes.NoPicker, untitledFile)).toBeUndefined();
   });
 
-  it('names an import whose own stem reduces to nothing, in the language given', () => {
+  it.each(['otm', 'tmbom'] as const)(
+    'opens a %s text as a new model, named as YAML under the file stem',
+    (format) => {
+      const action = openedBy(
+        OpenOutcome.Chosen({
+          name: 'example.json',
+          text: committedText(`${format}/example.json`),
+        }),
+        untitledFile,
+      );
+
+      expect(action).toMatchObject({
+        _tag: 'Imported',
+        name: 'example.yaml',
+        format,
+      });
+    },
+  );
+
+  it('names a new model whose file stem reduces to nothing, in the language given', () => {
     const action = openedBy(
       OpenOutcome.Chosen({
         name: '.json',
         text: committedText('otm/example.json'),
       }),
       'hotmodell',
-      'import',
     );
 
     expect(action).toMatchObject({ _tag: 'Imported', name: 'hotmodell.yaml' });
@@ -327,54 +350,137 @@ describe('naming', () => {
   });
 });
 
-const speaker = () => activeTranslator().t;
+const t = inLocale('en-CA');
 
-describe('reportLines', () => {
-  const divergences: readonly Divergence[] = [
-    {
-      subject: { kind: 'mitigation', id: mitigationIdSchema.parse('m-1') },
-      detail: { code: 'assumption-unrecorded' },
-      reason: 'unrepresentable',
-    },
-    {
-      subject: { kind: 'model' },
-      detail: { code: 'key-undeclared', parameters: { path: 'notes' } },
-      reason: 'undeclared',
-    },
-  ];
+const eopCard: Divergence = {
+  subject: { kind: 'threat', id: sampleThreat.id },
+  detail: { code: 'threat-category-eop-suit' },
+  reason: 'narrowed',
+};
 
-  afterEach(() => {
-    chooseLanguage('en-CA');
-    globalThis.localStorage.clear();
+const undeclaredKey: Divergence = {
+  subject: { kind: 'model' },
+  detail: { code: 'key-undeclared', parameters: { path: 'notes' } },
+  reason: 'undeclared',
+};
+
+const raisedMark: Divergence = {
+  subject: { kind: 'model' },
+  detail: {
+    code: 'threat-mark-raised-by-issue',
+    parameters: { from: 30, raised: 41 },
+  },
+  reason: 'overridden',
+};
+
+const unrecorded: Divergence = {
+  subject: { kind: 'assumption', id: firstAssumption },
+  detail: { code: 'assumption-unrecorded' },
+  reason: 'unrepresentable',
+};
+
+const opened = (source: RetainedSource, divergences: readonly Divergence[]) =>
+  Action.Opened({
+    model: sampleModel,
+    name: 'model.json',
+    source,
+    divergences,
   });
 
-  it('says nothing at all where nothing diverged', () => {
-    expect(reportLines(speaker(), [])).toEqual([]);
+const imported = (divergences: readonly Divergence[]) =>
+  Action.Imported({
+    model: sampleModel,
+    name: 'example.yaml',
+    format: 'otm',
+    divergences,
   });
 
-  it.each(['open', 'import'] as const)(
-    'describes one entry per line on %s, carrying the data its code names',
-    (occasion) => {
-      const lines = reportLines(speaker(), divergences, occasion);
+const keptOf = (report: LossReport | undefined): readonly boolean[] =>
+  report?.losses.map(({ kept }) => kept) ?? [];
 
-      expect(lines).toHaveLength(divergences.length);
-      expect(lines[1]).toContain('notes');
-    },
-  );
+describe('openReport', () => {
+  it('says which losses saving back to the Threat Dragon file keeps', () => {
+    const report = openReport(opened(foreignSource, [eopCard, undeclaredKey]));
 
-  it('names the subject and the reason on an open, and neither on an import', () => {
-    const [opened] = reportLines(speaker(), divergences, 'open');
-    const [imported] = reportLines(speaker(), divergences, 'import');
-
-    expect(opened).toContain('m-1');
-    expect(opened).toContain(imported);
-    expect(imported).not.toContain('m-1');
+    expect(report?.occasion).toBe('open');
+    expect(keptOf(report)).toEqual([true, false]);
   });
 
-  it('phrases every line in the translator it is handed', () => {
-    const english = reportLines(speaker(), divergences, 'open');
-    chooseLanguage('sv');
+  it('keeps nothing a native read narrowed, since the native codec projects', () => {
+    expect(keptOf(openReport(opened(nativeSource, [eopCard])))).toEqual([
+      false,
+    ]);
+  });
 
-    expect(reportLines(speaker(), divergences, 'open')).not.toEqual(english);
+  it('keeps nothing a file Saerskriven only reads lost, which holds no source to save back to', () => {
+    const report = openReport(imported([eopCard]));
+
+    expect(report).toMatchObject({ occasion: 'open', readOnlyFormat: 'otm' });
+    expect(keptOf(report)).toEqual([false]);
+  });
+
+  it('reports a file Saerskriven only reads even where it lost nothing, for its notice', () => {
+    expect(openReport(imported([raisedMark]))).toEqual({
+      occasion: 'open',
+      model: sampleModel,
+      losses: [],
+      readOnlyFormat: 'otm',
+    });
+  });
+
+  it('reports nothing for an open of a format Saerskriven writes that lost nothing', () => {
+    expect(openReport(opened(foreignSource, [raisedMark]))).toBeUndefined();
+  });
+
+  it('names each subject from the model the read produced', () => {
+    const report = openReport(opened(foreignSource, [eopCard]));
+
+    expect(report && reportLines(t, report)).toEqual([
+      t('divergence.kept', {
+        line: t('divergence.line', {
+          subject: t('divergence.subject-threat', {
+            number: sampleThreat.number,
+            title: sampleThreat.title,
+          }),
+          detail: t('divergence.threat-category-eop-suit'),
+        }),
+      }),
+    ]);
+  });
+});
+
+describe('saveReport', () => {
+  it('reports nothing for a save whose divergences lose nothing', () => {
+    expect(saveReport(recordedModel, [raisedMark])).toBeUndefined();
+  });
+
+  it('leaves out what loses nothing, and keeps nothing it reports', () => {
+    expect(saveReport(recordedModel, [raisedMark, unrecorded])?.losses).toEqual(
+      [{ divergence: unrecorded, kept: false }],
+    );
+  });
+
+  it('names each subject from the model it saved', () => {
+    const report = saveReport(recordedModel, [unrecorded]);
+
+    expect(report && reportLines(t, report)).toEqual([
+      t('divergence.line', {
+        subject: t('divergence.subject-assumption-on', {
+          threat: t('divergence.threat', {
+            number: sampleThreat.number,
+            title: sampleThreat.title,
+          }),
+        }),
+        detail: t('divergence.whole-assumption'),
+      }),
+    ]);
+  });
+
+  it('words a standing report again in the translator it is handed', () => {
+    const report = saveReport(recordedModel, [unrecorded]);
+
+    expect(report && reportLines(inLocale('sv'), report)).not.toEqual(
+      report && reportLines(t, report),
+    );
   });
 });

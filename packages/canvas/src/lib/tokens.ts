@@ -41,6 +41,12 @@ export type Palette = {
   readonly actionHover: Colour;
   /** Text drawn on the primary action. */
   readonly actionText: Colour;
+  /**
+   * The row under a list's or a menu's cursor, ringed in the primary action:
+   * the action's hue, at a lightness where the ring clears 3 and the muted
+   * ink 4.5. The solid action is kept for a state that is switched on.
+   */
+  readonly actionTint: Colour;
   /** The cream a threat badge is outlined and lettered in. */
   readonly badgeGround: Colour;
   /** Severity critical, a rust. */
@@ -79,6 +85,7 @@ export const lightPalette = {
   actionPrimary: '#4A635D',
   actionHover: '#3C504B',
   actionText: '#F9F6F0',
+  actionTint: '#DBE8E4',
   badgeGround: '#FAF8F2',
   toneCritical: '#C14339',
   toneHigh: '#A85E1D',
@@ -106,6 +113,7 @@ export const darkPalette = {
   actionPrimary: '#6B8A82',
   actionHover: '#83A39A',
   actionText: '#1F1C19',
+  actionTint: '#283330',
   badgeGround: '#1F1C19',
   toneCritical: '#DE6258',
   toneHigh: '#E89A4F',
@@ -166,17 +174,13 @@ const cueWidths = {
 
 /**
  * A square resize handle in the interactive canvas, in pixels at full zoom:
- * `size` is its side inside React Flow's 1px `border`, and `badgeGap` is how
- * far a handle beside a threat badge keeps from the badge's ink, on screen at
- * every zoom. `curveGap` is how far a boundary curve's corner handle sits
- * outside the corner on each axis, on screen at every zoom out, so a control
- * about 30 pixels across centred on a point at that corner leaves it
- * uncovered, and so does the badge.
+ * `size` is its side inside React Flow's 1px border. `curveGap` is how far a
+ * boundary curve's corner handle sits outside the corner on each axis, on
+ * screen at every zoom out, so a control about 30 pixels across centred on a
+ * point at that corner leaves it uncovered, and so does the badge.
  */
 export const resizeHandle = {
   size: 9,
-  border: 1,
-  badgeGap: 3,
   curveGap: 12,
 } as const;
 
@@ -241,6 +245,8 @@ const chromeCard = '5rem';
 
 const announcementSlot = 'calc(var(--saer-space-2) * 3 + 2px + 2lh)';
 
+const scrollCue = '1.5rem';
+
 const colourProperties = {
   surfaceApp: '--saer-colour-surface',
   surfaceCanvas: '--saer-colour-canvas',
@@ -254,6 +260,7 @@ const colourProperties = {
   actionPrimary: '--saer-colour-accent',
   actionHover: '--saer-colour-accent-hover',
   actionText: '--saer-colour-accent-text',
+  actionTint: '--saer-colour-accent-tint',
   badgeGround: '--saer-colour-badge-ground',
   toneCritical: '--saer-colour-tone-critical',
   toneHigh: '--saer-colour-tone-high',
@@ -295,6 +302,9 @@ const colourBlock = (palette: Palette, indent: string): string => {
  * overwrites with its measured height, since its tool row can wrap.
  * `--saer-announcement-slot` holds two lines of the canvas announcement with
  * its gap, border and padding, its `lh` resolving on the pane that reads it.
+ * `--saer-scroll-cue-size` is the strip a listbox lays over an edge its
+ * options run on past, and the scroll padding that keeps the keyboard's
+ * option clear of it.
  */
 export const tokenStylesheet = `:root {
   color-scheme: light dark;
@@ -330,6 +340,7 @@ ${colourBlock(lightPalette, '  ')}
   --saer-cue-flow-selection: ${cueWidths.flowSelection}px;
 
   --saer-resize-handle-size: ${String(resizeHandle.size)}px;
+  --saer-scroll-cue-size: ${scrollCue};
 }
 
 @media (prefers-color-scheme: dark) {

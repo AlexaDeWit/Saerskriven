@@ -13,5 +13,5 @@ refused with `{ code: 'otm-parent-not-single' }` as the issue's parameters.
 `@saerskriven/formats` reads that code, so it is an interface.
 
 [Fixture provenance](../../test-data/otm/README.md) records the source and
-licences. [Import behaviour](../../docs/import.md) belongs to the mapping
-package.
+licences. [Import behaviour](../../docs/studio.md#otm-and-tm-bom) belongs to
+the mapping package.
