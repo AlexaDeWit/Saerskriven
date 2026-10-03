@@ -15,6 +15,8 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `changes.ts`                                                          | What React Flow reports about a gesture, turned into store actions and dispatched                                                  |
 | `live-edges.ts`, `box-selection.ts`, `background-selection.ts`        | Hooks for a drag's flows, a selection box extended to flows, and a stationary background press                                     |
 | `group-drag.ts`                                                       | A drag of the selection from inside its bounds, where the press lands on empty canvas or an element it leaves out                  |
+| `node-drag.ts`                                                        | React Flow's own drag of nodes, put back when the selection changes under it or the window loses focus                             |
+| `item-focus.ts`                                                       | The Select tool's keys on a drawn element or flow, answered so that focus stays on it                                              |
 | `tools.ts`, `elements.ts`, `placement.tsx`, `placement-preview.tsx`   | The active mode outside the model store, the elements a tool places, the pointer and Enter gestures, and the draft drawn meanwhile |
 | `edits.ts`                                                            | One function per edit a control asks for                                                                                           |
 | `pane-shield.ts`                                                      | Keeping a double-click's second press out of a pane its first press opened                                                         |
@@ -71,7 +73,8 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   a resize one `ResizeElement`, or one `SetBoundaryShape` with a trust boundary
   curve's points scaled to the new box. During a drag each flow reads its endpoint
   nodes, and the collision search for names and badges runs when the pointer
-  pauses and once more on pointer-up.
+  pauses and once more on pointer-up. A drag that Escape or a blurred window
+  puts back never reaches it.
 - **Settle against the store's selection, not a render's.** React Flow reports
   a click that moves the selection between a node and a flow as two
   synchronous calls with no render between them.
@@ -92,6 +95,12 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
 - **Delete and Backspace are bound twice**, by the command registry for the
   page and by the canvas for itself. A press the canvas answered is marked
   handled, so one press is one removal ([the commands](../commands/README.md)).
+- **The Select tool's keys on a drawn element or flow are answered by the
+  canvas.** React Flow blurs a node or flow it unselects on Escape, and a
+  resize control goes with the selection, as does the frame React Flow draws
+  around a box selection. So `item-focus.ts` moves focus to the element, or
+  from the frame to the canvas, runs the command itself and stops the press
+  there, short of React Flow and the page binding.
 - **Which element has its name open is store state**, so the rename command
   reaches it with nothing of the canvas mounted above it
   ([the store](../store/README.md)). A name the model already holds dispatches
