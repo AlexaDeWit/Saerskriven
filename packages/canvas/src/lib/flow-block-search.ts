@@ -7,6 +7,7 @@ import {
 import {
   boxAround,
   boxMeetsEllipse,
+  boxSegmentGap,
   type Box,
   type Ellipse,
   type Segment,
@@ -29,8 +30,10 @@ export type Obstacle =
  * What placing one flow's block reads. `others` is everything drawn but the
  * flow's own line and arrowheads, which are `own`. `ends` are the stretches
  * of the flow's own line a block on the line leaves showing. A block beside
- * the line stands off it by each standoff of each of `bands`, a band tried
- * on both sides before the next, nearest first.
+ * the line stands off the line through its run by each standoff of each of
+ * `bands`, a band tried on both sides before the next, nearest first, and
+ * counts only where its backing lies `within` the band's distance of the
+ * run as drawn.
  */
 export type BlockSearch = {
   readonly runs: readonly LineRun[];
@@ -39,7 +42,10 @@ export type BlockSearch = {
   readonly others: readonly Obstacle[];
   readonly own: readonly Obstacle[];
   readonly ends: readonly Segment[];
-  readonly bands: readonly (readonly number[])[];
+  readonly bands: readonly {
+    readonly standoffs: readonly number[];
+    readonly within: number;
+  }[];
 };
 
 /** A box as an obstacle. */
@@ -75,9 +81,9 @@ export function ellipseObstacle(ellipse: Ellipse): Obstacle {
  * then beside it band by band, on the fixed side and then the other, each
  * shape widest first, at each standoff nearest first, at each spot in turn.
  * The first candidate covering nothing wins, a candidate on the line counting
- * only where it leaves `ends` uncovered and one beside it only where the
- * block's corner nearest the run lies alongside the run, and where none is
- * clear the first of those covering the fewest obstacles.
+ * only where it leaves `ends` uncovered and one beside it only within its
+ * band's distance of the run, and where none is clear the first of those
+ * covering the fewest obstacles.
  *
  * A block hung one way slides along a run in a straight line, so it meets a
  * box or a straight run of line over one interval of the run, which the
@@ -162,7 +168,7 @@ function* hangingsOf(search: BlockSearch): Generator<Hanging> {
     side: onTheLine,
     standoff: 0,
   };
-  for (const [band, standoffs] of search.bands.entries()) {
+  for (const [band, { standoffs }] of search.bands.entries()) {
     for (const side of [1, -1]) {
       for (const [shape, block] of search.shapes.entries()) {
         for (const standoff of standoffs) {
@@ -176,7 +182,7 @@ function* hangingsOf(search: BlockSearch): Generator<Hanging> {
 function obstaclesNearRuns(search: BlockSearch): NearRuns {
   const [onLine] = search.shapes;
   const reach =
-    Math.max(...search.bands.flat()) +
+    Math.max(...search.bands.flatMap(({ standoffs }) => standoffs)) +
     Math.max(
       ...search.shapes.map(
         (block) =>
@@ -204,7 +210,7 @@ function obstaclesNearRuns(search: BlockSearch): NearRuns {
       const projected = all.map((obstacle) =>
         projectedOnRun(run, obstacle.box),
       );
-      return search.bands.map((standoffs) =>
+      return search.bands.map(({ standoffs }) =>
         [1, -1].flatMap((sign) =>
           search.shapes.map((block) => {
             const low = Math.min(...standoffs) - margin;
@@ -265,13 +271,20 @@ function measureCosts(
       x: run.segment.from.x + offset.x,
       y: run.segment.from.y + offset.y,
     };
-    const corner = onLine ? 0 : nearCornerAlong(hanging, run.direction);
+    const within = onLine
+      ? Number.POSITIVE_INFINITY
+      : search.bands[hanging.band].within;
+    const reachesRun = (step: number): boolean =>
+      boxSegmentGap(
+        blockBox(hanging.block, search.spots[order[step]].at, offset),
+        run.segment,
+      ) <= within;
     let lowest = 0;
-    while (lowest < order.length && alongs[lowest] + corner < 0) {
+    while (lowest < order.length && !reachesRun(lowest)) {
       lowest += 1;
     }
     let highest = order.length - 1;
-    while (highest >= lowest && alongs[highest] + corner > run.length) {
+    while (highest >= lowest && !reachesRun(highest)) {
       highest -= 1;
     }
     if (lowest > highest) {
@@ -447,14 +460,6 @@ function placedAt(
       hangingOffset(hanging, search.runs[spot.run].direction),
       1,
     ),
-  );
-}
-
-function nearCornerAlong(hanging: Hanging, direction: Point): number {
-  const normal = scaledBy(fixedSide(direction), hanging.side);
-  return (
-    -Math.sign(normal.x) * hanging.block.halfWidth * direction.x -
-    Math.sign(normal.y) * hanging.block.halfHeight * direction.y
   );
 }
 

@@ -600,6 +600,38 @@ describe('a short flow', () => {
     },
   );
 
+  it.each([
+    [60, 40],
+    [60, 60],
+    [24, 40],
+    [80, 40],
+    [80, 60],
+  ])(
+    'places the block of a flow between %i-tall actors %i apart alike, tilted by half a unit',
+    (height, gap) => {
+      const tilted = (drop: number) =>
+        layoutOf(
+          modelWith({
+            elements: [
+              boxAt('el-left', 0, 0, 'actor', { width: 120, height }),
+              boxAt('el-right', 120 + gap, drop, 'actor', {
+                width: 120,
+                height,
+              }),
+              flowFrom('el-short', 'el-left', 'el-right', 'Book appointment'),
+            ],
+          }),
+        ).edges[0];
+      const level = tilted(0);
+      const nudged = tilted(0.5);
+      const levelCentre = centreOf(backingOf(level));
+      const nudgedCentre = centreOf(backingOf(nudged));
+      expect(nudged.label.name.width).toBe(level.label.name.width);
+      expect(Math.abs(nudgedCentre.x - levelCentre.x)).toBeLessThan(1);
+      expect(Math.abs(nudgedCentre.y - levelCentre.y)).toBeLessThan(1);
+    },
+  );
+
   it('uses the other side only where the fixed side is blocked', () => {
     const layout = twoBoxes(
       40,
@@ -608,6 +640,20 @@ describe('a short flow', () => {
     );
     const short = layout.edges[0];
     expect(backingOf(short).minY).toBeGreaterThanOrEqual(lowLine + besideGap);
+    expect(collisionsIn(layout)).toEqual([]);
+  });
+
+  it('tries the other side close by before the fixed side further out', () => {
+    const layout = twoBoxes(
+      40,
+      [boxAt('el-lid', 100, -30, 'actor', { width: 80, height: 25 })],
+      lowLine * 2,
+    );
+    const short = layout.edges[0];
+    expect(backingOf(short).minY).toBeGreaterThanOrEqual(lowLine + besideGap);
+    expect(backingOf(short).minY - lowLine).toBeLessThanOrEqual(
+      besideGap + besideReach,
+    );
     expect(collisionsIn(layout)).toEqual([]);
   });
 });

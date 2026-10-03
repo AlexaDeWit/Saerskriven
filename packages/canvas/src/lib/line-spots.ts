@@ -108,11 +108,12 @@ export function spotsOutward(
         offset,
       };
     }
-    const { index, fraction } = runAtLength(runs, middle + offset);
+    const found = runAtLength(runs, middle + offset);
+    const fraction = Math.min(1, found.fraction);
     return {
-      at: alongSegment(runs[index].segment, fraction),
-      run: index,
-      along: runs[index].length * fraction,
+      at: alongSegment(runs[found.index].segment, fraction),
+      run: found.index,
+      along: runs[found.index].length * fraction,
       offset,
     };
   });
