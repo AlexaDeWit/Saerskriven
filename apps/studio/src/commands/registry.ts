@@ -1,4 +1,3 @@
-import type { Diagram } from '@saerskriven/model';
 import type { StudioTranslator } from '../messages/catalogues.js';
 import type { Tool } from '../canvas/tools.js';
 import { commandTable, type CommandEntry } from './table.js';
@@ -66,24 +65,4 @@ export function describeCommandShortcuts(
     platform,
     t,
   );
-}
-
-/**
- * The SVG command bound to one diagram. In a model of several the label names
- * the diagram, whose title is model content and passes through as it is.
- */
-export function diagramExportCommand(
-  diagram: Diagram,
-  several: boolean,
-): Command {
-  const exported = commandById('export-diagram');
-  return {
-    ...exported,
-    label: several
-      ? { id: 'commands.export-diagram-named', title: diagram.title }
-      : exported.label,
-    run: (surface) => {
-      surface.files.exportDiagram(diagram.id);
-    },
-  };
 }

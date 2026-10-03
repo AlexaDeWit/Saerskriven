@@ -250,8 +250,8 @@ export function useFileSession(
         }
         setChoosing(true);
       },
-      exportDiagram: (diagramId) => {
-        exportCommands.diagram(diagramId);
+      exportDiagram: () => {
+        exportCommands.diagram();
       },
       exportRegister: () => {
         exportCommands.register();

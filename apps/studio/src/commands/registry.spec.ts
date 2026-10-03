@@ -18,7 +18,6 @@ import {
   commandById,
   commandFor,
   commands,
-  diagramExportCommand,
   runCommand,
   toolCommands,
   type CommandId,
@@ -215,15 +214,6 @@ describe('runCommand', () => {
       'fitToView',
       'toggleReference',
     ]);
-  });
-
-  it('binds a diagram export to the diagram named by the menu item', () => {
-    const recording = recordingSurface();
-    const command = diagramExportCommand(placeholderModel.diagrams[0], true);
-
-    runCommand(command, recording.surface);
-
-    expect(recording.asked).toEqual(['exportDiagram']);
   });
 
   it('selects an element mode without editing the store', () => {

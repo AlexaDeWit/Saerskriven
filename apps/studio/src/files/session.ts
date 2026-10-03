@@ -90,16 +90,58 @@ export function proposedName(
   return withExtension(name, formatFiles[format].extensions[0], untitled);
 }
 
+/** The longest diagram title, in characters, an export name carries. */
+export const diagramTitleLimit = 80;
+
+const unusableCharacters = new Set('/\\:*?"<>|');
+
+function isUnusable(character: string): boolean {
+  const code = character.codePointAt(0) ?? 0;
+  return (
+    unusableCharacters.has(character) ||
+    code < 0x20 ||
+    (code >= 0x7f && code <= 0x9f) ||
+    code === 0x2028 ||
+    code === 0x2029
+  );
+}
+
+/**
+ * A diagram title as a file name part. Each character a file name cannot hold
+ * (`/ \ : * ? " < > |`, control characters, line breaks) becomes `_`, runs of
+ * white space become one space, the title is cut to
+ * {@link diagramTitleLimit} characters, and leading and trailing dots and
+ * spaces go. Letters are kept as they are, not slugged. A title with nothing
+ * left becomes `untitled`, the translated untitled diagram default.
+ */
+export function diagramFileTitle(title: string, untitled: string): string {
+  const cleaned = Array.from(title, (character) =>
+    isUnusable(character) ? '_' : character,
+  )
+    .join('')
+    .replace(/\s+/gu, ' ');
+  const cut = Array.from(cleaned).slice(0, diagramTitleLimit).join('');
+  const trimmed = cut.replace(/^[. ]+|[. ]+$/gu, '');
+  return trimmed === '' ? untitled : trimmed;
+}
+
 /**
  * The proposed export name, derived from the open file, or `untitled` in the
- * active language while there is none.
+ * active language while there is none. A `diagramTitle` (already cleaned by
+ * {@link diagramFileTitle}) follows the stem as ` - <title>`.
  */
 export function proposedExportName(
   file: FileLifecycle,
   extension: string,
   untitled: string,
+  diagramTitle?: string,
 ): string {
-  return withExtension(nameOf(file, untitled), extension, untitled);
+  const suffix = diagramTitle === undefined ? '' : ` - ${diagramTitle}`;
+  return withExtension(
+    nameOf(file, untitled),
+    `${suffix}${extension}`,
+    untitled,
+  );
 }
 
 /** Where a save writes, and the document it merges the model onto. */

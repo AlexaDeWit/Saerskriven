@@ -193,5 +193,4 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'shortcut-summary': '{label}: {keys}. {when}.',
   'button-shortcut': 'Genväg: {chord}',
   'icon-description': '{description} Genväg: {chord}',
-  'export-diagram-named': 'Diagram som SVG: {title}',
 });

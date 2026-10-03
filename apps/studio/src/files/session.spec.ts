@@ -22,6 +22,8 @@ import {
   formatsFrom,
   openedBy,
   proposedName,
+  diagramFileTitle,
+  diagramTitleLimit,
   proposedExportName,
   reportLines,
   saveTarget,
@@ -252,6 +254,35 @@ describe('naming', () => {
     expect(proposedExportName(FileLifecycle.NoFile(), '.pdf', 'Namnlös')).toBe(
       'Namnlös.pdf',
     );
+  });
+
+  it('adds a cleaned diagram title to an export name after the stem', () => {
+    expect(proposedExportName(openedForeign, '.png', 'Namnlös', 'Pay')).toBe(
+      'model - Pay.png',
+    );
+    expect(
+      proposedExportName(FileLifecycle.NoFile(), '.svg', 'Namnlös', 'Pay'),
+    ).toBe('Namnlös - Pay.svg');
+  });
+
+  it.each([
+    ['a/b\\c:d*e?f"g<h>i|j', 'a_b_c_d_e_f_g_h_i_j'],
+    ['one\ntwo\ttab\u0007bell', 'one_two_tab_bell'],
+    ['  many   spaces\u00a0here ', 'many spaces here'],
+    ['..hidden. .', 'hidden'],
+    ['Översikt Schéma', 'Översikt Schéma'],
+    ['', 'Namnlöst'],
+    ['  . ', 'Namnlöst'],
+  ])('cleans the diagram title %j to %j', (title, expected) => {
+    expect(diagramFileTitle(title, 'Namnlöst')).toBe(expected);
+  });
+
+  it('cuts a long title at the limit and trims what the cut leaves at the end', () => {
+    const cut = diagramFileTitle('å'.repeat(diagramTitleLimit + 20), 'x');
+    expect(Array.from(cut)).toHaveLength(diagramTitleLimit);
+    expect(
+      diagramFileTitle(`${'a'.repeat(diagramTitleLimit - 1)} b`, 'x'),
+    ).toBe('a'.repeat(diagramTitleLimit - 1));
   });
 
   it('offers every registered format, the one the file is in first', () => {
