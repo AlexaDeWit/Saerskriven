@@ -76,7 +76,6 @@ export function RecordGroup<Held extends ThreatRecord>({
   const translator = useTranslator();
   const { t } = translator;
   const records = all.filter(target.holds);
-  const noun = t(kind.nounMessage);
   const linkable = linkableRecords(kind, all, target, threats, translator);
   const group = useRef<HTMLFieldSetElement>(null);
   const [draft, setDraft] = useState<Held | undefined>(() => {
@@ -329,13 +328,13 @@ export function RecordGroup<Held extends ThreatRecord>({
           </button>
           {linkable.length > 0 && (
             <PickExisting
-              actionLabel={t('fields.link-existing-record', { kind: noun })}
+              actionLabel={t(`fields.link-existing-${kind.noun}`)}
               actionText={t('panel.link')}
               choices={linkable.map(({ record, text }) => ({
                 id: record.id,
                 text,
               }))}
-              fieldLabel={t('fields.existing-record', { kind: noun })}
+              fieldLabel={t(`fields.existing-${kind.noun}`)}
               onPick={(id) => {
                 const picked = linkable.find(
                   ({ record }) => record.id === id,
@@ -346,7 +345,7 @@ export function RecordGroup<Held extends ThreatRecord>({
                 dispatch(target.link(picked));
                 focus.current = { kind: 'row', recordId: picked.id };
               }}
-              reason={t('fields.choose-existing-first', { kind: noun })}
+              reason={t(`fields.choose-existing-${kind.noun}-first`)}
             />
           )}
         </div>
