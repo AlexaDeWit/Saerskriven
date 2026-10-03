@@ -185,7 +185,7 @@ describe('commandFor', () => {
     },
   );
 
-  it('gives M to Model properties alone, unshifted and unmodified, on either platform', () => {
+  it('gives M to the model panel alone, unshifted and unmodified, on either platform', () => {
     const unmodified = press('m');
     for (const platform of platforms) {
       expect(
@@ -196,10 +196,10 @@ describe('commandFor', () => {
             ),
           )
           .map((command) => command.id),
-      ).toEqual(['model-properties']);
-      expect(commandFor(unmodified, platform)?.id).toBe('model-properties');
+      ).toEqual(['model-panel']);
+      expect(commandFor(unmodified, platform)?.id).toBe('model-panel');
       expect(commandFor({ ...unmodified, key: 'M' }, platform)?.id).toBe(
-        'model-properties',
+        'model-panel',
       );
       expect(
         commandFor({ ...unmodified, key: 'M', shiftKey: true }, platform),
@@ -298,19 +298,19 @@ describe('runCommand', () => {
     release();
   });
 
-  it('opens the model properties with a selection cleared, and closes them when they show', () => {
+  it('opens the model panel with a selection cleared, and closes it when it shows', () => {
     const recording = recordingSurface();
     modelStore.setState(initialState(sampleModel), true);
     dispatch(Action.Select({ elementIds: [actorElement] }));
 
-    runCommand(commandById('model-properties'), recording.surface);
+    runCommand(commandById('model-panel'), recording.surface);
     expect(modelStore.getState()).toMatchObject({
       selection: [],
-      modelProperties: true,
+      modelPanel: true,
     });
 
-    runCommand(commandById('model-properties'), recording.surface);
-    expect(modelStore.getState().modelProperties).toBe(false);
+    runCommand(commandById('model-panel'), recording.surface);
+    expect(modelStore.getState().modelPanel).toBe(false);
     expect(modelStore.getState().past).toEqual([]);
     expect(recording.asked).toEqual([]);
   });

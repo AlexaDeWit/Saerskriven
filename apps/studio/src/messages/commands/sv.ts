@@ -34,7 +34,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-redo': 'Gör om',
   'label-delete': 'Ta bort markeringen',
   'label-rename': 'Byt namn på markeringen',
-  'label-model-properties': 'Modellens egenskaper',
+  'label-model-panel': 'Modell',
   'label-focus-threats': 'Gå till hoten',
   'label-select-all': 'Markera allt',
   'label-add-bend': 'Lägg till knäckpunkt',
@@ -72,8 +72,8 @@ export const commandsSv = catalogue(commandMessages)('sv')({
     'Det finns en markering på arbetsytan och fokus ligger utanför textfält',
   'when-one-renameable-item':
     'Ett enda objekt på arbetsytan som kan byta namn är markerat',
-  'when-model-properties':
-    'Fokus ligger utanför textfält och öppna menyer. Öppnar med fokus i Titel och tömmer markeringen på arbetsytan, eller stänger om det redan visas',
+  'when-model-panel':
+    'Fokus ligger utanför textfält och öppna menyer. Öppnar på fliken Hot med fokus på den och tömmer markeringen på arbetsytan, eller stänger om den redan visas',
   'when-one-item-outside-fields':
     'Ett enda objekt på arbetsytan är markerat och fokus ligger utanför textfält',
   'when-outside-fields': 'Fokus ligger utanför textfält',
@@ -132,7 +132,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'key-commit-note': 'Bekräfta noteringens text',
   'key-cancel-canvas-text': 'Avbryt textredigering på arbetsytan',
   'key-close-threat-panel': 'Stäng hotpanelen',
-  'key-close-model-properties': 'Stäng modellens egenskaper',
+  'key-close-model-panel': 'Stäng modellpanelen',
   'key-close-shortcut-reference': 'Stäng genvägslistan',
   'key-when-choosing-segment': 'Lägg till knäckpunkt väljer ett segment',
   'key-when-segment-or-position':
@@ -166,8 +166,8 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'key-when-canvas-text-editor': 'En textredigerare på arbetsytan har fokus',
   'key-when-inside-threat-panel':
     'Fokus ligger i hotpanelen och ingen lista är öppen',
-  'key-when-inside-model-properties':
-    'Fokus ligger i panelen för modellens egenskaper och ingen lista är öppen',
+  'key-when-inside-model-panel':
+    'Fokus ligger i modellpanelen och ingen lista är öppen',
   'key-when-inside-reference': 'Fokus ligger i genvägslistan',
   'reference-close': 'Stäng tangentbordsgenvägarna',
   'reference-introduction':

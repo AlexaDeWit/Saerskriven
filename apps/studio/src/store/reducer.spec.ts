@@ -86,8 +86,8 @@ type StudioActionTag =
   | 'Redo'
   | 'SelectDiagram'
   | 'Select'
-  | 'ShowModelProperties'
-  | 'HideModelProperties'
+  | 'ShowModelPanel'
+  | 'HideModelPanel'
   | 'InlineEditing'
   | 'Imported'
   | 'LinkOpened'
@@ -427,8 +427,8 @@ const studioActions: ActionsByTag<StudioActionTag> = {
   Redo: Action.Redo(),
   SelectDiagram: Action.SelectDiagram({ diagramId: mainDiagram }),
   Select: Action.Select({ elementIds: [actorElement] }),
-  ShowModelProperties: Action.ShowModelProperties(),
-  HideModelProperties: Action.HideModelProperties(),
+  ShowModelPanel: Action.ShowModelPanel(),
+  HideModelPanel: Action.HideModelPanel(),
   InlineEditing: Action.InlineEditing({
     editor: { kind: 'name', elementId: actorElement },
   }),
@@ -808,41 +808,37 @@ describe('the element details', () => {
   });
 });
 
-describe('the model properties', () => {
+describe('the model panel', () => {
   const selected = reduce(start, Action.Select({ elementIds: [actorElement] }));
-  const shown = reduce(selected, Action.ShowModelProperties());
+  const shown = reduce(selected, Action.ShowModelPanel());
 
-  it('show in place of the selection, clearing it, with no history and no unsaved work', () => {
-    expect(shown.modelProperties).toBe(true);
+  it('shows in place of the selection, clearing it, with no history and no unsaved work', () => {
+    expect(shown.modelPanel).toBe(true);
     expect(shown.selection).toEqual([]);
     expect(shown.present).toBe(start.present);
     expect(shown.past).toEqual([]);
   });
 
-  it('give way to a selection, and stay through a cleared one', () => {
+  it('gives way to a selection, and stays through a cleared one', () => {
     expect(
-      reduce(shown, Action.Select({ elementIds: [actorElement] }))
-        .modelProperties,
+      reduce(shown, Action.Select({ elementIds: [actorElement] })).modelPanel,
     ).toBe(false);
     expect(reduce(shown, Action.Select({ elementIds: [] }))).toBe(shown);
   });
 
-  it('hide on request, and are the same state where they are not shown', () => {
-    expect(reduce(shown, Action.HideModelProperties()).modelProperties).toBe(
-      false,
-    );
-    expect(reduce(start, Action.HideModelProperties())).toBe(start);
-    expect(reduce(shown, Action.ShowModelProperties())).toBe(shown);
+  it('hides on request, and is the same state where it is not shown', () => {
+    expect(reduce(shown, Action.HideModelPanel()).modelPanel).toBe(false);
+    expect(reduce(start, Action.HideModelPanel())).toBe(start);
+    expect(reduce(shown, Action.ShowModelPanel())).toBe(shown);
   });
 
-  it('stay through an edit another tab made, and close on a new model', () => {
+  it('stays through an edit another tab made, and closes on a new model', () => {
     const elsewhere = reduce(start, applied.SetModelMetadata);
     expect(
-      reduce(shown, Action.Followed({ state: result(elsewhere) }))
-        .modelProperties,
+      reduce(shown, Action.Followed({ state: result(elsewhere) })).modelPanel,
     ).toBe(true);
-    expect(reduce(shown, studioActions.Opened).modelProperties).toBe(false);
-    expect(reduce(shown, Action.Closed()).modelProperties).toBe(false);
+    expect(reduce(shown, studioActions.Opened).modelPanel).toBe(false);
+    expect(reduce(shown, Action.Closed()).modelPanel).toBe(false);
   });
 });
 

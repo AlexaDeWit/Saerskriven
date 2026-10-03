@@ -275,12 +275,12 @@ const table = {
     shortcuts: escapeKey,
     when: 'commands.key-when-inside-threat-panel',
   },
-  'close-model-properties': {
-    id: 'close-model-properties',
-    label: 'commands.key-close-model-properties',
+  'close-model-panel': {
+    id: 'close-model-panel',
+    label: 'commands.key-close-model-panel',
     group: 'commands.group-panels',
     shortcuts: escapeKey,
-    when: 'commands.key-when-inside-model-properties',
+    when: 'commands.key-when-inside-model-panel',
   },
   'close-shortcut-reference': {
     id: 'close-shortcut-reference',

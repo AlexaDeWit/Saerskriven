@@ -6,6 +6,7 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
   'unlabelled-flow': 'Flow {ends}',
   details: 'Details',
   'close-threats': 'Close threats',
+  'close-model': 'Close model panel',
   'widen-pane': 'Widen pane',
   'restore-pane-width': 'Restore pane width',
   'several-selected': {
@@ -15,6 +16,7 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
   },
   'add-threat': 'Add a threat',
   'no-threats': 'No threats are recorded against this element.',
+  'no-model-threats': 'No threats are recorded in this model.',
   'delete-threat': 'Delete threat {number}',
   'threat-spread': {
     one: 'This threat names {count} element. Deleting it takes it off all of them.',
@@ -26,6 +28,8 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
   'summary-status': 'Status: {status}',
   'summary-category': 'Category: {category}',
   'also-on-elements': 'Also on {list}',
+  'on-elements': 'On {list}',
+  'on-no-element': 'On no element',
   'security-properties': 'Security properties',
   'not-recorded-hint': 'Not recorded means no security assertion is stored.',
   'no-relationships': 'No relationships.',

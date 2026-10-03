@@ -2,25 +2,20 @@ import {
   ElementPropertiesEditor,
   type ElementPropertyDrafts,
 } from './element-properties.js';
-import {
-  elementsAcross,
-  elementsById,
-  type ElementId,
-} from '@saerskriven/model';
-import { useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
+import { elementsAcross, elementsById } from '@saerskriven/model';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
-import { ElementThreats, type HeldDraft } from './element-threats.js';
 import { PanelFrame } from './panel-frame.js';
 import { PanelTabContent, type PanelTab } from './panel-tabs.js';
+import { ThreatList, type HeldDrafts } from './threat-list.js';
 import styles from './threat-panel.module.css';
 import { attachedThreats, elementLabel, type PanelSubject } from './threats.js';
 
 /** The selected subject, retained drafts, focus, and pane controls. */
 export type ThreatPanelProps = {
   readonly subject: Exclude<PanelSubject, { readonly kind: 'model' }>;
-  readonly drafts: Map<ElementId, HeldDraft>;
+  readonly drafts: HeldDrafts;
   readonly propertyDrafts?: ElementPropertyDrafts;
   readonly focusing: boolean;
   readonly onFocused: () => void;
@@ -46,14 +41,23 @@ export function ThreatPanel({
   onToggleWidth,
   onCover,
 }: ThreatPanelProps) {
-  const threats = useModelStore(useShallow(attachedThreats));
+  const threatCount = useModelStore((state) => attachedThreats(state).length);
   const diagrams = useModelStore((state) => state.present.diagrams);
   const [tab, setTab] = useState<PanelTab>('threats');
+  const addControl = useRef<HTMLButtonElement>(null);
   const { t } = useTranslator();
 
   if (focusing && tab !== 'threats') {
     setTab('threats');
   }
+
+  useEffect(() => {
+    if (!focusing) {
+      return;
+    }
+    addControl.current?.focus();
+    onFocused();
+  }, [focusing, onFocused]);
 
   const frame = {
     closeLabel: t('panel.close-threats'),
@@ -81,16 +85,10 @@ export function ThreatPanel({
     <PanelFrame
       {...frame}
       heading={elementLabel(element, elementsById(elementsAcross(diagrams)), t)}
-      tabs={{ tab, onTab: setTab, threatCount: threats.length }}
+      tabs={{ tab, onTab: setTab, threatCount }}
     >
       <PanelTabContent tab={tab} value="threats">
-        <ElementThreats
-          drafts={drafts}
-          element={element}
-          focusing={focusing}
-          onFocused={onFocused}
-          threats={threats}
-        />
+        <ThreatList drafts={drafts} element={element} home={addControl} />
       </PanelTabContent>
       <PanelTabContent tab={tab} value="details">
         <ElementPropertiesEditor

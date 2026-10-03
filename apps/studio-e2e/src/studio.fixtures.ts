@@ -480,9 +480,12 @@ export const selectByKeyboard = async (
 export const threatPanel = (page: Page): Locator =>
   page.getByRole('region', { name: 'Threats' });
 
-/** Shows the panel's Details tab, which holds the selected element's own fields. */
-export const showDetails = async (page: Page): Promise<void> => {
-  const details = threatPanel(page).getByRole('tab', { name: 'Details' });
+/** Shows a panel's Details tab, the threat panel's unless another is named, which holds its subject's own fields. */
+export const showDetails = async (
+  page: Page,
+  panel: Locator = threatPanel(page),
+): Promise<void> => {
+  const details = panel.getByRole('tab', { name: 'Details' });
   await details.click();
   await expect(details).toHaveAttribute('aria-selected', 'true');
 };

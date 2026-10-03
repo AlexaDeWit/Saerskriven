@@ -34,7 +34,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-redo': 'Rétablir',
   'label-delete': 'Supprimer la sélection',
   'label-rename': 'Renommer la sélection',
-  'label-model-properties': 'Propriétés du modèle',
+  'label-model-panel': 'Modèle',
   'label-focus-threats': 'Aller aux menaces',
   'label-select-all': 'Tout sélectionner',
   'label-add-bend': 'Ajouter un coude',
@@ -72,8 +72,8 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
     'Une sélection existe sur le canevas et le focus est hors des champs de texte',
   'when-one-renameable-item':
     'Un seul élément renommable du canevas est sélectionné',
-  'when-model-properties':
-    'Le focus est hors des champs de texte et des menus ouverts. Ouvre avec le focus dans Titre et vide la sélection du canevas, ou referme si déjà affiché',
+  'when-model-panel':
+    'Le focus est hors des champs de texte et des menus ouverts. Ouvre sur l’onglet Menaces avec le focus sur celui-ci et vide la sélection du canevas, ou referme si déjà affiché',
   'when-one-item-outside-fields':
     'Un seul élément du canevas est sélectionné et le focus est hors des champs de texte',
   'when-outside-fields': 'Le focus est hors des champs de texte',
@@ -132,7 +132,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'key-commit-note': 'Valider le texte de la note',
   'key-cancel-canvas-text': 'Annuler l’édition du texte sur le canevas',
   'key-close-threat-panel': 'Fermer le volet des menaces',
-  'key-close-model-properties': 'Fermer les propriétés du modèle',
+  'key-close-model-panel': 'Fermer le volet du modèle',
   'key-close-shortcut-reference': 'Fermer la liste des raccourcis',
   'key-when-choosing-segment':
     'Ajouter un coude est en train de choisir un segment',
@@ -172,8 +172,8 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'key-when-canvas-text-editor': 'Un éditeur de texte du canevas a le focus',
   'key-when-inside-threat-panel':
     'Le focus est dans le volet des menaces et aucune liste n’est ouverte',
-  'key-when-inside-model-properties':
-    'Le focus est dans le volet des propriétés du modèle et aucune liste n’est ouverte',
+  'key-when-inside-model-panel':
+    'Le focus est dans le volet du modèle et aucune liste n’est ouverte',
   'key-when-inside-reference': 'Le focus est dans la liste des raccourcis',
   'reference-close': 'Fermer les raccourcis clavier',
   'reference-introduction':

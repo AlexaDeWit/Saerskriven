@@ -14,6 +14,7 @@ import {
   useState,
   type RefObject,
 } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   announce,
   announceRefusal,
@@ -22,6 +23,7 @@ import {
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { elementById } from '../store/selectors.js';
+import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
 import { marked } from './marked.js';
@@ -38,6 +40,7 @@ import {
   attachSaid,
   detachSaid,
   freshThreat,
+  modelThreats,
   nextNumber,
   threatAfterDeleting,
   threatCommitter,
@@ -45,46 +48,56 @@ import {
 
 type PanelFocus = { readonly kind: EditorFocus; readonly threatId: ThreatId };
 
-/** A refused draft retained by the overlay for one element. */
+/** A refused draft retained by the overlay for one threat list. */
 export type HeldDraft = RefusedField & { readonly threatId: ThreatId };
 
-/** One element, the threats naming it, the drafts the overlay retains, and a request for focus. */
-export type ElementThreatsProps = {
-  readonly element: Element;
-  readonly threats: readonly Threat[];
-  readonly drafts: Map<ElementId, HeldDraft>;
-  readonly focusing: boolean;
-  readonly onFocused: () => void;
+/**
+ * The refused drafts the overlay retains, one per threat list: an element's
+ * under its id, and the model's under `undefined`.
+ */
+export type HeldDrafts = Map<ElementId | undefined, HeldDraft>;
+
+type ListControls = {
+  readonly held: HeldDraft | undefined;
+  readonly attach: (threatId: ThreatId, on: Element) => boolean;
+  readonly open: (threatId: ThreatId, focus: EditorFocus) => void;
 };
 
 /**
- * The Threats tab of an element's panel: Add a threat and Attach existing,
- * then the threats naming the element, one expanded at a time and each
- * edited in place. The list is in review order as it mounts and holds that
- * order while it stays mounted, so an edit never moves the threat under
- * the pointer and a threat added meanwhile joins the end. A threat opened
- * by any route lands with its header at the top of the body.
+ * The element whose threats are listed, or `undefined` for every threat in
+ * the model, the drafts the overlay retains, and the control focus goes to
+ * where no threat is left to take it: Add a threat on an element, which the
+ * list draws on that ref, and the Threats tab on the model.
  */
-export function ElementThreats({
-  element,
-  threats,
-  drafts,
-  focusing,
-  onFocused,
-}: ElementThreatsProps) {
-  const number = useModelStore(nextNumber);
-  const registered = useModelStore((state) => state.present.threats);
+export type ThreatListProps = {
+  readonly element: Element | undefined;
+  readonly drafts: HeldDrafts;
+  readonly home: RefObject<HTMLButtonElement | null>;
+};
+
+/**
+ * The Threats tab of either panel. On an element, Add a threat and Attach
+ * existing, then the threats naming the element. On the model, every threat
+ * in the model and no add, since a threat is added on an element. One threat
+ * is expanded at a time and each is edited in place. The list is in review
+ * order as it mounts and holds that order while it stays mounted, so an edit
+ * never moves the threat under the pointer and a threat added meanwhile joins
+ * the end. A threat opened by any route lands with its header at the top of
+ * the body. A threat leaves the list when it leaves the model, or on an
+ * element's list when it leaves the element.
+ */
+export function ThreatList({ element, drafts, home }: ThreatListProps) {
+  const on = element?.id;
+  const listed = element === undefined ? modelThreats : attachedThreats;
+  const threats = useModelStore(useShallow(listed));
+  const { t } = useTranslator();
   const shown = useShownOrder(inReviewOrder(threats));
-  const opened = drafts.get(element.id);
+  const opened = drafts.get(on);
   const [expanded, setExpanded] = useState<string>(opened?.threatId ?? '');
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
-  const addControl = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const scroll = useThreatScroll(list);
-  const translator = useTranslator();
-  const { t } = translator;
-  const attachable = attachableThreats(registered, element.id, translator);
   const held = threats.some((threat) => threat.id === draft?.threatId)
     ? draft
     : undefined;
@@ -98,11 +111,11 @@ export function ElementThreats({
 
   useEffect(() => {
     if (draft === undefined) {
-      drafts.delete(element.id);
+      drafts.delete(on);
     } else {
-      drafts.set(element.id, draft);
+      drafts.set(on, draft);
     }
-  }, [draft, drafts, element]);
+  }, [draft, drafts, on]);
 
   const restore = useCallback(
     (threatId: ThreatId) => {
@@ -113,33 +126,20 @@ export function ElementThreats({
     [scroll],
   );
 
-  useHistoryFocus(addControl, restore);
+  useHistoryFocus(home, listed, restore);
 
-  useEffect(() => {
-    if (!focusing) {
-      return;
-    }
-    addControl.current?.focus();
-    onFocused();
-  }, [focusing, onFocused]);
-
-  const add = (): void => {
-    const threat = freshThreat(number, element.id, t);
-    dispatch(Action.AddThreat({ threat }));
-    if (threatIn(threat.id) === undefined) {
-      return;
-    }
-    setExpanded(threat.id);
-    scroll.land(threat.id);
+  const open = (threatId: ThreatId, kind: EditorFocus): void => {
+    setExpanded(threatId);
+    scroll.land(threatId);
     setDraft(undefined);
-    setFocus({ kind: 'title', threatId: threat.id });
+    setFocus({ kind, threatId });
   };
 
   const leave = (threatId: ThreatId): void => {
     const next = threatAfterDeleting(shown, threatId);
     setDraft(undefined);
     if (next === undefined) {
-      addControl.current?.focus();
+      home.current?.focus();
     } else {
       setFocus({ kind: 'disclosure', threatId: next });
     }
@@ -152,13 +152,13 @@ export function ElementThreats({
     announce((speak) => speak('canvas.threat-deleted', { number: deleted }));
   };
 
-  const attach = (threatId: ThreatId, on: Element): boolean => {
-    dispatch(Action.AttachThreat({ threatId, elementId: on.id }));
+  const attach = (threatId: ThreatId, target: Element): boolean => {
+    dispatch(Action.AttachThreat({ threatId, elementId: target.id }));
     const attached = threatIn(threatId);
-    if (attached?.elements.includes(on.id) !== true) {
+    if (attached?.elements.includes(target.id) !== true) {
       return false;
     }
-    announce(attachSaid(attached, on, presentElements()));
+    announce(attachSaid(attached, target, presentElements()));
     return true;
   };
 
@@ -172,7 +172,10 @@ export function ElementThreats({
       if (said !== undefined) {
         announce(said);
       }
-      if (kept?.elements.includes(element.id) !== true) {
+      if (
+        kept === undefined ||
+        (on !== undefined && !kept.elements.includes(on))
+      ) {
         leave(threat.id);
       }
     };
@@ -188,9 +191,9 @@ export function ElementThreats({
         refusal === undefined ? undefined : { threatId: threat.id, ...refusal };
       setDraft(next);
       if (next === undefined) {
-        drafts.delete(element.id);
+        drafts.delete(on);
       } else {
-        drafts.set(element.id, next);
+        drafts.set(on, next);
       }
       announceRefusal(refusal, heldText);
     };
@@ -212,34 +215,21 @@ export function ElementThreats({
 
   return (
     <>
-      <div className={styles.addLink}>
-        <button
-          className={styles.add}
-          onClick={add}
-          ref={addControl}
-          type="button"
-        >
-          {t('panel.add-threat')}
-        </button>
-        {attachable.length > 0 && (
-          <PickExisting
-            actionLabel={t('fields.attach-existing-threat')}
-            actionText={t('panel.attach')}
-            choices={attachable}
-            fieldLabel={t('fields.existing-threat')}
-            onPick={(threatId) => {
-              if (attach(threatId, element) && held === undefined) {
-                setExpanded(threatId);
-                scroll.land(threatId);
-                setFocus({ kind: 'disclosure', threatId });
-              }
-            }}
-            reason={t('fields.choose-existing-threat-first')}
-          />
-        )}
-      </div>
+      {element !== undefined && (
+        <AddThreat
+          addControl={home}
+          element={element}
+          list={{ held, attach, open }}
+        />
+      )}
       {threats.length === 0 ? (
-        <p className={styles.instruction}>{t('panel.no-threats')}</p>
+        <p className={styles.instruction}>
+          {t(
+            element === undefined
+              ? 'panel.no-model-threats'
+              : 'panel.no-threats',
+          )}
+        </p>
       ) : (
         <Accordion.Root
           className={styles.list}
@@ -259,9 +249,9 @@ export function ElementThreats({
               held={held?.threatId === threat.id ? held : undefined}
               key={threat.id}
               onAttach={(elementId) => {
-                const on = elementById(modelStore.getState(), elementId);
-                if (on !== undefined) {
-                  attach(threat.id, on);
+                const target = elementById(modelStore.getState(), elementId);
+                if (target !== undefined) {
+                  attach(threat.id, target);
                 }
               }}
               onChange={resetAnnouncements}
@@ -272,13 +262,64 @@ export function ElementThreats({
               onDetach={detach(threat)}
               onFocused={focused}
               onRefusal={refused(threat)}
-              on={element.id}
+              on={on}
               threat={threat}
             />
           ))}
         </Accordion.Root>
       )}
     </>
+  );
+}
+
+function AddThreat({
+  element,
+  list,
+  addControl,
+}: {
+  readonly element: Element;
+  readonly list: ListControls;
+  readonly addControl: RefObject<HTMLButtonElement | null>;
+}) {
+  const number = useModelStore(nextNumber);
+  const registered = useModelStore((state) => state.present.threats);
+  const translator = useTranslator();
+  const { t } = translator;
+  const attachable = attachableThreats(registered, element.id, translator);
+
+  const add = (): void => {
+    const threat = freshThreat(number, element.id, t);
+    dispatch(Action.AddThreat({ threat }));
+    if (threatIn(threat.id) !== undefined) {
+      list.open(threat.id, 'title');
+    }
+  };
+
+  return (
+    <div className={styles.addLink}>
+      <button
+        className={styles.add}
+        onClick={add}
+        ref={addControl}
+        type="button"
+      >
+        {t('panel.add-threat')}
+      </button>
+      {attachable.length > 0 && (
+        <PickExisting
+          actionLabel={t('fields.attach-existing-threat')}
+          actionText={t('panel.attach')}
+          choices={attachable}
+          fieldLabel={t('fields.existing-threat')}
+          onPick={(threatId) => {
+            if (list.attach(threatId, element) && list.held === undefined) {
+              list.open(threatId, 'disclosure');
+            }
+          }}
+          reason={t('fields.choose-existing-threat-first')}
+        />
+      )}
+    </div>
   );
 }
 
@@ -300,16 +341,17 @@ function focusIn(
 }
 
 function useHistoryFocus(
-  addControl: RefObject<HTMLButtonElement | null>,
+  home: RefObject<HTMLElement | null>,
+  listed: (state: State) => readonly Threat[],
   restore: (threatId: ThreatId) => void,
 ): void {
   const undone = useRef<ThreatId | undefined>(undefined);
-  const toAdd = useRef(false);
+  const toHome = useRef(false);
 
   useEffect(() => {
-    if (toAdd.current) {
-      toAdd.current = false;
-      addControl.current?.focus();
+    if (toHome.current) {
+      toHome.current = false;
+      home.current?.focus();
     }
   });
 
@@ -320,27 +362,27 @@ function useHistoryFocus(
         const item = active?.closest<HTMLElement>(marked.threatItem)?.dataset[
           'threatItem'
         ];
-        const holder = attachedThreats(modelStore.getState()).find(
+        const holder = listed(modelStore.getState()).find(
           ({ id }) => id === item,
         );
-        const onAdd = active !== null && active === addControl.current;
+        const onHome = active !== null && active === home.current;
         return () => {
-          const attached = attachedThreats(modelStore.getState());
-          const restored = attached.find(({ id }) => id === undone.current);
+          const present = listed(modelStore.getState());
+          const restored = present.find(({ id }) => id === undone.current);
           if (
             holder !== undefined &&
-            !attached.some(({ id }) => id === holder.id)
+            !present.some(({ id }) => id === holder.id)
           ) {
             undone.current = holder.id;
-            toAdd.current = true;
+            toHome.current = true;
           } else if (restored !== undefined) {
             undone.current = undefined;
-            if (onAdd) {
+            if (onHome) {
               restore(restored.id);
             }
           }
         };
       }),
-    [addControl, restore],
+    [home, listed, restore],
   );
 }

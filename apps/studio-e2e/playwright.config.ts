@@ -84,7 +84,7 @@ export default defineConfig({
     // test whose layout turns on the width carries the `@phone` tag and runs
     // under `phone` as well as under `chromium`, which holds the ruling that
     // the layout is the same at every width. The chrome card and its
-    // submenus, a notice under the card, record and model properties rows,
+    // submenus, a notice under the card, record and model panel rows,
     // the Link existing listbox, a collapsed summary with its marks, and the
     // corner handles beside a threat badge, measured on screen (#447, #648),
     // carry it. A test tagged `@phone-only` reads what only a phone width

@@ -40,7 +40,7 @@ export const registeredChords = {
   redo: ['ControlOrMeta+Shift+z', 'Control+y'],
   delete: ['Delete', 'Backspace'],
   rename: ['F2'],
-  'model-properties': ['m'],
+  'model-panel': ['m'],
   'focus-threats': ['t'],
   'select-all': ['ControlOrMeta+a'],
   'fit-to-view': ['ControlOrMeta+0'],

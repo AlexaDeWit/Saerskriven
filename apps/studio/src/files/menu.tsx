@@ -392,7 +392,7 @@ function EditMenu() {
         ))}
       </Submenu>
       <MenuCommand command="rename" disabled={!renamable} />
-      <MenuCommand command="model-properties" />
+      <MenuCommand command="model-panel" />
     </DropdownMenu.Group>
   );
 }

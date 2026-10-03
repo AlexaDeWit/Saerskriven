@@ -5,6 +5,7 @@ import { createElement } from 'react';
 import { Accordion } from 'radix-ui';
 import { recordedModel, sampleThreat } from '../store/store.fixtures.js';
 import { noop } from '../ui/ui.fixtures.js';
+import { marked } from './marked.js';
 import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
 
 /**
@@ -15,7 +16,7 @@ import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
  * through `userEvent`, which commits and rerenders at every step. Three runs
  * on a host at load average 37 to 55 put the worst at 9.1 s against the 10 s
  * root, and which test tops out moves between runs, so the bound is the
- * suite's rather than one test's. The model properties, threat records,
+ * suite's rather than one test's. The model panel, threat records,
  * element properties and element details suites drive their fields and
  * listboxes the same way. At load average near 2.5 the element properties
  * suite's worst takes 0.65 s against the editor and panel suites' 0.35 s.
@@ -31,6 +32,14 @@ export const chooseFrom = async (
   await user.click(screen.getByRole('combobox', { name: field }));
   await user.click(screen.getByRole('option', { name: option }));
 };
+
+/** The ids of the threats listed under `root`, in the order the list shows them. */
+export const listedThreats = (
+  root: HTMLElement,
+): readonly (string | undefined)[] =>
+  [...root.querySelectorAll<HTMLElement>(marked.threatItem)].map(
+    (item) => item.dataset['threatItem'],
+  );
 
 /**
  * A threat {@link recordedModel} holds, the first where it holds no such id,

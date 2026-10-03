@@ -1,4 +1,5 @@
 import type { ElementId, Threat } from '@saerskriven/model';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
 import { categoryLabel } from '../ui/category-field.js';
@@ -10,9 +11,9 @@ import { threatAttachments } from './threats.js';
 /**
  * A collapsed threat's summary, which is also its accordion trigger's
  * accessible name, in drawn order. Its number and title, then its severity,
- * status, category and a mark per raised flag, then where the threat names
- * an element besides `on` (the element whose panel shows it), those
- * elements.
+ * status, category and a mark per raised flag, then the elements it is on:
+ * on an element's panel (`on`) the others it names, where it names any, and
+ * on the model's every one, or that it is on none.
  */
 export function ThreatSummary({
   threat,
@@ -24,9 +25,10 @@ export function ThreatSummary({
   const diagrams = useModelStore((state) => state.present.diagrams);
   const { t } = useTranslator();
   const category = categoryLabel(threat.category, t);
-  const others = threatAttachments(diagrams, threat, t)
+  const named = threatAttachments(diagrams, threat, t)
     .filter(({ id }) => id !== on)
     .map(({ label }) => label);
+  const elements = elementsLine(on, named, t);
 
   return (
     <>
@@ -44,15 +46,30 @@ export function ThreatSummary({
           </span>
           <FlagMarks threat={threat} />
         </span>
-        {others.length > 0 && (
+        {elements !== undefined && (
           <>
             {' '}
-            <span className={styles.alsoOn} data-also-on="">
-              {t('panel.also-on-elements', { list: others })}
+            <span className={styles.onElements} data-on-elements="">
+              {elements}
             </span>
           </>
         )}
       </span>
     </>
   );
+}
+
+function elementsLine(
+  on: ElementId | undefined,
+  named: readonly string[],
+  t: StudioTranslator['t'],
+): string | undefined {
+  if (on !== undefined) {
+    return named.length > 0
+      ? t('panel.also-on-elements', { list: named })
+      : undefined;
+  }
+  return named.length > 0
+    ? t('panel.on-elements', { list: named })
+    : t('panel.on-no-element');
 }

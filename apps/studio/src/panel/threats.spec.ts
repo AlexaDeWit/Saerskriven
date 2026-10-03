@@ -77,8 +77,8 @@ describe('panelSubject', () => {
     ).toBeUndefined();
   });
 
-  it('is the model while its properties are shown', () => {
-    expect(panelSubject({ ...selecting([]), modelProperties: true })).toEqual({
+  it('is the model while the model panel shows', () => {
+    expect(panelSubject({ ...selecting([]), modelPanel: true })).toEqual({
       kind: 'model',
     });
   });

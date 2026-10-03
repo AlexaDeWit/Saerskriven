@@ -160,12 +160,12 @@ export function reduce(state: State, action: Action): State {
     Redo: () => redone(state),
     SelectDiagram: ({ diagramId }) => selectedDiagram(state, diagramId),
     Select: ({ elementIds }) => withSelection(state, elementIds),
-    ShowModelProperties: () =>
-      state.modelProperties && state.selection.length === 0
+    ShowModelPanel: () =>
+      state.modelPanel && state.selection.length === 0
         ? state
-        : { ...state, selection: [], modelProperties: true },
-    HideModelProperties: () =>
-      state.modelProperties ? { ...state, modelProperties: false } : state,
+        : { ...state, selection: [], modelPanel: true },
+    HideModelPanel: () =>
+      state.modelPanel ? { ...state, modelPanel: false } : state,
     InlineEditing: ({ editor }) => ({ ...state, inlineEditor: editor }),
     Opened: ({ model, name, source }) => ({
       ...initialState(model),
@@ -263,11 +263,11 @@ function selectedDiagram(state: State, diagramId: DiagramId): State {
 
 function withSelection(state: State, elementIds: readonly ElementId[]): State {
   const selection = [...new Set(elementIds)];
-  const modelProperties = state.modelProperties && selection.length === 0;
+  const modelPanel = state.modelPanel && selection.length === 0;
   return sameSelection(state.selection, selection) &&
-    modelProperties === state.modelProperties
+    modelPanel === state.modelPanel
     ? state
-    : { ...state, selection, modelProperties };
+    : { ...state, selection, modelPanel };
 }
 
 function removedElements(
