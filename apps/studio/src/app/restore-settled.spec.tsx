@@ -71,11 +71,18 @@ describe('useRestoreSettled', () => {
 
 const tenFrames = 160;
 
+const aSecond = 1_000;
+
+const reportTab = (state: DocumentVisibilityState): void => {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+};
+
 describe('useRestoreSettled in a tab that draws no frame', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal('requestAnimationFrame', () => 0);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    reportTab('hidden');
   });
 
   afterEach(() => {
@@ -94,8 +101,22 @@ describe('useRestoreSettled in a tab that draws no frame', () => {
 
     vi.advanceTimersByTime(tenFrames);
     expect(mark.raised()).toBe(true);
-    vi.runAllTimers();
+    vi.advanceTimersByTime(aSecond);
     expect(mark.raised()).toBe(false);
+  });
+
+  it('starts no timer where the tab is shown, so the mark is still raised well past a second', () => {
+    reportTab('visible');
+    const mark = memoryRestoreMark(true);
+    render(
+      <ErrorBoundary>
+        <Drawn mark={mark} />
+      </ErrorBoundary>,
+    );
+
+    vi.advanceTimersByTime(10 * aSecond);
+
+    expect(mark.raised()).toBe(true);
   });
 
   it('leaves the mark raised where a child throws while rendering before the timer', () => {

@@ -8,14 +8,16 @@ const waitWithoutFrames = 1_000;
 
 /**
  * Lowers the restore mark once the tree this mounts in has stood for two
- * animation frames after its first commit, or for a second where no frame
- * comes, as in a tab that is not shown. A hidden tab runs a timer about once
- * a second, so a shorter wait would lower the mark no sooner there, and in a
- * tab that draws, the frames come well inside it. Both are asked for among
- * that commit's effects, so a draw those effects set off renders before
- * either. Both are cancelled in the commit that unmounts the tree, which is
- * the error boundary taking over, so a draw that failed leaves the mark
- * raised.
+ * animation frames after its first commit. A tab that is hidden as that
+ * commit's effects run draws no frame, so there a timer lowers the mark after
+ * a second as well. A tab that is shown starts no timer: a first draw that
+ * holds the thread for a second would otherwise find the timer due ahead of
+ * its first frame, and lose the mark before the pass that frame sets off. A
+ * tab hidden after those effects and before its second frame keeps the mark
+ * until it is shown again. The frames and the timer are asked for among that
+ * commit's effects, so a draw those effects set off renders before either,
+ * and both are cancelled in the commit that unmounts the tree, which is the
+ * error boundary taking over, so a draw that failed leaves the mark raised.
  */
 export function useRestoreSettled(
   mark: Pick<RestoreMark, 'lower'> = browserRestoreMark,
@@ -30,7 +32,9 @@ export function useRestoreSettled(
     frame.current = requestAnimationFrame(() => {
       frame.current = requestAnimationFrame(lower);
     });
-    timer.current = setTimeout(lower, waitWithoutFrames);
+    if (document.visibilityState === 'hidden') {
+      timer.current = setTimeout(lower, waitWithoutFrames);
+    }
   }, [mark]);
 
   useLayoutEffect(

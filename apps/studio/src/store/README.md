@@ -151,20 +151,22 @@ first raises the restore mark, a flag under `saerskriven:studio:restoring` in
 the tab's `sessionStorage`. A reload of the tab keeps it, a tab duplicated from
 this one starts with a copy of it, and any other tab starts without it.
 `useRestoreSettled` (`../app/restore-settled.ts`) lowers it once the studio's
-first draw has stood for two animation frames or for one second, whichever
-comes first, and leaves it raised where the error boundary took over before
-then. The second is there for a tab that is not shown, which draws no frame. A
-start that reads a snapshot and finds the mark raised takes it that the last
-start in this tab did not draw the session: the draw threw, never returned or
-ran the tab out of memory, or the tab was reloaded or closed before the mark
-came down. It does not restore: it lowers the mark, leaves the snapshot where
-it is, opens the placeholder, records `StoredRecoveryRejected` with the
-problem `RestoreUnfinished`, and sets `recoveryUnread`, as a start that could
-not read its snapshot does. The next reload finds the mark lowered and tries
-the restore again, which gives a tab that was only reloaded while it drew its
-session back. A start with no snapshot, or with one it could not read, never
-raises the mark, and neither does following another tab. Storage that throws
-reads as a lowered mark and skips a write.
+first draw has stood for two animation frames, and leaves it raised where the
+error boundary took over before then. A tab that is hidden as it first draws
+has no frames, so there the mark also comes down after one second. A tab that
+is shown waits on its frames alone, however long its first draw takes, and one
+hidden between its first draw and its second frame keeps the mark until it is
+shown again. A start that reads a snapshot and finds the mark raised takes it
+that the last start in this tab did not draw the session: the draw threw, never
+returned or ran the tab out of memory, or the tab was reloaded or closed before
+the mark came down. It does not restore: it lowers the mark, leaves the
+snapshot where it is, opens the placeholder, records `StoredRecoveryRejected`
+with the problem `RestoreUnfinished`, and sets `recoveryUnread`, as a start
+that could not read its snapshot does. The next reload finds the mark lowered
+and tries the restore again, which gives a tab that was only reloaded while it
+drew its session back. A start with no snapshot, or with one it could not read,
+never raises the mark, and neither does following another tab. Storage that
+throws reads as a lowered mark and skips a write.
 
 A successful write marks the state recoverable. A failed write records
 `RecoveryUnavailable` and leaves that mark false, and a later recoverable change
