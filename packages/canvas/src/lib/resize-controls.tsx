@@ -9,10 +9,13 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactElement,
+  type TouchEvent,
 } from 'react';
 import { handleSides, type NodeBox } from './handles.js';
 import type { CanvasNode } from './layout.js';
@@ -40,10 +43,31 @@ type ResizeSubject = {
 
 type Gesture = ResizeDragEvent['identifier'];
 
+type Settled = (pressed: CanvasNode) => NodeBox;
+
 type Press = {
+  readonly position: ResizeControlPosition;
   readonly subject: ResizeSubject;
   readonly gestures: Set<Gesture>;
   resized: boolean;
+  cancelled: boolean;
+};
+
+type NodePress = {
+  readonly refuses: (
+    position: ResizeControlPosition,
+    gestures: readonly Gesture[],
+  ) => boolean;
+  readonly start: (position: ResizeControlPosition, gesture: Gesture) => void;
+  readonly holds: (position: ResizeControlPosition) => boolean;
+  readonly resize: (position: ResizeControlPosition) => void;
+  readonly end: (
+    position: ResizeControlPosition,
+    gesture: Gesture,
+    cancelled: boolean,
+    settled: Settled,
+  ) => void;
+  readonly unmount: (position: ResizeControlPosition) => void;
 };
 
 /**
@@ -57,13 +81,19 @@ type Press = {
  * ends it with the extent it measured, a fractional size rounded to whole
  * pixels. `onResize` and `onResizeEnd` may be new functions on every render:
  * a pointer resize calls those of the render its press began on, and settles
- * against that render's `node`. A resize that called `onResize` gets one
- * `onResizeEnd`: once every finger and the mouse on its control has lifted,
- * with the box it finished on, or once its controls unmount under a touch,
- * whose lift React Flow then never reports, with the node's own box, so that
- * nothing is resized. A mouse press outlives its control and ends on its
- * release. A boundary curve's corner handles sit `resizeHandle.curveGap`
- * outside its corners, clear of a handle on a point there.
+ * against that render's `node`.
+ *
+ * One control holds the node's press at a time. Another finger on that
+ * control joins the press, and a press on another control resizes nothing
+ * until the press is over. A resize ends when the last finger or the mouse of
+ * its press lifts, with the box it finished on. It ends put back instead, with
+ * the box the node had when pressed, when a touch of its press was cancelled,
+ * when its control unmounts with no mouse down on it, or when its only
+ * pointer presses a control again, its own release never having come. A mouse
+ * press outlives its control and ends on its release.
+ *
+ * A boundary curve's corner handles sit `resizeHandle.curveGap` outside its
+ * corners, clear of a handle on a point there.
  */
 export function ResizeControls({
   labels,
@@ -75,6 +105,7 @@ export function ResizeControls({
   readonly labels: ResizeLabels;
   readonly visible: boolean;
 }): ReactElement {
+  const press = useNodePress({ node, onResize, onResizeEnd });
   return (
     <>
       {resizeControlsOf(node).map((position) => (
@@ -82,9 +113,9 @@ export function ResizeControls({
           key={position}
           label={labels[position]}
           node={node}
-          onResize={onResize}
           onResizeEnd={onResizeEnd}
           position={position}
+          press={press}
           visible={visible}
         />
       ))}
@@ -92,69 +123,117 @@ export function ResizeControls({
   );
 }
 
+function useNodePress(subject: ResizeSubject): NodePress {
+  const rendered = useRef(subject);
+  const press = useRef<Press>(undefined);
+  useLayoutEffect(() => {
+    rendered.current = subject;
+  });
+
+  return useMemo(() => {
+    const settle = (settled: Settled): void => {
+      const held = press.current;
+      if (held === undefined || held.gestures.size > 0) {
+        return;
+      }
+      press.current = undefined;
+      if (held.resized) {
+        const box = held.cancelled ? ownBox : settled;
+        held.subject.onResizeEnd?.(box(held.subject.node));
+      }
+    };
+    return {
+      refuses: (position, gestures) =>
+        press.current !== undefined &&
+        press.current.position !== position &&
+        !gestures.some((gesture) => press.current?.gestures.has(gesture)),
+      start: (position, gesture) => {
+        if (press.current?.gestures.delete(gesture) === true) {
+          settle(ownBox);
+        }
+        press.current ??= {
+          position,
+          subject: rendered.current,
+          gestures: new Set(),
+          resized: false,
+          cancelled: false,
+        };
+        if (press.current.position === position) {
+          press.current.gestures.add(gesture);
+        }
+      },
+      holds: (position) => press.current?.position === position,
+      resize: (position) => {
+        if (press.current?.position === position) {
+          press.current.resized = true;
+          press.current.subject.onResize?.();
+        }
+      },
+      end: (position, gesture, cancelled, settled) => {
+        if (press.current?.position === position) {
+          press.current.gestures.delete(gesture);
+          press.current.cancelled ||= cancelled;
+          settle(settled);
+        }
+      },
+      unmount: (position) => {
+        if (press.current?.position === position) {
+          dropTouches(press.current.gestures);
+          settle(ownBox);
+        }
+      },
+    };
+  }, []);
+}
+
 function ResizeControl({
   label,
   node,
-  onResize,
   onResizeEnd,
   position,
+  press,
   visible,
-}: ResizeSubject & {
+}: Pick<ResizeSubject, 'node' | 'onResizeEnd'> & {
   readonly label: string;
   readonly position: ResizeControlPosition;
+  readonly press: NodePress;
   readonly visible: boolean;
 }): ReactElement {
-  const rendered = useRef<ResizeSubject>({ node, onResize, onResizeEnd });
-  const press = useRef<Press>(undefined);
-  useLayoutEffect(() => {
-    rendered.current = { node, onResize, onResizeEnd };
-  });
-
-  const start = useCallback<OnResizeStart>((event) => {
-    press.current ??= {
-      subject: rendered.current,
-      gestures: new Set(),
-      resized: false,
-    };
-    press.current.gestures.add(event.identifier);
-  }, []);
+  const start = useCallback<OnResizeStart>(
+    (event) => {
+      press.start(position, event.identifier);
+    },
+    [position, press],
+  );
+  const holds = useCallback(
+    (): boolean => press.holds(position),
+    [position, press],
+  );
   const resize = useCallback((): void => {
-    if (press.current !== undefined) {
-      press.current.resized = true;
-      press.current.subject.onResize?.();
-    }
-  }, []);
-  const settle = useCallback((box: (pressed: CanvasNode) => NodeBox): void => {
-    const held = press.current;
-    if (held === undefined || held.gestures.size > 0) {
-      return;
-    }
-    press.current = undefined;
-    if (held.resized) {
-      held.subject.onResizeEnd?.(box(held.subject.node));
-    }
-  }, []);
+    press.resize(position);
+  }, [position, press]);
   const end = useCallback<OnResizeEnd>(
     (event, extent) => {
-      press.current?.gestures.delete(event.identifier);
-      settle((pressed) =>
+      press.end(position, event.identifier, cancels(event), (pressed) =>
         resizeBoxOnControlAxes(pressed, position, {
           position: { x: extent.x, y: extent.y },
           size: { width: extent.width, height: extent.height },
         }),
       );
     },
-    [position, settle],
+    [position, press],
   );
   useEffect(
     () => () => {
-      if (press.current !== undefined) {
-        dropTouches(press.current.gestures);
-        settle(ownBox);
-      }
+      press.unmount(position);
     },
-    [settle],
+    [position, press],
   );
+  const refuse = (event: MouseEvent | TouchEvent): void => {
+    if (press.refuses(position, pressing(event))) {
+      event.stopPropagation();
+    }
+  };
   const keyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
     const box = resizeBoxByKey(
       node,
@@ -185,6 +264,7 @@ function ResizeControl({
             ? 'vertical'
             : undefined
       }
+      shouldResize={holds}
       style={controlStyle(node, position, visible)}
       variant={
         sideControls.has(position)
@@ -196,10 +276,23 @@ function ResizeControl({
         aria-keyshortcuts={resizeControlKeys[position].join(' ')}
         aria-label={label}
         onKeyDown={keyDown}
+        onMouseDownCapture={refuse}
+        onTouchStartCapture={refuse}
         type="button"
       />
     </NodeResizeControl>
   );
+}
+
+function pressing(event: MouseEvent | TouchEvent): readonly Gesture[] {
+  return 'changedTouches' in event
+    ? Array.from(event.changedTouches, (touch) => touch.identifier)
+    : ['mouse'];
+}
+
+function cancels({ sourceEvent }: ResizeDragEvent): boolean {
+  const source: unknown = sourceEvent;
+  return source instanceof Event && source.type === 'touchcancel';
 }
 
 function dropTouches(gestures: Set<Gesture>): void {

@@ -1,7 +1,7 @@
 /**
- * A mouse event that carries the `view` its init names. jsdom's constructor
- * refuses the window a vitest spec runs in as a `view`, so the view is set
- * once the event exists.
+ * A mouse event that carries the `view` its init names. Under vitest, jsdom's
+ * constructor refuses the spec's `window` as a `view`, so the view is set once
+ * the event exists.
  */
 export class ViewKeepingMouseEvent extends MouseEvent {
   constructor(type: string, { view, ...init }: MouseEventInit = {}) {
@@ -10,23 +10,48 @@ export class ViewKeepingMouseEvent extends MouseEvent {
   }
 }
 
-/** One finger of a touch event: its identifier and where it is on screen. */
-export type Finger = {
-  readonly identifier: number;
-  readonly clientX: number;
-  readonly clientY: number;
-};
+const row = 100;
 
 /**
- * A touch event about the finger `changed`, with `touches` every finger still
- * down, the one longest down first: `changed` alone unless given, and none for
- * the lift of the only finger. jsdom has no `Touch`, and its `TouchEvent`
- * comes back with both lists empty, so they are set on a plain event.
+ * A bubbling, cancelable mouse event at `clientX` on the row `clientY` 100,
+ * with the window as its view.
+ */
+export const mouseEvent = (
+  type: 'mousedown' | 'mousemove' | 'mouseup',
+  clientX: number,
+): MouseEvent =>
+  new ViewKeepingMouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX,
+    clientY: row,
+    view: window,
+  });
+
+/** One finger of a touch event: its identifier and where it is on screen. */
+export type Finger = Pick<Touch, 'identifier' | 'clientX' | 'clientY'>;
+
+/** A finger at `clientX` on the row {@link mouseEvent} presses on. */
+export const finger = (identifier: number, clientX: number): Finger => ({
+  identifier,
+  clientX,
+  clientY: row,
+});
+
+/**
+ * A bubbling, cancelable event of a touch type about the finger `changed`.
+ * `touches` is every finger down once the event has happened, the one longest
+ * down first: unless given, `changed` alone for a start or a move, and none
+ * for a lift or a cancel. jsdom has no `Touch` to construct and a `TouchEvent`
+ * is typed to take them, so each finger is a plain object and the lists are
+ * set on a plain event.
  */
 export const touchEvent = (
-  type: 'touchstart' | 'touchmove' | 'touchend',
+  type: 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel',
   changed: Finger,
-  touches: readonly Finger[] = [changed],
+  touches: readonly Finger[] = type === 'touchstart' || type === 'touchmove'
+    ? [changed]
+    : [],
 ): Event => {
   const event = new Event(type, { bubbles: true, cancelable: true });
   Object.defineProperties(event, {
