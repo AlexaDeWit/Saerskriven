@@ -27,7 +27,12 @@ export {
   type UnplacedEndpoint,
 } from './lib/layout.js';
 export { svgNumber } from './lib/numbers.js';
-export { curveMidpoints, polylinePath, smoothPath } from './lib/paths.js';
+export {
+  curveMidpoints,
+  polylinePath,
+  smoothPath,
+  type CurveMidpoint,
+} from './lib/paths.js';
 export {
   CanvasEdgeBody,
   CanvasFreeEndBody,

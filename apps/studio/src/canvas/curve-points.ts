@@ -37,8 +37,8 @@ const pointEdit: ElementEdit<CurveBoundary, WaypointTarget> = {
 
 /**
  * Where Add point on the point at `index` puts a new one: halfway along the
- * drawn curve to the next point, or from the last point, halfway back to the
- * one before it. Nothing for an index the curve has no point at.
+ * drawn curve to the next point by length, or from the last point, halfway
+ * back to the one before it. Nothing for an index the curve has no point at.
  */
 export function addedPoint(
   waypoints: readonly Point[],
@@ -48,7 +48,7 @@ export function addedPoint(
     return undefined;
   }
   const segment = Math.min(index, waypoints.length - 2);
-  const point = curveMidpoints(waypoints).at(segment);
+  const point = curveMidpoints(waypoints).at(segment)?.point;
   return point === undefined
     ? undefined
     : { kind: 'insert', index: segment + 1, point };

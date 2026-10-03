@@ -63,8 +63,8 @@ test('a trust boundary curve takes a new point from a dragged midpoint handle an
   const dragged = curveIn(await savedModel(page));
   expect(dragged).toHaveLength(settledPoints.length + 1);
   expect([dragged[0], dragged[2], dragged[3]]).toEqual(settledPoints);
-  expect(dragged[1]?.x).toBeCloseTo(182.5, 0);
-  expect(dragged[1]?.y).toBeCloseTo(369.375 + 40 / zoom, 0);
+  expect(dragged[1]?.x).toBeCloseTo(208.6, 0);
+  expect(dragged[1]?.y).toBeCloseTo(374.6 + 40 / zoom, 0);
   await undoneToSettled(page);
 
   await point(page, 2).focus();
@@ -77,11 +77,9 @@ test('a trust boundary curve takes a new point from a dragged midpoint handle an
   await page.keyboard.press('Enter');
   await expect(pointHandles(page)).toHaveCount(settledPoints.length + 1);
   await expect(point(page, 3)).toBeFocused();
-  expect(curveIn(await savedModel(page))).toEqual([
-    settledPoints[0],
-    settledPoints[1],
-    { x: 666.25, y: 369.375 },
-    settledPoints[2],
-  ]);
+  const added = curveIn(await savedModel(page));
+  expect([added[0], added[1], added[3]]).toEqual(settledPoints);
+  expect(added[2]?.x).toBeCloseTo(641.3, 1);
+  expect(added[2]?.y).toBeCloseTo(374.1, 1);
   await undoneToSettled(page);
 });

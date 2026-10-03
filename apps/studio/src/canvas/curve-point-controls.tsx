@@ -1,4 +1,5 @@
 import { curveMidpoints } from '@saerskriven/canvas';
+import type { Point } from '@saerskriven/model';
 import { useStore, useViewport, ViewportPortal } from '@xyflow/react';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { keyboardOwner } from '../commands/binding.js';
@@ -23,11 +24,20 @@ type OpenActions = {
 };
 
 /**
+ * How long a curve segment must be drawn, in screen pixels, to show a
+ * midpoint handle: twice the 1.75rem point handle, so the midpoint handle
+ * clears the point handles at both of its ends.
+ */
+export const shortestMidpointSegment = 56;
+
+/**
  * A handle on each point of the selected trust boundary curve, a midpoint
- * handle halfway along each segment that a drag pulls a new point out of,
- * and the actions of the point clicked. The handles stand aside while React
- * Flow drags or resizes the curve, whose points they would otherwise leave
- * behind.
+ * handle halfway along each segment long enough to show one, which a drag
+ * pulls a new point out of, and the actions of the point clicked. The
+ * handles stand aside while React Flow drags or resizes the curve, whose
+ * points they would otherwise leave behind, and the midpoint handles while a
+ * point is dragged, except that a midpoint drag keeps its own handle mounted,
+ * unseen, so the pointer it captured is not lost.
  */
 export function CurvePointControls({
   points,
@@ -161,31 +171,34 @@ export function CurvePointControls({
   const beside = chosen === undefined ? undefined : shown.at(chosen);
   return (
     <ViewportPortal>
-      {curveMidpoints(shown).map((point, index) => (
-        <span
-          aria-hidden="true"
-          className={`${styles.midpoint} nodrag nopan`}
-          data-curve-segment={index}
-          key={index}
-          onClick={(event) => {
-            event.stopPropagation();
-            drag.endedDrag();
-          }}
-          onDoubleClick={(event) => {
-            event.stopPropagation();
-          }}
-          onPointerCancel={() => {
-            cancel(true);
-          }}
-          onPointerDown={(event) => {
-            down(event, addedPoint(boundary.shape.waypoints, index));
-          }}
-          onPointerMove={drag.move}
-          onPointerUp={drag.up}
-          style={onHandle(point, zoom)}
-          title={t('tools.curve-midpoint-handle-help')}
-        />
-      ))}
+      {midpointsShown(shown, points.draft, zoom).map(
+        ({ point, index, pulled }) => (
+          <span
+            aria-hidden="true"
+            className={`${styles.midpoint} nodrag nopan`}
+            data-curve-segment={index}
+            data-pulled={pulled ? 'true' : undefined}
+            key={index}
+            onClick={(event) => {
+              event.stopPropagation();
+              drag.endedDrag();
+            }}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+            }}
+            onPointerCancel={() => {
+              cancel(true);
+            }}
+            onPointerDown={(event) => {
+              down(event, addedPoint(boundary.shape.waypoints, index));
+            }}
+            onPointerMove={drag.move}
+            onPointerUp={drag.up}
+            style={onHandle(point, zoom)}
+            title={t('tools.curve-midpoint-handle-help')}
+          />
+        ),
+      )}
       {shown.map((point, index) => (
         <button
           aria-label={t('tools.curve-point-numbered', { number: index + 1 })}
@@ -248,6 +261,21 @@ export function CurvePointControls({
       )}
     </ViewportPortal>
   );
+}
+
+function midpointsShown(
+  shown: readonly Point[],
+  draft: CurvePoints['draft'],
+  zoom: number,
+) {
+  const held = draft?.kind === 'insert' ? draft.index - 1 : undefined;
+  return curveMidpoints(shown)
+    .map((middle, index) => ({ ...middle, index, pulled: index === held }))
+    .filter(({ segmentLength, pulled }) =>
+      draft === undefined
+        ? segmentLength * zoom >= shortestMidpointSegment
+        : pulled,
+    );
 }
 
 function focusPoint(index: number): void {

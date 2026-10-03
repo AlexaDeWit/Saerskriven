@@ -18,6 +18,7 @@ import {
   openCanvas,
   pointerOn,
   requestFlow,
+  viewportTransform,
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 
@@ -56,6 +57,27 @@ const midpoint = (segment: number): HTMLElement => {
 
 const midpointCount = () =>
   document.querySelectorAll('[data-curve-segment]').length;
+
+const tenths = (
+  points: readonly { readonly x: number; readonly y: number }[],
+) =>
+  points.map(({ x, y }) => ({
+    x: Math.round(x * 10) / 10,
+    y: Math.round(y * 10) / 10,
+  }));
+
+const reshaped = (
+  waypoints: readonly { readonly x: number; readonly y: number }[],
+): void => {
+  act(() => {
+    dispatch(
+      Action.SetBoundaryShape({
+        elementId: boundaryElement,
+        shape: { kind: 'curve', waypoints: [...waypoints] },
+      }),
+    );
+  });
+};
 
 const waypoints = () => {
   const boundary = elementIn(modelStore.getState().present, boundaryElement);
@@ -108,6 +130,25 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     render(<DiagramCanvas />);
     expect(midpointCount()).toBe(boundaryCurve.length - 1);
     expect(midpoint(0).getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('draws a midpoint handle only on a segment drawn at least twice as long as a point handle', () => {
+    render(<DiagramCanvas />);
+    const { zoom } = viewportTransform();
+    const drawnAcross = (length: number) => [
+      { x: 0, y: 0 },
+      { x: length / zoom, y: 0 },
+    ];
+    reshaped(drawnAcross(56.5));
+    expect(midpointCount()).toBe(1);
+    reshaped(drawnAcross(55.5));
+    expect(midpointCount()).toBe(0);
+  });
+
+  it('keeps a double-click on a midpoint handle from renaming the boundary', () => {
+    render(<DiagramCanvas />);
+    fireEvent.doubleClick(midpoint(0));
+    expect(modelStore.getState().inlineEditor).toBeUndefined();
   });
 
   it('moves a focused point by arrow key, one undo step each', () => {
@@ -202,6 +243,8 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     pointerOn(pulling, 'pointerdown', 0, 0);
     pointerOn(pulling, 'pointermove', 0, 60);
     expect(pointCount()).toBe(boundaryCurve.length + 1);
+    expect(midpointCount()).toBe(1);
+    expect(pulling.isConnected).toBe(true);
     pointerOn(pulling, 'pointercancel', 0, 60);
     expect(pointCount()).toBe(boundaryCurve.length);
     expect(modelStore.getState().present).toBe(curvedCanvasModel);
@@ -222,21 +265,46 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(waypoints()).toEqual(boundaryCurve);
   });
 
+  it('keeps a dragged midpoint handle under its pointer while the segment it shortens is too short to show one', () => {
+    render(<DiagramCanvas />);
+    dragHandle(midpoint(0), { x: -14, y: 80 });
+    const [, pulled] = waypoints();
+    expect(waypoints()).toHaveLength(boundaryCurve.length + 1);
+    expect(pulled?.x).toBeCloseTo(-14);
+    expect(pulled?.y).toBeCloseTo(80);
+  });
+
+  it('drops a midpoint drag on Escape, leaving the model as it was', () => {
+    render(<DiagramCanvas />);
+    const pulling = midpoint(0);
+    pointerOn(pulling, 'pointerdown', 0, 0);
+    pointerOn(pulling, 'pointermove', 0, 60);
+    expect(pointCount()).toBe(boundaryCurve.length + 1);
+    document.querySelector<HTMLElement>('.react-flow')?.focus();
+    expect(document.activeElement?.classList.contains('react-flow')).toBe(true);
+    press('Escape');
+    pointerOn(pulling, 'pointerup', 0, 60);
+    fireEvent.click(pulling);
+    expect(modelStore.getState().present).toBe(curvedCanvasModel);
+    expect(pointCount()).toBe(boundaryCurve.length);
+  });
+
   it('adds a point halfway to the next through Add point, focusing the new one for the arrow keys', () => {
     render(<DiagramCanvas />);
     fireEvent.click(point(1));
     fireEvent.click(screen.getByRole('button', { name: 'Add point' }));
-    expect(waypoints()).toEqual([
+    expect(tenths(waypoints())).toEqual([
       boundaryCurve[0],
-      { x: 75, y: 23.75 },
+      { x: 85.2, y: 18.1 },
       boundaryCurve[1],
       boundaryCurve[2],
     ]);
     expect(screen.queryByRole('group', { name: 'Point actions' })).toBeNull();
     expect(document.activeElement).toBe(point(2));
     expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
+    const added = waypoints()[1];
     press('ArrowDown');
-    expect(waypoints()[1]).toEqual({ x: 75, y: 28.75 });
+    expect(waypoints()[1]).toEqual({ x: added?.x, y: (added?.y ?? 0) + 5 });
     expect(modelStore.getState().past).toHaveLength(2);
   });
 
@@ -244,10 +312,10 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     render(<DiagramCanvas />);
     fireEvent.click(point(3));
     fireEvent.click(screen.getByRole('button', { name: 'Add point' }));
-    expect(waypoints()).toEqual([
+    expect(tenths(waypoints())).toEqual([
       boundaryCurve[0],
       boundaryCurve[1],
-      { x: 333.75, y: 23.75 },
+      { x: 324.1, y: 18.9 },
       boundaryCurve[2],
     ]);
     expect(document.activeElement).toBe(point(3));

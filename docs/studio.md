@@ -229,17 +229,21 @@ The boundary keeps its name, its threats and the elements and flows it declares.
 
 A selected trust boundary curve carries a handle on each of its points, and a
 smaller midpoint handle halfway along the curve between each point and the
-next. Drag a point, or focus it and press an arrow key to move it five units or
+next, wherever that stretch is drawn at least twice as long as a point handle.
+Drag a point, or focus it and press an arrow key to move it five units or
 twenty with Shift. Drag a midpoint handle to pull a new point out of the curve
 there. A press anywhere else on the curve's line moves the whole boundary.
 Escape drops either drag before its release, and each edit is one undo step.
-The handles stand aside while the curve itself is moved or scaled.
+The handles stand aside while the curve itself is moved or scaled, and the
+midpoint handles while a point is dragged.
 
 Click a point for Remove point and Add point, or press Delete or Backspace with
 the point focused to remove it. A curve keeps at least two points. Add point
 puts a new point halfway along the curve to the next point, or from the last
 point, halfway back to the one before it, and focuses the new point so the
-arrow keys move it.
+arrow keys move it. For a midpoint handle and Add point alike, halfway is
+measured along the curve's length and the new point lies on the curve, so the
+curve stays close to its shape.
 
 A selected curve also carries a box's side lines and corner handles around its
 points, each corner handle just outside its corner so that a point there keeps

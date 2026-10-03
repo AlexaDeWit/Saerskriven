@@ -60,6 +60,10 @@
   background: var(--saer-colour-surface-raised);
 }
 
+.midpoint[data-pulled='true'] {
+  opacity: 0;
+}
+
 .handle:focus-visible,
 .toolbar:focus-visible,
 .toolbar button:focus-visible,

@@ -13,6 +13,15 @@ import {
 const lowestOf = (points: readonly Point[]): number =>
   Math.min(...points.map((point) => point.y));
 
+const lengthOf = (points: readonly Point[]): number =>
+  points
+    .slice(1)
+    .reduce(
+      (sum, point, index) =>
+        sum + Math.hypot(point.x - points[index].x, point.y - points[index].y),
+      0,
+    );
+
 describe('translate', () => {
   it('writes the point as an SVG transform', () => {
     expect(translate({ x: 40, y: -12.5 })).toBe('translate(40, -12.5)');
@@ -163,23 +172,39 @@ describe('sampledCurve', () => {
 });
 
 describe('curveMidpoints', () => {
-  it('finds one point on the drawn curve halfway along each segment', () => {
-    const waypoints = [
-      { x: 0, y: 0 },
-      { x: 100, y: 40 },
-      { x: 200, y: 0 },
+  it('finds the point halfway along each segment by length, not by parameter', () => {
+    const arch = [
+      { x: 0, y: 330 },
+      { x: 420, y: 400 },
+      { x: 860, y: 330 },
     ];
-    const sampled = sampledCurve(waypoints);
-    expect(curveMidpoints(waypoints)).toEqual([sampled[32], sampled[96]]);
+    const [first, second] = curveMidpoints(arch);
+    expect(first?.point.x).toBeCloseTo(208.6, 1);
+    expect(first?.point.y).toBeCloseTo(374.6, 1);
+    expect(second?.point.x).toBeCloseTo(641.3, 1);
+    expect(second?.point.y).toBeCloseTo(374.1, 1);
+    expect(
+      (first?.segmentLength ?? 0) + (second?.segmentLength ?? 0),
+    ).toBeCloseTo(lengthOf(sampledCurve(arch)));
   });
 
-  it('halves the chord of a curve through two points', () => {
+  it('halves the chord of a curve through two points, as long as the chord', () => {
+    const [only] = curveMidpoints([
+      { x: 0, y: 0 },
+      { x: 60, y: 30 },
+    ]);
+    expect(only?.point.x).toBeCloseTo(30);
+    expect(only?.point.y).toBeCloseTo(15);
+    expect(only?.segmentLength).toBeCloseTo(Math.hypot(60, 30));
+  });
+
+  it('gives a segment of no length its point and a length of zero', () => {
     expect(
       curveMidpoints([
-        { x: 0, y: 0 },
-        { x: 60, y: 30 },
+        { x: 5, y: 5 },
+        { x: 5, y: 5 },
       ]),
-    ).toEqual([{ x: 30, y: 15 }]);
+    ).toEqual([{ point: { x: 5, y: 5 }, segmentLength: 0 }]);
   });
 
   it('finds no segment where there is nothing to smooth', () => {

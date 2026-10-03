@@ -9,19 +9,30 @@ import {
   openCanvas,
 } from './canvas.fixtures.js';
 import { addedPoint, useCurvePoints } from './curve-points.js';
+import type { WaypointTarget } from './waypoints.js';
 
-const firstHalfway = { x: 75, y: 23.75 };
+const firstHalfway = { x: 85.2, y: 18.1 };
 
-const secondHalfway = { x: 333.75, y: 23.75 };
+const secondHalfway = { x: 324.1, y: 18.9 };
+
+const tenth = (value: number): number => Math.round(value * 10) / 10;
+
+const roughly = (target: WaypointTarget | undefined) =>
+  target === undefined
+    ? undefined
+    : {
+        ...target,
+        point: { x: tenth(target.point.x), y: tenth(target.point.y) },
+      };
 
 describe('addedPoint', () => {
-  it('goes halfway along the drawn curve to the next point', () => {
-    expect(addedPoint(boundaryCurve, 0)).toEqual({
+  it('goes halfway along the drawn curve to the next point, by length', () => {
+    expect(roughly(addedPoint(boundaryCurve, 0))).toEqual({
       kind: 'insert',
       index: 1,
       point: firstHalfway,
     });
-    expect(addedPoint(boundaryCurve, 1)).toEqual({
+    expect(roughly(addedPoint(boundaryCurve, 1))).toEqual({
       kind: 'insert',
       index: 2,
       point: secondHalfway,
@@ -29,7 +40,7 @@ describe('addedPoint', () => {
   });
 
   it('goes from the last point halfway back to the one before it', () => {
-    expect(addedPoint(boundaryCurve, 2)).toEqual({
+    expect(roughly(addedPoint(boundaryCurve, 2))).toEqual({
       kind: 'insert',
       index: 2,
       point: secondHalfway,
@@ -42,8 +53,8 @@ describe('addedPoint', () => {
       { x: 80, y: 40 },
     ];
     const halfway = { kind: 'insert', index: 1, point: { x: 40, y: 20 } };
-    expect(addedPoint(line, 0)).toEqual(halfway);
-    expect(addedPoint(line, 1)).toEqual(halfway);
+    expect(roughly(addedPoint(line, 0))).toEqual(halfway);
+    expect(roughly(addedPoint(line, 1))).toEqual(halfway);
   });
 
   it('finds no place for a point the curve does not have', () => {
