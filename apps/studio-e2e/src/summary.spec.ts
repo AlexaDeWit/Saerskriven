@@ -74,6 +74,9 @@ test('the record groups of an expanded threat count what is added, linked and un
   await chooseInPanel(page, 'Existing mitigation', serverPricing);
   await panelControl(page, 'Link existing mitigation').click();
   await expect(recordGroup(page, 'Mitigations', 3)).toBeVisible();
+  await threatPanel(page)
+    .getByRole('button', { name: serverPricing, expanded: false })
+    .click();
   await panelControl(page, 'Unlink mitigation 3').click();
   await expect(recordGroup(page, 'Mitigations', 2)).toBeVisible();
 

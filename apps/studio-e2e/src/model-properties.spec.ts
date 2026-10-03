@@ -248,6 +248,9 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await expect(panelField(page, 'combobox', 'Status')).toHaveText(
     threatStatus ?? '',
   );
+  await threatPanel(page)
+    .getByRole('button', { name: rotate, expanded: false })
+    .click();
   const unlinkHere = panelControl(page, 'Unlink assumption 1');
   await expect(unlinkHere).not.toHaveAccessibleDescription('');
   await unlinkHere.click();

@@ -46,6 +46,13 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
     many: 'Aussi sur les menaces {list}.',
     other: 'Aussi sur les menaces {list}.',
   },
+  'also-on-other-threats': {
+    one: 'Aussi sur {count} autre menace.',
+    many: 'Aussi sur {count} d’autres menaces.',
+    other: 'Aussi sur {count} autres menaces.',
+  },
+  'mitigation-added': 'Ajoutée',
+  'assumption-added': 'Ajoutée',
   'more-threats': '{count} de plus',
   'detail-threats': {
     one: 'menace {list}',

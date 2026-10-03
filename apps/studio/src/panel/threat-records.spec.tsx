@@ -27,7 +27,12 @@ import {
 } from './panel.fixtures.js';
 import type { RecordFieldMessage } from './records.js';
 import type { RefusedField } from './refusals.js';
-import { button, describedNumbers, textbox } from '../ui/ui.fixtures.js';
+import {
+  button,
+  describedNumbers,
+  numbersIn,
+  textbox,
+} from '../ui/ui.fixtures.js';
 
 const linkFirstOffered = async (noun: string): Promise<void> => {
   const user = userEvent.setup();
@@ -41,14 +46,25 @@ const precedes = (first: Node, second: Node): boolean =>
   0;
 
 const assumptionRows = (): readonly (string | undefined)[] =>
-  screen
-    .queryAllByRole('textbox', { name: /^Assumption \d+$/u })
-    .map(
-      (_, index) =>
-        textbox(`Assumption ${String(index + 1)}`).closest<HTMLElement>(
-          '[data-record-row]',
-        )?.dataset['recordRow'],
-    );
+  [
+    ...screen
+      .getByRole('group', { name: /^Assumptions \d+$/u })
+      .querySelectorAll<HTMLElement>('[data-record-row]'),
+  ].map((row) => row.dataset['recordRow']);
+
+const unfold = async (): Promise<void> => {
+  const user = userEvent.setup();
+  for (const toggle of screen.queryAllByRole('button', { expanded: false })) {
+    await user.click(toggle);
+  }
+};
+
+const showOpened = async (
+  overrides: Parameters<typeof showThreatEditor>[0] = {},
+): Promise<void> => {
+  showThreatEditor({ threat: recordedThreat(firstThreat), ...overrides });
+  await unfold();
+};
 
 describe(
   'the records of a threat',
@@ -135,7 +151,7 @@ describe(
 
     it('removes a record unlinked from its only threat, and one undo restores it with its link', async () => {
       const user = userEvent.setup();
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await showOpened();
 
       await user.click(button('Unlink mitigation 1'));
 
@@ -160,7 +176,7 @@ describe(
           }),
         );
       });
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await showOpened();
 
       await user.click(button('Unlink mitigation 1'));
       expect(present().mitigations).toHaveLength(1);
@@ -193,7 +209,7 @@ describe(
           }),
         );
       });
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await showOpened();
 
       await user.click(button('Unlink mitigation 1'));
 
@@ -213,7 +229,7 @@ describe(
           }),
         );
       });
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await showOpened();
 
       await user.click(button('Unlink assumption 1'));
 
@@ -227,7 +243,7 @@ describe(
 
     it('describes the unlink control of an assumption that also applies to the model, and keeps that assumption in the model when it leaves its only threat', async () => {
       const user = userEvent.setup();
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await showOpened();
       const unlink = button('Unlink assumption 1');
       expect(unlink.getAttribute('aria-describedby')).toBeNull();
 
@@ -276,7 +292,17 @@ describe(
       expect(present().mitigations).toMatchObject([
         { id: firstMitigation, threats: [firstThreat, secondThreat] },
       ]);
-      expect(document.activeElement).toBe(textbox('Mitigation 1 title'));
+      const linked = screen.getByRole('button', {
+        name: 'Read-only share links',
+        expanded: false,
+      });
+      expect(document.activeElement).toBe(linked);
+      expect(
+        numbersIn(
+          linked.closest('[data-record-row]')?.querySelector('p')?.textContent,
+        ),
+      ).toEqual([1]);
+      await user.click(linked);
       expect(describedNumbers(button('Unlink mitigation 1'))).toEqual([1]);
       expect(
         screen.queryByRole('combobox', { name: 'Existing mitigation' }),
@@ -340,7 +366,7 @@ describe(
 
     it('heads each group with the count of the records it holds', async () => {
       const user = userEvent.setup();
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await showOpened();
       expect(
         screen.getByRole('group', { name: 'Mitigations 1' }),
       ).toBeDefined();
@@ -355,8 +381,8 @@ describe(
       ).toBeDefined();
     });
 
-    it('puts a record status and Unlink in its name row, above fields that show no label of their own', () => {
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+    it('puts a record status and Unlink in its name row, above fields that show no label of their own', async () => {
+      await showOpened();
       const record = screen.getByRole('group', { name: 'Mitigation 1' });
       const status = within(record).getByRole('combobox', {
         name: 'Mitigation 1 status',
@@ -374,8 +400,8 @@ describe(
       expect(title.getAttribute('placeholder')).toBe('Title');
     });
 
-    it('names each record card as a group holding its controls, and keeps their names', () => {
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+    it('names each record card as a group holding its controls, and keeps their names', async () => {
+      await showOpened();
 
       const card = screen.getByRole('group', { name: 'Mitigation 1' });
       expect(
@@ -416,8 +442,8 @@ describe(
         globalThis.localStorage.clear();
       });
 
-      it('names each field after its kind of record and the record\'s number, so no "de" lands before the record\'s name', () => {
-        showThreatEditor({ threat: recordedThreat(firstThreat) });
+      it('names each field after its kind of record and the record\'s number, so no "de" lands before the record\'s name', async () => {
+        await showOpened();
         const mitigation = card('enums.mitigation');
         const assumption = card('enums.assumption');
 
@@ -507,10 +533,7 @@ describe(
     it('drops a refusal whose row another edit took away', async () => {
       const user = userEvent.setup();
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
-      showThreatEditor({
-        threat: recordedThreat(firstThreat),
-        onRefusal: onRefusal,
-      });
+      await showOpened({ onRefusal: onRefusal });
 
       await user.click(textbox('Mitigation 1 title'));
       await user.keyboard(`{End}${softHyphen}`);
@@ -531,7 +554,7 @@ describe(
 
     it('edits a mitigation title and description in place, each as one replace', async () => {
       const user = userEvent.setup();
-      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      await showOpened();
 
       await user.click(textbox('Mitigation 1 title'));
       await user.keyboard(' for readers');
@@ -589,7 +612,9 @@ describe(
       await linkFirstOffered('assumption');
 
       expect(assumptionRows()).toEqual([added, firstAssumption]);
-      expect(document.activeElement).toBe(textbox('Assumption 2'));
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Every editor is signed in.' }),
+      );
 
       act(() => {
         dispatch(Action.Undo());
@@ -635,6 +660,7 @@ describe(
       const added = present().assumptions.at(-1)?.id;
       expect(assumptionRows()).toEqual([firstAssumption, added]);
 
+      await unfold();
       await user.click(button('Unlink assumption 1'));
       expect(assumptionRows()).toEqual([added]);
       act(() => {
@@ -653,11 +679,14 @@ describe(
       await user.tab();
       const added = present().assumptions.at(-1)?.id;
 
+      await unfold();
       await user.click(button('Unlink assumption 1'));
       await linkFirstOffered('assumption');
 
       expect(assumptionRows()).toEqual([firstAssumption, added]);
-      expect(document.activeElement).toBe(textbox('Assumption 1'));
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Assumption 1', expanded: true }),
+      );
     });
 
     it('drops a held draft for a record no longer on the threat, rather than reopening it', () => {

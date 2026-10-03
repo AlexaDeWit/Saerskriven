@@ -397,6 +397,46 @@
   font-weight: 600;
 }
 
+.recordToggle {
+  display: inline-flex;
+  flex: 1 1 8rem;
+  align-items: center;
+  gap: var(--saer-space-1);
+  min-inline-size: 0;
+  padding: var(--saer-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--saer-radius);
+  background: none;
+  color: var(--saer-colour-text);
+  font: inherit;
+  text-align: start;
+}
+
+.recordToggle > svg {
+  flex: none;
+  color: var(--saer-colour-text-muted);
+}
+
+.recordToggle:focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
+}
+
+.recordLine {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.added {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--saer-space-1);
+  font-size: var(--saer-font-size);
+  font-weight: 600;
+}
+
 .recordState {
   display: flex;
   flex-wrap: wrap;

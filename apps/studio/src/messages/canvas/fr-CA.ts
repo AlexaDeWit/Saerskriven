@@ -118,6 +118,8 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
     'Déliée : {record}. Elle reste liée à ses autres références.',
   'record-removed':
     'Supprimée : {record}. Rien d’autre ne l’utilisait. Annuler la rétablit.',
+  'mitigation-added': 'Mesure {number} ajoutée.',
+  'assumption-added': 'Hypothèse {number} ajoutée.',
   'copy-nothing-selected': 'Sélectionnez des éléments à copier.',
   'copy-refused': 'La sélection n’a pas pu être copiée.',
   'copy-too-large':

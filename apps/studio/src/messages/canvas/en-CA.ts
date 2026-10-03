@@ -103,6 +103,8 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'record-named': '{kind} “{label}”',
   'record-unlinked': 'Unlinked {record}. It stays on its other references.',
   'record-removed': 'Removed {record}. Nothing else used it. Undo restores it.',
+  'mitigation-added': 'Mitigation {number} added.',
+  'assumption-added': 'Assumption {number} added.',
   'copy-nothing-selected': 'Select elements to copy.',
   'copy-refused': 'The selection could not be copied.',
   'copy-too-large': 'The selection exceeds the clipboard size limit.',

@@ -43,6 +43,12 @@ export const panelSv = catalogue(panelMessages)('sv')({
     one: 'Även på hot {list}.',
     other: 'Även på hoten {list}.',
   },
+  'also-on-other-threats': {
+    one: 'Även på {count} annat hot.',
+    other: 'Även på {count} andra hot.',
+  },
+  'mitigation-added': 'Tillagd',
+  'assumption-added': 'Tillagt',
   'more-threats': '{count} till',
   'detail-threats': {
     one: 'hot {list}',

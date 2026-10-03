@@ -42,6 +42,12 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
     one: 'Also on threat {list}.',
     other: 'Also on threats {list}.',
   },
+  'also-on-other-threats': {
+    one: 'Also on {count} other threat.',
+    other: 'Also on {count} other threats.',
+  },
+  'mitigation-added': 'Added',
+  'assumption-added': 'Added',
   'more-threats': '{count} more',
   'detail-threats': {
     one: 'threat {list}',
