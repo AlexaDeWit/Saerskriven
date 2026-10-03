@@ -14,7 +14,7 @@ import { pointerDistance } from './elements.js';
 
 /** The pointer fields a handle drag reads. */
 export type HandlePointer = Pick<
-  PointerEvent<HTMLButtonElement | SVGPathElement>,
+  PointerEvent,
   | 'button'
   | 'clientX'
   | 'clientY'

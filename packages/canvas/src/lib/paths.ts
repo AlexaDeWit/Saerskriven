@@ -1,7 +1,8 @@
 import type { Point } from '@saerskriven/model';
+import { segmentsOfPolyline } from './geometry.js';
 import { svgNumber } from './numbers.js';
 import { arrowhead } from './tokens.js';
-import { unitDirection } from './vectors.js';
+import { alongSegment, unitDirection } from './vectors.js';
 
 const curveSamples = 64;
 
@@ -89,12 +90,28 @@ export function sampledCurve(points: readonly Point[]): readonly Point[] {
   }
   return [
     points[0],
-    ...drawn.flatMap((segment, index) =>
-      Array.from({ length: curveSamples }, (_unused, step) =>
-        onCubic(points[index], segment, (step + 1) / curveSamples),
-      ),
-    ),
+    ...drawn.flatMap((segment, index) => cubicSamples(points[index], segment)),
   ];
+}
+
+/** Halfway along one segment of a drawn curve by length, and that length. */
+export type CurveMidpoint = {
+  readonly point: Point;
+  readonly segmentLength: number;
+};
+
+/**
+ * Where the drawn curve passes halfway between each of the given points and
+ * the next, measured along the ink of each cubic of {@link smoothSegments}
+ * as {@link sampledCurve} samples it, and how long each segment is. One per
+ * segment, and none for fewer than two points.
+ */
+export function curveMidpoints(
+  points: readonly Point[],
+): readonly CurveMidpoint[] {
+  return smoothSegments(points).map((segment, index) =>
+    halfwayAlong([points[index], ...cubicSamples(points[index], segment)]),
+  );
 }
 
 /**
@@ -144,6 +161,32 @@ export function arrowheadPoints(tip: Point, from: Point): readonly Point[] {
 /** {@link arrowheadPoints} closed, as a filled SVG path. */
 export function arrowheadPath(tip: Point, from: Point): string {
   return `${polylinePath(arrowheadPoints(tip, from))} Z`;
+}
+
+function cubicSamples(from: Point, segment: CubicSegment): Point[] {
+  return Array.from({ length: curveSamples }, (_unused, step) =>
+    onCubic(from, segment, (step + 1) / curveSamples),
+  );
+}
+
+function halfwayAlong(run: readonly Point[]): CurveMidpoint {
+  const pieces = segmentsOfPolyline(run);
+  const lengths = pieces.map(({ from, to }) =>
+    Math.hypot(to.x - from.x, to.y - from.y),
+  );
+  const segmentLength = lengths.reduce((sum, length) => sum + length, 0);
+  let before = 0;
+  for (const [index, piece] of pieces.entries()) {
+    const length = lengths[index];
+    if (length > 0 && before + length >= segmentLength / 2) {
+      return {
+        point: alongSegment(piece, (segmentLength / 2 - before) / length),
+        segmentLength,
+      };
+    }
+    before += length;
+  }
+  return { point: run[0], segmentLength };
 }
 
 function onCubic(from: Point, segment: CubicSegment, at: number): Point {
