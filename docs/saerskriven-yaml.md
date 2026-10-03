@@ -40,7 +40,8 @@ one way. An attached endpoint's `side`, one of `top`, `right`, `bottom` and
 the renderer. A write states `bidirectional` on every flow and `side` on every
 pinned end. The security facts and declared relationships below are optional
 from the first release too, with absence meaning unknown. What a key added
-later costs the format is under `formatVersion` below.
+later costs the format, and when a write states one, is under `formatVersion`
+below.
 
 That order is three tiers, so a key added to the format later has an obvious
 home rather than an argued one. The header comes first, `formatVersion` and
@@ -67,9 +68,13 @@ extension.
 
 A change to the format is additive when the absence of what it adds means
 something. A new key is then optional on read, the mapping in
-`@saerskriven/formats` supplies what its absence means, a write states it
-wherever the model holds a value for it, and `formatVersion` stays where it
-is.
+`@saerskriven/formats` supplies what its absence means, and `formatVersion`
+stays where it is. A write states a key that a version's first release
+declared wherever the model holds a value for it. A key added to a version
+after its first release is written only where its value differs from what its
+absence means, so a file from before the key is written back as it was, and an
+earlier release of that version, which drops the key and reports it as
+`undeclared`, meets it only in the files that use it.
 
 A new value in an enumerated vocabulary is additive too: the version stays
 where it is, and every file that does not use the value reads and writes as
@@ -81,7 +86,9 @@ Version 1 grew by additive changes: every key its first release declared is
 required, and the keys later releases added are optional. Those are a flow's
 `bidirectional`, an attached endpoint's `side`, the security facts on actors,
 processes, stores and flows, and the relationship lists (`trustBoundaryIds`,
-`containedElements` and `crossingFlows`).
+`containedElements` and `crossingFlows`). Version 1, which a write no longer
+emits, stated `bidirectional` on every flow, one-way ones included, so the
+rule above for a later key holds from version 2 on.
 
 Version 2 has grown by one: a threat's `appliesToModel`. A threat applies to
 the model as a whole, to the elements it names, or to both, as an assumption
@@ -89,9 +96,9 @@ applies to the model, to threats, or to both. An assumption's `appliesToModel`
 is required, because the first release of version 2 declared it. A threat's is
 optional, and a threat that leaves it out does not apply to the model. The
 model holds the flag on every threat, and a write states it only on a threat
-that applies to the model: stating `false` on the rest would change every file
-an earlier release wrote the next time it is saved, and an earlier release
-would report the key on every threat it reads.
+that applies to the model, under the rule above for a key added after a
+version's first release. A `false` written by hand is therefore removed by the
+next save.
 
 Everything else is breaking: a rename, a type change, a removal, or a new key
 whose absence means nothing. That takes a new `formatVersion`, and a new
