@@ -6,15 +6,26 @@ import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
 import { announce, excerpt, nameQuoteLength } from './announcements.js';
 
-/** Puts the diagram `diagramId` names on screen and says so, where it was not already. */
-export function showDiagram(diagramId: DiagramId): boolean {
+/**
+ * Puts the diagram `diagramId` on screen without saying so. It returns the
+ * title of the diagram now shown, cut to {@link nameQuoteLength}, or
+ * `undefined` where nothing changed.
+ */
+export function switchDiagram(diagramId: DiagramId): string | undefined {
   const before = activeDiagramId(modelStore.getState());
   dispatch(Action.SelectDiagram({ diagramId }));
   const shown = activeDiagram(modelStore.getState());
-  if (shown === undefined || shown.id === before) {
+  return shown === undefined || shown.id === before
+    ? undefined
+    : excerpt(shown.title, nameQuoteLength);
+}
+
+/** Puts the diagram `diagramId` names on screen and says so in the status line, where it was not already. */
+export function showDiagram(diagramId: DiagramId): boolean {
+  const title = switchDiagram(diagramId);
+  if (title === undefined) {
     return false;
   }
-  const title = excerpt(shown.title, nameQuoteLength);
   announce((t) => t('canvas.diagram-shown', { title }));
   return true;
 }

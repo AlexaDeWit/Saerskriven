@@ -1,10 +1,10 @@
 import { DropdownMenu } from 'radix-ui';
-import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { announceRefusal } from '../canvas/announcements.js';
 import {
   endRenamingDiagram,
   renameActiveDiagram,
-  showDiagram,
+  switchDiagram,
   useDiagramRenaming,
 } from '../canvas/diagrams.js';
 import { activeDiagram } from '../store/selectors.js';
@@ -12,6 +12,7 @@ import { useModelStore } from '../store/store.js';
 import { useTranslator } from '../messages/locale.js';
 import { refusedName, useTextDraft } from '../ui/text-field.js';
 import { useCloseFocus } from '../ui/close-focus.js';
+import { VisuallyHidden } from '../ui/visually-hidden.js';
 import styles from './menu.module.css';
 import { MenuCommand, panelPlacement } from './menu-items.js';
 import { RadioChoices } from './radio-choices.js';
@@ -20,7 +21,9 @@ import { RadioChoices } from './radio-choices.js';
  * The title of the diagram on screen, opening a list of diagrams to switch
  * to with New diagram and Rename diagram. The title field closes when the
  * diagram on screen changes under it. Enter and Escape return focus to the
- * button, and a blur commits and leaves focus where it went.
+ * button, and a blur commits and leaves focus where it went. A choice is
+ * said in a hidden status region, not in the canvas status line, because the
+ * button keeps focus and shows the title.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);
@@ -31,6 +34,7 @@ export function DiagramSwitcher() {
   const wasEditing = useRef(false);
   const blurred = useRef(false);
   const closeFocus = useCloseFocus();
+  const [chosen, setChosen] = useState<Chosen>();
   const { t } = useTranslator();
 
   useEffect(() => {
@@ -87,7 +91,15 @@ export function DiagramSwitcher() {
                 label: diagram.title,
               }))}
               label={t('menu.diagram')}
-              onChoose={showDiagram}
+              onChoose={(diagramId) => {
+                const title = switchDiagram(diagramId);
+                if (title !== undefined) {
+                  setChosen((last) => ({
+                    title,
+                    sequence: (last?.sequence ?? 0) + 1,
+                  }));
+                }
+              }}
               value={active.id}
             />
             <DropdownMenu.Separator className={styles.rule} />
@@ -96,9 +108,18 @@ export function DiagramSwitcher() {
         <MenuCommand command="new-diagram" />
         {active !== undefined && <MenuCommand command="rename-diagram" />}
       </DropdownMenu.Content>
+      <output data-testid="diagram-chosen">
+        {chosen !== undefined && (
+          <VisuallyHidden key={chosen.sequence}>
+            {t('canvas.diagram-shown', { title: chosen.title })}
+          </VisuallyHidden>
+        )}
+      </output>
     </DropdownMenu.Root>
   );
 }
+
+type Chosen = { readonly title: string; readonly sequence: number };
 
 type TitleFieldProps = {
   readonly title: string;
