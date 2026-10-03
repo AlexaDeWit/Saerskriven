@@ -102,12 +102,19 @@ const siteFiles = (siteUrl: string, socialImage?: SocialImage): Plugin => {
   };
 };
 
-export const reactLib = (projectRoot: string) =>
+type ReactLibOptions = {
+  readonly setupFiles?: string[];
+};
+
+export const reactLib = (
+  projectRoot: string,
+  { setupFiles = [] }: ReactLibOptions = {},
+) =>
   defineConfig({
     root: projectRoot,
     cacheDir: cacheDir(projectRoot),
     plugins: [react()],
-    test: sharedTest(projectRoot, 'jsdom'),
+    test: sharedTest(projectRoot, 'jsdom', setupFiles),
   });
 
 type ReactAppOptions = {

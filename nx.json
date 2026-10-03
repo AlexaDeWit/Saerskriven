@@ -14,16 +14,15 @@
       { "env": "LANG" },
       { "env": "LC_ALL" }
     ],
-    // Root configuration imported by Vitest configurations, and the setup
-    // module they load into every jsdom project. That module is named here
-    // because `production` leaves a test-setup file out, so a project that
-    // depends on canvas would not otherwise hash it.
+    // Root configuration imported by Vitest configurations.
     "testConfiguration": [
       "{workspaceRoot}/vitest.shared.mts",
-      "{workspaceRoot}/packages/canvas/src/test-setup.ts",
       "{workspaceRoot}/workspace-version.mts",
       { "json": "{workspaceRoot}/package.json", "fields": ["version"] }
     ],
+    // A project's own test setup module, which `production` leaves out. A
+    // project that loads another project's names this input for that project.
+    "testSetup": ["{projectRoot}/src/test-setup.[jt]s"],
     "testFixtures": [
       "{workspaceRoot}/test-data/**/*",
       "{workspaceRoot}/threat-modelling/**/*"

@@ -2,9 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./out-tsc/vitest",
-    // The resize controls spec mounts React Flow under jsdom and presses a
-    // control, so it reads the document and builds mouse events, which only
-    // lib.dom declares.
+    // This program's modules run under jsdom and use the document, its
+    // events and its globals, which only lib.dom declares.
     "lib": ["dom", "es2022"],
     "types": [
       "vitest/globals",

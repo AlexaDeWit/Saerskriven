@@ -104,6 +104,16 @@ own fixtures module compiles too, since an import pulls in a module the lib
 tsconfig excludes. The `no-restricted-imports` override in `.oxlintrc.json`
 refuses both forms from every file but a spec, a test, or a fixture module.
 
+A browser API that jsdom leaves out, and that the specs of more than one
+project reach, is stubbed in one setup module, which its package exports as a
+subpath and each of those projects names in its own `setupFiles`.
+`@saerskriven/canvas/test-setup` stubs `ResizeObserver`: the canvas project
+loads it by its own path, and the studio by the subpath, ahead of the studio's
+own setup module. Only test configuration loads a setup subpath. The lint
+refuses a production module that imports one for its side effect, as it refuses
+any import that binds nothing, and nothing refuses one that imports it
+dynamically.
+
 ## Prose register
 
 Canadian English, no em- or en-dashes, no filler adjectives.
