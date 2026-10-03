@@ -20,6 +20,7 @@ stylesheet.
 | `visually-hidden.tsx`                                          | Text for assistive technology that is not drawn                                                         |
 | `external-store.ts`                                            | The subscription helper every module-level store in the studio shares                                   |
 | `close-focus.ts`, `measure.ts`                                 | Keeping a closed dropdown from taking focus back, and measuring an element                              |
+| `review-order.ts`                                              | The order threats are reviewed in: by status from the most risk left live, then by severity             |
 
 ## Tokens
 
@@ -90,7 +91,9 @@ rule](../panel/README.md#the-commit-rule)).
 `EnumField` is the worked example, and `SeverityField`, `StatusField` and
 `CategoryField` are it three times: each reads its options from a model
 schema, so the field offers what the model names and nothing else, and each
-maps the stored value to a catalogue message. `labelOf` is required, so a
+maps the stored value to a catalogue message. `StatusField` lists them in the
+order the threat panel lists threats, from `review-order.ts`. `labelOf` is
+required, so a
 stored value is never drawn as its own label. It can return an `OptionText`: a `suffix` that tells two like labels
 apart, drawn on its own line so the cut below cannot hide it, and a `detail`
 line under the option that becomes its accessible description. The trigger
@@ -120,9 +123,11 @@ field and goes with the text. A field can be opened on a draft reported that
 way, which is how the threat panel puts a refused draft back after the panel
 itself has been unmounted ([the panel](../panel/README.md)).
 
-`ProseField` starts at eight lines and grows with its text to 24, or starts at
-two and grows to ten when `compact`, as the record cards use it. Past its bound
-it scrolls, and it keeps manual vertical resizing. CSS `field-sizing: content`
+`ProseField` starts at eight lines and grows with its text to 24, past which it
+scrolls. A `compact` one, as every description in the threat panel uses,
+starts at two lines and grows with its text without a bound, so it never
+scrolls inside its own box. Both keep manual vertical resizing. CSS
+`field-sizing: content`
 does the growing where the browser supports it (`sizesFieldsToContent`).
 Elsewhere, Firefox among them, `growUnlessResized` sets the height from the
 text after each render through `growToContent`, which the canvas rename field

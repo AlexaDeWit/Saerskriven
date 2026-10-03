@@ -317,10 +317,13 @@ middle-button drag, Hand or held Space pans.
 
 ## The threat panel
 
-The panel shows the one selected element or flow: its description and scope,
-its security properties, and its threats. With several selected it says how
-many and offers no fields. Focus threats moves focus to "Add a threat".
-Selecting alone never moves focus into the panel. **Widen pane** widens it and
+The panel shows the one selected element or flow, headed by its name, on two
+tabs: **Threats**, which carries the element's threat count, and **Details**,
+which holds its description, scope and security properties. Every selection
+opens on Threats, and the arrow keys move between the tabs. With several
+selected the panel says how many and offers no fields. Focus threats shows the
+Threats tab and moves focus to "Add a threat". Selecting alone never moves
+focus into the panel. **Widen pane** widens it and
 **Restore pane width** returns it to normal, for the rest of the session. The
 panel covers the diagram rather than shrinking it, so pan to reach what it
 covers.
@@ -335,21 +338,36 @@ element first. Choose one, then Attach. The threat opens expanded unless
 another threat is holding a refused draft, which keeps the open one where it
 is, and an undo takes the attachment back.
 
-Each threat's summary shows its number, title, severity, status, how many
-mitigations and assumptions it links, and a mark for each flag it raises.
-Expand one threat at a time to edit it. A field commits when you leave it, and
-the title also on Enter. Text the model cannot hold stays in the field with the
-refused character named, and the threat stays expanded until you correct or
-clear it. That draft survives closing the panel and selecting something else,
-until the file changes. Deleting a threat removes it from the model, and so
-from every element it names, which the item says beside its delete control.
+Each threat's summary is two lines: its number and title, then its severity,
+its status with a glyph of its own, its category, and a mark for each flag it
+raises. Open is the one status drawn as a filled pill. A third line names the
+other elements the threat is on, where there are any. Threats are listed by how
+much risk is still live: open, accepted risk, transferred, mitigated, avoided,
+eliminated, then not applicable, each status from critical down to undecided.
+The order is set when the panel opens or the selection moves, and holds while
+the panel stays open, so a threat whose status changes keeps its place and a
+new one joins the end. The Status picker lists the statuses in the same order.
+
+Expand one threat at a time to edit it. Opening a threat scrolls it to the top
+of the panel, and its summary stays pinned there while any of the threat is in
+view. Tab keeps the field it reaches below the summary, with the next field in
+view under it. The fields run Title, Category, Description, the mitigations and
+assumptions, then Severity and Status side by side with any raised flag beside
+Status, then the attached elements and Delete. A field commits when you leave
+it, and the title also on Enter. A description starts at two lines and grows
+with its text, so the panel is the one thing that scrolls. Text the model
+cannot hold stays in the field with the refused character named, and the threat
+stays expanded until you correct or clear it. That draft survives closing the
+panel and selecting something else, until the file changes. Deleting a threat
+removes it from the model, and so from every element it names, which the item
+says beside its delete control.
 
 ### Attached elements
 
-An expanded threat lists the elements it names, across every diagram, with a
-Detach control on each and an **Attach existing element** picker under them
-that offers the elements it does not name. Attach and Detach are one undo step
-each.
+An expanded threat lists the elements it names, across every diagram, as one
+row of names each with its own Detach control, and an **Attach existing
+element** picker under them that offers the elements it does not name. Attach
+and Detach are one undo step each.
 
 Detaching the last element removes the threat, with the mitigations and
 assumptions left on no threat, and the notice says so. There is no
@@ -360,19 +378,29 @@ takes its place, or to Add a threat.
 
 ### Mitigations and assumptions
 
-An expanded threat holds a Mitigations group and an Assumptions group. Nothing
-done to a record changes a threat's status.
+An expanded threat holds a Mitigations group and an Assumptions group, each
+headed by how many records it holds. Nothing done to a record changes a
+threat's status.
 
-- **Add** opens an empty row. The record is created when a field in the row
-  commits, starting `proposed` for a mitigation or `unconfirmed` for an
-  assumption. Leaving a row with every field empty, or Discard, drops it. From
-  the keyboard, Tab out of typed text commits it, so clear the text to discard
-  it.
+- Every record starts folded to one row: its title, or the start of its text
+  where it has none, and its status, which you can change there. A record on
+  other threats adds a line saying how many ("Also on 3 other threats"), and
+  an assumption that applies to the model says so.
+- Activating the row opens the record in place: its status and Unlink in its
+  name row, the threats it is also on by number ("Also on threats 4 and 25"),
+  then its title and text, which show no label of their own. The same control
+  folds it again. An opened record stays open until its threat closes, and a
+  field holding refused text keeps it open.
+- **Add** opens an empty row with focus in its first field. The record is
+  created when a field in the row commits, Enter in a mitigation's title or
+  leaving a field that holds text, starting `proposed` for a mitigation or
+  `unconfirmed` for an assumption. It is then marked **Added** until its threat
+  closes, its Discard becomes Unlink, the group's count goes up, and a screen
+  reader hears it was added. Leaving a row with every field empty, or Discard,
+  drops it. From the keyboard, Tab out of typed text commits it, so clear the
+  text to discard it.
 - **Link existing** lists the records of that kind not on this threat. Choose
-  one, then Link.
-- A row edits the record's text and status in place. A record on other threats
-  says which ("Also on threats 4 and 25"), and an assumption that applies to
-  the model says so.
+  one, then Link, and the record joins folded.
 - **Unlink** takes the record off this threat. A record left with no threat,
   and for an assumption no model link either, is removed, and Undo brings it
   back.
@@ -388,7 +416,9 @@ clears the selection, and whether it is shown belongs to each tab. Selecting
 anything brings the threat panel back. Escape, Close model properties, or
 running the command again closes it and moves focus to the canvas.
 
-Its assumptions group works as a threat's does, bound to the model. Add
+Its assumptions group works as a threat's does, bound to the model, but its
+records stay open as cards with labelled fields, and its heading carries no
+count. Add
 creates an assumption that applies to the model and links no threat. Link
 existing lists the assumptions that do not yet apply to the model. Unlink stops
 an assumption applying to the model, and removes it only where it links no
@@ -396,9 +426,9 @@ threat.
 
 ### Description and scope
 
-The top of the panel holds the selected element's **Description**, **Out of
-scope** and **Reason out of scope**, above its security properties and its
-threats, for every element and flow, a Note included. Each field commits when
+The **Details** tab holds the selected element's **Description**, **Out of
+scope** and **Reason out of scope**, above its security properties, for every
+element and flow, a Note included. Each field commits when
 you leave it, as one undo step. Out of scope offers Yes and No. The reason
 shows while Out of scope is Yes or while the element holds a reason, and the
 two are independent: clearing Out of scope keeps the reason. Text the model
@@ -408,13 +438,13 @@ and selecting something else.
 
 ### Security properties
 
-Select one actor, process, store, flow or trust boundary and expand **Security
-properties** above its threats. **Not recorded** leaves a fact unknown, and a
-flag offers Yes and No. Protocol and privilege level distinguish an empty
+Select one actor, process, store, flow or trust boundary, show its Details tab,
+and expand **Security properties**. **Not recorded** leaves a fact unknown, and
+a flag offers Yes and No. Protocol and privilege level distinguish an empty
 recorded value from Not recorded. Relationship lists (the boundaries a flow
-crosses, a boundary's contained elements and crossing flows) offer valid
-targets in the same diagram, keep their order and any repeated entry until you
-edit them, and Not recorded removes the list itself. The fields' meaning is in
+crosses, a boundary's contained elements and crossing flows) offer valid targets
+in the same diagram, keep their order and any repeated entry until you edit
+them, and Not recorded removes the list itself. The fields' meaning is in
 [the format](saerskriven-yaml.md#security-facts).
 
 ## Keyboard
@@ -500,7 +530,7 @@ navigation keys do not.
   threats, and an assumption through its threats or the model properties. The
   model's explicit record removal has no control.
 - Link existing and Attach existing have no search or filter, and the threat
-  list has no filter, sort or search.
+  list has no filter or search, and no order but the one above.
 - A threat's id and number cannot be edited.
 - A custom methodology cannot be created in the studio. A threat that arrived
   with one shows it and can be moved to a listed category.
