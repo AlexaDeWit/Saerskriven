@@ -443,6 +443,24 @@ export const selectNode = async (
   return node;
 };
 
+/** Presses Tab from `from`, the control before the canvas unless named, until `target` holds focus, in at most 40 presses. */
+export const tabTo = async (
+  page: Page,
+  target: Locator,
+  from: Locator = beforeCanvas(page),
+): Promise<void> => {
+  await from.focus();
+  for (
+    let pressed = 0;
+    pressed < 40 &&
+    !(await target.evaluate((element) => element === document.activeElement));
+    pressed += 1
+  ) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(target).toBeFocused();
+};
+
 /** Selects an element by focusing it and pressing Enter, then waits for the canvas to settle. */
 export const selectByKeyboard = async (
   page: Page,
@@ -472,6 +490,13 @@ export const panelField = (
 /** One of the panel's buttons, by its exact accessible name. */
 export const panelControl = (page: Page, name: string): Locator =>
   threatPanel(page).getByRole('button', { name, exact: true });
+
+/** Closes the threat panel by keyboard from its Close threats button, leaving the pointer where it was, and waits for it to go. */
+export const closeThreats = async (page: Page): Promise<void> => {
+  await panelControl(page, 'Close threats').focus();
+  await page.keyboard.press('Enter');
+  await expect(threatPanel(page)).toHaveCount(0);
+};
 
 /** The summary button of the panel's threat whose accessible name matches `title`. */
 export const threatSummary = (page: Page, title: string | RegExp): Locator =>

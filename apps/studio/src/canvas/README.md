@@ -135,7 +135,10 @@ name selects the flow.
 
 React Flow z-index values are set by hand: a boundary at -1, a regular node at
 0 and a selected regular node at 1, so selection keeps a regular node visible
-without raising a boundary above what it encloses. A boundary's interior passes
+without raising a boundary above what it encloses. A node whose resize control
+holds keyboard focus rises to 2 while it does, above every other item and the
+handles on a curve's points, and that control above the node's other controls,
+so nothing on the canvas covers the control's ring. A boundary's interior passes
 pointer events through, and its name, resize control and an invisible stroke
 around its outline stay selectable. Its disabled connection handles cannot take
 an outline drag.
@@ -152,8 +155,10 @@ trust boundary curve's corner handles sit outside its corners instead, clear of
 the badge and of the handle on a point there.
 
 Focus is the app's ring (`--saer-focus-ring`) and selection the frame and
-weights above, drawn apart so they stack. Both are an outline or a border
-rather than a shadow, so forced-colours mode keeps them.
+weights above, drawn apart so they stack: an element's ring sits just inside
+its frame, over its own drawing and within the bounds it was drawn at. Both are
+an outline or a border rather than a shadow, so forced-colours mode keeps
+them.
 
 ## The view
 
