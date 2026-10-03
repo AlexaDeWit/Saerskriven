@@ -226,6 +226,23 @@ describe('local recovery storage', () => {
     });
   });
 
+  it('restores a threat that applies to the model with its model link', () => {
+    const memory = memoryStorage();
+    const storage = localRecoveryStorage(() => memory.backend);
+    const present: Model = {
+      ...sampleModel,
+      threats: sampleModel.threats.map((threat) => ({
+        ...threat,
+        appliesToModel: true,
+      })),
+    };
+    storage.replace(recoverySnapshot(present, true, FileLifecycle.NoFile()));
+
+    expect(Either.getOrThrow(storage.load())?.present.threats).toEqual(
+      present.threats,
+    );
+  });
+
   it('rejects a version 1 snapshot, saying an earlier release wrote it', () => {
     expect(loadStored(version1Snapshot)).toEqual(
       rejectedAs(RecoveryProblem.EarlierRelease({ writer: undefined })),

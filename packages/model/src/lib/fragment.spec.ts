@@ -112,6 +112,20 @@ describe('selectionFragment', () => {
     expect(fragment.assumptions).toEqual(validModel.assumptions);
   });
 
+  it('copies a threat without the model link its source holds', () => {
+    const modelWide = parsedFixture({
+      ...validModelFixture,
+      threats: validModelFixture.threats.map((threat) => ({
+        ...threat,
+        appliesToModel: true,
+      })),
+    });
+    const fragment = Either.getOrThrow(
+      selectionFragment(modelWide, diagram, [elementId('element-api')]),
+    );
+    expect(fragment.threats).toEqual(apiFragment().threats);
+  });
+
   it('includes the endpoint of a selected flow and keeps its free endpoint', () => {
     const flow = flowIn(validModel, 'element-order-flow');
     const fragment = Either.getOrThrow(
@@ -204,6 +218,26 @@ describe('remapFragment and insertFragment', () => {
   it('rejects a fragment whose ids the model already holds', () => {
     const { fresh, inserted } = whole();
     expect(Either.isLeft(insertFragment(inserted, diagram, fresh))).toBe(true);
+  });
+
+  it('pastes a threat with no model link, whatever the fragment states', () => {
+    const fragment = apiFragment();
+    const crafted = parsedFixture({
+      ...fragment,
+      threats: fragment.threats.map((threat) => ({
+        ...threat,
+        appliesToModel: true,
+      })),
+    });
+    const remapped = Either.getOrThrow(
+      remapFragment(crafted, 'pasted', { x: 0, y: 0 }, validModel),
+    );
+    const inserted = Either.getOrThrow(
+      insertFragment(validModel, diagram, remapped),
+    );
+    expect(
+      inserted.threats.map(({ appliesToModel }) => appliesToModel),
+    ).toEqual([false, false]);
   });
 
   it('pastes an unnamed element and a flow on one boundary at both ends, which only an edit refuses', () => {

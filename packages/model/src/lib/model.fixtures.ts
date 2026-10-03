@@ -142,6 +142,7 @@ export const validModelFixture: z.input<typeof modelSchema> = {
       status: 'open',
       description: 'An order can be altered between the customer and the API.',
       elements: ['element-api', 'element-order-flow'],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: 1,
@@ -258,6 +259,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       status: 'open',
       description: 'A stolen session cookie passes as the shopper.',
       elements: ['element-shopper'],
+      appliesToModel: false,
     },
     {
       id: 'threat-tamper-payment',
@@ -268,6 +270,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       status: 'open',
       description: 'The basket total is altered on its way to checkout.',
       elements: ['element-pay-flow', 'element-checkout'],
+      appliesToModel: false,
     },
     {
       id: 'threat-leak-vault',
@@ -281,6 +284,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       status: 'mitigated',
       description: 'A backup of the vault leaves the trust boundary.',
       elements: ['element-vault'],
+      appliesToModel: false,
     },
     {
       id: 'threat-flood-checkout',
@@ -291,6 +295,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       status: 'open',
       description: 'Repeated basket submissions exhaust checkout capacity.',
       elements: ['element-checkout'],
+      appliesToModel: false,
     },
     {
       id: 'threat-model-drift',
@@ -305,6 +310,7 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
       status: 'accepted-risk',
       description: 'The diagrams fall behind the system they describe.',
       elements: [],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: 12,

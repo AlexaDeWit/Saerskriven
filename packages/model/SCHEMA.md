@@ -173,6 +173,7 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
   - `status`: one of `open`, `mitigated`, `transferred`, `avoided`, `accepted-risk`, `eliminated`, `not-applicable`
   - `description`: text
   - `elements`: list of ElementId (text, at least 2 characters)
+  - `appliesToModel`: boolean
 - `lastIssuedThreatNumber`: integer, 0 or more
 - `mitigations`: list of object
   - `id`: MitigationId (text, at least 2 characters)

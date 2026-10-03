@@ -94,6 +94,15 @@ const withMitigationRecord = (id: string) =>
     ].join('\n'),
   );
 
+const appliedThreat = oneThreatYamlV1.replace(
+  '      - element-1\nlastIssuedThreatNumber',
+  '      - element-1\n    appliesToModel: true\nlastIssuedThreatNumber',
+);
+
+const appliedThreatInVersion2 = appliedThreat
+  .replace('formatVersion: 1', 'formatVersion: 2')
+  .replace('    mitigation: ""\n', '');
+
 const withExtras = `${oneThreatYamlV1.replace(
   '    number: 1',
   '    number: 1\n    likelihood: high',
@@ -114,6 +123,12 @@ function modelOfDocumentIn(text: string) {
   return Either.isLeft(read)
     ? undefined
     : Either.getOrUndefined(readSaerskrivenYamlDocument(read.right.source));
+}
+
+function linksOf(text: string) {
+  return readingOf(text)?.model.threats.map(
+    ({ appliesToModel }) => appliesToModel,
+  );
 }
 
 function issuePathsOf(text: string) {
@@ -258,6 +273,32 @@ describe('a version 1 assumption that links no threat', () => {
   });
 });
 
+describe('a threat that states its model link', () => {
+  it('applies to the model in a version 2 file, and does not where the file leaves the key out', () => {
+    expect(readingOf(appliedThreatInVersion2)?.divergences).toEqual([]);
+    expect(linksOf(appliedThreatInVersion2)).toEqual([true]);
+    expect(
+      linksOf(
+        appliedThreatInVersion2.replace('    appliesToModel: true\n', ''),
+      ),
+    ).toEqual([false]);
+  });
+
+  it('does not in a version 1 file, which has no such key: the read drops it as undeclared', () => {
+    expect(linksOf(appliedThreat)).toEqual([false]);
+    expect(readingOf(appliedThreat)?.divergences).toEqual([
+      {
+        subject: { kind: 'model' },
+        detail: {
+          code: 'key-undeclared',
+          parameters: { path: 'threats.0.appliesToModel' },
+        },
+        reason: 'undeclared',
+      },
+    ]);
+  });
+});
+
 describe('a version 1 threat that carries mitigation text', () => {
   it.each([
     ['mitigated', 'implemented'],
@@ -352,6 +393,10 @@ describe('a Saerskriven YAML document mapped without its text', () => {
     {
       named: 'an assumption that links no threat',
       text: threatlessAssumption,
+    },
+    {
+      named: 'a threat that applies to the model',
+      text: appliedThreatInVersion2,
     },
   ])(
     'maps $named from the version 2 source a read hands back to the model its text reads as',

@@ -574,6 +574,13 @@ export const expandThreat = async (
   await expect(summary).toHaveAttribute('aria-expanded', 'true');
 };
 
+/** Opens the two-diagram model with the shopper selected and its takeover threat expanded. */
+export const openShopperTakeover = async (page: Page): Promise<void> => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
+};
+
 /** Adds a record through the panel's Add control, typing its first field and, when given, a mitigation's description, each left by Tab. */
 export const addRecord = async (
   page: Page,

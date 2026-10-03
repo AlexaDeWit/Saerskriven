@@ -184,7 +184,8 @@ threat's last element attachment away (`detach_threat`, `remove_element` on
 its last element, or a `replace_threat` that leaves it none) removes the
 threat with it and everything that removal cascades to, and the result names
 each such threat under `culledThreats`. A threat the file already held
-attached to nothing stays.
+attached to nothing stays, and so does a threat the file says applies to the
+model as a whole (`appliesToModel`).
 
 Every call quotes the `revision` a read returned, and a file that changed
 before the call is refused rather than overwritten. The revision is checked
@@ -348,7 +349,9 @@ added and keeps it when the threat is replaced, so no edit renumbers a threat,
 and no two threats hold one number. `add_threat` takes the rest of the threat,
 and every element it attaches to has to be one the model holds.
 `replace_threat` takes the whole threat and replaces every field of the one
-with its id but the number. `set_threat_status`, `set_threat_severity` and
+with its id but the number. Neither takes `appliesToModel`: an added threat
+does not apply to the model, a replaced one keeps what the file states, and
+no edit changes it. `set_threat_status`, `set_threat_severity` and
 `set_threat_category` change that one field and keep the rest, the category
 given with its methodology. `set_threat_details` changes any of `title` and
 `description` and keeps the rest, so one text changes without a copy of the

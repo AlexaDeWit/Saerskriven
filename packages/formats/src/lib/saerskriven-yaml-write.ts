@@ -66,7 +66,9 @@ export function writeSaerskrivenYaml(
 /**
  * The model as a current-version document, threats in number order and every
  * other list in the model's order. Records are mapped field by field,
- * mirroring `saerskriven-yaml-read.ts`.
+ * mirroring `saerskriven-yaml-read.ts`. A threat's `appliesToModel` is stated
+ * only where it is true, so a model that never used it writes the bytes it
+ * wrote before the key existed.
  */
 export function writeSaerskrivenYamlDocument(
   model: Model,
@@ -181,6 +183,7 @@ function toWireThreat(threat: Threat): SaerskrivenYamlV2Threat {
     status: threatStatusesToWire[threat.status],
     description: threat.description,
     elements: threat.elements,
+    ...(threat.appliesToModel ? { appliesToModel: true } : {}),
   };
 }
 

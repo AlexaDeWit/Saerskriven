@@ -1,4 +1,8 @@
-import { OperationFailure, linkAssumptionToModel } from '@saerskriven/model';
+import {
+  OperationFailure,
+  linkAssumptionToModel,
+  linkThreatToModel,
+} from '@saerskriven/model';
 import {
   assumptionId,
   mitigationId,
@@ -178,6 +182,44 @@ describe('the details edits', () => {
       expect(Either.getOrUndefined(replaced)?.model).toEqual(registerModel);
     },
   );
+});
+
+describe('a threat edit and the model link', () => {
+  const spoofShopper = threatId('threat-spoof-shopper');
+  const modelWide = Either.getOrThrow(
+    linkThreatToModel(registerModel, spoofShopper),
+  );
+  const held = modelWide.threats.find(({ id }) => id === spoofShopper);
+
+  it('replace_threat keeps the link the model holds, so a replacement naming no element keeps the threat', () => {
+    const applied = Either.getOrThrow(
+      applyEdits(modelWide, [
+        modelEditSchema.parse({
+          op: 'replace_threat',
+          threat: { ...held, elements: [], appliesToModel: false },
+        }),
+      ]),
+    );
+    expect(applied.model.threats.find(({ id }) => id === spoofShopper)).toEqual(
+      { ...held, elements: [] },
+    );
+    expect(applied.culledThreats).toEqual([]);
+  });
+
+  it('add_threat adds a threat that does not apply to the model, whatever the edit states', () => {
+    const applied = Either.getOrThrow(
+      applyEdits(registerModel, [
+        modelEditSchema.parse({
+          op: 'add_threat',
+          threat: { ...held, id: 'threat-added', appliesToModel: true },
+        }),
+      ]),
+    );
+    expect(applied.model.threats.at(-1)).toMatchObject({
+      id: 'threat-added',
+      appliesToModel: false,
+    });
+  });
 });
 
 describe('replace_assumption', () => {

@@ -10,6 +10,7 @@ import type { Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import { unknownThreatIn } from './references.js';
+import type { Threat } from './threats.js';
 
 /** Names one record across both registers, where a mitigation and an assumption may share an id. */
 export const recordReferenceSchema = z.discriminatedUnion('kind', [
@@ -24,7 +25,8 @@ type RecordKey = 'mitigations' | 'assumptions';
 
 type RecordIn<Key extends RecordKey> = Model[Key][number];
 
-type UnknownThreatFailure = Extract<
+/** The failure for a threat id the register does not hold. */
+export type UnknownThreatFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownThreat' }
 >;
@@ -82,6 +84,17 @@ export function assumptionHasReference(
   assumption: Pick<Assumption, 'threats' | 'appliesToModel'>,
 ): boolean {
   return assumption.appliesToModel || assumption.threats.length > 0;
+}
+
+/**
+ * Whether a threat has a reference: an element attachment or its model link.
+ * An edit that takes the last one away culls the threat, and a file can hold
+ * one with none.
+ */
+export function threatHasReference(
+  threat: Pick<Threat, 'elements' | 'appliesToModel'>,
+): boolean {
+  return threat.appliesToModel || threat.elements.length > 0;
 }
 
 /** The mitigation register. A mitigation's references are its threat links. */

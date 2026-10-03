@@ -161,7 +161,7 @@ export function EndpointEditor({
         (['x', 'y'] as const).map((axis) => (
           <NumberField
             key={axis}
-            label={t(axis === 'x' ? 'tools.axis-x' : 'tools.axis-y')}
+            quantity={`axis-${axis}`}
             value={position[axis]}
             change={(value) => {
               setPosition({ ...position, [axis]: value });

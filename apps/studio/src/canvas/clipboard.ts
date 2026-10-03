@@ -278,7 +278,9 @@ function externalLinkCount(
       .filter((threat) => copiedThreats.has(threat.id))
       .reduce(
         (count, threat) =>
-          count + threat.elements.filter((id) => !copiedIds.has(id)).length,
+          count +
+          threat.elements.filter((id) => !copiedIds.has(id)).length +
+          (threat.appliesToModel ? 1 : 0),
         0,
       ) +
     uncopied(present.mitigations, fragment.mitigations) +

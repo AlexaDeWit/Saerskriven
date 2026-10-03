@@ -394,6 +394,7 @@ describe('a merge onto a document an edit has moved out from under', () => {
         status: 'open',
         description: '',
         elements: ['element-one'],
+        appliesToModel: false,
       },
       {
         id: 'threat-added',
@@ -404,6 +405,7 @@ describe('a merge onto a document an edit has moved out from under', () => {
         status: 'open',
         description: '',
         elements: ['element-one'],
+        appliesToModel: false,
       },
     ],
     lastIssuedThreatNumber: 4,
@@ -521,6 +523,7 @@ describe('a threat an edit detached from one of the cells holding it', () => {
         status: 'open',
         description: '',
         elements: ['cell-a'],
+        appliesToModel: false,
       },
     ],
     lastIssuedThreatNumber: 1,

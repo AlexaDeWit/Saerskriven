@@ -181,8 +181,7 @@ export function RelationshipProperty({
               <button
                 type="button"
                 data-remove-relationship
-                aria-label={t('fields.remove-relationship', {
-                  label: t(`fields.${relationship}-lower`),
+                aria-label={t(`fields.remove-from-${relationship}`, {
                   number: index + 1,
                 })}
                 onClick={() => {

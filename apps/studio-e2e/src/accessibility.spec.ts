@@ -8,7 +8,6 @@ import {
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
-  expandThreat,
   featureCompleteFile,
   handleOn,
   menuButton,
@@ -18,14 +17,13 @@ import {
   openFallback,
   openMenu,
   openPlaceholder,
+  openShopperTakeover,
   openText,
   openTwoDiagrams,
   panelField,
   placeByClick,
   placeholder,
   savedFromMenu,
-  selectNode,
-  storefront,
 } from './studio.fixtures.js';
 
 test('the studio page carries no axe-core accessibility violation', async ({
@@ -188,9 +186,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 test('the open Link existing listbox carries no violation with long record labels', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   await panelField(page, 'combobox', 'Existing mitigation').click();
   await expect(page.getByRole('listbox')).toBeVisible();
 

@@ -593,6 +593,7 @@ threats:
     status: not-applicable
     description: The schedule is internal.
     elements: []
+    appliesToModel: true
   - id: threat-card
     number: 40
     title: The clerk's session token is guessable
