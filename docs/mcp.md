@@ -362,19 +362,17 @@ renumbers a threat, and no two threats hold one number. `add_threat` takes the
 rest of the threat, and every element it attaches to has to be one the model
 holds. It starts a threat not applying to the model where `appliesToModel` is
 left out. `replace_threat` takes the whole threat, `appliesToModel` included,
-and replaces every field of the one with its id but the number. Up to 0.8.0 it
-took no `appliesToModel`, so an edit written for an earlier release is refused
-until it states the field. `link_threat_to_model` and
-`unlink_threat_from_model` take a threat id and set and clear the model link
-alone, and a link that is already there, or an unlink of one that is not,
-changes nothing. `set_threat_status`, `set_threat_severity` and
-`set_threat_category` change that one field and keep the rest, the category
-given with its methodology. `set_threat_details` changes any of `title` and
-`description` and keeps the rest, so one text changes without a copy of the
-whole threat. `attach_threat` and `detach_threat` take a threat id and an
-element id, and attaching an element the threat already carries, or detaching
-one it does not, changes nothing. `remove_threat` removes the threat and its
-links from every record.
+and replaces every field of the one with its id but the number.
+`link_threat_to_model` and `unlink_threat_from_model` take a threat id and set
+and clear the model link alone, and a link that is already there, or an unlink
+of one that is not, changes nothing. `set_threat_status`,
+`set_threat_severity` and `set_threat_category` change that one field and keep
+the rest, the category given with its methodology. `set_threat_details`
+changes any of `title` and `description` and keeps the rest, so one text
+changes without a copy of the whole threat. `attach_threat` and
+`detach_threat` take a threat id and an element id, and attaching an element
+the threat already carries, or detaching one it does not, changes nothing.
+`remove_threat` removes the threat and its links from every record.
 
 ```json
 [
