@@ -2,6 +2,7 @@ import {
   boxesOverlap,
   boxMeetsEllipse,
   boxOfPoints,
+  boxSegmentGap,
   cornersOfBox,
   segmentMeetsBox,
   segmentsOfBox,
@@ -183,5 +184,49 @@ describe('segmentMeetsBox', () => {
         unitBox,
       ),
     ).toBe(false);
+  });
+});
+
+describe('boxSegmentGap', () => {
+  it('is zero where the run meets the box', () => {
+    expect(
+      boxSegmentGap(unitBox, { from: { x: -10, y: 50 }, to: { x: 50, y: 50 } }),
+    ).toBe(0);
+  });
+
+  it('is the gap across where the box faces the run', () => {
+    expect(
+      boxSegmentGap(unitBox, {
+        from: { x: 20, y: 116 },
+        to: { x: 80, y: 116 },
+      }),
+    ).toBe(16);
+  });
+
+  it('is the distance from a corner where a long run passes it', () => {
+    expect(
+      boxSegmentGap(unitBox, {
+        from: { x: 110, y: 250 },
+        to: { x: 250, y: 110 },
+      }),
+    ).toBeCloseTo(160 / Math.SQRT2);
+  });
+
+  it('is the distance to the box from a run of no length', () => {
+    expect(
+      boxSegmentGap(unitBox, {
+        from: { x: 130, y: 140 },
+        to: { x: 130, y: 140 },
+      }),
+    ).toBe(50);
+  });
+
+  it('is the distance to the near end where the box hangs past it', () => {
+    expect(
+      boxSegmentGap(unitBox, {
+        from: { x: 130, y: 140 },
+        to: { x: 300, y: 140 },
+      }),
+    ).toBe(50);
   });
 });

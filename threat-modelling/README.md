@@ -39,9 +39,9 @@ get the canonical form, save the file from the studio or edit it through the
 MCP server's `saer_edit`, both of which write through the codec, or match the
 form by hand until the formats suite passes.
 
-Flow names are placed by `packages/canvas` against the other shapes, lines,
-names and badges of the diagram, and a name with no clear place still takes the
-cheapest one, so a gap narrower than a name puts it over a line. After moving
-an element, re-render and check that every gap is still wide enough for the
-name that crosses it, measured against the name unwrapped rather than as the
-canvas happens to wrap it.
+Flow names are placed by `packages/canvas` on their own lines, clear of the
+other shapes, lines, names and badges of the diagram where the line has room,
+beside it where it has not, and a name with no clear place still takes the spot
+that covers least. After moving an element, re-render and check that every flow
+still has room for its name, measured against the name unwrapped rather than as
+the canvas happens to wrap it.

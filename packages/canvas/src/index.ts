@@ -4,7 +4,7 @@ export {
   type ThreatBadge,
 } from './lib/badges.js';
 export { drawnBounds, type CanvasBounds } from './lib/bounds.js';
-export { type FlowLabelPlacement } from './lib/flow-labels.js';
+export { type FlowLabelPlacement } from './lib/flow-blocks.js';
 export { boxesOverlap, boxOfPoints, type Box } from './lib/geometry.js';
 export {
   boxElementStrokeInsets,

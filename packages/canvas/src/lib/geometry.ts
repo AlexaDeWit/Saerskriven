@@ -1,4 +1,5 @@
 import type { Point } from '@saerskriven/model';
+import { nearestOnSegment, squaredDistance } from './vectors.js';
 
 /** An axis-aligned box, as the low and high bound on each axis. */
 export type Box = {
@@ -60,6 +61,20 @@ export function segmentsOfBox(box: Box): Segment[] {
   ]);
 }
 
+/** The box reaching a half width and a half height either side of a centre. */
+export function boxAround(
+  centre: Point,
+  halfWidth: number,
+  halfHeight: number,
+): Box {
+  return {
+    minX: centre.x - halfWidth,
+    minY: centre.y - halfHeight,
+    maxX: centre.x + halfWidth,
+    maxY: centre.y + halfHeight,
+  };
+}
+
 /** The four corners of a box, from its top-left corner clockwise. */
 export function cornersOfBox(box: Box): Point[] {
   return [
@@ -101,12 +116,9 @@ export function boxesOverlap(one: Box, other: Box): boolean {
 export function boxMeetsEllipse(box: Box, ellipse: Ellipse): boolean {
   const nearestX = Math.min(Math.max(ellipse.centre.x, box.minX), box.maxX);
   const nearestY = Math.min(Math.max(ellipse.centre.y, box.minY), box.maxY);
-  return (
-    Math.hypot(
-      (nearestX - ellipse.centre.x) / ellipse.radiusX,
-      (nearestY - ellipse.centre.y) / ellipse.radiusY,
-    ) <= 1
-  );
+  const x = (nearestX - ellipse.centre.x) / ellipse.radiusX;
+  const y = (nearestY - ellipse.centre.y) / ellipse.radiusY;
+  return x * x + y * y <= 1;
 }
 
 /**
@@ -136,4 +148,27 @@ export function segmentMeetsBox(segment: Segment, box: Box): boolean {
     Math.min(topLeft, topRight, bottomRight, bottomLeft) <= 0 &&
     Math.max(topLeft, topRight, bottomRight, bottomLeft) >= 0
   );
+}
+
+/**
+ * How far apart a box and a straight run lie at their nearest, zero where
+ * they meet. Measured with correctly rounded roots, so every engine agrees.
+ */
+export function boxSegmentGap(box: Box, segment: Segment): number {
+  if (segmentMeetsBox(segment, box)) {
+    return 0;
+  }
+  return Math.min(
+    pointBoxGap(segment.from, box),
+    pointBoxGap(segment.to, box),
+    ...cornersOfBox(box).map((corner) =>
+      Math.sqrt(squaredDistance(corner, nearestOnSegment(segment, corner).at)),
+    ),
+  );
+}
+
+function pointBoxGap(point: Point, box: Box): number {
+  const x = Math.max(box.minX - point.x, 0, point.x - box.maxX);
+  const y = Math.max(box.minY - point.y, 0, point.y - box.maxY);
+  return Math.sqrt(x * x + y * y);
 }

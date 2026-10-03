@@ -72,11 +72,11 @@ describe('renderCanvasStylesheet', () => {
     );
   });
 
-  it('gives a flow name a halo, so converging names read in layers', () => {
+  it("fills a flow block's backing with the ground the diagram is drawn on", () => {
     const block = sheet
-      .split(`.${wrappedTextStyles.flowLabel.className} {`)[1]
+      .split(`.${canvasClassNames.flowBacking} {`)[1]
       .split('}')[0];
-    expect(block).toContain('paint-order: stroke');
+    expect(block).toContain(`fill: ${defaultRenderTheme.colours.background}`);
   });
 
   it('is styled with properties SVG applies, so it needs no HTML around it', () => {

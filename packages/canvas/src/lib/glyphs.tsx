@@ -115,8 +115,9 @@ export function PlacedElementGlyph({
 /**
  * One flow, in the diagram's own coordinates rather than a node's: straight
  * segments from its source through its waypoints to its target, an arrowhead
- * at the target, and its name and badge where the layout settled them, which
- * is also where a caller sizing a picture bounds them. `textVisible` false
+ * at the target, and its block where the layout settled it: the backing,
+ * drawn over the line so the line breaks around it, then the badge and the
+ * name. A caller sizing a picture bounds the backing. `textVisible` false
  * leaves the name out, as it does on {@link ElementGlyph}.
  */
 export function FlowGlyph({
@@ -145,7 +146,15 @@ export function FlowGlyph({
           d={arrowheadPath(edge.source, points[1])}
         />
       ) : null}
-      {textVisible ? <WrappedText {...edge.label.name} /> : null}
+      {edge.label.backing === undefined ? null : (
+        <rect
+          className={canvasClassNames.flowBacking}
+          x={svgNumber(edge.label.backing.minX)}
+          y={svgNumber(edge.label.backing.minY)}
+          width={svgNumber(edge.label.backing.maxX - edge.label.backing.minX)}
+          height={svgNumber(edge.label.backing.maxY - edge.label.backing.minY)}
+        />
+      )}
       {edge.badge === undefined || edge.label.badge === undefined ? null : (
         <ThreatBadgeGlyph
           badge={edge.badge}
@@ -153,6 +162,7 @@ export function FlowGlyph({
           marks={marks}
         />
       )}
+      {textVisible ? <WrappedText {...edge.label.name} /> : null}
     </g>
   );
 }

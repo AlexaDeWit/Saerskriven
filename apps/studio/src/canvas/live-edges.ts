@@ -8,7 +8,7 @@ import {
 } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
 import { applyNodeChanges, type NodeChange } from '@xyflow/react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { applyChanges, gestureSelection } from './changes.js';
 import {
   canvasEdgesById,
@@ -18,13 +18,11 @@ import {
   type DiagramNode,
 } from './nodes.js';
 
-const exactLabelDelay = 50;
-
 /**
  * The nodes React Flow draws and the flows laid out against them while a drag
- * or resize is in flight. A flow is laid out again on each change only where
- * its label no longer follows its segment, and in full once the pointer
- * pauses for `exactLabelDelay` milliseconds and once the gesture ends. The
+ * or resize is in flight. On each change a flow whose block no longer follows
+ * its segment is placed again, clear of the blocks every other flow keeps
+ * where it was, and every block is placed afresh once the gesture ends. The
  * nodes fold back onto the model's own as soon as the model moves. `rebase`
  * takes the settled layout's flows as the base for the next gesture.
  */
@@ -38,35 +36,13 @@ export function useLiveEdges(
   const [onScreen, setOnScreen] = useState<DiagramNode[]>(graph.nodes);
   const [folded, setFolded] = useState<DiagramNode[]>(graph.nodes);
   const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
-  const [moving, setMoving] = useState(false);
   const edgeBases = useRef<ReadonlyMap<string, CanvasEdge>>(new Map());
-  const pause = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const movingElements = useRef<readonly ElementId[]>(selection);
 
   if (folded !== graph.nodes) {
     setFolded(graph.nodes);
     setOnScreen(withMeasurements(graph.nodes, onScreen));
     setExactEdges(undefined);
   }
-
-  useEffect(() => {
-    if (!moving) {
-      return undefined;
-    }
-    const timer = globalThis.setTimeout(() => {
-      const paused = layoutAtReactFlowNodes(
-        layout,
-        onScreen,
-        movingElements.current,
-      );
-      setExactEdges(withLiveEdges(graph.edges, paused));
-      edgeBases.current = canvasEdgesById(paused);
-    }, exactLabelDelay);
-    pause.current = timer;
-    return () => {
-      globalThis.clearTimeout(timer);
-    };
-  }, [graph.edges, layout, moving, onScreen]);
 
   return {
     nodes: onScreen,
@@ -88,28 +64,21 @@ export function useLiveEdges(
           (change.type === 'dimensions' && change.resizing === false),
       );
       if (active || finished) {
-        globalThis.clearTimeout(pause.current);
-        movingElements.current = gestureSelection(
-          changes,
-          positions,
-          selection,
-        );
-        setMoving(active);
         const live = layoutAtReactFlowNodes(
           layout,
           next,
-          movingElements.current,
+          gestureSelection(changes, positions, selection),
           finished,
           edgeBases.current,
         );
-        const candidateChanged = live.edges.some((edge) => {
+        const blockReplaced = live.edges.some((edge) => {
           const base = edgeBases.current.get(edge.id);
           return (
             base === undefined ||
             (base !== edge && !flowLabelFollows(base, edge))
           );
         });
-        if (finished || candidateChanged) {
+        if (finished || blockReplaced) {
           setExactEdges(withLiveEdges(graph.edges, live));
           edgeBases.current = canvasEdgesById(live);
         }
