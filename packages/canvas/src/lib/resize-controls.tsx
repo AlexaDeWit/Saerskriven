@@ -2,9 +2,12 @@ import {
   NodeResizeControl,
   ResizeControlVariant,
   type OnResizeEnd,
+  type OnResizeStart,
+  type ResizeDragEvent,
 } from '@xyflow/react';
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   type CSSProperties,
@@ -35,6 +38,14 @@ type ResizeSubject = {
   readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
 };
 
+type Gesture = ResizeDragEvent['identifier'];
+
+type Press = {
+  readonly subject: ResizeSubject;
+  readonly gestures: Set<Gesture>;
+  resized: boolean;
+};
+
 /**
  * The resize controls of a selected node: a line control on each side, which
  * resizes one axis, and a handle at each corner, which resizes both, less
@@ -46,9 +57,13 @@ type ResizeSubject = {
  * ends it with the extent it measured, a fractional size rounded to whole
  * pixels. `onResize` and `onResizeEnd` may be new functions on every render:
  * a pointer resize calls those of the render its press began on, and settles
- * against that render's `node`. A boundary curve's corner handles sit
- * `resizeHandle.curveGap` outside its corners, clear of a handle on a point
- * there.
+ * against that render's `node`. A resize that called `onResize` gets one
+ * `onResizeEnd`: once every finger and the mouse on its control has lifted,
+ * with the box it finished on, or once its controls unmount under a touch,
+ * whose lift React Flow then never reports, with the node's own box, so that
+ * nothing is resized. A mouse press outlives its control and ends on its
+ * release. A boundary curve's corner handles sit `resizeHandle.curveGap`
+ * outside its corners, clear of a handle on a point there.
  */
 export function ResizeControls({
   labels,
@@ -90,15 +105,18 @@ function ResizeControl({
   readonly visible: boolean;
 }): ReactElement {
   const rendered = useRef<ResizeSubject>({ node, onResize, onResizeEnd });
-  const press = useRef<{ readonly subject: ResizeSubject; resized: boolean }>(
-    undefined,
-  );
+  const press = useRef<Press>(undefined);
   useLayoutEffect(() => {
     rendered.current = { node, onResize, onResizeEnd };
   });
 
-  const start = useCallback((): void => {
-    press.current = { subject: rendered.current, resized: false };
+  const start = useCallback<OnResizeStart>((event) => {
+    press.current ??= {
+      subject: rendered.current,
+      gestures: new Set(),
+      resized: false,
+    };
+    press.current.gestures.add(event.identifier);
   }, []);
   const resize = useCallback((): void => {
     if (press.current !== undefined) {
@@ -106,21 +124,36 @@ function ResizeControl({
       press.current.subject.onResize?.();
     }
   }, []);
+  const settle = useCallback((box: (pressed: CanvasNode) => NodeBox): void => {
+    const held = press.current;
+    if (held === undefined || held.gestures.size > 0) {
+      return;
+    }
+    press.current = undefined;
+    if (held.resized) {
+      held.subject.onResizeEnd?.(box(held.subject.node));
+    }
+  }, []);
   const end = useCallback<OnResizeEnd>(
-    (_, extent) => {
-      const ended = press.current;
-      press.current = undefined;
-      if (ended?.resized !== true) {
-        return;
-      }
-      ended.subject.onResizeEnd?.(
-        resizeBoxOnControlAxes(ended.subject.node, position, {
+    (event, extent) => {
+      press.current?.gestures.delete(event.identifier);
+      settle((pressed) =>
+        resizeBoxOnControlAxes(pressed, position, {
           position: { x: extent.x, y: extent.y },
           size: { width: extent.width, height: extent.height },
         }),
       );
     },
-    [position],
+    [position, settle],
+  );
+  useEffect(
+    () => () => {
+      if (press.current !== undefined) {
+        dropTouches(press.current.gestures);
+        settle(ownBox);
+      }
+    },
+    [settle],
   );
   const keyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
     const box = resizeBoxByKey(
@@ -167,6 +200,18 @@ function ResizeControl({
       />
     </NodeResizeControl>
   );
+}
+
+function dropTouches(gestures: Set<Gesture>): void {
+  for (const gesture of gestures) {
+    if (gesture !== 'mouse') {
+      gestures.delete(gesture);
+    }
+  }
+}
+
+function ownBox({ position, size }: CanvasNode): NodeBox {
+  return { position, size };
 }
 
 const verticalKeys = resizeKeys.filter(

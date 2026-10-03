@@ -1,6 +1,7 @@
 import { ReactFlow, type Node, type NodeProps } from '@xyflow/react';
 import { act, useState, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { touchEvent, ViewKeepingMouseEvent, type Finger } from '../fixtures.js';
 import { nodeNamed, specResizeLabels } from './canvas.fixtures.js';
 import type { NodeBox } from './handles.js';
 import type { CanvasNodeData } from './react-flow.js';
@@ -45,21 +46,21 @@ const nodes: ControlledNode[] = [
   },
 ];
 
-const mouse = (type: string, clientX: number): MouseEvent => {
-  const event = new MouseEvent(type, { bubbles: true, clientX, clientY: 100 });
-  Object.defineProperty(event, 'view', { value: window });
-  return event;
-};
+const row = 100;
 
-const touch = (type: string, clientX?: number): Event => {
-  const event = new Event(type, { bubbles: true, cancelable: true });
-  const finger = { identifier: 1, clientX: clientX ?? 0, clientY: 100 };
-  Object.defineProperties(event, {
-    changedTouches: { value: [finger] },
-    touches: { value: clientX === undefined ? [] : [finger] },
+const mouse = (type: string, clientX: number): MouseEvent =>
+  new ViewKeepingMouseEvent(type, {
+    bubbles: true,
+    clientX,
+    clientY: row,
+    view: window,
   });
-  return event;
-};
+
+const finger = (identifier: number, clientX: number): Finger => ({
+  identifier,
+  clientX,
+  clientY: row,
+});
 
 const keyDown = (key: string): KeyboardEvent =>
   new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
@@ -84,18 +85,22 @@ const pressRightControl = (movedBy: number): void => {
   });
 };
 
+const touchRight = (
+  type: 'touchstart' | 'touchmove' | 'touchend',
+  changed: Finger,
+  touches?: readonly Finger[],
+): void => {
+  act(() => {
+    rightControl().dispatchEvent(touchEvent(type, changed, touches));
+  });
+};
+
 const touchRightControl = (moves: readonly number[]): void => {
-  act(() => {
-    rightControl().dispatchEvent(touch('touchstart', 100));
-  });
+  touchRight('touchstart', finger(1, 100));
   for (const movedBy of moves) {
-    act(() => {
-      rightControl().dispatchEvent(touch('touchmove', 100 + movedBy));
-    });
+    touchRight('touchmove', finger(1, 100 + movedBy));
   }
-  act(() => {
-    rightControl().dispatchEvent(touch('touchend'));
-  });
+  touchRight('touchend', finger(1, 100 + (moves.at(-1) ?? 0)), []);
 };
 
 describe('ResizeControls', () => {
@@ -105,7 +110,7 @@ describe('ResizeControls', () => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     root = createRoot(document.body.appendChild(document.createElement('div')));
     act(() => {
-      root.render(<ReactFlow nodes={nodes} nodeTypes={nodeTypes} />);
+      root.render(<ReactFlow defaultNodes={nodes} nodeTypes={nodeTypes} />);
     });
   });
 
@@ -150,6 +155,66 @@ describe('ResizeControls', () => {
     touchRightControl([20]);
 
     expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(expect.anything(), false);
+  });
+
+  it('hands a touch resize one end, at the box it finished on, when a second touch on its control lifts first', () => {
+    const second = finger(2, 100);
+    touchRight('touchstart', finger(1, 100));
+    touchRight('touchmove', finger(1, 120));
+    touchRight('touchstart', second, [finger(1, 120), second]);
+    touchRight('touchend', second, [finger(1, 120)]);
+
+    expect(resizeEnd).not.toHaveBeenCalled();
+
+    touchRight('touchmove', finger(1, 160));
+    touchRight('touchend', finger(1, 160), []);
+
+    expect(resize).toHaveBeenCalledTimes(2);
+    expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+      { position: client.position, size: { ...client.size, width: 60 } },
+      false,
+    );
+  });
+
+  it('ends a touch resize at the box its press found when its controls unmount under it, and not again on the lift', () => {
+    const control = rightControl();
+    touchRight('touchstart', finger(1, 100));
+    touchRight('touchmove', finger(1, 140));
+    act(() => {
+      root.unmount();
+    });
+    act(() => {
+      control.dispatchEvent(touchEvent('touchend', finger(1, 140), []));
+    });
+
+    expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+      { position: client.position, size: client.size },
+      false,
+    );
+  });
+
+  it('ends a mouse resize on its release, at the box it finished on, after its controls unmount', () => {
+    const control = rightControl();
+    act(() => {
+      control.dispatchEvent(mouse('mousedown', 100));
+    });
+    act(() => {
+      window.dispatchEvent(mouse('mousemove', 140));
+    });
+    act(() => {
+      root.unmount();
+    });
+
+    expect(resizeEnd).not.toHaveBeenCalled();
+
+    act(() => {
+      window.dispatchEvent(mouse('mouseup', 140));
+    });
+
+    expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+      { position: client.position, size: { ...client.size, width: 40 } },
+      false,
+    );
   });
 
   it('hands one resize end to an arrow key on the axis of its control, and none to a key off it', () => {
