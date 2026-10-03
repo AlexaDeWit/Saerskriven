@@ -177,9 +177,9 @@ jobs:
           # that the entries every other job restores from already hold.
           # The restored entry carries the module's output path, so the
           # build behind this job's test target validates that path rather
-          # than compiling the crate. A change under nix/resvg-wasm is what
-          # makes it pay the compile, about a minute on a job nothing waits
-          # for.
+          # than compiling the crate. A change docs/build.md lists (the
+          # builder, its scripts, the module, flake.lock) is what makes it
+          # pay the compile, about a minute on a job nothing waits for.
           save-nix-store: 'false'
 
       # The test target depends on the `resvg-wasm` build, so the module is

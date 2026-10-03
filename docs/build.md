@@ -71,7 +71,7 @@ hand:
 ```sh
 pnpm nx run resvg-wasm:build          # one module alone
 pnpm nx build @saerskriven/studio     # builds both on the way
-pnpm nx test @saerskriven/render      # builds the rasterizer, and pnpm check both
+pnpm nx test @saerskriven/render      # builds the rasterizer
 ```
 
 The flake names each module's path in a variable, `SAERSKRIVEN_RESVG_WASM` and
@@ -102,17 +102,21 @@ Rust toolchain, is what makes a job pay the compile.
 
 Both modules are built by [`nix/wasm-module.nix`](../nix/wasm-module.nix), under
 the ban on unsafe Rust that [CODING.md](../CODING.md#rust-modules) states: a
-logic crate that forbids `unsafe_code` and an export crate whose `src/lib.rs`
-is the export table alone, checked before the compile and on the built module
-by the two scripts the builder runs. Rust owns one input buffer and one output
-buffer. The caller writes its bytes at the address `input(length)` answers,
-runs one of the module's calls, and copies the answer from the address and
-length `output()` and `output_length()` answer, so no address the caller holds
-is read in Rust. A call that writes the output answers a status, and 0 means
-the output holds the answer. Any
-call may grow the module's memory, so the caller makes each view of it after
-the call that answered its address. An allocation the module cannot make
-aborts it, which the caller sees as a trap.
+logic crate that forbids `unsafe_code` and an export crate whose `src/lib.rs` is
+the export table alone, checked before the compile and on the built module by
+the two scripts the builder runs. Each module's `default.nix` is data that
+`flake.nix` hands to the builder, and `flake.nix`, the builder, the two scripts
+and the module files are the ban's trust root, where a change is a change to the
+ban.
+
+Rust owns one input buffer and one output buffer. The caller writes its bytes at
+the address `input(length)` answers, runs one of the module's calls, and copies
+the answer from the address and length `output()` and `output_length()` answer,
+so no address the caller holds is read in Rust. A call that writes the output
+answers a status, and 0 means the output holds the answer. Any call may grow the
+module's memory, so the caller makes each view of it after the call that
+answered its address. An allocation the module cannot make aborts it, which the
+caller sees as a trap.
 
 [`@saerskriven/wasm`](../packages/wasm/README.md) drives both modules, compiles
 each module once per byte array and runs each call on its own instance, and

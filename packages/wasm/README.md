@@ -1,8 +1,9 @@
 # @saerskriven/wasm
 
 The TypeScript side of the WebAssembly boundary every flake-built Rust module
-shares, as [Building the executables](../../docs/build.md#the-webassembly-modules)
-describes it. It imports no internal package, so `@saerskriven/formats`, which
+shares, which
+[Building the executables](../../docs/build.md#the-webassembly-modules)
+describes. It imports no internal package, so `@saerskriven/formats`, which
 drives the brotli module, and `@saerskriven/render`, which drives the
 rasterizer, share one copy while neither may import the other.
 

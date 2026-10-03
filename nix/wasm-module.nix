@@ -1,28 +1,31 @@
-{ lib, stdenv, rustPlatform, cargo, rustc, lld, wabt
-  # The directory holding the export crate's Cargo.toml, Cargo.lock and src.
-, root
-  # The logic crate's directory under root.
-, logic
-  # The cdylib's crate name, which names the module under lib/.
-, library
-  # The locked crate whose version the derivation carries.
-, upstream
-  # The calls the module exports beside its memory and the linker globals.
-, exports
-, pname
-, meta
+{ lib, stdenv, rustPlatform, cargo, rustc, lld, wabt, jq
+  # One module's facts: the attribute set its file under nix/ holds, which
+  # flake.nix imports and hands here.
+, module
 }:
 
-# Every Rust WebAssembly module Saerskriven ships is built here, so the ban on
-# unsafe Rust (owner rulings, 2026-10-02, #622 and #640) is part of each
-# module's build rather than lines each derivation repeats. A module's
-# default.nix names its crates and its calls, and its nx project hashes this
-# file and the two scripts beside it.
+# Every Rust WebAssembly module Saerskriven ships is built here, under the ban
+# on unsafe Rust (owner rulings, 2026-10-02, #622 and #640). A module's file
+# is data rather than a derivation, so no module builds itself or drops a
+# phase of this one. This file, flake.nix, the two scripts beside it and the
+# module files are the ban's trust root (CODING.md, Rust modules), and each
+# module's nx project hashes all of them.
 let
+  facts = [
+    "description" "exports" "homepage" "library" "licenses" "logic" "pname"
+    "root" "upstream"
+  ];
+  # The directory holding the export crate's Cargo.toml, Cargo.lock and src.
+  root = module.root;
+  # The logic crate's directory under root.
+  logic = module.logic;
+  # The cdylib's crate name, which names the module under lib/.
+  file = "${module.library}.wasm";
+  built = "target/wasm32-unknown-unknown/release/${file}";
   lockFile = root + "/Cargo.lock";
   lock = builtins.fromTOML (builtins.readFile lockFile);
-  locked = lib.findFirst (crate: crate.name == upstream) null lock.package;
-  module = "${library}.wasm";
+  # The locked crate whose version the derivation carries.
+  locked = lib.findFirst (crate: crate.name == module.upstream) null lock.package;
   # The nix expressions are not inputs to the compile, so naming the files
   # keeps a change to them from rebuilding the module.
   sources = lib.fileset.toSource {
@@ -35,8 +38,11 @@ let
     ];
   };
 in
+assert lib.assertMsg
+  (builtins.isAttrs module && builtins.attrNames module == facts)
+  "a module file under nix/ is an attribute set of exactly ${toString facts}";
 stdenv.mkDerivation {
-  inherit pname meta;
+  inherit (module) pname;
   version = locked.version;
   src = sources;
 
@@ -45,8 +51,8 @@ stdenv.mkDerivation {
   cargoDeps = rustPlatform.importCargoLock { inherit lockFile; };
 
   # nixpkgs' rustc ships no rust-lld, and wasm32-unknown-unknown links with
-  # lld rather than the stdenv's cc.
-  nativeBuildInputs = [ rustPlatform.cargoSetupHook cargo rustc lld ];
+  # lld rather than the stdenv's cc. jq reads the guard's cargo metadata.
+  nativeBuildInputs = [ rustPlatform.cargoSetupHook cargo rustc lld jq ];
 
   # The ban is checked before the compile, by unsafe-ban.sh, with the export
   # crate at the source root and the logic crate beneath it.
@@ -62,9 +68,7 @@ stdenv.mkDerivation {
 
   installPhase = ''
     runHook preInstall
-    install -Dm444 \
-      target/wasm32-unknown-unknown/release/${module} \
-      "$out/lib/${module}"
+    install -Dm444 ${lib.escapeShellArg built} "$out"/lib/${lib.escapeShellArg file}
     runHook postInstall
   '';
 
@@ -74,12 +78,18 @@ stdenv.mkDerivation {
   nativeInstallCheckInputs = [ wabt ];
   installCheckPhase = ''
     runHook preInstallCheck
-    bash ${./wasm-surface.sh} "$out/lib/${module}" \
-      memory ${lib.escapeShellArgs exports} __data_end __heap_base
+    bash ${./wasm-surface.sh} "$out"/lib/${lib.escapeShellArg file} \
+      memory ${lib.escapeShellArgs module.exports} __data_end __heap_base
     runHook postInstallCheck
   '';
 
   # The fixup phase's strip and ELF patching do not read wasm.
   dontStrip = true;
   dontPatchELF = true;
+
+  meta = {
+    inherit (module) description homepage;
+    license = map (name: lib.licenses.${name}) module.licenses;
+    platforms = lib.platforms.all;
+  };
 }

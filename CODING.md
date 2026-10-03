@@ -89,19 +89,17 @@ ceiling for the root value: a spec needing longer declares its own at the
 narrowest scope that needs it, with the reason beside it, as the CLI's PDF
 compiles do.
 
-The fixture helpers every suite shares live on the
-`@saerskriven/model/fixtures` subpath, and those for a suite that runs a
-flake-built WebAssembly module on `@saerskriven/wasm/fixtures`. Only a spec, a
-test, or a fixture module imports a fixture helper. A fixtures subpath
-resolves to source, so every project that depends on its package reaches it,
-and nothing structural stops a downstream production module: the typecheck
-resolves it
-like any other entry point and the layer matrix reasons about projects rather
-than entry points, so a studio bundle carrying a fixture-derived value passes
-both. A relative import of a package's own fixtures module compiles too,
-since an import pulls in a module the lib tsconfig excludes. The
-`no-restricted-imports` override in `.oxlintrc.json` refuses both forms from
-every file but a spec, a test, or a fixture module.
+The fixture helpers every suite shares live on the `@saerskriven/model/fixtures`
+subpath, and those for a suite that runs a flake-built WebAssembly module on
+`@saerskriven/wasm/fixtures`. Only a spec, a test, or a fixture module imports a
+fixture helper. A fixtures subpath resolves to source, so every project that
+depends on its package reaches it, and nothing structural stops a downstream
+production module: the typecheck resolves it like any other entry point and the
+layer matrix reasons about projects rather than entry points, so a studio bundle
+carrying a fixture-derived value passes both. A relative import of a package's
+own fixtures module compiles too, since an import pulls in a module the lib
+tsconfig excludes. The `no-restricted-imports` override in `.oxlintrc.json`
+refuses both forms from every file but a spec, a test, or a fixture module.
 
 ## Prose register
 
@@ -188,14 +186,13 @@ runtime's main thread defines the worker-only `importScripts`. A
 ## Rust modules
 
 Saerskriven's Rust holds no `unsafe` code (owner rulings, 2026-10-02). Every
-WebAssembly module under `nix/` is built by
-[`nix/wasm-module.nix`](nix/wasm-module.nix) out of two crates:
+WebAssembly module under `nix/` is two crates, which
+[`nix/wasm-module.nix`](nix/wasm-module.nix) builds:
 
 - The logic crate holds the module's code and the buffers it shares with the
-  caller. Its root opens with `#![forbid(unsafe_code)]`, which rustc applies to
-  every module and included file of the crate and lets no attribute lower, and
-  its manifest sets the lint to `forbid` and declares no `[lib]` section or
-  build script.
+  caller. The root of its lib target opens with `#![forbid(unsafe_code)]`,
+  which rustc applies to every module and included file of the crate and which
+  no attribute, and no lint level a manifest passes, can lower.
 - The export crate's `src/lib.rs` is the export table alone: functions under
   `#[unsafe(no_mangle)]` whose body is one call to the logic crate's boundary
   function of the same name, passing the parameters in order. Rust owns the
@@ -207,25 +204,44 @@ owner-approved on 2026-10-02. rustc forces it: `no_mangle` is an unsafe
 attribute that the `unsafe_code` lint flags, so a crate that forbids the lint
 can export no function a host could call.
 
-The builder runs two scripts on every module, so a new module gets both by
-building through it:
+The builder runs two scripts on every module:
 
-- [`nix/unsafe-ban.sh`](nix/unsafe-ban.sh) runs before the compile and refuses
-  the build unless:
-  - the logic crate opens with its forbid and sets the lint no other way
-  - every line of the export table is a `//!` line, a blank line, the
-    allowance, the one `use` of the logic crate's boundary, or a line of an
-    export in that shape
-  - the export crate depends on the logic crate alone, with no build script,
-    patch or replacement
+- [`nix/unsafe-ban.sh`](nix/unsafe-ban.sh) runs before the compile. It reads
+  the crates as Cargo resolves them, through `cargo metadata`, and refuses the
+  build unless:
+  - the export crate and the logic crate are the only local packages in the
+    graph, and every other package comes from the crates.io registry, so no
+    patch, replacement, path or git dependency brings in other code
+  - the logic crate builds one target, a lib whose root is its `src/lib.rs`,
+    and depends on registry crates alone
+  - the export crate builds one target, a cdylib whose root is its
+    `src/lib.rs`, and depends on the logic crate alone
+  - neither crate has a build script
+  - the logic crate's root, at the path the metadata reports, opens with the
+    forbid after its `//!` header
+  - the export crate's `src` holds `lib.rs` alone, and every line of it is a
+    `//!` line, a blank line, the allowance, the one `use` of the logic crate's
+    boundary, or a line of an export in that shape
   - no resolved dependency feature is named `unsafe` or `ffi-api`, read from
     `cargo tree -e features` in the sandbox
-  - no `RUSTFLAGS`, rustc wrapper or Cargo configuration on Cargo's search
-    path caps lints, forces a warning or wraps rustc
+  - no `RUSTFLAGS` or rustc wrapper variable is set, and no Cargo
+    configuration on Cargo's search path caps lints, forces a warning or wraps
+    rustc
 - [`nix/wasm-surface.sh`](nix/wasm-surface.sh) runs on the built module and
   refuses it unless it imports nothing and exports exactly `memory`, the calls
-  its `default.nix` names, and the linker globals `__data_end` and
+  its module file names, and the linker globals `__data_end` and
   `__heap_base`.
+
+A manifest's own lint levels are not checked: `cargo metadata` does not report
+them, and the forbid at the crate root is the rule rustc enforces.
+
+A module's file (`nix/resvg-wasm/default.nix`, `nix/brotli-wasm/default.nix`)
+is data: its crates, its exports and its output's name, which `flake.nix`
+hands to the builder, so no module file builds a derivation or drops one of
+the builder's phases. `flake.nix`, `nix/wasm-module.nix`, the two scripts and
+the module files are the ban's trust root. A change to any of them is reviewed
+as a change to the ban, and an `overrideAttrs` that drops a phase would show
+there.
 
 The ban covers Saerskriven's own crates. Code inside a dependency is outside
 it. [Building the executables](docs/build.md#the-webassembly-modules)
