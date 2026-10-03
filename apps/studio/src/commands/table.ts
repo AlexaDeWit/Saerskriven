@@ -148,13 +148,6 @@ export const commandTable = {
     when: 'commands.when-outside-text-fields',
     operation: 'open',
   }),
-  import: fileCommand({
-    id: 'import',
-    label: 'commands.label-import',
-    shortcuts: [],
-    when: 'commands.when-import',
-    operation: 'import',
-  }),
   save: fileCommand({
     id: 'save',
     label: 'commands.label-save',

@@ -3,7 +3,6 @@ import { commandMessages } from './contract.js';
 
 export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-open': 'Ouvrir',
-  'label-import': 'Importer',
   'label-save': 'Enregistrer',
   'label-save-as': 'Enregistrer sous',
   'label-export-diagram': 'Diagramme en SVG',
@@ -61,8 +60,6 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'when-selection-outside-fields-and-overlays':
     'Avec une sélection sur le canevas, hors des champs de texte et des menus ouverts',
   'when-outside-text-fields': 'Hors des champs de texte',
-  'when-import':
-    'Convertir un fichier OTM ou TM-BOM en un nouveau modèle natif',
   'when-anywhere': 'Partout dans le studio',
   'when-file-menu': 'Depuis le menu Fichier',
   'when-view-menu': 'Depuis le menu Affichage',

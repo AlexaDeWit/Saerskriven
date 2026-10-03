@@ -1,3 +1,5 @@
+import { drawnBounds, selectedBadgeAnchor } from '@saerskriven/canvas';
+import { badgeRadius } from '@saerskriven/canvas/tokens';
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange } from '@xyflow/react';
 import { act, renderHook } from '@testing-library/react';
@@ -16,7 +18,7 @@ import {
   selectionBoundsPadding,
   useGroupDrag,
 } from './group-drag.js';
-import { currentLayout, selectionBounds } from './layout.js';
+import { currentLayout, insideBounds, selectionBounds } from './layout.js';
 import { elementIds, type DiagramNode } from './nodes.js';
 import { toggleSnap } from './snap.js';
 import { selectTool } from './tools.js';
@@ -177,6 +179,27 @@ describe('useGroupDrag', () => {
 
     expect(renderGroupDrag().drag.current.down(pressAt(nearby))).toBe(true);
     expect(renderGroupDrag(2).drag.current.down(pressAt(nearby))).toBe(false);
+  });
+
+  it("drags the selection from beside a selected element's badge, stepped out past its corner", () => {
+    openCanvas([actorElement]);
+    const reader = laidOutNode(actorElement);
+    const at = selectedBadgeAnchor(reader);
+    const besideBadge = {
+      x: reader.position.x + at.x + badgeRadius.primary,
+      y: reader.position.y + at.y - badgeRadius.primary,
+    };
+
+    expect(
+      insideBounds(
+        besideBadge,
+        drawnBounds([reader], []),
+        selectionBoundsPadding,
+      ),
+    ).toBe(false);
+    expect(renderGroupDrag().drag.current.down(pressAt(besideBadge))).toBe(
+      true,
+    );
   });
 
   it('leaves a press outside the bounds, on a selected element, with Shift, by touch or in another tool to the canvas', () => {

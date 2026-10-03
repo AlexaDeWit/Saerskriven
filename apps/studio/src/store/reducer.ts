@@ -179,10 +179,6 @@ export function reduce(state: State, action: Action): State {
         source: { format: 'saerskriven-yaml', document: undefined },
       }),
     }),
-    ImportFailed: ({ name, failure }) => ({
-      ...state,
-      lastFailure: StudioFailure.Read({ name, failure }),
-    }),
     Saved: ({ name, source }) => ({
       ...state,
       saved: state.present,

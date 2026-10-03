@@ -1,5 +1,5 @@
 import type { Point } from '@saerskriven/model';
-import { badgeBox, placedBadgeAnchor, type ThreatBadge } from './badges.js';
+import { badgeAnchor, badgeBox, type ThreatBadge } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
 import { boxOfPoints, cornersOfBox, shiftedBy } from './geometry.js';
 import { nodeBox } from './handles.js';
@@ -20,13 +20,18 @@ export type CanvasBounds = {
   readonly height: number;
 };
 
-/** The drawn extent of nodes and flows, as {@link CanvasBounds} defines it. */
+/**
+ * The drawn extent of nodes and flows, as {@link CanvasBounds} defines it.
+ * `badgeAt` says where each node hangs its badge, in its own coordinates, on
+ * its top-right corner unless a caller draws it elsewhere.
+ */
 export function drawnBounds(
   nodes: readonly CanvasNode[],
   edges: readonly CanvasEdge[],
+  badgeAt: (node: CanvasNode) => Point = (node) => badgeAnchor(node.size),
 ): CanvasBounds {
   return boundsOfPoints([
-    ...nodes.flatMap((node) => drawnNodePoints(node)),
+    ...nodes.flatMap((node) => drawnNodePoints(node, badgeAt(node))),
     ...edges.flatMap((edge) => drawnEdgePoints(edge)),
   ]);
 }
@@ -47,12 +52,12 @@ export function boundsOfPoints(points: readonly Point[]): CanvasBounds {
       };
 }
 
-function drawnNodePoints(node: CanvasNode): Point[] {
+function drawnNodePoints(node: CanvasNode, badgeAt: Point): Point[] {
   return [
     ...cornersOfBox(nodeBox(node)),
     ...placedTextCorners(node),
     ...outlinePoints(node).map((point) => shiftedBy(point, node.position)),
-    ...badgePoints(placedBadgeAnchor(node), node.badge),
+    ...badgePoints(shiftedBy(badgeAt, node.position), node.badge),
   ];
 }
 
