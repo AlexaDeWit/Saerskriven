@@ -38,6 +38,7 @@
     "@saerskriven/canvas": "workspace:*",
     "@saerskriven/i18n": "workspace:*",
     "@saerskriven/model": "workspace:*",
+    "@saerskriven/wasm": "workspace:*",
     "@types/mdast": "catalog:",
     "effect": "catalog:",
     "zod": "catalog:",

@@ -54,125 +54,121 @@ executable compiled without the Typst module, or with no `.ttf` beside it,
 writes no PDF (`apps/cli/src/pdf.ts` refuses a fontless install rather than
 typesetting a document with no text), so the `%PDF-` test fails.
 
-## The SVG rasterizer
+## The WebAssembly modules
 
-The `resvg-wasm` project builds a WebAssembly module out of the `resvg` crate,
-which draws an SVG document into the bytes of a PNG. That crate and every crate
-under it are pinned by [`nix/resvg-wasm/Cargo.lock`](../nix/resvg-wasm/Cargo.lock)
-and its checksums, fetched before the build and compiled with no network, so
-two builds of one commit write one module.
+Two Rust crates become WebAssembly modules in the flake: the `resvg-wasm`
+project builds the [SVG rasterizer](#the-svg-rasterizer) and the
+`brotli-wasm` project builds the [brotli module](#the-brotli-module). Each
+crate and every crate under it are pinned by the module's `Cargo.lock` and its
+checksums, fetched before the build and compiled with no network, so two builds
+of one commit write one module.
 
-Nix keeps the compilation and nx owns the dependency: the project's one target
-runs `nix build .#resvg-wasm` to a fixed out-link under `dist/resvg-wasm`, and
-every target that carries the module depends on it, so nothing has to be built
-first by hand:
+Nix keeps the compilation and nx owns the dependency: each project's one target
+runs `nix build` to a fixed out-link under `dist/`, and every target that
+carries a module depends on that build, so nothing has to be built first by
+hand:
 
 ```sh
-pnpm nx build @saerskriven/studio   # builds the module on the way
-pnpm nx test @saerskriven/render    # so does this, and pnpm check
+pnpm nx run resvg-wasm:build          # one module alone
+pnpm nx build @saerskriven/studio     # builds both on the way
+pnpm nx test @saerskriven/render      # builds the rasterizer
 ```
 
-The flake names the path in `SAERSKRIVEN_RESVG_WASM`, which
-[`nix/resvg-wasm/project.json`](../nix/resvg-wasm/project.json) writes the module
-to. The variable names where the module will be rather than a store path, so
+The flake names each module's path in a variable, `SAERSKRIVEN_RESVG_WASM` and
+`SAERSKRIVEN_BROTLI_WASM`, which the module's `project.json` under `nix/` writes
+it to. The variable names where the module will be rather than a store path, so
 it is the graph edge and not the variable that puts a file there, and a target
-that carries the module without declaring the edge fails on its first build.
-Declaring it is two lines: `dependsOn` on `resvg-wasm:build`, and that build's
+that carries a module without declaring the edge fails on its first build.
+Declaring it is two lines: `dependsOn` on the module's build, and that build's
 output among the target's inputs.
 
 `pnpm snapshots:update` runs Vitest outside nx, so it builds nothing on the
 way. In a checkout with no `dist/resvg-wasm`, run `pnpm nx run resvg-wasm:build`
 before updating the render snapshots.
 
-No dev shell carries the module or the Rust toolchain that builds it, so
-entering `nix develop` to work on the TypeScript pays for neither. A cold build
-pays the Rust compile once, and then replays it until `flake.lock`, `flake.nix`
-or `nix/resvg-wasm` changes. CI's Nix-store cache keeps the module and not the
-toolchain: the out-link is a garbage-collection root for the 2 MiB module
-alone, and `cache-nix-action` collects the store before it saves, so the Rust
-build inputs leave the entry and it stays under the cache ceiling.
-`build-test` is that cache prefix's one writer, and the `Rasterizer module` job
-restores an entry that already holds the module's output path, so its build
-validates that path rather than compiling the crate. A change under
-`nix/resvg-wasm`, or a `flake.lock` bump that moves the Rust toolchain, is what
-makes a job pay the compile.
+No dev shell carries a module or the Rust toolchain that builds it, so entering
+`nix develop` to work on the TypeScript pays for neither. A cold build pays the
+Rust compile once, and then replays it until `flake.lock`, `flake.nix`, the
+module's directory under `nix/`, or the builder and scripts every module shares
+change. CI's Nix-store cache keeps the modules and not the toolchain: each
+out-link is a garbage-collection root for its module alone, and
+`cache-nix-action` collects the store before it saves, so the Rust build inputs
+leave the entry and it stays under the cache ceiling. `build-test` is that
+cache prefix's one writer, and the `Rasterizer module` job restores an entry
+that already holds the rasterizer's output path, so its build validates that
+path rather than compiling the crate. A change under `nix/resvg-wasm` or to the
+builder and scripts every module shares, or a `flake.lock` bump that moves the
+Rust toolchain, is what makes a job pay the compile.
+
+Both modules are built by [`nix/wasm-module.nix`](../nix/wasm-module.nix), under
+the ban on unsafe Rust that [CODING.md](../CODING.md#rust-modules) states: a
+logic crate that forbids `unsafe_code` and an export crate whose `src/lib.rs` is
+the export table alone, checked before the compile and on the built module by
+the two scripts the builder runs. Each module's `default.nix` is data that
+`flake.nix` hands to the builder, and `flake.nix`, the builder, the two scripts
+and the module files are the ban's trust root, where a change is a change to the
+ban. The forbid does not see an `unsafe` block that a dependency's macro expands
+to, so each module's file also lists its logic crate's direct dependencies, and
+the guard refuses any other. Each module's `Cargo.lock` is trust root too: a
+dependency bump can reach a re-exported macro that expands to unsafe code the
+forbid does not see, so a lock change is reviewed as a change to the ban.
+
+Rust owns one input buffer and one output buffer. The caller writes its bytes at
+the address `input(length)` answers, runs one of the module's calls, and copies
+the answer from the address and length `output()` and `output_length()` answer,
+so no address the caller holds is read in Rust. A call that writes the output
+answers a status, and 0 means the output holds the answer. Any call may grow the
+module's memory, so the caller makes each view of it after the call that
+answered its address. An allocation the module cannot make aborts it, which the
+caller sees as a trap.
+
+[`@saerskriven/wasm`](../packages/wasm/README.md) drives both modules, compiles
+each module once per byte array and runs each call on its own instance, and
+`flakeModuleAsset` on its `build-assets` subpath locates a module through its
+variable. A suite that runs a module skips where the variable is unset or
+empty, which is what running outside the flake shell looks like. Inside it the
+variable is always set, so a module the build failed to write fails the suite
+on the missing file rather than skipping it, which is why no CI job checks for
+that file first.
+
+### The SVG rasterizer
+
+The `resvg-wasm` project builds the module out of the `resvg` crate
+([`linebender/resvg`](https://github.com/linebender/resvg)), pinned by
+[`nix/resvg-wasm/Cargo.lock`](../nix/resvg-wasm/Cargo.lock), which draws an
+SVG document into the bytes of a PNG. Its logic crate is
+[`nix/resvg-wasm/rasterizer`](../nix/resvg-wasm/rasterizer), and its export
+table [`src/lib.rs`](../nix/resvg-wasm/src/lib.rs) names its calls: `add_font()`
+takes the input buffer as a font, `render(long_edge)` draws the SVG in the input
+buffer into the output buffer, and `width()` and `height()` answer the PNG's
+size. `SAERSKRIVEN_RESVG_WASM` names its path.
 
 `@saerskriven/render/resvg` takes the module and the faces as bytes from its
-caller, as the `pdf` subpath takes the Typst module. `resvgWasmAsset` on the
-`build-assets` subpath locates the module through `SAERSKRIVEN_RESVG_WASM`. The
-rasterizer's spec skips on an unset or empty variable, which is what running
-outside the flake shell looks like. Inside it the variable is always set, so a
-module the build failed to write fails the spec on the missing file rather
-than skipping it, which is why no CI job checks for that file first.
+caller, as the `pdf` subpath takes the Typst module, and `resvgWasmAsset` on
+the `@saerskriven/render/build-assets` subpath locates it. The CLI build copies
+the module into `apps/cli/dist/assets`, and the studio build emits it as a
+hashed asset of the website. Both refuse a build that has no module.
 
-The CLI build copies the module into `apps/cli/dist/assets`, and the studio
-build emits it as a hashed asset of the website. Both refuse a build that has
-no module.
+### The brotli module
 
-## The brotli module
-
-The `brotli-wasm` project builds a WebAssembly module out of the `brotli` crate
-([`dropbox/rust-brotli`](https://github.com/dropbox/rust-brotli)), which share
+The `brotli-wasm` project builds the module out of the `brotli` crate
+([`dropbox/rust-brotli`](https://github.com/dropbox/rust-brotli)), pinned by
+[`nix/brotli-wasm/Cargo.lock`](../nix/brotli-wasm/Cargo.lock), which share
 links compress with (#604). It holds an encoder, at quality 11 with no custom
 dictionary so any standard brotli decoder reads its output, and a decoder that
 refuses a stream at the first byte past a maximum the caller names. The
 encoder's window is the smallest that covers the input, capped at 24 bits,
-because its memory follows the window and a larger one shortens no link. The
-crate and the three under it are pinned by
-[`nix/brotli-wasm/Cargo.lock`](../nix/brotli-wasm/Cargo.lock) and its checksums
-and compiled with no network, on the rasterizer's terms
-[above](#the-svg-rasterizer): one nx target runs `nix build .#brotli-wasm` to a
-fixed out-link under `dist/brotli-wasm`, every target that carries the module
-depends on it, and CI's Nix-store cache keeps the module and not the toolchain.
+because its memory follows the window and a larger one shortens no link. Its
+logic crate is [`nix/brotli-wasm/codec`](../nix/brotli-wasm/codec), and its
+export table [`src/lib.rs`](../nix/brotli-wasm/src/lib.rs) names its calls,
+`compress()` and `decompress(maximum)`. `SAERSKRIVEN_BROTLI_WASM` names its
+path.
 
-```sh
-pnpm nx run brotli-wasm:build          # the module alone
-pnpm nx test @saerskriven/formats      # builds it on the way
-```
-
-The module's Rust holds no `unsafe` code (owner rulings, 2026-10-02), and it is
-two crates. The logic crate,
-[`nix/brotli-wasm/codec`](../nix/brotli-wasm/codec), holds the encoder, the
-decoder and the input and output buffers Rust owns. Its root forbids the
-`unsafe_code` lint, which rustc enforces in every module and included file of
-that crate and lets no attribute lower. The export crate's
-[`src/lib.rs`](../nix/brotli-wasm/src/lib.rs) is the export table. It allows
-the lint, because rustc refuses an exported function under `forbid`, and each
-export in it passes its parameters to the boundary function of the same name.
-The caller writes and copies bytes at the addresses those exports answer, so no
-address the caller holds is read in Rust.
-
-Two scripts check what rustc cannot, and #640 points the rasterizer's build at
-both. [`nix/unsafe-ban.sh`](../nix/unsafe-ban.sh) runs before the compile and
-refuses the build, naming the rule, unless:
-
-- the logic crate's root opens with its forbid, and its manifest sets the lint
-  no other way and declares no `[lib]` section or build script
-- every line of the export table is a `//!` line, a blank line, the one
-  allowance, the one `use` of the logic crate's boundary, or a line of an
-  export in that shape
-- the export crate depends on the logic crate alone, with no build script,
-  patch or replacement
-- no resolved dependency feature is named `unsafe` or `ffi-api`, read from
-  `cargo tree -e features` in the sandbox
-- no RUSTFLAGS or rustc wrapper variable is set, and no Cargo configuration on
-  Cargo's search path caps lints, forces a warning or wraps rustc
-
-[`nix/wasm-surface.sh`](../nix/wasm-surface.sh) runs on the built module, with
-wabt's `wasm-objdump`, and refuses it unless it imports nothing and exports
-exactly `memory`, the five calls, and the two linker globals rustc always
-exports, `__data_end` and `__heap_base`.
-
-The flake names the path in `SAERSKRIVEN_BROTLI_WASM`.
 `@saerskriven/formats/brotli` takes the module as bytes from its caller, and
-`brotliWasmAsset` on the `@saerskriven/formats/build-assets` subpath locates it
-through the variable. The codec's spec skips where the variable is unset or
-empty, which is what running outside the flake shell looks like, and fails
-inside the shell when the module is not at the path the variable names.
-
-The studio's build resolves `virtual:saerskriven-brotli-wasm?url` to the module
-as a hashed asset, so a page can fetch it only when it needs it. The CLI does
-not carry it.
+`brotliWasmAsset` on the `@saerskriven/formats/build-assets` subpath locates
+it. The studio's build resolves `virtual:saerskriven-brotli-wasm?url` to the
+module as a hashed asset, so a page can fetch it only when it needs it. The CLI
+does not carry it.
 
 ## The runtime inside an executable
 

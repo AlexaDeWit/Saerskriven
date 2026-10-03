@@ -66,8 +66,20 @@ export default [
               bannedExternalImports: ['react', 'react-dom'],
             },
             {
+              // The boundary every flake-built Rust module shares: the
+              // driver, the compile cache, the module locator and their
+              // fixtures. It imports no internal package, so `formats` and
+              // `render`, which may not import each other, both reach it.
+              sourceTag: 'layer:wasm',
+              onlyDependOnLibsWithTags: [],
+            },
+            {
               sourceTag: 'layer:formats',
-              onlyDependOnLibsWithTags: ['layer:model', 'layer:wire'],
+              onlyDependOnLibsWithTags: [
+                'layer:model',
+                'layer:wire',
+                'layer:wasm',
+              ],
             },
             {
               sourceTag: 'layer:canvas',
@@ -79,6 +91,7 @@ export default [
                 'layer:model',
                 'layer:canvas',
                 'layer:i18n',
+                'layer:wasm',
               ],
             },
             {
@@ -92,6 +105,7 @@ export default [
                 'layer:formats',
                 'layer:canvas',
                 'layer:render',
+                'layer:wasm',
               ],
             },
             {
@@ -103,6 +117,7 @@ export default [
                 'layer:canvas',
                 'layer:render',
                 'layer:mcp',
+                'layer:wasm',
               ],
             },
           ],

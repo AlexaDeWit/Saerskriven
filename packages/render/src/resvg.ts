@@ -1,35 +1,27 @@
+import {
+  answered,
+  called,
+  instantiated,
+  isUnsigned,
+  mostUnsigned,
+  written,
+  type Answered,
+  type BoundaryModule,
+} from '@saerskriven/wasm';
 import { Either } from 'effect';
-import { promisePerBytes } from './promise-per-bytes.js';
 import { ResvgFailure } from './resvg-failures.js';
 
 export { ResvgFailure } from './resvg-failures.js';
 
-const rendered = 0;
+const calls = ['add_font', 'render', 'width', 'height'] as const;
 
-const wordSize = 4;
+type Rasterizer = BoundaryModule<(typeof calls)[number]>;
 
-const outcomeWords = 5;
-
-const mostEdge = 4_294_967_295;
-
-const unreserved = 0;
-
-const calls = ['alloc', 'dealloc', 'add_font', 'render', 'release'];
-
-type Rasterizer = {
-  readonly memory: WebAssembly.Memory;
-  readonly alloc: (length: number) => number;
-  readonly dealloc: (pointer: number, length: number) => void;
-  readonly add_font: (pointer: number, length: number) => number;
-  readonly render: (
-    pointer: number,
-    length: number,
-    longEdge: number,
-  ) => number;
-  readonly release: (outcome: number) => void;
+type Drawing = {
+  readonly status: number;
+  readonly width: number;
+  readonly height: number;
 };
-
-const compiled = promisePerBytes<WebAssembly.Module>();
 
 /**
  * The bytes a rasterization runs on, because this package reads no file:
@@ -65,44 +57,21 @@ export async function rasterizeSvg(
   assets: ResvgAssets,
   longEdge: number,
 ): Promise<Either.Either<Raster, ResvgFailure>> {
-  if (!Number.isInteger(longEdge) || longEdge < 0 || longEdge > mostEdge) {
+  if (!isUnsigned(longEdge)) {
     return Either.left(
       ResvgFailure.Refused({
-        sentence: `a long edge of ${longEdge} is not a pixel count from 0 to ${mostEdge}`,
+        sentence: `a long edge of ${longEdge} is not a pixel count from 0 to ${mostUnsigned}`,
       }),
     );
   }
-  const started = await instantiated(assets);
-  return Either.flatMap(started, (module) => drawn(module, source, longEdge));
-}
-
-async function instantiated(
-  assets: ResvgAssets,
-): Promise<Either.Either<Rasterizer, ResvgFailure>> {
-  try {
-    const { exports } = await WebAssembly.instantiate(
-      await compiled(assets.wasm, () =>
-        WebAssembly.compile(new Uint8Array(assets.wasm)),
-      ),
-    );
-    return rasterizes(exports)
-      ? offered(exports, assets.fonts)
-      : Either.left(
-          ResvgFailure.Unusable({
-            sentence: 'the module exports no rasterizer',
-          }),
-        );
-  } catch (error) {
-    return Either.left(ResvgFailure.Unusable({ sentence: sentenceOf(error) }));
-  }
-}
-
-function rasterizes(
-  exports: WebAssembly.Exports,
-): exports is WebAssembly.Exports & Rasterizer {
-  return (
-    exports['memory'] instanceof WebAssembly.Memory &&
-    calls.every((name) => typeof exports[name] === 'function')
+  const started = Either.mapLeft(
+    await instantiated(assets.wasm, calls, 'the module exports no rasterizer'),
+    unusable,
+  );
+  return Either.flatMap(started, (module) =>
+    Either.flatMap(offered(module, assets.fonts), () =>
+      drawn(module, source, longEdge),
+    ),
   );
 }
 
@@ -111,15 +80,11 @@ function offered(
   fonts: readonly Uint8Array[],
 ): Either.Either<Rasterizer, ResvgFailure> {
   for (const [index, font] of fonts.entries()) {
-    const pointer = handed(module, font);
-    if (pointer === unreserved) {
-      return Either.left(
-        refusedRoom(font.length, `the font at index ${index}`),
-      );
+    const faces = called(module, font, () => module.add_font() >>> 0);
+    if (Either.isLeft(faces)) {
+      return Either.left(unusable(faces.left));
     }
-    const faces = module.add_font(pointer, font.length);
-    module.dealloc(pointer, font.length);
-    if (faces === 0) {
+    if (faces.right === 0) {
       return Either.left(
         ResvgFailure.Unusable({
           sentence: `the font at index ${index} of ${fonts.length} holds no face the renderer reads`,
@@ -135,58 +100,30 @@ function drawn(
   source: string,
   longEdge: number,
 ): Either.Either<Raster, ResvgFailure> {
-  const svg = new TextEncoder().encode(source);
-  try {
-    const pointer = handed(module, svg);
-    if (pointer === unreserved) {
-      return Either.left(refusedRoom(svg.length, 'the document'));
-    }
-    const outcome = module.render(pointer, svg.length, longEdge);
-    const raster = read(module, outcome);
-    module.release(outcome);
-    module.dealloc(pointer, svg.length);
-    return raster;
-  } catch (error) {
-    return Either.left(ResvgFailure.Unusable({ sentence: sentenceOf(error) }));
+  const answer = answered(module, new TextEncoder().encode(source), () => ({
+    status: module.render(longEdge),
+    width: module.width() >>> 0,
+    height: module.height() >>> 0,
+  }));
+  return Either.flatMap(Either.mapLeft(answer, unusable), rasterOf);
+}
+
+function rasterOf({
+  value,
+  output,
+}: Answered<Drawing>): Either.Either<Raster, ResvgFailure> {
+  if (value.status === written) {
+    return Either.right({
+      png: output,
+      width: value.width,
+      height: value.height,
+    });
   }
-}
-
-function handed(module: Rasterizer, bytes: Uint8Array): number {
-  const pointer = module.alloc(bytes.length);
-  if (pointer !== unreserved) {
-    new Uint8Array(module.memory.buffer, pointer, bytes.length).set(bytes);
-  }
-  return pointer;
-}
-
-function refusedRoom(bytes: number, what: string): ResvgFailure {
-  return ResvgFailure.Unusable({
-    sentence: `the module reserved none of the ${bytes} bytes ${what} needs`,
-  });
-}
-
-function read(
-  module: Rasterizer,
-  outcome: number,
-): Either.Either<Raster, ResvgFailure> {
-  const words = new DataView(
-    module.memory.buffer,
-    outcome,
-    outcomeWords * wordSize,
+  return Either.left(
+    ResvgFailure.Refused({ sentence: new TextDecoder().decode(output) }),
   );
-  const status = words.getUint32(0, true);
-  const width = words.getUint32(wordSize, true);
-  const height = words.getUint32(2 * wordSize, true);
-  const payload = words.getUint32(3 * wordSize, true);
-  const length = words.getUint32(4 * wordSize, true);
-  const bytes = new Uint8Array(module.memory.buffer, payload, length).slice();
-  return status === rendered
-    ? Either.right({ png: bytes, width, height })
-    : Either.left(
-        ResvgFailure.Refused({ sentence: new TextDecoder().decode(bytes) }),
-      );
 }
 
-function sentenceOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+function unusable(sentence: string): ResvgFailure {
+  return ResvgFailure.Unusable({ sentence });
 }

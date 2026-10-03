@@ -27,7 +27,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@modelcontextprotocol/client": "catalog:"
+    "@modelcontextprotocol/client": "catalog:",
+    "@saerskriven/wasm": "workspace:*"
   },
   "nx": {
     "tags": [

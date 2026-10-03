@@ -29,8 +29,10 @@ suggestions.
   is the only layer that knows more than one of them; `canvas` imports only
   `model`; `render` imports `model`, `canvas` and `i18n`; apps import
   anything below them. `i18n` imports no internal package and no React, and
-  only apps and `render` import it. `eslint.config.mjs` holds the matrix and
-  the `boundaries` target enforces it.
+  only apps and `render` import it. `wasm`, the WebAssembly boundary every
+  Rust module shares, imports no internal package, and `formats`, `render`,
+  `mcp` and apps may import it beside the layers above. `eslint.config.mjs`
+  holds the matrix and the `boundaries` target enforces it.
 - **The flake is the toolchain authority.** Work inside `nix develop`. No
   global installs.
 - **Local verification**: `pnpm check`, everything the CI gate runs
