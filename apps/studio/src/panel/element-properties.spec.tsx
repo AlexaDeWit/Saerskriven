@@ -4,8 +4,10 @@ import {
   softHyphen,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
+import { locales } from '@saerskriven/i18n';
 import { act, render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { activeTranslator } from '../messages/locale.js';
 import { withLanguage } from '../messages/locale.fixtures.js';
 import { inLocale } from '../messages/messages.fixtures.js';
@@ -32,6 +34,38 @@ const flagCases = [
   ['element-order-flow', 'Encrypted flow', 'isEncrypted'],
   ['element-order-flow', 'Public network', 'isPublicNetwork'],
 ];
+const relationships = [
+  [
+    'element-order-flow',
+    'crossed-trust-boundaries',
+    {
+      'en-CA': ['Crossed trust boundary 1', 'Remove crossed trust boundary 1'],
+      'fr-CA': [
+        'Frontière de confiance franchie 1',
+        'Retirer la frontière de confiance franchie 1',
+      ],
+      sv: ['Korsad förtroendegräns 1', 'Ta bort korsad förtroendegräns 1'],
+    },
+  ],
+  [
+    'element-perimeter',
+    'contained-elements',
+    {
+      'en-CA': ['Contained element 1', 'Remove contained element 1'],
+      'fr-CA': ['Élément contenu 1', 'Retirer l’élément contenu 1'],
+      sv: ['Innehållet objekt 1', 'Ta bort innehållet objekt 1'],
+    },
+  ],
+  [
+    'element-perimeter',
+    'crossing-flows',
+    {
+      'en-CA': ['Crossing flow 1', 'Remove crossing flow 1'],
+      'fr-CA': ['Flux 1 qui la franchit', 'Retirer le flux 1 qui la franchit'],
+      sv: ['Korsande flöde 1', 'Ta bort korsande flöde 1'],
+    },
+  ],
+] as const;
 const current = (id: string) =>
   modelStore
     .getState()
@@ -47,6 +81,19 @@ async function open(id: string, drafts?: ElementPropertyDrafts) {
     }),
   );
   return shown;
+}
+
+async function recorded(
+  t: StudioTranslator['t'],
+  relationship: (typeof relationships)[number][1],
+) {
+  await chooseFrom(
+    t(`fields.recording-of-${relationship}`),
+    t('enums.recorded'),
+  );
+  return within(
+    screen.getByRole('group', { name: t(`fields.${relationship}`) }),
+  );
 }
 
 beforeEach(() => {
@@ -162,6 +209,7 @@ describe(
       [
         'element-order-flow',
         'Crossed trust boundaries',
+        'crossed trust boundary',
         'trustBoundaryIds',
         'Service perimeter',
         'element-perimeter',
@@ -170,6 +218,7 @@ describe(
       [
         'element-perimeter',
         'Contained elements',
+        'contained element',
         'containedElements',
         'Order API',
         'element-api',
@@ -178,6 +227,7 @@ describe(
       [
         'element-perimeter',
         'Crossing flows',
+        'crossing flow',
         'crossingFlows',
         'Submit order',
         'element-order-flow',
@@ -185,7 +235,7 @@ describe(
       ],
     ])(
       'edits %s %s from valid targets and preserves recorded empty lists',
-      async (id, label, field, allowed, allowedId, excluded) => {
+      async (id, label, item, field, allowed, allowedId, excluded) => {
         const user = userEvent.setup();
         await open(id);
         await chooseFrom(`${label} recording`, 'Recorded');
@@ -210,14 +260,10 @@ describe(
           2,
         );
         await user.click(
-          group.getByRole('button', {
-            name: `Remove ${label.toLowerCase()} 1`,
-          }),
+          group.getByRole('button', { name: `Remove ${item} 1` }),
         );
         await user.click(
-          group.getByRole('button', {
-            name: `Remove ${label.toLowerCase()} 1`,
-          }),
+          group.getByRole('button', { name: `Remove ${item} 1` }),
         );
         expect(current(id)).toHaveProperty(field, []);
         await chooseFrom(`${label} recording`, 'Not recorded');
@@ -351,14 +397,14 @@ describe(
       await user.click(
         screen.getByRole('button', { name: 'Add relationship' }),
       );
-      await chooseFrom('Crossed trust boundaries 1', 'Billing zone');
+      await chooseFrom('Crossed trust boundary 1', 'Billing zone');
       await waitFor(() => {
         expect(document.activeElement).toBe(
-          screen.getByRole('combobox', { name: 'Crossed trust boundaries 1' }),
+          screen.getByRole('combobox', { name: 'Crossed trust boundary 1' }),
         );
       });
       screen
-        .getByRole('button', { name: 'Remove crossed trust boundaries 1' })
+        .getByRole('button', { name: 'Remove crossed trust boundary 1' })
         .focus();
       await user.keyboard('{Enter}');
       await waitFor(() => {
@@ -422,38 +468,28 @@ describe(
       expect(current('element-api')).toHaveProperty('privilegeLevel', '');
     });
 
+    describe.each(locales)('a relationship row in %s', (locale) => {
+      const t = inLocale(locale);
+
+      withLanguage(locale);
+
+      it.each(relationships)(
+        'names the first of %s %s and its removal after that one item, in the singular',
+        async (id, relationship, names) => {
+          const [row, removal] = names[locale];
+          await open(id);
+          const group = await recorded(t, relationship);
+          await userEvent.click(
+            group.getByRole('button', { name: t('panel.add-relationship') }),
+          );
+          expect(group.getByRole('combobox', { name: row })).toBeDefined();
+          expect(group.getByRole('button', { name: removal })).toBeDefined();
+        },
+      );
+    });
+
     describe('in French', () => {
       const french = inLocale('fr-CA');
-      const relationships = [
-        [
-          'element-order-flow',
-          'crossed-trust-boundaries',
-          'Retirer la frontière de confiance franchie 1',
-        ],
-        [
-          'element-perimeter',
-          'contained-elements',
-          'Retirer l’élément contenu 1',
-        ],
-        [
-          'element-perimeter',
-          'crossing-flows',
-          'Retirer le flux 1 qui la franchit',
-        ],
-      ] as const;
-      const recorded = async (
-        relationship: (typeof relationships)[number][1],
-      ) => {
-        await chooseFrom(
-          french(`fields.recording-of-${relationship}`),
-          french('enums.recorded'),
-        );
-        return within(
-          screen.getByRole('group', {
-            name: french(`fields.${relationship}`),
-          }),
-        );
-      };
 
       withLanguage('fr-CA');
 
@@ -478,26 +514,12 @@ describe(
         'words the recording of and the addition to %s %s in the messages of that relationship, so no "de" or "à" lands before its label',
         async (id, relationship) => {
           await open(id);
-          const group = await recorded(relationship);
+          const group = await recorded(french, relationship);
           expect(
             group.getByRole('combobox', {
               name: french(`fields.add-to-${relationship}`),
             }),
           ).toBeDefined();
-        },
-      );
-
-      it.each(relationships)(
-        'names the removal of the first of %s %s after that one item, with its article',
-        async (id, relationship, removal) => {
-          await open(id);
-          const group = await recorded(relationship);
-          await userEvent.click(
-            group.getByRole('button', {
-              name: french('panel.add-relationship'),
-            }),
-          );
-          expect(group.getByRole('button', { name: removal })).toBeDefined();
         },
       );
     });

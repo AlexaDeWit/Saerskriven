@@ -42,6 +42,7 @@ import {
 } from './canvas.fixtures.js';
 import { resetThreatRegister } from '../panel/threat-register-state.js';
 import { DiagramCanvas } from './diagram-canvas.js';
+import { followItemMoves } from './move-message.js';
 import { placementClickDistance } from './elements.js';
 import { selectTool } from './tools.js';
 import { currentLayout } from './layout.js';
@@ -519,6 +520,18 @@ describe('DiagramCanvas', () => {
     expect(x).toBeLessThan(28);
     expect(decimalsOf(x)).toBe(3);
     expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it('tells the view of a resize by keyboard, so the view can follow the control', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    const told = vi.fn<() => void>();
+    const release = followItemMoves(told);
+
+    fireEvent.keyDown(resizeControl('right'), { key: 'ArrowRight' });
+
+    expect(told).toHaveBeenCalledOnce();
+    release();
   });
 
   it("scales a trust boundary curve's points by keyboard with the opposite side fixed, as one undo step", () => {

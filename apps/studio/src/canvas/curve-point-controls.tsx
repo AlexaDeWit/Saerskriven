@@ -18,6 +18,7 @@ import {
   type HandlePointer,
 } from './handle-drag.js';
 import styles from './handles.module.css';
+import { itemMoved } from './move-message.js';
 import { gestureDecimals } from './stored-decimals.js';
 import type { WaypointTarget } from './waypoints.js';
 
@@ -138,6 +139,7 @@ export function CurvePointControls({
         { kind: 'move', index, point: moved },
         gestureDecimals.keyboard,
       );
+      itemMoved();
     } else if (
       pressesContextualShortcut('remove-curve-point', event, hostPlatform)
     ) {

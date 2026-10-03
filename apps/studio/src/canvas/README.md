@@ -34,8 +34,9 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `stored-decimals.ts`                                                  | How many decimals a gesture, a command and a typed form each store                                                                 |
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
 | `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
-| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection                                                       |
+| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection, and how the view's follower is told of a move        |
 | `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them            |
+| `focus-pan.tsx`                                                       | The shortest pan that brings the focused item's ring into the viewport, asked for by Tab focus and by an arrow-key move or resize  |
 | `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                 |
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
@@ -230,6 +231,50 @@ tab's open fits again, while an edit or a save moves nothing. Opening fits the
 full canvas extent. The fit commands use `clearOfPanel`, the area left of the
 pane's measured coverage, and the `panelCover` token sets only the pane's
 default width.
+
+`FocusPan` in `focus-pan.tsx` pans to bring the focused item's ring into the
+viewport, React Flow's container box. Nothing over the canvas plays a part: a
+ring under a pane is inside the viewport and stays where it is. It stands in
+for React Flow's `autoPanOnNodeFocus`, which stays off because it centres a
+node. Two things ask for the pan. `onKeyboardFocus` keeps the input modality
+itself: a key press that `armsFocusPan` answers, Tab with Shift, Alt or
+neither, puts the keyboard in charge until the next `pointerdown`, both heard
+in the capture phase on the window. Alt is there for Safari, where Option+Tab
+is the chord that reaches every item, and no browser spec runs it.
+`:focus-visible` is not that test, because Chromium and Safari keep it for a
+script focus after any earlier key press, so an element placed by pointer and
+then named would pan. A `focusin` on React Flow's container counts while the
+keyboard is in charge and its target is an element, a flow, a resize control,
+or a bend, flow end or curve point handle that matches `:focus-visible`. Focus
+the browser hands back when the window regains it is not a move.
+`onKeyboardMove` lends the handler that `itemMoved` in `move-message.tsx`
+calls, the one way the follow is told: by `KeyboardMoveMessage` once an arrow
+key has moved the selection, by the arrow nudge of a bend, a free flow end and
+a curve point, and by a resize as it ends. So the follow needs no Tab first and
+knows nothing of how the move is stored. A resize ends the same way by key and
+by pointer, so the handler counts only while the last input was a key press,
+which also tells it whether the key is held. It measures whatever holds focus
+then: the element, the resize control, the handle, or the frame React Flow
+draws around a box selection, whose box is the whole group's. That frame is no
+tab stop, so only the move path takes it. A bend placed from the route toolbar
+moves while the toolbar holds focus, so it is not followed. Both paths measure
+on the next frame, when what the key press changed is drawn.
+
+`offsetIntoView` works in screen pixels, from the item's box with its outline's
+reach and the container's box: no move for a ring wholly inside, otherwise on
+each axis the least that puts the ring `ringMargin` inside the border it had
+crossed. A ring too long for the viewport on an axis moves the least that fills
+the viewport with it, and not at all once it spans the viewport. `viewPanner`
+hands the move to React Flow's `setViewport` as a `focusPanDuration`
+transition, interpolated linearly because React Flow's default zooms out and
+back over a pan. It has no duration under reduced motion, nor for the repeat of
+a held arrow key, since a transition restarted at each repeat falls behind the
+element. Each item is measured from where the view is at that moment and
+replaces a pan still running, and one needing no move stops it, so two pans
+never run against each other. A scroll, a drag or a zoom interrupts the
+transition inside d3-zoom, and nothing asks for the view again until focus or
+the element moves. The pan touches React Flow's store alone, so it is no edit,
+no undo step and nothing another tab hears of.
 
 ## Accessibility
 

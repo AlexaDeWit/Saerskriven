@@ -62,13 +62,13 @@ const expectRingOnItems = async (
   for (const [kind, name, least] of items) {
     await test.step(kind, async () => {
       const item = nodeNamed(page, name);
-      const shown = await focusRingShown(item, beforeCanvas(page), () =>
-        tabTo(page, item),
-      );
+      const shown = await focusRingShown(item, beforeCanvas(page), async () => {
+        await tabTo(page, item);
+        if (colour !== undefined) {
+          await expect(item).toHaveCSS('outline-color', colour);
+        }
+      });
       expectShown(shown, least, kind);
-      if (colour !== undefined) {
-        await expect(item).toHaveCSS('outline-color', colour);
-      }
     });
   }
 };

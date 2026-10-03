@@ -18,6 +18,7 @@ import { focusElement } from './edits.js';
 import { isFlowEnd } from './elements.js';
 import { insideBounds } from './layout.js';
 import type { AnchorTarget, EndTarget, FlowBends } from './flow-bends.js';
+import { itemMoved } from './move-message.js';
 import {
   draggedPoint,
   nudgedPoint,
@@ -374,6 +375,7 @@ function flowEndKey(
     );
     if (point !== undefined) {
       bends.commit({ kind: 'free', end, point }, gestureDecimals.keyboard);
+      itemMoved();
       return true;
     }
     if (pressesContextualShortcut('keep-free-end', event, hostPlatform)) {
@@ -418,6 +420,7 @@ function bendHandleKey(
       { kind: 'move', index, point: moved },
       gestureDecimals.keyboard,
     );
+    itemMoved();
     return true;
   }
   if (pressesContextualShortcut('remove-bend', event, hostPlatform)) {
