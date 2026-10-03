@@ -166,6 +166,33 @@ describe('the diagram switcher', () => {
     expect(currentAnnouncement().drawn).toBe(true);
   });
 
+  it('leaves the step keys on its button to the browser in a model of one diagram', () => {
+    modelStore.setState(initialState(sampleModel), true);
+    mounted();
+
+    expect(
+      fireEvent.keyDown(switcher('Diagram: Main'), { key: 'PageDown' }),
+    ).toBe(true);
+    expect(currentAnnouncement().message).toBe('');
+  });
+
+  it.each(['shiftKey', 'ctrlKey', 'altKey'] as const)(
+    'takes no step for a step key pressed on its button with %s',
+    (modifier) => {
+      modelStore.setState(initialState(twoDiagramModel), true);
+      mounted();
+
+      expect(
+        fireEvent.keyDown(switcher('Diagram: Main'), {
+          key: 'PageDown',
+          [modifier]: true,
+        }),
+      ).toBe(true);
+      expect(activeDiagramId(modelStore.getState())).toBe(mainDiagram);
+      expect(currentAnnouncement().message).toBe('');
+    },
+  );
+
   it('says a title committed by leaving the field in the status line', async () => {
     const user = userEvent.setup();
     modelStore.setState(initialState(sampleModel), true);
@@ -176,6 +203,7 @@ describe('the diagram switcher', () => {
     await user.tab();
 
     expect(currentAnnouncement().message).toContain('Core');
+    expect(currentAnnouncement().drawn).toBe(true);
     expect(document.activeElement).not.toBe(switcher('Diagram: Core'));
   });
 

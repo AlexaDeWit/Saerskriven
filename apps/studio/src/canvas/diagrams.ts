@@ -36,18 +36,18 @@ export function switchDiagram(diagramId: DiagramId): Diagram | undefined {
 
 /**
  * Puts the diagram `diagramId` names on screen and says so, where it was not
- * already. `through` says it: the status line draws it unless a caller hands
- * in `announceUndrawn`.
+ * already. `announcer` says it: the status line draws it unless a caller
+ * hands in `announceUndrawn`.
  */
 export function showDiagram(
   diagramId: DiagramId,
-  through: Announcer = announce,
+  announcer: Announcer = announce,
 ): boolean {
   const shown = switchDiagram(diagramId);
   if (shown === undefined) {
     return false;
   }
-  say('canvas.diagram-shown', shown, through);
+  say('canvas.diagram-shown', shown, announcer);
   return true;
 }
 
@@ -80,7 +80,7 @@ export function revealElement(elementId: ElementId): boolean {
  */
 export function stepDiagram(
   direction: 'next' | 'previous',
-  through: Announcer = announce,
+  announcer: Announcer = announce,
 ): boolean {
   const state = modelStore.getState();
   const diagrams = state.present.diagrams;
@@ -91,7 +91,7 @@ export function stepDiagram(
   }
   const step = direction === 'next' ? 1 : diagrams.length - 1;
   const target = diagrams[(at + step) % diagrams.length];
-  return target === undefined ? false : showDiagram(target.id, through);
+  return target === undefined ? false : showDiagram(target.id, announcer);
 }
 
 /**
@@ -171,10 +171,10 @@ function say(
     | 'canvas.diagram-added'
     | 'canvas.diagram-renamed',
   diagram: Pick<Diagram, 'title'>,
-  through: Announcer = announce,
+  announcer: Announcer = announce,
 ): void {
   const title = excerpt(diagram.title, nameQuoteLength);
-  through((t) => t(message, { title }));
+  announcer((t) => t(message, { title }));
 }
 
 function setRenaming(next: DiagramId | undefined): void {

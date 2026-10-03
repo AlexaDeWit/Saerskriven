@@ -1,4 +1,10 @@
-import { act, render, screen, within } from '@testing-library/react';
+import {
+  act,
+  isInaccessible,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import {
   announce,
   announceUndrawn,
@@ -27,12 +33,13 @@ describe('CanvasAnnouncement', () => {
     expect(drawnLine()?.textContent).toBe(said());
   });
 
-  it('holds an undrawn announcement as the text of the region, with no line', () => {
+  it('holds an undrawn announcement as text a screen reader is given, with no line', () => {
     act(() => {
       announceUndrawn(said);
     });
 
     expect(region().textContent).toBe(said());
+    expect(isInaccessible(within(region()).getByText(said()))).toBe(false);
     expect(drawnLine()).toBeNull();
   });
 

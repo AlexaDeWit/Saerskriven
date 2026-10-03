@@ -34,6 +34,19 @@ const onSecond = second.drawn;
 const drawnLineHeight = async (page: Page): Promise<number | undefined> =>
   (await editAnnouncement(page).boundingBox())?.height;
 
+const messageExtent = async (page: Page): Promise<number | undefined> => {
+  const box = await editAnnouncement(page).locator(':scope > *').boundingBox();
+  return box === null ? undefined : Math.max(box.width, box.height);
+};
+
+const saidUndrawn = async (page: Page, title: string): Promise<void> => {
+  const status = page.getByRole('status');
+  await expect(status).toContainText(title);
+  await expect.poll(() => status.ariaSnapshot()).toContain(title);
+  await expect.poll(() => drawnLineHeight(page)).toBe(0);
+  await expect.poll(() => messageExtent(page)).toBeLessThanOrEqual(1);
+};
+
 test('the switcher names the one diagram of the placeholder, and the menu holds no diagram group', async ({
   page,
 }) => {
@@ -137,15 +150,19 @@ test('a step with focus on the switcher says the diagram in the status region an
   await expect(switcher).toHaveAccessibleName(`Diagram: ${firstTitle}`);
   await expect(switcher).toBeFocused();
   await expect(nodeNamed(page, onFirst)).toHaveCount(1);
-  await expect(status).toContainText(firstTitle);
-  await expect.poll(() => drawnLineHeight(page)).toBe(0);
+  await saidUndrawn(page, firstTitle);
 
   await page.keyboard.press(registeredChords['previous-diagram'][0]);
 
   await expect(switcher).toHaveAccessibleName(`Diagram: ${secondTitle}`);
   await expect(switcher).toBeFocused();
-  await expect(status).toContainText(secondTitle);
-  await expect.poll(() => drawnLineHeight(page)).toBe(0);
+  await saidUndrawn(page, secondTitle);
+
+  await openSwitcher(page);
+  await diagramChoice(page, firstTitle).click();
+
+  await expect(switcher).toHaveAccessibleName(`Diagram: ${firstTitle}`);
+  await expect(status).toHaveText('');
 });
 
 test('switching clears the selection and adds no history, so undo has nothing to do', async ({
@@ -291,6 +308,7 @@ test('a title committed with Enter draws no status line, and one committed by le
   );
   await expect(diagramSwitcher(page)).not.toBeFocused();
   await expect(editAnnouncement(page)).toContainText('Tabbed away');
+  await expect.poll(() => drawnLineHeight(page)).toBeGreaterThan(0);
 });
 
 test('an edit lands on the diagram on screen, the saved file holds it there, and a reload comes back to that diagram', async ({
