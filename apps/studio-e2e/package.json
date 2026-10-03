@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "//": [
-    "e2e carries the rasterizer module through both of its web servers, so it depends on the build that writes it. The dependency is declared with nx's '...' spread, which merges with what @nx/playwright inferred. A plain array replaces that instead, and under CI the plugin infers no dependsOn at all while setting parallelism false, because it skips a web server it will not reuse, so a replacement supplying a continuous edge makes nx refuse to build the graph. Both directions measured on #379."
+    "e2e carries the rasterizer and brotli modules through both of its web servers, so it depends on the builds that write them. The dependency is declared with nx's '...' spread, which merges with what @nx/playwright inferred. A plain array replaces that instead, and under CI the plugin infers no dependsOn at all while setting parallelism false, because it skips a web server it will not reuse, so a replacement supplying a continuous edge makes nx refuse to build the graph. Both directions measured on #379."
   ],
   "devDependencies": {
     "@axe-core/playwright": "catalog:",
@@ -29,7 +29,8 @@
           "...",
           {
             "projects": [
-              "resvg-wasm"
+              "resvg-wasm",
+              "brotli-wasm"
             ],
             "target": "build"
           }

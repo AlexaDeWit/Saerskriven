@@ -5,7 +5,11 @@ import {
   type Diagram,
   type Model,
 } from '@saerskriven/model';
-import { committedDiagrams, committedModel } from '@saerskriven/model/fixtures';
+import {
+  committedDiagrams,
+  committedModel,
+  stop,
+} from '@saerskriven/model/fixtures';
 import { readFileSync } from 'node:fs';
 import {
   resvgVariable,
@@ -119,13 +123,11 @@ export function diagramOf(entry: GoldenDocument): Diagram {
   return entry.model.diagrams[entry.diagram];
 }
 
-const stop = (sentence: string): never => {
-  throw new Error(sentence);
-};
-
 /**
- * Whether the rasterizer module has not been built. No dev shell builds it,
- * so a suite that rasterizes skips where it is absent.
+ * Whether the variable naming the rasterizer module is unset or empty, which
+ * is what running outside the flake shell looks like, so a suite that
+ * rasterizes skips there. Inside the shell the variable is always set, and a
+ * module that is not at the path it names fails the suite.
  */
 export const resvgUnbuilt =
   process.env[resvgVariable] === undefined || process.env[resvgVariable] === '';
