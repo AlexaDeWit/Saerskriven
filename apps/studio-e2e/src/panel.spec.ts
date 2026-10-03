@@ -84,7 +84,7 @@ const shopperWithLongThreats = (): Model => {
 };
 
 const paneBody = (page: Page): Locator =>
-  threatPanel(page).locator(':scope > header + div');
+  threatPanel(page).locator(':scope > div:last-child');
 
 const insidePaneBody = async (
   page: Page,
@@ -221,7 +221,7 @@ test('the panel opens on the element selected and goes when the selection does',
   const actor = await selectNode(page, placeholder.actor);
 
   await expect(
-    threatPanel(page).getByRole('heading', { name: 'Threats on Actor' }),
+    threatPanel(page).getByRole('heading', { name: 'Actor', exact: true }),
   ).toBeVisible();
   await expect(
     threatPanel(page).locator(':focus'),
@@ -359,7 +359,7 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
   await openTwoDiagrams(page);
   const webShop = await selectNode(page, storefront.webShop);
   await expect(
-    page.getByRole('heading', { name: 'Threats on Web shop' }),
+    page.getByRole('heading', { name: 'Web shop', exact: true }),
   ).toBeVisible();
 
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
@@ -557,7 +557,7 @@ test('a flow selected on the canvas opens its own threats in the panel', async (
 
   await expect(
     threatPanel(page).getByRole('heading', {
-      name: /^Threats on browse the catalogue/u,
+      name: /^browse the catalogue/u,
     }),
   ).toBeVisible();
   await expect(threatSummary(page, storefront.basketPrice)).toHaveCount(0);

@@ -59,9 +59,21 @@ describe('ThreatOverlay', () => {
 
     select();
 
+    expect(screen.getByRole('heading', { name: 'Reader' })).toBeDefined();
+  });
+
+  it('opens every selection on its Threats tab', async () => {
+    const user = userEvent.setup();
+    render(<ThreatOverlay />);
+    select();
+    await user.click(screen.getByRole('tab', { name: 'Details' }));
+
+    select(processElement);
+
     expect(
-      screen.getByRole('heading', { name: 'Threats on Reader' }),
-    ).toBeDefined();
+      screen.getByRole('tab', { selected: true }).textContent,
+    ).not.toContain('Details');
+    expect(addControl()).toBeDefined();
   });
 
   it('takes the panel away again when the selection clears', () => {
@@ -325,6 +337,7 @@ describe('ThreatOverlay', () => {
     const user = userEvent.setup();
     const shown = render(<ThreatOverlay />);
     select(processElement);
+    await user.click(screen.getByRole('tab', { name: 'Details' }));
     await user.click(
       screen.getByRole('button', { name: 'Security properties' }),
     );

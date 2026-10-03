@@ -3,9 +3,8 @@ import { panelMessages } from './contract.js';
 
 export const panelEnCA = catalogue(panelMessages)('en-CA')({
   threats: 'Threats',
-  'threats-on': 'Threats on {element}',
   'unlabelled-flow': 'Flow {ends}',
-  'threats-on-unlabelled-flow': 'Threats on the flow {ends}',
+  details: 'Details',
   'close-threats': 'Close threats',
   'widen-pane': 'Widen pane',
   'restore-pane-width': 'Restore pane width',

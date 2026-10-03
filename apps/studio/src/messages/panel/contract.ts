@@ -3,9 +3,8 @@ import { plural, text } from '@saerskriven/i18n';
 /** The threat panel, the model's properties, and the record groups. */
 export const panelMessages = {
   threats: text(),
-  'threats-on': text({ element: 'text' }),
   'unlabelled-flow': text({ ends: 'text' }),
-  'threats-on-unlabelled-flow': text({ ends: 'text' }),
+  details: text(),
   'close-threats': text(),
   'widen-pane': text(),
   'restore-pane-width': text(),

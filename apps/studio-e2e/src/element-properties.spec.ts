@@ -8,6 +8,7 @@ import {
   panelField,
   savedModel,
   selectByKeyboard,
+  showDetails,
   storefront,
   threatPanel,
   twoDiagramsFile,
@@ -15,6 +16,7 @@ import {
 
 async function properties(page: Page, name: RegExp) {
   await selectByKeyboard(page, name);
+  await showDetails(page);
   await threatPanel(page)
     .getByRole('button', { name: 'Security properties' })
     .click();
@@ -160,6 +162,7 @@ test('edits the description and scope of a process and a note through undo, save
 }) => {
   await openFile(page, twoDiagramsFile);
   await selectByKeyboard(page, storefront.webShop);
+  await showDetails(page);
   const description = panelField(page, 'textbox', 'Description of Web shop');
   const flag = panelField(page, 'combobox', 'Out of scope');
   const reason = panelField(page, 'textbox', 'Reason out of scope');
@@ -177,6 +180,7 @@ test('edits the description and scope of a process and a note through undo, save
   await expect(flag).toContainText('Yes');
 
   await selectByKeyboard(page, /^Card note, text/u);
+  await showDetails(page);
   await expect(
     threatPanel(page).getByRole('button', { name: 'Security properties' }),
   ).toHaveCount(0);
@@ -203,6 +207,7 @@ test('edits the description and scope of a process and a note through undo, save
   await page.reload();
   await canvasSettled(page);
   await selectByKeyboard(page, storefront.webShop);
+  await showDetails(page);
   await expect(description).toHaveValue('Takes orders from the browser.');
   await expect(reason).toHaveValue('Run by the payment provider.');
 });
