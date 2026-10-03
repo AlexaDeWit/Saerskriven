@@ -107,6 +107,23 @@ test('a list field draws the row under the keyboard or the pointer as a ringed t
   await ringedInForcedColours(page, pointed);
 });
 
+const arrowTo = async (
+  page: Page,
+  row: Locator,
+  key: 'ArrowDown' | 'ArrowUp',
+): Promise<void> => {
+  await expect(async () => {
+    await page.keyboard.press(key);
+    await expect(row).toHaveAttribute('data-highlighted', { timeout: 250 });
+  }).toPass({ intervals: [0] });
+};
+
+const openMenuByKeyboard = async (page: Page): Promise<void> => {
+  await openTwoDiagrams(page);
+  await openByKeyboard(menuButton(page));
+  await expect(page.getByRole('menu')).toBeVisible();
+};
+
 const pickers: readonly {
   readonly name: string;
   readonly open: (page: Page) => Promise<void>;
@@ -132,10 +149,29 @@ const pickers: readonly {
   },
   {
     name: 'the menu',
+    open: openMenuByKeyboard,
+  },
+  {
+    name: "the menu's Appearance submenu trigger",
     open: async (page) => {
-      await openTwoDiagrams(page);
-      await openByKeyboard(menuButton(page));
-      await expect(page.getByRole('menu')).toBeVisible();
+      await openMenuByKeyboard(page);
+      await arrowTo(
+        page,
+        page.getByRole('menuitem', { name: /^Appearance/u }),
+        'ArrowDown',
+      );
+    },
+  },
+  {
+    name: "the menu's project link",
+    open: async (page) => {
+      await openMenuByKeyboard(page);
+      await page.keyboard.press('End');
+      await arrowTo(
+        page,
+        page.getByRole('menuitem', { name: /^View source/u }),
+        'ArrowUp',
+      );
     },
   },
   {
@@ -150,7 +186,7 @@ const pickers: readonly {
 ];
 
 for (const picker of pickers) {
-  test(`${picker.name} opens on a ringed tint, never the solid accent a switched-on tool keeps`, async ({
+  test(`${picker.name} draws its cursor row as a ringed tint, never the solid accent a switched-on tool keeps`, async ({
     page,
   }) => {
     await picker.open(page);

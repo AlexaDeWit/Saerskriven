@@ -135,7 +135,9 @@
 
 /* A row too narrow for its label and its chord wraps the chord under the
    label, at the end edge, and a chord still too wide breaks between its
-   alternatives, never inside one, so neither is clipped. */
+   alternatives, never inside one, so neither is clipped. The project link is
+   a row too, so it takes the menu's ink rather than the browser's link
+   colour, which no palette pins against the cursor's tint. */
 .item {
   display: flex;
   flex-wrap: wrap;
@@ -144,6 +146,7 @@
   column-gap: var(--saer-space-4);
   padding: var(--saer-space-2) var(--saer-space-3);
   border-radius: var(--saer-radius);
+  color: inherit;
   user-select: none;
 }
 

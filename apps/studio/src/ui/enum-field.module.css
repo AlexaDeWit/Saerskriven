@@ -97,23 +97,26 @@
 .viewport {
   max-block-size: min(24rem, var(--radix-select-content-available-height));
   padding: var(--saer-space-1);
-  scroll-padding-block: 1.5rem;
+  scroll-padding-block: var(--saer-scroll-cue-size);
 }
 
 /* Radix draws a cue only at an edge the options run on past, and hides the
    viewport's scrollbar, so these are what says the list scrolls. A rule
    marks the cut. Each lies over the viewport's edge rather than beside it:
    a cue that took room would move the rows under a pointer at rest as it
-   came and went, and Radix takes focus off a row the pointer leaves. */
+   came and went, and Radix takes focus off a row the pointer leaves. Radix
+   positions the viewport, so a cue needs a z-index to paint over its rows
+   and take the pointer from them. */
 .earlier,
 .later {
   position: absolute;
+  z-index: 1;
   inset-inline: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  block-size: 1.5rem;
+  block-size: var(--saer-scroll-cue-size);
   background: var(--saer-colour-surface);
   color: var(--saer-colour-text-muted);
 }

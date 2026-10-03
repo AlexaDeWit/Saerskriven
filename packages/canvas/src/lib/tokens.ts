@@ -241,6 +241,8 @@ const chromeCard = '5rem';
 
 const announcementSlot = 'calc(var(--saer-space-2) * 3 + 2px + 2lh)';
 
+const scrollCue = '1.5rem';
+
 const colourProperties = {
   surfaceApp: '--saer-colour-surface',
   surfaceCanvas: '--saer-colour-canvas',
@@ -296,6 +298,9 @@ const colourBlock = (palette: Palette, indent: string): string => {
  * overwrites with its measured height, since its tool row can wrap.
  * `--saer-announcement-slot` holds two lines of the canvas announcement with
  * its gap, border and padding, its `lh` resolving on the pane that reads it.
+ * `--saer-scroll-cue-size` is the strip a listbox lays over an edge its
+ * options run on past, and the scroll padding that keeps the keyboard's
+ * option clear of it.
  */
 export const tokenStylesheet = `:root {
   color-scheme: light dark;
@@ -331,6 +336,7 @@ ${colourBlock(lightPalette, '  ')}
   --saer-cue-flow-selection: ${cueWidths.flowSelection}px;
 
   --saer-resize-handle-size: ${String(resizeHandle.size)}px;
+  --saer-scroll-cue-size: ${scrollCue};
 }
 
 @media (prefers-color-scheme: dark) {
