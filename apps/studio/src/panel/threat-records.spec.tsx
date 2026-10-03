@@ -15,7 +15,8 @@ import {
   recordQuoteLength,
   resetAnnouncements,
 } from '../canvas/announcements.js';
-import { activeTranslator, chooseLanguage } from '../messages/locale.js';
+import { activeTranslator } from '../messages/locale.js';
+import { withLanguage } from '../messages/locale.fixtures.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { present, undoable } from '../store/store.fixtures.js';
@@ -431,18 +432,7 @@ describe(
       const first = (field: RecordFieldMessage): string =>
         french(field, { number: 1 });
 
-      beforeEach(() => {
-        act(() => {
-          chooseLanguage('fr-CA');
-        });
-      });
-
-      afterEach(() => {
-        act(() => {
-          chooseLanguage('en-CA');
-        });
-        globalThis.localStorage.clear();
-      });
+      withLanguage('fr-CA');
 
       it('names each field after its kind of record and the record\'s number, so no "de" lands before the record\'s name', async () => {
         await showOpened();
@@ -472,6 +462,67 @@ describe(
         expect(
           assumption.getByRole('combobox', {
             name: first('fields.assumption-status-field'),
+          }),
+        ).toBeDefined();
+      });
+
+      it('names Unlink after the record with the article its kind takes', async () => {
+        await showOpened();
+
+        expect(button('Délier la mesure 1')).toBeDefined();
+        expect(button('Délier l’hypothèse 1')).toBeDefined();
+      });
+
+      it.each([
+        ['Mesure existante', 'Abandonner la mesure 1', 'enums.noun-mitigation'],
+        [
+          'Hypothèse existante',
+          'Abandonner l’hypothèse 1',
+          'enums.noun-assumption',
+        ],
+      ] as const)(
+        'names an Existing picker "%s", opening with a capital, and Discard "%s", after the record with its article',
+        async (existing, discard, noun) => {
+          const user = userEvent.setup();
+          showThreatEditor({ threat: recordedThreat(secondThreat) });
+
+          expect(
+            screen.getByRole('combobox', { name: existing }),
+          ).toBeDefined();
+          await user.click(
+            button(french('fields.add-record', { kind: french(noun) })),
+          );
+          expect(button(discard)).toBeDefined();
+        },
+      );
+    });
+
+    describe('in Swedish', () => {
+      withLanguage('sv');
+
+      it("names each field of a record with the record's kind in lower case", async () => {
+        await showOpened();
+
+        expect(textbox('Titel för åtgärd 1')).toBeDefined();
+        expect(textbox('Beskrivning av åtgärd 1')).toBeDefined();
+        expect(
+          screen.getByRole('combobox', { name: 'Status för åtgärd 1' }),
+        ).toBeDefined();
+        expect(
+          screen.getByRole('combobox', { name: 'Status för antagande 1' }),
+        ).toBeDefined();
+      });
+
+      it('words the Existing picker of an assumption, its Link and the reason Link waits in the neuter', () => {
+        showThreatEditor({ threat: recordedThreat(secondThreat) });
+
+        expect(
+          screen.getByRole('combobox', { name: 'Befintligt antagande' }),
+        ).toBeDefined();
+        expect(
+          screen.getByRole('button', {
+            name: 'Länka befintligt antagande',
+            description: 'Välj först ett befintligt antagande.',
           }),
         ).toBeDefined();
       });
