@@ -1,4 +1,5 @@
 import type { Point } from '@saerskriven/model';
+import { nearestOnSegment, squaredDistance } from './vectors.js';
 
 /** An axis-aligned box, as the low and high bound on each axis. */
 export type Box = {
@@ -160,33 +161,14 @@ export function boxSegmentGap(box: Box, segment: Segment): number {
   return Math.min(
     pointBoxGap(segment.from, box),
     pointBoxGap(segment.to, box),
-    ...cornersOfBox(box).map((corner) => pointSegmentGap(corner, segment)),
+    ...cornersOfBox(box).map((corner) =>
+      Math.sqrt(squaredDistance(corner, nearestOnSegment(segment, corner).at)),
+    ),
   );
 }
 
 function pointBoxGap(point: Point, box: Box): number {
   const x = Math.max(box.minX - point.x, 0, point.x - box.maxX);
   const y = Math.max(box.minY - point.y, 0, point.y - box.maxY);
-  return Math.sqrt(x * x + y * y);
-}
-
-function pointSegmentGap(point: Point, segment: Segment): number {
-  const runX = segment.to.x - segment.from.x;
-  const runY = segment.to.y - segment.from.y;
-  const squared = runX * runX + runY * runY;
-  const along =
-    squared === 0
-      ? 0
-      : Math.max(
-          0,
-          Math.min(
-            1,
-            ((point.x - segment.from.x) * runX +
-              (point.y - segment.from.y) * runY) /
-              squared,
-          ),
-        );
-  const x = point.x - (segment.from.x + runX * along);
-  const y = point.y - (segment.from.y + runY * along);
   return Math.sqrt(x * x + y * y);
 }

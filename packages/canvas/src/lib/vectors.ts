@@ -42,18 +42,13 @@ export function labelNormal(segment: Segment): Point {
 }
 
 /**
- * Where a point projects onto a segment: the fraction along it, clamped to
- * the segment, the distance to that foot, and the distance signed by the side
- * {@link labelNormal} names.
+ * The point of a segment nearest a point, and the fraction along the
+ * segment it lies at. A segment of no length is its first point.
  */
-export function projectedOn(
+export function nearestOnSegment(
   segment: Segment,
   point: Point,
-): {
-  readonly distance: number;
-  readonly fraction: number;
-  readonly signedDistance: number;
-} {
+): { readonly fraction: number; readonly at: Point } {
   const run = {
     x: segment.to.x - segment.from.x,
     y: segment.to.y - segment.from.y,
@@ -71,7 +66,23 @@ export function projectedOn(
               lengthSquared,
           ),
         );
-  const at = alongSegment(segment, fraction);
+  return { fraction, at: alongSegment(segment, fraction) };
+}
+
+/**
+ * Where a point projects onto a segment: the fraction along it, clamped to
+ * the segment, the distance to that foot, and the distance signed by the side
+ * {@link labelNormal} names.
+ */
+export function projectedOn(
+  segment: Segment,
+  point: Point,
+): {
+  readonly distance: number;
+  readonly fraction: number;
+  readonly signedDistance: number;
+} {
+  const { fraction, at } = nearestOnSegment(segment, point);
   const normal = labelNormal(segment);
   return {
     distance: Math.sqrt(squaredDistance(point, at)),

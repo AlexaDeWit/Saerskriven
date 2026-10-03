@@ -34,6 +34,7 @@ import {
 import {
   boxesOverlap,
   boxOfPoints,
+  boxSegmentGap,
   segmentMeetsBox,
   segmentsOfBox,
   segmentsOfPolyline,
@@ -245,32 +246,10 @@ describe('the flow blocks of a whole diagram', () => {
   );
 });
 
-const distanceToBox = (point: Point, box: Box): number =>
-  Math.hypot(
-    Math.max(box.minX - point.x, 0, point.x - box.maxX),
-    Math.max(box.minY - point.y, 0, point.y - box.maxY),
+const gapToLine = (edge: CanvasEdge): number =>
+  Math.min(
+    ...linesOf(edge).map((line) => boxSegmentGap(backingOf(edge), line)),
   );
-
-const gapToLine = (edge: CanvasEdge): number => {
-  const block = backingOf(edge);
-  const corners = [
-    { x: block.minX, y: block.minY },
-    { x: block.maxX, y: block.minY },
-    { x: block.maxX, y: block.maxY },
-    { x: block.minX, y: block.maxY },
-  ];
-  return Math.min(
-    ...linesOf(edge).map((line) =>
-      segmentMeetsBox(line, block)
-        ? 0
-        : Math.min(
-            distanceToBox(line.from, block),
-            distanceToBox(line.to, block),
-            ...corners.map((corner) => projectedOn(line, corner).distance),
-          ),
-    ),
-  );
-};
 
 describe('the blocks beside their lines in the committed diagrams', () => {
   it.each(scenes)(
