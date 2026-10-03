@@ -281,7 +281,7 @@ align(center + horizon)[
 [#"1"], [#"Account takeover by credential stuffing"], [#"Shopper, browse the catalogue and fill a basket"], [#"Spoofing (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Open", rgb("#C14339"))],
 [#"2"], [#"Basket price changed in the page"], [#"Web shop, return the rendered page"], [#"Tampering (STRIDE)"], [#saer-badge("Critical", rgb("#C14339"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
 [#"3"], [#"Unpublished listings readable"], [#"Catalogue, read the product listings"], [#"Confidentiality (CIA)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Accepted risk", rgb("#A85E1D"))],
-[#"4"], [#"Card data disclosed in transit"], [#"Payment gateway, authorise the card payment"], [#"Information disclosure (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Transferred", rgb("#46788A"))],
+[#"4"], [#"Card data disclosed in transit"], [#"The whole model, Payment gateway, authorise the card payment"], [#"Information disclosure (STRIDE)"], [#saer-badge("High", rgb("#A85E1D"))], [#saer-badge("Transferred", rgb("#46788A"))],
 [#"6"], [#"Shopper denies placing an order"], [#"Order ledger, record the paid order"], [#"Repudiation (STRIDE)"], [#saer-badge("Low", rgb("#4B6B50"))], [#saer-badge("Mitigated", rgb("#4B6B50"))],
 [#"7"], [#"Forged payment callback"], [#"card network callback"], [#"Callback integrity (Payments checklist)"], [#saer-badge("Undecided", rgb("#756E63"))], [#saer-badge("Open", rgb("#C14339"))],
 [#"8"], [#"Stock held by abandoned reservations"], [#"Stock, reserve the stock for the order"], [#"Denial of service (STRIDE)"], [#saer-badge("Medium", rgb("#46788A"))], [#saer-badge("Open", rgb("#C14339"))],
@@ -358,7 +358,7 @@ align(center + horizon)[
 
 #heading(level: 2)[#"Threat 4: Card data disclosed in transit"]
 
-#list([#strong[#"Elements"]#": "#"Payment gateway, authorise the card payment"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Transferred", rgb("#46788A"))], [#strong[#"Flags"]#": "#"None"])
+#list([#strong[#"Elements"]#": "#"The whole model, Payment gateway, authorise the card payment"], [#strong[#"Category"]#": "#"Information disclosure (STRIDE)"], [#strong[#"Severity"]#": "#saer-badge("High", rgb("#A85E1D"))], [#strong[#"Status"]#": "#saer-badge("Transferred", rgb("#46788A"))], [#strong[#"Flags"]#": "#"None"])
 
 #strong[#"Description"]
 

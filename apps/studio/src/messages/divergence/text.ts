@@ -89,6 +89,7 @@ const openPlacements = {
   'scope-marking-dropped': 'save-only',
   'threat-attachment-stray': 'save-only',
   'threat-unplaceable': 'save-only',
+  'threat-model-link-dropped': 'save-only',
   'threat-split-across-elements': 'save-only',
   'threat-category-unnamed': 'save-only',
   'mitigation-records-merged': 'save-only',
@@ -417,6 +418,8 @@ function lossDetail(t: Speaker, detail: ReportedDetail, held: Held): string {
       return strayAttachment(t, detail.parameters, held);
     case 'threat-unplaceable':
       return t('divergence.whole-threat');
+    case 'threat-model-link-dropped':
+      return t('divergence.threat-model-link-dropped');
     case 'threat-split-across-elements':
       return t('divergence.split-into-copies', detail.parameters);
     case 'threat-category-unnamed':

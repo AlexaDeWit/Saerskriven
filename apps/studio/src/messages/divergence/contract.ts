@@ -49,6 +49,7 @@ export const divergenceMessages = {
   'threat-attachment-stray-trust-boundary': text(),
   'threat-attachment-stray-trust-boundary-named': text(name),
   'threat-attachment-stray-unknown': text(),
+  'threat-model-link-dropped': text(),
   'threat-category-unnamed': text(),
   'mitigation-records-merged': plural('count'),
   'mitigation-title-merged': text(),
