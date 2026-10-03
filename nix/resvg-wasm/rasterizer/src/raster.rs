@@ -78,7 +78,10 @@ pub(crate) fn rasterize(svg: &[u8], long_edge: u32) -> Result<Raster, String> {
     Ok(Raster { width, height, png })
 }
 
-// resolve_string treats an unresolved href as a file path. Answering None keeps
+// This module resolves no image from any href. usvg's default resolve_data
+// takes a data URL's bytes as an image, and parses them as a nested document
+// where they are an SVG. Its default resolve_string treats any other href as a
+// file path. Answering None from both leaves every image undrawn, and keeps
 // this module off every path the host might hold, on top of a target that has
 // no syscall to reach one with.
 fn options<'a>() -> usvg::Options<'a> {
@@ -86,6 +89,7 @@ fn options<'a>() -> usvg::Options<'a> {
         fontdb: FONTS.with_borrow(Arc::clone),
         ..usvg::Options::default()
     };
+    options.image_href_resolver.resolve_data = Box::new(|_mime, _data, _options| None);
     options.image_href_resolver.resolve_string = Box::new(|_href, _options| None);
     options
 }

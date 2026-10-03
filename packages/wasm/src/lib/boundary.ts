@@ -5,8 +5,10 @@ import { promisePerBytes } from './promise-per-bytes.js';
  * The calls every module on Saerskriven's WebAssembly boundary exports beside
  * its own. Rust owns one input buffer and one output buffer: `input(length)`
  * sizes the input buffer and answers its address, and `output()` and
- * `output_length()` answer the output buffer's. `nix/wasm-module.nix` builds
- * every such module, and `docs/build.md` describes the boundary.
+ * `output_length()` answer the output buffer's. Every call but a getter
+ * empties the output buffer first, so it holds what the last such call wrote,
+ * or nothing. `nix/wasm-module.nix` builds every such module, and
+ * `docs/build.md` describes the boundary.
  */
 export type BoundaryExports = {
   readonly memory: WebAssembly.Memory;
