@@ -33,10 +33,11 @@ const MOST_WINDOW_BITS: i32 = 24;
 const WINDOW_GAP: usize = 16;
 
 // Both directions write into a buffer this size and no larger. A decode also
-// holds the ring buffer the stream's window declares, at most 16 MiB, and the
-// bytes it kept, which never pass the maximum but grow by doubling. The blocks
-// a doubling frees cannot hold the next one, so the module's memory reaches
-// about twice the maximum.
+// holds the ring buffer the stream's window declares (at most 16 MiB), the
+// stream's own bytes, the bytes it kept, and a few MiB of decoder tables a
+// crafted stream can force. The kept bytes never pass the maximum but grow by
+// doubling, and the blocks a doubling frees cannot hold the next one, so they
+// cost about twice the maximum.
 const CHUNK: usize = 1 << 16;
 
 // Bytes cross the boundary as bytes, so one-byte alignment is the whole
@@ -122,8 +123,10 @@ pub unsafe extern "C" fn release(outcome: *mut Outcome) {
 }
 
 // The whole input goes to the encoder in one call that also finishes the
-// stream. Fed in pieces, as the crate's reader and writer helpers feed it,
-// the encoder reserves its full 32 MiB input ring on the second piece.
+// stream. Fed in pieces, the encoder reserves its full input ring, twice the
+// larger of the window and one block plus one block, on the second piece.
+// Fed whole, an input under one block, which is every input up to 256 KiB,
+// skips it.
 fn compressed(input: &[u8]) -> Vec<u8> {
     let mut encoder = BrotliEncoderStateStruct::new(StandardAlloc::default());
     encoder.params = BrotliEncoderParams {
@@ -211,15 +214,32 @@ fn inflated(stream: &[u8], maximum: usize) -> Result<Vec<u8>, u32> {
     }
 }
 
-// Doubles the kept bytes' room as a vector would, but never past the maximum,
-// so a maximum that is not a power of two is not overshot.
+// Doubles the kept bytes' room as a vector would, from a seed the doubling
+// lands on the maximum from. Clamped from any other start, the last step
+// would reserve the maximum beside a block of nearly its size and the smaller
+// blocks freed before it, about three times the maximum in all.
 fn keep(kept: &mut Vec<u8>, written: &[u8], maximum: usize) {
     let needed = kept.len() + written.len();
     if needed > kept.capacity() {
-        let room = kept.capacity().saturating_mul(2).clamp(needed, maximum);
-        kept.reserve_exact(room - kept.len());
+        let mut room = match kept.capacity() {
+            0 => seed(maximum),
+            held => held,
+        };
+        while room < needed {
+            room = room.saturating_mul(2);
+        }
+        kept.reserve_exact(room.min(maximum) - kept.len());
     }
     kept.extend_from_slice(written);
+}
+
+// The maximum halved, rounding up, until it fits one chunk.
+fn seed(maximum: usize) -> usize {
+    let mut room = maximum.max(1);
+    while room > CHUNK {
+        room = room.div_ceil(2);
+    }
+    room
 }
 
 fn hand_over(status: u32, bytes: Vec<u8>) -> *mut Outcome {

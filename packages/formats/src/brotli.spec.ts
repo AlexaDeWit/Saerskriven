@@ -1,11 +1,11 @@
-import { committedText, repositoryRoot } from '@saerskriven/model/fixtures';
+import { committedText } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { brotliUnbuilt, brotliWasm } from './brotli.fixtures.js';
 import { BrotliFailure, compressBrotli, decompressBrotli } from './brotli.js';
 import { readLimits } from './lib/read-limits.js';
+import { saerskrivenModelPath } from './lib/saerskriven-yaml.fixtures.js';
 
 const mebibyte = 1_048_576;
 
@@ -17,9 +17,7 @@ const model = new TextEncoder().encode(
   committedText('saerskriven', 'feature-complete.yaml'),
 );
 
-const threatModel = new Uint8Array(
-  readFileSync(join(repositoryRoot, 'threat-modelling', 'saerskriven.yaml')),
-);
+const threatModel = new Uint8Array(readFileSync(saerskrivenModelPath));
 
 const referenceStream = (bytes: Uint8Array, quality: number): Uint8Array =>
   brotliCompressSync(bytes, {
@@ -232,6 +230,23 @@ describe.skipIf(brotliUnbuilt)('a model compressed through the module', () => {
     }
   });
 
+  it('compiles again after a compile that failed, rather than keeping the failure', async () => {
+    const wasm = new Uint8Array(brotliWasm());
+    const compile = vi
+      .spyOn(WebAssembly, 'compile')
+      .mockRejectedValueOnce(new Error('the compile was refused'));
+    try {
+      expect(await compressBrotli(model, wasm)).toEqual(
+        Either.left(
+          BrotliFailure.Unusable({ sentence: 'the compile was refused' }),
+        ),
+      );
+      expect(Either.isRight(await compressBrotli(model, wasm))).toBe(true);
+    } finally {
+      compile.mockRestore();
+    }
+  });
+
   it('decodes an empty stream to no bytes under a maximum of 0', async () => {
     const stream = await compressed(new Uint8Array(0));
     expect(
@@ -248,7 +263,7 @@ describe.skipIf(brotliUnbuilt)('a stream the decoder refuses', () => {
     ).toEqual(BrotliFailure.PastMaximum({ maximum: model.length - 1 }));
   });
 
-  it.each([mebibyte, readLimits.maxTextBytes])(
+  it.each([mebibyte, 5 * mebibyte, readLimits.maxTextBytes])(
     'refuses 64 MiB of zeros against a maximum of %i bytes, within the window, twice the maximum and 4 MiB',
     async (maximum) => {
       const [refusal, held] = await withMemory(async () =>

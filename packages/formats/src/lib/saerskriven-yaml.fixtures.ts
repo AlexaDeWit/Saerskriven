@@ -977,7 +977,8 @@ export const twoDiagramsYaml: string = committedText(
   'saerskriven/two-diagrams.yaml',
 );
 
-const saerskrivenModelPath = join(
+/** The path of Saerskriven's own threat model. */
+export const saerskrivenModelPath = join(
   repositoryRoot,
   'threat-modelling/saerskriven.yaml',
 );

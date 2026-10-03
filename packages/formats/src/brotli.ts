@@ -90,10 +90,11 @@ export async function compressBrotli(
  *
  * A stream that would decode past the maximum is refused at the first byte
  * past it, and the rest is never decoded. The module's memory then reaches
- * the window the stream declares, at most 16 MiB, plus about twice the
- * maximum, plus about 2 MiB, whatever the stream would inflate to: the kept
- * bytes grow by doubling, and the blocks a doubling frees cannot hold the
- * next one. A stream that claims the large-window extension is `Malformed`.
+ * the declared window (at most 16 MiB), the stream's own bytes, about twice
+ * the maximum, and a few MiB of decoder tables, whatever the stream would
+ * inflate to: the kept bytes grow by doubling, and the blocks a doubling frees
+ * cannot hold the next one. A stream that claims the large-window extension
+ * is `Malformed`.
  * Each call runs its own instance, so that memory goes with the call.
  */
 export async function decompressBrotli(
