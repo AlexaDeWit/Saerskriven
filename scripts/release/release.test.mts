@@ -15,14 +15,13 @@ import {
   type ReleaseFailure,
   type RunCommand,
 } from './release.mts';
+import { temporaryWorkspace, workspaceRoot } from '../tools.fixtures.mts';
 import {
   fakeRunner,
   key,
   leftText,
   result,
   right,
-  temporaryWorkspace,
-  workspaceRoot,
 } from './release.fixtures.mts';
 
 const readVersion = (): Either.Either<string, ReleaseFailure> =>

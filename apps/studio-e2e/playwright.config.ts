@@ -7,6 +7,14 @@ const phoneOnly = /@phone-only/u;
 const pagesBasePath = '/Saerskriven';
 const pagesPort = 4300;
 
+// What `chromium` runs, held once so the Firefox and WebKit projects run the
+// same specs and cannot drift from it.
+const desktopSuite = {
+  testIgnore: [frameTimeFloor, pagesExport],
+  grepInvert: phoneOnly,
+  fullyParallel: true,
+};
+
 // Browsers come from the flake (PLAYWRIGHT_BROWSERS_PATH points into the nix
 // store), never from playwright's downloader. How to run and debug the suite,
 // and what it leaves to other suites, is in README.md beside this file.
@@ -71,14 +79,12 @@ export default defineConfig({
   projects: [
     // CI splits `chromium` and `phone` across a shard matrix. Each of the two
     // runs every test as its own shard group, so the split follows the test
-    // count rather than the file sizes. The projects below keep the default,
-    // one group per file, because each runs on one worker anyway.
+    // count rather than the file sizes. `pages` and `frame-time` keep the
+    // default, one group per file, because each runs on one worker anyway.
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: [frameTimeFloor, pagesExport],
-      grepInvert: phoneOnly,
-      fullyParallel: true,
+      ...desktopSuite,
     },
     // A phone viewport is the one the shell chrome has least room in, so a
     // test whose layout turns on the width carries the `@phone` tag and runs
@@ -141,5 +147,26 @@ export default defineConfig({
       fullyParallel: false,
       retries: 1,
     },
+    // Firefox and WebKit run the `chromium` specs nightly on main, outside
+    // the gate (#679, .github/workflows/nightly-browsers.yml). The two
+    // projects exist only where SAERSKRIVEN_E2E_OTHER_ENGINES is `1`, so a
+    // plain run and every pull request job keep to the projects above, and a
+    // spec that is red in another engine leaves them green. Neither is in
+    // the dependency chain: a run with the variable set starts both beside
+    // `chromium` and still reaches `frame-time` last and alone.
+    ...(process.env['SAERSKRIVEN_E2E_OTHER_ENGINES'] === '1'
+      ? [
+          {
+            name: 'firefox',
+            use: { ...devices['Desktop Firefox'] },
+            ...desktopSuite,
+          },
+          {
+            name: 'webkit',
+            use: { ...devices['Desktop Safari'] },
+            ...desktopSuite,
+          },
+        ]
+      : []),
   ],
 });

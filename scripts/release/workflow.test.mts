@@ -1,56 +1,15 @@
 import assert from 'node:assert/strict';
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import {
-  existsSync,
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { parse } from 'yaml';
 import { z } from 'zod';
-import { temporaryWorkspace, workspaceRoot } from './release.fixtures.mts';
-
-const concurrencySchema = z.object({
-  group: z.string(),
-  'cancel-in-progress': z.union([z.string(), z.boolean()]),
-});
-const jobSchema = z.object({
-  name: z.string(),
-  concurrency: concurrencySchema.optional(),
-  needs: z.union([z.string(), z.array(z.string())]).optional(),
-  if: z.string().optional(),
-  outputs: z.record(z.string(), z.string()).optional(),
-  permissions: z.record(z.string(), z.string()).optional(),
-  steps: z
-    .array(
-      z.object({
-        name: z.string(),
-        run: z.string().optional(),
-        uses: z.string().optional(),
-        if: z.string().optional(),
-        env: z.record(z.string(), z.string()).optional(),
-        with: z.record(z.string(), z.unknown()).optional(),
-        'continue-on-error': z.union([z.string(), z.boolean()]).optional(),
-        'timeout-minutes': z.number().optional(),
-      }),
-    )
-    .optional(),
-});
-const workflowSchema = z.object({
-  on: z.record(z.string(), z.unknown()),
-  concurrency: concurrencySchema,
-  jobs: z.record(z.string(), jobSchema),
-});
-const workflow = (name: string) =>
-  workflowSchema.parse(
-    parse(readFileSync(join(workspaceRoot, '.github/workflows', name), 'utf8')),
-  );
+import {
+  temporaryWorkspace,
+  workflow,
+  workspaceRoot,
+} from '../tools.fixtures.mts';
 
 void test('Codecov upload is bounded and advisory outside pull requests', () => {
   const upload = workflow('ci.yml').jobs['build-test']?.steps?.find(
@@ -364,11 +323,8 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
   }
 });
 
-void test('artifact validation rejects a wrong tag and a corrupted executable', (context) => {
-  const directory = mkdtempSync(join(tmpdir(), 'release-artifacts-'));
-  context.after(() => {
-    rmSync(directory, { recursive: true, force: true });
-  });
+void test('artifact validation rejects a wrong tag and a corrupted executable', () => {
+  const directory = temporaryWorkspace();
   writeFileSync(
     join(directory, 'package.json'),
     JSON.stringify({ version: '1.2.3' }),

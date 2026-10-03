@@ -1,9 +1,4 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { afterEach } from 'node:test';
 import { Either } from 'effect';
 import type {
   CommandResult,
@@ -16,15 +11,6 @@ type CommandCall = Readonly<{
   command: string;
   options: Readonly<{ cwd: string; inherit?: boolean }>;
 }>;
-
-/** Repository containing the release tooling. */
-export const workspaceRoot = fileURLToPath(new URL('../../', import.meta.url));
-const scratch: string[] = [];
-afterEach(() => {
-  for (const path of scratch.splice(0)) {
-    rmSync(path, { force: true, recursive: true });
-  }
-});
 
 /** Command output for a release-runner fixture. */
 export const result = (
@@ -139,11 +125,4 @@ export const leftText = <Value,>(
 ): string => {
   assert.equal(Either.isLeft(outcome), true, JSON.stringify(outcome));
   return Either.isLeft(outcome) ? JSON.stringify(outcome.left) : '';
-};
-
-/** Create an isolated workspace removed after the test. */
-export const temporaryWorkspace = (): string => {
-  const cwd = mkdtempSync(join(tmpdir(), 'saerskriven-release-'));
-  scratch.push(cwd);
-  return cwd;
 };

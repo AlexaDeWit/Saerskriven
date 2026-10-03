@@ -1,0 +1,53 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "nightly-tools",
+  "projectType": "application",
+  "sourceRoot": "scripts/nightly",
+  "targets": {
+    "lint": {
+      "inputs": ["...", "toolsFixtures"],
+      "options": {
+        "command": "oxlint scripts/nightly scripts/tools.fixtures.mts"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default",
+        "sharedGlobals",
+        "toolsFixtures",
+        "{workspaceRoot}/.github/workflows/nightly-browsers.yml",
+        "{workspaceRoot}/.github/workflows/ci.yml",
+        "{workspaceRoot}/.github/actions/setup-toolchain/action.yml",
+        "{workspaceRoot}/flake.lock",
+        {
+          "externalDependencies": ["yaml", "zod"]
+        }
+      ],
+      "options": {
+        "commands": [
+          {
+            "command": "node --test scripts/nightly/*.test.mts",
+            "forwardAllArgs": false
+          }
+        ]
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "default",
+        "toolsFixtures",
+        "{workspaceRoot}/tsconfig.base.json",
+        {
+          "externalDependencies": ["typescript", "yaml", "zod"]
+        }
+      ],
+      "options": {
+        "command": "tsc --noEmit --project scripts/nightly/tsconfig.json"
+      }
+    }
+  }
+}

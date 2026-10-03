@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Report a red nightly browser run on one tracking issue, for
+# .github/workflows/nightly-browsers.yml.
+#
+#     RUN_URL=<run> GITHUB_SHA=<commit> GH_REPO=<owner/name> \
+#       scripts/nightly/report.sh [--dry-run] <reports directory> <engine>...
+#
+# The directory holds Playwright's JSON report of each engine as
+# <engine>.json. An engine is red where its report lists a failing spec or an
+# error outside any spec, and where no readable report is found: a job stopped
+# before the suite finished leaves none, and neither does a run whose JSON
+# artifact has expired. BROWSERS_RESULT, the result of the browser jobs, makes
+# the night red where every report is green and a job still failed.
+#
+# A red night comments on the open issue carrying the title below, and opens
+# that issue where none is open. A green one writes nothing. Nothing here
+# closes the issue: a person does.
+#
+# --dry-run prints the action and the body in place of writing either. It
+# still asks GitHub which issues are open.
+#
+# bash, jq and gh alone, so the job that may write issues runs on a plain
+# runner and installs nothing.
+set -euo pipefail
+
+title='Nightly browser run is red in Firefox or WebKit'
+# A whole engine failing to start fails every spec, and an issue body holds
+# 65,536 characters.
+listed=100
+
+dry_run=''
+if [ "${1:-}" = '--dry-run' ]; then
+  dry_run=1
+  shift
+fi
+reports=${1:?expected the directory holding the JSON reports}
+shift
+[ "$#" -gt 0 ] || {
+  echo 'expected at least one engine' >&2
+  exit 1
+}
+run_url=${RUN_URL:?RUN_URL must link the workflow run}
+commit=${GITHUB_SHA:?GITHUB_SHA must name the commit the run tested}
+
+# One failing spec a line, as `file:line › describe › title`. A title is
+# flattened to one line, so the count is the line count.
+failing() {
+  jq -r '
+    def failing($path):
+      (.specs[]? | select(.ok == false)
+        | "\(.file):\(.line) › \($path + [.title] | join(" › "))"
+        | gsub("\\s+"; " ")),
+      (.suites[]? | failing($path + [.title]));
+    .suites[] | failing([])
+  ' "$1"
+}
+
+body=$(mktemp)
+trap 'rm -f "$body"' EXIT
+red=''
+{
+  printf 'Run: %s\nCommit: %s\n' "$run_url" "$commit"
+  for engine in "$@"; do
+    printf '\n### %s\n\n' "$engine"
+    report="$reports/$engine.json"
+    if ! jq -e '(.suites | type) == "array" and (.errors | type) == "array"' \
+      "$report" >/dev/null 2>&1; then
+      red=1
+      echo 'No report found.'
+      continue
+    fi
+    specs=$(failing "$report")
+    errors=$(jq -r '.errors | length' "$report")
+    if [ -z "$specs" ] && [ "$errors" -eq 0 ]; then
+      echo 'No failing spec.'
+      continue
+    fi
+    red=1
+    if [ "$errors" -gt 0 ]; then
+      printf 'Errors outside any spec: %s\n' "$errors"
+    fi
+    if [ -n "$specs" ]; then
+      count=$(wc -l <<<"$specs" | tr -d ' ')
+      # Indented as code, so a spec title cannot close the block and its
+      # `@phone` tag notifies no one.
+      printf 'Failing specs: %s\n\n' "$count"
+      head -n "$listed" <<<"$specs" | sed 's/^/    /'
+      if [ "$count" -gt "$listed" ]; then
+        printf '\nThe first %s are listed. The HTML report has the rest.\n' "$listed"
+      fi
+    fi
+  done
+  if [ -z "$red" ] && [ "${BROWSERS_RESULT:-success}" != success ]; then
+    red=1
+    printf '\nNo report lists a failure, and the browser jobs ended as `%s`.\n' \
+      "$BROWSERS_RESULT"
+  fi
+  printf '\nThe HTML report of each engine is an artifact of the run, `playwright-report-<engine>`.\n'
+} >"$body"
+
+if [ -z "$red" ]; then
+  echo 'No engine is red: nothing to report.'
+  exit 0
+fi
+
+# A listing, not a search: the search index trails a new issue, and a lookup
+# that misses the open issue opens a second one. A failed listing stops here
+# for the same reason.
+open=$(gh issue list --state open --limit 1000 --json number,title)
+number=$(jq -r --arg title "$title" \
+  '[.[] | select(.title == $title) | .number] | min // empty' <<<"$open")
+
+if [ -n "$dry_run" ]; then
+  if [ -n "$number" ]; then
+    echo "Would comment on #$number:"
+  else
+    echo "Would open \"$title\":"
+  fi
+  echo
+  cat "$body"
+elif [ -n "$number" ]; then
+  gh issue comment "$number" --body-file "$body"
+else
+  gh issue create --title "$title" --body-file "$body"
+fi

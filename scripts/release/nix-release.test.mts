@@ -5,14 +5,13 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { z } from 'zod';
 import { updateNixRelease } from './nix-release.mts';
+import { temporaryWorkspace, workspaceRoot } from '../tools.fixtures.mts';
 import {
   fakeRunner,
   key,
   leftText,
   result,
   right,
-  temporaryWorkspace,
-  workspaceRoot,
 } from './release.fixtures.mts';
 import type { CommandResult } from './release-io.mts';
 

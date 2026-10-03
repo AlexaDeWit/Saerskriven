@@ -15,7 +15,11 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { temporaryWorkspace, workspaceRoot } from './release.fixtures.mts';
+import {
+  linkTools,
+  temporaryWorkspace,
+  workspaceRoot,
+} from '../tools.fixtures.mts';
 
 const payload = '#!/bin/sh\necho executed > "$HOME/executed"\n';
 const digest = createHash('sha256').update(payload).digest('hex');
@@ -51,7 +55,7 @@ const fixture = (os = 'Linux', arch = 'x86_64', sha = 'sha256sum') => {
     },
   );
   assert.equal(packaged.status, 0, packaged.stderr);
-  for (const tool of [
+  linkTools(bin, [
     'bash',
     'awk',
     'mktemp',
@@ -63,14 +67,7 @@ const fixture = (os = 'Linux', arch = 'x86_64', sha = 'sha256sum') => {
     'ln',
     'readlink',
     ...(sha ? [sha] : []),
-  ]) {
-    const found = spawnSync('bash', ['-c', 'command -v "$1"', 'probe', tool], {
-      encoding: 'utf8',
-    });
-    assert.equal(found.status, 0, found.stderr);
-    symlinkSync(found.stdout.trim(), join(bin, tool));
-  }
-  symlinkSync(process.execPath, join(bin, 'node'));
+  ]);
   writeFileSync(
     join(bin, 'id'),
     '#!/usr/bin/env bash\nprintf "%s\\n" "${INSTALL_TEST_UID:-1000}"\n',

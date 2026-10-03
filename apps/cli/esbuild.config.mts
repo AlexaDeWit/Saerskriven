@@ -27,7 +27,7 @@ const nodeRequireBanner = [
   'const require = createNodeRequire(import.meta.url);',
 ].join('\n');
 
-// Both dev shells export this, pointing at the truetype directory of nixpkgs'
+// Every dev shell exports this, pointing at the truetype directory of nixpkgs'
 // liberation_ttf. The fonts are a toolchain input rather than something the
 // tree carries, so their provenance is the nixpkgs revision flake.lock pins
 // (CODING.md, Dependencies and versions).

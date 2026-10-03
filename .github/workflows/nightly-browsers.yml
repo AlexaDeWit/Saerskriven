@@ -1,0 +1,156 @@
+name: Nightly browsers
+
+# The studio's browser suite in Firefox and in WebKit, against main once a
+# night (#679). A pull request runs the suite in Chromium alone, so a fault
+# only another engine shows turns up here. Nothing in this workflow gates a
+# merge: no pull request or push starts it, and ci.yml's gate names none of
+# its jobs. .agents/orchestration.md says where to read a night's result.
+
+on:
+  schedule:
+    # Off the hour, where GitHub's scheduled-run backlog is deepest.
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+
+# A newer run never cancels one in progress on main: it waits. GitHub keeps
+# one waiting run per group, so a third replaces the one waiting. A run
+# started by hand on another branch gives way to a newer one on that branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions: {}
+
+env:
+  pnpm_config_store_dir: ${{ github.workspace }}/.pnpm-store
+
+jobs:
+  browsers:
+    name: Browser suite (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    # One job runs an engine's whole suite. A spec that hangs spends its full
+    # thirty seconds, so the ceiling leaves room for a night with many of them.
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      # A red engine says nothing about the other.
+      fail-fast: false
+      matrix:
+        engine: [firefox, webkit]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Restore the shared entries and save nothing: ci.yml's build-test is
+      # their one writer. The action installs through `.#ci`, the closure the
+      # restored entry holds.
+      - name: Set up toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          install-dependencies: 'true'
+          save-nix-store: 'false'
+
+      # `.#nightly` is `.#ci` plus Mesa, the EGL driver the flake's WebKit
+      # needs on a host that is not NixOS (flake.nix). No cache entry holds
+      # Mesa, so each leg fetches it from cache.nixos.org, about 800 MiB
+      # unpacked, and saves nothing. Both legs enter the one shell, so the
+      # two engines run in the same environment.
+      #
+      # SAERSKRIVEN_E2E_OTHER_ENGINES set to `1`, and no other value, is what
+      # puts the two projects in the Playwright config. `--no-deps` holds the
+      # run to the one named.
+      - name: Run the suite in this engine
+        env:
+          ENGINE: ${{ matrix.engine }}
+          SAERSKRIVEN_E2E_OTHER_ENGINES: '1'
+        run: >-
+          nix develop .#nightly --command
+          pnpm nx e2e @saerskriven/studio-e2e --
+          --project="$ENGINE" --no-deps
+
+      # The run writes a blob report under CI, as a pull request's does. The
+      # HTML report is for a person and the JSON one for the report job.
+      - name: Write the HTML and JSON reports
+        if: ${{ !cancelled() }}
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: test-output/playwright/report
+          PLAYWRIGHT_JSON_OUTPUT_FILE: test-output/playwright/json/${{ matrix.engine }}.json
+        run: >-
+          nix develop .#nightly --command
+          pnpm --filter @saerskriven/studio-e2e exec
+          playwright merge-reports --reporter html,json
+          test-output/playwright/blob
+
+      # A job stopped by its timeout counts as cancelled and writes no
+      # report, so this upload is the only record it leaves.
+      - name: Keep the Playwright output of a failed run
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-output-${{ matrix.engine }}
+          path: apps/studio-e2e/test-output/playwright/output/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Keep the HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-${{ matrix.engine }}
+          path: apps/studio-e2e/test-output/playwright/report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # The JSON report only feeds the report job, which runs in this run.
+      - name: Hand the JSON report to the report job
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-json-${{ matrix.engine }}
+          path: apps/studio-e2e/test-output/playwright/json/
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # One tracking issue for a red night: opened where none is open, commented
+  # on where one is, and closed by a person. A run on another branch reports
+  # nothing, and neither does a run someone cancelled. A leg its timeout
+  # stopped is red whichever result it ends with.
+  report:
+    name: Report a red night
+    needs: browsers
+    if: >-
+      !cancelled() && github.ref == 'refs/heads/main'
+      && needs.browsers.result != 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write # open the tracking issue or comment on it
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Merged into one directory, so each report keeps its engine's name
+      # however many legs left one. The directory is outside the checkout, so
+      # nothing an artifact holds lands beside the script about to run.
+      - name: Take the JSON report of each engine
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: playwright-json-*
+          path: ${{ runner.temp }}/nightly-reports
+          merge-multiple: true
+
+      # The runner's own bash, jq and gh: the job that may write issues
+      # installs nothing.
+      - name: Open the tracking issue or comment on it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BROWSERS_RESULT: ${{ needs.browsers.result }}
+        run: bash scripts/nightly/report.sh "$RUNNER_TEMP/nightly-reports" firefox webkit

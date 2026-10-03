@@ -5,8 +5,9 @@
   "sourceRoot": "scripts/release",
   "targets": {
     "lint": {
+      "inputs": ["...", "toolsFixtures"],
       "options": {
-        "command": "oxlint scripts/release"
+        "command": "oxlint scripts/release scripts/tools.fixtures.mts"
       }
     },
     "test": {
@@ -15,6 +16,7 @@
       "inputs": [
         "default",
         "sharedGlobals",
+        "toolsFixtures",
         "{workspaceRoot}/.github/workflows/ci.yml",
         "{workspaceRoot}/flake.lock",
         "{workspaceRoot}/nix/release.json",
@@ -36,6 +38,7 @@
       "cache": true,
       "inputs": [
         "default",
+        "toolsFixtures",
         "{workspaceRoot}/tsconfig.base.json",
         {
           "externalDependencies": ["effect", "typescript", "zod", "yaml"]
