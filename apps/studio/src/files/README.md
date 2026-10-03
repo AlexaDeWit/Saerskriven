@@ -90,8 +90,12 @@ too: a wire schema drops every key it does not declare, and the retained
 document has lost them as well, so no later save can say what became of them.
 An open marks each loss `keptByWriteBack` says a save to the same file keeps,
 and each report names its subjects from the model it opened or saved. An open
-of OTM or TM-BOM always reports, losses or none, because its report carries
-the notice that the model is new and that Save makes a Saerskriven file.
+report lists what the read converted ahead of what the studio does not show,
+each under its own heading and only where it has a line, by the place
+[`../messages/divergence/text.ts`](../messages/divergence/text.ts) gives each
+code. An open of OTM or TM-BOM always reports, losses or none, because its
+report carries the notice that the model is new and that Save makes a
+Saerskriven file.
 Both reports describe one crossing of the file boundary rather than the model,
 and each stands until a save starts, an open lands, or the file is closed. A
 refused open leaves the report alone, nothing having crossed.

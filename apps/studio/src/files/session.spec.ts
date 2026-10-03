@@ -6,6 +6,7 @@ import {
 } from '@saerskriven/formats';
 import { committedText } from '@saerskriven/model/fixtures';
 import type { Locale } from '@saerskriven/i18n';
+import { lossLines } from '../messages/divergence/text.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { FileLifecycle } from '../store/state.js';
@@ -28,7 +29,7 @@ import {
   fileTitleLimit,
   proposedExportName,
   openReport,
-  reportLines,
+  reportSections,
   saveReport,
   saveTarget,
   saveTypes,
@@ -432,16 +433,21 @@ describe('openReport', () => {
   it('names each subject from the model the read produced', () => {
     const report = openReport(opened(foreignSource, [eopCard]));
 
-    expect(report && reportLines(t, report)).toEqual([
-      t('divergence.kept', {
-        line: t('divergence.line', {
-          subject: t('divergence.subject-threat', {
-            number: sampleThreat.number,
-            title: sampleThreat.title,
+    expect(report && reportSections(t, report)).toEqual([
+      {
+        heading: 'reports.opened',
+        lines: [
+          t('divergence.kept', {
+            line: t('divergence.line', {
+              subject: t('divergence.subject-threat', {
+                number: sampleThreat.number,
+                title: sampleThreat.title,
+              }),
+              detail: t('divergence.threat-category-eop-suit'),
+            }),
           }),
-          detail: t('divergence.threat-category-eop-suit'),
-        }),
-      }),
+        ],
+      },
     ]);
   });
 });
@@ -460,24 +466,177 @@ describe('saveReport', () => {
   it('names each subject from the model it saved', () => {
     const report = saveReport(recordedModel, [unrecorded]);
 
-    expect(report && reportLines(t, report)).toEqual([
-      t('divergence.line', {
-        subject: t('divergence.subject-assumption-on', {
-          threat: t('divergence.threat', {
-            number: sampleThreat.number,
-            title: sampleThreat.title,
+    expect(report && reportSections(t, report)).toEqual([
+      {
+        heading: 'reports.saved',
+        lines: [
+          t('divergence.line', {
+            subject: t('divergence.subject-assumption-on', {
+              threat: t('divergence.threat', {
+                number: sampleThreat.number,
+                title: sampleThreat.title,
+              }),
+            }),
+            detail: t('divergence.whole-assumption'),
           }),
-        }),
-        detail: t('divergence.whole-assumption'),
-      }),
+        ],
+      },
     ]);
   });
 
   it('words a standing report again in the translator it is handed', () => {
     const report = saveReport(recordedModel, [unrecorded]);
 
-    expect(report && reportLines(inLocale('sv'), report)).not.toEqual(
-      report && reportLines(t, report),
+    expect(report && reportSections(inLocale('sv'), report)).not.toEqual(
+      report && reportSections(t, report),
     );
+  });
+});
+
+const asProcesses: Divergence = {
+  subject: { kind: 'model' },
+  detail: { code: 'otm-components-as-processes' },
+  reason: 'narrowed',
+};
+
+const reportOfText = (name: string, text: string): LossReport => {
+  const read = openedBy(OpenOutcome.Chosen({ name, text }), untitledFile);
+  const report =
+    read !== undefined &&
+    (Action.$is('Opened')(read) || Action.$is('Imported')(read))
+      ? openReport(read)
+      : undefined;
+  if (report === undefined) {
+    throw new Error(`${name} opened with no report`);
+  }
+  return report;
+};
+
+const reportOfFile = (...path: readonly string[]): LossReport =>
+  reportOfText(path.at(-1) ?? '', committedText(...path));
+
+const headingsOf = (report: LossReport | undefined): readonly string[] =>
+  report === undefined
+    ? []
+    : reportSections(t, report).map(({ heading }) => heading);
+
+describe('reportSections', () => {
+  it('lists what an open converted under its own heading, ahead of what the studio does not show', () => {
+    const report = openReport(imported([undeclaredKey, asProcesses]));
+
+    expect(report && reportSections(t, report)).toEqual([
+      {
+        heading: 'reports.converted',
+        lines: [t('divergence.otm-components-as-processes')],
+      },
+      {
+        heading: 'reports.opened',
+        lines: [t('divergence.key-undeclared', { path: 'notes' })],
+      },
+    ]);
+  });
+
+  it.each([
+    ['only conversions', [asProcesses], ['reports.converted']],
+    ['nothing a person reads', [raisedMark], []],
+    ['no conversion', [undeclaredKey, eopCard], ['reports.opened']],
+  ] as const)(
+    'draws no heading without a line, for an open with %s',
+    (_, divergences, headings) => {
+      expect(headingsOf(openReport(imported(divergences)))).toEqual(headings);
+    },
+  );
+
+  it('counts lines that read the same under their own heading', () => {
+    const report = openReport(
+      imported([asProcesses, undeclaredKey, asProcesses, undeclaredKey]),
+    );
+
+    expect(
+      report && reportSections(t, report).map(({ lines }) => lines),
+    ).toEqual([
+      [
+        t('divergence.repeated', {
+          count: 2,
+          line: t('divergence.otm-components-as-processes'),
+        }),
+      ],
+      [
+        t('divergence.repeated', {
+          count: 2,
+          line: t('divergence.key-undeclared', { path: 'notes' }),
+        }),
+      ],
+    ]);
+  });
+
+  it.each([
+    ['threat-dragon', 'feature-complete.json'],
+    ['saerskriven', 'saerskriven-v0.3.0.yaml'],
+  ] as const)(
+    'leaves the report of %s/%s as it read under one heading',
+    (...path) => {
+      const report = reportOfFile(...path);
+
+      expect(report.losses.length > 0).toBe(true);
+      expect(reportSections(t, report)).toEqual([
+        {
+          heading: 'reports.opened',
+          lines: lossLines(t, report.model, report.losses),
+        },
+      ]);
+    },
+  );
+
+  it.each([
+    ['otm', 'divergence.otm-components-as-processes'],
+    ['tmbom', 'divergence.tmbom-flow-fields-as-prose'],
+  ] as const)(
+    'lists every line of the %s example under one of the two headings',
+    (folder, conversion) => {
+      const report = reportOfFile(folder, 'example.json');
+      const [converted, notShown, ...rest] = reportSections(t, report);
+      const every = lossLines(t, report.model, report.losses);
+
+      expect(rest).toEqual([]);
+      expect(converted.heading).toBe('reports.converted');
+      expect(converted.lines).toContain(t(conversion));
+      expect(notShown.heading).toBe('reports.opened');
+      expect(new Set([...converted.lines, ...notShown.lines])).toEqual(
+        new Set(every),
+      );
+      expect(converted.lines.length + notShown.lines.length).toBe(every.length);
+    },
+  );
+
+  it('lists a Threat Dragon category read as a custom one as a conversion a save back keeps', () => {
+    const report = reportOfText(
+      'feature-complete.json',
+      committedText('threat-dragon', 'feature-complete.json').replace(
+        '"type": "Spoofing"',
+        '"type": "Unlisted label"',
+      ),
+    );
+    const [relabelled] = report.model.threats.filter(
+      ({ category }) => category.category === 'Unlisted label',
+    );
+
+    expect(reportSections(t, report)[0]).toEqual({
+      heading: 'reports.converted',
+      lines: [
+        t('divergence.kept', {
+          line: t('divergence.line', {
+            subject: t('divergence.subject-threat', {
+              number: relabelled.number,
+              title: relabelled.title,
+            }),
+            detail: t('divergence.threat-category-unmapped', {
+              category: 'Unlisted label',
+            }),
+          }),
+        }),
+      ],
+    });
+    expect(headingsOf(report)).toEqual(['reports.converted', 'reports.opened']);
   });
 });

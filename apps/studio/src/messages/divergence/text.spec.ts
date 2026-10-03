@@ -24,7 +24,12 @@ import {
 } from '@saerskriven/model/fixtures';
 import { studioCatalogues } from '../catalogues.js';
 import { inLocale } from '../messages.fixtures.js';
-import { lossLines, reportedDivergence, type Loss } from './text.js';
+import {
+  lossLines,
+  openSectionOf,
+  reportedDivergence,
+  type Loss,
+} from './text.js';
 
 const confirmed = 'A booking changes after it is confirmed';
 
@@ -181,6 +186,21 @@ const leftOut: readonly DivergenceDetail[] = [
   { code: 'tmbom-geometry-generated' },
 ];
 
+const converted: readonly DivergenceCode[] = [
+  'threat-category-unmapped',
+  'otm-threat-split',
+  'otm-threat-status-unmapped',
+  'otm-mitigation-split',
+  'otm-mitigation-status-retained',
+  'otm-mitigation-unlinked',
+  'otm-assets-as-descriptions',
+  'otm-components-as-processes',
+  'tmbom-control-proposed',
+  'tmbom-control-unlinked',
+  'tmbom-flow-fields-as-prose',
+  'tmbom-data-set-as-prose',
+];
+
 const sharedEntries: Partial<Record<DivergenceCode, string>> = {
   'assumption-unrecorded': 'divergence.whole-assumption',
   'threat-unplaceable': 'divergence.whole-threat',
@@ -273,6 +293,17 @@ describe('the divergences a studio report shows', () => {
     }
     expect(modelLine(detail)).toContain(value);
   });
+
+  it.each(reported)(
+    'lists %j in an open report as a conversion only where the model holds the value in another form or place',
+    (detail) => {
+      expect(
+        openSectionOf(
+          lossOf(divergenceOn({ kind: 'model' }, detail)).divergence,
+        ),
+      ).toBe(converted.includes(detail.code) ? 'converted' : 'not-shown');
+    },
+  );
 });
 
 const eopCard: DivergenceDetail = { code: 'threat-category-eop-suit' };
