@@ -247,7 +247,10 @@ output's name, which `flake.nix` hands to the builder, so no module file builds
 a derivation or drops one of the builder's phases. `flake.nix`,
 `nix/wasm-module.nix`, the two scripts and the module files are the ban's trust
 root. A change to any of them is reviewed as a change to the ban, and an
-`overrideAttrs` that drops a phase would show there.
+`overrideAttrs` that drops a phase would show there. Each module's `Cargo.lock`
+is trust root too: a dependency bump can reach a re-exported macro that expands
+to unsafe code the forbid does not see, so a lock change is reviewed as a change
+to the ban.
 
 The ban covers Saerskriven's own crates. Code inside a dependency is outside
 it. [Building the executables](docs/build.md#the-webassembly-modules)

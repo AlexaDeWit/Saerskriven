@@ -12,8 +12,11 @@
 # crate can lower a forbid. The forbid does not see an `unsafe` block that a
 # dependency's macro expands to, so the logic crate's direct dependencies are
 # part of the ban: adding one is a change to the module's file, which is trust
-# root. This script checks what rustc cannot. It reads the crates as Cargo
-# resolves them, through `cargo metadata`, and requires:
+# root. Each module's Cargo.lock is trust root too: a dependency bump can reach
+# a re-exported macro that expands to unsafe code the forbid does not see, so a
+# lock change is reviewed as a change to the ban. This script checks what rustc
+# cannot. It reads the crates as Cargo resolves them, through `cargo metadata`,
+# and requires:
 # - two local packages in the whole graph, the export crate and the logic
 #   crate, and every other package from the crates.io registry
 # - the logic crate to build one target, a lib whose root is its src/lib.rs,

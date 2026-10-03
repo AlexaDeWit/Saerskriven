@@ -109,7 +109,9 @@ the two scripts the builder runs. Each module's `default.nix` is data that
 and the module files are the ban's trust root, where a change is a change to the
 ban. The forbid does not see an `unsafe` block that a dependency's macro expands
 to, so each module's file also lists its logic crate's direct dependencies, and
-the guard refuses any other.
+the guard refuses any other. Each module's `Cargo.lock` is trust root too: a
+dependency bump can reach a re-exported macro that expands to unsafe code the
+forbid does not see, so a lock change is reviewed as a change to the ban.
 
 Rust owns one input buffer and one output buffer. The caller writes its bytes at
 the address `input(length)` answers, runs one of the module's calls, and copies
