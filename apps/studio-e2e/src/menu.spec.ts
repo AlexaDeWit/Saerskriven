@@ -58,8 +58,8 @@ test('every item is reached, run and left by the keyboard alone', async ({
     'Export',
     'Share as link',
     'New model',
-    /^Appearance /u,
-    /^Language /u,
+    /^Appearance: /u,
+    /^Language: /u,
     'Undo',
   ]) {
     await page.keyboard.press('ArrowDown');

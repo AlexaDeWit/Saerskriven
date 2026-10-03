@@ -4,7 +4,7 @@ import { audit } from './accessibility.fixtures.js';
 import { openMenu, openPlaceholder } from './studio.fixtures.js';
 
 const appearance = (page: Page) =>
-  page.getByRole('menuitem', { name: /^Appearance /u });
+  page.getByRole('menuitem', { name: /^Appearance: /u });
 
 const chooseAppearance = async (
   page: Page,

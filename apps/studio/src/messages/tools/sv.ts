@@ -11,7 +11,7 @@ export const toolsSv = catalogue(toolMessages)('sv')({
     other: '{count} öppna hot',
   },
   'severity-not-assessed': 'allvarlighetsgrad ej bedömd',
-  'highest-severity': 'högsta allvarlighetsgrad {severity}',
+  'highest-severity': 'högsta allvarlighetsgrad: {severity}',
   'zoom-and-fit': 'Zoom och anpassning',
   'current-zoom': 'Aktuell zoom: {percent} %.',
   'flow-target': 'Flödets mål',

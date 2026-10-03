@@ -38,7 +38,7 @@ import { registeredChords } from './chords.fixtures.js';
 
 const { first, second } = twoDiagrams;
 
-const submenus = ['Export', 'Arrange', /^Appearance /u, /^Language /u];
+const submenus = ['Export', 'Arrange', /^Appearance: /u, /^Language: /u];
 
 const cardBorder = 1;
 
@@ -375,7 +375,12 @@ test(
     const beside = panel.x + panel.width - 8;
     const clearOfEveryTrigger = { x: panel.x + 8, y: panel.y + 4 };
 
-    for (const name of ['Export', /^Appearance /u, /^Language /u, 'Arrange']) {
+    for (const name of [
+      'Export',
+      /^Appearance: /u,
+      /^Language: /u,
+      'Arrange',
+    ]) {
       const row = await screenBoxOf(page.getByRole('menuitem', { name }));
       const middle = row.y + row.height / 2;
       await page.mouse.move(row.x + row.width / 2, middle);

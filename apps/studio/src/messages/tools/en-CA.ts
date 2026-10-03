@@ -11,7 +11,7 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
     other: '{count} open threats',
   },
   'severity-not-assessed': 'severity not assessed',
-  'highest-severity': 'highest severity {severity}',
+  'highest-severity': 'highest severity: {severity}',
   'zoom-and-fit': 'Zoom and fit',
   'current-zoom': 'Current zoom: {percent}%.',
   'flow-target': 'Flow target',

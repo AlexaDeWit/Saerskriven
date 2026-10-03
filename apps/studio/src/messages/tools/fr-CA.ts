@@ -12,7 +12,7 @@ export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
     other: '{count} menaces ouvertes',
   },
   'severity-not-assessed': 'gravité non évaluée',
-  'highest-severity': 'gravité la plus élevée {severity}',
+  'highest-severity': 'gravité maximale : {severity}',
   'zoom-and-fit': 'Zoom et ajustement',
   'current-zoom': 'Zoom actuel : {percent} %.',
   'flow-target': 'Destination du flux',
