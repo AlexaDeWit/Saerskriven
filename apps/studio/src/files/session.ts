@@ -293,11 +293,7 @@ export function linkReport(
   model: Model,
   divergences: readonly Divergence[],
 ): LossReport | undefined {
-  return reported(
-    'open',
-    model,
-    lossesOf(divergences, () => false),
-  );
+  return unkeptReport('open', model, divergences);
 }
 
 /** What a save of `model` lost, and nothing at all where it lost nothing. */
@@ -305,8 +301,16 @@ export function saveReport(
   model: Model,
   divergences: readonly Divergence[],
 ): LossReport | undefined {
+  return unkeptReport('save', model, divergences);
+}
+
+function unkeptReport(
+  occasion: LossOccasion,
+  model: Model,
+  divergences: readonly Divergence[],
+): LossReport | undefined {
   return reported(
-    'save',
+    occasion,
     model,
     lossesOf(divergences, () => false),
   );

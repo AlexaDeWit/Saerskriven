@@ -1,12 +1,6 @@
-import {
-  brotliVariable,
-  brotliWasmAsset,
-} from '@saerskriven/formats/build-assets';
-import { writeShareLink } from '@saerskriven/formats/share-link';
 import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { PdfFailure } from '@saerskriven/render/pdf';
-import { builtModule, unbuilt } from '@saerskriven/wasm/fixtures';
 import {
   act,
   fireEvent,
@@ -38,11 +32,15 @@ import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
   brokenThreatDragonText,
+  brotliUnbuilt,
   chosenFile,
   edit,
+  fragmentOf,
+  paste,
   sampleNativeText,
   specBridge,
   type SpecBridge,
+  specLinks,
   specRenders,
   vendoredFile,
 } from './files.fixtures.js';
@@ -54,7 +52,6 @@ import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
 import type { ShareLinks } from './share-link.js';
 import { recordingClipboard } from '../canvas/canvas.fixtures.js';
-import { writeClipboard } from '../system-clipboard.js';
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -1026,34 +1023,17 @@ describe('closing', () => {
   });
 });
 
-describe.skipIf(unbuilt(brotliVariable))('a shared link', () => {
-  const brotli = builtModule(brotliWasmAsset);
-
-  const links: ShareLinks = {
-    module: () => Promise.resolve(Either.right(brotli())),
-    copy: writeClipboard,
-  };
-
-  const arrives = async (): Promise<void> => {
-    const link = Either.getOrThrow(
-      await writeShareLink(recordedModel, globalThis.location.href, brotli()),
-    );
-    act(() => {
-      globalThis.history.replaceState(null, '', new URL(link).hash);
-      globalThis.dispatchEvent(new HashChangeEvent('hashchange'));
-    });
-  };
-
+describe.skipIf(brotliUnbuilt)('a shared link', () => {
   afterEach(() => {
     globalThis.history.replaceState(null, '', '/');
   });
 
   it('turns Share as link into the question over unsaved work, and opens the link on the second step', async () => {
     const user = userEvent.setup();
-    mounted(specBridge(), undefined, undefined, links);
+    mounted(specBridge(), undefined, undefined, specLinks().links);
     edit();
 
-    await arrives();
+    paste(await fragmentOf(recordedModel));
 
     const question = await screen.findByRole(
       'menuitem',
@@ -1080,9 +1060,9 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link', () => {
       { ...initialState(sampleModel), recoveryUnread: true },
       true,
     );
-    mounted(specBridge(), undefined, undefined, links);
+    mounted(specBridge(), undefined, undefined, specLinks().links);
 
-    await arrives();
+    paste(await fragmentOf(recordedModel));
 
     expect(
       await screen.findByRole(
@@ -1095,6 +1075,29 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link', () => {
     expect(modelStore.getState().present).toBe(sampleModel);
   });
 
+  it('settles the question as Cancel when the model becomes clean, and the address drops the link', async () => {
+    mounted(specBridge(), undefined, undefined, specLinks().links);
+    edit();
+    paste(await fragmentOf(recordedModel));
+    await screen.findByRole(
+      'menuitem',
+      { name: 'Discard changes and open the link' },
+      { timeout: 5_000 },
+    );
+
+    act(() => {
+      dispatch(Action.Undo());
+    });
+
+    expect(
+      screen.queryByRole('menuitem', {
+        name: 'Discard changes and open the link',
+      }),
+    ).toBe(null);
+    expect(globalThis.location.hash).toBe('');
+    expect(modelStore.getState().present).toBe(sampleModel);
+  });
+
   it.each([
     ['Cancel', (user: User) => user.click(item('Cancel'))],
     ['a dismissed menu', (user: User) => user.keyboard('{Escape}')],
@@ -1102,10 +1105,10 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link', () => {
     'keeps the work on %s, and the address drops the link',
     async (_answer, answer) => {
       const user = userEvent.setup();
-      mounted(specBridge(), undefined, undefined, links);
+      mounted(specBridge(), undefined, undefined, specLinks().links);
       edit();
       const before = modelStore.getState().present;
-      await arrives();
+      paste(await fragmentOf(recordedModel));
       await screen.findByRole(
         'menuitem',
         { name: 'Discard changes and open the link' },
@@ -1124,7 +1127,7 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link', () => {
   it('reports the link it shares, and who can read it, until dismissed', async () => {
     const user = userEvent.setup();
     recordingClipboard();
-    mounted(specBridge(), undefined, undefined, links);
+    mounted(specBridge(), undefined, undefined, specLinks().links);
 
     await choose(user, 'Share as link');
 

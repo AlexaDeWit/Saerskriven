@@ -199,8 +199,8 @@ The landing is published to every other tab, so the question comes first.
 While the session holds unsaved work (`holdsUnsavedWork`: unsaved changes, or
 a recovery snapshot that could not be read at startup and that nothing has
 replaced since), the Share item turns into Discard changes and open the link,
-with Cancel under it, as Open and Import ask. Answering, Cancel, a dismissed
-menu, the model becoming clean, and following another tab each settle it.
+with Cancel under it, as Open asks. Answering, Cancel, a dismissed menu, the
+model becoming clean, and following another tab each settle it.
 The fragment is removed with `history.replaceState` once the link lands, is
 refused, or the question is settled, keeping the path and the query, so a
 reload neither asks again nor loads the link over later edits. One fragment

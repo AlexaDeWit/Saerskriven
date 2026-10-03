@@ -1,15 +1,9 @@
 import { ReadFailure, saerskrivenYamlCodec } from '@saerskriven/formats';
 import {
-  brotliVariable,
-  brotliWasmAsset,
-} from '@saerskriven/formats/build-assets';
-import {
   ShareLinkFailure,
   shareLinkLimit,
-  writeShareLink,
 } from '@saerskriven/formats/share-link';
 import type { Model } from '@saerskriven/model';
-import { builtModule, unbuilt } from '@saerskriven/wasm/fixtures';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { Either } from 'effect';
 import { brotliCompressSync } from 'node:zlib';
@@ -34,16 +28,20 @@ import { writeClipboard } from '../system-clipboard.js';
 import { useFileSession } from './file-commands.js';
 import {
   anotherTab,
+  brotliModule,
+  brotliUnbuilt,
   deferred,
   edit,
+  fragmentOf,
+  paste,
   sampleNativeText,
   specBridge,
+  specLinks,
   specRenders,
+  visit,
 } from './files.fixtures.js';
 import { linkLanding, readLink, type ShareLinks } from './share-link.js';
 import { describeShareNotice, ShareNotice } from './share-notice.js';
-
-const brotli = builtModule(brotliWasmAsset);
 
 const settled = { timeout: 5_000 };
 
@@ -57,22 +55,8 @@ const asRead = (model: Model): Model =>
     saerskrivenYamlCodec.read(saerskrivenYamlCodec.write(model).output),
   ).model;
 
-const fragmentOf = async (model: Model): Promise<string> =>
-  new URL(
-    Either.getOrThrow(
-      await writeShareLink(model, globalThis.location.href, brotli()),
-    ),
-  ).hash;
-
 const holding = (text: string): string =>
   `#share=1.${brotliCompressSync(Buffer.from(text)).toString('base64url')}`;
-
-const specLinks = (
-  module: ShareLinks['module'] = () => Promise.resolve(Either.right(brotli())),
-) => {
-  const loads = vi.fn<ShareLinks['module']>(module);
-  return { links: { module: loads, copy: writeClipboard }, loads };
-};
 
 const session = (
   links: ShareLinks,
@@ -82,17 +66,6 @@ const session = (
   renderHook(() => useFileSession(specBridge(), specRenders(), sync, links), {
     wrapper: strict ? StrictMode : undefined,
   }).result;
-
-const visit = (address: string): void => {
-  globalThis.history.replaceState(null, '', address);
-};
-
-const paste = (fragment: string): void => {
-  act(() => {
-    visit(fragment);
-    globalThis.dispatchEvent(new HashChangeEvent('hashchange'));
-  });
-};
 
 const held = (): State => modelStore.getState();
 
@@ -111,7 +84,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe.skipIf(unbuilt(brotliVariable))('a shared link arriving', () => {
+describe.skipIf(brotliUnbuilt)('a shared link arriving', () => {
   it('loads into a clean session unsaved, named after its title, and leaves the address without its fragment', async () => {
     visit(await fragmentOf(shared));
     const { links } = specLinks();
@@ -169,7 +142,7 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link arriving', () => {
       module: () => {
         const read = reads[calls];
         calls += 1;
-        return read?.promise ?? Promise.resolve(Either.right(brotli()));
+        return read?.promise ?? Promise.resolve(Either.right(brotliModule()));
       },
       copy: writeClipboard,
     });
@@ -181,13 +154,13 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link arriving', () => {
 
     paste(earlier);
     paste(later);
-    reads[1]?.resolve(Either.right(brotli()));
+    reads[1]?.resolve(Either.right(brotliModule()));
     await waitFor(() => {
       expect(held().present.metadata.title).toBe('Later link');
     }, settled);
     const landed = held().present;
     await act(async () => {
-      reads[0]?.resolve(Either.right(brotli()));
+      reads[0]?.resolve(Either.right(brotliModule()));
       await reads[0]?.promise;
       await new Promise((resolve) => setTimeout(resolve, 200));
     });
@@ -248,7 +221,7 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link arriving', () => {
   });
 });
 
-describe.skipIf(unbuilt(brotliVariable))(
+describe.skipIf(brotliUnbuilt)(
   'a shared link arriving over unsaved work',
   () => {
     it('asks the question rather than loading, while the session holds unsaved changes', async () => {
@@ -341,7 +314,7 @@ describe.skipIf(unbuilt(brotliVariable))(
   },
 );
 
-describe.skipIf(unbuilt(brotliVariable))('a refused link', () => {
+describe.skipIf(brotliUnbuilt)('a refused link', () => {
   it.each([
     ['cut off', '#share=1.not*base64', 'Codec', 'Malformed'],
     ['in a newer encoding', '#share=2.G2QA', 'Codec', 'UnknownEncoding'],
@@ -384,7 +357,7 @@ describe.skipIf(unbuilt(brotliVariable))('a refused link', () => {
   });
 });
 
-describe.skipIf(unbuilt(brotliVariable))('Share', () => {
+describe.skipIf(brotliUnbuilt)('Share', () => {
   const shareNotice = async (
     result: ReturnType<typeof session>,
   ): Promise<ShareNotice> => {
@@ -430,7 +403,7 @@ describe.skipIf(unbuilt(brotliVariable))('Share', () => {
     });
 
     expect(copy).toHaveBeenCalledTimes(1);
-    module.resolve(Either.right(brotli()));
+    module.resolve(Either.right(brotliModule()));
     await waitFor(() => {
       expect(result.current.shareNotice?._tag).toBe('Shared');
     }, settled);
