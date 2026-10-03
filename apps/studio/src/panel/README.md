@@ -98,8 +98,8 @@ gives.
 
 The register draws over the selection cards, so the canvas holds them inert
 while it is open, and a card a command opens closes the register first. In a
-window under 55rem it covers the panel too, and hides every pane under it. A
-close is committed (`flushSync`) before focus moves, since a control the
+window too narrow for both, it covers the panel too, and hides every pane under
+it. A close is committed (`flushSync`) before focus moves, since a control the
 register covered takes no focus until the register has gone.
 
 A chosen row reaches the model panel's list through `openInModelPanel` in

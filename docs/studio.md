@@ -713,8 +713,8 @@ Enter on a focused element selects it, and a second Enter edits its name.
 
 Tab reaches the card, then the diagram's flows and elements, every flow before
 every element, then the threat register while it is open, then the panel. Where
-the register covers the panel, in a window under 55rem, Tab skips the panel
-until the register closes.
+the register covers the panel, in a window too narrow for both, Tab skips the
+panel until the register closes.
 
 Every element and flow is a tab stop whose accessible name comes from the
 model: its name, its kind, what its badge says, and each flag its threats

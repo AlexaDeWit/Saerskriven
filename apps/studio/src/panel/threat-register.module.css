@@ -28,8 +28,8 @@
    sliver of the panel shows beside it. The panes it then covers are hidden
    while it is open, which takes them off the Tab path and out of the
    accessibility tree, and they show again as it closes. A chosen row reads
-   that hiding from the model panel, and closes the register where it finds
-   it, so this query is the one home of the width. */
+   the model panel's computed visibility, and closes the register where it is
+   hidden, so this query is the one home of the width. */
 @media (max-width: 55rem) {
   .register {
     min-inline-size: calc(100% - var(--saer-space-3) * 2);
