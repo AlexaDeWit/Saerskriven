@@ -210,9 +210,9 @@ is both in either state ("Mitigation 1, Rate limit logins",
 so opening the record changes the toggle's expanded state and not what it is
 called.
 
-Each row is a group. A row that draws a toggle is a group with no name, so a
-screen reader says the record's name once, on the toggle. The empty row draws
-no toggle, and its group takes the record's name ("Mitigation 2").
+Each row is a group with no name, the empty row included. Its toggle, or the
+empty row's fields ("Mitigation 2 title", "Assumption 2"), already carry the
+record's name.
 
 ## Attachments
 

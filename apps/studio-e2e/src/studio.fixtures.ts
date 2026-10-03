@@ -531,8 +531,7 @@ export const panelControl = (page: Page, name: string): Locator =>
 
 /**
  * The row of the panel's record whose toggle is named `toggle`: the group
- * with no name of its own that holds that toggle. A row that draws no toggle
- * is found by its group name instead.
+ * with no name of its own that holds that toggle.
  */
 export const recordRow = (page: Page, toggle: string): Locator =>
   threatPanel(page)

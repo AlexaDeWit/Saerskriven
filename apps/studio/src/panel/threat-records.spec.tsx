@@ -363,7 +363,9 @@ describe(
       await user.click(button('Add mitigation'));
 
       expect(document.activeElement).toBe(textbox('Mitigation 1 title'));
-      expect(screen.queryByRole('group', { name: 'Mitigation 2' })).toBeNull();
+      expect(
+        screen.queryByRole('combobox', { name: 'Mitigation 2 status' }),
+      ).toBeNull();
     });
 
     it('heads each group with the count of the records it holds', async () => {
