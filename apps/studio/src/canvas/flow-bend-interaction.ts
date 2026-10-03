@@ -114,7 +114,7 @@ export function useFlowBendInteraction(
   };
   const commit = (
     target: WaypointTarget | EndTarget,
-    input?: GestureInput,
+    input: GestureInput | undefined,
   ): void => {
     bends.commit(
       target,
@@ -124,7 +124,7 @@ export function useFlowBendInteraction(
     handBack();
   };
   const pinEnd = (end: FlowEnd, side: Side | undefined): void => {
-    commit({ kind: 'anchor', end, side });
+    commit({ kind: 'anchor', end, side }, undefined);
   };
   const remove = (index: number): void => {
     bends.remove(index);

@@ -6,6 +6,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import type { Point } from '@saerskriven/model';
 import { elementIn } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
@@ -15,11 +16,16 @@ import {
   SelectionControls,
   FlowEndpointCommands,
 } from './selection-controls.js';
-import { commandById, runCommand } from '../commands/registry.js';
+import {
+  commandById,
+  runCommand,
+  type CommandId,
+} from '../commands/registry.js';
 import {
   drawnAs,
   iconOnly,
   recordingSurface,
+  runRegistered,
   tooltipOnFocus,
 } from '../commands/commands.fixtures.js';
 import { selectTool } from './tools.js';
@@ -54,16 +60,30 @@ const sourceDrawn = () =>
 const bothWaysToggle = () =>
   screen.getByRole('button', { name: 'Toggle bidirectional flow' });
 
+const opened = (form: CommandId) => {
+  render(<SelectionControls />);
+  runRegistered(form);
+};
+
+const curvedThrough = (waypoints: Point[]) => ({
+  ...curvedCanvasModel,
+  diagrams: curvedCanvasModel.diagrams.map((diagram) => ({
+    ...diagram,
+    elements: diagram.elements.map((element) =>
+      element.id === boundaryElement && element.kind === 'trust-boundary'
+        ? { ...element, shape: { kind: 'curve' as const, waypoints } }
+        : element,
+    ),
+  })),
+});
+
 beforeEach(() => {
   openCanvas([actorElement]);
 });
 
 describe('SelectionControls', () => {
   it('holds geometry drafts until Apply and records position plus size as one edit', async () => {
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     await waitFor(() => {
       expect(document.activeElement).toBe(
         screen.getByRole('spinbutton', { name: 'X' }),
@@ -90,10 +110,7 @@ describe('SelectionControls', () => {
   it('stores a typed position and size as typed, from a position that is not the origin', () => {
     openCanvas([processElement]);
     expect(laidOutNode(processElement).position.x).not.toBe(0);
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
       target: { value: '10.1234' },
     });
@@ -120,10 +137,7 @@ describe('SelectionControls', () => {
       x: 3742.089,
       y: 80.1234567890123,
     });
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
       target: { value: '530.189' },
     });
@@ -147,10 +161,7 @@ describe('SelectionControls', () => {
       x: 300.456,
       y: 80.75,
     });
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
       target: { value: '100' },
     });
@@ -173,10 +184,7 @@ describe('SelectionControls', () => {
         decimals: undefined,
       }),
     );
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Y' }), {
       target: { value: '12.98765' },
     });
@@ -190,10 +198,7 @@ describe('SelectionControls', () => {
   });
 
   it('steps a field by one at the decimals it is written with', () => {
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     const x = screen.getByRole<HTMLInputElement>('spinbutton', { name: 'X' });
     fireEvent.change(x, { target: { value: '-128.998' } });
 
@@ -207,10 +212,7 @@ describe('SelectionControls', () => {
   it("shows a trust boundary curve's width and height and scales its points to them as one edit", () => {
     openCanvas([boundaryElement], curvedCanvasModel);
     const node = laidOutNode(boundaryElement);
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     const height = screen.getByRole<HTMLInputElement>('spinbutton', {
       name: 'Height',
     });
@@ -235,29 +237,12 @@ describe('SelectionControls', () => {
   });
 
   it('shows only the width of a trust boundary curve along one level line, and scales it along the line', () => {
-    const level = [
+    const levelModel = curvedThrough([
       { x: -20, y: 80 },
       { x: 440, y: 80 },
-    ];
-    const levelModel = {
-      ...curvedCanvasModel,
-      diagrams: curvedCanvasModel.diagrams.map((diagram) => ({
-        ...diagram,
-        elements: diagram.elements.map((element) =>
-          element.id === boundaryElement && element.kind === 'trust-boundary'
-            ? {
-                ...element,
-                shape: { kind: 'curve' as const, waypoints: level },
-              }
-            : element,
-        ),
-      })),
-    };
+    ]);
     openCanvas([boundaryElement], levelModel);
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     expect(screen.queryByRole('spinbutton', { name: 'Height' })).toBeNull();
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), {
       target: { value: String(laidOutNode(boundaryElement).size.width + 460) },
@@ -277,11 +262,37 @@ describe('SelectionControls', () => {
     });
   });
 
-  it('retains invalid dimensions and cancels by Escape without history', () => {
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
+  it("keeps at least three decimals on a trust boundary curve's points, which a typed position moves without showing them", () => {
+    openCanvas(
+      [boundaryElement],
+      curvedThrough([
+        { x: 10, y: 10 },
+        { x: 50.12345, y: 30.56789 },
+        { x: 100, y: 60 },
+      ]),
+    );
+    opened('edit-geometry');
+    const x = screen.getByRole<HTMLInputElement>('spinbutton', { name: 'X' });
+    expect(x.value).toBe('8');
+    fireEvent.change(x, { target: { value: '18' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
+
+    expect(
+      elementIn(modelStore.getState().present, boundaryElement),
+    ).toMatchObject({
+      shape: {
+        kind: 'curve',
+        waypoints: [
+          { x: 20, y: 10 },
+          { x: 60.123, y: 30.568 },
+          { x: 110, y: 60 },
+        ],
+      },
     });
+  });
+
+  it('retains invalid dimensions and cancels by Escape without history', () => {
+    opened('edit-geometry');
     const width = screen.getByRole('spinbutton', { name: 'Width' });
     fireEvent.change(width, { target: { value: '-2' } });
     fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
@@ -298,10 +309,7 @@ describe('SelectionControls', () => {
       sampleModel.diagrams[0].elements.map((element) => element.id),
       sampleModel,
     );
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     expect(screen.queryByRole('spinbutton', { name: 'Width' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Decrease Y' }));
     fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
@@ -325,10 +333,7 @@ describe('SelectionControls', () => {
 
   it('reports a flow-only geometry selection and ignores editor requests during placement', () => {
     openCanvas([requestFlow]);
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('edit-geometry'), recordingSurface().surface);
-    });
+    opened('edit-geometry');
     expect(screen.queryByRole('spinbutton')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     act(() => {
@@ -340,10 +345,7 @@ describe('SelectionControls', () => {
 
   it('pins the chosen endpoint to a side, and releases it, through the endpoint editor', () => {
     openCanvas([requestFlow]);
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('reconnect-source'), recordingSurface().surface);
-    });
+    opened('reconnect-source');
     const side = screen.getByRole<HTMLSelectElement>('combobox', {
       name: 'Side',
     });
@@ -354,9 +356,7 @@ describe('SelectionControls', () => {
       source: { kind: 'attached', element: actorElement, side: 'bottom' },
     });
     expect(modelStore.getState().past).toHaveLength(1);
-    act(() => {
-      runCommand(commandById('reconnect-source'), recordingSurface().surface);
-    });
+    runRegistered('reconnect-source');
     expect(
       screen.getByRole<HTMLSelectElement>('combobox', { name: 'Side' }).value,
     ).toBe('bottom');
@@ -375,10 +375,7 @@ describe('SelectionControls', () => {
     const drawn = currentLayout(modelStore.getState()).edges.find(
       (edge) => edge.id === requestFlow,
     )?.target;
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('reconnect-target'), recordingSurface().surface);
-    });
+    opened('reconnect-target');
     const targets = screen.getByRole('combobox', { name: 'Target' });
     expect(within(targets).getAllByRole('option').at(0)).toBe(
       screen.getByRole('option', { name: 'Free point' }),
@@ -401,6 +398,22 @@ describe('SelectionControls', () => {
     expect(modelStore.getState().past).toEqual([canvasModel]);
   });
 
+  it('stores a typed free end at six decimals at the most', () => {
+    openCanvas([requestFlow]);
+    opened('reconnect-target');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Target' }), {
+      target: { value: '' },
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
+      target: { value: '520.1234567' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
+
+    expect(flowOf()).toMatchObject({
+      target: { kind: 'free', position: { x: 520.123457 } },
+    });
+  });
+
   it('starts a freed end at its anchor written at three decimals, and stores it as shown', () => {
     openCanvas([requestFlow]);
     dispatch(
@@ -411,10 +424,7 @@ describe('SelectionControls', () => {
       }),
     );
     expect(sourceDrawn()).toEqual({ x: -3.6359999999999957, y: 30.98765 });
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('reconnect-source'), recordingSurface().surface);
-    });
+    opened('reconnect-source');
     fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
       target: { value: '' },
     });
@@ -438,10 +448,7 @@ describe('SelectionControls', () => {
         decimals: undefined,
       }),
     );
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('reconnect-source'), recordingSurface().surface);
-    });
+    opened('reconnect-source');
 
     expect(
       screen.getByRole<HTMLInputElement>('spinbutton', { name: 'X' }).value,
@@ -450,10 +457,7 @@ describe('SelectionControls', () => {
 
   it('keeps a free endpoint whose position is not a number in the form', () => {
     openCanvas([requestFlow]);
-    render(<SelectionControls />);
-    act(() => {
-      runCommand(commandById('reconnect-source'), recordingSurface().surface);
-    });
+    opened('reconnect-source');
     fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
       target: { value: '' },
     });
@@ -489,9 +493,7 @@ describe('FlowEndpointCommands', () => {
     expect(
       screen.getByRole('button', { name: 'Change flow source' }),
     ).toBeDefined();
-    act(() => {
-      runCommand(commandById('reconnect-source'), recordingSurface().surface);
-    });
+    runRegistered('reconnect-source');
     fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
       target: { value: 'extra-node' },
     });
@@ -501,9 +503,7 @@ describe('FlowEndpointCommands', () => {
         source: { kind: 'attached', element: 'extra-node' },
       },
     );
-    act(() => {
-      runCommand(commandById('reconnect-target'), recordingSurface().surface);
-    });
+    runRegistered('reconnect-target');
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(modelStore.getState().past).toEqual([base]);
   });

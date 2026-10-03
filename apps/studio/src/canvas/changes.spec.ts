@@ -113,7 +113,12 @@ describe('selectionActions', () => {
 describe('moveActions', () => {
   it('moves an element by the offset from where the model has it', () => {
     expect(
-      moveActions([moving(actorElement, { x: 40, y: 25 }, false)], nodes, []),
+      moveActions(
+        [moving(actorElement, { x: 40, y: 25 }, false)],
+        nodes,
+        [],
+        undefined,
+      ),
     ).toEqual([
       Action.MoveElement({
         elementId: actorElement,
@@ -125,9 +130,12 @@ describe('moveActions', () => {
 
   it('leaves a gesture still in flight to the canvas', () => {
     expect(
-      moveActions([moving(actorElement, { x: 40, y: 25 }, true)], nodes, [
-        actorElement,
-      ]),
+      moveActions(
+        [moving(actorElement, { x: 40, y: 25 }, true)],
+        nodes,
+        [actorElement],
+        undefined,
+      ),
     ).toEqual([]);
   });
 
@@ -140,31 +148,41 @@ describe('moveActions', () => {
         ],
         nodes,
         [actorElement],
+        undefined,
       ),
     ).toEqual([]);
   });
 
   it('asks for nothing where the element ended up where it started', () => {
     expect(
-      moveActions([moving(actorElement, { x: 0, y: 0 }, false)], nodes, [
-        actorElement,
-      ]),
+      moveActions(
+        [moving(actorElement, { x: 0, y: 0 }, false)],
+        nodes,
+        [actorElement],
+        undefined,
+      ),
     ).toEqual([]);
   });
 
   it('moves nothing for an id that names no drawn node', () => {
     expect(
-      moveActions([moving(anchor, { x: 9, y: 9 }, false)], nodes, []),
+      moveActions(
+        [moving(anchor, { x: 9, y: 9 }, false)],
+        nodes,
+        [],
+        undefined,
+      ),
     ).toEqual([]);
   });
 
   it('moves a multi-selection through one plural action', () => {
     expect(
-      moveActions([moving(actorElement, { x: 40, y: 25 }, false)], nodes, [
-        actorElement,
-        processElement,
-        requestFlow,
-      ]),
+      moveActions(
+        [moving(actorElement, { x: 40, y: 25 }, false)],
+        nodes,
+        [actorElement, processElement, requestFlow],
+        undefined,
+      ),
     ).toEqual([
       Action.MoveElements({
         elementIds: [actorElement, processElement, requestFlow],

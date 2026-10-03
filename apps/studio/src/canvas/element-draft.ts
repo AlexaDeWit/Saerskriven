@@ -46,7 +46,7 @@ type Draft<Subject, Target> = Target & {
  * dispatch. The element is `edit`'s subject while the Select tool is active
  * and no text field is open, and a preview lasts while the model, the
  * selection, the open field and the tool stay as they were. A commit names
- * the decimals its edit stores, and one that names none stores its points as
+ * the decimals its edit stores, and says `undefined` to store its points as
  * they are.
  */
 export function useElementDraft<Subject extends Element, Target extends object>(
@@ -92,7 +92,7 @@ export function useElementDraft<Subject extends Element, Target extends object>(
         setHeld({ ...target, subject, state, transition: tool.transition });
       }
     },
-    commit: (target: Target, decimals?: Decimals): void => {
+    commit: (target: Target, decimals: Decimals | undefined): void => {
       if (
         subject === undefined ||
         modelStore.getState().present !== state.present ||

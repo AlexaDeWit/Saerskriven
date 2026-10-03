@@ -89,9 +89,7 @@ export function reduce(state: State, action: Action): State {
         moves.reduce<Either.Either<Model, OperationFailure>>(
           (outcome, { elementId, offset }) =>
             Either.flatMap(outcome, (model) =>
-              offset.x === 0 && offset.y === 0
-                ? Either.right(model)
-                : moveElement(model, elementId, offset, decimals),
+              moveElement(model, elementId, offset, decimals),
             ),
           Either.right(state.present),
         ),

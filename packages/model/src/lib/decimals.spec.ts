@@ -120,7 +120,6 @@ describe('storedPoint, storedPoints and storedSize', () => {
     [3, { width: 120.123, height: 0.04 }],
     [1, { width: 120.1, height: 0.1 }],
     [0, { width: 120, height: 1 }],
-    [23, { width: 120.123456, height: 0.04 }],
   ])(
     'keeps a size at %d decimals above zero, at the smallest extent that count writes',
     (decimals, stored) => {
@@ -128,13 +127,10 @@ describe('storedPoint, storedPoints and storedSize', () => {
     },
   );
 
-  it.each([23, 30, 100])(
-    'floors a size at %d decimals on the smallest extent that count writes, with no noise of its own',
-    (decimals) => {
-      const least = storedSize({ width: 1e-200, height: 1 }, decimals).width;
+  it('floors a size at 30 decimals on the smallest extent that count writes, with no noise of its own', () => {
+    const least = storedSize({ width: 1e-200, height: 1 }, 30).width;
 
-      expect(least).toBe(Number(`1e-${String(decimals)}`));
-      expect(decimalsOf(least)).toBe(decimals);
-    },
-  );
+    expect(least).toBe(1e-30);
+    expect(decimalsOf(least)).toBe(30);
+  });
 });

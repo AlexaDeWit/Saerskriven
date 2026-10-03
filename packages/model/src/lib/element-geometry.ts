@@ -93,8 +93,12 @@ export function resized(element: Element, size: Size): Element | undefined {
 }
 
 /**
- * Whether two elements of one kind hold the same geometry, number for number:
- * positions, sizes, free ends, bends and curve points.
+ * Whether an element holds the same geometry after a move or a resize as
+ * before it, number for number: positions, sizes, free ends, bends and curve
+ * points. Sound only for an element and that same element after such an
+ * edit, which changes no kind, attachment or shape: the numbers are compared
+ * in order with nothing saying which is which, so two elements of different
+ * shapes can hold the same list.
  */
 export function sameGeometry(left: Element, right: Element): boolean {
   return sameItems(numbersOf(left), numbersOf(right));

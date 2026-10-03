@@ -18,16 +18,17 @@ export const gestureDecimals = {
  */
 export const commandDecimals: Decimals = 3;
 
-/** The Position and size form stores at most this many decimals of any number. */
+/** The most decimals a form stores of any number: Position and size, and the flow end form. */
 export const mostTypedDecimals: Decimals = 6;
 
 /**
  * How many decimals the Position and size form stores when it shows `shown`
  * in its fields: the most any of them is written with, never fewer than
- * {@link commandDecimals} and never more than {@link mostTypedDecimals}. A
- * typed number of six decimals or fewer is so stored as typed, an element a
- * typed group position moves keeps at least three decimals, and a field
- * showing a longer number is stored at six.
+ * {@link commandDecimals} and never more than {@link mostTypedDecimals}. So a
+ * typed number of six decimals or fewer is stored as typed, a field showing a
+ * longer number is stored at six, and what the form writes without showing it
+ * (the elements a typed group position moves, the points of a trust boundary
+ * curve) keeps at least three.
  */
 export function typedDecimals(shown: readonly number[]): Decimals {
   return Math.min(

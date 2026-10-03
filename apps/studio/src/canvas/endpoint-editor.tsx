@@ -16,7 +16,7 @@ import { freeEndSaid } from './flow-bends.js';
 import { NumberField, numeric } from './geometry-editor.js';
 import { currentLayout } from './layout.js';
 import { sideMessages } from '../messages/enum-labels.js';
-import { commandDecimals } from './stored-decimals.js';
+import { commandDecimals, mostTypedDecimals } from './stored-decimals.js';
 import { useTranslator } from '../messages/locale.js';
 import styles from './selection-controls.module.css';
 
@@ -24,9 +24,10 @@ const freePoint = '';
 
 /**
  * The form moving one end of the selected flow: to another element and side,
- * or free at a typed position, which is stored as typed. The position starts
- * where the end is drawn: a free end's own stored position, or an attached
- * end's anchor, which is worked out and so written at `commandDecimals`.
+ * or free at a typed position, which is stored as typed up to
+ * `mostTypedDecimals`. The position starts where the end is drawn: a free
+ * end's own stored position, or an attached end's anchor, which is worked out
+ * and so written at `commandDecimals`.
  */
 export function EndpointEditor({
   state,
@@ -87,7 +88,7 @@ export function EndpointEditor({
           elementId: flow.id,
           side,
           position: at.data,
-          decimals: undefined,
+          decimals: mostTypedDecimals,
         }),
       );
       close();

@@ -94,7 +94,7 @@ export function moveActions(
   changes: readonly DiagramChange[],
   nodes: ReadonlyMap<string, CanvasNode>,
   selection: readonly ElementId[],
-  decimals?: Decimals,
+  decimals: Decimals | undefined,
 ): Action[] {
   const resizing = new Set(
     changes.flatMap((change) =>
