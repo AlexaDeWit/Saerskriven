@@ -90,7 +90,8 @@ absent from macOS matching, labels and ARIA attributes. Backspace stands in for
 Delete on Mac keyboards. Zoom accepts the equals key or the produced plus
 character. A Mod+Shift digit chord also matches its
 digit key code when the event reports the punctuation the layout shifts that
-key to: `)` on a US layout, `=` on a Swedish one. `+` for Add bend accepts
+key to: for 0, `)` on a US layout and `=` on a Swedish one. No command takes
+such a chord today. `+` for Add bend accepts
 either Shift state, because layouts differ in how they produce it, while Ctrl
 or Command with it keeps its zoom binding.
 
@@ -150,8 +151,8 @@ only some directions list those keys.
   locales and store the id. A function that spells a chord or describes an
   entry takes the active translator, so the caller resolves at render.
 - Bind a new command by adding an entry, not by adding a listener.
-- A command on a selection card takes Shift and a letter, and so does Position
-  and size. Add a chord a platform or a browser turns out to keep to
+- A command on a selection card takes Shift and a letter, and so do Position
+  and size and Fit selection. Add a chord a platform or a browser turns out to keep to
   `reservedChords`, so the spec holds every chord clear of it.
 - Add a key that acts only inside one control to `contextual-shortcuts.ts`.
   Renderers, event handlers and accessible descriptions read it from there.

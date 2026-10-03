@@ -58,7 +58,11 @@ const pressing = (chord: Chord, platform: Platform) => {
 
 const press = (
   key: string,
-  modifiers: { readonly ctrlKey?: boolean; readonly shiftKey?: boolean } = {},
+  modifiers: {
+    readonly ctrlKey?: boolean;
+    readonly metaKey?: boolean;
+    readonly shiftKey?: boolean;
+  } = {},
 ) => ({
   key,
   ctrlKey: false,
