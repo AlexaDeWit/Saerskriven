@@ -20,6 +20,15 @@ export function isDirty(state: State): boolean {
   return state.present !== state.saved;
 }
 
+/**
+ * Whether replacing the model loses work: unsaved changes, or a recovery
+ * snapshot that could not be read at startup and that the replacement's
+ * recovery write would overwrite.
+ */
+export function holdsUnsavedWork(state: State): boolean {
+  return isDirty(state) || state.recoveryUnread;
+}
+
 /** The dirty session lacks a confirmed recovery write. */
 export function needsCloseGuard(state: State): boolean {
   return isDirty(state) && !state.recoveryCurrent;

@@ -8,21 +8,32 @@ import { describeExportNotice } from './export-notice.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
 import { reportHeadlines, reportLines } from './session.js';
+import { describeShareNotice } from './share-notice.js';
 
 /**
- * The failure notice, the report of the last file crossing and the export
- * report, which hang under the chrome card. Each is empty until something is
- * refused, costs the model a key, or opens as a new model, and each is
- * worded on render, so a change of language rewords a standing report.
+ * The failure notice, the report of the last file crossing, the export report
+ * and the share report, which hang under the chrome card. Each is empty until
+ * something is refused, costs the model a key, opens as a new model, or is
+ * shared, and each is worded on render, so a change of language rewords a
+ * standing report.
  */
 export function FileReports({ session }: { readonly session: FileSession }) {
   const { t } = useTranslator();
   const failure = useModelStore((state) => state.lastFailure);
-  const { dismissExportNotice, dismissReport, exportNotice, report } = session;
+  const {
+    dismissExportNotice,
+    dismissReport,
+    dismissShareNotice,
+    exportNotice,
+    report,
+    shareNotice,
+  } = session;
   const exported =
     exportNotice === undefined
       ? undefined
       : describeExportNotice(t, exportNotice);
+  const shared =
+    shareNotice === undefined ? undefined : describeShareNotice(t, shareNotice);
 
   return (
     <>
@@ -73,6 +84,19 @@ export function FileReports({ session }: { readonly session: FileSession }) {
               type="button"
             >
               {t('reports.dismiss-export')}
+            </button>
+          </div>
+        )}
+        {shared !== undefined && (
+          <div data-testid="share-report">
+            <p className={styles.headline}>{shared.headline}</p>
+            <DetailLines className={styles.lines} lines={shared.details} />
+            <button
+              className={styles.dismiss}
+              onClick={dismissShareNotice}
+              type="button"
+            >
+              {t('reports.dismiss-share')}
             </button>
           </div>
         )}

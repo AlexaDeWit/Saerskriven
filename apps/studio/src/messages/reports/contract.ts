@@ -1,11 +1,12 @@
-import { text } from '@saerskriven/i18n';
+import { plural, text } from '@saerskriven/i18n';
 
 const endpoint = { flow: 'text', element: 'text' } as const;
 
 /**
  * The reports under the chrome card: what a file crossing cost, the notice a
  * file opens with when Saerskriven does not write its format, what an export
- * left out or could not do, and the file types an export offers.
+ * left out or could not do, the file types an export offers, and the link
+ * Share copied or could not write.
  */
 export const reportMessages = {
   region: text(),
@@ -22,6 +23,12 @@ export const reportMessages = {
   'compile-refused': text(),
   'no-pdf': text(),
   'draw-refused': text(),
+  shared: plural('length'),
+  'shared-disclosure': text(),
+  'share-too-large': text(),
+  'share-refused': text(),
+  'share-clipboard-refused': text(),
+  'dismiss-share': text(),
   unplaced: text(),
   'unplaced-source': text(endpoint),
   'unplaced-target': text(endpoint),

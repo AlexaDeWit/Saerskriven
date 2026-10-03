@@ -25,6 +25,21 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
     '{name} n’est pas un document valide du format qui l’a reconnu.',
   'invalid-model':
     '{name} est un document valide, mais le modèle qui en découle ne l’est pas.',
+  'link-refused': 'Saerskriven n’a pas pu ouvrir le lien partagé.',
+  'link-too-long':
+    'Le lien compte {length} caractères, au-delà des {limit} qu’un lien peut contenir.',
+  'link-past-read-bound':
+    'Le modèle compte {size} octets en texte, au-delà des {bound} qu’une lecture accepte.',
+  'link-not-a-link': 'L’adresse ne contient aucun lien partagé.',
+  'link-encoding':
+    'Le lien utilise l’encodage {prefix}, que cette version de Saerskriven ne lit pas. Une version ultérieure l’a écrit.',
+  'link-cut-off':
+    'Le lien est tronqué ou endommagé, alors il ne contient pas un modèle entier.',
+  'link-module': 'Le module qui écrit et lit les liens ne s’est pas exécuté.',
+  'link-too-large':
+    'Le modèle que contient le lien dépasse une limite de lecture.',
+  'link-not-a-model':
+    'Le lien ne contient aucun modèle que Saerskriven peut lire.',
   'snapshot-limit-detail':
     '{limit} : la limite est de {bound}, l’instantané a atteint {observed}.',
   'snapshot-unsupported':

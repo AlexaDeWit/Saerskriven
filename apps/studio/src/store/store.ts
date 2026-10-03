@@ -117,6 +117,7 @@ function startState(storage: RecoveryStorage, fallback: Model): State {
       onLeft: (failure) => ({
         ...initialState(fallback),
         lastFailure: startupFailure(failure),
+        recoveryUnread: true,
       }),
       onRight: (snapshot) =>
         snapshot === undefined
@@ -140,12 +141,13 @@ function settled(
     return {
       ...(closing ? before : reduced),
       recoveryCurrent: closing ? before.recoveryCurrent : false,
+      recoveryUnread: before.recoveryUnread,
       lastFailure: StudioFailure.RecoveryUnavailable({
         problem: stored.left.problem,
       }),
     };
   }
-  return { ...reduced, recoveryCurrent: !closing };
+  return { ...reduced, recoveryCurrent: !closing, recoveryUnread: false };
 }
 
 function syncedState(state: State): SyncedState {

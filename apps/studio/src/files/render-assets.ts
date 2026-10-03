@@ -1,26 +1,13 @@
 import type { PdfAssets } from '@saerskriven/render/pdf';
 import { drawingFace, ledBy } from '@saerskriven/render/png';
 import type { ResvgAssets } from '@saerskriven/render/resvg';
-import { Data, Either } from 'effect';
+import { Either } from 'effect';
+import brotliWasmUrl from 'virtual:saerskriven-brotli-wasm?url';
 import resvgWasmUrl from 'virtual:saerskriven-resvg-wasm?url';
 import { renderFaces } from 'virtual:saerskriven-render-faces';
 import typstWasmUrl from 'virtual:saerskriven-typst-wasm?url';
+import { AssetFailure } from '../asset-failure.js';
 import { reasonOf } from '../reason.js';
-
-/**
- * Why the browser could not load the bytes a projection is drawn with.
- * `Unavailable` carries the text the browser raised, `Answered` the status a
- * server gave instead of the bytes, and `FaceMissing` the face the build
- * lacks.
- */
-export type RenderAssetFailure = Data.TaggedEnum<{
-  Unavailable: { readonly reason: string };
-  Answered: { readonly url: string; readonly status: number };
-  FaceMissing: { readonly face: string };
-}>;
-
-/** Constructors for {@link RenderAssetFailure}. */
-export const RenderAssetFailure = Data.taggedEnum<RenderAssetFailure>();
 
 type Assets = {
   readonly wasm: Uint8Array;
@@ -32,7 +19,7 @@ type Face = {
   readonly bytes: Uint8Array;
 };
 
-type Loaded<Value> = () => Promise<Either.Either<Value, RenderAssetFailure>>;
+type Loaded<Value> = () => Promise<Either.Either<Value, AssetFailure>>;
 
 const subject = 'this studio build';
 
@@ -42,7 +29,7 @@ const subject = 'this studio build';
  * {@link loadPngAssets}.
  */
 export function loadPdfAssets(): Promise<
-  Either.Either<PdfAssets, RenderAssetFailure>
+  Either.Either<PdfAssets, AssetFailure>
 > {
   return assembled(typstModule, (faces) => Either.right(faces));
 }
@@ -53,15 +40,23 @@ export function loadPdfAssets(): Promise<
  * is given, so a build without that face is refused.
  */
 export function loadPngAssets(): Promise<
-  Either.Either<ResvgAssets, RenderAssetFailure>
+  Either.Either<ResvgAssets, AssetFailure>
 > {
   return assembled(resvgModule, (faces) =>
     Either.mapLeft(
       ledBy(faces, (face) => face.name, drawingFace, subject),
-      () => RenderAssetFailure.FaceMissing({ face: drawingFace }),
+      () => AssetFailure.FaceMissing({ face: drawingFace }),
     ),
   );
 }
+
+/**
+ * The brotli module a share link is written and read with, fetched once per
+ * session after a successful read and shared by every link.
+ */
+export const loadBrotliModule: Loaded<Uint8Array> = once(() =>
+  fetchBytes(brotliWasmUrl),
+);
 
 const faces: Loaded<readonly Face[]> = once(() =>
   firstFailureOrAll(
@@ -82,8 +77,8 @@ async function assembled(
   module: Loaded<Uint8Array>,
   lettered: (
     faces: readonly Face[],
-  ) => Either.Either<readonly Face[], RenderAssetFailure>,
-): Promise<Either.Either<Assets, RenderAssetFailure>> {
+  ) => Either.Either<readonly Face[], AssetFailure>,
+): Promise<Either.Either<Assets, AssetFailure>> {
   const [wasm, loaded] = await Promise.all([module(), faces()]);
   if (Either.isLeft(wasm)) {
     return Either.left(wasm.left);
@@ -98,12 +93,12 @@ async function assembled(
 }
 
 function firstFailureOrAll<Value>(
-  loads: readonly Promise<Either.Either<Value, RenderAssetFailure>>[],
-): Promise<Either.Either<Value[], RenderAssetFailure>> {
-  const firstFailure = new Promise<Either.Either<Value[], RenderAssetFailure>>(
+  loads: readonly Promise<Either.Either<Value, AssetFailure>>[],
+): Promise<Either.Either<Value[], AssetFailure>> {
+  const firstFailure = new Promise<Either.Either<Value[], AssetFailure>>(
     (resolve) => {
       const failed = async (
-        load: Promise<Either.Either<Value, RenderAssetFailure>>,
+        load: Promise<Either.Either<Value, AssetFailure>>,
       ): Promise<void> => {
         const outcome = await load;
         if (Either.isLeft(outcome)) {
@@ -121,7 +116,7 @@ function firstFailureOrAll<Value>(
 
 function once<Value>(load: Loaded<Value>): Loaded<Value> {
   let held: Value | undefined;
-  let loading: Promise<Either.Either<Value, RenderAssetFailure>> | undefined;
+  let loading: Promise<Either.Either<Value, AssetFailure>> | undefined;
   return async () => {
     if (held !== undefined) {
       return Either.right(held);
@@ -139,14 +134,14 @@ function once<Value>(load: Loaded<Value>): Loaded<Value> {
 
 async function fetchBytes(
   url: string,
-): Promise<Either.Either<Uint8Array, RenderAssetFailure>> {
+): Promise<Either.Either<Uint8Array, AssetFailure>> {
   const response = await guarded(() => fetch(url));
   if (Either.isLeft(response)) {
     return Either.left(response.left);
   }
   if (!response.right.ok) {
     return Either.left(
-      RenderAssetFailure.Answered({ url, status: response.right.status }),
+      AssetFailure.Answered({ url, status: response.right.status }),
     );
   }
   const body = response.right;
@@ -155,12 +150,10 @@ async function fetchBytes(
 
 async function guarded<Value>(
   work: () => Promise<Value>,
-): Promise<Either.Either<Value, RenderAssetFailure>> {
+): Promise<Either.Either<Value, AssetFailure>> {
   try {
     return Either.right(await work());
   } catch (cause) {
-    return Either.left(
-      RenderAssetFailure.Unavailable({ reason: reasonOf(cause) }),
-    );
+    return Either.left(AssetFailure.Unavailable({ reason: reasonOf(cause) }));
   }
 }

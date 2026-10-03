@@ -28,7 +28,7 @@ import type {
   ThreatId,
 } from '@saerskriven/model';
 import { Data } from 'effect';
-import type { InlineEditor } from './state.js';
+import type { InlineEditor, LinkFailure } from './state.js';
 import type { SyncedState } from './sync.js';
 
 /** Every state change the reducer accepts. */
@@ -144,6 +144,7 @@ export type Action = Data.TaggedEnum<{
     readonly format: ImportFormat;
     readonly divergences: readonly Divergence[];
   };
+  LinkOpened: { readonly model: Model; readonly name: string };
   Saved: { readonly name: string; readonly source: RetainedSource };
   Closed: {};
   Followed: { readonly state: SyncedState };
@@ -155,6 +156,7 @@ export type Action = Data.TaggedEnum<{
     readonly operation: 'open' | 'save';
     readonly reason: string;
   };
+  LinkRefused: { readonly failure: LinkFailure };
   DismissFailure: {};
 }>;
 

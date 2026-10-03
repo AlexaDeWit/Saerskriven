@@ -8,6 +8,7 @@ export const menuEnCA = catalogue(menuMessages)('en-CA')({
   'view-source': 'View source on GitHub',
   cancel: 'Cancel',
   'discard-and-open': 'Discard changes and open',
+  'discard-and-open-link': 'Discard changes and open the link',
   'discard-and-new': 'Discard changes and create new model',
   'save-as-format': 'Save as {format}',
   'file-state-dirty': '{name}, {format}, unsaved changes',
