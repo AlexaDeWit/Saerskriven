@@ -50,10 +50,11 @@ jobs:
       - name: Check the installed Nix CLI without runtime network access
         run: nix build --no-link --print-build-logs --option sandbox true .#checks.x86_64-linux.saerskriven
 
-      # `pnpm check` builds the rasterizer module on the way to the targets
-      # that carry it, so the module lands in the store this job saves and a
-      # later run finds the output path valid and skips the Rust build
-      # (nix/resvg-wasm/project.json says what its out-link roots and why).
+      # `pnpm check` builds the rasterizer and brotli modules on the way to
+      # the targets that carry them, so each module lands in the store this
+      # job saves and a later run finds the output path valid and skips the
+      # Rust build (nix/resvg-wasm/project.json says what an out-link roots
+      # and why).
       - name: Check
         run: nix develop .#ci --command pnpm check
 

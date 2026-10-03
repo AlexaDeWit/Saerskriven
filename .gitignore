@@ -17,7 +17,7 @@ test-output/
 .nx/self-healing
 .nx/migrate-runs
 
-# The default out-link of `nix build` run by hand. The rasterizer module's
+# The default out-link of `nix build` run by hand. Each WebAssembly module's
 # out-link and the copy nx caches go under dist/, which is ignored above.
 /result
 

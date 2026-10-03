@@ -16,13 +16,7 @@ import { sideMessages } from '../messages/enum-labels.js';
 import type { Said } from '../messages/said.js';
 import { announce, spokenElement } from './announcements.js';
 import { useElementDraft, type ElementEdit } from './element-draft.js';
-
-/** An insertion slot or an existing bend in source-to-target order. */
-export type BendTarget = {
-  readonly kind: 'insert' | 'move';
-  readonly index: number;
-  readonly point: Point;
-};
+import { editedWaypoints, type WaypointTarget } from './waypoints.js';
 
 /** One attached end of a flow, pinned to a side of its element or released to follow the route. */
 export type AnchorTarget = {
@@ -54,7 +48,7 @@ export type FreeTarget = {
  */
 export type EndTarget = AnchorTarget | AttachTarget | FreeTarget;
 
-type RouteTarget = BendTarget | EndTarget;
+type RouteTarget = WaypointTarget | EndTarget;
 
 const routeEdit: ElementEdit<Flow, RouteTarget> = {
   subject: (element) => (element.kind === 'flow' ? element : undefined),
@@ -94,14 +88,6 @@ export function useFlowBends() {
 /** The state and operations exposed to the bend controls. */
 export type FlowBends = ReturnType<typeof useFlowBends>;
 
-function editedBends(flow: Flow, target: BendTarget): Point[] {
-  return [
-    ...flow.waypoints.slice(0, target.index),
-    target.point,
-    ...flow.waypoints.slice(target.index + (target.kind === 'move' ? 1 : 0)),
-  ];
-}
-
 function editedRoute(
   model: Model,
   flow: Flow,
@@ -119,7 +105,11 @@ function editedRoute(
   if (target.kind === 'free') {
     return setFlowEndPosition(model, flow.id, target.end, target.point);
   }
-  return setFlowWaypoints(model, flow.id, editedBends(flow, target));
+  return setFlowWaypoints(
+    model,
+    flow.id,
+    editedWaypoints(flow.waypoints, target),
+  );
 }
 
 function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
@@ -150,7 +140,7 @@ function routeAction(flow: Flow, target: RouteTarget): Action | undefined {
   }
   return Action.SetFlowWaypoints({
     elementId: flow.id,
-    waypoints: editedBends(flow, target),
+    waypoints: editedWaypoints(flow.waypoints, target),
   });
 }
 

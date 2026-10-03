@@ -16,12 +16,7 @@ import { bendInsertionEvent } from './bend-insertion.js';
 import { focusElement } from './edits.js';
 import { isFlowEnd } from './elements.js';
 import { insideBounds } from './layout.js';
-import type {
-  AnchorTarget,
-  BendTarget,
-  EndTarget,
-  FlowBends,
-} from './flow-bends.js';
+import type { AnchorTarget, EndTarget, FlowBends } from './flow-bends.js';
 import {
   draggedPoint,
   nudgedPoint,
@@ -29,13 +24,14 @@ import {
   type DragSpan,
   type HandlePointer,
 } from './handle-drag.js';
+import type { WaypointTarget } from './waypoints.js';
 
 /** Which end of a flow a handle stands for. */
 export type FlowEnd = AnchorTarget['end'];
 
 type BendMode =
   | { readonly kind: 'choose'; readonly index: number }
-  | { readonly kind: 'place'; readonly target: BendTarget }
+  | { readonly kind: 'place'; readonly target: WaypointTarget }
   | { readonly kind: 'actions'; readonly index: number }
   | { readonly kind: 'end-actions'; readonly end: FlowEnd };
 
@@ -46,7 +42,7 @@ type HeldEnd = {
   readonly box: NodeBox | undefined;
 };
 
-type Held = BendTarget | HeldEnd;
+type Held = WaypointTarget | HeldEnd;
 
 const controlSelector = 'button, input, textarea, [data-bend-toolbar]';
 
@@ -109,12 +105,12 @@ export function useFlowBendInteraction(
     setMode({ kind: 'choose', index });
     announce((t) => t('tools.bend-choose-help', { number: index + 1 }));
   };
-  const place = (target: BendTarget): void => {
+  const place = (target: WaypointTarget): void => {
     setMode({ kind: 'place', target });
     bends.preview(target);
     announce((t) => t('tools.bend-place-help'));
   };
-  const commit = (target: BendTarget | EndTarget): void => {
+  const commit = (target: WaypointTarget | EndTarget): void => {
     bends.commit(target);
     setMode(undefined);
     handBack();
@@ -303,7 +299,7 @@ function choosingKey(
   index: number,
   edge: CanvasEdge,
   choose: (index: number) => void,
-  place: (target: BendTarget) => void,
+  place: (target: WaypointTarget) => void,
 ): boolean {
   if (pressesContextualShortcut('choose-bend-segment', event, hostPlatform)) {
     choose(
@@ -326,10 +322,10 @@ function choosingKey(
 
 function placingKey(
   event: KeyboardEvent,
-  target: BendTarget,
+  target: WaypointTarget,
   bends: FlowBends,
   setMode: (mode: BendMode) => void,
-  commit: (target: BendTarget) => void,
+  commit: (target: WaypointTarget) => void,
 ): boolean {
   const point = nudgedPoint(target.point, event, 'move-bend', 'move-bend-far');
   if (point !== undefined) {
@@ -420,7 +416,7 @@ function bendHandleKey(
 function openActions(
   mode: BendMode | undefined,
   next: BendMode,
-  commit: (target: BendTarget) => void,
+  commit: (target: WaypointTarget) => void,
   setMode: (mode: BendMode) => void,
 ): void {
   if (mode?.kind === 'place') {
@@ -448,7 +444,7 @@ function draggedTarget(
   bends: FlowBends,
   held: Held,
   span: DragSpan,
-): BendTarget | EndTarget | undefined {
+): WaypointTarget | EndTarget | undefined {
   if (held.kind !== 'end') {
     return { ...held, point: draggedPoint(held.point, span) };
   }
@@ -492,7 +488,7 @@ function landing(
   return attachable ? { kind: 'attach', end, element: under.id } : undefined;
 }
 
-function segmentBend(edge: CanvasEdge, index: number): BendTarget {
+function segmentBend(edge: CanvasEdge, index: number): WaypointTarget {
   const points = [edge.source, ...edge.waypoints, edge.target];
   const from = points[index];
   const to = points[index + 1];

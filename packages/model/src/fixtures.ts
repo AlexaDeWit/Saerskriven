@@ -128,6 +128,15 @@ export const committedText = (...segments: readonly string[]): string =>
   readFileSync(testDataPath(...segments), 'utf8');
 
 /**
+ * A refusal that throws its sentence, for the build-asset locators a fixture
+ * or spec calls: an asset the flake shell should have put in place fails the
+ * spec that asked for it.
+ */
+export const stop = (sentence: string): never => {
+  throw new Error(sentence);
+};
+
+/**
  * The SHA-256 digest of bytes as hex, which is how a binary golden is
  * compared: a failed comparison of the buffers themselves is pretty-printed
  * and diffed element by element, which takes minutes on a picture and
