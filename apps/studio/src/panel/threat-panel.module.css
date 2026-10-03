@@ -400,6 +400,12 @@
   margin-inline-start: auto;
 }
 
+/* A folded row does not wrap, so the status keeps its own width and a long
+   title shortens instead. */
+.recordHead[data-folded] > .recordState {
+  flex: none;
+}
+
 .recordName {
   font-weight: 600;
 }

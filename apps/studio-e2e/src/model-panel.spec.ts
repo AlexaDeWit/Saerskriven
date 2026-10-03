@@ -16,6 +16,7 @@ import {
   runFromMenu,
   selectByKeyboard,
   selectNode,
+  showDetails,
   storefront,
   threatPanel,
   undoOffered,
@@ -36,9 +37,6 @@ const modelControl = (page: Page, name: string): Locator =>
 const threatsTab = (page: Page): Locator =>
   modelPanel(page).getByRole('tab', { name: /^Threats \d+$/u });
 
-const detailsTab = (page: Page): Locator =>
-  modelPanel(page).getByRole('tab', { name: 'Details', exact: true });
-
 const foldedRecord = (page: Page, text: string): Locator =>
   modelPanel(page).getByRole('button', {
     name: text,
@@ -57,11 +55,6 @@ const refundAbuse = /Refund policy abused/u;
 const openModelPanel = async (page: Page): Promise<void> => {
   await runFromMenu(page, 'Model');
   await expect(modelPanel(page)).toBeVisible();
-};
-
-const showModelDetails = async (page: Page): Promise<void> => {
-  await detailsTab(page).click();
-  await expect(detailsTab(page)).toHaveAttribute('aria-selected', 'true');
 };
 
 const replaceText = async (field: Locator, text: string): Promise<void> => {
@@ -201,7 +194,7 @@ test('M types into Title on Details, and closes the model panel again from outsi
   await page.keyboard.press(shortcut);
   await expect(threatsTab(page)).toBeFocused();
 
-  await showModelDetails(page);
+  await showDetails(page, modelPanel(page));
   const title = modelField(page, 'textbox', 'Title');
   const before = await title.inputValue();
   await title.focus();
@@ -226,7 +219,7 @@ test('the title and the description commit as one undo step each, and Tab runs f
 }) => {
   await openTwoDiagrams(page);
   await openModelPanel(page);
-  await showModelDetails(page);
+  await showDetails(page, modelPanel(page));
   const title = modelField(page, 'textbox', 'Title');
   const description = modelField(page, 'textbox', 'Description');
   const before = {
@@ -271,7 +264,7 @@ test(
     await openTwoDiagrams(page);
     expect(await undoOffered(page)).toBe(false);
     await openModelPanel(page);
-    await showModelDetails(page);
+    await showDetails(page, modelPanel(page));
 
     const add = modelControl(page, 'Add assumption');
     await onScreenUnscrolled(page, add);
@@ -300,6 +293,26 @@ test(
   },
 );
 
+test(
+  'a folded assumption keeps its status on one line beside a first line too long for the row',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    await openModelPanel(page);
+    await showDetails(page, modelPanel(page));
+
+    const lines = await modelField(page, 'combobox', 'Assumption 1 status')
+      .locator('[data-option-label]')
+      .evaluate((label) => {
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        return range.getClientRects().length;
+      });
+
+    expect(lines).toBe(1);
+  },
+);
+
 test("applying a threat's assumption to the model keeps its threat link, and each unlink culls it only from its last reference", async ({
   page,
 }) => {
@@ -318,7 +331,7 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await expect(panelControl(page, 'Add assumption')).toBeFocused();
 
   await openModelPanel(page);
-  await showModelDetails(page);
+  await showDetails(page, modelPanel(page));
   await chooseInPanel(page, 'Existing assumption', rotate, modelPanel(page));
   await modelControl(page, 'Link existing assumption').click();
   await expect(foldedRecord(page, rotate)).toBeFocused();
@@ -351,7 +364,7 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await expect(panelField(page, 'textbox', 'Assumption 1')).toHaveCount(0);
 
   await openModelPanel(page);
-  await showModelDetails(page);
+  await showDetails(page, modelPanel(page));
   await foldedRecord(page, rotate).click();
   const kept = modelField(page, 'textbox', 'Assumption 3');
   await expect(kept).toHaveValue(rotate);
@@ -382,7 +395,7 @@ test('an older assumption linked after an added one lands after it, and leaves a
   await expect(panelControl(page, 'Add assumption')).toBeFocused();
 
   await openModelPanel(page);
-  await showModelDetails(page);
+  await showDetails(page, modelPanel(page));
   await modelControl(page, 'Add assumption').click();
   await page.keyboard.type(added);
   await page.keyboard.press('Tab');
@@ -419,7 +432,7 @@ test('the model edited in one tab reaches another, which keeps its own selection
   const selected = await selectNode(other, storefront.catalogue);
 
   await openModelPanel(page);
-  await showModelDetails(page);
+  await showDetails(page, modelPanel(page));
   await replaceText(
     modelField(page, 'textbox', 'Title'),
     'Two diagrams, shared',
@@ -440,7 +453,7 @@ test('the model edited in one tab reaches another, which keeps its own selection
   await expect(
     modelPanel(other).getByRole('heading', { name: 'Two diagrams, shared' }),
   ).toBeVisible();
-  await showModelDetails(other);
+  await showDetails(other, modelPanel(other));
   await expect(modelField(other, 'textbox', 'Title')).toHaveValue(
     'Two diagrams, shared',
   );
@@ -465,7 +478,7 @@ test(
   async ({ page }) => {
     await openTwoDiagrams(page);
     await openModelPanel(page);
-    await showModelDetails(page);
+    await showDetails(page, modelPanel(page));
     await modelControl(page, 'Add assumption').click();
     await page.keyboard.insertText(
       'Every caller of the proxy presents a token that it scopes to one tenant, and the proxy never forwards it.',

@@ -157,12 +157,15 @@ describe('where else a shared row says its record is referenced', () => {
       numbered.find((threat) => threat.number === number)?.id ?? firstThreat,
     );
 
-  it('names the other threats by number, in number order, alike in both panels', () => {
+  it('names the other threats by number, in number order, alike in both panels and on a folded model record', () => {
     expect(
       numbersIn(onThreat(9).elsewhere(on(9, 25, 4), numbered, translator)),
     ).toEqual([4, 25]);
     expect(
       numbersIn(modelTarget.elsewhere(on(25, 4), numbered, translator)),
+    ).toEqual([4, 25]);
+    expect(
+      numbersIn(modelTarget.elsewhereCounted(on(25, 4), numbered, translator)),
     ).toEqual([4, 25]);
     expect(onThreat(9).elsewhere(on(9, 25, 4), numbered, translator)).toBe(
       modelTarget.elsewhere(on(25, 4), numbered, translator),
