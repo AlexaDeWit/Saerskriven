@@ -1,4 +1,4 @@
-import { boxOfPoints, resizableAxes } from '@saerskriven/canvas';
+import { resizableAxes } from '@saerskriven/canvas';
 import { pointSchema, sizeSchema } from '@saerskriven/model';
 import { useId, useState, type FormEvent } from 'react';
 import { useTranslator } from '../messages/locale.js';
@@ -7,7 +7,7 @@ import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
 import { resizeNode } from './edits.js';
-import { currentLayout } from './layout.js';
+import { currentLayout, selectionPosition } from './layout.js';
 import styles from './selection-controls.module.css';
 
 /** The position and size form over the selected nodes, committing one move or resize on Apply. */
@@ -18,16 +18,17 @@ export function GeometryEditor({
   readonly state: State;
   readonly close: () => void;
 }) {
-  const nodes = currentLayout(state).nodes.filter((node) =>
+  const layout = currentLayout(state);
+  const nodes = layout.nodes.filter((node) =>
     state.selection.includes(node.id),
   );
   const single =
     nodes.length === 1 && state.selection.length === 1 ? nodes[0] : undefined;
   const axes = single === undefined ? undefined : resizableAxes(single);
-  const bounds = boxOfPoints(nodes.map((node) => node.position));
+  const origin = selectionPosition(layout, state.selection);
   const [position, setPosition] = useState({
-    x: String(bounds?.minX ?? 0),
-    y: String(bounds?.minY ?? 0),
+    x: String(origin?.x ?? 0),
+    y: String(origin?.y ?? 0),
   });
   const [size, setSize] = useState({
     width: String(single?.size.width ?? 1),
@@ -35,7 +36,7 @@ export function GeometryEditor({
   });
   const [refused, setRefused] = useState(false);
   const { t } = useTranslator();
-  if (bounds === undefined) {
+  if (origin === undefined) {
     return (
       <>
         <p>{t('tools.select-node-geometry')}</p>
@@ -63,7 +64,7 @@ export function GeometryEditor({
     if (single !== undefined && extent.success) {
       resizeNode(single, { position: at.data, size: extent.data });
     } else {
-      const offset = { x: at.data.x - bounds.minX, y: at.data.y - bounds.minY };
+      const offset = { x: at.data.x - origin.x, y: at.data.y - origin.y };
       if (offset.x !== 0 || offset.y !== 0) {
         dispatch(Action.MoveElements({ elementIds: state.selection, offset }));
       }

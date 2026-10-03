@@ -1,4 +1,5 @@
 import {
+  boxOfPoints,
   drawnBounds,
   layoutDiagram,
   type CanvasBounds,
@@ -51,6 +52,23 @@ export function selectionBounds(
     layout.nodes.filter((node) => selected.has(node.id)),
     layout.edges.filter((edge) => selected.has(edge.id)),
   );
+}
+
+/**
+ * Where Position and size places the selection: the least x and the least y
+ * among the selected elements' positions. Nothing while no element is selected.
+ */
+export function selectionPosition(
+  layout: CanvasLayout,
+  selection: readonly ElementId[],
+): Point | undefined {
+  const selected = new Set(selection);
+  const box = boxOfPoints(
+    layout.nodes
+      .filter((node) => selected.has(node.id))
+      .map((node) => node.position),
+  );
+  return box === undefined ? undefined : { x: box.minX, y: box.minY };
 }
 
 /** Whether `point` lies inside `bounds`, grown by `padding` on every side. */

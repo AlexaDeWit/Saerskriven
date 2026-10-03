@@ -15,6 +15,7 @@ import {
   emptyLayout,
   insideBounds,
   selectionBounds,
+  selectionPosition,
 } from './layout.js';
 
 const start = initialState(canvasModel);
@@ -71,6 +72,18 @@ describe('selectionBounds', () => {
     expect(bounds.x).toBeLessThanOrEqual(0);
     expect(bounds.x + bounds.width).toBeGreaterThanOrEqual(420);
     expect(bounds.y + bounds.height).toBeLessThan(note?.position.y ?? 0);
+  });
+});
+
+describe('selectionPosition', () => {
+  it('takes the least x and the least y among the selected elements', () => {
+    expect(
+      selectionPosition(currentLayout(start), [processElement, noteElement]),
+    ).toEqual({ x: 0, y: 0 });
+  });
+
+  it('gives nothing while no element is selected', () => {
+    expect(selectionPosition(currentLayout(start), [])).toBeUndefined();
   });
 });
 

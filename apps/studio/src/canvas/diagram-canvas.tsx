@@ -50,6 +50,11 @@ import { FlowBendControls } from './flow-bend-controls.js';
 import { useGroupDrag } from './group-drag.js';
 import { useLiveEdges } from './live-edges.js';
 import {
+  KeyboardMoveMessage,
+  preMoveMessage,
+  type KeyboardMoveReport,
+} from './move-message.js';
+import {
   diagramGraph,
   elementIds,
   nodesById,
@@ -124,8 +129,7 @@ function useCanvasKeyboardText(): CanvasKeyboardText {
       a11y: {
         'node.a11yDescription.default': nodeText,
         'node.a11yDescription.keyboardDisabled': nodeText,
-        'node.a11yDescription.ariaLiveMessage': ({ x, y }) =>
-          t('canvas.node-moved', { x, y }),
+        'node.a11yDescription.ariaLiveMessage': preMoveMessage,
         'edge.a11yDescription.default': sentences(flowText, commandText),
         'controls.ariaLabel': t('canvas.flow-controls'),
         'controls.zoomIn.ariaLabel': t('commands.label-zoom-in'),
@@ -206,7 +210,10 @@ export function DiagramCanvas({
     placement.pointerDown(event);
   };
 
+  const keyboardMove = useRef<KeyboardMoveReport>(null);
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    keyboardMove.current?.(event);
     if (
       keyboardOwner(event.target) !== 'page' ||
       commandFor(event, hostPlatform)?.id !== 'delete'
@@ -405,6 +412,7 @@ export function DiagramCanvas({
         <FlowBendControls bends={bends} />
         <CurvePointControls points={points} />
         <FitOnOpen />
+        <KeyboardMoveMessage ref={keyboardMove} />
         <ZoomCluster />
       </ReactFlow>
       <SelectionControls />
