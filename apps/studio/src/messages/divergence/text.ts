@@ -77,8 +77,9 @@ export const openSections = ['converted', 'not-shown'] as const;
 /**
  * One heading of an open report. `converted`: the model holds the value in
  * another form or another place than the file had it, so a person finds it
- * in the studio. `not-shown`: the model has no place for the value, or holds
- * it less exactly with nothing in the model saying so.
+ * in the studio. A kind that converts and also loses falls here where the
+ * value can still be found. `not-shown`: the model has no place for the
+ * value, or holds it less exactly with nothing in the model saying so.
  */
 export type OpenSection = (typeof openSections)[number];
 
