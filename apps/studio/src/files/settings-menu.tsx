@@ -17,16 +17,15 @@ export function AppearanceMenu({
 }) {
   const { t } = useTranslator();
   const heading = t('menu.appearance');
-  const chosen = t(colourModeMessages[mode]);
 
   return (
     <Submenu
-      label={t('menu.appearance-chosen', { mode: chosen })}
+      label={t(`menu.appearance-${mode}`)}
       trigger={
         <>
           <span>{heading}</span>
           <span aria-hidden="true" className={styles.chord}>
-            {chosen}
+            {t(colourModeMessages[mode])}
           </span>
         </>
       }

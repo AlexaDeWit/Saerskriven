@@ -1,11 +1,12 @@
 import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
-import type { Model } from '@saerskriven/model';
+import type { Model, Severity } from '@saerskriven/model';
 import {
   canvasModel,
   flaggedCanvasModel,
   probeFlow,
   requestFlow,
 } from './canvas.fixtures.js';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { activeTranslator } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { accessibleNames, nameFieldLabel } from './names.js';
@@ -27,8 +28,21 @@ const withoutNodes = (from: CanvasLayout): CanvasLayout => ({
   nodes: [],
 });
 
-const namedIn = (model: Model, id: string): string | undefined =>
-  accessibleNames(layoutDiagram(model.diagrams[0], model), model, t).get(id);
+const namedIn = (
+  model: Model,
+  id: string,
+  speak: StudioTranslator['t'] = t,
+): string | undefined =>
+  accessibleNames(layoutDiagram(model.diagrams[0], model), model, speak).get(
+    id,
+  );
+
+const assessed = ['low', 'medium', 'high', 'critical'] as const;
+
+const assessedAt = (severity: Severity): Model => ({
+  ...canvasModel,
+  threats: canvasModel.threats.map((threat) => ({ ...threat, severity })),
+});
 
 describe('accessibleNames', () => {
   it('names an element by what it is called and what kind it is', () => {
@@ -37,9 +51,52 @@ describe('accessibleNames', () => {
 
   it('says what an element badge shows, which no glyph says to a reader', () => {
     expect(names.get(actorElement)).toBe(
-      'Reader, actor, 1 open threat, highest severity Medium',
+      'Reader, actor, 1 open threat, highest severity medium',
     );
   });
+
+  it.each([
+    [
+      'en-CA',
+      [
+        'highest severity low',
+        'highest severity medium',
+        'highest severity high',
+        'highest severity critical',
+      ],
+    ],
+    [
+      'fr-CA',
+      [
+        'gravité maximale faible',
+        'gravité maximale moyenne',
+        'gravité maximale élevée',
+        'gravité maximale critique',
+      ],
+    ],
+    [
+      'sv',
+      [
+        'högsta allvarlighetsgrad låg',
+        'högsta allvarlighetsgrad medel',
+        'högsta allvarlighetsgrad hög',
+        'högsta allvarlighetsgrad kritisk',
+      ],
+    ],
+  ] as const)(
+    'says the highest severity of a badge in %s as one phrase, the severity written as it reads inside it',
+    (locale, phrases) => {
+      const speak = inLocale(locale);
+
+      expect(
+        assessed.map((severity) =>
+          namedIn(assessedAt(severity), actorElement, speak)
+            ?.split(', ')
+            .at(-1),
+        ),
+      ).toEqual(phrases);
+    },
+  );
 
   it('says an undecided badge is unassessed rather than naming a severity', () => {
     expect(names.get(requestFlow)).toContain('severity not assessed');
@@ -55,7 +112,7 @@ describe('accessibleNames', () => {
       'threat-tampering': { invalidated: true },
     });
     expect(namedIn(model, actorElement)).toBe(
-      'Reader, actor, 1 open threat, highest severity Medium, Rests on an invalidated assumption',
+      'Reader, actor, 1 open threat, highest severity medium, Rests on an invalidated assumption',
     );
   });
 
@@ -66,7 +123,7 @@ describe('accessibleNames', () => {
       'threat-tampering': { elements: [requestFlow], invalidated: true },
     });
     expect(namedIn(model, requestFlow)).toBe(
-      'Opens a model, flow, from Reader to Studio, 2 open threats, highest severity Medium, Mitigated without implemented work, Rests on an invalidated assumption',
+      'Opens a model, flow, from Reader to Studio, 2 open threats, highest severity medium, Mitigated without implemented work, Rests on an invalidated assumption',
     );
   });
 

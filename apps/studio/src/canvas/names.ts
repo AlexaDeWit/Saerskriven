@@ -22,7 +22,6 @@ import {
   articleKindMessages,
   flagMessages,
   kindMessages,
-  severityMessages,
 } from '../messages/enum-labels.js';
 import { useLanguage } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
@@ -231,9 +230,7 @@ function badgeWords(
     t('tools.open-threats', { count: badge.count }),
     badge.severity === 'undecided'
       ? t('tools.severity-not-assessed')
-      : t('tools.highest-severity', {
-          severity: t(severityMessages[badge.severity]),
-        }),
+      : t(`tools.highest-severity-${badge.severity}`),
   ];
 }
 

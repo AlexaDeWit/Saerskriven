@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DropdownMenu } from 'radix-ui';
 import type { ReactNode } from 'react';
-import { chooseLanguage } from '../messages/locale.js';
-import type { ColourMode } from '../theme-preference.js';
+import { withLanguage } from '../messages/locale.fixtures.js';
+import { colourModes, type ColourMode } from '../theme-preference.js';
 import { AppearanceMenu, LanguageMenu } from './settings-menu.js';
 
 type User = ReturnType<typeof userEvent.setup>;
@@ -25,12 +25,9 @@ const openSubmenu = async (user: User, name: RegExp): Promise<void> => {
 const choice = (name: string): HTMLElement =>
   screen.getByRole('menuitemradio', { name });
 
-afterEach(() => {
-  chooseLanguage('en-CA');
-  globalThis.localStorage.clear();
-});
-
 describe('the language submenu', () => {
+  withLanguage('en-CA');
+
   it('lists exactly the three supported locales, each in its own language', async () => {
     const user = userEvent.setup();
     openPanel(<LanguageMenu />);
@@ -69,5 +66,45 @@ describe('the appearance submenu', () => {
     await user.click(choice('Dark'));
 
     expect(chosen).toHaveBeenCalledWith('dark');
+  });
+
+  describe.each([
+    [
+      'en-CA',
+      {
+        system: 'Appearance system',
+        light: 'Appearance light',
+        dark: 'Appearance dark',
+      },
+    ],
+    [
+      'fr-CA',
+      {
+        system: 'Apparence du système',
+        light: 'Apparence claire',
+        dark: 'Apparence sombre',
+      },
+    ],
+    [
+      'sv',
+      {
+        system: 'Utseende enligt systemet',
+        light: 'Utseende ljust',
+        dark: 'Utseende mörkt',
+      },
+    ],
+  ] as const)('in %s', (locale, names) => {
+    withLanguage(locale);
+
+    it.each(colourModes)(
+      'names its row as one phrase with the %s mode chosen, the mode written as it reads inside it',
+      (mode) => {
+        openPanel(<AppearanceMenu mode={mode} />);
+
+        expect(
+          screen.getByRole('menuitem', { name: names[mode] }),
+        ).toBeDefined();
+      },
+    );
   });
 });

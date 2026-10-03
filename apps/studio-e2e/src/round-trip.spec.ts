@@ -67,7 +67,7 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
   await chooseInPanel(page, 'Severity', 'Critical');
 
   await expect(archive).toHaveAccessibleName(
-    'Paper archive, store, 1 open threat, highest severity Critical',
+    'Paper archive, store, 1 open threat, highest severity critical',
   );
   await expect(archive.locator(`.${canvasClassNames.badgeMark}`)).toHaveText(
     'C',

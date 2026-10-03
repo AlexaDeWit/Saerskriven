@@ -98,6 +98,14 @@ contenu 2_, _Innehållet objekt 2_) does, while the list's heading stays
 plural. Each language sets the number where its phrase takes it:
 `fields.item-of-crossing-flows` is _Flux 2 qui la franchit_.
 
+A value named inside a phrase takes a message per value too. The
+value's own label opens with a capital and stands in the form its list takes,
+so the phrase holds the word as it reads there: `menu.appearance-light`
+(_Appearance light_, _Apparence claire_, _Utseende ljust_) agrees with the
+noun before it, and `tools.highest-severity-high` (_highest severity high_,
+_gravité maximale élevée_, _högsta allvarlighetsgrad hög_) keeps the word
+`terms` gives that severity.
+
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`
 adds beside them. `parseIssueLine` places either at its path. OTM and TM-BOM

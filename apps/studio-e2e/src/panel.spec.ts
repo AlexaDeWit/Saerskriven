@@ -473,7 +473,7 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
   await expect(
     nodeNamed(
       page,
-      'Web shop, process, 1 open threat, highest severity Critical',
+      'Web shop, process, 1 open threat, highest severity critical',
     ),
   ).toBeVisible();
   await expect(webShop.locator(`.${canvasClassNames.badgeMark}`)).toHaveText(
@@ -488,7 +488,7 @@ test('a status chosen in the panel takes the threat out of the count the canvas 
   await openTwoDiagrams(page);
   const shopper = await selectNode(page, storefront.shopper);
   await expect(shopper).toHaveAccessibleName(
-    /1 open threat, highest severity High/u,
+    /1 open threat, highest severity high/u,
   );
 
   await threatSummary(page, storefront.takeover).click();
@@ -620,7 +620,7 @@ test('every field of a threat is reachable and editable from the keyboard, add a
 
   await expect(threatSummary(page, /Queue poisoning/u)).toBeVisible();
   await expect(printer).toHaveAccessibleName(
-    /1 open threat, highest severity Critical/u,
+    /1 open threat, highest severity critical/u,
   );
 
   await runFromMenu(page, 'Undo');
@@ -698,7 +698,7 @@ test('collapsed summaries expose severity and status without an empty content st
     /Severity: High.*Status: Mitigated/u,
   );
   await expect(nodeNamed(page, placeholder.actor)).toHaveAccessibleName(
-    /1 open threat, highest severity Medium/u,
+    /1 open threat, highest severity medium/u,
   );
   await page.keyboard.press('Tab');
   expect(
