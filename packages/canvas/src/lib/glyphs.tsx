@@ -2,10 +2,11 @@ import type { Size } from '@saerskriven/model';
 import type { CSSProperties, ReactElement } from 'react';
 import { badgeAnchor, ThreatBadgeGlyph, type BadgeMarks } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
+import type { Box } from './geometry.js';
 import { WrappedText } from './labels.js';
 import type { CanvasEdge, CanvasNode, CanvasNodeKind } from './layout.js';
 import { svgNumber } from './numbers.js';
-import { processEllipse } from './obstacles.js';
+import { noteFrame, processEllipse } from './obstacles.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
 import { canvasClassNames } from './stylesheet.js';
 import { nodeTextPlacement } from './text-placement.js';
@@ -62,11 +63,12 @@ export function BoxElementGlyph({
 /**
  * One element's glyph in the element's own coordinates, its origin at the
  * element's position: its outline, its run of text, and its badge, in that
- * order. React Flow places a node itself; the headless render places it with
- * {@link PlacedElementGlyph}. `textVisible` false leaves the run of text out,
- * for a canvas with an editor open where that text is drawn. `badgeVisible`
- * false leaves the badge out, for a canvas that draws it in a layer of its own.
- * `marks` are the letters the badge draws.
+ * order. A note has no outline, and draws a frame outside its box while it
+ * is out of scope. React Flow places a node itself, and the headless render
+ * places it with {@link PlacedElementGlyph}. `textVisible` false leaves the
+ * run of text out, for a canvas with an editor open where that text is drawn.
+ * `badgeVisible` false leaves the badge out, for a canvas that draws it in a
+ * layer of its own. `marks` are the letters the badge draws.
  */
 export function ElementGlyph({
   badgeVisible = true,
@@ -146,15 +148,9 @@ export function FlowGlyph({
           d={arrowheadPath(edge.source, points[1])}
         />
       ) : null}
-      {edge.label.backing === undefined ? null : (
-        <rect
-          className={canvasClassNames.flowBacking}
-          x={svgNumber(edge.label.backing.minX)}
-          y={svgNumber(edge.label.backing.minY)}
-          width={svgNumber(edge.label.backing.maxX - edge.label.backing.minX)}
-          height={svgNumber(edge.label.backing.maxY - edge.label.backing.minY)}
-        />
-      )}
+      {edge.label.backing === undefined
+        ? null
+        : rectOfBox(canvasClassNames.flowBacking, edge.label.backing)}
       {edge.badge === undefined || edge.label.badge === undefined ? null : (
         <ThreatBadgeGlyph
           badge={edge.badge}
@@ -181,8 +177,24 @@ function outlineOf(node: CanvasNode): ReactElement | null {
   if (node.kind === 'boundary-curve') {
     return boundaryCurveOutline(node);
   }
-  return node.kind === 'text' ? null : (
-    <BoxElementGlyph kind={node.kind} size={node.size} />
+  if (node.kind === 'text') {
+    const frame = noteFrame(node, { x: 0, y: 0 });
+    return frame === undefined
+      ? null
+      : rectOfBox(shapeClass(canvasClassNames.noteFrame), frame);
+  }
+  return <BoxElementGlyph kind={node.kind} size={node.size} />;
+}
+
+function rectOfBox(className: string, box: Box): ReactElement {
+  return (
+    <rect
+      className={className}
+      x={svgNumber(box.minX)}
+      y={svgNumber(box.minY)}
+      width={svgNumber(box.maxX - box.minX)}
+      height={svgNumber(box.maxY - box.minY)}
+    />
   );
 }
 

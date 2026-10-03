@@ -1,8 +1,12 @@
+import type { Point } from '@saerskriven/model';
 import { elementId } from '@saerskriven/model/fixtures';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { badgeExtent, type ThreatBadge } from './badges.js';
 import { edgeNamed, nodeNamed, specMarks } from './canvas.fixtures.js';
+import { flowLabelPlacements } from './flow-labels.js';
+import { segmentMeetsBox, type Box } from './geometry.js';
 import {
   boxElementStrokeInsets,
   BoxElementGlyph,
@@ -16,17 +20,13 @@ import {
   canvasClassNames,
   wrappedTextStyles,
 } from './stylesheet.js';
-import { badgeExtent, type ThreatBadge } from './badges.js';
-import type { Point } from '@saerskriven/model';
-import { segmentMeetsBox, type Box } from './geometry.js';
-import { flowLabelPlacements } from './flow-labels.js';
+import { noteFrameOffset, strokeWidths } from './tokens.js';
 import { looseLabelWidth, textExtent } from './typography.js';
-import { strokeWidths } from './tokens.js';
 
-const glyphOf = (value: string): string =>
-  renderToStaticMarkup(
-    <ElementGlyph marks={specMarks} node={nodeNamed(value)} />,
-  );
+const drawn = (node: CanvasNode): string =>
+  renderToStaticMarkup(<ElementGlyph marks={specMarks} node={node} />);
+
+const glyphOf = (value: string): string => drawn(nodeNamed(value));
 
 const packageSource = join(import.meta.dirname, '..');
 
@@ -110,6 +110,17 @@ describe('ElementGlyph, taking its extent from the model', () => {
     expect(markup).not.toContain(canvasClassNames.shape);
   });
 
+  it('frames a note outside its box while it is out of scope, and not once it is in scope', () => {
+    const note = nodeNamed('el-scope-note');
+    expect(drawn(note)).toContain(
+      `<rect class="${canvasClassNames.shape} ${canvasClassNames.noteFrame}" ` +
+        `x="${-noteFrameOffset}" y="${-noteFrameOffset}" ` +
+        `width="${note.size.width + noteFrameOffset * 2}" ` +
+        `height="${note.size.height + noteFrameOffset * 2}"`,
+    );
+    expect(drawn({ ...note, outOfScope: false })).not.toContain('<rect');
+  });
+
   it('draws a box boundary as a rectangle of the shape width and height', () => {
     const node = nodeNamed('el-zone');
     expect(glyphOf('el-zone')).toContain(
@@ -149,12 +160,8 @@ describe('ElementGlyph, taking its extent from the model', () => {
   });
 
   it('follows the model when a size changes', () => {
-    const widened: CanvasNode = {
-      ...nodeNamed('el-client'),
-      size: { width: 999, height: 111 },
-    };
     expect(
-      renderToStaticMarkup(<ElementGlyph marks={specMarks} node={widened} />),
+      drawn({ ...nodeNamed('el-client'), size: { width: 999, height: 111 } }),
     ).toContain('width="999" height="111"');
   });
 });
