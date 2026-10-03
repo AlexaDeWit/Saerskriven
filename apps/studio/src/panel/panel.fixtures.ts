@@ -5,6 +5,7 @@ import { createElement } from 'react';
 import { Accordion } from 'radix-ui';
 import { recordedModel, sampleThreat } from '../store/store.fixtures.js';
 import { noop } from '../ui/ui.fixtures.js';
+import { marked } from './marked.js';
 import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
 
 /**
@@ -31,6 +32,14 @@ export const chooseFrom = async (
   await user.click(screen.getByRole('combobox', { name: field }));
   await user.click(screen.getByRole('option', { name: option }));
 };
+
+/** The ids of the threats listed under `root`, in the order the list shows them. */
+export const listedThreats = (
+  root: HTMLElement,
+): readonly (string | undefined)[] =>
+  [...root.querySelectorAll<HTMLElement>(marked.threatItem)].map(
+    (item) => item.dataset['threatItem'],
+  );
 
 /**
  * A threat {@link recordedModel} holds, the first where it holds no such id,

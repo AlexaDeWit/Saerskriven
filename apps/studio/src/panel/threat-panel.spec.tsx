@@ -27,7 +27,7 @@ import {
   undoable,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { chooseFrom, editorTimeout } from './panel.fixtures.js';
+import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
 import type { HeldDraft } from './threat-list.js';
 import { ThreatPanel, type ThreatPanelProps } from './threat-panel.js';
 import {
@@ -125,12 +125,8 @@ const withReviewedThreats = (): void => {
   );
 };
 
-const listedThreats = (): readonly (string | undefined)[] =>
-  [
-    ...screen
-      .getByTestId('threat-panel')
-      .querySelectorAll<HTMLElement>('[data-threat-item]'),
-  ].map((item) => item.dataset['threatItem']);
+const listed = (): readonly (string | undefined)[] =>
+  listedThreats(screen.getByTestId('threat-panel'));
 
 const addThreat = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(addControl());
@@ -274,7 +270,7 @@ describe(
       await user.click(button('Detach Reader'));
 
       expect(present().threats[0].elements).toEqual([processElement]);
-      expect(listedThreats()).toEqual([]);
+      expect(listed()).toEqual([]);
       expect(document.activeElement).toBe(addControl());
     });
 
@@ -401,7 +397,7 @@ describe(
       withReviewedThreats();
       showPanel(actorElement);
 
-      expect(listedThreats()).toEqual([
+      expect(listed()).toEqual([
         'threat-open-critical',
         'threat-open-low',
         'threat-accepted-critical',
@@ -413,7 +409,7 @@ describe(
       const user = userEvent.setup();
       withReviewedThreats();
       showPanel(actorElement);
-      const shown = listedThreats();
+      const shown = listed();
 
       act(() => {
         dispatch(
@@ -424,10 +420,10 @@ describe(
       });
       await addThreat(user);
 
-      expect(listedThreats()).toEqual([...shown, present().threats.at(-1)?.id]);
+      expect(listed()).toEqual([...shown, present().threats.at(-1)?.id]);
       cleanup();
       showPanel(actorElement);
-      expect(listedThreats().slice(0, 2)).toEqual([
+      expect(listed().slice(0, 2)).toEqual([
         'threat-open-critical',
         'threat-mitigated-high',
       ]);
