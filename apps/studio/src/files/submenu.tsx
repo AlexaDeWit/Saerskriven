@@ -11,6 +11,7 @@ import {
   type RefObject,
 } from 'react';
 import { panelPlacement } from './menu-items.js';
+import cursor from '../ui/cursor-row.module.css';
 import styles from './menu.module.css';
 
 /** The element a {@link Submenu} lines its start edge up with: row one of the chrome card, on screen at every width. */
@@ -96,7 +97,7 @@ export function Submenu({ children, label, trigger }: SubmenuProps) {
     <DropdownMenu.Sub>
       <DropdownMenu.SubTrigger
         aria-label={label}
-        className={styles.item}
+        className={`${styles.item} ${cursor.row}`}
         onPointerLeave={(event) => {
           if (entersSubmenu(event, content.current)) {
             event.preventDefault();

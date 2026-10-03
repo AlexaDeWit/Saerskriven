@@ -91,16 +91,6 @@
   user-select: none;
 }
 
-.item[data-highlighted] {
-  background: var(--saer-colour-accent);
-  color: var(--saer-colour-accent-text);
-}
-
-.item[data-highlighted]:focus-visible {
-  outline: var(--saer-focus-ring-width) solid var(--saer-colour-accent-text);
-  outline-offset: calc(-1 * var(--saer-focus-ring-offset));
-}
-
 .announcement:empty {
   border: 0;
   padding: 0;

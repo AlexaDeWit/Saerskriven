@@ -147,24 +147,11 @@
   user-select: none;
 }
 
-/* Radix reports the pointer or keyboard cursor through `data-highlighted` and
-   an item it will not run through `data-disabled`, which is where a state is
-   styled from rather than a class the component would have to keep in step. */
-.item[data-highlighted] {
-  background: var(--saer-colour-accent);
-  color: var(--saer-colour-accent-text);
-}
-
+/* Radix reports an item it will not run through `data-disabled`, which is
+   where the state is styled from rather than a class the component would
+   have to keep in step. */
 .item[data-disabled] {
   color: var(--saer-colour-text-muted);
-}
-
-/* Radix puts real DOM focus on the highlighted item, so the app's focus
-   indicator belongs here too, in the colour the item draws its text in: the
-   accent the ring token carries is the background it would be drawn on. */
-.item[data-highlighted]:focus-visible {
-  outline: var(--saer-focus-ring-width) solid var(--saer-colour-accent-text);
-  outline-offset: calc(-1 * var(--saer-focus-ring-offset));
 }
 
 .chord {
@@ -185,10 +172,6 @@
 .radioMark {
   width: 1rem;
   color: inherit;
-}
-
-.item[data-highlighted] .chord {
-  color: var(--saer-colour-accent-text);
 }
 
 .externalLink {
