@@ -1,5 +1,6 @@
 import { focusCanvas } from '../canvas/edits.js';
 import { externalStore } from '../ui/external-store.js';
+import { handlerSlot } from '../ui/handler-slot.js';
 import { focusModelPanel } from './panel-focus.js';
 
 let open = false;
@@ -8,7 +9,7 @@ let opener: HTMLElement | undefined;
 
 let focusRequested = false;
 
-let take: (() => void) | undefined;
+const registerFocus = handlerSlot<() => void>();
 
 const registerStore = externalStore(() => open);
 
@@ -18,7 +19,7 @@ const registerStore = externalStore(() => open);
  */
 export function openThreatRegister(): void {
   if (open) {
-    take?.();
+    registerFocus.current()?.();
     return;
   }
   const active = document.activeElement;
@@ -63,16 +64,12 @@ export function leaveThreatRegister(): void {
  * mounting, focus moves there at once.
  */
 export function registerFocusHandler(handler: () => void): () => void {
-  take = handler;
+  const release = registerFocus.register(handler);
   if (focusRequested) {
     focusRequested = false;
     handler();
   }
-  return () => {
-    if (take === handler) {
-      take = undefined;
-    }
-  };
+  return release;
 }
 
 /** Subscribes a component to whether the register is open. */
@@ -82,7 +79,6 @@ export function useThreatRegisterOpen(): boolean {
 
 /** Closes the register and forgets its opener, which is how a spec starts from rest. */
 export function resetThreatRegister(): void {
-  take = undefined;
   leaveThreatRegister();
 }
 

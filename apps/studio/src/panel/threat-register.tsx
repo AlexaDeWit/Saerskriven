@@ -1,21 +1,10 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
 import type { ElementId, Threat, ThreatId } from '@saerskriven/model';
-import {
-  Fragment,
-  memo,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react';
+import { Fragment, memo, useEffect, useId, useRef, useState } from 'react';
 import { announce } from '../canvas/announcements.js';
 import { revealElement } from '../canvas/diagrams.js';
-import { keyboardOwner } from '../commands/binding.js';
-import {
-  describeContextualShortcuts,
-  pressesContextualShortcut,
-} from '../commands/contextual-shortcuts.js';
+import { closingOn } from '../commands/binding.js';
+import { describeContextualShortcuts } from '../commands/contextual-shortcuts.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
@@ -145,7 +134,9 @@ function Register({ cover }: { readonly cover: number }) {
                 <th className={styles.titleColumn} scope="col">
                   {t('fields.title')}
                 </th>
-                <th scope="col">{t('panel.register-elements')}</th>
+                <th className={styles.elementsColumn} scope="col">
+                  {t('panel.register-elements')}
+                </th>
                 <th scope="col">{t('fields.severity')}</th>
                 <th scope="col">{t('fields.status')}</th>
               </tr>
@@ -175,16 +166,7 @@ function followElement(elementId: ElementId): void {
   revealElement(elementId);
 }
 
-function closeOnEscape(event: KeyboardEvent<HTMLElement>): void {
-  if (
-    !pressesContextualShortcut('close-threat-register', event, hostPlatform) ||
-    keyboardOwner(event.target) === 'overlay'
-  ) {
-    return;
-  }
-  event.preventDefault();
-  closeThreatRegister();
-}
+const closeOnEscape = closingOn('close-threat-register', closeThreatRegister);
 
 function RegisterRow({
   threat,
@@ -214,7 +196,10 @@ function RegisterRow({
         <button
           aria-current={chosen ? 'true' : undefined}
           className={styles.choose}
-          onClick={onChoose}
+          onClick={(event) => {
+            event.currentTarget.focus();
+            onChoose();
+          }}
           type="button"
         >
           {threat.title === '' ? (

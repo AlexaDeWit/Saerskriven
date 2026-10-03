@@ -5,8 +5,11 @@ import {
   diagramSwitcher,
   editAnnouncement,
   nodeNamed,
+  openFallback,
   openTwoDiagrams,
+  placeholder,
   runFromMenu,
+  selectByKeyboard,
   selectNode,
   showDetails,
   storefront,
@@ -120,6 +123,44 @@ test("the menu opens the register, and an element's name closes it and selects t
   await expect(
     threatPanel(page).getByRole('heading', { name: 'Courier', exact: true }),
   ).toBeVisible();
+});
+
+test("a flow's card under the register is off the Tab path, and Change flow source closes the register to open its card", async ({
+  page,
+}) => {
+  await openFallback(page);
+  await selectByKeyboard(page, placeholder.records);
+  const card = page.getByRole('region', { name: 'Reconnect flow' });
+  await expect(card).toBeVisible();
+
+  await pressR(page);
+  await expect(register(page)).toBeVisible();
+  await page.keyboard.press('Shift+Tab');
+  await expect(
+    register(page).getByRole('button', {
+      name: 'Close threat register',
+      exact: true,
+    }),
+  ).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  expect(
+    await card.evaluate((section) => section.contains(document.activeElement)),
+  ).toBe(false);
+
+  await pressR(page);
+  await page.keyboard.press(registeredChords['reconnect-source'][0]);
+
+  await expect(register(page)).toHaveCount(0);
+  const endpoint = page.getByRole('region', {
+    name: 'Flow endpoint',
+    exact: true,
+  });
+  await expect(endpoint).toBeVisible();
+  await expect
+    .poll(() =>
+      endpoint.evaluate((section) => section.contains(document.activeElement)),
+    )
+    .toBe(true);
 });
 
 test('R typed into a field stays in the field', async ({ page }) => {

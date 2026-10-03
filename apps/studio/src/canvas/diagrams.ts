@@ -39,8 +39,7 @@ export function showDiagram(diagramId: DiagramId): boolean {
   if (shown === undefined) {
     return false;
   }
-  const title = excerpt(shown.title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-shown', { title }));
+  sayShown(shown);
   return true;
 }
 
@@ -62,8 +61,7 @@ export function revealElement(elementId: ElementId): boolean {
   dispatch(Action.Select({ elementIds: [elementId] }));
   focusElement(elementId);
   if (shown !== undefined) {
-    const title = excerpt(shown.title, nameQuoteLength);
-    announce((t) => t('canvas.diagram-shown', { title }));
+    sayShown(shown);
   }
   return true;
 }
@@ -144,6 +142,11 @@ export function useDiagramRenaming(): DiagramId | undefined {
 /** Puts the switcher back to its button, for specs. */
 export function resetDiagramRenaming(): void {
   setRenaming(undefined);
+}
+
+function sayShown(diagram: Diagram): void {
+  const title = excerpt(diagram.title, nameQuoteLength);
+  announce((t) => t('canvas.diagram-shown', { title }));
 }
 
 function setRenaming(next: DiagramId | undefined): void {

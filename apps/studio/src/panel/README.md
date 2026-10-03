@@ -51,12 +51,13 @@ refusal.
 Focus is sent through `panel-focus.ts`, a channel of its own rather than a
 field of the store, because focus belongs in neither the model nor its undo
 stacks. Focus threats, the M command, the threat register, and undo and redo
-use it. Each list has a
-home control, "Add a threat" on an element and the Threats tab on the model,
-which has no add of its own. M focuses the model's. An undo that takes away the
-threat holding focus sends focus home, a redo there sends it back to the
-restored title, and anywhere else focus stays where it is. A deleted threat's
-focus goes home too where no threat is left to take it.
+use it, each through a `handlerSlot` (`../ui/handler-slot.ts`) the mounted
+panel registers with. Each list has a home control, "Add a threat" on an
+element and the Threats tab on the model, which has no add of its own. M
+focuses the model's. An undo that takes away the threat holding focus sends
+focus home, a redo there sends it back to the restored title, and anywhere
+else focus stays where it is. A deleted threat's focus goes home too where no
+threat is left to take it.
 
 The pane claims the first Escape, closing and returning focus to the element,
 so one press never also clears the selection. An open listbox inside the pane
@@ -87,11 +88,16 @@ while none is open, so it ends where the panel begins. It is a module store of
 its own rather than a field of the model store, as the target chooser is: it
 is per tab and never part of the file, the undo stacks or the recovery
 snapshot. It is a region with a table rather than a dialog or a grid. Each row
-is chosen through its title's button, whose box reaches over the whole row,
-and each element name is a button of its own, so every control is on the Tab
-path and a screen reader reads the table by its column headers. The severity
-and status in a cell drop the field name the summary speaks, which the column
-header already gives.
+is chosen through its title's button, whose box reaches over the title's
+cell, and each element name is a button of its own, so every control is on
+the Tab path and a screen reader reads the table by its column headers. The
+reach and the chosen row's ring hang from the cells, since a table row is no
+containing block in Safari 26.5 and earlier. The severity and status in a
+cell drop the field name the summary speaks, which the column header already
+gives.
+
+The register draws over the selection cards, so the canvas holds them inert
+while it is open, and a card a command opens closes the register first.
 
 A chosen row reaches the model panel's list through `openInModelPanel` in
 `panel-focus.ts`. Where the model panel shows, its list opens the threat at

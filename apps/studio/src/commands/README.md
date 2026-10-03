@@ -123,6 +123,10 @@ wherever a person is. Three rules decide whether a press is the studio's:
   and clears the selection ([the panel](../panel/README.md)). A refused draft
   outlives both presses.
 
+A pane that closes on a contextual key, such as the threat panel or the
+threat register on Escape, takes its key handler from `closingOn`, which
+claims the press unless an open overlay inside the pane is handling it.
+
 A press that is the studio's is claimed from the browser, so a chord the
 studio advertises does nothing else instead. A command with `available` is the
 studio's only then: the diagram steps claim PageUp and PageDown while the model

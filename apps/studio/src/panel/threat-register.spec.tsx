@@ -1,6 +1,13 @@
 import type { Model, Threat } from '@saerskriven/model';
-import { threatId } from '@saerskriven/model/fixtures';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { softHyphen, threatId } from '@saerskriven/model/fixtures';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   currentAnnouncement,
@@ -8,6 +15,7 @@ import {
 } from '../canvas/announcements.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
 import { commandById, runCommand } from '../commands/registry.js';
+import { severityMessages, statusMessages } from '../messages/enum-labels.js';
 import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { activeDiagramId } from '../store/selectors.js';
@@ -21,8 +29,8 @@ import {
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { detailsTab, numbersIn, threatsTab } from '../ui/ui.fixtures.js';
-import { marked, markedWithin } from './marked.js';
-import { editorTimeout } from './panel.fixtures.js';
+import { markedWithin } from './marked.js';
+import { editorTimeout, listedThreats } from './panel.fixtures.js';
 import { ThreatOverlay } from './threat-overlay.js';
 import panelStyles from './threat-panel.module.css';
 import { resetThreatRegister } from './threat-register-state.js';
@@ -79,12 +87,30 @@ const chooser = (id: Threat['id']): HTMLElement =>
   within(rowOf(id)).getAllByRole('button')[0];
 
 const listedRows = (): readonly (string | undefined)[] =>
-  [...register().querySelectorAll<HTMLElement>(marked.registerRow)].map(
-    (row) => row.dataset['registerRow'],
-  );
+  listedThreats(register(), 'registerRow');
 
 const modelSummary = (title: RegExp): HTMLElement =>
   within(modelPanel()).getByRole('button', { name: title });
+
+const refuseADraft = async (
+  user: ReturnType<typeof userEvent.setup>,
+): Promise<HTMLElement> => {
+  const description = within(modelPanel()).getByRole('textbox', {
+    name: 'Description',
+  });
+  await user.click(description);
+  await user.keyboard(`Pasted${softHyphen}prose`);
+  await user.click(screen.getByRole('button', { name: 'Opener' }));
+  expect(description.getAttribute('aria-invalid')).toBe('true');
+  resetAnnouncements();
+  return description;
+};
+
+const hideModelPanel = (): void => {
+  act(() => {
+    dispatch(Action.HideModelPanel());
+  });
+};
 
 const showStudio = (): void => {
   render(
@@ -353,6 +379,103 @@ describe(
       expect(
         numbersIn(within(register()).getByRole('heading').textContent),
       ).toEqual([4]);
+    });
+
+    it('takes focus to a chosen row on a click, which Safari and Firefox leave unfocused', () => {
+      showStudio();
+      openRegister();
+
+      fireEvent.click(chooser(mitigatedThreat));
+
+      expect(document.activeElement).toBe(chooser(mitigatedThreat));
+    });
+
+    it('reads a severity and a status as their values alone, under the headers that name them', () => {
+      const { t } = activeTranslator();
+      showStudio();
+      openRegister();
+
+      const cells = rowOf(looseThreat).cells;
+      expect(cells[3].textContent).toBe(t(severityMessages.high));
+      expect(cells[4].textContent).toBe(t(statusMessages.open));
+    });
+
+    it('names the row of a threat with no title by its number', () => {
+      modelStore.setState(
+        initialState({
+          ...registerModel,
+          threats: [
+            ...registerModel.threats,
+            {
+              ...base,
+              id: threatId('threat-untitled'),
+              number: 4,
+              title: '',
+            },
+          ],
+          lastIssuedThreatNumber: 4,
+        }),
+        true,
+      );
+      showStudio();
+      openRegister();
+
+      expect(within(register()).getByRole('button', { name: 'Threat 4' })).toBe(
+        chooser(threatId('threat-untitled')),
+      );
+    });
+
+    it('leaves a threat holding a refused draft open in the model panel, and the row chosen meanwhile unmarked and unannounced', async () => {
+      const user = userEvent.setup();
+      showStudio();
+      openRegister();
+      await user.click(chooser(looseThreat));
+      await refuseADraft(user);
+
+      await user.click(chooser(mitigatedThreat));
+
+      expect(
+        modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
+      ).toBe('true');
+      expect(
+        modelSummary(/A model file is read past its bounds/u).getAttribute(
+          'aria-expanded',
+        ),
+      ).toBe('false');
+      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
+      expect(currentAnnouncement().message).toBe('');
+    });
+
+    it("opens the model panel on a retained refused draft rather than a row chosen while it was hidden, and on the draft's own threat where that is the row", async () => {
+      const user = userEvent.setup();
+      showStudio();
+      openRegister();
+      await user.click(chooser(looseThreat));
+      await refuseADraft(user);
+      hideModelPanel();
+
+      await user.click(chooser(mitigatedThreat));
+
+      expect(
+        modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
+      ).toBe('true');
+      expect(
+        modelSummary(/A model file is read past its bounds/u).getAttribute(
+          'aria-expanded',
+        ),
+      ).toBe('false');
+      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
+      expect(currentAnnouncement().message).toBe('');
+
+      hideModelPanel();
+      await user.click(chooser(looseThreat));
+
+      expect(
+        within(modelPanel())
+          .getByRole('textbox', { name: 'Description' })
+          .getAttribute('aria-invalid'),
+      ).toBe('true');
+      expect(numbersIn(currentAnnouncement().message)).toEqual([2]);
     });
 
     it('says so where the model holds no threat, with focus on Close', () => {

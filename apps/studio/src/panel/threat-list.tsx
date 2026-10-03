@@ -107,11 +107,12 @@ export function ThreatList({
   const { t } = useTranslator();
   const shown = useShownOrder(inReviewOrder(threats));
   const opened = drafts.get(on);
-  const [arrival] = useState(() =>
-    element === undefined && opened === undefined
-      ? arrivingThreat()
-      : undefined,
-  );
+  const [arrival] = useState(() => {
+    const asked = element === undefined ? arrivingThreat() : undefined;
+    return opened === undefined || opened.threatId === asked?.threatId
+      ? asked
+      : undefined;
+  });
   const [expanded, setExpanded] = useState<string>(
     opened?.threatId ?? arrival?.threatId ?? '',
   );

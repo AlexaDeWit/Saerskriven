@@ -1,9 +1,13 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { holdHandTool, releaseHandTool } from '../canvas/tools.js';
+import {
+  pressesContextualShortcut,
+  type ContextualShortcutId,
+} from './contextual-shortcuts.js';
 import { commandFor, runCommand, type Command } from './registry.js';
 import type { CommandSurface } from './surface.js';
 import { modelStore } from '../store/store.js';
-import { hostPlatform, type Platform } from './shortcuts.js';
+import { hostPlatform, type ChordEvent, type Platform } from './shortcuts.js';
 
 const nothing = (): void => undefined;
 
@@ -62,6 +66,29 @@ export function keyboardOwner(target: EventTarget | null): KeyboardOwner {
     return 'overlay';
   }
   return target.closest(typingSelector) === null ? 'page' : 'typing';
+}
+
+/**
+ * The key handler of a pane that closes on the contextual shortcut
+ * `shortcut`: it claims the press and runs `close`, unless an open overlay
+ * inside the pane is handling the press.
+ */
+export function closingOn(
+  shortcut: ContextualShortcutId,
+  close: () => void,
+): (
+  event: ChordEvent & Pick<KeyboardEvent, 'target' | 'preventDefault'>,
+) => void {
+  return (event) => {
+    if (
+      !pressesContextualShortcut(shortcut, event, hostPlatform) ||
+      keyboardOwner(event.target) === 'overlay'
+    ) {
+      return;
+    }
+    event.preventDefault();
+    close();
+  };
 }
 
 /** Selects a command while respecting handled events, overlays, and text-field ownership. */

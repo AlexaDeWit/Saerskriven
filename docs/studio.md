@@ -498,12 +498,12 @@ that order while the register stays open: an edit updates its row in place
 and a new threat joins the end. A threat on no element reads "No element".
 There is no filter or search.
 
-Choosing a row, by its title or anywhere else on it, opens that threat on the
-model panel's Threats tab, landed at the top as if it were opened there, and
-shows the model panel where something else was in its place. The register
-stays open with the row marked and focus on it, and the status line says
-which threat opened. A threat holding refused text in the model panel stays
-open there, and a row chosen meanwhile is not marked.
+Choosing a row by its title opens that threat on the model panel's Threats
+tab, landed at the top as if it were opened there, and shows the model panel
+where something else was in its place. The register stays open with the row
+marked and focus on its title, and the status line says which threat opened.
+A threat holding refused text in the model panel stays open there, and
+another row chosen meanwhile is not marked.
 
 Each element name in a row selects that element, on whichever diagram draws
 it, and closes the register, with focus on the element.
@@ -512,6 +512,10 @@ Escape, or Close threat register, closes it and leaves the model panel open.
 Focus moves to the threat open in the model panel, or to its Threats tab where
 none is, and without the model panel back to where it was before the register
 opened.
+
+The register covers the cards over a selection, such as Reconnect flow, which
+Tab skips while it is open. Position and size, Change flow source and Change
+flow target close the register as they open their card.
 
 ## Keyboard
 

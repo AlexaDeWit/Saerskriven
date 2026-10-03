@@ -288,3 +288,9 @@
 .canvas :global(.react-flow__attribution) a {
   color: var(--saer-colour-text-muted);
 }
+
+/* The selection cards hang from the canvas itself, so their wrapper draws
+   no box. It goes inert while the threat register covers the cards. */
+.cards {
+  display: contents;
+}

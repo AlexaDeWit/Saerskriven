@@ -20,6 +20,7 @@ stylesheet.
 | `error-boundary.tsx`                                           | The last stop for a throw                                                                               |
 | `visually-hidden.tsx`                                          | Text for assistive technology that is not drawn                                                         |
 | `external-store.ts`                                            | The subscription helper every module-level store in the studio shares                                   |
+| `handler-slot.ts`                                              | The slot a module keeps for the one handler a mounted component lends it                                |
 | `close-focus.ts`, `measure.ts`                                 | Keeping a closed dropdown from taking focus back, and measuring an element                              |
 | `review-order.ts`                                              | The order threats are reviewed in: by status from the most risk left live, then by severity             |
 

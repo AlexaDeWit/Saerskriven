@@ -84,7 +84,7 @@
 
 .table {
   inline-size: 100%;
-  min-inline-size: 34rem;
+  min-inline-size: 42rem;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -102,7 +102,11 @@
 }
 
 .titleColumn {
-  inline-size: 40%;
+  inline-size: 36%;
+}
+
+.elementsColumn {
+  inline-size: 28%;
 }
 
 .table thead th {
@@ -115,21 +119,37 @@
   white-space: nowrap;
 }
 
-.row {
+/* Each cell is a containing block, for the title's reach and the chosen
+   ring: a table row is not one in Safari 26.5 and earlier. */
+.row > * {
   position: relative;
 }
 
-.row:hover {
+.row:hover > * {
   background: var(--saer-colour-surface);
 }
 
 /* The chosen row is the threat the model panel was last opened on from
-   here: the accent's tint, and a ring inside the row, which forced colours
-   keep where they drop the tint. */
-.row[data-chosen] {
-  outline: var(--saer-focus-ring);
-  outline-offset: calc(-1 * var(--saer-focus-ring-width));
+   here: the accent's tint, and a ring round the row drawn from its cells'
+   edges, a border that forced colours keep where they drop the tint. */
+.row[data-chosen] > * {
   background: var(--saer-colour-accent-tint);
+}
+
+.row[data-chosen] > *::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-block: var(--saer-focus-ring);
+  pointer-events: none;
+}
+
+.row[data-chosen] > :first-child::before {
+  border-inline-start: var(--saer-focus-ring);
+}
+
+.row[data-chosen] > :last-child::before {
+  border-inline-end: var(--saer-focus-ring);
 }
 
 .number {
@@ -150,8 +170,7 @@
   overflow-wrap: break-word;
 }
 
-/* The title's control reaches over the whole row, so a press anywhere on it
-   chooses the row. The element controls sit above that reach. */
+/* The title's control reaches over its whole cell. */
 .choose::after {
   content: '';
   position: absolute;
@@ -169,8 +188,6 @@
 }
 
 .link {
-  position: relative;
-  z-index: 1;
   padding: 0;
   border: 0;
   background: none;

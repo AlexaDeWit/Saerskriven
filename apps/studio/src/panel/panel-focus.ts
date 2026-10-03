@@ -2,6 +2,7 @@ import type { ThreatId } from '@saerskriven/model';
 import { focusCanvas } from '../canvas/edits.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { handlerSlot } from '../ui/handler-slot.js';
 
 /** A threat asked for on the model panel, and what to call once the list has opened it. */
 export type ThreatRequest = {
@@ -15,29 +16,22 @@ export type ModelList = {
   readonly focus: () => void;
 };
 
-let take: (() => boolean) | undefined;
+const panelFocus = handlerSlot<() => boolean>();
+
+const historyStep = handlerSlot<() => () => void>();
+
+const modelList = handlerSlot<ModelList>();
 
 let focusRequested = false;
-
-let historyStep: (() => () => void) | undefined;
-
-let modelList: ModelList | undefined;
 
 let arriving: ThreatRequest | undefined;
 
 /** Registers what moves focus into the mounted threat panel, and returns the removal. */
-export function panelFocusHandler(handler: () => boolean): () => void {
-  take = handler;
-  return () => {
-    if (take === handler) {
-      take = undefined;
-    }
-  };
-}
+export const panelFocusHandler = panelFocus.register;
 
 /** Moves focus into the threat panel, reopening it where Escape closed it, and answers whether a panel took it. */
 export function focusThreatPanel(): boolean {
-  return take?.() ?? false;
+  return panelFocus.current()?.() ?? false;
 }
 
 /**
@@ -69,14 +63,7 @@ export function takeModelPanelFocus(focusTab: () => void): void {
 }
 
 /** Registers the mounted model panel's threat list, and returns the removal. */
-export function modelListHandler(handler: ModelList): () => void {
-  modelList = handler;
-  return () => {
-    if (modelList === handler) {
-      modelList = undefined;
-    }
-  };
-}
+export const modelListHandler = modelList.register;
 
 /**
  * Opens a threat on the model panel's Threats tab, showing the panel where it
@@ -84,8 +71,9 @@ export function modelListHandler(handler: ModelList): () => void {
  * opened the threat, and never where a refused draft holds another open.
  */
 export function openInModelPanel(request: ThreatRequest): void {
-  if (modelStore.getState().modelPanel && modelList !== undefined) {
-    modelList.open(request);
+  const list = modelList.current();
+  if (modelStore.getState().modelPanel && list !== undefined) {
+    list.open(request);
     return;
   }
   arriving = request;
@@ -104,26 +92,20 @@ export function settleArrivingThreat(): void {
 
 /** Moves focus into the model panel where it shows, and answers whether it did. */
 export function focusModelPanel(): boolean {
-  if (!modelStore.getState().modelPanel || modelList === undefined) {
+  const list = modelList.current();
+  if (!modelStore.getState().modelPanel || list === undefined) {
     return false;
   }
-  modelList.focus();
+  list.focus();
   return true;
 }
 
 /** Registers the threat panel's look at focus before an undo or redo, which returns how to settle it after. Returns the removal. */
-export function historyFocusHandler(handler: () => () => void): () => void {
-  historyStep = handler;
-  return () => {
-    if (historyStep === handler) {
-      historyStep = undefined;
-    }
-  };
-}
+export const historyFocusHandler = historyStep.register;
 
 /** Runs an undo or redo step between the mounted threat panel's two looks at focus. */
 export function stepHistory(step: () => void): void {
-  const settle = historyStep?.();
+  const settle = historyStep.current()?.();
   step();
   settle?.();
 }

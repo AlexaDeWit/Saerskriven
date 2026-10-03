@@ -7,7 +7,8 @@ import {
   contextualShortcuts,
   type ContextualShortcutId,
 } from '../commands/contextual-shortcuts.js';
-import { commandById } from '../commands/registry.js';
+import { recordingSurface } from '../commands/commands.fixtures.js';
+import { commandById, runCommand } from '../commands/registry.js';
 import {
   hostPlatform,
   shortcutLabelText,
@@ -30,6 +31,7 @@ import {
   requestFlow,
   viewportTransform,
 } from './canvas.fixtures.js';
+import { resetThreatRegister } from '../panel/threat-register-state.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { placementClickDistance } from './elements.js';
 import { currentLayout } from './layout.js';
@@ -89,6 +91,9 @@ const press = {
 
 const nodeDescriptionText = (): string | null | undefined =>
   document.querySelector('[id^="react-flow__node-desc"]')?.textContent;
+
+const reconnect = (): HTMLElement =>
+  screen.getByRole('region', { name: 'Reconnect flow', hidden: true });
 
 describe('DiagramCanvas', () => {
   beforeEach(() => {
@@ -681,5 +686,30 @@ describe('DiagramCanvas', () => {
     });
 
     expect(modelStore.getState().inlineEditor).toBeUndefined();
+  });
+
+  it('holds the selection cards inert while the threat register covers them, and a card a command opens closes the register', () => {
+    openCanvas([requestFlow]);
+    resetThreatRegister();
+    render(<DiagramCanvas />);
+    expect(reconnect().closest('[inert]')).toBeNull();
+
+    act(() => {
+      runCommand(commandById('threat-register'), recordingSurface().surface);
+    });
+    expect(
+      screen.getByRole('region', { name: 'Threat register' }),
+    ).toBeDefined();
+    expect(reconnect().closest('[inert]')).not.toBeNull();
+
+    act(() => {
+      runCommand(commandById('reconnect-source'), recordingSurface().surface);
+    });
+
+    expect(
+      screen.queryByRole('region', { name: 'Threat register' }),
+    ).toBeNull();
+    expect(reconnect().closest('[inert]')).toBeNull();
+    expect(screen.getByRole('region', { name: 'Flow endpoint' })).toBeDefined();
   });
 });
