@@ -61,8 +61,8 @@ export function freshLiveText(said: string, message: string): string {
 export const preMoveMessage = (): string => '';
 
 /**
- * Writes React Flow's live region after an arrow key on a focused node, or on
- * the rectangle React Flow draws around a box selection, has moved the
+ * Writes React Flow's live region after an arrow key within a node, or on the
+ * rectangle React Flow draws around a box selection, has moved the
  * selection. The canvas wrapper hands `ref` each keydown once React Flow's
  * handler has run, so the store already holds the move. Mounted inside
  * `ReactFlow`, where its store is in reach.
@@ -96,6 +96,8 @@ function movedBySelectionKey(event: KeyboardEvent): boolean {
   return (
     isResizeKey(event.key) &&
     event.target instanceof Element &&
-    event.target.matches('.react-flow__node, .react-flow__nodesselection-rect')
+    event.target.closest(
+      '.react-flow__node, .react-flow__nodesselection-rect',
+    ) !== null
   );
 }

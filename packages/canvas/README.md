@@ -126,7 +126,8 @@ diagram out at the node positions React Flow holds during a gesture.
 use, one control per `resizeControlPositions` entry, less those a boundary
 curve's points give nothing to stretch. `scaledCurvePoints` fits a curve's
 points to a resized box, for the node body's live drawing and for the edit the
-mounting canvas commits.
+mounting canvas commits. `isResizeKey` tells whether a key is one of
+`resizeKeys`.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
 each node its accessible name, hands `CanvasNodeBody` the `resizeLabels` its

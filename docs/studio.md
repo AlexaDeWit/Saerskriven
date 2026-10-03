@@ -157,8 +157,8 @@ canvas, inside a selected trust boundary, or on an element the selection leaves
 out. A click there without a drag clears the selection, or selects that element
 alone. With Shift held, or by touch, a press there acts as it does outside the
 selection. An arrow key moves the selection five model units, and Shift+arrow
-twenty, or one grid interval and four with Snap to grid on, landing on the
-grid. A flow does not move on its own, but a moved group carries its bends
+twenty, or one grid interval and four with Snap to grid on, snapped as a drag
+is. A flow does not move on its own, but a moved group carries its bends
 and free ends along. After each arrow key a screen reader hears where Position
 and size now places the selection, in the figures it shows.
 

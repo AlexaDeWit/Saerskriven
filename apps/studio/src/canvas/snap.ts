@@ -5,7 +5,7 @@ let enabled = false;
 
 const snapStore = externalStore(currentSnap);
 
-/** Whether pointer movement snaps nodes to the visible grid. */
+/** Whether dragging and arrow-key moves snap nodes to the visible grid. */
 export function currentSnap(): boolean {
   return enabled;
 }

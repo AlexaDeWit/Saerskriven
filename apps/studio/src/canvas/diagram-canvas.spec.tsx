@@ -387,13 +387,16 @@ describe('DiagramCanvas', () => {
     expect(flowLiveMessage()).toBe('');
   });
 
-  it('says nothing in the move message for an arrow key on a resize control', () => {
+  it('says where the element went when an arrow key off a resize control axis moves it instead', () => {
     openCanvas([actorElement]);
     render(<DiagramCanvas />);
 
-    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowUp' });
+    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowLeft' });
 
-    expect(flowLiveMessage()).toBe('');
+    expect(readerBox().position).toEqual({ x: -5, y: 0 });
+    expect(flowLiveMessage()).toBe(
+      t('canvas.node-moved', writtenAsPositionAndSize(readerBox().position)),
+    );
   });
 
   it.each([
