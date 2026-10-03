@@ -62,6 +62,54 @@
   scrollbar-gutter: stable;
 }
 
+.tabList {
+  display: flex;
+  gap: var(--saer-space-1);
+  padding-inline: var(--saer-space-3);
+  border-bottom: 1px solid var(--saer-colour-border);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--saer-space-1);
+  margin-block-end: -1px;
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--saer-colour-text-muted);
+  font: inherit;
+}
+
+.tab[data-state='active'] {
+  border-bottom-color: var(--saer-colour-text);
+  color: var(--saer-colour-text);
+  font-weight: 600;
+}
+
+.tab:focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: calc(0px - var(--saer-focus-ring-width));
+}
+
+.count {
+  color: var(--saer-colour-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: normal;
+}
+
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--saer-space-3);
+  min-inline-size: 0;
+}
+
+.tabContent[hidden] {
+  display: none;
+}
+
 .heading {
   margin: 0;
   font-size: 1rem;
@@ -124,6 +172,17 @@
   font-size: inherit;
 }
 
+/* A sticky box stops at the scroller's padding edge, so the pinned summary
+   reaches up through the body's padding to sit flush with the top. */
+.item[data-state='open'] > .header {
+  position: sticky;
+  inset-block-start: calc(0px - var(--saer-space-3));
+  z-index: 1;
+  border-block-end: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius) var(--saer-radius) 0 0;
+  background: var(--saer-colour-surface);
+}
+
 .disclosure {
   display: flex;
   align-items: baseline;
@@ -155,17 +214,14 @@
 .metadata {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--saer-space-1) var(--saer-space-2);
   font-size: var(--saer-font-size);
-}
-
-.counts {
-  display: inline-flex;
-  gap: var(--saer-space-2);
-  white-space: nowrap;
+  font-weight: normal;
 }
 
 .severity,
+.status,
 .flag {
   display: inline-flex;
   align-items: center;
@@ -175,12 +231,36 @@
   border-radius: var(--saer-radius);
 }
 
+.status {
+  border-color: transparent;
+  color: var(--saer-colour-text-muted);
+}
+
+.status[data-status='open'] {
+  padding-inline: var(--saer-space-2);
+  border-color: currentcolor;
+  border-radius: 999px;
+  background: var(--saer-colour-text);
+  color: var(--saer-colour-surface-raised);
+  font-weight: 600;
+}
+
+.category,
+.alsoOn {
+  color: var(--saer-colour-text-muted);
+}
+
+.alsoOn {
+  font-size: var(--saer-font-size);
+  font-weight: normal;
+}
+
 .flag {
   border-color: currentcolor;
   font-weight: 600;
 }
 
-.flagGlyph {
+.glyph {
   fill: none;
   stroke: currentcolor;
   stroke-width: 1.5;
@@ -200,26 +280,71 @@
   gap: var(--saer-space-3);
 }
 
+.statusColumn,
+.flags {
+  display: flex;
+  min-inline-size: 0;
+  gap: var(--saer-space-1);
+}
+
+.statusColumn {
+  flex-direction: column;
+}
+
+.flags {
+  flex-wrap: wrap;
+  font-size: var(--saer-font-size);
+}
+
+.flags:empty {
+  display: none;
+}
+
+.flags .flag {
+  padding-inline: 0;
+  border-color: transparent;
+}
+
 .attachments {
   display: flex;
-  flex-direction: column;
-  gap: var(--saer-space-1);
+  flex-wrap: wrap;
+  gap: var(--saer-space-1) var(--saer-space-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .attachment {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--saer-space-2);
+  gap: var(--saer-space-1);
+  min-inline-size: 0;
 }
 
 .attachmentName {
   min-inline-size: 0;
   overflow-wrap: anywhere;
+}
+
+.detach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: var(--saer-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--saer-radius);
+  background: none;
+  color: var(--saer-colour-text-muted);
+}
+
+.detach:hover {
+  color: var(--saer-colour-text);
+}
+
+.detach:focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 .spread {
@@ -245,13 +370,6 @@
   gap: var(--saer-space-2);
 }
 
-.record {
-  padding: var(--saer-space-2) var(--saer-space-3);
-  border: 1px solid var(--saer-colour-border);
-  border-radius: var(--saer-radius);
-  background: var(--saer-colour-surface-raised);
-}
-
 .recordFields {
   display: flex;
   flex-direction: column;
@@ -262,10 +380,80 @@
   border: 0;
 }
 
+.recordCard {
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+}
+
+.record + .record {
+  padding-block-start: var(--saer-space-2);
+  border-block-start: 1px solid var(--saer-colour-border);
+}
+
+.recordHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--saer-space-2) var(--saer-space-1);
+}
+
+/* A folded row stays one line, and its headline's ellipsis takes the whole
+   squeeze, so a long headline never breaks the status value inside it. */
+.recordHead[data-folded] {
+  flex-wrap: nowrap;
+}
+
+.recordHead[data-folded] > .recordState {
+  flex-shrink: 0;
+}
+
+.recordHead > .recordState {
+  margin-inline-start: auto;
+}
+
 .recordName {
-  margin-block-end: var(--saer-space-2);
-  padding: 0;
   font-weight: 600;
+}
+
+.recordToggle {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--saer-space-1);
+  min-inline-size: 0;
+  padding: var(--saer-space-1) 0;
+  border: 1px solid transparent;
+  border-radius: var(--saer-radius);
+  background: none;
+  color: var(--saer-colour-text);
+  font: inherit;
+  text-align: start;
+}
+
+.recordToggle > svg {
+  flex: none;
+  color: var(--saer-colour-text-muted);
+}
+
+.recordToggle:focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
+}
+
+.recordLine {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.added {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--saer-space-1);
+  font-size: var(--saer-font-size);
 }
 
 .recordState {
@@ -278,6 +466,21 @@
 
 .recordState [role='combobox'] {
   min-inline-size: 9rem;
+}
+
+/* A name row holds the record's name, its Added mark, its status and Unlink
+   on one line at the default pane width in the wider sans faces too, so its
+   controls take their content's width and a compact inset. Where a longer
+   language needs more, the status and Unlink wrap together to the row's end,
+   still above the record's fields. */
+.recordHead [role='combobox'] {
+  gap: var(--saer-space-1);
+  min-inline-size: 0;
+  padding: var(--saer-space-1) var(--saer-space-2);
+}
+
+.recordHead .unlink {
+  padding: var(--saer-space-1) 0;
 }
 
 .unlink {
@@ -363,23 +566,31 @@
   color: var(--saer-colour-text-muted);
 }
 
+.item[data-state='open'] .summary > :first-child,
+.item[data-state='open'] .alsoOn {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.item[data-state='open'] .alsoOn {
+  -webkit-line-clamp: 1;
+}
+
 .content {
   display: flex;
   flex-direction: column;
   gap: var(--saer-space-3);
-  padding: var(--saer-space-3);
-  border-top: 1px solid var(--saer-colour-border);
+  padding: var(--saer-space-3) var(--saer-space-2);
 }
 
-/* At phone width the panel, the threat item and each record card would each
-   take a full inset from the room the fields have, so the inner two narrow. */
+/* At phone width the panel and a model record card would each take a full
+   inset from the room the fields have, so both narrow, as an open threat's
+   content does at every width. */
 @media (max-width: 30rem) {
   .body,
-  .content {
-    padding-inline: var(--saer-space-2);
-  }
-
-  .record {
+  .recordCard {
     padding-inline: var(--saer-space-2);
   }
 }

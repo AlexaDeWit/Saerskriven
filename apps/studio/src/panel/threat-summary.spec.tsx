@@ -1,23 +1,26 @@
-import { assumptionId, mitigationId } from '@saerskriven/model/fixtures';
-import type { Threat, ThreatFlag } from '@saerskriven/model';
-import { act, render, screen } from '@testing-library/react';
+import { assumptionId } from '@saerskriven/model/fixtures';
+import type { ElementId, Threat, ThreatFlag } from '@saerskriven/model';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
+  actorElement,
   firstAssumption,
   firstMitigation,
   firstThreat,
+  processElement,
   recordedModel,
   secondThreat,
+  storeElement,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { recordedThreat } from './panel.fixtures.js';
 import { ThreatSummary } from './threat-summary.js';
 
-const showSummary = (threat: Threat): void => {
+const showSummary = (threat: Threat, on: ElementId = actorElement): void => {
   render(
     <button type="button">
-      <ThreatSummary threat={threat} />
+      <ThreatSummary on={on} threat={threat} />
     </button>,
   );
 };
@@ -27,11 +30,19 @@ const trigger = (): HTMLElement => screen.getByRole('button');
 const named = (part: string): HTMLElement | null =>
   screen.queryByRole('button', { name: (name) => name.includes(part) });
 
-const countText = (kind: 'mitigations' | 'assumptions'): string =>
-  trigger().querySelector(`[data-count="${kind}"]`)?.textContent ?? '';
+const nameOf = (): string => {
+  let found = '';
+  screen.getByRole('button', {
+    name: (name) => {
+      found = name;
+      return true;
+    },
+  });
+  return found;
+};
 
-const countOf = (kind: 'mitigations' | 'assumptions'): number =>
-  Number(/\d+$/u.exec(countText(kind).trim())?.[0] ?? Number.NaN);
+const alsoOn = (): string | undefined =>
+  trigger().querySelector('[data-also-on]')?.textContent ?? undefined;
 
 const raised = (): string[] =>
   [...trigger().querySelectorAll<HTMLElement>('[data-flag]')].map(
@@ -52,37 +63,43 @@ describe('ThreatSummary', () => {
     modelStore.setState(initialState(recordedModel), true);
   });
 
-  it('counts the records linked to the threat, and follows a link and an unlink', () => {
+  it('names its number, title, severity, status and category in that order, and no record counts', () => {
     showSummary(recordedThreat(firstThreat));
-    run(
-      Action.AddMitigation({
-        mitigation: {
-          id: mitigationId('mitigation-audit-log'),
-          title: 'Audit every write',
-          prose: '',
-          status: 'proposed',
-          threats: [firstThreat],
-        },
-      }),
-    );
 
-    expect(countOf('mitigations')).toBe(2);
-    expect(countOf('assumptions')).toBe(1);
-
-    run(
-      Action.UnlinkAssumption({
-        assumptionId: firstAssumption,
-        threatId: firstThreat,
-      }),
-    );
-
-    expect(countOf('assumptions')).toBe(0);
-    expect(named(countText('mitigations'))).not.toBeNull();
-    expect(named(countText('assumptions'))).not.toBeNull();
+    const name = nameOf();
+    const parts = [
+      '1',
+      'A reader edits a model they may only read',
+      'Medium',
+      'Open',
+      'Tampering',
+    ].map((part) => name.indexOf(part));
+    expect(parts.every((at) => at >= 0)).toBe(true);
+    expect(
+      parts.every((at, index) => index === 0 || at > parts[index - 1]),
+    ).toBe(true);
+    expect(name).not.toContain('Mitigations');
+    expect(name).not.toContain('Assumptions');
   });
 
-  it('counts an assumption that applies to the model only on the threats it links', () => {
-    showSummary(recordedThreat(secondThreat));
+  it('names the other elements the threat is on, and only when there are any', () => {
+    showSummary(recordedThreat(firstThreat));
+    expect(alsoOn()).toBeUndefined();
+    cleanup();
+
+    showSummary({
+      ...recordedThreat(firstThreat),
+      elements: [actorElement, storeElement, processElement],
+    });
+
+    expect(alsoOn()).toContain('Studio');
+    expect(alsoOn()).toContain('Models');
+    expect(alsoOn()).not.toContain('Reader');
+    expect(named('Models')).not.toBeNull();
+  });
+
+  it('marks an assumption that applies to the model only on the threats it links', () => {
+    showSummary(recordedThreat(secondThreat), processElement);
     run(
       Action.AddAssumption({
         assumption: {
@@ -95,7 +112,6 @@ describe('ThreatSummary', () => {
       }),
     );
 
-    expect(countOf('assumptions')).toBe(0);
     expect(raised()).toEqual([]);
 
     run(
@@ -105,7 +121,6 @@ describe('ThreatSummary', () => {
       }),
     );
 
-    expect(countOf('assumptions')).toBe(1);
     expect(raised()).toEqual(['rests-on-invalidated-assumption']);
   });
 

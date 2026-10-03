@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 
 import { statusMessages } from '../messages/enum-labels.js';
 import { activeTranslator } from '../messages/locale.js';
+import { statusesByLiveRisk } from './review-order.js';
 import { StatusField } from './status-field.js';
 import { noop } from './ui.fixtures.js';
 
@@ -25,5 +26,22 @@ describe('StatusField', () => {
         screen.getByRole('option', { name: t(statusMessages[status]) }),
       ).toBeDefined();
     }
+  });
+
+  it('lists the statuses in the order the panel lists threats', async () => {
+    const user = userEvent.setup();
+    render(<StatusField onCommit={noop} value="open" />);
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+
+    const options = screen.getAllByRole('option');
+    expect(
+      statusesByLiveRisk.map((status) =>
+        options.indexOf(
+          screen.getByRole('option', { name: t(statusMessages[status]) }),
+        ),
+      ),
+    ).toEqual(statusesByLiveRisk.map((_, index) => index));
   });
 });

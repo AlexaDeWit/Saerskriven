@@ -3,9 +3,8 @@ import { panelMessages } from './contract.js';
 
 export const panelEnCA = catalogue(panelMessages)('en-CA')({
   threats: 'Threats',
-  'threats-on': 'Threats on {element}',
   'unlabelled-flow': 'Flow {ends}',
-  'threats-on-unlabelled-flow': 'Threats on the flow {ends}',
+  details: 'Details',
   'close-threats': 'Close threats',
   'widen-pane': 'Widen pane',
   'restore-pane-width': 'Restore pane width',
@@ -25,8 +24,8 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
   'attached-elements': 'Attached elements',
   'summary-severity': 'Severity: {severity}',
   'summary-status': 'Status: {status}',
-  'summary-mitigations': 'Mitigations: {count}',
-  'summary-assumptions': 'Assumptions: {count}',
+  'summary-category': 'Category: {category}',
+  'also-on-elements': 'Also on {list}',
   'security-properties': 'Security properties',
   'not-recorded-hint': 'Not recorded means no security assertion is stored.',
   'no-relationships': 'No relationships.',
@@ -38,12 +37,17 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
   discard: 'Discard',
   unlink: 'Unlink',
   attach: 'Attach',
-  detach: 'Detach',
   'also-applies-to-model': 'Also applies to the model.',
   'also-on-threats': {
     one: 'Also on threat {list}.',
     other: 'Also on threats {list}.',
   },
+  'also-on-other-threats': {
+    one: 'Also on {count} other threat.',
+    other: 'Also on {count} other threats.',
+  },
+  'mitigation-added': 'Added',
+  'assumption-added': 'Added',
   'more-threats': '{count} more',
   'detail-threats': {
     one: 'threat {list}',

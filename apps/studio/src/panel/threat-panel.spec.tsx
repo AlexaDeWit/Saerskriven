@@ -1,6 +1,12 @@
-import { renameElement, type ElementId, type Threat } from '@saerskriven/model';
+import {
+  renameElement,
+  type ElementId,
+  type Severity,
+  type Threat,
+  type ThreatStatus,
+} from '@saerskriven/model';
 import { Either } from 'effect';
-import { act, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   currentAnnouncement,
@@ -22,11 +28,8 @@ import {
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { chooseFrom, editorTimeout } from './panel.fixtures.js';
-import {
-  ThreatPanel,
-  type HeldDraft,
-  type ThreatPanelProps,
-} from './threat-panel.js';
+import type { HeldDraft } from './element-threats.js';
+import { ThreatPanel, type ThreatPanelProps } from './threat-panel.js';
 import {
   addControl,
   button,
@@ -73,6 +76,12 @@ const titleField = (): HTMLElement =>
 const severityOf = (): string =>
   screen.getByRole('combobox', { name: 'Severity' }).textContent ?? '';
 
+const threatsTab = (): HTMLElement =>
+  screen.getByRole('tab', { name: /^Threats \d+$/u });
+
+const detailsTab = (): HTMLElement =>
+  screen.getByRole('tab', { name: 'Details' });
+
 const threatsInStore = (): number =>
   modelStore.getState().present.threats.length;
 
@@ -92,6 +101,40 @@ const shareThreat = (): void => {
     }),
   );
 };
+
+const reviewedThreats: readonly Threat[] = (
+  [
+    ['threat-mitigated-high', 'mitigated', 'high'],
+    ['threat-open-low', 'open', 'low'],
+    ['threat-accepted-critical', 'accepted-risk', 'critical'],
+    ['threat-open-critical', 'open', 'critical'],
+  ] as const satisfies readonly (readonly [string, ThreatStatus, Severity])[]
+).map(([id, status, severity], index) => ({
+  ...sampleThreat,
+  id: threatId(id),
+  number: index + 1,
+  title: id,
+  status,
+  severity,
+}));
+
+const withReviewedThreats = (): void => {
+  modelStore.setState(
+    initialState({
+      ...sampleModel,
+      threats: [...reviewedThreats],
+      lastIssuedThreatNumber: reviewedThreats.length,
+    }),
+    true,
+  );
+};
+
+const listedThreats = (): readonly (string | undefined)[] =>
+  [
+    ...screen
+      .getByTestId('threat-panel')
+      .querySelectorAll<HTMLElement>('[data-threat-item]'),
+  ].map((item) => item.dataset['threatItem']);
 
 const addThreat = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(addControl());
@@ -248,12 +291,77 @@ describe(
     it('names the selected element and lists what is recorded against it', () => {
       showPanel(actorElement);
 
-      expect(
-        screen.getByRole('heading', { name: 'Threats on Reader' }),
-      ).toBeDefined();
+      expect(screen.getByRole('heading', { name: 'Reader' })).toBeDefined();
       expect(
         screen.getByRole('button', { name: /A reader edits/u }),
       ).toBeDefined();
+    });
+
+    it('opens on a Threats tab carrying the threat count, beside a Details tab', () => {
+      showPanel(actorElement);
+
+      expect(threatsTab().getAttribute('aria-selected')).toBe('true');
+      expect(detailsTab().getAttribute('aria-selected')).toBe('false');
+      expect(addControl()).toBeDefined();
+      expect(
+        screen.queryByRole('textbox', { name: 'Description of Reader' }),
+      ).toBeNull();
+    });
+
+    it('holds the element description, scope and security properties on Details', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+
+      await user.click(detailsTab());
+
+      expect(textbox('Description of Reader')).toBeDefined();
+      expect(
+        screen.getByRole('combobox', { name: 'Out of scope' }),
+      ).toBeDefined();
+      expect(button('Security properties')).toBeDefined();
+      expect(screen.queryByRole('button', { name: 'Add a threat' })).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: /A reader edits/u }),
+      ).toBeNull();
+    });
+
+    it('moves between its tabs from the keyboard as a tab list does', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+      act(() => {
+        threatsTab().focus();
+      });
+
+      await user.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(detailsTab());
+      expect(detailsTab().getAttribute('aria-selected')).toBe('true');
+      await user.keyboard('{Home}');
+      expect(document.activeElement).toBe(threatsTab());
+      expect(threatsTab().getAttribute('aria-selected')).toBe('true');
+      await user.keyboard('{Tab}');
+
+      expect(document.activeElement).toBe(addControl());
+    });
+
+    it('keeps an open threat open through a visit to Details', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+
+      await user.click(detailsTab());
+      await user.click(threatsTab());
+
+      expect(titleField()).toBeDefined();
+    });
+
+    it('counts the threats on its Threats tab as one is added', async () => {
+      const user = userEvent.setup();
+      showPanel(processElement);
+      expect(numbersIn(threatsTab().textContent)).toEqual([0]);
+
+      await addThreat(user);
+
+      expect(numbersIn(threatsTab().textContent)).toEqual([1]);
     });
 
     it('names a flow left unlabelled from its ends in its heading', () => {
@@ -276,10 +384,59 @@ describe(
       );
 
       expect(
-        screen.getByRole('heading', {
-          name: 'Threats on the flow from Reader to Studio',
-        }),
+        screen.getByRole('heading', { name: 'Flow from Reader to Studio' }),
       ).toBeDefined();
+    });
+
+    it('lists the threats still open first, each status from the highest severity down', () => {
+      withReviewedThreats();
+      showPanel(actorElement);
+
+      expect(listedThreats()).toEqual([
+        'threat-open-critical',
+        'threat-open-low',
+        'threat-accepted-critical',
+        'threat-mitigated-high',
+      ]);
+    });
+
+    it('holds its order while it is open, and sorts again when it opens next', async () => {
+      const user = userEvent.setup();
+      withReviewedThreats();
+      showPanel(actorElement);
+      const shown = listedThreats();
+
+      act(() => {
+        dispatch(
+          Action.ReplaceThreat({
+            threat: { ...reviewedThreats[0], status: 'open' },
+          }),
+        );
+      });
+      await addThreat(user);
+
+      expect(listedThreats()).toEqual([...shown, present().threats.at(-1)?.id]);
+      cleanup();
+      showPanel(actorElement);
+      expect(listedThreats().slice(0, 2)).toEqual([
+        'threat-open-critical',
+        'threat-mitigated-high',
+      ]);
+    });
+
+    it('moves focus to the threat listed after a deleted one', async () => {
+      const user = userEvent.setup();
+      withReviewedThreats();
+      showPanel(actorElement);
+      await user.click(
+        screen.getByRole('button', { name: /threat-open-critical/u }),
+      );
+
+      await user.click(button('Delete threat 4'));
+
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: /threat-open-low/u }),
+      );
     });
 
     it('lists nothing for an element no threat names, and still offers an add', () => {
@@ -530,6 +687,21 @@ describe(
       expect(modelStore.getState().present.threats[0].description).toBe(
         'Pasted prose',
       );
+    });
+
+    it('shows Threats again when focus is asked for while Details shows', async () => {
+      const user = userEvent.setup();
+      const props = panelProps({
+        subject: { kind: 'element', element: sampleElement(actorElement) },
+      });
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+      const { rerender } = render(<ThreatPanel {...props} />);
+      await user.click(detailsTab());
+
+      rerender(<ThreatPanel {...props} focusing />);
+
+      expect(threatsTab().getAttribute('aria-selected')).toBe('true');
+      expect(document.activeElement).toBe(addControl());
     });
 
     it('moves focus to its first control when it is asked for, and not before', () => {

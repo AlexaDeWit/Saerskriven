@@ -134,7 +134,9 @@ test('a plain click or Enter reduces a group to that element', async ({
 
   await expect(actor).toHaveClass(/selected/u);
   await expect(store).not.toHaveClass(/selected/u);
-  await expect(threatPanel(page)).toContainText('Threats on Actor');
+  await expect(
+    threatPanel(page).getByRole('heading', { name: 'Actor', exact: true }),
+  ).toBeVisible();
 
   await page.keyboard.press('ControlOrMeta+a');
   const flow = nodeNamed(page, placeholder.records);

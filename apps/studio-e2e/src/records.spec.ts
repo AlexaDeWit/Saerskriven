@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { softHyphen } from '@saerskriven/model/fixtures';
 import {
   type Box,
+  canvasSettled,
   onScreen,
   screenBoxOf,
   scrolledAbove,
@@ -22,6 +23,8 @@ import {
   selectNode,
   storefront,
   threatPanel,
+  threatSummary,
+  twoDiagrams,
   undoOffered,
 } from './studio.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
@@ -35,12 +38,106 @@ const describedNumbers = (control: Locator): Promise<readonly number[]> =>
     ).map(Number),
   );
 
+const middle = (box: Box): number => box.y + box.height / 2;
+
+const recordToggle = (page: Page, headline: string): Locator =>
+  threatPanel(page).getByRole('button', { name: headline, exact: true });
+
+const openRecord = async (page: Page, headline: string): Promise<void> => {
+  const toggle = recordToggle(page, headline);
+  await toggle.click();
+  await expect(toggle).toHaveCount(0);
+};
+
 const mitigationOffered = (page: Page, label: string): Promise<boolean> =>
   offeredToLink(
     page,
     panelField(page, 'combobox', 'Existing mitigation'),
     label,
   );
+
+test(
+  'a record shared with another threat starts folded and says so, takes a status folded, and stays open until its threat closes',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    await page.keyboard.press(registeredChords['next-diagram'][0]);
+    await canvasSettled(page);
+    await selectNode(page, twoDiagrams.second.drawn);
+    const picker = threatSummary(page, /Picker overrides a dispatch hold/u);
+    await expandThreat(page, /Picker overrides a dispatch hold/u);
+    await expect(picker.locator('[data-also-on]')).toContainText('Picker');
+
+    const reservation = recordToggle(page, 'Reservation expiry');
+    await expect(reservation).toHaveAttribute('aria-expanded', 'false');
+    const record = threatPanel(page).getByRole('group', {
+      name: 'Mitigation 1',
+      exact: true,
+    });
+    await expect(record.locator('p')).toContainText('1');
+    await chooseInPanel(page, 'Mitigation 1 status', 'Implemented');
+    await expect(reservation).toHaveAttribute('aria-expanded', 'false');
+
+    await openRecord(page, 'Reservation expiry');
+    await expect(panelField(page, 'textbox', 'Mitigation 1 title')).toHaveValue(
+      'Reservation expiry',
+    );
+    await expect(record.locator('p')).toContainText('8');
+    await expect(panelControl(page, 'Unlink mitigation 1')).toBeVisible();
+
+    await picker.click();
+    await expandThreat(page, /Picker overrides a dispatch hold/u);
+    await expect(reservation).toHaveAttribute('aria-expanded', 'false');
+  },
+);
+
+test('a folded record with a long headline leaves its status whole, as tall as a short one', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.webShop);
+  await expandThreat(page, storefront.basketPrice);
+
+  const statuses = [1, 2].map((number) =>
+    threatPanel(page)
+      .getByRole('group', { name: `Mitigation ${String(number)}`, exact: true })
+      .getByRole('combobox'),
+  );
+  await expect(statuses[0]).toBeVisible();
+  const heights = await Promise.all(
+    statuses.map(async (status) => (await screenBoxOf(status)).height),
+  );
+
+  expect(Math.abs(heights[0] - heights[1])).toBeLessThanOrEqual(1);
+});
+
+test('a kept record keeps its toggle, Added mark, status and Unlink on one name row at the default pane width', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  await expandThreat(page, storefront.takeover);
+  await panelControl(page, 'Add mitigation').click();
+  await page.keyboard.type('Strip caller tokens at the edge');
+  await page.keyboard.press('Enter');
+
+  const record = threatPanel(page).getByRole('group', {
+    name: 'Mitigation 2',
+    exact: true,
+  });
+  await expect(record.locator('[data-added]')).toBeVisible();
+  const toggle = await screenBoxOf(record.locator('[data-record-toggle]'));
+  const added = await screenBoxOf(record.locator('[data-added]'));
+  expect(added.x - (toggle.x + toggle.width)).toBeLessThanOrEqual(12);
+  for (const control of [
+    record.getByRole('combobox', { name: 'Mitigation 2 status' }),
+    record.getByRole('button', { name: 'Unlink mitigation 2' }),
+  ]) {
+    expect(
+      Math.abs(middle(await screenBoxOf(control)) - middle(toggle)),
+    ).toBeLessThanOrEqual(4);
+  }
+});
 
 test(
   'a mitigation added from the empty row is one undo step, and its status changes in place',
@@ -86,7 +183,7 @@ test(
   },
 );
 
-test('Tab out of a new record reaches its status, and undoing the record keeps focus in its group', async ({
+test('Tab out of a new record keeps it and reaches Add, and undoing the record from its status keeps focus in its group', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -97,8 +194,9 @@ test('Tab out of a new record reaches its status, and undoing the record keeps f
   await page.keyboard.type('Callers rotate their tokens.');
   await page.keyboard.press('Tab');
 
+  await expect(panelControl(page, 'Add assumption')).toBeFocused();
   const status = panelField(page, 'combobox', 'Assumption 1 status');
-  await expect(status).toBeFocused();
+  await status.focus();
 
   await page.keyboard.press(registeredChords.undo[0]);
 
@@ -182,12 +280,6 @@ test('leaving the empty row leaves no record and nothing to undo', async ({
   const prose = panelField(page, 'textbox', 'Assumption 1');
   await expect(prose).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(
-    panelField(page, 'combobox', 'Assumption 1 status'),
-  ).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(panelControl(page, 'Discard assumption 1')).toBeFocused();
-  await page.keyboard.press('Tab');
 
   await expect(add).toBeFocused();
   await expect(prose).toHaveCount(0);
@@ -216,20 +308,27 @@ test('a linked record names the other threats that hold it by number, and unlink
   await chooseInPanel(page, 'Existing mitigation', bound);
   await panelControl(page, 'Link existing mitigation').click();
 
-  const linked = panelField(page, 'textbox', 'Mitigation 3 title');
-  await expect(linked).toHaveValue(bound);
+  const linked = recordToggle(page, bound);
   await expect(linked).toBeFocused();
+  await expect(linked).toHaveAttribute('aria-expanded', 'false');
   expect(await mitigationOffered(page, bound)).toBe(false);
+  await openRecord(page, bound);
+  await expect(panelField(page, 'textbox', 'Mitigation 3 title')).toHaveValue(
+    bound,
+  );
   await expect
     .poll(() => describedNumbers(panelControl(page, 'Unlink mitigation 3')))
     .toEqual([1]);
 
   await panelControl(page, 'Unlink mitigation 3').click();
-  await expect(linked).toHaveCount(0);
+  await expect(panelField(page, 'textbox', 'Mitigation 3 title')).toHaveCount(
+    0,
+  );
   expect(await mitigationOffered(page, bound)).toBe(true);
 
   await selectByKeyboard(page, storefront.shopper);
   await expandThreat(page, storefront.takeover);
+  await openRecord(page, bound);
   const kept = panelField(page, 'textbox', 'Mitigation 2 title');
   await expect(kept).toHaveValue(bound);
   await expect
@@ -290,6 +389,7 @@ test(
     const description = panelField(page, 'textbox', 'Mitigation 2 description');
     await expect(description).toBeFocused();
 
+    await openRecord(page, 'Sign-in throttling');
     const top = (await screenBoxOf(threatPanel(page))).y;
     const unlink = panelControl(page, 'Unlink mitigation 1');
     await onScreen(unlink);
@@ -302,7 +402,7 @@ test(
     await remaining.press('End');
     const field = (await screenBoxOf(remaining)).y;
     await page.keyboard.type('s');
-    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
     await expect(remaining).toHaveValue('Strip caller tokens at the edges');
     await expect(editAnnouncement(page)).toBeEmpty();
     expect((await screenBoxOf(threatPanel(page))).y).toBe(top);
@@ -339,6 +439,7 @@ test(
       'Rotate the upstream token hourly',
       'Issue tokens per caller.\nExpire them within the hour.\nRefuse a replay.\nLog each rotation.\nAlert on a failed rotation.',
     );
+    await openRecord(page, 'Sign-in throttling');
 
     const unlink = panelControl(page, 'Unlink mitigation 1');
     await onScreen(unlink);
@@ -356,7 +457,7 @@ test(
 );
 
 test(
-  'an unlink scrolls the pane only as far as the next Unlink needs to be seen',
+  "an unlink at the pane's lower edge puts the next record's Unlink in its place, scrolling nothing",
   { tag: '@phone' },
   async ({ page }) => {
     await openTwoDiagrams(page);
@@ -382,10 +483,9 @@ test(
     );
     await expect(unlink).toBeFocused();
     await expect(unlink).toBeInViewport({ ratio: 1 });
-    expect(await scrolledAbove(add)).toBeGreaterThan(scrolled);
-    const revealed = await screenBoxOf(unlink);
+    expect(await scrolledAbove(add)).toBe(scrolled);
     expect(
-      Math.abs(revealed.y + revealed.height - (pressed.y + pressed.height)),
+      Math.abs((await screenBoxOf(unlink)).y - pressed.y),
     ).toBeLessThanOrEqual(1);
   },
 );
@@ -410,9 +510,9 @@ test('a record arriving from another tab above the rows in view leaves those row
   await expandThreat(other, storefront.takeover);
   await addRecord(other, 'mitigation', 'Strip caller tokens at the edge');
 
-  await expect(panelField(page, 'textbox', 'Mitigation 2 title')).toHaveValue(
-    'Strip caller tokens at the edge',
-  );
+  await expect(
+    recordToggle(page, 'Strip caller tokens at the edge'),
+  ).toBeVisible();
   expect(await settledBox(addMitigation)).toEqual(drawn);
 });
 
@@ -464,9 +564,9 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
 
   await selectByKeyboard(other, storefront.shopper);
   await expandThreat(other, storefront.takeover);
-  await expect(panelField(other, 'textbox', 'Mitigation 2 title')).toHaveValue(
-    'Strip caller tokens at the edge',
-  );
+  await expect(
+    recordToggle(other, 'Strip caller tokens at the edge'),
+  ).toBeVisible();
   await chooseInPanel(other, 'Mitigation 2 status', 'Verified');
 
   await expect(
