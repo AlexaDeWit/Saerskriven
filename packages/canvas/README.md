@@ -47,10 +47,10 @@ spot, leaving some line and every arrowhead showing at both ends. Where no spot
 on the line is clear, it goes beside the line, alongside the run it hangs
 beside: above a run nearer horizontal, right of one nearer vertical, wrapping
 the name onto up to three lines where that helps, and on the other side only
-where that side is blocked. Wherever a spot that close is clear on either
-side, it stands at most 16 units off the line through that run and within 20
-of the run as drawn, so it still reads as the line's, and only then steps out
-as far as 44, within 48 of the run. Where nothing is clear it takes the spot
+where that side is blocked. It stands at most 16 units off the line through
+that run and within 20 of the run as drawn wherever a spot that close is clear
+on either side, so it still reads as the line's, and only then steps out as
+far as 44, within 48 of the run. Where nothing is clear it takes the spot
 that covers the fewest things, so no name is dropped. The search is
 [`flow-block-search.ts`](src/lib/flow-block-search.ts). Flows are
 placed in id order from the model alone, so the studio and the headless render
