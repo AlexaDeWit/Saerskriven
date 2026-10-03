@@ -27,7 +27,7 @@ import {
 } from 'react';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { Action } from '../store/actions.js';
-import { keyboardOwner } from '../commands/binding.js';
+import { keyboardOwner, useCommandSurface } from '../commands/binding.js';
 import {
   contextualShortcuts,
   describeContextualShortcuts,
@@ -48,6 +48,7 @@ import { useCurvePoints } from './curve-points.js';
 import { useFlowBends } from './flow-bends.js';
 import { FlowBendControls } from './flow-bend-controls.js';
 import { useGroupDrag } from './group-drag.js';
+import { selectToolOnItem } from './item-focus.js';
 import { useLiveEdges } from './live-edges.js';
 import {
   KeyboardMoveMessage,
@@ -61,6 +62,7 @@ import {
   type DiagramNode,
 } from './nodes.js';
 import { editingEdgeTypes, editingNodeTypes } from './inline-editing.js';
+import { useNodeDrag } from './node-drag.js';
 import { usePaneShield } from './pane-shield.js';
 import { PlacementPreview } from './placement-preview.js';
 import { usePlacement } from './placement.js';
@@ -185,6 +187,8 @@ export function DiagramCanvas({
 
   const liveEdges = useLiveEdges(layout, graph, selection, elements, positions);
   const paneShield = usePaneShield(elements);
+  const nodeDrag = useNodeDrag(positions, liveEdges.onNodesChange);
+  const commandSurface = useCommandSurface();
   const groupDrag = useGroupDrag(
     view,
     layout,
@@ -228,6 +232,9 @@ export function DiagramCanvas({
   };
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>): void => {
+    if (selectToolOnItem(event, elements, commandSurface)) {
+      return;
+    }
     const selects = pressesContextualShortcut(
       'select-canvas-item',
       event,
@@ -361,6 +368,7 @@ export function DiagramCanvas({
         aria-label={t('tools.diagram-region')}
         ariaLabelConfig={keyboard.a11y}
         attributionPosition="bottom-left"
+        autoPanOnNodeDrag={nodeDrag.autoPan}
         autoPanOnNodeFocus={false}
         autoPanOnSelection={false}
         connectionMode={ConnectionMode.Loose}
@@ -383,7 +391,9 @@ export function DiagramCanvas({
           view.current = instance;
         }}
         onKeyDown={onKeyDown}
-        onNodesChange={liveEdges.onNodesChange}
+        onNodeDragStart={nodeDrag.onNodeDragStart}
+        onNodeDragStop={nodeDrag.onNodeDragStop}
+        onNodesChange={nodeDrag.onNodesChange}
         onSelectionEnd={boxSelection.onSelectionEnd}
         onSelectionStart={boxSelection.onSelectionStart}
         panActivationKeyCode={null}

@@ -9,6 +9,7 @@ import {
   selectByKeyboard,
   selectNode,
   storefront,
+  threatPanel,
 } from './studio.fixtures.js';
 
 const offered = {
@@ -26,6 +27,11 @@ const offered = {
   },
 } as const;
 
+const linkedRow = (page: Page): Locator =>
+  threatPanel(page)
+    .getByRole('group', { name: 'Mitigation 2', exact: true })
+    .locator('[data-record-toggle]');
+
 const openPicker = async (page: Page) => {
   await openTwoDiagrams(page);
   await selectNode(page, storefront.shopper);
@@ -41,9 +47,9 @@ test(
   { tag: '@phone' },
   async ({ page }) => {
     const trigger = await openPicker(page);
-    const linked = panelField(page, 'textbox', 'Mitigation 2 description');
+    const linked = linkedRow(page);
 
-    for (const [place, { name, description }] of Object.entries(offered)) {
+    for (const [place, { name }] of Object.entries(offered)) {
       await test.step(place, async () => {
         await trigger.scrollIntoViewIfNeeded();
         await trigger.click();
@@ -54,7 +60,8 @@ test(
         await expect(listbox).toHaveCount(0);
         await panelControl(page, 'Link existing mitigation').click();
 
-        await expect(linked).toHaveValue(description);
+        await expect(linked).toHaveAccessibleName(name);
+        await expect(linked).toBeFocused();
 
         await runFromMenu(page, 'Undo');
         await expect(linked).toHaveCount(0);
@@ -76,6 +83,9 @@ test('the keyboard links the last mitigation offered', async ({ page }) => {
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
 
+  const linked = linkedRow(page);
+  await expect(linked).toBeFocused();
+  await page.keyboard.press('Enter');
   await expect(
     panelField(page, 'textbox', 'Mitigation 2 description'),
   ).toHaveValue(offered.last.description);
@@ -84,19 +94,20 @@ test('the keyboard links the last mitigation offered', async ({ page }) => {
 const suffixShownIn = async (holder: Locator): Promise<string> => {
   const suffix = holder.locator('[data-option-suffix]');
   await expect(suffix).toBeVisible();
-  const [outer, label, inner] = await Promise.all([
-    holder.boundingBox(),
-    holder.locator('[data-option-label]').boundingBox(),
-    suffix.boundingBox(),
-  ]);
-  expect(inner?.height).toBeGreaterThan(0);
-  expect(inner?.y).toBeGreaterThanOrEqual(
-    (label?.y ?? Infinity) + (label?.height ?? 0),
+  const [outer, label, inner] = await holder.evaluate((option) =>
+    [
+      option,
+      option.querySelector('[data-option-label]'),
+      option.querySelector('[data-option-suffix]'),
+    ].map((part) => {
+      const rect = part?.getBoundingClientRect();
+      return { y: rect?.y ?? Number.NaN, height: rect?.height ?? 0 };
+    }),
   );
-  expect(inner?.y).toBeGreaterThanOrEqual(outer?.y ?? Infinity);
-  expect((inner?.y ?? 0) + (inner?.height ?? 0)).toBeLessThanOrEqual(
-    (outer?.y ?? 0) + (outer?.height ?? 0),
-  );
+  expect(inner.height).toBeGreaterThan(0);
+  expect(inner.y).toBeGreaterThanOrEqual(label.y + label.height);
+  expect(inner.y).toBeGreaterThanOrEqual(outer.y);
+  expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height);
   return (await suffix.textContent()) ?? '';
 };
 

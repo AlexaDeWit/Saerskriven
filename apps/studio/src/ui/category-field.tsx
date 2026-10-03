@@ -8,6 +8,7 @@ import {
   type ThreatCategory,
 } from '@saerskriven/model';
 import type { EnumeratedCategory } from '@saerskriven/render';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { categoryMessages } from '../messages/enum-labels.js';
 import { useTranslator } from '../messages/locale.js';
 import { EnumField } from './enum-field.js';
@@ -75,6 +76,15 @@ const messageByKey = new Map<string, CategoryMessage>(
     ),
   ),
 );
+
+/** What a category is called: its catalogue label, or for a custom category the name its author typed. */
+export function categoryLabel(
+  category: ThreatCategory,
+  t: StudioTranslator['t'],
+): string {
+  const message = messageByKey.get(categoryKey(category));
+  return message === undefined ? category.category : t(message);
+}
 
 /** The key of every enumerated methodology and category pair, in the union's order. */
 export const enumeratedCategoryKeys: readonly string[] = [

@@ -1,6 +1,5 @@
 import { NodeResizeControl, ResizeControlVariant } from '@xyflow/react';
 import type { CSSProperties, KeyboardEvent, ReactElement } from 'react';
-import { badgeExtent } from './badges.js';
 import { handleSides, type NodeBox } from './handles.js';
 import type { CanvasNode } from './layout.js';
 import { svgNumber } from './numbers.js';
@@ -14,7 +13,7 @@ import {
   shiftedKeyboardResizeStep,
   type ResizeControlPosition,
 } from './resizing.js';
-import { resizeHandle, strokeWidths } from './tokens.js';
+import { resizeHandle } from './tokens.js';
 
 /** The accessible name of each resize control, which the mounting canvas words. */
 export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
@@ -25,12 +24,9 @@ export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
  * those {@link resizeControlsOf} leaves off a boundary curve. Each
  * holds a button named from `labels` that resizes by arrow key in
  * model-space steps. Both routes hand `onResizeEnd` the settled position and
- * size together, so a resize from the top or left is one edit. On a node with
- * a badge, the top-right handle sits on the top edge `resizeHandle.badgeGap`
- * screen pixels left of the badge's ink at every zoom, and at full zoom it
- * stays clear of the top-left handle. A boundary curve's corner handles sit
- * `resizeHandle.curveGap` outside its corners instead, clear of a handle on
- * a point there.
+ * size together, so a resize from the top or left is one edit. A boundary
+ * curve's corner handles sit `resizeHandle.curveGap` outside its corners,
+ * clear of a handle on a point there.
  */
 export function ResizeControls({
   labels,
@@ -138,24 +134,12 @@ function controlStyle(
   position: ResizeControlPosition,
   visible: boolean,
 ): CSSProperties | undefined {
-  const hidden: CSSProperties = visible ? {} : { visibility: 'hidden' };
-  if (node.kind === 'boundary-curve' && !sideControls.has(position)) {
-    return { ...hidden, ...outsideCorner(position) };
-  }
-  const badge = position === 'top-right' ? node.badge : undefined;
-  if (badge === undefined) {
-    return visible ? undefined : hidden;
-  }
-  const handleExtent = resizeHandle.size + 2 * resizeHandle.border;
-  const gap = `${svgNumber(resizeHandle.badgeGap)}px`;
-  const reach = badgeExtent(badge).radius + strokeWidths.badgeRing / 2;
-  const beyondTopLeft = 2 * (handleExtent + resizeHandle.badgeGap);
-  return {
-    ...hidden,
-    left: `max(${svgNumber(beyondTopLeft)}px, calc(100% - ${svgNumber(reach)}px))`,
-    translate: `calc(-100% - ${gap}) -50%`,
-    transformOrigin: `calc(100% + ${gap}) 50%`,
-  };
+  const hidden: CSSProperties | undefined = visible
+    ? undefined
+    : { visibility: 'hidden' };
+  return node.kind === 'boundary-curve' && !sideControls.has(position)
+    ? { ...hidden, ...outsideCorner(position) }
+    : hidden;
 }
 
 function outsideCorner(position: ResizeControlPosition): CSSProperties {

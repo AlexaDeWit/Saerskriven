@@ -1,4 +1,8 @@
-import { canvasClassNames, flowEndNodeId } from '@saerskriven/canvas';
+import {
+  canvasClassNames,
+  canvasInteractionClassNames,
+  flowEndNodeId,
+} from '@saerskriven/canvas';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
 import { elementIn } from '@saerskriven/model/fixtures';
@@ -23,6 +27,7 @@ import {
   boundaryElement,
   canvasModel,
   curvedCanvasModel,
+  flaggedCanvasModel,
   laidOutNode,
   noteElement,
   openCanvas,
@@ -168,6 +173,35 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
 
     expect(reader().classList.contains('selected')).toBe(true);
+  });
+
+  it("raises a selected trust boundary's badge into the viewport portal at the boundary's place, and keeps it in the boundary while unselected", () => {
+    openCanvas(
+      [],
+      flaggedCanvasModel({
+        'threat-path-disclosure': { elements: [boundaryElement] },
+      }),
+    );
+    render(<DiagramCanvas />);
+    const badge = `.${canvasClassNames.badge}`;
+    const boundary = document.querySelector(`[data-id="${boundaryElement}"]`);
+    const portal = document.querySelector('.react-flow__viewport-portal');
+
+    expect(boundary?.querySelector(badge)).not.toBeNull();
+    expect(portal?.querySelector(badge)).toBeNull();
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [boundaryElement] }));
+    });
+    const raised = portal?.querySelector<SVGElement>(
+      `.${canvasInteractionClassNames.badgeLayer}`,
+    );
+    const { position } = laidOutNode(boundaryElement);
+
+    expect(boundary?.querySelector(badge)).toBeNull();
+    expect(raised?.querySelector(badge)).not.toBeNull();
+    expect(raised?.style.left).toBe(`${String(position.x)}px`);
+    expect(raised?.style.top).toBe(`${String(position.y)}px`);
   });
 
   it('selects the element that was clicked, through the store', () => {
@@ -664,12 +698,14 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
 
-      fireEvent.pointerDown(scope, press);
-      fireEvent.click(scope, { detail: 2 });
+      fireEvent.pointerDown(existing, press);
+      fireEvent.click(existing, { detail: 2 });
 
-      expect(scope.getAttribute('aria-expanded')).toBe('false');
+      expect(existing.getAttribute('aria-expanded')).toBe('false');
       expect(modelStore.getState().inlineEditor).toEqual({
         kind: 'name',
         elementId: actorElement,
@@ -683,9 +719,11 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
-      fireEvent.pointerDown(scope, press);
-      expect(scope.getAttribute('aria-expanded')).toBe('false');
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
+      fireEvent.pointerDown(existing, press);
+      expect(existing.getAttribute('aria-expanded')).toBe('false');
 
       fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
         detail: 0,
@@ -702,10 +740,12 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
-      fireEvent.pointerDown(scope, press);
-      expect(scope.getAttribute('aria-expanded')).toBe('false');
-      fireEvent.pointerCancel(scope, press);
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
+      fireEvent.pointerDown(existing, press);
+      expect(existing.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.pointerCancel(existing, press);
 
       fireEvent.click(screen.getByRole('button', { name: 'Add a threat' }), {
         detail: 1,
@@ -721,11 +761,13 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
 
-      fireEvent.pointerDown(scope, press);
+      fireEvent.pointerDown(existing, press);
 
-      expect(scope.getAttribute('aria-expanded')).toBe('true');
+      expect(existing.getAttribute('aria-expanded')).toBe('true');
     });
 
     it('leaves a press on the panel that moved as far as a drag to the panel', () => {
@@ -734,14 +776,16 @@ describe('DiagramCanvas', () => {
       act(() => {
         dispatch(Action.Select({ elementIds: [actorElement] }));
       });
-      const scope = screen.getByRole('combobox', { name: 'Out of scope' });
+      const existing = screen.getByRole('combobox', {
+        name: 'Existing threat',
+      });
 
-      fireEvent.pointerDown(scope, {
+      fireEvent.pointerDown(existing, {
         ...press,
         clientX: press.clientX + placementClickDistance,
       });
 
-      expect(scope.getAttribute('aria-expanded')).toBe('true');
+      expect(existing.getAttribute('aria-expanded')).toBe('true');
       expect(modelStore.getState().inlineEditor).toBeUndefined();
     });
   });

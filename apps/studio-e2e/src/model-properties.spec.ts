@@ -224,9 +224,7 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await panelControl(page, 'Add assumption').click();
   await page.keyboard.type(rotate);
   await page.keyboard.press('Tab');
-  await expect(
-    panelField(page, 'combobox', 'Assumption 1 status'),
-  ).toBeFocused();
+  await expect(panelControl(page, 'Add assumption')).toBeFocused();
 
   await openModelProperties(page);
   await chooseInPanel(page, 'Existing assumption', rotate, modelPanel(page));
@@ -250,6 +248,9 @@ test("applying a threat's assumption to the model keeps its threat link, and eac
   await expect(panelField(page, 'combobox', 'Status')).toHaveText(
     threatStatus ?? '',
   );
+  await threatPanel(page)
+    .getByRole('button', { name: rotate, expanded: false })
+    .click();
   const unlinkHere = panelControl(page, 'Unlink assumption 1');
   await expect(unlinkHere).not.toHaveAccessibleDescription('');
   await unlinkHere.click();
@@ -282,9 +283,7 @@ test('an older assumption linked after an added one lands after it, and leaves a
   await panelControl(page, 'Add assumption').click();
   await page.keyboard.type(older);
   await page.keyboard.press('Tab');
-  await expect(
-    panelField(page, 'combobox', 'Assumption 1 status'),
-  ).toBeFocused();
+  await expect(panelControl(page, 'Add assumption')).toBeFocused();
 
   await openModelProperties(page);
   await modelControl(page, 'Add assumption').click();

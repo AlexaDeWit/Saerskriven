@@ -54,6 +54,8 @@ export type RecordKind<Held extends ThreatRecord> = {
   readonly title: 'enums.mitigation' | 'enums.assumption';
   readonly nounMessage: 'enums.noun-mitigation' | 'enums.noun-assumption';
   readonly heading: 'terms.mitigations' | 'terms.assumptions';
+  readonly addedMark: 'panel.mitigation-added' | 'panel.assumption-added';
+  readonly addedSaid: 'canvas.mitigation-added' | 'canvas.assumption-added';
   readonly statusMessage: (status: Held['status']) => RecordStatusMessage;
   readonly parts: readonly RecordPart[];
   readonly partField: (part: RecordPart) => RecordFieldMessage;
@@ -84,6 +86,8 @@ export const mitigationKind: RecordKind<Mitigation> = {
   title: 'enums.mitigation',
   nounMessage: 'enums.noun-mitigation',
   heading: 'terms.mitigations',
+  addedMark: 'panel.mitigation-added',
+  addedSaid: 'canvas.mitigation-added',
   statusMessage: (status) => mitigationStatusMessages[status],
   parts: ['title', 'prose'],
   partField: (part) =>
@@ -117,6 +121,8 @@ export const assumptionKind: RecordKind<Assumption> = {
   title: 'enums.assumption',
   nounMessage: 'enums.noun-assumption',
   heading: 'terms.assumptions',
+  addedMark: 'panel.assumption-added',
+  addedSaid: 'canvas.assumption-added',
   statusMessage: (status) => assumptionStatusMessages[status],
   parts: ['prose'],
   partField: () => 'fields.assumption-prose-field',
@@ -145,18 +151,27 @@ type NumberedThreat = Pick<Threat, 'id' | 'number'>;
 
 /**
  * What one record group's records are linked to: a threat, or for
- * assumptions the model. `elsewhere` says which other threats hold a record.
+ * assumptions the model. `elsewhere` says which other threats hold a record,
+ * and `elsewhereCounted` says how many, for a folded row. `inThreat` is true
+ * for a group in an expanded threat, whose heading counts its records and
+ * whose records are sections that start folded, where the model's are cards.
  */
 export type RecordTarget<Held extends ThreatRecord> = {
   readonly heading:
     | 'terms.mitigations'
     | 'terms.assumptions'
     | 'terms.model-assumptions';
+  readonly inThreat: boolean;
   readonly holds: (record: Held) => boolean;
   readonly attach: (record: Held) => Held;
   readonly link: (record: Held) => Action;
   readonly unlink: (record: Held) => Action;
   readonly elsewhere: (
+    record: Held,
+    threats: readonly NumberedThreat[],
+    translator: StudioTranslator,
+  ) => string | undefined;
+  readonly elsewhereCounted: (
     record: Held,
     threats: readonly NumberedThreat[],
     translator: StudioTranslator,
@@ -170,6 +185,7 @@ export function threatTarget<Held extends ThreatRecord>(
 ): RecordTarget<Held> {
   return {
     heading: kind.heading,
+    inThreat: true,
     holds: (record) => record.threats.includes(threatId),
     attach: (record) => ({ ...record, threats: [threatId] }),
     link: (record) => kind.link(record, threatId),
@@ -177,9 +193,12 @@ export function threatTarget<Held extends ThreatRecord>(
     elsewhere: (record, threats, translator) =>
       joined([
         alsoOn(record, threats, translator, threatId),
-        'appliesToModel' in record &&
-          record.appliesToModel &&
-          translator.t('panel.also-applies-to-model'),
+        appliesToModel(record, translator),
+      ]),
+    elsewhereCounted: (record, threats, translator) =>
+      joined([
+        alsoOnCount(record, threats, translator, threatId),
+        appliesToModel(record, translator),
       ]),
   };
 }
@@ -187,12 +206,15 @@ export function threatTarget<Held extends ThreatRecord>(
 /** The assumptions that apply to the model. */
 export const modelTarget: RecordTarget<Assumption> = {
   heading: 'terms.model-assumptions',
+  inThreat: false,
   holds: (assumption) => assumption.appliesToModel,
   attach: (assumption) => ({ ...assumption, appliesToModel: true }),
   link: ({ id }) => Action.LinkAssumptionToModel({ assumptionId: id }),
   unlink: ({ id }) => Action.UnlinkAssumptionFromModel({ assumptionId: id }),
   elsewhere: (assumption, threats, translator) =>
     joined([alsoOn(assumption, threats, translator)]),
+  elsewhereCounted: (assumption, threats, translator) =>
+    joined([alsoOnCount(assumption, threats, translator)]),
 };
 
 /** The text of one part of a record. */
@@ -206,7 +228,14 @@ export function textOf(record: ThreatRecord, part: RecordPart): string {
 
 /** What a person calls a record: its title or the first line of its text, and its id while both are empty. */
 export function recordLabel(record: ThreatRecord): string {
-  return firstLine(record) ?? record.id;
+  return recordHeadline(record) ?? record.id;
+}
+
+/** A record's title, or the first line of its text where it has no title, and nothing while both are empty. */
+export function recordHeadline(record: ThreatRecord): string | undefined {
+  return [textOf(record, 'title'), record.prose]
+    .map((text) => text.split('\n')[0].trim())
+    .find((line) => line !== '');
 }
 
 /**
@@ -227,7 +256,7 @@ export function linkableRecords<Held extends ThreatRecord>(
       .map((record) => ({
         id: record.id,
         label: recordLabel(record),
-        unnamed: firstLine(record) === undefined,
+        unnamed: recordHeadline(record) === undefined,
         record,
       })),
   ).map(([{ record }, text]) => ({
@@ -275,29 +304,6 @@ function recordDetail<Held extends ThreatRecord>(
   ]
     .filter((part) => part !== false)
     .join(', ');
-}
-
-/**
- * `rows` in the order of the ids a group has shown, and that order with the
- * ids of rows it has not shown before appended. A shown id whose row is gone
- * keeps its slot, so the row takes it back when it returns. The order comes
- * back as `shown` itself when no row is new.
- */
-export function inShownOrder<Row extends { readonly id: string }>(
-  rows: readonly Row[],
-  shown: readonly string[],
-): { readonly rows: readonly Row[]; readonly shown: readonly string[] } {
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  const known = new Set(shown);
-  const arrived = [...byId.keys()].filter((id) => !known.has(id));
-  const order =
-    arrived.length === 0 && known.size === shown.length
-      ? shown
-      : [...known, ...arrived];
-  return {
-    rows: order.flatMap((id) => byId.get(id) ?? []),
-    shown: order,
-  };
 }
 
 /**
@@ -388,6 +394,27 @@ function alsoOn(
   });
 }
 
+function alsoOnCount(
+  record: ThreatRecord,
+  threats: readonly NumberedThreat[],
+  { t }: StudioTranslator,
+  except?: ThreatId,
+): string | false {
+  const count = threatNumbers(record, threats, except).length;
+  return count > 0 && t('panel.also-on-other-threats', { count });
+}
+
+function appliesToModel(
+  record: ThreatRecord,
+  { t }: StudioTranslator,
+): string | false {
+  return (
+    'appliesToModel' in record &&
+    record.appliesToModel &&
+    t('panel.also-applies-to-model')
+  );
+}
+
 function threatNumbers(
   record: ThreatRecord,
   threats: readonly NumberedThreat[],
@@ -401,12 +428,6 @@ function threatNumbers(
 function joined(said: readonly (string | false)[]): string | undefined {
   const text = sentences(...said.filter((sentence) => sentence !== false));
   return text === '' ? undefined : text;
-}
-
-function firstLine(record: ThreatRecord): string | undefined {
-  return [textOf(record, 'title'), record.prose]
-    .map((text) => text.split('\n')[0].trim())
-    .find((line) => line !== '');
 }
 
 function freshMitigation(): Mitigation {

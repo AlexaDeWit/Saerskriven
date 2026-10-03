@@ -71,7 +71,6 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
     'Flödenas kryptering och känslighet: nu beskrivningstext',
   'tmbom-data-set-as-prose':
     'Datamängd ”{name}”: nu text på dess datalager, inte längre delad',
-  'tmbom-data-set-dropped':
-    'Datamängd ”{name}”: på inget datalager, inte importerad',
-  'field-not-retained': 'Fält {path}: inte importerat',
+  'tmbom-data-set-dropped': 'Datamängd ”{name}”: på inget datalager, inte läst',
+  'field-not-retained': 'Fält {path}: inte läst',
 });

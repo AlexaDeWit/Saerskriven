@@ -1,4 +1,6 @@
-import { emptyModel } from '@saerskriven/model';
+import { drawnBounds, selectedBadgeAnchor } from '@saerskriven/canvas';
+import { badgeRadius } from '@saerskriven/canvas/tokens';
+import { emptyModel, type ElementId } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import { reduce } from '../store/reducer.js';
 import { initialState } from '../store/state.js';
@@ -61,6 +63,15 @@ describe('currentLayout', () => {
   it('draws nothing for a model that holds no diagram', () => {
     expect(currentLayout(initialState(emptyModel))).toBe(emptyLayout);
   });
+
+  it('lays the diagram out the same whatever is selected', () => {
+    const selecting = (elementIds: readonly ElementId[]) =>
+      reduce(start, Action.Select({ elementIds }));
+    const selected = currentLayout(selecting([actorElement]));
+
+    expect(currentLayout(start)).toBe(selected);
+    expect(currentLayout(selecting([processElement]))).toBe(selected);
+  });
 });
 
 describe('selectionBounds', () => {
@@ -72,6 +83,22 @@ describe('selectionBounds', () => {
     expect(bounds.x).toBeLessThanOrEqual(0);
     expect(bounds.x + bounds.width).toBeGreaterThanOrEqual(420);
     expect(bounds.y + bounds.height).toBeLessThan(note?.position.y ?? 0);
+  });
+
+  it("reaches a selected element's badge where it steps out past the corner, beyond what the layout measures", () => {
+    const layout = currentLayout(start);
+    const reader = layout.nodes.find((node) => node.id === actorElement);
+    assert.isDefined(reader);
+    const at = selectedBadgeAnchor(reader);
+    const badgeTop = {
+      x: reader.position.x + at.x,
+      y: reader.position.y + at.y - badgeRadius.primary,
+    };
+
+    expect(
+      insideBounds(badgeTop, selectionBounds(layout, [actorElement])),
+    ).toBe(true);
+    expect(insideBounds(badgeTop, drawnBounds([reader], []))).toBe(false);
   });
 });
 

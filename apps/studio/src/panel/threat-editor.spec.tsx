@@ -3,11 +3,19 @@ import type { Threat } from '@saerskriven/model';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
+  firstThreat,
   processElement,
+  recordedModel,
   sampleThreat,
   storeElement,
 } from '../store/store.fixtures.js';
-import { editorTimeout, showThreatEditor } from './panel.fixtures.js';
+import {
+  editorTimeout,
+  recordedThreat,
+  showThreatEditor,
+} from './panel.fixtures.js';
+import { initialState } from '../store/state.js';
+import { modelStore } from '../store/store.js';
 import type { RefusedField } from './refusals.js';
 import { describedNumbers, numbersIn, textbox } from '../ui/ui.fixtures.js';
 import { softHyphen } from '@saerskriven/model/fixtures';
@@ -28,6 +36,10 @@ const typeInto = async (field: string, text: string): Promise<void> => {
 describe(
   'ThreatEditor',
   () => {
+    beforeEach(() => {
+      modelStore.setState(initialState(recordedModel), true);
+    });
+
     it('is named by its number and title while it is collapsed', () => {
       showThreatEditor({}, false);
 
@@ -48,6 +60,56 @@ describe(
       expect(
         screen.getByRole('button', { name: 'Delete threat 1' }),
       ).toBeDefined();
+    });
+
+    it('runs its fields from the title down to Delete, severity and status below the records they are judged from', () => {
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
+
+      const drawn = [
+        textbox('Title'),
+        screen.getByRole('combobox', { name: 'Category' }),
+        textbox('Description'),
+        screen.getByRole('group', { name: 'Mitigations 1' }),
+        screen.getByRole('group', { name: 'Assumptions 1' }),
+        screen.getByRole('combobox', { name: 'Severity' }),
+        screen.getByRole('combobox', { name: 'Status' }),
+        screen.getByRole('group', { name: 'Attached elements' }),
+        screen.getByRole('button', { name: 'Delete threat 1' }),
+      ];
+
+      expect(
+        drawn.every((control, index) =>
+          index === 0
+            ? true
+            : (drawn[index - 1].compareDocumentPosition(control) &
+                Node.DOCUMENT_POSITION_FOLLOWING) !==
+              0,
+        ),
+      ).toBe(true);
+    });
+
+    it('shows a raised flag beside Status as well as in its summary', () => {
+      showThreatEditor({ threat: recordedThreat(firstThreat, 'mitigated') });
+
+      const status = screen.getByRole('combobox', { name: 'Status' });
+      const beside = status.closest('[data-status-column]');
+
+      expect(
+        beside?.querySelector(
+          '[data-flag="mitigated-without-implemented-work"]',
+        ),
+      ).not.toBeNull();
+      expect(
+        disclosure().querySelector(
+          '[data-flag="mitigated-without-implemented-work"]',
+        ),
+      ).not.toBeNull();
+    });
+
+    it('starts its description at two lines', () => {
+      showThreatEditor();
+
+      expect(textbox('Description').getAttribute('rows')).toBe('2');
     });
 
     it('commits a title left behind as a patch of that field alone', async () => {

@@ -57,6 +57,18 @@ describe('diagramGraph', () => {
     );
   });
 
+  it('hands React Flow the laid-out nodes and flows whatever is selected, so selecting a badged element moves no flow name', () => {
+    const unselected = diagramGraph(layout, canvasModel, [], t);
+    const selected = diagramGraph(layout, canvasModel, [actorElement], t);
+
+    expect(selected.nodes.map((node) => node.data)).toEqual(
+      unselected.nodes.map((node) => node.data),
+    );
+    expect(selected.edges.map((edge) => edge.data)).toEqual(
+      unselected.edges.map((edge) => edge.data),
+    );
+  });
+
   it('keeps a selected boundary below unselected nodes', () => {
     const { nodes } = diagramGraph(layout, canvasModel, [boundaryElement], t);
     expect(nodes.find((node) => node.id === boundaryElement)?.zIndex).toBe(-1);

@@ -151,14 +151,32 @@ describe('openedBy', () => {
     expect(openedBy(openOutcomes.NoPicker, untitledFile)).toBeUndefined();
   });
 
-  it('names an import whose own stem reduces to nothing, in the language given', () => {
+  it.each(['otm', 'tmbom'] as const)(
+    'opens a %s text as a new model, named as YAML under the file stem',
+    (format) => {
+      const action = openedBy(
+        OpenOutcome.Chosen({
+          name: 'example.json',
+          text: committedText(`${format}/example.json`),
+        }),
+        untitledFile,
+      );
+
+      expect(action).toMatchObject({
+        _tag: 'Imported',
+        name: 'example.yaml',
+        format,
+      });
+    },
+  );
+
+  it('names a new model whose file stem reduces to nothing, in the language given', () => {
     const action = openedBy(
       OpenOutcome.Chosen({
         name: '.json',
         text: committedText('otm/example.json'),
       }),
       'hotmodell',
-      'import',
     );
 
     expect(action).toMatchObject({ _tag: 'Imported', name: 'hotmodell.yaml' });
@@ -369,6 +387,14 @@ const opened = (source: RetainedSource, divergences: readonly Divergence[]) =>
     divergences,
   });
 
+const imported = (divergences: readonly Divergence[]) =>
+  Action.Imported({
+    model: sampleModel,
+    name: 'example.yaml',
+    format: 'otm',
+    divergences,
+  });
+
 const keptOf = (report: LossReport | undefined): readonly boolean[] =>
   report?.losses.map(({ kept }) => kept) ?? [];
 
@@ -386,17 +412,24 @@ describe('openReport', () => {
     ]);
   });
 
-  it('keeps nothing an import lost, which holds no source to save back to', () => {
-    const report = openReport(
-      Action.Imported({
-        model: sampleModel,
-        name: 'example.yaml',
-        divergences: [eopCard],
-      }),
-    );
+  it('keeps nothing a file Saerskriven only reads lost, which holds no source to save back to', () => {
+    const report = openReport(imported([eopCard]));
 
-    expect(report?.occasion).toBe('import');
+    expect(report).toMatchObject({ occasion: 'open', readOnlyFormat: 'otm' });
     expect(keptOf(report)).toEqual([false]);
+  });
+
+  it('reports a file Saerskriven only reads even where it lost nothing, for its notice', () => {
+    expect(openReport(imported([raisedMark]))).toEqual({
+      occasion: 'open',
+      model: sampleModel,
+      losses: [],
+      readOnlyFormat: 'otm',
+    });
+  });
+
+  it('reports nothing for an open of a format Saerskriven writes that lost nothing', () => {
+    expect(openReport(opened(foreignSource, [raisedMark]))).toBeUndefined();
   });
 
   it('names each subject from the model the read produced', () => {

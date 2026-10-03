@@ -17,6 +17,7 @@ import {
 import { sameSelection } from '../store/selection.js';
 import { selectedElements } from '../store/selectors.js';
 import { modelStore } from '../store/store.js';
+import { positionChanges, unmoved } from './changes.js';
 import { currentConnecting } from './connecting.js';
 import { drawnElement } from './edits.js';
 import { placementClickDistance, pointerDistance } from './elements.js';
@@ -29,8 +30,6 @@ import { currentTool } from './tools.js';
 export const selectionBoundsPadding = 4;
 
 const controlSelector = 'button, input, textarea, .react-flow__handle';
-
-const unmoved: Point = { x: 0, y: 0 };
 
 type GroupDragView = Pick<
   ReactFlowInstance<DiagramNode, CanvasFlowEdge>,
@@ -241,17 +240,4 @@ export function useGroupDrag(
 
 function onGrid(value: number): number {
   return Math.round(value / gridSpacing) * gridSpacing;
-}
-
-function positionChanges(
-  nodes: readonly CanvasNode[],
-  offset: Point,
-  dragging: boolean,
-): NodeChange<DiagramNode>[] {
-  return nodes.map((node) => ({
-    id: node.id,
-    type: 'position',
-    position: { x: node.position.x + offset.x, y: node.position.y + offset.y },
-    dragging,
-  }));
 }

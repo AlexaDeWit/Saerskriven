@@ -1,9 +1,11 @@
 import {
   DetectionFailure,
   ReadFailure,
+  importFormatSchema,
   type WireIssue,
 } from '@saerskriven/formats';
 import { OperationFailure } from '@saerskriven/model';
+import { formatNames } from '../format-names.js';
 import { parseIssueLine } from '../messages/issues/text.js';
 import { useTranslator } from '../messages/locale.js';
 import { Message } from '../messages/message.js';
@@ -216,7 +218,13 @@ function describeRead(
   return DetectionFailure.$is('NoFormatClaimed')(failure)
     ? {
         headline: t('notice.no-format-claimed', { name }),
-        details: [t('notice.formats-tried', { formats: failure.tried })],
+        details: [
+          t('notice.formats-tried', {
+            formats: [...failure.tried, ...importFormatSchema.options].map(
+              (format) => formatNames[format],
+            ),
+          }),
+        ],
       }
     : ReadFailure.$match(failure, {
         ExceededReadLimit: (bound) => ({

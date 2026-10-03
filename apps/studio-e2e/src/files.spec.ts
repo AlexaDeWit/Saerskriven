@@ -1,16 +1,22 @@
 import { expect, test, type Page } from '@playwright/test';
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { testDataPath } from '@saerskriven/model/fixtures';
+import { Either } from 'effect';
 import {
   canvasContainer,
   canvasSettled,
+  dragOnto,
   elementNodes,
 } from './canvas.fixtures.js';
 import {
   chooseFile,
   expectFileShown,
   featureCompleteFile,
+  handleOn,
   menuButton,
   nameField,
   nodeNamed,
+  openFallback,
   openFile,
   openPlaceholder,
   runFromMenu,
@@ -113,6 +119,48 @@ test('opens the native format by its content, and draws its diagram', async ({
   await expect(page.locator('.react-flow__edge')).toHaveCount(7);
   await expect(nodeNamed(page, storefront.shopNetwork)).toBeVisible();
   await expect(nodeNamed(page, storefront.webShop)).toBeVisible();
+});
+
+test('opens an OTM file through Open as a new model, and saves native YAML under its stem', async ({
+  page,
+}) => {
+  await openFallback(page);
+  const chooser = page.waitForEvent('filechooser');
+  await runFromMenu(page, 'Open');
+  await (await chooser).setFiles(testDataPath('otm', 'example.json'));
+  await expect(page.getByTestId('failure-notice')).toBeEmpty();
+  await expect(page.getByTestId('loss-report')).not.toBeEmpty();
+  await expect(page.locator('.react-flow__edge')).toHaveCount(2);
+  await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
+  const source = nodeNamed(page, /^Class CustomerDatabase, process/u);
+  const target = nodeNamed(page, /^Customer Database, process/u);
+  await source.hover();
+  await dragOnto(page, handleOn(source, 'left'), handleOn(target, 'right'));
+  await expect(page.locator('.react-flow__edge')).toHaveCount(3);
+  const output = await savedFile(page);
+  expect(output.name).toBe('example.yaml');
+  const read = Either.getOrThrow(saerskrivenYamlCodec.read(output.text));
+  expect(read.model.threats).toHaveLength(2);
+  await expect(menuButton(page)).toHaveAccessibleName('Menu');
+});
+
+test('after a TM-BOM file opens, Save asks through the save picker with YAML under its stem', async ({
+  page,
+}) => {
+  await page.addInitScript(stubSavePicker, savePicker);
+  await openPlaceholder(page);
+  await chooseFile(page, 'tmbom/example.json');
+  await expect(menuButton(page)).toHaveAccessibleName('Menu, unsaved changes');
+
+  await runFromMenu(page, 'Save');
+
+  await expect.poll(() => writtenBySavePicker(page)).toHaveLength(1);
+  expect(await recorded(page, savePicker.asked)).toEqual([
+    {
+      name: 'example.yaml',
+      formats: ['Saerskriven YAML', 'Threat Dragon JSON'],
+    },
+  ]);
 });
 
 test('after a reload, Save asks once through the save picker and writes there after, and a dismissed picker leaves the work unsaved', async ({

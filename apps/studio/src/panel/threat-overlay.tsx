@@ -7,8 +7,9 @@ import { selectedElements } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { ModelPropertiesPanel } from './model-properties.js';
 import { hideModelProperties, panelFocusHandler } from './panel-focus.js';
+import type { HeldDraft } from './element-threats.js';
 import type { RefusedField } from './refusals.js';
-import { ThreatPanel, type HeldDraft } from './threat-panel.js';
+import { ThreatPanel } from './threat-panel.js';
 import { openFileName, panelSubject } from './threats.js';
 
 type Held = {

@@ -76,6 +76,6 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   'tmbom-data-set-as-prose':
     'Jeu de données « {name} » : désormais du texte sur ses magasins de données, non partagé',
   'tmbom-data-set-dropped':
-    'Jeu de données « {name} » : sur aucun magasin de données, non importé',
-  'field-not-retained': 'Champ {path} : non importé',
+    'Jeu de données « {name} » : sur aucun magasin de données, non lu',
+  'field-not-retained': 'Champ {path} : non lu',
 });

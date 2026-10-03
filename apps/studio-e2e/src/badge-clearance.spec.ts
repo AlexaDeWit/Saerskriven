@@ -5,6 +5,7 @@ import {
   boxesOverlap,
   boxOf,
   canvasSettled,
+  centreOf,
   dragBy,
   inkBoxOf,
   onScreen,
@@ -29,6 +30,13 @@ const resizeDrags = [
   ['right', { x: 24, y: 0 }, false],
 ] as const;
 
+const corners = [
+  ['top', 'left'],
+  ['top', 'right'],
+  ['bottom', 'right'],
+  ['bottom', 'left'],
+] as const;
+
 const openWithFlagOnlyStore = async (page: Page): Promise<void> => {
   const text = committedText('every-glyph.model.json')
     .replace('"elements": ["el-db"]', '"elements": ["el-api"]')
@@ -36,8 +44,22 @@ const openWithFlagOnlyStore = async (page: Page): Promise<void> => {
   await openModelDocument(page, JSON.parse(text));
 };
 
-const selectClear = async (page: Page, name: RegExp): Promise<Locator> => {
-  await openWithFlagOnlyStore(page);
+const openWithShortFlaggedApi = async (page: Page): Promise<void> => {
+  const text = committedText('every-glyph.model.json')
+    .replace('"elements": ["el-probe"]', '"elements": ["el-api"]')
+    .replace(
+      '"size": { "width": 120, "height": 120 }',
+      '"size": { "width": 120, "height": 40 }',
+    );
+  await openModelDocument(page, JSON.parse(text));
+};
+
+const selectClear = async (
+  page: Page,
+  name: RegExp,
+  open = openWithFlagOnlyStore,
+): Promise<Locator> => {
+  await open(page);
   const node = await selectNode(page, name);
   await threatPanel(page)
     .getByRole('button', { name: 'Close threats', exact: true })
@@ -48,32 +70,82 @@ const selectClear = async (page: Page, name: RegExp): Promise<Locator> => {
 
 const lowZoom = 0.45;
 
-const onScreenGap = 2;
+const cornerTolerance = 0.5;
 
-const badgeInk = (node: Locator) =>
-  inkBoxOf(
-    node.locator(
-      `.${canvasClassNames.badge} circle, .${canvasClassNames.badge} path`,
-    ),
-  );
+const badgeShapes = `.${canvasClassNames.badge} circle, .${canvasClassNames.badge} path`;
+
+const badgeInk = (node: Locator) => inkBoxOf(node.locator(badgeShapes));
+
+const badgeFace = (node: Locator): Locator => node.locator(badgeShapes).first();
+
+const zoomOutTo = async (page: Page, zoom: number): Promise<void> => {
+  const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
+  for (let step = 0; step < 10 && (await viewportZoom(page)) > zoom; step++) {
+    await zoomOut.click();
+    await canvasSettled(page);
+  }
+  expect(await viewportZoom(page)).toBeLessThanOrEqual(zoom);
+};
+
+const expectHandlesOnCornersClearOfBadge = async (
+  node: Locator,
+): Promise<void> => {
+  const frame = await screenBoxOf(node);
+  const ink = await badgeInk(node);
+  for (const [vertical, horizontal] of corners) {
+    const square = await screenBoxOf(
+      node.locator(
+        `.react-flow__resize-control.handle.${vertical}.${horizontal}`,
+      ),
+    );
+    const corner = {
+      x: horizontal === 'left' ? frame.x : frame.x + frame.width,
+      y: vertical === 'top' ? frame.y : frame.y + frame.height,
+    };
+    expect(corner.x).toBeGreaterThanOrEqual(square.x - cornerTolerance);
+    expect(corner.x).toBeLessThanOrEqual(
+      square.x + square.width + cornerTolerance,
+    );
+    expect(corner.y).toBeGreaterThanOrEqual(square.y - cornerTolerance);
+    expect(corner.y).toBeLessThanOrEqual(
+      square.y + square.height + cornerTolerance,
+    );
+    expect(boxesOverlap(square, ink)).toBe(false);
+  }
+};
+
+test(
+  'a short element keeps every corner handle clear of the flag stacked under its selected badge, at low zoom as well',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const node = await selectClear(
+      page,
+      /^Order API, process/u,
+      openWithShortFlaggedApi,
+    );
+    await expect(node.locator(`.${canvasClassNames.badgeFlag}`)).toHaveCount(1);
+
+    await expectHandlesOnCornersClearOfBadge(node);
+    await zoomOutTo(page, lowZoom);
+    await expectHandlesOnCornersClearOfBadge(node);
+  },
+);
 
 for (const [badge, element, name, counts] of cases) {
   test(
-    `a selected element with ${badge} keeps its handles, controls and badge clear of each other, at low zoom as well`,
+    `a selected element with ${badge} keeps every handle on its corner, its controls reachable and its badge clear past the corner, at low zoom as well`,
     { tag: '@phone' },
     async ({ page }) => {
       const node = await selectClear(page, name);
 
-      await test.step('no corner handle covers the badge', async () => {
+      await test.step('every corner handle sits on its corner, clear of the badge', async () => {
         await expect(
           node.locator(`.${canvasClassNames.badgePrimary}`),
         ).toHaveCount(counts);
-        const ink = await badgeInk(node);
-        const handles = node.locator('.react-flow__resize-control.handle');
-        await expect(handles).toHaveCount(4);
-        for (const handle of await handles.all()) {
-          expect(boxesOverlap(await screenBoxOf(handle), ink)).toBe(false);
-        }
+        await expect(
+          node.locator('.react-flow__resize-control.handle'),
+        ).toHaveCount(4);
+        await expectHandlesOnCornersClearOfBadge(node);
       });
 
       await test.step('every resize control is under the pointer', async () => {
@@ -84,46 +156,39 @@ for (const [badge, element, name, counts] of cases) {
         }
       });
 
-      await test.step('the badge draws above the selection frame and the side lines', async () => {
-        await page.addStyleTag({
-          content:
-            '.react-flow__node.selected::after, .react-flow__resize-control.line { pointer-events: auto !important; }',
-        });
-        const corner = await screenBoxOf(node);
+      await test.step('the badge steps out past the top right corner and takes the pointer there', async () => {
+        const frame = await screenBoxOf(node);
         const ink = await badgeInk(node);
-        const inside = {
-          x: corner.x + corner.width - ink.width * 0.1,
-          y: corner.y + ink.width * 0.17,
-        };
+        expect(ink.x).toBeGreaterThan(frame.x + frame.width);
+        expect(ink.y).toBeLessThan(frame.y);
         expect(
-          await reachesAt(node.locator(`.${canvasClassNames.badge}`), inside),
+          await reachesAt(
+            node.locator(`.${canvasClassNames.badge}`),
+            await centreOf(badgeFace(node)),
+          ),
         ).toBe(true);
       });
 
-      await test.step('the top right handle keeps a gap from the badge on screen at low zoom', async () => {
-        const zoomOut = page.getByRole('button', {
-          name: 'Zoom out',
-          exact: true,
-        });
-        for (
-          let step = 0;
-          step < 10 && (await viewportZoom(page)) > lowZoom;
-          step++
-        ) {
-          await zoomOut.click();
-          await canvasSettled(page);
-        }
-        expect(await viewportZoom(page)).toBeLessThanOrEqual(lowZoom);
-        const handle = await screenBoxOf(
-          node.locator('.react-flow__resize-control.handle.top.right'),
-        );
-        const ink = await badgeInk(node);
-        expect(ink.x - (handle.x + handle.width)).toBeGreaterThanOrEqual(
-          onScreenGap,
-        );
+      await test.step('at low zoom every corner handle still sits on its corner, clear of the badge', async () => {
+        await zoomOutTo(page, lowZoom);
+        await expectHandlesOnCornersClearOfBadge(node);
       });
     },
   );
+
+  test(`a press on the stepped-out badge drags the selected element with ${badge}`, async ({
+    page,
+  }) => {
+    const node = await selectClear(page, name);
+    const original = await boxOf(node);
+
+    await dragBy(page, badgeFace(node), { x: 40, y: 30 });
+
+    await expect.poll(async () => (await boxOf(node)).x).not.toBe(original.x);
+    await expect(node).toHaveClass(/selected/u);
+    await runFromMenu(page, 'Undo');
+    await expect.poll(() => boxOf(node)).toEqual(original);
+  });
 
   test(`the corner and side controls still resize an element with ${badge}`, async ({
     page,

@@ -66,11 +66,22 @@ in [`yaml-alias-cost.ts`](src/lib/yaml-alias-cost.ts).
 
 ## Import
 
-[Import](../../docs/import.md) converts OTM and TM-BOM into a native model through
-`importModel` ([`import.ts`](src/lib/import.ts)). No codec writes those
-formats. `importedId` is the id an import gives each record it makes, from
-the source parts it was made of, and `importedFrom` finds the records made
-from the source record a divergence names by its id.
+`importModel` ([`import.ts`](src/lib/import.ts)) converts an OTM or TM-BOM
+text into a native model
+([what each becomes](../../docs/studio.md#otm-and-tm-bom)), returning
+`ReadFailure` on refusal. No codec writes those formats.
+`readOrImport` reads a text as `readAnyFormat` does, and converts it where no
+codec claims it and its root names OTM or TM-BOM, which is how the studio's
+Open and `saer convert` read a file. The text a conversion joins, the
+identifiers it generates, and the escaped paths its report names for
+undeclared fields share one budget, `readLimits.maxImportTextUnits`, charged
+before each string is built, and a conversion over it returns
+`ExceededReadLimit`. The mapping validates the references it uses and then
+parses the result through `parseModel`.
+
+`importedId` is the id an import gives each record it makes, from the source
+parts it was made of, and `importedFrom` finds the records made from the
+source record a divergence names by its id.
 
 An `InvalidWireDocument` issue carries a parse issue code of
 `@saerskriven/model` or an import code of
