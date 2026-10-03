@@ -4,6 +4,7 @@ import {
   diagramId,
   elementId,
   flowIn,
+  mitigationOf,
   modelWith,
   parsedFixture,
   securityModelFixture,
@@ -19,13 +20,15 @@ import {
 } from './model.fixtures.js';
 import {
   fragmentRecordCounts,
+  fragmentThreatCounts,
   insertFragment,
   remapFragment,
   selectionFragment,
 } from './fragment.js';
 import { unlinkMitigation } from './mitigation-operations.js';
 import { parseModel, type Model } from './parse.js';
-import { removeThreat } from './threat-operations.js';
+import { removeThreat, replaceThreat } from './threat-operations.js';
+import type { Threat } from './threats.js';
 
 const diagram = diagramId('diagram-main');
 
@@ -571,5 +574,137 @@ describe('pasting records', () => {
       linked: 0,
       cloned: 2,
     });
+  });
+});
+
+describe('pasting a threat that applies to the model', () => {
+  const drawn = diagramId('d');
+  const copied = elementId('el-a');
+  const modelWide = threatOf({
+    number: 1,
+    elements: ['el-a'],
+    appliesToModel: true,
+  });
+  const ordinary = threatOf({ number: 2, elements: ['el-a'] });
+  const shared = mitigationOf({
+    id: 'mitigation-shared',
+    threats: [modelWide.id, ordinary.id],
+  });
+  const source = modelWith({
+    elements: [boxAt('el-a', 0, 0), boxAt('el-b', 200, 0)],
+    threats: [modelWide, ordinary],
+    mitigations: [shared],
+  });
+  const cut = Either.getOrThrow(removeElement(source, copied));
+
+  function pastedInto(target: Model) {
+    const fragment = Either.getOrThrow(
+      selectionFragment(source, drawn, [copied]),
+    );
+    const remapped = Either.getOrThrow(
+      remapFragment(fragment, 'pasted', { x: 20, y: 20 }, target),
+    );
+    return {
+      inserted: Either.getOrThrow(insertFragment(target, drawn, remapped)),
+      records: fragmentRecordCounts(target, remapped),
+      threats: fragmentThreatCounts(target, remapped),
+    };
+  }
+
+  const edited = (change: Partial<Threat>): Model =>
+    Either.getOrThrow(replaceThreat(source, { ...modelWide, ...change }));
+
+  it('attaches the pasted element to the threat a cut left in the model, under its number, and copies none', () => {
+    expect(cut.threats).toEqual([{ ...modelWide, elements: [] }]);
+
+    const { inserted, threats } = pastedInto(cut);
+
+    expect(inserted.threats).toEqual([
+      { ...modelWide, elements: ['pasted:el-a'] },
+      { ...ordinary, id: 'pasted:threat-2', elements: ['pasted:el-a'] },
+    ]);
+    expect(inserted.lastIssuedThreatNumber).toBe(2);
+    expect(threats).toEqual({ attached: 1, pasted: 1 });
+  });
+
+  it('attaches a copy of the element to the same threat while the original stays on it', () => {
+    const { inserted } = pastedInto(source);
+
+    expect(inserted.threats).toEqual([
+      { ...modelWide, elements: ['el-a', 'pasted:el-a'] },
+      ordinary,
+      {
+        ...ordinary,
+        id: 'pasted:threat-2',
+        number: 3,
+        elements: ['pasted:el-a'],
+      },
+    ]);
+  });
+
+  it('leaves the records of the held threat as the model holds them, and links a shared record to the pasted threats alone', () => {
+    const { inserted, records } = pastedInto(source);
+
+    expect(inserted.mitigations).toEqual([
+      { ...shared, threats: [...shared.threats, 'pasted:threat-2'] },
+    ]);
+    expect(records).toEqual({ linked: 1, cloned: 0 });
+
+    const relinked = modelWith({
+      elements: [boxAt('el-a', 0, 0)],
+      threats: [modelWide],
+      mitigations: [{ ...shared, title: 'Edited', threats: [modelWide.id] }],
+    });
+    const onto = pastedInto(relinked);
+
+    expect(onto.inserted.mitigations).toEqual([
+      ...relinked.mitigations,
+      {
+        ...shared,
+        id: 'pasted:mitigation-shared',
+        threats: ['pasted:threat-2'],
+      },
+    ]);
+    expect(onto.records).toEqual({ linked: 0, cloned: 1 });
+  });
+
+  it.each<[string, Partial<Threat>]>([
+    ['title', { title: 'Edited' }],
+    ['description', { description: 'Edited.' }],
+    ['severity', { severity: 'critical' }],
+    ['status', { status: 'mitigated' }],
+    ['category', { category: { methodology: 'STRIDE', category: 'spoofing' } }],
+    ['model link', { appliesToModel: false }],
+  ])(
+    'copies the threat as a new one where the %s of the held threat differs',
+    (_, change) => {
+      const target = edited(change);
+      const { inserted, threats } = pastedInto(target);
+
+      expect(inserted.threats.map(({ id, number }) => [id, number])).toEqual([
+        [modelWide.id, 1],
+        [ordinary.id, 2],
+        ['pasted:threat-1', 3],
+        ['pasted:threat-2', 4],
+      ]);
+      expect(inserted.threats[0]).toEqual(target.threats[0]);
+      expect(inserted.threats[2].appliesToModel).toBe(false);
+      expect(threats).toEqual({ attached: 0, pasted: 2 });
+    },
+  );
+
+  it('copies the threat where the model holds its id under another number', () => {
+    const renumbered = modelWith({
+      elements: [boxAt('el-a', 0, 0)],
+      threats: [{ ...modelWide, number: 5 }],
+    });
+
+    const { inserted } = pastedInto(renumbered);
+
+    expect(inserted.threats.map(({ id, number }) => [id, number])).toEqual([
+      [modelWide.id, 5],
+      ['pasted:threat-1', 1],
+      ['pasted:threat-2', 2],
+    ]);
   });
 });
