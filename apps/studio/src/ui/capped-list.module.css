@@ -27,7 +27,7 @@
   justify-content: center;
   box-sizing: border-box;
   block-size: var(--saer-scroll-cue-size);
-  background: var(--saer-colour-surface);
+  background: inherit;
   color: var(--saer-colour-text-muted);
 }
 

@@ -13,7 +13,7 @@ stylesheet.
 | Module                                                         | What it holds                                                                                           |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `enum-field.tsx`                                               | `EnumField`, the listbox control                                                                        |
-| `capped-list.tsx`                                              | `CappedList`, the select overlay capped to the window with a cue at each cut edge                       |
+| `capped-list.tsx`                                              | `CappedList`, the select overlay with a height cap and a cue at each cut edge                           |
 | `cursor-row.module.css`                                        | The row under a list's or a menu's cursor, which every listbox and menu row takes beside its own class  |
 | `severity-field.tsx`, `status-field.tsx`, `category-field.tsx` | `EnumField` bound to a model schema                                                                     |
 | `text-field.tsx`, `grow-to-content.ts`                         | `TextField` and `ProseField` with their draft state, and textarea growth                                |

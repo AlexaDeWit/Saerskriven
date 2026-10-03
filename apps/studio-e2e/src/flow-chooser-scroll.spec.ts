@@ -1,10 +1,12 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { committedText } from '@saerskriven/model/fixtures';
 import { edgesOf } from './canvas.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
   focusedOption,
   openModelDocument,
+  scrollCue,
+  scrolledOffItsStart,
   selectByKeyboard,
   storefront,
 } from './studio.fixtures.js';
@@ -35,9 +37,6 @@ const crowdedModel = (): unknown => {
   );
 };
 
-const scrollCue = (page: Page, edge: 'earlier' | 'later'): Locator =>
-  page.locator(`[data-scroll-cue="${edge}"]`);
-
 const openChooser = async (page: Page): Promise<void> => {
   await openModelDocument(page, crowdedModel());
   await selectByKeyboard(page, storefront.webShop);
@@ -45,22 +44,37 @@ const openChooser = async (page: Page): Promise<void> => {
   await expect(page.getByRole('listbox')).toBeVisible();
 };
 
+const scrolledOffItsEnd = async (page: Page): Promise<void> => {
+  await expect(async () => {
+    await page.keyboard.press('ArrowUp');
+    await expect(scrollCue(page, 'later')).toBeVisible({ timeout: 100 });
+  }).toPass({ intervals: [0], timeout: 5_000 });
+};
+
 const chooserCapsAndScrolls = async (page: Page): Promise<void> => {
   await openChooser(page);
   const list = page.getByRole('listbox');
-  const window = page.viewportSize();
-  expect((await edgesOf(list)).bottom).toBeLessThanOrEqual(window?.height ?? 0);
   await expect(scrollCue(page, 'later')).toBeVisible();
   await expect(scrollCue(page, 'earlier')).toHaveCount(0);
+  const window = page.viewportSize();
+  expect((await edgesOf(list)).bottom).toBeLessThanOrEqual(
+    (window?.height ?? 0) + 0.5,
+  );
 
   await expect(focusedOption(page)).toHaveCount(1);
+  await scrolledOffItsStart(page);
+  await expect(focusedOption(page)).toHaveCount(1);
+  expect((await edgesOf(focusedOption(page))).bottom).toBeLessThanOrEqual(
+    (await edgesOf(scrollCue(page, 'later'))).top + 0.5,
+  );
+
   await page.keyboard.press('End');
-  const row = await edgesOf(focusedOption(page));
-  const box = await edgesOf(list);
-  expect(row.bottom).toBeLessThanOrEqual(box.bottom + 0.5);
-  expect(row.top).toBeGreaterThanOrEqual(box.top - 0.5);
-  await expect(scrollCue(page, 'earlier')).toBeVisible();
   await expect(scrollCue(page, 'later')).toHaveCount(0);
+  await scrolledOffItsEnd(page);
+  await expect(focusedOption(page)).toHaveCount(1);
+  expect((await edgesOf(focusedOption(page))).top).toBeGreaterThanOrEqual(
+    (await edgesOf(scrollCue(page, 'earlier'))).bottom - 0.5,
+  );
 };
 
 test.describe('in a short window', () => {
