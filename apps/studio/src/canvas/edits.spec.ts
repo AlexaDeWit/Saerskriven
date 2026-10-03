@@ -153,6 +153,22 @@ describe('removalCascade', () => {
       threats: 1,
     });
   });
+
+  it('counts the link of a threat that applies to the model, which the removal keeps', () => {
+    const modelWide = {
+      ...canvasModel,
+      threats: canvasModel.threats.map((threat) =>
+        threat.id === 'threat-path-disclosure'
+          ? { ...threat, appliesToModel: true }
+          : threat,
+      ),
+    };
+    expect(removalCascade(modelWide, requestFlow)).toEqual({
+      flows: 0,
+      threatLinks: 1,
+      threats: 1,
+    });
+  });
 });
 
 describe('describeRemoval', () => {

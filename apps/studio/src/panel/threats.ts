@@ -280,6 +280,7 @@ export function freshThreat(
     status: 'open',
     description: '',
     elements: [elementId],
+    appliesToModel: false,
   };
 }
 

@@ -57,7 +57,8 @@ import { undeclaredDivergences } from './undeclared.js';
  * the version's schema does not declare is dropped and reported, so a file
  * from a later release still reads. Records are mapped field by field onto
  * the model's input types, mirroring `saerskriven-yaml-write.ts`, and ids
- * cross as plain strings for `parseModel` to brand.
+ * cross as plain strings for `parseModel` to brand. A threat that leaves
+ * `appliesToModel` out does not apply to the model.
  */
 export function readSaerskrivenYaml(
   text: string,
@@ -202,6 +203,7 @@ function toThreat(threat: SaerskrivenYamlV2Threat): ThreatInput {
     status: threatStatusesToModel[threat.status],
     description: threat.description,
     elements: threat.elements,
+    appliesToModel: threat.appliesToModel ?? false,
   };
 }
 

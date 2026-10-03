@@ -21,9 +21,11 @@ import {
   attachThreat,
   detachThreat,
   droppedThreats,
+  linkThreatToModel,
   nextThreatNumber,
   removeThreat,
   replaceThreat,
+  unlinkThreatFromModel,
 } from './threat-operations.js';
 import { threatSchema } from './threats.js';
 
@@ -49,6 +51,7 @@ const replayInput = {
   status: 'open',
   description: 'A captured payment request is submitted a second time.',
   elements: ['element-pay-flow'],
+  appliesToModel: false,
 };
 
 const replay = threatSchema.parse(replayInput);
@@ -60,6 +63,14 @@ const editedFlood = threatSchema.parse({
   status: 'mitigated',
   elements: ['element-checkout', 'element-ledger'],
 });
+
+const linkedToModel = modelOf(linkThreatToModel(registerModel, spoofShopper));
+
+const linkedToModelAlone = modelOf(
+  detachThreat(linkedToModel, spoofShopper, shopper),
+);
+
+const ghost = threatId('threat-ghost');
 
 describe('addThreat', () => {
   it('appends the threat to the register', () => {
@@ -185,10 +196,8 @@ describe('removeThreat', () => {
   });
 
   it('fails on a threat the register does not hold', () => {
-    expect(
-      errorOf(removeThreat(registerModel, threatId('threat-ghost'))),
-    ).toEqual(
-      OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
+    expect(errorOf(removeThreat(registerModel, ghost))).toEqual(
+      OperationFailure.UnknownThreat({ threatId: ghost }),
     );
   });
 });
@@ -223,6 +232,27 @@ describe('replaceThreat', () => {
       { ...registerModel.mitigations[0], threats: [tamperPayment] },
     ]);
     expect(next.assumptions).toEqual([]);
+  });
+
+  it('keeps a threat whose replacement takes its last element and applies it to the model', () => {
+    const scoped = threatSchema.parse({
+      ...editedFlood,
+      elements: [],
+      appliesToModel: true,
+    });
+    expect(
+      threatIn(modelOf(replaceThreat(registerModel, scoped)), floodCheckout),
+    ).toEqual(scoped);
+  });
+
+  it('removes a threat on no element whose replacement takes its model link', () => {
+    const unreferenced = threatSchema.parse({
+      ...threatIn(linkedToModelAlone, spoofShopper),
+      appliesToModel: false,
+    });
+    expect(
+      threatIds(modelOf(replaceThreat(linkedToModelAlone, unreferenced))),
+    ).not.toContain('threat-spoof-shopper');
   });
 
   it('keeps a threat already attached to nothing, whatever else the replacement changes', () => {
@@ -286,10 +316,8 @@ describe('attachThreat', () => {
   });
 
   it('fails on an unknown threat', () => {
-    expect(
-      errorOf(attachThreat(registerModel, threatId('threat-ghost'), shopper)),
-    ).toEqual(
-      OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
+    expect(errorOf(attachThreat(registerModel, ghost, shopper))).toEqual(
+      OperationFailure.UnknownThreat({ threatId: ghost }),
     );
   });
 
@@ -342,6 +370,15 @@ describe('detachThreat', () => {
     ).toEqual([{ ...modelWide.assumptions[0], threats: [] }]);
   });
 
+  it('keeps a threat that applies to the model when its last element goes, with its records', () => {
+    expect(threatIn(linkedToModelAlone, spoofShopper)).toEqual({
+      ...threatIn(linkedToModel, spoofShopper),
+      elements: [],
+    });
+    expect(linkedToModelAlone.mitigations).toEqual(registerModel.mitigations);
+    expect(linkedToModelAlone.assumptions).toEqual(registerModel.assumptions);
+  });
+
   it('leaves the number of the threat it removed spent', () => {
     const next = modelOf(detachThreat(registerModel, spoofShopper, shopper));
     expect(next.lastIssuedThreatNumber).toBe(
@@ -362,10 +399,8 @@ describe('detachThreat', () => {
   });
 
   it('fails on an unknown threat', () => {
-    expect(
-      errorOf(detachThreat(registerModel, threatId('threat-ghost'), shopper)),
-    ).toEqual(
-      OperationFailure.UnknownThreat({ threatId: threatId('threat-ghost') }),
+    expect(errorOf(detachThreat(registerModel, ghost, shopper))).toEqual(
+      OperationFailure.UnknownThreat({ threatId: ghost }),
     );
   });
 
@@ -378,6 +413,63 @@ describe('detachThreat', () => {
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
       }),
+    );
+  });
+});
+
+describe('linkThreatToModel', () => {
+  it('applies the threat to the model and keeps its elements', () => {
+    expect(linkedToModel.threats).toEqual(
+      registerModel.threats.map((threat) =>
+        threat.id === spoofShopper
+          ? { ...threat, appliesToModel: true }
+          : threat,
+      ),
+    );
+  });
+
+  it('returns the model it was given for a threat that already applies', () => {
+    expect(modelOf(linkThreatToModel(linkedToModel, spoofShopper))).toBe(
+      linkedToModel,
+    );
+  });
+
+  it('refuses an unknown threat', () => {
+    expect(errorOf(linkThreatToModel(registerModel, ghost))).toEqual(
+      OperationFailure.UnknownThreat({ threatId: ghost }),
+    );
+  });
+});
+
+describe('unlinkThreatFromModel', () => {
+  it('keeps a threat that still names an element, with that element', () => {
+    expect(
+      modelOf(unlinkThreatFromModel(linkedToModel, spoofShopper)).threats,
+    ).toEqual(registerModel.threats);
+  });
+
+  it('removes a threat that names no element with the cascade of a removal, and droppedThreats names it', () => {
+    const next = modelOf(
+      unlinkThreatFromModel(linkedToModelAlone, spoofShopper),
+    );
+    expect(
+      droppedThreats(linkedToModelAlone, next).map((threat) => threat.id),
+    ).toEqual([spoofShopper]);
+    expect(next.mitigations).toEqual([
+      { ...registerModel.mitigations[0], threats: [tamperPayment] },
+    ]);
+    expect(next.assumptions).toEqual([]);
+  });
+
+  it('returns the model it was given for a threat that does not apply', () => {
+    expect(modelOf(unlinkThreatFromModel(registerModel, spoofShopper))).toBe(
+      registerModel,
+    );
+  });
+
+  it('refuses an unknown threat', () => {
+    expect(errorOf(unlinkThreatFromModel(registerModel, ghost))).toEqual(
+      OperationFailure.UnknownThreat({ threatId: ghost }),
     );
   });
 });
@@ -432,6 +524,14 @@ describe('threat operations', () => {
     detachThreat: {
       input: registerModel,
       run: (model) => detachThreat(model, spoofShopper, shopper),
+    },
+    linkThreatToModel: {
+      input: registerModel,
+      run: (model) => linkThreatToModel(model, spoofShopper),
+    },
+    unlinkThreatFromModel: {
+      input: linkedToModelAlone,
+      run: (model) => unlinkThreatFromModel(model, spoofShopper),
     },
   });
 });

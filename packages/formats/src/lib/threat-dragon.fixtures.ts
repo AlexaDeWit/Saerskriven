@@ -81,6 +81,7 @@ const recorded = (
   status,
   description,
   elements: [...elements],
+  appliesToModel: false,
 });
 
 const fromText = (
@@ -996,6 +997,7 @@ export const richerThanFormatFixture: ModelInput = {
       status: 'open',
       description: 'Nothing signs an entry on its way to storage.',
       elements: ['element-ledger', 'element-vault'],
+      appliesToModel: false,
     },
     {
       id: 'threat-privacy',
@@ -1006,6 +1008,7 @@ export const richerThanFormatFixture: ModelInput = {
       status: 'mitigated',
       description: 'The terminal runs unattended.',
       elements: ['element-clerk'],
+      appliesToModel: false,
     },
     {
       id: 'threat-zone',
@@ -1016,6 +1019,7 @@ export const richerThanFormatFixture: ModelInput = {
       status: 'accepted-risk',
       description: 'Nobody retires the zone.',
       elements: ['element-zone'],
+      appliesToModel: false,
     },
     {
       id: 'threat-unattached',
@@ -1030,6 +1034,7 @@ export const richerThanFormatFixture: ModelInput = {
       status: 'open',
       description: 'The diagrams are not reviewed with a release.',
       elements: [],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: 9,

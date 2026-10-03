@@ -173,6 +173,34 @@ describe('a file with an unconfirmed assumption', () => {
       '    elements: []',
     );
   });
+
+  const appliedDocument = unconfirmedDocument.replace(
+    '    elements: []\n',
+    '    elements: []\n    appliesToModel: true\n',
+  );
+
+  it('reads a threat that applies to the model with nothing diverging, and writes it back to the byte', () => {
+    const reading = readOrThrow(appliedDocument);
+    expect(reading.divergences).toEqual([]);
+    expect(
+      reading.model.threats.map(({ appliesToModel }) => appliesToModel),
+    ).toEqual([true]);
+    expect(saerskrivenYamlCodec.write(reading.model).output).toBe(
+      appliedDocument,
+    );
+  });
+
+  it('writes no model link for a threat that does not apply, a stated false included', () => {
+    const negative = appliedDocument.replace(
+      '    appliesToModel: true\n',
+      '    appliesToModel: false\n',
+    );
+    const reading = readOrThrow(negative);
+    expect(reading.divergences).toEqual([]);
+    expect(saerskrivenYamlCodec.write(reading.model).output).toBe(
+      unconfirmedDocument,
+    );
+  });
 });
 
 describe('the document shape v0.2.1 wrote', () => {

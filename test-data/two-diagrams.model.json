@@ -486,7 +486,8 @@
       "elements": [
         "el-shopper",
         "el-browse"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-basket-price",
@@ -502,7 +503,8 @@
       "elements": [
         "el-web-shop",
         "el-page"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-draft-listings",
@@ -518,7 +520,8 @@
       "elements": [
         "el-catalogue",
         "el-listings"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-card-data",
@@ -534,7 +537,8 @@
       "elements": [
         "el-payment",
         "el-charge"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-order-denied",
@@ -550,7 +554,8 @@
       "elements": [
         "el-ledger",
         "el-record"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-forged-callback",
@@ -566,7 +571,8 @@
       "description": "A callback that is not from the card network marks an order paid.",
       "elements": [
         "el-callback"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-stock-hoarding",
@@ -582,7 +588,8 @@
       "elements": [
         "el-stock",
         "el-reserve"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-address-exposure",
@@ -598,7 +605,8 @@
       "elements": [
         "el-courier",
         "el-hand-over"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-picker-override",
@@ -615,7 +623,8 @@
         "el-picker",
         "el-dispatch",
         "el-picked"
-      ]
+      ],
+      "appliesToModel": false
     },
     {
       "id": "th-refund-abuse",
@@ -628,7 +637,8 @@
       "severity": "low",
       "status": "open",
       "description": "Not tied to one element: the policy itself is the weakness.",
-      "elements": []
+      "elements": [],
+      "appliesToModel": false
     }
   ],
   "lastIssuedThreatNumber": 11,

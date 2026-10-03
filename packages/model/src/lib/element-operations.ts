@@ -129,9 +129,10 @@ export function addElement(
 
 /**
  * Removes an element and its threat and boundary references. A threat the
- * element was the last attachment of goes with it, carrying the cascade
- * {@link removeThreat} does. Attached flows keep their identity and acquire
- * free endpoints at the removed element's anchor.
+ * element was the last reference of goes with it, carrying the cascade
+ * {@link removeThreat} does, and one that applies to the model stays.
+ * Attached flows keep their identity and acquire free endpoints at the
+ * removed element's anchor.
  */
 export function removeElement(
   model: Model,

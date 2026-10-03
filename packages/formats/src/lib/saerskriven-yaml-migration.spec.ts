@@ -78,12 +78,16 @@ const version1 = version1Document({
 const migrated = currentSaerskrivenYaml(version1);
 
 describe('the version 2 wire schema', () => {
-  it('declares the keys of version 1, less the threat text and the assumption element links, and with the model link', () => {
+  it('declares the keys of version 1, less the threat text and the assumption element links, and with the model link of an assumption and, optionally, of a threat', () => {
     const version1Keys = declaredKeys(saerskrivenYamlWireSchema).filter(
       (key) => key !== 'threats.mitigation' && key !== 'assumptions.elements',
     );
     expect(new Set(declaredKeys(saerskrivenYamlV2WireSchema))).toEqual(
-      new Set([...version1Keys, 'assumptions.appliesToModel']),
+      new Set([
+        ...version1Keys,
+        'assumptions.appliesToModel',
+        'threats.appliesToModel?',
+      ]),
     );
   });
 });
