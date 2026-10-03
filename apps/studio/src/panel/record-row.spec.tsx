@@ -126,8 +126,8 @@ describe(
         }),
       ).toBeDefined();
       expect(
-        within(recordRow('Assumption 2', 'textbox')).getByRole('combobox', {
-          name: 'Assumption 2 status',
+        within(recordRow('Assumption 2', 'textbox')).getByRole('button', {
+          name: 'Discard assumption 2',
         }),
       ).toBeDefined();
     });

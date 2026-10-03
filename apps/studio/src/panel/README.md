@@ -211,7 +211,8 @@ so opening the record changes the toggle's expanded state and not what it is
 called.
 
 Each row is a group with no name, the empty row included. Its toggle, or the
-empty row's fields ("Assumption 2"), already say the record's name.
+empty row's fields ("Mitigation 2 title", "Assumption 2"), already carry the
+record's name.
 
 ## Attachments
 

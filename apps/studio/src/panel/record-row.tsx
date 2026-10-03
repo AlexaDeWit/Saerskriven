@@ -61,7 +61,7 @@ export type RecordRowProps<Held extends ThreatRecord> = {
  * while it is not yet kept), and its fields follow without labels of their
  * own. The toggle is named alike in both states, by the record's name and
  * its headline. The row is a group with no name: its toggle, or a new row's
- * fields, already say the record's name.
+ * fields, already carry the record's name.
  */
 export function RecordRow<Held extends ThreatRecord>({
   kind,
