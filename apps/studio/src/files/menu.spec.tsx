@@ -29,7 +29,7 @@ import {
   recordedModel,
   sampleModel,
 } from '../store/store.fixtures.js';
-import { SaveOutcome } from './bridge.js';
+import { SaveOutcome, type ChosenFile } from './bridge.js';
 import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
@@ -135,13 +135,17 @@ const readOnlyFiles = [
   { path: 'tmbom/example.json', format: 'TM-BOM' },
 ] as const;
 
+const receive = (file: ChosenFile): void => {
+  fireEvent.change(screen.getByTestId('file-input'), {
+    target: { files: [file] },
+  });
+};
+
 const receiveReadOnly = async ({
   path,
   format,
 }: (typeof readOnlyFiles)[number]): Promise<void> => {
-  fireEvent.change(screen.getByTestId('file-input'), {
-    target: { files: [vendoredFile(path)] },
-  });
+  receive(vendoredFile(path));
   await waitFor(() => {
     expect(screen.getByTestId('loss-report').textContent).toContain(
       inLocale('en-CA')('reports.opened-read-only', { format }),
@@ -680,9 +684,7 @@ describe('opening', () => {
     const user = userEvent.setup();
     mounted(specBridge());
 
-    fireEvent.change(screen.getByTestId('file-input'), {
-      target: { files: [chosenFile('model.yaml', sampleNativeText)] },
-    });
+    receive(chosenFile('model.yaml', sampleNativeText));
     await openMenu(user);
 
     await waitFor(() => {
@@ -800,6 +802,23 @@ describe('opening', () => {
     }
   });
 
+  it('draws the report of the same file opened twice in a row as new nodes the second time too', async () => {
+    mounted(specBridge());
+    const [file] = readOnlyFiles;
+    await receiveReadOnly(file);
+    const region = screen.getByTestId('loss-report');
+    const standing = region.firstElementChild;
+
+    const gained = await reportGainsOver(async () => {
+      receive(vendoredFile(file.path));
+      await waitFor(() => {
+        expect(region.firstElementChild).not.toBe(standing);
+      });
+    });
+
+    expect(textsIn(gained)).toEqual(textsIn([region]));
+  });
+
   it('keeps focus on Dismiss while the next file replaces the report over it', async () => {
     mounted(specBridge());
     const [first, second] = readOnlyFiles;
@@ -871,7 +890,7 @@ describe('opening', () => {
     expect(reportEntries()).toEqual([]);
   });
 
-  it('leaves the report standing when the next open is refused, nothing having crossed', async () => {
+  it('leaves the report standing, saying none of it again, when the next open is refused, nothing having crossed', async () => {
     const user = userEvent.setup();
     mounted(
       specBridge({
@@ -883,15 +902,16 @@ describe('opening', () => {
       expect(reportEntries().length > 0).toBe(true);
     });
 
-    fireEvent.change(screen.getByTestId('file-input'), {
-      target: { files: [chosenFile('notes.txt', 'no threat model here')] },
+    const gained = await reportGainsOver(async () => {
+      receive(chosenFile('notes.txt', 'no threat model here'));
+      await waitFor(() => {
+        expect(screen.getByTestId('failure-notice').textContent).toContain(
+          'notes.txt',
+        );
+      });
     });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('failure-notice').textContent).toContain(
-        'notes.txt',
-      );
-    });
+    expect(textsIn(gained)).toEqual([]);
     expect(reportEntries().length > 0).toBe(true);
   });
 
