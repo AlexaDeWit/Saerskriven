@@ -363,6 +363,39 @@ describe('DiagramCanvas', () => {
     );
   });
 
+  it('says a move again where an undo between two moves puts the element in the same place', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    fireEvent.keyDown(reader(), { key: 'ArrowRight' });
+    const first = flowLiveMessage();
+
+    act(() => {
+      dispatch(Action.Undo());
+    });
+    fireEvent.keyDown(reader(), { key: 'ArrowRight' });
+
+    expect(flowLiveMessage()).not.toBe(first);
+    expect(flowLiveMessage()?.trim()).toBe(first);
+  });
+
+  it('says nothing for an arrow key on a focused element the selection leaves out', () => {
+    openCanvas([processElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(reader(), { key: 'ArrowRight' });
+
+    expect(flowLiveMessage()).toBe('');
+  });
+
+  it('says nothing in the move message for an arrow key on a resize control', () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowUp' });
+
+    expect(flowLiveMessage()).toBe('');
+  });
+
   it.each([
     [
       'top',

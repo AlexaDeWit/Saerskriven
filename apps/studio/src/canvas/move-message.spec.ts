@@ -5,7 +5,11 @@ import { reduce } from '../store/reducer.js';
 import { initialState } from '../store/state.js';
 import { actorElement } from '../store/store.fixtures.js';
 import { canvasModel } from './canvas.fixtures.js';
-import { coordinateText, movedSelectionMessage } from './move-message.js';
+import {
+  coordinateText,
+  freshLiveText,
+  movedSelectionMessage,
+} from './move-message.js';
 
 const french = translator(studioMessages, studioCatalogues, 'fr-CA');
 
@@ -19,6 +23,18 @@ describe('coordinateText', () => {
   it("writes the locale's decimal sign", () => {
     expect(coordinateText('fr-CA', 28.5)).toBe('28,5');
     expect(coordinateText('sv', 1234.5)).toBe('1234,5');
+  });
+});
+
+describe('freshLiveText', () => {
+  it('changes the text of a repeated message, and changes it back on the repeat after that', () => {
+    const once = freshLiveText('', 'Moved.');
+    const twice = freshLiveText(once, 'Moved.');
+
+    expect(once).toBe('Moved.');
+    expect(twice).not.toBe(once);
+    expect(twice.trim()).toBe(once);
+    expect(freshLiveText(twice, 'Moved.')).toBe(once);
   });
 });
 

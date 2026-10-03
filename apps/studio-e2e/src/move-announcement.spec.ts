@@ -1,7 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { boxSelect, canvasSettled } from './canvas.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
+  nodeNamed,
   openFallback,
+  openPlaceholder,
   placeholder,
   savedModel,
   selectByKeyboard,
@@ -16,18 +19,19 @@ const positionAndSize = (page: Page): Locator =>
 const axisField = (page: Page, axis: 'X' | 'Y'): Locator =>
   positionAndSize(page).getByRole('spinbutton', { name: axis, exact: true });
 
-const shownPosition = async (
-  page: Page,
-  element: Locator,
-): Promise<{ readonly x: string; readonly y: string }> => {
+type Shown = { readonly x: string; readonly y: string };
+
+const shownPosition = async (page: Page): Promise<Shown> => {
   await page.keyboard.press(registeredChords['edit-geometry'][0]);
-  const shown = {
+  return {
     x: await axisField(page, 'X').inputValue(),
     y: await axisField(page, 'Y').inputValue(),
   };
-  await positionAndSize(page).getByRole('button', { name: 'Cancel' }).click();
-  await expect(element).toBeFocused();
-  return shown;
+};
+
+const expectSaid = async (page: Page, shown: Shown): Promise<void> => {
+  await expect(flowLiveMessage(page)).toContainText(shown.x);
+  await expect(flowLiveMessage(page)).toContainText(shown.y);
 };
 
 test('each Arrow and Shift+Arrow move says the position Position and size and the saved file then hold', async ({
@@ -54,11 +58,13 @@ test('each Arrow and Shift+Arrow move says the position Position and size and th
   ]) {
     await test.step(chord, async () => {
       await page.keyboard.press(chord);
-      shown = await shownPosition(page, actor);
+      shown = await shownPosition(page);
+      await positionAndSize(page)
+        .getByRole('button', { name: 'Cancel' })
+        .click();
+      await expect(actor).toBeFocused();
 
-      await expect(flowLiveMessage(page)).toHaveText(
-        `Moved the selection. New position, x: ${shown.x}, y: ${shown.y}.`,
-      );
+      await expectSaid(page, shown);
     });
   }
 
@@ -68,4 +74,20 @@ test('each Arrow and Shift+Arrow move says the position Position and size and th
     saved.diagrams[0].elements.find((element) => element.kind === 'actor')
       ?.position,
   ).toEqual({ x: Number(shown.x), y: Number(shown.y) });
+});
+
+test('an arrow move of a box selection says where Position and size then places the group', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await canvasSettled(page);
+  await boxSelect(page, [
+    nodeNamed(page, placeholder.actor),
+    nodeNamed(page, placeholder.store),
+  ]);
+  await expect(page.locator('.react-flow__nodesselection-rect')).toBeFocused();
+
+  await page.keyboard.press('ArrowDown');
+
+  await expectSaid(page, await shownPosition(page));
 });

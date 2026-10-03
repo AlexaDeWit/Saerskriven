@@ -59,6 +59,7 @@ export {
 } from './lib/render-theme.js';
 export { type ResizeLabels } from './lib/resize-controls.js';
 export {
+  isResizeKey,
   keyboardResizeStep,
   minimumNodeExtent,
   resizableAxes,

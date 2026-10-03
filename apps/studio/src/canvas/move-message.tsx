@@ -1,14 +1,19 @@
-import { resizeKeys } from '@saerskriven/canvas';
+import { isResizeKey } from '@saerskriven/canvas';
 import type { Locale } from '@saerskriven/i18n';
 import { useStoreApi } from '@xyflow/react';
-import { useImperativeHandle, type KeyboardEvent, type Ref } from 'react';
+import {
+  useImperativeHandle,
+  useRef,
+  type KeyboardEvent,
+  type Ref,
+} from 'react';
 import type { StudioTranslator } from '../messages/catalogues.js';
 import { useTranslator } from '../messages/locale.js';
 import type { State } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { currentLayout, selectionPosition } from './layout.js';
 
-/** Hands on a keydown that has already passed React Flow's own node handler. */
+/** Hands on a keydown that has already passed React Flow's own key handlers. */
 export type KeyboardMoveReport = (event: KeyboardEvent) => void;
 
 /**
@@ -40,6 +45,15 @@ export function movedSelectionMessage(
 }
 
 /**
+ * The text that makes the live region speak `message` even where it repeats
+ * `said`, the text last written there: a repeat gains a trailing no-break
+ * space, and the repeat after that loses it again.
+ */
+export function freshLiveText(said: string, message: string): string {
+  return message === said ? `${message}\u00a0` : message;
+}
+
+/**
  * React Flow's own move message, left blank: React Flow writes it from the
  * position before the move, truncated, and `KeyboardMoveMessage` writes the
  * message once the move has landed.
@@ -47,10 +61,11 @@ export function movedSelectionMessage(
 export const preMoveMessage = (): string => '';
 
 /**
- * Writes React Flow's live region after an arrow key on a focused node has
- * moved the selection. The canvas wrapper hands `ref` each keydown once React
- * Flow's node handler has run, so the store already holds the move. Mounted
- * inside `ReactFlow`, where its store is in reach.
+ * Writes React Flow's live region after an arrow key on a focused node, or on
+ * the rectangle React Flow draws around a box selection, has moved the
+ * selection. The canvas wrapper hands `ref` each keydown once React Flow's
+ * handler has run, so the store already holds the move. Mounted inside
+ * `ReactFlow`, where its store is in reach.
  */
 export function KeyboardMoveMessage({
   ref,
@@ -59,15 +74,17 @@ export function KeyboardMoveMessage({
 }): null {
   const flow = useStoreApi();
   const translator = useTranslator();
+  const said = useRef('');
   useImperativeHandle(
     ref,
     () => (event: KeyboardEvent) => {
-      if (!event.defaultPrevented || !onFocusedNode(event)) {
+      if (!event.defaultPrevented || !movedBySelectionKey(event)) {
         return;
       }
       const message = movedSelectionMessage(modelStore.getState(), translator);
       if (message !== undefined) {
-        flow.setState({ ariaLiveMessage: message });
+        said.current = freshLiveText(said.current, message);
+        flow.setState({ ariaLiveMessage: said.current });
       }
     },
     [flow, translator],
@@ -75,10 +92,10 @@ export function KeyboardMoveMessage({
   return null;
 }
 
-function onFocusedNode(event: KeyboardEvent): boolean {
+function movedBySelectionKey(event: KeyboardEvent): boolean {
   return (
-    resizeKeys.some((key) => key === event.key) &&
+    isResizeKey(event.key) &&
     event.target instanceof Element &&
-    event.target.matches('.react-flow__node')
+    event.target.matches('.react-flow__node, .react-flow__nodesselection-rect')
   );
 }
