@@ -202,6 +202,14 @@
         {
           "env": "PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS"
         },
+        // What the nightly dev shell adds for WebKit (flake.nix). A WebKit
+        // run that passed there would fail where they are unset.
+        {
+          "env": "__EGL_VENDOR_LIBRARY_FILENAMES"
+        },
+        {
+          "env": "LIBGL_ALWAYS_SOFTWARE"
+        },
         {
           "env": "PAGES_BASE_PATH"
         },

@@ -48,11 +48,13 @@ pnpm nx e2e @saerskriven/studio-e2e -- \
 
 `firefox` and `webkit` run what `chromium` runs, in the other two engines the
 studio supports. They exist only where `SAERSKRIVEN_E2E_OTHER_ENGINES` is `1`,
-so a plain run and a pull request leave them out:
+so a plain run and a pull request leave them out. Run them inside
+`nix develop .#nightly`, the shell that gives the flake's WebKit an EGL driver
+on a host that is not NixOS:
 
 ```sh
 SAERSKRIVEN_E2E_OTHER_ENGINES=1 pnpm nx e2e @saerskriven/studio-e2e -- \
-  --project=firefox --no-deps src/files.spec.ts
+  --project=webkit --no-deps src/files.spec.ts
 ```
 
 CI runs both on `main` once a night, outside the gate
@@ -93,9 +95,7 @@ The file-menu unit specs cover its registration. Dedicated boundary deletion
 coverage is absent. The canvas package owns detailed glyph and stylesheet
 checks. Automated accessibility checks do not replace manual screen-reader
 review. A pull request runs Chromium only, the phone project through a device
-preset rather than another engine, and Firefox and WebKit run nightly. The
-flake's WebKit opens no page outside NixOS, where it finds no EGL driver, so
-`--project=webkit` fails on such a host.
+preset rather than another engine, and Firefox and WebKit run nightly.
 
 Current interaction limitations live in
 [Using the studio](../../docs/studio.md#current-limitations).

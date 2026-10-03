@@ -43,6 +43,8 @@ Edit here when the process changes, in the same PR as the change.
   the `chromium` project's specs in Firefox and in WebKit on `main` once a
   night.
 - It is outside the gate: no pull request or push starts it.
+- Its legs run in `nix develop .#nightly`: the CI shell plus Mesa, the EGL
+  driver WebKit needs off NixOS.
 - Read a night in the run's `Browser suite (<engine>)` jobs and its
   `playwright-report-<engine>` artifact, kept 14 days.
 - A red night opens one issue, or comments on it while it is open. A person

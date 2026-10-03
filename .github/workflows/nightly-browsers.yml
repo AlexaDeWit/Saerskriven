@@ -45,13 +45,20 @@ jobs:
           persist-credentials: false
 
       # Restore the shared entries and save nothing: ci.yml's build-test is
-      # their one writer.
+      # their one writer. The action installs through `.#ci`, the closure the
+      # restored entry holds.
       - name: Set up toolchain
         uses: ./.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
           save-nix-store: 'false'
 
+      # `.#nightly` is `.#ci` plus Mesa, the EGL driver the flake's WebKit
+      # needs on a host that is not NixOS (flake.nix). No cache entry holds
+      # Mesa, so each leg fetches it from cache.nixos.org, about 800 MB
+      # unpacked, and saves nothing. Both legs enter the one shell, so the
+      # two engines run in the same environment.
+      #
       # SAERSKRIVEN_E2E_OTHER_ENGINES set to `1`, and no other value, is what
       # puts the two projects in the Playwright config. `--no-deps` holds the
       # run to the one named.
@@ -60,7 +67,7 @@ jobs:
           ENGINE: ${{ matrix.engine }}
           SAERSKRIVEN_E2E_OTHER_ENGINES: '1'
         run: >-
-          nix develop .#ci --command
+          nix develop .#nightly --command
           pnpm nx e2e @saerskriven/studio-e2e --
           --project="$ENGINE" --no-deps
 
@@ -72,7 +79,7 @@ jobs:
           PLAYWRIGHT_HTML_OUTPUT_DIR: test-output/playwright/report
           PLAYWRIGHT_JSON_OUTPUT_FILE: test-output/playwright/json/${{ matrix.engine }}.json
         run: >-
-          nix develop .#ci --command
+          nix develop .#nightly --command
           pnpm --filter @saerskriven/studio-e2e exec
           playwright merge-reports --reporter html,json
           test-output/playwright/blob

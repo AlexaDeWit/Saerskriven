@@ -310,17 +310,25 @@ void test('the script under test reaches no gh but the fake and is handed no cre
 });
 
 const nightly = workflow('nightly-browsers.yml');
+const gate = readFileSync(
+  join(workspaceRoot, '.github/workflows/ci.yml'),
+  'utf8',
+);
 
 void test('the nightly run starts on a schedule or by hand, and the gate never names its engines', () => {
   assert.deepEqual(Object.keys(nightly.on).toSorted(), [
     'schedule',
     'workflow_dispatch',
   ]);
-  const gate = readFileSync(
-    join(workspaceRoot, '.github/workflows/ci.yml'),
-    'utf8',
-  );
   assert.equal(gate.includes('SAERSKRIVEN_E2E_OTHER_ENGINES'), false);
+});
+
+void test('each engine runs its suite in the nightly shell, which the gate never enters', () => {
+  const suite = nightly.jobs['browsers']?.steps?.find(({ run }) =>
+    run?.includes('nx e2e'),
+  );
+  assert.ok(suite?.run?.startsWith('nix develop .#nightly --command'));
+  assert.equal(gate.includes('.#nightly'), false);
 });
 
 void test('only the report job may write, to issues alone, and only for a red run on main nobody cancelled', () => {

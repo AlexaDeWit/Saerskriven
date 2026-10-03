@@ -38,7 +38,7 @@ and it holds four kinds of file.
 - **The brotli module**, described [below](#the-brotli-module), which
   `saer share` and the MCP server's `saer_share_link` compress a link with.
 - **Five Liberation faces and their licence**, copied out of the store path
-  `SAERSKRIVEN_FONTS_DIR` names. Both dev shells export it from the pinned
+  `SAERSKRIVEN_FONTS_DIR` names. Every dev shell exports it from the pinned
   nixpkgs' `liberation_ttf`, so the fonts' provenance is the `nixpkgs` revision
   in `flake.lock`. Liberation Sans is metric-compatible with Arial, which the
   canvas stylesheet asks for, so a diagram embedded in a PDF keeps the layout
@@ -249,7 +249,7 @@ nix develop --command pnpm nx compile @saerskriven/cli
 ```
 
 The default shell is enough: `flake.nix` puts the denort pins and the font path
-in both shells, and `.#ci` is the shell CI happens to enter. Compare the host
+in every shell, and `.#ci` is the shell CI happens to enter. Compare the host
 target's line with the release's `SHA256SUMS`. Every CI run prints the same
 hashes, so a runner build and a local build can be compared from the logs.
 
