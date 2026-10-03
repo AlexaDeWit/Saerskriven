@@ -18,12 +18,14 @@ import { currentAnnouncement } from './announcements.js';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
+  boundaryElement,
   canvasModel,
   laidOutNode,
   noteElement,
   openCanvas,
   probeFlow,
   requestFlow,
+  viewportTransform,
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { placementClickDistance } from './elements.js';
@@ -64,6 +66,11 @@ const readerBox = () => {
   const { position, size } = laidOutNode(actorElement);
   return { position, size };
 };
+
+const probeFreeEnd = () =>
+  currentLayout(modelStore.getState()).edges.find(
+    (edge) => edge.id === probeFlow,
+  )?.target;
 
 const resizeControl = (from: string): HTMLElement =>
   screen.getByRole('button', { name: `Resize Reader from ${from}` });
@@ -375,6 +382,53 @@ describe('DiagramCanvas', () => {
     });
 
     expect(modelStore.getState().selection).toEqual([]);
+  });
+
+  describe('a press inside the bounds of the selection', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    });
+
+    it('moves a selected boundary, the elements inside it and a free flow end from its interior, in one undo step', () => {
+      const group = [boundaryElement, actorElement, processElement];
+      openCanvas([...group, probeFlow]);
+      render(<DiagramCanvas />);
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      const pane = document.querySelector('.react-flow__pane') ?? document.body;
+      const before = group.map((id) => laidOutNode(id).position);
+      const freeBefore = probeFreeEnd();
+      const { x, y, zoom } = viewportTransform();
+      const between = { clientX: x + 200 * zoom, clientY: y + 40 * zoom };
+      const moved = {
+        clientX: between.clientX + 30 * zoom,
+        clientY: between.clientY + 10 * zoom,
+      };
+
+      fireEvent.pointerDown(pane, { ...press, ...between });
+      fireEvent.pointerMove(pane, { ...press, ...moved });
+      fireEvent.pointerUp(pane, { ...press, ...moved });
+
+      group.forEach((id, index) => {
+        const { position } = laidOutNode(id);
+        expect(position.x - before[index].x).toBeCloseTo(30);
+        expect(position.y - before[index].y).toBeCloseTo(10);
+      });
+      expect((probeFreeEnd()?.x ?? 0) - (freeBefore?.x ?? 0)).toBeCloseTo(30);
+      expect((probeFreeEnd()?.y ?? 0) - (freeBefore?.y ?? 0)).toBeCloseTo(10);
+      expect(modelStore.getState().past).toHaveLength(1);
+      act(() => {
+        dispatch(Action.Undo());
+      });
+      expect(group.map((id) => laidOutNode(id).position)).toEqual(before);
+      expect(probeFreeEnd()).toEqual(freeBefore);
+    });
   });
 
   it('opens the name of a node in a field on the second click of a pair', () => {

@@ -47,6 +47,7 @@ import { CurvePointControls } from './curve-point-controls.js';
 import { useCurvePoints } from './curve-points.js';
 import { useFlowBends } from './flow-bends.js';
 import { FlowBendControls } from './flow-bend-controls.js';
+import { useGroupDrag } from './group-drag.js';
 import { useLiveEdges } from './live-edges.js';
 import {
   diagramGraph,
@@ -180,6 +181,13 @@ export function DiagramCanvas({
 
   const liveEdges = useLiveEdges(layout, graph, selection, elements, positions);
   const paneShield = usePaneShield(elements);
+  const groupDrag = useGroupDrag(
+    view,
+    layout,
+    selection,
+    elements,
+    liveEdges.onNodesChange,
+  );
 
   const onConnect = (connection: Connection): void => {
     applyConnection(connection, elements);
@@ -191,6 +199,9 @@ export function DiagramCanvas({
     }
     backgroundSelection.down(event);
     liveEdges.rebase();
+    if (groupDrag.down(event)) {
+      return;
+    }
     boxSelection.pointerDown(event, mode.active);
     placement.pointerDown(event);
   };
@@ -312,19 +323,25 @@ export function DiagramCanvas({
       data-testid="canvas-container"
       onClickCapture={onCanvasClickCapture}
       onKeyDownCapture={onKeyDownCapture}
+      onMouseDownCapture={(event) => {
+        groupDrag.mouseDown(event);
+      }}
       onPointerCancelCapture={(event) => {
         paneShield.cancel();
         backgroundSelection.cancel();
+        groupDrag.cancel();
         boxSelection.cancel();
         placement.pointerCancel(event);
       }}
       onPointerDownCapture={onPointerDownCapture}
       onPointerMoveCapture={(event) => {
         backgroundSelection.move(event);
+        groupDrag.move(event);
         placement.pointerMove(event);
       }}
       onPointerUpCapture={(event) => {
         backgroundSelection.up(event);
+        groupDrag.up(event);
         placement.pointerUp(event);
       }}
     >

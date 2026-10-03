@@ -1,5 +1,10 @@
-import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
-import type { DiagramId, Model } from '@saerskriven/model';
+import {
+  drawnBounds,
+  layoutDiagram,
+  type CanvasBounds,
+  type CanvasLayout,
+} from '@saerskriven/canvas';
+import type { DiagramId, ElementId, Model, Point } from '@saerskriven/model';
 import { activeDiagram } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 
@@ -34,4 +39,30 @@ export function currentLayout(
   layouts.set(diagram.id, layout);
   laidOut.set(state.present, layouts);
   return layout;
+}
+
+/** The drawn extent of the selected elements and flows, as `drawnBounds` measures it. */
+export function selectionBounds(
+  layout: CanvasLayout,
+  selection: readonly ElementId[],
+): CanvasBounds {
+  const selected = new Set(selection);
+  return drawnBounds(
+    layout.nodes.filter((node) => selected.has(node.id)),
+    layout.edges.filter((edge) => selected.has(edge.id)),
+  );
+}
+
+/** Whether `point` lies inside `bounds`, grown by `padding` on every side. */
+export function insideBounds(
+  point: Point,
+  bounds: CanvasBounds,
+  padding = 0,
+): boolean {
+  return (
+    point.x >= bounds.x - padding &&
+    point.x <= bounds.x + bounds.width + padding &&
+    point.y >= bounds.y - padding &&
+    point.y <= bounds.y + bounds.height + padding
+  );
 }

@@ -277,6 +277,17 @@ export function pointerOn(
   fireEvent(element, event);
 }
 
+/** Where React Flow has the canvas: the translation and zoom it gives the viewport. */
+export function viewportTransform(): Point & { readonly zoom: number } {
+  const transform =
+    window.document.querySelector<HTMLElement>('.react-flow__viewport')?.style
+      .transform ?? '';
+  const [, x = '0', y = '0'] =
+    /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/u.exec(transform) ?? [];
+  const zoom = Number(/scale\(([^)]+)\)/u.exec(transform)?.[1] ?? 1);
+  return { x: Number(x), y: Number(y), zoom };
+}
+
 /**
  * Drags a canvas handle from where it is drawn so that the point it stands
  * for lands on `to`, in model units at the viewport's zoom, and releases it
@@ -291,10 +302,7 @@ export function dragHandle(
     x: Number.parseFloat(handle.style.left),
     y: Number.parseFloat(handle.style.top),
   };
-  const transform =
-    window.document.querySelector<HTMLElement>('.react-flow__viewport')?.style
-      .transform ?? '';
-  const zoom = Number(/scale\(([^)]+)\)/u.exec(transform)?.[1] ?? 1);
+  const { zoom } = viewportTransform();
   const at = { x: (to.x - from.x) * zoom, y: (to.y - from.y) * zoom };
   pointerOn(handle, 'pointerdown', 0, 0);
   pointerOn(handle, 'pointermove', at.x, at.y);

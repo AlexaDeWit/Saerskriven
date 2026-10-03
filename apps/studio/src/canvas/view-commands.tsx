@@ -1,11 +1,10 @@
-import { drawnBounds } from '@saerskriven/canvas';
 import type { DiagramId, Model } from '@saerskriven/model';
 import { useReactFlow, useStore } from '@xyflow/react';
 import { useEffect, useMemo, useRef } from 'react';
 import type { ViewCommands } from '../commands/surface.js';
 import { activeDiagramId, modelAsOpened } from '../store/selectors.js';
 import { modelStore, useModelStore } from '../store/store.js';
-import { currentLayout } from './layout.js';
+import { currentLayout, selectionBounds } from './layout.js';
 import { clearOfPanel, fitViewport } from './viewport.js';
 
 /** View commands use the measured pane coverage for explicit fitting. */
@@ -22,14 +21,8 @@ export function useViewCommands(panelCover = 0): ViewCommands {
       },
       fitSelection: () => {
         const state = modelStore.getState();
-        const layout = currentLayout(state);
-        const selected = new Set(state.selection);
-        const bounds = drawnBounds(
-          layout.nodes.filter((node) => selected.has(node.id)),
-          layout.edges.filter((edge) => selected.has(edge.id)),
-        );
         const viewport = fitViewport(
-          bounds,
+          selectionBounds(currentLayout(state), state.selection),
           clearOfPanel({ width, height }, panelCover),
         );
         if (viewport !== undefined) {
