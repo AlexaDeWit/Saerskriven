@@ -118,6 +118,10 @@ export function recordDownloads(): readonly string[] {
 export const openPicker = () =>
   vi.fn<() => Promise<ReturnType<typeof handleFor>[]>>();
 
+/** The error a browser picker rejects with when the person dismisses it. */
+export const dismissal = (): DOMException =>
+  new DOMException('The user dismissed the picker.', 'AbortError');
+
 /** A browser file handle whose writes and completion a spec controls. */
 export const handleFor = (
   name: string,
@@ -203,18 +207,22 @@ type SpecBridgeOptions = {
 /**
  * A bridge reading through the size bound it is handed and recording the
  * writes. By default an open is cancelled and a save writes the proposed name.
+ * It holds the name of the file an open or a save-as settled on, as the
+ * browser's bridge holds that file's handle.
  */
 export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
-  const ownership = fileOwnership<never>();
+  const ownership = fileOwnership<string>();
   const writes: Recorded[] = [];
   const offered: (readonly SaveFileType[])[] = [];
   const releases: Releases = { count: 0 };
 
   const request = async <Outcome>(
     work: () => Promise<Outcome>,
+    candidate: (outcome: Outcome) => string | undefined,
   ): Promise<FileResult<Outcome>> => {
     const complete = ownership.begin();
-    return complete(await work(), undefined);
+    const outcome = await work();
+    return complete(outcome, candidate(outcome));
   };
 
   const opened = (maxBytes: number): Promise<OpenOutcome> => {
@@ -247,16 +255,38 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
     writes,
     offered,
     releases,
-    open: (maxBytes) => request(() => opened(maxBytes)),
-    received: (file, maxBytes) => request(() => readWithin(file, maxBytes)),
-    save: (name, text) => request(() => answer(name, text, false)),
-    saveAs: (name, types, text) =>
-      request(() => {
-        offered.push(types);
-        const chosen =
-          options.picker === false ? name : (options.chooses ?? name);
-        return answer(chosen, text(chosen), true);
-      }),
+    open: (maxBytes) =>
+      request(
+        () => opened(maxBytes),
+        () => options.offers?.name,
+      ),
+    received: (file, maxBytes) =>
+      request(
+        () => readWithin(file, maxBytes),
+        () => undefined,
+      ),
+    save: (name, text) => {
+      const held = ownership.current();
+      return request(
+        () => answer(name, text, false),
+        () => held,
+      );
+    },
+    saveAs: (name, types, text) => {
+      const previous = ownership.current();
+      const chosen =
+        options.picker === false ? name : (options.chooses ?? name);
+      return request(
+        () => {
+          offered.push(types);
+          return answer(chosen, text(chosen), true);
+        },
+        (outcome) =>
+          SaveOutcome.$is('Written')(outcome) && options.picker !== false
+            ? chosen
+            : previous,
+      );
+    },
     exportFile: (name, type, content) => {
       offered.push([type]);
       const chosen =
@@ -264,6 +294,7 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
       return answer(chosen, content, true);
     },
     asksWhere: () => options.picker !== false,
+    writesBack: () => ownership.current() !== undefined,
     release: () => {
       ownership.release();
       releases.count += 1;

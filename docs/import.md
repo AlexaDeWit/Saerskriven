@@ -6,7 +6,7 @@ neither format.
 In the studio, choose **Import** beside **Export** in the File menu and select
 an OTM or TM-BOM file. Import replaces the current model after the usual
 unsaved-changes confirmation. The result is an unsaved native model: Save
-writes YAML under the source file's stem and never writes back to the imported
+proposes YAML under the source file's stem and never writes back to the imported
 file. A refused import leaves the current model and file available. Over MCP,
 `saer_import` writes the converted model to a new file ([the MCP
 server](mcp.md)). On the command line, `saer convert <file> --to

@@ -74,7 +74,8 @@ export type FileSession = {
 /**
  * The file session: it settles handle ownership before synchronously
  * dispatching an open or a save, and following another tab's result releases
- * the handle and puts away the report and every question.
+ * the handle and puts away the report and every question. A Save with no file
+ * to write back to runs Save as wherever the platform can ask where.
  */
 export function useFileSession(
   bridge: FileBridge = browserFileBridge,
@@ -236,6 +237,10 @@ export function useFileSession(
         void openFile('import');
       },
       save: () => {
+        if (bridge.asksWhere() && !bridge.writesBack()) {
+          void askWhere();
+          return;
+        }
         void store();
       },
       saveAs: () => {

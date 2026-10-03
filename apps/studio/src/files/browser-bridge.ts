@@ -137,6 +137,10 @@ function asksWhere(): boolean {
   return window.showSaveFilePicker !== undefined;
 }
 
+function writesBack(): boolean {
+  return ownership.current() !== undefined;
+}
+
 async function writeTo(
   handle: FileSystemFileHandle,
   name: string,
@@ -189,5 +193,6 @@ export const browserFileBridge: FileBridge = {
   saveAs,
   exportFile,
   asksWhere,
+  writesBack,
   release,
 };

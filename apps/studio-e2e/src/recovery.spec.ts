@@ -17,6 +17,7 @@ test('reload restores the last completed edit', async ({ page }) => {
   const sourceText = committedText(featureCompleteFile);
   await page.addInitScript(
     ({ handleWriteKey: recoveryHandleWriteKey, sourceText: openedText }) => {
+      Reflect.deleteProperty(globalThis, 'showSaveFilePicker');
       Object.defineProperty(globalThis, 'showOpenFilePicker', {
         value: () =>
           Promise.resolve([
