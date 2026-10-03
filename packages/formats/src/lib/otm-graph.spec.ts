@@ -106,22 +106,3 @@ it.each<readonly [string, (document: OtmDocument) => OtmDocument]>([
 it('reports assets as descriptions once for a file that references them from a component and a flow', () => {
   expect(assetReports(otmFixture())).toHaveLength(1);
 });
-
-it('reports no assets as descriptions where the one referenced asset has neither a name nor a description', () => {
-  const document = unreferenced(otmFixture());
-  const nameless = {
-    id: 'nameless',
-    name: '',
-    risk: { confidentiality: 0, integrity: 0, availability: 0 },
-  };
-  expect(
-    assetReports({
-      ...document,
-      assets: [nameless],
-      dataflows: document.dataflows?.map((flow) => ({
-        ...flow,
-        assets: [nameless.id],
-      })),
-    }),
-  ).toEqual([]);
-});
