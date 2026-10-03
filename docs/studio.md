@@ -80,8 +80,8 @@ language names, read as a custom category. **Not shown in the studio** lists
 what the model has no place for or holds less exactly than the file: keys the
 format's schema does not declare, the source fields of an OTM or TM-BOM file
 the model has no place for, and values such as a Threat Dragon Elevation of
-Privilege card. A line ends "Saving back keeps it." where a save to the same
-file keeps the value. Each line names a threat by its number and title, and
+Privilege card. A line under that heading ends "Saving back keeps it." where a
+save to the same file keeps the value. Each line names a threat by its number and title, and
 anything else by the name the studio shows, and lines that read the same are
 shown once with their count. A report leaves out what loses nothing, such as a
 raised threat number mark, which the command line still prints. An OTM or

@@ -20,6 +20,7 @@ import {
   reportedDivergence,
   type Loss,
   type OpenSection,
+  type ReportedDivergence,
 } from '../messages/divergence/text.js';
 import type { Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
@@ -290,7 +291,8 @@ export function reportSections(
 
 /**
  * What a read lost, naming the model it produced. An open of a format
- * Saerskriven writes says which losses saving back to the same file keeps.
+ * Saerskriven writes says which losses saving back to the same file keeps,
+ * among those it lists as not shown: a conversion is on screen already.
  * One of a format it only reads keeps none, and always reports, since its
  * notice stands whatever it lost.
  */
@@ -301,8 +303,11 @@ export function openReport(
     ? reported(
         'open',
         read.model,
-        lossesOf(read.divergences, (divergence) =>
-          keptByWriteBack(read.source.format, divergence),
+        lossesOf(
+          read.divergences,
+          (divergence, shown) =>
+            openSectionOf(shown) === 'not-shown' &&
+            keptByWriteBack(read.source.format, divergence),
         ),
       )
     : {
@@ -355,13 +360,13 @@ function reported(
 
 function lossesOf(
   divergences: readonly Divergence[],
-  keeps: (divergence: Divergence) => boolean,
+  keeps: (divergence: Divergence, shown: ReportedDivergence) => boolean,
 ): readonly Loss[] {
   return divergences.flatMap((divergence): Loss[] => {
     const shown = reportedDivergence(divergence);
     return shown === undefined
       ? []
-      : [{ divergence: shown, kept: keeps(divergence) }];
+      : [{ divergence: shown, kept: keeps(divergence, shown) }];
   });
 }
 

@@ -609,7 +609,7 @@ describe('reportSections', () => {
     },
   );
 
-  it('lists a Threat Dragon category read as a custom one as a conversion a save back keeps', () => {
+  it('lists a Threat Dragon category read as a custom one as a conversion, without the sentence a not-shown line a save back keeps carries', () => {
     const report = reportOfText(
       'feature-complete.json',
       committedText('threat-dragon', 'feature-complete.json').replace(
@@ -624,15 +624,13 @@ describe('reportSections', () => {
     expect(reportSections(t, report)[0]).toEqual({
       heading: 'reports.converted',
       lines: [
-        t('divergence.kept', {
-          line: t('divergence.line', {
-            subject: t('divergence.subject-threat', {
-              number: relabelled.number,
-              title: relabelled.title,
-            }),
-            detail: t('divergence.threat-category-unmapped', {
-              category: 'Unlisted label',
-            }),
+        t('divergence.line', {
+          subject: t('divergence.subject-threat', {
+            number: relabelled.number,
+            title: relabelled.title,
+          }),
+          detail: t('divergence.threat-category-unmapped', {
+            category: 'Unlisted label',
           }),
         }),
       ],

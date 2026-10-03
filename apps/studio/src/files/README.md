@@ -88,8 +88,8 @@ read from merges onto it. Saving in any other format has nothing to merge onto,
 so the codec projects, which is where a loss report comes from. A read reports
 too: a wire schema drops every key it does not declare, and the retained
 document has lost them as well, so no later save can say what became of them.
-An open marks each loss `keptByWriteBack` says a save to the same file keeps,
-and each report names its subjects from the model it opened or saved. An open
+An open marks each loss it lists as not shown that `keptByWriteBack` says a
+save to the same file keeps, and each report names its subjects from the model it opened or saved. An open
 report lists what the read converted ahead of what the studio does not show,
 each under its own heading and only where it has a line, by the place
 [`../messages/divergence/text.ts`](../messages/divergence/text.ts) gives each
