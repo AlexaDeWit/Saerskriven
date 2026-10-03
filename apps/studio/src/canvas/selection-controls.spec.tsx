@@ -15,18 +15,13 @@ import {
   SelectionControls,
   FlowEndpointCommands,
 } from './selection-controls.js';
+import { commandById, runCommand } from '../commands/registry.js';
 import {
-  commandById,
-  runCommand,
-  type CommandId,
-} from '../commands/registry.js';
-import { recordingSurface } from '../commands/commands.fixtures.js';
-import {
-  hostPlatform,
-  shortcutLabelText,
-  shortcutText,
-} from '../commands/shortcuts.js';
-import { activeTranslator } from '../messages/locale.js';
+  drawnAs,
+  iconOnly,
+  recordingSurface,
+  tooltipOnFocus,
+} from '../commands/commands.fixtures.js';
 import { selectTool } from './tools.js';
 import { currentAnnouncement } from './announcements.js';
 import {
@@ -50,29 +45,6 @@ const flowOf = () =>
   modelStore
     .getState()
     .present.diagrams[0].elements.find((element) => element.kind === 'flow');
-
-const { t } = activeTranslator();
-
-const drawnAs = (control: HTMLElement) => ({
-  text: control.textContent,
-  glyph: control.querySelector('svg')?.getAttribute('aria-hidden'),
-});
-
-const iconOnly = { text: '', glyph: 'true' };
-
-const tooltipOnFocus = async (command: CommandId) => {
-  const entry = commandById(command);
-  const label = shortcutLabelText(entry.label, t);
-  act(() => {
-    screen.getByRole('button', { name: label }).focus();
-  });
-  const tooltip = await screen.findByRole('tooltip');
-  return {
-    shown: tooltip.textContent,
-    label,
-    chord: shortcutText(entry.shortcuts, hostPlatform, t).chord,
-  };
-};
 
 const bothWaysToggle = () =>
   screen.getByRole('button', { name: 'Toggle bidirectional flow' });
@@ -392,9 +364,9 @@ describe('FlowEndpointCommands', () => {
     async (command) => {
       openCanvas([requestFlow]);
       render(<FlowEndpointCommands />);
-      const { shown, label, chord } = await tooltipOnFocus(command);
-      expect(shown).toContain(label);
-      expect(shown).toContain(chord);
+      const { tooltip, label, chord } = await tooltipOnFocus(command);
+      expect(tooltip.textContent).toContain(label);
+      expect(tooltip.textContent).toContain(chord);
     },
   );
 
@@ -437,11 +409,11 @@ describe('BoundaryShapeCommands', () => {
     ).getByRole('button', { name: 'Switch boundary shape' });
     expect(drawnAs(control)).toEqual(iconOnly);
     expect(control.hasAttribute('aria-pressed')).toBe(false);
-    const { shown, label, chord } = await tooltipOnFocus(
+    const { tooltip, label, chord } = await tooltipOnFocus(
       'toggle-boundary-shape',
     );
-    expect(shown).toContain(label);
-    expect(shown).toContain(chord);
+    expect(tooltip.textContent).toContain(label);
+    expect(tooltip.textContent).toContain(chord);
   });
 
   it('switches the selected boundary between a box and a curve as one undo step each', () => {

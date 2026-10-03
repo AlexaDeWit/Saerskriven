@@ -140,8 +140,8 @@ const cardGlyphs = {
   ),
   'toggle-boundary-shape': (
     <>
-      <rect x="1.75" y="1.75" width="7.5" height="6.5" />
-      <path d="M7.25 14.25c0-5.5 7-5.5 7 0" />
+      <rect x="2.5" y="1.5" width="11" height="5" />
+      <path d="M2 14C4 10 8 10 9 12.25s3 2.5 5-1" />
     </>
   ),
 } satisfies Partial<Record<CommandId, ReactNode>>;

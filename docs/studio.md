@@ -218,17 +218,18 @@ point, first in the list, which frees the end at the X and Y typed, starting
 from where the end is drawn. Toggle bidirectional flow draws an arrowhead at both ends or one again,
 and the flow keeps its source and target either way. Reverse flow swaps the
 source and the target and runs the bends the other way, so the flow keeps its
-route, its threats and whether it runs both ways.
+route, its threats and whether it runs both ways. Escape on a focused icon
+closes its tooltip first, and a second Escape clears the selection.
 
 ## Trust boundaries
 
 While one trust boundary is selected with the Select tool and no name is open
 for editing, the **Trust boundary** card, in the Reconnect flow card's place,
-holds **Switch boundary shape**, an icon of a box and an arch with its name and
-shortcut in a tooltip. It turns a box into the arch the Trust boundary
-curve tool draws in that box, and a curve into the box around its points, at
-least ten units each way. A box at least ten units each way, turned into a
-curve and back, is the same box.
+holds **Switch boundary shape**, an icon of the two Trust boundary tools' shapes,
+the box over the curve, with its name and shortcut in a tooltip. It turns a box
+into the arch the Trust boundary curve tool draws in that box, and a curve into
+the box around its points, at least ten units each way. A box at least ten
+units each way, turned into a curve and back, is the same box.
 The boundary keeps its name, its threats and the elements and flows it declares.
 
 A selected trust boundary curve carries a handle on each of its points, and a

@@ -95,9 +95,9 @@ becomes the accessible name, and the label with its chord is a Radix tooltip
 rather than the `title` attribute its worded sibling holds, because `title` is
 shown to a pointer alone and an icon has to say what it is to a keyboard as
 well. The tooltip renders in place rather than through a portal, so it stays in
-whichever landmark the control sits in. The zoom cluster and the toolbox draw
-their commands this way. The burger menu's button is a glyph, but every command
-inside it is worded.
+whichever landmark the control sits in. The zoom cluster, the toolbox and the
+selection cards draw their commands this way. The burger menu's button is a
+glyph, but every command inside it is worded.
 
 ## Who holds the keyboard
 
