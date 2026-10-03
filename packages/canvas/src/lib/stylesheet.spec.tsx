@@ -11,7 +11,7 @@ import {
   themedCanvasStylesheet,
   wrappedTextStyles,
 } from './stylesheet.js';
-import { outOfScopeInk, paletteProperty } from './tokens.js';
+import { outOfScopeOutline, paletteProperty } from './tokens.js';
 
 const declared = new Set<string>(Object.values(canvasClassNames));
 
@@ -37,6 +37,9 @@ const emitted = new Set<string>(
 
 const toneRule = (styles: string, className: string): string | undefined =>
   styles.split('\n').find((line) => line.startsWith(`.${className} { fill:`));
+
+const dashOf = (rule: string | undefined): string | undefined =>
+  /stroke-dasharray: (?<dash>[^;]+);/u.exec(rule ?? '')?.groups?.dash;
 
 const toned = (theme: RenderTheme): [string, string][] => [
   ...severitySchema.options.map((severity): [string, string] => [
@@ -124,13 +127,14 @@ describe('themedCanvasStylesheet', () => {
 });
 
 describe('an out-of-scope element', () => {
-  const outOfScope = `.${canvasClassNames.outOfScope} `;
-  const rules = themedCanvasStylesheet
+  const themedRules = themedCanvasStylesheet
     .split('}')
-    .map((rule) => rule.trim())
-    .filter((rule) => rule.startsWith(outOfScope));
-  const ruleFor = (className: string): string | undefined =>
-    rules.find((rule) => rule.startsWith(`${outOfScope}.${className} {`));
+    .map((rule) => rule.trim());
+  const ruleStarting = (selector: string): string | undefined =>
+    themedRules.find((rule) => rule.startsWith(selector));
+  const outOfScope = `.${canvasClassNames.outOfScope} `;
+  const rules = themedRules.filter((rule) => rule.startsWith(outOfScope));
+  const outline = ruleStarting(`${outOfScope}.${canvasClassNames.shape} {`);
 
   it('is faded by neither sheet, so each ink is drawn at the ratio the palette measures for it', () => {
     expect(
@@ -140,24 +144,31 @@ describe('an out-of-scope element', () => {
     ).toEqual([]);
   });
 
-  it('has its outline, line, arrowhead and name drawn in its own inks, its badge, note and flow name as in scope', () => {
+  it('has only its outline, line and arrowhead drawn in the outline ink, its name, badge, note and flow name as in scope', () => {
     expect(classesStyledBy(rules.join('\n'))).toEqual(
       new Set([
         canvasClassNames.outOfScope,
         canvasClassNames.shape,
         canvasClassNames.flowArrow,
-        canvasClassNames.label,
       ]),
     );
-    expect(ruleFor(canvasClassNames.shape)).toContain(
-      `stroke: ${paletteProperty(outOfScopeInk.outline)};`,
+    expect(outline).toContain(`stroke: ${paletteProperty(outOfScopeOutline)};`);
+    expect(
+      ruleStarting(`${outOfScope}.${canvasClassNames.flowArrow} {`),
+    ).toContain(`fill: ${paletteProperty(outOfScopeOutline)};`);
+  });
+
+  it("dashes its outline, which in scope is solid, in a dash apart from a trust boundary's", () => {
+    const dash = dashOf(outline);
+    const boundaryDash = dashOf(
+      ruleStarting(`.${canvasClassNames.boundaryBox},`),
     );
-    expect(ruleFor(canvasClassNames.flowArrow)).toContain(
-      `fill: ${paletteProperty(outOfScopeInk.outline)};`,
-    );
-    expect(ruleFor(canvasClassNames.label)).toContain(
-      `fill: ${paletteProperty(outOfScopeInk.name)};`,
-    );
+    expect(
+      dashOf(ruleStarting(`.${canvasClassNames.shape} {`)),
+    ).toBeUndefined();
+    expect(dash).toBeDefined();
+    expect(boundaryDash).toBeDefined();
+    expect(dash).not.toBe(boundaryDash);
   });
 });
 

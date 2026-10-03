@@ -72,9 +72,6 @@ align(center + horizon)[
 .saer-diagram-out-of-scope .saer-diagram-flow-arrow {
   fill: #6B655C;
 }
-.saer-diagram-out-of-scope .saer-diagram-label {
-  fill: #38342E;
-}
 .saer-diagram-badge {
   stroke: #FAF8F2;
   stroke-width: 3;
@@ -204,9 +201,6 @@ align(center + horizon)[
 }
 .saer-diagram-out-of-scope .saer-diagram-flow-arrow {
   fill: #6B655C;
-}
-.saer-diagram-out-of-scope .saer-diagram-label {
-  fill: #38342E;
 }
 .saer-diagram-badge {
   stroke: #FAF8F2;

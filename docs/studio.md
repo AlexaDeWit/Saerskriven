@@ -418,11 +418,11 @@ threat's fields, until you correct or clear it, and survives closing the panel
 and selecting something else.
 
 On the canvas and in exported drawings, an element out of scope has its
-outline dashed and drawn in the muted ink, and a flow its line and arrowhead.
-Its name and badge are drawn as they are in scope. The dash is not a colour, so
-it survives forced colours. A Note, which has no outline, is not marked on the
-canvas, and a trust boundary, already dashed, is marked by a shorter dash
-alone.
+outline dashed and drawn in the muted ink. A flow out of scope has its line
+dashed and drawn in the muted ink, and its arrowhead filled with it. Names and
+badges are drawn as they are in scope. The dash is not a colour, so it survives
+forced colours. A Note, which has no outline, is not marked, and a trust
+boundary, already dashed, is marked by a shorter dash alone.
 
 ### Security properties
 

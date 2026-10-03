@@ -115,15 +115,11 @@ export const darkPalette = {
 } as const satisfies Palette;
 
 /**
- * The roles an out-of-scope element is drawn in. Its outline, with a flow's
- * line and arrowhead, steps back to the muted ink, and its dash marks it out
- * of scope. Its name keeps the ink of an in-scope name. Nothing about it is
- * faded, so each ink holds the ratio measured for its role.
+ * The role an out-of-scope element's dashed outline is drawn in, and a flow's
+ * dashed line and its arrowhead. Being a mark rather than text, it is held to
+ * the ratio a mark needs.
  */
-export const outOfScopeInk = {
-  name: 'textPrimary',
-  outline: 'textSecondary',
-} as const satisfies Record<'name' | 'outline', keyof Palette>;
+export const outOfScopeOutline = 'textSecondary' satisfies keyof Palette;
 
 /**
  * The type the studio's chrome is set in. Every value is a CSS length or a
