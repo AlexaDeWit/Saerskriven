@@ -471,8 +471,11 @@ export const touchSession = async (page: Page): Promise<CDPSession> => {
   return session;
 };
 
-/** Sends a touch gesture between screen coordinates, including a stationary tap. */
-export const touchDrag = async (
+/**
+ * Puts one finger down at a screen point and moves it to another, leaving it
+ * down so the caller can act before the lift.
+ */
+export const touchDown = async (
   session: CDPSession,
   from: Point,
   to: Point,
@@ -492,8 +495,22 @@ export const touchDrag = async (
       ],
     });
   }
+};
+
+/** Lifts the finger {@link touchDown} left down. */
+export const touchUp = async (session: CDPSession): Promise<void> => {
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchEnd',
     touchPoints: [],
   });
+};
+
+/** Sends a touch gesture between screen coordinates, including a stationary tap. */
+export const touchDrag = async (
+  session: CDPSession,
+  from: Point,
+  to: Point,
+): Promise<void> => {
+  await touchDown(session, from, to);
+  await touchUp(session);
 };

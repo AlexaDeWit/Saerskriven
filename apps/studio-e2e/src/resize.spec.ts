@@ -1,4 +1,10 @@
-import { expect, test, type Locator } from '@playwright/test';
+import {
+  expect,
+  test,
+  type CDPSession,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import { boxAt, modelWith } from '@saerskriven/model/fixtures';
 import {
   type Box,
@@ -7,8 +13,10 @@ import {
   dragBy,
   type Point,
   pressOn,
+  touchDown,
   touchDrag,
   touchSession,
+  touchUp,
   viewportZoom,
 } from './canvas.fixtures.js';
 import {
@@ -55,6 +63,21 @@ const sideControl = (node: Locator, side: string, of = 'Actor'): Locator =>
 
 const glyphWidthOf = async (node: Locator): Promise<number> =>
   Number(await node.locator('svg').first().getAttribute('width'));
+
+const touchDragged = 60;
+
+const selectKioskForTouch = async (
+  page: Page,
+): Promise<{
+  readonly session: CDPSession;
+  readonly node: Locator;
+  readonly before: Box;
+}> => {
+  const session = await touchSession(page);
+  await openModelDocument(page, kioskModel);
+  const node = await selectNode(page, kiosk.drawn);
+  return { session, node, before: await boxOf(node) };
+};
 
 const expectFixedOpposite = (side: string, before: Box, after: Box): void => {
   if (side === 'top') {
@@ -178,15 +201,11 @@ test('a press on a control without movement records no edit at a fractional size
 test('a touch drag on a control resizes for the whole drag, as one undo step', async ({
   page,
 }) => {
-  const session = await touchSession(page);
-  await openModelDocument(page, kioskModel);
-  const node = await selectNode(page, kiosk.drawn);
-  const before = await boxOf(node);
+  const { session, node, before } = await selectKioskForTouch(page);
   const from = await centreOf(sideControl(node, 'right', kiosk.name));
-  const dragged = 60;
-  const grown = dragged / (await viewportZoom(page));
+  const grown = touchDragged / (await viewportZoom(page));
 
-  await touchDrag(session, from, { x: from.x + dragged, y: from.y });
+  await touchDrag(session, from, { x: from.x + touchDragged, y: from.y });
 
   await expect
     .poll(async () =>
@@ -199,6 +218,63 @@ test('a touch drag on a control resizes for the whole drag, as one undo step', a
   await expect.poll(() => boxOf(node)).toEqual(before);
   expect(await undoOffered(page)).toBe(false);
   expect(await glyphWidthOf(node)).toBe(before.width);
+  await session.detach();
+});
+
+test('a touch resize cut short by a deselect is put back, and a still press after it records no edit', async ({
+  page,
+}) => {
+  const { session, node, before } = await selectKioskForTouch(page);
+  const right = sideControl(node, 'right', kiosk.name);
+  const from = await centreOf(right);
+
+  await touchDown(session, from, { x: from.x + touchDragged, y: from.y });
+  await expect
+    .poll(async () => (await boxOf(node)).width)
+    .not.toBe(before.width);
+  await page.keyboard.press('Escape');
+  await expect(node).not.toHaveClass(/selected/u);
+  await touchUp(session);
+
+  await expect.poll(() => boxOf(node)).toEqual(before);
+  await expect.poll(() => glyphWidthOf(node)).toBe(before.width);
+  expect(await undoOffered(page)).toBe(false);
+
+  await selectNode(page, kiosk.drawn);
+  await pressOn(page, right);
+  await page.mouse.up();
+
+  await expect(right).toBeFocused();
+  expect(await undoOffered(page)).toBe(false);
+  expect(await boxOf(node)).toEqual(before);
+  await session.detach();
+});
+
+test('a still touch on a corner after a touch resize from the bottom records no edit', async ({
+  page,
+}) => {
+  const { session, node, before } = await selectKioskForTouch(page);
+  const from = await centreOf(sideControl(node, 'bottom', kiosk.name));
+  const grown = touchDragged / (await viewportZoom(page));
+
+  await touchDrag(session, from, { x: from.x, y: from.y + touchDragged });
+  await expect
+    .poll(async () =>
+      Math.abs((await boxOf(node)).height - before.height - grown),
+    )
+    .toBeLessThanOrEqual(pointerTolerance);
+  const resized = await boxOf(node);
+  expect(resized.width).toBe(before.width);
+
+  const corner = sideControl(node, 'bottom right corner', kiosk.name);
+  const at = await centreOf(corner);
+  await touchDrag(session, at, at);
+
+  await expect(corner).toBeFocused();
+  expect(await boxOf(node)).toEqual(resized);
+  await runFromMenu(page, 'Undo');
+  await expect.poll(() => boxOf(node)).toEqual(before);
+  expect(await undoOffered(page)).toBe(false);
   await session.detach();
 });
 
