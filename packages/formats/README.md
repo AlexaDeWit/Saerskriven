@@ -34,7 +34,10 @@ Two codecs are registered:
 
 `readAnyFormat` ([`detect.ts`](src/lib/detect.ts)) opens a text without being
 told its format and answers with the codec that claimed it, so a later write
-goes back through the same one.
+goes back through the same one. `keptByWriteBack` says whether that write
+keeps a divergence the read reported, from the codec's `keepsNarrowed`: the
+Threat Dragon merge keeps a value the read narrowed, the native codec
+projects and keeps none, and no codec keeps an `undeclared` key.
 
 ## Divergences
 

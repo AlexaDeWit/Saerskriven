@@ -1,18 +1,22 @@
 import { Either } from 'effect';
+import { readFileSync } from 'node:fs';
 import { ReadFailure } from './codec.js';
 import { readFailureIssues } from './codec.fixtures.js';
 import { adversarialText, corpusTexts } from './corpus.fixtures.js';
 import {
   DetectionFailure,
   formatNameSchema,
+  keptByWriteBack,
   readAnyFormat,
   retainedSource,
   writeThrough,
   type DetectedRead,
 } from './detect.js';
-import { hasDiverged } from './divergence.js';
+import { hasDiverged, type Divergence } from './divergence.js';
+import { equivalent } from './equivalence.js';
 import {
   featureCompleteYaml,
+  frozenV030Path,
   minimalYamlV1,
   nativeFixtures,
   oneThreatYamlV1,
@@ -361,4 +365,50 @@ describe('retainedSource', () => {
       );
     },
   );
+});
+
+describe('keptByWriteBack', () => {
+  it.each([
+    { name: 'Threat Dragon', text: featureCompleteText },
+    {
+      name: 'version 1 Saerskriven YAML',
+      text: readFileSync(frozenV030Path, 'utf8'),
+    },
+  ])(
+    'says of each value a $name read narrowed whether the file written back narrows it again',
+    ({ text }) => {
+      const answer = opened(text);
+      const again = opened(
+        writeThrough(answer.model, retainedSource(answer)).output,
+      );
+      const narrowed = answer.divergences.filter(
+        ({ reason }) => reason === 'narrowed',
+      );
+
+      expect(narrowed.length).toBeGreaterThan(0);
+      expect(
+        narrowed.map((divergence) =>
+          keptByWriteBack(answer.format, divergence),
+        ),
+      ).toEqual(
+        narrowed.map((divergence) =>
+          again.divergences.some((reread) => equivalent(reread, divergence)),
+        ),
+      );
+    },
+  );
+
+  it('keeps no key a read left undeclared, whatever the format', () => {
+    const undeclared: Divergence = {
+      subject: { kind: 'model' },
+      detail: { code: 'key-undeclared', parameters: { path: 'notes' } },
+      reason: 'undeclared',
+    };
+
+    expect(
+      formatNameSchema.options.some((format) =>
+        keptByWriteBack(format, undeclared),
+      ),
+    ).toBe(false);
+  });
 });

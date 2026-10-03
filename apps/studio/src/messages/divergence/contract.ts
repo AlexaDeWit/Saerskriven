@@ -4,94 +4,78 @@ const id = { id: 'text' } as const;
 
 const name = { name: 'text' } as const;
 
-const mark = { from: 'text', raised: 'text' } as const;
+const path = { path: 'text' } as const;
 
-const shape = { shape: 'text' } as const;
+const numbered = { number: 'number' } as const;
 
-const element = { element: 'text' } as const;
+const titled = { number: 'number', title: 'text' } as const;
+
+const onThreat = { threat: 'text' } as const;
 
 /**
- * What a codec or an import reports it could not carry, one message per
- * divergence code, with the subject and the reason each line names. A
- * parameter is data the codec passed through, so no message joins English
- * fragments. A code naming an element kind has a message for each kind it
- * can name, so no locale composes an article onto the kind.
+ * The lines of a studio report, one per divergence that loses something:
+ * the subject named as the studio shows it, then what was lost. A code
+ * whose subject is the model words its own subject from the source's data.
+ * A subject or a lost link naming an element kind has a message for each
+ * kind, so no locale composes an article onto the kind.
  */
 export const divergenceMessages = {
-  line: text({ subject: 'text', detail: 'text', reason: 'text' }),
-  'subject-model': text(),
-  'subject-diagram': text(id),
-  'subject-element': text(id),
-  'subject-threat': text(id),
-  'subject-mitigation': text(id),
-  'subject-assumption': text(id),
-  'reason-unrepresentable': text(),
-  'reason-undeclared': text(),
-  'reason-narrowed': text(),
-  'reason-split': text(),
-  'reason-overridden': text(),
-  'reason-discarded-by-edit': text(),
-  'release-restamped': text({ from: 'text', written: 'text' }),
-  'threat-mark-raised-by-issue': text(mark),
-  'threat-mark-raised-to-issued': text(mark),
-  'diagram-mark-raised-by-issue': text(mark),
-  'diagram-mark-raised-to-issued': text(mark),
-  'assumption-unrecorded': text(),
-  'diagram-discarded': text({ title: 'text' }),
-  'threat-copy-detached': text({ cell: 'text' }),
-  'threat-discarded': text({ title: 'text' }),
-  'note-name-dropped': text(name),
+  line: text({ subject: 'text', detail: 'text' }),
+  kept: text({ line: 'text' }),
+  threat: text(titled),
+  'threat-untitled': text(numbered),
+  'subject-threat': text(titled),
+  'subject-threat-untitled': text(numbered),
+  'subject-diagram': text({ title: 'text' }),
+  'subject-actor': text(),
+  'subject-actor-named': text(name),
+  'subject-process': text(),
+  'subject-process-named': text(name),
+  'subject-store': text(),
+  'subject-store-named': text(name),
+  'subject-text': text(),
+  'subject-text-named': text(name),
+  'subject-flow-named': text(name),
+  'subject-trust-boundary': text(),
+  'subject-trust-boundary-named': text(name),
+  'subject-mitigation': text({ title: 'text' }),
+  'subject-mitigation-on': text(onThreat),
+  'subject-mitigation-untitled': text(),
+  'subject-assumption-on': text(onThreat),
+  'subject-assumption-on-model': text(),
+  'subject-assumption': text(),
+  'whole-threat': text(),
+  'whole-mitigation': text(),
+  'whole-assumption': text(),
+  'split-into-copies': plural('count'),
+  'note-name-dropped': text(),
   'scope-marking-dropped': text(),
-  'cell-reshaped-actor': text(shape),
-  'cell-reshaped-process': text(shape),
-  'cell-reshaped-store': text(shape),
-  'cell-reshaped-text': text(shape),
-  'cell-reshaped-flow': text(shape),
-  'cell-reshaped-trust-boundary': text(shape),
-  'diagram-name-numbered': text({ number: 'text' }),
-  'cell-discarded': text(shape),
-  'threat-attachment-stray-text': text(element),
-  'threat-attachment-stray-trust-boundary': text(element),
-  'threat-attachment-stray-unknown': text(element),
-  'threat-unplaceable': text(),
-  'threat-split-across-elements': plural('count'),
-  'threat-category-unnamed': text({
-    methodology: 'text',
-    category: 'text',
-  }),
+  'threat-attachment-stray-text': text(),
+  'threat-attachment-stray-text-named': text(name),
+  'threat-attachment-stray-trust-boundary': text(),
+  'threat-attachment-stray-trust-boundary-named': text(name),
+  'threat-attachment-stray-unknown': text(),
+  'threat-category-unnamed': text(),
   'mitigation-records-merged': plural('count'),
   'mitigation-title-merged': text(),
-  'mitigation-empty-dropped': text({ threat: 'text' }),
-  'mitigation-status-dropped': text({
-    status: 'text',
-    threat: 'text',
-    inferred: 'text',
-  }),
-  'mitigation-unlinked': text(name),
-  'mitigation-split-across-threats': plural('count'),
+  'mitigation-status-dropped': text({ status: 'text', inferred: 'text' }),
   'threat-status-unmapped': text({ status: 'text' }),
   'threat-severity-unmapped': text({ severity: 'text' }),
   'threat-category-eop-suit': text(),
   'threat-category-unmapped': text({ category: 'text' }),
-  'key-undeclared': text({ path: 'text' }),
+  'key-undeclared': text(path),
   'assumption-element-links-dropped': text(),
   'otm-threat-split': text(id),
-  'otm-threat-undecided': text(id),
   'otm-threat-status-unmapped': text({ status: 'text' }),
-  'otm-threat-status-absent': text(),
   'otm-mitigation-split': text(id),
   'otm-mitigation-status-retained': text({ id: 'text', status: 'text' }),
-  'otm-mitigation-status-absent': text(id),
   'otm-mitigation-unlinked': text(id),
   'otm-assets-as-descriptions': text(),
   'otm-components-as-processes': text(),
-  'otm-geometry-generated': text(id),
-  'tmbom-threats-undecided': text(),
   'tmbom-control-proposed': text(name),
   'tmbom-control-unlinked': text(name),
-  'tmbom-geometry-generated': text(),
   'tmbom-flow-fields-as-prose': text(),
   'tmbom-data-set-as-prose': text(name),
   'tmbom-data-set-dropped': text(name),
-  'field-not-retained': text({ path: 'text' }),
+  'field-not-retained': text(path),
 } as const;

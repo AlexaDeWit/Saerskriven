@@ -35,11 +35,15 @@ person typed reach a message as parameters and pass through unchanged.
 | `terms`      | Render's words for stored values, record-group headings and badge marks         |
 | `tools`      | The controls drawn over the canvas: zoom, placement, routes and endpoints       |
 
-`divergence/text.ts` maps each divergence code `@saerskriven/formats` records
-to its message, with the codec's parameters passed through. A divergence line
-takes other messages' text as parameters: the subject, the detail and the
-reason are each a complete phrase, and the `line` message owns their order
-and punctuation. The canvas does the same with a name: `canvas.quoted` sets a
+`divergence/text.ts` words each divergence `@saerskriven/formats` records
+that a studio report shows, and leaves out a code that loses nothing a person
+reads. A line names its subject as the studio shows it: a threat by number and
+title, an element, a diagram or a mitigation by its name or title, and a
+record without a title by its kind and the threat it is on. A code about the
+model words its own subject from the file's data. The subject and what was
+lost are each a complete phrase, and the `line` message owns their order and
+punctuation, as `kept` does for the sentence saying a save back keeps it. The
+canvas does the same with a name: `canvas.quoted` sets a
 person's text in the reader's quotation marks, and an element without a name
 is called by its kind (`enums.the-actor` and the like), so an announcement
 takes either as one noun phrase.

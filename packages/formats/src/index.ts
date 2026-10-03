@@ -7,6 +7,7 @@ export {
 export {
   DetectionFailure,
   formatNameSchema,
+  keptByWriteBack,
   readAnyFormat,
   retainedSource,
   writeThrough,

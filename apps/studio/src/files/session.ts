@@ -2,18 +2,20 @@ import {
   importModel,
   ReadFailure,
   formatNameSchema,
-  hasDiverged,
+  keptByWriteBack,
   readAnyFormat,
   retainedSource,
   type Divergence,
   type FormatName,
   type RetainedSource,
 } from '@saerskriven/formats';
+import type { Model } from '@saerskriven/model';
 import type { StudioMessageId } from '../messages/catalogues.js';
 import { Either } from 'effect';
 import {
-  divergenceDetail,
-  divergenceLine,
+  lossLines,
+  reportedDivergence,
+  type Loss,
 } from '../messages/divergence/text.js';
 import type { Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
@@ -222,28 +224,16 @@ export function savedBy(
   });
 }
 
-/**
- * A report's lines in the caller's language, one per divergence. The caller
- * supplies the translator so a component re-words a standing report on a
- * change of locale. An import charges every entry to the model, so its lines
- * carry the detail alone.
- */
-export function reportLines(
-  t: Speaker,
-  divergences: readonly Divergence[],
-  occasion?: LossOccasion,
-): readonly string[] {
-  return occasion === 'import'
-    ? divergences.map(({ detail }) => divergenceDetail(t, detail))
-    : divergences.map((divergence) => divergenceLine(t, divergence));
-}
-
 type LossOccasion = 'open' | 'save' | 'import';
 
-/** What one open or one save cost, and which of the two it was. */
+/**
+ * What one open, import or save lost that a person reads, and the model each
+ * line names its subject from: the one opened, imported or saved.
+ */
 export type LossReport = {
   readonly occasion: LossOccasion;
-  readonly divergences: readonly Divergence[];
+  readonly model: Model;
+  readonly losses: readonly Loss[];
 };
 
 /** The message each occasion introduces its report with. */
@@ -253,26 +243,54 @@ export const reportHeadlines = {
   save: 'reports.saved',
 } as const satisfies Record<LossOccasion, StudioMessageId>;
 
-/** Reports losses from reading, including fields absent from the retained document. */
-export function openReport(
-  divergences: readonly Divergence[],
-  occasion: ReadIntent = 'open',
-): LossReport | undefined {
-  return reported(occasion, divergences);
+/**
+ * A report's lines in the caller's language, one per loss. The caller
+ * supplies the translator so a component rewords a standing report on a
+ * change of locale.
+ */
+export function reportLines(
+  t: Speaker,
+  { model, losses }: LossReport,
+): readonly string[] {
+  return lossLines(t, model, losses);
 }
 
-/** What a save cost, and nothing at all where it carried everything. */
+/**
+ * What a read lost, naming the model it produced. An open says which losses
+ * saving back to the same file keeps, and an import, which keeps no source
+ * to save back to, keeps none.
+ */
+export function openReport(
+  read: Extract<Action, { readonly _tag: 'Opened' | 'Imported' }>,
+): LossReport | undefined {
+  return Action.$is('Opened')(read)
+    ? reported('open', read.model, read.divergences, (divergence) =>
+        keptByWriteBack(read.source.format, divergence),
+      )
+    : reported('import', read.model, read.divergences, () => false);
+}
+
+/** What a save of `model` lost, and nothing at all where it lost nothing. */
 export function saveReport(
+  model: Model,
   divergences: readonly Divergence[],
 ): LossReport | undefined {
-  return reported('save', divergences);
+  return reported('save', model, divergences, () => false);
 }
 
 function reported(
   occasion: LossOccasion,
+  model: Model,
   divergences: readonly Divergence[],
+  keeps: (divergence: Divergence) => boolean,
 ): LossReport | undefined {
-  return hasDiverged(divergences) ? { occasion, divergences } : undefined;
+  const losses = divergences.flatMap((divergence): Loss[] => {
+    const shown = reportedDivergence(divergence);
+    return shown === undefined
+      ? []
+      : [{ divergence: shown, kept: keeps(divergence) }];
+  });
+  return losses.length === 0 ? undefined : { occasion, model, losses };
 }
 
 function actionForText(name: string, text: string): Action {

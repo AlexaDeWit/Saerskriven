@@ -37,9 +37,15 @@ import type { ReadLimit } from './read-limits.js';
  * `write` returns no `Either`: what the format cannot hold is a divergence
  * rather than a failure, so a caller asking what a save would cost calls
  * `write` and discards the output.
+ *
+ * `keepsNarrowed` says whether a `write` onto the document `read` returned
+ * leaves what that read reported as `narrowed` as the file stated it, so the
+ * same read reports it again. What it reported as `undeclared` is gone from
+ * that document either way.
  */
 export interface Codec<WireSchema extends z.ZodType<object>> {
   readonly wire: WireSchema;
+  readonly keepsNarrowed: boolean;
   read(text: string): Either.Either<ReadResult<WireSchema>, ReadFailure>;
   write(model: Model, source?: z.infer<WireSchema>): WriteResult;
 }

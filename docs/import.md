@@ -12,10 +12,12 @@ file. A refused import leaves the current model and file available. Over MCP,
 server](mcp.md)). On the command line, `saer convert <file> --to
 saerskriven-yaml` writes it as native YAML ([usage](../README.md#usage)).
 
-The conversion report names generated values, changed representations, and
-omitted source fields that hold a value. Expand its details before dismissing
-it. Import does not retain a source document for later merging, so keep the
-original file when its omitted information matters.
+The conversion report names changed representations and omitted source
+fields that hold a value. The studio's leaves out a default or a layout the
+import supplied where the source held none, which `saer convert` and MCP still
+name. Expand its details before dismissing it. Import does not retain a source
+document for later merging, so keep the original file when its omitted
+information matters.
 
 `importModel(text)` in `@saerskriven/formats` provides the same conversion to
 application code. It returns Effect's `Either`, with `ReadFailure` on refusal.
