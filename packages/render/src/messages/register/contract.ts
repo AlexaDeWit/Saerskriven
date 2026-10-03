@@ -5,7 +5,8 @@ import { text } from '@saerskriven/i18n';
  * in place of absent content. `field` joins a field's name to its value,
  * both as nodes, so each language places its own punctuation between them.
  * `flow-from-to` and `flow-between` name a flow left unlabelled by its ends,
- * and `free-point` is an end attached to nothing.
+ * and `free-point` is an end attached to nothing. `whole-model` stands among
+ * a threat's elements where the threat applies to the model.
  */
 export const registerMessages = {
   untitled: text(),
@@ -14,6 +15,7 @@ export const registerMessages = {
   number: text(),
   title: text(),
   elements: text(),
+  'whole-model': text(),
   category: text(),
   severity: text(),
   status: text(),

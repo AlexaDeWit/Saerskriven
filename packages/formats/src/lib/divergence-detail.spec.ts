@@ -111,6 +111,10 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
     'the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under',
   ],
   [
+    { code: 'threat-model-link-dropped' },
+    'the link to the whole model, which the format holds a threat nowhere but under a cell, so this one is written under the cells it names alone',
+  ],
+  [
     { code: 'threat-split-across-elements', parameters: { count: 3 } },
     'the one record, written once under each of the 3 elements it names',
   ],

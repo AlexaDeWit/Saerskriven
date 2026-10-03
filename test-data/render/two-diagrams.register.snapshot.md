@@ -1,17 +1,17 @@
 # Two diagrams threat register
 
-| Number           | Title                                   | Elements                                        | Category                                | Severity  | Status        |
-| ---------------- | --------------------------------------- | ----------------------------------------------- | --------------------------------------- | --------- | ------------- |
-| [1](#threat-1)   | Account takeover by credential stuffing | Shopper, browse the catalogue and fill a basket | Spoofing (STRIDE)                       | High      | Open          |
-| [2](#threat-2)   | Basket price changed in the page        | Web shop, return the rendered page              | Tampering (STRIDE)                      | Critical  | Mitigated     |
-| [3](#threat-3)   | Unpublished listings readable           | Catalogue, read the product listings            | Confidentiality (CIA)                   | Medium    | Accepted risk |
-| [4](#threat-4)   | Card data disclosed in transit          | Payment&#xA;gateway, authorise the card payment | Information disclosure (STRIDE)         | High      | Transferred   |
-| [6](#threat-6)   | Shopper denies placing an order         | Order ledger, record the paid order             | Repudiation (STRIDE)                    | Low       | Mitigated     |
-| [7](#threat-7)   | Forged payment callback                 | card network callback                           | Callback integrity (Payments checklist) | Undecided | Open          |
-| [8](#threat-8)   | Stock held by abandoned reservations    | Stock, reserve the stock for the order          | Denial of service (STRIDE)              | Medium    | Open          |
-| [9](#threat-9)   | Courier learns more than the address    | Courier, hand over the parcel                   | Data disclosure (LINDDUN)               | Low       | Open          |
-| [10](#threat-10) | Picker overrides a dispatch hold        | Picker, Dispatch, report the picked items       | Elevation of privilege (STRIDE)         | High      | Open          |
-| [11](#threat-11) | Refund policy abused                    | None                                            | Integrity (CIA)                         | Low       | Open          |
+| Number           | Title                                   | Elements                                                         | Category                                | Severity  | Status        |
+| ---------------- | --------------------------------------- | ---------------------------------------------------------------- | --------------------------------------- | --------- | ------------- |
+| [1](#threat-1)   | Account takeover by credential stuffing | Shopper, browse the catalogue and fill a basket                  | Spoofing (STRIDE)                       | High      | Open          |
+| [2](#threat-2)   | Basket price changed in the page        | Web shop, return the rendered page                               | Tampering (STRIDE)                      | Critical  | Mitigated     |
+| [3](#threat-3)   | Unpublished listings readable           | Catalogue, read the product listings                             | Confidentiality (CIA)                   | Medium    | Accepted risk |
+| [4](#threat-4)   | Card data disclosed in transit          | The whole model, Payment&#xA;gateway, authorise the card payment | Information disclosure (STRIDE)         | High      | Transferred   |
+| [6](#threat-6)   | Shopper denies placing an order         | Order ledger, record the paid order                              | Repudiation (STRIDE)                    | Low       | Mitigated     |
+| [7](#threat-7)   | Forged payment callback                 | card network callback                                            | Callback integrity (Payments checklist) | Undecided | Open          |
+| [8](#threat-8)   | Stock held by abandoned reservations    | Stock, reserve the stock for the order                           | Denial of service (STRIDE)              | Medium    | Open          |
+| [9](#threat-9)   | Courier learns more than the address    | Courier, hand over the parcel                                    | Data disclosure (LINDDUN)               | Low       | Open          |
+| [10](#threat-10) | Picker overrides a dispatch hold        | Picker, Dispatch, report the picked items                        | Elevation of privilege (STRIDE)         | High      | Open          |
+| [11](#threat-11) | Refund policy abused                    | None                                                             | Integrity (CIA)                         | Low       | Open          |
 
 ## Assumptions that apply to the model
 
@@ -107,7 +107,7 @@ None recorded.
 
 ## Threat 4: Card data disclosed in transit
 
-- **Elements**: Payment
+- **Elements**: The whole model, Payment
   gateway, authorise the card payment
 - **Category**: Information disclosure (STRIDE)
 - **Severity**: High

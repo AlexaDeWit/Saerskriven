@@ -169,9 +169,10 @@ A hand-written model of a small shop on two diagrams, `storefront` and
 box and a curve boundary, pairs of flows sharing one line, flows converging on
 one process, and flow names long enough to crowd, so the canvas label
 placement checks have something to place. Its register has threats over four
-methodologies, one custom, a threat on no element, mitigations and assumptions
-in every status, assumptions that apply to the model, and both flags. The
-canvas suite lays both diagrams out, render draws its goldens from it, and
+methodologies, one custom, a threat on no element, a threat that applies to
+the model and also names elements, mitigations and assumptions in every
+status, assumptions that apply to the model, and both flags. The canvas suite
+lays both diagrams out, render draws its goldens from it, and
 `apps/studio-e2e` opens it.
 `committedDiagrams` on `@saerskriven/model/fixtures` lists the diagrams both
 suites draw.

@@ -70,7 +70,11 @@ own format where the item stood. The page cannot tell whether a download went
 through, so a download counts as saved even where the browser's own download
 dialog was cancelled. Saving in another format than the file was read as is
 where most of a save's report, **Not kept by this save**, comes from, since
-only the file's own format keeps what Saerskriven does not model. Opening a
+only the file's own format keeps what Saerskriven does not model. A Threat
+Dragon file holds a threat only under an actor, a process, a store or a flow:
+a threat that applies to the whole model is saved under those it is on, with
+its attachment to the whole model reported as not kept, and a threat on none of
+them is reported whole and not saved. Opening a
 file reports too, under two headings, each shown only when it has a line.
 **Converted on opening** comes first and lists what the model holds in another
 form or place than the file had it, so it can still be found in the studio: an
@@ -170,7 +174,8 @@ identity.
 
 Each threat occurrence becomes a separate threat with its own status and
 mitigations. This preserves different treatments on different components.
-Threat definitions without occurrences become threats on no element. Known
+Threat definitions without occurrences become threats on no element, which
+are not read as applying to the whole model. Known
 threat statuses map to the corresponding core treatment. Unknown statuses
 remain in the description and are read as open. Each mitigation an occurrence
 names becomes a record linked to that occurrence's threat. Mitigations marked
@@ -205,6 +210,7 @@ inferred. Shared data identity and other data-set properties are reported as
 losses.
 
 Threats preserve their declared component attachments and event descriptions.
+A threat that declares no affected component applies to the whole model.
 They are read as open, with undecided severity and an unspecified category.
 Separate risk records and threat personas are reported as omissions.
 Controls become mitigations linked to the threats they name. Active controls

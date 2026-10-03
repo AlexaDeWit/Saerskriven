@@ -36,6 +36,7 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   'threat-attachment-stray-trust-boundary-named':
     'its attachment to the trust boundary "{name}"',
   'threat-attachment-stray-unknown': 'its attachment to a missing element',
+  'threat-model-link-dropped': 'its attachment to the whole model',
   'threat-category-unnamed': 'its category, which reopens as a custom one',
   'mitigation-records-merged': {
     one: 'its {count} mitigation, now one without a title',

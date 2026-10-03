@@ -2,6 +2,7 @@ import {
   divergenceDetailSchema,
   importModel,
   importedId,
+  threatDragonCodec,
   type Divergence,
   type DivergenceCode,
   type DivergenceDetail,
@@ -92,6 +93,7 @@ const reported: readonly DivergenceDetail[] = [
     parameters: { element: 'stray-element', kind: 'trust-boundary' },
   },
   { code: 'threat-unplaceable' },
+  { code: 'threat-model-link-dropped' },
   { code: 'threat-split-across-elements', parameters: { count: 21 } },
   {
     code: 'threat-category-unnamed',
@@ -249,6 +251,19 @@ const linesOf = (
     t,
     within,
     divergences.map((divergence) => lossOf(divergence)),
+  );
+
+const shownLines = (
+  divergences: readonly Divergence[],
+  within: Model,
+): readonly string[] =>
+  lossLines(
+    t,
+    within,
+    divergences.flatMap((divergence) => {
+      const shown = reportedDivergence(divergence);
+      return shown === undefined ? [] : [{ divergence: shown, kept: false }];
+    }),
   );
 
 const lineOf = (divergence: Divergence, speaker = t, kept = false): string => {
@@ -745,14 +760,7 @@ const twoOccurrences = JSON.stringify({
 
 describe('the lines a real OTM import reports', () => {
   const read = Either.getOrThrow(importModel(twoOccurrences));
-  const lines = lossLines(
-    t,
-    read.model,
-    read.divergences.flatMap((divergence) => {
-      const shown = reportedDivergence(divergence);
-      return shown === undefined ? [] : [{ divergence: shown, kept: false }];
-    }),
-  );
+  const lines = shownLines(read.divergences, read.model);
   const threatNamed = (title: string, state: string) => {
     const threat = read.model.threats.find(
       (candidate) =>
@@ -798,5 +806,42 @@ describe('the lines a real OTM import reports', () => {
         }),
       }),
     );
+  });
+});
+
+const lineAbout = (number: number, title: string, detail: string): string =>
+  t('divergence.line', {
+    subject: t('divergence.subject-threat', { number, title }),
+    detail,
+  });
+
+describe('the lines a Threat Dragon save reports for threats that apply to the model', () => {
+  const marked = modelWith({
+    elements: [
+      boxAt('archive', 0, 0, 'store', undefined, 'Paper archive'),
+      boxAt('desk', 300, 0, 'process', undefined, 'Front desk'),
+    ],
+    threats: [
+      threatOf({ number: 1, title: 'Supply chain', appliesToModel: true }),
+      threatOf({
+        number: 2,
+        title: 'Stale backups',
+        elements: ['archive', 'desk'],
+        appliesToModel: true,
+      }),
+    ],
+  });
+  it('name the whole threat where it is on no element, and the lost attachment once, beside the copies, where it is on two', () => {
+    expect(
+      shownLines(threatDragonCodec.write(marked).divergences, marked),
+    ).toEqual([
+      lineAbout(1, 'Supply chain', t('divergence.whole-threat')),
+      lineAbout(2, 'Stale backups', t('divergence.threat-model-link-dropped')),
+      lineAbout(
+        2,
+        'Stale backups',
+        t('divergence.split-into-copies', { count: 2 }),
+      ),
+    ]);
   });
 });
