@@ -161,6 +161,9 @@ function Labelled({
   );
 }
 
+/** Selects a text field while it holds a refused draft. */
+export const refusedFieldSelector = '[aria-invalid="true"]';
+
 function controlProps(
   label: string,
   shownLabel: string | undefined,

@@ -650,7 +650,9 @@ Where the register hides the panel under it, choosing a row closes the
 register instead, and focus moves to that threat in the model panel, as it
 does on Escape. The register then opens with that row marked and focus on
 it, until it is closed another way. A row chosen while another threat holds
-refused text leaves the register open.
+refused text also closes the register, with focus on the field holding that
+text. The chosen threat does not open, and the register next opens with no
+row marked.
 
 Each element name in a row selects that element, on whichever diagram draws
 it, and closes the register, with focus on the element.
