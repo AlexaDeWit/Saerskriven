@@ -53,12 +53,12 @@ function withRecords(
 const [mitigation] = validModelFixture.mitigations;
 const [assumption] = validModelFixture.assumptions;
 
-describe('selectionFragment', () => {
-  const apiFragment = () =>
-    Either.getOrThrow(
-      selectionFragment(validModel, diagram, [elementId('element-api')]),
-    );
+const apiFragment = () =>
+  Either.getOrThrow(
+    selectionFragment(validModel, diagram, [elementId('element-api')]),
+  );
 
+describe('selectionFragment', () => {
   it('copies each threat, mitigation and assumption the selection links once', () => {
     const fragment = apiFragment();
     expect(fragment.diagrams[0].elements.map((element) => element.id)).toEqual([
@@ -157,24 +157,24 @@ describe('selectionFragment', () => {
   });
 });
 
-describe('remapFragment and insertFragment', () => {
-  const whole = () => {
-    const fragment = Either.getOrThrow(
-      selectionFragment(
-        validModel,
-        diagram,
-        validModel.diagrams[0].elements.map((element) => element.id),
-      ),
-    );
-    const fresh = Either.getOrThrow(
-      remapFragment(fragment, 'fresh', { x: 20, y: 30 }, validModel),
-    );
-    const inserted = Either.getOrThrow(
-      insertFragment(validModel, diagram, fresh),
-    );
-    return { fragment, fresh, inserted };
-  };
+const whole = () => {
+  const fragment = Either.getOrThrow(
+    selectionFragment(
+      validModel,
+      diagram,
+      validModel.diagrams[0].elements.map((element) => element.id),
+    ),
+  );
+  const fresh = Either.getOrThrow(
+    remapFragment(fragment, 'fresh', { x: 20, y: 30 }, validModel),
+  );
+  const inserted = Either.getOrThrow(
+    insertFragment(validModel, diagram, fresh),
+  );
+  return { fragment, fresh, inserted };
+};
 
+describe('remapFragment and insertFragment', () => {
   it('remaps element ids under the prefix and offsets their geometry', () => {
     const { fresh, inserted } = whole();
     expect(

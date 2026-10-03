@@ -305,6 +305,20 @@ const heldFlow = (port?: string): ThreatDragonCell => ({
   data: { type: 'tm.Flow', name: 'Ledger', isBidirectional: false },
 });
 
+const flowTo = (side?: string, bidirectional = false): Element =>
+  elementOf({
+    kind: 'flow',
+    id: 'flow-1',
+    ...named,
+    source: { kind: 'free', position: { x: 0, y: 0 } },
+    target:
+      side === undefined
+        ? { kind: 'attached', element: 'cell-1' }
+        : { kind: 'attached', element: 'cell-1', side },
+    waypoints: [],
+    bidirectional,
+  });
+
 describe('a flow end and the port Threat Dragon fastens it to', () => {
   const ledger: ThreatDragonCell = {
     id: 'cell-1',
@@ -320,19 +334,6 @@ describe('a flow end and the port Threat Dragon fastens it to', () => {
     data: { type: 'tm.Store' },
   };
   const ports = portSides([ledger]);
-  const flowTo = (side?: string, bidirectional = false): Element =>
-    elementOf({
-      kind: 'flow',
-      id: 'flow-1',
-      ...named,
-      source: { kind: 'free', position: { x: 0, y: 0 } },
-      target:
-        side === undefined
-          ? { kind: 'attached', element: 'cell-1' }
-          : { kind: 'attached', element: 'cell-1', side },
-      waypoints: [],
-      bidirectional,
-    });
   it('keeps the source anchor where its port sits on the pinned side', () => {
     const merged = mergeCell(flowTo('top'), heldFlow('port-top'), [], 0, ports);
     expect(merged.cell).toMatchObject({
