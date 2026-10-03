@@ -16,7 +16,7 @@ export type FlakeModule = {
  * The module a host build must carry, or a test reads, at the path its
  * variable names.
  *
- * Both dev shells export the variable, and what it names is the path the
+ * Every dev shell exports the variable, and what it names is the path the
  * module's nx project writes it to rather than a store path, so a target that
  * carries the module declares a dependency on that build instead of a caller
  * pointing the variable somewhere. No shell carries a module or the Rust

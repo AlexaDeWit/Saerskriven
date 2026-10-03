@@ -55,7 +55,7 @@ jobs:
 
       # `.#nightly` is `.#ci` plus Mesa, the EGL driver the flake's WebKit
       # needs on a host that is not NixOS (flake.nix). No cache entry holds
-      # Mesa, so each leg fetches it from cache.nixos.org, about 800 MB
+      # Mesa, so each leg fetches it from cache.nixos.org, about 800 MiB
       # unpacked, and saves nothing. Both legs enter the one shell, so the
       # two engines run in the same environment.
       #

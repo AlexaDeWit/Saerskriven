@@ -179,9 +179,9 @@
 
           # The shell the nightly Firefox and WebKit legs enter (#679): ci
           # plus the EGL driver WebKit needs. Mesa and its LLVM add about
-          # 800 MB to a closure, so they stay out of ci, whose closure and
+          # 800 MiB to a closure, so they stay out of ci, whose closure and
           # cache entry every pull request job pays for (owner ruling,
-          # 2026-10-04). It is built on ci's own attribute set, so the two
+          # 2026-10-03). It is built on ci's own attribute set, so the two
           # differ by that driver and nothing else.
           nightly = pkgs.mkShell (ciShell // webkitEglEnv // {
             name = "saerskriven-nightly";

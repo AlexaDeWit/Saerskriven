@@ -58,8 +58,12 @@ fs.appendFileSync(process.env.NIGHTLY_TEST_LOG, JSON.stringify({ args, body, inh
 const tracker = JSON.parse(process.env.NIGHTLY_TEST_TRACKER);
 if (args[1] !== 'list') process.exit(tracker.writesFail ? 1 : 0);
 if (tracker.listFails) process.exit(1);
-const wanted = args[args.indexOf('--state') + 1];
-const listed = tracker.issues.filter(({ state }) => wanted === 'all' || state === wanted);
+const flagValue = (name, fallback) => (args.includes(name) ? args[args.indexOf(name) + 1] : fallback);
+const wanted = flagValue('--state', 'open');
+const listed = tracker.issues
+  .filter(({ state }) => wanted === 'all' || state === wanted)
+  .sort((newer, older) => older.number - newer.number)
+  .slice(0, Number(flagValue('--limit', '30')));
 console.log(JSON.stringify(listed.map(({ number, title }) => ({ number, title }))));
 `;
 const callSchema = z.object({
@@ -195,14 +199,40 @@ void test('a red night comments on the open tracking issue and neither opens nor
     },
   );
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(
-    calls.map(({ args }) => args.slice(0, 4)),
-    [
-      ['issue', 'list', '--state', 'open'],
-      ['issue', 'comment', '41', '--body-file'],
-    ],
-  );
+  assert.deepEqual(calls[0]?.args, [
+    'issue',
+    'list',
+    '--state',
+    'open',
+    '--limit',
+    '1000',
+    '--json',
+    'number,title',
+  ]);
+  assert.deepEqual(calls[1]?.args.slice(0, 4), [
+    'issue',
+    'comment',
+    '41',
+    '--body-file',
+  ]);
   assert.ok(calls[1]?.body.includes('files.spec.ts:40'));
+});
+
+void test('a tracking issue older than thirty newer open issues is still found', () => {
+  const newer = Array.from({ length: 30 }, (_, index) => ({
+    number: 42 + index,
+    title: `Something newer ${String(index)}`,
+    state: 'open' as const,
+  }));
+  const { result, writes } = night(
+    { firefox: red, webkit: green },
+    { issues: [{ number: 41, title, state: 'open' }, ...newer] },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(
+    writes.map(({ args }) => args.slice(0, 3)),
+    [['issue', 'comment', '41']],
+  );
 });
 
 void test('a closed tracking issue gets no comment: the night opens a new one', () => {
@@ -290,20 +320,28 @@ void test('a listing that fails opens nothing, so no second tracking issue appea
 });
 
 void test('a write GitHub refuses fails the report, after one attempt', () => {
-  const { result, writes } = night(
-    { firefox: red, webkit: green },
-    { writesFail: true },
-  );
-  assert.notEqual(result.status, 0);
-  assert.deepEqual(
-    writes.map(({ args }) => args.slice(0, 2)),
-    [['issue', 'create']],
-  );
+  const reports = { firefox: red, webkit: green };
+  const refused = [
+    { issues: [], attempt: 'create' },
+    {
+      issues: [{ number: 41, title, state: 'open' as const }],
+      attempt: 'comment',
+    },
+  ];
+  for (const { issues, attempt } of refused) {
+    const { result, writes } = night(reports, { issues, writesFail: true });
+    assert.notEqual(result.status, 0, attempt);
+    assert.deepEqual(
+      writes.map(({ args }) => args.slice(0, 2)),
+      [['issue', attempt]],
+    );
+  }
 });
 
 void test('the script under test reaches no gh but the fake and is handed no credentials', () => {
   const reports = { firefox: red, webkit: green };
-  assert.equal(night(reports, { gh: false }).result.status, 127);
+  const absent = night(reports, { gh: false, args: ['--dry-run'] });
+  assert.equal(absent.result.status, 127);
   const { calls } = night(reports);
   assert.equal(calls.length, 2);
   for (const { inherited } of calls) assert.deepEqual(inherited, []);
@@ -312,6 +350,10 @@ void test('the script under test reaches no gh but the fake and is handed no cre
 const nightly = workflow('nightly-browsers.yml');
 const gate = readFileSync(
   join(workspaceRoot, '.github/workflows/ci.yml'),
+  'utf8',
+);
+const setupAction = readFileSync(
+  join(workspaceRoot, '.github/actions/setup-toolchain/action.yml'),
   'utf8',
 );
 
@@ -323,12 +365,13 @@ void test('the nightly run starts on a schedule or by hand, and the gate never n
   assert.equal(gate.includes('SAERSKRIVEN_E2E_OTHER_ENGINES'), false);
 });
 
-void test('each engine runs its suite in the nightly shell, which the gate never enters', () => {
+void test('each engine runs its suite in the nightly shell, which neither the gate nor the setup action it shares enters', () => {
   const suite = nightly.jobs['browsers']?.steps?.find(({ run }) =>
     run?.includes('nx e2e'),
   );
   assert.ok(suite?.run?.startsWith('nix develop .#nightly --command'));
   assert.equal(gate.includes('.#nightly'), false);
+  assert.equal(setupAction.includes('.#nightly'), false);
 });
 
 void test('only the report job may write, to issues alone, and only for a red run on main nobody cancelled', () => {

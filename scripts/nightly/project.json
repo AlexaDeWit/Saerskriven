@@ -19,6 +19,7 @@
         "toolsFixtures",
         "{workspaceRoot}/.github/workflows/nightly-browsers.yml",
         "{workspaceRoot}/.github/workflows/ci.yml",
+        "{workspaceRoot}/.github/actions/setup-toolchain/action.yml",
         "{workspaceRoot}/flake.lock",
         {
           "externalDependencies": ["yaml", "zod"]

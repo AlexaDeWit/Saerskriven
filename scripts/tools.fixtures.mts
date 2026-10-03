@@ -31,7 +31,7 @@ export const linkTools = (bin: string, tools: readonly string[]): void => {
     const found = spawnSync('bash', ['-c', 'command -v "$1"', 'probe', tool], {
       encoding: 'utf8',
     });
-    assert.equal(found.status, 0, found.stderr);
+    assert.equal(found.status, 0, `${tool} is not on PATH`);
     symlinkSync(found.stdout.trim(), join(bin, tool));
   }
   symlinkSync(process.execPath, join(bin, 'node'));
