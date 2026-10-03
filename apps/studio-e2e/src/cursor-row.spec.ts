@@ -10,13 +10,12 @@ import {
   arrowTo,
   chromeCard,
   diagramSwitcher,
-  expandThreat,
   menuButton,
+  openShopperTakeover,
   openTwoDiagrams,
   panelField,
   scrollPaneTo,
   selectByKeyboard,
-  selectNode,
   stepThroughOptions,
   storefront,
 } from './studio.fixtures.js';
@@ -61,12 +60,6 @@ const ringedInForcedColours = async (
   await page.emulateMedia({ forcedColors: 'none' });
 };
 
-const openThreat = async (page: Page): Promise<void> => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
-};
-
 const openByKeyboard = async (trigger: Locator): Promise<void> => {
   await trigger.focus();
   await trigger.press('Enter');
@@ -81,7 +74,7 @@ const chosenMarks = (option: Locator) =>
 test('a list field draws the row under the keyboard or the pointer as a ringed tint, and the chosen value keeps its weight and its check either way', async ({
   page,
 }) => {
-  await openThreat(page);
+  await openShopperTakeover(page);
   const field = panelField(page, 'combobox', 'Status');
   expect(await scrollPaneTo(field, 'bottom')).toBe(true);
   await openByKeyboard(field);
@@ -121,7 +114,7 @@ const pickers: readonly {
   {
     name: 'an Existing picker with nothing chosen yet',
     open: async (page) => {
-      await openThreat(page);
+      await openShopperTakeover(page);
       await openByKeyboard(panelField(page, 'combobox', 'Existing element'));
       await expect(page.getByRole('listbox')).toBeVisible();
       await expect(

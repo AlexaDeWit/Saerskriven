@@ -4,6 +4,7 @@ import {
   addRecord,
   chooseInPanel,
   expandThreat,
+  openShopperTakeover,
   openTwoDiagrams,
   panelControl,
   panelField,
@@ -171,9 +172,7 @@ test('a mitigated threat with only proposed work is marked until the work is imp
 test('only an invalidated assumption marks the threat it is linked to', async ({
   page,
 }) => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
   const summary = threatSummary(page, storefront.takeover);
 

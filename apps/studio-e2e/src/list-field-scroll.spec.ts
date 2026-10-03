@@ -1,24 +1,19 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { edgesOf } from './canvas.fixtures.js';
 import {
-  expandThreat,
   focusedOption,
-  openTwoDiagrams,
+  openShopperTakeover,
   panelField,
   scrollPaneTo,
   scrollCue,
   scrolledOffItsStart,
-  selectNode,
-  storefront,
 } from './studio.fixtures.js';
 
 const labelOf = async (option: Locator): Promise<string> =>
   (await option.locator('[data-option-label]').textContent()) ?? '';
 
 const openNearTopEdge = async (page: Page): Promise<Locator> => {
-  await openTwoDiagrams(page);
-  await selectNode(page, storefront.shopper);
-  await expandThreat(page, storefront.takeover);
+  await openShopperTakeover(page);
   const field = panelField(page, 'combobox', 'Category');
   expect(await scrollPaneTo(field, 'top')).toBe(true);
   return field;
