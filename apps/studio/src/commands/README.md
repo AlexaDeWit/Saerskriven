@@ -15,7 +15,7 @@ the in-app shortcut reference this directory renders.
 | `table.ts`                | The command table and the entry builders that fill it                                                     |
 | `registry.ts`             | Reading that table: `commandById`, `commandFor`, `runCommand` and the diagram export                      |
 | `surface.ts`              | The command surface types: the file session, the reference and the viewport                               |
-| `shortcuts.ts`            | The chord type, its builders, and how each platform writes a chord                                        |
+| `shortcuts.ts`            | The chord type, its builders, the chords the platforms reserve, and how each platform writes a chord      |
 | `binding.tsx`             | The document-level key listener, who owns a key press, and the `CommandSurface` context                   |
 | `contextual-shortcuts.ts` | Keys that act only inside one control, such as bend and resize keys, with their matchers and descriptions |
 | `command-button.tsx`      | `CommandButton` and `IconCommandButton`                                                                   |
@@ -57,7 +57,10 @@ A chord is a set of modifiers and one key from a closed list, so a binding
 names a key the studio decided on rather than any string a keyboard can
 produce, and two commands reaching for one chord is a comparison over a known
 alphabet. The registry's spec fails a chord that collides with one already
-bound. A command may have no chord, as the export commands do.
+bound, or with one in `reservedChords`: the chords macOS, Windows, Chrome,
+Firefox and Safari keep for their own commands by default, such as the macOS
+screenshot keys ⇧⌘3, ⇧⌘4 and ⇧⌘5, which never reach the page. A command may
+have no chord, as the export commands do.
 
 `Mod` is the platform's command modifier: Command on Apple hardware, Control
 everywhere else. The platform is read once at load, from the user agent data
@@ -85,8 +88,9 @@ instead.
 Matching allows for keyboards. Ctrl+Y is an alternative Redo off macOS only,
 absent from macOS matching, labels and ARIA attributes. Backspace stands in for
 Delete on Mac keyboards. Zoom accepts the equals key or the produced plus
-character. Shifted number-row commands also match their digit key code when the
-event reports punctuation, such as `!` for Shift+1. `+` for Add bend accepts
+character. A Mod+Shift digit chord, such as Fit selection's, also matches its
+digit key code when the event reports the punctuation the layout shifts that
+key to: `)` on a US layout, `=` on a Swedish one. `+` for Add bend accepts
 either Shift state, because layouts differ in how they produce it, while Ctrl
 or Command with it keeps its zoom binding.
 
@@ -146,6 +150,9 @@ only some directions list those keys.
   locales and store the id. A function that spells a chord or describes an
   entry takes the active translator, so the caller resolves at render.
 - Bind a new command by adding an entry, not by adding a listener.
+- A command on a selection card takes Shift and a letter, and so does Position
+  and size. Add a chord a platform or a browser turns out to keep to
+  `reservedChords`, so the spec holds every chord clear of it.
 - Add a key that acts only inside one control to `contextual-shortcuts.ts`.
   Renderers, event handlers and accessible descriptions read it from there.
 - The tool commands select a mode, and the toolbox reads those same entries for

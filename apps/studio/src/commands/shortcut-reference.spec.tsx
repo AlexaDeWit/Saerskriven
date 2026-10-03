@@ -79,6 +79,29 @@ describe('ShortcutReference', () => {
     ]);
   });
 
+  it('lists one Open and Share among the file commands, and no Import', () => {
+    render(<ShortcutReference onClose={() => undefined} platform="other" />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: activeTranslator().t('commands.group-file'),
+      }),
+    );
+
+    expect(idsOf('data-command-id')).toEqual([
+      'open',
+      'save',
+      'save-as',
+      'export-diagram',
+      'export-register',
+      'export-typst',
+      'export-pdf',
+      'export-png',
+      'share',
+      'close-file',
+    ]);
+  });
+
   it.each(platforms)(
     'compacts complete arrow groups and retains %s alternatives',
     (platform) => {
@@ -104,6 +127,27 @@ describe('ShortcutReference', () => {
         expect(keysIn(commandRow(id))).toEqual([
           `${platform === 'apple' ? '⌘' : 'Ctrl+'}${key}`,
         ]);
+      }
+    },
+  );
+
+  it.each(platforms)(
+    'writes the selection cards’ Shift chords as %s writes them',
+    (platform) => {
+      render(
+        <ShortcutReference onClose={() => undefined} platform={platform} />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+      const shifted = platform === 'apple' ? '⇧' : 'Shift+';
+      for (const [id, key] of [
+        ['edit-geometry', 'P'],
+        ['reconnect-source', 'S'],
+        ['reconnect-target', 'T'],
+        ['toggle-flow-direction', 'D'],
+        ['reverse-flow', 'R'],
+        ['toggle-boundary-shape', 'B'],
+      ]) {
+        expect(keysIn(commandRow(id))).toEqual([`${shifted}${key}`]);
       }
     },
   );

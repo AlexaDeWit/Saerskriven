@@ -4,6 +4,11 @@ import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { z } from 'zod';
 import { modelFrom, parseWire, ReadFailure } from './codec.js';
+import {
+  DetectionFailure,
+  readAnyFormat,
+  type DetectedRead,
+} from './detect.js';
 import type { Divergence } from './divergence.js';
 import { mapOtm } from './otm-import.js';
 import { parseYaml } from './parse-yaml.js';
@@ -37,11 +42,22 @@ export function importModel(
 }
 
 /**
- * The import format a parsed document names at its root, by an `otmVersion`
- * or a `$schema` key, or the refusal {@link importModel} returns where it
- * names neither.
+ * A text read by whichever codec claims it, as {@link readAnyFormat} reads
+ * it, or converted as {@link importModel} converts it where no codec claims
+ * it and its root names OTM or TM-BOM. Any other text no codec claims keeps
+ * the detection failure, which names the codec formats tried.
  */
-export function importFormatOf(
+export function readOrImport(
+  text: string,
+): Either.Either<DetectedRead | ImportResult, ReadFailure | DetectionFailure> {
+  return Either.orElse(readAnyFormat(text), (failure) =>
+    DetectionFailure.$is('NoFormatClaimed')(failure)
+      ? importNamed(text, failure)
+      : Either.left(failure),
+  );
+}
+
+function importFormatOf(
   given: unknown,
 ): Either.Either<ImportFormat, ReadFailure> {
   if (isRecord(given) && Object.hasOwn(given, 'otmVersion')) {
@@ -74,6 +90,20 @@ const releasesRead = {
 function releaseNamedBy(schemaUri: string): string {
   const start = schemaUri.indexOf(schemaReleaseMark) + schemaReleaseMark.length;
   return schemaUri.slice(start, schemaUri.indexOf('/', start));
+}
+
+function importNamed(
+  text: string,
+  unclaimed: DetectionFailure,
+): Either.Either<ImportResult, ReadFailure | DetectionFailure> {
+  const given = parseYaml(text);
+  if (Either.isLeft(given)) {
+    return Either.left(unclaimed);
+  }
+  const format = importFormatOf(given.right);
+  return Either.isLeft(format)
+    ? Either.left(unclaimed)
+    : convert(format.right, given.right);
 }
 
 function convert(

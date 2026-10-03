@@ -11,6 +11,7 @@ import { hostPlatform } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
 import { useMeasured } from '../ui/measure.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
+import { PanelTabList, PanelTabs, type PanelTabsProps } from './panel-tabs.js';
 import styles from './threat-panel.module.css';
 
 type PanelFrameProps = {
@@ -23,6 +24,7 @@ type PanelFrameProps = {
   readonly onToggleWidth: () => void;
   readonly onClose: () => void;
   readonly onCover?: (cover: number) => void;
+  readonly tabs?: PanelTabsProps;
   readonly children: ReactNode;
 };
 
@@ -33,9 +35,10 @@ const widthLabel = (
 
 /**
  * The pane the panel location draws, whichever subject it shows: the width
- * control, the heading and the close control above a scrolling body. It
- * reports how much of the canvas it covers, and closes on its Escape unless
- * an open listbox inside it is handling the press.
+ * control, the heading and the close control, then the tab list where `tabs`
+ * is given, above a scrolling body. It reports how much of the canvas it
+ * covers, and closes on its Escape unless an open listbox inside it is
+ * handling the press.
  */
 export function PanelFrame({
   label,
@@ -47,6 +50,7 @@ export function PanelFrame({
   onToggleWidth,
   onClose,
   onCover,
+  tabs,
   children,
 }: PanelFrameProps) {
   const panel = useRef<HTMLElement>(null);
@@ -78,7 +82,7 @@ export function PanelFrame({
     onClose();
   };
 
-  return (
+  const frame = (
     <section
       aria-describedby={keyboardDescriptionId}
       aria-label={label}
@@ -125,7 +129,10 @@ export function PanelFrame({
           <Cross1Icon aria-hidden="true" />
         </button>
       </header>
+      {tabs !== undefined && <PanelTabList threatCount={tabs.threatCount} />}
       <div className={styles.body}>{children}</div>
     </section>
   );
+
+  return tabs === undefined ? frame : <PanelTabs frame={frame} tabs={tabs} />;
 }

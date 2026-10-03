@@ -90,7 +90,6 @@ type StudioActionTag =
   | 'HideModelProperties'
   | 'InlineEditing'
   | 'Imported'
-  | 'ImportFailed'
   | 'Opened'
   | 'Saved'
   | 'Closed'
@@ -441,11 +440,8 @@ const studioActions: ActionsByTag<StudioActionTag> = {
   Imported: Action.Imported({
     model: emptyModel,
     name: 'imported.yaml',
+    format: 'otm',
     divergences: [],
-  }),
-  ImportFailed: Action.ImportFailed({
-    name: 'model.otm',
-    failure: ReadFailure.MalformedText({ message: 'not YAML' }),
   }),
   Saved: Action.Saved({ name: 'model.yaml', source: nativeSource }),
   Closed: Action.Closed(),

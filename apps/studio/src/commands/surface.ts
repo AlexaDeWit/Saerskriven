@@ -1,7 +1,6 @@
 /** File operations whose session guards unsaved changes before replacing the model. */
 export type FileCommands = {
   open(): void;
-  import(): void;
   save(): void;
   saveAs(): void;
   exportDiagram(): void;

@@ -201,7 +201,7 @@ test('a flow left unlabelled draws no label, and the threat panel names it from 
   );
   await expect(
     threatPanel(page).getByRole('heading', {
-      name: 'Threats on the flow from Web shop to Catalogue',
+      name: 'Flow from Web shop to Catalogue',
       exact: true,
     }),
   ).toBeVisible();

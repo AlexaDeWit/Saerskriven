@@ -21,12 +21,15 @@
    them through :global() from the container rather than by hanging a class of
    its own on every node and every flow. */
 
-/* The focus indicator is the app's own token, on the element the browser put
-   focus on. Selection is drawn separately below, so an element that is both
-   focused and selected shows both. */
-.canvas :global(.react-flow__node):focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 var(--saer-focus-ring-width) var(--saer-colour-accent);
+/* The focus ring is the app's own token, on the element the browser put focus
+   on. An outline, unlike a shadow, paints over the element's drawing. It sits
+   just inside the selection frame below, so an element both focused and
+   selected shows both. */
+.canvas :global(.react-flow__nodes .react-flow__node):focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: calc(
+    -1 * (var(--saer-cue-selection) + var(--saer-focus-ring-width))
+  );
 }
 
 .canvas :global(.react-flow__edge):focus-visible {
@@ -118,8 +121,10 @@
 
 /* A threat badge draws over the selection frame and the side lines, and under
    every control's hit area: a side line forms no stacking context, so its
-   button stacks above the badge while its border stays beneath it. The canvas
-   package keeps the corner handles clear of the badge. */
+   button stacks above the badge while its border stays beneath it. While its
+   element is selected the canvas package steps the badge out past the corner
+   handle. A selected boundary box's badge rides in the viewport portal, where
+   this lifts it above the nodes around it. */
 .canvas :global(.saer-diagram-badge-layer) {
   z-index: 1;
 }
@@ -168,12 +173,17 @@
   translate: 0 0;
 }
 
+/* Scaled up at low zoom, a right-hand corner handle grows inward from the
+   right side, so it never reaches the badge stepped out past the top-right
+   corner or the marks stacked under it. */
 .canvas :global(.react-flow__resize-control.handle.top.right) {
   translate: -100% 0;
+  transform-origin: 100% 50%;
 }
 
 .canvas :global(.react-flow__resize-control.handle.bottom.right) {
   translate: -100% -100%;
+  transform-origin: 100% 50%;
 }
 
 .canvas :global(.react-flow__resize-control.handle.bottom.left) {
@@ -220,6 +230,22 @@
 .canvas :global(.react-flow__resize-control > button:focus-visible) {
   outline: var(--saer-focus-ring);
   outline-offset: var(--saer-focus-ring-offset);
+}
+
+/* A resize control's ring paints at the control's level and its node's, so
+   the control holding keyboard focus comes above its node's other controls,
+   and its node above the other items and the handles on a curve's points,
+   under the menu a handle opens. React Flow sets each node's z-index inline,
+   hence the !important. */
+.canvas :global(.react-flow__resize-control:has(> button:focus-visible)) {
+  z-index: 4;
+}
+
+.canvas
+  :global(
+    .react-flow__node:has(.react-flow__resize-control > button:focus-visible)
+  ) {
+  z-index: 2 !important;
 }
 
 /* The handles a flow attaches to are drawn on the element under the pointer

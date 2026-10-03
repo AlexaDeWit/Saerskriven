@@ -3,16 +3,16 @@ import { plural, text } from '@saerskriven/i18n';
 const endpoint = { flow: 'text', element: 'text' } as const;
 
 /**
- * The reports under the chrome card: what a file crossing cost, what an
- * export left out or could not do, the file types an export offers, and the
- * link Share copied or could not write.
+ * The reports under the chrome card: what a file crossing cost, the notice a
+ * file opens with when Saerskriven does not write its format, what an export
+ * left out or could not do, the file types an export offers, and the link
+ * Share copied or could not write.
  */
 export const reportMessages = {
   region: text(),
   opened: text(),
-  imported: text(),
+  'opened-read-only': text({ format: 'text' }),
   saved: text(),
-  'conversion-details': plural('count'),
   'dismiss-report': text(),
   'dismiss-export': text(),
   'write-refused': text(),

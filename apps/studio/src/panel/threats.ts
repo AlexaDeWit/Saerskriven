@@ -60,12 +60,7 @@ export function attachedThreats(state: State): readonly Threat[] {
       );
 }
 
-/**
- * Where a flow left unlabelled runs, "from A to B", and undefined for any
- * other element. `elements` holds the elements its ends attach to, keyed by
- * id.
- */
-export function unlabelledFlowEnds(
+function unlabelledFlowEnds(
   element: Element,
   elements: ReadonlyMap<ElementId, Element>,
   t: StudioTranslator['t'],

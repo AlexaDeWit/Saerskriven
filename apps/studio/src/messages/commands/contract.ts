@@ -7,7 +7,6 @@ import { text } from '@saerskriven/i18n';
  */
 export const commandMessages = {
   'label-open': text(),
-  'label-import': text(),
   'label-save': text(),
   'label-save-as': text(),
   'label-export-diagram': text(),
@@ -65,7 +64,6 @@ export const commandMessages = {
   'label-shortcut-reference': text(),
   'when-selection-outside-fields-and-overlays': text(),
   'when-outside-text-fields': text(),
-  'when-import': text(),
   'when-share': text(),
   'when-anywhere': text(),
   'when-file-menu': text(),

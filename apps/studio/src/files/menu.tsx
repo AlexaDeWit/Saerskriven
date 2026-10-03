@@ -49,7 +49,6 @@ type UnsavedChangesCommandProps = {
 
 type DiscardQuestion =
   | 'menu.discard-and-open'
-  | 'menu.discard-and-import'
   | 'menu.discard-and-open-link'
   | 'menu.discard-and-new';
 
@@ -121,7 +120,6 @@ export function StudioMenu({
 
   useCloseGuard(guarded);
   useAsking(session.opening, dirty, setOpen, session.cancelOpen);
-  useAsking(session.importing, dirty, setOpen, session.cancelImport);
   useAsking(session.linking, unsaved, setOpen, session.cancelLink);
   const askingLink = session.linking && unsaved;
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
@@ -144,7 +142,6 @@ export function StudioMenu({
           setOpen(next);
           if (!next) {
             cancelOpen();
-            session.cancelImport();
             cancelLink();
             cancelClose();
             cancelChoice();
@@ -342,14 +339,6 @@ function FileMenu({
               })}
             </MenuItem>
           ))}
-      <UnsavedChangesCommand
-        asking={session.importing && dirty}
-        asksFirst={dirty}
-        cancel={session.cancelImport}
-        command="import"
-        proceed={session.confirmImport}
-        question="menu.discard-and-import"
-      />
       <ExportMenu />
       <UnsavedChangesCommand
         asking={askingLink}

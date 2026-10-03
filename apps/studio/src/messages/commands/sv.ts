@@ -3,7 +3,6 @@ import { commandMessages } from './contract.js';
 
 export const commandsSv = catalogue(commandMessages)('sv')({
   'label-open': 'Öppna',
-  'label-import': 'Importera',
   'label-save': 'Spara',
   'label-save-as': 'Spara som',
   'label-export-diagram': 'Diagram som SVG',
@@ -62,7 +61,6 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'when-selection-outside-fields-and-overlays':
     'Med en markering på arbetsytan, utanför textfält och öppna menyer',
   'when-outside-text-fields': 'Utanför textfält',
-  'when-import': 'Konvertera en OTM- eller TM-BOM-fil till en ny egen modell',
   'when-share':
     'Kopiera en länk som rymmer hela modellen till urklipp, från menyn Arkiv',
   'when-anywhere': 'Var som helst i studion',

@@ -4,13 +4,9 @@ import { reportMessages } from './contract.js';
 export const reportsEnCA = catalogue(reportMessages)('en-CA')({
   region: 'File reports',
   opened: 'Not shown in the studio:',
-  imported:
-    'Import created a native model with these conversions and omissions:',
+  'opened-read-only':
+    '{format} opens as a new model. Saerskriven does not write {format}, so Save makes a Saerskriven file. The opened file stays as it is.',
   saved: 'Not kept by this save:',
-  'conversion-details': {
-    one: '{count} conversion detail',
-    other: '{count} conversion details',
-  },
   'dismiss-report': 'Dismiss report',
   'dismiss-export': 'Dismiss export report',
   'write-refused': 'Saerskriven could not write the export.',

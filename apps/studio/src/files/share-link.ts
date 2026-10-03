@@ -95,6 +95,7 @@ export function linkLanding(
   return Action.Imported({
     model: read.model,
     name: linkFileName(read.model.metadata.title, untitled),
+    format: undefined,
     divergences: read.divergences,
   });
 }

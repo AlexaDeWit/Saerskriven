@@ -1,6 +1,7 @@
 import { elementId } from '@saerskriven/model/fixtures';
 import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { selectedBadgeAnchor } from './badges.js';
 import { everyGlyphLayout, nodeNamed, specMarks } from './canvas.fixtures.js';
 import { shiftedBy } from './geometry.js';
 import { handleSides } from './handles.js';
@@ -134,18 +135,18 @@ const everyNodeSelectedAt = (offset: {
     selected: true,
   }));
 
+const badgePlace = (markup: string): readonly string[] =>
+  /^[^>]*? transform="translate\(([^,]+), ([^)]+)\)"/u
+    .exec(markup.slice(markup.indexOf(`class="${canvasClassNames.badge}"`)))
+    ?.slice(1) ?? [];
+
 const flowLabelPlace = (markup: string): readonly string[] => {
   const name = markup.slice(
     markup.indexOf(`class="${canvasClassNames.flowLabel}"`),
   );
-  const badge = markup.slice(
-    markup.indexOf(`class="${canvasClassNames.badge}"`),
-  );
   return [
     ...(/^[^>]*? x="([^"]+)" y="([^"]+)"/u.exec(name)?.slice(1) ?? []),
-    ...(/^[^>]*? transform="translate\(([^,]+), ([^)]+)\)"/u
-      .exec(badge)
-      ?.slice(1) ?? []),
+    ...badgePlace(markup),
   ];
 };
 
@@ -215,6 +216,39 @@ describe('CanvasNodeBody', () => {
     expect(markup.indexOf(badge)).toBeGreaterThan(
       markup.lastIndexOf('react-flow__resize-control'),
     );
+  });
+
+  it("draws a selected element's badge stepped out past its top-right corner, and an unselected one on it", () => {
+    const node = nodeNamed('el-api');
+    const stepped = selectedBadgeAnchor(node);
+
+    expect(badgePlace(bodyMarkup(node))).toEqual([
+      svgNumber(node.size.width),
+      '0',
+    ]);
+    expect(badgePlace(bodyMarkup(node, true))).toEqual([
+      svgNumber(stepped.x),
+      svgNumber(stepped.y),
+    ]);
+    expect(stepped.x).toBeGreaterThan(node.size.width);
+    expect(stepped.y).toBeLessThan(0);
+  });
+
+  it("hands a selected boundary box's badge to React Flow's viewport portal, out of the boundary's own layer", () => {
+    const zone = nodeNamed('el-zone');
+    const badge = `class="${canvasClassNames.badge}"`;
+
+    expect(bodyMarkup(zone)).toContain(badge);
+    expect(bodyMarkup(zone, true)).not.toContain(badge);
+  });
+
+  it("keeps a selected boundary curve's badge in its own layer, on its corner", () => {
+    assert.isDefined(curveNode);
+
+    expect(badgePlace(bodyMarkup(curveNode, true))).toEqual([
+      svgNumber(curveNode.size.width),
+      '0',
+    ]);
   });
 
   it('draws no badge layer for an element without a badge', () => {

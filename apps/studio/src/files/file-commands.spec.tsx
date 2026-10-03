@@ -48,6 +48,7 @@ const failedFiles: readonly ChosenFile[] = [
   { ...chosenFile('large.yaml', ''), size: readLimits.maxTextBytes + 1 },
   unreadableFile('unreadable.yaml', 0),
   chosenFile('notes.txt', 'not a model'),
+  chosenFile('broken.otm', 'otmVersion: 0.2.0'),
 ];
 
 const session = (
@@ -260,7 +261,7 @@ describe('useFileSession', () => {
       },
     );
 
-    it.each(['a reload', 'another tab', 'an import'] as const)(
+    it.each(['a reload', 'another tab', 'an OTM open'] as const)(
       'asks once after %s, then writes to the file it chose without asking',
       async (lost) => {
         const original: FileContent[] = [];
@@ -298,13 +299,13 @@ describe('useFileSession', () => {
             other.reaches({ ...modelStore.getState(), recoveryCurrent: true });
           } else {
             await act(() => {
-              result.current.commands.import();
+              result.current.commands.open();
               return Promise.resolve();
             });
           }
         }
         expect(modelStore.getState().file).toMatchObject({
-          name: lost === 'an import' ? 'source.yaml' : 'model.yaml',
+          name: lost === 'an OTM open' ? 'source.yaml' : 'model.yaml',
         });
         expect(isDirty(modelStore.getState())).toBe(true);
 

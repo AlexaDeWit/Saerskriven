@@ -55,7 +55,6 @@ test('every item is reached, run and left by the keyboard alone', async ({
   for (const name of [
     'Save',
     'Save as',
-    'Import',
     'Export',
     'Share as link',
     'New model',
@@ -115,7 +114,6 @@ test('closing asks in the menu before it drops work that is in no file', async (
   for (const name of [
     'Save',
     'Save as',
-    'Import',
     'Export',
     'Share as link',
     'New model',

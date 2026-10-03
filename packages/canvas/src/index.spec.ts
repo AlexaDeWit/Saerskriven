@@ -9,6 +9,7 @@ describe('the package barrel', () => {
       'canvasNodeOf',
       'isBoundary',
       'drawnBounds',
+      'selectedBadgeAnchor',
       'flowLabelFollows',
       'flowWithFollowedLabel',
       'ElementGlyph',

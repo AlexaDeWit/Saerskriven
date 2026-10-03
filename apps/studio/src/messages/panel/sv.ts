@@ -3,9 +3,8 @@ import { panelMessages } from './contract.js';
 
 export const panelSv = catalogue(panelMessages)('sv')({
   threats: 'Hot',
-  'threats-on': 'Hot på {element}',
   'unlabelled-flow': 'Flöde {ends}',
-  'threats-on-unlabelled-flow': 'Hot på flödet {ends}',
+  details: 'Detaljer',
   'close-threats': 'Stäng hoten',
   'widen-pane': 'Bredda panelen',
   'restore-pane-width': 'Återställ panelens bredd',
@@ -25,8 +24,8 @@ export const panelSv = catalogue(panelMessages)('sv')({
   'attached-elements': 'Kopplade objekt',
   'summary-severity': 'Allvarlighetsgrad: {severity}',
   'summary-status': 'Status: {status}',
-  'summary-mitigations': 'Åtgärder: {count}',
-  'summary-assumptions': 'Antaganden: {count}',
+  'summary-category': 'Kategori: {category}',
+  'also-on-elements': 'Även på {list}',
   'security-properties': 'Säkerhetsegenskaper',
   'not-recorded-hint':
     'Ej angivet betyder att inget säkerhetspåstående är sparat.',
@@ -39,12 +38,17 @@ export const panelSv = catalogue(panelMessages)('sv')({
   discard: 'Kasta',
   unlink: 'Ta bort länken',
   attach: 'Koppla',
-  detach: 'Koppla bort',
   'also-applies-to-model': 'Gäller även modellen.',
   'also-on-threats': {
     one: 'Även på hot {list}.',
     other: 'Även på hoten {list}.',
   },
+  'also-on-other-threats': {
+    one: 'Även på {count} annat hot.',
+    other: 'Även på {count} andra hot.',
+  },
+  'mitigation-added': 'Tillagd',
+  'assumption-added': 'Tillagt',
   'more-threats': '{count} till',
   'detail-threats': {
     one: 'hot {list}',

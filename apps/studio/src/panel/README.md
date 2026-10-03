@@ -9,21 +9,22 @@ a person can do with it is in
 
 ## Modules
 
-| Module                                                  | What it holds                                                                                                               |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `threat-overlay.tsx`                                    | The mount: which panel to draw, the drafts and pane width it retains across both, and the keyboard                          |
-| `panel-frame.tsx`                                       | The pane either panel draws: width control, heading, close control, Escape, and the coverage it reports to the canvas       |
-| `threat-panel.tsx`, `threat-editor.tsx`                 | The panel for a selection, and one expanded threat                                                                          |
-| `kept-header.ts`                                        | Keeping a pressed threat header in view when the accordion swaps                                                            |
-| `threat-summary.tsx`                                    | A collapsed threat's summary, which is also its accordion trigger's accessible name                                         |
-| `threat-records.tsx`, `records.ts`                      | One record group, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
-| `threat-attachments.tsx`                                | The elements one threat names, with the controls that attach and detach them                                                |
-| `pick-existing.tsx`                                     | The listbox and control that "Link existing" and "Attach existing" share                                                    |
-| `model-properties.tsx`                                  | The panel for the model: title, description and the model's assumptions                                                     |
-| `element-properties.tsx`, `element-property-fields.tsx` | The element's own fields: its details, then its security properties, and their field kinds                                  |
-| `element-details.tsx`                                   | An element's description, out-of-scope flag and reason, for every kind, a note included                                     |
-| `threats.ts`                                            | `panelSubject` and `attachedThreats`, the selectors the panel binds to, and what each picker offers                         |
-| `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`   | Refused drafts, option labels a person can tell apart, and the focus channel                                                |
+| Module                                                             | What it holds                                                                                                                                          |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `threat-overlay.tsx`                                               | The mount: which panel to draw, the drafts and pane width it retains across both, and the keyboard                                                     |
+| `panel-frame.tsx`, `panel-tabs.tsx`                                | The pane either panel draws: width control, heading, close control, Escape, the coverage it reports, and the Threats and Details tabs                  |
+| `threat-panel.tsx`, `element-threats.tsx`                          | The panel for a selection, and its Threats tab: add, attach, delete and the threat list                                                                |
+| `threat-editor.tsx`, `threat-scroll.ts`                            | One expanded threat, and where an opened threat and a field Tab reaches land in the scrolling body                                                     |
+| `threat-summary.tsx`, `threat-marks.tsx`                           | A collapsed threat's summary, which is also its accordion trigger's accessible name, and its severity, status and flag marks                           |
+| `threat-records.tsx`, `record-row.tsx`, `records.ts`               | One record group, one record folded or open, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
+| `shown-order.ts`                                                   | Holding the order a list mounted in, which the threat list and each record group keep while they are open                                              |
+| `threat-attachments.tsx`                                           | The elements one threat names, with the controls that attach and detach them                                                                           |
+| `pick-existing.tsx`                                                | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
+| `model-properties.tsx`                                             | The panel for the model: title, description and the model's assumptions                                                                                |
+| `element-properties.tsx`, `element-property-fields.tsx`            | The element's own fields on Details: its details, then its security properties, and their field kinds                                                  |
+| `element-details.tsx`                                              | An element's description, out-of-scope flag and reason, for every kind, a note included                                                                |
+| `threats.ts`                                                       | `panelSubject` and `attachedThreats`, the selectors the panel binds to, and what each picker offers                                                    |
+| `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`, `marked.ts` | Refused drafts, option labels a person can tell apart, the focus channel, and finding a record row or threat item by its id                            |
 
 The panel is mounted from `../canvas/diagram-canvas.tsx`, inside the canvas
 container, which is what makes it an overlay on the diagram rather than a
@@ -39,8 +40,9 @@ opening it resizes nothing: the fit commands use the coverage the pane reports
 The panel holds no copy of model state. `panelSubject` returns one element, a
 count of several, the model while its properties are shown, or nothing, and
 `attachedThreats` returns threats only for a single selection. A flow is an
-element here because it carries threats. The panel's own state is which threat
-is expanded, where focus is being sent, and the draft a field holds after a
+element here because it carries threats. The panel's own state is which tab
+shows, which threat is expanded, the order the list mounted in, which records
+are open, where focus is being sent, and the draft a field holds after a
 refusal.
 
 Focus is sent through `panel-focus.ts`, a channel of its own rather than a
@@ -70,16 +72,23 @@ canvas parent makes during a drag.
 
 ## Drawing a threat
 
-The summary takes its flag wording from the studio's own catalogue, not from
-the render package's report labels, which stay English for a generated
-register. Its severity and status read from the catalogue too, so no stored
-value is drawn as its own label. Its severity marker uses the canvas tone
-class. Each
-flag mark has a glyph shape of its own, an outline and its label as text, all
-in the text colour, so severity and every mark stay distinct in forced colours.
-The whole summary, counts and marks included, is the accordion control's
-accessible name, in drawn order, and it holds no control of its own. The
-model's properties head their assumptions group with `terms.model-assumptions`.
+The summary takes its flag wording from the studio's own catalogue, not from the
+render package's report labels, which stay English for a generated register. Its
+severity, status and category read from the catalogue too, so no stored value is
+drawn as its own label. Its severity marker uses the canvas tone class. Each
+status and each flag mark has a glyph shape of its own, so every mark stays
+distinct in forced colours, where open also keeps its outline and weight. Beside
+Status in an open threat a flag mark drops its outline, the only outlines there
+being the fields' own, and keeps its weight. The whole summary is the accordion
+control's accessible name, in drawn order, and it holds no control of its own.
+Its values are drawn without their field names, which a screen reader still
+hears ("Severity: High"), so the drawn label is hidden from assistive technology
+and the named one is visually hidden. The model's properties head their
+assumptions group with `terms.model-assumptions`.
+
+The list sorts with `inReviewOrder` from `../ui/review-order.ts`, which also
+orders the Status picker. Both are presentation: the model's status tuple keeps
+its order.
 
 ## Record groups
 
@@ -88,6 +97,16 @@ records get no panel, list or tab of their own. The threat editor and the
 model's properties draw the same group, bound through a `RecordTarget` that
 heads the group, says which records it shows, attaches a new record, links,
 unlinks, and says where else a record is referenced.
+
+A threat's groups count their records in their heading and start every record
+folded to a toggle and its status, while the model's group keeps its records as
+open cards with labelled fields and no count (`RecordTarget.inThreat`). A record
+opened stays open while the group is mounted, which is until its threat
+collapses, and one whose field holds a refused draft will not fold, since
+folding would unmount the draft. A new row that becomes a record is marked Added
+until then, opens, and is announced by kind and number
+(`canvas.mitigation-added`), so a kept record says so where the focused field
+reads nothing new.
 
 A group mounts its rows in the model's record order and holds that order while
 it stays mounted. A record added or linked meanwhile, from this tab or
@@ -102,17 +121,18 @@ hold a row below the removed one in place. Anchoring stays on for every other
 change, so a record arriving above the rows in view leaves them where they
 are. A row that goes while it holds focus leaves focus in its group.
 
-The empty row carries its status control and a Discard control from the start,
-so nothing moves when it becomes a record and a click on Add or Link existing
-lands where it was aimed. A pointer press on Discard keeps focus in the text,
-so typed text is discarded rather than committed. Keyboard focus leaving the
-text commits it before Discard can be reached.
+The empty row carries its status control and a Discard control in its name row
+from the start, so nothing moves when it becomes a record and a click on Add or
+Link existing lands where it was aimed. A pointer press on Discard keeps focus
+in the text, so typed text is discarded rather than committed. Keyboard focus
+leaving the text commits it before Discard can be reached.
 
 Control names carry the kind and the row's position ("Mitigation 2 title",
 "Unlink mitigation 2", "Link existing mitigation"), and positions renumber when
 a row above is unlinked. The card's group name already says which record a
 control belongs to, so the drawn text is shorter and begins the name or is
-contained in it: Title, Description, Add, Link, Unlink and Discard. Link stays
+contained in it: Add, Link, Unlink and Discard, and the Title and Description
+placeholders of a record's fields, which draw no label. Link stays
 on the Tab path while no record is chosen (`aria-disabled`, with a description
 saying to choose one).
 
@@ -171,15 +191,20 @@ A commit always comes before a collapse: reaching the control that collapses
 an item, by pointer or by Tab, takes focus out of the field, which is the
 commit.
 
-Expanding a threat collapses the open one, and when that one sits above, the
-body could no longer scroll as far and the header just pressed would land out
-of view. `kept-header.ts` measures that header before the swap and scrolls the
-body in the next animation frame so the header is back where it was, moved only
-as far as it takes to show it whole, or to show its top where it is taller than
-the body. The frame is the earliest point that works: Radix removes the
+Opening a threat, by its summary, Add a threat or Attach, collapses the open
+one and lands the opened threat's top at the top of the body, in the next
+animation frame. The frame is the earliest point that works: Radix removes the
 collapsed content in a layout effect of its own, after the panel's layout
-effects have run. Browser scroll anchoring does not hold the header on its own,
-since its anchor is often a row of the content that goes.
+effects have run. Collapsing a threat keeps its header where it was instead.
+The open threat's header is sticky, reaching up through the body's padding,
+since a sticky box stops at its scroller's padding edge, and the body's scroll
+padding follows its height so the browser's own scrolling stops below it.
+
+A Tab into the open threat scrolls the field it reaches clear of the pinned
+header, with the next field in view below it where both fit (`fieldScroll` in
+`threat-scroll.ts`). Only a Tab does: focus the panel moves itself, after an
+add or an unlink, is left to the browser and to the record group, whose unlink
+holds the scroll position.
 
 ## Saying what happened
 

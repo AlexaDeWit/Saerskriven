@@ -148,13 +148,6 @@ export const commandTable = {
     when: 'commands.when-outside-text-fields',
     operation: 'open',
   }),
-  import: fileCommand({
-    id: 'import',
-    label: 'commands.label-import',
-    shortcuts: [],
-    when: 'commands.when-import',
-    operation: 'import',
-  }),
   save: fileCommand({
     id: 'save',
     label: 'commands.label-save',
@@ -253,7 +246,7 @@ export const commandTable = {
   'edit-geometry': editCommand({
     id: 'edit-geometry',
     label: 'commands.label-edit-geometry',
-    shortcuts: [modShift('p')],
+    shortcuts: [shift('p')],
     run: () => {
       openSelectionControl('geometry');
     },
@@ -261,7 +254,7 @@ export const commandTable = {
   'reconnect-source': editCommand({
     id: 'reconnect-source',
     label: 'commands.label-reconnect-source',
-    shortcuts: [modShift('1')],
+    shortcuts: [shift('s')],
     run: () => {
       openSelectionControl('source');
     },
@@ -269,7 +262,7 @@ export const commandTable = {
   'reconnect-target': editCommand({
     id: 'reconnect-target',
     label: 'commands.label-reconnect-target',
-    shortcuts: [modShift('2')],
+    shortcuts: [shift('t')],
     run: () => {
       openSelectionControl('target');
     },
@@ -277,7 +270,7 @@ export const commandTable = {
   'toggle-flow-direction': editCommand({
     id: 'toggle-flow-direction',
     label: 'commands.label-toggle-flow-direction',
-    shortcuts: [modShift('3')],
+    shortcuts: [shift('d')],
     run: toggleFlowDirection,
   }),
   'reverse-flow': editCommand({

@@ -1,5 +1,5 @@
+import { formatNames } from '../format-names.js';
 import { useTranslator } from '../messages/locale.js';
-import { Message } from '../messages/message.js';
 import { useModelStore } from '../store/store.js';
 import { DetailLines } from '../ui/detail-lines.js';
 import { FailureNotice } from '../ui/failure-notice.js';
@@ -13,8 +13,9 @@ import { describeShareNotice } from './share-notice.js';
 /**
  * The failure notice, the report of the last file crossing, the export report
  * and the share report, which hang under the chrome card. Each is empty until
- * something is refused, costs the model a key, or is shared, and each is
- * worded on render, so a change of language rewords a standing report.
+ * something is refused, costs the model a key, opens as a new model, or is
+ * shared, and each is worded on render, so a change of language rewords a
+ * standing report.
  */
 export function FileReports({ session }: { readonly session: FileSession }) {
   const { t } = useTranslator();
@@ -44,21 +45,24 @@ export function FileReports({ session }: { readonly session: FileSession }) {
       >
         {report !== undefined && (
           <>
-            <p className={styles.headline}>
-              {t(reportHeadlines[report.occasion])}
-            </p>
-            <DetailLines
-              className={styles.lines}
-              lines={reportLines(t, report)}
-              summary={
-                report.occasion === 'import' ? (
-                  <Message
-                    id="reports.conversion-details"
-                    params={{ count: report.losses.length }}
-                  />
-                ) : undefined
-              }
-            />
+            {report.readOnlyFormat !== undefined && (
+              <p className={styles.notice}>
+                {t('reports.opened-read-only', {
+                  format: formatNames[report.readOnlyFormat],
+                })}
+              </p>
+            )}
+            {report.losses.length > 0 && (
+              <>
+                <p className={styles.headline}>
+                  {t(reportHeadlines[report.occasion])}
+                </p>
+                <DetailLines
+                  className={styles.lines}
+                  lines={reportLines(t, report)}
+                />
+              </>
+            )}
             <button
               className={styles.dismiss}
               onClick={dismissReport}

@@ -1,7 +1,6 @@
 import { PlusIcon } from '@radix-ui/react-icons';
 import {
   useEffect,
-  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -13,31 +12,26 @@ import {
   recordQuoteLength,
 } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
-import type { Speaker } from '../messages/said.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
-import { EnumField } from '../ui/enum-field.js';
-import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
+import { marked, markedWithin } from './marked.js';
 import { PickExisting } from './pick-existing.js';
+import { RecordRow, type HeldText } from './record-row.js';
 import {
   editedRecord,
-  inShownOrder,
   isRecordField,
   linkableRecords,
   recordFieldIn,
   recordFieldName,
   recordLabel,
-  textOf,
-  type RecordField,
   type RecordFieldName,
   type RecordKind,
   type RecordPart,
   type RecordTarget,
   type ThreatRecord,
 } from './records.js';
-import type { RefusedField, RefusedText } from './refusals.js';
+import type { RefusedText } from './refusals.js';
+import { useShownOrder } from './shown-order.js';
 import styles from './threat-panel.module.css';
-
-type HeldText = Pick<RefusedField, 'field' | 'text' | 'status'>;
 
 type RecordGroupProps<Held extends ThreatRecord> = {
   readonly kind: RecordKind<Held>;
@@ -52,6 +46,7 @@ type RecordGroupProps<Held extends ThreatRecord> = {
 
 type FocusRequest =
   | { readonly kind: 'text'; readonly recordId: string }
+  | { readonly kind: 'row'; readonly recordId: string }
   | { readonly kind: 'add' }
   | {
       readonly kind: 'unlinked';
@@ -60,13 +55,14 @@ type FocusRequest =
       readonly scrolled: number;
     };
 
-const rowSelector = '[data-record-row]';
-
 /**
  * The records of one kind linked to one target, a threat or the model. Add
  * opens an empty row that becomes a record on its first commit and goes when
  * left empty. A row that returns while the group is mounted takes its old
- * slot back.
+ * slot back. On a threat the heading counts the records, every record starts
+ * folded and one opened stays open while the group is mounted, and a new
+ * record is marked and announced as added once it is kept. The model's
+ * records are cards, open, as they were before threats folded theirs.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,
@@ -94,21 +90,28 @@ export function RecordGroup<Held extends ThreatRecord>({
         : kind.restored(heldField.recordId, held?.status);
     return restored === undefined ? undefined : target.attach(restored);
   });
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => {
+    const heldField = recordFieldIn(held?.field, kind.noun);
+    return new Set(
+      heldField === undefined || heldField.pending ? [] : [heldField.recordId],
+    );
+  });
+  const [added, setAdded] = useState<ReadonlySet<string>>(() => new Set());
   const focus = useRef<FocusRequest | undefined>(undefined);
   const focusedRow = useRef<string | undefined>(undefined);
   const drafting =
     draft !== undefined && !records.some(({ id }) => id === draft.id);
   const listed = drafting ? [...records, draft] : records;
   const isDraft = (record: Held): boolean => drafting && record.id === draft.id;
-  const [order, setOrder] = useState<readonly string[]>(() =>
-    listed.map(({ id }) => id),
-  );
-  const arranged = inShownOrder(listed, order);
-  const { rows } = arranged;
-  if (arranged.shown !== order) {
-    setOrder(arranged.shown);
-  }
+  const rows = useShownOrder(listed);
   const shown = new Set<string>(rows.map(({ id }) => id));
+  const refused = new Set(
+    [...refusals.keys()].flatMap(
+      (field) => recordFieldIn(field, kind.noun)?.recordId ?? [],
+    ),
+  );
+  const isOpen = (record: Held): boolean =>
+    !target.inThreat || isDraft(record) || opened.has(record.id);
   const stale = [...refusals.keys(), held?.field ?? '']
     .filter((field) => isRecordField(field, kind.noun))
     .find(
@@ -142,7 +145,7 @@ export function RecordGroup<Held extends ThreatRecord>({
     const lost = focusedRow.current;
     if (
       lost !== undefined &&
-      rowOf(group.current, lost) === undefined &&
+      markedWithin(group.current, 'recordRow', lost) === undefined &&
       !(group.current?.contains(document.activeElement) ?? false)
     ) {
       focusedRow.current = undefined;
@@ -151,7 +154,7 @@ export function RecordGroup<Held extends ThreatRecord>({
   });
 
   const commit =
-    (record: Held, part: RecordPart) =>
+    (record: Held, part: RecordPart, position: number) =>
     (text: string): void => {
       const next = editedRecord(kind, record, part, text);
       if (next === undefined) {
@@ -168,8 +171,25 @@ export function RecordGroup<Held extends ThreatRecord>({
           .some(({ id }) => id === next.id)
       ) {
         setDraft(undefined);
+        if (target.inThreat) {
+          setOpened((current) => withId(current, next.id));
+          setAdded((current) => withId(current, next.id));
+          const { addedSaid } = kind;
+          announce((speak) => speak(addedSaid, { number: position }));
+        }
       }
     };
+
+  const toggle = (record: Held): void => {
+    if (isOpen(record) && refused.has(record.id)) {
+      return;
+    }
+    setOpened((current) =>
+      current.has(record.id)
+        ? new Set([...current].filter((id) => id !== record.id))
+        : withId(current, record.id),
+    );
+  };
 
   const left = (event: FocusEvent<HTMLElement>): void => {
     const row = event.currentTarget;
@@ -213,10 +233,9 @@ export function RecordGroup<Held extends ThreatRecord>({
 
   const tracked = (event: FocusEvent<HTMLDivElement>): void => {
     if (event.type === 'focus') {
-      focusedRow.current =
-        document.activeElement?.closest<HTMLElement>(rowSelector)?.dataset[
-          'recordRow'
-        ];
+      focusedRow.current = document.activeElement?.closest<HTMLElement>(
+        marked.recordRow,
+      )?.dataset['recordRow'];
     } else if (
       event.target.isConnected &&
       !event.currentTarget.contains(event.relatedTarget)
@@ -227,22 +246,40 @@ export function RecordGroup<Held extends ThreatRecord>({
 
   return (
     <fieldset className={styles.records} ref={group}>
-      <legend>{t(target.heading)}</legend>
+      <legend>
+        {t(target.heading)}
+        {target.inThreat && (
+          <>
+            {' '}
+            <span className={styles.count}>{records.length}</span>
+          </>
+        )}
+      </legend>
       <div className={styles.recordBody} onBlur={tracked} onFocus={tracked}>
         {rows.map((record, index) => (
           <RecordRow
+            added={added.has(record.id)}
             draft={isDraft(record)}
+            elsewhere={target.elsewhere(record, threats, translator)}
+            elsewhereCounted={target.elsewhereCounted(
+              record,
+              threats,
+              translator,
+            )}
+            foldable={target.inThreat && !isDraft(record)}
             held={held}
             key={record.id}
             kind={kind}
+            layout={target.inThreat ? 'section' : 'card'}
             name={t('fields.record-name', {
               kind: t(kind.title),
               number: index + 1,
             })}
+            open={isOpen(record)}
             position={index + 1}
             onBlur={left}
             onChange={onChange}
-            onCommit={(part) => commit(record, part)}
+            onCommit={(part) => commit(record, part, index + 1)}
             onRefused={(field, refusal) => {
               onRefused([[recordFieldName(field), refusal]]);
             }}
@@ -269,7 +306,9 @@ export function RecordGroup<Held extends ThreatRecord>({
                 unlink(record, index);
               }
             }}
-            elsewhere={target.elsewhere(record, threats, translator)}
+            onToggle={() => {
+              toggle(record);
+            }}
             record={record}
           />
         ))}
@@ -288,9 +327,9 @@ export function RecordGroup<Held extends ThreatRecord>({
                 })?.focus();
                 return;
               }
-              const opened = target.attach(kind.fresh());
-              focus.current = { kind: 'text', recordId: opened.id };
-              setDraft(opened);
+              const fresh = target.attach(kind.fresh());
+              focus.current = { kind: 'text', recordId: fresh.id };
+              setDraft(fresh);
             }}
             type="button"
           >
@@ -314,7 +353,7 @@ export function RecordGroup<Held extends ThreatRecord>({
                   return;
                 }
                 dispatch(target.link(picked));
-                focus.current = { kind: 'text', recordId: picked.id };
+                focus.current = { kind: 'row', recordId: picked.id };
               }}
               reason={t('fields.choose-existing-first', { kind: noun })}
             />
@@ -325,146 +364,35 @@ export function RecordGroup<Held extends ThreatRecord>({
   );
 }
 
-type RecordRowProps<Held extends ThreatRecord> = {
-  readonly kind: RecordKind<Held>;
-  readonly record: Held;
-  readonly elsewhere: string | undefined;
-  readonly name: string;
-  readonly position: number;
-  readonly draft: boolean;
-  readonly held: HeldText | undefined;
-  readonly onBlur: (event: FocusEvent<HTMLElement>) => void;
-  readonly onChange: () => void;
-  readonly onCommit: (part: RecordPart) => (text: string) => void;
-  readonly onRefused: (
-    field: RecordField,
-    refusal: RefusedText | undefined,
-  ) => void;
-  readonly onStatus: (status: Held['status']) => void;
-  readonly onRemove: () => void;
-};
-
-function RecordRow<Held extends ThreatRecord>({
-  kind,
-  record,
-  elsewhere,
-  name,
-  position,
-  draft,
-  held,
-  onBlur,
-  onChange,
-  onCommit,
-  onRefused,
-  onStatus,
-  onRemove,
-}: RecordRowProps<Held>) {
-  const sharedId = useId();
-  const { t } = useTranslator();
-  const heldField = recordFieldIn(held?.field, kind.noun);
-  const heldIn = (part: RecordPart): string | undefined =>
-    heldField?.recordId === record.id && heldField.part === part
-      ? held?.text
-      : undefined;
-  const shownLabel = (part: RecordPart): string =>
-    kind.parts.length === 1
-      ? ''
-      : t(part === 'title' ? 'fields.title' : 'fields.description');
-  const fieldProps = (part: RecordPart) => ({
-    held: heldIn(part),
-    label: (speak: Speaker): string =>
-      speak(kind.partField(part), { number: position }),
-    shownLabel: shownLabel(part),
-    onChange,
-    onCommit: onCommit(part),
-    onRefused: (refusal: RefusedDraft | undefined) => {
-      onRefused(
-        { noun: kind.noun, part, recordId: record.id, pending: draft },
-        refusal !== undefined && draft
-          ? { ...refusal, status: record.status }
-          : refusal,
-      );
-    },
-    value: textOf(record, part),
-  });
-
-  return (
-    <div
-      className={styles.record}
-      data-record-row={record.id}
-      onBlur={draft ? onBlur : undefined}
-    >
-      <fieldset className={styles.recordFields}>
-        <legend className={styles.recordName}>{name}</legend>
-        {kind.parts.map((part) =>
-          part === 'title' ? (
-            <TextField key={part} {...fieldProps(part)} />
-          ) : (
-            <ProseField compact key={part} {...fieldProps(part)} />
-          ),
-        )}
-        <div className={styles.recordState}>
-          <EnumField
-            label={t(kind.statusField, { number: position })}
-            labelOf={(status) => t(kind.statusMessage(status))}
-            onCommit={onStatus}
-            options={kind.statuses}
-            shownLabel=""
-            value={record.status}
-          />
-          <button
-            aria-describedby={elsewhere === undefined ? undefined : sharedId}
-            aria-label={t(
-              draft ? 'fields.discard-record' : 'fields.unlink-record',
-              { kind: t(kind.nounMessage), number: position },
-            )}
-            className={styles.unlink}
-            data-unlink-record={draft ? undefined : true}
-            onClick={onRemove}
-            onMouseDown={
-              draft
-                ? (event) => {
-                    event.preventDefault();
-                  }
-                : undefined
-            }
-            type="button"
-          >
-            {t(draft ? 'panel.discard' : 'panel.unlink')}
-          </button>
-        </div>
-        {elsewhere !== undefined && (
-          <p className={styles.shared} id={sharedId}>
-            {elsewhere}
-          </p>
-        )}
-      </fieldset>
-    </div>
-  );
-}
-
-function rowOf(
-  group: HTMLFieldSetElement | null,
-  recordId: string,
-): HTMLElement | undefined {
-  return [...(group?.querySelectorAll<HTMLElement>(rowSelector) ?? [])].find(
-    (row) => row.dataset['recordRow'] === recordId,
-  );
-}
-
 function focusTarget(
   group: HTMLFieldSetElement | null,
   focus: FocusRequest,
 ): HTMLElement | null | undefined {
-  if (focus.kind === 'text') {
-    return rowOf(group, focus.recordId)?.querySelector<HTMLElement>(
-      'input, textarea',
+  if (focus.kind === 'text' || focus.kind === 'row') {
+    const row = markedWithin(group, 'recordRow', focus.recordId);
+    return (
+      (focus.kind === 'row'
+        ? row?.querySelector<HTMLElement>('[data-record-toggle]')
+        : undefined) ?? row?.querySelector<HTMLElement>('input, textarea')
     );
   }
   const add = group?.querySelector<HTMLElement>('[data-add-record]');
   if (focus.kind === 'add') {
     return add;
   }
-  const unlinks = group?.querySelectorAll<HTMLElement>('[data-unlink-record]');
-  return unlinks?.[focus.index] ?? unlinks?.[focus.index - 1] ?? add;
+  const rows = [
+    ...(group?.querySelectorAll<HTMLElement>(marked.recordRow) ?? []),
+  ];
+  const row =
+    rows.at(focus.index) ??
+    (focus.index > 0 ? rows.at(focus.index - 1) : undefined);
+  return (
+    row?.querySelector<HTMLElement>('[data-unlink-record]') ??
+    row?.querySelector<HTMLElement>('[data-record-toggle]') ??
+    add
+  );
+}
+
+function withId(ids: ReadonlySet<string>, id: string): ReadonlySet<string> {
+  return ids.has(id) ? ids : new Set([...ids, id]);
 }

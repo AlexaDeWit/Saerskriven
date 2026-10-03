@@ -229,7 +229,7 @@ describe('describeFailure', () => {
     });
   }
 
-  it('names every format tried where none claimed the file', () => {
+  it('names every format Open reads where none claimed the file, by its name', () => {
     const described = describeFailure(
       t,
       StudioFailure.Read({
@@ -241,8 +241,11 @@ describe('describeFailure', () => {
     );
 
     expect(described.headline).toContain('notes.txt');
-    expect(described.details[0]).toContain('threat-dragon');
-    expect(described.details[0]).toContain('saerskriven-yaml');
+    expect(described.details).toEqual([
+      t('notice.formats-tried', {
+        formats: ['Threat Dragon JSON', 'Saerskriven YAML', 'OTM', 'TM-BOM'],
+      }),
+    ]);
   });
 
   it('distinguishes rejected recovery data from unavailable storage', () => {

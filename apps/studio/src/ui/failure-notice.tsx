@@ -1,12 +1,14 @@
 import {
   DetectionFailure,
   ReadFailure,
+  importFormatSchema,
   readLimits,
   type WireIssue,
 } from '@saerskriven/formats';
 import { ShareLinkFailure } from '@saerskriven/formats/share-link';
 import { OperationFailure } from '@saerskriven/model';
 import { assetFailureLine } from '../asset-failure.js';
+import { formatNames } from '../format-names.js';
 import { parseIssueLine } from '../messages/issues/text.js';
 import { useTranslator } from '../messages/locale.js';
 import { Message } from '../messages/message.js';
@@ -262,7 +264,13 @@ function describeRead(
   return DetectionFailure.$is('NoFormatClaimed')(failure)
     ? {
         headline: t('notice.no-format-claimed', { name }),
-        details: [t('notice.formats-tried', { formats: failure.tried })],
+        details: [
+          t('notice.formats-tried', {
+            formats: [...failure.tried, ...importFormatSchema.options].map(
+              (format) => formatNames[format],
+            ),
+          }),
+        ],
       }
     : {
         headline: t(readHeadlines[failure._tag], { name }),

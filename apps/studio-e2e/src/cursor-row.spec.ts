@@ -83,7 +83,7 @@ test('a list field draws the row under the keyboard or the pointer as a ringed t
 }) => {
   await openThreat(page);
   const field = panelField(page, 'combobox', 'Status');
-  expect(await scrollPaneTo(field, 'top')).toBe(true);
+  expect(await scrollPaneTo(field, 'bottom')).toBe(true);
   await openByKeyboard(field);
   const options = page.getByRole('option');
   const chosen = page.locator('[role="option"][data-state="checked"]');
