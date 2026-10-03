@@ -78,30 +78,26 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     'Hot {number} kopplades till förtroendegränsen.',
   'threat-attached-to-trust-boundary-named':
     'Hot {number} kopplades till {name}.',
-  'threat-detached-from-actor':
-    'Hot {number} kopplades bort från aktören. Det ligger kvar på sina övriga objekt.',
+  'threat-detached-from-actor': 'Hot {number} kopplades bort från aktören.',
   'threat-detached-from-actor-named':
-    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
-  'threat-detached-from-process':
-    'Hot {number} kopplades bort från processen. Det ligger kvar på sina övriga objekt.',
+    'Hot {number} kopplades bort från {name}.',
+  'threat-detached-from-process': 'Hot {number} kopplades bort från processen.',
   'threat-detached-from-process-named':
-    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
-  'threat-detached-from-store':
-    'Hot {number} kopplades bort från datalagret. Det ligger kvar på sina övriga objekt.',
+    'Hot {number} kopplades bort från {name}.',
+  'threat-detached-from-store': 'Hot {number} kopplades bort från datalagret.',
   'threat-detached-from-store-named':
-    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
-  'threat-detached-from-text':
-    'Hot {number} kopplades bort från texten. Det ligger kvar på sina övriga objekt.',
-  'threat-detached-from-text-named':
-    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
+    'Hot {number} kopplades bort från {name}.',
+  'threat-detached-from-text': 'Hot {number} kopplades bort från texten.',
+  'threat-detached-from-text-named': 'Hot {number} kopplades bort från {name}.',
   'threat-detached-from-flow':
-    'Hot {number} kopplades bort från flödet {ends}. Det ligger kvar på sina övriga objekt.',
-  'threat-detached-from-flow-named':
-    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
+    'Hot {number} kopplades bort från flödet {ends}.',
+  'threat-detached-from-flow-named': 'Hot {number} kopplades bort från {name}.',
   'threat-detached-from-trust-boundary':
-    'Hot {number} kopplades bort från förtroendegränsen. Det ligger kvar på sina övriga objekt.',
+    'Hot {number} kopplades bort från förtroendegränsen.',
   'threat-detached-from-trust-boundary-named':
-    'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
+    'Hot {number} kopplades bort från {name}.',
+  'threat-stays-on-elements': 'Det ligger kvar på sina övriga objekt.',
+  'threat-stays-on-model': 'Det gäller fortfarande hela modellen.',
   'threat-detach-removed':
     'Hot {number} togs bort. Det var inte kopplat till något annat. Ångra återställer det.',
   'record-named': '{kind} ”{label}”',
@@ -129,7 +125,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   copied: 'Kopierade markeringen.',
   cut: 'Klippte ut markeringen.',
   duplicated: 'Duplicerade markeringen.',
-  pasted: 'Klistrade in markeringen med nya id:n för objekt och hot.',
+  pasted: 'Klistrade in markeringen.',
   'copy-counts':
     'Objekt: {elements}. Hot: {threats}. Uteslutna externa länkar: {excluded}.',
   'copy-source-fields':
@@ -139,9 +135,9 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     other:
       'Kopierade hot: {copied}, varav {removed} togs bort med sina sista objekt.',
   },
-  'cut-remains':
-    'Ett hot som blir utan koppling tas bort, och ett hot som är kopplat någon annanstans finns kvar i registret. Andra anslutna flöden behåller fria ändar.',
+  'cut-remains': 'Andra anslutna flöden behåller fria ändar.',
   'cut-abandoned': 'Markeringen ändrades under kopieringen. Inget klipptes ut.',
+  'threats-attached': 'Kopplade hot, inte kopierade: {attached}.',
   'records-counts': 'Länkade poster: {linked}. Klonade poster: {cloned}.',
   'node-moved': 'Flyttade markeringen. Ny position, x: {x}, y: {y}.',
   'flow-controls': 'Kontroller för arbetsytan',

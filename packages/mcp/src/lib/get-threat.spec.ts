@@ -7,6 +7,7 @@ import {
   forgedLinesIn,
   recordLinksTree,
   refusalOf,
+  twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
 
 const workspace = featureCompleteWorkspace();
@@ -89,6 +90,29 @@ describe('a threat whose assumption also applies to the model', () => {
     expect(
       rendered.filter((line) => line.includes('also applies to the model')),
     ).toEqual([expect.stringContaining('assumption-reviewed')]);
+  });
+});
+
+const modelLinkSaid = (ref: string) => {
+  const read = answerOf(getThreat(twoDiagramsWorkspace(), { ref }));
+  return {
+    held: read.threat.appliesToModel,
+    lines: renderThreatRecord(read).filter((line) =>
+      line.startsWith('applies to the model:'),
+    ),
+  };
+};
+
+describe('whether a threat applies to the model as a whole', () => {
+  it('is in the record and on a line of its own in the text, for a threat that does and one that does not', () => {
+    expect(modelLinkSaid('4')).toEqual({
+      held: true,
+      lines: ['applies to the model: yes'],
+    });
+    expect(modelLinkSaid('1')).toEqual({
+      held: false,
+      lines: ['applies to the model: no'],
+    });
   });
 });
 

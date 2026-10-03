@@ -14,12 +14,12 @@ and its own fields. What a person can do with it is in
 | `threat-overlay.tsx`                                               | The mount: which panel to draw, the drafts and pane width it retains across both, and the keyboard                                                     |
 | `panel-frame.tsx`, `panel-tabs.tsx`                                | The pane either panel draws: width control, heading, close control, Escape, the coverage it reports, and the Threats and Details tabs                  |
 | `threat-panel.tsx`                                                 | The panel for a selection                                                                                                                              |
-| `threat-list.tsx`                                                  | The Threats tab either panel draws: add and attach on an element, then the threat list, and where focus goes after each change                         |
+| `threat-list.tsx`                                                  | The Threats tab either panel draws: add, and on an element attach, then the threat list, and where focus goes after each change                        |
 | `threat-editor.tsx`, `threat-scroll.ts`                            | One expanded threat, and where an opened threat and a field Tab reaches land in the scrolling body                                                     |
 | `threat-summary.tsx`, `threat-marks.tsx`                           | A collapsed threat's summary, which is also its accordion trigger's accessible name, and its severity, status and flag marks                           |
 | `threat-records.tsx`, `record-row.tsx`, `records.ts`               | One record group, one record folded or open, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
 | `shown-order.ts`                                                   | Holding the order a list mounted in, which the threat list and each record group keep while they are open                                              |
-| `threat-attachments.tsx`                                           | The elements one threat names, with the controls that attach and detach them                                                                           |
+| `threat-attachments.tsx`                                           | What one threat is on: its model link and the elements it names, with the controls that change them                                                    |
 | `pick-existing.tsx`                                                | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
 | `model-panel.tsx`                                                  | The panel for the model: every threat on Threats, and its title, description and assumptions on Details                                                |
 | `threat-register.tsx`, `threat-register-state.ts`                  | The threat register over the canvas, and whether it is open, the R command that opens it, a choice that closes it, and where focus goes as it closes   |
@@ -53,11 +53,11 @@ field of the store, because focus belongs in neither the model nor its undo
 stacks. Focus threats, the M command, the threat register, and undo and redo
 use it, each through a `handlerSlot` (`../ui/handler-slot.ts`) the mounted
 panel registers with. Each list has a home control, "Add a threat" on an
-element and the Threats tab on the model, which has no add of its own. M
-focuses the model's. An undo that takes away the threat holding focus sends
-focus home, a redo there sends it back to the restored title, and anywhere
-else focus stays where it is. A deleted threat's focus goes home too where no
-threat is left to take it.
+element and the Threats tab on the model, where M lands, so the model's own
+Add a threat is not its home. M focuses the model's. An undo that takes away
+the threat holding focus sends focus home, a redo there sends it back to the
+restored title, and anywhere else focus stays where it is. A deleted threat's
+focus goes home too where no threat is left to take it.
 
 The pane claims the first Escape, closing and returning focus to the element,
 so one press never also clears the selection. An open listbox inside the pane
@@ -128,7 +128,10 @@ The register keeps the order it opened in for the reason the list does, and
 with the same `useShownOrder`. The table's columns follow the exported
 Markdown register's overview, less the category, but share nothing with it:
 that table is built in number order from render's own catalogue for a
-generated document, and names elements by the export's rules.
+generated document, and names elements by the export's rules. As in that
+overview, a threat that applies to the model leads its elements with the whole
+model, in the studio's own words and as text, there being no element to
+select.
 
 ## Drawing a threat
 
@@ -146,11 +149,13 @@ hears ("Severity: High"), so the drawn label is hidden from assistive technology
 and the named one is visually hidden. The model panel heads its assumptions
 group with `terms.model-assumptions`.
 
-The summary's elements line depends on the list. On an element's panel it
-names the threat's other elements and is left out where there are none, since
-the panel's heading already names the one shown. On the model's list, which
-shows no element, it names every element the threat is on, or says it is on
-none, so a threat on no element reads as one.
+A summary closes with what its threat is on. A threat that applies to the
+model says so on a line of its own, on either list, and the elements line
+follows it. On an element's panel that line names the threat's other elements
+and is left out where there are none, since the panel's heading already names
+the one shown. On the model's list, which shows no element, it names every
+element the threat is on. A threat on no element that does not apply to the
+model either says it is on none there, so a threat on nothing reads as one.
 
 The list sorts with `inReviewOrder` from `../ui/review-order.ts`, which also
 orders the Status picker. Both are presentation: the model's status tuple keeps
@@ -216,24 +221,37 @@ record's name.
 
 ## Attachments
 
-Which elements a threat names is edited from two places. The element's panel
-attaches a threat the register already holds, offering the threats attached to
-no element first, since a file can be read with one and nothing else reaches
-them. The expanded threat attaches and detaches elements of its own. Both go
-through `AttachThreat` and `DetachThreat`, never through a `ReplaceThreat`
-carrying a shorter list: the model culls a threat on the detach that takes its
-last element, unless the threat applies to the model, and a replacement naming
-no element does not.
+What a threat is on is edited from two places. The element's panel attaches a
+threat the register already holds, offering the threats attached to no element
+first and saying of each whether it applies to the model. The expanded threat
+sets and clears its own model link, through the Yes and No control an
+element's Out of scope uses, and attaches and detaches elements of its own.
+Each change is the action of its own model operation: `AttachThreat`,
+`DetachThreat`, `LinkThreatToModel` and `UnlinkThreatFromModel`, never a
+`ReplaceThreat` carrying another list or flag, which is what a field commits.
 
-The list owns both dispatches because a detach can take the threat off the
-list, off the element whose panel it is or, with its last element, off the
-model (a threat that applies to the model stays, on no element), which leaves
-the group unmounted with nowhere to put focus. The model's
-list keeps a threat a detach leaves on another element, and the threat's
-elements line follows. The group asks only for the next row when it survives. A
-detach that removes the threat says so in the shared status, as an unlinked
+The model culls a threat on the edit that takes its last reference, an element
+or the model link. The list owns those dispatches because any of them can take
+the threat off the list: a detach off the element whose panel it is, and a
+detach or a cleared model link that takes the last reference off the model,
+which leaves the group unmounted with nowhere to put focus. The model's list
+keeps a threat a detach leaves on another element, or on the model alone, and
+the threat's summary follows. The group asks only for the next row when it
+survives, and for its model link control where no row is left.
+
+An edit that removes the threat says so in the shared status, as an unlinked
 record does, and needs no confirmation because one undo brings the threat back
-with everything the removal took.
+with everything the removal took. A detach the threat survives says what it
+stays on: its other elements, or the whole model where it is on none. Setting
+the model link, or clearing it on a threat that stays, says nothing, since the
+control shows it.
+
+A removal through the model link control moves focus at once, as a detach
+does. The listbox ends an Enter press with the choice (`CappedList`), so the
+threat that takes focus is not opened by it.
+
+The model's list has an Add a threat of its own, which adds a threat that
+applies to the model and names no element.
 
 ## The commit rule
 

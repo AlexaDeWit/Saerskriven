@@ -114,6 +114,7 @@ const calls = async (session: McpSession) => {
           status: 'mitigated',
           description: threat.description,
           elements: threat.elements,
+          appliesToModel: threat.appliesToModel,
         },
       },
     ],

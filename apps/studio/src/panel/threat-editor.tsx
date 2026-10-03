@@ -17,7 +17,7 @@ import { ThreatSummary } from './threat-summary.js';
 /** Focus after adding or deleting a threat. */
 export type EditorFocus = 'title' | 'disclosure';
 
-/** A threat, the element whose panel shows it, and callbacks for its edits, its attachments and its refused drafts. */
+/** A threat, the element whose panel shows it, and callbacks for its edits, its attachments, its model link and its refused drafts. */
 export type ThreatEditorProps = {
   readonly threat: Threat;
   readonly on: ElementId | undefined;
@@ -28,6 +28,7 @@ export type ThreatEditorProps = {
   readonly onRefusal: (refused: RefusedField | undefined) => void;
   readonly onAttach: (elementId: ElementId) => void;
   readonly onDetach: (elementId: ElementId) => void;
+  readonly onModelLink: (applies: boolean) => void;
   readonly onDelete: () => void;
   readonly onFocused: () => void;
 };
@@ -48,6 +49,7 @@ export function ThreatEditor({
   onRefusal,
   onAttach,
   onDetach,
+  onModelLink,
   onDelete,
   onFocused,
 }: ThreatEditorProps) {
@@ -151,6 +153,7 @@ export function ThreatEditor({
         <AttachmentGroup
           onAttach={onAttach}
           onDetach={onDetach}
+          onModelLink={onModelLink}
           threat={threat}
         />
         {spread > 1 && (

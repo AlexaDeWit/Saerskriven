@@ -1,5 +1,5 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Select } from 'radix-ui';
 
 import styles from './capped-list.module.css';
@@ -18,6 +18,9 @@ type CappedListProps = {
  * the pane's scroll box) is limited to that box instead of the window. The
  * callers style the box and the rows. Render it as a child of a
  * `Select.Root`, which supplies the select's state and portals the overlay.
+ * It cancels the default of an Enter keydown, so the key press ends with the
+ * choice: Radix commits as the key goes down, and the keypress that follows
+ * would go to whatever control the choice moved focus to.
  */
 export function CappedList({
   contentClassName,
@@ -29,6 +32,7 @@ export function CappedList({
     <Select.Content
       className={`${styles.frame} ${contentClassName}`}
       collisionBoundary={collisionBoundary}
+      onKeyDown={endPressWithChoice}
       position="popper"
     >
       <Select.ScrollUpButton
@@ -48,4 +52,10 @@ export function CappedList({
       </Select.ScrollDownButton>
     </Select.Content>
   );
+}
+
+function endPressWithChoice(event: KeyboardEvent): void {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+  }
 }

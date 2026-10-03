@@ -619,6 +619,7 @@ const replacedTamperOrder = (elements: readonly string[]): EditInput => ({
     status: 'open',
     description: 'An order can be altered between the customer and the API.',
     elements: [...elements],
+    appliesToModel: false,
   },
 });
 

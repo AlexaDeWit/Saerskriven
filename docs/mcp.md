@@ -77,9 +77,12 @@ way: the rows of `saer_coverage`, the elements `saer_get_threat` lists, and the
 element the `stride_pass` prompt lays out. The second takes
 `status`, `severity`, `category`, `diagram`, `element` and `query` and carries
 the threat number and id, its title, status, severity, category, attached
-elements and flags. Its `category` is the pair a result names, such as
+elements, whether it applies to the model as a whole (`appliesToModel`), and
+its flags. Its text says "applies to the model" on the row of a threat that
+does. Its `category` is the pair a result names, such as
 `STRIDE/tampering`, compared without case, and its `diagram` keeps the threats
-that reference an element drawn on that diagram. Both searches refuse a
+that reference an element drawn on that diagram, so a threat that applies to
+the model and attaches to no element is on no diagram. Both searches refuse a
 `diagram` the model does not hold. Both take `response_format`: `concise` is
 those fields, and `detailed` adds the complete model record, including an
 element's description, out-of-scope reason, geometry, flow direction, security
@@ -111,11 +114,12 @@ server keeps no session between pages, so compare the `revision` of each: a
 changed revision means the file changed between the calls, and the pages can
 skip or repeat a match.
 
-`saer_get_threat` reads one threat by number or id, with its flags, the
-elements it attaches to, the mitigation records addressing it and the
-assumption records its analysis rests on, each assumption saying whether it
-also applies to the model. The flags are the model's derived threat flags
-([the model package](../packages/model/README.md)).
+`saer_get_threat` reads one threat by number or id: the whole record, which
+says whether the threat applies to the model as a whole (`appliesToModel`),
+with its flags, the elements it attaches to, the mitigation records addressing
+it and the assumption records its analysis rests on, each assumption saying
+whether it also applies to the model. The flags are the model's derived threat
+flags ([the model package](../packages/model/README.md)).
 
 `saer_coverage` reports the elements no threat references, the open threats
 grouped by severity, and the count of threats recorded against every element.
@@ -179,13 +183,15 @@ given, and the first one the model refuses stops the batch, so nothing is
 written and the result names the index that was refused and what the model
 said. An edit that takes a mitigation's last threat link, or an assumption's
 last threat link and model link, away removes the record with it, and the
-result names each record the batch culled under `culled`. An edit that takes a
-threat's last element attachment away (`detach_threat`, `remove_element` on
-its last element, or a `replace_threat` that leaves it none) removes the
+result names each record the batch culled under `culled`. A threat's
+references are its element attachments and its model link (`appliesToModel`).
+An edit that takes a threat's last reference away (`detach_threat`,
+`remove_element` on its last element, `unlink_threat_from_model` where it
+attaches to no element, or a `replace_threat` that leaves it none) removes the
 threat with it and everything that removal cascades to, and the result names
-each such threat under `culledThreats`. A threat the file already held
-attached to nothing stays, and so does a threat the file says applies to the
-model as a whole (`appliesToModel`).
+each such threat under `culledThreats`. A threat that applies to the model
+stays when its last attachment goes, and a threat the file already held with
+no reference stays.
 
 Every call quotes the `revision` a read returned, and a file that changed
 before the call is refused rather than overwritten. The revision is checked
@@ -348,28 +354,35 @@ only a diagram with no elements left, so remove its elements with
 
 #### Threats
 
-A threat carries no number in an edit: the model issues one when a threat is
-added and keeps it when the threat is replaced, so no edit renumbers a threat,
-and no two threats hold one number. `add_threat` takes the rest of the threat,
-and every element it attaches to has to be one the model holds.
-`replace_threat` takes the whole threat and replaces every field of the one
-with its id but the number. Neither takes `appliesToModel`: an added threat
-does not apply to the model, a replaced one keeps what the file states, and
-no edit changes it. `set_threat_status`, `set_threat_severity` and
-`set_threat_category` change that one field and keep the rest, the category
-given with its methodology. `set_threat_details` changes any of `title` and
-`description` and keeps the rest, so one text changes without a copy of the
-whole threat. `attach_threat` and `detach_threat` take a threat id and an
-element id, and attaching an element the threat already carries, or detaching
-one it does not, changes nothing. `remove_threat` removes the threat and its
-links from every record.
+A threat applies to the elements it attaches to, to the model as a whole
+(`appliesToModel`), or to both, as an assumption applies to threats, to the
+model, or to both. A threat carries no number in an edit: the model issues one
+when a threat is added and keeps it when the threat is replaced, so no edit
+renumbers a threat, and no two threats hold one number. `add_threat` takes the
+rest of the threat, and every element it attaches to has to be one the model
+holds. It starts a threat not applying to the model where `appliesToModel` is
+left out. `replace_threat` takes the whole threat, `appliesToModel` included,
+and replaces every field of the one with its id but the number.
+`link_threat_to_model` and `unlink_threat_from_model` take a threat id and set
+and clear the model link alone, and a link that is already there, or an unlink
+of one that is not, changes nothing. `set_threat_status`,
+`set_threat_severity` and `set_threat_category` change that one field and keep
+the rest, the category given with its methodology. `set_threat_details`
+changes any of `title` and `description` and keeps the rest, so one text
+changes without a copy of the whole threat. `attach_threat` and
+`detach_threat` take a threat id and an element id, and attaching an element
+the threat already carries, or detaching one it does not, changes nothing.
+`remove_threat` removes the threat and its links from every record.
 
 ```json
-{
-  "op": "set_threat_details",
-  "threat": "threat-2",
-  "description": "A replayed order is accepted a second time."
-}
+[
+  {
+    "op": "set_threat_details",
+    "threat": "threat-2",
+    "description": "A replayed order is accepted a second time."
+  },
+  { "op": "link_threat_to_model", "threat": "threat-2" }
+]
 ```
 
 #### Mitigations and assumptions
