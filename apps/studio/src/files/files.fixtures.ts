@@ -7,8 +7,17 @@ import { renderSvg } from '@saerskriven/render';
 import { act } from '@testing-library/react';
 import { Either } from 'effect';
 import { statSync } from 'node:fs';
+import {
+  RecoveryProblem,
+  recoveryStorageKey,
+} from '../store/recovery-storage.js';
+import {
+  StudioFailure,
+  initialState,
+  placeholderModel,
+} from '../store/state.js';
 import { addedProcess, sampleModel } from '../store/store.fixtures.js';
-import { dispatch } from '../store/store.js';
+import { dispatch, modelStore } from '../store/store.js';
 import type { SyncedState } from '../store/sync.js';
 import {
   OpenOutcome,
@@ -95,6 +104,40 @@ export const edit = (): void => {
     dispatch(addedProcess);
   });
 };
+
+/**
+ * The two ways a start leaves a stored session unread, under the words a spec
+ * title gives each: a restore it did not attempt because the last one was not
+ * seen to finish drawing, and a snapshot it could not read.
+ */
+export const unreadSessions = [
+  ['left unrestored', RecoveryProblem.RestoreUnfinished()],
+  ['that could not be read', RecoveryProblem.Unsupported()],
+] as const;
+
+/** The text {@link startUnread} leaves in recovery storage, standing in for a session. */
+export const storedSession = 'a stored session';
+
+/**
+ * Puts the store and recovery storage where a start that left the stored
+ * session unread leaves them: the placeholder with nothing edited, under the
+ * notice for `problem`, and the session still stored.
+ */
+export const startUnread = (problem: RecoveryProblem): void => {
+  globalThis.localStorage.setItem(recoveryStorageKey, storedSession);
+  modelStore.setState(
+    {
+      ...initialState(placeholderModel),
+      recoveryUnread: true,
+      lastFailure: StudioFailure.StoredRecoveryRejected({ problem }),
+    },
+    true,
+  );
+};
+
+/** What recovery storage holds now, or `null` once it is cleared. */
+export const heldInRecovery = (): string | null =>
+  globalThis.localStorage.getItem(recoveryStorageKey);
 
 /**
  * A tab sync whose other tab a spec drives: `reaches` hands the session that

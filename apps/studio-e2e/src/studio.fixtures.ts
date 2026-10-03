@@ -26,6 +26,22 @@ export const refusedYaml = ['formatVersion: 1', 'diagrams: none'].join('\n');
 export const recoverySnapshot = (page: Page): Promise<string | null> =>
   page.evaluate((key) => localStorage.getItem(key), recoveryStorageKey);
 
+/**
+ * Stores `snapshot` as the recovery snapshot before every start of the studio
+ * in `page`, as an earlier session would have left it.
+ */
+export const withRecoverySnapshot = async (
+  page: Page,
+  snapshot: string,
+): Promise<void> => {
+  await page.addInitScript(
+    ({ key, stored }) => {
+      localStorage.setItem(key, stored);
+    },
+    { key: recoveryStorageKey, stored: snapshot },
+  );
+};
+
 /** What the placeholder model draws, by the names assistive technology has for them. */
 export const placeholder = {
   actor: /^Actor, actor/u,

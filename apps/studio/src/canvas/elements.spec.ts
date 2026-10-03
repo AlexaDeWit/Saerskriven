@@ -200,4 +200,17 @@ describe('switchedShape', () => {
       size: { width: 100, height: minimumNodeExtent },
     });
   });
+
+  it('boxes a curve through a million points', () => {
+    const waypoints = Array.from({ length: 1_000_000 }, (_, index) => ({
+      x: index,
+      y: 0 - index,
+    }));
+
+    expect(switchedShape({ kind: 'curve', waypoints })).toEqual({
+      kind: 'box',
+      position: { x: 0, y: -999_999 },
+      size: { width: 999_999, height: 999_999 },
+    });
+  });
 });

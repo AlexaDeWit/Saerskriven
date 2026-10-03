@@ -12,6 +12,7 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
   'file-unreachable': 'Saerskriven could not reach the file.',
   'recovery-rejected': 'Saerskriven rejected the stored recovery snapshot.',
   'recovery-unavailable': 'Local recovery is unavailable.',
+  'recovery-not-restored': 'Saerskriven did not restore the last session.',
   'no-format-claimed': 'No format claimed {name}.',
   'formats-tried': 'Saerskriven tried {formats}.',
   'read-limit': '{name} is past a read bound, so nothing read it.',
@@ -42,6 +43,8 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
     'An earlier release of Saerskriven stored this session, in a form this release cannot restore.',
   'snapshot-release':
     'Saerskriven {release} stored this session, in a form this release cannot restore.',
+  'snapshot-restore-unfinished':
+    'The session could not be shown. Reloading tries it again.',
   'field-not-saved': '{field} was not saved.',
   'refused-character': 'Character {position} is one the model does not accept.',
   'empty-name': 'A name cannot be empty.',
