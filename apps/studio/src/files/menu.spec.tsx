@@ -24,6 +24,7 @@ import {
   mainDiagram,
   nativeSource,
   newNote,
+  recordedModel,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
@@ -40,6 +41,7 @@ import {
   vendoredFile,
 } from './files.fixtures.js';
 import { chooseLanguage } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
@@ -607,10 +609,24 @@ describe('opening', () => {
       expect(reportEntries().length > 0).toBe(true);
     });
     const entries = reportEntries().map((entry) => entry.textContent);
+    const card = modelStore
+      .getState()
+      .present.threats.find(({ id }) => id === 'threat-card');
+    const t = inLocale('en-CA');
     expect(entries).toHaveLength(3);
     expect(entries[0]).toContain('unknownRoot');
     expect(entries[1]).toContain('detail.unknownDetail');
-    expect(entries[2]).toContain('threat-card');
+    expect(entries[2]).toBe(
+      t('divergence.kept', {
+        line: t('divergence.line', {
+          subject: t('divergence.subject-threat', {
+            number: card?.number ?? 0,
+            title: card?.title ?? '',
+          }),
+          detail: t('divergence.threat-category-eop-suit'),
+        }),
+      }),
+    );
 
     await choose(user, 'Save');
 
@@ -764,9 +780,25 @@ describe('saving', () => {
     });
   });
 
+  it('says nothing of a save whose divergences lose nothing a person reads', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge({ picker: false });
+    mounted(bridge);
+
+    await choose(user, 'Save as');
+    await screen.findByRole('menuitem', { name: 'Save as Threat Dragon JSON' });
+    await user.click(item('Save as Threat Dragon JSON'));
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(reportEntries()).toEqual([]);
+  });
+
   it('reports what the format it was asked for could not hold, and puts the report away again', async () => {
     const user = userEvent.setup();
     const bridge = specBridge({ picker: false });
+    modelStore.setState(initialState(recordedModel), true);
     mounted(bridge);
 
     await choose(user, 'Save as');

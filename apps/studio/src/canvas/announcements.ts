@@ -30,7 +30,7 @@ let current = nothingSaid;
 
 const announcementStore = externalStore(() => current);
 
-onCanvasOrPanelChange(clear);
+onCanvasOrPanelChange(endAnnouncement);
 
 /**
  * Says `said` in the canvas announcement, worded in the language active when
@@ -93,6 +93,15 @@ export function resetAnnouncements(): void {
   announcementStore.notify();
 }
 
+/** Ends the announcement now showing, keeping its sequence so the next one announces. */
+export function endAnnouncement(): void {
+  if (current.said === undefined) {
+    return;
+  }
+  current = { ...current, said: undefined };
+  announcementStore.notify();
+}
+
 /** What was last said, worded in the active language. */
 export function currentAnnouncement(): Announcement {
   return worded(current, activeTranslator().t);
@@ -110,12 +119,4 @@ function worded(held: Held, t: Speaker): Announcement {
     message: held.said === undefined ? '' : held.said(t),
     sequence: held.sequence,
   };
-}
-
-function clear(): void {
-  if (current.said === undefined) {
-    return;
-  }
-  current = { ...current, said: undefined };
-  announcementStore.notify();
 }

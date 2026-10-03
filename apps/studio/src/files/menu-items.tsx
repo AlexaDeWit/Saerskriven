@@ -14,6 +14,7 @@ import {
   type ShortcutText,
 } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
+import cursor from '../ui/cursor-row.module.css';
 import styles from './menu.module.css';
 
 /**
@@ -67,7 +68,7 @@ export function MenuItem({
   return (
     <DropdownMenu.Item
       aria-keyshortcuts={shortcut?.keyShortcuts}
-      className={styles.item}
+      className={`${styles.item} ${cursor.row}`}
       disabled={disabled}
       onSelect={(event) => {
         if (keepOpen === true) {

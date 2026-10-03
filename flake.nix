@@ -22,12 +22,13 @@
           # Nx sets FORCE_COLOR for child processes. Drop a host NO_COLOR so
           # Node does not warn when both variables reach those processes.
           #
-          # SAERSKRIVEN_RESVG_WASM names where the rasterizer module will be
-          # rather than a store path. The `resvg-wasm` nx project builds it to
-          # that path and every consumer target depends on that build, so the
-          # graph is what puts the file there (nix/resvg-wasm/project.json
-          # holds the same path). The value is named here and not on the
-          # consumer targets because it has to be absolute: nx strips
+          # SAERSKRIVEN_RESVG_WASM and SAERSKRIVEN_BROTLI_WASM name where the
+          # rasterizer and brotli modules will be rather than store paths. The
+          # `resvg-wasm` and `brotli-wasm` nx projects build them to those
+          # paths and every consumer target depends on that build, so the
+          # graph is what puts the file there (each project.json under nix/
+          # holds the same path). The values are named here and not on the
+          # consumer targets because they have to be absolute: nx strips
           # `{workspaceRoot}` out of an option value instead of expanding it,
           # so a target can only state a workspace-relative path, and most of
           # the consumer tasks run with their own project root as the working
@@ -37,8 +38,8 @@
           # $PWD, so entering the shell in a subdirectory still names the one
           # path.
           #
-          # The path has to stay under the workspace root. The studio's
-          # development server allows that root and no longer names the
+          # The paths have to stay under the workspace root. The studio's
+          # development server allows that root and no longer names a
           # module's own directory, so a module outside it would come back as
           # Vite refusing to serve a file rather than as a sentence naming the
           # cause (apps/studio/build-assets.mts).
@@ -49,6 +50,7 @@
               workspace=$(dirname "$workspace")
             done
             export SAERSKRIVEN_RESVG_WASM="$workspace/dist/resvg-wasm/lib/saerskriven_resvg.wasm"
+            export SAERSKRIVEN_BROTLI_WASM="$workspace/dist/brotli-wasm/lib/saerskriven_brotli.wasm"
             unset workspace
           '';
 
@@ -112,6 +114,9 @@
           SAERSKRIVEN_UNSHARE = "${pkgs.util-linux}/bin/unshare";
         };
 
+        wasmModule = file:
+          pkgs.callPackage ./nix/wasm-module.nix { module = import file; };
+
         workflowLintInputs = [
           pkgs.actionlint
           pkgs.zizmor
@@ -135,14 +140,17 @@
         };
       in {
         packages.denort-cache = denortCache;
-        # No dev shell carries this closure: the Rust toolchain is large and
+        # No dev shell carries these closures: the Rust toolchain is large and
         # entering a shell to work on the TypeScript should not pay for it
         # (issue #341). What changed with #379 is who runs the build: the
-        # `resvg-wasm` nx project does, as a task every consumer depends on,
-        # so a cold `nx build @saerskriven/studio` now triggers the Rust
-        # compile where it used to refuse and name this command. The shell
-        # still holds neither the toolchain nor the module.
-        packages.resvg-wasm = pkgs.callPackage ./nix/resvg-wasm { };
+        # `resvg-wasm` and `brotli-wasm` nx projects do, each as a task every
+        # consumer depends on, so a cold `nx build @saerskriven/studio` now
+        # triggers the Rust compiles where it used to refuse and name the
+        # command. The shell still holds neither the toolchain nor a module.
+        # Each module's file under nix/ is data, and nix/wasm-module.nix, the
+        # one builder, is applied to it here, so no module builds itself.
+        packages.resvg-wasm = wasmModule ./nix/resvg-wasm;
+        packages.brotli-wasm = wasmModule ./nix/brotli-wasm;
         packages.saerskriven = packageFor pkgs;
         checks.saerskriven = pkgs.callPackage ./nix/check.nix {
           saerskriven = packageFor pkgs;

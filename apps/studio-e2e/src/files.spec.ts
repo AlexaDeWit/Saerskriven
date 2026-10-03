@@ -89,6 +89,9 @@ test('opens a model, saves it back, and writes a file that parses again', async 
   await expectFileShown(page, 'feature-complete.json', 'Threat Dragon JSON');
   await expect(elementNodes(page)).toHaveCount(6);
   await expect(page.locator('.react-flow__edge')).toHaveCount(3);
+  const report = page.getByTestId('loss-report');
+  await expect(report).toContainText("The clerk's session token is guessable");
+  await expect(report).not.toContainText('threat-card');
 
   const written = await savedFile(page);
 

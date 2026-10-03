@@ -11,10 +11,26 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./brotli": {
+      "types": "./src/brotli.ts",
+      "import": "./src/brotli.ts",
+      "default": "./src/brotli.ts"
+    },
+    "./build-assets": {
+      "types": "./src/build-assets.ts",
+      "import": "./src/build-assets.ts",
+      "default": "./src/build-assets.ts"
+    },
+    "./share-link": {
+      "types": "./src/share-link.ts",
+      "import": "./src/share-link.ts",
+      "default": "./src/share-link.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
     "@saerskriven/model": "workspace:*",
+    "@saerskriven/wasm": "workspace:*",
     "@saerskriven/wire-saerskriven-yaml": "workspace:*",
     "@saerskriven/wire-saerskriven-yaml-v2": "workspace:*",
     "@saerskriven/wire-threat-dragon": "workspace:*",
@@ -36,10 +52,25 @@
       "boundaries": {},
       "lint": {},
       "test": {
+        "dependsOn": [
+          {
+            "projects": [
+              "brotli-wasm"
+            ],
+            "target": "build"
+          }
+        ],
         "inputs": [
           "...",
           "testFixtures",
-          "{workspaceRoot}/docs/saerskriven-yaml.md"
+          "{workspaceRoot}/docs/saerskriven-yaml.md",
+          {
+            "dependentTasksOutputFiles": "dist/brotli-wasm/lib/**/*",
+            "transitive": false
+          },
+          {
+            "env": "SAERSKRIVEN_BROTLI_WASM"
+          }
         ]
       }
     }

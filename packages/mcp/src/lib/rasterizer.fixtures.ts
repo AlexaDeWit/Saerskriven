@@ -5,18 +5,15 @@ import {
 } from '@saerskriven/render/build-assets';
 import { drawingFace, ledBy } from '@saerskriven/render/png';
 import type { ResvgAssets } from '@saerskriven/render/resvg';
+import { builtModule, stop, unbuilt } from '@saerskriven/wasm/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import type { RasterizerAssets } from './render-diagram.js';
 
-/**
- * Whether the rasterizer module has been built. No dev shell exports the
- * variable naming it, since the module is built from Rust and entering a
- * shell to work on the TypeScript should pay for neither, so a suite that
- * draws skips rather than fails where it is unset.
- */
-export const rasterizerUnbuilt =
-  process.env[resvgVariable] === undefined || process.env[resvgVariable] === '';
+/** Whether a suite that draws skips, as `unbuilt` decides. */
+export const rasterizerUnbuilt = unbuilt(resvgVariable);
+
+const rasterizerWasm = builtModule(resvgWasmAsset);
 
 /**
  * The flake-built module with the faces led by the one the drawings are
@@ -27,20 +24,16 @@ export const rasterizerUnbuilt =
 export const builtRasterizer: RasterizerAssets = () =>
   Either.map(
     ledBy(
-      typstFontAssets(refuse),
+      typstFontAssets(stop),
       (font) => font.name,
       drawingFace,
       'the flake-built fonts',
     ),
     (faces): ResvgAssets => ({
-      wasm: new Uint8Array(readFileSync(resvgWasmAsset(refuse))),
+      wasm: rasterizerWasm(),
       fonts: faces.map((font) => new Uint8Array(readFileSync(font.from))),
     }),
   );
-
-function refuse(sentence: string): never {
-  throw new Error(sentence);
-}
 
 /**
  * Assets a render cannot start: bytes that are no WebAssembly module. It is

@@ -40,6 +40,7 @@ export const canvasMessages = {
   'flow-reversed': text(flow),
   'boundary-curved': text(boundary),
   'boundary-boxed': text(boundary),
+  'point-added': text(point),
   'point-moved': text(point),
   'point-removed': text(point),
   'point-kept': text(),

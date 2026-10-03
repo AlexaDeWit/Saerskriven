@@ -17,7 +17,8 @@ the state it describes resolves. None is removed by a timer.
 A status line under the card says what an action did wherever the control
 that has focus does not already show it, such as a deletion, a refusal, a
 paste or an Undo. It ends at the next action that changes the canvas or the
-panel.
+panel. A diagram chosen in the switcher draws no line, since focus returns to
+the switcher, which names it. PageDown and PageUp do draw it.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
 persists across reloads. **Language** beside it selects English (Canada),
@@ -57,9 +58,16 @@ name, and **Save as** turns into a list of formats in the menu, with the file's
 own format where the item stood. The page cannot tell whether a download went
 through, so a download counts as saved even where the browser's own download
 dialog was cancelled. Saving in another format than the file was read as is
-where a loss report comes from, since only the file's own format keeps what
-Saerskriven does not model. A read reports too, when the file carries keys the
-format's schema does not declare.
+where most of a save's report, **Not kept by this save**, comes from, since
+only the file's own format keeps what Saerskriven does not model. Opening a
+file reports too, under **Not shown in the studio**: keys the format's schema
+does not declare, and values the studio holds less exactly than the file,
+such as a Threat Dragon Elevation of Privilege card, with "Saving back keeps
+it." where a save to the same file keeps them. Each line names a threat by its
+number and title, and anything else by the name the studio shows, and lines
+that read the same are shown once with their count. A report leaves out what
+loses nothing, such as a raised threat number mark, which the command line
+still prints.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
@@ -208,31 +216,47 @@ expects.
 
 While one flow is selected with the Select tool and no name or note is open for
 editing, the **Reconnect flow** card pinned at the top left, under the chrome
-card, holds **Change flow source**, **Change flow target**, **Toggle
-bidirectional flow** and **Reverse flow**. The first two choose another actor,
+card, holds one row of icons: **Change flow source** (a dot at the start of an
+arrow), **Change flow target** (an arrow ending on a dot), **Toggle
+bidirectional flow** (a two-headed arrow, drawn pressed while the flow runs
+both ways) and **Reverse flow** (two opposed arrows). A tooltip names each
+command and its shortcut, as in the toolbox. The first two choose another actor,
 process or store for one end, with a side to pin it to or Automatic, or Free
 point, first in the list, which frees the end at the X and Y typed, starting
 from where the end is drawn. Toggle bidirectional flow draws an arrowhead at both ends or one again,
 and the flow keeps its source and target either way. Reverse flow swaps the
 source and the target and runs the bends the other way, so the flow keeps its
-route, its threats and whether it runs both ways.
+route, its threats and whether it runs both ways. Escape on a focused icon
+closes its tooltip first, and a second Escape clears the selection.
 
 ## Trust boundaries
 
 While one trust boundary is selected with the Select tool and no name is open
 for editing, the **Trust boundary** card, in the Reconnect flow card's place,
-holds **Switch boundary shape**. It turns a box into the arch the Trust boundary
-curve tool draws in that box, and a curve into the box around its points, at
-least ten units each way. A box at least ten units each way, turned into a
-curve and back, is the same box.
+holds **Switch boundary shape**, an icon of the two Trust boundary tools' shapes,
+the box over the curve, with its name and shortcut in a tooltip. It turns a box
+into the arch the Trust boundary curve tool draws in that box, and a curve into
+the box around its points, at least ten units each way. A box at least ten
+units each way, turned into a curve and back, is the same box.
 The boundary keeps its name, its threats and the elements and flows it declares.
 
-A selected trust boundary curve carries a handle on each of its points. Drag a
-point, or focus it and press an arrow key to move it five units or twenty with
-Shift. Click a point for Remove point, or press Delete or Backspace with the
-point focused. A curve keeps at least two points. Escape drops a point drag
-before its release. The point handles stand aside while the curve itself is
-moved or scaled.
+A selected trust boundary curve carries a handle on each of its points, and a
+smaller midpoint handle halfway along the curve between each point and the
+next, wherever that stretch is drawn at least twice as long as a point handle.
+Drag a point, or focus it and press an arrow key to move it five units or
+twenty with Shift. Drag a midpoint handle to pull a new point out of the curve
+there. A press anywhere else on the curve's line moves the whole boundary.
+Escape drops either drag before its release, and each edit is one undo step.
+The handles stand aside while the curve itself is moved or scaled, and the
+midpoint handles while a point is dragged.
+
+Click a point for Remove point and Add point, or press Delete or Backspace with
+the point focused to remove it. A curve keeps at least two points. Add point
+puts a new point halfway along the curve to the next point, or from the last
+point, halfway back to the one before it, and focuses the new point so the
+arrow keys move it. For a midpoint handle and Add point alike, halfway is
+measured along the curve's length and the new point lies on the curve, so the
+curve stays close to its shape.
 
 A selected curve also carries a box's side lines and corner handles around its
 points, each corner handle just outside its corner so that a point there keeps
@@ -472,9 +496,9 @@ outside one, and none works while focus is inside an open menu or list.
 | Select all                             | Mod+A                                        | Keyboard only       |
 | Delete selection                       | Delete or Backspace                          | Keyboard only       |
 | Rename selection                       | F2, or Enter with one selected               | Menu                |
-| Position and size                      | Mod+Shift+P                                  | Keyboard only       |
-| Change flow source, Change flow target | Mod+Shift+1, Mod+Shift+2                     | Reconnect flow card |
-| Toggle bidirectional flow              | Mod+Shift+3                                  | Reconnect flow card |
+| Position and size                      | Shift+P                                      | Keyboard only       |
+| Change flow source, Change flow target | Shift+S, Shift+T                             | Reconnect flow card |
+| Toggle bidirectional flow              | Shift+D                                      | Reconnect flow card |
 | Reverse flow                           | Shift+R                                      | Reconnect flow card |
 | Switch boundary shape                  | Shift+B                                      | Trust boundary card |
 | Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange       |
@@ -512,6 +536,10 @@ heavier line, and focus is a separate ring, so neither depends on colour and
 both survive forced colours. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
 
+A focused element or resize control that lies under the threat panel or the
+Reconnect flow or Trust boundary card shows its ring under that pane, and the
+canvas does not pan to bring it out.
+
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves
 focus to the canvas.
@@ -524,8 +552,6 @@ navigation keys do not.
 
 - Removing and reordering diagrams is not offered.
 - Nothing pans to a newly connected flow, or out from under the panel.
-- A trust boundary curve takes no new point once it is drawn.
-  [`saer_edit`](mcp.md#writing) can give it any points.
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model properties. The
   model's explicit record removal has no control.

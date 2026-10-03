@@ -1,11 +1,16 @@
-import { act, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { currentTool, resetTools } from '../canvas/tools.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { CommandSurfaceProvider } from './binding.js';
 import { CommandButton, IconCommandButton } from './command-button.js';
-import { recordingSurface } from './commands.fixtures.js';
+import {
+  drawnAs,
+  iconOnly,
+  recordingSurface,
+  tooltipOnFocus,
+} from './commands.fixtures.js';
 
 describe('CommandButton', () => {
   beforeEach(() => {
@@ -75,7 +80,9 @@ describe('IconCommandButton', () => {
       </IconCommandButton>,
     );
 
-    expect(screen.getByRole('button', { name: 'Zoom in' })).toBeDefined();
+    expect(drawnAs(screen.getByRole('button', { name: 'Zoom in' }))).toEqual(
+      iconOnly,
+    );
   });
 
   it('says the command and its chord in a tooltip, on focus as well as on hover', async () => {
@@ -85,13 +92,9 @@ describe('IconCommandButton', () => {
       </IconCommandButton>,
     );
 
-    act(() => {
-      screen.getByRole('button', { name: 'Fit to view' }).focus();
-    });
-
-    const tooltip = await screen.findByRole('tooltip');
-    expect(tooltip.textContent).toContain('Fit to view');
-    expect(tooltip.textContent).toContain('Ctrl+0');
+    const { tooltip, label, chord } = await tooltipOnFocus('fit-to-view');
+    expect(tooltip.textContent).toContain(label);
+    expect(tooltip.textContent).toContain(chord);
   });
 
   it('runs the command against the surface it is mounted under', async () => {

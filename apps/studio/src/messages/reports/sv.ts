@@ -3,11 +3,10 @@ import { reportMessages } from './contract.js';
 
 export const reportsSv = catalogue(reportMessages)('sv')({
   region: 'Filrapporter',
-  opened:
-    'När filen öppnades föll följande bort, som filen innehåller men Saerskriven inte stöder:',
+  opened: 'Visas inte i studion:',
   imported:
     'Importen skapade en inbyggd modell med dessa konverteringar och utelämnanden:',
-  saved: 'Den senaste sparningen fick inte med allt som modellen innehåller:',
+  saved: 'Behålls inte av den här sparningen:',
   'conversion-details': {
     one: '{count} konverteringsdetalj',
     other: '{count} konverteringsdetaljer',

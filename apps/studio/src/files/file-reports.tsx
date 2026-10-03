@@ -39,12 +39,12 @@ export function FileReports({ session }: { readonly session: FileSession }) {
             </p>
             <DetailLines
               className={styles.lines}
-              lines={reportLines(t, report.divergences, report.occasion)}
+              lines={reportLines(t, report)}
               summary={
                 report.occasion === 'import' ? (
                   <Message
                     id="reports.conversion-details"
-                    params={{ count: report.divergences.length }}
+                    params={{ count: report.losses.length }}
                   />
                 ) : undefined
               }

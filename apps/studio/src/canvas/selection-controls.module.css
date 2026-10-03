@@ -15,7 +15,8 @@
 }
 .endpoints {
   display: flex;
-  gap: var(--saer-space-2);
+  gap: var(--saer-space-1);
+  padding: var(--saer-space-1);
 }
 .panel {
   z-index: 3;
@@ -41,8 +42,7 @@
 }
 .panel button,
 .panel input,
-.panel select,
-.endpoints button {
+.panel select {
   min-height: 2rem;
   border: 1px solid var(--saer-colour-border);
   border-radius: var(--saer-radius);
@@ -50,8 +50,7 @@
   color: var(--saer-colour-text);
   font: inherit;
 }
-.panel :focus-visible,
-.endpoints :focus-visible {
+.panel :focus-visible {
   outline: var(--saer-focus-ring);
   outline-offset: var(--saer-focus-ring-offset);
 }

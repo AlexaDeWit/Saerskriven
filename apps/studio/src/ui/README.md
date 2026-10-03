@@ -13,6 +13,7 @@ stylesheet.
 | Module                                                         | What it holds                                                                                           |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `enum-field.tsx`                                               | `EnumField`, the listbox control                                                                        |
+| `cursor-row.module.css`                                        | The row under a list's or a menu's cursor, which every listbox and menu row takes beside its own class  |
 | `severity-field.tsx`, `status-field.tsx`, `category-field.tsx` | `EnumField` bound to a model schema                                                                     |
 | `text-field.tsx`, `grow-to-content.ts`                         | `TextField` and `ProseField` with their draft state, and textarea growth                                |
 | `live-region.tsx`, `failure-notice.tsx`, `detail-lines.tsx`    | Announcements, the refusal notice, and notice lines as a list, folded under a summary when one is given |
@@ -60,7 +61,10 @@ notices under it, and `--saer-pane-block-start` adds those to the fixed
 
 A control never suppresses the focus indicator and never invents its own: it
 applies the focus tokens in `:focus-visible`, swapping the ring's colour only
-where the accent is the background it would be drawn on.
+where the accent is the background it would be drawn on. A list or menu row
+draws the same ring on the row under the cursor, pointer or keyboard alike,
+over the accent's tint (`--saer-colour-accent-tint`), so the solid accent
+marks only a state that is switched on, such as the selected tool.
 
 ## Adding a control
 
@@ -103,7 +107,9 @@ trigger shorter. The accessible name is still the whole label and its suffix.
 A field with no `value` shows its `placeholder`, and its first option keeps
 the listbox's tab stop. The listbox is placed and sized within the box the
 field scrolls in, the panel body, so it opens clear of the chrome card and the
-pane header.
+pane header. Radix hides the listbox's scrollbar, so where the options run
+past that room a chevron at the cut edge says the list goes on, and scrolls it
+while a pointer rests on it.
 
 `EnumField`, `TextField` and `ProseField` take a `shownLabel` that draws a
 shorter label, or none, where the surroundings already say what the field is.

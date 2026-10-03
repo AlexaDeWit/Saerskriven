@@ -3,12 +3,10 @@ import { reportMessages } from './contract.js';
 
 export const reportsFrCA = catalogue(reportMessages)('fr-CA')({
   region: 'Rapports de fichier',
-  opened:
-    'L’ouverture du fichier a laissé de côté ce qu’il contient et que Saerskriven ne prend pas en charge :',
+  opened: 'Non affiché dans le studio :',
   imported:
     'L’importation a créé un modèle natif avec ces conversions et omissions :',
-  saved:
-    'Le dernier enregistrement n’a pas conservé tout ce que contient le modèle :',
+  saved: 'Non conservé par cet enregistrement :',
   'conversion-details': {
     one: '{count} détail de conversion',
     many: '{count} de détails de conversion',

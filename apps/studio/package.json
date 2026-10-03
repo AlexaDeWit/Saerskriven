@@ -40,7 +40,8 @@
           "...",
           {
             "projects": [
-              "resvg-wasm"
+              "resvg-wasm",
+              "brotli-wasm"
             ],
             "target": "build"
           }
@@ -52,6 +53,10 @@
           },
           {
             "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
+            "transitive": false
+          },
+          {
+            "dependentTasksOutputFiles": "dist/brotli-wasm/lib/**/*",
             "transitive": false
           },
           {
@@ -87,7 +92,8 @@
         "dependsOn": [
           {
             "projects": [
-              "resvg-wasm"
+              "resvg-wasm",
+              "brotli-wasm"
             ],
             "target": "build"
           }
@@ -97,7 +103,8 @@
         "dependsOn": [
           {
             "projects": [
-              "resvg-wasm"
+              "resvg-wasm",
+              "brotli-wasm"
             ],
             "target": "build"
           }
@@ -117,6 +124,10 @@
           },
           {
             "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
+            "transitive": false
+          },
+          {
+            "dependentTasksOutputFiles": "dist/brotli-wasm/lib/**/*",
             "transitive": false
           },
           {

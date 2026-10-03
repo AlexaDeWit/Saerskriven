@@ -34,7 +34,10 @@ Two codecs are registered:
 
 `readAnyFormat` ([`detect.ts`](src/lib/detect.ts)) opens a text without being
 told its format and answers with the codec that claimed it, so a later write
-goes back through the same one.
+goes back through the same one. `keptByWriteBack` says whether that write
+keeps a divergence the read reported, from the codec's `keepsNarrowed`: the
+Threat Dragon merge keeps a value the read narrowed, the native codec
+projects and keeps none, and no codec keeps an `undeclared` key.
 
 ## Divergences
 
@@ -65,13 +68,39 @@ in [`yaml-alias-cost.ts`](src/lib/yaml-alias-cost.ts).
 
 [Import](../../docs/import.md) converts OTM and TM-BOM into a native model through
 `importModel` ([`import.ts`](src/lib/import.ts)). No codec writes those
-formats.
+formats. `importedId` is the id an import gives each record it makes, from
+the source parts it was made of, and `importedFrom` finds the records made
+from the source record a divergence names by its id.
 
 An `InvalidWireDocument` issue carries a parse issue code of
 `@saerskriven/model` or an import code of
 [`import-issue-detail.ts`](src/lib/import-issue-detail.ts).
 `renderReadFailure` words both in English, and the CLI and the MCP server
 print that text, so it is an interface.
+
+## Brotli
+
+`compressBrotli(bytes, wasm)` and `decompressBrotli(bytes, wasm, maximum)`, on
+the `@saerskriven/formats/brotli` subpath ([`brotli.ts`](src/brotli.ts)), run
+the module the `brotli-wasm` project builds, which the caller passes as bytes,
+through the driver [`@saerskriven/wasm`](../wasm/README.md) holds for every
+flake-built module. They sit on a subpath so the main entry carries no
+WebAssembly. A refusal is a `BrotliFailure`, and `maximum` is the guard against
+a stream that inflates without bound: decoding stops at the first byte past it.
+[Building the executables](../../docs/build.md#the-brotli-module) describes the
+module and the variable `@saerskriven/formats/build-assets` locates it through.
+
+## Share links
+
+`writeShareLink(model, base, wasm)` and `readShareLink(fragment, wasm)`, on the
+`@saerskriven/formats/share-link` subpath ([`share-link.ts`](src/share-link.ts)),
+write a model as a share link and read one back through `saerskrivenYamlCodec`.
+`isShareLinkFragment` tells a share link's fragment from any other, and
+`shareLinkLimit` is the most characters a link holds. A refusal is a
+`ShareLinkFailure`, or on a read the codec's own `ReadFailure`. The subpath
+keeps the brotli module out of the main entry.
+[The Saerskriven YAML format](../../docs/saerskriven-yaml.md#share-links) sets
+out the link format and its compatibility contract.
 
 ## Fixtures
 

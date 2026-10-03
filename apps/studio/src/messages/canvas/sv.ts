@@ -23,6 +23,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'flow-reversed': 'Vände riktningen på {flow}.',
   'boundary-curved': 'Ändrade {boundary} till en kurva.',
   'boundary-boxed': 'Ändrade {boundary} till en rektangel.',
+  'point-added': 'Lade till punkt {number} på {boundary}.',
   'point-moved': 'Flyttade punkt {number} på {boundary}.',
   'point-removed': 'Tog bort punkt {number} från {boundary}.',
   'point-kept': 'En förtroendegränskurva behåller minst två punkter.',

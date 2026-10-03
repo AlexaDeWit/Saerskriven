@@ -23,6 +23,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'flow-reversed': 'Reversed {flow}.',
   'boundary-curved': 'Changed {boundary} to a curve.',
   'boundary-boxed': 'Changed {boundary} to a box.',
+  'point-added': 'Added point {number} on {boundary}.',
   'point-moved': 'Moved point {number} on {boundary}.',
   'point-removed': 'Removed point {number} from {boundary}.',
   'point-kept': 'A trust boundary curve keeps at least two points.',

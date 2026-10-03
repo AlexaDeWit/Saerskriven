@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
 import { registeredChords } from './chords.fixtures.js';
 import {
@@ -32,6 +32,9 @@ const savedFlow = async (page: import('@playwright/test').Page) =>
   (await savedModel(page)).diagrams[0].elements.find(
     (element) => element.kind === 'flow',
   );
+
+const groundOf = (locator: Locator): Promise<string> =>
+  locator.evaluate((element) => getComputedStyle(element).backgroundColor);
 
 const freeTargetX = (flow: Awaited<ReturnType<typeof savedFlow>>): number =>
   flow?.kind === 'flow' && flow.target.kind === 'free'
@@ -82,7 +85,7 @@ test('a flow becomes bidirectional by its command, draws two arrowheads, and sav
   const flow = await selectByKeyboard(page, placeholder.records);
   const arrows = flow.locator(`path.${canvasClassNames.flowArrow}`);
   await expect(arrows).toHaveCount(1);
-  await page.keyboard.press('ControlOrMeta+Shift+3');
+  await page.keyboard.press(registeredChords['toggle-flow-direction'][0]);
   await expect(arrows).toHaveCount(2);
   await expect(flow).toHaveAccessibleName(/between Actor and Store/u);
   await page.keyboard.press('ControlOrMeta+z');
@@ -92,6 +95,37 @@ test('a flow becomes bidirectional by its command, draws two arrowheads, and sav
   const written = await savedFile(page);
   expect(written.text).toContain('bidirectional: true');
 });
+
+test(
+  'the Reconnect flow card draws its commands as one row of icons, names each in a tooltip, and presses the two-way one while the flow runs both ways, in forced colours too',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openFallback(page);
+    await selectByKeyboard(page, placeholder.records);
+    const card = page.getByRole('region', { name: 'Reconnect flow' });
+    const commands = card.getByRole('button');
+    await expect(commands).toHaveCount(4);
+    const rows = await commands.evaluateAll((controls) =>
+      controls.map((control) => control.getBoundingClientRect().top),
+    );
+    expect(new Set(rows).size).toBe(1);
+    const both = card.getByRole('button', {
+      name: 'Toggle bidirectional flow',
+      exact: true,
+    });
+    await both.focus();
+    await expect(page.getByRole('tooltip')).toHaveText(
+      /^Toggle bidirectional flow \S/u,
+    );
+    await expect(both).toHaveAttribute('aria-pressed', 'false');
+    await both.click();
+    await expect(both).toHaveAttribute('aria-pressed', 'true');
+    await page.emulateMedia({ forcedColors: 'active' });
+    expect(await groundOf(both)).not.toBe(await groundOf(card));
+    await both.click();
+    await expect(both).toHaveAttribute('aria-pressed', 'false');
+  },
+);
 
 test('a flow reverses by its chord and its command, one undo step each, and saves the swap', async ({
   page,

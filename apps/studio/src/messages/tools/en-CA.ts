@@ -54,8 +54,10 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   'curve-point-numbered': 'Point {number}',
   'curve-point-actions': 'Point actions',
   'remove-curve-point': 'Remove point',
+  'add-curve-point': 'Add point',
   'curve-point-handle-help':
     'Drag or use arrow keys to move. Click for actions. Delete removes this point while the curve keeps two.',
+  'curve-midpoint-handle-help': 'Drag to add a point here.',
   'bend-choose-help':
     'Segment {number}: Left/Right to choose, Enter to add. Or click a segment.',
   'bend-place-help':

@@ -64,8 +64,10 @@ its side midpoints. An attached flow end takes its pinned side, or else
 waypoint moves, and several flows can meet at one midpoint.
 
 [`paths.ts`](src/lib/paths.ts): `polylinePath` and `smoothPath` write SVG
-paths. In [`geometry.ts`](src/lib/geometry.ts), `boxOfPoints` bounds a list of
-points and `boxesOverlap` tests whether two boxes overlap.
+paths, and `curveMidpoints` finds where a smooth path passes halfway along
+the length of each segment between a pair of its points, and how long that
+segment is. In [`geometry.ts`](src/lib/geometry.ts), `boxOfPoints` bounds a
+list of points and `boxesOverlap` tests whether two boxes overlap.
 
 ## The visual system
 

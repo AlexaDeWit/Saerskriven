@@ -54,8 +54,10 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   'curve-point-numbered': 'Punkt {number}',
   'curve-point-actions': 'Åtgärder för punkten',
   'remove-curve-point': 'Ta bort punkten',
+  'add-curve-point': 'Lägg till punkt',
   'curve-point-handle-help':
     'Dra eller använd piltangenterna för att flytta. Klicka för åtgärder. Delete tar bort punkten så länge kurvan behåller två.',
+  'curve-midpoint-handle-help': 'Dra för att lägga till en punkt här.',
   'bend-choose-help':
     'Segment {number}: Vänster/Höger för att välja, Retur för att lägga till. Eller klicka på ett segment.',
   'bend-place-help':

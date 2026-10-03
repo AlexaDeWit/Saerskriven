@@ -11,6 +11,7 @@ import { writeSaerskrivenYaml } from './saerskriven-yaml-write.js';
  */
 export const saerskrivenYamlCodec: Codec<typeof saerskrivenYamlV2WireSchema> = {
   wire: saerskrivenYamlV2WireSchema,
+  keepsNarrowed: false,
   read: readSaerskrivenYaml,
   write: writeSaerskrivenYaml,
 };

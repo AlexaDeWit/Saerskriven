@@ -16,7 +16,12 @@ import {
   FlowEndpointCommands,
 } from './selection-controls.js';
 import { commandById, runCommand } from '../commands/registry.js';
-import { recordingSurface } from '../commands/commands.fixtures.js';
+import {
+  drawnAs,
+  iconOnly,
+  recordingSurface,
+  tooltipOnFocus,
+} from '../commands/commands.fixtures.js';
 import { selectTool } from './tools.js';
 import { currentAnnouncement } from './announcements.js';
 import {
@@ -40,6 +45,9 @@ const flowOf = () =>
   modelStore
     .getState()
     .present.diagrams[0].elements.find((element) => element.kind === 'flow');
+
+const bothWaysToggle = () =>
+  screen.getByRole('button', { name: 'Toggle bidirectional flow' });
 
 beforeEach(() => {
   openCanvas([actorElement]);
@@ -330,17 +338,48 @@ describe('FlowEndpointCommands', () => {
     expect(modelStore.getState().past).toEqual([base]);
   });
 
-  it('toggles a flow between one way and both ways as one undo step each', () => {
+  it('draws its four commands as icons named by their full labels', () => {
     openCanvas([requestFlow]);
     render(<FlowEndpointCommands />);
-    fireEvent.click(
-      screen.getByRole('button', { name: /Toggle bidirectional flow/u }),
-    );
+    const card = screen.getByRole('region', { name: 'Reconnect flow' });
+    for (const name of [
+      'Change flow source',
+      'Change flow target',
+      'Toggle bidirectional flow',
+      'Reverse flow',
+    ]) {
+      expect(drawnAs(within(card).getByRole('button', { name }))).toEqual(
+        iconOnly,
+      );
+    }
+  });
+
+  it.each([
+    'reconnect-source',
+    'reconnect-target',
+    'toggle-flow-direction',
+    'reverse-flow',
+  ] as const)(
+    'names %s and its registered chord in a tooltip on focus',
+    async (command) => {
+      openCanvas([requestFlow]);
+      render(<FlowEndpointCommands />);
+      const { tooltip, label, chord } = await tooltipOnFocus(command);
+      expect(tooltip.textContent).toContain(label);
+      expect(tooltip.textContent).toContain(chord);
+    },
+  );
+
+  it('toggles a flow between one way and both ways as one undo step each, pressed while it runs both ways', () => {
+    openCanvas([requestFlow]);
+    render(<FlowEndpointCommands />);
+    expect(bothWaysToggle().getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(bothWaysToggle());
     expect(flowOf()).toMatchObject({ bidirectional: true });
-    fireEvent.click(
-      screen.getByRole('button', { name: /Toggle bidirectional flow/u }),
-    );
+    expect(bothWaysToggle().getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(bothWaysToggle());
     expect(flowOf()).toMatchObject({ bidirectional: false });
+    expect(bothWaysToggle().getAttribute('aria-pressed')).toBe('false');
     expect(modelStore.getState().past).toHaveLength(2);
   });
 
@@ -362,6 +401,21 @@ const shapeOf = () => {
 };
 
 describe('BoundaryShapeCommands', () => {
+  it('draws Switch boundary shape as an icon, with its registered chord in a tooltip on focus', async () => {
+    openCanvas([boundaryElement]);
+    render(<BoundaryShapeCommands />);
+    const control = within(
+      screen.getByRole('region', { name: 'Trust boundary' }),
+    ).getByRole('button', { name: 'Switch boundary shape' });
+    expect(drawnAs(control)).toEqual(iconOnly);
+    expect(control.hasAttribute('aria-pressed')).toBe(false);
+    const { tooltip, label, chord } = await tooltipOnFocus(
+      'toggle-boundary-shape',
+    );
+    expect(tooltip.textContent).toContain(label);
+    expect(tooltip.textContent).toContain(chord);
+  });
+
   it('switches the selected boundary between a box and a curve as one undo step each', () => {
     openCanvas([boundaryElement]);
     render(<BoundaryShapeCommands />);
