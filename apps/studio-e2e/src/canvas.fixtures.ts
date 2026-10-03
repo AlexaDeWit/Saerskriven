@@ -455,10 +455,10 @@ export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
   return clear ?? { x: canvas.x, y: canvas.y };
 };
 
-const touchPoint = (at: Point) => ({
+const touchPoint = (at: Point, id = 1) => ({
   x: Math.round(at.x),
   y: Math.round(at.y),
-  id: 1,
+  id,
 });
 
 /** Enables touch input on a Chromium debugging session. */
@@ -497,11 +497,38 @@ export const touchDown = async (
   }
 };
 
-/** Lifts the finger {@link touchDown} left down. */
+/** Lifts every finger still down. */
 export const touchUp = async (session: CDPSession): Promise<void> => {
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchEnd',
     touchPoints: [],
+  });
+};
+
+/** Cancels every finger still down, which the page sees as `touchcancel`. */
+export const touchCancel = async (session: CDPSession): Promise<void> => {
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchCancel',
+    touchPoints: [],
+  });
+};
+
+/**
+ * Sends one touch event about the fingers named, each under its own id, so a
+ * second finger can press or move while the first is down, and stay down while
+ * it lifts. In Chromium a `touchStart` that names a finger already down beside
+ * a new one presses the new one alone, and a `touchEnd` lifts the fingers it
+ * names and leaves the others down. The finger {@link touchDown} leaves down
+ * is id 1.
+ */
+export const touchFingers = async (
+  session: CDPSession,
+  type: 'touchStart' | 'touchMove' | 'touchEnd',
+  fingers: readonly (readonly [id: number, at: Point])[],
+): Promise<void> => {
+  await session.send('Input.dispatchTouchEvent', {
+    type,
+    touchPoints: fingers.map(([id, at]) => touchPoint(at, id)),
   });
 };
 

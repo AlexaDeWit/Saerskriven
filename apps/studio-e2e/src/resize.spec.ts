@@ -11,10 +11,13 @@ import {
   boxOf,
   centreOf,
   dragBy,
+  onScreen,
   type Point,
   pressOn,
+  touchCancel,
   touchDown,
   touchDrag,
+  touchFingers,
   touchSession,
   touchUp,
   viewportZoom,
@@ -247,6 +250,64 @@ test('a touch resize cut short by a deselect is put back, and a still press afte
   await expect(right).toBeFocused();
   expect(await undoOffered(page)).toBe(false);
   expect(await boxOf(node)).toEqual(before);
+  await session.detach();
+});
+
+test('a cancelled touch resize is put back, and a still touch after it records no edit', async ({
+  page,
+}) => {
+  const { session, node, before } = await selectKioskForTouch(page);
+  const right = sideControl(node, 'right', kiosk.name);
+  const from = await centreOf(right);
+
+  await touchDown(session, from, { x: from.x + touchDragged, y: from.y });
+  await expect
+    .poll(async () => (await boxOf(node)).width)
+    .not.toBe(before.width);
+  await touchCancel(session);
+
+  await expect.poll(() => boxOf(node)).toEqual(before);
+  await expect.poll(() => glyphWidthOf(node)).toBe(before.width);
+  expect(await undoOffered(page)).toBe(false);
+
+  await touchDrag(session, from, from);
+
+  await expect(right).toBeFocused();
+  expect(await undoOffered(page)).toBe(false);
+  expect(await boxOf(node)).toEqual(before);
+  await session.detach();
+});
+
+test('a second finger on another control resizes nothing while the first holds the element', async ({
+  page,
+}) => {
+  const { session, node, before } = await selectKioskForTouch(page);
+  const from = await centreOf(sideControl(node, 'right', kiosk.name));
+  const held = { x: from.x + touchDragged, y: from.y };
+  const bottom = sideControl(node, 'bottom', kiosk.name);
+  const grown = touchDragged / (await viewportZoom(page));
+
+  await touchDown(session, from, held);
+  await onScreen(bottom);
+  const other = await centreOf(bottom);
+  const moved = { x: other.x, y: other.y + touchDragged };
+  await touchFingers(session, 'touchStart', [
+    [1, held],
+    [2, other],
+  ]);
+  await touchFingers(session, 'touchEnd', [[1, held]]);
+  await touchFingers(session, 'touchMove', [[2, moved]]);
+  await touchUp(session);
+
+  await expect
+    .poll(async () =>
+      Math.abs((await boxOf(node)).width - before.width - grown),
+    )
+    .toBeLessThanOrEqual(pointerTolerance);
+  expect((await boxOf(node)).height).toBe(before.height);
+  await runFromMenu(page, 'Undo');
+  await expect.poll(() => boxOf(node)).toEqual(before);
+  expect(await undoOffered(page)).toBe(false);
   await session.detach();
 });
 
