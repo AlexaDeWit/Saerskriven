@@ -28,4 +28,4 @@ exported=$(wasm-objdump -x -j Export "$module" |
   sed -n 's/^ - [a-z]*\[[0-9]*\].* -> "\(.*\)"$/\1/p' | sort)
 expected=$(printf '%s\n' "$@" | sort)
 [ "$exported" = "$expected" ] ||
-  refuse "it exports $(printf '%s' "$exported" | tr '\n' ' '), where its derivation names $(printf '%s' "$expected" | tr '\n' ' ')"
+  refuse "it exports $(printf '%s' "$exported" | tr '\n' ' '), where its module file names $(printf '%s' "$expected" | tr '\n' ' ')"

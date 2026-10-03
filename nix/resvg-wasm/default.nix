@@ -8,6 +8,9 @@
   logic = "rasterizer";
   library = "saerskriven_resvg";
   upstream = "resvg";
+  # The logic crate's direct dependencies, part of the ban on unsafe Rust
+  # because their macros can expand to unsafe code the forbid does not see.
+  dependencies = [ "resvg" ];
   exports = [
     "input" "add_font" "render" "width" "height" "output" "output_length"
   ];

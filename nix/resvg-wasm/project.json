@@ -2,10 +2,11 @@
   "name": "resvg-wasm",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   // The one place that runs `nix build .#resvg-wasm`. Nix keeps the
-  // compilation: default.nix beside this file is the derivation and flake.lock
-  // is the pin. What nx owns is the dependency edge, so a target that carries
-  // the module declares `dependsOn` on this build instead of its caller
-  // running the build first (issue #379).
+  // compilation: default.nix beside this file holds the module's facts,
+  // nix/wasm-module.nix is the derivation, and flake.lock is the pin. What nx
+  // owns is the dependency edge, so a target that carries the module declares
+  // `dependsOn` on this build instead of its caller running the build first
+  // (issue #379).
   //
   // The target lives here rather than in nx.json's targetDefaults, which key
   // on a target name or an executor and would reach every project's `build`

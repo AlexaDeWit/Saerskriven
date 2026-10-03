@@ -107,7 +107,9 @@ the export table alone, checked before the compile and on the built module by
 the two scripts the builder runs. Each module's `default.nix` is data that
 `flake.nix` hands to the builder, and `flake.nix`, the builder, the two scripts
 and the module files are the ban's trust root, where a change is a change to the
-ban.
+ban. The forbid does not see an `unsafe` block that a dependency's macro expands
+to, so each module's file also lists its logic crate's direct dependencies, and
+the guard refuses any other.
 
 Rust owns one input buffer and one output buffer. The caller writes its bytes at
 the address `input(length)` answers, runs one of the module's calls, and copies

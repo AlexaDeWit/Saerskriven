@@ -12,8 +12,8 @@
 # module's nx project hashes all of them.
 let
   facts = [
-    "description" "exports" "homepage" "library" "licenses" "logic" "pname"
-    "root" "upstream"
+    "dependencies" "description" "exports" "homepage" "library" "licenses"
+    "logic" "pname" "root" "upstream"
   ];
   # The directory holding the export crate's Cargo.toml, Cargo.lock and src.
   root = module.root;
@@ -55,9 +55,10 @@ stdenv.mkDerivation {
   nativeBuildInputs = [ rustPlatform.cargoSetupHook cargo rustc lld jq ];
 
   # The ban is checked before the compile, by unsafe-ban.sh, with the export
-  # crate at the source root and the logic crate beneath it.
+  # crate at the source root, the logic crate beneath it, and the names of the
+  # logic crate's direct dependencies, the only crates whose macros it reaches.
   preBuild = ''
-    bash ${./unsafe-ban.sh} . ${lib.escapeShellArg logic}
+    bash ${./unsafe-ban.sh} . ${lib.escapeShellArg logic} ${lib.escapeShellArgs module.dependencies}
   '';
 
   buildPhase = ''

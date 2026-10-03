@@ -2,18 +2,23 @@
 # Stops a Rust WebAssembly module's build where its crates break the ban on
 # unsafe Rust (owner rulings, 2026-10-02, #622 and #640). nix/wasm-module.nix
 # runs it before every module's compile, from the source root, with the export
-# crate's directory and the logic crate's:
+# crate's directory, the logic crate's, and the names of the logic crate's
+# direct dependencies, which the module's file lists:
 #
-#   bash ${./unsafe-ban.sh} . codec
+#   bash ${./unsafe-ban.sh} . codec brotli
 #
 # rustc enforces the ban in the logic crate: its root forbids the
 # `unsafe_code` lint, and no module, included file or inner attribute in that
-# crate can lower a forbid. This script checks what rustc cannot. It reads the
-# crates as Cargo resolves them, through `cargo metadata`, and requires:
+# crate can lower a forbid. The forbid does not see an `unsafe` block that a
+# dependency's macro expands to, so the logic crate's direct dependencies are
+# part of the ban: adding one is a change to the module's file, which is trust
+# root. This script checks what rustc cannot. It reads the crates as Cargo
+# resolves them, through `cargo metadata`, and requires:
 # - two local packages in the whole graph, the export crate and the logic
 #   crate, and every other package from the crates.io registry
 # - the logic crate to build one target, a lib whose root is its src/lib.rs,
-#   and to depend on registry crates alone
+#   and to depend on registry crates alone, whose names of every kind are
+#   exactly the names the module's file lists
 # - the export crate to build one target, a cdylib whose root is its
 #   src/lib.rs, and to depend on the logic crate alone
 # - so no build script in either crate, and no patch or replacement that
@@ -24,18 +29,21 @@
 #   the export table's shapes: `//!` header lines, blank lines, the one
 #   `#![allow(unsafe_code)]`, one `use` of the logic crate's boundary, and
 #   exports of the form `#[unsafe(no_mangle)]`, `pub extern "C" fn` with
-#   primitive parameters, one call to the boundary function of the same name
-#   passing those parameters in order, and `}`
+#   32- or 64-bit integer or float parameters, which a WebAssembly caller
+#   cannot pass out of range, one call to the boundary function of the same
+#   name passing those parameters in order, and `}`
 # And for the compile itself:
 # - no resolved dependency feature is named `unsafe` or `ffi-api`
-# - no RUSTFLAGS or rustc wrapper variable is set, and no Cargo configuration
-#   on Cargo's search path caps lints, forces a warning, or wraps rustc, the
-#   ways a forbid in source can be lifted
+# - no RUSTFLAGS, NIX_RUSTFLAGS or rustc wrapper variable is set, and no Cargo
+#   configuration on Cargo's search path caps lints, forces a warning, or
+#   wraps rustc, the ways a forbid in source can be lifted
 
 set -euo pipefail
 
 exporter=${1:?name the export crate directory}
 logic=${2:?name the logic crate directory}
+shift 2
+listed=$(jq -cn '$ARGS.positional | sort | unique' --args "$@")
 exporter_dir=$(cd "$exporter" && pwd -P)
 logic_dir=$(cd "$logic" && pwd -P)
 exporter_manifest=$exporter_dir/Cargo.toml
@@ -47,9 +55,9 @@ refuse() {
   exit 1
 }
 
-for variable in RUSTFLAGS CARGO_BUILD_RUSTFLAGS CARGO_ENCODED_RUSTFLAGS \
-  CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS RUSTC_WRAPPER \
-  RUSTC_WORKSPACE_WRAPPER CARGO_BUILD_RUSTC_WRAPPER; do
+for variable in RUSTFLAGS NIX_RUSTFLAGS CARGO_BUILD_RUSTFLAGS \
+  CARGO_ENCODED_RUSTFLAGS CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS \
+  RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER CARGO_BUILD_RUSTC_WRAPPER; do
   [ -z "${!variable:-}" ] ||
     refuse "$variable is set, and could cap the lint the logic crate forbids."
 done
@@ -111,6 +119,10 @@ stray=$(query --arg manifest "$logic_manifest" --arg registry "$crates_io" ".pac
 [ "$stray" = '[]' ] ||
   refuse "the logic crate depends on $stray, which do not come from the crates.io registry."
 
+direct=$(package "$logic_manifest" '[.dependencies[].name] | sort | unique')
+[ "$direct" = "$listed" ] ||
+  refuse "the logic crate depends on $direct, where its module's file lists $listed. A dependency's macro can expand to unsafe code the forbid does not see, so the list is part of the ban."
+
 root=$(package "$logic_manifest" '.targets[0].src_path' | jq -r .)
 table=$(package "$exporter_manifest" '.targets[0].src_path' | jq -r .)
 logic_crate=$(package "$logic_manifest" '.targets[0].name' | jq -r . | tr '-' '_')
@@ -138,7 +150,8 @@ awk -v use_line="use ${logic_crate}::boundary;" '
   BEGIN {
     state = "header"
     primitive = "(u8|u16|u32|u64|usize|i8|i16|i32|i64|isize|f32|f64|bool)"
-    parameter = "[a-z_][a-z0-9_]*: " primitive
+    wide = "(u32|u64|usize|i32|i64|isize|f32|f64)"
+    parameter = "[a-z_][a-z0-9_]*: " wide
     signature = "^pub extern \"C\" fn [a-z_][a-z0-9_]*[(](" parameter "(, " parameter ")*)?[)]( -> (" primitive "|[*](const|mut) u8))? [{]$"
   }
   state == "header" && ($0 == "" || $0 ~ /^\/\/!/) { next }
@@ -156,7 +169,7 @@ awk -v use_line="use ${logic_crate}::boundary;" '
     call = "    boundary::" name "(" names(arguments) ")"
     state = "call"; next
   }
-  state == "signature" { fail("an export is pub extern \"C\" fn NAME(PARAMETERS) -> TYPE { with primitive types") }
+  state == "signature" { fail("an export is pub extern \"C\" fn NAME(PARAMETERS) -> TYPE { with 32- or 64-bit numeric parameters and a primitive result") }
   state == "call" && $0 == call { state = "close"; exports++; next }
   state == "call" { fail("an export body is the one line \"" call "\"") }
   state == "close" && $0 == "}" { state = "between"; next }
