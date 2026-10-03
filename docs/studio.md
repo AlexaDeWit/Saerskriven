@@ -58,9 +58,16 @@ name, and **Save as** turns into a list of formats in the menu, with the file's
 own format where the item stood. The page cannot tell whether a download went
 through, so a download counts as saved even where the browser's own download
 dialog was cancelled. Saving in another format than the file was read as is
-where a loss report comes from, since only the file's own format keeps what
-Saerskriven does not model. A read reports too, when the file carries keys the
-format's schema does not declare.
+where most of a save's report, **Not kept by this save**, comes from, since
+only the file's own format keeps what Saerskriven does not model. Opening a
+file reports too, under **Not shown in the studio**: keys the format's schema
+does not declare, and values the studio holds less exactly than the file,
+such as a Threat Dragon Elevation of Privilege card, with "Saving back keeps
+it." where a save to the same file keeps them. Each line names a threat by its
+number and title, and anything else by the name the studio shows, and lines
+that read the same are shown once with their count. A report leaves out what
+loses nothing, such as a raised threat number mark, which the command line
+still prints.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
