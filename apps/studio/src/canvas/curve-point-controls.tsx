@@ -1,12 +1,14 @@
-import { curveMidpoints } from '@saerskriven/canvas';
-import type { Point } from '@saerskriven/model';
 import { useStore, useViewport, ViewportPortal } from '@xyflow/react';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { keyboardOwner } from '../commands/binding.js';
 import { pressesContextualShortcut } from '../commands/contextual-shortcuts.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
-import { addedPoint, type CurvePoints } from './curve-points.js';
+import {
+  addedPoint,
+  shownMidpoints,
+  type CurvePoints,
+} from './curve-points.js';
 import { focusElement } from './edits.js';
 import { besideHandle, HandleActions, onHandle } from './handle-actions.js';
 import {
@@ -22,13 +24,6 @@ type OpenActions = {
   readonly context: CurvePoints['context'];
   readonly index: number;
 };
-
-/**
- * How long a curve segment must be drawn, in screen pixels, to show a
- * midpoint handle: twice the 1.75rem point handle, so the midpoint handle
- * clears the point handles at both of its ends.
- */
-export const shortestMidpointSegment = 56;
 
 /**
  * A handle on each point of the selected trust boundary curve, a midpoint
@@ -171,7 +166,7 @@ export function CurvePointControls({
   const beside = chosen === undefined ? undefined : shown.at(chosen);
   return (
     <ViewportPortal>
-      {midpointsShown(shown, points.draft, zoom).map(
+      {shownMidpoints(shown, zoom, points.draft).map(
         ({ point, index, pulled }) => (
           <span
             aria-hidden="true"
@@ -182,9 +177,6 @@ export function CurvePointControls({
             onClick={(event) => {
               event.stopPropagation();
               drag.endedDrag();
-            }}
-            onDoubleClick={(event) => {
-              event.stopPropagation();
             }}
             onPointerCancel={() => {
               cancel(true);
@@ -207,7 +199,7 @@ export function CurvePointControls({
           key={index}
           onClick={(event) => {
             event.stopPropagation();
-            if (!drag.endedDrag()) {
+            if (event.detail === 0 || !drag.endedDrag()) {
               setOpen({ context: points.context, index });
             }
           }}
@@ -261,21 +253,6 @@ export function CurvePointControls({
       )}
     </ViewportPortal>
   );
-}
-
-function midpointsShown(
-  shown: readonly Point[],
-  draft: CurvePoints['draft'],
-  zoom: number,
-) {
-  const held = draft?.kind === 'insert' ? draft.index - 1 : undefined;
-  return curveMidpoints(shown)
-    .map((middle, index) => ({ ...middle, index, pulled: index === held }))
-    .filter(({ segmentLength, pulled }) =>
-      draft === undefined
-        ? segmentLength * zoom >= shortestMidpointSegment
-        : pulled,
-    );
 }
 
 function focusPoint(index: number): void {

@@ -8,7 +8,7 @@ import {
   curvedCanvasModel,
   openCanvas,
 } from './canvas.fixtures.js';
-import { addedPoint, useCurvePoints } from './curve-points.js';
+import { addedPoint, shownMidpoints, useCurvePoints } from './curve-points.js';
 import type { WaypointTarget } from './waypoints.js';
 
 const firstHalfway = { x: 85.2, y: 18.1 };
@@ -24,6 +24,11 @@ const roughly = (target: WaypointTarget | undefined) =>
         ...target,
         point: { x: tenth(target.point.x), y: tenth(target.point.y) },
       };
+
+const across = (length: number) => [
+  { x: 0, y: 0 },
+  { x: length, y: 0 },
+];
 
 describe('addedPoint', () => {
   it('goes halfway along the drawn curve to the next point, by length', () => {
@@ -60,6 +65,31 @@ describe('addedPoint', () => {
   it('finds no place for a point the curve does not have', () => {
     expect(addedPoint(boundaryCurve, 3)).toBeUndefined();
     expect(addedPoint(boundaryCurve, -1)).toBeUndefined();
+  });
+});
+
+describe('shownMidpoints', () => {
+  it('shows the midpoint of a segment drawn at least 56 screen pixels long, whatever the zoom', () => {
+    expect(shownMidpoints(across(28.25), 2, undefined)).toHaveLength(1);
+    expect(shownMidpoints(across(27.75), 2, undefined)).toHaveLength(0);
+    expect(shownMidpoints(across(112.5), 0.5, undefined)).toHaveLength(1);
+    expect(shownMidpoints(across(111.5), 0.5, undefined)).toHaveLength(0);
+  });
+
+  it('keeps only the midpoint a midpoint drag holds while a drag is in flight', () => {
+    const pulling = {
+      kind: 'insert',
+      index: 2,
+      point: { x: 0, y: 0 },
+    } as const;
+    expect(
+      shownMidpoints(boundaryCurve, 1, pulling).map(({ index, pulled }) => ({
+        index,
+        pulled,
+      })),
+    ).toEqual([{ index: 1, pulled: true }]);
+    const moving = { kind: 'move', index: 0, point: { x: 0, y: 0 } } as const;
+    expect(shownMidpoints(boundaryCurve, 1, moving)).toEqual([]);
   });
 });
 

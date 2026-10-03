@@ -1,4 +1,5 @@
 import type { Point } from '@saerskriven/model';
+import { segmentsOfPolyline } from './geometry.js';
 import {
   arrowheadPath,
   controlPolygon,
@@ -14,13 +15,10 @@ const lowestOf = (points: readonly Point[]): number =>
   Math.min(...points.map((point) => point.y));
 
 const lengthOf = (points: readonly Point[]): number =>
-  points
-    .slice(1)
-    .reduce(
-      (sum, point, index) =>
-        sum + Math.hypot(point.x - points[index].x, point.y - points[index].y),
-      0,
-    );
+  segmentsOfPolyline(points).reduce(
+    (sum, { from, to }) => sum + Math.hypot(to.x - from.x, to.y - from.y),
+    0,
+  );
 
 describe('translate', () => {
   it('writes the point as an SVG transform', () => {

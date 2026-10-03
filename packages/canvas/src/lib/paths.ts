@@ -1,4 +1,5 @@
 import type { Point } from '@saerskriven/model';
+import { segmentsOfPolyline } from './geometry.js';
 import { svgNumber } from './numbers.js';
 import { arrowhead } from './tokens.js';
 import { alongSegment, unitDirection } from './vectors.js';
@@ -169,7 +170,7 @@ function cubicSamples(from: Point, segment: CubicSegment): Point[] {
 }
 
 function halfwayAlong(run: readonly Point[]): CurveMidpoint {
-  const pieces = run.slice(1).map((to, index) => ({ from: run[index], to }));
+  const pieces = segmentsOfPolyline(run);
   const lengths = pieces.map(({ from, to }) =>
     Math.hypot(to.x - from.x, to.y - from.y),
   );

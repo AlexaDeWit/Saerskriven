@@ -1,4 +1,4 @@
-import { curveMidpoints } from '@saerskriven/canvas';
+import { curveMidpoints, type CurveMidpoint } from '@saerskriven/canvas';
 import {
   setBoundaryShape,
   type CurveBoundaryShape,
@@ -16,6 +16,14 @@ import { editedWaypoints, type WaypointTarget } from './waypoints.js';
 export type CurveBoundary = TrustBoundary & {
   readonly shape: CurveBoundaryShape;
 };
+
+/**
+ * How long a curve segment must be drawn, in screen pixels, to show a
+ * midpoint handle: twice the 1.75rem point handle at the default 16px root,
+ * so on a straight segment the midpoint handle clears the point handles at
+ * both of its ends.
+ */
+export const shortestMidpointSegment = 56;
 
 const fewestCurvePoints = 2;
 
@@ -52,6 +60,27 @@ export function addedPoint(
   return point === undefined
     ? undefined
     : { kind: 'insert', index: segment + 1, point };
+}
+
+/**
+ * The midpoint handles a curve drawn through `points` at `zoom` shows, each
+ * with the index of its segment: one on every segment drawn at least
+ * {@link shortestMidpointSegment} long. While `draft` holds a drag, only the
+ * midpoint that a midpoint drag pulls a point out of stays, marked `pulled`.
+ */
+export function shownMidpoints(
+  points: readonly Point[],
+  zoom: number,
+  draft: WaypointTarget | undefined,
+): (CurveMidpoint & { readonly index: number; readonly pulled: boolean })[] {
+  const held = draft?.kind === 'insert' ? draft.index - 1 : undefined;
+  return curveMidpoints(points)
+    .map((middle, index) => ({ ...middle, index, pulled: index === held }))
+    .filter(({ segmentLength, pulled }) =>
+      draft === undefined
+        ? segmentLength * zoom >= shortestMidpointSegment
+        : pulled,
+    );
 }
 
 /**

@@ -132,7 +132,7 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(midpoint(0).getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('draws a midpoint handle only on a segment drawn at least twice as long as a point handle', () => {
+  it('hides the midpoint handle of a segment drawn shorter than twice a point handle', () => {
     render(<DiagramCanvas />);
     const { zoom } = viewportTransform();
     const drawnAcross = (length: number) => [
@@ -147,7 +147,10 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
 
   it('keeps a double-click on a midpoint handle from renaming the boundary', () => {
     render(<DiagramCanvas />);
-    fireEvent.doubleClick(midpoint(0));
+    const handle = midpoint(0);
+    fireEvent.click(handle, { detail: 1 });
+    fireEvent.click(handle, { detail: 2 });
+    fireEvent.doubleClick(handle);
     expect(modelStore.getState().inlineEditor).toBeUndefined();
   });
 
@@ -216,7 +219,7 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(moved?.y).toBeCloseTo(120);
     expect(waypoints().slice(1)).toEqual(boundaryCurve.slice(1));
     expect(modelStore.getState().past).toHaveLength(1);
-    fireEvent.click(point(1));
+    fireEvent.click(point(1), { detail: 1 });
     expect(screen.queryByRole('group', { name: 'Point actions' })).toBeNull();
   });
 
@@ -256,8 +259,8 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(pointCount()).toBe(boundaryCurve.length + 1);
     expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
     expect(currentAnnouncement().message).toContain('Perimeter');
-    fireEvent.click(midpoint(0));
-    fireEvent.click(point(1));
+    fireEvent.click(midpoint(0), { detail: 1 });
+    fireEvent.click(point(1), { detail: 1 });
     expect(screen.getByRole('group', { name: 'Point actions' })).not.toBeNull();
     act(() => {
       dispatch(Action.Undo());
@@ -274,6 +277,14 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(pulled?.y).toBeCloseTo(80);
   });
 
+  it('opens the actions of a point from the keyboard after a midpoint drag whose handle is gone before its click', () => {
+    render(<DiagramCanvas />);
+    dragHandle(midpoint(0), { x: -14, y: 80 });
+    expect(document.querySelector('[data-curve-segment="0"]')).toBeNull();
+    fireEvent.click(point(4));
+    expect(screen.getByRole('group', { name: 'Point actions' })).not.toBeNull();
+  });
+
   it('drops a midpoint drag on Escape, leaving the model as it was', () => {
     render(<DiagramCanvas />);
     const pulling = midpoint(0);
@@ -284,7 +295,7 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(document.activeElement?.classList.contains('react-flow')).toBe(true);
     press('Escape');
     pointerOn(pulling, 'pointerup', 0, 60);
-    fireEvent.click(pulling);
+    fireEvent.click(pulling, { detail: 1 });
     expect(modelStore.getState().present).toBe(curvedCanvasModel);
     expect(pointCount()).toBe(boundaryCurve.length);
   });
