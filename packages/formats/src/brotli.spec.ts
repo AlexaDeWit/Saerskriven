@@ -1,4 +1,5 @@
 import { committedText } from '@saerskriven/model/fixtures';
+import { moduleWhoseEveryCall, trapping } from '@saerskriven/wasm/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
@@ -104,51 +105,26 @@ const refusalOf = (
 ): BrotliFailure | undefined =>
   Either.isLeft(outcome) ? outcome.left : undefined;
 
-const wasmHeader = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
-
-const section = (id: number, body: readonly number[]): number[] => [
-  id,
-  body.length,
-  ...body,
+const codecCalls = [
+  'input',
+  'compress',
+  'decompress',
+  'output',
+  'output_length',
 ];
 
-const named = (name: string): number[] => {
-  const bytes = [...new TextEncoder().encode(name)];
-  return [bytes.length, ...bytes];
-};
-
-const calls = ['input', 'compress', 'decompress', 'output', 'output_length'];
-
-const moduleWhoseEveryCall = (body: readonly number[]): Uint8Array =>
-  new Uint8Array([
-    ...wasmHeader,
-    ...section(1, [1, 0x60, 0, 1, 0x7f]),
-    ...section(3, [1, 0]),
-    ...section(5, [1, 0, 1]),
-    ...section(7, [
-      calls.length + 1,
-      ...named('memory'),
-      0x02,
-      0,
-      ...calls.flatMap((name) => [...named(name), 0x00, 0]),
-    ]),
-    ...section(10, [1, body.length + 2, 0, ...body, 0x0b]),
-  ]);
-
-const answeringPastMemory = [0x41, 0xff, 0xff, 0xff, 0xff, 0x07];
-
-const trapping = [0x00];
+const trappingCodec = (): Uint8Array =>
+  moduleWhoseEveryCall(codecCalls, trapping);
 
 describe('a module that will not do the work', () => {
-  it('reports bytes that are not a module', async () => {
-    expect(
-      refusalOf(await compressBrotli(model, new Uint8Array([1, 2, 3])))?._tag,
-    ).toBe('Unusable');
-  });
-
   it('reports a module that exports no codec', async () => {
     expect(
-      refusalOf(await compressBrotli(model, new Uint8Array(wasmHeader))),
+      refusalOf(
+        await compressBrotli(
+          model,
+          moduleWhoseEveryCall(['input', 'output', 'output_length'], trapping),
+        ),
+      ),
     ).toEqual(
       BrotliFailure.Unusable({
         sentence: 'the module exports no brotli codec',
@@ -158,17 +134,7 @@ describe('a module that will not do the work', () => {
 
   it('reports one that trapped, as an allocation it cannot make ends, rather than throwing out of the call', async () => {
     expect(
-      refusalOf(
-        await decompressBrotli(model, moduleWhoseEveryCall(trapping), 10),
-      )?._tag,
-    ).toBe('Unusable');
-  });
-
-  it('reports one that answers an address past its own memory', async () => {
-    expect(
-      refusalOf(
-        await compressBrotli(model, moduleWhoseEveryCall(answeringPastMemory)),
-      )?._tag,
+      refusalOf(await decompressBrotli(model, trappingCodec(), 10))?._tag,
     ).toBe('Unusable');
   });
 
@@ -176,13 +142,7 @@ describe('a module that will not do the work', () => {
     'refuses a maximum of %p rather than decoding to another bound',
     async (maximum) => {
       expect(
-        refusalOf(
-          await decompressBrotli(
-            model,
-            moduleWhoseEveryCall(trapping),
-            maximum,
-          ),
-        ),
+        refusalOf(await decompressBrotli(model, trappingCodec(), maximum)),
       ).toEqual(
         BrotliFailure.Unusable({
           sentence: `a maximum of ${maximum} is not a byte count from 0 to 4294967295`,
@@ -233,23 +193,6 @@ describe.skipIf(brotliUnbuilt)('a model compressed through the module', () => {
       const stream = Either.getOrThrow(await compressBrotli(model, wasm));
       await decompressBrotli(stream, wasm, model.length);
       expect(compile).toHaveBeenCalledTimes(1);
-    } finally {
-      compile.mockRestore();
-    }
-  });
-
-  it('compiles again after a compile that failed, rather than keeping the failure', async () => {
-    const wasm = new Uint8Array(brotliWasm());
-    const compile = vi
-      .spyOn(WebAssembly, 'compile')
-      .mockRejectedValueOnce(new Error('the compile was refused'));
-    try {
-      expect(await compressBrotli(model, wasm)).toEqual(
-        Either.left(
-          BrotliFailure.Unusable({ sentence: 'the compile was refused' }),
-        ),
-      );
-      expect(Either.isRight(await compressBrotli(model, wasm))).toBe(true);
     } finally {
       compile.mockRestore();
     }

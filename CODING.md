@@ -90,10 +90,12 @@ narrowest scope that needs it, with the reason beside it, as the CLI's PDF
 compiles do.
 
 The fixture helpers every suite shares live on the
-`@saerskriven/model/fixtures` subpath, and only a spec, a test, or a fixture
-module imports a fixture helper. The subpath resolves to source, so every
-project that depends on `@saerskriven/model` reaches it, and nothing
-structural stops a downstream production module: the typecheck resolves it
+`@saerskriven/model/fixtures` subpath, and those for a suite that runs a
+flake-built WebAssembly module on `@saerskriven/wasm/fixtures`. Only a spec, a
+test, or a fixture module imports a fixture helper. A fixtures subpath
+resolves to source, so every project that depends on its package reaches it,
+and nothing structural stops a downstream production module: the typecheck
+resolves it
 like any other entry point and the layer matrix reasons about projects rather
 than entry points, so a studio bundle carrying a fixture-derived value passes
 both. A relative import of a package's own fixtures module compiles too,
@@ -182,6 +184,52 @@ three undefined. The deno-compiled executable defines the Web Storage pair
 runtime's main thread defines the worker-only `importScripts`. A
 `no-restricted-globals` override in `.oxlintrc.json` refuses all three in
 `apps/cli/**`, where the type program cannot.
+
+## Rust modules
+
+Saerskriven's Rust holds no `unsafe` code (owner rulings, 2026-10-02). Every
+WebAssembly module under `nix/` is built by
+[`nix/wasm-module.nix`](nix/wasm-module.nix) out of two crates:
+
+- The logic crate holds the module's code and the buffers it shares with the
+  caller. Its root opens with `#![forbid(unsafe_code)]`, which rustc applies to
+  every module and included file of the crate and lets no attribute lower, and
+  its manifest sets the lint to `forbid` and declares no `[lib]` section or
+  build script.
+- The export crate's `src/lib.rs` is the export table alone: functions under
+  `#[unsafe(no_mangle)]` whose body is one call to the logic crate's boundary
+  function of the same name, passing the parameters in order. Rust owns the
+  buffers and answers their addresses, so no address the caller holds is read
+  in Rust.
+
+The export table's `#![allow(unsafe_code)]` is the ban's one exception,
+owner-approved on 2026-10-02. rustc forces it: `no_mangle` is an unsafe
+attribute that the `unsafe_code` lint flags, so a crate that forbids the lint
+can export no function a host could call.
+
+The builder runs two scripts on every module, so a new module gets both by
+building through it:
+
+- [`nix/unsafe-ban.sh`](nix/unsafe-ban.sh) runs before the compile and refuses
+  the build unless:
+  - the logic crate opens with its forbid and sets the lint no other way
+  - every line of the export table is a `//!` line, a blank line, the
+    allowance, the one `use` of the logic crate's boundary, or a line of an
+    export in that shape
+  - the export crate depends on the logic crate alone, with no build script,
+    patch or replacement
+  - no resolved dependency feature is named `unsafe` or `ffi-api`, read from
+    `cargo tree -e features` in the sandbox
+  - no `RUSTFLAGS`, rustc wrapper or Cargo configuration on Cargo's search
+    path caps lints, forces a warning or wraps rustc
+- [`nix/wasm-surface.sh`](nix/wasm-surface.sh) runs on the built module and
+  refuses it unless it imports nothing and exports exactly `memory`, the calls
+  its `default.nix` names, and the linker globals `__data_end` and
+  `__heap_base`.
+
+The ban covers Saerskriven's own crates. Code inside a dependency is outside
+it. [Building the executables](docs/build.md#the-webassembly-modules)
+describes the boundary the modules share and each module's calls.
 
 ## Workflows and CI
 

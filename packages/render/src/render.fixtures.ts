@@ -5,11 +5,8 @@ import {
   type Diagram,
   type Model,
 } from '@saerskriven/model';
-import {
-  committedDiagrams,
-  committedModel,
-  stop,
-} from '@saerskriven/model/fixtures';
+import { committedDiagrams, committedModel } from '@saerskriven/model/fixtures';
+import { builtModule, stop, unbuilt } from '@saerskriven/wasm/fixtures';
 import { readFileSync } from 'node:fs';
 import {
   resvgVariable,
@@ -123,20 +120,11 @@ export function diagramOf(entry: GoldenDocument): Diagram {
   return entry.model.diagrams[entry.diagram];
 }
 
-/**
- * Whether the variable naming the rasterizer module is unset or empty, which
- * is what running outside the flake shell looks like, so a suite that
- * rasterizes skips there. Inside the shell the variable is always set, and a
- * module that is not at the path it names fails the suite.
- */
-export const resvgUnbuilt =
-  process.env[resvgVariable] === undefined || process.env[resvgVariable] === '';
-
-let resvgModule: Uint8Array | undefined;
+/** Whether a suite that rasterizes skips, as `unbuilt` decides. */
+export const resvgUnbuilt = unbuilt(resvgVariable);
 
 /** The flake-built rasterizer module, read once per suite. */
-export const resvgWasm = (): Uint8Array =>
-  (resvgModule ??= new Uint8Array(readFileSync(resvgWasmAsset(stop))));
+export const resvgWasm = builtModule(resvgWasmAsset);
 
 /** The bytes of each font, in the order given. */
 export const fontBytes = (

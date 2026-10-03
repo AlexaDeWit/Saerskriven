@@ -305,6 +305,13 @@ dependencies = [
 name = "saerskriven-resvg"
 version = "0.0.0"
 dependencies = [
+ "saerskriven-resvg-rasterizer",
+]
+
+[[package]]
+name = "saerskriven-resvg-rasterizer"
+version = "0.0.0"
+dependencies = [
  "resvg",
 ]
 

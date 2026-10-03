@@ -5,24 +5,17 @@
     "outDir": "dist",
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": true,
+    // The driver instantiates WebAssembly modules, and only lib.dom and
+    // lib.webworker declare that namespace: with es2022 alone this program
+    // stops with seven errors, TS2503 and TS2304 on src/lib/boundary.ts.
+    // webworker is the narrower of the two and declares neither document nor
+    // window.
+    "lib": ["webworker", "es2022"],
     "forceConsistentCasingInFileNames": true,
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "references": [
-    {
-      "path": "../render/tsconfig.lib.json"
-    },
-    {
-      "path": "../model/tsconfig.lib.json"
-    },
-    {
-      "path": "../formats/tsconfig.lib.json"
-    },
-    {
-      "path": "../wasm/tsconfig.lib.json"
-    }
-  ],
+  "references": [],
   "exclude": [
     "vite.config.ts",
     "vite.config.mts",

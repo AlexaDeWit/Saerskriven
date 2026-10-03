@@ -12,6 +12,7 @@
       "inputs": [
         "{workspaceRoot}/flake.nix",
         "{workspaceRoot}/flake.lock",
+        "{workspaceRoot}/nix/wasm-module.nix",
         "{workspaceRoot}/nix/unsafe-ban.sh",
         "{workspaceRoot}/nix/wasm-surface.sh",
         "{projectRoot}/**/*"

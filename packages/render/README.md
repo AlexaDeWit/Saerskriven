@@ -125,7 +125,8 @@ does: 2 MB of WebAssembly.
 
 `assets.wasm` is the module the `resvg-wasm` project builds out of the `resvg`
 crate, and `assets.fonts` the faces. Without a face the renderer draws no text
-at all. `build-assets` names the variable a build reads the module's path from
+at all. The module runs through the driver
+[`@saerskriven/wasm`](../wasm/README.md) holds for every flake-built module. `build-assets` names the variable a build reads the module's path from
 and the name it is carried under beside a bundle. Its spec skips where that
 variable is unset, which is what running outside the flake shell looks like:
 inside it the `resvg-wasm` build every carrying target depends on is what

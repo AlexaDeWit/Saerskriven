@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Stops a Rust WebAssembly module's build where its crates break the ban on
-# unsafe Rust (owner rulings, 2026-10-02, #622 and #640). A derivation runs it
-# before the compile, from the source root, with the export crate's directory
-# and the logic crate's:
+# unsafe Rust (owner rulings, 2026-10-02, #622 and #640). nix/wasm-module.nix
+# runs it before every module's compile, from the source root, with the export
+# crate's directory and the logic crate's:
 #
-#   bash ${../unsafe-ban.sh} . codec
+#   bash ${./unsafe-ban.sh} . codec
 #
 # rustc enforces the ban in the logic crate: its root forbids the
 # `unsafe_code` lint, and no module, included file or inner attribute in that

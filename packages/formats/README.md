@@ -78,7 +78,9 @@ print that text, so it is an interface.
 `compressBrotli(bytes, wasm)` and `decompressBrotli(bytes, wasm, maximum)`, on
 the `@saerskriven/formats/brotli` subpath ([`brotli.ts`](src/brotli.ts)),
 run the module the `brotli-wasm` project builds, which the caller passes as
-bytes. They sit on a subpath so the main entry carries no WebAssembly. A
+bytes, through the driver [`@saerskriven/wasm`](../wasm/README.md) holds for
+every flake-built module. They sit on a subpath so the main entry carries no
+WebAssembly. A
 refusal is a `BrotliFailure`, and `maximum` is the guard against a stream that
 inflates without bound: decoding stops at the first byte past it.
 [Building the executables](../../docs/build.md#the-brotli-module) describes the
