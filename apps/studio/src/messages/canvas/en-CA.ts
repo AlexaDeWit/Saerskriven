@@ -116,7 +116,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   copied: 'Copied the selection.',
   cut: 'Cut the selection.',
   duplicated: 'Duplicated the selection.',
-  pasted: 'Pasted the selection with new element and threat IDs.',
+  pasted: 'Pasted the selection.',
   'copy-counts':
     'Elements: {elements}. Threats: {threats}. External links excluded: {excluded}.',
   'copy-source-fields':
@@ -126,8 +126,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
     other:
       'Threats copied: {copied}, of which {removed} were removed with their last element.',
   },
-  'cut-remains':
-    'Every other threat stays in the register. Other attached flows retain free endpoints.',
+  'cut-remains': 'Other attached flows retain free endpoints.',
   'cut-abandoned': 'The selection changed while copying. Nothing was cut.',
   'threats-attached': 'Threats attached, not copied: {attached}.',
   'records-counts': 'Records linked: {linked}. Records cloned: {cloned}.',

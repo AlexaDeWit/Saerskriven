@@ -49,8 +49,10 @@ describe(
       showAttachments([actorElement, processElement]);
 
       expect(
-        screen.getByRole('group', { name: 'Attached elements' }),
-      ).toBeDefined();
+        within(
+          screen.getByRole('group', { name: 'Attached elements' }),
+        ).getAllByRole('listitem'),
+      ).toHaveLength(2);
       expect(button('Detach Reader')).toBeDefined();
       expect(button('Detach Studio')).toBeDefined();
       expect(
@@ -126,6 +128,7 @@ describe(
         screen.getByRole('combobox', { name: wholeModel }).textContent,
       ).toContain(t('enums.yes'));
       expect(screen.queryByRole('button', { name: /^Detach / })).toBeNull();
+      expect(screen.queryByRole('list')).toBeNull();
 
       await chooseFrom(wholeModel, t('enums.no'));
 

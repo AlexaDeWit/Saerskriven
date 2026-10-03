@@ -463,9 +463,10 @@ removed meanwhile, or no longer applies to the whole model, the paste adds a
 copy that does not, as for any other threat.
 
 The status line counts the records linked and added, the threats attached in
-place of being copied where there are any, and on a copy the links left
-behind. Duplicate leaves the clipboard alone. Text fields keep their own
-clipboard keys.
+place of being copied where there are any, and on a copy, a cut or a duplicate
+the links left behind. A duplicate counts none for a threat it is attached to,
+which keeps them all. Duplicate leaves the clipboard alone. Text fields keep
+their own clipboard keys.
 
 Paste reads the clipboard within the same size, depth and alias bounds as a
 file, and anything that is not a Saerskriven selection makes no edit. A

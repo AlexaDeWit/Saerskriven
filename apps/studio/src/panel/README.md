@@ -242,6 +242,11 @@ stays on: its other elements, or the whole model where it is on none. Setting
 the model link, or clearing it on a threat that stays, says nothing, since the
 control shows it.
 
+A removal through the model link control moves focus in the next animation
+frame and not at once. The listbox commits as the key goes down, and a control
+focused before that press is over takes the press as its own, which would open
+the next threat and clear the status.
+
 The model's list has an Add a threat of its own, which adds a threat that
 applies to the model and names no element.
 

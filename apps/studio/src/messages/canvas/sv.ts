@@ -125,7 +125,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   copied: 'Kopierade markeringen.',
   cut: 'Klippte ut markeringen.',
   duplicated: 'Duplicerade markeringen.',
-  pasted: 'Klistrade in markeringen med nya id:n för objekt och hot.',
+  pasted: 'Klistrade in markeringen.',
   'copy-counts':
     'Objekt: {elements}. Hot: {threats}. Uteslutna externa länkar: {excluded}.',
   'copy-source-fields':
@@ -135,8 +135,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     other:
       'Kopierade hot: {copied}, varav {removed} togs bort med sina sista objekt.',
   },
-  'cut-remains':
-    'Alla andra hot finns kvar i registret. Andra anslutna flöden behåller fria ändar.',
+  'cut-remains': 'Andra anslutna flöden behåller fria ändar.',
   'cut-abandoned': 'Markeringen ändrades under kopieringen. Inget klipptes ut.',
   'threats-attached': 'Kopplade hot, inte kopierade: {attached}.',
   'records-counts': 'Länkade poster: {linked}. Klonade poster: {cloned}.',

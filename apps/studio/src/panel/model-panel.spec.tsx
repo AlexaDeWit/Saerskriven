@@ -1,5 +1,5 @@
 import type { Model, Threat } from '@saerskriven/model';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   currentAnnouncement,
@@ -270,7 +270,9 @@ describe(
       expect(currentAnnouncement().message).toBe(
         t('canvas.threat-detach-removed', { number: 1 }),
       );
-      expect(document.activeElement).toBe(summary(/A reader sees/u));
+      await waitFor(() => {
+        expect(document.activeElement).toBe(summary(/A reader sees/u));
+      });
       expect(undoable()).toBe(3);
       undo();
       expect(present()).toBe(kept);

@@ -33,6 +33,7 @@ export function AttachmentGroup({
   const diagrams = useModelStore((state) => state.present.diagrams);
   const { t } = useTranslator();
   const group = useRef<HTMLFieldSetElement>(null);
+  const modelLink = useRef<HTMLDivElement>(null);
   const detached = useRef<number | undefined>(undefined);
   const attachments = threatAttachments(diagrams, threat, t);
   const attachable = attachableElements(diagrams, threat, t);
@@ -49,7 +50,7 @@ export function AttachmentGroup({
     (
       rows?.[index] ??
       rows?.[index - 1] ??
-      group.current?.querySelector<HTMLElement>('[role="combobox"]')
+      modelLink.current?.querySelector<HTMLElement>('[role="combobox"]')
     )?.focus();
   });
 
@@ -57,30 +58,34 @@ export function AttachmentGroup({
     <fieldset className={styles.records} ref={group}>
       <legend>{t('panel.attached-elements')}</legend>
       <div className={styles.recordBody}>
-        <RequiredBooleanProperty
-          label={t('fields.applies-to-whole-model')}
-          onCommit={onModelLink}
-          value={threat.appliesToModel}
-        />
-        <ul className={styles.attachments}>
-          {attachments.map(({ id, label, detach }, index) => (
-            <li className={styles.attachment} key={id}>
-              <span className={styles.attachmentName}>{label}</span>
-              <button
-                aria-label={detach}
-                className={styles.detach}
-                data-detach-element
-                onClick={() => {
-                  detached.current = index;
-                  onDetach(id);
-                }}
-                type="button"
-              >
-                <Cross2Icon aria-hidden="true" />
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div ref={modelLink}>
+          <RequiredBooleanProperty
+            label={t('fields.applies-to-whole-model')}
+            onCommit={onModelLink}
+            value={threat.appliesToModel}
+          />
+        </div>
+        {attachments.length > 0 && (
+          <ul className={styles.attachments}>
+            {attachments.map(({ id, label, detach }, index) => (
+              <li className={styles.attachment} key={id}>
+                <span className={styles.attachmentName}>{label}</span>
+                <button
+                  aria-label={detach}
+                  className={styles.detach}
+                  data-detach-element
+                  onClick={() => {
+                    detached.current = index;
+                    onDetach(id);
+                  }}
+                  type="button"
+                >
+                  <Cross2Icon aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         {attachable.length > 0 && (
           <div className={styles.addLink}>
             <PickExisting

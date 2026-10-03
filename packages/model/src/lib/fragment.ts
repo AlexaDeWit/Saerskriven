@@ -99,9 +99,7 @@ export function remapFragment(
   const heldMitigation = identicalIn(target.mitigations, sameMitigation);
   const heldAssumption = identicalIn(target.assumptions, sameAssumption);
   const held = new Set<string>(
-    fragment.threats
-      .filter(identicalIn(target.threats, sameModelThreat))
-      .map(({ id }) => id),
+    fragmentHeldThreats(target, fragment).map(({ id }) => id),
   );
   const renamedThreat = (id: string) => (held.has(id) ? id : renamed(id));
   return checkedFragment({
@@ -202,16 +200,12 @@ export function fragmentRecordCounts(
 }
 
 /**
- * How many of a remapped fragment's threats {@link insertFragment} attaches
- * to an identical threat `model` holds in place of pasting them, and how
- * many it pastes.
+ * The threats of a fragment that `model` holds: each is identical to a
+ * threat of `model` that applies to the model, so {@link insertFragment}
+ * attaches the pasted elements to that threat in place of pasting this one.
  */
-export function fragmentThreatCounts(
-  model: Model,
-  fragment: Model,
-): { readonly attached: number; readonly pasted: number } {
-  const { threats } = pastedRegister(model, fragment);
-  return { attached: threats.linked.length, pasted: threats.cloned.length };
+export function fragmentHeldThreats(model: Model, fragment: Model): Threat[] {
+  return fragment.threats.filter(heldModelThreat(model));
 }
 
 function numberedThreats(
@@ -372,10 +366,7 @@ function pastedRegister(
   readonly mitigations: Split<Mitigation>;
   readonly assumptions: Split<Assumption>;
 } {
-  const threats = split(
-    fragment.threats,
-    identicalIn(model.threats, sameModelThreat),
-  );
+  const threats = split(fragment.threats, heldModelThreat(model));
   const pasted = new Set(threats.cloned.map(({ id }) => id));
   return {
     threats,
@@ -409,6 +400,10 @@ function identicalIn<Held extends { readonly id: string }>(
     const record = byId.get(copy.id);
     return record !== undefined && same(record, copy);
   };
+}
+
+function heldModelThreat(model: Model): (copy: Threat) => boolean {
+  return identicalIn(model.threats, sameModelThreat);
 }
 
 function sameMitigation(held: Mitigation, copy: Mitigation): boolean {

@@ -111,7 +111,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'threat-detached-from-trust-boundary-named':
     'Menace {number} détachée de la frontière de confiance « {name} ».',
   'threat-stays-on-elements': 'Elle reste sur ses autres éléments.',
-  'threat-stays-on-model': 'Elle s’applique toujours au modèle entier.',
+  'threat-stays-on-model': 'Elle s’applique encore au modèle entier.',
   'threat-detach-removed':
     'Menace {number} supprimée. Elle n’était rattachée à rien d’autre. Annuler la rétablit.',
   'record-named': '{kind} « {label} »',
@@ -141,8 +141,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   copied: 'Sélection copiée.',
   cut: 'Sélection coupée.',
   duplicated: 'Sélection dupliquée.',
-  pasted:
-    'Sélection collée avec de nouveaux identifiants d’éléments et de menaces.',
+  pasted: 'Sélection collée.',
   'copy-counts':
     'Éléments : {elements}. Menaces : {threats}. Liens externes exclus : {excluded}.',
   'copy-source-fields':
@@ -153,8 +152,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
     other:
       'Menaces copiées : {copied}, dont {removed} supprimées avec leur dernier élément.',
   },
-  'cut-remains':
-    'Toute autre menace reste au registre. Les autres flux rattachés gardent des extrémités libres.',
+  'cut-remains': 'Les autres flux rattachés gardent des extrémités libres.',
   'cut-abandoned':
     'La sélection a changé pendant la copie. Rien n’a été coupé.',
   'threats-attached': 'Menaces rattachées, non copiées : {attached}.',

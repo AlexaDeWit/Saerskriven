@@ -600,6 +600,61 @@ describe('duplicateSelected', () => {
     expect(modelStore.getState().present).toBe(canvasModel);
   });
 
+  it('counts no excluded link for a threat the duplicate is attached to, or for its records, where a copy of the same selection counts each', async () => {
+    const { t } = activeTranslator();
+    recordingClipboard();
+    const model = parsedFixture({
+      ...sampleModel,
+      threats: [
+        {
+          ...sampleThreat,
+          elements: [actorElement, storeElement],
+          appliesToModel: true,
+        },
+        {
+          ...sampleThreat,
+          id: 'external-threat',
+          number: 2,
+          elements: [storeElement],
+        },
+      ],
+      lastIssuedThreatNumber: 2,
+      mitigations: [
+        {
+          id: 'shared-mitigation',
+          title: 'Protection',
+          prose: 'Shared',
+          status: 'proposed',
+          threats: [firstThreat, 'external-threat'],
+        },
+      ],
+    });
+    modelStore.setState(
+      { ...initialState(model), selection: [actorElement] },
+      true,
+    );
+
+    expect(await announcedBy(() => copySelected())).toContain(
+      t('canvas.copy-counts', { elements: 1, threats: 1, excluded: 3 }),
+    );
+
+    duplicateSelected();
+
+    const duplicated = currentAnnouncement().message;
+    expect(duplicated).toContain(
+      t('canvas.copy-counts', { elements: 1, threats: 1, excluded: 0 }),
+    );
+    expect(duplicated).toContain(t('canvas.threats-attached', { attached: 1 }));
+    expect(modelStore.getState().present.threats[0]).toMatchObject({
+      appliesToModel: true,
+      elements: [
+        actorElement,
+        storeElement,
+        modelStore.getState().present.diagrams[0].elements.at(-1)?.id,
+      ],
+    });
+  });
+
   it('duplicates a threat linked to the records its original links', () => {
     openCanvas([actorElement], recordedModelWide);
     duplicateSelected();

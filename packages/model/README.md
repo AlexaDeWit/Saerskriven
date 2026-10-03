@@ -109,8 +109,9 @@ link, and a threat as a new threat with no model link, a threat identical to a
 held one that does not apply to the model included. So cutting the last
 element of a threat that applies to the model and pasting it leaves one threat
 under its number, and copying one of its elements attaches the copy to the
-same threat. `fragmentRecordCounts` and `fragmentThreatCounts` say how many of
-a fragment's records and threats an insert links and how many it copies.
+same threat. `fragmentRecordCounts` says how many of a fragment's records an
+insert links and how many it copies, and `fragmentHeldThreats` names the
+threats it attaches to in place of copying.
 
 ## Records, culling and flags
 

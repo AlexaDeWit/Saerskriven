@@ -1,5 +1,6 @@
 import { Either } from 'effect';
 import {
+  assumptionOf,
   boxAt,
   diagramId,
   elementId,
@@ -19,8 +20,8 @@ import {
   validModelFixture,
 } from './model.fixtures.js';
 import {
+  fragmentHeldThreats,
   fragmentRecordCounts,
-  fragmentThreatCounts,
   insertFragment,
   remapFragment,
   selectionFragment,
@@ -577,6 +578,20 @@ describe('pasting records', () => {
   });
 });
 
+function holding(methodologyName: string): Model {
+  const custom = threatOf({
+    number: 1,
+    elements: ['el-a'],
+    appliesToModel: true,
+    category: {
+      methodology: 'custom',
+      methodologyName,
+      category: 'process gap',
+    },
+  });
+  return modelWith({ elements: [boxAt('el-a', 0, 0)], threats: [custom] });
+}
+
 describe('pasting a threat that applies to the model', () => {
   const drawn = diagramId('d');
   const copied = elementId('el-a');
@@ -590,16 +605,21 @@ describe('pasting a threat that applies to the model', () => {
     id: 'mitigation-shared',
     threats: [modelWide.id, ordinary.id],
   });
+  const rested = assumptionOf({
+    id: 'assumption-rested',
+    threats: [modelWide.id],
+  });
   const source = modelWith({
     elements: [boxAt('el-a', 0, 0), boxAt('el-b', 200, 0)],
     threats: [modelWide, ordinary],
     mitigations: [shared],
+    assumptions: [rested],
   });
   const cut = Either.getOrThrow(removeElement(source, copied));
 
-  function pastedInto(target: Model) {
+  function pastedInto(target: Model, from = source) {
     const fragment = Either.getOrThrow(
-      selectionFragment(source, drawn, [copied]),
+      selectionFragment(from, drawn, [copied]),
     );
     const remapped = Either.getOrThrow(
       remapFragment(fragment, 'pasted', { x: 20, y: 20 }, target),
@@ -607,7 +627,7 @@ describe('pasting a threat that applies to the model', () => {
     return {
       inserted: Either.getOrThrow(insertFragment(target, drawn, remapped)),
       records: fragmentRecordCounts(target, remapped),
-      threats: fragmentThreatCounts(target, remapped),
+      held: fragmentHeldThreats(target, remapped).map(({ id }) => id),
     };
   }
 
@@ -617,14 +637,14 @@ describe('pasting a threat that applies to the model', () => {
   it('attaches the pasted element to the threat a cut left in the model, under its number, and copies none', () => {
     expect(cut.threats).toEqual([{ ...modelWide, elements: [] }]);
 
-    const { inserted, threats } = pastedInto(cut);
+    const { inserted, held } = pastedInto(cut);
 
     expect(inserted.threats).toEqual([
       { ...modelWide, elements: ['pasted:el-a'] },
       { ...ordinary, id: 'pasted:threat-2', elements: ['pasted:el-a'] },
     ]);
     expect(inserted.lastIssuedThreatNumber).toBe(2);
-    expect(threats).toEqual({ attached: 1, pasted: 1 });
+    expect(held).toEqual([modelWide.id]);
   });
 
   it('attaches a copy of the element to the same threat while the original stays on it', () => {
@@ -648,12 +668,14 @@ describe('pasting a threat that applies to the model', () => {
     expect(inserted.mitigations).toEqual([
       { ...shared, threats: [...shared.threats, 'pasted:threat-2'] },
     ]);
+    expect(inserted.assumptions).toEqual([rested]);
     expect(records).toEqual({ linked: 1, cloned: 0 });
 
     const relinked = modelWith({
       elements: [boxAt('el-a', 0, 0)],
       threats: [modelWide],
       mitigations: [{ ...shared, title: 'Edited', threats: [modelWide.id] }],
+      assumptions: [{ ...rested, prose: 'Edited.' }],
     });
     const onto = pastedInto(relinked);
 
@@ -665,6 +687,7 @@ describe('pasting a threat that applies to the model', () => {
         threats: ['pasted:threat-2'],
       },
     ]);
+    expect(onto.inserted.assumptions).toEqual(relinked.assumptions);
     expect(onto.records).toEqual({ linked: 0, cloned: 1 });
   });
 
@@ -679,7 +702,7 @@ describe('pasting a threat that applies to the model', () => {
     'copies the threat as a new one where the %s of the held threat differs',
     (_, change) => {
       const target = edited(change);
-      const { inserted, threats } = pastedInto(target);
+      const { inserted, held } = pastedInto(target);
 
       expect(inserted.threats.map(({ id, number }) => [id, number])).toEqual([
         [modelWide.id, 1],
@@ -689,9 +712,23 @@ describe('pasting a threat that applies to the model', () => {
       ]);
       expect(inserted.threats[0]).toEqual(target.threats[0]);
       expect(inserted.threats[2].appliesToModel).toBe(false);
-      expect(threats).toEqual({ attached: 0, pasted: 2 });
+      expect(held).toEqual([]);
     },
   );
+
+  it('copies a threat under a custom category where the held threat names another methodology, and attaches to one that names the same', () => {
+    const from = holding('House');
+
+    expect(pastedInto(from, from).held).toEqual(['threat-1']);
+
+    const { inserted, held } = pastedInto(holding('Other house'), from);
+
+    expect(held).toEqual([]);
+    expect(inserted.threats.map(({ id }) => id)).toEqual([
+      'threat-1',
+      'pasted:threat-1',
+    ]);
+  });
 
   it('copies the threat where the model holds its id under another number', () => {
     const renumbered = modelWith({

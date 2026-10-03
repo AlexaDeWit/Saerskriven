@@ -3,6 +3,7 @@ import { registeredChords } from './chords.fixtures.js';
 import { onScreen, screenBoxOf } from './canvas.fixtures.js';
 import {
   canvasSurface,
+  chooseByKeyboard,
   chooseInPanel,
   editAnnouncement,
   expandThreat,
@@ -230,10 +231,13 @@ test('a threat applied to the whole model stays when its last element is detache
   await expect(wholeModel(page)).toBeFocused();
   await expect(editAnnouncement(page)).toContainText('7');
 
-  await chooseInPanel(page, wholeModelField, 'No', modelPanel(page));
+  await chooseByKeyboard(page, 'ArrowDown');
   await expect(callback).toHaveCount(0);
   await expect(threatsTab(page)).toHaveText(/9/u);
   await expect(editAnnouncement(page)).toContainText('7');
+  const next = modelThreat(page, /Unpublished listings readable/u);
+  await expect(next).toBeFocused();
+  await expect(next).toHaveAttribute('aria-expanded', 'false');
 
   await runFromMenu(page, 'Undo');
   await expect(callback).toHaveAccessibleName(/Applies to the whole model$/u);
