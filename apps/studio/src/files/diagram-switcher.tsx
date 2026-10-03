@@ -4,7 +4,7 @@ import { announceRefusal } from '../canvas/announcements.js';
 import {
   endRenamingDiagram,
   renameActiveDiagram,
-  showDiagram,
+  switchDiagram,
   useDiagramRenaming,
 } from '../canvas/diagrams.js';
 import { activeDiagram } from '../store/selectors.js';
@@ -21,6 +21,8 @@ import { RadioChoices } from './radio-choices.js';
  * to with New diagram and Rename diagram. The title field closes when the
  * diagram on screen changes under it. Enter and Escape return focus to the
  * button, and a blur commits and leaves focus where it went.
+ * A choice draws no status line: focus returns to the button, which names
+ * the diagram.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);
@@ -87,7 +89,7 @@ export function DiagramSwitcher() {
                 label: diagram.title,
               }))}
               label={t('menu.diagram')}
-              onChoose={showDiagram}
+              onChoose={switchDiagram}
               value={active.id}
             />
             <DropdownMenu.Separator className={styles.rule} />
