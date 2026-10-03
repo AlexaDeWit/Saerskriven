@@ -257,16 +257,11 @@ describe('a threat edit and the model link', () => {
   });
 
   it('unlink_threat_from_model culls a threat that names no element, with the records left on no threat', () => {
-    const [onModelAlone] = applying(modelWide, {
+    const loose = applying(modelWide, {
       op: 'replace_threat',
       threat: { ...held, elements: [] },
-    }).model.threats.filter(({ id }) => id === spoofShopper);
-    const loose = {
-      ...modelWide,
-      threats: modelWide.threats.map((threat) =>
-        threat.id === spoofShopper ? onModelAlone : threat,
-      ),
-    };
+    }).model;
+    const onModelAlone = heldIn(loose);
 
     const applied = applying(loose, {
       op: 'unlink_threat_from_model',
