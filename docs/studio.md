@@ -208,8 +208,11 @@ expects.
 
 While one flow is selected with the Select tool and no name or note is open for
 editing, the **Reconnect flow** card pinned at the top left, under the chrome
-card, holds **Change flow source**, **Change flow target**, **Toggle
-bidirectional flow** and **Reverse flow**. The first two choose another actor,
+card, holds one row of icons: **Change flow source** (a dot at the start of an
+arrow), **Change flow target** (an arrow ending on a dot), **Toggle
+bidirectional flow** (a two-headed arrow, drawn pressed while the flow runs
+both ways) and **Reverse flow** (two opposed arrows). A tooltip names each
+command and its shortcut, as in the toolbox. The first two choose another actor,
 process or store for one end, with a side to pin it to or Automatic, or Free
 point, first in the list, which frees the end at the X and Y typed, starting
 from where the end is drawn. Toggle bidirectional flow draws an arrowhead at both ends or one again,
@@ -221,7 +224,8 @@ route, its threats and whether it runs both ways.
 
 While one trust boundary is selected with the Select tool and no name is open
 for editing, the **Trust boundary** card, in the Reconnect flow card's place,
-holds **Switch boundary shape**. It turns a box into the arch the Trust boundary
+holds **Switch boundary shape**, an icon of a box and an arch with its name and
+shortcut in a tooltip. It turns a box into the arch the Trust boundary
 curve tool draws in that box, and a curve into the box around its points, at
 least ten units each way. A box at least ten units each way, turned into a
 curve and back, is the same box.
