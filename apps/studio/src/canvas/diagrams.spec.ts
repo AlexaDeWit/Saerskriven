@@ -11,7 +11,11 @@ import {
   twoDiagramModel,
 } from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
-import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import {
+  announceUndrawn,
+  currentAnnouncement,
+  resetAnnouncements,
+} from './announcements.js';
 import {
   createDiagram,
   endRenamingDiagram,
@@ -86,6 +90,29 @@ describe('stepDiagram', () => {
   it('says which diagram it showed in the status line', () => {
     stepDiagram('next');
     expect(currentAnnouncement().message).toContain('Second');
+    expect(currentAnnouncement().drawn).toBe(true);
+  });
+
+  it('says it without drawing it through announceUndrawn, in place of a drawn line', () => {
+    stepDiagram('next');
+    stepDiagram('next', announceUndrawn);
+
+    expect(shown()).toBe(mainDiagram);
+    expect(currentAnnouncement().message).toContain('Main');
+    expect(currentAnnouncement().drawn).toBe(false);
+  });
+
+  it('says a step between two diagrams of one title as a new announcement in the same words', () => {
+    stepDiagram('next');
+    retitleActiveDiagram('Main');
+    stepDiagram('next', announceUndrawn);
+    const first = currentAnnouncement();
+
+    stepDiagram('next', announceUndrawn);
+
+    expect(shown()).toBe(secondDiagram);
+    expect(currentAnnouncement().message).toBe(first.message);
+    expect(currentAnnouncement().sequence).toBe(first.sequence + 1);
   });
 
   it('is what the two registered commands run', () => {

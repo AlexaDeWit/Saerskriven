@@ -20,7 +20,9 @@ that has focus does not already show it, such as a deletion, a refusal, a
 paste or an Undo. It ends at the next action that changes the canvas or the
 panel. A diagram chosen in the switcher, or renamed there with Enter, draws no
 line, since focus returns to the switcher, which names it. PageDown and PageUp
-do draw it, and so does a rename ended by leaving the field.
+pressed with focus on the switcher draw none either, and a screen reader is
+still told the diagram. Pressed anywhere else they draw the line, and so does
+a rename ended by leaving the field.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
 persists across reloads. **Language** beside it selects English (Canada),

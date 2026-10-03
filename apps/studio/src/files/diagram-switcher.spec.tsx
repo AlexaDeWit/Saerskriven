@@ -19,6 +19,7 @@ import { resetDiagramRenaming, stepDiagram } from '../canvas/diagrams.js';
 import { activeDiagramId } from '../store/selectors.js';
 import { initialState, untitledDiagram } from '../store/state.js';
 import {
+  mainDiagram,
   sampleModel,
   secondDiagram,
   twoDiagramModel,
@@ -31,9 +32,13 @@ const mounted = (): void => {
   render(
     <CommandSurfaceProvider surface={unmountedSurface}>
       <DiagramSwitcher />
+      <button type="button">Elsewhere</button>
     </CommandSurfaceProvider>,
   );
 };
+
+const elsewhere = (): HTMLElement =>
+  screen.getByRole('button', { name: 'Elsewhere' });
 
 const switcher = (name: string | RegExp): HTMLElement =>
   screen.getByRole('button', { name });
@@ -119,6 +124,46 @@ describe('the diagram switcher', () => {
     expect(modelStore.getState().present.diagrams[0].title).toBe('Core');
     expect(currentAnnouncement().message).toBe('');
     expect(document.activeElement).toBe(switcher('Diagram: Core'));
+  });
+
+  it('says a step made with focus on its button without drawing it, in place of a drawn line', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(twoDiagramModel), true);
+    mounted();
+    act(() => {
+      stepDiagram('next');
+      stepDiagram('previous');
+      switcher('Diagram: Main').focus();
+    });
+    expect(currentAnnouncement().drawn).toBe(true);
+
+    await user.keyboard('{PageDown}');
+
+    expect(activeDiagramId(modelStore.getState())).toBe(secondDiagram);
+    expect(currentAnnouncement().message).toContain('Second');
+    expect(currentAnnouncement().drawn).toBe(false);
+    expect(document.activeElement).toBe(switcher('Diagram: Second'));
+
+    await user.keyboard('{PageUp}');
+
+    expect(activeDiagramId(modelStore.getState())).toBe(mainDiagram);
+    expect(currentAnnouncement().message).toContain('Main');
+    expect(currentAnnouncement().drawn).toBe(false);
+  });
+
+  it('leaves a step made with focus elsewhere to the drawn line', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(twoDiagramModel), true);
+    mounted();
+    act(() => {
+      elsewhere().focus();
+    });
+
+    await user.keyboard('{PageDown}');
+
+    expect(activeDiagramId(modelStore.getState())).toBe(secondDiagram);
+    expect(currentAnnouncement().message).toContain('Second');
+    expect(currentAnnouncement().drawn).toBe(true);
   });
 
   it('says a title committed by leaving the field in the status line', async () => {
@@ -227,42 +272,29 @@ describe('the diagram switcher', () => {
   it('leaves focus where a click put it when the field closes by blur', async () => {
     const user = userEvent.setup();
     modelStore.setState(initialState(sampleModel), true);
-    render(
-      <CommandSurfaceProvider surface={unmountedSurface}>
-        <DiagramSwitcher />
-        <button type="button">Elsewhere</button>
-      </CommandSurfaceProvider>,
-    );
+    mounted();
 
     await openTitle(user);
     await user.keyboard('Clicked away');
-    await user.click(screen.getByRole('button', { name: 'Elsewhere' }));
+    await user.click(elsewhere());
 
     expect(modelStore.getState().present.diagrams[0].title).toBe(
       'Clicked away',
     );
-    expect(document.activeElement).toBe(
-      screen.getByRole('button', { name: 'Elsewhere' }),
-    );
+    expect(document.activeElement).toBe(elsewhere());
   });
 
   it('leaves focus on a control that took it before the closed switcher returned focus to its button', async () => {
     const user = userEvent.setup();
     modelStore.setState(initialState(sampleModel), true);
-    render(
-      <CommandSurfaceProvider surface={unmountedSurface}>
-        <DiagramSwitcher />
-        <button type="button">Elsewhere</button>
-      </CommandSurfaceProvider>,
-    );
-    const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+    mounted();
     await user.click(switcher('Diagram: Main'));
     const menu = await screen.findByRole('menu');
 
     fireEvent.keyDown(menu, { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull();
     act(() => {
-      elsewhere.focus();
+      elsewhere().focus();
     });
     await act(async () => {
       await new Promise((settled) => {
@@ -270,7 +302,7 @@ describe('the diagram switcher', () => {
       });
     });
 
-    expect(document.activeElement).toBe(elsewhere);
+    expect(document.activeElement).toBe(elsewhere());
   });
 
   it('hands focus back to its button when Escape closes it', async () => {

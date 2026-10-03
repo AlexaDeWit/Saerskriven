@@ -1,13 +1,17 @@
 import { DropdownMenu } from 'radix-ui';
 import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
-import { announceRefusal } from '../canvas/announcements.js';
+import { announceRefusal, announceUndrawn } from '../canvas/announcements.js';
 import {
   endRenamingDiagram,
   renameActiveDiagram,
   retitleActiveDiagram,
+  stepDiagram,
   switchDiagram,
   useDiagramRenaming,
 } from '../canvas/diagrams.js';
+import { commandForKey } from '../commands/binding.js';
+import type { CommandId } from '../commands/registry.js';
+import { hostPlatform } from '../commands/shortcuts.js';
 import { activeDiagram } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { useTranslator } from '../messages/locale.js';
@@ -24,6 +28,8 @@ import { RadioChoices } from './radio-choices.js';
  * button, and a blur commits and leaves focus where it went. A choice and a
  * title committed with Enter draw no status line, since the button that
  * takes focus names the diagram, and a title committed by a blur draws one.
+ * The button takes the two diagram step chords itself, so a step made with
+ * focus on it is said without being drawn.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);
@@ -72,6 +78,7 @@ export function DiagramSwitcher() {
         })}
         className={styles.switcher}
         data-testid="diagram-switcher"
+        onKeyDown={stepUndrawn}
         ref={trigger}
       >
         {active?.title ?? t('menu.no-diagram')}
@@ -101,6 +108,20 @@ export function DiagramSwitcher() {
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
+}
+
+const steps: Partial<Record<CommandId, 'next' | 'previous'>> = {
+  'next-diagram': 'next',
+  'previous-diagram': 'previous',
+};
+
+function stepUndrawn(event: KeyboardEvent<HTMLButtonElement>): void {
+  const command = commandForKey(event.nativeEvent, hostPlatform);
+  const direction = command === undefined ? undefined : steps[command.id];
+  if (direction !== undefined) {
+    event.preventDefault();
+    stepDiagram(direction, announceUndrawn);
+  }
 }
 
 type TitleFieldProps = {

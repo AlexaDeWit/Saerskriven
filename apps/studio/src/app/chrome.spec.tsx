@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useMemo } from 'react';
 import {
   CommandSurfaceProvider,
@@ -10,6 +10,7 @@ import { resetTools } from '../canvas/tools.js';
 import { useFileSession } from '../files/file-commands.js';
 import { specBridge } from '../files/files.fixtures.js';
 import { initialState, placeholderModel } from '../store/state.js';
+import { twoDiagramModel } from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
 import { StudioChrome } from './chrome.js';
 
@@ -89,6 +90,21 @@ describe('StudioChrome', () => {
     const region = screen.getByRole('status');
     expect(region.textContent).toContain('completed');
     expect(held.contains(region)).toBe(false);
+  });
+
+  it('says a diagram step made on the switcher in the one status region, under the card', () => {
+    modelStore.setState(initialState(twoDiagramModel), true);
+    render(<Chrome />);
+    const switcher = screen.getByTestId('diagram-switcher');
+
+    act(() => {
+      switcher.focus();
+    });
+    fireEvent.keyDown(switcher, { key: 'PageDown' });
+
+    const region = screen.getByRole('status');
+    expect(region.textContent).toContain('Second');
+    expect(card().contains(region)).toBe(false);
   });
 
   it('measures the card and the notices over the announcement back onto the document root', () => {

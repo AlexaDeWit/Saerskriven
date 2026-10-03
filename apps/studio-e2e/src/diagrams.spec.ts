@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { registeredChords } from './chords.fixtures.js';
 import {
   canvasContainer,
@@ -10,6 +10,7 @@ import {
   diagramSwitcher,
   diagramTitleField,
   editAnnouncement,
+  menuButton,
   menuItem,
   nodeNamed,
   openFallback,
@@ -19,6 +20,7 @@ import {
   openTwoDiagrams,
   placeByClick,
   savedModel,
+  tabTo,
   twoDiagrams,
   withoutPickers,
 } from './studio.fixtures.js';
@@ -28,6 +30,9 @@ const firstTitle = first.title;
 const secondTitle = second.title;
 const onFirst = first.drawn;
 const onSecond = second.drawn;
+
+const drawnLineHeight = async (page: Page): Promise<number | undefined> =>
+  (await editAnnouncement(page).boundingBox())?.height;
 
 test('the switcher names the one diagram of the placeholder, and the menu holds no diagram group', async ({
   page,
@@ -113,6 +118,34 @@ test('the next and previous chords step through the diagrams and wrap', async ({
 
   await page.keyboard.press(registeredChords['previous-diagram'][0]);
   await expect(switcher).toHaveAccessibleName(`Diagram: ${secondTitle}`);
+});
+
+test('a step with focus on the switcher says the diagram in the status region and draws no line', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  const switcher = diagramSwitcher(page);
+  const status = page.getByRole('status');
+
+  await page.keyboard.press(registeredChords['next-diagram'][0]);
+  await expect(status).toContainText(secondTitle);
+  await expect.poll(() => drawnLineHeight(page)).toBeGreaterThan(0);
+
+  await tabTo(page, switcher, menuButton(page));
+  await page.keyboard.press(registeredChords['next-diagram'][0]);
+
+  await expect(switcher).toHaveAccessibleName(`Diagram: ${firstTitle}`);
+  await expect(switcher).toBeFocused();
+  await expect(nodeNamed(page, onFirst)).toHaveCount(1);
+  await expect(status).toContainText(firstTitle);
+  await expect.poll(() => drawnLineHeight(page)).toBe(0);
+
+  await page.keyboard.press(registeredChords['previous-diagram'][0]);
+
+  await expect(switcher).toHaveAccessibleName(`Diagram: ${secondTitle}`);
+  await expect(switcher).toBeFocused();
+  await expect(status).toContainText(secondTitle);
+  await expect.poll(() => drawnLineHeight(page)).toBe(0);
 });
 
 test('switching clears the selection and adds no history, so undo has nothing to do', async ({
