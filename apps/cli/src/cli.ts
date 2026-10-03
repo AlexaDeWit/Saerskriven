@@ -24,6 +24,7 @@ import {
   type ExitCode,
 } from './outcome.js';
 import { render, renderOptionsSchema, type RenderOptions } from './render.js';
+import { share } from './share.js';
 import { validate } from './validate.js';
 import { cliVersion } from './version.js';
 
@@ -39,6 +40,7 @@ type Request =
       readonly file: string;
       readonly options: ConvertOptions;
     }
+  | { readonly kind: 'share'; readonly file: string }
   | { readonly kind: 'mcp'; readonly options: McpOptions }
   | { readonly kind: 'mcp-install'; readonly options: InstallOptions }
   | { readonly kind: 'usage'; readonly text: string };
@@ -145,6 +147,7 @@ function programFor(state: ParseState): Command {
   validateCommand(program, state);
   renderCommand(program, state);
   convertCommand(program, state);
+  shareCommand(program, state);
   mcpCommand(program, state);
   return program;
 }
@@ -214,6 +217,18 @@ function convertCommand(program: Command, state: ParseState): void {
     });
 }
 
+function shareCommand(program: Command, state: ParseState): void {
+  program
+    .command('share')
+    .description(
+      'print a link that opens the model in the hosted studio, readable by anyone who holds it',
+    )
+    .argument('<file>', 'the model file to read')
+    .action((file: string) => {
+      state.request = { kind: 'share', file };
+    });
+}
+
 function mcpCommand(program: Command, state: ParseState): void {
   const mcp = program
     .command('mcp')
@@ -275,6 +290,8 @@ function outcomeOf(request: Request): Promise<CommandOutcome> {
       return render(request.file, request.options);
     case 'convert':
       return Promise.resolve(convert(request.file, request.options));
+    case 'share':
+      return share(request.file);
     case 'mcp':
       return serveMcp(request.options);
     case 'mcp-install':

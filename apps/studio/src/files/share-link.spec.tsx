@@ -1,4 +1,5 @@
 import { ReadFailure, saerskrivenYamlCodec } from '@saerskriven/formats';
+import { brotliUnbuilt, brotliWasm } from '@saerskriven/formats/fixtures';
 import {
   ShareLinkFailure,
   shareLinkLimit,
@@ -28,8 +29,6 @@ import { writeClipboard } from '../system-clipboard.js';
 import { useFileSession } from './file-commands.js';
 import {
   anotherTab,
-  brotliModule,
-  brotliUnbuilt,
   deferred,
   edit,
   fragmentOf,
@@ -142,7 +141,7 @@ describe.skipIf(brotliUnbuilt)('a shared link arriving', () => {
       module: () => {
         const read = reads[calls];
         calls += 1;
-        return read?.promise ?? Promise.resolve(Either.right(brotliModule()));
+        return read?.promise ?? Promise.resolve(Either.right(brotliWasm()));
       },
       copy: writeClipboard,
     });
@@ -154,13 +153,13 @@ describe.skipIf(brotliUnbuilt)('a shared link arriving', () => {
 
     paste(earlier);
     paste(later);
-    reads[1]?.resolve(Either.right(brotliModule()));
+    reads[1]?.resolve(Either.right(brotliWasm()));
     await waitFor(() => {
       expect(held().present.metadata.title).toBe('Later link');
     }, settled);
     const landed = held().present;
     await act(async () => {
-      reads[0]?.resolve(Either.right(brotliModule()));
+      reads[0]?.resolve(Either.right(brotliWasm()));
       await reads[0]?.promise;
       await new Promise((resolve) => setTimeout(resolve, 200));
     });
@@ -403,7 +402,7 @@ describe.skipIf(brotliUnbuilt)('Share', () => {
     });
 
     expect(copy).toHaveBeenCalledTimes(1);
-    module.resolve(Either.right(brotliModule()));
+    module.resolve(Either.right(brotliWasm()));
     await waitFor(() => {
       expect(result.current.shareNotice?._tag).toBe('Shared');
     }, settled);

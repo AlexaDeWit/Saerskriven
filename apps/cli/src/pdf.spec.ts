@@ -1,9 +1,10 @@
 import { deepestProse, renderTypst } from '@saerskriven/render';
 import { Either } from 'effect';
-import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  builtAssets,
   fixtureFile,
   proseThreatYaml,
   scratchDirectory,
@@ -11,8 +12,6 @@ import {
 import { readModel } from './input.js';
 import { compilePdf } from './pdf.js';
 import { compileTimeout, outlineTitles, pageCount } from './pdf.fixtures.js';
-
-const assets = join(repositoryRoot, 'apps/cli/dist/assets');
 
 const hostileFile = testDataPath('adversarial/typst-injection.yaml');
 
@@ -37,7 +36,7 @@ const document = (body: string): string =>
     body,
   ].join('\n');
 
-const compiled = (source: string) => compilePdf(source, assets);
+const compiled = (source: string) => compilePdf(source, builtAssets);
 
 const refusal = (outcome: Either.Either<Uint8Array, string>): string =>
   Either.match(outcome, {
@@ -89,7 +88,7 @@ describe('Typst source compiled to a PDF', () => {
 describe('an install with the module and no font face', () => {
   const bareDirectory = scratchDirectory('no-font');
   copyFileSync(
-    join(assets, 'typst_ts_web_compiler_bg.wasm'),
+    join(builtAssets, 'typst_ts_web_compiler_bg.wasm'),
     join(bareDirectory, 'typst_ts_web_compiler_bg.wasm'),
   );
 
@@ -104,7 +103,7 @@ describe('an install with the module and no font face', () => {
     'compiles as before once one face is restored',
     async () => {
       copyFileSync(
-        join(assets, 'LiberationSans-Regular.ttf'),
+        join(builtAssets, 'LiberationSans-Regular.ttf'),
         join(bareDirectory, 'LiberationSans-Regular.ttf'),
       );
       const pdf = Either.getOrThrow(
