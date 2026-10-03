@@ -113,10 +113,12 @@ no module.
 
 The `brotli-wasm` project builds a WebAssembly module out of the `brotli` crate
 ([`dropbox/rust-brotli`](https://github.com/dropbox/rust-brotli)), which share
-links compress with (#604). It holds an encoder, at quality 11 with a 24-bit
-window and no custom dictionary so any standard brotli decoder reads its
-output, and a decoder that refuses a stream at the first byte past a maximum
-the caller names. The crate and the three under it are pinned by
+links compress with (#604). It holds an encoder, at quality 11 with no custom
+dictionary so any standard brotli decoder reads its output, and a decoder that
+refuses a stream at the first byte past a maximum the caller names. The
+encoder's window is the smallest that covers the input, capped at 24 bits,
+because its memory follows the window and a larger one shortens no link. The
+crate and the three under it are pinned by
 [`nix/brotli-wasm/Cargo.lock`](../nix/brotli-wasm/Cargo.lock) and its checksums
 and compiled with no network, on the rasterizer's terms
 [above](#the-svg-rasterizer): one nx target runs `nix build .#brotli-wasm` to a
@@ -131,8 +133,9 @@ pnpm nx test @saerskriven/formats      # builds it on the way
 The flake names the path in `SAERSKRIVEN_BROTLI_WASM`.
 `@saerskriven/formats/brotli` takes the module as bytes from its caller, and
 `brotliWasmAsset` on the `@saerskriven/formats/build-assets` subpath locates it
-through the variable. Its spec skips where the variable is unset, which is what
-running outside the flake shell looks like.
+through the variable. Its spec skips where the variable is unset or empty,
+which is what running outside the flake shell looks like, and fails inside the
+shell when the module is not at the path the variable names.
 
 The studio's build resolves `virtual:saerskriven-brotli-wasm?url` to the module
 as a hashed asset, so a page can fetch it only when it needs it. The CLI does

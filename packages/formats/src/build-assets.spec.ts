@@ -1,8 +1,5 @@
+import { stop } from '@saerskriven/model/fixtures';
 import { brotliVariable, brotliWasmAsset } from './build-assets.js';
-
-const stop = (sentence: string): never => {
-  throw new Error(sentence);
-};
 
 describe('the brotli module a build carries', () => {
   afterEach(() => {

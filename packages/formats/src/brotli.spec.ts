@@ -1,15 +1,24 @@
-import { committedText } from '@saerskriven/model/fixtures';
+import { committedText, repositoryRoot } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { brotliUnbuilt, brotliWasm } from './brotli.fixtures.js';
 import { BrotliFailure, compressBrotli, decompressBrotli } from './brotli.js';
+import { readLimits } from './lib/read-limits.js';
 
 const mebibyte = 1_048_576;
 
 const standardWindow = 16 * mebibyte;
 
+const windowGap = 16;
+
 const model = new TextEncoder().encode(
   committedText('saerskriven', 'feature-complete.yaml'),
+);
+
+const threatModel = new Uint8Array(
+  readFileSync(join(repositoryRoot, 'threat-modelling', 'saerskriven.yaml')),
 );
 
 const referenceStream = (bytes: Uint8Array, quality: number): Uint8Array =>
@@ -19,6 +28,63 @@ const referenceStream = (bytes: Uint8Array, quality: number): Uint8Array =>
       [constants.BROTLI_PARAM_LGWIN]: 24,
     },
   });
+
+const zerosBomb = (): Uint8Array =>
+  referenceStream(new Uint8Array(64 * mebibyte), 4);
+
+const largeWindowBomb = (): Uint8Array =>
+  brotliCompressSync(new Uint8Array(65 * mebibyte), {
+    params: {
+      [constants.BROTLI_PARAM_QUALITY]: 4,
+      [constants.BROTLI_PARAM_LARGE_WINDOW]: 1,
+      [constants.BROTLI_PARAM_LGWIN]: 30,
+    },
+  });
+
+const bitsFrom = (stream: Uint8Array, start: number, count: number): number =>
+  Array.from(
+    { length: count },
+    (_bit, offset) =>
+      (stream[(start + offset) >> 3] >> ((start + offset) & 7)) & 1,
+  ).reduce((value, bit, offset) => value | (bit << offset), 0);
+
+const declaredWindowBits = (stream: Uint8Array): number => {
+  if (bitsFrom(stream, 0, 1) === 0) {
+    return 16;
+  }
+  const wide = bitsFrom(stream, 1, 3);
+  if (wide !== 0) {
+    return 17 + wide;
+  }
+  const narrow = bitsFrom(stream, 4, 3);
+  return narrow === 0 ? 17 : 8 + narrow;
+};
+
+const withMemory = async <Value>(
+  work: () => Promise<Value>,
+): Promise<readonly [Value, readonly number[]]> => {
+  const instances: WebAssembly.Instance[] = [];
+  const instantiate = WebAssembly.instantiate;
+  const spy = vi
+    .spyOn(WebAssembly, 'instantiate')
+    .mockImplementation(async (module: WebAssembly.Module) => {
+      const instance = await instantiate(module);
+      instances.push(instance);
+      return instance;
+    });
+  try {
+    const value = await work();
+    return [
+      value,
+      instances
+        .map((instance) => instance.exports['memory'])
+        .filter((memory) => memory instanceof WebAssembly.Memory)
+        .map((memory) => memory.buffer.byteLength),
+    ];
+  } finally {
+    spy.mockRestore();
+  }
+};
 
 const compressed = async (bytes: Uint8Array): Promise<Uint8Array> =>
   Either.getOrThrow(await compressBrotli(bytes, brotliWasm()));
@@ -137,11 +203,33 @@ describe.skipIf(brotliUnbuilt)('a model compressed through the module', () => {
     ).toEqual(model);
   });
 
-  it('declares a 24-bit window and compresses as tightly as quality 11', async () => {
+  it('declares the smallest window that covers the input, and compresses as tightly as quality 11', async () => {
     const stream = await compressed(model);
-    const reference = referenceStream(model, 11);
-    expect(stream[0] & 0x0f).toBe(reference[0] & 0x0f);
-    expect(stream.length).toBeLessThanOrEqual(reference.length * 1.01);
+    const bits = declaredWindowBits(stream);
+    expect(2 ** bits - windowGap).toBeGreaterThanOrEqual(model.length);
+    expect(2 ** (bits - 1) - windowGap).toBeLessThan(model.length);
+    expect(stream.length).toBeLessThanOrEqual(
+      referenceStream(model, 11).length * 1.01,
+    );
+  });
+
+  it('compresses a 59 KB model in under 12 MiB of module memory', async () => {
+    const [stream, held] = await withMemory(() => compressed(threatModel));
+    expect(new Uint8Array(brotliDecompressSync(stream))).toEqual(threatModel);
+    expect(held).toHaveLength(1);
+    expect(held[0]).toBeLessThan(12 * mebibyte);
+  });
+
+  it('compiles the module once for every call handed the same bytes', async () => {
+    const wasm = new Uint8Array(brotliWasm());
+    const compile = vi.spyOn(WebAssembly, 'compile');
+    try {
+      const stream = Either.getOrThrow(await compressBrotli(model, wasm));
+      await decompressBrotli(stream, wasm, model.length);
+      expect(compile).toHaveBeenCalledTimes(1);
+    } finally {
+      compile.mockRestore();
+    }
   });
 
   it('decodes an empty stream to no bytes under a maximum of 0', async () => {
@@ -153,10 +241,6 @@ describe.skipIf(brotliUnbuilt)('a model compressed through the module', () => {
 });
 
 describe.skipIf(brotliUnbuilt)('a stream the decoder refuses', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('refuses one byte past the maximum', async () => {
     const stream = await compressed(model);
     expect(
@@ -164,26 +248,27 @@ describe.skipIf(brotliUnbuilt)('a stream the decoder refuses', () => {
     ).toEqual(BrotliFailure.PastMaximum({ maximum: model.length - 1 }));
   });
 
-  it('refuses 64 MiB of zeros against 1 MiB, holding the window and the maximum at most', async () => {
-    const bomb = referenceStream(new Uint8Array(64 * mebibyte), 4);
-    const instances: WebAssembly.Instance[] = [];
-    const instantiate = WebAssembly.instantiate;
-    vi.spyOn(WebAssembly, 'instantiate').mockImplementation(
-      async (module: WebAssembly.Module) => {
-        const instance = await instantiate(module);
-        instances.push(instance);
-        return instance;
-      },
+  it.each([mebibyte, readLimits.maxTextBytes])(
+    'refuses 64 MiB of zeros against a maximum of %i bytes, within the window, twice the maximum and 4 MiB',
+    async (maximum) => {
+      const [refusal, held] = await withMemory(async () =>
+        refusalOf(await decompressBrotli(zerosBomb(), brotliWasm(), maximum)),
+      );
+      expect(refusal).toEqual(BrotliFailure.PastMaximum({ maximum }));
+      expect(held).toHaveLength(1);
+      expect(held[0]).toBeLessThan(standardWindow + 2 * maximum + 4 * mebibyte);
+    },
+  );
+
+  it('refuses a stream that claims the large-window extension before reserving its window', async () => {
+    const [refusal, held] = await withMemory(async () =>
+      refusalOf(
+        await decompressBrotli(largeWindowBomb(), brotliWasm(), mebibyte),
+      ),
     );
-    expect(
-      refusalOf(await decompressBrotli(bomb, brotliWasm(), mebibyte)),
-    ).toEqual(BrotliFailure.PastMaximum({ maximum: mebibyte }));
-    const held = instances
-      .map((instance) => instance.exports['memory'])
-      .filter((memory) => memory instanceof WebAssembly.Memory)
-      .map((memory) => memory.buffer.byteLength);
+    expect(refusal).toEqual(BrotliFailure.Malformed());
     expect(held).toHaveLength(1);
-    expect(held[0]).toBeLessThan(standardWindow + mebibyte + 8 * mebibyte);
+    expect(held[0]).toBeLessThan(4 * mebibyte);
   });
 
   it.each([

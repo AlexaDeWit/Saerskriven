@@ -1,14 +1,15 @@
 import { Data, Either } from 'effect';
+import { promisePerBytes } from './lib/promise-per-bytes.js';
 
 /**
  * Why a compression or a decompression produced no bytes: `_tag`
  * discriminates the refusal, following Effect's own convention.
  * `PastMaximum` is a stream whose decoded bytes would pass the caller's
- * maximum. `Malformed` is input that is not one whole brotli stream: damaged,
- * cut short, or followed by more bytes. `Unusable` is about the call rather
- * than the bytes: a module that would not start, one that stopped partway or
- * reserved none of the memory asked for, and a maximum that is not a byte
- * count.
+ * maximum. `Malformed` is input that is not one whole standard brotli
+ * stream: damaged, cut short, followed by more bytes, or claiming the
+ * large-window extension. `Unusable` is about the call rather than the bytes:
+ * a module that would not start, one that stopped partway or reserved none of
+ * the memory asked for, and a maximum that is not a byte count.
  */
 export type BrotliFailure = Data.TaggedEnum<{
   PastMaximum: { readonly maximum: number };
@@ -54,13 +55,19 @@ type Answer = {
   readonly bytes: Uint8Array;
 };
 
+const compiled = promisePerBytes<WebAssembly.Module>();
+
 /**
- * Compresses bytes to one brotli stream at quality 11 with a 24-bit window
- * and no custom dictionary, so any standard brotli decoder reads it back.
- * `wasm` is the module `nix build .#brotli-wasm` writes.
+ * Compresses bytes to one brotli stream at quality 11 with no custom
+ * dictionary, in the smallest window that reaches back over the whole input,
+ * up to 24 bits, so any standard brotli decoder reads it back. `wasm` is the
+ * module `nix build .#brotli-wasm` writes.
  *
- * Each call runs its own instance, so the memory a call grows goes with it.
- * The encoder grows that memory by about 130 MiB whatever the input's size.
+ * The compiled module is held per `wasm` array, and each call runs its own
+ * instance, so the memory a call grows goes with it. That memory follows the
+ * window: measured at 2.4 MiB for no input, 7.3 MiB for a 59 KB model,
+ * 46 MiB for 1 MiB, and 193 MiB for 8 MiB, where the window reaches its
+ * 24-bit cap.
  */
 export async function compressBrotli(
   bytes: Uint8Array,
@@ -82,10 +89,12 @@ export async function compressBrotli(
  * to 4294967295, with the module `nix build .#brotli-wasm` writes.
  *
  * A stream that would decode past the maximum is refused at the first byte
- * past it, and the rest is never decoded. The module then holds at most the
- * maximum, one 64 KiB chunk, and the window the stream declares, which
- * standard brotli caps at 16 MiB, whatever the stream would inflate to. Each
- * call runs its own instance, so that memory goes with the call.
+ * past it, and the rest is never decoded. The module's memory then reaches
+ * the window the stream declares, at most 16 MiB, plus about twice the
+ * maximum, plus about 2 MiB, whatever the stream would inflate to: the kept
+ * bytes grow by doubling, and the blocks a doubling frees cannot hold the
+ * next one. A stream that claims the large-window extension is `Malformed`.
+ * Each call runs its own instance, so that memory goes with the call.
  */
 export async function decompressBrotli(
   bytes: Uint8Array,
@@ -115,7 +124,7 @@ async function instantiated(
 ): Promise<Either.Either<Codec, BrotliFailure>> {
   try {
     const { exports } = await WebAssembly.instantiate(
-      await WebAssembly.compile(new Uint8Array(wasm)),
+      await compiled(wasm, () => WebAssembly.compile(new Uint8Array(wasm))),
     );
     return codes(exports)
       ? Either.right(exports)

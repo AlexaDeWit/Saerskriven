@@ -21,13 +21,22 @@ const WRITTEN: u32 = 0;
 const PAST_MAXIMUM: u32 = 1;
 const MALFORMED: u32 = 2;
 
-// Quality 11 with no custom dictionary (#604) and a 24-bit window (#622), so
-// a native brotli decoder can read every link.
+// Quality 11 with no custom dictionary (#604), so a native brotli decoder can
+// read every link.
 const QUALITY: i32 = 11;
-const WINDOW_BITS: i32 = 24;
 
-// Both directions write into a buffer this size and no larger, so what a
-// decode holds is the bytes it kept, never past the maximum, plus one chunk.
+// The window is the smallest that reaches back over the whole input, capped
+// at standard brotli's 24 bits (#622). A window past the input shortens no
+// link, and the quality 11 hasher is sized to the window, 128 MiB at 24 bits.
+const FEWEST_WINDOW_BITS: i32 = 10;
+const MOST_WINDOW_BITS: i32 = 24;
+const WINDOW_GAP: usize = 16;
+
+// Both directions write into a buffer this size and no larger. A decode also
+// holds the ring buffer the stream's window declares, at most 16 MiB, and the
+// bytes it kept, which never pass the maximum but grow by doubling. The blocks
+// a doubling frees cannot hold the next one, so the module's memory reaches
+// about twice the maximum.
 const CHUNK: usize = 1 << 16;
 
 // Bytes cross the boundary as bytes, so one-byte alignment is the whole
@@ -68,8 +77,8 @@ pub unsafe extern "C" fn dealloc(pointer: *mut u8, length: usize) {
     }
 }
 
-/// Compresses a buffer to one brotli stream at quality 11 with a 24-bit
-/// window.
+/// Compresses a buffer to one brotli stream at quality 11, in the smallest
+/// window that covers it, up to 24 bits.
 ///
 /// # Safety
 ///
@@ -119,7 +128,7 @@ fn compressed(input: &[u8]) -> Vec<u8> {
     let mut encoder = BrotliEncoderStateStruct::new(StandardAlloc::default());
     encoder.params = BrotliEncoderParams {
         quality: QUALITY,
-        lgwin: WINDOW_BITS,
+        lgwin: window_bits(input.len()),
         ..BrotliEncoderParams::default()
     };
     let mut stream = Vec::new();
@@ -149,6 +158,15 @@ fn compressed(input: &[u8]) -> Vec<u8> {
         stream.extend_from_slice(&chunk[..output_offset]);
     }
     stream
+}
+
+// A window of `bits` reaches back 2^bits less 16 bytes.
+fn window_bits(length: usize) -> i32 {
+    let mut bits = FEWEST_WINDOW_BITS;
+    while bits < MOST_WINDOW_BITS && (1_usize << bits) - WINDOW_GAP < length {
+        bits += 1;
+    }
+    bits
 }
 
 fn inflated(stream: &[u8], maximum: usize) -> Result<Vec<u8>, u32> {
