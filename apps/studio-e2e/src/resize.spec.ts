@@ -3,10 +3,12 @@ import { boxAt, modelWith } from '@saerskriven/model/fixtures';
 import {
   type Box,
   boxOf,
+  centreOf,
   dragBy,
-  onScreen,
   type Point,
   pressOn,
+  touchDrag,
+  touchSession,
   viewportZoom,
 } from './canvas.fixtures.js';
 import {
@@ -21,7 +23,15 @@ import {
 
 const pointerTolerance = 1;
 
-const fractionalSize = { width: 112.5, height: 80 };
+const kiosk = {
+  name: 'Kiosk',
+  drawn: /^Kiosk, actor/u,
+  size: { width: 112.5, height: 80 },
+} as const;
+
+const kioskModel = modelWith({
+  elements: [boxAt('el-kiosk', 0, 0, 'actor', kiosk.size, kiosk.name)],
+});
 
 const sideCases = [
   ['top', { x: 0, y: -40 }, 'height'],
@@ -37,11 +47,14 @@ const shrinkingCases = [
   ['left', { x: 400, y: 0 }, 'width'],
 ] as const;
 
-const sideControl = (node: Locator, side: string): Locator =>
+const sideControl = (node: Locator, side: string, of = 'Actor'): Locator =>
   node.getByRole('button', {
-    name: `Resize Actor from ${side}`,
+    name: `Resize ${of} from ${side}`,
     exact: true,
   });
+
+const glyphWidthOf = async (node: Locator): Promise<number> =>
+  Number(await node.locator('svg').first().getAttribute('width'));
 
 const expectFixedOpposite = (side: string, before: Box, after: Box): void => {
   if (side === 'top') {
@@ -97,17 +110,12 @@ test('the glyph follows the selection bounds during a resize drag', async ({
 }) => {
   await openPlaceholder(page);
   const node = await selectNode(page, placeholder.actor);
-  const glyph = node.locator('svg').first();
-  const before = Number(await glyph.getAttribute('width'));
+  const before = await glyphWidthOf(node);
   const from = await pressOn(page, sideControl(node, 'right'));
 
   await page.mouse.move(from.x + 40, from.y, { steps: 8 });
-  await expect
-    .poll(async () => Number(await glyph.getAttribute('width')))
-    .not.toBe(before);
-  expect(Number(await glyph.getAttribute('width'))).toBeCloseTo(
-    (await boxOf(node)).width,
-  );
+  await expect.poll(() => glyphWidthOf(node)).not.toBe(before);
+  expect(await glyphWidthOf(node)).toBeCloseTo((await boxOf(node)).width);
 
   await page.mouse.up();
 });
@@ -147,31 +155,51 @@ test('a no-op resize at the minimum leaves later geometry settled', async ({
 
   await runFromMenu(page, 'Undo');
   await expect.poll(async () => (await boxOf(node)).width).toBeGreaterThan(10);
-  expect(Number(await node.locator('svg').first().getAttribute('width'))).toBe(
-    (await boxOf(node)).width,
-  );
+  expect(await glyphWidthOf(node)).toBe((await boxOf(node)).width);
 });
 
 test('a press on a control without movement records no edit at a fractional size', async ({
   page,
 }) => {
-  await openModelDocument(
-    page,
-    modelWith({
-      elements: [boxAt('el-actor', 0, 0, 'actor', fractionalSize, 'Actor')],
-    }),
-  );
-  const node = await selectNode(page, placeholder.actor);
+  await openModelDocument(page, kioskModel);
+  const node = await selectNode(page, kiosk.drawn);
   const before = await boxOf(node);
-  expect(before.width).toBe(fractionalSize.width);
-  const right = sideControl(node, 'right');
-  await onScreen(right);
+  expect(before.width).toBe(kiosk.size.width);
+  const right = sideControl(node, 'right', kiosk.name);
 
   await pressOn(page, right);
   await page.mouse.up();
 
+  await expect(right).toBeFocused();
   expect(await undoOffered(page)).toBe(false);
   expect(await boxOf(node)).toEqual(before);
+});
+
+test('a touch drag on a control resizes for the whole drag, as one undo step', async ({
+  page,
+}) => {
+  const session = await touchSession(page);
+  await openModelDocument(page, kioskModel);
+  const node = await selectNode(page, kiosk.drawn);
+  const before = await boxOf(node);
+  const from = await centreOf(sideControl(node, 'right', kiosk.name));
+  const dragged = 60;
+  const grown = dragged / (await viewportZoom(page));
+
+  await touchDrag(session, from, { x: from.x + dragged, y: from.y });
+
+  await expect
+    .poll(async () =>
+      Math.abs((await boxOf(node)).width - before.width - grown),
+    )
+    .toBeLessThanOrEqual(pointerTolerance);
+
+  await runFromMenu(page, 'Undo');
+
+  await expect.poll(() => boxOf(node)).toEqual(before);
+  expect(await undoOffered(page)).toBe(false);
+  expect(await glyphWidthOf(node)).toBe(before.width);
+  await session.detach();
 });
 
 test('a corner resizes both axes in one undo step', async ({ page }) => {

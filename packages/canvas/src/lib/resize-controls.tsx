@@ -1,5 +1,11 @@
-import { NodeResizeControl, ResizeControlVariant } from '@xyflow/react';
 import {
+  NodeResizeControl,
+  ResizeControlVariant,
+  type OnResizeEnd,
+} from '@xyflow/react';
+import {
+  useCallback,
+  useLayoutEffect,
   useRef,
   type CSSProperties,
   type KeyboardEvent,
@@ -23,6 +29,12 @@ import { resizeHandle } from './tokens.js';
 /** The accessible name of each resize control, which the mounting canvas words. */
 export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
 
+type ResizeSubject = {
+  readonly node: CanvasNode;
+  readonly onResize: (() => void) | undefined;
+  readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
+};
+
 /**
  * The resize controls of a selected node: a line control on each side, which
  * resizes one axis, and a handle at each corner, which resizes both, less
@@ -32,8 +44,11 @@ export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
  * size together, so a resize from the top or left is one edit. A pointer
  * press that never resized the node does not reach `onResizeEnd`: React Flow
  * ends it with the extent it measured, a fractional size rounded to whole
- * pixels. A boundary curve's corner handles sit `resizeHandle.curveGap`
- * outside its corners, clear of a handle on a point there.
+ * pixels. `onResize` and `onResizeEnd` may be new functions on every render:
+ * a pointer resize calls those of the render its press began on, and settles
+ * against that render's `node`. A boundary curve's corner handles sit
+ * `resizeHandle.curveGap` outside its corners, clear of a handle on a point
+ * there.
  */
 export function ResizeControls({
   labels,
@@ -41,84 +56,116 @@ export function ResizeControls({
   onResize,
   onResizeEnd,
   visible,
-}: {
+}: ResizeSubject & {
   readonly labels: ResizeLabels;
-  readonly node: CanvasNode;
-  readonly onResize: (() => void) | undefined;
-  readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
   readonly visible: boolean;
 }): ReactElement {
-  const resizedFrom = useRef(new Set<ResizeControlPosition>());
-  const keyDown = (
-    control: ResizeControlPosition,
-    event: KeyboardEvent<HTMLButtonElement>,
-  ): void => {
-    const resized = resizeBoxByKey(
-      { position: node.position, size: node.size },
-      control,
+  return (
+    <>
+      {resizeControlsOf(node).map((position) => (
+        <ResizeControl
+          key={position}
+          label={labels[position]}
+          node={node}
+          onResize={onResize}
+          onResizeEnd={onResizeEnd}
+          position={position}
+          visible={visible}
+        />
+      ))}
+    </>
+  );
+}
+
+function ResizeControl({
+  label,
+  node,
+  onResize,
+  onResizeEnd,
+  position,
+  visible,
+}: ResizeSubject & {
+  readonly label: string;
+  readonly position: ResizeControlPosition;
+  readonly visible: boolean;
+}): ReactElement {
+  const rendered = useRef<ResizeSubject>({ node, onResize, onResizeEnd });
+  const press = useRef<{ readonly subject: ResizeSubject; resized: boolean }>(
+    undefined,
+  );
+  useLayoutEffect(() => {
+    rendered.current = { node, onResize, onResizeEnd };
+  });
+
+  const start = useCallback((): void => {
+    press.current = { subject: rendered.current, resized: false };
+  }, []);
+  const resize = useCallback((): void => {
+    if (press.current !== undefined) {
+      press.current.resized = true;
+      press.current.subject.onResize?.();
+    }
+  }, []);
+  const end = useCallback<OnResizeEnd>(
+    (_, extent) => {
+      const ended = press.current;
+      press.current = undefined;
+      if (ended?.resized !== true) {
+        return;
+      }
+      ended.subject.onResizeEnd?.(
+        resizeBoxOnControlAxes(ended.subject.node, position, {
+          position: { x: extent.x, y: extent.y },
+          size: { width: extent.width, height: extent.height },
+        }),
+      );
+    },
+    [position],
+  );
+  const keyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
+    const box = resizeBoxByKey(
+      node,
+      position,
       event.key,
       event.shiftKey ? shiftedKeyboardResizeStep : keyboardResizeStep,
     );
-    if (resized === undefined || onResizeEnd === undefined) {
+    if (box === undefined || onResizeEnd === undefined) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
-    onResizeEnd(resized);
+    onResizeEnd(box);
   };
 
   return (
-    <>
-      {resizeControlsOf(node).map((position) => (
-        <NodeResizeControl
-          key={position}
-          minHeight={minimumNodeExtent}
-          minWidth={minimumNodeExtent}
-          onResize={() => {
-            resizedFrom.current.add(position);
-            onResize?.();
-          }}
-          onResizeEnd={(_, resized) => {
-            if (!resizedFrom.current.delete(position)) {
-              return;
-            }
-            onResizeEnd?.(
-              resizeBoxOnControlAxes(
-                { position: node.position, size: node.size },
-                position,
-                {
-                  position: { x: resized.x, y: resized.y },
-                  size: { width: resized.width, height: resized.height },
-                },
-              ),
-            );
-          }}
-          position={position}
-          resizeDirection={
-            position === 'left' || position === 'right'
-              ? 'horizontal'
-              : position === 'top' || position === 'bottom'
-                ? 'vertical'
-                : undefined
-          }
-          style={controlStyle(node, position, visible)}
-          variant={
-            sideControls.has(position)
-              ? ResizeControlVariant.Line
-              : ResizeControlVariant.Handle
-          }
-        >
-          <button
-            aria-keyshortcuts={resizeControlKeys[position].join(' ')}
-            aria-label={labels[position]}
-            onKeyDown={(event) => {
-              keyDown(position, event);
-            }}
-            type="button"
-          />
-        </NodeResizeControl>
-      ))}
-    </>
+    <NodeResizeControl
+      minHeight={minimumNodeExtent}
+      minWidth={minimumNodeExtent}
+      onResize={resize}
+      onResizeEnd={end}
+      onResizeStart={start}
+      position={position}
+      resizeDirection={
+        position === 'left' || position === 'right'
+          ? 'horizontal'
+          : position === 'top' || position === 'bottom'
+            ? 'vertical'
+            : undefined
+      }
+      style={controlStyle(node, position, visible)}
+      variant={
+        sideControls.has(position)
+          ? ResizeControlVariant.Line
+          : ResizeControlVariant.Handle
+      }
+    >
+      <button
+        aria-keyshortcuts={resizeControlKeys[position].join(' ')}
+        aria-label={label}
+        onKeyDown={keyDown}
+        type="button"
+      />
+    </NodeResizeControl>
   );
 }
 
