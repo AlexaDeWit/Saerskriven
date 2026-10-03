@@ -146,6 +146,96 @@ export const onScreen = async (target: Locator): Promise<void> => {
   expect(reached, 'the control is covered').toBe(true);
 };
 
+const ringReach = 16;
+
+/**
+ * The share of `target`'s outline along which a focus ring comes on screen
+ * when `focus` moves keyboard focus there from `away`. Two screenshots are
+ * read, one with focus on `away` and one after `focus`: at each pixel along
+ * each side of `target`, whether a pixel up to 16 pixels across that side,
+ * short of its middle, changed between them. Anything drawn over the ring
+ * leaves its pixels as they were.
+ */
+export const focusRingShown = async (
+  target: Locator,
+  away: Locator,
+  focus: () => Promise<void>,
+): Promise<number> => {
+  const page = target.page();
+  const shown = await screenBoxOf(target);
+  const clip = {
+    x: Math.max(Math.floor(shown.x) - ringReach, 0),
+    y: Math.max(Math.floor(shown.y) - ringReach, 0),
+    width: Math.ceil(shown.width) + 2 * ringReach,
+    height: Math.ceil(shown.height) + 2 * ringReach,
+  };
+  await away.focus();
+  const before = await page.screenshot({ clip });
+  await focus();
+  await expect(target).toBeFocused();
+  const after = await page.screenshot({ clip });
+  return page.evaluate(
+    async ({ images, frame, box, across }) => {
+      const [from, to] = await Promise.all(
+        images.map(async (png) => {
+          const image = new Image();
+          image.src = `data:image/png;base64,${png}`;
+          await image.decode();
+          const canvas = new OffscreenCanvas(image.width, image.height);
+          const context = canvas.getContext('2d');
+          context?.drawImage(image, 0, 0);
+          return (
+            context?.getImageData(0, 0, image.width, image.height).data ??
+            new Uint8ClampedArray()
+          );
+        }),
+      );
+      const changed = (x: number, y: number): boolean => {
+        const column = Math.round(x - frame.x);
+        const row = Math.round(y - frame.y);
+        if (column < 0 || column >= frame.width || row < 0) {
+          return false;
+        }
+        const at = (row * frame.width + column) * 4;
+        return (
+          [0, 1, 2].reduce(
+            (sum, channel) =>
+              sum +
+              Math.abs((from?.[at + channel] ?? 0) - (to?.[at + channel] ?? 0)),
+            0,
+          ) > 48
+        );
+      };
+      const offsets = (extent: number): number[] =>
+        Array.from(
+          { length: across + Math.floor(Math.min(across, extent / 2)) + 1 },
+          (_, step) => step - across,
+        );
+      const down = offsets(box.height);
+      const along = offsets(box.width);
+      const right = box.x + box.width;
+      const bottom = box.y + box.height;
+      const sides = [
+        ...Array.from({ length: Math.floor(box.width) }, (_, step) => [
+          down.some((offset) => changed(box.x + step, box.y + offset)),
+          down.some((offset) => changed(box.x + step, bottom - offset)),
+        ]),
+        ...Array.from({ length: Math.floor(box.height) }, (_, step) => [
+          along.some((offset) => changed(box.x + offset, box.y + step)),
+          along.some((offset) => changed(right - offset, box.y + step)),
+        ]),
+      ].flat();
+      return sides.filter(Boolean).length / Math.max(sides.length, 1);
+    },
+    {
+      images: [before.toString('base64'), after.toString('base64')],
+      frame: clip,
+      box: shown,
+      across: ringReach,
+    },
+  );
+};
+
 /** How far every ancestor of `target` is scrolled, summed, so a scroll anywhere above it shows. */
 export const scrolledAbove = (target: Locator): Promise<number> =>
   target.evaluate((element) => {
