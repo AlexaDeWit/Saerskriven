@@ -95,6 +95,10 @@ const insidePaneBody = async (
   return drawn.top >= body.top - 0.5 && drawn.bottom <= body.bottom + 0.5;
 };
 
+const atPaneTop = async (page: Page, target: Locator): Promise<boolean> =>
+  Math.abs((await edgesOf(target)).top - (await edgesOf(paneBody(page))).top) <=
+  1.5;
+
 const belowLongTakeover = async (page: Page): Promise<Locator> => {
   await openModelDocument(page, shopperWithLongThreats());
   await selectNode(page, storefront.shopper);
@@ -105,7 +109,7 @@ const belowLongTakeover = async (page: Page): Promise<Locator> => {
 };
 
 test(
-  'expanding a threat below a long open one keeps its header inside the pane when it cannot stay where it was',
+  'a threat opened below a long open one lands with its header at the top of the pane',
   { tag: '@phone' },
   async ({ page }) => {
     const below = await belowLongTakeover(page);
@@ -118,12 +122,12 @@ test(
       'aria-expanded',
       'false',
     );
-    expect(await insidePaneBody(page, below)).toBe(true);
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
   },
 );
 
 test(
-  'a threat expanded from the keyboard below a long open one keeps its header where it was and keeps focus, without scroll anchoring',
+  'a threat opened from the keyboard lands at the top of the pane and keeps focus, without scroll anchoring',
   { tag: '@phone' },
   async ({ page }) => {
     const below = await belowLongTakeover(page);
@@ -131,17 +135,13 @@ test(
       body.style.overflowAnchor = 'none';
     });
     await below.focus();
-    expect(await scrollPaneTo(below, 'top')).toBe(true);
-    const pressed = await screenBoxOf(below);
+    expect(await scrollPaneTo(below, 'bottom')).toBe(true);
 
     await page.keyboard.press('Enter');
 
     await expect(below).toHaveAttribute('aria-expanded', 'true');
     await expect(below).toBeFocused();
-    expect(await insidePaneBody(page, below)).toBe(true);
-    expect(
-      Math.abs((await screenBoxOf(below)).y - pressed.y),
-    ).toBeLessThanOrEqual(1);
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
   },
 );
 
@@ -167,7 +167,7 @@ const pressedPartlyClipped = async (
 };
 
 test(
-  'a header pressed while partly above the pane comes fully into it as the long threat above collapses',
+  'a header pressed while partly above the pane lands at its top as the long threat above collapses',
   { tag: '@phone' },
   async ({ page }) => {
     const below = await belowLongTakeover(page);
@@ -175,12 +175,12 @@ test(
     await pressedPartlyClipped(page, below, 'top');
 
     await expect(below).toBeFocused();
-    expect(await insidePaneBody(page, below)).toBe(true);
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
   },
 );
 
 test(
-  'a header pressed while partly below the pane comes fully into it',
+  'a header pressed while partly below the pane comes up to its top',
   { tag: '@phone' },
   async ({ page }) => {
     await openModelDocument(page, shopperWithLongThreats());
@@ -190,7 +190,98 @@ test(
     await pressedPartlyClipped(page, lower, 'bottom');
 
     await expect(lower).toBeFocused();
-    expect(await insidePaneBody(page, lower)).toBe(true);
+    await expect.poll(() => atPaneTop(page, lower)).toBe(true);
+  },
+);
+
+test(
+  "an open threat's summary stays pinned at the top of the pane while any of the threat is in it",
+  { tag: '@phone' },
+  async ({ page }) => {
+    const below = await belowLongTakeover(page);
+    await below.click();
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
+    const item = page.locator('[data-threat-item="th-shopper-0"]');
+
+    await paneBody(page).evaluate((body) => {
+      body.scrollTop += Math.round(body.clientHeight / 2);
+    });
+    expect(await atPaneTop(page, below)).toBe(true);
+    expect((await edgesOf(item)).top).toBeLessThan(
+      (await edgesOf(paneBody(page))).top - 1,
+    );
+
+    await paneBody(page).evaluate((body) => {
+      body.scrollTop = body.scrollHeight;
+    });
+    const end = await edgesOf(item);
+    const summary = await edgesOf(below);
+    expect(summary.bottom).toBeLessThanOrEqual(end.bottom + 0.5);
+    if (end.bottom < (await edgesOf(paneBody(page))).top) {
+      expect(await insidePaneBody(page, below)).toBe(false);
+    }
+  },
+);
+
+const focusPlacement = (summary: Locator) =>
+  summary.evaluate((header) => {
+    let body = header.parentElement;
+    while (body !== null && getComputedStyle(body).overflowY !== 'auto') {
+      body = body.parentElement;
+    }
+    const field = document.activeElement;
+    if (body === null || !(field instanceof HTMLElement)) {
+      return undefined;
+    }
+    const view = body.getBoundingClientRect();
+    const drawn = field.getBoundingClientRect();
+    const pinned = header.getBoundingClientRect();
+    const tabbable = [
+      ...body.querySelectorAll<HTMLElement>(
+        'input, textarea, button, [role="combobox"]',
+      ),
+    ].filter((element) => element.getClientRects().length > 0);
+    const next = tabbable.at(tabbable.indexOf(field) + 1);
+    const nextBottom = next?.getBoundingClientRect().bottom ?? drawn.bottom;
+    const atEnd = body.scrollTop >= body.scrollHeight - body.clientHeight - 1;
+    return {
+      clearOfSummary: drawn.top >= pinned.bottom - 0.5,
+      inView:
+        drawn.bottom <= view.bottom + 0.5 ||
+        (drawn.height > view.bottom - pinned.bottom &&
+          Math.abs(drawn.top - pinned.bottom) <= 1),
+      nextInView:
+        nextBottom <= view.bottom + 0.5 ||
+        atEnd ||
+        nextBottom - drawn.top > view.bottom - pinned.bottom,
+      scrolled: body.scrollTop,
+    };
+  });
+
+test(
+  'Tab brings each field of an open threat into view below its pinned summary, with the next field in view under it',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const below = await belowLongTakeover(page);
+    await below.click();
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
+    await threatPanel(page)
+      .getByRole('textbox', { name: 'Title', exact: true })
+      .focus();
+    const scrolledAt = new Set<number>();
+
+    for (let step = 0; step < 14; step += 1) {
+      await page.keyboard.press('Tab');
+      const placed = await focusPlacement(below);
+      expect(placed, `Tab ${String(step + 1)}`).toMatchObject({
+        clearOfSummary: true,
+        inView: true,
+        nextInView: true,
+      });
+      scrolledAt.add(placed?.scrolled ?? 0);
+    }
+
+    expect(scrolledAt.size).toBeGreaterThan(1);
   },
 );
 

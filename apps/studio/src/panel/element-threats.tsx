@@ -24,13 +24,13 @@ import { Action } from '../store/actions.js';
 import { elementById } from '../store/selectors.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
-import { useHeaderKept } from './kept-header.js';
 import { historyFocusHandler } from './panel-focus.js';
 import { PickExisting } from './pick-existing.js';
 import type { RefusedField } from './refusals.js';
 import { useShownOrder } from './shown-order.js';
 import { ThreatEditor, type EditorFocus } from './threat-editor.js';
 import styles from './threat-panel.module.css';
+import { useThreatScroll } from './threat-scroll.js';
 import {
   attachableThreats,
   attachedThreats,
@@ -61,7 +61,8 @@ export type ElementThreatsProps = {
  * then the threats naming the element, one expanded at a time and each
  * edited in place. The list is in review order as it mounts and holds that
  * order while it stays mounted, so an edit never moves the threat under
- * the pointer and a threat added meanwhile joins the end.
+ * the pointer and a threat added meanwhile joins the end. A threat opened
+ * by any route lands with its header at the top of the body.
  */
 export function ElementThreats({
   element,
@@ -79,7 +80,7 @@ export function ElementThreats({
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const addControl = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement>(null);
-  const keepHeader = useHeaderKept(list);
+  const scroll = useThreatScroll(list);
   const translator = useTranslator();
   const { t } = translator;
   const attachable = attachableThreats(registered, element.id, translator);
@@ -124,6 +125,7 @@ export function ElementThreats({
       return;
     }
     setExpanded(threat.id);
+    scroll.land(threat.id);
     setDraft(undefined);
     setFocus({ kind: 'title', threatId: threat.id });
   };
@@ -194,7 +196,11 @@ export function ElementThreats({
     }
     if (value !== expanded) {
       resetAnnouncements();
-      keepHeader(value === '' ? expanded : value);
+      if (value === '') {
+        scroll.keep(expanded);
+      } else {
+        scroll.land(value);
+      }
     }
     setExpanded(value);
   };
@@ -219,6 +225,7 @@ export function ElementThreats({
             onPick={(threatId) => {
               if (attach(threatId, element) && held === undefined) {
                 setExpanded(threatId);
+                scroll.land(threatId);
                 setFocus({ kind: 'disclosure', threatId });
               }
             }}
@@ -232,6 +239,8 @@ export function ElementThreats({
         <Accordion.Root
           className={styles.list}
           collapsible
+          onFocus={scroll.follow}
+          onKeyDown={scroll.tab}
           onValueChange={expand}
           ref={list}
           type="single"

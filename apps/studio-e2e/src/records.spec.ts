@@ -297,7 +297,7 @@ test(
     await remaining.press('End');
     const field = (await screenBoxOf(remaining)).y;
     await page.keyboard.type('s');
-    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
     await expect(remaining).toHaveValue('Strip caller tokens at the edges');
     await expect(editAnnouncement(page)).toBeEmpty();
     expect((await screenBoxOf(threatPanel(page))).y).toBe(top);

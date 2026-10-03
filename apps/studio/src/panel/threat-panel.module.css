@@ -172,6 +172,17 @@
   font-size: inherit;
 }
 
+/* A sticky box stops at the scroller's padding edge, so the pinned summary
+   reaches up through the body's padding to sit flush with the top. */
+.item[data-state='open'] > .header {
+  position: sticky;
+  inset-block-start: calc(0px - var(--saer-space-3));
+  z-index: 1;
+  border-block-end: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius) var(--saer-radius) 0 0;
+  background: var(--saer-colour-surface);
+}
+
 .disclosure {
   display: flex;
   align-items: baseline;
@@ -481,12 +492,23 @@
   color: var(--saer-colour-text-muted);
 }
 
+.item[data-state='open'] .summary > :first-child,
+.item[data-state='open'] .alsoOn {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.item[data-state='open'] .alsoOn {
+  -webkit-line-clamp: 1;
+}
+
 .content {
   display: flex;
   flex-direction: column;
   gap: var(--saer-space-3);
   padding: var(--saer-space-3);
-  border-top: 1px solid var(--saer-colour-border);
 }
 
 /* At phone width the panel, the threat item and a model record card would
