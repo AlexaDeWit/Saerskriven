@@ -46,6 +46,7 @@ import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
+import { readOnlyNotices } from './session.js';
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -168,6 +169,7 @@ describe('what the menu offers', () => {
     for (const name of ['Open', 'Save', 'Save as', 'Export', 'New model']) {
       expect(item(name)).toBeDefined();
     }
+    expect(screen.queryByRole('menuitem', { name: 'Import' })).toBeNull();
     expect(items.filter((entry) => entry.hasAttribute('href'))).toHaveLength(1);
     const submenus = items.filter(
       (entry) => entry.getAttribute('aria-haspopup') === 'menu',
@@ -635,6 +637,45 @@ describe('opening', () => {
     });
     expect(bridge.writes[0].text).not.toContain('unknownRoot');
     expect(reportEntries()).toEqual([]);
+  });
+
+  it.each(['otm', 'tmbom'] as const)(
+    'opens a %s file as a new model under a notice naming the format',
+    async (format) => {
+      const user = userEvent.setup();
+      mounted(specBridge({ offers: vendoredFile(`${format}/example.json`) }));
+
+      await choose(user, 'Open');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loss-report').textContent).toContain(
+          inLocale('en-CA')(readOnlyNotices[format]),
+        );
+      });
+      expect(nameOf(modelStore.getState().file)).toBe('example.yaml');
+      expect(isDirty(modelStore.getState())).toBe(true);
+    },
+  );
+
+  it('opens a format Saerskriven writes under no new-model notice', async () => {
+    const user = userEvent.setup();
+    mounted(
+      specBridge({
+        offers: chosenFile('feature-complete.json', await withUndeclaredKeys()),
+      }),
+    );
+
+    await choose(user, 'Open');
+
+    await waitFor(() => {
+      expect(reportEntries().length > 0).toBe(true);
+    });
+    const t = inLocale('en-CA');
+    for (const notice of Object.values(readOnlyNotices)) {
+      expect(screen.getByTestId('loss-report').textContent).not.toContain(
+        t(notice),
+      );
+    }
   });
 
   it('re-words a standing report when the language changes', async () => {

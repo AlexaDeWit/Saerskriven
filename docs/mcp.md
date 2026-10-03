@@ -173,7 +173,7 @@ text note, or a text note's name, so a write reports each one it drops.
 `saer_create` writes a new model in the native YAML format at version 2, with
 the `title` it is given and any of `owner`, `description` and `contributors`,
 each left out written empty. `saer_import` converts an OTM or TM-BOM file into
-one ([import](import.md)). Both refuse a path that is already taken.
+one ([what each format becomes](studio.md#otm-and-tm-bom)). Both refuse a path that is already taken.
 
 A read refuses a file past 8 MiB in UTF-8, and `saer_edit`, `saer_create` and
 `saer_import` all refuse a write whose output would be past that size, leaving

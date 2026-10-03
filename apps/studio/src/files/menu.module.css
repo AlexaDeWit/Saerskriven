@@ -233,6 +233,10 @@
   background: var(--saer-colour-surface-raised);
 }
 
+.notice {
+  margin: 0 0 var(--saer-space-2);
+}
+
 .headline {
   margin: 0;
   font-weight: 600;

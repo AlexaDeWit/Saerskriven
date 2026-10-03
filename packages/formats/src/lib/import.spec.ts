@@ -5,9 +5,10 @@ import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { stringify } from 'yaml';
 import { readFailureIssues } from './codec.fixtures.js';
+import { DetectionFailure, formatNameSchema } from './detect.js';
 import { divergenceDetailText } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
-import { importModel } from './import.js';
+import { importModel, readOrImport } from './import.js';
 import {
   importCorpus,
   importTexts,
@@ -905,5 +906,40 @@ describe('the feature-complete TM-BOM document', () => {
       });
       expect(reportsOf(divergences)).toEqual(reportsOf(read.divergences));
     }
+  });
+});
+
+describe('readOrImport', () => {
+  it.each([
+    ['threat-dragon', committedText('threat-dragon/feature-complete.json')],
+    ['saerskriven-yaml', committedText('saerskriven/feature-complete.yaml')],
+    ['otm', importTexts.otm],
+    ['tmbom', importTexts.tmbom],
+  ] as const)('reads a %s text', (format, text) => {
+    expect(Either.getOrThrow(readOrImport(text)).format).toBe(format);
+  });
+
+  it('keeps the detection failure where neither a codec nor an import claims the text', () => {
+    expect(readOrImport('An unrelated document')).toEqual(
+      Either.left(
+        DetectionFailure.NoFormatClaimed({ tried: formatNameSchema.options }),
+      ),
+    );
+  });
+
+  it.each([
+    [
+      'a codec',
+      JSON.stringify({
+        version: '2.0',
+        summary: { title: 'Broken' },
+        detail: { diagrams: [{ id: 0 }] },
+      }),
+    ],
+    ['an import', 'otmVersion: 0.2.0'],
+  ])('keeps the refusal of %s that claimed the text', (_claimant, text) => {
+    expect(readOrImport(text)).toMatchObject({
+      left: { _tag: 'InvalidWireDocument' },
+    });
   });
 });

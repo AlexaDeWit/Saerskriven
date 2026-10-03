@@ -4,14 +4,11 @@ import { reportMessages } from './contract.js';
 export const reportsFrCA = catalogue(reportMessages)('fr-CA')({
   region: 'Rapports de fichier',
   opened: 'Non affiché dans le studio :',
-  imported:
-    'L’importation a créé un modèle natif avec ces conversions et omissions :',
+  'opened-otm':
+    'Un fichier OTM s’ouvre comme un nouveau modèle. Saerskriven n’écrit pas en OTM, alors Enregistrer crée un fichier Saerskriven. Le fichier ouvert reste tel quel.',
+  'opened-tmbom':
+    'Un fichier TM-BOM s’ouvre comme un nouveau modèle. Saerskriven n’écrit pas en TM-BOM, alors Enregistrer crée un fichier Saerskriven. Le fichier ouvert reste tel quel.',
   saved: 'Non conservé par cet enregistrement :',
-  'conversion-details': {
-    one: '{count} détail de conversion',
-    many: '{count} de détails de conversion',
-    other: '{count} détails de conversion',
-  },
   'dismiss-report': 'Masquer le rapport',
   'dismiss-export': 'Masquer le rapport d’exportation',
   'write-refused': 'Saerskriven n’a pas pu écrire l’exportation.',

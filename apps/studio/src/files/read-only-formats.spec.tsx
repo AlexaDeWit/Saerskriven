@@ -3,8 +3,8 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { Either } from 'effect';
 import { isDirty } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
-import { dispatch, modelStore } from '../store/store.js';
-import { addedProcess, sampleModel } from '../store/store.fixtures.js';
+import { modelStore } from '../store/store.js';
+import { sampleModel } from '../store/store.fixtures.js';
 import { browserFileBridge } from './browser-bridge.js';
 import { useFileSession } from './file-commands.js';
 import {
@@ -28,14 +28,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it('imports through the fallback picker and saves a dirty native model', async () => {
+it('opens an OTM file through the fallback picker as a new model, and Save writes YAML under its stem', async () => {
   const bridge = specBridge({ picker: false });
   const { result } = renderHook(() => useFileSession(bridge));
   const input = document.createElement('input');
   const click = vi.spyOn(input, 'click');
   act(() => {
     result.current.attachPicker(input);
-    result.current.commands.import();
+    result.current.commands.open();
   });
   await waitFor(() => {
     expect(click).toHaveBeenCalledOnce();
@@ -46,7 +46,7 @@ it('imports through the fallback picker and saves a dirty native model', async (
     name: 'example.yaml',
     source: { format: 'saerskriven-yaml', document: undefined },
   });
-  expect(result.current.report?.occasion).toBe('import');
+  expect(result.current.report?.readOnly).toBe('otm');
   act(() => {
     result.current.commands.save();
   });
@@ -60,52 +60,46 @@ it('imports through the fallback picker and saves a dirty native model', async (
   expect(isDirty(modelStore.getState())).toBe(false);
 });
 
-it('asks before replacing edited work and allows cancellation', async () => {
-  const bridge = specBridge({
-    offers: vendoredFile('otm/example.json'),
-  });
-  const open = vi.spyOn(bridge, 'open');
+it('opens a TM-BOM file through the picker without keeping it, and Save asks where with YAML first', async () => {
+  const bridge = specBridge({ offers: vendoredFile('tmbom/example.json') });
   const { result } = renderHook(() => useFileSession(bridge));
   act(() => {
-    dispatch(addedProcess);
-    result.current.commands.import();
-  });
-  expect(result.current.importing).toBe(true);
-  expect(open).not.toHaveBeenCalled();
-  act(() => {
-    result.current.cancelImport();
-  });
-  expect(result.current.importing).toBe(false);
-  expect(modelStore.getState().present.metadata.title).toBe(
-    sampleModel.metadata.title,
-  );
-  act(() => {
-    result.current.commands.import();
-    result.current.confirmImport();
+    result.current.commands.open();
   });
   await waitFor(() => {
-    expect(result.current.report?.occasion).toBe('import');
+    expect(result.current.report?.readOnly).toBe('tmbom');
   });
+  expect(bridge.writesBack()).toBe(false);
+  act(() => {
+    result.current.commands.save();
+  });
+  await waitFor(() => {
+    expect(bridge.writes).toHaveLength(1);
+  });
+  expect(bridge.writes[0]).toMatchObject({
+    name: 'example.yaml',
+    elsewhere: true,
+  });
+  expect(bridge.offered[0][0].description).toBe('Saerskriven YAML');
 });
 
-it('releases the imported source handle and keeps the existing handle after a failed import', async () => {
+it('never writes the OTM file it opened, nor the file open before it', async () => {
   const original: FileContent[] = [];
   const source: FileContent[] = [];
-  const picker = openPicker()
-    .mockResolvedValueOnce([
-      handleFor('original.yaml', sampleNativeText, original),
-    ])
-    .mockResolvedValueOnce([
-      handleFor('invalid.otm', 'otmVersion: 0.2.0', source),
-    ])
-    .mockResolvedValueOnce([
-      handleFor(
-        'source.otm',
-        await vendoredFile('otm/example.json').text(),
-        source,
-      ),
-    ]);
-  vi.stubGlobal('showOpenFilePicker', picker);
+  vi.stubGlobal(
+    'showOpenFilePicker',
+    openPicker()
+      .mockResolvedValueOnce([
+        handleFor('original.yaml', sampleNativeText, original),
+      ])
+      .mockResolvedValueOnce([
+        handleFor(
+          'source.otm',
+          await vendoredFile('otm/example.json').text(),
+          source,
+        ),
+      ]),
+  );
   const { result } = renderHook(() => useFileSession(browserFileBridge));
   act(() => {
     result.current.commands.open();
@@ -114,20 +108,7 @@ it('releases the imported source handle and keeps the existing handle after a fa
     expect(modelStore.getState().file).toMatchObject({ name: 'original.yaml' });
   });
   act(() => {
-    result.current.commands.import();
-  });
-  await waitFor(() => {
-    expect(modelStore.getState().lastFailure?._tag).toBe('Read');
-  });
-  act(() => {
-    result.current.commands.save();
-  });
-  await waitFor(() => {
-    expect(original).toHaveLength(1);
-  });
-  expect(source).toEqual([]);
-  act(() => {
-    result.current.commands.import();
+    result.current.commands.open();
   });
   await waitFor(() => {
     expect(modelStore.getState().file).toMatchObject({ name: 'source.yaml' });
@@ -137,20 +118,20 @@ it('releases the imported source handle and keeps the existing handle after a fa
     result.current.commands.save();
   });
   await waitFor(() => {
-    expect(downloads).toHaveLength(1);
+    expect(downloads).toEqual(['source.yaml']);
   });
-  expect(original).toHaveLength(1);
+  expect(original).toEqual([]);
   expect(source).toEqual([]);
 });
 
-it('ignores a late import when a newer open already owns the session', async () => {
+it('ignores a late OTM read when a newer open already owns the session', async () => {
   const pending = deferred<string>();
   const bridge = specBridge({
     offers: chosenFile('slow.otm', '', () => pending.promise),
   });
   const { result } = renderHook(() => useFileSession(bridge));
   act(() => {
-    result.current.commands.import();
+    result.current.commands.open();
   });
   await act(() =>
     result.current.receive(chosenFile('new.yaml', sampleNativeText)),

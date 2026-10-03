@@ -1,11 +1,10 @@
-# Opening, saving, importing and exporting
+# Opening, saving and exporting
 
 The studio reaches files through `FileBridge` (`bridge.ts`), a record of
 functions the app is handed rather than a platform it calls. A spec is handed a
 recording one. Every path answers with an outcome, and nothing throws. What a
-person sees is in [Using the studio](../../../../docs/studio.md#files), and
-what an import carries over is in
-[Importing a foreign model](../../../../docs/import.md).
+person sees, and what an OTM or TM-BOM file becomes, is in
+[Using the studio](../../../../docs/studio.md#files).
 
 ## Modules
 
@@ -56,15 +55,17 @@ untouched. A refused save keeps the file and handle for retry. Dismissing a
 picker keeps the last settled association and does not revive an older pending
 operation. An empty fallback selection starts no operation, and a successful
 one settles with no handle, so its next Save takes the no-handle path under
-the chosen name.
-Import shares operation ownership and unsaved-work guards with Open, releases
-the source handle on success, and proposes a YAML name.
+the chosen name. An open of OTM or TM-BOM, which Saerskriven reads and does
+not write, releases the handle on success as well, so no Save writes to that
+file, and names the model as YAML under the file's stem.
 
 ## Reading and writing
 
 A read is the size against `readLimits.maxTextBytes` first, since that bound
-keeps the parse finite, then `readAnyFormat`, then one action: the model, or
-the codec's own failure, which the notice renders with the paths it carries.
+keeps the parse finite, then `readOrImport`, then one action: the model, or
+the codec's or the import's own failure, which the notice renders with the
+paths it carries. A model converted from OTM or TM-BOM is `Imported`: new,
+unsaved, and with no document retained for a save to merge onto.
 A write is the codec's own write for the file's format, then the bridge, then
 one action.
 
@@ -85,7 +86,9 @@ so the codec projects, which is where a loss report comes from. A read reports
 too: a wire schema drops every key it does not declare, and the retained
 document has lost them as well, so no later save can say what became of them.
 An open marks each loss `keptByWriteBack` says a save to the same file keeps,
-and each report names its subjects from the model it opened or saved.
+and each report names its subjects from the model it opened or saved. An open
+of OTM or TM-BOM always reports, losses or none, because its report carries
+the notice that the model is new and that Save makes a Saerskriven file.
 Both reports describe one crossing of the file boundary rather than the model,
 and each stands until a save starts, an open lands, or the file is closed. A
 refused open leaves the report alone, nothing having crossed.

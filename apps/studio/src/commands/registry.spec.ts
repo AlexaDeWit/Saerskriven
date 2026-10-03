@@ -47,13 +47,12 @@ const press = (
 });
 
 describe('the command registry', () => {
-  it('leaves the import, export and diagram-switcher commands without shortcuts', () => {
+  it('leaves the export and diagram-switcher commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
         .map((command) => command.id),
     ).toEqual([
-      'import',
       'export-diagram',
       'export-register',
       'export-typst',

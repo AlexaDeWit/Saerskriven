@@ -53,7 +53,8 @@ A wire package declares one file format and depends on zod alone, so no
 change to the internal model can change what a released format version
 means. `packages/formats` is the only project that knows both a format and
 the model. `packages/wire-otm` and `packages/wire-tmbom` hold the schemas of
-the two formats the studio [imports](docs/import.md).
+the two formats Saerskriven
+[reads and does not write](docs/studio.md#otm-and-tm-bom).
 
 [`threat-modelling/`](threat-modelling/README.md) holds Saerskriven's own threat
 model, in the native format, kept valid by the same suites that read it as a
@@ -61,16 +62,15 @@ fixture.
 
 ## Documentation
 
-| Page                                                          | For                                                           |
-| ------------------------------------------------------------- | ------------------------------------------------------------- |
-| [The Saerskriven YAML format](docs/saerskriven-yaml.md)       | The native file format and its compatibility contract         |
-| [Using the studio](docs/studio.md)                            | Drawing, editing threats and records, files, and the keyboard |
-| [Importing a foreign model](docs/import.md)                   | What OTM and TM-BOM import carries over and reports           |
-| [Render themes and embedded registers](docs/render-themes.md) | Appearance overrides, website badges, heading controls        |
-| [The MCP server](docs/mcp.md)                                 | `saer mcp`: tools, resources, HTTP, host registration         |
-| [Nix](docs/nix.md)                                            | Consuming the released CLI from a flake                       |
-| [Building the executables](docs/build.md)                     | Packaging, the WebAssembly modules, reproducible builds       |
-| [Cutting a release](docs/release.md)                          | The release procedure and the website deployment              |
+| Page                                                          | For                                                                                    |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [The Saerskriven YAML format](docs/saerskriven-yaml.md)       | The native file format and its compatibility contract                                  |
+| [Using the studio](docs/studio.md)                            | Drawing, editing threats and records, files including OTM and TM-BOM, and the keyboard |
+| [Render themes and embedded registers](docs/render-themes.md) | Appearance overrides, website badges, heading controls                                 |
+| [The MCP server](docs/mcp.md)                                 | `saer mcp`: tools, resources, HTTP, host registration                                  |
+| [Nix](docs/nix.md)                                            | Consuming the released CLI from a flake                                                |
+| [Building the executables](docs/build.md)                     | Packaging, the WebAssembly modules, reproducible builds                                |
+| [Cutting a release](docs/release.md)                          | The release procedure and the website deployment                                       |
 
 ## Install
 
@@ -224,10 +224,11 @@ has neither Typst nor a browser installed.
 `convert` writes the model in the format `--to` names, `saerskriven-yaml` at
 the current `formatVersion` or `threat-dragon`, to the path `--out` names or
 to standard output with `--out -`. It reads OTM and TM-BOM files as well,
-converting them as [import](docs/import.md) does. A file already in the target
-format is merged onto the document it was read from, so a Threat Dragon file
-keeps what the model does not describe, and a Saerskriven YAML file comes out
-in the current writer's form, which moves a version 1 file to version 2.
+converting them as the studio's [Open](docs/studio.md#otm-and-tm-bom) does. A
+file already in the target format is merged onto the document it was read
+from, so a Threat Dragon file keeps what the model does not describe, and a
+Saerskriven YAML file comes out in the current writer's form, which moves a
+version 1 file to version 2.
 `--out` may name the input file itself when `--to` is the format it is already
 in: the document is written to a temporary file beside it and renamed over it
 once complete, following a symbolic link to the file it names, and a file the

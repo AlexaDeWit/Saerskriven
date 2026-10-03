@@ -1,12 +1,12 @@
 import {
-  importModel,
   ReadFailure,
   formatNameSchema,
   keptByWriteBack,
-  readAnyFormat,
+  readOrImport,
   retainedSource,
   type Divergence,
   type FormatName,
+  type ImportFormat,
   type RetainedSource,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
@@ -177,27 +177,19 @@ export function saveTarget(
   });
 }
 
-/** The selected read operation determines whether the source remains a save target. */
-export type ReadIntent = 'open' | 'import';
-
 /**
- * Cancellation produces no action. Import refuses without changing the
- * current file. `untitled` names an import whose own stem reduces to
- * nothing, in the active locale.
+ * Cancellation produces no action. A file in a format Saerskriven only reads
+ * opens as a new model under its own stem as YAML, and `untitled` names one
+ * whose stem reduces to nothing, in the active locale.
  */
 export function openedBy(
   outcome: OpenOutcome,
   untitled: string,
-  intent: ReadIntent = 'open',
 ): Action | undefined {
-  const failed = intent === 'import' ? Action.ImportFailed : Action.ReadFailed;
   return OpenOutcome.$match(outcome, {
-    Chosen: ({ name, text }) =>
-      intent === 'import'
-        ? actionForImport(name, text, untitled)
-        : actionForText(name, text),
+    Chosen: ({ name, text }) => actionForText(name, text, untitled),
     TooLarge: ({ name, bound, observed }) =>
-      failed({
+      Action.ReadFailed({
         name,
         failure: ReadFailure.ExceededReadLimit({
           limit: 'maxTextBytes',
@@ -206,7 +198,7 @@ export function openedBy(
         }),
       }),
     Unreadable: ({ reason }) =>
-      Action.FileRefused({ operation: intent, reason }),
+      Action.FileRefused({ operation: 'open', reason }),
     Cancelled: () => undefined,
     NoPicker: () => undefined,
   });
@@ -224,24 +216,31 @@ export function savedBy(
   });
 }
 
-type LossOccasion = 'open' | 'save' | 'import';
+type LossOccasion = 'open' | 'save';
 
 /**
- * What one open, import or save lost that a person reads, and the model each
- * line names its subject from: the one opened, imported or saved.
+ * What one open or save lost that a person reads, and the model each line
+ * names its subject from: the one opened or saved. `readOnly` is the format
+ * of an opened file Saerskriven does not write, which opened as a new model.
  */
 export type LossReport = {
   readonly occasion: LossOccasion;
   readonly model: Model;
   readonly losses: readonly Loss[];
+  readonly readOnly?: ImportFormat;
 };
 
-/** The message each occasion introduces its report with. */
+/** The message each occasion introduces its losses with. */
 export const reportHeadlines = {
   open: 'reports.opened',
-  import: 'reports.imported',
   save: 'reports.saved',
 } as const satisfies Record<LossOccasion, StudioMessageId>;
+
+/** The notice an open of each format Saerskriven does not write shows. */
+export const readOnlyNotices = {
+  otm: 'reports.opened-otm',
+  tmbom: 'reports.opened-tmbom',
+} as const satisfies Record<ImportFormat, StudioMessageId>;
 
 /**
  * A report's lines in the caller's language, one per loss. The caller
@@ -256,18 +255,28 @@ export function reportLines(
 }
 
 /**
- * What a read lost, naming the model it produced. An open says which losses
- * saving back to the same file keeps, and an import, which keeps no source
- * to save back to, keeps none.
+ * What a read lost, naming the model it produced. An open of a format
+ * Saerskriven writes says which losses saving back to the same file keeps.
+ * One of a format it only reads keeps none, and always reports, since its
+ * notice stands whatever it lost.
  */
 export function openReport(
   read: Extract<Action, { readonly _tag: 'Opened' | 'Imported' }>,
 ): LossReport | undefined {
   return Action.$is('Opened')(read)
-    ? reported('open', read.model, read.divergences, (divergence) =>
-        keptByWriteBack(read.source.format, divergence),
+    ? reported(
+        'open',
+        read.model,
+        lossesOf(read.divergences, (divergence) =>
+          keptByWriteBack(read.source.format, divergence),
+        ),
       )
-    : reported('import', read.model, read.divergences, () => false);
+    : {
+        occasion: 'open',
+        model: read.model,
+        losses: lossesOf(read.divergences, () => false),
+        readOnly: read.format,
+      };
 }
 
 /** What a save of `model` lost, and nothing at all where it lost nothing. */
@@ -275,46 +284,50 @@ export function saveReport(
   model: Model,
   divergences: readonly Divergence[],
 ): LossReport | undefined {
-  return reported('save', model, divergences, () => false);
+  return reported(
+    'save',
+    model,
+    lossesOf(divergences, () => false),
+  );
 }
 
 function reported(
   occasion: LossOccasion,
   model: Model,
+  losses: readonly Loss[],
+): LossReport | undefined {
+  return losses.length === 0 ? undefined : { occasion, model, losses };
+}
+
+function lossesOf(
   divergences: readonly Divergence[],
   keeps: (divergence: Divergence) => boolean,
-): LossReport | undefined {
-  const losses = divergences.flatMap((divergence): Loss[] => {
+): readonly Loss[] {
+  return divergences.flatMap((divergence): Loss[] => {
     const shown = reportedDivergence(divergence);
     return shown === undefined
       ? []
       : [{ divergence: shown, kept: keeps(divergence) }];
   });
-  return losses.length === 0 ? undefined : { occasion, model, losses };
 }
 
-function actionForText(name: string, text: string): Action {
-  return Either.match(readAnyFormat(text), {
+function actionForText(name: string, text: string, untitled: string): Action {
+  return Either.match(readOrImport(text), {
     onLeft: (failure) => Action.ReadFailed({ name, failure }),
     onRight: (read) =>
-      Action.Opened({
-        model: read.model,
-        name,
-        source: retainedSource(read),
-        divergences: read.divergences,
-      }),
-  });
-}
-
-function actionForImport(name: string, text: string, untitled: string): Action {
-  return Either.match(importModel(text), {
-    onLeft: (failure) => Action.ImportFailed({ name, failure }),
-    onRight: ({ model, divergences }) =>
-      Action.Imported({
-        model,
-        name: proposedName(name, nativeFormat, untitled),
-        divergences,
-      }),
+      'codec' in read
+        ? Action.Opened({
+            model: read.model,
+            name,
+            source: retainedSource(read),
+            divergences: read.divergences,
+          })
+        : Action.Imported({
+            model: read.model,
+            name: proposedName(name, nativeFormat, untitled),
+            format: read.format,
+            divergences: read.divergences,
+          }),
   });
 }
 

@@ -44,13 +44,23 @@ the React Flow attribution, and any other build says `development`.
 
 ## Files
 
-**Open** reads a Threat Dragon v2 JSON or Saerskriven YAML file, whatever its
-extension. **Save** keeps the format the file was read as, unless the save
-picker is used to choose another. Where the browser offers the File System
-Access API, Save writes to the file that was opened or last saved as, without
-asking. With no such file, as for a new model or an import, Save asks where in
-the browser's save picker, proposing the same name and formats as **Save as**,
-and later Saves write to the file chosen there.
+**Open** reads a Saerskriven YAML, Threat Dragon v2 JSON, OTM or TM-BOM file,
+whatever its extension. What Save does next depends on the format:
+
+- Saerskriven YAML and Threat Dragon: **Save** writes back to the file in the
+  format it was read as, unless the save picker is used to choose another.
+- OTM and TM-BOM: Saerskriven reads these and does not write them, so the file
+  opens as a new, unsaved model under a notice saying so, and no Save ever
+  writes to it. Save makes a Saerskriven YAML file under the file's stem, as
+  `example.yaml` for `example.json`: the save picker proposes that name, and a
+  browser without one downloads under it. What each format becomes is in
+  [OTM and TM-BOM](#otm-and-tm-bom).
+
+Where the browser offers the File System Access API, Save writes to the file
+that was opened or last saved as, without asking. With no such file, as for a
+new model or an OTM or TM-BOM file, Save asks where in the browser's save
+picker, proposing the same name and formats as **Save as**, and later Saves
+write to the file chosen there.
 Dismissing the picker, from Save or Save as, leaves the work unsaved in every
 tab. Elsewhere, Firefox and Safari among them, Save downloads the file under its
 name, and **Save as** turns into a list of formats in the menu, with the file's
@@ -66,7 +76,10 @@ it." where a save to the same file keeps them. Each line names a threat by its
 number and title, and anything else by the name the studio shows, and lines
 that read the same are shown once with their count. A report leaves out what
 loses nothing, such as a raised threat number mark, which the command line
-still prints.
+still prints. An OTM or TM-BOM report names the source fields that hold a
+value the model has no place for, and leaves out a default or a layout
+Saerskriven supplied where the file held none. Nothing of that file is kept for
+a later save, so keep it where what the report names matters.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
@@ -74,10 +87,8 @@ second press confirms. A failed open keeps the current model but lets go of its
 file, so its next Save treats it as a new model rather than writing to either
 file.
 
-**Import** converts an OTM or TM-BOM file into an unsaved native model
-([importing a foreign model](import.md)). **Export** writes the diagram on
-screen as SVG or PNG, the register as Markdown, or the whole model as Typst or
-PDF. An export proposes the open file's name with the export's extension, or
+**Export** writes the diagram on screen as SVG or PNG, the register as
+Markdown, or the whole model as Typst or PDF. An export proposes the open file's name with the export's extension, or
 `Untitled`, and never changes which file Save writes to. When the model has
 several diagrams, the SVG and PNG names add the diagram's title, as
 `payments - Checkout.svg`: characters a file name cannot hold become `_`,
@@ -99,6 +110,83 @@ an open or a save in one tab reaches the others, while each tab keeps its own
 selection and diagram on screen. Once another tab has changed the model, Save
 in this tab asks where to write, or downloads a copy, rather than writing back
 to the file.
+
+### OTM and TM-BOM
+
+Open reads an OTM or TM-BOM file into a new native model, and so do
+`saer convert` ([usage](../README.md#usage)) and the MCP server's
+`saer_import` ([the MCP server](mcp.md)). Content decides the format, in JSON
+or YAML syntax alike, and the reading passes the same size, depth and alias
+bounds as any other file. Ids Saerskriven generates use an ASCII alphabet the
+canvas can address.
+
+#### OTM 0.2.0
+
+Open reads a file stamped `otmVersion: 0.2.0`. All components become process
+nodes because OTM component types do not define a DFD vocabulary. Their
+original types remain in their descriptions. All graph records enter one
+diagram, using geometry from the first declared diagram representation
+where available. Missing geometry receives a deterministic layout. Additional
+representations, code references, and drawing attributes are reported as
+omissions. Invalid geometry produces a model failure.
+
+Trust zones become drawn boxes. Parent relationships and numeric trust
+ratings do not enter the core. A bidirectional dataflow becomes one
+bidirectional flow. Referenced asset names and descriptions become prose on
+the arrows and components. These copies no longer share an editable data
+identity.
+
+Each threat occurrence becomes a separate threat with its own status and
+mitigations. This preserves different treatments on different components.
+Threat definitions without occurrences become threats on no element. Known
+threat statuses map to the corresponding core treatment. Unknown statuses
+remain in the description and are read as open. Each mitigation an occurrence
+names becomes a record linked to that occurrence's threat. Mitigations marked
+implemented or verified retain that status. Other mitigation states are read
+as proposed, with the source state kept in prose and differences reported. A
+mitigation definition no occurrence names would link no threat, so it becomes
+a line of the model description holding its name and description, with a
+report line.
+
+Threat severity remains undecided. OTM numeric risk values and category
+lists have no exact core equivalent and appear in the omission report.
+Threats receive an unspecified custom category. Numeric mitigation
+reductions, asset risk assessments, tags, and extension attributes are also
+reported as omissions.
+
+#### TM-BOM 1.0.1 and 1.0.2
+
+A TM-BOM file needs a `$schema` URI naming either supported release of the
+OWASP Threat Model Library schema. The model's own `version` is not a schema
+version. Later schema versions are refused.
+
+Actors, components, data stores, and flows become their corresponding DFD
+kinds. Saerskriven generates a diagram grouped by declared trust-zone
+membership. Boxes show those zones, but membership is only drawn. Embedded
+Graphviz, Mermaid, PlantUML, and SVG sources are reported as omissions.
+Saerskriven does not execute or interpret them.
+
+Flow encryption and sensitivity values remain in the flow descriptions.
+Data-set names and descriptions appear on the stores named by their
+placements. TM-BOM has no direct data-set reference on a flow, so none is
+inferred. Shared data identity and other data-set properties are reported as
+losses.
+
+Threats preserve their declared component attachments and event descriptions.
+They are read as open, with undecided severity and an unspecified category.
+Separate risk records and threat personas are reported as omissions.
+Controls become mitigations linked to the threats they name. Active controls
+become implemented mitigations. Suggested controls become proposed
+mitigations. Other pending states remain in prose and are read as proposed.
+A control naming no threat would link no threat, so it becomes a line of the
+model description holding its title, its description and its mapped status,
+with a report line. Retired and declined controls are reported as omissions
+whether or not they name a threat.
+
+TM-BOM assumptions name no threat, so every assumption becomes an assumption
+that applies to the model, with its description as prose. Confirmed, rejected
+and unconfirmed assumptions map to the valid, invalidated and unconfirmed
+states. Topic links are reported as omissions.
 
 ## Diagrams
 

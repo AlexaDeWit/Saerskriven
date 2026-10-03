@@ -1,17 +1,18 @@
-import { plural, text } from '@saerskriven/i18n';
+import { text } from '@saerskriven/i18n';
 
 const endpoint = { flow: 'text', element: 'text' } as const;
 
 /**
- * The reports under the chrome card: what a file crossing cost, what an
- * export left out or could not do, and the file types an export offers.
+ * The reports under the chrome card: what a file crossing cost, the notice a
+ * file opens with when Saerskriven does not write its format, what an export
+ * left out or could not do, and the file types an export offers.
  */
 export const reportMessages = {
   region: text(),
   opened: text(),
-  imported: text(),
+  'opened-otm': text(),
+  'opened-tmbom': text(),
   saved: text(),
-  'conversion-details': plural('count'),
   'dismiss-report': text(),
   'dismiss-export': text(),
   'write-refused': text(),

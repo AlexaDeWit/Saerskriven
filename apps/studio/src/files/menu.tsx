@@ -44,10 +44,7 @@ type UnsavedChangesCommandProps = {
   readonly question: DiscardQuestion;
 };
 
-type DiscardQuestion =
-  | 'menu.discard-and-open'
-  | 'menu.discard-and-import'
-  | 'menu.discard-and-new';
+type DiscardQuestion = 'menu.discard-and-open' | 'menu.discard-and-new';
 
 function UnsavedChangesCommand({
   asking,
@@ -111,7 +108,6 @@ export function StudioMenu({
 
   useCloseGuard(guarded);
   useAsking(session.opening, dirty, setOpen, session.cancelOpen);
-  useAsking(session.importing, dirty, setOpen, session.cancelImport);
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
   useChoosing(session.choosing, setOpen);
 
@@ -126,7 +122,6 @@ export function StudioMenu({
           setOpen(next);
           if (!next) {
             cancelOpen();
-            session.cancelImport();
             cancelClose();
             cancelChoice();
           }
@@ -309,14 +304,6 @@ function FileMenu({
               })}
             </MenuItem>
           ))}
-      <UnsavedChangesCommand
-        asking={session.importing && dirty}
-        cancel={session.cancelImport}
-        command="import"
-        dirty={dirty}
-        proceed={session.confirmImport}
-        question="menu.discard-and-import"
-      />
       <ExportMenu />
       <UnsavedChangesCommand
         asking={askingClose}

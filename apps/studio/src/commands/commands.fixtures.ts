@@ -16,7 +16,6 @@ export function recordingSurface(): RecordingSurface {
     surface: {
       files: {
         open: note('open'),
-        import: note('import'),
         save: note('save'),
         saveAs: note('saveAs'),
         exportDiagram: note('exportDiagram'),
