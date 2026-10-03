@@ -153,14 +153,14 @@ migration.
 
 ## `every-glyph.model.json`
 
-A hand-written model with every element kind, both boundary shapes, an
-out-of-scope element, and flows with waypoints, free ends, and an endpoint
-naming another flow. Its open threats exercise paired badges and a neutral
-badge. A flow's open threat resting on an invalidated assumption draws the
-flag mark under a count, and a boundary curve named only by a `mitigated`
-threat with a proposed mitigation draws the flag-only mark. Canvas and render
-tests parse it, render draws its goldens, and `apps/studio-e2e` measures badge
-clearance on it.
+A hand-written model with every element kind, both boundary shapes, a store,
+a note and a box boundary out of scope, and flows with waypoints, free ends,
+and an endpoint naming another flow. Its open threats exercise paired badges
+and a neutral badge. A flow's open threat resting on an invalidated assumption
+draws the flag mark under a count, and a boundary curve named only by a
+`mitigated` threat with a proposed mitigation draws the flag-only mark. Canvas
+and render tests parse it, render draws its goldens, and `apps/studio-e2e`
+measures badge clearance on it.
 
 ## `two-diagrams.model.json`
 

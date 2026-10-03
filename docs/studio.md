@@ -597,11 +597,13 @@ correct or clear it, and survives closing the panel and selecting something
 else.
 
 On the canvas and in exported drawings, an element out of scope has its
-outline dashed and drawn in the muted ink. A flow out of scope has its line
-dashed and drawn in the muted ink, and its arrowhead filled with it. Names and
-badges are drawn as they are in scope. The dash is not a colour, so it survives
-forced colours. A Note, which has no outline, is not marked, and a trust
-boundary, already dashed, is marked by a shorter dash alone.
+outline dotted and drawn in the muted ink. A solid outline is in scope, a
+dashed one is a trust boundary, and a dotted one is out of scope: a trust
+boundary out of scope is dotted in place of its dashes. A flow out of scope
+has its line dotted and drawn in the muted ink, and its arrowhead filled with
+it. A Note, which has no outline, takes a dotted frame just outside its box
+while it is out of scope. Names and badges are drawn as they are in scope. The
+dots are a pattern, not a colour, so they survive forced colours.
 
 ### Security properties
 

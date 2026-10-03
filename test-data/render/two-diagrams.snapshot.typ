@@ -35,6 +35,9 @@ align(center + horizon)[
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
+.saer-diagram-note-frame {
+  fill: none;
+}
 .saer-diagram-label {
   fill: #38342E;
   font-size: 10px;
@@ -67,7 +70,8 @@ align(center + horizon)[
 }
 .saer-diagram-out-of-scope .saer-diagram-shape {
   stroke: #6B655C;
-  stroke-dasharray: 6 4;
+  stroke-dasharray: 0 5;
+  stroke-linecap: round;
 }
 .saer-diagram-out-of-scope .saer-diagram-flow-arrow {
   fill: #6B655C;
@@ -165,6 +169,9 @@ align(center + horizon)[
   stroke-width: 2;
   stroke-dasharray: 8 6;
 }
+.saer-diagram-note-frame {
+  fill: none;
+}
 .saer-diagram-label {
   fill: #38342E;
   font-size: 10px;
@@ -197,7 +204,8 @@ align(center + horizon)[
 }
 .saer-diagram-out-of-scope .saer-diagram-shape {
   stroke: #6B655C;
-  stroke-dasharray: 6 4;
+  stroke-dasharray: 0 5;
+  stroke-linecap: round;
 }
 .saer-diagram-out-of-scope .saer-diagram-flow-arrow {
   fill: #6B655C;

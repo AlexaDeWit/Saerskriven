@@ -45,11 +45,11 @@ export const twoBoxDiagram = (flow: unknown, extra: unknown[] = []): Model =>
 
 /**
  * The model that draws every glyph and every badge tone: the six element
- * kinds, a trust boundary in both shapes, an out-of-scope element, a flow
- * with a waypoint, a flow with a free end, a flow the layout refuses, and
- * open threats spread so that one element carries the stacked pair of
- * badges and another carries the neutral badge alone, a flow whose open
- * threat is flagged, and a boundary curve named only by a flagged
+ * kinds, a trust boundary in both shapes, a store, a note and a box boundary
+ * out of scope, a flow with a waypoint, a flow with a free end, a flow the
+ * layout refuses, and open threats spread so that one element carries the
+ * stacked pair of badges and another carries the neutral badge alone, a flow
+ * whose open threat is flagged, and a boundary curve named only by a flagged
  * `mitigated` threat, which carries the flag-only badge. It lives under
  * test-data because `packages/render` draws it too, and render cannot import
  * canvas's spec fixtures, which no entry point exports.
