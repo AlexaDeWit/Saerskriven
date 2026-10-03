@@ -165,6 +165,66 @@ describe('arrangeSelected', () => {
     expect(modelStore.getState().present).toBe(aligned);
   });
 
+  it.each([
+    {
+      operation: 'centre',
+      landing: 'the widest node',
+      placed: [
+        { position: { x: 0, y: 20 }, size: { width: 100.001, height: 60 } },
+        { position: { x: 200, y: 120 }, size: { width: 50, height: 60 } },
+      ],
+      aligned: [
+        { x: 74.999, y: 20 },
+        { x: 99.999, y: 120 },
+      ],
+    },
+    {
+      operation: 'middle',
+      landing: 'the tallest node',
+      placed: [
+        { position: { x: 20, y: 0 }, size: { width: 60, height: 100.001 } },
+        { position: { x: 120, y: 200 }, size: { width: 60, height: 50 } },
+      ],
+      aligned: [
+        { x: 20, y: 74.999 },
+        { x: 120, y: 99.999 },
+      ],
+    },
+    {
+      operation: 'centre',
+      landing: 'a narrower node',
+      placed: [
+        {
+          position: { x: -206.63, y: 20 },
+          size: { width: 78.837, height: 60 },
+        },
+        {
+          position: { x: -3.45, y: 120 },
+          size: { width: 300.214, height: 60 },
+        },
+      ],
+      aligned: [
+        { x: 5.648, y: 20 },
+        { x: -105.04, y: 120 },
+      ],
+    },
+  ] as const)(
+    'aligns on the $operation line in one undo step and moves nothing on a second press, where $landing lands on a half thousandth',
+    ({ operation, placed, aligned }) => {
+      const model = selectedPair(placed);
+
+      arrangeSelected(operation);
+      const once = modelStore.getState().present;
+
+      expect(
+        [actorElement, processElement].map((id) => elementIn(once, id)),
+      ).toMatchObject(aligned.map((position) => ({ position })));
+      arrangeSelected(operation);
+      expect(modelStore.getState().present).toBe(once);
+      expect(modelStore.getState().past).toEqual([model]);
+    },
+  );
+
   it('adds no undo step and says nothing for an alignment already in place, though its offsets are not exactly zero', () => {
     const model = selectedPair([
       { position: { x: 0.1, y: 20 }, size: { width: 120, height: 60 } },
