@@ -7,10 +7,10 @@
 #
 # The directory holds Playwright's JSON report of each engine as
 # <engine>.json. An engine is red where its report lists a failing spec or an
-# error outside any spec, and where the report is missing or unreadable, which
-# is what a job stopped before the suite finished leaves. BROWSERS_RESULT, the
-# result of the browser jobs, makes the night red where every report is green
-# and a job still failed.
+# error outside any spec, and where no readable report is found: a job stopped
+# before the suite finished leaves none, and neither does a run whose JSON
+# artifact has expired. BROWSERS_RESULT, the result of the browser jobs, makes
+# the night red where every report is green and a job still failed.
 #
 # A red night comments on the open issue carrying the title below, and opens
 # that issue where none is open. A green one writes nothing. Nothing here
@@ -66,7 +66,7 @@ red=''
     if ! jq -e '(.suites | type) == "array" and (.errors | type) == "array"' \
       "$report" >/dev/null 2>&1; then
       red=1
-      echo 'No report: the job stopped before the suite finished.'
+      echo 'No report found.'
       continue
     fi
     specs=$(failing "$report")

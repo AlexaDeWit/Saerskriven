@@ -149,12 +149,12 @@ export default defineConfig({
     },
     // Firefox and WebKit run the `chromium` specs nightly on main, outside
     // the gate (#679, .github/workflows/nightly-browsers.yml). The two
-    // projects exist only where SAERSKRIVEN_E2E_OTHER_ENGINES is set, so a
+    // projects exist only where SAERSKRIVEN_E2E_OTHER_ENGINES is `1`, so a
     // plain run and every pull request job keep to the projects above, and a
     // spec that is red in another engine leaves them green. Neither is in
     // the dependency chain: a run with the variable set starts both beside
     // `chromium` and still reaches `frame-time` last and alone.
-    ...(process.env['SAERSKRIVEN_E2E_OTHER_ENGINES']
+    ...(process.env['SAERSKRIVEN_E2E_OTHER_ENGINES'] === '1'
       ? [
           {
             name: 'firefox',
