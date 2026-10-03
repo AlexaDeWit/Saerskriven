@@ -1,13 +1,14 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import {
   hostedStudioUrl,
+  renderShareLinkWriteFailure,
   shareLinkLimit,
+  ShareLinkWriteFailure,
 } from '@saerskriven/formats/share-link';
 import { unclaimedYaml } from '@saerskriven/mcp/fixtures';
 import {
   committedText,
   incompressibleModel,
-  oversizedLinkTimeout,
   testDataPath,
   validModel,
 } from '@saerskriven/model/fixtures';
@@ -25,21 +26,18 @@ const directory = scratchDirectory('share');
 
 const prefix = `${hostedStudioUrl}#share=1.`;
 
-const refusedLength =
-  /^error: the link would be (\d+) characters, past the (\d+) /u;
-
 describe('share', () => {
   it('prints a link to the hosted studio on one line, which reads back as the model of the file', async () => {
     const outcome = await share(
       testDataPath('saerskriven/two-diagrams.yaml'),
       builtAssets,
     );
-    const [link, rest] = String(outcome.out).split('\n');
-    expect({ code: outcome.code, err: outcome.err, rest }).toEqual({
+    const [link] = String(outcome.out).split('\n');
+    expect({ code: outcome.code, err: outcome.err }).toEqual({
       code: 0,
       err: '',
-      rest: '',
     });
+    expect(String(outcome.out).split('\n')).toEqual([link, '']);
     expect(link?.startsWith(prefix)).toBe(true);
     expect(await modelIn(link ?? '')).toEqual(
       modelOf(committedText('saerskriven/two-diagrams.yaml')),
@@ -74,28 +72,28 @@ describe('share', () => {
     expect(outcome).toEqual(validate(file));
   });
 
-  it(
-    'writes no link past the length a link holds, and exits 2 naming the length, the limit and the file as the thing to send',
-    async () => {
-      const file = fixtureFile(
-        directory,
-        'oversized.yaml',
-        saerskrivenYamlCodec.write(incompressibleModel(validModel, 800_000))
-          .output,
-      );
-      const outcome = await share(file, builtAssets);
-      const [, length, limit] = refusedLength.exec(outcome.err) ?? [];
-      expect({ code: outcome.code, out: outcome.out }).toEqual({
-        code: 2,
-        out: '',
-      });
-      expect(Number(length)).toBeGreaterThan(shareLinkLimit);
-      expect(Number(limit)).toEqual(shareLinkLimit);
-      expect(outcome.err).toContain('Send the file itself instead.');
-      expect(outcome.err.split('\n')).toHaveLength(2);
-    },
-    oversizedLinkTimeout,
-  );
+  it('writes no link past the length a link holds, and exits 2 on one line naming the length, the limit and the file as the thing to send', async () => {
+    const file = fixtureFile(
+      directory,
+      'oversized.yaml',
+      saerskrivenYamlCodec.write(incompressibleModel(validModel, 800_000))
+        .output,
+    );
+    const outcome = await share(file, builtAssets);
+    const [length] = /\d{7,}/u.exec(outcome.err) ?? [];
+    const refusal = renderShareLinkWriteFailure(
+      ShareLinkWriteFailure.TooLong({
+        length: Number(length),
+        limit: shareLinkLimit,
+      }),
+    );
+    expect(Number(length)).toBeGreaterThan(shareLinkLimit);
+    expect(outcome).toEqual({
+      code: 2,
+      out: '',
+      err: `error: ${refusal.join(' ')}\n`,
+    });
+  });
 
   it('exits 2 saying why where the install carries no brotli module', async () => {
     const outcome = await share(

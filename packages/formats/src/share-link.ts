@@ -3,6 +3,7 @@ import type { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-
 import { Data, Either } from 'effect';
 import { BrotliFailure, compressBrotli, decompressBrotli } from './brotli.js';
 import { ReadFailure, type ReadResult } from './lib/codec.js';
+import { escapedForTerminal } from './lib/divergence.js';
 import {
   exceededReadLimit,
   readLimits,
@@ -77,6 +78,8 @@ const encoder = new TextEncoder();
 
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
+const sendTheFile = 'Send the file itself instead.';
+
 /**
  * `base` with the model as a share link fragment, `#share=1.` and then the
  * bytes a save writes, compressed with brotli and encoded as base64url
@@ -97,6 +100,29 @@ export async function writeShareLink(
   return Either.flatMap(Either.mapLeft(compressed, uncompressed), (bytes) =>
     linkWithin(`${pageOf(base)}${marker}${encoding}.${base64url(bytes)}`),
   );
+}
+
+/**
+ * Why a write produced no link, as lines without terminators, every variant
+ * worded. A link past its limit and a model past the read bound both end by
+ * saying to send the file, which opens where its link would not.
+ */
+export function renderShareLinkWriteFailure(
+  failure: ShareLinkWriteFailure,
+): readonly string[] {
+  return ShareLinkWriteFailure.$match(failure, {
+    TooLong: ({ length, limit }) => [
+      `The link would be ${String(length)} characters, past the ${String(limit)} a share link may hold, so none was written.`,
+      sendTheFile,
+    ],
+    PastReadBound: ({ size }) => [
+      `The model is ${String(size)} bytes as Saerskriven YAML, past the ${String(readLimits.maxTextBytes)} bytes a read accepts, so no link to it would open.`,
+      sendTheFile,
+    ],
+    Unusable: ({ sentence }) => [
+      `The brotli module a link is compressed with did not run: ${escapedForTerminal(sentence)}.`,
+    ],
+  });
 }
 
 /** Whether a fragment, as `location.hash` gives it, carries a share link. */

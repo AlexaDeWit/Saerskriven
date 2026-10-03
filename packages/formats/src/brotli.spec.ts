@@ -3,7 +3,7 @@ import { moduleWhoseEveryCall, trapping } from '@saerskriven/wasm/fixtures';
 import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
-import { brotliUnbuilt, brotliWasm } from './brotli.fixtures.js';
+import { brotliUnbuilt, brotliWasm } from './fixtures.js';
 import { BrotliFailure, compressBrotli, decompressBrotli } from './brotli.js';
 import { readLimits } from './lib/read-limits.js';
 import { saerskrivenModelPath } from './lib/saerskriven-yaml.fixtures.js';

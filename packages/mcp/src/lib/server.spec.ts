@@ -3,6 +3,8 @@ import {
   ProtocolError,
   type CallToolResult,
 } from '@modelcontextprotocol/server';
+import { brotliUnbuilt } from '@saerskriven/formats/fixtures';
+import { hostedStudioUrl } from '@saerskriven/formats/share-link';
 import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
@@ -10,6 +12,7 @@ import {
   editOf,
   eras,
   inspectionOf,
+  occurrencesIn,
   ownLinkTextOf,
   promptProseOf,
   proseOf,
@@ -17,6 +20,8 @@ import {
   registeredPrompts,
   registeredTools,
   resourceProseOf,
+  shareLinkOf,
+  shareLinkResultSchema,
   structuredOf,
   textOf,
   type Era,
@@ -33,7 +38,7 @@ import {
   staleRevision,
   type EditInput,
 } from './edit.fixtures.js';
-import { brotliUnbuilt, builtBrotli } from './brotli.fixtures.js';
+import { builtBrotli } from './brotli.fixtures.js';
 import { editOps } from './edits.js';
 import { dataNotInstructions } from './preface.js';
 import { builtRasterizer, rasterizerUnbuilt } from './rasterizer.fixtures.js';
@@ -592,6 +597,29 @@ for (const era of eras) {
           proseOf(result).prose.map((text) => text.split('\n')[0]),
         ).toEqual([dataNotInstructions]);
         expect(drawn.image.mimeType).toEqual('image/png');
+      });
+    });
+
+    describe.skipIf(brotliUnbuilt)('a share link through a client', () => {
+      it('carries the link once in the whole result, alone in the block after the text', async () => {
+        const writable = editableTree();
+        const run = await session({ root: writable.root, era, brotli });
+        const result = await run.client.callTool({
+          name: 'saer_share_link',
+          arguments: { file: modelFile },
+        });
+        await run.end();
+        const link = shareLinkOf(result);
+        expect(result.isError).toBeFalsy();
+        expect(link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
+        expect(link).toMatch(/^[A-Za-z0-9_.:/#=-]+$/u);
+        expect(occurrencesIn(result, link)).toBe(1);
+        expect(structuredOf(result, shareLinkResultSchema).length).toEqual(
+          link.length,
+        );
+        expect(
+          proseOf(result).prose.map((text) => text.split('\n')[0]),
+        ).toEqual([dataNotInstructions]);
       });
     });
 

@@ -1,22 +1,17 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { brotliUnbuilt, brotliWasm } from '@saerskriven/formats/fixtures';
 import {
   hostedStudioUrl,
   readShareLink,
+  renderShareLinkWriteFailure,
   shareLinkLimit,
+  ShareLinkWriteFailure,
 } from '@saerskriven/formats/share-link';
 import { inNumberOrder } from '@saerskriven/model';
-import {
-  incompressibleModel,
-  oversizedLinkTimeout,
-  validModel,
-} from '@saerskriven/model/fixtures';
+import { incompressibleModel, validModel } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import {
-  brokenBrotli,
-  brotliUnbuilt,
-  brotliWasm,
-  builtBrotli,
-} from './brotli.fixtures.js';
+import { occurrencesIn, shareLinkOf } from '../fixtures.js';
+import { brokenBrotli, builtBrotli } from './brotli.fixtures.js';
 import {
   answerOf,
   featureCompleteFile,
@@ -28,12 +23,29 @@ import {
 } from './read-tools.fixtures.js';
 import { readNamed } from './reading.js';
 import { noBrotli } from './server.fixtures.js';
-import { renderShareLink, shareLink } from './share-link.js';
+import {
+  renderShareLink,
+  shareLink,
+  shareLinkDescription,
+  type SharedLink,
+} from './share-link.js';
+import { attachedToolResult } from './tool-result.js';
 import { validate } from './validate.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import { openWorkspace } from './workspace.js';
 
 const workspace = featureCompleteWorkspace();
+
+const linkIn = (shared: SharedLink): string => {
+  const [block] = shared.blocks;
+  return block?.type === 'text' ? block.text : '';
+};
+
+describe('what saer_share_link tells a client', () => {
+  it('states the longest link its result can hold', () => {
+    expect(shareLinkDescription).toContain(String(shareLinkLimit));
+  });
+});
 
 describe('what saer_share_link refuses', () => {
   it('names the reason where this install carries no brotli module', async () => {
@@ -45,7 +57,8 @@ describe('what saer_share_link refuses', () => {
 
   it('words what the module refused where it will not start', async () => {
     const refused = refusalOf(await shareLink(workspace, brokenBrotli, {}));
-    expect(refused[0]).toContain('cannot write a share link');
+    expect(refused).toHaveLength(1);
+    expect(refused[0]).toContain('did not run');
     expect(refused[0]).toContain('WebAssembly');
   });
 
@@ -72,47 +85,57 @@ describe.skipIf(brotliUnbuilt)('what saer_share_link writes', () => {
   it('writes a link on the hosted studio that reads back as the model of the file', async () => {
     const reading = answerOf(readNamed(workspace, undefined));
     const shared = answerOf(await shareLink(workspace, builtBrotli, {}));
-    expect(shared.link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
+    const link = linkIn(shared);
+    expect(link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
     const read = Either.getOrThrow(
-      await readShareLink(new URL(shared.link).hash, brotliWasm()),
+      await readShareLink(new URL(link).hash, brotliWasm()),
     );
     expect(read.model).toEqual({
       ...reading.model,
       threats: inNumberOrder(reading.model.threats),
     });
-    expect({
-      file: shared.file,
-      format: shared.format,
-      revision: shared.revision,
-      divergences: shared.divergences,
-    }).toEqual({
+    expect(shared.answer).toEqual({
       file: featureCompleteFile,
       format: 'threat-dragon',
       revision: reading.revision,
+      length: link.length,
       divergences: reading.divergences,
     });
   });
 
-  it('carries the link in its text, after the reading', async () => {
-    const shared = answerOf(await shareLink(workspace, builtBrotli, {}));
-    const rendered = renderShareLink(shared);
-    expect(rendered[0]).toEqual(`file: ${featureCompleteFile}`);
-    expect(rendered).toContain(`link: ${shared.link}`);
+  it('carries the link once in the whole result, in a block holding nothing else', async () => {
+    const outcome = await shareLink(workspace, builtBrotli, {});
+    const link = linkIn(answerOf(outcome));
+    const result = attachedToolResult(outcome, renderShareLink);
+    expect(result.content.map((block) => block.type)).toEqual(['text', 'text']);
+    expect(shareLinkOf(result)).toEqual(link);
+    expect(occurrencesIn(result, link)).toBe(1);
   });
 
-  it(
-    'refuses a model whose link would pass the limit, naming both lengths and the file as the thing to send',
-    async () => {
-      const oversized = treeHolding(
-        saerskrivenYamlCodec.write(incompressibleModel(validModel, 800_000))
-          .output,
-      );
-      const refused = refusalOf(await shareLink(oversized, builtBrotli, {}));
-      const [length] = /\d{7,}/u.exec(refused[0] ?? '') ?? [];
-      expect(Number(length)).toBeGreaterThan(shareLinkLimit);
-      expect(refused[0]).toContain(`past the ${String(shareLinkLimit)} `);
-      expect(refused.join('\n')).toContain('Send the file');
-    },
-    oversizedLinkTimeout,
-  );
+  it('names the link in its text by its length, after the reading', async () => {
+    const shared = answerOf(await shareLink(workspace, builtBrotli, {}));
+    const rendered = renderShareLink(shared.answer);
+    expect(rendered[0]).toEqual(`file: ${featureCompleteFile}`);
+    expect(
+      rendered.filter((line) => line.includes(String(shared.answer.length))),
+    ).toHaveLength(1);
+  });
+
+  it('refuses a model whose link would pass the limit, naming both lengths and the file as the thing to send', async () => {
+    const oversized = treeHolding(
+      saerskrivenYamlCodec.write(incompressibleModel(validModel, 800_000))
+        .output,
+    );
+    const refused = refusalOf(await shareLink(oversized, builtBrotli, {}));
+    const [length] = /\d{7,}/u.exec(refused[0] ?? '') ?? [];
+    expect(Number(length)).toBeGreaterThan(shareLinkLimit);
+    expect(refused).toEqual(
+      renderShareLinkWriteFailure(
+        ShareLinkWriteFailure.TooLong({
+          length: Number(length),
+          limit: shareLinkLimit,
+        }),
+      ),
+    );
+  });
 });

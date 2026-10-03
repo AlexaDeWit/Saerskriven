@@ -90,9 +90,10 @@ narrowest scope that needs it, with the reason beside it, as the CLI's PDF
 compiles do.
 
 The fixture helpers every suite shares live on the `@saerskriven/model/fixtures`
-subpath, and those for a suite that runs a flake-built WebAssembly module on
-`@saerskriven/wasm/fixtures`. Only a spec, a test, or a fixture module imports a
-fixture helper. A fixtures subpath resolves to source, so every project that
+subpath, those for a suite that runs a flake-built WebAssembly module on
+`@saerskriven/wasm/fixtures`, and the built brotli module on
+`@saerskriven/formats/fixtures`. Only a spec, a test, or a fixture module
+imports a fixture helper. A fixtures subpath resolves to source, so every project that
 depends on its package reaches it, and nothing structural stops a downstream
 production module: the typecheck resolves it like any other entry point and the
 layer matrix reasons about projects rather than entry points, so a studio bundle

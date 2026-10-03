@@ -323,7 +323,7 @@ function sharingTools(
       annotations: reads,
     },
     async (args) =>
-      toolResult(
+      attachedToolResult(
         await shareLink(options.workspace, options.brotli, args),
         renderShareLink,
       ),

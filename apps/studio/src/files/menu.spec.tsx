@@ -1,3 +1,4 @@
+import { brotliUnbuilt } from '@saerskriven/formats/fixtures';
 import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { PdfFailure } from '@saerskriven/render/pdf';
@@ -32,7 +33,6 @@ import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
   brokenThreatDragonText,
-  brotliUnbuilt,
   chosenFile,
   edit,
   fragmentOf,

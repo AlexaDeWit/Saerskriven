@@ -1,8 +1,8 @@
-import { readLimits, type DetectedRead } from '@saerskriven/formats';
+import type { DetectedRead } from '@saerskriven/formats';
 import { brotliWasmFile } from '@saerskriven/formats/build-assets';
 import {
   hostedStudioUrl,
-  ShareLinkWriteFailure,
+  renderShareLinkWriteFailure,
   writeShareLink,
 } from '@saerskriven/formats/share-link';
 import { Either } from 'effect';
@@ -52,19 +52,12 @@ async function linked(
   return Either.match(
     await writeShareLink(read.model, hostedStudioUrl, module.right),
     {
-      onLeft: (failure) => usageError(lines(refused(failure))),
+      onLeft: (failure) =>
+        usageError(
+          lines(`error: ${renderShareLinkWriteFailure(failure).join(' ')}`),
+        ),
       onRight: (link) =>
         succeeded(lines(link), describeDivergences(read.divergences)),
     },
   );
-}
-
-function refused(failure: ShareLinkWriteFailure): string {
-  return ShareLinkWriteFailure.$match(failure, {
-    TooLong: ({ length, limit }) =>
-      `error: the link would be ${String(length)} characters, past the ${String(limit)} a share link may hold, so none was written. Send the file itself instead.`,
-    PastReadBound: ({ size }) =>
-      `error: the model is ${String(size)} bytes as Saerskriven YAML, past the ${String(readLimits.maxTextBytes)} bytes a read accepts, so no link to it would open. Send the file itself instead.`,
-    Unusable: ({ sentence }) => `error: cannot write the link: ${sentence}`,
-  });
 }

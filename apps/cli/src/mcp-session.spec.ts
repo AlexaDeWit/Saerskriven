@@ -8,6 +8,7 @@ import {
   getThreatResultSchema,
   imagesOf,
   mediaTypesOf,
+  occurrencesIn,
   pngMagic,
   promptProseOf,
   proseOf,
@@ -20,6 +21,7 @@ import {
   resourceProseOf,
   searchElementsResultSchema,
   searchThreatsResultSchema,
+  shareLinkOf,
   shareLinkResultSchema,
   structuredOf,
   textOf,
@@ -137,7 +139,7 @@ const calls = async (session: McpSession) => {
     ],
     inspected: readingOf(inspected),
     drawn,
-    shared: structuredOf(shared, shareLinkResultSchema),
+    shared,
     searched: structuredOf(searched, searchThreatsResultSchema),
     held: threat,
     edited,
@@ -189,10 +191,13 @@ for (const runner of runners) {
             expect(mediaTypesOf(run.drawn)).toEqual(['image/png']);
             expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
             expect(Math.max(drawn.image.width, drawn.image.height)).toBe(1568);
+            const link = shareLinkOf(run.shared);
+            expect(link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
+            expect(occurrencesIn(run.shared, link)).toBe(1);
             expect(
-              run.shared.link.startsWith(`${hostedStudioUrl}#share=1.`),
-            ).toBe(true);
-            expect(await modelIn(run.shared.link)).toEqual(
+              structuredOf(run.shared, shareLinkResultSchema).length,
+            ).toEqual(link.length);
+            expect(await modelIn(link)).toEqual(
               modelOf(dragonBytes.toString('utf8')),
             );
             expect(run.searched.threats.length).toBeGreaterThan(0);

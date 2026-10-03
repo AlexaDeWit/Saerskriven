@@ -6,7 +6,7 @@ import {
 import { Either, Option } from 'effect';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
-import { brotliUnbuilt, brotliWasm } from './brotli.fixtures.js';
+import { brotliUnbuilt, brotliWasm } from './fixtures.js';
 import type { ReadFailure } from './lib/codec.js';
 import { adversarialText, vendoredTexts } from './lib/corpus.fixtures.js';
 import { exceededReadLimit, readLimits } from './lib/read-limits.js';
@@ -24,8 +24,10 @@ import {
   hostedStudioUrl,
   isShareLinkFragment,
   readShareLink,
+  renderShareLinkWriteFailure,
   ShareLinkFailure,
   shareLinkLimit,
+  ShareLinkWriteFailure,
   writeShareLink,
 } from './share-link.js';
 
@@ -91,8 +93,45 @@ const incompressible = (bytes: number): Model =>
   incompressibleModel(featureComplete, bytes);
 
 describe('the hosted studio', () => {
-  it('is reached over https alone', () => {
-    expect(new URL(hostedStudioUrl).protocol).toBe('https:');
+  it('is the canonical address, over https', () => {
+    expect(hostedStudioUrl).toBe('https://saerskriven.com/');
+  });
+});
+
+describe('why a write produced no link', () => {
+  it('gives the length and the limit of a link past it, and says to send the file', () => {
+    expect(
+      renderShareLinkWriteFailure(
+        ShareLinkWriteFailure.TooLong({
+          length: 1_200_000,
+          limit: shareLinkLimit,
+        }),
+      ),
+    ).toEqual([
+      'The link would be 1200000 characters, past the 1048576 a share link may hold, so none was written.',
+      'Send the file itself instead.',
+    ]);
+  });
+
+  it('gives the size and the bound of a model past the read bound, and says to send the file', () => {
+    expect(
+      renderShareLinkWriteFailure(
+        ShareLinkWriteFailure.PastReadBound({ size: 9_000_000 }),
+      ),
+    ).toEqual([
+      'The model is 9000000 bytes as Saerskriven YAML, past the 8388608 bytes a read accepts, so no link to it would open.',
+      'Send the file itself instead.',
+    ]);
+  });
+
+  it("carries the module's own sentence, escaped, where it did not run", () => {
+    expect(
+      renderShareLinkWriteFailure(
+        ShareLinkWriteFailure.Unusable({ sentence: 'it \u001b[31mtrapped' }),
+      ),
+    ).toEqual([
+      'The brotli module a link is compressed with did not run: it \\u001b[31mtrapped.',
+    ]);
   });
 });
 

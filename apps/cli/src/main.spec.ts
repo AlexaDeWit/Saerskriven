@@ -1,4 +1,3 @@
-import { hostedStudioUrl } from '@saerskriven/formats/share-link';
 import { repositoryRoot, sha256Of } from '@saerskriven/model/fixtures';
 import { spawnSync } from 'node:child_process';
 import { closeSync, existsSync, openSync, readFileSync } from 'node:fs';
@@ -32,6 +31,8 @@ const directory = scratchDirectory('main');
 const fullDevice = '/dev/full';
 
 const twoDiagrams = 'test-data/saerskriven/two-diagrams.yaml';
+
+const linkPrefix = 'https://saerskriven.com/#share=1.';
 
 const scenarios: readonly Scenario[] = [
   {
@@ -152,13 +153,13 @@ for (const runner of runners) {
 
       it('prints a share link on one line, which reads back as the model of the file', async () => {
         const shared = text(runner, ['share', twoDiagrams]);
-        const [link, rest] = shared.out.split('\n');
-        expect({ code: shared.code, err: shared.err, rest }).toEqual({
+        const [link] = shared.out.split('\n');
+        expect({ code: shared.code, err: shared.err }).toEqual({
           code: 0,
           err: '',
-          rest: '',
         });
-        expect(link?.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
+        expect(shared.out.split('\n')).toEqual([link, '']);
+        expect(link?.slice(0, linkPrefix.length)).toEqual(linkPrefix);
         expect(await modelIn(link ?? '')).toEqual(
           modelOf(readFileSync(join(repositoryRoot, twoDiagrams), 'utf8')),
         );
