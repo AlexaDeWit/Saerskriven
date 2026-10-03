@@ -283,7 +283,8 @@ export function resizeNode(node: CanvasNode, box: NodeBox): void {
   );
 }
 
-const drawnSelector = '.react-flow__node, .react-flow__edge';
+/** The elements and flows React Flow draws, each one a tab stop. */
+export const drawnSelector = '.react-flow__node, .react-flow__edge';
 
 const focusAttempts = 3;
 

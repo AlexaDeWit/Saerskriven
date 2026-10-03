@@ -35,6 +35,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
 | `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection                                                       |
 | `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them            |
+| `focus-pan.tsx`                                                       | The shortest pan that shows a keyboard-focused item's ring clear of the panes, and the listener that asks for it                   |
 | `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                 |
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
@@ -193,6 +194,29 @@ tab's open fits again, while an edit or a save moves nothing. Opening fits the
 full canvas extent. The fit commands use `clearOfPanel`, the area left of the
 pane's measured coverage, and the `panelCover` token sets only the pane's
 default width.
+
+`FocusPan` in `focus-pan.tsx` pans when keyboard focus lands on an item a pane
+covers. It stands in for React Flow's `autoPanOnNodeFocus`, which stays off
+because it centres a node, and only one outside the canvas. `onKeyboardFocus`
+listens for `focusin` on React Flow's container and answers only an element,
+flow or resize control that matches `:focus-visible`, the same judgement the
+ring is drawn by, so no pointer focus pans and a focus return after a key press
+does. Focus the browser hands back when the window regains it is not a move.
+The measuring waits for the next frame, so a pane the same key press closes, as
+Close threats does before it returns focus, is gone by then, and one it opens
+is in place. `clearingOffset` then works in screen pixels, from the item's box
+with its outline's reach, every `[data-pane]` box and the container's own: no
+move unless a pane covers the ring, otherwise the shortest one that puts the
+ring inside the canvas and `ringClearance` clear of every pane, and no move
+where no such place exists.
+`focusPanner` hands that to React Flow's `setViewport` as a `focusPanDuration`
+transition, interpolated linearly because React Flow's default zooms out and
+back over a pan. Each focus is measured from where the view is at that moment
+and replaces a pan still running, and a focus needing no move stops one, so two
+pans never run against each other. A scroll, a drag or a zoom interrupts the
+transition inside d3-zoom, and nothing asks for the view again until focus
+moves. The pan touches React Flow's store alone, so it is no edit, no undo step
+and nothing another tab hears of.
 
 ## Accessibility
 
