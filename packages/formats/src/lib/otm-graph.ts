@@ -12,7 +12,9 @@ import {
 
 /**
  * The OTM components, trust zones and dataflows as diagram elements, placed
- * by the first diagram representation where the source has one.
+ * by the first diagram representation where the source has one. It reports
+ * `otm-assets-as-descriptions` once, and only where an asset a component or
+ * a dataflow references put text in that element's description.
  */
 export function otmGraph(document: OtmDocument, context: ImportContext) {
   const components = document.components ?? [];
@@ -21,10 +23,9 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
     (item) => item.id,
     'components',
   );
-  const assets = context.index(
-    document.assets ?? [],
-    (item) => item.id,
-    'assets',
+  const assets = assetDescriptions(
+    context.index(document.assets ?? [], (item) => item.id, 'assets'),
+    context,
   );
   context.index(document.trustZones ?? [], (item) => item.id, 'trustZones');
   context.index(document.dataflows ?? [], (item) => item.id, 'dataflows');
@@ -52,7 +53,7 @@ export function otmGraph(document: OtmDocument, context: ImportContext) {
     assets,
     context,
   );
-  if (assets.size > 0) {
+  if (assets.made) {
     context.report({ code: 'otm-assets-as-descriptions' });
   }
   return {
@@ -69,10 +70,12 @@ type Dataflow = NonNullable<OtmDocument['dataflows']>[number];
 
 type Asset = NonNullable<OtmDocument['assets']>[number];
 
+type AssetDescriptions = ReturnType<typeof assetDescriptions>;
+
 function otmComponents(
   components: readonly Component[],
   representation: string | undefined,
-  assets: ReadonlyMap<string, Asset>,
+  assets: AssetDescriptions,
   context: ImportContext,
 ): ElementInput[] {
   const elements: ElementInput[] = [];
@@ -94,18 +97,8 @@ function otmComponents(
     const description = context.text([
       component.description ?? '',
       ...labeledClause('Source component type: ', component.type),
-      dataProse(
-        data?.processed ?? [],
-        'components.assets.processed',
-        assets,
-        context,
-      ),
-      dataProse(
-        data?.stored ?? [],
-        'components.assets.stored',
-        assets,
-        context,
-      ),
+      assets.prose(data?.processed ?? [], 'components.assets.processed'),
+      assets.prose(data?.stored ?? [], 'components.assets.stored'),
     ]);
     elements.push({
       ...importElement(context, id, component.name, description),
@@ -146,7 +139,7 @@ function otmZones(
 function otmFlows(
   flows: readonly Dataflow[],
   componentIds: ReadonlyMap<string, Component>,
-  assets: ReadonlyMap<string, Asset>,
+  assets: AssetDescriptions,
   context: ImportContext,
 ): ElementInput[] {
   return flows.map((flow): ElementInput => {
@@ -175,7 +168,7 @@ function otmFlows(
         flow.name,
         context.text([
           flow.description ?? '',
-          dataProse(flow.assets ?? [], 'dataflows.assets', assets, context),
+          assets.prose(flow.assets ?? [], 'dataflows.assets'),
         ]),
       ),
       kind: 'flow',
@@ -193,30 +186,38 @@ function otmFlows(
   });
 }
 
-function dataProse(
-  ids: readonly (string | null)[],
-  path: string,
+function assetDescriptions(
   assets: ReadonlyMap<string, Asset>,
   context: ImportContext,
-): string {
-  return context.text(
-    ids.flatMap((id) => {
-      if (id === null) {
-        return [];
-      }
-      const asset = assets.get(id);
-      if (asset === undefined) {
-        context.problem([path], {
-          code: 'unknown-source-reference',
-          parameters: { id, kind: 'asset' },
-        });
-        return [];
-      }
-      context.fields(asset, ['id', 'name', 'description']);
-      return context.text([asset.name, asset.description ?? ''], ': ');
-    }),
-    '\n',
-  );
+) {
+  let made = false;
+  return {
+    get made() {
+      return made;
+    },
+    prose: (ids: readonly (string | null)[], path: string): string => {
+      const prose = context.text(
+        ids.flatMap((id) => {
+          if (id === null) {
+            return [];
+          }
+          const asset = assets.get(id);
+          if (asset === undefined) {
+            context.problem([path], {
+              code: 'unknown-source-reference',
+              parameters: { id, kind: 'asset' },
+            });
+            return [];
+          }
+          context.fields(asset, ['id', 'name', 'description']);
+          return context.text([asset.name, asset.description ?? ''], ': ');
+        }),
+        '\n',
+      );
+      made ||= prose !== '';
+      return prose;
+    },
+  };
 }
 
 function otmGeometry(
