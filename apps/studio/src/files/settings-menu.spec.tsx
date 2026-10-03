@@ -54,6 +54,20 @@ describe('the language submenu', () => {
     expect(choice('Svenska').getAttribute('aria-checked')).toBe('true');
     expect(choice('Français (Canada)')).toBeDefined();
   });
+
+  describe.each([
+    ['en-CA', 'Language English (Canada)'],
+    ['fr-CA', 'Langue français (Canada)'],
+    ['sv', 'Språk svenska'],
+  ] as const)('in %s', (locale, name) => {
+    withLanguage(locale);
+
+    it('names its row as one phrase, the language written as it writes its own name inside one', () => {
+      openPanel(<LanguageMenu />);
+
+      expect(screen.getByRole('menuitem', { name })).toBeDefined();
+    });
+  });
 });
 
 describe('the appearance submenu', () => {

@@ -104,7 +104,12 @@ so the phrase holds the word as it reads there: `menu.appearance-light`
 (_Appearance light_, _Apparence claire_, _Utseende ljust_) agrees with the
 noun before it, and `tools.highest-severity-high` (_highest severity high_,
 _gravité maximale élevée_, _högsta allvarlighetsgrad hög_) keeps the word
-`terms` gives that severity.
+`terms` gives that severity. `menu.language-chosen` takes no parameter: the
+language chosen is the catalogue's own, so each catalogue writes its
+language's name as that language does inside a phrase (_Language English
+(Canada)_, _Langue français (Canada)_, _Språk svenska_), and the option keeps
+the capital it is listed under in
+[`../language-preference.ts`](../language-preference.ts).
 
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`

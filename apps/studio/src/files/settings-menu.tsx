@@ -45,21 +45,23 @@ export function AppearanceMenu({
   );
 }
 
-/** The language submenu: each locale named in its own language. */
+/**
+ * The language submenu: each locale named in its own language. The catalogue
+ * in use is the chosen language's own, so it words the row's spoken name whole.
+ */
 export function LanguageMenu() {
   const translator = useTranslator();
   const [locale, choose] = useLanguage();
   const heading = translator.t('shell.language');
-  const chosen = languageNames[locale];
 
   return (
     <Submenu
-      label={translator.t('menu.language-chosen', { language: chosen })}
+      label={translator.t('menu.language-chosen')}
       trigger={
         <>
           <span>{heading}</span>
           <span aria-hidden="true" className={styles.chord}>
-            {chosen}
+            {languageNames[locale]}
           </span>
         </>
       }

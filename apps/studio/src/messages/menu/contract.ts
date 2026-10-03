@@ -19,7 +19,7 @@ export const menuMessages = {
   'appearance-system': text(),
   'appearance-light': text(),
   'appearance-dark': text(),
-  'language-chosen': text({ language: 'text' }),
+  'language-chosen': text(),
   'snap-on': text(),
   'snap-off': text(),
   diagram: text(),

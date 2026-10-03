@@ -19,7 +19,7 @@ export const menuSv = catalogue(menuMessages)('sv')({
   'appearance-system': 'Utseende enligt systemet',
   'appearance-light': 'Utseende ljust',
   'appearance-dark': 'Utseende mörkt',
-  'language-chosen': 'Språk {language}',
+  'language-chosen': 'Språk svenska',
   'snap-on': 'Fäst mot rutnätet: på',
   'snap-off': 'Fäst mot rutnätet: av',
   diagram: 'Diagram',

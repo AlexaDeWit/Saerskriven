@@ -73,7 +73,7 @@ const readers = {
 
 const languageRow = (page: Page): Locator =>
   page.getByRole('menuitem', {
-    name: /(?:English \(Canada\)|Français \(Canada\)|Svenska)$/u,
+    name: /(?:English \(Canada\)|français \(Canada\)|svenska)$/u,
   });
 
 const openLanguage = async (page: Page): Promise<void> => {
