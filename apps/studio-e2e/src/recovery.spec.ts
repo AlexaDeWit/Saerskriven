@@ -7,8 +7,10 @@ import {
   nodeNamed,
   openPlaceholder,
   placeholder,
+  recoverySnapshot,
   runFromMenu,
   savedFile,
+  withRecoverySnapshot,
 } from './studio.fixtures.js';
 
 const handleWriteKey = 'saerskrivenRecoveryTestHandleWrite';
@@ -92,4 +94,66 @@ test('two tabs follow each other, so the one in view is the one that is right', 
   await runFromMenu(other, 'Undo');
   await expect(nodeNamed(other, placeholder.store)).toHaveCount(1);
   await expect(nodeNamed(page, placeholder.store)).toHaveCount(1);
+});
+
+const undrawnSession = JSON.stringify({
+  version: 2,
+  document: {
+    formatVersion: 2,
+    metadata: {
+      title: 'Undrawn',
+      owner: '',
+      description: '',
+      contributors: [],
+    },
+    diagrams: [
+      {
+        id: 'diagram-main',
+        title: 'Main',
+        elements: [
+          {
+            kind: 'trust-boundary',
+            id: 'boundary-perimeter',
+            name: 'Perimeter',
+            description: '',
+            outOfScope: false,
+            reasonOutOfScope: '',
+            shape: {
+              kind: 'curve',
+              waypoints: [
+                { x: -1e308, y: 0 },
+                { x: 1e308, y: 0 },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    threats: [],
+    lastIssuedThreatNumber: 0,
+    mitigations: [],
+    assumptions: [],
+  },
+  writtenBy: { studioVersion: 'spec' },
+  dirty: true,
+  file: { _tag: 'NoFile' },
+});
+
+test('a stored session the studio cannot draw stops one start, and the next opens the placeholder and says so', async ({
+  page,
+}) => {
+  await withRecoverySnapshot(page, undrawnSession);
+
+  await page.goto('/');
+  await expect(
+    page.getByRole('region', { name: 'Saerskriven stopped' }),
+  ).toBeVisible();
+
+  await page.reload();
+  await expect(canvasContainer(page)).toBeVisible();
+  await canvasSettled(page);
+
+  await expect(nodeNamed(page, placeholder.actor)).toBeVisible();
+  await expect(page.getByTestId('failure-notice')).not.toBeEmpty();
+  expect(await recoverySnapshot(page)).toBe(undrawnSession);
 });

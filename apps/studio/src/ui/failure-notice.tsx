@@ -303,6 +303,7 @@ function describeRecovery(t: Speaker, problem: RecoveryProblem): string {
       writer === undefined
         ? t('notice.snapshot-earlier-release')
         : t('notice.snapshot-release', { release: writer }),
+    RestoreUnfinished: () => t('notice.snapshot-restore-unfinished'),
   });
 }
 

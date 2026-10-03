@@ -42,6 +42,8 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
     'An earlier release of Saerskriven stored this session, in a form this release cannot restore.',
   'snapshot-release':
     'Saerskriven {release} stored this session, in a form this release cannot restore.',
+  'snapshot-restore-unfinished':
+    'The last session could not be shown. Reloading tries it again.',
   'field-not-saved': '{field} was not saved.',
   'refused-character': 'Character {position} is one the model does not accept.',
   'empty-name': 'A name cannot be empty.',

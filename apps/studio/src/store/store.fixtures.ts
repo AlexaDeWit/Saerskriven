@@ -23,6 +23,7 @@ import {
   recoverySnapshot,
   recoverySnapshotSchema,
   type RecoverySnapshot,
+  type RestoreMark,
 } from './recovery-storage.js';
 import { Action } from './actions.js';
 import type { FileLifecycle, State } from './state.js';
@@ -333,6 +334,20 @@ export function restorableSnapshot(
     );
   }
   return parsed.data;
+}
+
+/** A restore mark held in memory, lowered unless `raised` says otherwise. */
+export function memoryRestoreMark(raised = false): RestoreMark {
+  let up = raised;
+  return {
+    raised: () => up,
+    raise: () => {
+      up = true;
+    },
+    lower: () => {
+      up = false;
+    },
+  };
 }
 
 /** The model the store holds now. */

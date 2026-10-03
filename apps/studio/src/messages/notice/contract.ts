@@ -39,6 +39,7 @@ export const noticeMessages = {
   'snapshot-unsupported': text(),
   'snapshot-earlier-release': text(),
   'snapshot-release': text({ release: 'text' }),
+  'snapshot-restore-unfinished': text(),
   'field-not-saved': text({ field: 'text' }),
   'refused-character': text({ position: 'number' }),
   'empty-name': text(),

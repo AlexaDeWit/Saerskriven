@@ -14,9 +14,14 @@ import { useColourMode } from '../theme.js';
 import { studioReleaseTag, studioVersion } from '../version.js';
 import styles from './app.module.css';
 import { StudioChrome } from './chrome.js';
+import { useRestoreSettled } from './restore-settled.js';
 
-/** The studio shell and the provider that exposes its viewport commands. */
+/**
+ * The studio shell and the provider that exposes its viewport commands. Its
+ * first draw standing is what lowers the restore mark.
+ */
 export function App() {
+  useRestoreSettled();
   return (
     <ReactFlowProvider>
       <Studio />

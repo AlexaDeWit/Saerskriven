@@ -43,6 +43,8 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
     'En tidigare version av Saerskriven sparade den här sessionen, i en form som den här versionen inte kan återställa.',
   'snapshot-release':
     'Saerskriven {release} sparade den här sessionen, i en form som den här versionen inte kan återställa.',
+  'snapshot-restore-unfinished':
+    'Den senaste sessionen kunde inte visas. En omladdning försöker igen.',
   'field-not-saved': '{field} sparades inte.',
   'refused-character': 'Modellen godtar inte tecknet på position {position}.',
   'empty-name': 'Ett namn kan inte vara tomt.',

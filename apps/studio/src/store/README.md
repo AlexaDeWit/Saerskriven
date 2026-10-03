@@ -22,7 +22,7 @@ host provides.
 | `store.ts`             | The store, `dispatch`, `useModelStore` and the canvas-or-panel change subscription                                                        |
 | `selectors.ts`         | What views derive from the state                                                                                                          |
 | `selection.ts`         | `sameSelection`, the comparison the reducer uses to keep an unchanged selection's array identity                                          |
-| `recovery-storage.ts`  | The recovery snapshot                                                                                                                     |
+| `recovery-storage.ts`  | The recovery snapshot and the restore mark                                                                                                |
 | `sync.ts`              | The tab sync channel                                                                                                                      |
 | `development-model.ts` | The model a development session injects, read in development builds only                                                                  |
 | `../reason.ts`         | A thrown or rejected value as text, shared by the store, the file modules and the error boundary, so the store imports nothing from files |
@@ -143,6 +143,25 @@ and records `StoredRecoveryRejected`. A snapshot that was rejected, or that
 storage would not hand over, also sets `recoveryUnread`, which stays set
 through a dismissal of the notice and a failed write and clears at the first
 recovery write that lands, since that write is what replaces the snapshot.
+
+The snapshot is written before the model it holds is drawn, so a start cannot
+assume the studio can draw what it restores. A start that restores a snapshot
+first raises the restore mark, a flag under `saerskriven:studio:restoring` in
+the tab's `sessionStorage`, which a reload of the tab keeps and no other tab
+reads. `useRestoreSettled` (`../app/restore-settled.ts`) lowers it once the
+studio's first draw has stood for two animation frames, and leaves it raised
+where the error boundary took over before then. A start that reads a snapshot
+and finds the mark raised knows the last start in this tab never finished
+drawing it. It does not restore: it lowers the mark, leaves the snapshot where
+it is, opens the placeholder, records `StoredRecoveryRejected` with the
+problem `RestoreUnfinished`, and sets `recoveryUnread`, so the snapshot counts
+as one that could not be read at startup. The next reload finds the mark
+lowered and tries the restore again, which gives a tab that was only reloaded
+while it drew its session back. A start with no snapshot, or with one it could
+not read, never raises the mark, and neither does following another tab.
+Storage that throws reads as a lowered mark and skips a write. A tab in the
+background draws no frame, so its mark stays raised until it is shown, and a
+reload of it before then opens the placeholder once.
 
 A successful write marks the state recoverable. A failed write records
 `RecoveryUnavailable` and leaves that mark false, and a later recoverable change

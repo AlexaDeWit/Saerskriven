@@ -48,6 +48,8 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
     'Une version antérieure de Saerskriven a enregistré cette session sous une forme que cette version ne peut pas restaurer.',
   'snapshot-release':
     'Saerskriven {release} a enregistré cette session sous une forme que cette version ne peut pas restaurer.',
+  'snapshot-restore-unfinished':
+    'La dernière session n’a pas pu être affichée. Un rechargement tente de l’afficher de nouveau.',
   'field-not-saved': 'Champ non enregistré : {field}.',
   'refused-character':
     'Le modèle n’accepte pas le caractère en position {position}.',
