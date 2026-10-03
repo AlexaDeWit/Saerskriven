@@ -11,10 +11,24 @@ import type { StudioTranslator } from '../messages/catalogues.js';
 import { useTranslator } from '../messages/locale.js';
 import type { State } from '../store/state.js';
 import { modelStore } from '../store/store.js';
+import { handlerSlot } from '../ui/handler-slot.js';
 import { currentLayout, selectionPosition } from './layout.js';
 
 /** Hands on a keydown that has already passed React Flow's own key handlers. */
 export type KeyboardMoveReport = (event: KeyboardEvent) => void;
+
+const follower = handlerSlot<(held: boolean) => void>();
+
+/**
+ * Lends the handler `KeyboardMoveMessage` calls each time an arrow key has
+ * moved the selection, with whether the press is a repeat of a key held
+ * down, and answers the function that takes it back.
+ */
+export function followKeyboardMoves(
+  moved: (held: boolean) => void,
+): () => void {
+  return follower.register(moved);
+}
 
 /**
  * A coordinate as Position and size shows it: the stored number, neither
@@ -63,9 +77,10 @@ export const preMoveMessage = (): string => '';
 /**
  * Writes React Flow's live region after an arrow key within a node, or on the
  * rectangle React Flow draws around a box selection, has moved the
- * selection. The canvas wrapper hands `ref` each keydown once React Flow's
- * handler has run, so the store already holds the move. Mounted inside
- * `ReactFlow`, where its store is in reach.
+ * selection, and tells the handler lent through `followKeyboardMoves`. The
+ * canvas wrapper hands `ref` each keydown once React Flow's handler has run,
+ * so the store already holds the move. Mounted inside `ReactFlow`, where its
+ * store is in reach.
  */
 export function KeyboardMoveMessage({
   ref,
@@ -81,6 +96,7 @@ export function KeyboardMoveMessage({
       if (!event.defaultPrevented || !movedBySelectionKey(event)) {
         return;
       }
+      follower.current()?.(event.repeat);
       const message = movedSelectionMessage(modelStore.getState(), translator);
       if (message !== undefined) {
         said.current = freshLiveText(said.current, message);

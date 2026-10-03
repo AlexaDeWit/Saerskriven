@@ -33,9 +33,9 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `clipboard.ts`, `arrangement.ts`, `snap.ts`                           | Copy, cut, paste and duplicate, align and distribute, and the snap setting                                                         |
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
 | `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
-| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection                                                       |
+| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection, and the handler it tells of the move                 |
 | `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them            |
-| `focus-pan.tsx`                                                       | The shortest pan that shows a keyboard-focused item's ring clear of the panes, and the listener that asks for it                   |
+| `focus-pan.tsx`                                                       | The shortest pan that brings the focused item's ring into the viewport, asked for by Tab focus and by an arrow-key move            |
 | `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                 |
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
@@ -197,28 +197,39 @@ full canvas extent. The fit commands use `clearOfPanel`, the area left of the
 pane's measured coverage, and the `panelCover` token sets only the pane's
 default width.
 
-`FocusPan` in `focus-pan.tsx` pans when keyboard focus lands on an item a pane
-covers. It stands in for React Flow's `autoPanOnNodeFocus`, which stays off
-because it centres a node, and only one outside the canvas. `onKeyboardFocus`
-listens for `focusin` on React Flow's container and answers only an element,
-flow or resize control that matches `:focus-visible`, the same judgement the
-ring is drawn by, so no pointer focus pans and a focus return after a key press
-does. Focus the browser hands back when the window regains it is not a move.
-The measuring waits for the next frame, so a pane the same key press closes, as
-Close threats does before it returns focus, is gone by then, and one it opens
-is in place. `clearingOffset` then works in screen pixels, from the item's box
-with its outline's reach, every `[data-pane]` box and the container's own: no
-move unless a pane covers the ring, otherwise the shortest one that puts the
-ring inside the canvas and `ringClearance` clear of every pane, and no move
-where no such place exists.
-`focusPanner` hands that to React Flow's `setViewport` as a `focusPanDuration`
-transition, interpolated linearly because React Flow's default zooms out and
-back over a pan. Each focus is measured from where the view is at that moment
-and replaces a pan still running, and a focus needing no move stops one, so two
-pans never run against each other. A scroll, a drag or a zoom interrupts the
-transition inside d3-zoom, and nothing asks for the view again until focus
-moves. The pan touches React Flow's store alone, so it is no edit, no undo step
-and nothing another tab hears of.
+`FocusPan` in `focus-pan.tsx` pans to bring the focused item's ring into the
+viewport, React Flow's container box. Nothing over the canvas plays a part: a
+ring under a pane is inside the viewport and stays where it is. It stands in
+for React Flow's `autoPanOnNodeFocus`, which stays off because it centres a
+node. Two things ask for the pan. `onKeyboardFocus` keeps the input modality
+itself: a key press that `armsFocusPan` answers, Tab with Shift or without,
+puts the keyboard in charge until the next `pointerdown`, both heard in the
+capture phase on the window. `:focus-visible` is not that test, because
+Chromium and Safari keep it for a script focus after any earlier key press, so
+an element placed by pointer and then named would pan. A `focusin` on React
+Flow's container counts while the keyboard is in charge and its target is an
+element, flow or resize control that matches `:focus-visible`. Focus the
+browser hands back when the window regains it is not a move. `onKeyboardMove`
+lends `KeyboardMoveMessage` the handler it calls once an arrow key has moved
+the selection, so the follow needs no Tab first, knows nothing of how the move
+is stored, and never hears of a pointer drag. Both measure on the next frame,
+when what the key press changed is drawn.
+
+`offsetIntoView` works in screen pixels, from the item's box with its
+outline's reach and the container's box: no move for a ring wholly inside,
+otherwise on each axis the least that puts the ring `ringMargin` inside the
+border it had crossed. A ring too long for the viewport on an axis moves the
+least that fills the viewport with it, and not at all once it spans the
+viewport. `viewPanner` hands the move to React Flow's `setViewport` as a
+`focusPanDuration` transition, interpolated linearly because React Flow's
+default zooms out and back over a pan. It has no duration under reduced
+motion, nor for the repeat of a held arrow key, since a transition restarted
+at each repeat falls behind the element. Each item is measured from where the
+view is at that moment and replaces a pan still running, and one needing no
+move stops it, so two pans never run against each other. A scroll, a drag or a
+zoom interrupts the transition inside d3-zoom, and nothing asks for the view
+again until focus or the element moves. The pan touches React Flow's store
+alone, so it is no edit, no undo step and nothing another tab hears of.
 
 ## Accessibility
 

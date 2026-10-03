@@ -279,7 +279,9 @@ selection. An arrow key moves the selection five model units, and Shift+arrow
 twenty, or one grid interval and four with Snap to grid on, snapped as a drag
 is. A flow does not move on its own, but a moved group carries its bends
 and free ends along. After each arrow key a screen reader hears where Position
-and size now places the selection, in the figures it shows. Pressing Escape,
+and size now places the selection, in the figures it shows, and the view
+follows an element the key moves out of the viewport
+([Accessibility](#accessibility)). Pressing Escape,
 or leaving the browser window, before the release puts every dragged element
 back where it was, with no undo step. Escape also clears the selection, as it
 does anywhere.
@@ -463,8 +465,9 @@ Opening a model, or switching to another diagram, fits the diagram to the
 window. **Fit to view** and **Fit selection** fit the area left of the open
 threat panel. The zoom controls show the current percentage, and pressing it
 resets the zoom to 100%. Selecting or dropping an element does not move the
-view. Keyboard focus landing on an element under a pane does, by the least that
-shows its focus ring ([Accessibility](#accessibility)).
+view. Tab onto an item outside the viewport, and an arrow key that moves the
+selected element out of it, bring the item back inside by the shortest pan
+([Accessibility](#accessibility)).
 
 Scrolling pans in both directions and a trackpad pinch zooms. Holding Control
 (or Command on macOS) turns scrolling into zoom. A touch drag pans in Select. A
@@ -733,24 +736,29 @@ heavier line, and focus is a separate ring, so neither depends on colour and
 both survive forced colours. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
 
-When Tab, or any other key that moves focus, lands on an element, a flow or a
-resize control that a pane covers any part of, the view pans the shortest
-distance that shows the whole focus ring clear of every pane: the threat or
-model panel, the threat register, the Reconnect flow or Trust boundary card,
-and the Position and size and flow end editors. The pan takes about half a
-second, or is a single step where the system asks for reduced motion. It keeps
-the zoom and never centres the element, and scrolling, dragging or zooming
-while it runs takes the view over. Under the open register most of the diagram
-is covered, so Tab through it moves the view at each stop that fits clear of
-the register, and the view stays where the last stop left it.
+A focused element or resize control that lies under the threat panel, the
+threat register or the Reconnect flow or Trust boundary card shows its ring
+under that pane, and the canvas does not move for it. What lies over the canvas
+plays no part in where the view goes.
 
-The view stays where it is when the ring is already clear, when focus arrives
-by a click, a press or a tap, and when the ring fits nowhere clear of the panes
-at the current zoom, as a trust boundary wider than the room beside the panel
-does not. It moves only when focus does: a panel that opens over the focused
-element, as selecting it can, and an arrow key that moves the element under a
-pane, leave the ring covered. The card at the top and the zoom controls are not
-panes, so a ring under either stays there.
+The view does move to bring an item into the viewport, the canvas's own area.
+When Tab or Shift+Tab puts focus on an element, a flow or a resize control
+whose focus ring lies partly or wholly outside the viewport, the view pans the
+shortest distance that brings the whole ring inside, to the border it had
+crossed. Tab steers the view this way from the press until the next press of a
+mouse button, a finger or a pen, so a key that returns focus meanwhile, such as
+Escape from a resize control back to its element, pans the same way, and no
+pointer action does. An arrow key that moves the selected element out of the
+viewport is followed the same way, with no Tab needed, and a held arrow key is
+followed at each step.
+
+The pan takes about half a second, or is a single step where the system asks
+for reduced motion or an arrow key is held. It keeps the zoom and never centres
+the item, and scrolling, dragging or zooming while it runs takes the view over.
+An item larger than the viewport is moved the least that fills the viewport
+with it, its nearer edge at the border, and not at all once it spans the
+viewport. Resizing with an arrow key, and an arrow key on a bend, a flow end or
+a curve point, do not move the view.
 
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves
@@ -768,8 +776,10 @@ navigation keys do not.
 ## Current limitations
 
 - Removing and reordering diagrams is not offered.
-- Nothing pans to a newly connected flow, and only keyboard focus pans an
-  element out from under a pane ([Accessibility](#accessibility)).
+- The view moves only for an item outside the viewport that Tab reaches or an
+  arrow key moves ([Accessibility](#accessibility)): not for one under a pane,
+  and not for a pointer action such as drawing a flow or dropping an element at
+  the edge.
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model panel's Details.
   The model's explicit record removal has no control.

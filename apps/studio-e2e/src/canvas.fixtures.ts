@@ -156,7 +156,8 @@ const ringReach = 16;
  * each pixel along each side of `target`, whether a pixel up to 16 pixels
  * across that side, short of its middle, differs between them. Anything drawn
  * over the ring leaves its pixels as they were, and so does a part of it off
- * the viewport. Focus is left on `away`.
+ * the viewport. The view is held to stay where it rested from the first
+ * screenshot to the second. Focus is left on `away`.
  */
 export const focusRingShown = async (
   target: Locator,
@@ -167,6 +168,7 @@ export const focusRingShown = async (
   await focus();
   await expect(target).toBeFocused();
   await canvasSettled(page);
+  const rested = await viewportTransform(page);
   const shown = await screenBoxOf(target);
   const clip = {
     x: Math.max(Math.floor(shown.x) - ringReach, 0),
@@ -177,6 +179,10 @@ export const focusRingShown = async (
   const after = await page.screenshot({ clip, scale: 'css' });
   await away.focus();
   const before = await page.screenshot({ clip, scale: 'css' });
+  expect(
+    await viewportTransform(page),
+    'the view moved while the ring was measured',
+  ).toBe(rested);
   return page.evaluate(
     async ({ images, origin, box, across }) => {
       const [from, to] = await Promise.all(

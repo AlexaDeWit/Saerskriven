@@ -1,18 +1,22 @@
 import type { Box } from '@saerskriven/canvas';
 import type { Point } from '@saerskriven/model';
-import { render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 import { ReactFlow, type Viewport } from '@xyflow/react';
-import { StrictMode } from 'react';
+import { StrictMode, useRef } from 'react';
 import {
-  clearingOffset,
+  armsFocusPan,
   FocusPan,
   focusPanDuration,
-  focusPanner,
+  offsetIntoView,
   onKeyboardFocus,
-  ringClearance,
-  type FocusScene,
+  ringMargin,
+  viewPanner,
   type PannedView,
 } from './focus-pan.js';
+import {
+  KeyboardMoveMessage,
+  type KeyboardMoveReport,
+} from './move-message.js';
 
 const box = (
   minX: number,
@@ -26,128 +30,100 @@ const box = (
   maxY: minY + height,
 });
 
-const canvas = box(0, 0, 1280, 720);
+const window1280 = box(0, 0, 1280, 720);
 
-const card = box(12, 165, 42, 42);
+const besideASidebar = box(240, 56, 1000, 600);
 
-const panel = box(808, 165, 460, 239);
-
-const scene = (
-  ring: Box,
-  panes: readonly Box[] = [card, panel],
-): FocusScene => ({
-  ring,
-  panes,
-  canvas,
-});
-
-const underThePanelTop = scene(box(1056, 158, 30, 30));
-
-const underThePanelSide = scene(box(800, 300, 30, 30));
-
-const underTheCard = scene(box(14, 180, 20, 20));
-
-const betweenTwoPanes = scene(box(104, 130, 20, 20), [
-  box(100, 100, 100, 100),
-  box(60, 100, 36, 100),
-]);
-
-const widerAndTallerThanTheRoom = scene(box(183, 82, 896, 364));
-
-const moved = (ring: Box, by: Point): Box => ({
-  minX: ring.minX + by.x,
-  minY: ring.minY + by.y,
-  maxX: ring.maxX + by.x,
-  maxY: ring.maxY + by.y,
-});
-
-const clearAfter = ({ ring, panes, canvas: room }: FocusScene, by: Point) => {
-  const at = moved(ring, by);
-  return (
-    at.minX >= room.minX &&
-    at.minY >= room.minY &&
-    at.maxX <= room.maxX &&
-    at.maxY <= room.maxY &&
-    panes.every(
-      (pane) =>
-        at.maxX <= pane.minX - ringClearance ||
-        at.minX >= pane.maxX + ringClearance ||
-        at.maxY <= pane.minY - ringClearance ||
-        at.minY >= pane.maxY + ringClearance,
-    )
-  );
-};
-
-const wholePixelMovesWithin = (reach: number): Point[] =>
-  Array.from(
-    { length: 2 * reach + 1 },
-    (unused, column) => column - reach,
-  ).flatMap((x) =>
-    Array.from({ length: 2 * reach + 1 }, (unused, row) => ({
-      x,
-      y: row - reach,
-    })),
-  );
-
-describe('clearingOffset', () => {
-  it('moves nothing for a ring no pane covers, however near', () => {
+describe('offsetIntoView', () => {
+  it('moves nothing for a ring inside the viewport, at its border included', () => {
     for (const ring of [
-      box(778, 300, 30, 30),
-      box(55, 180, 20, 20),
       box(400, 300, 160, 90),
+      box(0, 0, 160, 90),
+      box(1120, 630, 160, 90),
+      box(2, 300, 160, 90),
     ]) {
-      expect(clearingOffset(scene(ring))).toBeUndefined();
+      expect(offsetIntoView(ring, window1280)).toBeUndefined();
     }
   });
 
-  it('takes the shortest way out from under a pane, and stops the clearance short of it', () => {
-    expect(clearingOffset(underThePanelTop)).toEqual({
-      x: 0,
-      y: 165 - ringClearance - 188,
-    });
-    expect(clearingOffset(underThePanelSide)).toEqual({
-      x: 808 - ringClearance - 830,
+  it('brings a ring that crosses one side just inside that side, and leaves the other axis alone', () => {
+    expect(offsetIntoView(box(-30, 300, 160, 90), window1280)).toEqual({
+      x: 30 + ringMargin,
       y: 0,
     });
-  });
-
-  it('passes over a way out that leaves the canvas', () => {
-    expect(clearingOffset(underTheCard)).toEqual({
+    expect(offsetIntoView(box(1200, 300, 160, 90), window1280)).toEqual({
+      x: 1280 - ringMargin - 1360,
+      y: 0,
+    });
+    expect(offsetIntoView(box(400, -200, 160, 90), window1280)).toEqual({
       x: 0,
-      y: 207 + ringClearance - 180,
+      y: 200 + ringMargin,
+    });
+    expect(offsetIntoView(box(400, 700, 160, 90), window1280)).toEqual({
+      x: 0,
+      y: 720 - ringMargin - 790,
     });
   });
 
-  it('lands clear of every pane, not only of the one that covered the ring', () => {
-    expect(clearingOffset(betweenTwoPanes)).toEqual({
-      x: 0,
-      y: 100 - ringClearance - 150,
+  it('brings a ring that is outside on two sides in on both', () => {
+    expect(offsetIntoView(box(1300, 800, 160, 90), window1280)).toEqual({
+      x: 1280 - ringMargin - 1460,
+      y: 720 - ringMargin - 890,
     });
   });
 
-  it('is no longer than any whole-pixel move that clears the ring', () => {
-    for (const covered of [
-      underThePanelTop,
-      underThePanelSide,
-      underTheCard,
-      betweenTwoPanes,
+  it('measures against the viewport where it is, not against the window', () => {
+    expect(offsetIntoView(box(100, 100, 160, 90), besideASidebar)).toEqual({
+      x: 240 + ringMargin - 100,
+      y: 0,
+    });
+    expect(offsetIntoView(box(1100, 600, 160, 90), besideASidebar)).toEqual({
+      x: 1240 - ringMargin - 1260,
+      y: 656 - ringMargin - 690,
+    });
+    expect(
+      offsetIntoView(box(300, 100, 160, 90), besideASidebar),
+    ).toBeUndefined();
+  });
+
+  it('fills the viewport with a ring too long for it, its nearer end at the border, and rests once the ring spans it', () => {
+    expect(offsetIntoView(box(300, 300, 1500, 90), window1280)).toEqual({
+      x: ringMargin - 300,
+      y: 0,
+    });
+    expect(offsetIntoView(box(-900, 300, 1500, 90), window1280)).toEqual({
+      x: 1280 - ringMargin - 600,
+      y: 0,
+    });
+    expect(offsetIntoView(box(1400, 300, 1500, 90), window1280)).toEqual({
+      x: ringMargin - 1400,
+      y: 0,
+    });
+    expect(
+      offsetIntoView(box(-100, 300, 1500, 90), window1280),
+    ).toBeUndefined();
+    expect(
+      offsetIntoView(box(-100, -100, 2000, 2000), window1280),
+    ).toBeUndefined();
+  });
+
+  it('rests where it leaves a ring, so a second look moves nothing', () => {
+    for (const ring of [
+      box(-30, 300, 160, 90),
+      box(1300, 800, 160, 90),
+      box(300, 300, 1500, 90),
+      box(1400, -900, 1500, 800),
     ]) {
-      const offset = clearingOffset(covered) ?? { x: 0, y: 0 };
-      const length = Math.hypot(offset.x, offset.y);
+      const { x, y } = offsetIntoView(ring, window1280) ?? { x: 0, y: 0 };
+      const rested = box(
+        ring.minX + x,
+        ring.minY + y,
+        ring.maxX - ring.minX,
+        ring.maxY - ring.minY,
+      );
 
-      expect(clearAfter(covered, offset)).toBe(true);
-      expect(
-        wholePixelMovesWithin(Math.ceil(length)).filter(
-          (move) =>
-            Math.hypot(move.x, move.y) < length && clearAfter(covered, move),
-        ),
-      ).toEqual([]);
+      expect(offsetIntoView(rested, window1280)).toBeUndefined();
     }
-  });
-
-  it('moves nothing for a ring that fits nowhere clear of the panes', () => {
-    expect(clearingOffset(widerAndTallerThanTheRoom)).toBeUndefined();
-    expect(clearingOffset(scene(box(-100, -100, 2000, 2000)))).toBeUndefined();
   });
 });
 
@@ -162,64 +138,67 @@ const watchedView = () => {
     at,
     setViewport,
     pan: (instant = false) =>
-      focusPanner(
+      viewPanner(
         { getViewport: () => at.viewport, setViewport },
         () => instant,
       ),
   };
 };
 
-describe('focusPanner', () => {
-  it('pans by the clearing offset from where the view is, at the same zoom, over the pan duration', () => {
+describe('viewPanner', () => {
+  it('pans by the offset from where the view is, at the same zoom, over the pan duration', () => {
     const view = watchedView();
 
-    view.pan()(underThePanelTop);
+    view.pan()({ x: 0, y: -27 });
 
     expect(view.setViewport.mock.calls).toEqual([
       [
-        { x: 183, y: 82 - 23 - ringClearance, zoom: 1.4 },
+        { x: 183, y: 55, zoom: 1.4 },
         { duration: focusPanDuration, interpolate: 'linear' },
       ],
     ]);
   });
 
-  it('moves at once where motion is reduced', () => {
-    const view = watchedView();
+  it('moves at once where motion is reduced, and where the call asks for it', () => {
+    const reduced = watchedView();
+    const held = watchedView();
 
-    view.pan(true)(underThePanelTop);
+    reduced.pan(true)({ x: 0, y: -27 });
+    held.pan()({ x: 0, y: -27 }, true);
 
-    expect(view.setViewport.mock.lastCall?.[1]?.duration).toBe(0);
+    expect(reduced.setViewport.mock.lastCall?.[1]?.duration).toBe(0);
+    expect(held.setViewport.mock.lastCall?.[1]?.duration).toBe(0);
   });
 
-  it('asks nothing of the view for a ring already clear', () => {
+  it('asks nothing of the view where there is no offset', () => {
     const view = watchedView();
 
-    view.pan()(scene(box(400, 300, 160, 90)));
+    view.pan()(undefined);
 
     expect(view.setViewport).not.toHaveBeenCalled();
   });
 
-  it('measures focus that moves during a pan from where the view has got to', () => {
+  it('measures an offset that arrives during a pan from where the view has got to', () => {
     const view = watchedView();
     const pan = view.pan();
-    pan(underThePanelTop);
+    pan({ x: 0, y: -27 });
     view.at.viewport = { x: 183, y: 70, zoom: 1.4 };
 
-    pan(underThePanelSide);
+    pan({ x: -26, y: 0 });
 
     expect(view.setViewport.mock.lastCall).toEqual([
-      { x: 183 - 22 - ringClearance, y: 70, zoom: 1.4 },
+      { x: 157, y: 70, zoom: 1.4 },
       { duration: focusPanDuration, interpolate: 'linear' },
     ]);
   });
 
-  it('stops a pan on its way where the newest focus needs none', () => {
+  it('stops a pan on its way where the newest item needs none', () => {
     const view = watchedView();
     const pan = view.pan();
-    pan(underThePanelTop);
+    pan({ x: 0, y: -27 });
     view.at.viewport = { x: 183, y: 70, zoom: 1.4 };
 
-    pan(scene(box(400, 300, 160, 90)));
+    pan(undefined);
 
     expect(view.setViewport.mock.lastCall).toEqual([view.at.viewport]);
   });
@@ -227,23 +206,14 @@ describe('focusPanner', () => {
   it('asks nothing more of a view that has arrived, or that the person has moved since', () => {
     const view = watchedView();
     const pan = view.pan();
-    pan(underThePanelTop);
+    pan({ x: 0, y: -27 });
     view.at.viewport = view.setViewport.mock.lastCall?.[0] ?? opened;
 
-    pan(scene(box(400, 300, 160, 90)));
+    pan(undefined);
     view.at.viewport = { x: 0, y: 0, zoom: 0.5 };
+    pan(undefined);
 
     expect(view.setViewport).toHaveBeenCalledOnce();
-  });
-
-  it('leaves the view alone, focus after focus, where the ring fits nowhere clear', () => {
-    const view = watchedView();
-    const pan = view.pan();
-
-    pan(widerAndTallerThanTheRoom);
-    pan(widerAndTallerThanTheRoom);
-
-    expect(view.setViewport).not.toHaveBeenCalled();
   });
 });
 
@@ -281,6 +251,24 @@ const nextFrame = (): Promise<void> =>
     });
   });
 
+const press = (key: string, modifiers: KeyboardEventInit = {}): void => {
+  window.dispatchEvent(new KeyboardEvent('keydown', { key, ...modifiers }));
+};
+
+const arms = (key: string, modifiers: KeyboardEventInit = {}): boolean =>
+  armsFocusPan(new KeyboardEvent('keydown', { key, ...modifiers }));
+
+describe('armsFocusPan', () => {
+  it('takes Tab, with Shift or without, and no other key or chord', () => {
+    expect(arms('Tab')).toBe(true);
+    expect(arms('Tab', { shiftKey: true })).toBe(true);
+    expect(arms('Tab', { ctrlKey: true })).toBe(false);
+    expect(arms('Enter')).toBe(false);
+    expect(arms('ArrowRight')).toBe(false);
+    expect(arms('a')).toBe(false);
+  });
+});
+
 describe('onKeyboardFocus', () => {
   const landed = vi.fn<(target: Element) => void>();
   let surface: HTMLElement;
@@ -297,7 +285,7 @@ describe('onKeyboardFocus', () => {
     stop();
   });
 
-  it('answers focus that shows its ring on an element, a flow and a resize control', async () => {
+  it('answers focus that shows its ring on an element, a flow and a resize control once Tab is pressed', async () => {
     const node = drawn('div', 'react-flow__node', surface);
     const flow = drawn('div', 'react-flow__edge', surface);
     const control = drawn(
@@ -305,6 +293,7 @@ describe('onKeyboardFocus', () => {
       '',
       drawn('div', 'react-flow__resize-control', node),
     );
+    press('Tab');
 
     for (const item of [node, flow, control]) {
       focusByKeyboard(item);
@@ -314,9 +303,55 @@ describe('onKeyboardFocus', () => {
     expect(landed.mock.calls).toEqual([[node], [flow], [control]]);
   });
 
+  it('passes over a ringed focus until Tab is pressed, whatever other key was', async () => {
+    const node = drawn('div', 'react-flow__node', surface);
+    const other = drawn('div', 'react-flow__node', surface);
+
+    focusByKeyboard(node);
+    await nextFrame();
+    press('Enter');
+    press('a');
+    focusByKeyboard(other);
+    await nextFrame();
+    expect(landed).not.toHaveBeenCalled();
+
+    press('Tab', { shiftKey: true });
+    focusByKeyboard(node);
+    await nextFrame();
+    expect(landed.mock.calls).toEqual([[node]]);
+  });
+
+  it('passes over a script focus that a pointer press came before, and answers again after Tab', async () => {
+    const node = drawn('div', 'react-flow__node', surface);
+    const other = drawn('div', 'react-flow__node', surface);
+    press('Tab');
+
+    node.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    focusByKeyboard(node);
+    await nextFrame();
+    expect(landed).not.toHaveBeenCalled();
+
+    press('Tab');
+    focusByKeyboard(other);
+    await nextFrame();
+    expect(landed.mock.calls).toEqual([[other]]);
+  });
+
+  it('answers a focus return after another key while Tab is still in charge', async () => {
+    const node = drawn('div', 'react-flow__node', surface);
+    press('Tab');
+
+    press('Escape');
+    focusByKeyboard(node);
+    await nextFrame();
+
+    expect(landed.mock.calls).toEqual([[node]]);
+  });
+
   it('waits a frame, and answers only the item focus rests on by then', async () => {
     const node = drawn('div', 'react-flow__node', surface);
     const other = drawn('div', 'react-flow__node', surface);
+    press('Tab');
 
     focusByKeyboard(node);
     expect(landed).not.toHaveBeenCalled();
@@ -326,7 +361,9 @@ describe('onKeyboardFocus', () => {
     expect(landed.mock.calls).toEqual([[other]]);
   });
 
-  it('passes over focus that shows no ring, as a pointer press leaves it', async () => {
+  it('passes over focus that shows no ring, as a browser leaves a pointer focus', async () => {
+    press('Tab');
+
     drawn('div', 'react-flow__node', surface).focus();
     await nextFrame();
 
@@ -335,6 +372,7 @@ describe('onKeyboardFocus', () => {
 
   it('passes over a field inside an element', async () => {
     const node = drawn('div', 'react-flow__node', surface);
+    press('Tab');
 
     focusByKeyboard(drawn('input', '', node));
     await nextFrame();
@@ -345,6 +383,7 @@ describe('onKeyboardFocus', () => {
   it('takes focus handed back after the window lost it as no move', async () => {
     const node = drawn('div', 'react-flow__node', surface);
     const other = drawn('div', 'react-flow__node', surface);
+    press('Tab');
     focusByKeyboard(node);
     await nextFrame();
     landed.mockClear();
@@ -363,10 +402,12 @@ describe('onKeyboardFocus', () => {
 
   it('stops listening when asked, a focus still waiting for its frame included', async () => {
     const node = drawn('div', 'react-flow__node', surface);
+    press('Tab');
     focusByKeyboard(node);
     stop();
     await nextFrame();
 
+    press('Tab');
     focusByKeyboard(drawn('div', 'react-flow__node', surface));
     await nextFrame();
 
@@ -391,18 +432,87 @@ const viewOf = (within: Element): Point => {
   return { x: x ?? Number.NaN, y: y ?? Number.NaN };
 };
 
-const nodes = [{ id: 'store', position: { x: 0, y: 0 }, data: {} }];
+const nodes = [
+  { id: 'store', position: { x: 0, y: 0 }, data: {}, selected: true },
+  { id: 'note', position: { x: 300, y: 0 }, data: {} },
+];
 
-function Canvas({ panning }: { readonly panning: boolean }) {
+function Canvas({
+  panning,
+  zoom = 1,
+}: {
+  readonly panning: boolean;
+  readonly zoom?: number;
+}) {
+  const report = useRef<KeyboardMoveReport>(null);
   return (
     <StrictMode>
-      <ReactFlow edges={[]} height={720} nodes={nodes} width={1280}>
+      <ReactFlow
+        defaultViewport={{ x: 0, y: 0, zoom }}
+        edges={[]}
+        height={720}
+        nodes={nodes}
+        onKeyDown={(event) => {
+          report.current?.(event);
+        }}
+        width={1280}
+      >
+        <KeyboardMoveMessage ref={report} />
         {panning ? <FocusPan /> : null}
       </ReactFlow>
-      <section data-pane="" />
+      <section data-pane="" data-testid="pane" />
     </StrictMode>
   );
 }
+
+const mounted = async (
+  viewport: Box,
+  at: Box,
+  { zoom = 1, reducedMotion = true } = {},
+) => {
+  vi.stubGlobal('matchMedia', () => ({ matches: reducedMotion }));
+  const { container, rerender } = render(
+    <Canvas panning={false} zoom={zoom} />,
+  );
+  const [store, note] = await waitFor(() => {
+    const found = [
+      ...container.querySelectorAll<HTMLElement>('.react-flow__node'),
+    ];
+    expect(found).toHaveLength(2);
+    return found;
+  });
+  rerender(<Canvas panning zoom={zoom} />);
+  for (const node of [store, note]) {
+    if (node !== undefined) {
+      node.style.outlineStyle = 'solid';
+      node.style.outlineWidth = '2px';
+      node.style.outlineOffset = '2px';
+      ringable(node);
+    }
+  }
+  drawnAt(container.querySelector('.react-flow'), viewport);
+  drawnAt(store ?? null, at);
+  drawnAt(container.querySelector('[data-testid="pane"]'), viewport);
+  return {
+    store: store ?? document.body,
+    note: note ?? document.body,
+    view: () => viewOf(container),
+    stopPanning: () => {
+      rerender(<Canvas panning={false} zoom={zoom} />);
+    },
+  };
+};
+
+const tabOnto = async (node: HTMLElement): Promise<void> => {
+  press('Tab');
+  focusByKeyboard(node);
+  await nextFrame();
+};
+
+const arrowOn = async (node: HTMLElement, init = {}): Promise<void> => {
+  fireEvent.keyDown(node, { key: 'ArrowRight', ...init });
+  await nextFrame();
+};
 
 describe('FocusPan', () => {
   afterEach(() => {
@@ -410,28 +520,110 @@ describe('FocusPan', () => {
     vi.restoreAllMocks();
   });
 
-  it('moves the view once for keyboard focus under a pane, mounted where its effect runs twice, and at once where motion is reduced', async () => {
-    vi.stubGlobal('matchMedia', () => ({ matches: true }));
-    const { container, rerender } = render(<Canvas panning={false} />);
-    const node = await waitFor(() => {
-      const found = container.querySelector<HTMLElement>('.react-flow__node');
-      expect(found).not.toBeNull();
-      return found ?? document.body;
+  it('brings an item Tab lands on outside the viewport just inside it, once, mounted where its effect runs twice, and at once where motion is reduced', async () => {
+    const canvas = await mounted(window1280, box(1250, 300, 100, 50));
+    const rested = { x: 1280 - ringMargin - (1350 + 4), y: 0 };
+
+    await tabOnto(canvas.store);
+    expect(canvas.view()).toEqual(rested);
+    await nextFrame();
+
+    expect(canvas.view()).toEqual(rested);
+  });
+
+  it('leaves the view alone for an item inside the viewport, a pane lying over the whole of it', async () => {
+    const canvas = await mounted(window1280, box(1000, 300, 100, 50));
+
+    await tabOnto(canvas.store);
+
+    expect(canvas.view()).toEqual({ x: 0, y: 0 });
+  });
+
+  it('measures the ring at the zoom it is drawn at, against a viewport away from the window origin', async () => {
+    const canvas = await mounted(besideASidebar, box(150, 100, 100, 50), {
+      zoom: 2,
     });
-    rerender(<Canvas panning />);
-    node.style.outlineWidth = '2px';
-    node.style.outlineOffset = '2px';
-    drawnAt(container.querySelector('.react-flow'), canvas);
-    drawnAt(container.querySelector('[data-pane]'), panel);
-    drawnAt(node, box(1000, 300, 100, 50));
-    ringable(node);
-    const rested = { x: 0, y: 404 + ringClearance - (300 - 4) };
 
-    focusByKeyboard(node);
-    await nextFrame();
-    expect(viewOf(container)).toEqual(rested);
-    await nextFrame();
+    await tabOnto(canvas.store);
 
-    expect(viewOf(container)).toEqual(rested);
+    expect(canvas.view()).toEqual({
+      x: 240 + ringMargin - (150 - 2 * 4),
+      y: 0,
+    });
+  });
+
+  it('takes an item that draws no outline at its own box', async () => {
+    const canvas = await mounted(window1280, box(1250, 300, 100, 50));
+    canvas.store.style.outlineStyle = 'none';
+
+    await tabOnto(canvas.store);
+
+    expect(canvas.view()).toEqual({ x: 1280 - ringMargin - 1350, y: 0 });
+  });
+
+  it('follows an arrow-key move that carries the focused element out of the viewport, with no Tab before it', async () => {
+    const canvas = await mounted(window1280, box(1250, 690, 100, 50));
+    canvas.store.focus();
+
+    await arrowOn(canvas.store);
+
+    expect(canvas.view()).toEqual({
+      x: 1280 - ringMargin - (1350 + 4),
+      y: 720 - ringMargin - (740 + 4),
+    });
+  });
+
+  it('leaves the view alone for an arrow-key move that ends inside the viewport', async () => {
+    const canvas = await mounted(window1280, box(1000, 300, 100, 50));
+    canvas.store.focus();
+
+    await arrowOn(canvas.store);
+
+    expect(canvas.view()).toEqual({ x: 0, y: 0 });
+  });
+
+  it('leaves the view alone for a moved element that already spans the viewport', async () => {
+    const canvas = await mounted(window1280, box(-100, -100, 2000, 2000));
+    canvas.store.focus();
+
+    await arrowOn(canvas.store);
+
+    expect(canvas.view()).toEqual({ x: 0, y: 0 });
+  });
+
+  it('leaves the view alone for an arrow key that moves nothing, on an element the selection leaves out', async () => {
+    const canvas = await mounted(window1280, box(1250, 300, 100, 50));
+    drawnAt(canvas.note, box(1250, 300, 100, 50));
+    canvas.note.focus();
+
+    await arrowOn(canvas.note);
+
+    expect(canvas.view()).toEqual({ x: 0, y: 0 });
+  });
+
+  it('keeps up at once with an arrow key held down, where motion is not reduced', async () => {
+    const canvas = await mounted(window1280, box(1250, 300, 100, 50), {
+      reducedMotion: false,
+    });
+    canvas.store.focus();
+
+    await arrowOn(canvas.store, { repeat: true });
+
+    expect(canvas.view()).toEqual({
+      x: 1280 - ringMargin - (1350 + 4),
+      y: 0,
+    });
+  });
+
+  it('stops following once it is unmounted, a move still waiting for its frame included', async () => {
+    const canvas = await mounted(window1280, box(1250, 300, 100, 50));
+    canvas.store.focus();
+
+    fireEvent.keyDown(canvas.store, { key: 'ArrowRight' });
+    canvas.stopPanning();
+    await nextFrame();
+    await arrowOn(canvas.store);
+
+    expect(canvas.view()).toEqual({ x: 0, y: 0 });
   });
 });
