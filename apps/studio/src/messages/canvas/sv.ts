@@ -63,6 +63,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'undo-done': 'Ångrade.',
   'redo-done': 'Gjorde om.',
   'threat-deleted': 'Hot {number} togs bort.',
+  'threat-opened-in-model-panel': 'Hot {number} öppnades i modellpanelen.',
   'threat-attached-to-actor': 'Hot {number} kopplades till aktören.',
   'threat-attached-to-actor-named': 'Hot {number} kopplades till {name}.',
   'threat-attached-to-process': 'Hot {number} kopplades till processen.',

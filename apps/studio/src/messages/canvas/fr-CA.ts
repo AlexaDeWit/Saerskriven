@@ -68,6 +68,8 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'undo-done': 'Annulation effectuée.',
   'redo-done': 'Rétablissement effectué.',
   'threat-deleted': 'Menace {number} supprimée.',
+  'threat-opened-in-model-panel':
+    'Menace {number} ouverte dans le volet du modèle.',
   'threat-attached-to-actor': 'Menace {number} rattachée à l’acteur.',
   'threat-attached-to-actor-named':
     'Menace {number} rattachée à l’acteur « {name} ».',

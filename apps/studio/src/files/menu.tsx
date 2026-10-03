@@ -407,6 +407,7 @@ function ViewMenu() {
       <DropdownMenu.Label className={styles.heading}>
         {t('commands.group-view')}
       </DropdownMenu.Label>
+      <MenuCommand command="threat-register" />
       <MenuCommand command="fit-selection" disabled={nothing} />
       <MenuCommand command="snap-to-grid">
         {t(snapping ? 'menu.snap-on' : 'menu.snap-off')}

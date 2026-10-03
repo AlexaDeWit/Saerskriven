@@ -1,6 +1,7 @@
-/** The selector of each element the panel marks with an id: a record row and a threat item. */
+/** The selector of each element the panel marks with an id: a record row, a threat item and a threat register row. */
 export const marked = {
   recordRow: '[data-record-row]',
+  registerRow: '[data-register-row]',
   threatItem: '[data-threat-item]',
 } as const;
 

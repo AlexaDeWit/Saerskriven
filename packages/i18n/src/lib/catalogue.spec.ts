@@ -184,10 +184,11 @@ describe('message calls the typecheck refuses', () => {
     expect(t('shelf.opened', { title: 'Huvud' })).toBe('Öppnad.');
   });
 
+  // @ts-expect-error `shelf.opne` is not a message
+  const outsideContract = () => t('shelf.opne');
+
   it('refuses an id outside the contract', () => {
-    // @ts-expect-error `shelf.opne` is not a message
-    const call = () => t('shelf.opne');
-    expect(call).toBeTypeOf('function');
+    expect(outsideContract).toBeTypeOf('function');
   });
 
   it('refuses a message with a node parameter as text', () => {

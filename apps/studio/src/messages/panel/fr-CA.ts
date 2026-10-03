@@ -65,4 +65,10 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   },
   'detail-applies-to-model': 's’applique au modèle',
   'detail-no-elements': 'rattachée à aucun élément',
+  'close-register': 'Fermer le registre des menaces',
+  'register-number': 'Numéro',
+  'register-number-short': 'Nº',
+  'register-elements': 'Éléments',
+  'no-element': 'Aucun élément',
+  'untitled-threat': 'Menace {number}',
 });

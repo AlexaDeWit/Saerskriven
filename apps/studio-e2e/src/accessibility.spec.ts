@@ -62,6 +62,28 @@ test('the studio carries no violation with the threat panel open on a selected e
   await audit(page, 'showing an open listbox', '[role="listbox"]');
 });
 
+test('the studio carries no violation with the threat register open beside the model panel, in either scheme', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  const [shortcut] = registeredChords['threat-register'];
+  await page.keyboard.press(shortcut);
+  const register = page.getByRole('region', {
+    name: 'Threat register',
+    exact: true,
+  });
+  await register
+    .getByRole('button', { name: 'Refund policy abused', exact: true })
+    .click();
+  await expect(
+    page.getByRole('region', { name: 'Model', exact: true }),
+  ).toBeVisible();
+
+  await audit(page, 'showing the threat register beside the model panel');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await audit(page, 'showing the threat register in the dark scheme');
+});
+
 test('the studio carries no violation with the panel open mid-drag', async ({
   page,
 }) => {

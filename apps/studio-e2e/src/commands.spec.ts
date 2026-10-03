@@ -366,7 +366,7 @@ test('macOS uses Command shortcuts and Shift-Command-Z for redo', async ({
   await flow.focus();
   await page.keyboard.press('Enter');
   const unfitted = await viewportTransform(page);
-  await page.keyboard.press('Meta+Shift+)');
+  await page.keyboard.press(registeredChords['fit-selection'][0]);
   await expect.poll(() => viewportTransform(page)).not.toBe(unfitted);
   await page.keyboard.press(registeredChords['reconnect-source'][0]);
   await expect(

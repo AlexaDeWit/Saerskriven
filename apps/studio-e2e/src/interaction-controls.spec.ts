@@ -260,7 +260,7 @@ test('arrangement and view controls use the registry without view edits entering
   await expect(
     page.getByRole('button', { name: 'Reset zoom to 100%' }),
   ).toHaveText('100%');
-  await page.keyboard.press('ControlOrMeta+Shift+0');
+  await page.keyboard.press(registeredChords['fit-selection'][0]);
   await expect(
     page.getByRole('button', { name: /^Menu/u }),
   ).toHaveAccessibleName('Menu');

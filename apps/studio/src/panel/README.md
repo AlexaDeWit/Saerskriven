@@ -22,10 +22,11 @@ and its own fields. What a person can do with it is in
 | `threat-attachments.tsx`                                           | The elements one threat names, with the controls that attach and detach them                                                                           |
 | `pick-existing.tsx`                                                | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
 | `model-panel.tsx`                                                  | The panel for the model: every threat on Threats, and its title, description and assumptions on Details                                                |
+| `threat-register.tsx`, `threat-register-state.ts`                  | The threat register over the canvas, and whether it is open, the R command that opens it, a choice that closes it, and where focus goes as it closes   |
 | `element-properties.tsx`, `element-property-fields.tsx`            | The element's own fields on Details: its details, then its security properties, and their field kinds                                                  |
 | `element-details.tsx`                                              | An element's description, out-of-scope flag and reason, for every kind, a note included                                                                |
 | `threats.ts`                                                       | `panelSubject`, `attachedThreats` and `modelThreats`, the selectors the panel binds to, and what each picker offers                                    |
-| `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`, `marked.ts` | Refused drafts, option labels a person can tell apart, the focus channel, and finding a record row or threat item by its id                            |
+| `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`, `marked.ts` | Refused drafts, option labels a person can tell apart, the focus channel, and finding a record row, threat item or register row by its id              |
 
 The panel is mounted from `../canvas/diagram-canvas.tsx`, inside the canvas
 container, which is what makes it an overlay on the diagram rather than a
@@ -49,12 +50,14 @@ refusal.
 
 Focus is sent through `panel-focus.ts`, a channel of its own rather than a
 field of the store, because focus belongs in neither the model nor its undo
-stacks. Focus threats, the M command, and undo and redo use it. Each list has a
-home control, "Add a threat" on an element and the Threats tab on the model,
-which has no add of its own. M focuses the model's. An undo that takes away the
-threat holding focus sends focus home, a redo there sends it back to the
-restored title, and anywhere else focus stays where it is. A deleted threat's
-focus goes home too where no threat is left to take it.
+stacks. Focus threats, the M command, the threat register, and undo and redo
+use it, each through a `handlerSlot` (`../ui/handler-slot.ts`) the mounted
+panel registers with. Each list has a home control, "Add a threat" on an
+element and the Threats tab on the model, which has no add of its own. M
+focuses the model's. An undo that takes away the threat holding focus sends
+focus home, a redo there sends it back to the restored title, and anywhere
+else focus stays where it is. A deleted threat's focus goes home too where no
+threat is left to take it.
 
 The pane claims the first Escape, closing and returning focus to the element,
 so one press never also clears the selection. An open listbox inside the pane
@@ -76,6 +79,50 @@ hides, whatever hid it. The security properties' controls mount on first
 opening and stay mounted through later collapses, and only a security
 property's draft holds that disclosure open. The overlay skips renders its
 canvas parent makes during a drag.
+
+## The threat register
+
+The register is mounted beside the panel in `../canvas/diagram-canvas.tsx`
+and reads the coverage the pane reports, standing in the default panel width
+while none is open, so it ends where the panel begins. It is a module store of
+its own rather than a field of the model store, as the target chooser is: it
+is per tab and never part of the file, the undo stacks or the recovery
+snapshot. It is a region with a table rather than a dialog or a grid. Each row
+is chosen through its title's button, whose box reaches over the title's
+cell, and each element name is a button of its own, so every control is on
+the Tab path and a screen reader reads the table by its column headers. The
+reach and the chosen row's ring hang from the cells, since a table row is no
+containing block in Safari 26.5 and earlier. The severity and status in a
+cell drop the field name the summary speaks, which the column header already
+gives.
+
+The register draws over the selection cards, so the canvas holds them inert
+while it is open, and a card a command opens closes the register first. In a
+window too narrow for both, it covers the panel too, and hides every pane under
+it. A close is committed (`flushSync`) before focus moves, since a control the
+register covered takes no focus until the register has gone.
+
+A chosen row reaches the model panel's list through `openInModelPanel` in
+`panel-focus.ts`. Where the model panel shows, its list opens the threat at
+once. Where it does not, the request is left for the list to take as it
+mounts, and the list opens on that threat. Either way the list calls back once
+it has opened the threat, which is when the register marks the row and the
+status says so. A list holding a refused draft on another threat refuses, as
+it refuses a collapse.
+
+A choice is committed (`flushSync`) and then asks the list whether it has that
+threat open where styles hide it (`hiddenInModelPanel`), which reads the
+panel's computed visibility. Under the register's media query it does, and the
+register closes by its own close, so focus lands as it does on Escape, and
+carries the choice to its next opening, which marks that row. The width
+stays in the stylesheet alone, and a refused choice opens nothing, so it
+closes nothing. Any other close forgets the carried choice.
+
+The register keeps the order it opened in for the reason the list does, and
+with the same `useShownOrder`. The table's columns follow the exported
+Markdown register's overview, less the category, but share nothing with it:
+that table is built in number order from render's own catalogue for a
+generated document, and names elements by the export's rules.
 
 ## Drawing a threat
 
