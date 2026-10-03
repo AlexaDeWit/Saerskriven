@@ -6,14 +6,12 @@ import {
   modelWith,
   threatOf,
 } from '@saerskriven/model/fixtures';
-import { badgeAnchor, badgeBox, type BadgeMarks } from './badges.js';
+import { badgeBox, placedBadgeAnchor, type BadgeMarks } from './badges.js';
 import {
   boxesOverlap,
-  boxMeetsCircle,
+  boxMeetsEllipse,
   boxOfPoints,
-  shiftedBy,
   type Box,
-  type Circle,
 } from './geometry.js';
 import { nodeBox } from './handles.js';
 import {
@@ -22,8 +20,8 @@ import {
   type CanvasLayout,
   type CanvasNode,
 } from './layout.js';
-import { processCircle } from './obstacles.js';
-import { nodeTextPlacement, textPlacementCorners } from './text-placement.js';
+import { placedProcessEllipse } from './obstacles.js';
+import { placedTextCorners } from './text-placement.js';
 
 /** One diagram of a model laid out, the first by default. */
 export const layoutOf = (model: Model, diagram = 0): CanvasLayout =>
@@ -110,27 +108,17 @@ export const asSolid = (drawn: Drawn): Solid => ({
   meets: (box) => boxesOverlap(box, drawn.box),
 });
 
-/** A process's circle in diagram coordinates. */
-export const circleOf = (node: CanvasNode): Circle => {
-  const circle = processCircle(node.size);
-  return {
-    centre: shiftedBy(circle.centre, node.position),
-    radius: circle.radius,
-  };
-};
-
 const outlineSolid = (node: CanvasNode): Solid =>
   node.kind === 'process'
-    ? { of: node.name, meets: (box) => boxMeetsCircle(box, circleOf(node)) }
+    ? {
+        of: node.name,
+        meets: (box) => boxMeetsEllipse(box, placedProcessEllipse(node)),
+      }
     : asSolid({ of: node.name, box: nodeBox(node) });
 
 /** The box a node's own text fills, in diagram coordinates. */
 export const textBoxOf = (node: CanvasNode): Box | undefined =>
-  boxOfPoints(
-    textPlacementCorners(nodeTextPlacement(node)).map((corner) =>
-      shiftedBy(corner, node.position),
-    ),
-  );
+  boxOfPoints(placedTextCorners(node));
 
 /** Every element badge a layout draws. */
 export const elementBadges = (layout: CanvasLayout): Drawn[] =>
@@ -140,10 +128,7 @@ export const elementBadges = (layout: CanvasLayout): Drawn[] =>
       : [
           {
             of: `${node.name} badge`,
-            box: badgeBox(
-              shiftedBy(badgeAnchor(node.size), node.position),
-              node.badge,
-            ),
+            box: badgeBox(placedBadgeAnchor(node), node.badge),
           },
         ],
   );

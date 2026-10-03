@@ -44,10 +44,11 @@ headless render agree.
 [`glyphs.tsx`](src/lib/glyphs.tsx): `ElementGlyph` draws an element in its own
 coordinates, and `boxElementStrokeInsets` says how far an outline's stroke
 reaches past its box. Glyphs are the ones Threat Dragon draws, since the
-corpus round-trips through that tool. [`scene.tsx`](src/lib/scene.tsx):
-`DiagramGlyphs` draws a whole layout in painting order with no root element,
-so the `<svg>`, its viewBox and its `<style>` belong to whoever composes the
-document.
+corpus round-trips through that tool, except a process: Threat Dragon draws
+the circle inscribed in its box, and this package draws the ellipse filling
+it. [`scene.tsx`](src/lib/scene.tsx): `DiagramGlyphs` draws a whole layout in
+painting order with no root element, so the `<svg>`, its viewBox and its
+`<style>` belong to whoever composes the document.
 
 [`badges.tsx`](src/lib/badges.tsx) counts open threats on the model's own
 definition of open and marks any flagged threat, so a badge, the register and

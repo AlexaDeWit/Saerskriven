@@ -1,4 +1,4 @@
-import type { Point } from '@saerskriven/model';
+import type { Point, Size } from '@saerskriven/model';
 import { boxAt, curveBoundary, modelWith } from '@saerskriven/model/fixtures';
 import type { CanvasBounds } from './bounds.js';
 import {
@@ -18,7 +18,9 @@ import {
 } from './canvas.fixtures.js';
 import type { CanvasLayout, CanvasNode } from './layout.js';
 import { sampledCurve } from './paths.js';
+import { wrappedTextStyles } from './stylesheet.js';
 import { nodeTextPlacement, textPlacementCorners } from './text-placement.js';
+import { textPadding, wrapText } from './typography.js';
 
 const dividerName = 'a divider named at length, over more than one line';
 
@@ -88,6 +90,24 @@ const mirrorBoxOf = (node: CanvasNode): Box | undefined => {
         y: middle.y * 2 - placement.at.y,
       },
     }).map((corner) => shiftedBy(corner, node.position)),
+  );
+};
+
+const processSized = (size: Size): CanvasNode =>
+  layoutOf(
+    modelWith({
+      elements: [
+        boxAt('el-process', 0, 0, 'process', size, 'Authentication service'),
+      ],
+    }),
+  ).nodes[0];
+
+const processNameLines = (size: Size): string[] => {
+  const placement = nodeTextPlacement(processSized(size));
+  return wrapText(
+    placement.text,
+    wrappedTextStyles[placement.textStyle].fontSize,
+    placement.width,
   );
 };
 
@@ -356,5 +376,29 @@ describe('the name of a 300 by 100 arch', () => {
     );
     expect(nameStruckBy(arch)).toEqual([]);
     expect(curveNameOverlaps(pushed)).toEqual([]);
+  });
+});
+
+describe("a process's name", () => {
+  it.each([
+    ['square', { width: 100, height: 100 }],
+    ['two to one', { width: 200, height: 100 }],
+  ] as const)(
+    'wraps in a %s box to the largest rectangle inside its ellipse, less the padding',
+    (_shape, size) => {
+      expect(nodeTextPlacement(processSized(size)).width).toBeCloseTo(
+        size.width * Math.SQRT1_2 - textPadding * 2,
+      );
+    },
+  );
+
+  it('takes more of the name on each line as its box widens', () => {
+    expect(processNameLines({ width: 60, height: 60 }).length).toBeGreaterThan(
+      2,
+    );
+    expect(processNameLines({ width: 130, height: 60 })).toEqual([
+      'Authentication',
+      'service',
+    ]);
   });
 });

@@ -43,8 +43,8 @@ export type CurveNameSide = {
  * text element's prose centred in its box, a box boundary's name below its
  * top edge, a curve boundary's name beside the bend its `nameSide` names (see
  * {@link settledCurveNames}), and every other kind's name centred in its box.
- * A process wraps to the width of the square inscribed in its circle rather
- * than to its box.
+ * A process wraps to the width of the largest rectangle inside its ellipse,
+ * `SQRT1_2` of its box's, rather than to its box.
  */
 export function nodeTextPlacement(node: CanvasNode): TextPlacement {
   if (node.kind === 'text') {
@@ -77,7 +77,7 @@ export function nodeTextPlacement(node: CanvasNode): TextPlacement {
     anchor: 'centre',
     width: innerWidth(
       node.kind === 'process'
-        ? Math.min(node.size.width, node.size.height) * Math.SQRT1_2
+        ? node.size.width * Math.SQRT1_2
         : node.size.width,
     ),
     textStyle: 'label',

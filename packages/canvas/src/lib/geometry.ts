@@ -8,10 +8,14 @@ export type Box = {
   readonly maxY: number;
 };
 
-/** A circle, as the point it is centred on and its radius. */
-export type Circle = {
+/**
+ * An ellipse whose axes run along x and y, as the point it is centred on and
+ * its radius along each axis.
+ */
+export type Ellipse = {
   readonly centre: Point;
-  readonly radius: number;
+  readonly radiusX: number;
+  readonly radiusY: number;
 };
 
 /** A straight run between two points, the piece every drawn line is made of. */
@@ -82,16 +86,19 @@ export function boxesOverlap(one: Box, other: Box): boolean {
 }
 
 /**
- * Whether a box shares any point with a circle, its edge and the circle's
- * own included. The point of the box nearest the centre decides it, which is
- * the centre itself where the centre lies inside.
+ * Whether a box shares any point with an ellipse, its edge and the ellipse's
+ * own included. Measuring each axis in its own radius turns the ellipse into
+ * a unit circle and leaves the box a box, so the point of the box nearest the
+ * centre decides it, which is the centre itself where the centre lies inside.
  */
-export function boxMeetsCircle(box: Box, circle: Circle): boolean {
-  const nearestX = Math.min(Math.max(circle.centre.x, box.minX), box.maxX);
-  const nearestY = Math.min(Math.max(circle.centre.y, box.minY), box.maxY);
+export function boxMeetsEllipse(box: Box, ellipse: Ellipse): boolean {
+  const nearestX = Math.min(Math.max(ellipse.centre.x, box.minX), box.maxX);
+  const nearestY = Math.min(Math.max(ellipse.centre.y, box.minY), box.maxY);
   return (
-    Math.hypot(nearestX - circle.centre.x, nearestY - circle.centre.y) <=
-    circle.radius
+    Math.hypot(
+      (nearestX - ellipse.centre.x) / ellipse.radiusX,
+      (nearestY - ellipse.centre.y) / ellipse.radiusY,
+    ) <= 1
   );
 }
 

@@ -15,7 +15,7 @@ import {
 } from './flow-labels.js';
 import {
   boxesOverlap,
-  boxMeetsCircle,
+  boxMeetsEllipse,
   boxOfPoints,
   segmentMeetsBox,
   segmentsOfBox,
@@ -26,7 +26,6 @@ import {
 } from './geometry.js';
 import {
   asSolid,
-  circleOf,
   drawnSolids,
   elementBadges,
   everyGlyphModel,
@@ -40,6 +39,7 @@ import {
 } from './canvas.fixtures.js';
 import { nodeBox } from './handles.js';
 import type { CanvasLayout, CanvasNode } from './layout.js';
+import { placedProcessEllipse } from './obstacles.js';
 import { controlPolygon } from './paths.js';
 import { textPlacementCorners } from './text-placement.js';
 import { flowLabelClearance } from './typography.js';
@@ -310,13 +310,13 @@ describe('the every-glyph label beside the Order API process', () => {
   it('keeps the smaller name clear of the process box', () => {
     const name = boxNamed('"Submit order"');
     expect(boxesOverlap(name, nodeBox(orderApi))).toBe(false);
-    expect(boxMeetsCircle(name, circleOf(orderApi))).toBe(false);
+    expect(boxMeetsEllipse(name, placedProcessEllipse(orderApi))).toBe(false);
   });
 
   it('hangs the badge beside the flow rather than in that corner beside the name', () => {
     const badge = boxNamed('"Submit order" badge');
     expect(boxesOverlap(badge, nodeBox(orderApi))).toBe(false);
-    expect(boxMeetsCircle(badge, circleOf(orderApi))).toBe(false);
+    expect(boxMeetsEllipse(badge, placedProcessEllipse(orderApi))).toBe(false);
   });
 });
 

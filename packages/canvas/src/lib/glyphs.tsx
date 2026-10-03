@@ -5,7 +5,7 @@ import { edgePoints } from './flow-anchors.js';
 import { WrappedText } from './labels.js';
 import type { CanvasEdge, CanvasNode, CanvasNodeKind } from './layout.js';
 import { svgNumber } from './numbers.js';
-import { processCircle } from './obstacles.js';
+import { processEllipse } from './obstacles.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
 import { canvasClassNames } from './stylesheet.js';
 import { nodeTextPlacement } from './text-placement.js';
@@ -212,14 +212,15 @@ function rectOutline(
 }
 
 function processOutline(size: Size, style?: CSSProperties): ReactElement {
-  const circle = processCircle(size);
+  const ellipse = processEllipse(size);
   return (
-    <circle
+    <ellipse
       className={shapeClass(canvasClassNames.process)}
       style={style}
-      cx={svgNumber(circle.centre.x)}
-      cy={svgNumber(circle.centre.y)}
-      r={svgNumber(circle.radius)}
+      cx={svgNumber(ellipse.centre.x)}
+      cy={svgNumber(ellipse.centre.y)}
+      rx={svgNumber(ellipse.radiusX)}
+      ry={svgNumber(ellipse.radiusY)}
     />
   );
 }

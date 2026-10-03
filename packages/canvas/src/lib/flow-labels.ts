@@ -73,7 +73,7 @@ export type FlowGeometry = {
  * each of its segments, on either side of the segment's normal, at three
  * standoffs a clearance apart, with the badge on the other side from the
  * name. A candidate costs one for every obstacle its name or badge box meets:
- * an element's drawn shape (a box, or a process's circle), name or badge, a
+ * an element's drawn shape (a box, or a process's ellipse), name or badge, a
  * straight run of a trust boundary's outline or of any flow's line, its own
  * included, and every name or badge already placed. A badge box is tested
  * against every other badge grown by a clearance, so a badge within a
@@ -237,16 +237,16 @@ function drawnObstacles(
     ...nodes.flatMap(ownTextBox),
   ];
   const badges = nodes.flatMap(ownBadgeBox);
-  const circles = outlines.flatMap((outline) => outline.circles);
+  const ellipses = outlines.flatMap((outline) => outline.ellipses);
   const lines = [
     ...outlines.flatMap((outline) => outline.lines),
     ...flows.flatMap(segmentsForFlow),
   ];
   return {
-    forName: { boxes: [...boxes, ...badges], circles, lines },
+    forName: { boxes: [...boxes, ...badges], ellipses, lines },
     forBadge: {
       boxes: [...boxes, ...badges.map(grownByClearance)],
-      circles,
+      ellipses,
       lines,
     },
   };
