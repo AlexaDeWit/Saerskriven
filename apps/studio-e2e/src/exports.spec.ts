@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { committedText, sha256Of } from '@saerskriven/model/fixtures';
+import { canvasSettled } from './canvas.fixtures.js';
 import { exportGolden } from './exports.fixtures.js';
 import {
   exportedFile,
   openFile,
-  openModelDocument,
+  openFallback,
+  openText,
   twoDiagramsFile,
 } from './studio.fixtures.js';
 
@@ -49,15 +51,17 @@ test('exports the diagram, picture, register and Typst source the CLI writes, by
 test('names the open diagram, cleaned for a file name, when the model has several', async ({
   page,
 }) => {
-  const text = committedText('two-diagrams.model.json').replace(
-    '"title": "Taking an order"',
-    '"title": "Orders: A/B?"',
+  const text = committedText(twoDiagramsFile).replace(
+    'title: Taking an order',
+    'title: "Orders: A/B?"',
   );
-  await openModelDocument(page, JSON.parse(text));
+  await openFallback(page);
+  await openText(page, 'two-diagrams.yaml', text);
+  await canvasSettled(page);
 
   const drawing = await exportedFile(page, 'Diagram as SVG');
   const picture = await exportedFile(page, 'Diagram as PNG');
 
-  expect(drawing.name).toBe('Untitled - Orders_ A_B_.svg');
-  expect(picture.name).toBe('Untitled - Orders_ A_B_.png');
+  expect(drawing.name).toBe('two-diagrams - Orders_ A_B_.svg');
+  expect(picture.name).toBe('two-diagrams - Orders_ A_B_.png');
 });

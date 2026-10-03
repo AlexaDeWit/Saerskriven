@@ -76,8 +76,8 @@ several diagrams, the SVG and PNG names add the diagram's title, as
 `payments - Checkout.svg`: characters a file name cannot hold become `_`,
 runs of white space collapse, leading and trailing dots and spaces go, the
 title is cut to 80 characters, and an empty one reads as the untitled diagram.
-Diagrams with the same title propose the same name. An export that could not place a flow
-endpoint says so after it writes. A refused PDF or PNG export writes nothing
+Diagrams with the same title propose the same name. An export that could not
+place a flow endpoint says so after it writes. A refused PDF or PNG export writes nothing
 and stands until dismissed or until a later export.
 
 The studio keeps the current session in the browser's local storage. A reload

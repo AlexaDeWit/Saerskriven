@@ -269,6 +269,7 @@ describe('naming', () => {
     ['a/b\\c:d*e?f"g<h>i|j', 'a_b_c_d_e_f_g_h_i_j'],
     ['one\ntwo\ttab\u0007bell', 'one_two_tab_bell'],
     ['  many   spaces\u00a0here ', 'many spaces here'],
+    ['a\u2028b\u2029c\u0085d\u009fe\u007ff', 'a_b_c_d_e_f'],
     ['..hidden. .', 'hidden'],
     ['Översikt Schéma', 'Översikt Schéma'],
     ['', 'Namnlöst'],
@@ -278,7 +279,10 @@ describe('naming', () => {
   });
 
   it('cuts a long title at the limit and trims what the cut leaves at the end', () => {
-    const cut = diagramFileTitle('å'.repeat(diagramTitleLimit + 20), 'x');
+    const cut = diagramFileTitle(
+      '\u{1d504}'.repeat(diagramTitleLimit + 20),
+      'x',
+    );
     expect(Array.from(cut)).toHaveLength(diagramTitleLimit);
     expect(
       diagramFileTitle(`${'a'.repeat(diagramTitleLimit - 1)} b`, 'x'),

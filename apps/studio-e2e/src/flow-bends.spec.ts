@@ -223,18 +223,16 @@ test('a selected flow still renames and a cancelled or returned drag creates no 
   await expect(page.locator('[data-bend-index]')).toHaveCount(0);
 });
 
-for (const { fixture, bent, bentId, svgItem } of [
+for (const { fixture, bent, bentId } of [
   {
     fixture: featureCompleteFile,
     bent: /^Book appointment, flow/u,
     bentId: 'flow-request',
-    svgItem: 'Diagram as SVG: Booking',
   },
   {
     fixture: twoDiagramsFile,
     bent: /^record the paid order, flow/u,
     bentId: 'el-record',
-    svgItem: 'Diagram as SVG: Taking an order',
   },
 ]) {
   test(`route edits preserve metadata and survive save/reopen in ${fixture}`, async ({
@@ -267,7 +265,7 @@ for (const { fixture, bent, bentId, svgItem } of [
     await canvasSettled(page);
     await selectByKeyboard(page, bent);
     expect(turnsOf(await drawnBy(line)).slice(1, -1)).toEqual(points);
-    const output = await exportedFile(page, svgItem);
+    const output = await exportedFile(page, 'Diagram as SVG');
     const svg = output.bytes.toString('utf8');
     expect(svg).toContain(await drawnBy(line));
     expect(svg).not.toContain('data-bend-index');

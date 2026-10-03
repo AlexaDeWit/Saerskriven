@@ -20,7 +20,7 @@ import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { activeLocale, activeTranslator } from '../messages/locale.js';
-import { activeDiagram } from '../store/selectors.js';
+import { activeDiagram, severalDiagrams } from '../store/selectors.js';
 import type { FileLifecycle, State } from '../store/state.js';
 import { modelStore, onCanvasOrPanelChange } from '../store/store.js';
 import { SaveOutcome, type FileBridge, type SaveFileType } from './bridge.js';
@@ -295,12 +295,12 @@ async function drawn(
 }
 
 function fileTitleOf(state: State, diagram: Diagram): string | undefined {
-  return state.present.diagrams.length < 2
-    ? undefined
-    : diagramFileTitle(
+  return severalDiagrams(state)
+    ? diagramFileTitle(
         diagram.title,
         activeTranslator().t('defaults.untitled-diagram'),
-      );
+      )
+    : undefined;
 }
 
 function noticeFrom(
