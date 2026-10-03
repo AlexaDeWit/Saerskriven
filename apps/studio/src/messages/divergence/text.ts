@@ -11,6 +11,7 @@ import {
   elementsById,
   inNumberOrder,
   mitigationStatusSchema,
+  threatIdSchema,
   type Assumption,
   type AssumptionId,
   type Element,
@@ -52,11 +53,18 @@ type ReportedDetail =
   | Exclude<DivergenceDetail, { readonly code: LeftOutCode | StatusCarried }>
   | {
       readonly code: 'otm-threat-status-unmapped';
-      readonly parameters: { readonly status: string; readonly id?: string };
+      readonly parameters: {
+        readonly status: string;
+        readonly threat?: string;
+      };
     }
   | {
       readonly code: 'otm-mitigation-status-retained';
-      readonly parameters: { readonly id: string; readonly status: string };
+      readonly parameters: {
+        readonly id: string;
+        readonly status: string;
+        readonly threat?: string;
+      };
     };
 
 /** A divergence a studio report shows, its detail one the catalogue words. */
@@ -88,9 +96,10 @@ export function reportedDivergence(
  * Each loss as a line in the reader's language: its subject as `model` shows
  * it, then what was lost, and a sentence where saving back keeps it. Losses
  * that read the same make one line with their count. An import names the
- * record it made from the source record a divergence names, and a subject
- * `model` does not hold leaves the line to the detail, which a code about the
- * model alone words with its own subject.
+ * record it made, the one a divergence carries or else the first made from
+ * the source record it names, and a subject `model` does not hold leaves the
+ * line to the detail, which a code about the model alone words with its own
+ * subject.
  */
 export function lossLines(
   t: Speaker,
@@ -141,16 +150,16 @@ function heldBy(model: Model): Held {
 
 function reportedDetail(detail: DivergenceDetail): ReportedDetail | undefined {
   if (detail.code === 'otm-threat-status-unmapped') {
-    const { status, id } = detail.parameters;
+    const { status, threat } = detail.parameters;
     return status === undefined
       ? undefined
-      : { code: detail.code, parameters: { status, id } };
+      : { code: detail.code, parameters: { status, threat } };
   }
   if (detail.code === 'otm-mitigation-status-retained') {
-    const { id, status } = detail.parameters;
+    const { id, status, threat } = detail.parameters;
     return status === null || status === undefined
       ? undefined
-      : { code: detail.code, parameters: { id, status } };
+      : { code: detail.code, parameters: { id, status, threat } };
   }
   return isLeftOut(detail) ? undefined : detail;
 }
@@ -199,12 +208,13 @@ function importedSubject(
   held: Held,
   detail: ReportedDetail,
 ): string | undefined {
-  if (
-    detail.code === 'otm-threat-split' ||
-    detail.code === 'otm-threat-status-unmapped'
-  ) {
-    const source = detail.parameters.id;
-    return source === undefined ? undefined : threatMadeFrom(t, held, source);
+  if (detail.code === 'otm-threat-split') {
+    return threatMadeFrom(t, held, detail.parameters.id);
+  }
+  if (detail.code === 'otm-threat-status-unmapped') {
+    const made = threatIdSchema.safeParse(detail.parameters.threat);
+    const threat = made.success ? held.threats.get(made.data) : undefined;
+    return threat && threatSubject(t, threat);
   }
   if (
     detail.code === 'otm-mitigation-split' ||
@@ -247,8 +257,11 @@ function mitigationMadeFrom(
   kind: SourceNamedKind,
   source: string,
 ): string | undefined {
-  const mitigation = [...held.mitigations.values()].find(({ id }) =>
-    importedFrom(id, kind, source),
+  const named = threatNamedBy(detail);
+  const mitigation = [...held.mitigations.values()].find(
+    ({ id, threats }) =>
+      importedFrom(id, kind, source) &&
+      (named === undefined || threats.some((threat) => threat === named)),
   );
   return mitigation && mitigationSubject(t, mitigation, held, detail);
 }
@@ -315,7 +328,8 @@ function assumptionSubject(
 
 function threatNamedBy(detail: ReportedDetail): string | undefined {
   return detail.code === 'mitigation-empty-dropped' ||
-    detail.code === 'mitigation-status-dropped'
+    detail.code === 'mitigation-status-dropped' ||
+    detail.code === 'otm-mitigation-status-retained'
     ? detail.parameters.threat
     : undefined;
 }

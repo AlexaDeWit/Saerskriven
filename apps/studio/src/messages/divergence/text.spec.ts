@@ -1,11 +1,13 @@
 import {
   divergenceDetailSchema,
+  importModel,
   importedId,
   type Divergence,
   type DivergenceCode,
   type DivergenceDetail,
 } from '@saerskriven/formats';
 import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
+import { Either } from 'effect';
 import { codesOf, type Model } from '@saerskriven/model';
 import {
   assumptionId,
@@ -419,6 +421,25 @@ describe('the subject a line names', () => {
     ).toEqual([t('divergence.repeated', { count: 2, line }), eopDetail]);
   });
 
+  it('counts the same kept loss before saying saving back keeps it', () => {
+    const card = divergenceOn(
+      { kind: 'threat', id: threatId('threat-9') },
+      eopCard,
+    );
+    const line = t('divergence.line', {
+      subject: threatNine,
+      detail: eopDetail,
+    });
+
+    expect(
+      lossLines(t, model, [lossOf(card, true), lossOf(card, true)]),
+    ).toEqual([
+      t('divergence.kept', {
+        line: t('divergence.repeated', { count: 2, line }),
+      }),
+    ]);
+  });
+
   it.each([
     ['the model', { kind: 'model' }],
     [
@@ -538,6 +559,11 @@ const imported = modelWith({
       threats: [spoofedOne],
     }),
     mitigationOf({
+      id: importedId('otm-mitigation', ['mitigation-signing', spoofedTwo, '0']),
+      title: 'Sign the booking',
+      threats: [spoofedTwo],
+    }),
+    mitigationOf({
       id: importedId('tmbom-control', ['control-review']),
       threats: [spoofedTwo],
     }),
@@ -570,24 +596,27 @@ describe('the record an import made from the source record a line names', () => 
     ]);
   });
 
-  it('names the threat whose OTM status it could not map by the source id the divergence carries', () => {
+  it('names each threat whose OTM status it could not map by the threat the import made for that occurrence', () => {
+    const unmapped = (threat: string): Divergence =>
+      fromSource({
+        code: 'otm-threat-status-unmapped',
+        parameters: { status: 'under-review', threat },
+      });
+    const detail = t('divergence.otm-threat-status-unmapped', {
+      status: 'under-review',
+    });
+
     expect(
-      linesOf(
-        [
-          fromSource({
-            code: 'otm-threat-status-unmapped',
-            parameters: { status: 'under-review', id: 'threat-spoofing' },
-          }),
-        ],
-        imported,
-      ),
+      linesOf([unmapped(spoofedTwo), unmapped(spoofedOne)], imported),
     ).toEqual([
       t('divergence.line', {
-        subject: spoofedPatient,
-        detail: t('divergence.otm-threat-status-unmapped', {
-          status: 'under-review',
+        subject: t('divergence.subject-threat', {
+          number: 2,
+          title: 'Spoofed patient',
         }),
+        detail,
       }),
+      t('divergence.line', { subject: spoofedPatient, detail }),
     ]);
   });
 
@@ -599,6 +628,21 @@ describe('the record an import made from the source record a line names', () => 
         parameters: { id: 'mitigation-signing', status: 'rejected' },
       },
       t('divergence.subject-mitigation', { title: 'Sign the booking' }),
+    ],
+    [
+      'the copy of an OTM mitigation on the threat the import made for its occurrence',
+      {
+        code: 'otm-mitigation-status-retained',
+        parameters: {
+          id: 'mitigation-signing',
+          status: 'rejected',
+          threat: spoofedTwo,
+        },
+      },
+      t('divergence.subject-mitigation-titled-on', {
+        title: 'Sign the booking',
+        threat: t('divergence.threat', { number: 2, title: 'Spoofed patient' }),
+      }),
     ],
     [
       'the untitled mitigation a TM-BOM control became by the threat it is on',
@@ -620,6 +664,106 @@ describe('the record an import made from the source record a line names', () => 
       t('divergence.line', {
         subject,
         detail: modelLine(detail),
+      }),
+    );
+  });
+});
+
+const twoOccurrences = JSON.stringify({
+  otmVersion: '0.2.0',
+  project: { name: 'Clinic booking', id: 'clinic-booking' },
+  trustZones: [{ id: 'zone', name: 'Clinic', risk: { trustRating: 50 } }],
+  components: [
+    {
+      id: 'patient-app',
+      name: 'Patient app',
+      type: 'web-client',
+      parent: { trustZone: 'zone' },
+      threats: [
+        {
+          threat: 'threat-spoofing',
+          state: 'exposed',
+          mitigations: [{ mitigation: 'mitigation-review', state: 'verified' }],
+        },
+        { threat: 'threat-spoofing', state: 'under-review' },
+        {
+          threat: 'threat-sniffing',
+          state: 'open',
+          mitigations: [{ mitigation: 'mitigation-review', state: 'rejected' }],
+        },
+      ],
+    },
+  ],
+  threats: [
+    {
+      id: 'threat-spoofing',
+      name: 'Spoofed patient',
+      risk: { likelihood: null, impact: 70 },
+    },
+    {
+      id: 'threat-sniffing',
+      name: 'Form read in transit',
+      risk: { likelihood: null, impact: 60 },
+    },
+  ],
+  mitigations: [
+    { id: 'mitigation-review', name: 'Review the fee', riskReduction: 30 },
+  ],
+});
+
+describe('the lines a real OTM import reports', () => {
+  const read = Either.getOrThrow(importModel(twoOccurrences));
+  const lines = lossLines(
+    t,
+    read.model,
+    read.divergences.flatMap((divergence) => {
+      const shown = reportedDivergence(divergence);
+      return shown === undefined ? [] : [{ divergence: shown, kept: false }];
+    }),
+  );
+  const threatNamed = (title: string, state: string) => {
+    const threat = read.model.threats.find(
+      (candidate) =>
+        candidate.title === title && candidate.description.includes(state),
+    );
+    if (threat === undefined) {
+      throw new Error(`the import made no threat ${title} for ${state}`);
+    }
+    return threat;
+  };
+
+  it('names the threat made for the occurrence whose state it could not map', () => {
+    const { number } = threatNamed('Spoofed patient', 'under-review');
+
+    expect(number).toBe(2);
+    expect(lines).toContain(
+      t('divergence.line', {
+        subject: t('divergence.subject-threat', {
+          number,
+          title: 'Spoofed patient',
+        }),
+        detail: t('divergence.otm-threat-status-unmapped', {
+          status: 'under-review',
+        }),
+      }),
+    );
+  });
+
+  it('names the copy of a mitigation on the threat whose occurrence kept its source status', () => {
+    const { number } = threatNamed('Form read in transit', 'open');
+
+    expect(lines).toContain(
+      t('divergence.line', {
+        subject: t('divergence.subject-mitigation-titled-on', {
+          title: 'Review the fee',
+          threat: t('divergence.threat', {
+            number,
+            title: 'Form read in transit',
+          }),
+        }),
+        detail: t('divergence.otm-mitigation-status-retained', {
+          status: 'rejected',
+        }),
       }),
     );
   });

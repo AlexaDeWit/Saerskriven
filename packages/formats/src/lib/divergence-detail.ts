@@ -79,12 +79,13 @@ export const divergenceDetailSchema = z.discriminatedUnion('code', [
   carrying('otm-threat-undecided', { id: z.string() }),
   carrying('otm-threat-status-unmapped', {
     status: z.string().optional(),
-    id: z.string().optional(),
+    threat: z.string().optional(),
   }),
   carrying('otm-mitigation-split', { id: z.string() }),
   carrying('otm-mitigation-status-retained', {
     id: z.string(),
     status: z.string().nullish(),
+    threat: z.string().optional(),
   }),
   carrying('otm-mitigation-unlinked', { id: z.string() }),
   coded('otm-assets-as-descriptions'),
