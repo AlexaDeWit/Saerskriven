@@ -161,13 +161,23 @@ describe('freshFlow', () => {
     });
   });
 
+  it('pins an end to the side it is given and leaves the other automatic', () => {
+    const flow = freshFlow(actorElement, processElement, { source: 'right' });
+
+    expect(flow).toMatchObject({
+      source: { kind: 'attached', side: 'right' },
+      target: { kind: 'attached' },
+    });
+    expect(flow.kind === 'flow' && 'side' in flow.target).toBe(false);
+  });
+
   it('builds a flow the model accepts', () => {
     expect(
       Either.isRight(
         addElement(
           canvasModel,
           mainDiagram,
-          freshFlow(actorElement, processElement),
+          freshFlow(actorElement, processElement, { target: 'top' }),
         ),
       ),
     ).toBe(true);

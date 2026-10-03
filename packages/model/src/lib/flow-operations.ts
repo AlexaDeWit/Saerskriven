@@ -160,7 +160,8 @@ function locatedFlow(
   );
 }
 
-function attachedEndpoint(
+/** An endpoint attached to an element, pinned to `side` when one is given. */
+export function attachedEndpoint(
   element: ElementId,
   side: Side | undefined,
 ): FlowEndpoint {

@@ -8,6 +8,7 @@ import {
 import {
   chosenFile,
   deferred,
+  dismissal,
   handleFor,
   openPicker,
   recordDownloads,
@@ -29,9 +30,6 @@ const inTheFormatOf = (name: string): string =>
   name.endsWith('.json') ? '{}' : 'a: 1';
 
 let downloads: readonly string[] = [];
-
-const dismissal = (): DOMException =>
-  new DOMException('The user dismissed the picker.', 'AbortError');
 
 const freshBridge = async (): Promise<FileBridge> => {
   vi.resetModules();
@@ -282,6 +280,22 @@ describe('saving', () => {
 
     expect(written).toEqual([]);
     expect(downloads).toEqual(['model.yaml', 'model.yaml']);
+  });
+
+  it('says it writes back only while it holds a file a picker handed over', async () => {
+    vi.stubGlobal('showOpenFilePicker', () =>
+      Promise.resolve([handleFor('model.yaml', 'a: 1', [])]),
+    );
+    vi.stubGlobal('showSaveFilePicker', () => Promise.reject(dismissal()));
+    const bridge = await freshBridge();
+
+    expect(bridge.writesBack()).toBe(false);
+    await settled(bridge.open(1024));
+    expect(bridge.writesBack()).toBe(true);
+    await settled(bridge.saveAs('model.yaml', types, inTheFormatOf));
+    expect(bridge.writesBack()).toBe(true);
+    bridge.release();
+    expect(bridge.writesBack()).toBe(false);
   });
 
   it('says it can ask where wherever the browser has that picker', async () => {

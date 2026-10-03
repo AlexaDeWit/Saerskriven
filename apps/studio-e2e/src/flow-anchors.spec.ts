@@ -14,7 +14,7 @@ import {
 import {
   handleOn,
   nodeNamed,
-  openPlaceholder,
+  openFallback,
   placeholder,
   readBack,
   savedFile,
@@ -41,7 +41,7 @@ const freeTargetX = (flow: Awaited<ReturnType<typeof savedFlow>>): number =>
 test('pins a flow end to a side by keyboard and by dragging, releases it, and saves the pin', async ({
   page,
 }) => {
-  await openPlaceholder(page);
+  await openFallback(page);
   const flow = await selectByKeyboard(page, placeholder.records);
   const line = lineOf(page, placeholder.records);
   const original = await drawnBy(line);
@@ -78,7 +78,7 @@ test('pins a flow end to a side by keyboard and by dragging, releases it, and sa
 test('a flow becomes bidirectional by its command, draws two arrowheads, and saves as such', async ({
   page,
 }) => {
-  await openPlaceholder(page);
+  await openFallback(page);
   const flow = await selectByKeyboard(page, placeholder.records);
   const arrows = flow.locator(`path.${canvasClassNames.flowArrow}`);
   await expect(arrows).toHaveCount(1);
@@ -96,7 +96,7 @@ test('a flow becomes bidirectional by its command, draws two arrowheads, and sav
 test('a flow reverses by its chord and its command, one undo step each, and saves the swap', async ({
   page,
 }) => {
-  await openPlaceholder(page);
+  await openFallback(page);
   const flow = await selectByKeyboard(page, placeholder.records);
   await expect(flow).toHaveAccessibleName(/from Actor to Store/u);
   await page.keyboard.press(registeredChords['reverse-flow'][0]);
@@ -117,7 +117,7 @@ test('a flow reverses by its chord and its command, one undo step each, and save
 test('a flow end dragged onto empty canvas goes free there, moves by arrow key, and attaches where it is dropped on an element', async ({
   page,
 }) => {
-  await openPlaceholder(page);
+  await openFallback(page);
   const flow = await selectByKeyboard(page, placeholder.records);
   const original = await drawnBy(lineOf(page, placeholder.records));
   await dragTo(page, targetEnd(page), await emptyCanvasPoint(page));

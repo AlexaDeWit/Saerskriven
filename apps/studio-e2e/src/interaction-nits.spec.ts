@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
 import {
   canvasSettled,
+  centreOf,
   emptyCanvasPoint,
   type Point,
   touchDrag,
@@ -48,6 +49,63 @@ test('scroll pans while a modified scroll keeps pinch zoom', async ({
   await page.keyboard.up('Control');
 
   await expect.poll(() => viewportZoom(page)).not.toBe(zoom);
+});
+
+test.describe('on macOS', () => {
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  });
+
+  test('holding Control during scroll momentum switches to zoom', async ({
+    page,
+  }) => {
+    await openPlaceholder(page);
+    const at = await emptyCanvasPoint(page);
+    await page.mouse.move(at.x, at.y);
+    const zoom = await viewportZoom(page);
+    const start = await viewportTransform(page);
+
+    await page.mouse.wheel(0, 60);
+    await page.mouse.wheel(0, 60);
+    await expect.poll(() => viewportTransform(page)).not.toBe(start);
+    expect(await viewportZoom(page)).toBe(zoom);
+    const actor = nodeNamed(page, placeholder.actor);
+    const before = await centreOf(actor);
+
+    await page.keyboard.down('Control');
+    await page.evaluate(
+      async ({ x, y }) => {
+        const pane = document.querySelector('.react-flow__pane');
+        for (let tick = 0; tick < 5; tick += 1) {
+          pane?.dispatchEvent(
+            new WheelEvent('wheel', {
+              deltaY: 30,
+              ctrlKey: false,
+              bubbles: true,
+              cancelable: true,
+              clientX: x,
+              clientY: y,
+            }),
+          );
+          await new Promise((resolve) => setTimeout(resolve, 16));
+        }
+      },
+      { x: at.x, y: at.y },
+    );
+    await expect.poll(() => viewportZoom(page)).not.toBe(zoom);
+    await page.keyboard.up('Control');
+    await canvasSettled(page);
+
+    const zoomed = await viewportZoom(page);
+    const after = await centreOf(actor);
+    expect(after.x - at.x).toBeCloseTo(((before.x - at.x) * zoomed) / zoom, 0);
+    expect(after.y - at.y).toBeCloseTo(((before.y - at.y) * zoomed) / zoom, 0);
+    const panned = await viewportTransform(page);
+    await page.mouse.wheel(0, 60);
+    await expect.poll(() => viewportTransform(page)).not.toBe(panned);
+    expect(await viewportZoom(page)).toBe(zoomed);
+  });
 });
 
 test('middle-button dragging pans without zooming or clearing selection', async ({

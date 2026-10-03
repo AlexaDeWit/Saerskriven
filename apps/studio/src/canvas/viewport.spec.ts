@@ -2,9 +2,20 @@ import { panelCover } from '@saerskriven/canvas';
 import {
   clearOfPanel,
   fitViewport,
+  zoomActivationKeysFor,
   zoomLimits,
   type CanvasExtent,
 } from './viewport.js';
+
+describe('zoomActivationKeysFor', () => {
+  it('adds Control to Command on Apple platforms', () => {
+    expect(zoomActivationKeysFor('apple')).toEqual(['Meta', 'Control']);
+  });
+
+  it('keeps Control alone elsewhere', () => {
+    expect(zoomActivationKeysFor('other')).toBe('Control');
+  });
+});
 
 describe('clearOfPanel', () => {
   it('takes what the panel covers off the right of the canvas', () => {

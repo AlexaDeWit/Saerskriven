@@ -1,5 +1,6 @@
 import type { CanvasBounds } from '@saerskriven/canvas';
 import type { Viewport } from '@xyflow/react';
+import type { Platform } from '../commands/shortcuts.js';
 
 /** How much of the page the canvas has, in its own pixels. */
 export type CanvasExtent = {
@@ -11,6 +12,11 @@ const canvasPadding = 64;
 
 /** Zoom bounds shared with React Flow. */
 export const zoomLimits = { minimum: 0.1, maximum: 2 } as const;
+
+/** The keys that turn scrolling into zoom. Apple platforms add Control to React Flow's Command default, other platforms keep its Control default. */
+export function zoomActivationKeysFor(platform: Platform): string | string[] {
+  return platform === 'apple' ? ['Meta', 'Control'] : 'Control';
+}
 
 /** The canvas area left of the measured pane coverage. */
 export function clearOfPanel(

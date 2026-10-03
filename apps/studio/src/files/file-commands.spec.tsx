@@ -11,6 +11,7 @@ import { isDirty } from '../store/selectors.js';
 import { modelStore } from '../store/store.js';
 import type { StoreSync, SyncedState } from '../store/sync.js';
 import {
+  foreignSource,
   mainDiagram,
   nativeSource,
   sampleModel,
@@ -21,12 +22,14 @@ import {
   type ChosenFile,
   type FileBridge,
   type FileContent,
+  type SaveFileType,
 } from './bridge.js';
 import { browserFileBridge } from './browser-bridge.js';
 import { useFileSession } from './file-commands.js';
 import {
   chosenFile,
   deferred,
+  dismissal,
   edit,
   handleFor,
   openPicker,
@@ -35,6 +38,7 @@ import {
   specBridge,
   specRenders,
   unreadableFile,
+  vendoredFile,
 } from './files.fixtures.js';
 
 let downloads: readonly string[] = [];
@@ -67,6 +71,26 @@ function anotherTab() {
     },
   };
 }
+
+type Asked = { suggestedName: string; types: readonly SaveFileType[] };
+
+const dismissed = (): Promise<never> => Promise.reject(dismissal());
+
+const refusedWrite = () =>
+  Promise.resolve({
+    name: 'chosen.yaml',
+    createWritable: () => Promise.reject(new Error('NotAllowedError')),
+  });
+
+const restored = (name: string, source = nativeSource): void => {
+  modelStore.setState(
+    {
+      ...initialState(sampleModel),
+      file: FileLifecycle.Opened({ name, source }),
+    },
+    true,
+  );
+};
 
 beforeEach(() => {
   browserFileBridge.release();
@@ -226,6 +250,157 @@ describe('useFileSession', () => {
     },
   );
 
+  describe('a Save with no file to write back to', () => {
+    it.each(['save', 'saveAs'] as const)(
+      'asks the save picker for the name and formats Save as offers, from %s',
+      async (command) => {
+        const asked: Asked[] = [];
+        vi.stubGlobal('showSaveFilePicker', (options: Asked) => {
+          asked.push(options);
+          return dismissed();
+        });
+        restored('model.json', foreignSource);
+        const result = session(browserFileBridge);
+
+        await act(() => {
+          result.current.commands[command]();
+          return Promise.resolve();
+        });
+
+        expect(asked).toHaveLength(1);
+        expect(asked[0].suggestedName).toBe('model.json');
+        expect(asked[0].types.map(({ description }) => description)).toEqual([
+          'Threat Dragon JSON',
+          'Saerskriven YAML',
+        ]);
+      },
+    );
+
+    it.each(['a reload', 'another tab', 'an import'] as const)(
+      'asks once after %s, then writes to the file it chose without asking',
+      async (lost) => {
+        const original: FileContent[] = [];
+        const chosen: FileContent[] = [];
+        const savePicker = vi.fn<() => Promise<ReturnType<typeof handleFor>>>(
+          () => Promise.resolve(handleFor('chosen.yaml', '', chosen)),
+        );
+        vi.stubGlobal(
+          'showOpenFilePicker',
+          openPicker()
+            .mockResolvedValueOnce([
+              handleFor('model.yaml', sampleNativeText, original),
+            ])
+            .mockResolvedValueOnce([
+              handleFor(
+                'source.otm',
+                await vendoredFile('otm/example.json').text(),
+                [],
+              ),
+            ]),
+        );
+        vi.stubGlobal('showSaveFilePicker', savePicker);
+        const other = anotherTab();
+        const result = session(browserFileBridge, undefined, other.sync);
+        if (lost === 'a reload') {
+          restored('model.yaml');
+          edit();
+        } else {
+          await act(() => {
+            result.current.commands.open();
+            return Promise.resolve();
+          });
+          if (lost === 'another tab') {
+            edit();
+            other.reaches({ ...modelStore.getState(), recoveryCurrent: true });
+          } else {
+            await act(() => {
+              result.current.commands.import();
+              return Promise.resolve();
+            });
+          }
+        }
+        expect(modelStore.getState().file).toMatchObject({
+          name: lost === 'an import' ? 'source.yaml' : 'model.yaml',
+        });
+        expect(isDirty(modelStore.getState())).toBe(true);
+
+        act(() => {
+          result.current.commands.save();
+        });
+        await waitFor(() => {
+          expect(chosen).toHaveLength(1);
+        });
+
+        expect(savePicker).toHaveBeenCalledOnce();
+        expect(modelStore.getState().file).toMatchObject({
+          _tag: 'Opened',
+          name: 'chosen.yaml',
+        });
+        expect(isDirty(modelStore.getState())).toBe(false);
+
+        act(() => {
+          result.current.commands.save();
+        });
+        await waitFor(() => {
+          expect(chosen).toHaveLength(2);
+        });
+
+        expect(savePicker).toHaveBeenCalledOnce();
+        expect(original).toEqual([]);
+        expect(downloads).toEqual([]);
+      },
+    );
+
+    describe.each(['save', 'saveAs'] as const)('from %s', (command) => {
+      it.each([
+        { answer: 'was dismissed', picked: dismissed, failure: undefined },
+        { answer: 'refused the write', picked: refusedWrite, failure: 'File' },
+      ] as const)(
+        'keeps the work unsaved in every tab where the picker $answer, and Open and New still ask',
+        async ({ picked, failure }) => {
+          vi.stubGlobal('showSaveFilePicker', picked);
+          restored('model.yaml');
+          edit();
+          const before = modelStore.getState();
+          const result = session(browserFileBridge);
+
+          await act(() => {
+            result.current.commands[command]();
+            return Promise.resolve();
+          });
+
+          const after = modelStore.getState();
+          expect(after.lastFailure?._tag).toBe(failure);
+          expect(after.file).toBe(before.file);
+          expect(after.saved).toBe(before.saved);
+          expect(isDirty(after)).toBe(true);
+
+          act(() => {
+            result.current.commands.open();
+            result.current.commands.close();
+          });
+
+          expect(result.current.opening).toBe(true);
+          expect(result.current.closing).toBe(true);
+        },
+      );
+    });
+
+    it('downloads under the file name where the browser has no save picker, and counts that as saved', async () => {
+      restored('model.yaml');
+      edit();
+      const result = session(browserFileBridge);
+
+      await act(() => {
+        result.current.commands.save();
+        return Promise.resolve();
+      });
+
+      expect(downloads).toEqual(['model.yaml']);
+      expect(isDirty(modelStore.getState())).toBe(false);
+    });
+  });
+
   describe.each(['save', 'saveAs'] as const)('an overlapping %s', (command) => {
     it.each([
       'picker refusal',
@@ -330,9 +505,7 @@ describe('useFileSession', () => {
             break;
           }
           case 'cancelled open': {
-            picker.mockRejectedValueOnce(
-              new DOMException('Dismissed', 'AbortError'),
-            );
+            picker.mockRejectedValueOnce(dismissal());
             result.current.commands.open();
             result.current.confirmOpen();
             break;
@@ -353,20 +526,18 @@ describe('useFileSession', () => {
       expect(modelStore.getState().present).toBe(later.present);
       expect(modelStore.getState().saved).toBe(later.saved);
       expect(modelStore.getState().lastFailure).toBe(later.lastFailure);
-      const destination =
-        change === 'cancelled open'
+      const held =
+        change === 'cancelled open' || change === 'newer save'
           ? 'original.yaml'
           : change === 'successful open' ||
               change === 'stale write refusal' ||
               change === 'newer save-as'
             ? 'replacement.yaml'
-            : change === 'newer save'
-              ? 'original.yaml'
-              : 'threat-model.yaml';
+            : undefined;
       expect(modelStore.getState().file).toMatchObject(
-        destination === 'threat-model.yaml'
+        held === undefined
           ? FileLifecycle.NoFile()
-          : { _tag: 'Opened', name: destination },
+          : { _tag: 'Opened', name: held },
       );
       const counts = Object.fromEntries(
         Object.entries(writes).map(([name, values]) => [name, values.length]),
@@ -376,9 +547,8 @@ describe('useFileSession', () => {
         return Promise.resolve();
       });
 
-      expect(downloads).toEqual(
-        destination === 'threat-model.yaml' ? [destination] : [],
-      );
+      const destination = held ?? 'elsewhere.yaml';
+      expect(downloads).toEqual([]);
       for (const [name, values] of Object.entries(writes)) {
         expect(values).toHaveLength(
           counts[name] + (name === destination ? 1 : 0),

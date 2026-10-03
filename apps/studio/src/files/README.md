@@ -30,6 +30,14 @@ platform's picker, so a platform with none is asked in advance and the studio
 puts the question in its own menu, handing the save-as the one format it
 settled on.
 
+`writesBack` says whether the bridge holds a file for Save to write to. A Save
+with none takes the no-handle path: where the platform can ask where, the
+session runs the save-as route, so the picker proposes the same name and
+formats, the file chosen there becomes the one later Saves write to, and a
+dismissed picker dispatches nothing. Where it cannot ask, the bridge's `save`
+downloads and answers `Written`, since the page cannot see the browser's own
+dialog ([Using the studio](../../../../docs/studio.md#files)).
+
 Each bridge open, fallback read, save, or save-as starts one operation. The
 latest request owns settlement, regardless of completion order. The bridge
 returns an outcome and a settlement function without changing its held handle,
@@ -47,7 +55,8 @@ association and releases the handle, so the next Save leaves both files
 untouched. A refused save keeps the file and handle for retry. Dismissing a
 picker keeps the last settled association and does not revive an older pending
 operation. An empty fallback selection starts no operation, and a successful
-one settles with no handle, so its next Save downloads under the chosen name.
+one settles with no handle, so its next Save takes the no-handle path under
+the chosen name.
 Import shares operation ownership and unsaved-work guards with Open, releases
 the source handle on success, and proposes a YAML name.
 

@@ -242,13 +242,21 @@ export const downloaded = async (
   };
 };
 
-/** Saves from the menu through the download path, and reads back what was written. */
+/**
+ * Saves from the menu through the download path, and reads back what was
+ * written. The download path needs a page without the save picker, as
+ * `openFallback` and `withoutPickers` leave it.
+ */
 export const savedFile = async (page: Page): Promise<Downloaded> => {
   await openMenu(page);
   return downloaded(page, () => menuItem(page, 'Save').click());
 };
 
-/** Presses `chord` and reads back the file the studio wrote through it. */
+/**
+ * Presses `chord` and reads back the file the studio wrote through it. The
+ * download path needs a page without the save picker, as `openFallback` and
+ * `withoutPickers` leave it.
+ */
 export const savedByKey = async (
   page: Page,
   chord: string,

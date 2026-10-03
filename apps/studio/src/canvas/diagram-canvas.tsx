@@ -61,7 +61,7 @@ import { PlacementPreview } from './placement-preview.js';
 import { usePlacement } from './placement.js';
 import { currentTool } from './tools.js';
 import { FitOnOpen } from './view-commands.js';
-import { zoomLimits } from './viewport.js';
+import { zoomActivationKeysFor, zoomLimits } from './viewport.js';
 import { ZoomCluster } from './zoom-cluster.js';
 import {
   BoundaryShapeCommands,
@@ -380,6 +380,7 @@ export function DiagramCanvas({
         onSelectionEnd={boxSelection.onSelectionEnd}
         onSelectionStart={boxSelection.onSelectionStart}
         panActivationKeyCode={null}
+        zoomActivationKeyCode={zoomActivationKeysFor(hostPlatform)}
         panOnDrag={
           mode.active === 'hand'
             ? true

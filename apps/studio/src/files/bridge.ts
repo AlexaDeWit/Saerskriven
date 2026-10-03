@@ -104,6 +104,7 @@ export type FileBridge = {
     content: FileContent,
   ): Promise<SaveOutcome>;
   asksWhere(): boolean;
+  writesBack(): boolean;
   release(): void;
 };
 
