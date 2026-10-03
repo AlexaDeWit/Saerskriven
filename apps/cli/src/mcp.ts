@@ -7,6 +7,7 @@ import {
   createSaerskrivenServer,
   openWorkspace,
   renderWorkspaceFailure,
+  type BrotliModule,
   type RasterizerAssets,
 } from '@saerskriven/mcp';
 import { Either } from 'effect';
@@ -21,6 +22,7 @@ import {
   usageError,
   type CommandOutcome,
 } from './outcome.js';
+import { brotliModule } from './share.js';
 import { cliVersion } from './version.js';
 
 /**
@@ -70,6 +72,14 @@ export function rasterizerIn(assets: string): RasterizerAssets {
 }
 
 /**
+ * Where one server gets its brotli module, read through the process-wide
+ * module cache, which re-reads a refusal.
+ */
+export function brotliIn(assets: string): BrotliModule {
+  return () => brotliModule(assets);
+}
+
+/**
  * The process as a server sees it: the streams stdio carries the protocol
  * over, and what the HTTP server reports through and stops on.
  */
@@ -106,8 +116,14 @@ export function serveMcp(
       Promise.resolve(usageError(lines(...renderWorkspaceFailure(failure)))),
     onRight: (workspace) => {
       const rasterizer = rasterizerIn(assets);
+      const brotli = brotliIn(assets);
       const factory: McpServerFactory = () =>
-        createSaerskrivenServer({ workspace, version: cliVersion, rasterizer });
+        createSaerskrivenServer({
+          workspace,
+          version: cliVersion,
+          rasterizer,
+          brotli,
+        });
       return options.http === undefined
         ? servedOverStdio(factory, host)
         : serveHttp(factory, options.http, host);
