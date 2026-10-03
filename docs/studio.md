@@ -63,9 +63,10 @@ file reports too, under **Not shown in the studio**: keys the format's schema
 does not declare, and values the studio holds less exactly than the file,
 such as a Threat Dragon Elevation of Privilege card, with "Saving back keeps
 it." where a save to the same file keeps them. Each line names a threat by its
-number and title, and anything else by the name the studio shows. A report
-leaves out what loses nothing, such as a raised threat number mark, which the
-command line still prints.
+number and title, and anything else by the name the studio shows, and lines
+that read the same are shown once with their count. A report leaves out what
+loses nothing, such as a raised threat number mark, which the command line
+still prints.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a

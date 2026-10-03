@@ -3,24 +3,18 @@ import { divergenceMessages } from './contract.js';
 
 export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   line: '{subject}: {detail}',
+  repeated: { one: '{line}', other: '{line}, {count} times' },
   kept: '{line}. Saving back keeps it.',
   threat: 'threat {number} "{title}"',
   'threat-untitled': 'threat {number}',
   'subject-threat': 'Threat {number} "{title}"',
   'subject-threat-untitled': 'Threat {number}',
-  'subject-diagram': 'Diagram "{title}"',
-  'subject-actor': 'Actor',
-  'subject-actor-named': 'Actor "{name}"',
-  'subject-process': 'Process',
-  'subject-process-named': 'Process "{name}"',
-  'subject-store': 'Store',
-  'subject-store-named': 'Store "{name}"',
   'subject-text': 'Text',
   'subject-text-named': 'Text "{name}"',
-  'subject-flow-named': 'Flow "{name}"',
   'subject-trust-boundary': 'Trust boundary',
   'subject-trust-boundary-named': 'Trust boundary "{name}"',
   'subject-mitigation': 'Mitigation "{title}"',
+  'subject-mitigation-titled-on': 'Mitigation "{title}" on {threat}',
   'subject-mitigation-on': 'Mitigation on {threat}',
   'subject-mitigation-untitled': 'Mitigation',
   'subject-assumption-on': 'Assumption on {threat}',
@@ -55,12 +49,12 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   'threat-category-unmapped': 'its category "{category}"',
   'key-undeclared': 'Key {path}: not read',
   'assumption-element-links-dropped': 'its links to elements',
-  'otm-threat-split': 'Threat "{id}": one threat per occurrence',
+  'otm-threat-split': 'copied for another occurrence',
   'otm-threat-status-unmapped':
-    'Threat status "{status}": read as open, kept in the description',
-  'otm-mitigation-split': 'Mitigation "{id}": one mitigation per occurrence',
+    'its status "{status}", read as open and kept in its description',
+  'otm-mitigation-split': 'copied for another occurrence',
   'otm-mitigation-status-retained':
-    'Mitigation "{id}": status "{status}" read as proposed, kept in its description',
+    'its status "{status}", read as proposed and kept in its description',
   'otm-mitigation-unlinked':
     'Mitigation "{id}": on no threat, now a line of the model description',
   'otm-assets-as-descriptions':
@@ -68,7 +62,7 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   'otm-components-as-processes':
     'Component types: now processes, kept in the descriptions',
   'tmbom-control-proposed':
-    'Control "{name}": status read as proposed, kept in its description',
+    'its status, read as proposed and kept in its description',
   'tmbom-control-unlinked':
     'Control "{name}": on no threat, now a line of the model description',
   'tmbom-flow-fields-as-prose':

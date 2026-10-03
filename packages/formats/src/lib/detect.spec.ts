@@ -14,6 +14,7 @@ import {
 } from './detect.js';
 import { hasDiverged, type Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
+import { isRecord } from './records.js';
 import {
   featureCompleteYaml,
   frozenV030Path,
@@ -367,9 +368,43 @@ describe('retainedSource', () => {
   );
 });
 
+const unmappedThreat = JSON.stringify(
+  JSON.parse(featureCompleteText, (_key, value: unknown) =>
+    isRecord(value) && value['id'] === 'threat-spoofing'
+      ? {
+          ...value,
+          status: 'Investigating',
+          severity: 'Extreme',
+          type: 'Gremlins',
+        }
+      : value,
+  ),
+);
+
 describe('keptByWriteBack', () => {
+  it('reads every narrowing Threat Dragon reports from a threat with unmapped values beside the card', () => {
+    expect(
+      new Set(
+        opened(unmappedThreat)
+          .divergences.filter(({ reason }) => reason === 'narrowed')
+          .map(({ detail }) => detail.code),
+      ),
+    ).toEqual(
+      new Set([
+        'threat-status-unmapped',
+        'threat-severity-unmapped',
+        'threat-category-unmapped',
+        'threat-category-eop-suit',
+      ]),
+    );
+  });
+
   it.each([
     { name: 'Threat Dragon', text: featureCompleteText },
+    {
+      name: 'Threat Dragon with an unmapped status, severity and type',
+      text: unmappedThreat,
+    },
     {
       name: 'version 1 Saerskriven YAML',
       text: readFileSync(frozenV030Path, 'utf8'),

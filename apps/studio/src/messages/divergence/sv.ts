@@ -3,24 +3,18 @@ import { divergenceMessages } from './contract.js';
 
 export const divergenceSv = catalogue(divergenceMessages)('sv')({
   line: '{subject}: {detail}',
-  kept: '{line}. Att spara tillbaka behåller det.',
+  repeated: { one: '{line}', other: '{line}, {count} gånger' },
+  kept: '{line}. Behålls om filen sparas igen.',
   threat: 'hot {number} ”{title}”',
   'threat-untitled': 'hot {number}',
   'subject-threat': 'Hot {number} ”{title}”',
   'subject-threat-untitled': 'Hot {number}',
-  'subject-diagram': 'Diagram ”{title}”',
-  'subject-actor': 'Aktör',
-  'subject-actor-named': 'Aktör ”{name}”',
-  'subject-process': 'Process',
-  'subject-process-named': 'Process ”{name}”',
-  'subject-store': 'Datalager',
-  'subject-store-named': 'Datalager ”{name}”',
   'subject-text': 'Text',
   'subject-text-named': 'Text ”{name}”',
-  'subject-flow-named': 'Flöde ”{name}”',
   'subject-trust-boundary': 'Förtroendegräns',
   'subject-trust-boundary-named': 'Förtroendegräns ”{name}”',
   'subject-mitigation': 'Åtgärd ”{title}”',
+  'subject-mitigation-titled-on': 'Åtgärd ”{title}” för {threat}',
   'subject-mitigation-on': 'Åtgärd för {threat}',
   'subject-mitigation-untitled': 'Åtgärd',
   'subject-assumption-on': 'Antagande för {threat}',
@@ -44,7 +38,7 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   'threat-attachment-stray-unknown':
     'dess koppling till ett element som saknas',
   'threat-category-unnamed':
-    'dess kategori, som öppnas igen som en egen kategori',
+    'dess kategori, en egen kategori när filen öppnas igen',
   'mitigation-records-merged': {
     one: 'dess {count} åtgärd, nu en enda utan titel',
     other: 'dess {count} åtgärder, nu en enda utan titel',
@@ -57,12 +51,12 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   'threat-category-unmapped': 'dess kategori ”{category}”',
   'key-undeclared': 'Nyckel {path}: inte läst',
   'assumption-element-links-dropped': 'dess länkar till element',
-  'otm-threat-split': 'Hot ”{id}”: ett hot per förekomst',
+  'otm-threat-split': 'kopierat för en annan förekomst',
   'otm-threat-status-unmapped':
-    'Hotstatus ”{status}”: läst som öppen, kvar i beskrivningen',
-  'otm-mitigation-split': 'Åtgärd ”{id}”: en åtgärd per förekomst',
+    'dess status ”{status}”, läst som öppen och kvar i dess beskrivning',
+  'otm-mitigation-split': 'kopierad för en annan förekomst',
   'otm-mitigation-status-retained':
-    'Åtgärd ”{id}”: status ”{status}” läst som föreslagen, kvar i dess beskrivning',
+    'dess status ”{status}”, läst som föreslagen och kvar i dess beskrivning',
   'otm-mitigation-unlinked':
     'Åtgärd ”{id}”: utan hot, nu en rad i modellens beskrivning',
   'otm-assets-as-descriptions':
@@ -70,7 +64,7 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   'otm-components-as-processes':
     'Komponenttyper: nu processer, kvar i beskrivningarna',
   'tmbom-control-proposed':
-    'Kontroll ”{name}”: status läst som föreslagen, kvar i dess beskrivning',
+    'dess status, läst som föreslagen och kvar i dess beskrivning',
   'tmbom-control-unlinked':
     'Kontroll ”{name}”: utan hot, nu en rad i modellens beskrivning',
   'tmbom-flow-fields-as-prose':

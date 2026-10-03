@@ -75,12 +75,8 @@ export type RecordKind<Held extends ThreatRecord> = {
 
 /** The catalogue label of one record status, of either kind. */
 export type RecordStatusMessage =
-  | 'terms.mitigation-proposed'
-  | 'terms.mitigation-implemented'
-  | 'terms.mitigation-verified'
-  | 'terms.assumption-unconfirmed'
-  | 'terms.assumption-valid'
-  | 'terms.assumption-invalidated';
+  | (typeof mitigationStatusMessages)[keyof typeof mitigationStatusMessages]
+  | (typeof assumptionStatusMessages)[keyof typeof assumptionStatusMessages];
 
 /** Mitigations, which start `proposed`. */
 export const mitigationKind: RecordKind<Mitigation> = {

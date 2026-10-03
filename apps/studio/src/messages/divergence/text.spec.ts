@@ -1,11 +1,12 @@
 import {
   divergenceDetailSchema,
+  importedId,
   type Divergence,
   type DivergenceCode,
   type DivergenceDetail,
 } from '@saerskriven/formats';
 import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
-import { codesOf, elementsAcross, elementsById } from '@saerskriven/model';
+import { codesOf, type Model } from '@saerskriven/model';
 import {
   assumptionId,
   assumptionOf,
@@ -13,15 +14,12 @@ import {
   curveBoundary,
   diagramId,
   elementId,
-  elementIn,
-  flowFrom,
   mitigationId,
   mitigationOf,
   modelWith,
   threatId,
   threatOf,
 } from '@saerskriven/model/fixtures';
-import { unlabelledFlowEnds } from '../../panel/threats.js';
 import { studioCatalogues } from '../catalogues.js';
 import { inLocale } from '../messages.fixtures.js';
 import { lossLines, reportedDivergence, type Loss } from './text.js';
@@ -31,7 +29,6 @@ const confirmed = 'A booking changes after it is confirmed';
 const model = modelWith({
   elements: [
     boxAt('archive', 0, 0, 'store', undefined, 'Paper archive'),
-    boxAt('clerk', 200, 0, 'actor', undefined, ''),
     { ...boxAt('note', 400, 0, 'text', undefined, 'Reminder'), text: 'Hi' },
     curveBoundary(
       'perimeter',
@@ -45,7 +42,6 @@ const model = modelWith({
       { x: 0, y: 0 },
       { x: 90, y: 90 },
     ]),
-    flowFrom('handover', 'clerk', 'archive', ''),
   ],
   threats: [
     threatOf({ number: 9, title: confirmed, elements: ['archive'] }),
@@ -55,11 +51,17 @@ const model = modelWith({
     mitigationOf({ id: 'titled', title: 'Rate limit', threats: ['threat-9'] }),
     mitigationOf({ id: 'untitled', threats: ['threat-9', 'threat-4'] }),
     mitigationOf({ id: 'unlinked', threats: [] }),
+    mitigationOf({
+      id: 'shared',
+      title: 'Read-only share links',
+      threats: ['threat-9', 'threat-4'],
+    }),
   ],
   assumptions: [
     assumptionOf({ id: 'on-threats', threats: ['threat-9', 'threat-4'] }),
     assumptionOf({ id: 'on-model', threats: [], appliesToModel: true }),
     assumptionOf({ id: 'on-nothing', threats: [] }),
+    assumptionOf({ id: 'also-on-threats', threats: ['threat-4'] }),
   ],
 });
 
@@ -217,6 +219,16 @@ const lossOf = (divergence: Divergence, kept = false): Loss => {
   return { divergence: shown, kept };
 };
 
+const linesOf = (
+  divergences: readonly Divergence[],
+  within: Model = model,
+): readonly string[] =>
+  lossLines(
+    t,
+    within,
+    divergences.map((divergence) => lossOf(divergence)),
+  );
+
 const lineOf = (divergence: Divergence, speaker = t, kept = false): string => {
   const [line] = lossLines(speaker, model, [lossOf(divergence, kept)]);
   return line;
@@ -248,7 +260,7 @@ describe('the divergences a studio report shows', () => {
   it.each([
     ['key-undeclared', 'undeclared.path'],
     ['field-not-retained', 'kept.nowhere'],
-    ['otm-threat-split', 'otm-split-threat'],
+    ['otm-mitigation-unlinked', 'otm-unlinked-mitigation'],
     ['otm-mitigation-status-retained', 'otm-source-status'],
     ['threat-status-unmapped', 'unmapped-status'],
     ['tmbom-data-set-dropped', 'tmbom-dropped-data'],
@@ -270,8 +282,6 @@ const threatNine = t('divergence.subject-threat', {
   title: confirmed,
 });
 
-const elements = elementsById(elementsAcross(model.diagrams));
-
 describe('the subject a line names', () => {
   it.each([
     [
@@ -285,11 +295,6 @@ describe('the subject a line names', () => {
       t('divergence.subject-threat-untitled', { number: 4 }),
     ],
     [
-      'a diagram by its title',
-      { kind: 'diagram', id: diagramId('d') },
-      t('divergence.subject-diagram', { title: 'Diagram' }),
-    ],
-    [
       'a named element by its kind and name',
       { kind: 'element', id: elementId('note') },
       t('divergence.subject-text-named', { name: 'Reminder' }),
@@ -298,14 +303,6 @@ describe('the subject a line names', () => {
       'an unnamed element by its kind',
       { kind: 'element', id: elementId('zone') },
       t('divergence.subject-trust-boundary'),
-    ],
-    [
-      'a flow left unlabelled by its ends, as the panel does',
-      { kind: 'element', id: elementId('handover') },
-      t('panel.unlabelled-flow', {
-        ends:
-          unlabelledFlowEnds(elementIn(model, 'handover'), elements, t) ?? '',
-      }),
     ],
     [
       'a titled mitigation by its title',
@@ -364,11 +361,77 @@ describe('the subject a line names', () => {
     );
   });
 
+  it('names a titled mitigation by the threat whose text the divergence is about, so a status lost on two threats reads as two lines', () => {
+    const subject = { kind: 'mitigation', id: mitigationId('shared') } as const;
+    const onThreat = (threat: string) =>
+      t('divergence.subject-mitigation-titled-on', {
+        title: 'Read-only share links',
+        threat,
+      });
+    const detail = modelLine(statusDropped('verified', 'proposed'));
+
+    expect(
+      linesOf([
+        divergenceOn(
+          subject,
+          statusDropped('verified', 'proposed', 'threat-9'),
+        ),
+        divergenceOn(
+          subject,
+          statusDropped('verified', 'proposed', 'threat-4'),
+        ),
+      ]),
+    ).toEqual([
+      t('divergence.line', {
+        subject: onThreat(
+          t('divergence.threat', { number: 9, title: confirmed }),
+        ),
+        detail,
+      }),
+      t('divergence.line', {
+        subject: onThreat(t('divergence.threat-untitled', { number: 4 })),
+        detail,
+      }),
+    ]);
+  });
+
+  it('makes losses that read the same one line with their count', () => {
+    const unrecorded: DivergenceDetail = { code: 'assumption-unrecorded' };
+    const line = t('divergence.line', {
+      subject: t('divergence.subject-assumption-on', {
+        threat: t('divergence.threat-untitled', { number: 4 }),
+      }),
+      detail: t('divergence.whole-assumption'),
+    });
+
+    expect(
+      linesOf([
+        divergenceOn(
+          { kind: 'assumption', id: assumptionId('on-threats') },
+          unrecorded,
+        ),
+        divergenceOn({ kind: 'model' }, eopCard),
+        divergenceOn(
+          { kind: 'assumption', id: assumptionId('also-on-threats') },
+          unrecorded,
+        ),
+      ]),
+    ).toEqual([t('divergence.repeated', { count: 2, line }), eopDetail]);
+  });
+
   it.each([
     ['the model', { kind: 'model' }],
     [
       'a threat the model no longer holds',
       { kind: 'threat', id: threatId('gone') },
+    ],
+    [
+      'a diagram, which no report names',
+      { kind: 'diagram', id: diagramId('d') },
+    ],
+    [
+      'an element of a kind no report names',
+      { kind: 'element', id: elementId('archive') },
     ],
   ] as const)('leaves %s to the detail, naming no id', (_, subject) => {
     expect(lineOf(divergenceOn(subject, eopCard))).toBe(eopDetail);
@@ -456,5 +519,108 @@ describe('the element a stray attachment names', () => {
     ],
   ] as const)('words %s', (_, detail, id) => {
     expect(modelLine(detail)).toBe(t(id));
+  });
+});
+
+const spoofedOne = importedId('otm-threat', ['threat-spoofing', 'c1', '0']);
+
+const spoofedTwo = importedId('otm-threat', ['threat-spoofing', 'c2', '1']);
+
+const imported = modelWith({
+  threats: [
+    threatOf({ number: 2, title: 'Spoofed patient', id: spoofedTwo }),
+    threatOf({ number: 1, title: 'Spoofed patient', id: spoofedOne }),
+  ],
+  mitigations: [
+    mitigationOf({
+      id: importedId('otm-mitigation', ['mitigation-signing', spoofedOne, '0']),
+      title: 'Sign the booking',
+      threats: [spoofedOne],
+    }),
+    mitigationOf({
+      id: importedId('tmbom-control', ['control-review']),
+      threats: [spoofedTwo],
+    }),
+  ],
+});
+
+const fromSource = (detail: DivergenceDetail): Divergence =>
+  divergenceOn({ kind: 'model' }, detail);
+
+const spoofedPatient = t('divergence.subject-threat', {
+  number: 1,
+  title: 'Spoofed patient',
+});
+
+describe('the record an import made from the source record a line names', () => {
+  it('names an OTM threat by the lowest-numbered threat its occurrences became, once with the count', () => {
+    const split: DivergenceDetail = {
+      code: 'otm-threat-split',
+      parameters: { id: 'threat-spoofing' },
+    };
+
+    expect(linesOf([fromSource(split), fromSource(split)], imported)).toEqual([
+      t('divergence.repeated', {
+        count: 2,
+        line: t('divergence.line', {
+          subject: spoofedPatient,
+          detail: t('divergence.otm-threat-split'),
+        }),
+      }),
+    ]);
+  });
+
+  it('names the threat whose OTM status it could not map by the source id the divergence carries', () => {
+    expect(
+      linesOf(
+        [
+          fromSource({
+            code: 'otm-threat-status-unmapped',
+            parameters: { status: 'under-review', id: 'threat-spoofing' },
+          }),
+        ],
+        imported,
+      ),
+    ).toEqual([
+      t('divergence.line', {
+        subject: spoofedPatient,
+        detail: t('divergence.otm-threat-status-unmapped', {
+          status: 'under-review',
+        }),
+      }),
+    ]);
+  });
+
+  it.each([
+    [
+      'an OTM mitigation by its title',
+      {
+        code: 'otm-mitigation-status-retained',
+        parameters: { id: 'mitigation-signing', status: 'rejected' },
+      },
+      t('divergence.subject-mitigation', { title: 'Sign the booking' }),
+    ],
+    [
+      'the untitled mitigation a TM-BOM control became by the threat it is on',
+      {
+        code: 'tmbom-control-proposed',
+        parameters: { name: 'control-review' },
+      },
+      t('divergence.subject-mitigation-on', {
+        threat: t('divergence.threat', {
+          number: 2,
+          title: 'Spoofed patient',
+        }),
+      }),
+    ],
+  ] as const)('names %s', (_, detail, subject) => {
+    const [line] = linesOf([fromSource(detail)], imported);
+
+    expect(line).toBe(
+      t('divergence.line', {
+        subject,
+        detail: modelLine(detail),
+      }),
+    );
   });
 });

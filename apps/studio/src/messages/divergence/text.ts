@@ -1,17 +1,18 @@
-import type {
-  Divergence,
-  DivergenceCode,
-  DivergenceDetail,
+import {
+  importedFrom,
+  type Divergence,
+  type DivergenceCode,
+  type DivergenceDetail,
+  type SourceNamedKind,
 } from '@saerskriven/formats';
 import {
+  elementIdSchema,
   elementsAcross,
   elementsById,
   inNumberOrder,
   mitigationStatusSchema,
   type Assumption,
   type AssumptionId,
-  type Diagram,
-  type DiagramId,
   type Element,
   type ElementId,
   type Mitigation,
@@ -20,7 +21,6 @@ import {
   type Threat,
   type ThreatId,
 } from '@saerskriven/model';
-import { unlabelledFlowEnds } from '../../panel/threats.js';
 import { mitigationStatusMessages } from '../enum-labels.js';
 import type { Speaker } from '../said.js';
 
@@ -52,7 +52,7 @@ type ReportedDetail =
   | Exclude<DivergenceDetail, { readonly code: LeftOutCode | StatusCarried }>
   | {
       readonly code: 'otm-threat-status-unmapped';
-      readonly parameters: { readonly status: string };
+      readonly parameters: { readonly status: string; readonly id?: string };
     }
   | {
       readonly code: 'otm-mitigation-status-retained';
@@ -86,9 +86,11 @@ export function reportedDivergence(
 
 /**
  * Each loss as a line in the reader's language: its subject as `model` shows
- * it, then what was lost, and a sentence where saving back keeps it. A
- * subject `model` does not hold, and the model itself, leave the line to the
- * detail, which a code about the model words with its own subject.
+ * it, then what was lost, and a sentence where saving back keeps it. Losses
+ * that read the same make one line with their count. An import names the
+ * record it made from the source record a divergence names, and a subject
+ * `model` does not hold leaves the line to the detail, which a code about the
+ * model alone words with its own subject.
  */
 export function lossLines(
   t: Speaker,
@@ -96,19 +98,28 @@ export function lossLines(
   losses: readonly Loss[],
 ): readonly string[] {
   const held = heldBy(model);
-  return losses.map(({ divergence, kept }) => {
+  const counted = new Map<
+    string,
+    { line: string; kept: boolean; count: number }
+  >();
+  for (const { divergence, kept } of losses) {
     const detail = lossDetail(t, divergence.detail, held);
     const subject = subjectText(t, held, divergence);
     const line =
       subject === undefined
         ? detail
         : t('divergence.line', { subject, detail });
-    return kept ? t('divergence.kept', { line }) : line;
+    const key = `${String(kept)}:${line}`;
+    const seen = counted.get(key);
+    counted.set(key, { line, kept, count: (seen?.count ?? 0) + 1 });
+  }
+  return [...counted.values()].map(({ line, kept, count }) => {
+    const once = t('divergence.repeated', { count, line });
+    return kept ? t('divergence.kept', { line: once }) : once;
   });
 }
 
 type Held = {
-  readonly diagrams: ReadonlyMap<DiagramId, Diagram>;
   readonly elements: ReadonlyMap<ElementId, Element>;
   readonly threats: ReadonlyMap<ThreatId, Threat>;
   readonly mitigations: ReadonlyMap<MitigationId, Mitigation>;
@@ -117,7 +128,6 @@ type Held = {
 
 function heldBy(model: Model): Held {
   return {
-    diagrams: new Map(model.diagrams.map((diagram) => [diagram.id, diagram])),
     elements: elementsById(elementsAcross(model.diagrams)),
     threats: new Map(model.threats.map((threat) => [threat.id, threat])),
     mitigations: new Map(
@@ -131,10 +141,10 @@ function heldBy(model: Model): Held {
 
 function reportedDetail(detail: DivergenceDetail): ReportedDetail | undefined {
   if (detail.code === 'otm-threat-status-unmapped') {
-    const { status } = detail.parameters;
+    const { status, id } = detail.parameters;
     return status === undefined
       ? undefined
-      : { code: detail.code, parameters: { status } };
+      : { code: detail.code, parameters: { status, id } };
   }
   if (detail.code === 'otm-mitigation-status-retained') {
     const { id, status } = detail.parameters;
@@ -158,16 +168,14 @@ function subjectText(
 ): string | undefined {
   switch (subject.kind) {
     case 'model':
+      return importedSubject(t, held, detail);
+    case 'diagram':
       return undefined;
-    case 'diagram': {
-      const diagram = held.diagrams.get(subject.id);
-      return (
-        diagram && t('divergence.subject-diagram', { title: diagram.title })
-      );
-    }
     case 'element': {
       const element = held.elements.get(subject.id);
-      return element && elementSubject(t, element, held.elements);
+      return element?.kind === 'text' || element?.kind === 'trust-boundary'
+        ? elementSubject(t, element)
+        : undefined;
     }
     case 'threat': {
       const threat = held.threats.get(subject.id);
@@ -186,17 +194,69 @@ function subjectText(
   }
 }
 
+function importedSubject(
+  t: Speaker,
+  held: Held,
+  detail: ReportedDetail,
+): string | undefined {
+  if (
+    detail.code === 'otm-threat-split' ||
+    detail.code === 'otm-threat-status-unmapped'
+  ) {
+    const source = detail.parameters.id;
+    return source === undefined ? undefined : threatMadeFrom(t, held, source);
+  }
+  if (
+    detail.code === 'otm-mitigation-split' ||
+    detail.code === 'otm-mitigation-status-retained'
+  ) {
+    return mitigationMadeFrom(
+      t,
+      held,
+      detail,
+      'otm-mitigation',
+      detail.parameters.id,
+    );
+  }
+  return detail.code === 'tmbom-control-proposed'
+    ? mitigationMadeFrom(
+        t,
+        held,
+        detail,
+        'tmbom-control',
+        detail.parameters.name,
+      )
+    : undefined;
+}
+
+function threatMadeFrom(
+  t: Speaker,
+  held: Held,
+  source: string,
+): string | undefined {
+  const threat = inNumberOrder([...held.threats.values()]).find(({ id }) =>
+    importedFrom(id, 'otm-threat', source),
+  );
+  return threat && threatSubject(t, threat);
+}
+
+function mitigationMadeFrom(
+  t: Speaker,
+  held: Held,
+  detail: ReportedDetail,
+  kind: SourceNamedKind,
+  source: string,
+): string | undefined {
+  const mitigation = [...held.mitigations.values()].find(({ id }) =>
+    importedFrom(id, kind, source),
+  );
+  return mitigation && mitigationSubject(t, mitigation, held, detail);
+}
+
 function elementSubject(
   t: Speaker,
-  element: Element,
-  elements: ReadonlyMap<ElementId, Element>,
+  element: Extract<Element, { readonly kind: 'text' | 'trust-boundary' }>,
 ): string {
-  if (element.kind === 'flow') {
-    const ends = unlabelledFlowEnds(element, elements, t);
-    return ends === undefined
-      ? t('divergence.subject-flow-named', { name: element.name })
-      : t('panel.unlabelled-flow', { ends });
-  }
   return element.name === ''
     ? t(`divergence.subject-${element.kind}`)
     : t(`divergence.subject-${element.kind}-named`, { name: element.name });
@@ -220,10 +280,16 @@ function mitigationSubject(
   held: Held,
   detail: ReportedDetail,
 ): string {
+  const named = threatNamedBy(detail);
+  const threat = threatHolding(mitigation, held, named);
   if (mitigation.title !== '') {
-    return t('divergence.subject-mitigation', { title: mitigation.title });
+    return threat !== undefined && threat.id === named
+      ? t('divergence.subject-mitigation-titled-on', {
+          title: mitigation.title,
+          threat: threatPhrase(t, threat),
+        })
+      : t('divergence.subject-mitigation', { title: mitigation.title });
   }
-  const threat = threatHolding(mitigation, held, threatNamedBy(detail));
   return threat === undefined
     ? t('divergence.subject-mitigation-untitled')
     : t('divergence.subject-mitigation-on', {
@@ -309,13 +375,17 @@ function lossDetail(t: Speaker, detail: ReportedDetail, held: Held): string {
     case 'assumption-element-links-dropped':
       return t('divergence.assumption-element-links-dropped');
     case 'otm-threat-split':
-      return t('divergence.otm-threat-split', detail.parameters);
+      return t('divergence.otm-threat-split');
     case 'otm-threat-status-unmapped':
-      return t('divergence.otm-threat-status-unmapped', detail.parameters);
+      return t('divergence.otm-threat-status-unmapped', {
+        status: detail.parameters.status,
+      });
     case 'otm-mitigation-split':
-      return t('divergence.otm-mitigation-split', detail.parameters);
+      return t('divergence.otm-mitigation-split');
     case 'otm-mitigation-status-retained':
-      return t('divergence.otm-mitigation-status-retained', detail.parameters);
+      return t('divergence.otm-mitigation-status-retained', {
+        status: detail.parameters.status,
+      });
     case 'otm-mitigation-unlinked':
       return t('divergence.otm-mitigation-unlinked', detail.parameters);
     case 'otm-assets-as-descriptions':
@@ -323,7 +393,7 @@ function lossDetail(t: Speaker, detail: ReportedDetail, held: Held): string {
     case 'otm-components-as-processes':
       return t('divergence.otm-components-as-processes');
     case 'tmbom-control-proposed':
-      return t('divergence.tmbom-control-proposed', detail.parameters);
+      return t('divergence.tmbom-control-proposed');
     case 'tmbom-control-unlinked':
       return t('divergence.tmbom-control-unlinked', detail.parameters);
     case 'tmbom-flow-fields-as-prose':
@@ -355,9 +425,8 @@ function strayAttachment(
   if (kind === undefined) {
     return t('divergence.threat-attachment-stray-unknown');
   }
-  const name =
-    [...held.elements.values()].find((candidate) => candidate.id === element)
-      ?.name ?? '';
+  const id = elementIdSchema.safeParse(element);
+  const name = id.success ? (held.elements.get(id.data)?.name ?? '') : '';
   return name === ''
     ? t(`divergence.threat-attachment-stray-${kind}`)
     : t(`divergence.threat-attachment-stray-${kind}-named`, { name });

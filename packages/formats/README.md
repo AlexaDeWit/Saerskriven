@@ -68,7 +68,9 @@ in [`yaml-alias-cost.ts`](src/lib/yaml-alias-cost.ts).
 
 [Import](../../docs/import.md) converts OTM and TM-BOM into a native model through
 `importModel` ([`import.ts`](src/lib/import.ts)). No codec writes those
-formats.
+formats. `importedId` is the id an import gives each record it makes, from
+the source parts it was made of, and `importedFrom` finds the records made
+from the source record a divergence names by its id.
 
 An `InvalidWireDocument` issue carries a parse issue code of
 `@saerskriven/model` or an import code of

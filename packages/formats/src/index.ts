@@ -39,6 +39,11 @@ export {
   type WireIssueDetail,
 } from './lib/import-issue-detail.js';
 export {
+  importedFrom,
+  importedId,
+  type SourceNamedKind,
+} from './lib/import-budget.js';
+export {
   importFormatOf,
   importFormatSchema,
   importModel,
