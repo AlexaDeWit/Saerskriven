@@ -183,7 +183,7 @@ export function DiagramCanvas({
 
   const liveEdges = useLiveEdges(layout, graph, selection, elements, positions);
   const paneShield = usePaneShield(elements);
-  const onNodesChange = useNodeDrag(positions, liveEdges.onNodesChange);
+  const nodeDrag = useNodeDrag(positions, liveEdges.onNodesChange);
   const commandSurface = useCommandSurface();
   const groupDrag = useGroupDrag(
     view,
@@ -361,6 +361,7 @@ export function DiagramCanvas({
         aria-label={t('tools.diagram-region')}
         ariaLabelConfig={keyboard.a11y}
         attributionPosition="bottom-left"
+        autoPanOnNodeDrag={nodeDrag.autoPan}
         autoPanOnNodeFocus={false}
         autoPanOnSelection={false}
         connectionMode={ConnectionMode.Loose}
@@ -383,7 +384,7 @@ export function DiagramCanvas({
           view.current = instance;
         }}
         onKeyDown={onKeyDown}
-        onNodesChange={onNodesChange}
+        onNodesChange={nodeDrag.onNodesChange}
         onSelectionEnd={boxSelection.onSelectionEnd}
         onSelectionStart={boxSelection.onSelectionStart}
         panActivationKeyCode={null}

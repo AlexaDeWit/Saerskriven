@@ -1,7 +1,7 @@
 import type { CanvasNode } from '@saerskriven/canvas';
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange } from '@xyflow/react';
-import { useEffect, useEffectEvent, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { sameSelection } from '../store/selection.js';
 import { selectedElements } from '../store/selectors.js';
 import type { State } from '../store/state.js';
@@ -21,13 +21,16 @@ type Drag = {
  * Hands React Flow's node changes to `moveNodes`, and puts React Flow's own
  * drag of nodes back where the model has them once the selection changes
  * under it, as Escape does, or the window loses focus. Nothing more of a drag
- * put back reaches `moveNodes`, its release included, so it records no move.
+ * put back reaches `moveNodes`, its release included, so it records no move,
+ * and `autoPan` stays off until that release, so the view stops following the
+ * pointer to the canvas edge.
  */
 export function useNodeDrag(
   positions: ReadonlyMap<string, CanvasNode>,
   moveNodes: (changes: NodeChange<DiagramNode>[]) => void,
-): (changes: NodeChange<DiagramNode>[]) => void {
+) {
   const drag = useRef<Drag | undefined>(undefined);
+  const [heldBack, setHeldBack] = useState(false);
 
   const cancel = (): void => {
     const current = drag.current;
@@ -35,6 +38,7 @@ export function useNodeDrag(
       return;
     }
     drag.current = { ...current, cancelled: true };
+    setHeldBack(true);
     moveNodes(positionChanges(current.nodes, unmoved, false));
   };
 
@@ -59,20 +63,24 @@ export function useNodeDrag(
     };
   }, []);
 
-  return (changes) => {
-    const current = drag.current;
-    if (current === undefined) {
-      drag.current = started(changes, positions);
-    } else if (reportsPosition(changes, false)) {
-      drag.current = undefined;
-    }
-    const passed =
-      current?.cancelled === true
-        ? changes.filter((change) => change.type !== 'position')
-        : changes;
-    if (passed.length > 0) {
-      moveNodes(passed);
-    }
+  return {
+    autoPan: !heldBack,
+    onNodesChange: (changes: NodeChange<DiagramNode>[]): void => {
+      const current = drag.current;
+      if (current === undefined) {
+        drag.current = started(changes, positions);
+      } else if (reportsPosition(changes, false)) {
+        drag.current = undefined;
+        setHeldBack(false);
+      }
+      const passed =
+        current?.cancelled === true
+          ? changes.filter((change) => change.type !== 'position')
+          : changes;
+      if (passed.length > 0) {
+        moveNodes(passed);
+      }
+    },
   };
 }
 

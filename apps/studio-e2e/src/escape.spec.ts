@@ -3,9 +3,12 @@ import {
   boxOf,
   boxSelect,
   canvasContainer,
+  canvasSettled,
   drawnBy,
   lineOf,
   pressOn,
+  screenBoxOf,
+  viewportTransform,
 } from './canvas.fixtures.js';
 import {
   canvasSurface,
@@ -83,6 +86,26 @@ test('Escape mid-drag puts a single element back and records nothing', async ({
 
   await expect.poll(async () => (await boxOf(actor)).x).toBe(actorBefore.x + 5);
   expect((await boxOf(actor)).y).toBe(actorBefore.y);
+});
+
+test('a drag put back by Escape no longer pans the view at the canvas edge', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = nodeNamed(page, placeholder.actor);
+  const canvas = await screenBoxOf(canvasContainer(page), 'the canvas');
+  const at = await pressOn(page, actor);
+  await page.mouse.move(at.x + 20, at.y + 20, { steps: 4 });
+  await page.keyboard.press('Escape');
+
+  await page.mouse.move(canvas.x + canvas.width - 10, at.y + 20, {
+    steps: 6,
+  });
+  const held = await viewportTransform(page);
+  await canvasSettled(page);
+
+  expect(await viewportTransform(page)).toBe(held);
+  await page.mouse.up();
 });
 
 test('Escape that clears the selection leaves focus on the element, flow or trust boundary that had it', async ({

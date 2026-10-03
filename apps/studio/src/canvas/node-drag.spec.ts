@@ -17,7 +17,15 @@ const renderNodeDrag = () => {
   const { result } = renderHook(() =>
     useNodeDrag(nodesById(currentLayout(modelStore.getState())), moveNodes),
   );
-  return { report: result, moveNodes };
+  return {
+    report: (changes: NodeChange<DiagramNode>[]) => {
+      act(() => {
+        result.current.onNodesChange(changes);
+      });
+    },
+    autoPan: () => result.current.autoPan,
+    moveNodes,
+  };
 };
 
 const movedTo = (
@@ -55,37 +63,40 @@ describe('useNodeDrag', () => {
     ];
 
     for (const change of changes) {
-      report.current(change);
+      report(change);
     }
 
     expect(moveNodes.mock.calls).toEqual(changes.map((change) => [change]));
   });
 
-  it('puts a drag back once the selection changes under it, as Escape to Select does, and drops the rest of it', () => {
-    const { report, moveNodes } = renderNodeDrag();
+  it('puts a drag back once the selection changes under it, as Escape to Select does, and drops the rest of it with autopan off', () => {
+    const { report, autoPan, moveNodes } = renderNodeDrag();
 
-    report.current(movedTo(pair, { x: 20, y: 10 }, true));
+    report(movedTo(pair, { x: 20, y: 10 }, true));
+    expect(autoPan()).toBe(true);
     act(() => {
       selectTool('select');
     });
-    report.current(movedTo(pair, { x: 40, y: 30 }, true));
-    report.current([...movedTo(pair, { x: 40, y: 30 }, false), measured]);
+    expect(autoPan()).toBe(false);
+    report(movedTo(pair, { x: 40, y: 30 }, true));
+    report([...movedTo(pair, { x: 40, y: 30 }, false), measured]);
 
     expect(moveNodes.mock.calls).toEqual([
       [movedTo(pair, { x: 20, y: 10 }, true)],
       [movedTo(pair, { x: 0, y: 0 }, false)],
       [[measured]],
     ]);
+    expect(autoPan()).toBe(true);
   });
 
   it('puts a drag back when the window loses focus', () => {
     const { report, moveNodes } = renderNodeDrag();
 
-    report.current(movedTo(pair, { x: 20, y: 10 }, true));
+    report(movedTo(pair, { x: 20, y: 10 }, true));
     act(() => {
       window.dispatchEvent(new Event('blur'));
     });
-    report.current(movedTo(pair, { x: 20, y: 10 }, false));
+    report(movedTo(pair, { x: 20, y: 10 }, false));
 
     expect(moveNodes).toHaveBeenCalledTimes(2);
     expect(moveNodes).toHaveBeenLastCalledWith(
@@ -100,14 +111,14 @@ describe('useNodeDrag', () => {
     act(() => {
       dispatch(Action.Select({ elementIds: [actorElement] }));
     });
-    report.current(movedTo([actorElement], { x: 20, y: 10 }, true));
-    report.current(movedTo([actorElement], { x: 20, y: 10 }, false));
-    report.current(movedTo([actorElement], { x: 10, y: 0 }, true));
+    report(movedTo([actorElement], { x: 20, y: 10 }, true));
+    report(movedTo([actorElement], { x: 20, y: 10 }, false));
+    report(movedTo([actorElement], { x: 10, y: 0 }, true));
     act(() => {
       window.dispatchEvent(new Event('blur'));
     });
-    report.current(movedTo([actorElement], { x: 10, y: 0 }, false));
-    report.current(movedTo([actorElement], { x: 5, y: 5 }, true));
+    report(movedTo([actorElement], { x: 10, y: 0 }, false));
+    report(movedTo([actorElement], { x: 5, y: 5 }, true));
 
     expect(moveNodes).toHaveBeenNthCalledWith(
       2,
