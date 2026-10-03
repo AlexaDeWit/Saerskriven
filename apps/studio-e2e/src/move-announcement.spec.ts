@@ -1,6 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import type { Model } from '@saerskriven/model';
-import { decimalsOf } from '@saerskriven/model/fixtures';
+import { decimalsOf, type Model } from '@saerskriven/model';
 import { boxSelect, canvasSettled, dragBy } from './canvas.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {

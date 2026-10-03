@@ -70,8 +70,9 @@ size a count would round to zero becomes the smallest size that count writes,
 0.1 at one decimal, so it stays positive. Handed no count, an operation stores
 what it computes, which is what a file, the CLI and the MCP server get. The
 model holds no count of its own: the caller names one. `fixedNumber` writes a
-number at a count of decimals and `storedNumber` rounds one, and the canvas
-package's `svgNumber` writes through the first.
+number at a count of decimals, `storedNumber` rounds one and `decimalsOf`
+counts the decimals one is written with, which is the count that stores it
+unchanged. The canvas package's `svgNumber` writes through the first.
 
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no

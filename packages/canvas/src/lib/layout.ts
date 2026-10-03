@@ -1,16 +1,18 @@
-import type {
-  Diagram,
-  Element,
-  ElementId,
-  Flow,
-  FlowEndpoint,
-  Model,
-  Point,
-  Size,
-  TrustBoundary,
+import {
+  decimalsOf,
+  storedNumber,
+  type Diagram,
+  type Element,
+  type ElementId,
+  type Flow,
+  type FlowEndpoint,
+  type Model,
+  type Point,
+  type Size,
+  type TrustBoundary,
 } from '@saerskriven/model';
 import { badgesByElement, type ThreatBadge } from './badges.js';
-import { boundsOfPoints, drawnBounds, type CanvasBounds } from './bounds.js';
+import { drawnBounds, type CanvasBounds } from './bounds.js';
 import {
   anchorsOf,
   flowGeometry,
@@ -18,6 +20,7 @@ import {
 } from './flow-anchors.js';
 import type { FlowLabelPlacement } from './flow-blocks.js';
 import { flowLabelPlacements } from './flow-labels.js';
+import { boxOfPoints } from './geometry.js';
 import { nodeBoxesOf, type HandleSide, type NodeBox } from './handles.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 import { settledCurveNames, type CurveNameSide } from './text-placement.js';
@@ -135,7 +138,12 @@ export function isBoundary(node: CanvasNode): node is CanvasBoundaryNode {
   return node.kind === 'boundary-box' || node.kind === 'boundary-curve';
 }
 
-/** Converts one model element into the node the canvas draws, if any. */
+/**
+ * Converts one model element into the node the canvas draws, if any. A
+ * boundary curve's box is worked out from its points and the stroke width,
+ * and written at the most decimals any of them has, so it carries none of
+ * the noise of that arithmetic.
+ */
 export function canvasNodeOf(
   element: Element,
   badge?: ThreatBadge,
@@ -197,10 +205,11 @@ function boundaryNode(
     badge,
   };
   if (element.shape.kind === 'curve') {
-    const box = boundsOfPoints(element.shape.waypoints);
+    const { waypoints } = element.shape;
+    const { minX, minY, maxX, maxY } = boxOfPoints(waypoints) ?? noExtent;
     const origin = {
-      x: box.x - boundaryStrokeWidth,
-      y: box.y - boundaryStrokeWidth,
+      x: sumOf(minX, -boundaryStrokeWidth),
+      y: sumOf(minY, -boundaryStrokeWidth),
     };
     return {
       ...base,
@@ -208,10 +217,10 @@ function boundaryNode(
       nameSide: undefined,
       position: origin,
       size: {
-        width: box.width + boundaryStrokeWidth * 2,
-        height: box.height + boundaryStrokeWidth * 2,
+        width: sumOf(maxX, -minX, boundaryStrokeWidth * 2),
+        height: sumOf(maxY, -minY, boundaryStrokeWidth * 2),
       },
-      waypoints: element.shape.waypoints.map((point) => ({
+      waypoints: waypoints.map((point) => ({
         x: point.x - origin.x,
         y: point.y - origin.y,
       })),
@@ -223,6 +232,15 @@ function boundaryNode(
     position: element.shape.position,
     size: element.shape.size,
   };
+}
+
+const noExtent = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+
+function sumOf(...terms: readonly number[]): number {
+  return storedNumber(
+    terms.reduce((total, term) => total + term, 0),
+    Math.max(...terms.map(decimalsOf)),
+  );
 }
 
 function placeFlow(

@@ -5,12 +5,12 @@ import type {
   ReadFailure,
   RetainedSource,
 } from '@saerskriven/formats';
-import type { GestureInput } from '@saerskriven/canvas';
 import type {
   Assumption,
   AssumptionId,
   AssumptionStatus,
   BoundaryShape,
+  Decimals,
   Diagram,
   DiagramId,
   Element,
@@ -32,7 +32,11 @@ import { Data } from 'effect';
 import type { InlineEditor, LinkFailure } from './state.js';
 import type { SyncedState } from './sync.js';
 
-/** Every state change the reducer accepts. */
+/**
+ * Every state change the reducer accepts. An edit that writes geometry carries
+ * `decimals`, the count its model operation stores at, and stores what the
+ * operation computes where it names none.
+ */
 export type Action = Data.TaggedEnum<{
   SetElementProperties: {
     readonly elementId: ElementId;
@@ -42,13 +46,18 @@ export type Action = Data.TaggedEnum<{
     readonly elementId: ElementId;
     readonly change: ElementDetailsChange;
   };
-  AddElement: { readonly diagramId: DiagramId; readonly element: Element };
+  AddElement: {
+    readonly diagramId: DiagramId;
+    readonly element: Element;
+    readonly decimals?: Decimals;
+  };
   InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };
   ArrangeElements: {
     readonly moves: readonly {
       readonly elementId: ElementId;
       readonly offset: Point;
     }[];
+    readonly decimals?: Decimals;
   };
   ReconnectFlow: {
     readonly elementId: ElementId;
@@ -64,29 +73,44 @@ export type Action = Data.TaggedEnum<{
     readonly elementId: ElementId;
     readonly side: 'source' | 'target';
     readonly position: Point;
+    readonly decimals?: Decimals;
   };
   ReverseFlow: { readonly elementId: ElementId };
   SetBoundaryShape: {
     readonly elementId: ElementId;
     readonly shape: BoundaryShape;
+    readonly decimals?: Decimals;
   };
-  RemoveElement: { readonly elementId: ElementId };
-  RemoveElements: { readonly elementIds: readonly ElementId[] };
-  MoveElement: { readonly elementId: ElementId; readonly offset: Point };
+  RemoveElement: {
+    readonly elementId: ElementId;
+    readonly decimals?: Decimals;
+  };
+  RemoveElements: {
+    readonly elementIds: readonly ElementId[];
+    readonly decimals?: Decimals;
+  };
+  MoveElement: {
+    readonly elementId: ElementId;
+    readonly offset: Point;
+    readonly decimals?: Decimals;
+  };
   MoveElements: {
     readonly elementIds: readonly ElementId[];
     readonly offset: Point;
+    readonly decimals?: Decimals;
   };
   ResizeElement: {
     readonly elementId: ElementId;
     readonly offset: Point;
     readonly size: Size;
+    readonly decimals?: Decimals;
   };
   RenameElement: { readonly elementId: ElementId; readonly name: string };
   EditNote: { readonly elementId: ElementId; readonly text: string };
   SetFlowWaypoints: {
     readonly elementId: ElementId;
     readonly waypoints: readonly Point[];
+    readonly decimals?: Decimals;
   };
   AddThreat: { readonly threat: Threat };
   RemoveThreat: { readonly threatId: ThreatId };
@@ -124,7 +148,6 @@ export type Action = Data.TaggedEnum<{
   LinkAssumptionToModel: { readonly assumptionId: AssumptionId };
   UnlinkAssumptionFromModel: { readonly assumptionId: AssumptionId };
   SetModelMetadata: { readonly change: ModelMetadataChange };
-  Gesture: { readonly input: GestureInput; readonly edit: GestureEdit };
   AddDiagram: { readonly diagram: Diagram };
   RenameDiagram: { readonly diagramId: DiagramId; readonly title: string };
   Undo: {};
@@ -162,33 +185,5 @@ export type Action = Data.TaggedEnum<{
   DismissFailure: {};
 }>;
 
-/** An edit a canvas gesture commits: one that can write a position, a size or a run of points. */
-export type GestureEdit = Extract<
-  Action,
-  {
-    readonly _tag:
-      | 'AddElement'
-      | 'MoveElement'
-      | 'MoveElements'
-      | 'ReconnectFlow'
-      | 'ResizeElement'
-      | 'SetBoundaryShape'
-      | 'SetFlowEndPosition'
-      | 'SetFlowWaypoints';
-  }
->;
-
 /** Constructors and matching helpers for store actions. */
 export const Action = Data.taggedEnum<Action>();
-
-/**
- * `edit` as a gesture made with `input` commits it, or as it is where nothing
- * names an input: a typed number or a command, whose numbers the store does
- * not round.
- */
-export function committedBy(
-  input: GestureInput | undefined,
-  edit: GestureEdit,
-): Action {
-  return input === undefined ? edit : Action.Gesture({ input, edit });
-}

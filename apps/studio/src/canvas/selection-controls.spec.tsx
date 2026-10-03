@@ -82,7 +82,7 @@ describe('SelectionControls', () => {
     ).toBeNull();
   });
 
-  it('does not round a typed position or size to the decimals a gesture keeps', () => {
+  it('stores a typed position and size as typed, from a position that is not the origin', () => {
     openCanvas([processElement]);
     expect(laidOutNode(processElement).position.x).not.toBe(0);
     render(<SelectionControls />);
@@ -97,10 +97,49 @@ describe('SelectionControls', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
 
-    const { position, size } = laidOutNode(processElement);
-    expect(position.x).toBeCloseTo(10.123456, 9);
-    expect(size.width).toBeCloseTo(120.98765, 9);
-    expect([position.y, size.height]).toEqual([0, 60]);
+    expect(laidOutNode(processElement)).toMatchObject({
+      position: { x: 10.123456, y: 0 },
+      size: { width: 120.98765, height: 60 },
+    });
+  });
+
+  it('lands a multi-selection on the typed position, though its offset from the stored one is not exact', () => {
+    openCanvas([actorElement, processElement]);
+    dispatch(
+      Action.MoveElements({
+        elementIds: [actorElement, processElement],
+        offset: { x: 40, y: 40 },
+      }),
+    );
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('edit-geometry'), recordingSurface().surface);
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Y' }), {
+      target: { value: '12.98765' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
+
+    expect(laidOutNode(actorElement).position).toEqual({ x: 40, y: 12.98765 });
+    expect(laidOutNode(processElement).position).toEqual({
+      x: 340,
+      y: 12.98765,
+    });
+  });
+
+  it('steps a field by one at the decimals it is written with', () => {
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('edit-geometry'), recordingSurface().surface);
+    });
+    const x = screen.getByRole<HTMLInputElement>('spinbutton', { name: 'X' });
+    fireEvent.change(x, { target: { value: '-128.998' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Increase X' }));
+    expect(x.value).toBe('-127.998');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Decrease X' }));
+    expect(x.value).toBe('-128.998');
   });
 
   it("shows a trust boundary curve's width and height and scales its points to them as one edit", () => {

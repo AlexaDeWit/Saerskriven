@@ -2,6 +2,7 @@ import {
   reconnectFlow,
   setFlowEndPosition,
   setFlowWaypoints,
+  type Decimals,
   type ElementId,
   type Flow,
   type Model,
@@ -10,7 +11,7 @@ import {
   type Side,
 } from '@saerskriven/model';
 import { Either } from 'effect';
-import { Action, type GestureEdit } from '../store/actions.js';
+import { Action } from '../store/actions.js';
 import { dispatch } from '../store/store.js';
 import { sideMessages } from '../messages/enum-labels.js';
 import type { Said } from '../messages/said.js';
@@ -112,7 +113,11 @@ function editedRoute(
   );
 }
 
-function routeAction(flow: Flow, target: RouteTarget): GestureEdit | undefined {
+function routeAction(
+  flow: Flow,
+  target: RouteTarget,
+  decimals: Decimals | undefined,
+): Action | undefined {
   if (target.kind === 'anchor') {
     const end = flow[target.end];
     return end.kind === 'attached'
@@ -136,11 +141,13 @@ function routeAction(flow: Flow, target: RouteTarget): GestureEdit | undefined {
       elementId: flow.id,
       side: target.end,
       position: target.point,
+      decimals,
     });
   }
   return Action.SetFlowWaypoints({
     elementId: flow.id,
     waypoints: editedWaypoints(flow.waypoints, target),
+    decimals,
   });
 }
 

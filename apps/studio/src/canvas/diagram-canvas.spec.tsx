@@ -5,7 +5,8 @@ import {
 } from '@saerskriven/canvas';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
-import { decimalsOf, elementIn } from '@saerskriven/model/fixtures';
+import { decimalsOf } from '@saerskriven/model';
+import { elementIn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
   contextualShortcuts,
@@ -476,7 +477,7 @@ describe('DiagramCanvas', () => {
     },
   );
 
-  it('stores the size a keyboard resize leaves at one decimal, and leaves the position it kept as stored', () => {
+  it('stores the position and size a keyboard resize leaves at one decimal', () => {
     openCanvas([actorElement]);
     dispatch(
       Action.ResizeElement({
@@ -490,7 +491,7 @@ describe('DiagramCanvas', () => {
     fireEvent.keyDown(resizeControl('right'), { key: 'ArrowRight' });
 
     expect(readerBox()).toEqual({
-      position: { x: 28.123456, y: 0 },
+      position: { x: 28.1, y: 0 },
       size: { width: 125.1, height: 61 },
     });
   });

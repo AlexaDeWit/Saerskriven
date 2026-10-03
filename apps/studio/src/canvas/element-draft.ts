@@ -1,9 +1,13 @@
-import type { GestureInput } from '@saerskriven/canvas';
-import type { Element, Model, OperationFailure } from '@saerskriven/model';
+import type {
+  Decimals,
+  Element,
+  Model,
+  OperationFailure,
+} from '@saerskriven/model';
 import { Either } from 'effect';
 import { useMemo, useState } from 'react';
 import type { Said } from '../messages/said.js';
-import { committedBy, type GestureEdit } from '../store/actions.js';
+import type { Action } from '../store/actions.js';
 import { selectedElement, selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
@@ -14,7 +18,7 @@ import { currentTool, useTool } from './tools.js';
 /**
  * How the selected element of one kind is edited: which element it is, what
  * a target does to the model while previewed, the one action that commits
- * it, and what the committed edit says.
+ * it at a count of decimals, and what the committed edit says.
  */
 export type ElementEdit<Subject extends Element, Target extends object> = {
   readonly subject: (element: Element) => Subject | undefined;
@@ -26,7 +30,8 @@ export type ElementEdit<Subject extends Element, Target extends object> = {
   readonly action: (
     subject: Subject,
     target: Target,
-  ) => GestureEdit | undefined;
+    decimals: Decimals | undefined,
+  ) => Action | undefined;
   readonly said: (subject: Subject, target: Target) => Said;
 };
 
@@ -41,7 +46,8 @@ type Draft<Subject, Target> = Target & {
  * dispatch. The element is `edit`'s subject while the Select tool is active
  * and no text field is open, and a preview lasts while the model, the
  * selection, the open field and the tool stay as they were. A commit names
- * the `input` its gesture was made with, and a command's names none.
+ * the decimals its edit stores, and one that names none stores its points as
+ * they are.
  */
 export function useElementDraft<Subject extends Element, Target extends object>(
   edit: ElementEdit<Subject, Target>,
@@ -86,7 +92,7 @@ export function useElementDraft<Subject extends Element, Target extends object>(
         setHeld({ ...target, subject, state, transition: tool.transition });
       }
     },
-    commit: (target: Target, input?: GestureInput): void => {
+    commit: (target: Target, decimals?: Decimals): void => {
       if (
         subject === undefined ||
         modelStore.getState().present !== state.present ||
@@ -96,12 +102,12 @@ export function useElementDraft<Subject extends Element, Target extends object>(
       ) {
         return;
       }
-      const action = edit.action(subject, target);
+      const action = edit.action(subject, target, decimals);
       if (action === undefined) {
         return;
       }
       const before = modelStore.getState().present;
-      dispatch(committedBy(input, action));
+      dispatch(action);
       setHeld(undefined);
       if (modelStore.getState().present !== before) {
         announce(edit.said(subject, target));

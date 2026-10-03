@@ -6,6 +6,7 @@ export {
 export * from './lib/ids.js';
 export * from './lib/geometry.js';
 export {
+  decimalsOf,
   decimalsSchema,
   fixedNumber,
   storedNumber,

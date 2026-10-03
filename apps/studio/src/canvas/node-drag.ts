@@ -27,7 +27,11 @@ type Drag = {
  * gesture with the window mouse release it waits for, since the real one may
  * land outside the window. The next drag start replaces a drag React Flow
  * never ended. A change React Flow reports outside a drag passes as the
- * keyboard's: only an arrow key moves a node then.
+ * keyboard's: only an arrow key moves a node then. React Flow reports an
+ * arrow-key move and a drag's release as the same change, so that is an
+ * inference: after a drag React Flow never ended, an arrow-key move passes
+ * as a pointer's, and is stored at three decimals where one was due, until
+ * the next drag starts.
  */
 export function useNodeDrag(
   positions: ReadonlyMap<string, CanvasNode>,

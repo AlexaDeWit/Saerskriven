@@ -287,13 +287,13 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(pointCount()).toBe(boundaryCurve.length);
   });
 
-  it('adds a point halfway to the next through Add point, focusing the new one for the arrow keys', () => {
+  it('adds a point halfway to the next through Add point, stored at three decimals, focusing the new one for the arrow keys', () => {
     render(<DiagramCanvas />);
     fireEvent.click(point(1));
     fireEvent.click(screen.getByRole('button', { name: 'Add point' }));
-    expect(tenths(waypoints())).toEqual([
+    expect(waypoints()).toEqual([
       boundaryCurve[0],
-      { x: 85.2, y: 18.1 },
+      { x: 85.212, y: 18.129 },
       boundaryCurve[1],
       boundaryCurve[2],
     ]);

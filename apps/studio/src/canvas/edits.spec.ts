@@ -413,6 +413,34 @@ describe('toggleBoundaryShape', () => {
     });
   });
 
+  it('stores the shape it works out at three decimals', () => {
+    openCanvas([boundaryElement]);
+    dispatch(
+      Action.SetBoundaryShape({
+        elementId: boundaryElement,
+        shape: {
+          kind: 'box',
+          position: { x: -20.123456, y: -20.98765 },
+          size: { width: 460.5558, height: 100.4444 },
+        },
+      }),
+    );
+
+    toggleBoundaryShape();
+
+    expect(
+      elementIn(modelStore.getState().present, boundaryElement),
+    ).toMatchObject({
+      shape: {
+        waypoints: [
+          { x: -20.123, y: 79.457 },
+          { x: 210.154, y: -20.988 },
+          { x: 440.432, y: 79.457 },
+        ],
+      },
+    });
+  });
+
   it('leaves a selection that is not one trust boundary alone', () => {
     openCanvas([requestFlow]);
 
@@ -437,6 +465,23 @@ describe('removeSelected', () => {
     expect(removeSelected()).toBe(false);
     expect(modelStore.getState().past).toHaveLength(0);
     expect(currentAnnouncement().message).toBe('');
+  });
+
+  it('frees the flow ends a removal detaches at three decimals', () => {
+    openCanvas([processElement]);
+    dispatch(
+      Action.ResizeElement({
+        elementId: processElement,
+        offset: { x: 0.123456, y: 0 },
+        size: { width: 120.5558, height: 60.4444 },
+      }),
+    );
+
+    expect(removeSelected()).toBe(true);
+
+    expect(elementIn(modelStore.getState().present, requestFlow)).toMatchObject(
+      { target: { kind: 'free', position: { x: 360.401, y: 30.222 } } },
+    );
   });
 
   it('removes the selection and says what the cascade took with it', () => {
@@ -512,10 +557,11 @@ describe('resizeNode', () => {
       return;
     }
 
-    resizeNode(node, {
-      position: { x: -20, y: -10 },
-      size: { width: 140, height: 70 },
-    });
+    resizeNode(
+      node,
+      { position: { x: -20, y: -10 }, size: { width: 140, height: 70 } },
+      3,
+    );
 
     const state = modelStore.getState();
     expect(state.past).toHaveLength(1);
@@ -531,36 +577,29 @@ describe('resizeNode', () => {
 
   it.each([
     [
-      'pointer',
+      3,
       {
         position: { x: -20.123, y: -10.988 },
         size: { width: 140.556, height: 70.444 },
       },
     ],
     [
-      'keyboard',
+      1,
       {
         position: { x: -20.1, y: -11 },
         size: { width: 140.6, height: 70.4 },
       },
     ],
-    [
-      undefined,
-      {
-        position: { x: -20.123456, y: -10.98765 },
-        size: { width: 140.5558, height: 70.4444 },
-      },
-    ],
-  ] as const)(
-    'stores a resize made with the %s at the decimals that input keeps, and a typed box as typed',
-    (input, stored) => {
+  ])(
+    'stores the position and size of a resize at the %d decimals it names',
+    (decimals, stored) => {
       resizeNode(
         laidOutNode(actorElement),
         {
           position: { x: -20.123456, y: -10.98765 },
           size: { width: 140.5558, height: 70.4444 },
         },
-        input,
+        decimals,
       );
 
       expect(
@@ -576,7 +615,7 @@ describe('resizeNode', () => {
     );
     expect(node).toBeDefined();
     if (node !== undefined) {
-      resizeNode(node, { position: node.position, size: node.size });
+      resizeNode(node, { position: node.position, size: node.size }, 3);
     }
 
     expect(modelStore.getState().past).toHaveLength(0);
@@ -586,10 +625,14 @@ describe('resizeNode', () => {
     openCanvas([boundaryElement], curvedCanvasModel);
     const node = laidOutNode(boundaryElement);
 
-    resizeNode(node, {
-      position: node.position,
-      size: { width: node.size.width + 460, height: node.size.height },
-    });
+    resizeNode(
+      node,
+      {
+        position: node.position,
+        size: { width: node.size.width + 460, height: node.size.height },
+      },
+      3,
+    );
 
     const state = modelStore.getState();
     expect(state.past).toEqual([curvedCanvasModel]);

@@ -2,7 +2,6 @@ import { Either } from 'effect';
 import * as fc from 'fast-check';
 import {
   boxAt,
-  decimalsOf,
   diagramId,
   elementId,
   elementIn,
@@ -14,6 +13,7 @@ import {
   softHyphen,
   validModel,
 } from '../fixtures.js';
+import { decimalsOf } from './decimals.js';
 import { addDiagram } from './diagram-operations.js';
 import {
   addElement,

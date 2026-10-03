@@ -308,28 +308,27 @@ and arrow-key moves to the visible grid. Typed coordinates are not snapped.
 
 ### What a gesture stores
 
-A gesture rounds the numbers it changes as it stores them: to three decimals
+A gesture rounds the numbers it writes as it stores them: to three decimals
 when it is made with a pointer (a mouse, a pen or a touch), and to one decimal
 when it is made with the keyboard. That covers a move, a resize, a placed
 element, a bend, a free end and a point of a trust boundary curve, and the
 bends, free ends and curve points a moved group carries.
 
-- A position the gesture changes is rounded in both coordinates, a size in
-  width and height, and a flow's bends or a curve's points all together.
-- A number the gesture leaves alone keeps its stored value: an element's size
-  through a move, and its position through a resize that does not move it.
-- A number typed into Position and size or the flow end editor is not rounded,
-  and a number that came from a file stays as it is until a gesture changes it.
-- A command stores what it works out, not rounded: Align, Distribute,
-  Duplicate, Paste, Add point and Switch boundary shape.
+- A move rounds the position, both coordinates, and leaves the size as stored.
+  A resize rounds the position and the size. A bend or a curve point rounds
+  every bend of that flow or point of that curve.
+- A command that works geometry out stores three decimals, however it is
+  invoked: Align, Distribute, Duplicate, Paste, Add point, Switch boundary
+  shape, and the flow ends a deleted element leaves free.
+- A number typed into Position and size or the flow end editor is stored as
+  typed. The Decrease and Increase buttons keep the decimals the field has.
+- A number that came from a file stays as it is until an edit writes it.
 - With Snap to grid on, a snapped position is a grid multiple, which the
   rounding leaves as it is.
 - In a group moved by arrow key, each element lands on one decimal of its own,
-  so two of them can shift against each other by under a tenth of a unit.
-- A trust boundary curve stores its points. Position and size shows the box
-  around them, a boundary line's width outside the outermost points, so its
-  figures are worked out from the points and can show more decimals than the
-  points hold.
+  so two of them can shift against each other by under a tenth of a unit. A
+  position typed for a group rounds each of its elements to the decimals
+  typed.
 
 ## Flows
 

@@ -4,6 +4,7 @@ import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
 import { currentLayout } from './layout.js';
+import { commandDecimals } from './stored-decimals.js';
 
 const arrangementSchema = z.enum([
   'left',
@@ -100,7 +101,7 @@ export function arrangeSelected(operation: Arrangement): void {
     state.selection.includes(node.id),
   );
   const moves = arrangementMoves(nodes, operation);
-  dispatch(Action.ArrangeElements({ moves }));
+  dispatch(Action.ArrangeElements({ moves, decimals: commandDecimals }));
   if (modelStore.getState().present !== state.present) {
     announce((t) => t('canvas.arranged', { count: nodes.length }));
   }

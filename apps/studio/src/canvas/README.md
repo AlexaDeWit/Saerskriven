@@ -31,6 +31,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `curve-points.ts`, `curve-point-controls.tsx`                         | A trust boundary curve's point previews and model edits, which midpoints it shows, and the handles and actions that make them      |
 | `bend-insertion.ts`                                                   | The event connecting the Add bend command to the mounted bend controls                                                             |
 | `clipboard.ts`, `arrangement.ts`, `snap.ts`                           | Copy, cut, paste and duplicate, align and distribute, and the snap setting                                                         |
+| `stored-decimals.ts`                                                  | How many decimals a gesture, a command and a typed form each store                                                                 |
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
 | `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
 | `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection                                                       |
@@ -78,19 +79,25 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   the blocks the other flows keep, and every block is placed afresh on
   pointer-up. A drag that Escape or a blurred window puts back never reaches
   the store.
-- **A gesture names what made it.** Every edit a gesture commits is dispatched
-  inside `Action.Gesture` with `pointer` or `keyboard`, and the store rounds
-  what the edit changed to that input's decimals
-  ([the store](../store/README.md#gestures)). The commits are `applyChanges`
-  for a move, where `node-drag.ts` tells React Flow's drag from its arrow-key
-  move and `group-drag.ts` is a pointer's, `resizeNode` for a resize, whose
-  control says which it was, `placeElement` and `placeBoundaryCurve` for a
-  placement, and an element draft's `commit` for a bend, a flow end and a curve
-  point. A point the arrow keys placed is the keyboard's, and one a click or a
-  drag placed is the pointer's. A typed number and a command name no input, so
-  their numbers are not rounded. Snap to grid acts before the commit, in
-  React Flow and in `group-drag.ts`, and the rounding leaves a grid multiple as
-  it is.
+- **Every edit that writes geometry names the decimals it stores.** The model
+  rounds what an operation writes to the count the action carries
+  ([the store](../store/README.md#stored-decimals)), and `stored-decimals.ts`
+  says which count: three for a pointer gesture and one for a keyboard gesture
+  (`gestureDecimals`), three for a command that works geometry out
+  (`commandDecimals`: align, distribute, duplicate, paste, Add point, Switch
+  boundary shape, and the flow ends a removal frees), and for a typed form the
+  most decimals any of its fields is written with (`typedDecimals`), which
+  stores each as typed. The gesture commits are `applyChanges` for a move,
+  where `node-drag.ts` tells React Flow's drag from its arrow-key move and
+  `group-drag.ts` is a pointer's, `resizeNode` for a resize, whose control says
+  which it was, `placeElement` and `placeBoundaryCurve` for a placement, and an
+  element draft's `commit` for a bend, a flow end and a curve point. A point
+  the arrow keys placed is the keyboard's, and one a click or a drag placed is
+  the pointer's. Removing a bend or a curve point names no count, since it
+  writes only points already stored, and neither does the flow end form, whose
+  operation stores the typed position itself. Snap to grid acts before the
+  commit, in React Flow and in `group-drag.ts`, and a grid multiple is the same
+  number at any count.
 - **Settle against the store's selection, not a render's.** React Flow reports
   a click that moves the selection between a node and a flow as two
   synchronous calls with no render between them.

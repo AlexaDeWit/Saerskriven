@@ -99,6 +99,34 @@ describe('arrangeSelected', () => {
     expect(modelStore.getState().present).toBe(state.present);
   });
 
+  it('stores what an alignment works out at three decimals, with none of the noise of its offset', () => {
+    const positions = [
+      { x: 0.1, y: 20 },
+      { x: 5.1, y: 120 },
+    ];
+    const model = {
+      ...sampleModel,
+      diagrams: sampleModel.diagrams.map((diagram) => ({
+        ...diagram,
+        elements: [actorElement, processElement].map((id, index) => ({
+          ...elementIn(sampleModel, id),
+          position: positions[index],
+        })),
+      })),
+    };
+    modelStore.setState(
+      { ...initialState(model), selection: [actorElement, processElement] },
+      true,
+    );
+
+    arrangeSelected('left');
+
+    expect(5.1 + (0.1 - 5.1)).not.toBe(0.1);
+    expect(
+      elementIn(modelStore.getState().present, processElement),
+    ).toMatchObject({ position: { x: 0.1, y: 120 } });
+  });
+
   it.each(alignments)(
     '%s uses the selected outer bounds and preserves one-step undo',
     (command, expected) => {

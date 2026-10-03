@@ -5,17 +5,19 @@ import type {
 } from '@saerskriven/canvas';
 import {
   sideSchema,
+  type Decimals,
   type ElementId,
   type Point,
   type Side,
 } from '@saerskriven/model';
 import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
-import { Action, type GestureEdit } from '../store/actions.js';
+import { Action } from '../store/actions.js';
 import { sameSelection } from '../store/selection.js';
 import { selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { connectElements } from './edits.js';
 import type { DiagramNode } from './nodes.js';
+import { gestureDecimals } from './stored-decimals.js';
 
 /** One thing React Flow reports about a node or a flow it draws. */
 export type DiagramChange =
@@ -24,7 +26,8 @@ export type DiagramChange =
 
 /**
  * Turns what React Flow reports about a gesture on its nodes into store
- * actions and dispatches them, a move as the gesture made with `input`.
+ * actions and dispatches them, a move storing the decimals a gesture made
+ * with `input` keeps.
  */
 export function applyChanges(
   changes: readonly DiagramChange[],
@@ -35,9 +38,7 @@ export function applyChanges(
   const selection = selectedElements(modelStore.getState());
   for (const action of [
     ...selectionActions(changes, elements, selection),
-    ...moveActions(changes, nodes, selection).map((edit) =>
-      Action.Gesture({ input, edit }),
-    ),
+    ...moveActions(changes, nodes, selection, gestureDecimals[input]),
   ]) {
     dispatch(action);
   }
@@ -85,12 +86,16 @@ export function selectionActions(
     : [Action.Select({ elementIds: next })];
 }
 
-/** The moves the reported changes ask for, as offsets from where the model has each element. */
+/**
+ * The moves the reported changes ask for, as offsets from where the model has
+ * each element, each to be stored at `decimals`.
+ */
 export function moveActions(
   changes: readonly DiagramChange[],
   nodes: ReadonlyMap<string, CanvasNode>,
   selection: readonly ElementId[],
-): GestureEdit[] {
+  decimals?: Decimals,
+): Action[] {
   const resizing = new Set(
     changes.flatMap((change) =>
       change.type === 'dimensions' && change.resizing === true
@@ -127,8 +132,8 @@ export function moveActions(
     ? selection
     : [first.elementId];
   return elementIds.length === 1
-    ? [Action.MoveElement(first)]
-    : [Action.MoveElements({ elementIds, offset: first.offset })];
+    ? [Action.MoveElement({ ...first, decimals })]
+    : [Action.MoveElements({ elementIds, offset: first.offset, decimals })];
 }
 
 /**

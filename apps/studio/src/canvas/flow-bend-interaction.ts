@@ -25,6 +25,7 @@ import {
   type DragSpan,
   type HandlePointer,
 } from './handle-drag.js';
+import { gestureDecimals } from './stored-decimals.js';
 import type { WaypointTarget } from './waypoints.js';
 
 /** Which end of a flow a handle stands for. */
@@ -115,7 +116,10 @@ export function useFlowBendInteraction(
     target: WaypointTarget | EndTarget,
     input?: GestureInput,
   ): void => {
-    bends.commit(target, input);
+    bends.commit(
+      target,
+      input === undefined ? undefined : gestureDecimals[input],
+    );
     setMode(undefined);
     handBack();
   };
@@ -369,7 +373,7 @@ function flowEndKey(
       'move-free-end-far',
     );
     if (point !== undefined) {
-      bends.commit({ kind: 'free', end, point }, 'keyboard');
+      bends.commit({ kind: 'free', end, point }, gestureDecimals.keyboard);
       return true;
     }
     if (pressesContextualShortcut('keep-free-end', event, hostPlatform)) {
@@ -410,7 +414,10 @@ function bendHandleKey(
   }
   const moved = nudgedPoint(point, event, 'move-bend', 'move-bend-far');
   if (moved !== undefined) {
-    bends.commit({ kind: 'move', index, point: moved }, 'keyboard');
+    bends.commit(
+      { kind: 'move', index, point: moved },
+      gestureDecimals.keyboard,
+    );
     return true;
   }
   if (pressesContextualShortcut('remove-bend', event, hostPlatform)) {

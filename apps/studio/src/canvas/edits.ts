@@ -7,13 +7,14 @@ import {
 } from '@saerskriven/canvas';
 import {
   elementsAcross,
+  type Decimals,
   type Element,
   type ElementId,
   type Model,
   type Point,
   type Threat,
 } from '@saerskriven/model';
-import { Action, committedBy } from '../store/actions.js';
+import { Action } from '../store/actions.js';
 import {
   activeDiagramId,
   elementById,
@@ -34,6 +35,7 @@ import {
 import { sentences, type Speaker } from '../messages/said.js';
 import { currentLayout } from './layout.js';
 import { elementIds } from './nodes.js';
+import { commandDecimals, gestureDecimals } from './stored-decimals.js';
 
 type RemovalCascade = {
   readonly flows: number;
@@ -42,8 +44,8 @@ type RemovalCascade = {
 };
 
 /**
- * Places and selects one element, as the gesture made with `input` that put
- * it there, then opens its inline editor when asked.
+ * Places and selects one element, stored at the decimals a gesture made with
+ * `input` keeps, then opens its inline editor when asked.
  */
 export function placeElement(
   element: Element,
@@ -57,7 +59,7 @@ export function placeElement(
   );
 }
 
-/** Places a trust-boundary curve through the waypoints a gesture made with `input` committed. */
+/** Places a trust-boundary curve through its committed waypoints, stored at the decimals a gesture made with `input` keeps. */
 export function placeBoundaryCurve(
   waypoints: readonly Point[],
   input: GestureInput,
@@ -123,7 +125,13 @@ export function toggleBoundaryShape(): void {
   }
   const shape = switchedShape(boundary.shape);
   if (
-    changedModel(Action.SetBoundaryShape({ elementId: boundary.id, shape }))
+    changedModel(
+      Action.SetBoundaryShape({
+        elementId: boundary.id,
+        shape,
+        decimals: commandDecimals,
+      }),
+    )
   ) {
     announce((t) =>
       t(
@@ -148,8 +156,11 @@ export function removeSelected(): boolean {
   const cascade = removalCascade(state.present, selection);
   const action =
     selection.length === 1 && one !== undefined
-      ? Action.RemoveElement({ elementId: one })
-      : Action.RemoveElements({ elementIds: selection });
+      ? Action.RemoveElement({ elementId: one, decimals: commandDecimals })
+      : Action.RemoveElements({
+          elementIds: selection,
+          decimals: commandDecimals,
+        });
   if (!changedModel(action)) {
     return false;
   }
@@ -258,39 +269,38 @@ export function commitNote(elementId: ElementId, text: string): void {
 }
 
 /**
- * Applies a node's new position and size as one undo step: a resize, or for a
- * trust boundary curve its points scaled to the new box. A resize control
- * names the `input` its gesture was made with, and a typed box names none.
+ * Applies a node's new position and size as one undo step, each stored at
+ * `decimals`: a resize, or for a trust boundary curve its points scaled to
+ * the new box.
  */
 export function resizeNode(
   node: CanvasNode,
   box: NodeBox,
-  input?: GestureInput,
+  decimals: Decimals,
 ): void {
   if (sameNodeBox(node, box)) {
     return;
   }
   const element = elementById(modelStore.getState(), node.id);
   dispatch(
-    committedBy(
-      input,
-      element?.kind === 'trust-boundary' && element.shape.kind === 'curve'
-        ? Action.SetBoundaryShape({
-            elementId: element.id,
-            shape: {
-              kind: 'curve',
-              waypoints: scaledCurvePoints(element.shape.waypoints, box),
-            },
-          })
-        : Action.ResizeElement({
-            elementId: node.id,
-            offset: {
-              x: box.position.x - node.position.x,
-              y: box.position.y - node.position.y,
-            },
-            size: box.size,
-          }),
-    ),
+    element?.kind === 'trust-boundary' && element.shape.kind === 'curve'
+      ? Action.SetBoundaryShape({
+          elementId: element.id,
+          shape: {
+            kind: 'curve',
+            waypoints: scaledCurvePoints(element.shape.waypoints, box),
+          },
+          decimals,
+        })
+      : Action.ResizeElement({
+          elementId: node.id,
+          offset: {
+            x: box.position.x - node.position.x,
+            y: box.position.y - node.position.y,
+          },
+          size: box.size,
+          decimals,
+        }),
   );
 }
 
@@ -402,9 +412,10 @@ function placed(
   if (
     diagramId === undefined ||
     !changedModel(
-      Action.Gesture({
-        input,
-        edit: Action.AddElement({ diagramId, element }),
+      Action.AddElement({
+        diagramId,
+        element,
+        decimals: gestureDecimals[input],
       }),
     )
   ) {

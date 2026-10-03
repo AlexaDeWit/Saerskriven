@@ -18,6 +18,7 @@ import {
   type HandlePointer,
 } from './handle-drag.js';
 import styles from './handles.module.css';
+import { gestureDecimals } from './stored-decimals.js';
 import type { WaypointTarget } from './waypoints.js';
 
 type OpenActions = {
@@ -60,7 +61,7 @@ export function CurvePointControls({
     commit: (held, span) => {
       points.commit(
         { ...held, point: draggedPoint(held.point, span) },
-        'pointer',
+        gestureDecimals.pointer,
       );
       handBack();
     },
@@ -133,7 +134,10 @@ export function CurvePointControls({
       'move-curve-point-far',
     );
     if (moved !== undefined) {
-      points.commit({ kind: 'move', index, point: moved }, 'keyboard');
+      points.commit(
+        { kind: 'move', index, point: moved },
+        gestureDecimals.keyboard,
+      );
     } else if (
       pressesContextualShortcut('remove-curve-point', event, hostPlatform)
     ) {
