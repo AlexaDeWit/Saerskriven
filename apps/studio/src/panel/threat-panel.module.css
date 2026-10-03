@@ -399,8 +399,14 @@
   gap: var(--saer-space-2) var(--saer-space-1);
 }
 
+/* A folded row stays one line, and its headline's ellipsis takes the whole
+   squeeze, so a long headline never breaks the status value inside it. */
 .recordHead[data-folded] {
   flex-wrap: nowrap;
+}
+
+.recordHead[data-folded] > .recordState {
+  flex-shrink: 0;
 }
 
 .recordHead > .recordState {
