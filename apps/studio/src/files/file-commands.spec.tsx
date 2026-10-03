@@ -29,6 +29,7 @@ import { useFileSession } from './file-commands.js';
 import {
   chosenFile,
   deferred,
+  dismissal,
   edit,
   handleFor,
   openPicker,
@@ -73,8 +74,7 @@ function anotherTab() {
 
 type Asked = { suggestedName: string; types: readonly SaveFileType[] };
 
-const dismissal = (): Promise<never> =>
-  Promise.reject(new DOMException('Dismissed', 'AbortError'));
+const dismissed = (): Promise<never> => Promise.reject(dismissal());
 
 const refusedWrite = () =>
   Promise.resolve({
@@ -257,7 +257,7 @@ describe('useFileSession', () => {
         const asked: Asked[] = [];
         vi.stubGlobal('showSaveFilePicker', (options: Asked) => {
           asked.push(options);
-          return dismissal();
+          return dismissed();
         });
         restored('model.json', foreignSource);
         const result = session(browserFileBridge);
@@ -353,7 +353,7 @@ describe('useFileSession', () => {
 
     describe.each(['save', 'saveAs'] as const)('from %s', (command) => {
       it.each([
-        { answer: 'was dismissed', picked: dismissal, failure: undefined },
+        { answer: 'was dismissed', picked: dismissed, failure: undefined },
         { answer: 'refused the write', picked: refusedWrite, failure: 'File' },
       ] as const)(
         'keeps the work unsaved in every tab where the picker $answer, and Open and New still ask',
@@ -505,9 +505,7 @@ describe('useFileSession', () => {
             break;
           }
           case 'cancelled open': {
-            picker.mockRejectedValueOnce(
-              new DOMException('Dismissed', 'AbortError'),
-            );
+            picker.mockRejectedValueOnce(dismissal());
             result.current.commands.open();
             result.current.confirmOpen();
             break;

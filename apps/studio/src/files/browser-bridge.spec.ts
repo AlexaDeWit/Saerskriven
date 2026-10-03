@@ -8,6 +8,7 @@ import {
 import {
   chosenFile,
   deferred,
+  dismissal,
   handleFor,
   openPicker,
   recordDownloads,
@@ -29,9 +30,6 @@ const inTheFormatOf = (name: string): string =>
   name.endsWith('.json') ? '{}' : 'a: 1';
 
 let downloads: readonly string[] = [];
-
-const dismissal = (): DOMException =>
-  new DOMException('The user dismissed the picker.', 'AbortError');
 
 const freshBridge = async (): Promise<FileBridge> => {
   vi.resetModules();

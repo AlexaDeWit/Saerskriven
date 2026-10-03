@@ -45,11 +45,12 @@ the React Flow attribution, and any other build says `development`.
 ## Files
 
 **Open** reads a Threat Dragon v2 JSON or Saerskriven YAML file, whatever its
-extension. **Save** writes back in the format the file was read as. Where the
-browser offers the File System Access API, Save writes to the file that was
-opened or last saved as, without asking. With no such file, as for a new model
-or an import, Save asks where in the browser's save picker, proposing the same
-name and formats as **Save as**, and later Saves write to the file chosen there.
+extension. **Save** keeps the format the file was read as, unless the save
+picker is used to choose another. Where the browser offers the File System
+Access API, Save writes to the file that was opened or last saved as, without
+asking. With no such file, as for a new model or an import, Save asks where in
+the browser's save picker, proposing the same name and formats as **Save as**,
+and later Saves write to the file chosen there.
 Dismissing the picker, from Save or Save as, leaves the work unsaved in every
 tab. Elsewhere, Firefox and Safari among them, Save downloads the file under its
 name, and **Save as** turns into a list of formats in the menu, with the file's

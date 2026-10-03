@@ -118,6 +118,10 @@ export function recordDownloads(): readonly string[] {
 export const openPicker = () =>
   vi.fn<() => Promise<ReturnType<typeof handleFor>[]>>();
 
+/** The error a browser picker rejects with when the person dismisses it. */
+export const dismissal = (): DOMException =>
+  new DOMException('The user dismissed the picker.', 'AbortError');
+
 /** A browser file handle whose writes and completion a spec controls. */
 export const handleFor = (
   name: string,
