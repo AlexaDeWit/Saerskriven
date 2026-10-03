@@ -5,7 +5,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { emptyModel } from '@saerskriven/model';
 import {
   CommandSurfaceProvider,
@@ -15,7 +15,7 @@ import {
   currentAnnouncement,
   resetAnnouncements,
 } from '../canvas/announcements.js';
-import { resetDiagramRenaming } from '../canvas/diagrams.js';
+import { resetDiagramRenaming, stepDiagram } from '../canvas/diagrams.js';
 import { activeDiagramId } from '../store/selectors.js';
 import { initialState, untitledDiagram } from '../store/state.js';
 import {
@@ -43,6 +43,17 @@ const choice = (name: string): HTMLElement =>
 
 const item = (name: string): HTMLElement =>
   screen.getByRole('menuitem', { name });
+
+const titleField = (): HTMLElement =>
+  screen.getByRole('textbox', { name: 'Diagram title' });
+
+const openTitle = async (user: UserEvent): Promise<HTMLElement> => {
+  await user.click(switcher('Diagram: Main'));
+  await user.click(
+    await screen.findByRole('menuitem', { name: 'Rename diagram' }),
+  );
+  return titleField();
+};
 
 afterEach(() => {
   resetDiagramRenaming();
@@ -92,6 +103,37 @@ describe('the diagram switcher', () => {
     });
   });
 
+  it('draws no status line for a title committed with Enter and returns focus to the button naming it', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(twoDiagramModel), true);
+    mounted();
+    act(() => {
+      stepDiagram('next');
+      stepDiagram('previous');
+    });
+    expect(currentAnnouncement().message).not.toBe('');
+
+    await openTitle(user);
+    await user.keyboard('Core{Enter}');
+
+    expect(modelStore.getState().present.diagrams[0].title).toBe('Core');
+    expect(currentAnnouncement().message).toBe('');
+    expect(document.activeElement).toBe(switcher('Diagram: Core'));
+  });
+
+  it('says a title committed by leaving the field in the status line', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(sampleModel), true);
+    mounted();
+
+    await openTitle(user);
+    await user.keyboard('Core');
+    await user.tab();
+
+    expect(currentAnnouncement().message).toContain('Core');
+    expect(document.activeElement).not.toBe(switcher('Diagram: Core'));
+  });
+
   it('offers only a new diagram while the model holds none', async () => {
     const user = userEvent.setup();
     modelStore.setState(initialState(emptyModel), true);
@@ -108,9 +150,7 @@ describe('the diagram switcher', () => {
     await user.click(item('New diagram'));
 
     expect(modelStore.getState().present.diagrams).toHaveLength(1);
-    expect(
-      screen.getByRole('textbox', { name: 'Diagram title' }),
-    ).toBeDefined();
+    expect(titleField()).toBeDefined();
   });
 
   it('adds a diagram, opens its title selected, and commits the title on Enter', async () => {
@@ -123,7 +163,7 @@ describe('the diagram switcher', () => {
       await screen.findByRole('menuitem', { name: 'New diagram' }),
     );
 
-    const field = screen.getByRole('textbox', { name: 'Diagram title' });
+    const field = titleField();
     expect(document.activeElement).toBe(field);
     expect(field).toHaveProperty('value', untitledDiagram);
     await user.keyboard('Request forgery{Enter}');
@@ -143,11 +183,7 @@ describe('the diagram switcher', () => {
     modelStore.setState(initialState(sampleModel), true);
     mounted();
 
-    await user.click(switcher('Diagram: Main'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
-    );
-    const field = screen.getByRole('textbox', { name: 'Diagram title' });
+    const field = await openTitle(user);
     await user.clear(field);
     await user.keyboard('{Enter}');
     expect(field.getAttribute('aria-invalid')).toBe('true');
@@ -163,13 +199,10 @@ describe('the diagram switcher', () => {
     expect(modelStore.getState().present.diagrams[0].title).toBe('Main');
     expect(document.activeElement).toBe(switcher('Diagram: Main'));
 
-    await user.click(switcher('Diagram: Main'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
-    );
+    const reopened = await openTitle(user);
     await user.keyboard('Core');
     act(() => {
-      screen.getByRole('textbox', { name: 'Diagram title' }).blur();
+      reopened.blur();
     });
     expect(modelStore.getState().present.diagrams[0].title).toBe('Core');
     expect(modelStore.getState().past).toHaveLength(1);
@@ -180,11 +213,7 @@ describe('the diagram switcher', () => {
     modelStore.setState(initialState(sampleModel), true);
     mounted();
 
-    await user.click(switcher('Diagram: Main'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
-    );
-    const field = screen.getByRole('textbox', { name: 'Diagram title' });
+    const field = await openTitle(user);
     await user.clear(field);
     act(() => {
       field.blur();
@@ -205,10 +234,7 @@ describe('the diagram switcher', () => {
       </CommandSurfaceProvider>,
     );
 
-    await user.click(switcher('Diagram: Main'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
-    );
+    await openTitle(user);
     await user.keyboard('Clicked away');
     await user.click(screen.getByRole('button', { name: 'Elsewhere' }));
 
@@ -270,9 +296,7 @@ describe('the diagram switcher', () => {
     await user.click(
       await screen.findByRole('menuitem', { name: 'New diagram' }),
     );
-    expect(
-      screen.getByRole('textbox', { name: 'Diagram title' }),
-    ).toBeDefined();
+    expect(titleField()).toBeDefined();
 
     act(() => {
       dispatch(Action.Undo());

@@ -39,7 +39,7 @@ export function showDiagram(diagramId: DiagramId): boolean {
   if (shown === undefined) {
     return false;
   }
-  sayShown(shown);
+  say('canvas.diagram-shown', shown);
   return true;
 }
 
@@ -61,7 +61,7 @@ export function revealElement(elementId: ElementId): boolean {
   dispatch(Action.Select({ elementIds: [elementId] }));
   focusElement(elementId);
   if (shown !== undefined) {
-    sayShown(shown);
+    say('canvas.diagram-shown', shown);
   }
   return true;
 }
@@ -94,26 +94,33 @@ export function createDiagram(): boolean {
   if (!changedModel(Action.AddDiagram({ diagram }))) {
     return false;
   }
-  const title = excerpt(diagram.title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-added', { title }));
+  say('canvas.diagram-added', diagram);
   beginRenamingDiagram();
   return true;
 }
 
-/** Retitles the diagram on screen as one undo step, skipping an unchanged title. */
-export function renameActiveDiagram(title: string): boolean {
-  const state = modelStore.getState();
-  const diagram = activeDiagram(state);
+/**
+ * Retitles the diagram on screen as one undo step without saying so, skipping
+ * an unchanged title. It returns the diagram as retitled, or `undefined`
+ * where nothing changed.
+ */
+export function retitleActiveDiagram(title: string): Diagram | undefined {
+  const diagram = activeDiagram(modelStore.getState());
   if (diagram === undefined || diagram.title === title) {
-    return false;
+    return undefined;
   }
   dispatch(Action.RenameDiagram({ diagramId: diagram.id, title }));
-  const renamed = activeDiagram(modelStore.getState());
-  if (renamed === undefined || renamed.title !== title) {
+  const retitled = activeDiagram(modelStore.getState());
+  return retitled?.title === title ? retitled : undefined;
+}
+
+/** Retitles the diagram on screen and says so in the status line, where the title changed. */
+export function renameActiveDiagram(title: string): boolean {
+  const renamed = retitleActiveDiagram(title);
+  if (renamed === undefined) {
     return false;
   }
-  const excerpted = excerpt(title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-renamed', { title: excerpted }));
+  say('canvas.diagram-renamed', renamed);
   return true;
 }
 
@@ -144,9 +151,15 @@ export function resetDiagramRenaming(): void {
   setRenaming(undefined);
 }
 
-function sayShown(diagram: Diagram): void {
+function say(
+  message:
+    | 'canvas.diagram-shown'
+    | 'canvas.diagram-added'
+    | 'canvas.diagram-renamed',
+  diagram: Pick<Diagram, 'title'>,
+): void {
   const title = excerpt(diagram.title, nameQuoteLength);
-  announce((t) => t('canvas.diagram-shown', { title }));
+  announce((t) => t(message, { title }));
 }
 
 function setRenaming(next: DiagramId | undefined): void {

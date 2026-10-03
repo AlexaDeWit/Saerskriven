@@ -9,6 +9,7 @@ import {
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
+  editAnnouncement,
   menuItem,
   nodeNamed,
   openFallback,
@@ -78,26 +79,22 @@ test('the switcher lists the diagrams by title, and a choice draws the one chose
     `Diagram: ${secondTitle}`,
   );
   await expect(diagramSwitcher(page)).toBeFocused();
-  await expect(page.getByTestId('canvas-announcement')).toHaveText('');
+  await expect(editAnnouncement(page)).toHaveText('');
 });
 
 test('a switcher choice ends the line a chord drew', async ({ page }) => {
   await openTwoDiagrams(page);
   await page.keyboard.press(registeredChords['next-diagram'][0]);
-  await expect(page.getByTestId('canvas-announcement')).toContainText(
-    secondTitle.slice(0, 12),
-  );
+  await expect(editAnnouncement(page)).toContainText(secondTitle.slice(0, 12));
 
   await openSwitcher(page);
-  await expect(page.getByTestId('canvas-announcement')).toContainText(
-    secondTitle.slice(0, 12),
-  );
+  await expect(editAnnouncement(page)).toContainText(secondTitle.slice(0, 12));
   await diagramChoice(page, firstTitle).click();
 
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
     `Diagram: ${firstTitle}`,
   );
-  await expect(page.getByTestId('canvas-announcement')).toHaveText('');
+  await expect(editAnnouncement(page)).toHaveText('');
 });
 
 test('the next and previous chords step through the diagrams and wrap', async ({
@@ -109,9 +106,7 @@ test('the next and previous chords step through the diagrams and wrap', async ({
   await page.keyboard.press(registeredChords['next-diagram'][0]);
   await expect(switcher).toHaveAccessibleName(`Diagram: ${secondTitle}`);
   await expect(nodeNamed(page, onSecond)).toHaveCount(1);
-  await expect(page.getByTestId('canvas-announcement')).toContainText(
-    secondTitle.slice(0, 12),
-  );
+  await expect(editAnnouncement(page)).toContainText(secondTitle.slice(0, 12));
 
   await page.keyboard.press(registeredChords['next-diagram'][0]);
   await expect(switcher).toHaveAccessibleName(`Diagram: ${firstTitle}`);
@@ -231,6 +226,38 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
   );
   await expect(process).toBeFocused();
   await expect(diagramSwitcher(page)).not.toBeFocused();
+});
+
+test('a title committed with Enter draws no status line, and one committed by leaving the field draws it', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await page.keyboard.press(registeredChords['next-diagram'][0]);
+  await expect(editAnnouncement(page)).toContainText(secondTitle.slice(0, 12));
+
+  await openSwitcher(page);
+  await menuItem(page, 'Rename diagram').click();
+  await expect(diagramTitleField(page)).toBeFocused();
+  await page.keyboard.type('Dispatching');
+  await page.keyboard.press('Enter');
+
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    'Diagram: Dispatching',
+  );
+  await expect(diagramSwitcher(page)).toBeFocused();
+  await expect(editAnnouncement(page)).toHaveText('');
+
+  await openSwitcher(page);
+  await menuItem(page, 'Rename diagram').click();
+  await expect(diagramTitleField(page)).toBeFocused();
+  await page.keyboard.type('Tabbed away');
+  await page.keyboard.press('Tab');
+
+  await expect(diagramSwitcher(page)).toHaveAccessibleName(
+    'Diagram: Tabbed away',
+  );
+  await expect(diagramSwitcher(page)).not.toBeFocused();
+  await expect(editAnnouncement(page)).toContainText('Tabbed away');
 });
 
 test('an edit lands on the diagram on screen, the saved file holds it there, and a reload comes back to that diagram', async ({

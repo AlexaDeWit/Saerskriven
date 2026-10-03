@@ -4,6 +4,7 @@ import { announceRefusal } from '../canvas/announcements.js';
 import {
   endRenamingDiagram,
   renameActiveDiagram,
+  retitleActiveDiagram,
   switchDiagram,
   useDiagramRenaming,
 } from '../canvas/diagrams.js';
@@ -20,9 +21,9 @@ import { RadioChoices } from './radio-choices.js';
  * The title of the diagram on screen, opening a list of diagrams to switch
  * to with New diagram and Rename diagram. The title field closes when the
  * diagram on screen changes under it. Enter and Escape return focus to the
- * button, and a blur commits and leaves focus where it went.
- * A choice draws no status line: focus returns to the button, which names
- * the diagram.
+ * button, and a blur commits and leaves focus where it went. A choice and a
+ * title committed with Enter draw no status line, since the button that
+ * takes focus names the diagram, and a title committed by a blur draws one.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);
@@ -111,13 +112,18 @@ function TitleField({ title, onClose }: TitleFieldProps) {
   const field = useRef<HTMLInputElement>(null);
   const refusalId = useId();
   const settled = useRef(false);
+  const leaving = useRef(false);
   const { t } = useTranslator();
   const draft = useTextDraft(
     (speak) => speak('fields.diagram-title'),
     title,
     undefined,
     (text) => {
-      renameActiveDiagram(text);
+      if (leaving.current) {
+        renameActiveDiagram(text);
+      } else {
+        retitleActiveDiagram(text);
+      }
     },
     announceRefusal,
     refusedName,
@@ -151,6 +157,7 @@ function TitleField({ title, onClose }: TitleFieldProps) {
     if (settled.current) {
       return;
     }
+    leaving.current = true;
     draft.commit();
     close('blur');
   };
