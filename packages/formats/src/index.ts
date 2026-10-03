@@ -7,6 +7,7 @@ export {
 export {
   DetectionFailure,
   formatNameSchema,
+  keptByWriteBack,
   readAnyFormat,
   retainedSource,
   writeThrough,
@@ -38,9 +39,14 @@ export {
   type WireIssueDetail,
 } from './lib/import-issue-detail.js';
 export {
-  importFormatOf,
+  importedFrom,
+  importedId,
+  type SourceNamedKind,
+} from './lib/import-budget.js';
+export {
   importFormatSchema,
   importModel,
+  readOrImport,
   type ImportFormat,
   type ImportResult,
 } from './lib/import.js';

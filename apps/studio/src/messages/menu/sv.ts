@@ -8,7 +8,6 @@ export const menuSv = catalogue(menuMessages)('sv')({
   'view-source': 'Visa källkoden på GitHub',
   cancel: 'Avbryt',
   'discard-and-open': 'Kasta ändringarna och öppna',
-  'discard-and-import': 'Kasta ändringarna och importera',
   'discard-and-new': 'Kasta ändringarna och skapa en ny modell',
   'save-as-format': 'Spara som {format}',
   'file-state-dirty': '{name}, {format}, osparade ändringar',

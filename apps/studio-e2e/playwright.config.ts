@@ -86,13 +86,12 @@ export default defineConfig({
     // the layout is the same at every width. The chrome card and its
     // submenus, a notice under the card, record and model properties rows,
     // the Link existing listbox, a collapsed summary with its marks, and the
-    // gap between a corner handle and a threat badge measured on screen
-    // (#447) carry it. A test tagged `@phone-only` reads what only a phone
-    // width reaches, so `chromium` leaves it out. The preset carries the
-    // viewport, the touch flags and the device pixel ratio together, so a
-    // change of preset changes all three at once. An untagged test is about
-    // behaviour that does not turn on the viewport, and runs under `chromium`
-    // alone.
+    // corner handles beside a threat badge, measured on screen (#447, #648),
+    // carry it. A test tagged `@phone-only` reads what only a phone width
+    // reaches, so `chromium` leaves it out. The preset carries the viewport,
+    // the touch flags and the device pixel ratio together, so a change of
+    // preset changes all three at once. An untagged test is about behaviour
+    // that does not turn on the viewport, and runs under `chromium` alone.
     {
       name: 'phone',
       use: { ...devices['Pixel 7'] },

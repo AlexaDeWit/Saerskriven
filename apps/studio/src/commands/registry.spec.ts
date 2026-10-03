@@ -15,6 +15,10 @@ import { currentTool, resetTools } from '../canvas/tools.js';
 import { panelFocusHandler } from '../panel/panel-focus.js';
 import { recordingSurface } from './commands.fixtures.js';
 import {
+  contextualShortcuts,
+  pressesContextualShortcut,
+} from './contextual-shortcuts.js';
+import {
   commandById,
   commandFor,
   commands,
@@ -23,16 +27,34 @@ import {
   type CommandId,
 } from './registry.js';
 import { activeTranslator } from '../messages/locale.js';
-import { platforms, shortcutsOn, spellChord } from './shortcuts.js';
+import {
+  platforms,
+  reservedChords,
+  shortcutsOn,
+  spellChord,
+  type Chord,
+  type Platform,
+} from './shortcuts.js';
 
 const { t } = activeTranslator();
 
-const chordsOn = (platform: (typeof platforms)[number]): string[] =>
+const chordsOn = (platform: Platform): string[] =>
   commands.flatMap((command) =>
     shortcutsOn(command.shortcuts, platform).map((chord) =>
       spellChord(chord, platform, t),
     ),
   );
+
+const pressing = (chord: Chord, platform: Platform) => {
+  const modified = chord.modifiers.includes('Mod');
+  return {
+    key: chord.key,
+    ctrlKey: modified && platform === 'other',
+    metaKey: modified && platform === 'apple',
+    shiftKey: chord.modifiers.includes('Shift'),
+    altKey: false,
+  };
+};
 
 const press = (
   key: string,
@@ -47,13 +69,12 @@ const press = (
 });
 
 describe('the command registry', () => {
-  it('leaves the import, export and diagram-switcher commands without shortcuts', () => {
+  it('leaves the export and diagram-switcher commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
         .map((command) => command.id),
     ).toEqual([
-      'import',
       'export-diagram',
       'export-register',
       'export-typst',
@@ -75,24 +96,38 @@ describe('the command registry', () => {
     for (const platform of platforms) {
       for (const command of commands) {
         for (const chord of shortcutsOn(command.shortcuts, platform)) {
-          const modified = chord.modifiers.includes('Mod');
-          const event = {
-            key: chord.key,
-            ctrlKey: modified && platform === 'other',
-            metaKey: modified && platform === 'apple',
-            shiftKey: chord.modifiers.includes('Shift'),
-            altKey: false,
-          };
+          const event = pressing(chord, platform);
           expect(commandFor(event, platform)?.id).toBe(command.id);
           expect(
             commandFor(
               { ...event, ctrlKey: event.metaKey, metaKey: event.ctrlKey },
               platform,
             )?.id,
-          ).toBe(modified ? undefined : command.id);
+          ).toBe(chord.modifiers.includes('Mod') ? undefined : command.id);
         }
       }
     }
+  });
+
+  it('answers no chord the system or a browser reserves, with a command or a contextual key', () => {
+    const taken = platforms.flatMap((platform) =>
+      shortcutsOn(Object.values(reservedChords).flat(), platform).flatMap(
+        (reserved) => {
+          const event = pressing(reserved, platform);
+          return [
+            commandFor(event, platform)?.id,
+            ...contextualShortcuts
+              .filter((entry) =>
+                pressesContextualShortcut(entry.id, event, platform),
+              )
+              .map((entry) => entry.id),
+          ]
+            .filter((id) => id !== undefined)
+            .map((id) => `${id}: ${spellChord(reserved, platform, t)}`);
+        },
+      ),
+    );
+    expect(taken).toEqual([]);
   });
 
   it('files every command under its own id', () => {
@@ -132,6 +167,14 @@ describe('commandFor', () => {
     { key: '6', modifiers: {}, command: 'boundary-curve-tool' },
     { key: '7', modifiers: {}, command: 'note-tool' },
     { key: 't', modifiers: {}, command: 'focus-threats' },
+    { key: 'S', modifiers: { shiftKey: true }, command: 'reconnect-source' },
+    { key: 'T', modifiers: { shiftKey: true }, command: 'reconnect-target' },
+    {
+      key: 'D',
+      modifiers: { shiftKey: true },
+      command: 'toggle-flow-direction',
+    },
+    { key: 'P', modifiers: { shiftKey: true }, command: 'edit-geometry' },
   ] as const)(
     'maps $key with modifiers $modifiers to $command',
     ({ key, modifiers, command }) => {

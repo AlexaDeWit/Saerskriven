@@ -1,3 +1,4 @@
+import { Cross2Icon } from '@radix-ui/react-icons';
 import type { ElementId, Threat } from '@saerskriven/model';
 import { useEffect, useRef } from 'react';
 import { useTranslator } from '../messages/locale.js';
@@ -14,8 +15,10 @@ export type AttachmentGroupProps = {
 };
 
 /**
- * The elements one threat names. Detaching the last of them removes the
- * threat, so the group goes with it and the panel takes focus from there.
+ * The elements one threat names, as one row of names each with its own
+ * Detach control, above the picker that attaches another. Detaching the last
+ * of them removes the threat, so the group goes with it and the panel takes
+ * focus from there.
  */
 export function AttachmentGroup({
   threat,
@@ -51,7 +54,7 @@ export function AttachmentGroup({
               <span className={styles.attachmentName}>{label}</span>
               <button
                 aria-label={detach}
-                className={styles.unlink}
+                className={styles.detach}
                 data-detach-element
                 onClick={() => {
                   detached.current = index;
@@ -59,7 +62,7 @@ export function AttachmentGroup({
                 }}
                 type="button"
               >
-                {t('panel.detach')}
+                <Cross2Icon aria-hidden="true" />
               </button>
             </li>
           ))}

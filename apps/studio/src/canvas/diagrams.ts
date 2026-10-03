@@ -1,17 +1,40 @@
-import { generateDiagramId, type DiagramId } from '@saerskriven/model';
+import {
+  generateDiagramId,
+  type Diagram,
+  type DiagramId,
+} from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { activeTranslator } from '../messages/locale.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
-import { announce, excerpt, nameQuoteLength } from './announcements.js';
+import {
+  announce,
+  endAnnouncement,
+  excerpt,
+  nameQuoteLength,
+} from './announcements.js';
 
-/** Puts the diagram `diagramId` names on screen and says so, where it was not already. */
-export function showDiagram(diagramId: DiagramId): boolean {
+/**
+ * Puts the diagram `diagramId` on screen without saying so, and ends any
+ * status line still showing. It returns the diagram now on screen, or
+ * `undefined` where nothing changed.
+ */
+export function switchDiagram(diagramId: DiagramId): Diagram | undefined {
   const before = activeDiagramId(modelStore.getState());
   dispatch(Action.SelectDiagram({ diagramId }));
   const shown = activeDiagram(modelStore.getState());
   if (shown === undefined || shown.id === before) {
+    return undefined;
+  }
+  endAnnouncement();
+  return shown;
+}
+
+/** Puts the diagram `diagramId` names on screen and says so in the status line, where it was not already. */
+export function showDiagram(diagramId: DiagramId): boolean {
+  const shown = switchDiagram(diagramId);
+  if (shown === undefined) {
     return false;
   }
   const title = excerpt(shown.title, nameQuoteLength);

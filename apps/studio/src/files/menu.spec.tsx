@@ -24,6 +24,7 @@ import {
   mainDiagram,
   nativeSource,
   newNote,
+  recordedModel,
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome } from './bridge.js';
@@ -40,6 +41,7 @@ import {
   vendoredFile,
 } from './files.fixtures.js';
 import { chooseLanguage } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
@@ -166,6 +168,7 @@ describe('what the menu offers', () => {
     for (const name of ['Open', 'Save', 'Save as', 'Export', 'New model']) {
       expect(item(name)).toBeDefined();
     }
+    expect(screen.queryByRole('menuitem', { name: 'Import' })).toBeNull();
     expect(items.filter((entry) => entry.hasAttribute('href'))).toHaveLength(1);
     const submenus = items.filter(
       (entry) => entry.getAttribute('aria-haspopup') === 'menu',
@@ -607,10 +610,24 @@ describe('opening', () => {
       expect(reportEntries().length > 0).toBe(true);
     });
     const entries = reportEntries().map((entry) => entry.textContent);
+    const card = modelStore
+      .getState()
+      .present.threats.find(({ id }) => id === 'threat-card');
+    const t = inLocale('en-CA');
     expect(entries).toHaveLength(3);
     expect(entries[0]).toContain('unknownRoot');
     expect(entries[1]).toContain('detail.unknownDetail');
-    expect(entries[2]).toContain('threat-card');
+    expect(entries[2]).toBe(
+      t('divergence.kept', {
+        line: t('divergence.line', {
+          subject: t('divergence.subject-threat', {
+            number: card?.number ?? 0,
+            title: card?.title ?? '',
+          }),
+          detail: t('divergence.threat-category-eop-suit'),
+        }),
+      }),
+    );
 
     await choose(user, 'Save');
 
@@ -619,6 +636,48 @@ describe('opening', () => {
     });
     expect(bridge.writes[0].text).not.toContain('unknownRoot');
     expect(reportEntries()).toEqual([]);
+  });
+
+  it.each([
+    { path: 'otm/example.json', format: 'OTM' },
+    { path: 'tmbom/example.json', format: 'TM-BOM' },
+  ])(
+    'opens $path as a new model under a notice naming $format',
+    async ({ path, format }) => {
+      const user = userEvent.setup();
+      mounted(specBridge({ offers: vendoredFile(path) }));
+
+      await choose(user, 'Open');
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loss-report').textContent).toContain(
+          inLocale('en-CA')('reports.opened-read-only', { format }),
+        );
+      });
+      expect(nameOf(modelStore.getState().file)).toBe('example.yaml');
+      expect(isDirty(modelStore.getState())).toBe(true);
+    },
+  );
+
+  it('opens a format Saerskriven writes under no new-model notice', async () => {
+    const user = userEvent.setup();
+    mounted(
+      specBridge({
+        offers: chosenFile('feature-complete.json', await withUndeclaredKeys()),
+      }),
+    );
+
+    await choose(user, 'Open');
+
+    await waitFor(() => {
+      expect(reportEntries().length > 0).toBe(true);
+    });
+    const t = inLocale('en-CA');
+    for (const format of ['OTM', 'TM-BOM', 'Threat Dragon JSON']) {
+      expect(screen.getByTestId('loss-report').textContent).not.toContain(
+        t('reports.opened-read-only', { format }),
+      );
+    }
   });
 
   it('re-words a standing report when the language changes', async () => {
@@ -764,9 +823,25 @@ describe('saving', () => {
     });
   });
 
+  it('says nothing of a save whose divergences lose nothing a person reads', async () => {
+    const user = userEvent.setup();
+    const bridge = specBridge({ picker: false });
+    mounted(bridge);
+
+    await choose(user, 'Save as');
+    await screen.findByRole('menuitem', { name: 'Save as Threat Dragon JSON' });
+    await user.click(item('Save as Threat Dragon JSON'));
+
+    await waitFor(() => {
+      expect(bridge.writes).toHaveLength(1);
+    });
+    expect(reportEntries()).toEqual([]);
+  });
+
   it('reports what the format it was asked for could not hold, and puts the report away again', async () => {
     const user = userEvent.setup();
     const bridge = specBridge({ picker: false });
+    modelStore.setState(initialState(recordedModel), true);
     mounted(bridge);
 
     await choose(user, 'Save as');

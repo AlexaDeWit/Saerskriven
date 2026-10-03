@@ -189,6 +189,38 @@ export const closeMenu = async (page: Page): Promise<void> => {
   await expect(page.getByRole('menu')).toHaveCount(0);
 };
 
+/** Moves a menu's keyboard focus forward to `target`, one ArrowDown per enabled row of its own menu between them. */
+export const arrowTo = async (page: Page, target: Locator): Promise<void> => {
+  const ownMenu = target.locator('xpath=ancestor::*[@role="menu"][1]');
+  await expect(ownMenu.locator('[role^="menuitem"]:focus')).toHaveCount(1);
+  const steps = await target.evaluate((element) => {
+    const menu = element.closest('[role="menu"]');
+    const items = [
+      ...(menu?.querySelectorAll('[role^="menuitem"]:not([data-disabled])') ??
+        []),
+    ].filter((item) => item.closest('[role="menu"]') === menu);
+    return (
+      items.indexOf(element) -
+      items.findIndex((item) => item === document.activeElement)
+    );
+  });
+  expect(
+    steps,
+    `arrowTo needs a forward step count toward the target, got ${steps}`,
+  ).toBeGreaterThanOrEqual(0);
+  for (let step = 0; step < steps; step += 1) {
+    const focused = await page.evaluateHandle(() => document.activeElement);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForFunction(
+      (previous) => document.activeElement !== previous,
+      focused,
+      { polling: 'raf', timeout: 2_000 },
+    );
+    await focused.dispose();
+  }
+  await expect(target).toBeFocused();
+};
+
 /** Runs one menu command, which puts the menu away as it runs. */
 export const runFromMenu = async (page: Page, name: string): Promise<void> => {
   await openMenu(page);
@@ -411,6 +443,24 @@ export const selectNode = async (
   return node;
 };
 
+/** Presses Tab from `from`, the control before the canvas unless named, until `target` holds focus, in at most 40 presses. */
+export const tabTo = async (
+  page: Page,
+  target: Locator,
+  from: Locator = beforeCanvas(page),
+): Promise<void> => {
+  await from.focus();
+  for (
+    let pressed = 0;
+    pressed < 40 &&
+    !(await target.evaluate((element) => element === document.activeElement));
+    pressed += 1
+  ) {
+    await page.keyboard.press('Tab');
+  }
+  await expect(target).toBeFocused();
+};
+
 /** Selects an element by focusing it and pressing Enter, then waits for the canvas to settle. */
 export const selectByKeyboard = async (
   page: Page,
@@ -430,6 +480,13 @@ export const selectByKeyboard = async (
 export const threatPanel = (page: Page): Locator =>
   page.getByRole('region', { name: 'Threats' });
 
+/** Shows the panel's Details tab, which holds the selected element's own fields. */
+export const showDetails = async (page: Page): Promise<void> => {
+  const details = threatPanel(page).getByRole('tab', { name: 'Details' });
+  await details.click();
+  await expect(details).toHaveAttribute('aria-selected', 'true');
+};
+
 /** One of the panel's fields, by its exact accessible name. */
 export const panelField = (
   page: Page,
@@ -440,6 +497,13 @@ export const panelField = (
 /** One of the panel's buttons, by its exact accessible name. */
 export const panelControl = (page: Page, name: string): Locator =>
   threatPanel(page).getByRole('button', { name, exact: true });
+
+/** Closes the threat panel by keyboard from its Close threats button, leaving the pointer where it was, and waits for it to go. */
+export const closeThreats = async (page: Page): Promise<void> => {
+  await panelControl(page, 'Close threats').focus();
+  await page.keyboard.press('Enter');
+  await expect(threatPanel(page)).toHaveCount(0);
+};
 
 /** The summary button of the panel's threat whose accessible name matches `title`. */
 export const threatSummary = (page: Page, title: string | RegExp): Locator =>

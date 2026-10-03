@@ -3,17 +3,10 @@ import { reportMessages } from './contract.js';
 
 export const reportsFrCA = catalogue(reportMessages)('fr-CA')({
   region: 'Rapports de fichier',
-  opened:
-    'L’ouverture du fichier a laissé de côté ce qu’il contient et que Saerskriven ne prend pas en charge :',
-  imported:
-    'L’importation a créé un modèle natif avec ces conversions et omissions :',
-  saved:
-    'Le dernier enregistrement n’a pas conservé tout ce que contient le modèle :',
-  'conversion-details': {
-    one: '{count} détail de conversion',
-    many: '{count} de détails de conversion',
-    other: '{count} détails de conversion',
-  },
+  opened: 'Non affiché dans le studio :',
+  'opened-read-only':
+    'Un fichier {format} s’ouvre comme un nouveau modèle. Saerskriven n’écrit pas en {format}, alors Enregistrer crée un fichier Saerskriven. Le fichier ouvert reste tel quel.',
+  saved: 'Non conservé par cet enregistrement :',
   'dismiss-report': 'Masquer le rapport',
   'dismiss-export': 'Masquer le rapport d’exportation',
   'write-refused': 'Saerskriven n’a pas pu écrire l’exportation.',

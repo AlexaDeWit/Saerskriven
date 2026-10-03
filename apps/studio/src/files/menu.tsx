@@ -30,6 +30,7 @@ import {
   RegisteredMenuCommand,
 } from './menu-items.js';
 import type { FileSession } from './file-commands.js';
+import cursor from '../ui/cursor-row.module.css';
 import styles from './menu.module.css';
 import { AppearanceMenu, LanguageMenu } from './settings-menu.js';
 import { Submenu, SubmenuEdge } from './submenu.js';
@@ -44,10 +45,7 @@ type UnsavedChangesCommandProps = {
   readonly question: DiscardQuestion;
 };
 
-type DiscardQuestion =
-  | 'menu.discard-and-open'
-  | 'menu.discard-and-import'
-  | 'menu.discard-and-new';
+type DiscardQuestion = 'menu.discard-and-open' | 'menu.discard-and-new';
 
 function UnsavedChangesCommand({
   asking,
@@ -79,7 +77,7 @@ function ProjectLink({
   readonly children: ReactNode;
 }) {
   return (
-    <DropdownMenu.Item asChild className={styles.item}>
+    <DropdownMenu.Item asChild className={`${styles.item} ${cursor.row}`}>
       <a href={href} rel="noopener noreferrer" target="_blank">
         <span>{children}</span>
         <ExternalLinkIcon aria-hidden="true" className={styles.externalLink} />
@@ -111,7 +109,6 @@ export function StudioMenu({
 
   useCloseGuard(guarded);
   useAsking(session.opening, dirty, setOpen, session.cancelOpen);
-  useAsking(session.importing, dirty, setOpen, session.cancelImport);
   useAsking(session.closing, dirty, setOpen, session.cancelClose);
   useChoosing(session.choosing, setOpen);
 
@@ -126,7 +123,6 @@ export function StudioMenu({
           setOpen(next);
           if (!next) {
             cancelOpen();
-            session.cancelImport();
             cancelClose();
             cancelChoice();
           }
@@ -309,14 +305,6 @@ function FileMenu({
               })}
             </MenuItem>
           ))}
-      <UnsavedChangesCommand
-        asking={session.importing && dirty}
-        cancel={session.cancelImport}
-        command="import"
-        dirty={dirty}
-        proceed={session.confirmImport}
-        question="menu.discard-and-import"
-      />
       <ExportMenu />
       <UnsavedChangesCommand
         asking={askingClose}

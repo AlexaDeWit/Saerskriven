@@ -13,6 +13,7 @@ stylesheet.
 | Module                                                         | What it holds                                                                                           |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `enum-field.tsx`                                               | `EnumField`, the listbox control                                                                        |
+| `cursor-row.module.css`                                        | The row under a list's or a menu's cursor, which every listbox and menu row takes beside its own class  |
 | `severity-field.tsx`, `status-field.tsx`, `category-field.tsx` | `EnumField` bound to a model schema                                                                     |
 | `text-field.tsx`, `grow-to-content.ts`                         | `TextField` and `ProseField` with their draft state, and textarea growth                                |
 | `live-region.tsx`, `failure-notice.tsx`, `detail-lines.tsx`    | Announcements, the refusal notice, and notice lines as a list, folded under a summary when one is given |
@@ -20,6 +21,7 @@ stylesheet.
 | `visually-hidden.tsx`                                          | Text for assistive technology that is not drawn                                                         |
 | `external-store.ts`                                            | The subscription helper every module-level store in the studio shares                                   |
 | `close-focus.ts`, `measure.ts`                                 | Keeping a closed dropdown from taking focus back, and measuring an element                              |
+| `review-order.ts`                                              | The order threats are reviewed in: by status from the most risk left live, then by severity             |
 
 ## Tokens
 
@@ -59,7 +61,10 @@ notices under it, and `--saer-pane-block-start` adds those to the fixed
 
 A control never suppresses the focus indicator and never invents its own: it
 applies the focus tokens in `:focus-visible`, swapping the ring's colour only
-where the accent is the background it would be drawn on.
+where the accent is the background it would be drawn on. A list or menu row
+draws the same ring on the row under the cursor, pointer or keyboard alike,
+over the accent's tint (`--saer-colour-accent-tint`), so the solid accent
+marks only a state that is switched on, such as the selected tool.
 
 ## Adding a control
 
@@ -88,19 +93,22 @@ change the value dispatches nothing ([the commit
 rule](../panel/README.md#the-commit-rule)).
 
 `EnumField` is the worked example, and `SeverityField`, `StatusField` and
-`CategoryField` are it three times: each reads its options from a model
-schema, so the field offers what the model names and nothing else, and each
-maps the stored value to a catalogue message. `labelOf` is required, so a
-stored value is never drawn as its own label. It can return an `OptionText`: a `suffix` that tells two like labels
-apart, drawn on its own line so the cut below cannot hide it, and a `detail`
-line under the option that becomes its accessible description. The trigger
-and each option draw at most two lines of their label, so a long label cannot
-grow the trigger past the room its listbox needs, and a caller can cut the
-trigger shorter. The accessible name is still the whole label and its suffix.
-A field with no `value` shows its `placeholder`, and its first option keeps
-the listbox's tab stop. The listbox is placed and sized within the box the
-field scrolls in, the panel body, so it opens clear of the chrome card and the
-pane header.
+`CategoryField` are it three times: each reads its options from a model schema,
+so the field offers what the model names and nothing else, and each maps the
+stored value to a catalogue message. `StatusField` lists them in the order the
+threat panel lists threats, from `review-order.ts`. `labelOf` is required, so a
+stored value is never drawn as its own label. It can return an `OptionText`: a
+`suffix` that tells two like labels apart, drawn on its own line so the cut
+below cannot hide it, and a `detail` line under the option that becomes its
+accessible description. The trigger and each option draw at most two lines of
+their label, so a long label cannot grow the trigger past the room its listbox
+needs, and a caller can cut the trigger shorter. The accessible name is still
+the whole label and its suffix. A field with no `value` shows its `placeholder`,
+and its first option keeps the listbox's tab stop. The listbox is placed and
+sized within the box the field scrolls in, the panel body, so it opens clear of
+the chrome card and the pane header. Radix hides the listbox's scrollbar, so
+where the options run past that room a chevron at the cut edge says the list
+goes on, and scrolls it while a pointer rests on it.
 
 `EnumField`, `TextField` and `ProseField` take a `shownLabel` that draws a
 shorter label, or none, where the surroundings already say what the field is.
@@ -120,14 +128,15 @@ field and goes with the text. A field can be opened on a draft reported that
 way, which is how the threat panel puts a refused draft back after the panel
 itself has been unmounted ([the panel](../panel/README.md)).
 
-`ProseField` starts at eight lines and grows with its text to 24, or starts at
-two and grows to ten when `compact`, as the record cards use it. Past its bound
-it scrolls, and it keeps manual vertical resizing. CSS `field-sizing: content`
+`ProseField` starts at eight lines and grows with its text to 24, past which it
+scrolls. A `compact` one, as every description in the threat panel uses, starts
+at two lines and grows with its text without a bound, so it never scrolls inside
+its own box. Both keep manual vertical resizing. CSS `field-sizing: content`
 does the growing where the browser supports it (`sizesFieldsToContent`).
-Elsewhere, Firefox among them, `growUnlessResized` sets the height from the
-text after each render through `growToContent`, which the canvas rename field
-also uses, under the same CSS bounds. Once a person drags the resize handle,
-the field keeps that height and stops growing.
+Elsewhere, Firefox among them, `growUnlessResized` sets the height from the text
+after each render through `growToContent`, which the canvas rename field also
+uses, under the same CSS bounds. Once a person drags the resize handle, the
+field keeps that height and stops growing.
 
 ## What is here that is not a control
 

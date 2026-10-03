@@ -21,10 +21,12 @@ const chordKeys = [
   'n',
   'o',
   'p',
+  'q',
   'r',
   's',
   't',
   'v',
+  'w',
   'x',
   'y',
   'z',
@@ -95,9 +97,10 @@ export const mod = (key: ChordKey, platform?: Platform): Chord => ({
 });
 
 /** A key with the platform command modifier and Shift. */
-export const modShift = (key: ChordKey): Chord => ({
+export const modShift = (key: ChordKey, platform?: Platform): Chord => ({
   modifiers: ['Mod', 'Shift'],
   key,
+  ...(platform === undefined ? {} : { platform }),
 });
 
 /** A key with Shift. */
@@ -111,6 +114,42 @@ export const enterChord = bare('Enter');
 
 /** The unmodified Escape chord shared by commands and contextual actions. */
 export const escapeChord = bare('Escape');
+
+/**
+ * The chords macOS, Windows, Chrome, Firefox and Safari keep for their own
+ * commands by default, which no command or contextual key may take.
+ */
+export const reservedChords = {
+  macos: [
+    modShift('3', 'apple'),
+    modShift('4', 'apple'),
+    modShift('5', 'apple'),
+    modShift('6', 'apple'),
+    mod(' ', 'apple'),
+    mod('Tab', 'apple'),
+    modShift('Tab', 'apple'),
+    mod('h', 'apple'),
+    mod('m', 'apple'),
+    modShift('q', 'apple'),
+    modShift('?', 'apple'),
+  ],
+  windows: [mod('Escape', 'other'), modShift('Escape', 'other')],
+  browsers: [
+    mod('n'),
+    modShift('n'),
+    mod('t'),
+    modShift('t'),
+    mod('w'),
+    modShift('w'),
+    modShift('p'),
+    mod('q'),
+    modShift('q', 'other'),
+    mod('Tab', 'other'),
+    modShift('Tab', 'other'),
+    mod('PageUp', 'other'),
+    mod('PageDown', 'other'),
+  ],
+} as const satisfies Record<string, readonly Chord[]>;
 
 /** A message the `commands` section declares. */
 export type CommandMessageId = Extract<StudioMessageId, `commands.${string}`>;

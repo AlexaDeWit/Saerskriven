@@ -60,7 +60,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
     if (occurrence !== undefined) {
       fields(occurrence, ['threat', 'state', 'mitigations']);
     }
-    const status = otmThreatStatus(state, context);
+    const status = otmThreatStatus(state, id, context);
     threats.push({
       id,
       number: threats.length + 1,
@@ -196,7 +196,11 @@ function otmMitigations(
     ) {
       report({
         code: 'otm-mitigation-status-retained',
-        parameters: { id: mitigation.id, status: given.state },
+        parameters: {
+          id: mitigation.id,
+          status: given.state,
+          threat: threatId,
+        },
       });
     }
     mitigations.push({
@@ -215,6 +219,7 @@ function otmMitigations(
 
 function otmThreatStatus(
   state: string | undefined,
+  threat: string,
   context: ImportContext,
 ): ThreatStatus {
   switch (state) {
@@ -238,7 +243,7 @@ function otmThreatStatus(
     default:
       context.report({
         code: 'otm-threat-status-unmapped',
-        parameters: { status: state },
+        parameters: { status: state, threat },
       });
       return 'open';
   }

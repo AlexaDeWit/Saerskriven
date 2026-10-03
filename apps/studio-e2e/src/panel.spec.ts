@@ -84,7 +84,7 @@ const shopperWithLongThreats = (): Model => {
 };
 
 const paneBody = (page: Page): Locator =>
-  threatPanel(page).locator(':scope > header + div');
+  threatPanel(page).locator(':scope > div:last-child');
 
 const insidePaneBody = async (
   page: Page,
@@ -94,6 +94,10 @@ const insidePaneBody = async (
   const drawn = await edgesOf(target);
   return drawn.top >= body.top - 0.5 && drawn.bottom <= body.bottom + 0.5;
 };
+
+const atPaneTop = async (page: Page, target: Locator): Promise<boolean> =>
+  Math.abs((await edgesOf(target)).top - (await edgesOf(paneBody(page))).top) <=
+  1.5;
 
 const belowLongTakeover = async (page: Page): Promise<Locator> => {
   await openModelDocument(page, shopperWithLongThreats());
@@ -105,7 +109,7 @@ const belowLongTakeover = async (page: Page): Promise<Locator> => {
 };
 
 test(
-  'expanding a threat below a long open one keeps its header inside the pane when it cannot stay where it was',
+  'a threat opened below a long open one lands with its header at the top of the pane',
   { tag: '@phone' },
   async ({ page }) => {
     const below = await belowLongTakeover(page);
@@ -118,12 +122,12 @@ test(
       'aria-expanded',
       'false',
     );
-    expect(await insidePaneBody(page, below)).toBe(true);
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
   },
 );
 
 test(
-  'a threat expanded from the keyboard below a long open one keeps its header where it was and keeps focus, without scroll anchoring',
+  'a threat opened from the keyboard lands at the top of the pane and keeps focus, without scroll anchoring',
   { tag: '@phone' },
   async ({ page }) => {
     const below = await belowLongTakeover(page);
@@ -131,17 +135,13 @@ test(
       body.style.overflowAnchor = 'none';
     });
     await below.focus();
-    expect(await scrollPaneTo(below, 'top')).toBe(true);
-    const pressed = await screenBoxOf(below);
+    expect(await scrollPaneTo(below, 'bottom')).toBe(true);
 
     await page.keyboard.press('Enter');
 
     await expect(below).toHaveAttribute('aria-expanded', 'true');
     await expect(below).toBeFocused();
-    expect(await insidePaneBody(page, below)).toBe(true);
-    expect(
-      Math.abs((await screenBoxOf(below)).y - pressed.y),
-    ).toBeLessThanOrEqual(1);
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
   },
 );
 
@@ -167,7 +167,7 @@ const pressedPartlyClipped = async (
 };
 
 test(
-  'a header pressed while partly above the pane comes fully into it as the long threat above collapses',
+  'a header pressed while partly above the pane lands at its top as the long threat above collapses',
   { tag: '@phone' },
   async ({ page }) => {
     const below = await belowLongTakeover(page);
@@ -175,12 +175,12 @@ test(
     await pressedPartlyClipped(page, below, 'top');
 
     await expect(below).toBeFocused();
-    expect(await insidePaneBody(page, below)).toBe(true);
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
   },
 );
 
 test(
-  'a header pressed while partly below the pane comes fully into it',
+  'a header pressed while partly below the pane comes up to its top',
   { tag: '@phone' },
   async ({ page }) => {
     await openModelDocument(page, shopperWithLongThreats());
@@ -190,7 +190,98 @@ test(
     await pressedPartlyClipped(page, lower, 'bottom');
 
     await expect(lower).toBeFocused();
-    expect(await insidePaneBody(page, lower)).toBe(true);
+    await expect.poll(() => atPaneTop(page, lower)).toBe(true);
+  },
+);
+
+test(
+  "an open threat's summary stays pinned at the top of the pane while any of the threat is in it",
+  { tag: '@phone' },
+  async ({ page }) => {
+    const below = await belowLongTakeover(page);
+    await below.click();
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
+    const item = page.locator('[data-threat-item="th-shopper-0"]');
+
+    await paneBody(page).evaluate((body) => {
+      body.scrollTop += Math.round(body.clientHeight / 2);
+    });
+    expect(await atPaneTop(page, below)).toBe(true);
+    expect((await edgesOf(item)).top).toBeLessThan(
+      (await edgesOf(paneBody(page))).top - 1,
+    );
+
+    await paneBody(page).evaluate((body) => {
+      body.scrollTop = body.scrollHeight;
+    });
+    const end = await edgesOf(item);
+    const summary = await edgesOf(below);
+    expect(summary.bottom).toBeLessThanOrEqual(end.bottom + 0.5);
+    if (end.bottom < (await edgesOf(paneBody(page))).top) {
+      expect(await insidePaneBody(page, below)).toBe(false);
+    }
+  },
+);
+
+const focusPlacement = (summary: Locator) =>
+  summary.evaluate((header) => {
+    let body = header.parentElement;
+    while (body !== null && getComputedStyle(body).overflowY !== 'auto') {
+      body = body.parentElement;
+    }
+    const field = document.activeElement;
+    if (body === null || !(field instanceof HTMLElement)) {
+      return undefined;
+    }
+    const view = body.getBoundingClientRect();
+    const drawn = field.getBoundingClientRect();
+    const pinned = header.getBoundingClientRect();
+    const tabbable = [
+      ...body.querySelectorAll<HTMLElement>(
+        'input, textarea, button, [role="combobox"]',
+      ),
+    ].filter((element) => element.getClientRects().length > 0);
+    const next = tabbable.at(tabbable.indexOf(field) + 1);
+    const nextBottom = next?.getBoundingClientRect().bottom ?? drawn.bottom;
+    const atEnd = body.scrollTop >= body.scrollHeight - body.clientHeight - 1;
+    return {
+      clearOfSummary: drawn.top >= pinned.bottom - 0.5,
+      inView:
+        drawn.bottom <= view.bottom + 0.5 ||
+        (drawn.height > view.bottom - pinned.bottom &&
+          Math.abs(drawn.top - pinned.bottom) <= 1),
+      nextInView:
+        nextBottom <= view.bottom + 0.5 ||
+        atEnd ||
+        nextBottom - drawn.top > view.bottom - pinned.bottom,
+      scrolled: body.scrollTop,
+    };
+  });
+
+test(
+  'Tab brings each field of an open threat into view below its pinned summary, with the next field in view under it',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const below = await belowLongTakeover(page);
+    await below.click();
+    await expect.poll(() => atPaneTop(page, below)).toBe(true);
+    await threatPanel(page)
+      .getByRole('textbox', { name: 'Title', exact: true })
+      .focus();
+    const scrolledAt = new Set<number>();
+
+    for (let step = 0; step < 14; step += 1) {
+      await page.keyboard.press('Tab');
+      const placed = await focusPlacement(below);
+      expect(placed, `Tab ${String(step + 1)}`).toMatchObject({
+        clearOfSummary: true,
+        inView: true,
+        nextInView: true,
+      });
+      scrolledAt.add(placed?.scrolled ?? 0);
+    }
+
+    expect(scrolledAt.size).toBeGreaterThan(1);
   },
 );
 
@@ -221,7 +312,7 @@ test('the panel opens on the element selected and goes when the selection does',
   const actor = await selectNode(page, placeholder.actor);
 
   await expect(
-    threatPanel(page).getByRole('heading', { name: 'Threats on Actor' }),
+    threatPanel(page).getByRole('heading', { name: 'Actor', exact: true }),
   ).toBeVisible();
   await expect(
     threatPanel(page).locator(':focus'),
@@ -274,6 +365,9 @@ test('undoing a threat just added from the keyboard hands focus to Add a threat,
   await page.keyboard.press(registeredChords.redo[0]);
 
   await expect(titleField(page)).toBeFocused();
+  await expect
+    .poll(() => atPaneTop(page, threatSummary(page, /New threat/u)))
+    .toBe(true);
 });
 
 test('an element the panel would cover stays where it was drawn', async ({
@@ -359,7 +453,7 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
   await openTwoDiagrams(page);
   const webShop = await selectNode(page, storefront.webShop);
   await expect(
-    page.getByRole('heading', { name: 'Threats on Web shop' }),
+    page.getByRole('heading', { name: 'Web shop', exact: true }),
   ).toBeVisible();
 
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
@@ -450,32 +544,9 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   );
 
   await page.keyboard.press('Tab');
-  await expect(panelField(page, 'combobox', 'Severity')).toBeFocused();
-  await chooseByKeyboard(page, 'ArrowUp');
-  await expect(panelField(page, 'combobox', 'Severity')).toContainText(
-    'Critical',
-  );
-
-  await page.keyboard.press('Tab');
-  await expect(panelField(page, 'combobox', 'Status')).toBeFocused();
-
-  await page.keyboard.press('Tab');
   const description = panelField(page, 'textbox', 'Description');
   await expect(description).toBeFocused();
   await page.keyboard.type('The queue accepts a job nobody enqueued.');
-
-  for (const [group, role, control] of [
-    ['Attached elements', 'button', 'Detach Label printer'],
-    ['Attached elements', 'combobox', 'Existing element'],
-    ['Attached elements', 'button', 'Attach existing element'],
-  ] as const) {
-    await page.keyboard.press('Tab');
-    await expect(
-      threatPanel(page)
-        .getByRole('group', { name: group })
-        .getByRole(role, { name: control, exact: true }),
-    ).toBeFocused();
-  }
 
   const mitigations = threatPanel(page).getByRole('group', {
     name: 'Mitigations',
@@ -503,14 +574,35 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   );
 
   for (const [group, role, control] of [
-    ['Mitigations', 'combobox', 'Mitigation 1 status'],
-    ['Mitigations', 'button', 'Unlink mitigation 1'],
     ['Mitigations', 'button', 'Add mitigation'],
     ['Mitigations', 'combobox', 'Existing mitigation'],
     ['Mitigations', 'button', 'Link existing mitigation'],
     ['Assumptions', 'button', 'Add assumption'],
     ['Assumptions', 'combobox', 'Existing assumption'],
     ['Assumptions', 'button', 'Link existing assumption'],
+  ] as const) {
+    await page.keyboard.press('Tab');
+    await expect(
+      threatPanel(page)
+        .getByRole('group', { name: group })
+        .getByRole(role, { name: control, exact: true }),
+    ).toBeFocused();
+  }
+
+  await page.keyboard.press('Tab');
+  await expect(panelField(page, 'combobox', 'Severity')).toBeFocused();
+  await chooseByKeyboard(page, 'ArrowUp');
+  await expect(panelField(page, 'combobox', 'Severity')).toContainText(
+    'Critical',
+  );
+
+  await page.keyboard.press('Tab');
+  await expect(panelField(page, 'combobox', 'Status')).toBeFocused();
+
+  for (const [group, role, control] of [
+    ['Attached elements', 'button', 'Detach Label printer'],
+    ['Attached elements', 'combobox', 'Existing element'],
+    ['Attached elements', 'button', 'Attach existing element'],
   ] as const) {
     await page.keyboard.press('Tab');
     await expect(
@@ -531,6 +623,10 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     /1 open threat, highest severity Critical/u,
   );
 
+  await runFromMenu(page, 'Undo');
+  await expect(panelField(page, 'combobox', 'Severity')).toContainText(
+    'Undecided',
+  );
   await runFromMenu(page, 'Undo');
   await expect(recordTitle).toHaveCount(0);
   await expect(description).toHaveValue(
@@ -557,7 +653,7 @@ test('a flow selected on the canvas opens its own threats in the panel', async (
 
   await expect(
     threatPanel(page).getByRole('heading', {
-      name: /^Threats on browse the catalogue/u,
+      name: /^browse the catalogue/u,
     }),
   ).toBeVisible();
   await expect(threatSummary(page, storefront.basketPrice)).toHaveCount(0);
@@ -656,7 +752,10 @@ test('keyboard width changes preserve the viewport and persist across selection 
   expect(await viewportTransform(page)).toBe(beforeRestore);
 });
 
-test('prose grows to a bound, keeps manual resizing, and commits once through pane controls', async ({
+const scrollsInside = (field: Locator): Promise<boolean> =>
+  field.evaluate((node) => node.scrollHeight > node.clientHeight + 1);
+
+test('prose starts at two lines and grows with its text without scrolling inside, keeps manual resizing, and commits once through pane controls', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -675,15 +774,17 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
   const lineHeight = await description.evaluate((node) =>
     Number.parseFloat(getComputedStyle(node).lineHeight),
   );
-  expect(initial.height).toBeGreaterThanOrEqual(lineHeight * 8);
+  expect(initial.height).toBeGreaterThanOrEqual(lineHeight * 2);
+  expect(initial.height).toBeLessThan(lineHeight * 4);
   const prose = Array.from(
     { length: 80 },
     (_, index) => `Line ${String(index)} of a long threat description.`,
   ).join('\n');
   await description.fill(prose);
   const grown = await edgesOf(description);
-  expect(grown.height).toBeGreaterThan(initial.height);
-  expect(grown.height).toBeLessThanOrEqual(lineHeight * 25);
+  expect(grown.height).toBeGreaterThan(lineHeight * 80);
+  expect(await scrollsInside(description)).toBe(false);
+  expect(await scrollsInside(paneBody(page))).toBe(true);
   await panel.getByRole('button', { name: 'Widen pane' }).click();
   await expect(description).toHaveValue(prose);
   await panel
@@ -691,11 +792,12 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
     .click();
   const recordInitial = await edgesOf(recordProse);
   expect(recordInitial.height).toBeGreaterThanOrEqual(lineHeight * 2);
-  expect(recordInitial.height).toBeLessThan(initial.height);
-  await recordProse.fill(prose.split('\n').slice(0, 6).join('\n'));
+  expect(recordInitial.height).toBeLessThan(lineHeight * 4);
+  await recordProse.fill(prose.split('\n').slice(0, 30).join('\n'));
   const recordGrown = await edgesOf(recordProse);
-  expect(recordGrown.height).toBeGreaterThan(recordInitial.height);
-  expect(recordGrown.height).toBeLessThanOrEqual(lineHeight * 25);
+  expect(recordGrown.height).toBeGreaterThan(lineHeight * 30);
+  expect(await scrollsInside(recordProse)).toBe(false);
+  await recordProse.fill(prose.split('\n').slice(0, 6).join('\n'));
   const heading = await edgesOf(panel.getByRole('heading', { level: 2 }));
   await recordProse.scrollIntoViewIfNeeded();
   expect((await edgesOf(panel.getByRole('heading', { level: 2 }))).top).toBe(

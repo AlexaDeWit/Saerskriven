@@ -1,18 +1,23 @@
 import { Either } from 'effect';
+import { readFileSync } from 'node:fs';
 import { ReadFailure } from './codec.js';
 import { readFailureIssues } from './codec.fixtures.js';
 import { adversarialText, corpusTexts } from './corpus.fixtures.js';
 import {
   DetectionFailure,
   formatNameSchema,
+  keptByWriteBack,
   readAnyFormat,
   retainedSource,
   writeThrough,
   type DetectedRead,
 } from './detect.js';
-import { hasDiverged } from './divergence.js';
+import { hasDiverged, type Divergence } from './divergence.js';
+import { equivalent } from './equivalence.js';
+import { isRecord } from './records.js';
 import {
   featureCompleteYaml,
+  frozenV030Path,
   minimalYamlV1,
   nativeFixtures,
   oneThreatYamlV1,
@@ -361,4 +366,84 @@ describe('retainedSource', () => {
       );
     },
   );
+});
+
+const unmappedThreat = JSON.stringify(
+  JSON.parse(featureCompleteText, (_key, value: unknown) =>
+    isRecord(value) && value['id'] === 'threat-spoofing'
+      ? {
+          ...value,
+          status: 'Investigating',
+          severity: 'Extreme',
+          type: 'Gremlins',
+        }
+      : value,
+  ),
+);
+
+describe('keptByWriteBack', () => {
+  it('reads every narrowing Threat Dragon reports from a threat with unmapped values beside the card', () => {
+    expect(
+      new Set(
+        opened(unmappedThreat)
+          .divergences.filter(({ reason }) => reason === 'narrowed')
+          .map(({ detail }) => detail.code),
+      ),
+    ).toEqual(
+      new Set([
+        'threat-status-unmapped',
+        'threat-severity-unmapped',
+        'threat-category-unmapped',
+        'threat-category-eop-suit',
+      ]),
+    );
+  });
+
+  it.each([
+    { name: 'Threat Dragon', text: featureCompleteText },
+    {
+      name: 'Threat Dragon with an unmapped status, severity and type',
+      text: unmappedThreat,
+    },
+    {
+      name: 'version 1 Saerskriven YAML',
+      text: readFileSync(frozenV030Path, 'utf8'),
+    },
+  ])(
+    'says of each value a $name read narrowed whether the file written back narrows it again',
+    ({ text }) => {
+      const answer = opened(text);
+      const again = opened(
+        writeThrough(answer.model, retainedSource(answer)).output,
+      );
+      const narrowed = answer.divergences.filter(
+        ({ reason }) => reason === 'narrowed',
+      );
+
+      expect(narrowed.length).toBeGreaterThan(0);
+      expect(
+        narrowed.map((divergence) =>
+          keptByWriteBack(answer.format, divergence),
+        ),
+      ).toEqual(
+        narrowed.map((divergence) =>
+          again.divergences.some((reread) => equivalent(reread, divergence)),
+        ),
+      );
+    },
+  );
+
+  it('keeps no key a read left undeclared, whatever the format', () => {
+    const undeclared: Divergence = {
+      subject: { kind: 'model' },
+      detail: { code: 'key-undeclared', parameters: { path: 'notes' } },
+      reason: 'undeclared',
+    };
+
+    expect(
+      formatNameSchema.options.some((format) =>
+        keptByWriteBack(format, undeclared),
+      ),
+    ).toBe(false);
+  });
 });

@@ -3,15 +3,10 @@ import { reportMessages } from './contract.js';
 
 export const reportsSv = catalogue(reportMessages)('sv')({
   region: 'Filrapporter',
-  opened:
-    'När filen öppnades föll följande bort, som filen innehåller men Saerskriven inte stöder:',
-  imported:
-    'Importen skapade en inbyggd modell med dessa konverteringar och utelämnanden:',
-  saved: 'Den senaste sparningen fick inte med allt som modellen innehåller:',
-  'conversion-details': {
-    one: '{count} konverteringsdetalj',
-    other: '{count} konverteringsdetaljer',
-  },
+  opened: 'Visas inte i studion:',
+  'opened-read-only':
+    'En {format}-fil öppnas som en ny modell. Saerskriven skriver inte {format}, så Spara skapar en Saerskriven-fil. Den öppnade filen lämnas som den är.',
+  saved: 'Behålls inte av den här sparningen:',
   'dismiss-report': 'Dölj rapporten',
   'dismiss-export': 'Dölj exportrapporten',
   'write-refused': 'Saerskriven kunde inte skriva exporten.',

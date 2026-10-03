@@ -216,6 +216,36 @@ produce the same file, so a diff shows the edit and nothing else.
 A read preserves the order the file states. It is a write that orders, so a
 hand-edited file reaches canonical order the next time Saerskriven saves it.
 
+## Share links
+
+A share link carries a whole model in its URL fragment:
+`<base URL>#share=<encoding>.<payload>`. The payload is the file a save writes,
+the native YAML text in UTF-8, never the editor's own state. The codec is
+`writeShareLink` and `readShareLink` on the `@saerskriven/formats/share-link`
+subpath, which take the brotli module as bytes.
+
+| Encoding | Payload                                                                                                                                         |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1`      | The text compressed as one standard brotli stream at quality 11 with no custom dictionary, then base64url without padding (RFC 4648, section 5) |
+
+Every encoding ever issued decodes for good. An encoding is a number of one to
+four ASCII digits, and a later encoding takes a new one. A release refuses a
+number it does not know as `UnknownEncoding`, and anything else where the
+number goes as `Malformed`.
+
+The encoding versions the wrapping, and the document's own `formatVersion`
+versions the content. A link is read through `saerskrivenYamlCodec`, the path a
+file takes, so a link written by an earlier release migrates as its file would,
+and every read limit applies. Decompression stops at `readLimits.maxTextBytes`,
+and a stream that would inflate past it is refused as `ExceededReadLimit`.
+
+A link holds at most 1,048,576 characters, base URL included: Firefox's default
+cap, which Chrome and Safari both exceed, so every link opens in all three. A
+model whose link would pass that gets `TooLong` rather than a link, and one
+whose text is past `readLimits.maxTextBytes` gets `PastReadBound`, since no read
+would open it. A link that was cut off, or holds a character outside the
+base64url alphabet, is refused as `Malformed`: chat tools shorten long links.
+
 ## An example
 
 Written by the codec, and compared against it by a test, so it is what a save

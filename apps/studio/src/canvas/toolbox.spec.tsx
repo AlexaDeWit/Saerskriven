@@ -1,5 +1,10 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  drawnAs,
+  iconOnly,
+  tooltipOnFocus,
+} from '../commands/commands.fixtures.js';
 import { openCanvas } from './canvas.fixtures.js';
 import { currentTool } from './tools.js';
 import { Toolbox } from './toolbox.js';
@@ -23,10 +28,7 @@ describe('Toolbox', () => {
       'Note',
       'Hand',
     ]) {
-      const control = screen.getByRole('button', { name });
-      expect(control.querySelector('svg')?.getAttribute('aria-hidden')).toBe(
-        'true',
-      );
+      expect(drawnAs(screen.getByRole('button', { name }))).toEqual(iconOnly);
     }
   });
 
@@ -56,12 +58,9 @@ describe('Toolbox', () => {
 
   it('shows every shortcut in the icon tooltip', async () => {
     render(<Toolbox />);
-    act(() => {
-      screen.getByRole('button', { name: 'Actor' }).focus();
-    });
 
-    const tooltip = await screen.findByRole('tooltip');
-    expect(tooltip.textContent).toContain('Actor');
-    expect(within(tooltip).getByText('A or 2')).toBeDefined();
+    const { tooltip, label, chord } = await tooltipOnFocus('actor-tool');
+    expect(tooltip.textContent).toContain(label);
+    expect(within(tooltip).getByText(chord)).toBeDefined();
   });
 });

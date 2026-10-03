@@ -114,6 +114,9 @@
           SAERSKRIVEN_UNSHARE = "${pkgs.util-linux}/bin/unshare";
         };
 
+        wasmModule = file:
+          pkgs.callPackage ./nix/wasm-module.nix { module = import file; };
+
         workflowLintInputs = [
           pkgs.actionlint
           pkgs.zizmor
@@ -144,8 +147,10 @@
         # consumer depends on, so a cold `nx build @saerskriven/studio` now
         # triggers the Rust compiles where it used to refuse and name the
         # command. The shell still holds neither the toolchain nor a module.
-        packages.resvg-wasm = pkgs.callPackage ./nix/resvg-wasm { };
-        packages.brotli-wasm = pkgs.callPackage ./nix/brotli-wasm { };
+        # Each module's file under nix/ is data, and nix/wasm-module.nix, the
+        # one builder, is applied to it here, so no module builds itself.
+        packages.resvg-wasm = wasmModule ./nix/resvg-wasm;
+        packages.brotli-wasm = wasmModule ./nix/brotli-wasm;
         packages.saerskriven = packageFor pkgs;
         checks.saerskriven = pkgs.callPackage ./nix/check.nix {
           saerskriven = packageFor pkgs;

@@ -94,6 +94,8 @@ export const canvasMessages = {
   'record-named': text({ kind: 'text', label: 'text' }),
   'record-unlinked': text({ record: 'text' }),
   'record-removed': text({ record: 'text' }),
+  'mitigation-added': text(numbered),
+  'assumption-added': text(numbered),
   'copy-nothing-selected': text(),
   'copy-refused': text(),
   'copy-too-large': text(),
