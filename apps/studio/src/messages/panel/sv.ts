@@ -60,4 +60,10 @@ export const panelSv = catalogue(panelMessages)('sv')({
   },
   'detail-applies-to-model': 'gäller modellen',
   'detail-no-elements': 'kopplat till inget objekt',
+  'close-register': 'Stäng hotregistret',
+  'register-number': 'Nummer',
+  'register-number-short': 'Nr',
+  'register-elements': 'Objekt',
+  'no-element': 'Inget objekt',
+  'untitled-threat': 'Hot {number}',
 });

@@ -168,6 +168,8 @@ describe('commandFor', () => {
     { key: '6', modifiers: {}, command: 'boundary-curve-tool' },
     { key: '7', modifiers: {}, command: 'note-tool' },
     { key: 't', modifiers: {}, command: 'focus-threats' },
+    { key: 'r', modifiers: {}, command: 'threat-register' },
+    { key: 'R', modifiers: { shiftKey: true }, command: 'reverse-flow' },
     { key: 'S', modifiers: { shiftKey: true }, command: 'reconnect-source' },
     { key: 'T', modifiers: { shiftKey: true }, command: 'reconnect-target' },
     {

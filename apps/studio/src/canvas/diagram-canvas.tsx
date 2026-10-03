@@ -26,6 +26,8 @@ import {
   type PointerEvent,
 } from 'react';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
+import { useThreatRegisterOpen } from '../panel/threat-register-state.js';
+import { ThreatRegister } from '../panel/threat-register.js';
 import { Action } from '../store/actions.js';
 import { keyboardOwner, useCommandSurface } from '../commands/binding.js';
 import {
@@ -181,7 +183,8 @@ export function DiagramCanvas({
     null,
   );
   const localCoverage = useState(0);
-  const [, setPanelCover] = paneCoverage ?? localCoverage;
+  const [panelCover, setPanelCover] = paneCoverage ?? localCoverage;
+  const registerOpen = useThreatRegisterOpen();
   const placement = usePlacement(surface, view, layout);
   const { mode } = placement;
 
@@ -425,9 +428,12 @@ export function DiagramCanvas({
         <KeyboardMoveMessage ref={keyboardMove} />
         <ZoomCluster />
       </ReactFlow>
-      <SelectionControls />
-      <FlowEndpointCommands />
-      <BoundaryShapeCommands />
+      <div className={styles.cards} inert={registerOpen}>
+        <SelectionControls />
+        <FlowEndpointCommands />
+        <BoundaryShapeCommands />
+      </div>
+      <ThreatRegister cover={panelCover} />
       <ThreatOverlay onCover={setPanelCover} />
     </div>
   );

@@ -1,6 +1,6 @@
 import { plural, text } from '@saerskriven/i18n';
 
-/** The threat panel, the model panel, and the record groups. */
+/** The threat panel, the model panel, the record groups, and the threat register. */
 export const panelMessages = {
   threats: text(),
   'unlabelled-flow': text({ ends: 'text' }),
@@ -42,4 +42,10 @@ export const panelMessages = {
   'detail-threats': plural('count', { list: 'list' }),
   'detail-applies-to-model': text(),
   'detail-no-elements': text(),
+  'close-register': text(),
+  'register-number': text(),
+  'register-number-short': text(),
+  'register-elements': text(),
+  'no-element': text(),
+  'untitled-threat': text({ number: 'number' }),
 } as const;

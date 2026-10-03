@@ -282,6 +282,13 @@ const table = {
     shortcuts: escapeKey,
     when: 'commands.key-when-inside-model-panel',
   },
+  'close-threat-register': {
+    id: 'close-threat-register',
+    label: 'commands.key-close-threat-register',
+    group: 'commands.group-panels',
+    shortcuts: escapeKey,
+    when: 'commands.key-when-inside-register',
+  },
   'close-shortcut-reference': {
     id: 'close-shortcut-reference',
     label: 'commands.key-close-shortcut-reference',

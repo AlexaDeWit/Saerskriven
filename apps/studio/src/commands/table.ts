@@ -28,6 +28,7 @@ import {
   stepHistory,
   toggleModelPanel,
 } from '../panel/panel-focus.js';
+import { openThreatRegister } from '../panel/threat-register-state.js';
 import { Action } from '../store/actions.js';
 import { severalDiagrams } from '../store/selectors.js';
 import type { State } from '../store/state.js';
@@ -430,6 +431,14 @@ export const commandTable = {
     shortcuts: [modShift('g')],
     when: 'commands.when-view-menu',
     run: toggleSnap,
+  }),
+  'threat-register': command({
+    id: 'threat-register',
+    label: 'commands.label-threat-register',
+    group: 'commands.group-view',
+    shortcuts: [bare('r')],
+    when: 'commands.when-threat-register',
+    run: openThreatRegister,
   }),
   'reset-zoom': viewCommand({
     id: 'reset-zoom',

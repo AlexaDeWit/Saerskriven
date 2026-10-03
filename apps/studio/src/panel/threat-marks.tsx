@@ -43,11 +43,35 @@ function Glyph({ path }: { readonly path: string }) {
   );
 }
 
+function Spoken({
+  label,
+  named,
+}: {
+  readonly label: string;
+  readonly named: string | undefined;
+}) {
+  return named === undefined ? (
+    <span>{label}</span>
+  ) : (
+    <>
+      <span aria-hidden="true">{label}</span>
+      <VisuallyHidden>{named}</VisuallyHidden>
+    </>
+  );
+}
+
 /**
  * A severity in a chip: the canvas tone and the severity's label. A screen
- * reader hears the label with the field it belongs to ("Severity: High").
+ * reader hears the label with the field it belongs to ("Severity: High"),
+ * or alone where `headed`, in a table column whose header names the field.
  */
-export function SeverityChip({ severity }: { readonly severity: Severity }) {
+export function SeverityChip({
+  severity,
+  headed = false,
+}: {
+  readonly severity: Severity;
+  readonly headed?: boolean;
+}) {
   const { t } = useTranslator();
   const label = t(severityMessages[severity]);
 
@@ -56,10 +80,12 @@ export function SeverityChip({ severity }: { readonly severity: Severity }) {
       <svg aria-hidden="true" className={styles.tone} viewBox="0 0 12 12">
         <circle className={severityToneClass[severity]} cx="6" cy="6" r="5" />
       </svg>
-      <span aria-hidden="true">{label}</span>
-      <VisuallyHidden>
-        {t('panel.summary-severity', { severity: label })}
-      </VisuallyHidden>
+      <Spoken
+        label={label}
+        named={
+          headed ? undefined : t('panel.summary-severity', { severity: label })
+        }
+      />
     </span>
   );
 }
@@ -67,19 +93,28 @@ export function SeverityChip({ severity }: { readonly severity: Severity }) {
 /**
  * A status with a glyph of its own. Open is drawn as a filled pill and every
  * other status in muted text, so the threats still open stand out of a list.
- * A screen reader hears the label with its field ("Status: Open").
+ * A screen reader hears the label with its field ("Status: Open"), or alone
+ * where `headed`, as {@link SeverityChip} does.
  */
-export function StatusMark({ status }: { readonly status: ThreatStatus }) {
+export function StatusMark({
+  status,
+  headed = false,
+}: {
+  readonly status: ThreatStatus;
+  readonly headed?: boolean;
+}) {
   const { t } = useTranslator();
   const label = t(statusMessages[status]);
 
   return (
     <span className={styles.status} data-status={status}>
       <Glyph path={statusGlyphs[status]} />
-      <span aria-hidden="true">{label}</span>
-      <VisuallyHidden>
-        {t('panel.summary-status', { status: label })}
-      </VisuallyHidden>
+      <Spoken
+        label={label}
+        named={
+          headed ? undefined : t('panel.summary-status', { status: label })
+        }
+      />
     </span>
   );
 }

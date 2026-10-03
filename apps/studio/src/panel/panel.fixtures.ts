@@ -33,12 +33,17 @@ export const chooseFrom = async (
   await user.click(screen.getByRole('option', { name: option }));
 };
 
-/** The ids of the threats listed under `root`, in the order the list shows them. */
+/**
+ * The ids of the threats listed under `root`, in the order the list shows
+ * them: a panel's threat items, or the threat register's rows where `marker`
+ * names them.
+ */
 export const listedThreats = (
   root: HTMLElement,
+  marker: 'threatItem' | 'registerRow' = 'threatItem',
 ): readonly (string | undefined)[] =>
-  [...root.querySelectorAll<HTMLElement>(marked.threatItem)].map(
-    (item) => item.dataset['threatItem'],
+  [...root.querySelectorAll<HTMLElement>(marked[marker])].map(
+    (item) => item.dataset[marker],
   );
 
 /**
