@@ -35,9 +35,29 @@ changes, without the diagram-wide label search.
 
 [`text-placement.ts`](src/lib/text-placement.ts): `nodeTextPlacement` and
 `textPlacementCorners` say where an element's text hangs and what box it
-fills. [`flow-labels.ts`](src/lib/flow-labels.ts) puts every flow's name and
-badge where nothing else is drawn, deterministically, so the studio and the
-headless render agree.
+fills.
+
+[`flow-labels.ts`](src/lib/flow-labels.ts) draws a flow's badge and name as
+one block, the badge first, on a backing in the canvas ground colour
+([`flow-blocks.ts`](src/lib/flow-blocks.ts)). The block sits on the flow's
+line, which it breaks, starting at the middle of the line's longest run. Where
+it would cover a shape, a name, a badge, another block, another flow's line or
+a trust boundary's line, it slides along its own line to the nearest clear
+spot, leaving some line and every arrowhead showing at both ends. Where no spot
+on the line is clear, it goes beside the line, alongside the run it hangs
+beside: above a run nearer horizontal, right of one nearer vertical, wrapping
+the name onto up to three lines where that helps, and on the other side only
+where that side is blocked. It stands at most 16 units off the line through
+that run and within 20 of the run as drawn wherever a spot that close is clear
+on either side, so it still reads as the line's, and only then steps out as
+far as 44, within 48 of the run. Where nothing is clear it takes the spot
+that covers the fewest things, so no name is dropped. The search is
+[`flow-block-search.ts`](src/lib/flow-block-search.ts). Flows are
+placed in id order from the model alone, so the studio and the headless render
+agree. During a drag, `flowLabelPlacementsDuringMove` keeps the block of every
+flow the drag leaves alone and places a moving flow's block by the same rules.
+A block cannot yet be dragged along its line and kept there, since the file
+format has no field to hold it.
 
 ## Drawing
 
@@ -131,7 +151,8 @@ badge on the corner. A canvas measuring a selection as drawn passes
 use, one control per `resizeControlPositions` entry, less those a boundary
 curve's points give nothing to stretch. `scaledCurvePoints` fits a curve's
 points to a resized box, for the node body's live drawing and for the edit the
-mounting canvas commits.
+mounting canvas commits. `isResizeKey` tells whether a key is one of
+`resizeKeys`.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
 each node its accessible name, hands `CanvasNodeBody` the `resizeLabels` its

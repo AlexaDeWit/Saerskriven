@@ -22,6 +22,19 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
     '{name} är inte ett giltigt dokument i formatet som kände igen den.',
   'invalid-model':
     '{name} är ett giltigt dokument, men modellen det ger är inte giltig.',
+  'link-refused': 'Saerskriven kunde inte öppna den delade länken.',
+  'link-too-long':
+    'Länken är {length} tecken lång, över de {limit} som en länk får rymma.',
+  'link-past-read-bound':
+    'Modellen är {size} byte som text, över de {bound} som en läsning godtar.',
+  'link-not-a-link': 'Adressen innehåller ingen delad länk.',
+  'link-encoding':
+    'Länken använder kodning {prefix}, som den här versionen av Saerskriven inte läser. En senare version skrev den.',
+  'link-cut-off':
+    'Länken är avkortad eller skadad, så den rymmer ingen hel modell.',
+  'link-module': 'Modulen som skriver och läser länkar kördes inte.',
+  'link-too-large': 'Modellen som länken rymmer överskrider en läsgräns.',
+  'link-not-a-model': 'Länken rymmer ingen modell som Saerskriven kan läsa.',
   'snapshot-limit-detail':
     '{limit}: gränsen är {bound}, ögonblicksbilden nådde {observed}.',
   'snapshot-unsupported':

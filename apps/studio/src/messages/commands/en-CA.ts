@@ -11,6 +11,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'label-export-pdf': 'Model as PDF',
   'label-export-png': 'Diagram as PNG',
   'label-close-file': 'New model',
+  'label-share': 'Share as link',
   'label-copy': 'Copy',
   'label-cut': 'Cut',
   'label-paste': 'Paste',
@@ -60,6 +61,8 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'when-selection-outside-fields-and-overlays':
     'With a canvas selection, outside text fields and open overlays',
   'when-outside-text-fields': 'Outside text fields',
+  'when-share':
+    'Copy a link that holds the whole model to the clipboard, from the File menu',
   'when-anywhere': 'Anywhere in the studio',
   'when-file-menu': 'From the File menu',
   'when-view-menu': 'From the View menu',

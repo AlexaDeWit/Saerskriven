@@ -101,6 +101,7 @@ describe('reanchoredFlow', () => {
             id: moved.id,
             name: moved.name,
             badge: moved.badge,
+            bidirectional: moved.bidirectional,
             points: [moved.source, ...moved.waypoints, moved.target],
           },
         ],

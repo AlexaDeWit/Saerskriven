@@ -33,6 +33,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `clipboard.ts`, `arrangement.ts`, `snap.ts`                           | Copy, cut, paste and duplicate, align and distribute, and the snap setting                                                         |
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
 | `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
+| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection                                                       |
 | `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them            |
 | `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                 |
 
@@ -73,9 +74,10 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   dispatches `MoveElement`, a group move `MoveElements` with one shared offset,
   a resize one `ResizeElement`, or one `SetBoundaryShape` with a trust boundary
   curve's points scaled to the new box. During a drag each flow reads its endpoint
-  nodes, and the collision search for names and badges runs when the pointer
-  pauses and once more on pointer-up. A drag that Escape or a blurred window
-  puts back never reaches the store.
+  nodes, a flow whose block no longer follows its line is placed again clear of
+  the blocks the other flows keep, and every block is placed afresh on
+  pointer-up. A drag that Escape or a blurred window puts back never reaches
+  the store.
 - **Settle against the store's selection, not a render's.** React Flow reports
   a click that moves the selection between a node and a flow as two
   synchronous calls with no render between them.
@@ -121,7 +123,9 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
 - **The announcement speaks only where the next focus does not show the
   result.** An action whose result the focused control or React Flow's own
   message already reports, such as a placement, a rename or a keyboard move,
-  announces nothing. A name a person wrote is quoted through `quoted` in
+  announces nothing. React Flow writes its move message before the move lands,
+  so `move-message.tsx` writes it once the store holds the move, in the figures
+  Position and size shows. A name a person wrote is quoted through `quoted` in
   `announcements.ts`, on one line and cut past `nameQuoteLength` (40 grapheme
   clusters) or `recordQuoteLength` (24). While a pane or a selection editor is
   open the announcement stops at two lines on screen, and the accessible names

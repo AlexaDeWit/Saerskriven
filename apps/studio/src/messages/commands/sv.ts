@@ -11,6 +11,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-export-pdf': 'Modell som PDF',
   'label-export-png': 'Diagram som PNG',
   'label-close-file': 'Ny modell',
+  'label-share': 'Dela som länk',
   'label-copy': 'Kopiera',
   'label-cut': 'Klipp ut',
   'label-paste': 'Klistra in',
@@ -60,6 +61,8 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'when-selection-outside-fields-and-overlays':
     'Med en markering på arbetsytan, utanför textfält och öppna menyer',
   'when-outside-text-fields': 'Utanför textfält',
+  'when-share':
+    'Kopiera en länk som rymmer hela modellen till urklipp, från menyn Arkiv',
   'when-anywhere': 'Var som helst i studion',
   'when-file-menu': 'Från menyn Arkiv',
   'when-view-menu': 'Från menyn Visa',

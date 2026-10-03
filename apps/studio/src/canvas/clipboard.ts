@@ -17,6 +17,7 @@ import { sameSelection } from '../store/selection.js';
 import { activeDiagramId } from '../store/selectors.js';
 import { FileLifecycle, type State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { writeClipboard } from '../system-clipboard.js';
 import { describeOperation } from '../ui/failure-notice.js';
 import { announce } from './announcements.js';
 import {
@@ -54,18 +55,8 @@ export async function copySelected(cut = false): Promise<void> {
     announce(refusal(copy.left));
     return;
   }
-  const written = await Effect.runPromise(
-    Effect.either(
-      Effect.tryPromise({
-        try: async () => {
-          await navigator.clipboard.writeText(copy.right.text);
-        },
-        catch: () => ClipboardFailure.WriteFailed(),
-      }),
-    ),
-  );
-  if (Either.isLeft(written)) {
-    announce(refusal(written.left));
+  if (Either.isLeft(await writeClipboard(copy.right.text))) {
+    announce(refusal(ClipboardFailure.WriteFailed()));
     return;
   }
   const { report } = copy.right;

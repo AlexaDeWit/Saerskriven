@@ -16,7 +16,8 @@ import {
   flowGeometry,
   type PlacedEndpoint,
 } from './flow-anchors.js';
-import { flowLabelPlacements, type FlowLabelPlacement } from './flow-labels.js';
+import type { FlowLabelPlacement } from './flow-blocks.js';
+import { flowLabelPlacements } from './flow-labels.js';
 import { nodeBoxesOf, type HandleSide, type NodeBox } from './handles.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 import { settledCurveNames, type CurveNameSide } from './text-placement.js';

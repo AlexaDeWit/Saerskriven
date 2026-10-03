@@ -8,6 +8,7 @@ export const menuFrCA = catalogue(menuMessages)('fr-CA')({
   'view-source': 'Voir le code source sur GitHub',
   cancel: 'Annuler',
   'discard-and-open': 'Abandonner les modifications et ouvrir',
+  'discard-and-open-link': 'Abandonner les modifications et ouvrir le lien',
   'discard-and-new': 'Abandonner les modifications et créer un nouveau modèle',
   'save-as-format': 'Enregistrer en {format}',
   'file-state-dirty': '{name}, {format}, modifications non enregistrées',

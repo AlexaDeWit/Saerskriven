@@ -224,7 +224,7 @@ test('a quick release keeps the live placement of a label beside an opposite flo
   expect(await besideOf(label, dragged)).toEqual(live);
 });
 
-test('a release after a pause keeps the placement the pause gave a label beside an opposite flow', async ({
+test('a release after a pause keeps the live placement of a label beside an opposite flow', async ({
   page,
 }) => {
   await openTwoDiagrams(page);

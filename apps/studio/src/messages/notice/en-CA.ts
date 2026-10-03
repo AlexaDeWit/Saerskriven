@@ -22,6 +22,19 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
     '{name} is not a valid document of the format that claimed it.',
   'invalid-model':
     '{name} is a valid document, and the model it maps to is not.',
+  'link-refused': 'Saerskriven could not open the shared link.',
+  'link-too-long':
+    'The link is {length} characters, past the {limit} a link may hold.',
+  'link-past-read-bound':
+    'The model is {size} bytes as text, past the {bound} a read accepts.',
+  'link-not-a-link': 'The address holds no shared link.',
+  'link-encoding':
+    'The link uses encoding {prefix}, which this release of Saerskriven does not read. A later release wrote it.',
+  'link-cut-off':
+    'The link is cut off or damaged, so it does not hold a whole model.',
+  'link-module': 'The module that writes and reads links did not run.',
+  'link-too-large': 'The model the link holds is past a read bound.',
+  'link-not-a-model': 'The link does not hold a model Saerskriven can read.',
   'snapshot-limit-detail':
     '{limit}: the bound is {bound}, the snapshot reached {observed}.',
   'snapshot-unsupported': 'The stored snapshot is malformed or unsupported.',

@@ -47,16 +47,20 @@ const labelled = layout.edges[0];
 const settled = layout.edges.map((edge) => edge.label);
 
 const onto = (): Point => {
-  const at = labelled.label.name.at;
-  const beyond = at.y < labelled.source.y;
+  const block = labelled.label.backing ?? {
+    minX: labelled.label.name.at.x,
+    minY: labelled.label.name.at.y,
+    maxX: labelled.label.name.at.x,
+    maxY: labelled.label.name.at.y,
+  };
   return {
-    x: at.x - drifterSize.width / 2,
-    y: beyond ? at.y - drifterSize.height + overlap : at.y - overlap,
+    x: (block.minX + block.maxX) / 2 - drifterSize.width / 2,
+    y: block.maxY - overlap,
   };
 };
 
-const dragTo = (at: Point): NodeChange<DiagramNode>[] => [
-  { id: drifter, type: 'position', position: at, dragging: true },
+const dragTo = (at: Point, dragging = true): NodeChange<DiagramNode>[] => [
+  { id: drifter, type: 'position', position: at, dragging },
 ];
 
 const labelsOf = (edges: readonly CanvasFlowEdge[]): FlowLabelPlacement[] =>
@@ -75,19 +79,20 @@ afterEach(() => {
 });
 
 describe('useLiveEdges', () => {
-  it('lays every flow out in full once the pointer pauses', () => {
-    const graph = diagramGraph(layout, model, moving, t);
-    const at = onto();
-    const paused = layoutAtReactFlowNodes(
-      layout,
-      graph.nodes.map((node) =>
-        node.id === drifter ? { ...node, position: at } : node,
-      ),
-      moving,
-    );
+  const graph = diagramGraph(layout, model, moving, t);
+  const at = onto();
+  const dropped = layoutAtReactFlowNodes(
+    layout,
+    graph.nodes.map((node) =>
+      node.id === drifter ? { ...node, position: at } : node,
+    ),
+    moving,
+  );
+
+  it('keeps the block of a flow outside the drag where it was, pause or no pause', () => {
     expect(
-      paused.edges.map((edge) => edge.label),
-      'the drifter covers a label the full search then moves',
+      dropped.edges.map((edge) => edge.label),
+      'the drifter covers a block the settled placement then moves',
     ).not.toEqual(settled);
 
     const { result } = renderHook(() =>
@@ -96,15 +101,26 @@ describe('useLiveEdges', () => {
     act(() => {
       result.current.onNodesChange(dragTo(at));
     });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
 
     expect(labelsOf(result.current.edges)).toEqual(settled);
+  });
 
+  it('places every block afresh once the drag ends', () => {
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
     act(() => {
-      vi.advanceTimersByTime(100);
+      result.current.onNodesChange(dragTo(at));
+    });
+    act(() => {
+      result.current.onNodesChange(dragTo(at, false));
     });
 
     expect(labelsOf(result.current.edges)).toEqual(
-      paused.edges.map((edge) => edge.label),
+      dropped.edges.map((edge) => edge.label),
     );
   });
 });

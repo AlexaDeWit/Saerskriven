@@ -5,11 +5,12 @@ import { boxOfPoints, cornersOfBox, shiftedBy } from './geometry.js';
 import { nodeBox } from './handles.js';
 import type { CanvasEdge, CanvasNode } from './layout.js';
 import { arrowheadPoints, controlPolygon } from './paths.js';
-import { placedTextCorners, textPlacementCorners } from './text-placement.js';
+import { placedTextCorners } from './text-placement.js';
 
 /**
  * The extent of what a layout paints: node outlines, a boundary curve's
- * control polygon, element and flow text, badges, flow lines and arrowheads.
+ * control polygon, element text and badges, flow lines and arrowheads, and
+ * the backing of each flow's block, which holds its name and badge.
  * Stroke widths straddle the lines they paint and are left for the caller to
  * pad.
  */
@@ -71,10 +72,9 @@ function drawnEdgePoints(edge: CanvasEdge): Point[] {
     ...points,
     ...arrowheadPoints(edge.target, points[points.length - 2]),
     ...(edge.bidirectional ? arrowheadPoints(edge.source, points[1]) : []),
-    ...textPlacementCorners(edge.label.name),
-    ...(edge.label.badge === undefined
+    ...(edge.label.backing === undefined
       ? []
-      : badgePoints(edge.label.badge, edge.badge)),
+      : cornersOfBox(edge.label.backing)),
   ];
 }
 

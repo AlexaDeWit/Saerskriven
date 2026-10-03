@@ -56,6 +56,7 @@ test('every item is reached, run and left by the keyboard alone', async ({
     'Save',
     'Save as',
     'Export',
+    'Share as link',
     'New model',
     /^Appearance /u,
     /^Language /u,
@@ -110,7 +111,13 @@ test('closing asks in the menu before it drops work that is in no file', async (
 
   await menuButton(page).press('Enter');
   await expect(menuItem(page, 'Open')).toBeFocused();
-  for (const name of ['Save', 'Save as', 'Export', 'New model']) {
+  for (const name of [
+    'Save',
+    'Save as',
+    'Export',
+    'Share as link',
+    'New model',
+  ]) {
     await page.keyboard.press('ArrowDown');
     await expect(menuItem(page, name)).toBeFocused();
   }

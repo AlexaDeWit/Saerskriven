@@ -20,11 +20,7 @@ import { badgeExtent, type ThreatBadge } from './badges.js';
 import type { Point } from '@saerskriven/model';
 import { segmentMeetsBox, type Box } from './geometry.js';
 import { flowLabelPlacements } from './flow-labels.js';
-import {
-  flowLabelClearance,
-  looseLabelWidth,
-  textExtent,
-} from './typography.js';
+import { looseLabelWidth, textExtent } from './typography.js';
 import { strokeWidths } from './tokens.js';
 
 const glyphOf = (value: string): string =>
@@ -265,9 +261,10 @@ const probeFlow = (
   from: Point,
   to: Point,
   badge: ThreatBadge | undefined,
+  name = probeName,
 ): CanvasEdge => ({
   id: elementId('el-probe'),
-  name: probeName,
+  name,
   outOfScope: false,
   badge,
   source: from,
@@ -281,7 +278,15 @@ const probeFlow = (
   waypoints: [],
   bidirectional: false,
   label: flowLabelPlacements(
-    [{ id: elementId('el-probe'), name: probeName, badge, points: [from, to] }],
+    [
+      {
+        id: elementId('el-probe'),
+        name,
+        badge,
+        bidirectional: false,
+        points: [from, to],
+      },
+    ],
     [],
   )[0],
 });
@@ -308,10 +313,10 @@ const labelBoxOf = (markup: string): Box => {
 };
 
 const badgeBoxOf = (markup: string, badge: ThreatBadge): Box => {
-  const found = new RegExp(
-    `class="${canvasClassNames.badge}" transform="translate\\(([-\\d.]+), ([-\\d.]+)\\)"`,
-    'u',
-  ).exec(markup);
+  const found =
+    /class="saer-diagram-badge" transform="translate\(([-\d.]+), ([-\d.]+)\)"/u.exec(
+      markup,
+    );
   if (found === null) {
     throw new Error('The flow drew no badge to measure');
   }
@@ -325,41 +330,70 @@ const badgeBoxOf = (markup: string, badge: ThreatBadge): Box => {
   };
 };
 
-describe('FlowGlyph, keeping its label off its own line', () => {
+const backingOf = (markup: string): Box => {
+  const found =
+    /<rect class="saer-diagram-flow-backing" x="([-\d.]+)" y="([-\d.]+)" width="([\d.]+)" height="([\d.]+)"/u.exec(
+      markup,
+    );
+  if (found === null) {
+    throw new Error('The flow drew no backing to measure');
+  }
+  const [x, y, width, height] = found.slice(1).map(Number);
+  return { minX: x, minY: y, maxX: x + width, maxY: y + height };
+};
+
+const holds = (outer: Box, inner: Box): boolean =>
+  outer.minX <= inner.minX + 1e-3 &&
+  outer.minY <= inner.minY + 1e-3 &&
+  outer.maxX >= inner.maxX - 1e-3 &&
+  outer.maxY >= inner.maxY - 1e-3;
+
+describe('FlowGlyph, drawing its badge and name as one block on its line', () => {
+  it('carries the class names the markup probes below look for', () => {
+    expect(canvasClassNames.flowBacking).toBe('saer-diagram-flow-backing');
+    expect(canvasClassNames.badge).toBe('saer-diagram-badge');
+  });
+
   it.each(orientations)(
-    'draws the name clear of a %s segment',
+    'draws the backing over a %s line, so the line breaks around it',
     (_orientation, from, to) => {
       const markup = renderToStaticMarkup(
         <FlowGlyph marks={specMarks} edge={probeFlow(from, to, undefined)} />,
       );
-      expect(markup.match(/<tspan/gu)?.length).toBeGreaterThanOrEqual(3);
-      expect(segmentMeetsBox({ from, to }, labelBoxOf(markup))).toBe(false);
+      expect(markup.indexOf(canvasClassNames.flowBacking)).toBeGreaterThan(
+        markup.indexOf(canvasClassNames.flowArrow),
+      );
+      expect(segmentMeetsBox({ from, to }, backingOf(markup))).toBe(true);
     },
   );
 
   it.each(orientations)(
-    'draws the badge clear of a %s segment',
+    'holds the badge and the name inside the backing on a %s line',
     (_orientation, from, to) => {
       const markup = renderToStaticMarkup(
         <FlowGlyph marks={specMarks} edge={probeFlow(from, to, wordyBadge)} />,
       );
-      expect(
-        segmentMeetsBox({ from, to }, badgeBoxOf(markup, wordyBadge)),
-      ).toBe(false);
+      const backing = backingOf(markup);
+      expect(holds(backing, labelBoxOf(markup))).toBe(true);
+      expect(holds(backing, badgeBoxOf(markup, wordyBadge))).toBe(true);
     },
   );
 
-  it('puts the name and the badge on opposite sides of the line', () => {
-    const [from, to] = [
-      { x: 0, y: 0 },
-      { x: 400, y: 0 },
-    ];
+  it('draws the badge first and the name after it', () => {
     const markup = renderToStaticMarkup(
-      <FlowGlyph marks={specMarks} edge={probeFlow(from, to, wordyBadge)} />,
+      <FlowGlyph
+        marks={specMarks}
+        edge={probeFlow({ x: 0, y: 0 }, { x: 400, y: 0 }, wordyBadge)}
+      />,
     );
-    expect(labelBoxOf(markup).minY).toBeCloseTo(flowLabelClearance);
-    expect(badgeBoxOf(markup, wordyBadge).maxY).toBeCloseTo(
-      -flowLabelClearance,
+    expect(badgeBoxOf(markup, wordyBadge).maxX).toBeLessThan(
+      labelBoxOf(markup).minX,
+    );
+    expect(markup.indexOf(canvasClassNames.flowBacking)).toBeLessThan(
+      markup.indexOf(`class="${canvasClassNames.badge}"`),
+    );
+    expect(markup.indexOf(`class="${canvasClassNames.badge}"`)).toBeLessThan(
+      markup.indexOf(canvasClassNames.flowLabel),
     );
   });
 
@@ -375,46 +409,14 @@ describe('FlowGlyph, keeping its label off its own line', () => {
     expect(box.maxX - box.minX).toBeLessThanOrEqual(looseLabelWidth);
   });
 
-  it('takes a side from the segment, not from the end it runs from', () => {
-    const forwards = renderToStaticMarkup(
-      <FlowGlyph
-        marks={specMarks}
-        edge={probeFlow({ x: 0, y: 0 }, { x: 0, y: 400 }, undefined)}
-      />,
-    );
-    const backwards = renderToStaticMarkup(
-      <FlowGlyph
-        marks={specMarks}
-        edge={probeFlow({ x: 0, y: 400 }, { x: 0, y: 0 }, undefined)}
-      />,
-    );
-    expect(labelBoxOf(forwards).minX).toBe(labelBoxOf(backwards).minX);
-    expect(labelBoxOf(forwards).minX).toBeGreaterThan(0);
-  });
-
-  it('draws a flow of no length beside where it sits', () => {
-    const still = { x: 50, y: 50 };
+  it('draws no backing for a flow with neither a name nor a badge', () => {
     const markup = renderToStaticMarkup(
-      <FlowGlyph marks={specMarks} edge={probeFlow(still, still, undefined)} />,
+      <FlowGlyph
+        marks={specMarks}
+        edge={probeFlow({ x: 0, y: 0 }, { x: 400, y: 0 }, undefined, '')}
+      />,
     );
-    expect(labelBoxOf(markup).minY).toBeGreaterThan(still.y);
-  });
-
-  it('keeps the halo on the name', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph
-          marks={specMarks}
-          edge={probeFlow(
-            { x: 0, y: 0 },
-            {
-              x: 400,
-              y: 0,
-            },
-            undefined,
-          )}
-        />,
-      ),
-    ).toContain(wrappedTextStyles.flowLabel.className);
+    expect(markup).not.toContain(canvasClassNames.flowBacking);
+    expect(markup).not.toContain(canvasClassNames.flowLabel);
   });
 });

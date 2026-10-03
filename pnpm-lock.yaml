@@ -355,6 +355,9 @@ importers:
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.59.1
+      '@saerskriven/wasm':
+        specifier: workspace:*
+        version: link:../../packages/wasm
       '@testing-library/dom':
         specifier: 'catalog:'
         version: 10.4.1

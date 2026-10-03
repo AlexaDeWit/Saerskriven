@@ -3,7 +3,9 @@ import type { Segment } from './geometry.js';
 
 /** The squared distance between two points. */
 export function squaredDistance(from: Point, to: Point): number {
-  return (from.x - to.x) ** 2 + (from.y - to.y) ** 2;
+  const x = from.x - to.x;
+  const y = from.y - to.y;
+  return x * x + y * y;
 }
 
 /**
@@ -12,7 +14,7 @@ export function squaredDistance(from: Point, to: Point): number {
  */
 export function unitDirection(from: Point, to: Point): Point {
   const run = { x: to.x - from.x, y: to.y - from.y };
-  const length = Math.hypot(run.x, run.y);
+  const length = Math.sqrt(squaredDistance(from, to));
   return length === 0
     ? { x: 1, y: 0 }
     : { x: run.x / length, y: run.y / length };
@@ -40,18 +42,13 @@ export function labelNormal(segment: Segment): Point {
 }
 
 /**
- * Where a point projects onto a segment: the fraction along it, clamped to
- * the segment, the distance to that foot, and the distance signed by the side
- * {@link labelNormal} names.
+ * The point of a segment nearest a point, and the fraction along the
+ * segment it lies at. A segment of no length is its first point.
  */
-export function projectedOn(
+export function nearestOnSegment(
   segment: Segment,
   point: Point,
-): {
-  readonly distance: number;
-  readonly fraction: number;
-  readonly signedDistance: number;
-} {
+): { readonly fraction: number; readonly at: Point } {
   const run = {
     x: segment.to.x - segment.from.x,
     y: segment.to.y - segment.from.y,
@@ -69,10 +66,26 @@ export function projectedOn(
               lengthSquared,
           ),
         );
-  const at = alongSegment(segment, fraction);
+  return { fraction, at: alongSegment(segment, fraction) };
+}
+
+/**
+ * Where a point projects onto a segment: the fraction along it, clamped to
+ * the segment, the distance to that foot, and the distance signed by the side
+ * {@link labelNormal} names.
+ */
+export function projectedOn(
+  segment: Segment,
+  point: Point,
+): {
+  readonly distance: number;
+  readonly fraction: number;
+  readonly signedDistance: number;
+} {
+  const { fraction, at } = nearestOnSegment(segment, point);
   const normal = labelNormal(segment);
   return {
-    distance: Math.hypot(point.x - at.x, point.y - at.y),
+    distance: Math.sqrt(squaredDistance(point, at)),
     fraction,
     signedDistance: (point.x - at.x) * normal.x + (point.y - at.y) * normal.y,
   };

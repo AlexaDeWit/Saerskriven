@@ -12,7 +12,7 @@ export type Colour = `#${string}`;
 export type Palette = {
   /** The studio shell, and the cream a badge lifts itself off the canvas. */
   readonly surfaceApp: Colour;
-  /** What a diagram is drawn on, and the halo a flow name is stroked in. */
+  /** What a diagram is drawn on, and the backing under a flow's name and badge. */
   readonly surfaceCanvas: Colour;
   /** Panels, overlays, and the fill inside an element's outline. */
   readonly surfacePanel: Colour;
@@ -147,15 +147,13 @@ export const canvasType = {
 /**
  * Every stroke the drawing lays down, in user units. One weight carries an
  * element's outline, a trust boundary's dashes and a flow's line. A store's
- * two lines are heavier, being its whole glyph. The badge ring and the halo
- * under a flow name are drawn in a ground colour, cutting the mark out of
- * what lies beneath.
+ * two lines are heavier, being its whole glyph. The badge ring is drawn in a
+ * ground colour, cutting the mark out of what lies beneath.
  */
 export const strokeWidths = {
   outline: 2,
   store: 2.5,
   badgeRing: 3,
-  labelHalo: 3,
 } as const;
 
 const cueWidths = {

@@ -79,7 +79,7 @@ describe('ShortcutReference', () => {
     ]);
   });
 
-  it('lists one Open among the file commands, and no Import', () => {
+  it('lists one Open and Share among the file commands, and no Import', () => {
     render(<ShortcutReference onClose={() => undefined} platform="other" />);
 
     fireEvent.click(
@@ -97,6 +97,7 @@ describe('ShortcutReference', () => {
       'export-typst',
       'export-pdf',
       'export-png',
+      'share',
       'close-file',
     ]);
   });
