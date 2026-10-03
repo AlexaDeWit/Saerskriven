@@ -46,7 +46,11 @@ export function describeFailure(
       details: linkFailureLines(t, refusal),
     }),
     StoredRecoveryRejected: ({ problem }) => ({
-      headline: t('notice.recovery-rejected'),
+      headline: t(
+        RecoveryProblem.$is('RestoreUnfinished')(problem)
+          ? 'notice.recovery-not-restored'
+          : 'notice.recovery-rejected',
+      ),
       details: [describeRecovery(t, problem)],
     }),
     RecoveryUnavailable: ({ problem }) => ({

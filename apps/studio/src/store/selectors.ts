@@ -22,8 +22,8 @@ export function isDirty(state: State): boolean {
 
 /**
  * Whether replacing the model loses work: unsaved changes, or a recovery
- * snapshot that could not be read at startup and that the replacement's
- * recovery write would overwrite.
+ * snapshot that startup could not read or left unrestored, and that the
+ * replacement's recovery write would overwrite.
  */
 export function holdsUnsavedWork(state: State): boolean {
   return isDirty(state) || state.recoveryUnread;

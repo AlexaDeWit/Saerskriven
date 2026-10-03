@@ -141,7 +141,8 @@ While unsaved work has not reached that storage, closing the tab asks first.
 If a tab's last start did not finish drawing the stored session, its next
 start leaves that session in storage and opens the Untitled model a new
 session starts on, under a notice saying so. A reload after that tries the
-stored session again.
+stored session again. Until then, the first edit, New model or Open replaces
+the stored session, and none of the three asks first.
 
 Every studio tab in one browser profile shows the same model. An edit, an undo,
 an open or a save in one tab reaches the others, while each tab keeps its own

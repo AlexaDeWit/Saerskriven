@@ -475,6 +475,21 @@ describe.each(locales)('a failure a %s reader is shown', (locale) => {
       describeFailure(speak, studioFailures.StoredRecoveryRejected).details,
     );
   });
+
+  it('heads a session left unrestored with a line of its own, apart from a rejected snapshot', () => {
+    const { t: speak } = activeTranslator();
+    const { headline } = describeFailure(
+      speak,
+      StudioFailure.StoredRecoveryRejected({
+        problem: RecoveryProblem.RestoreUnfinished(),
+      }),
+    );
+
+    expect(headline).toBe(speak('notice.recovery-not-restored'));
+    expect(headline).not.toBe(
+      describeFailure(speak, studioFailures.StoredRecoveryRejected).headline,
+    );
+  });
 });
 
 describe('FailureNotice', () => {

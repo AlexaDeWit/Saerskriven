@@ -19,6 +19,7 @@ export const noticeMessages = {
   'file-unreachable': text(),
   'recovery-rejected': text(),
   'recovery-unavailable': text(),
+  'recovery-not-restored': text(),
   'no-format-claimed': text(name),
   'formats-tried': text({ formats: 'list' }),
   'read-limit': text(name),

@@ -13,6 +13,8 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
   'recovery-rejected':
     'Saerskriven avvisade den sparade återställningsögonblicksbilden.',
   'recovery-unavailable': 'Lokal återställning är inte tillgänglig.',
+  'recovery-not-restored':
+    'Saerskriven återställde inte den senaste sessionen.',
   'no-format-claimed': 'Inget format kände igen {name}.',
   'formats-tried': 'Saerskriven försökte med {formats}.',
   'read-limit': '{name} överskrider en läsgräns, så inget läste den.',
@@ -44,7 +46,7 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
   'snapshot-release':
     'Saerskriven {release} sparade den här sessionen, i en form som den här versionen inte kan återställa.',
   'snapshot-restore-unfinished':
-    'Den senaste sessionen kunde inte visas. En omladdning försöker igen.',
+    'Sessionen kunde inte visas. En omladdning gör ett nytt försök.',
   'field-not-saved': '{field} sparades inte.',
   'refused-character': 'Modellen godtar inte tecknet på position {position}.',
   'empty-name': 'Ett namn kan inte vara tomt.',

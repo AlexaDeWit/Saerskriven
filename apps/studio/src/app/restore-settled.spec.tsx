@@ -68,3 +68,54 @@ describe('useRestoreSettled', () => {
     expect(mark.raised()).toBe(true);
   });
 });
+
+const tenFrames = 160;
+
+describe('useRestoreSettled in a tab that draws no frame', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('lowers the mark on a timer, long after two frames would have come', () => {
+    const mark = memoryRestoreMark(true);
+    render(
+      <ErrorBoundary>
+        <Drawn mark={mark} />
+      </ErrorBoundary>,
+    );
+
+    vi.advanceTimersByTime(tenFrames);
+    expect(mark.raised()).toBe(true);
+    vi.runAllTimers();
+    expect(mark.raised()).toBe(false);
+  });
+
+  it('leaves the mark raised where a child throws while rendering before the timer', () => {
+    const mark = memoryRestoreMark(true);
+    const { rerender } = render(
+      <ErrorBoundary>
+        <Drawn mark={mark} />
+      </ErrorBoundary>,
+    );
+
+    rerender(
+      <ErrorBoundary>
+        <Drawn mark={mark}>
+          <Breaks />
+        </Drawn>
+      </ErrorBoundary>,
+    );
+    vi.runAllTimers();
+
+    expect(screen.getByRole('region')).toBeDefined();
+    expect(mark.raised()).toBe(true);
+  });
+});

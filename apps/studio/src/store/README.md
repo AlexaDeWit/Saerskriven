@@ -71,8 +71,8 @@ host provides.
   the three, never on a clock.
 - `selectors.ts` derives what views show. `isDirty` is `present !== saved` by
   identity, so undoing back to the saved point clears it with no bookkeeping.
-  `holdsUnsavedWork` adds a recovery snapshot that could not be read at startup
-  to that, for a shared link, whose landing would overwrite it.
+  `holdsUnsavedWork` adds a recovery snapshot that startup could not read or
+  left unrestored to that, for a shared link, whose landing would overwrite it.
   `modelAsOpened` is the present model while both stacks are empty, which is
   how the canvas tells a model that arrived from one that was edited
   ([the canvas](../canvas/README.md#the-view)). `windowTitle` names the browser
@@ -147,21 +147,23 @@ recovery write that lands, since that write is what replaces the snapshot.
 The snapshot is written before the model it holds is drawn, so a start cannot
 assume the studio can draw what it restores. A start that restores a snapshot
 first raises the restore mark, a flag under `saerskriven:studio:restoring` in
-the tab's `sessionStorage`, which a reload of the tab keeps and no other tab
-reads. `useRestoreSettled` (`../app/restore-settled.ts`) lowers it once the
-studio's first draw has stood for two animation frames, and leaves it raised
-where the error boundary took over before then. A start that reads a snapshot
-and finds the mark raised knows the last start in this tab never finished
-drawing it. It does not restore: it lowers the mark, leaves the snapshot where
+the tab's `sessionStorage`. A reload of the tab keeps it, a tab duplicated from
+this one starts with a copy of it, and any other tab starts without it.
+`useRestoreSettled` (`../app/restore-settled.ts`) lowers it once the studio's
+first draw has stood for two animation frames or for one second, whichever
+comes first, and leaves it raised where the error boundary took over before
+then. The second is there for a tab that is not shown, which draws no frame. A
+start that reads a snapshot and finds the mark raised takes it that the last
+start in this tab did not draw the session: the draw threw, never returned or
+ran the tab out of memory, or the tab was reloaded or closed before the mark
+came down. It does not restore: it lowers the mark, leaves the snapshot where
 it is, opens the placeholder, records `StoredRecoveryRejected` with the
-problem `RestoreUnfinished`, and sets `recoveryUnread`, so the snapshot counts
-as one that could not be read at startup. The next reload finds the mark
-lowered and tries the restore again, which gives a tab that was only reloaded
-while it drew its session back. A start with no snapshot, or with one it could
-not read, never raises the mark, and neither does following another tab.
-Storage that throws reads as a lowered mark and skips a write. A tab in the
-background draws no frame, so its mark stays raised until it is shown, and a
-reload of it before then opens the placeholder once.
+problem `RestoreUnfinished`, and sets `recoveryUnread`, as a start that could
+not read its snapshot does. The next reload finds the mark lowered and tries
+the restore again, which gives a tab that was only reloaded while it drew its
+session back. A start with no snapshot, or with one it could not read, never
+raises the mark, and neither does following another tab. Storage that throws
+reads as a lowered mark and skips a write.
 
 A successful write marks the state recoverable. A failed write records
 `RecoveryUnavailable` and leaves that mark false, and a later recoverable change

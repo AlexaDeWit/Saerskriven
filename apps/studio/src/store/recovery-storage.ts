@@ -134,7 +134,7 @@ type ReadBound = Omit<
  * `Unsupported` otherwise, whether the stored document or the model it maps
  * to was refused and however many issues the refusal gathered.
  * `RestoreUnfinished` is a snapshot that reads, left alone because the last
- * start in this tab restored it and never finished drawing it.
+ * start in this tab restored it and was not seen to finish drawing it.
  */
 export type RecoveryProblem = Data.TaggedEnum<{
   Thrown: { readonly reason: string };
@@ -200,9 +200,10 @@ export const browserRecoveryStorage = localRecoveryStorage(
 );
 
 /**
- * Whether a restore has started and not finished drawing. A start raises it
- * before it restores a snapshot and the first draw that stands lowers it, so
- * a start that finds it raised knows the last one never drew the session.
+ * Whether a restore has started and not been seen to finish drawing. A start
+ * raises it before it restores a snapshot and the first draw that stands
+ * lowers it, so a start that finds it raised takes it that the last one did
+ * not draw the session.
  */
 export type RestoreMark = {
   readonly raised: () => boolean;
@@ -240,8 +241,9 @@ export function storedRestoreMark(storage: () => StorageBackend): RestoreMark {
 }
 
 /**
- * The mark in this tab's session storage, which a reload of the tab keeps and
- * no other tab reads.
+ * The mark in this tab's session storage. A reload of the tab keeps it, a tab
+ * duplicated from this one starts with a copy, and any other tab starts
+ * without it.
  */
 export const browserRestoreMark = storedRestoreMark(
   () => globalThis.sessionStorage,

@@ -14,6 +14,7 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
   'recovery-rejected':
     'Saerskriven a rejeté l’instantané de récupération enregistré.',
   'recovery-unavailable': 'La récupération locale n’est pas disponible.',
+  'recovery-not-restored': 'Saerskriven n’a pas restauré la dernière session.',
   'no-format-claimed': 'Aucun format n’a reconnu {name}.',
   'formats-tried': 'Saerskriven a essayé {formats}.',
   'read-limit': '{name} dépasse une limite de lecture, alors rien ne l’a lu.',
@@ -49,7 +50,7 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
   'snapshot-release':
     'Saerskriven {release} a enregistré cette session sous une forme que cette version ne peut pas restaurer.',
   'snapshot-restore-unfinished':
-    'La dernière session n’a pas pu être affichée. Un rechargement tente de l’afficher de nouveau.',
+    'La session n’a pas pu être affichée. Le rechargement fait une nouvelle tentative.',
   'field-not-saved': 'Champ non enregistré : {field}.',
   'refused-character':
     'Le modèle n’accepte pas le caractère en position {position}.',
