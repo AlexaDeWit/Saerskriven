@@ -6,10 +6,12 @@ import {
   replaceThreat,
   reverseFlow,
   setFlowDirection,
+  type Element,
   type ElementId,
   type Model,
   type Threat,
 } from '@saerskriven/model';
+import { locales, type Locale } from '@saerskriven/i18n';
 import { elementId, elementIn, threatId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import {
@@ -28,7 +30,9 @@ import {
   sampleElement,
   sampleModel,
   sampleThreat,
+  storeElement,
 } from '../store/store.fixtures.js';
+import { headingKindMessages } from '../messages/enum-labels.js';
 import { activeTranslator } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import {
@@ -36,6 +40,7 @@ import {
   attachedThreats,
   attachSaid,
   detachSaid,
+  elementHeading,
   elementLabel,
   freshThreat,
   nextNumber,
@@ -194,6 +199,51 @@ describe('elementLabel', () => {
     expect(labelIn(spacedCanvas, requestFlow)).toBe(
       'Flow from Reader to Studio',
     );
+  });
+});
+
+const namelessOfEveryKind: readonly Element[] = [
+  ...canvasModel.diagrams[0].elements,
+  sampleElement(storeElement),
+]
+  .filter(({ kind }) => kind !== 'flow')
+  .map((element) => ({ ...element, name: '' }));
+
+const opensWithCapital = (text: string, locale: Locale): boolean =>
+  text.charAt(0) !== text.charAt(0).toLocaleLowerCase(locale);
+
+describe('elementHeading', () => {
+  it('is what the element is called', () => {
+    expect(
+      elementHeading(newProcess('process-named', 'Studio'), sampleElements, t),
+    ).toBe('Studio');
+  });
+
+  it.each(locales)(
+    'opens with a capital in %s for an element of each kind called nothing, where its label in a sentence does not',
+    (locale) => {
+      const speak = inLocale(locale);
+      const opening = (label: typeof elementLabel): readonly boolean[] =>
+        namelessOfEveryKind.map((element) =>
+          opensWithCapital(label(element, sampleElements, speak), locale),
+        );
+
+      expect(new Set(namelessOfEveryKind.map(({ kind }) => kind))).toEqual(
+        new Set(Object.keys(headingKindMessages)),
+      );
+      expect(opening(elementHeading)).not.toContain(false);
+      expect(opening(elementLabel)).not.toContain(true);
+    },
+  );
+
+  it('heads a flow left unlabelled by its ends', () => {
+    expect(
+      elementHeading(
+        elementIn(unlabelledCanvas, requestFlow),
+        elementsById(elementsAcross(unlabelledCanvas.diagrams)),
+        t,
+      ),
+    ).toBe('Flow from Reader to Studio');
   });
 });
 

@@ -393,6 +393,34 @@ describe(
       ).toBeDefined();
     });
 
+    it('heads an element called nothing by its kind, opening with a capital', () => {
+      const nameless = { ...sampleElement(processElement), name: '' };
+      modelStore.setState(
+        {
+          ...initialState({
+            ...sampleModel,
+            diagrams: sampleModel.diagrams.map((diagram) => ({
+              ...diagram,
+              elements: diagram.elements.map((element) =>
+                element.id === processElement ? nameless : element,
+              ),
+            })),
+          }),
+          selection: [processElement],
+        },
+        true,
+      );
+      render(
+        <ThreatPanel
+          {...panelProps({ subject: { kind: 'element', element: nameless } })}
+        />,
+      );
+
+      expect(
+        screen.getByRole('heading', { name: 'The process' }),
+      ).toBeDefined();
+    });
+
     it('lists the threats still open first, each status from the highest severity down', () => {
       withReviewedThreats();
       showPanel(actorElement);

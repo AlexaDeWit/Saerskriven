@@ -339,7 +339,7 @@ describe('ThreatOverlay', () => {
     await user.click(
       screen.getByRole('button', { name: 'Security properties' }),
     );
-    const labels = vi.spyOn(panelSelectors, 'elementLabel');
+    const labels = vi.spyOn(panelSelectors, 'elementHeading');
     for (let frame = 0; frame < 20; frame += 1)
       shown.rerender(<ThreatOverlay />);
     expect(labels).not.toHaveBeenCalled();

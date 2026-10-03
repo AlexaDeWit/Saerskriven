@@ -534,11 +534,6 @@
   inline-size: 100%;
 }
 
-.existing [role='combobox'],
-.existing [role='option'] {
-  text-transform: none;
-}
-
 .existing [role='combobox'] [data-option-label] {
   -webkit-line-clamp: 1;
 }

@@ -63,6 +63,15 @@ export const articleKindMessages = {
   'trust-boundary': 'enums.the-trust-boundary',
 } as const satisfies Record<Element['kind'], LabelMessageId>;
 
+/** What an element that carries no name is called at the head of its panel. A flow is headed by its ends. */
+export const headingKindMessages = {
+  actor: 'enums.heading-actor',
+  process: 'enums.heading-process',
+  store: 'enums.heading-store',
+  text: 'enums.heading-text',
+  'trust-boundary': 'enums.heading-trust-boundary',
+} as const satisfies Record<Exclude<Element['kind'], 'flow'>, LabelMessageId>;
+
 export const kindMessages = {
   actor: 'enums.kind-actor',
   process: 'enums.kind-process',

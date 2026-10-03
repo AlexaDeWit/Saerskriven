@@ -109,7 +109,9 @@ and its first option keeps the listbox's tab stop. The listbox is placed and
 sized within the box the field scrolls in, the panel body, so it opens clear of
 the chrome card and the pane header. Radix hides the listbox's scrollbar, so
 where the options run past that room a chevron at the cut edge says the list
-goes on, and scrolls it while a pointer rests on it.
+goes on, and scrolls it while a pointer rests on it. The trigger and the options
+draw a label in the case it arrives in, the catalogue's or its author's, so a
+value reads in the field as it does in the threat summary.
 
 `EnumField`, `TextField` and `ProseField` take a `shownLabel` that draws a
 shorter label, or none, where the surroundings already say what the field is.

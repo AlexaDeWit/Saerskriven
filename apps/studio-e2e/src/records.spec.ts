@@ -40,13 +40,10 @@ const describedNumbers = (control: Locator): Promise<readonly number[]> =>
 
 const middle = (box: Box): number => box.y + box.height / 2;
 
-const recordToggle = (page: Page, headline: string): Locator =>
-  threatPanel(page).getByRole('button', { name: headline, exact: true });
-
-const openRecord = async (page: Page, headline: string): Promise<void> => {
-  const toggle = recordToggle(page, headline);
+const openRecord = async (page: Page, name: string): Promise<void> => {
+  const toggle = panelControl(page, name);
   await toggle.click();
-  await expect(toggle).toHaveCount(0);
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 };
 
 const mitigationOffered = (page: Page, label: string): Promise<boolean> =>
@@ -68,7 +65,7 @@ test(
     await expandThreat(page, /Picker overrides a dispatch hold/u);
     await expect(picker.locator('[data-on-elements]')).toContainText('Picker');
 
-    const reservation = recordToggle(page, 'Reservation expiry');
+    const reservation = panelControl(page, 'Mitigation 1, Reservation expiry');
     await expect(reservation).toHaveAttribute('aria-expanded', 'false');
     const record = threatPanel(page).getByRole('group', {
       name: 'Mitigation 1',
@@ -78,7 +75,7 @@ test(
     await chooseInPanel(page, 'Mitigation 1 status', 'Implemented');
     await expect(reservation).toHaveAttribute('aria-expanded', 'false');
 
-    await openRecord(page, 'Reservation expiry');
+    await openRecord(page, 'Mitigation 1, Reservation expiry');
     await expect(panelField(page, 'textbox', 'Mitigation 1 title')).toHaveValue(
       'Reservation expiry',
     );
@@ -308,11 +305,11 @@ test('a linked record names the other threats that hold it by number, and unlink
   await chooseInPanel(page, 'Existing mitigation', bound);
   await panelControl(page, 'Link existing mitigation').click();
 
-  const linked = recordToggle(page, bound);
+  const linked = panelControl(page, `Mitigation 3, ${bound}`);
   await expect(linked).toBeFocused();
   await expect(linked).toHaveAttribute('aria-expanded', 'false');
   expect(await mitigationOffered(page, bound)).toBe(false);
-  await openRecord(page, bound);
+  await openRecord(page, `Mitigation 3, ${bound}`);
   await expect(panelField(page, 'textbox', 'Mitigation 3 title')).toHaveValue(
     bound,
   );
@@ -328,7 +325,7 @@ test('a linked record names the other threats that hold it by number, and unlink
 
   await selectByKeyboard(page, storefront.shopper);
   await expandThreat(page, storefront.takeover);
-  await openRecord(page, bound);
+  await openRecord(page, `Mitigation 2, ${bound}`);
   const kept = panelField(page, 'textbox', 'Mitigation 2 title');
   await expect(kept).toHaveValue(bound);
   await expect
@@ -389,7 +386,7 @@ test(
     const description = panelField(page, 'textbox', 'Mitigation 2 description');
     await expect(description).toBeFocused();
 
-    await openRecord(page, 'Sign-in throttling');
+    await openRecord(page, 'Mitigation 1, Sign-in throttling');
     const top = (await screenBoxOf(threatPanel(page))).y;
     const unlink = panelControl(page, 'Unlink mitigation 1');
     await onScreen(unlink);
@@ -439,7 +436,7 @@ test(
       'Rotate the upstream token hourly',
       'Issue tokens per caller.\nExpire them within the hour.\nRefuse a replay.\nLog each rotation.\nAlert on a failed rotation.',
     );
-    await openRecord(page, 'Sign-in throttling');
+    await openRecord(page, 'Mitigation 1, Sign-in throttling');
 
     const unlink = panelControl(page, 'Unlink mitigation 1');
     await onScreen(unlink);
@@ -511,7 +508,7 @@ test('a record arriving from another tab above the rows in view leaves those row
   await addRecord(other, 'mitigation', 'Strip caller tokens at the edge');
 
   await expect(
-    recordToggle(page, 'Strip caller tokens at the edge'),
+    panelControl(page, 'Mitigation 2, Strip caller tokens at the edge'),
   ).toBeVisible();
   expect(await settledBox(addMitigation)).toEqual(drawn);
 });
@@ -565,7 +562,7 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
   await selectByKeyboard(other, storefront.shopper);
   await expandThreat(other, storefront.takeover);
   await expect(
-    recordToggle(other, 'Strip caller tokens at the edge'),
+    panelControl(other, 'Mitigation 2, Strip caller tokens at the edge'),
   ).toBeVisible();
   await chooseInPanel(other, 'Mitigation 2 status', 'Verified');
 
