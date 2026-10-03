@@ -14,6 +14,10 @@
 //! - `output()` and `output_length()` answer the output buffer's address and
 //!   length, for the caller to copy the bytes from.
 //!
+//! Every call but `output()` and `output_length()` empties the output buffer
+//! before it does anything else, so after a call that trapped they answer
+//! nothing an earlier call wrote.
+//!
 //! Any call may grow the module's memory, so the caller makes each view of the
 //! memory after the call that answered its address, never before. An
 //! allocation the module cannot make aborts it, which the caller sees as a

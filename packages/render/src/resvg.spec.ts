@@ -1,4 +1,10 @@
 import { sha256Of } from '@saerskriven/model/fixtures';
+import {
+  called,
+  instantiated,
+  mostUnsigned,
+  type BoundaryModule,
+} from '@saerskriven/wasm';
 import { moduleWhoseEveryCall, trapping } from '@saerskriven/wasm/fixtures';
 import { Either } from 'effect';
 import {
@@ -49,6 +55,28 @@ const stubbed = (
   wasm: moduleWhoseEveryCall(rasterizerCalls, body),
   fonts,
 });
+
+const rendering = async (document: string) => {
+  const module = Either.getOrThrow(
+    await instantiated(
+      resvgWasm(),
+      ['add_font', 'render', 'width', 'height'],
+      'the module exports no rasterizer',
+    ),
+  );
+  Either.getOrThrow(
+    called(module, new TextEncoder().encode(document), () =>
+      module.render(200),
+    ),
+  );
+  return module;
+};
+
+const held = (module: BoundaryModule<'width' | 'height'>): number[] => [
+  module.output_length(),
+  module.width(),
+  module.height(),
+];
 
 describe('a module that will not do the work', () => {
   it('reports one that trapped, rather than throwing out of the call', async () => {
@@ -166,5 +194,34 @@ describe.skipIf(resvgUnbuilt)('an SVG document rasterized to a PNG', () => {
     expect(sha256Of(raster.png)).toBe(
       sha256Of((await drawn(rectangle, withoutFonts(), 200)).png),
     );
+  });
+
+  it('draws no image a data URL holds', async () => {
+    const image = svg('<rect width="40" height="20" fill="#fedcba"/>', 40, 20);
+    const pointed = svg(
+      `<rect width="40" height="20" fill="#123456"/><image href="data:image/svg+xml;base64,${btoa(image)}" x="0" y="0" width="40" height="20"/>`,
+      40,
+      20,
+    );
+    const raster = await drawn(pointed, withoutFonts(), 200);
+    expect(sha256Of(raster.png)).toBe(
+      sha256Of((await drawn(rectangle, withoutFonts(), 200)).png),
+    );
+  });
+});
+
+describe.skipIf(resvgUnbuilt)('one instance called more than once', () => {
+  it('answers no output and no size after a call that trapped, where an earlier call drew', async () => {
+    const module = await rendering(rectangle);
+    expect(held(module)).not.toContain(0);
+    expect(() => module.input(mostUnsigned)).toThrow(WebAssembly.RuntimeError);
+    expect(held(module)).toEqual([0, 0, 0]);
+  });
+
+  it('answers no output and no size after a call that took a font, where an earlier call drew', async () => {
+    const module = await rendering(rectangle);
+    expect(held(module)).not.toContain(0);
+    module.add_font();
+    expect(held(module)).toEqual([0, 0, 0]);
   });
 });

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FileCommands } from '../commands/surface.js';
 import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
-import { isDirty } from '../store/selectors.js';
+import { holdsUnsavedWork } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { browserStoreSync, type StoreSync } from '../store/sync.js';
@@ -234,7 +234,7 @@ export function useFileSession(
 
     return {
       open: () => {
-        if (isDirty(modelStore.getState())) {
+        if (holdsUnsavedWork(modelStore.getState())) {
           setOpening(true);
           return;
         }
@@ -271,7 +271,7 @@ export function useFileSession(
       },
       share,
       close: () => {
-        if (isDirty(modelStore.getState())) {
+        if (holdsUnsavedWork(modelStore.getState())) {
           setClosing(true);
           return;
         }

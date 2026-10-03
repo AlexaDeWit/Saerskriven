@@ -8,6 +8,7 @@ import {
   elementCount,
   foreignSource,
   mainDiagram,
+  memoryRestoreMark,
   nativeSource,
   restorableSnapshot,
   sampleModel,
@@ -33,6 +34,7 @@ import {
   initialState,
   nameOf,
   placeholderModel,
+  StudioFailure,
 } from './state.js';
 import {
   createModelStore,
@@ -241,6 +243,80 @@ describe('session recovery', () => {
       runtime.dispatch(Action.Undo());
       expect(unread()).toBe(false);
       expect(holdsUnsavedWork(runtime.modelStore.getState())).toBe(false);
+    },
+  );
+
+  it('raises the restore mark as it restores a snapshot', () => {
+    const mark = memoryRestoreMark();
+
+    const state = createModelStore(
+      loaded(restorableSnapshot(sampleModel, true, FileLifecycle.NoFile())),
+      silent,
+      placeholderModel,
+      mark,
+    ).modelStore.getState();
+
+    expect(state.present).toEqual(sampleModel);
+    expect(mark.raised()).toBe(true);
+  });
+
+  it('opens the placeholder over a snapshot whose last restore never finished drawing, leaves it stored, and restores it at the start after', () => {
+    const mark = memoryRestoreMark(true);
+    const tab = tabs(
+      restorableSnapshot(sampleModel, true, FileLifecycle.NoFile()),
+    );
+
+    const skipped = createModelStore(
+      tab.storage,
+      tab.sync,
+      placeholderModel,
+      mark,
+    ).modelStore.getState();
+
+    expect(skipped.present).toBe(placeholderModel);
+    expect(skipped.recoveryUnread).toBe(true);
+    expect(skipped.lastFailure).toEqual(
+      StudioFailure.StoredRecoveryRejected({
+        problem: RecoveryProblem.RestoreUnfinished(),
+      }),
+    );
+    expect(mark.raised()).toBe(false);
+    expect(tab.writes).toEqual({ replaced: 0, cleared: 0 });
+
+    const next = createModelStore(
+      tab.storage,
+      tab.sync,
+      placeholderModel,
+      mark,
+    ).modelStore.getState();
+
+    expect(next.present).toEqual(sampleModel);
+    expect(next.lastFailure).toBeUndefined();
+    expect(mark.raised()).toBe(true);
+  });
+
+  it.each([
+    ['no snapshot', loaded()],
+    [
+      'a snapshot it could not read',
+      {
+        ...loaded(),
+        load: () =>
+          Either.left(
+            RecoveryStorageFailure.Rejected({
+              problem: RecoveryProblem.Unsupported(),
+            }),
+          ),
+      },
+    ],
+  ])(
+    'leaves the restore mark lowered at a start that finds %s',
+    (_found, storage) => {
+      const mark = memoryRestoreMark();
+
+      createModelStore(storage, silent, placeholderModel, mark);
+
+      expect(mark.raised()).toBe(false);
     },
   );
 

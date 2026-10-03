@@ -46,7 +46,11 @@ export function describeFailure(
       details: linkFailureLines(t, refusal),
     }),
     StoredRecoveryRejected: ({ problem }) => ({
-      headline: t('notice.recovery-rejected'),
+      headline: t(
+        RecoveryProblem.$is('RestoreUnfinished')(problem)
+          ? 'notice.recovery-not-restored'
+          : 'notice.recovery-rejected',
+      ),
       details: [describeRecovery(t, problem)],
     }),
     RecoveryUnavailable: ({ problem }) => ({
@@ -303,6 +307,7 @@ function describeRecovery(t: Speaker, problem: RecoveryProblem): string {
       writer === undefined
         ? t('notice.snapshot-earlier-release')
         : t('notice.snapshot-release', { release: writer }),
+    RestoreUnfinished: () => t('notice.snapshot-restore-unfinished'),
   });
 }
 

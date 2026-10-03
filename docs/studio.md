@@ -99,9 +99,11 @@ matters.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
-second press confirms. A failed open keeps the current model but lets go of its
-file, so its next Save treats it as a new model rather than writing to either
-file.
+second press confirms. A stored session the studio could not read at startup,
+or left in storage undrawn as described below, counts as unsaved work until the
+studio next stores one, since either command would replace it. A failed open
+keeps the current model but lets go of its file, so its next Save treats it as
+a new model rather than writing to either file.
 
 **Export** writes the diagram on screen as SVG or PNG, the register as
 Markdown, or the whole model as Typst or PDF. An export proposes the open
@@ -129,13 +131,13 @@ dismissed or until a later Share.
 Opening a link, in a new tab or pasted into the address bar of an open one,
 loads the model it holds as an unsaved model named after its title. Over
 unsaved work, the menu opens with Share as link turned into Discard changes and
-open the link, focused, and Cancel under it, as Open asks. A session whose
-stored recovery snapshot could not be read counts as unsaved work until the
-studio next writes one, since loading the link would replace it. Either answer,
-or closing the menu, takes the link out of the address, so a reload neither
-asks again nor loads it over later edits. A link that was cut off, is too long,
-holds no model, or was written by a later release opens nothing, and the notice
-says which.
+open the link, focused, and Cancel under it, as Open asks. A stored session
+that was not read or not drawn counts as unsaved work here as it does for
+Open, since loading the link would replace it. Either answer, or closing the
+menu, takes the link out of the address, so a reload neither asks again nor
+loads it over later edits. A link that was cut off, is too long, holds no
+model, or was written by a later release opens nothing, and the notice says
+which.
 
 The studio keeps the current session in the browser's local storage. A reload
 restores the model, whether it was saved, the file's name and format, and the
@@ -143,6 +145,12 @@ diagram on screen, without the undo history, the selection or an open field.
 The browser's file handle does not survive, so the next Save asks where to
 write, or downloads a copy where the browser cannot ask.
 While unsaved work has not reached that storage, closing the tab asks first.
+
+If a tab's last start did not finish drawing the stored session, its next
+start leaves that session in storage and opens the Untitled model a new
+session starts on, under a notice saying so. A reload after that tries the
+stored session again. Until then the first edit replaces the stored session
+without asking, while Open, New model and a shared link ask first.
 
 Every studio tab in one browser profile shows the same model. An edit, an undo,
 an open or a save in one tab reaches the others, while each tab keeps its own

@@ -17,10 +17,15 @@
 //!   longer side is `long_edge` pixels, or at the size the document names when
 //!   `long_edge` is 0. It answers a status: 0 means the output buffer holds a
 //!   PNG, and 1 that it holds a UTF-8 sentence naming what was refused.
-//! - `width()` and `height()` answer the last PNG's size in pixels, and 0
-//!   after a refusal.
+//! - `width()` and `height()` answer the size in pixels of the PNG the output
+//!   buffer holds, and 0 where it holds none.
 //! - `output()` and `output_length()` answer the output buffer's address and
 //!   length, for the caller to copy the bytes from.
+//!
+//! Every call but `width()`, `height()`, `output()` and `output_length()`
+//! empties the output buffer and resets that size to 0 before it does anything
+//! else, so after a call that trapped they answer nothing an earlier call
+//! wrote.
 //!
 //! Any call may grow the module's memory, so the caller makes each view of the
 //! memory after the call that answered its address, never before. An

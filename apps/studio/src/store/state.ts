@@ -75,8 +75,9 @@ export type InlineEditor = {
  * The model, history, transient view state, file, and recovery status.
  * `activeDiagram` is undefined until a diagram is chosen, and
  * `modelPanel` is whether the panel shows the model rather than the selection.
- * `recoveryUnread` is whether the snapshot found at startup could not be read
- * and no recovery write has replaced it since.
+ * `recoveryUnread` is whether the snapshot found at startup could not be read,
+ * or was left unrestored because the last restore was not seen to finish
+ * drawing, and no recovery write has replaced it since.
  */
 export type State = {
   readonly present: Model;

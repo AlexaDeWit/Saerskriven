@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { resetTools } from '../canvas/tools.js';
+import { browserRestoreMark } from '../store/recovery-storage.js';
 import { initialState, placeholderModel } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { appTimeout } from './app.fixtures.js';
@@ -98,6 +99,16 @@ describe(
 
       await undoThroughMenu(user);
       expect(heldElements()).toBe(3);
+    });
+
+    it('lowers the restore mark once the studio it drew has stood', async () => {
+      browserRestoreMark.raise();
+      render(<App />);
+      expect(browserRestoreMark.raised()).toBe(true);
+
+      await vi.waitFor(() => {
+        expect(browserRestoreMark.raised()).toBe(false);
+      }, appTimeout);
     });
   },
   appTimeout,

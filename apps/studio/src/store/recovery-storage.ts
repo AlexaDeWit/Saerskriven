@@ -133,12 +133,15 @@ type ReadBound = Omit<
  * envelope says, `EarlierRelease` below the current version and
  * `Unsupported` otherwise, whether the stored document or the model it maps
  * to was refused and however many issues the refusal gathered.
+ * `RestoreUnfinished` is a snapshot that reads, left alone because the last
+ * start in this tab restored it and was not seen to finish drawing it.
  */
 export type RecoveryProblem = Data.TaggedEnum<{
   Thrown: { readonly reason: string };
   PastBound: ReadBound;
   Unsupported: {};
   EarlierRelease: { readonly writer: string | undefined };
+  RestoreUnfinished: {};
 }>;
 
 /** Constructors for {@link RecoveryProblem}, plus Effect's `$match`. */
@@ -195,6 +198,63 @@ export function localRecoveryStorage(
 export const browserRecoveryStorage = localRecoveryStorage(
   () => globalThis.localStorage,
 );
+
+/**
+ * Whether a restore has started and not been seen to finish drawing. A start
+ * raises it before it restores a snapshot and the first draw that stands
+ * lowers it, so a start that finds it raised takes it that the last one did
+ * not draw the session.
+ */
+export type RestoreMark = {
+  readonly raised: () => boolean;
+  readonly raise: () => void;
+  readonly lower: () => void;
+};
+
+const restoreMarkKey = 'saerskriven:studio:restoring';
+
+/**
+ * Keeps the mark in one Web Storage provider. Storage that throws reads as
+ * lowered and skips a write, so the mark never stops a start.
+ */
+export function storedRestoreMark(storage: () => StorageBackend): RestoreMark {
+  return {
+    raised: () =>
+      Either.getOrElse(
+        accessStorage(
+          storage,
+          (available) => available.getItem(restoreMarkKey) !== null,
+        ),
+        () => false,
+      ),
+    raise: () => {
+      accessStorage(storage, (available) => {
+        available.setItem(restoreMarkKey, 'raised');
+      });
+    },
+    lower: () => {
+      accessStorage(storage, (available) => {
+        available.removeItem(restoreMarkKey);
+      });
+    },
+  };
+}
+
+/**
+ * The mark in this tab's session storage. A reload of the tab keeps it, a tab
+ * duplicated from this one starts with a copy, and any other tab starts
+ * without it.
+ */
+export const browserRestoreMark = storedRestoreMark(
+  () => globalThis.sessionStorage,
+);
+
+/** A mark that is never raised, for a store with no tab to reload. */
+export const inertRestoreMark: RestoreMark = {
+  raised: () => false,
+  raise: () => undefined,
+  lower: () => undefined,
+};
 
 function readItem(
   storage: () => StorageBackend,

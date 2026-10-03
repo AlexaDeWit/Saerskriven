@@ -126,6 +126,13 @@ module's memory, so the caller makes each view of it after the call that
 answered its address. An allocation the module cannot make aborts it, which the
 caller sees as a trap.
 
+Every call but a getter empties the output buffer before it does anything else,
+so after a call that trapped the getters answer nothing an earlier call wrote.
+The getters are `output()` and `output_length()`, and the rasterizer's `width()`
+and `height()`, whose size is reset to 0 with the buffer. Emptying frees the
+buffer's memory and does not wipe it, so the rule covers what the getters answer
+and not what the module's memory still holds.
+
 [`@saerskriven/wasm`](../packages/wasm/README.md) drives both modules, compiles
 each module once per byte array and runs each call on its own instance, and
 `flakeModuleAsset` on its `build-assets` subpath locates a module through its
