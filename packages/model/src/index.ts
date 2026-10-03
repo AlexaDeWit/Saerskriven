@@ -50,14 +50,17 @@ export {
   attachThreat,
   detachThreat,
   droppedThreats,
+  linkThreatToModel,
   nextThreatNumber,
   removeThreat,
   replaceThreat,
+  unlinkThreatFromModel,
   type AddThreatFailure,
   type AttachThreatFailure,
   type DetachThreatFailure,
   type RemoveThreatFailure,
   type ReplaceThreatFailure,
+  type ThreatModelLinkFailure,
 } from './lib/threat-operations.js';
 export * from './lib/mitigation-operations.js';
 export * from './lib/assumption-operations.js';

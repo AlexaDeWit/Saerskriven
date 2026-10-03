@@ -45,7 +45,10 @@ const threatEditSchema = z.object({
   threat: threatIdSchema.describe('The id of the threat to edit.'),
 });
 
-const threatFieldsSchema = threatSchema.omit({ number: true });
+const threatFieldsSchema = threatSchema.omit({
+  number: true,
+  appliesToModel: true,
+});
 
 const mitigationEditSchema = z.object({
   mitigation: mitigationIdSchema.describe('The id of the mitigation to edit.'),
@@ -186,6 +189,8 @@ export function isRegisterEdit(edit: {
 /**
  * Applies one threat, mitigation or assumption edit. An edit that patches a
  * held record hands the patched record to that record's replace operation.
+ * A threat edit carries no model link: an added threat has none, and a
+ * replaced one keeps the link it holds.
  */
 export function applyRegisterEdit(
   model: Model,
@@ -196,11 +201,13 @@ export function applyRegisterEdit(
       return addThreat(model, {
         ...edit.threat,
         number: nextThreatNumber(model),
+        appliesToModel: false,
       });
     case 'replace_threat':
       return withThreat(model, edit.threat.id, (held) => ({
         ...edit.threat,
         number: held.number,
+        appliesToModel: held.appliesToModel,
       }));
     case 'remove_threat':
       return removeThreat(model, edit.threat);

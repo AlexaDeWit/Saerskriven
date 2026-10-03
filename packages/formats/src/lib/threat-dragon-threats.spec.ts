@@ -53,6 +53,7 @@ const threat = (number: number): ModelInput['threats'][number] => ({
   status: 'open',
   description: '',
   elements: ['cell-1'],
+  appliesToModel: false,
 });
 
 const emptyDocument: ThreatDragonDocument = {

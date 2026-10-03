@@ -77,6 +77,7 @@ export function otmRegister(document: OtmDocument, context: ImportContext) {
       severity: 'undecided',
       status,
       elements: [...attached],
+      appliesToModel: false,
     });
     report({
       code: 'otm-threat-undecided',

@@ -284,6 +284,7 @@ function threatArbitrary(
     status: fc.constantFrom(...threatStatusSchema.options),
     description: textArbitrary,
     elements: fc.subarray([...elementIds]),
+    appliesToModel: fc.boolean(),
   });
 }
 

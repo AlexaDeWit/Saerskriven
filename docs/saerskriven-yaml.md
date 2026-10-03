@@ -27,7 +27,7 @@ order:
 | `assumptions`            | What the analysis rests on, linked to threats by id, and `appliesToModel`       |
 | `diagrams`               | The diagrams, each owning its elements and their geometry                       |
 | `mitigations`            | Mitigating work, addressing threats by id                                       |
-| `threats`                | The threats, each attached to elements by id                                    |
+| `threats`                | The threats, each attached to elements by id, and optionally `appliesToModel`   |
 | `lastIssuedThreatNumber` | The highest threat number ever issued or kept by a paste, counting removed ones |
 
 Every key is required unless the schema marks it optional, and every list may
@@ -83,6 +83,16 @@ required, and the keys later releases added are optional. Those are a flow's
 processes, stores and flows, and the relationship lists (`trustBoundaryIds`,
 `containedElements` and `crossingFlows`).
 
+Version 2 has grown by one: a threat's `appliesToModel`. A threat applies to
+the model as a whole, to the elements it names, or to both, as an assumption
+applies to the model, to threats, or to both. An assumption's `appliesToModel`
+is required, because the first release of version 2 declared it. A threat's is
+optional, and a threat that leaves it out does not apply to the model. The
+model holds the flag on every threat, and a write states it only on a threat
+that applies to the model: stating `false` on the rest would change every file
+an earlier release wrote the next time it is saved, and an earlier release
+would report the key on every threat it reads.
+
 Everything else is breaking: a rename, a type change, a removal, or a new key
 whose absence means nothing. That takes a new `formatVersion`, and a new
 version arrives as a wire package of its own beside the one before it, so
@@ -120,9 +130,13 @@ sets out.
 
 A record with no reference in the file, a mitigation that links no threat or an
 assumption that links no threat and does not apply to the model, is kept on
-read and not culled, and so is a threat the file attaches to no element.
-Culling is edit-triggered, as the
+read and not culled, and so is a threat the file attaches to no element and
+does not apply to the model. Culling is edit-triggered, as the
 [model package](../packages/model/README.md) sets out.
+
+A threat's model link is never inferred. A threat with an empty `elements`
+list applies to the model only where the file states `appliesToModel: true`,
+and version 1 has no such key, so a version 1 threat never does.
 
 Version 2 removed two keys and added one, and the v1 to v2 migration reads a
 version 1 file in three steps over its document:

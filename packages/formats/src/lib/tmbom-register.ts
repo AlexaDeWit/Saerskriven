@@ -80,6 +80,7 @@ function tmbomThreats(
       elements: (threat.components_affected ?? []).map((id) =>
         tmbomNodeId('process', id, context),
       ),
+      appliesToModel: false,
     };
   });
 }

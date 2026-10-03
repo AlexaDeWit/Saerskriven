@@ -169,6 +169,7 @@ const placeholderDocument = {
       status: 'open',
       description: '',
       elements: ['placeholder-actor'],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: 1,

@@ -158,7 +158,8 @@ export function removeSelected(): boolean {
  * What a removal takes beyond the elements themselves, counted before it:
  * the flows it detaches, the threat links it drops, and the threats it
  * removes for want of a last attachment. A link is counted only on a threat
- * that survives, so a removed threat is reported once.
+ * that survives, as one that applies to the model does, so a removed threat
+ * is reported once.
  */
 export function removalCascade(
   model: Model,
@@ -369,6 +370,7 @@ function culledThreats(model: Model, removed: ReadonlySet<ElementId>): number {
 
 function culled(threat: Threat, removed: ReadonlySet<ElementId>): boolean {
   return (
+    !threat.appliesToModel &&
     threat.elements.length > 0 &&
     threat.elements.every((held) => removed.has(held))
   );

@@ -24,7 +24,8 @@ type RecordKey = 'mitigations' | 'assumptions';
 
 type RecordIn<Key extends RecordKey> = Model[Key][number];
 
-type UnknownThreatFailure = Extract<
+/** The failure for a threat id the register does not hold. */
+export type UnknownThreatFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownThreat' }
 >;

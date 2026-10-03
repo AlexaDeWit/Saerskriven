@@ -50,8 +50,9 @@ move, resize, rename, edit Note text, set description and scope, reconnect,
 set flow route and direction, free or move one flow end, reverse a flow, set a
 trust boundary's shape, set security properties), diagram edits (add,
 rename, remove), a metadata edit, fragment edits (copy, remap, insert), and
-register edits for threats (add, remove, replace, attach, detach), mitigations
-and assumptions (add, replace, remove, link, unlink, set status). Coverage
+register edits for threats (add, remove, replace, attach, detach, link to the
+model, unlink from it), mitigations and assumptions (add, replace, remove,
+link, unlink, set status). Coverage
 queries read a model without changing it: elements no threat references, open
 threats by severity, and the threat count of every element. `autoPlacement`
 gives a position to a caller that has none to read, as the OTM and TM-BOM
@@ -59,7 +60,7 @@ imports do.
 
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no
-element is on no diagram.
+element is on no diagram, whether or not it applies to the model.
 
 A threat number never moves: the model carries the highest number it has ever
 issued or kept by a paste, so a removed threat leaves a gap and
@@ -87,7 +88,10 @@ flow.
 A pasted fragment's mitigation or assumption is identical to a record the
 target model holds when it has the same kind, id and content: a mitigation's
 title, prose and status, or an assumption's prose and status.
-`appliesToModel` is not compared.
+`appliesToModel` is not compared. A copied threat leaves its own
+`appliesToModel` behind, as a copied assumption does, since the link belongs
+to the model it was copied from: `selectionFragment` clears it and
+`insertFragment` adds every pasted threat without it.
 
 ## Records, culling and flags
 
@@ -113,16 +117,25 @@ it. `removeMitigation` and `removeAssumption` are explicit removals, not culls.
 `droppedRecords` names the records one model holds and another does not, which
 is how a caller reports what an edit culled.
 
-A threat is culled on the same terms, its references being its element
-attachments. `detachThreat`, `removeElement` and `replaceThreat` remove a
-threat whose last attachment they take, carrying `removeThreat`'s own
-cascade, so the records left with no threat go in the same operation and one
-undo step restores all of them. A threat that was attached to nothing before
-the edit stays through any of them: `parseModel` keeps it, an unrelated
-`removeElement` keeps it, and a `replaceThreat` that leaves it unattached
-keeps it too, whatever else it changes. `droppedThreats` names the threats
-one model holds and another does not, the way `droppedRecords` does for
-records. No new threat takes a culled threat's number.
+A threat applies to the model as a whole, to the elements it names, or to
+both, and its model link is its stored `appliesToModel` flag, never inferred
+from an empty `elements` list. `linkThreatToModel` and `unlinkThreatFromModel`
+set and clear it, and a link that is already there or an unlink of one that is
+not returns the model it was given.
+
+A threat is culled on the same terms as a record, its references being its
+element attachments and its model link. `detachThreat`, `removeElement`,
+`unlinkThreatFromModel` and `replaceThreat` remove a threat whose last
+reference they take, carrying `removeThreat`'s own cascade, so the records
+left with no threat go in the same operation and one undo step restores all
+of them. A threat that applies to the model stays when its last element goes,
+attached to nothing. A threat that had no reference before the edit stays
+through any of them: `parseModel` keeps it, an unrelated `removeElement` keeps
+it, and a `replaceThreat` that leaves it with none keeps it too, whatever else
+it changes. `addThreat` accepts a threat with no reference. `droppedThreats`
+names the threats one model holds and another does not, the way
+`droppedRecords` does for records. No new threat takes a culled threat's
+number.
 
 `threatFlags` derives the flags a threat's records raise, as
 `threatFlagSchema` values: `mitigated-without-implemented-work` for a

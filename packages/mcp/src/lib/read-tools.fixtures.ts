@@ -125,6 +125,7 @@ const everyRecordModel: Model = parsedFixture({
       status: 'accepted-risk',
       description: '',
       elements: [],
+      appliesToModel: false,
     },
   ],
   lastIssuedThreatNumber: editableModel.lastIssuedThreatNumber + 1,
