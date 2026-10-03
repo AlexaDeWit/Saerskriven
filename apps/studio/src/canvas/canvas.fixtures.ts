@@ -1,5 +1,5 @@
 import type { CanvasNode } from '@saerskriven/canvas';
-import { createEvent, fireEvent } from '@testing-library/react';
+import { fireEvent } from '@testing-library/react';
 import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
 import {
   assumptionId,
@@ -284,23 +284,8 @@ export function pointerOn(
 }
 
 /**
- * Fires a mouse event at a screen x on `target`, carrying the window as its
- * view, which React Flow's resize gesture listens on for the moves and the
- * release that follow a press on a resize control.
- */
-export function mouseOn(
-  target: Element | Window,
-  type: 'mouseDown' | 'mouseMove' | 'mouseUp',
-  clientX: number,
-): void {
-  const event = createEvent[type](target, { clientX, clientY: 100 });
-  Object.defineProperty(event, 'view', { value: window });
-  fireEvent(target, event);
-}
-
-/**
  * Resolves once the click React Flow's resize gesture swallows after its
- * release is let through again, so a spec that ends on {@link mouseOn} awaits
+ * release is let through again, so a spec that ends on a mouse resize awaits
  * it rather than leave the next spec's first click swallowed.
  */
 export const clickSuppressionLifted = (): Promise<void> =>

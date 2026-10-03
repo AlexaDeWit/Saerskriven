@@ -34,7 +34,6 @@ import {
   flaggedCanvasModel,
   laidOutNode,
   lastPlaced,
-  mouseOn,
   noteElement,
   openCanvas,
   probeFlow,
@@ -103,6 +102,11 @@ const touchResizeReader = (): void => {
 const stillPressReader = (): void => {
   fireEvent(resizeControl('right'), mouseEvent('mousedown', 100));
   fireEvent(window, mouseEvent('mouseup', 100));
+};
+
+const cancelledTouchResizeReader = (): void => {
+  touchResizeReader();
+  fireEvent(resizeControl('right'), touchEvent('touchcancel', finger(1, 160)));
 };
 
 const press = {
@@ -525,9 +529,9 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
     const control = resizeControl('left').parentElement ?? document.body;
 
-    mouseOn(control, 'mouseDown', 100);
-    mouseOn(window, 'mouseMove', 60);
-    mouseOn(window, 'mouseUp', 60);
+    fireEvent(control, mouseEvent('mousedown', 100));
+    fireEvent(window, mouseEvent('mousemove', 60));
+    fireEvent(window, mouseEvent('mouseup', 60));
     await clickSuppressionLifted();
 
     const { x } = readerBox().position;
@@ -535,6 +539,34 @@ describe('DiagramCanvas', () => {
     expect(decimalsOf(x)).toBe(3);
     expect(modelStore.getState().past).toHaveLength(2);
   });
+
+  it.each([
+    { named: 'a still press on a resize control', gesture: stillPressReader },
+    {
+      named: 'a touch resize that is cancelled',
+      gesture: cancelledTouchResizeReader,
+    },
+  ])(
+    'stores nothing for $named, so a position and size of more than three decimals stay as stored',
+    ({ gesture }) => {
+      openCanvas([actorElement]);
+      dispatch(
+        Action.ResizeElement({
+          elementId: actorElement,
+          offset: { x: 28.123456, y: 0 },
+          size: { width: 120.123456, height: 60.98765 },
+          decimals: undefined,
+        }),
+      );
+      const stored = modelStore.getState();
+      render(<DiagramCanvas />);
+
+      gesture();
+
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
+    },
+  );
 
   it('tells the view of a resize by keyboard, so the view can follow the control', () => {
     openCanvas([actorElement]);

@@ -11,7 +11,11 @@ import { nodeNamed, specResizeLabels } from './canvas.fixtures.js';
 import type { NodeBox } from './handles.js';
 import type { CanvasNodeData } from './react-flow.js';
 import { ResizeControls } from './resize-controls.js';
-import { keyboardResizeStep, type ResizeControlPosition } from './resizing.js';
+import {
+  keyboardResizeStep,
+  type GestureInput,
+  type ResizeControlPosition,
+} from './resizing.js';
 
 type HostNode = Node<CanvasNodeData, 'host'>;
 
@@ -24,6 +28,8 @@ const drift = 50;
 const resize = vi.fn<(fromResizingRender: boolean) => void>();
 
 const resizeEnd = vi.fn<(box: NodeBox, fromResizingRender: boolean) => void>();
+
+const endedBy = vi.fn<(input: GestureInput) => void>();
 
 const nodesChange = vi.fn<(changes: NodeChange<HostNode>[]) => void>();
 
@@ -45,10 +51,11 @@ function Host({ data }: NodeProps<HostNode>): ReactElement {
         setResizing(true);
         resize(resizing);
       }}
-      onResizeEnd={(box) => {
+      onResizeEnd={(box, input) => {
         setResizing(false);
         setNode({ ...node, ...box });
         resizeEnd(box, resizing);
+        endedBy(input);
       }}
       visible
     />
@@ -345,6 +352,22 @@ describe('ResizeControls', () => {
 
     expect(resizeEnd).toHaveBeenCalledTimes(1);
     expect(endedBoxes()).not.toContainEqual(pressed);
+  });
+
+  it('says a mouse resize and a touch resize ended by the pointer, and an arrow key by the keyboard', () => {
+    mouse(control('right'), 'mousedown', 100);
+    mouse(control('right'), 'mousemove', 140);
+    mouse(control('right'), 'mouseup', 140);
+    touchResize('right', [20, 40]);
+    act(() => {
+      control('right').dispatchEvent(keyDown('ArrowRight'));
+    });
+
+    expect(endedBy.mock.calls.flat()).toEqual([
+      'pointer',
+      'pointer',
+      'keyboard',
+    ]);
   });
 
   it('hands one resize end to an arrow key on the axis of its control, and none to a key off it', () => {
