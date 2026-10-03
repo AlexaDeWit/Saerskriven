@@ -1,9 +1,14 @@
 import { Either } from 'effect';
+import * as fc from 'fast-check';
 import {
+  boxAt,
+  decimalsOf,
   diagramId,
   elementId,
   elementIn,
   flowIn,
+  modelInputArbitrary,
+  modelWith,
   parsedFixture,
   securityModelFixture,
   softHyphen,
@@ -29,13 +34,22 @@ import {
   flowInput,
   mainDiagram,
   modelOf,
+  noisyBox,
+  noisyCurve,
+  noisyDiagram,
+  noisyFlow,
+  noisyModel,
+  noisyProcess,
+  noisyStore,
   note,
   operationContract,
+  pointsOf,
   storeInput,
   withNote,
   writeFlow,
 } from './operations.fixtures.js';
 import { parseModel, type Model } from './parse.js';
+import { elementsAcross } from './references.js';
 
 const secured = parsedFixture(securityModelFixture);
 
@@ -48,6 +62,12 @@ const everyKindButFlow: readonly Element[] = [
   elementIn(validModel, 'element-perimeter'),
   note,
 ];
+
+const movedAtOneDecimal = (id: string): Element =>
+  elementIn(
+    modelOf(moveElement(noisyModel, elementId(id), { x: 5, y: 20 }, 1)),
+    id,
+  );
 
 const readWith = (...added: readonly Element[]): Model =>
   Either.getOrThrow(
@@ -198,6 +218,47 @@ describe('addElement', () => {
     expect(flowIn(next, 'element-write-flow').name).toBe('');
   });
 
+  it('stores the whole geometry of the element it adds at the decimals named, and the element itself where none is', () => {
+    const holder = modelWith({
+      elements: [boxAt(noisyStore, 300.0004, 0.04, 'store')],
+    });
+    const added = (id: string, decimals?: number) =>
+      elementIn(
+        modelOf(
+          addElement(holder, noisyDiagram, elementIn(noisyModel, id), decimals),
+        ),
+        id,
+      );
+
+    for (const id of [noisyProcess, noisyFlow, noisyBox, noisyCurve]) {
+      expect(added(id)).toBe(elementIn(noisyModel, id));
+    }
+    expect(added(noisyProcess, 1)).toMatchObject({
+      position: { x: 123.6, y: 5.1 },
+      size: { width: 120.1, height: 0.1 },
+    });
+    expect(added(noisyFlow, 1)).toMatchObject({
+      source: { kind: 'attached', element: noisyStore },
+      target: { position: { x: 500.6, y: 200.4 } },
+      waypoints: [{ x: 250.1, y: 100 }],
+    });
+    expect(added(noisyBox, 3)).toMatchObject({
+      shape: {
+        position: { x: 10.123, y: -20.988 },
+        size: { width: 400.556, height: 300.444 },
+      },
+    });
+    expect(added(noisyCurve, 1)).toMatchObject({
+      shape: {
+        waypoints: [
+          { x: -20.3, y: 80.7 },
+          { x: 200.1, y: -20.2 },
+          { x: 441, y: 80.6 },
+        ],
+      },
+    });
+  });
+
   it('refuses cross-diagram references and checks new elements and diagrams', () => {
     const boundary = secured.diagrams[0].elements[4];
     const outside = parsedFixture({
@@ -343,6 +404,21 @@ describe('removeElement', () => {
     );
   });
 
+  it.each([
+    [undefined, { x: 300.0004 + 60, y: 0.04 + 40 }],
+    [1, { x: 360, y: 40 }],
+  ])(
+    'frees an endpoint at the anchor it works out, stored at %s decimals',
+    (decimals, position) => {
+      const next = modelOf(removeElement(noisyModel, noisyStore, decimals));
+
+      expect(flowIn(next, noisyFlow).source).toEqual({
+        kind: 'free',
+        position,
+      });
+    },
+  );
+
   it("frees an endpoint at the removed flow's own free endpoint", () => {
     const spur = elementSchema.parse({
       ...flowInput,
@@ -445,6 +521,58 @@ describe('moveElement', () => {
     });
   });
 
+  it.each([
+    [undefined, { x: 123.63636363636364 + 5, y: 5.1 - 5 }],
+    [3, { x: 128.636, y: 0.1 }],
+    [1, { x: 128.6, y: 0.1 }],
+    [0, { x: 129, y: 0 }],
+  ])(
+    'lands a move from a noisy position on a number of %s decimals, where one is named',
+    (decimals, position) => {
+      const next = modelOf(
+        moveElement(noisyModel, noisyProcess, { x: 5, y: -5 }, decimals),
+      );
+
+      expect(elementIn(next, noisyProcess)).toMatchObject({ position });
+    },
+  );
+
+  it('stores the bends, free ends and curve points it carries at the decimals named, and a box boundary by its position', () => {
+    expect(movedAtOneDecimal(noisyFlow)).toMatchObject({
+      source: { kind: 'attached', element: noisyStore },
+      target: { position: { x: 505.6, y: 220.4 } },
+      waypoints: [{ x: 255.1, y: 120 }],
+    });
+    expect(movedAtOneDecimal(noisyCurve)).toMatchObject({
+      shape: {
+        waypoints: [
+          { x: -15.3, y: 100.7 },
+          { x: 205.1, y: -0.2 },
+          { x: 446, y: 100.6 },
+        ],
+      },
+    });
+    expect(movedAtOneDecimal(noisyBox)).toMatchObject({
+      shape: {
+        position: { x: 15.1, y: -1 },
+        size: { width: 400.5558, height: 300.4444 },
+      },
+    });
+  });
+
+  it('leaves the size of what it moves, and every other element, as stored', () => {
+    const next = modelOf(
+      moveElement(noisyModel, noisyProcess, { x: 5, y: -5 }, 1),
+    );
+
+    expect(elementIn(next, noisyProcess)).toMatchObject({
+      size: { width: 120.123456, height: 0.04 },
+    });
+    for (const id of [noisyStore, noisyFlow, noisyBox, noisyCurve]) {
+      expect(elementIn(next, id)).toBe(elementIn(noisyModel, id));
+    }
+  });
+
   it('fails on an unknown element', () => {
     expect(
       errorOf(
@@ -453,6 +581,70 @@ describe('moveElement', () => {
     ).toEqual(
       OperationFailure.UnknownElement({
         elementId: elementId('element-ghost'),
+      }),
+    );
+  });
+});
+
+describe('moveElement over generated models', () => {
+  const generatedModel = modelInputArbitrary.map(parsedFixture);
+  const coordinate = fc.double({
+    min: -500,
+    max: 500,
+    noNaN: true,
+    noDefaultInfinity: true,
+  });
+  const offsetArbitrary = fc.record({ x: coordinate, y: coordinate });
+
+  it('stores each point it writes at the decimals named, nearest where the offset puts it, the same on every call, and touches no other element', () => {
+    fc.assert(
+      fc.property(
+        generatedModel,
+        offsetArbitrary,
+        fc.constantFrom(0, 1, 3),
+        (model, offset, decimals) => {
+          for (const element of elementsAcross(model.diagrams)) {
+            const moved = modelOf(
+              moveElement(model, element.id, offset, decimals),
+            );
+            const from = pointsOf(element);
+            for (const [index, point] of pointsOf(
+              elementIn(moved, element.id),
+            ).entries()) {
+              for (const axis of ['x', 'y'] as const) {
+                expect(decimalsOf(point[axis])).toBeLessThanOrEqual(decimals);
+                expect(Object.is(point[axis], -0)).toBe(false);
+                expect(
+                  Math.abs(point[axis] - (from[index][axis] + offset[axis])),
+                ).toBeLessThanOrEqual(0.5 / 10 ** decimals + 1e-9);
+              }
+            }
+            for (const other of elementsAcross(model.diagrams).filter(
+              (held) => held.id !== element.id,
+            )) {
+              expect(elementIn(moved, other.id)).toBe(other);
+            }
+            expect(
+              modelOf(moveElement(model, element.id, offset, decimals)),
+            ).toEqual(moved);
+          }
+        },
+      ),
+    );
+  });
+
+  it('stores what the offset computes where no count is named', () => {
+    fc.assert(
+      fc.property(generatedModel, offsetArbitrary, (model, offset) => {
+        for (const element of elementsAcross(model.diagrams)) {
+          const moved = modelOf(moveElement(model, element.id, offset));
+          expect(pointsOf(elementIn(moved, element.id))).toEqual(
+            pointsOf(element).map((point) => ({
+              x: point.x + offset.x,
+              y: point.y + offset.y,
+            })),
+          );
+        }
       }),
     );
   });
@@ -482,6 +674,30 @@ describe('resizeElement', () => {
       shape: { size: { width: 600, height: 240 } },
     });
   });
+
+  it.each([
+    [undefined, { width: 125.123456, height: 0.04 }],
+    [3, { width: 125.123, height: 0.04 }],
+    [1, { width: 125.1, height: 0.1 }],
+    [0, { width: 125, height: 1 }],
+  ])(
+    'stores a size at %s decimals, above zero, and leaves the position as stored',
+    (decimals, size) => {
+      const next = modelOf(
+        resizeElement(
+          noisyModel,
+          noisyProcess,
+          { width: 125.123456, height: 0.04 },
+          decimals,
+        ),
+      );
+
+      expect(elementIn(next, noisyProcess)).toMatchObject({
+        position: { x: 123.63636363636364, y: 5.1 },
+        size,
+      });
+    },
+  );
 
   it('refuses a flow and a curve trust boundary', () => {
     const size = { width: 10, height: 10 };
@@ -766,6 +982,29 @@ describe('element operations', () => {
           width: 5,
           height: 5,
         }),
+    },
+    'addElement at one decimal': {
+      input: noisyModel,
+      run: (model) =>
+        addElement(
+          model,
+          noisyDiagram,
+          { ...elementIn(noisyModel, noisyProcess), id: elementId('again') },
+          1,
+        ),
+    },
+    'removeElement at one decimal': {
+      input: noisyModel,
+      run: (model) => removeElement(model, noisyStore, 1),
+    },
+    'moveElement at one decimal': {
+      input: noisyModel,
+      run: (model) => moveElement(model, noisyFlow, { x: 5, y: 20 }, 1),
+    },
+    'resizeElement at one decimal to a height that rounds to zero': {
+      input: noisyModel,
+      run: (model) =>
+        resizeElement(model, noisyProcess, { width: 125.04, height: 0.04 }, 1),
     },
     renameElement: {
       input: validModel,

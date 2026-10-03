@@ -1,7 +1,8 @@
-import { fixedNumber, type GestureInput } from '@saerskriven/canvas';
+import type { GestureInput } from '@saerskriven/canvas';
 import {
   elementsAcross,
   elementsById,
+  storedNumber,
   type BoundaryShape,
   type Element,
   type FlowEndpoint,
@@ -22,7 +23,7 @@ export const gestureDecimals = {
  * arithmetic that produced it, and never negative zero.
  */
 export function atGesturePrecision(value: number, input: GestureInput): number {
-  return Number(fixedNumber(value, gestureDecimals[input]));
+  return storedNumber(value, gestureDecimals[input]);
 }
 
 /**

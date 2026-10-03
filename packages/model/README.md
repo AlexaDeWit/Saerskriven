@@ -57,6 +57,22 @@ threats by severity, and the threat count of every element. `autoPlacement`
 gives a position to a caller that has none to read, as the OTM and TM-BOM
 imports do.
 
+An operation that writes geometry takes, as its last argument, how many
+decimals to store (`Decimals`, a whole count from 0 to 100): `addElement`,
+`removeElement`, `moveElement`, `resizeElement`, `setFlowWaypoints`,
+`setFlowEndPosition`, `setBoundaryShape` and `remapFragment`. Handed a count,
+it rounds the numbers it writes to that many decimals, the nearest such number
+with no negative zero, so a move by an offset from 123.63636363636364 lands on
+128.6 at one decimal. It rounds what it writes and nothing else: a move the
+positions, bends, free ends and curve points it carries and not a size, a
+resize the size and not the position, and no element it was not asked about. A
+size a count would round to zero becomes the smallest size that count writes,
+0.1 at one decimal, so it stays positive. Handed no count, an operation stores
+what it computes, which is what a file, the CLI and the MCP server get. The
+model holds no count of its own: the caller names one. `fixedNumber` writes a
+number at a count of decimals and `storedNumber` rounds one, and the canvas
+package's `svgNumber` writes through the first.
+
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no
 element is on no diagram.

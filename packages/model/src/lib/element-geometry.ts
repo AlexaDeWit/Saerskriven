@@ -1,22 +1,65 @@
+import {
+  storedPoint,
+  storedPoints,
+  storedSize,
+  type Decimals,
+} from './decimals.js';
 import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
 import type { Point, Size } from './geometry.js';
 
 const origin: Point = { x: 0, y: 0 };
 
-/** Translates element geometry while attached endpoints retain their references. */
-export function translatedElement(element: Element, offset: Point): Element {
+/**
+ * Translates element geometry while attached endpoints retain their
+ * references, each point it moves stored at `decimals`.
+ */
+export function translatedElement(
+  element: Element,
+  offset: Point,
+  decimals?: Decimals,
+): Element {
+  return withPoints(element, (point) =>
+    storedPoint({ x: point.x + offset.x, y: point.y + offset.y }, decimals),
+  );
+}
+
+/**
+ * `element` with the whole of its geometry stored at `decimals`: every
+ * position, free end, waypoint and size. `element` itself where no count is
+ * named.
+ */
+export function storedElement(
+  element: Element,
+  decimals: Decimals | undefined,
+): Element {
+  if (decimals === undefined) {
+    return element;
+  }
   if (element.kind === 'flow') {
-    return {
-      ...element,
-      source: shiftedEndpoint(element.source, offset),
-      target: shiftedEndpoint(element.target, offset),
-      waypoints: element.waypoints.map((waypoint) => shifted(waypoint, offset)),
-    };
+    return withPoints(element, (point) => storedPoint(point, decimals));
   }
   if (element.kind === 'trust-boundary') {
-    return { ...element, shape: shiftedShape(element.shape, offset) };
+    return { ...element, shape: storedShape(element.shape, decimals) };
   }
-  return { ...element, position: shifted(element.position, offset) };
+  return {
+    ...element,
+    position: storedPoint(element.position, decimals),
+    size: storedSize(element.size, decimals),
+  };
+}
+
+/** A copy of `shape` with its position and size, or its waypoints, stored at `decimals`. */
+export function storedShape(
+  shape: BoundaryShape,
+  decimals: Decimals | undefined,
+): BoundaryShape {
+  return shape.kind === 'box'
+    ? {
+        kind: 'box',
+        position: storedPoint(shape.position, decimals),
+        size: storedSize(shape.size, decimals),
+      }
+    : { kind: 'curve', waypoints: storedPoints(shape.waypoints, decimals) };
 }
 
 /**
@@ -53,6 +96,40 @@ export function samePoint(left: Point, right: Point): boolean {
   return left.x === right.x && left.y === right.y;
 }
 
+function withPoints(element: Element, at: (point: Point) => Point): Element {
+  if (element.kind === 'flow') {
+    return {
+      ...element,
+      source: endpointAt(element.source, at),
+      target: endpointAt(element.target, at),
+      waypoints: element.waypoints.map((waypoint) => at(waypoint)),
+    };
+  }
+  if (element.kind === 'trust-boundary') {
+    const { shape } = element;
+    return {
+      ...element,
+      shape:
+        shape.kind === 'box'
+          ? { ...shape, position: at(shape.position) }
+          : {
+              ...shape,
+              waypoints: shape.waypoints.map((waypoint) => at(waypoint)),
+            },
+    };
+  }
+  return { ...element, position: at(element.position) };
+}
+
+function endpointAt(
+  endpoint: FlowEndpoint,
+  at: (point: Point) => Point,
+): FlowEndpoint {
+  return endpoint.kind === 'free'
+    ? { ...endpoint, position: at(endpoint.position) }
+    : endpoint;
+}
+
 function centreOf(position: Point, size: Size): Point {
   return {
     x: position.x + size.width / 2,
@@ -66,23 +143,4 @@ function freeEndpointPosition(flow: Flow): Point | undefined {
       endpoint.kind === 'free' ? [endpoint.position] : [],
     )
     .at(0);
-}
-
-function shifted(point: Point, offset: Point): Point {
-  return { x: point.x + offset.x, y: point.y + offset.y };
-}
-
-function shiftedEndpoint(endpoint: FlowEndpoint, offset: Point): FlowEndpoint {
-  return endpoint.kind === 'free'
-    ? { ...endpoint, position: shifted(endpoint.position, offset) }
-    : endpoint;
-}
-
-function shiftedShape(shape: BoundaryShape, offset: Point): BoundaryShape {
-  return shape.kind === 'box'
-    ? { ...shape, position: shifted(shape.position, offset) }
-    : {
-        ...shape,
-        waypoints: shape.waypoints.map((waypoint) => shifted(waypoint, offset)),
-      };
 }

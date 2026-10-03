@@ -9,7 +9,14 @@ import { setBoundaryShape } from './boundary-operations.js';
 import type { BoundaryShape } from './elements.js';
 import type { ElementId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
-import { errorOf, modelOf, operationContract } from './operations.fixtures.js';
+import {
+  errorOf,
+  modelOf,
+  noisyBox,
+  noisyCurve,
+  noisyModel,
+  operationContract,
+} from './operations.fixtures.js';
 
 const perimeter = elementId('element-perimeter');
 const billingZone = elementId('element-billing-zone');
@@ -28,6 +35,17 @@ const box = {
   position: { x: 20, y: 300 },
   size: { width: 780, height: 120 },
 } satisfies BoundaryShape;
+
+const shaped = (id: ElementId, shape: BoundaryShape, decimals?: number) =>
+  elementIn(modelOf(setBoundaryShape(noisyModel, id, shape, decimals)), id);
+
+const curveThrough = (x: number): BoundaryShape => ({
+  kind: 'curve',
+  waypoints: [
+    { x, y: 5 },
+    { x: 20, y: 5 },
+  ],
+});
 
 describe('setBoundaryShape', () => {
   it('turns a box boundary into a curve and back, keeping its declared relationships', () => {
@@ -89,6 +107,52 @@ describe('setBoundaryShape', () => {
     },
   );
 
+  it('stores the shape it is given at the decimals named, a box above zero, and as given where none is', () => {
+    const flat = {
+      kind: 'box',
+      position: { x: 10.123456, y: -20.98765 },
+      size: { width: 400.5558, height: 0.04 },
+    } satisfies BoundaryShape;
+    const points = {
+      kind: 'curve',
+      waypoints: [
+        { x: -20.3333, y: 80.6666 },
+        { x: 200.1111, y: -20.2222 },
+      ],
+    } satisfies BoundaryShape;
+
+    expect(shaped(noisyCurve, flat)).toMatchObject({ shape: flat });
+    expect(shaped(noisyCurve, flat, 1)).toMatchObject({
+      shape: {
+        position: { x: 10.1, y: -21 },
+        size: { width: 400.6, height: 0.1 },
+      },
+    });
+    expect(shaped(noisyBox, points, 3)).toMatchObject({
+      shape: {
+        waypoints: [
+          { x: -20.333, y: 80.667 },
+          { x: 200.111, y: -20.222 },
+        ],
+      },
+    });
+  });
+
+  it('keeps the model for the shape the boundary has, as given or as the decimals named would store it', () => {
+    const held = structuredClone(elementIn(noisyModel, noisyCurve));
+    const rounded = modelOf(
+      setBoundaryShape(noisyModel, noisyCurve, curveThrough(9.96), 1),
+    );
+
+    expect(
+      held.kind === 'trust-boundary' &&
+        modelOf(setBoundaryShape(noisyModel, noisyCurve, held.shape, 1)),
+    ).toBe(noisyModel);
+    expect(
+      modelOf(setBoundaryShape(rounded, noisyCurve, curveThrough(10.04), 1)),
+    ).toBe(rounded);
+  });
+
   it('holds its own copy of the shape it was given', () => {
     const givenBox = structuredClone(box);
     const givenCurve = structuredClone(curve);
@@ -128,6 +192,20 @@ describe('setBoundaryShape', () => {
     'setBoundaryShape to a box': {
       input: validModel,
       run: (model) => setBoundaryShape(model, billingZone, box),
+    },
+    'setBoundaryShape at one decimal to a box whose height rounds to zero': {
+      input: noisyModel,
+      run: (model) =>
+        setBoundaryShape(
+          model,
+          noisyCurve,
+          {
+            kind: 'box',
+            position: { x: 10.123456, y: -20.98765 },
+            size: { width: 400.5558, height: 0.04 },
+          },
+          1,
+        ),
     },
   });
 });

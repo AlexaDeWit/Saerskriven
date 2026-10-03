@@ -35,7 +35,6 @@ describe('the package barrel', () => {
       'polylinePath',
       'smoothPath',
       'svgNumber',
-      'fixedNumber',
       'boxOfPoints',
       'boxesOverlap',
       'wrapText',

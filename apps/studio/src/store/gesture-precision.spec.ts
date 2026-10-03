@@ -4,22 +4,15 @@ import {
   attached,
   boxAt,
   curveBoundary,
-  decimalsOf,
   elementId,
   elementIn,
   flowBetween,
   modelWith,
 } from '@saerskriven/model/fixtures';
 import { Action, type GestureEdit } from './actions.js';
-import {
-  atGesturePrecision,
-  gestureDecimals,
-  modelAtGesturePrecision,
-} from './gesture-precision.js';
+import { modelAtGesturePrecision } from './gesture-precision.js';
 import { reduce } from './reducer.js';
 import { initialState } from './state.js';
-
-const inputs = ['pointer', 'keyboard'] as const;
 
 const actor = elementId('actor');
 const store = elementId('store');
@@ -64,49 +57,6 @@ const pointsOf = (element: Element): readonly Point[] =>
   element.kind === 'trust-boundary' && element.shape.kind === 'curve'
     ? element.shape.waypoints
     : [];
-
-describe('atGesturePrecision', () => {
-  it.each([
-    [0.1 + 0.2, 0.3, 0.3],
-    [123.63636363636364 + 5, 128.636, 128.6],
-    [128.60000000000002, 128.6, 128.6],
-    [5.1 - 5, 0.1, 0.1],
-    [17.3 - 20, -2.7, -2.7],
-    [-12.25, -12.25, -12.3],
-    [-0.04, -0.04, 0],
-    [-0.0004, 0, 0],
-    [28.5, 28.5, 28.5],
-    [33.123, 33.123, 33.1],
-    [-275, -275, -275],
-  ])(
-    'stores %d as %d from a pointer and as %d from the keyboard',
-    (value, pointer, keyboard) => {
-      expect(atGesturePrecision(value, 'pointer')).toBe(pointer);
-      expect(atGesturePrecision(value, 'keyboard')).toBe(keyboard);
-    },
-  );
-
-  it.each(inputs)(
-    'gives a number the arithmetic of a %s gesture made no more decimals than that input keeps, and the nearest such number',
-    (input) => {
-      const decimals = gestureDecimals[input];
-      for (let step = -400; step <= 400; step += 1) {
-        for (const made of [
-          step / 7,
-          step / 11 + 5,
-          step * 0.1 + 0.2,
-          step * 1.1 - 20,
-        ]) {
-          const kept = atGesturePrecision(made, input);
-          expect(decimalsOf(kept)).toBeLessThanOrEqual(decimals);
-          expect(Math.abs(kept - made)).toBeLessThanOrEqual(
-            0.5 / 10 ** decimals + 1e-9,
-          );
-        }
-      }
-    },
-  );
-});
 
 describe('a gesture', () => {
   it.each([

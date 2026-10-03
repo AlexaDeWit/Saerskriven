@@ -30,7 +30,7 @@ export {
   type CanvasNodeKind,
   type UnplacedEndpoint,
 } from './lib/layout.js';
-export { fixedNumber, svgNumber } from './lib/numbers.js';
+export { svgNumber } from './lib/numbers.js';
 export {
   curveMidpoints,
   polylinePath,
