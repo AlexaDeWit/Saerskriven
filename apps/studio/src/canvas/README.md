@@ -97,13 +97,14 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   page and by the canvas for itself. A press the canvas answered is marked
   handled, so one press is one removal ([the commands](../commands/README.md)).
 - **The Select tool's keys on a canvas item or a control of the selection
-  are answered by the canvas.** React Flow blurs a node or flow it unselects on Escape, and the
-  controls of the selection go with it: resize controls, bend, end and point
-  handles, the route toolbar, the sections marked `data-selection-commands`,
-  and the frame React Flow draws around a box selection. So `item-focus.ts`
-  moves focus to the element, or from the frame to the canvas, runs the
-  command itself and stops the press there, short of React Flow and the page
-  binding. A handle gesture's own Escape runs first and stops the press.
+  are answered by the canvas.** React Flow blurs a node or flow it unselects
+  on Escape, and the controls of the selection go with it: resize controls,
+  bend, end and point handles, the route toolbar, the sections marked
+  `data-selection-commands`, and the frame React Flow draws around a box
+  selection. So `item-focus.ts` moves focus to the element, or from the frame
+  to the canvas, runs the command itself and stops the press there, short of
+  React Flow and the page binding. A handle gesture's own Escape runs first
+  and stops the press.
 - **Which element has its name open is store state**, so the rename command
   reaches it with nothing of the canvas mounted above it
   ([the store](../store/README.md)). A name the model already holds dispatches

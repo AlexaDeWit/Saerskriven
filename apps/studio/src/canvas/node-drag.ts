@@ -16,13 +16,14 @@ type Drag = {
 };
 
 /**
- * React Flow's own drag of nodes, from its `onNodeDragStart` to the settled
+ * React Flow's own drag of nodes, from its `onNodeDragStart` to its
+ * `onNodeDragStop`, which follows every drag it started, or to the settled
  * position change that ends it. Its changes pass to `moveNodes` until the
  * selection changes under it, as Escape does, or the window loses focus. The
  * drag is then put back where the model has its nodes now, and nothing more
  * of it reaches `moveNodes`, its release included, so it records no move.
- * `autoPan` stays off until that release. A drag React Flow ends without a
- * settled change is forgotten at the next drag start or primary press.
+ * `autoPan` stays off until that release. The next drag start replaces a drag
+ * React Flow never ended.
  */
 export function useNodeDrag(
   positions: ReadonlyMap<string, CanvasNode>,
@@ -62,19 +63,12 @@ export function useNodeDrag(
   const blurred = useEffectEvent((): void => {
     cancel();
   });
-  const pressed = useEffectEvent((event: PointerEvent): void => {
-    if (event.isPrimary) {
-      forget();
-    }
-  });
   useEffect(() => {
     const unsubscribe = modelStore.subscribe(reselected);
     window.addEventListener('blur', blurred);
-    window.addEventListener('pointerdown', pressed, true);
     return () => {
       unsubscribe();
       window.removeEventListener('blur', blurred);
-      window.removeEventListener('pointerdown', pressed, true);
     };
   }, []);
 
@@ -91,6 +85,9 @@ export function useNodeDrag(
         cancelled: false,
       };
       setHeldBack(false);
+    },
+    onNodeDragStop: (): void => {
+      forget();
     },
     onNodesChange: (changes: NodeChange<DiagramNode>[]): void => {
       const current = drag.current;

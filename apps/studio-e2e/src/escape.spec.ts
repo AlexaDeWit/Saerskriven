@@ -148,7 +148,7 @@ test('Escape on a selected element resize control moves focus to the element', a
   await focusSettled(actor);
 });
 
-test('Escape on a bend or end handle of the selected flow moves focus to the flow', async ({
+test('Escape on a bend or end handle, the route toolbar or a flow command moves focus to the selected flow', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -161,6 +161,8 @@ test('Escape on a bend or end handle of the selected flow moves focus to the flo
   for (const handle of [
     page.getByRole('button', { name: 'Bend 1', exact: true }),
     page.getByRole('button', { name: 'Flow source end', exact: true }),
+    page.getByRole('button', { name: 'Add bend', exact: true }),
+    page.getByRole('button', { name: 'Change flow source', exact: true }),
   ]) {
     await handle.focus();
 

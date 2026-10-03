@@ -1,19 +1,33 @@
+import type { ElementId } from '@saerskriven/model';
+import { act, render, screen } from '@testing-library/react';
+import { createElement, type FunctionComponent } from 'react';
 import { unmountedSurface } from '../commands/binding.js';
 import { actorElement } from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
-import { openCanvas } from './canvas.fixtures.js';
+import { boundaryElement, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { selectToolOnItem } from './item-focus.js';
 import { currentLayout } from './layout.js';
 import { elementIds } from './nodes.js';
+import {
+  BoundaryShapeCommands,
+  FlowEndpointCommands,
+} from './selection-controls.js';
 
 const canvas = document.createElement('div');
 canvas.className = 'react-flow';
 canvas.tabIndex = -1;
 
-const node = document.createElement('div');
-node.className = 'react-flow__node';
-node.dataset['id'] = actorElement;
-node.tabIndex = 0;
+const drawn = (className: string, id: ElementId): HTMLElement => {
+  const item = document.createElement('div');
+  item.className = className;
+  item.dataset['id'] = id;
+  item.tabIndex = 0;
+  return item;
+};
+
+const node = drawn('react-flow__node', actorElement);
+const flow = drawn('react-flow__edge', requestFlow);
+const boundary = drawn('react-flow__node', boundaryElement);
 
 const resizeControl = document.createElement('button');
 const nameField = document.createElement('textarea');
@@ -25,21 +39,22 @@ const frameRect = document.createElement('div');
 frameRect.tabIndex = -1;
 selectionFrame.append(frameRect);
 
-const besideSelection = ['data-bend-index', 'data-curve-point'].map(
-  (attribute) => {
-    const handle = document.createElement('button');
-    handle.setAttribute(attribute, '0');
-    return handle;
-  },
-);
+const besideSelection = [
+  'data-bend-index',
+  'data-flow-end',
+  'data-bend-toolbar',
+  'data-curve-point',
+].map((attribute) => {
+  const holder = document.createElement('div');
+  holder.setAttribute(attribute, '0');
+  const control = document.createElement('button');
+  holder.append(control);
+  canvas.append(holder);
+  return control;
+});
 
-const selectionCommands = document.createElement('section');
-selectionCommands.dataset['selectionCommands'] = '';
-const shapeCommand = document.createElement('button');
-selectionCommands.append(shapeCommand);
-
-canvas.append(node, selectionFrame, ...besideSelection);
-document.body.append(canvas, selectionCommands);
+canvas.append(node, flow, boundary, selectionFrame);
+document.body.append(canvas);
 
 const press = (key: string, on: HTMLElement) => {
   on.focus();
@@ -90,13 +105,43 @@ describe('selectToolOnItem', () => {
     expect(modelStore.getState().selection).toEqual([]);
   });
 
-  it('moves focus from a handle or command beside the selected element to the element', () => {
-    for (const control of [...besideSelection, shapeCommand]) {
+  it('moves focus from a handle or the route toolbar beside the selected element to the element', () => {
+    for (const control of besideSelection) {
       openCanvas([actorElement]);
 
       expect(answered('Escape', control).ran).toBe(true);
       expect(document.activeElement).toBe(node);
       expect(modelStore.getState().selection).toEqual([]);
+    }
+  });
+
+  it('moves focus from the flow endpoint and boundary shape commands to the element they act on', () => {
+    const sections: readonly [
+      FunctionComponent,
+      ElementId,
+      HTMLElement,
+      string,
+    ][] = [
+      [FlowEndpointCommands, requestFlow, flow, 'Change flow source'],
+      [
+        BoundaryShapeCommands,
+        boundaryElement,
+        boundary,
+        'Switch boundary shape',
+      ],
+    ];
+    for (const [Commands, selected, item, name] of sections) {
+      openCanvas([selected]);
+      const { unmount } = render(createElement(Commands));
+      const command = screen.getByRole('button', { name });
+
+      act(() => {
+        expect(answered('Escape', command).ran).toBe(true);
+      });
+
+      expect(document.activeElement).toBe(item);
+      expect(modelStore.getState().selection).toEqual([]);
+      unmount();
     }
   });
 

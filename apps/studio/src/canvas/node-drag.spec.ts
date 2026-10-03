@@ -27,6 +27,11 @@ const renderNodeDrag = () => {
         );
       });
     },
+    stop: () => {
+      act(() => {
+        result.current.onNodeDragStop();
+      });
+    },
     report: (changes: NodeChange<DiagramNode>[]) => {
       act(() => {
         result.current.onNodesChange(changes);
@@ -160,7 +165,7 @@ describe('useNodeDrag', () => {
     );
   });
 
-  it('forgets a drag React Flow never settled at the next drag start, and at the next primary press', () => {
+  it('replaces a drag React Flow never ended at the next drag start', () => {
     const { start, report, autoPan, moveNodes } = renderNodeDrag();
 
     start([actorElement]);
@@ -180,14 +185,42 @@ describe('useNodeDrag', () => {
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 10, y: 0 }, true),
     );
+  });
 
+  it('filters the late release of a drag the window put back, whatever is pressed before it, and lets the next keyboard move by', () => {
+    const { start, report, stop, autoPan, moveNodes } = renderNodeDrag();
+
+    start(pair);
+    report(movedTo(pair, { x: 20, y: 10 }, true));
     blur();
     act(() => {
       window.dispatchEvent(
         new PointerEvent('pointerdown', { isPrimary: true }),
       );
     });
+    report(movedTo(pair, { x: 20, y: 10 }, false));
+    expect(moveNodes).toHaveBeenLastCalledWith(
+      movedTo(pair, { x: 0, y: 0 }, false),
+    );
+    stop();
     report(movedTo(pair, { x: 5, y: 0 }, false));
+
+    expect(moveNodes).toHaveBeenLastCalledWith(
+      movedTo(pair, { x: 5, y: 0 }, false),
+    );
+    expect(autoPan()).toBe(true);
+  });
+
+  it('forgets at its stop a drag that moved nothing, so the next keyboard move goes by', () => {
+    const { start, report, stop, autoPan, moveNodes } = renderNodeDrag();
+
+    start(pair);
+    act(() => {
+      selectTool('select');
+    });
+    stop();
+    report(movedTo(pair, { x: 5, y: 0 }, false));
+
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(pair, { x: 5, y: 0 }, false),
     );
