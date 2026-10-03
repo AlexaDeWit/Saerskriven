@@ -78,12 +78,12 @@ pub(crate) fn rasterize(svg: &[u8], long_edge: u32) -> Result<Raster, String> {
     Ok(Raster { width, height, png })
 }
 
-// This module resolves no image from any href. usvg's default resolve_data
-// takes a data URL's bytes as an image, and parses them as a nested document
-// where they are an SVG. Its default resolve_string treats any other href as a
-// file path. Answering None from both leaves every image undrawn, and keeps
-// this module off every path the host might hold, on top of a target that has
-// no syscall to reach one with.
+// No image is resolved from an href in the document render is given. usvg's
+// default resolve_data takes a data URL's bytes as an image, and an SVG among
+// them as a nested document. Its default resolve_string treats any other href
+// as a file path, on a target with no syscall to reach one. Both answer None
+// here. These options do not reach the SVG glyphs of a face add_font took:
+// usvg parses each with its own defaults, so a data URL image in one resolves.
 fn options<'a>() -> usvg::Options<'a> {
     let mut options = usvg::Options {
         fontdb: FONTS.with_borrow(Arc::clone),
