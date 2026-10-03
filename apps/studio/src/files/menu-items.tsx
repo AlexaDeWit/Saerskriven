@@ -1,5 +1,5 @@
 import { DropdownMenu } from 'radix-ui';
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, type ReactNode, type Ref } from 'react';
 import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
@@ -34,6 +34,7 @@ type MenuItemProps = {
   readonly children: ReactNode;
   readonly disabled?: boolean;
   readonly keepOpen?: boolean;
+  readonly itemRef?: Ref<HTMLDivElement>;
   readonly onChoose: () => void;
 };
 
@@ -63,6 +64,7 @@ export function MenuItem({
   children,
   disabled,
   keepOpen,
+  itemRef,
   onChoose,
 }: MenuItemProps) {
   return (
@@ -70,6 +72,7 @@ export function MenuItem({
       aria-keyshortcuts={shortcut?.keyShortcuts}
       className={`${styles.item} ${cursor.row}`}
       disabled={disabled}
+      ref={itemRef}
       onSelect={(event) => {
         if (keepOpen === true) {
           event.preventDefault();
@@ -101,6 +104,7 @@ export function MenuCommand({ command, children, disabled }: MenuCommandProps) {
 type MenuQuestion = {
   readonly question: string;
   readonly answer: () => void;
+  readonly itemRef?: Ref<HTMLDivElement>;
 };
 
 type RegisteredMenuCommandProps = {
@@ -115,7 +119,8 @@ type RegisteredMenuCommandProps = {
 /**
  * A command bound at render time, such as one export item per diagram.
  * `onChoose` replaces running the command through the surface. While `asking`,
- * the item shows the question without the chord and choosing it answers.
+ * the item shows the question without the chord, choosing it answers, and
+ * the question's `itemRef` reaches the item, for a menu that focuses it.
  */
 export function RegisteredMenuCommand({
   entry,
@@ -132,6 +137,7 @@ export function RegisteredMenuCommand({
     return (
       <MenuItem
         disabled={disabled}
+        itemRef={asking.itemRef}
         keepOpen={keepOpen}
         onChoose={asking.answer}
       >

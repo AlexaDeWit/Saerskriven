@@ -1018,6 +1018,9 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link', () => {
       { timeout: 5_000 },
     );
     expect(item('Cancel')).toBeDefined();
+    await waitFor(() => {
+      expect(document.activeElement).toBe(question);
+    });
     expect(modelStore.getState().present).not.toEqual(recordedModel);
 
     await user.click(question);
@@ -1027,6 +1030,26 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link', () => {
     );
     expect(isDirty(modelStore.getState())).toBe(true);
     expect(globalThis.location.hash).toBe('');
+  });
+
+  it('asks over a clean model whose recovery snapshot could not be read at startup', async () => {
+    modelStore.setState(
+      { ...initialState(sampleModel), recoveryUnread: true },
+      true,
+    );
+    mounted(specBridge(), undefined, undefined, links);
+
+    await arrives();
+
+    expect(
+      await screen.findByRole(
+        'menuitem',
+        { name: 'Discard changes and open the link' },
+        { timeout: 5_000 },
+      ),
+    ).toBeDefined();
+    expect(isDirty(modelStore.getState())).toBe(false);
+    expect(modelStore.getState().present).toBe(sampleModel);
   });
 
   it.each([

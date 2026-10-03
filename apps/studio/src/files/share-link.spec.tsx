@@ -158,6 +158,43 @@ describe.skipIf(unbuilt(brotliVariable))('a shared link arriving', () => {
     expect(globalThis.location.hash).toBe('');
   });
 
+  it('lands the later of two pasted links when the earlier finishes reading last', async () => {
+    const reads = [
+      deferred<Either.Either<Uint8Array, AssetFailure>>(),
+      deferred<Either.Either<Uint8Array, AssetFailure>>(),
+    ];
+    let calls = 0;
+    const result = session({
+      module: () => {
+        const read = reads[calls];
+        calls += 1;
+        return read?.promise ?? Promise.resolve(Either.right(brotli()));
+      },
+      copy: writeClipboard,
+    });
+    const earlier = await fragmentOf(shared);
+    const later = await fragmentOf({
+      ...shared,
+      metadata: { ...shared.metadata, title: 'Later link' },
+    });
+
+    paste(earlier);
+    paste(later);
+    reads[1]?.resolve(Either.right(brotli()));
+    await waitFor(() => {
+      expect(held().present.metadata.title).toBe('Later link');
+    }, settled);
+    const landed = held().present;
+    await act(async () => {
+      reads[0]?.resolve(Either.right(brotli()));
+      await reads[0]?.promise;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+
+    expect(held().present).toBe(landed);
+    expect(result.current.linking).toBe(false);
+  });
+
   it('loads none of the module while the address holds no share link', () => {
     const { links, loads } = specLinks();
     visit('#security-properties');

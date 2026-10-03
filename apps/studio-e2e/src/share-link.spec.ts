@@ -81,7 +81,7 @@ test('a link opened in a second tab over unsaved work asks rather than losing th
 
   await expect(
     menuItem(other, 'Discard changes and open the link'),
-  ).toBeVisible();
+  ).toBeFocused();
   await expect(nodeNamed(other, /^Till, process/u)).toHaveCount(1);
   await menuItem(other, 'Cancel').click();
 
