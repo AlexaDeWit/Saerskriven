@@ -1,0 +1,215 @@
+//! Compresses bytes to brotli and decodes them back for Saerskriven's share
+//! links.
+//!
+//! The module instantiates with no imports and no JavaScript glue, on the
+//! rasterizer's terms: bytes cross the boundary as a pointer and a length into
+//! the module's own memory, which `alloc` hands out and `dealloc` takes back.
+//! `compress` and `decompress` read the buffer they are given rather than
+//! taking it, so the caller deallocs everything it allocs. Both answer with a
+//! pointer to three 32-bit words, status, payload pointer and payload length,
+//! which `release` frees. Status 0 means the payload holds the bytes, 1 that
+//! the decoded bytes would pass the caller's maximum, and 2 that the input is
+//! not one whole brotli stream. `compress` only ever answers 0.
+
+use std::alloc::{self, Layout};
+
+use brotli::enc::encode::{BrotliEncoderOperation, BrotliEncoderStateStruct};
+use brotli::enc::{BrotliEncoderParams, StandardAlloc};
+use brotli::{BrotliDecompressStream, BrotliResult, BrotliState};
+
+const WRITTEN: u32 = 0;
+const PAST_MAXIMUM: u32 = 1;
+const MALFORMED: u32 = 2;
+
+// Quality 11 with no custom dictionary (#604) and a 24-bit window (#622), so
+// a native brotli decoder can read every link.
+const QUALITY: i32 = 11;
+const WINDOW_BITS: i32 = 24;
+
+// Both directions write into a buffer this size and no larger, so what a
+// decode holds is the bytes it kept, never past the maximum, plus one chunk.
+const CHUNK: usize = 1 << 16;
+
+// Bytes cross the boundary as bytes, so one-byte alignment is the whole
+// contract, and `dealloc` rebuilds the same layout from the same length.
+const ALIGNMENT: usize = 1;
+
+/// What `compress` and `decompress` answer with, read by the caller and freed
+/// by `release`.
+#[repr(C)]
+pub struct Outcome {
+    status: u32,
+    payload: *mut u8,
+    length: usize,
+}
+
+/// Reserves `length` bytes of the module's memory for the caller to write
+/// into, or answers null where it has no such run to give.
+#[unsafe(no_mangle)]
+pub extern "C" fn alloc(length: usize) -> *mut u8 {
+    if length == 0 {
+        return std::ptr::dangling_mut();
+    }
+    match Layout::from_size_align(length, ALIGNMENT) {
+        Ok(layout) => unsafe { alloc::alloc(layout) },
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Returns a buffer `alloc` handed out, at the length it was asked for.
+///
+/// # Safety
+///
+/// `pointer` and `length` are one `alloc` call's answer and its argument.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dealloc(pointer: *mut u8, length: usize) {
+    if let (true, Ok(layout)) = (length > 0, Layout::from_size_align(length, ALIGNMENT)) {
+        unsafe { alloc::dealloc(pointer, layout) };
+    }
+}
+
+/// Compresses a buffer to one brotli stream at quality 11 with a 24-bit
+/// window.
+///
+/// # Safety
+///
+/// `pointer` and `length` name a buffer the caller owns for the call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn compress(pointer: *const u8, length: usize) -> *mut Outcome {
+    let input = unsafe { std::slice::from_raw_parts(pointer, length) };
+    hand_over(WRITTEN, compressed(input))
+}
+
+/// Decodes one brotli stream, keeping at most `maximum` bytes of its output.
+/// It stops at the first byte past the maximum rather than decoding the rest.
+///
+/// # Safety
+///
+/// `pointer` and `length` name a buffer the caller owns for the call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn decompress(
+    pointer: *const u8,
+    length: usize,
+    maximum: usize,
+) -> *mut Outcome {
+    let stream = unsafe { std::slice::from_raw_parts(pointer, length) };
+    match inflated(stream, maximum) {
+        Ok(bytes) => hand_over(WRITTEN, bytes),
+        Err(status) => hand_over(status, Vec::new()),
+    }
+}
+
+/// Frees an outcome and its payload.
+///
+/// # Safety
+///
+/// `outcome` is one `compress` or `decompress` call's answer, not yet
+/// released.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn release(outcome: *mut Outcome) {
+    let held = unsafe { Box::from_raw(outcome) };
+    let payload = std::ptr::slice_from_raw_parts_mut(held.payload, held.length);
+    drop(unsafe { Box::from_raw(payload) });
+}
+
+// The whole input goes to the encoder in one call that also finishes the
+// stream. Fed in pieces, as the crate's reader and writer helpers feed it,
+// the encoder reserves its full 32 MiB input ring on the second piece.
+fn compressed(input: &[u8]) -> Vec<u8> {
+    let mut encoder = BrotliEncoderStateStruct::new(StandardAlloc::default());
+    encoder.params = BrotliEncoderParams {
+        quality: QUALITY,
+        lgwin: WINDOW_BITS,
+        ..BrotliEncoderParams::default()
+    };
+    let mut stream = Vec::new();
+    let mut chunk = vec![0; CHUNK];
+    let mut available_in = input.len();
+    let mut input_offset = 0;
+    while !encoder.is_finished() {
+        let mut available_out = CHUNK;
+        let mut output_offset = 0;
+        let accepted = encoder.compress_stream(
+            BrotliEncoderOperation::BROTLI_OPERATION_FINISH,
+            &mut available_in,
+            input,
+            &mut input_offset,
+            &mut available_out,
+            &mut chunk,
+            &mut output_offset,
+            &mut None,
+            &mut |_, _, _, _| (),
+        );
+        // The encoder refuses only parameters these constants are not, so a
+        // refusal is a defect, and it aborts as an allocation the module
+        // cannot make does.
+        if !accepted {
+            std::process::abort();
+        }
+        stream.extend_from_slice(&chunk[..output_offset]);
+    }
+    stream
+}
+
+fn inflated(stream: &[u8], maximum: usize) -> Result<Vec<u8>, u32> {
+    // The strict state refuses the large-window extension, whose ring buffer
+    // reaches 1 GiB, so a stream can claim no more than standard brotli's
+    // 16 MiB window.
+    let mut decoder = BrotliState::new_strict(
+        StandardAlloc::default(),
+        StandardAlloc::default(),
+        StandardAlloc::default(),
+    );
+    let mut kept = Vec::new();
+    let mut chunk = vec![0; CHUNK];
+    let mut available_in = stream.len();
+    let mut input_offset = 0;
+    let mut total_out = 0;
+    loop {
+        // One byte more than may still be kept, so a stream that would pass
+        // the maximum shows it here and is decoded no further.
+        let room = (maximum - kept.len()).saturating_add(1).min(CHUNK);
+        let mut available_out = room;
+        let mut output_offset = 0;
+        let result = BrotliDecompressStream(
+            &mut available_in,
+            &mut input_offset,
+            stream,
+            &mut available_out,
+            &mut output_offset,
+            &mut chunk[..room],
+            &mut total_out,
+            &mut decoder,
+        );
+        if output_offset > maximum - kept.len() {
+            return Err(PAST_MAXIMUM);
+        }
+        keep(&mut kept, &chunk[..output_offset], maximum);
+        match result {
+            BrotliResult::NeedsMoreOutput => {}
+            BrotliResult::ResultSuccess if available_in == 0 => return Ok(kept),
+            _ => return Err(MALFORMED),
+        }
+    }
+}
+
+// Doubles the kept bytes' room as a vector would, but never past the maximum,
+// so a maximum that is not a power of two is not overshot.
+fn keep(kept: &mut Vec<u8>, written: &[u8], maximum: usize) {
+    let needed = kept.len() + written.len();
+    if needed > kept.capacity() {
+        let room = kept.capacity().saturating_mul(2).clamp(needed, maximum);
+        kept.reserve_exact(room - kept.len());
+    }
+    kept.extend_from_slice(written);
+}
+
+fn hand_over(status: u32, bytes: Vec<u8>) -> *mut Outcome {
+    let payload = bytes.into_boxed_slice();
+    let length = payload.len();
+    Box::into_raw(Box::new(Outcome {
+        status,
+        payload: Box::into_raw(payload).cast(),
+        length,
+    }))
+}

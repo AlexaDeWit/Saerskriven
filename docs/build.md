@@ -109,6 +109,35 @@ The CLI build copies the module into `apps/cli/dist/assets`, and the studio
 build emits it as a hashed asset of the website. Both refuse a build that has
 no module.
 
+## The brotli module
+
+The `brotli-wasm` project builds a WebAssembly module out of the `brotli` crate
+([`dropbox/rust-brotli`](https://github.com/dropbox/rust-brotli)), which share
+links compress with (#604). It holds an encoder, at quality 11 with a 24-bit
+window and no custom dictionary so any standard brotli decoder reads its
+output, and a decoder that refuses a stream at the first byte past a maximum
+the caller names. The crate and the three under it are pinned by
+[`nix/brotli-wasm/Cargo.lock`](../nix/brotli-wasm/Cargo.lock) and its checksums
+and compiled with no network, on the rasterizer's terms
+[above](#the-svg-rasterizer): one nx target runs `nix build .#brotli-wasm` to a
+fixed out-link under `dist/brotli-wasm`, every target that carries the module
+depends on it, and CI's Nix-store cache keeps the module and not the toolchain.
+
+```sh
+pnpm nx run brotli-wasm:build          # the module alone
+pnpm nx test @saerskriven/formats      # builds it on the way
+```
+
+The flake names the path in `SAERSKRIVEN_BROTLI_WASM`.
+`@saerskriven/formats/brotli` takes the module as bytes from its caller, and
+`brotliWasmAsset` on the `@saerskriven/formats/build-assets` subpath locates it
+through the variable. Its spec skips where the variable is unset, which is what
+running outside the flake shell looks like.
+
+The studio's build resolves `virtual:saerskriven-brotli-wasm?url` to the module
+as a hashed asset, so a page can fetch it only when it needs it. The CLI does
+not carry it.
+
 ## The runtime inside an executable
 
 About 33 MB of every executable is the denort runtime `deno compile` embeds.

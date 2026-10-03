@@ -153,13 +153,14 @@ targets do not run another project's tests.
 
 Files a task produces are restored only when listed in its `outputs`. A task
 that consumes another task's output declares both `dependsOn` and a
-`dependentTasksOutputFiles` input. Three cases in this tree: the CLI's
+`dependentTasksOutputFiles` input. Four cases in this tree: the CLI's
 `compile` stores `dist/cli` and its `test-compiled` hashes that executable
 before it runs it, the CLI's `test` hashes the whole build output rather than
 only its JavaScript, because the fonts and modules beside the bundle decide
-what a render writes, and the `resvg-wasm` build stores the rasterizer module
+what a render writes, the `resvg-wasm` build stores the rasterizer module
 that the CLI's build, the studio's build and test, and `@saerskriven/render`'s
-test each hash.
+test each hash, and the `brotli-wasm` build stores the brotli module that the
+studio's build and test and `@saerskriven/formats`'s test each hash.
 
 A leaf target that extends a `targetDefaults` or plugin-inferred array opens it
 with the spread token `"..."`. Without it the leaf array replaces the default,

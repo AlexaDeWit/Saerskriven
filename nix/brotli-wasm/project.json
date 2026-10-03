@@ -1,0 +1,27 @@
+{
+  "name": "brotli-wasm",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  // The one place that runs `nix build .#brotli-wasm`, on the shape of
+  // nix/resvg-wasm/project.json, which says why the inputs stop at the pin and
+  // the derivation, why the output is the copy under lib/ and not the
+  // out-link, and what the out-link roots in CI's Nix-store cache.
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "{workspaceRoot}/flake.nix",
+        "{workspaceRoot}/flake.lock",
+        "{projectRoot}/**/*"
+      ],
+      "outputs": ["{workspaceRoot}/dist/brotli-wasm/lib"],
+      "options": {
+        "parallel": false,
+        "commands": [
+          "nix build --print-build-logs --option sandbox true --out-link dist/brotli-wasm/store .#brotli-wasm",
+          "install -D -m 644 dist/brotli-wasm/store/lib/saerskriven_brotli.wasm dist/brotli-wasm/lib/saerskriven_brotli.wasm"
+        ]
+      }
+    }
+  }
+}
