@@ -54,7 +54,9 @@ that read the same and `kept` for the sentence saying a save back keeps it. The
 canvas does the same with a name: `canvas.quoted` sets a person's text in the
 reader's quotation marks, and an element without a name is called by its kind
 (`enums.the-actor` and the like), so an announcement takes either as one noun
-phrase.
+phrase. Where the kind opens a line instead, as it does at the head of that
+element's panel, it is `enums.heading-actor` and the like, the capital form
+each locale writes (_L’acteur_).
 
 In French that noun phrase never follows _de_ or _à_, which contract onto a
 kind's article (_du processus_, _au flux_), and _de_ elides before a name

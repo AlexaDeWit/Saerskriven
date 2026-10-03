@@ -54,12 +54,13 @@ export type RecordRowProps<Held extends ThreatRecord> = {
 };
 
 /**
- * One record. Folded, it is one row: a toggle reading its title, or the
+ * One record. Folded, it is one row: a toggle drawing its title, or the
  * start of its text, then its status, and a second line where it is on
  * other threats. Open, its name row carries the toggle that folds it, the
  * Added mark once a new record is kept, the status and Unlink (Discard
  * while it is not yet kept), and its fields follow without labels of their
- * own.
+ * own. The toggle is named alike in both states, by the record's name and
+ * its headline.
  */
 export function RecordRow<Held extends ThreatRecord>({
   kind,
@@ -160,23 +161,13 @@ export function RecordRow<Held extends ThreatRecord>({
       <fieldset aria-label={name} className={styles.recordFields}>
         <div className={styles.recordHead} data-folded={open ? undefined : ''}>
           {foldable ? (
-            <button
-              aria-describedby={line === undefined ? undefined : sharedId}
-              aria-expanded={open}
-              className={styles.recordToggle}
-              data-record-toggle=""
-              onClick={onToggle}
-              type="button"
-            >
-              {open ? (
-                <ChevronDownIcon aria-hidden="true" />
-              ) : (
-                <ChevronRightIcon aria-hidden="true" />
-              )}
-              <span className={open ? styles.recordName : styles.recordLine}>
-                {open ? name : (recordHeadline(record) ?? name)}
-              </span>
-            </button>
+            <RecordToggle
+              describedBy={line === undefined ? undefined : sharedId}
+              headline={recordHeadline(record)}
+              name={name}
+              onToggle={onToggle}
+              open={open}
+            />
           ) : (
             <span className={styles.recordName}>{name}</span>
           )}
@@ -199,5 +190,46 @@ export function RecordRow<Held extends ThreatRecord>({
         {open && fields}
       </fieldset>
     </div>
+  );
+}
+
+function RecordToggle({
+  name,
+  headline,
+  open,
+  describedBy,
+  onToggle,
+}: {
+  readonly name: string;
+  readonly headline: string | undefined;
+  readonly open: boolean;
+  readonly describedBy: string | undefined;
+  readonly onToggle: () => void;
+}) {
+  const { t } = useTranslator();
+
+  return (
+    <button
+      aria-describedby={describedBy}
+      aria-expanded={open}
+      aria-label={
+        headline === undefined
+          ? name
+          : t('fields.record-toggle', { name, headline })
+      }
+      className={styles.recordToggle}
+      data-record-toggle=""
+      onClick={onToggle}
+      type="button"
+    >
+      {open ? (
+        <ChevronDownIcon aria-hidden="true" />
+      ) : (
+        <ChevronRightIcon aria-hidden="true" />
+      )}
+      <span className={open ? styles.recordName : styles.recordLine}>
+        {open ? name : (headline ?? name)}
+      </span>
+    </button>
   );
 }

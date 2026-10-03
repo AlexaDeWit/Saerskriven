@@ -34,6 +34,7 @@ export const fieldsEnCA = catalogue(fieldMessages)('en-CA')({
   'name-of-trust-boundary': 'Name of the trust boundary',
   'name-of-trust-boundary-named': 'Name of {name}',
   'record-name': '{kind} {number}',
+  'record-toggle': '{name}, {headline}',
   'mitigation-title-field': 'Mitigation {number} title',
   'mitigation-prose-field': 'Mitigation {number} description',
   'mitigation-status-field': 'Mitigation {number} status',

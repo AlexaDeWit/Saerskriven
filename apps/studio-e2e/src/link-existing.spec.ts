@@ -15,14 +15,17 @@ import {
 const offered = {
   first: {
     name: /^The server prices the basket/u,
+    toggle: /^Mitigation 2, The server prices the basket/u,
     description: /^The server prices the basket/u,
   },
   middle: {
     name: /^Write an audit entry/u,
+    toggle: /^Mitigation 2, Write an audit entry/u,
     description: /^Write an audit entry/u,
   },
   last: {
     name: /^Reservation expiry/u,
+    toggle: /^Mitigation 2, Reservation expiry$/u,
     description: /^A reservation lapses/u,
   },
 } as const;
@@ -49,7 +52,7 @@ test(
     const trigger = await openPicker(page);
     const linked = linkedRow(page);
 
-    for (const [place, { name }] of Object.entries(offered)) {
+    for (const [place, { name, toggle }] of Object.entries(offered)) {
       await test.step(place, async () => {
         await trigger.scrollIntoViewIfNeeded();
         await trigger.click();
@@ -60,7 +63,7 @@ test(
         await expect(listbox).toHaveCount(0);
         await panelControl(page, 'Link existing mitigation').click();
 
-        await expect(linked).toHaveAccessibleName(name);
+        await expect(linked).toHaveAccessibleName(toggle);
         await expect(linked).toBeFocused();
 
         await runFromMenu(page, 'Undo');

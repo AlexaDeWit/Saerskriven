@@ -35,6 +35,7 @@ export const fieldsFrCA = catalogue(fieldMessages)('fr-CA')({
   'name-of-trust-boundary': 'Nom de la frontière de confiance',
   'name-of-trust-boundary-named': 'Nom de la frontière de confiance « {name} »',
   'record-name': '{kind} {number}',
+  'record-toggle': '{name}, {headline}',
   'mitigation-title-field': 'Titre de la mesure {number}',
   'mitigation-prose-field': 'Description de la mesure {number}',
   'mitigation-status-field': 'État de la mesure {number}',

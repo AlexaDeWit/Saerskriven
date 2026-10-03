@@ -197,6 +197,13 @@ placeholders of a record's fields, which draw no label. Link stays
 on the Tab path while no record is chosen (`aria-disabled`, with a description
 saying to choose one).
 
+A record's fold toggle draws the headline, the record's title or the first line
+of its text, while folded and the record's name while open. Its accessible name
+is both in either state ("Mitigation 1, Rate limit logins",
+`fields.record-toggle`), or the record's name alone where it has no headline,
+so opening the record changes the toggle's expanded state and not what it is
+called.
+
 ## Attachments
 
 Which elements a threat names is edited from two places. The element's panel
