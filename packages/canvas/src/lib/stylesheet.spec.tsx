@@ -185,7 +185,7 @@ describe('an out-of-scope element', () => {
     expect(boundaryDash).toBeGreaterThan(0);
   });
 
-  it("dots every out-of-scope outline over the dash a trust boundary has in scope, a boundary's own and a note's frame among them", () => {
+  it("dots every out-of-scope outline over the dash a trust boundary has in scope, a boundary's own, a note's frame and a flow's line among them", () => {
     const [dotted] = selectorsOf(outline);
     const shapeIn = `class="${canvasClassNames.shape} `;
     const outlinesDrawnOutOfScope = everyGlyphMarkup
@@ -206,6 +206,7 @@ describe('an out-of-scope element', () => {
         canvasClassNames.store,
         canvasClassNames.boundaryBox,
         canvasClassNames.noteFrame,
+        canvasClassNames.flow,
       ]),
     );
   });

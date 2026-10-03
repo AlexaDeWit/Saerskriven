@@ -145,9 +145,11 @@ element takes a dashed frame a step heavier than its outline, and a flow's own
 line is heavier under the pointer and heavier again once selected. The weights
 reach `diagram-canvas.module.css` as the `--saer-cue-*` properties
 `tokenStylesheet` writes, so a cue is measured against the drawing's own stroke
-weight. The canvas package's edge body adds React Flow's invisible interaction
-path, and holds the flow's name, so a click on the line, the wider path or the
-name selects the flow.
+weight. An out-of-scope flow's dots are as wide as its line, so the gap between
+them grows with the cue weight and they stay apart under both cues. The canvas
+package's edge body adds React Flow's invisible interaction path, and holds the
+flow's name, so a click on the line, the wider path or the name selects the
+flow.
 
 React Flow z-index values are set by hand: a boundary at -1, a regular node at
 0 and a selected regular node at 1, so selection keeps a regular node visible

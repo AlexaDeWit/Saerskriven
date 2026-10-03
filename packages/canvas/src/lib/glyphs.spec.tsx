@@ -28,6 +28,9 @@ const drawn = (node: CanvasNode): string =>
 
 const glyphOf = (value: string): string => drawn(nodeNamed(value));
 
+const flowOf = (value: string): string =>
+  renderToStaticMarkup(<FlowGlyph marks={specMarks} edge={edgeNamed(value)} />);
+
 const packageSource = join(import.meta.dirname, '..');
 
 const sourceFiles = (from: string): string[] =>
@@ -181,27 +184,17 @@ describe('PlacedElementGlyph', () => {
 
 describe('FlowGlyph', () => {
   it('runs straight segments from source through waypoints to target', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
-      ),
-    ).toContain('d="M 200 100 L 240 100 L 280 120"');
+    expect(flowOf('el-request')).toContain('d="M 200 100 L 240 100 L 280 120"');
   });
 
   it('marks the target with an arrowhead', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
-      ),
-    ).toContain(`class="${canvasClassNames.flowArrow}"`);
+    expect(flowOf('el-request')).toContain(
+      `class="${canvasClassNames.flowArrow}"`,
+    );
   });
 
   it('names the flow near the midpoint of its longest segment', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-probe')} />,
-      ),
-    ).toContain('Nightly backup probe');
+    expect(flowOf('el-probe')).toContain('Nightly backup probe');
   });
 
   it('leaves the name out while a field stands in for it', () => {
@@ -216,17 +209,16 @@ describe('FlowGlyph', () => {
     expect(markup).not.toContain('Nightly backup probe');
   });
 
+  it('marks an out-of-scope flow and no other', () => {
+    expect(flowOf('el-write')).toContain(
+      `<g class="${canvasClassNames.element} ${canvasClassNames.outOfScope}">`,
+    );
+    expect(flowOf('el-request')).not.toContain(canvasClassNames.outOfScope);
+  });
+
   it('badges a flow the open threats name', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
-      ),
-    ).toContain(canvasClassNames.badge);
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-write')} />,
-      ),
-    ).not.toContain(canvasClassNames.badge);
+    expect(flowOf('el-request')).toContain(canvasClassNames.badge);
+    expect(flowOf('el-write')).not.toContain(canvasClassNames.badge);
   });
 });
 

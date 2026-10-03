@@ -11,6 +11,7 @@ import {
 import {
   nameField,
   nodeNamed,
+  openEveryGlyph,
   openPlaceholder,
   placeByClick,
   placeholder,
@@ -19,6 +20,8 @@ import {
 import { registeredChords } from './chords.fixtures.js';
 
 const drawnFlow = /^New flow, flow, from Actor to Store/u;
+
+const outOfScopeFlow = /^Store order, flow/u;
 
 const pane = (page: Page): Locator => page.locator('.react-flow__pane');
 
@@ -47,6 +50,17 @@ const outlineOf = async (node: Locator): Promise<number> =>
 
 const weightOf = async (line: Locator): Promise<number> =>
   lengthOf(await line.evaluate((path) => getComputedStyle(path).strokeWidth));
+
+const dashOf = async (shape: Locator): Promise<number[]> =>
+  (await shape.evaluate((drawn) => getComputedStyle(drawn).strokeDasharray))
+    .split(',')
+    .map(lengthOf);
+
+const dotSpacingOf = async (line: Locator): Promise<number> => {
+  const [dot, gap] = await dashOf(line);
+  expect(dot).toBe(0);
+  return gap / (await weightOf(line));
+};
 
 const processOutlineBox = (node: Locator): Promise<Box> =>
   node.locator(`.${canvasClassNames.process}`).evaluate((shape) => {
@@ -152,6 +166,41 @@ test('a flow reads heavier under the pointer, and heavier again once it is selec
   await expect.poll(() => weightOf(line)).toBeGreaterThan(drawn);
 
   expect(await weightOf(line)).toBeLessThan(selected);
+});
+
+test('an out-of-scope flow keeps its dots as far apart for their size under the pointer and once selected', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  const flow = nodeNamed(page, outOfScopeFlow);
+  const line = lineOf(page, outOfScopeFlow);
+  const drawn = await weightOf(line);
+  const atRest = await dotSpacingOf(line);
+
+  const on = await halfwayAlong(line);
+  await page.mouse.move(on.x, on.y);
+  await expect.poll(() => weightOf(line)).toBeGreaterThan(drawn);
+  const hovered = await weightOf(line);
+  expect(await dotSpacingOf(line)).toBeCloseTo(atRest);
+
+  await page.mouse.click(on.x, on.y);
+  await expect(flow).toHaveClass(/selected/u);
+  await expect.poll(() => weightOf(line)).toBeGreaterThan(hovered);
+  expect(await dotSpacingOf(line)).toBeCloseTo(atRest);
+});
+
+test('a trust boundary is dashed in scope and dotted under round caps out of scope', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  const outline = (name: RegExp): Locator =>
+    nodeNamed(page, name).locator(`.${canvasClassNames.shape}`);
+  const dotted = outline(/^Partner network, trust boundary/u);
+
+  const [dash] = await dashOf(outline(/^Service perimeter, trust boundary/u));
+  expect(dash).toBeGreaterThan(0);
+  expect((await dashOf(dotted))[0]).toBe(0);
+  await expect(dotted).toHaveCSS('stroke-linecap', 'round');
 });
 
 test('Select rests on the arrow while handles and flows keep their own cursors', async ({
