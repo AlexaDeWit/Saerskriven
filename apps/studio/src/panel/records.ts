@@ -158,12 +158,15 @@ type NumberedThreat = Pick<Threat, 'id' | 'number'>;
 /**
  * What one record group's records are linked to: a threat, or for
  * assumptions the model. `elsewhere` says which other threats hold a record.
+ * `inThreat` is true for a group in an expanded threat, whose heading counts
+ * its records.
  */
 export type RecordTarget<Held extends ThreatRecord> = {
   readonly heading:
     | 'terms.mitigations'
     | 'terms.assumptions'
     | 'terms.model-assumptions';
+  readonly inThreat: boolean;
   readonly holds: (record: Held) => boolean;
   readonly attach: (record: Held) => Held;
   readonly link: (record: Held) => Action;
@@ -182,6 +185,7 @@ export function threatTarget<Held extends ThreatRecord>(
 ): RecordTarget<Held> {
   return {
     heading: kind.heading,
+    inThreat: true,
     holds: (record) => record.threats.includes(threatId),
     attach: (record) => ({ ...record, threats: [threatId] }),
     link: (record) => kind.link(record, threatId),
@@ -199,6 +203,7 @@ export function threatTarget<Held extends ThreatRecord>(
 /** The assumptions that apply to the model. */
 export const modelTarget: RecordTarget<Assumption> = {
   heading: 'terms.model-assumptions',
+  inThreat: false,
   holds: (assumption) => assumption.appliesToModel,
   attach: (assumption) => ({ ...assumption, appliesToModel: true }),
   link: ({ id }) => Action.LinkAssumptionToModel({ assumptionId: id }),
@@ -287,29 +292,6 @@ function recordDetail<Held extends ThreatRecord>(
   ]
     .filter((part) => part !== false)
     .join(', ');
-}
-
-/**
- * `rows` in the order of the ids a group has shown, and that order with the
- * ids of rows it has not shown before appended. A shown id whose row is gone
- * keeps its slot, so the row takes it back when it returns. The order comes
- * back as `shown` itself when no row is new.
- */
-export function inShownOrder<Row extends { readonly id: string }>(
-  rows: readonly Row[],
-  shown: readonly string[],
-): { readonly rows: readonly Row[]; readonly shown: readonly string[] } {
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  const known = new Set(shown);
-  const arrived = [...byId.keys()].filter((id) => !known.has(id));
-  const order =
-    arrived.length === 0 && known.size === shown.length
-      ? shown
-      : [...known, ...arrived];
-  return {
-    rows: order.flatMap((id) => byId.get(id) ?? []),
-    shown: order,
-  };
 }
 
 /**

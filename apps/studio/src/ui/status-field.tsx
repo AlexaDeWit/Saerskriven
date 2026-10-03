@@ -1,8 +1,9 @@
-import { threatStatusSchema, type ThreatStatus } from '@saerskriven/model';
+import type { ThreatStatus } from '@saerskriven/model';
 
 import { statusMessages } from '../messages/enum-labels.js';
 import { useTranslator } from '../messages/locale.js';
 import { EnumField } from './enum-field.js';
+import { statusesByLiveRisk } from './review-order.js';
 
 type StatusFieldProps = {
   readonly value: ThreatStatus;
@@ -12,7 +13,7 @@ type StatusFieldProps = {
 /**
  * Where a threat stands, as a listbox over the model's own status union: the
  * open threat and the six dispositions it can reach, each under its
- * catalogue label.
+ * catalogue label, in the order the panel lists threats.
  */
 export function StatusField({ value, onCommit }: StatusFieldProps) {
   const { t } = useTranslator();
@@ -22,7 +23,7 @@ export function StatusField({ value, onCommit }: StatusFieldProps) {
       label={t('fields.status')}
       labelOf={(option) => t(statusMessages[option])}
       onCommit={onCommit}
-      options={threatStatusSchema.options}
+      options={statusesByLiveRisk}
       value={value}
     />
   );

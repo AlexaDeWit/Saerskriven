@@ -334,6 +334,23 @@ describe(
       expect(screen.queryByRole('group', { name: 'Mitigation 2' })).toBeNull();
     });
 
+    it('heads each group with the count of the records it holds', async () => {
+      const user = userEvent.setup();
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      expect(
+        screen.getByRole('group', { name: 'Mitigations 1' }),
+      ).toBeDefined();
+      expect(
+        screen.getByRole('group', { name: 'Assumptions 1' }),
+      ).toBeDefined();
+
+      await user.click(button('Unlink mitigation 1'));
+
+      expect(
+        screen.getByRole('group', { name: 'Mitigations 0' }),
+      ).toBeDefined();
+    });
+
     it('names each record card as a group holding its controls, and keeps their names', () => {
       showThreatEditor({ threat: recordedThreat(firstThreat) });
 

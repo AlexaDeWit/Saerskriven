@@ -23,10 +23,12 @@ import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { elementById } from '../store/selectors.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import { inReviewOrder } from '../ui/review-order.js';
 import { useHeaderKept } from './kept-header.js';
 import { historyFocusHandler } from './panel-focus.js';
 import { PickExisting } from './pick-existing.js';
 import type { RefusedField } from './refusals.js';
+import { useShownOrder } from './shown-order.js';
 import { ThreatEditor, type EditorFocus } from './threat-editor.js';
 import styles from './threat-panel.module.css';
 import {
@@ -57,7 +59,9 @@ export type ElementThreatsProps = {
 /**
  * The Threats tab of an element's panel: Add a threat and Attach existing,
  * then the threats naming the element, one expanded at a time and each
- * edited in place.
+ * edited in place. The list is in review order as it mounts and holds that
+ * order while it stays mounted, so an edit never moves the threat under
+ * the pointer and a threat added meanwhile joins the end.
  */
 export function ElementThreats({
   element,
@@ -68,6 +72,7 @@ export function ElementThreats({
 }: ElementThreatsProps) {
   const number = useModelStore(nextNumber);
   const registered = useModelStore((state) => state.present.threats);
+  const shown = useShownOrder(inReviewOrder(threats));
   const opened = drafts.get(element.id);
   const [expanded, setExpanded] = useState<string>(opened?.threatId ?? '');
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
@@ -124,7 +129,7 @@ export function ElementThreats({
   };
 
   const leave = (threatId: ThreatId): void => {
-    const next = threatAfterDeleting(threats, threatId);
+    const next = threatAfterDeleting(shown, threatId);
     setDraft(undefined);
     if (next === undefined) {
       addControl.current?.focus();
@@ -232,7 +237,7 @@ export function ElementThreats({
           type="single"
           value={expanded}
         >
-          {threats.map((threat) => (
+          {shown.map((threat) => (
             <ThreatEditor
               focus={focusIn(focus, threat)}
               held={held?.threatId === threat.id ? held : undefined}
@@ -251,6 +256,7 @@ export function ElementThreats({
               onDetach={detach(threat)}
               onFocused={focused}
               onRefusal={refused(threat)}
+              on={element.id}
               threat={threat}
             />
           ))}

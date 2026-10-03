@@ -26,8 +26,8 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   'attached-elements': 'Éléments rattachés',
   'summary-severity': 'Gravité : {severity}',
   'summary-status': 'État : {status}',
-  'summary-mitigations': 'Mesures : {count}',
-  'summary-assumptions': 'Hypothèses : {count}',
+  'summary-category': 'Catégorie : {category}',
+  'also-on-elements': 'Aussi sur {list}',
   'security-properties': 'Propriétés de sécurité',
   'not-recorded-hint':
     'Non consigné signifie qu’aucune affirmation de sécurité n’est enregistrée.',

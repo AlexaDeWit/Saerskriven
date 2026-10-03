@@ -24,8 +24,8 @@ export const panelSv = catalogue(panelMessages)('sv')({
   'attached-elements': 'Kopplade objekt',
   'summary-severity': 'Allvarlighetsgrad: {severity}',
   'summary-status': 'Status: {status}',
-  'summary-mitigations': 'Åtgärder: {count}',
-  'summary-assumptions': 'Antaganden: {count}',
+  'summary-category': 'Kategori: {category}',
+  'also-on-elements': 'Även på {list}',
   'security-properties': 'Säkerhetsegenskaper',
   'not-recorded-hint':
     'Ej angivet betyder att inget säkerhetspåstående är sparat.',

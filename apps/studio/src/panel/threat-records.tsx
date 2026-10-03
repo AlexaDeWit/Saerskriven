@@ -20,7 +20,6 @@ import { ProseField, TextField, type RefusedDraft } from '../ui/text-field.js';
 import { PickExisting } from './pick-existing.js';
 import {
   editedRecord,
-  inShownOrder,
   isRecordField,
   linkableRecords,
   recordFieldIn,
@@ -35,6 +34,7 @@ import {
   type ThreatRecord,
 } from './records.js';
 import type { RefusedField, RefusedText } from './refusals.js';
+import { useShownOrder } from './shown-order.js';
 import styles from './threat-panel.module.css';
 
 type HeldText = Pick<RefusedField, 'field' | 'text' | 'status'>;
@@ -63,10 +63,10 @@ type FocusRequest =
 const rowSelector = '[data-record-row]';
 
 /**
- * The records of one kind linked to one target, a threat or the model. Add
- * opens an empty row that becomes a record on its first commit and goes when
- * left empty. A row that returns while the group is mounted takes its old
- * slot back.
+ * The records of one kind linked to one target, a threat or the model, under
+ * a heading that counts them on a threat. Add opens an empty row that becomes a record on
+ * its first commit and goes when left empty. A row that returns while the
+ * group is mounted takes its old slot back.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,
@@ -100,14 +100,7 @@ export function RecordGroup<Held extends ThreatRecord>({
     draft !== undefined && !records.some(({ id }) => id === draft.id);
   const listed = drafting ? [...records, draft] : records;
   const isDraft = (record: Held): boolean => drafting && record.id === draft.id;
-  const [order, setOrder] = useState<readonly string[]>(() =>
-    listed.map(({ id }) => id),
-  );
-  const arranged = inShownOrder(listed, order);
-  const { rows } = arranged;
-  if (arranged.shown !== order) {
-    setOrder(arranged.shown);
-  }
+  const rows = useShownOrder(listed);
   const shown = new Set<string>(rows.map(({ id }) => id));
   const stale = [...refusals.keys(), held?.field ?? '']
     .filter((field) => isRecordField(field, kind.noun))
@@ -227,7 +220,15 @@ export function RecordGroup<Held extends ThreatRecord>({
 
   return (
     <fieldset className={styles.records} ref={group}>
-      <legend>{t(target.heading)}</legend>
+      <legend>
+        {t(target.heading)}
+        {target.inThreat && (
+          <>
+            {' '}
+            <span className={styles.count}>{records.length}</span>
+          </>
+        )}
+      </legend>
       <div className={styles.recordBody} onBlur={tracked} onFocus={tracked}>
         {rows.map((record, index) => (
           <RecordRow

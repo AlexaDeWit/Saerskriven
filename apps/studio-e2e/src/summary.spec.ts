@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { lightPalette, rgbColour } from '@saerskriven/canvas';
 import {
   addRecord,
   chooseInPanel,
@@ -8,6 +9,7 @@ import {
   panelField,
   selectNode,
   storefront,
+  threatPanel,
   threatSummary,
 } from './studio.fixtures.js';
 
@@ -26,13 +28,11 @@ const collapse = async (page: Page, title: RegExp): Promise<Locator> => {
   return summary;
 };
 
-const countOn = (summary: Locator, kind: string): Locator =>
-  summary.locator(`[data-count="${kind}"]`);
-
-const countOf = async (summary: Locator, kind: string): Promise<number> => {
-  const text = (await countOn(summary, kind).textContent()) ?? '';
-  return Number(/\d+$/u.exec(text.trim())?.[0] ?? Number.NaN);
-};
+const recordGroup = (page: Page, heading: string, count: number): Locator =>
+  threatPanel(page).getByRole('group', {
+    name: `${heading} ${String(count)}`,
+    exact: true,
+  });
 
 const markOn = (summary: Locator, flag: string): Locator =>
   summary.locator(`[data-flag="${flag}"]`);
@@ -44,9 +44,9 @@ const partsInOrder = (name: string, parts: readonly string[]): boolean =>
   });
 
 const namesItsParts = async (summary: Locator): Promise<void> => {
-  const parts = (
-    await summary.locator('[data-count], [data-flag]').allTextContents()
-  ).map((part) => part.trim());
+  const parts = (await summary.locator('[data-flag]').allTextContents()).map(
+    (part) => part.trim(),
+  );
   expect(parts.length).toBeGreaterThan(0);
   await expect
     .poll(async () => partsInOrder(await summary.ariaSnapshot(), parts))
@@ -59,34 +59,46 @@ const raiseBothFlags = async (page: Page): Promise<void> => {
   await chooseInPanel(page, 'Assumption 1 status', 'Invalidated');
 };
 
-test('collapsed counts follow records linked and unlinked from the expanded view', async ({
+test('the record groups of an expanded threat count what is added, linked and unlinked, and the summary counts nothing', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
   await selectNode(page, storefront.ledger);
   await expandThreat(page, storefront.orderDenied);
+  await expect(recordGroup(page, 'Mitigations', 1)).toBeVisible();
   await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
+  await expect(recordGroup(page, 'Mitigations', 2)).toBeVisible();
+  await expect(recordGroup(page, 'Assumptions', 1)).toBeVisible();
 
-  const summary = await collapse(page, storefront.orderDenied);
-  await expect.poll(() => countOf(summary, 'mitigations')).toBe(2);
-  await expect.poll(() => countOf(summary, 'assumptions')).toBe(1);
-  await namesItsParts(summary);
-
-  await expandThreat(page, storefront.orderDenied);
   await chooseInPanel(page, 'Existing mitigation', serverPricing);
   await panelControl(page, 'Link existing mitigation').click();
-  await expect(
-    panelField(page, 'textbox', 'Mitigation 3 description'),
-  ).toHaveValue(serverPricing);
-  await collapse(page, storefront.orderDenied);
-  await expect.poll(() => countOf(summary, 'mitigations')).toBe(3);
-
-  await expandThreat(page, storefront.orderDenied);
+  await expect(recordGroup(page, 'Mitigations', 3)).toBeVisible();
   await panelControl(page, 'Unlink mitigation 3').click();
-  await collapse(page, storefront.orderDenied);
-  await expect.poll(() => countOf(summary, 'mitigations')).toBe(2);
-  await expect.poll(() => countOf(summary, 'assumptions')).toBe(1);
+  await expect(recordGroup(page, 'Mitigations', 2)).toBeVisible();
+
+  const summary = await collapse(page, storefront.orderDenied);
+  await expect(summary).not.toHaveAccessibleName(/Mitigations|Assumptions/u);
+});
+
+test('an open status is the one drawn as a filled pill', async ({ page }) => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.shopper);
+  const summary = threatSummary(page, storefront.takeover);
+  const open = summary.locator('[data-status="open"]');
+  await expect(open).toHaveCSS(
+    'background-color',
+    rgbColour(lightPalette.textPrimary),
+  );
+
+  await expandThreat(page, storefront.takeover);
+  await chooseInPanel(page, 'Status', 'Accepted risk');
+  await collapse(page, storefront.takeover);
+
+  const accepted = summary.locator('[data-status="accepted-risk"]');
+  await expect(accepted).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(accepted.locator('svg path')).toHaveCount(1);
+  await expect(open).toHaveCount(0);
 });
 
 test('a mitigated threat with only proposed work is marked until the work is implemented', async ({
@@ -165,7 +177,7 @@ test('each flag mark keeps its glyph and outline in forced colours', async ({
 });
 
 test(
-  'a summary with counts and both flags fits the panel without scrolling sideways',
+  'a summary with both flags fits the panel without scrolling sideways',
   { tag: '@phone' },
   async ({ page }) => {
     await openTwoDiagrams(page);
@@ -183,10 +195,9 @@ test(
         scroller = scroller.parentElement;
       }
       const edge = scroller?.getBoundingClientRect().right ?? 0;
-      const outside = [
-        node,
-        ...node.querySelectorAll('[data-count], [data-flag]'),
-      ].filter((part) => part.getBoundingClientRect().right > edge + 0.5);
+      const outside = [node, ...node.querySelectorAll('[data-flag]')].filter(
+        (part) => part.getBoundingClientRect().right > edge + 0.5,
+      );
       return {
         outside: outside.length,
         scrolls: (scroller?.scrollWidth ?? 1) > (scroller?.clientWidth ?? 0),

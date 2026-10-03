@@ -1,6 +1,12 @@
-import { renameElement, type ElementId, type Threat } from '@saerskriven/model';
+import {
+  renameElement,
+  type ElementId,
+  type Severity,
+  type Threat,
+  type ThreatStatus,
+} from '@saerskriven/model';
 import { Either } from 'effect';
-import { act, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   currentAnnouncement,
@@ -95,6 +101,40 @@ const shareThreat = (): void => {
     }),
   );
 };
+
+const reviewedThreats: readonly Threat[] = (
+  [
+    ['threat-mitigated-high', 'mitigated', 'high'],
+    ['threat-open-low', 'open', 'low'],
+    ['threat-accepted-critical', 'accepted-risk', 'critical'],
+    ['threat-open-critical', 'open', 'critical'],
+  ] as const satisfies readonly (readonly [string, ThreatStatus, Severity])[]
+).map(([id, status, severity], index) => ({
+  ...sampleThreat,
+  id: threatId(id),
+  number: index + 1,
+  title: id,
+  status,
+  severity,
+}));
+
+const withReviewedThreats = (): void => {
+  modelStore.setState(
+    initialState({
+      ...sampleModel,
+      threats: [...reviewedThreats],
+      lastIssuedThreatNumber: reviewedThreats.length,
+    }),
+    true,
+  );
+};
+
+const listedThreats = (): readonly (string | undefined)[] =>
+  [
+    ...screen
+      .getByTestId('threat-panel')
+      .querySelectorAll<HTMLElement>('[data-threat-item]'),
+  ].map((item) => item.dataset['threatItem']);
 
 const addThreat = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(addControl());
@@ -346,6 +386,57 @@ describe(
       expect(
         screen.getByRole('heading', { name: 'Flow from Reader to Studio' }),
       ).toBeDefined();
+    });
+
+    it('lists the threats still open first, each status from the highest severity down', () => {
+      withReviewedThreats();
+      showPanel(actorElement);
+
+      expect(listedThreats()).toEqual([
+        'threat-open-critical',
+        'threat-open-low',
+        'threat-accepted-critical',
+        'threat-mitigated-high',
+      ]);
+    });
+
+    it('holds its order while it is open, and sorts again when it opens next', async () => {
+      const user = userEvent.setup();
+      withReviewedThreats();
+      showPanel(actorElement);
+      const shown = listedThreats();
+
+      act(() => {
+        dispatch(
+          Action.ReplaceThreat({
+            threat: { ...reviewedThreats[0], status: 'open' },
+          }),
+        );
+      });
+      await addThreat(user);
+
+      expect(listedThreats()).toEqual([...shown, present().threats.at(-1)?.id]);
+      cleanup();
+      showPanel(actorElement);
+      expect(listedThreats().slice(0, 2)).toEqual([
+        'threat-open-critical',
+        'threat-mitigated-high',
+      ]);
+    });
+
+    it('moves focus to the threat listed after a deleted one', async () => {
+      const user = userEvent.setup();
+      withReviewedThreats();
+      showPanel(actorElement);
+      await user.click(
+        screen.getByRole('button', { name: /threat-open-critical/u }),
+      );
+
+      await user.click(button('Delete threat 4'));
+
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: /threat-open-low/u }),
+      );
     });
 
     it('lists nothing for an element no threat names, and still offers an add', () => {

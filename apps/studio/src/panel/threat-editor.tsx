@@ -16,9 +16,10 @@ import { ThreatSummary } from './threat-summary.js';
 /** Focus after adding or deleting a threat. */
 export type EditorFocus = 'title' | 'disclosure';
 
-/** A threat and callbacks for its edits, its attachments and its refused drafts. */
+/** A threat, the element whose panel shows it, and callbacks for its edits, its attachments and its refused drafts. */
 export type ThreatEditorProps = {
   readonly threat: Threat;
+  readonly on: ElementId | undefined;
   readonly focus: EditorFocus | undefined;
   readonly held: RefusedField | undefined;
   readonly onChange: () => void;
@@ -33,6 +34,7 @@ export type ThreatEditorProps = {
 /** An expandable threat with one commit per field. */
 export function ThreatEditor({
   threat,
+  on,
   focus,
   held,
   onChange,
@@ -70,7 +72,7 @@ export function ThreatEditor({
     >
       <Accordion.Header className={styles.header}>
         <Accordion.Trigger className={styles.disclosure} ref={disclosure}>
-          <ThreatSummary threat={threat} />
+          <ThreatSummary on={on} threat={threat} />
           <span aria-hidden="true" className={styles.chevron}>
             ▾
           </span>

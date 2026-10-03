@@ -203,17 +203,13 @@
 .metadata {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--saer-space-1) var(--saer-space-2);
   font-size: var(--saer-font-size);
 }
 
-.counts {
-  display: inline-flex;
-  gap: var(--saer-space-2);
-  white-space: nowrap;
-}
-
 .severity,
+.status,
 .flag {
   display: inline-flex;
   align-items: center;
@@ -223,12 +219,35 @@
   border-radius: var(--saer-radius);
 }
 
+.status {
+  border-color: transparent;
+  color: var(--saer-colour-text-muted);
+}
+
+.status[data-status='open'] {
+  padding-inline: var(--saer-space-2);
+  border-color: currentcolor;
+  border-radius: 999px;
+  background: var(--saer-colour-text);
+  color: var(--saer-colour-surface-raised);
+  font-weight: 600;
+}
+
+.category,
+.alsoOn {
+  color: var(--saer-colour-text-muted);
+}
+
+.alsoOn {
+  font-size: var(--saer-font-size);
+}
+
 .flag {
   border-color: currentcolor;
   font-weight: 600;
 }
 
-.flagGlyph {
+.glyph {
   fill: none;
   stroke: currentcolor;
   stroke-width: 1.5;
