@@ -7,6 +7,7 @@ import {
   type NodeBox,
 } from '@saerskriven/canvas';
 import {
+  attachedEndpoint,
   generateElementId,
   type BoundaryShape,
   type Element,
@@ -237,17 +238,11 @@ export function freshFlow(
   return {
     kind: 'flow',
     ...namedElement(activeTranslator().t('defaults.new-flow')),
-    source: attachedEnd(source, sides.source),
-    target: attachedEnd(target, sides.target),
+    source: attachedEndpoint(source, sides.source),
+    target: attachedEndpoint(target, sides.target),
     waypoints: [],
     bidirectional: false,
   };
-}
-
-function attachedEnd(element: ElementId, side: Side | undefined) {
-  return side === undefined
-    ? ({ kind: 'attached', element } as const)
-    : ({ kind: 'attached', element, side } as const);
 }
 
 function namedElement(name: string) {

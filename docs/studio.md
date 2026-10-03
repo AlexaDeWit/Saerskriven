@@ -147,12 +147,15 @@ the visible grid. Keyboard moves and typed coordinates are not snapped.
 
 A flow runs between actors, processes and stores. Hover an element to show its
 connection handles, then drag from a handle to a handle on another element.
-Releasing anywhere else draws nothing. A flow cannot start and end on one
-element, and cannot attach to a trust boundary, a Note or another flow.
+Releasing anywhere else draws nothing. The flow keeps the sides of the two
+handles it was drawn between, so moving either element leaves it on them. A
+flow cannot start and end on one element, and cannot attach to a trust
+boundary, a Note or another flow.
 
 From the keyboard, select an element and run Start a flow: a list of targets
 opens under the card. The arrow keys and typing choose, Enter draws the
-flow, and Escape cancels.
+flow, and Escape cancels. A flow started this way follows the route at both
+ends.
 
 Select one flow to edit its route. While one flow is selected with the Select
 tool and no name or note is open for editing, the **Flow route** toolbar at the
@@ -166,11 +169,6 @@ expects.
   with Shift, and Enter commits. Escape, Tab or leaving the browser window
   cancels it without an edit.
 - A focused bend moves with the arrow keys, and Delete or Backspace removes it.
-- A flow drawn from one element's handle to another's keeps the sides of the
-  two handles: moving either element leaves it on those sides. Dropped on
-  something that names no side, an end follows the route. Follow the route on
-  an end returns it to following the route. A flow made from the keyboard, by
-  an import, or through the MCP server follows the route at both ends.
 - An end handle sits where the flow meets its element. Drag it to another side
   of that element to pin the end there, onto another actor, process or store
   to attach the end there, following the route, or onto empty canvas to free
