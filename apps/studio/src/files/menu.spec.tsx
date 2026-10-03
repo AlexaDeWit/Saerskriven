@@ -46,7 +46,6 @@ import { toggleModelProperties } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { FileReports } from './file-reports.js';
 import { StudioMenu } from './menu.js';
-import { readOnlyNotices } from './session.js';
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -639,17 +638,20 @@ describe('opening', () => {
     expect(reportEntries()).toEqual([]);
   });
 
-  it.each(['otm', 'tmbom'] as const)(
-    'opens a %s file as a new model under a notice naming the format',
-    async (format) => {
+  it.each([
+    { path: 'otm/example.json', format: 'OTM' },
+    { path: 'tmbom/example.json', format: 'TM-BOM' },
+  ])(
+    'opens $path as a new model under a notice naming $format',
+    async ({ path, format }) => {
       const user = userEvent.setup();
-      mounted(specBridge({ offers: vendoredFile(`${format}/example.json`) }));
+      mounted(specBridge({ offers: vendoredFile(path) }));
 
       await choose(user, 'Open');
 
       await waitFor(() => {
         expect(screen.getByTestId('loss-report').textContent).toContain(
-          inLocale('en-CA')(readOnlyNotices[format]),
+          inLocale('en-CA')('reports.opened-read-only', { format }),
         );
       });
       expect(nameOf(modelStore.getState().file)).toBe('example.yaml');
@@ -671,9 +673,9 @@ describe('opening', () => {
       expect(reportEntries().length > 0).toBe(true);
     });
     const t = inLocale('en-CA');
-    for (const notice of Object.values(readOnlyNotices)) {
+    for (const format of ['OTM', 'TM-BOM', 'Threat Dragon JSON']) {
       expect(screen.getByTestId('loss-report').textContent).not.toContain(
-        t(notice),
+        t('reports.opened-read-only', { format }),
       );
     }
   });

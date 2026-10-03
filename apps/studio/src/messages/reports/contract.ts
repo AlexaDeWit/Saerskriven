@@ -10,8 +10,7 @@ const endpoint = { flow: 'text', element: 'text' } as const;
 export const reportMessages = {
   region: text(),
   opened: text(),
-  'opened-otm': text(),
-  'opened-tmbom': text(),
+  'opened-read-only': text({ format: 'text' }),
   saved: text(),
   'dismiss-report': text(),
   'dismiss-export': text(),

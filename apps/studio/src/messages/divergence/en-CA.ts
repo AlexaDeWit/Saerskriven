@@ -69,6 +69,6 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
     'Flow encryption and sensitivity: now description text',
   'tmbom-data-set-as-prose':
     'Data set "{name}": now text on its stores, no longer shared',
-  'tmbom-data-set-dropped': 'Data set "{name}": on no store, not imported',
-  'field-not-retained': 'Field {path}: not imported',
+  'tmbom-data-set-dropped': 'Data set "{name}": on no store, not read',
+  'field-not-retained': 'Field {path}: not read',
 });

@@ -415,7 +415,7 @@ describe('openReport', () => {
   it('keeps nothing a file Saerskriven only reads lost, which holds no source to save back to', () => {
     const report = openReport(imported([eopCard]));
 
-    expect(report).toMatchObject({ occasion: 'open', readOnly: 'otm' });
+    expect(report).toMatchObject({ occasion: 'open', readOnlyFormat: 'otm' });
     expect(keptOf(report)).toEqual([false]);
   });
 
@@ -424,7 +424,7 @@ describe('openReport', () => {
       occasion: 'open',
       model: sampleModel,
       losses: [],
-      readOnly: 'otm',
+      readOnlyFormat: 'otm',
     });
   });
 

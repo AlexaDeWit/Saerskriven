@@ -1,3 +1,4 @@
+import { formatNames } from '../format-names.js';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
 import { DetailLines } from '../ui/detail-lines.js';
@@ -6,7 +7,7 @@ import { LiveRegion } from '../ui/live-region.js';
 import { describeExportNotice } from './export-notice.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
-import { readOnlyNotices, reportHeadlines, reportLines } from './session.js';
+import { reportHeadlines, reportLines } from './session.js';
 
 /**
  * The failure notice, the report of the last file crossing and the export
@@ -33,9 +34,11 @@ export function FileReports({ session }: { readonly session: FileSession }) {
       >
         {report !== undefined && (
           <>
-            {report.readOnly !== undefined && (
+            {report.readOnlyFormat !== undefined && (
               <p className={styles.notice}>
-                {t(readOnlyNotices[report.readOnly])}
+                {t('reports.opened-read-only', {
+                  format: formatNames[report.readOnlyFormat],
+                })}
               </p>
             )}
             {report.losses.length > 0 && (

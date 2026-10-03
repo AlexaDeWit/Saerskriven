@@ -919,8 +919,11 @@ describe('readOrImport', () => {
     expect(Either.getOrThrow(readOrImport(text)).format).toBe(format);
   });
 
-  it('keeps the detection failure where neither a codec nor an import claims the text', () => {
-    expect(readOrImport('An unrelated document')).toEqual(
+  it.each([
+    ['names no format', 'An unrelated document'],
+    ['is malformed', 'otmVersion: [0.2.0'],
+  ])('keeps the detection failure for a text that %s', (_reason, text) => {
+    expect(readOrImport(text)).toEqual(
       Either.left(
         DetectionFailure.NoFormatClaimed({ tried: formatNameSchema.options }),
       ),

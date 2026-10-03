@@ -91,7 +91,8 @@ names, and everything created afterwards is named in the active language.
 A file format's name, a path, a model's own names and descriptions, and
 anything a person typed are data: they reach a message as parameters and pass
 through unchanged. So do ids, a read limit's name, and the file name an open
-was given.
+was given. Each format Open reads goes by the name
+[`../format-names.ts`](../format-names.ts) gives it.
 
 Some text on screen is not a catalogue's, and the pseudo-locale pass lists it
 as an exception:

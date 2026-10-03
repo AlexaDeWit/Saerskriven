@@ -69,9 +69,9 @@ unsaved, and with no document retained for a save to merge onto.
 A write is the codec's own write for the file's format, then the bridge, then
 one action.
 
-`formatFiles` is the one table saying how a format appears as a file: the
-words a person reads, the media type a picker files it under, and the
-extensions it is written with. `saveTypes` is that table as a picker takes it,
+`formatFiles` is the one table saying how a format appears as a file: its
+name from [`../format-names.ts`](../format-names.ts), the media type a picker
+files it under, and the extensions it is written with. `saveTypes` is that table as a picker takes it,
 the file's own format first, and `formatOfName` is the way back: the extension
 of the name a picker answers with says which codec writes the text. Nothing
 else reads an extension as a format. The text of a save-as is written once the

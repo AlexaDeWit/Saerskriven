@@ -4,10 +4,8 @@ import { reportMessages } from './contract.js';
 export const reportsSv = catalogue(reportMessages)('sv')({
   region: 'Filrapporter',
   opened: 'Visas inte i studion:',
-  'opened-otm':
-    'En OTM-fil öppnas som en ny modell. Saerskriven skriver inte OTM, så Spara skapar en Saerskriven-fil. Den öppnade filen lämnas som den är.',
-  'opened-tmbom':
-    'En TM-BOM-fil öppnas som en ny modell. Saerskriven skriver inte TM-BOM, så Spara skapar en Saerskriven-fil. Den öppnade filen lämnas som den är.',
+  'opened-read-only':
+    'En {format}-fil öppnas som en ny modell. Saerskriven skriver inte {format}, så Spara skapar en Saerskriven-fil. Den öppnade filen lämnas som den är.',
   saved: 'Behålls inte av den här sparningen:',
   'dismiss-report': 'Dölj rapporten',
   'dismiss-export': 'Dölj exportrapporten',

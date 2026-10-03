@@ -4,10 +4,8 @@ import { reportMessages } from './contract.js';
 export const reportsEnCA = catalogue(reportMessages)('en-CA')({
   region: 'File reports',
   opened: 'Not shown in the studio:',
-  'opened-otm':
-    'OTM opens as a new model. Saerskriven does not write OTM, so Save makes a Saerskriven file. The opened file stays as it is.',
-  'opened-tmbom':
-    'TM-BOM opens as a new model. Saerskriven does not write TM-BOM, so Save makes a Saerskriven file. The opened file stays as it is.',
+  'opened-read-only':
+    '{format} opens as a new model. Saerskriven does not write {format}, so Save makes a Saerskriven file. The opened file stays as it is.',
   saved: 'Not kept by this save:',
   'dismiss-report': 'Dismiss report',
   'dismiss-export': 'Dismiss export report',

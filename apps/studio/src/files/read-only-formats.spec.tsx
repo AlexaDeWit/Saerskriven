@@ -46,7 +46,7 @@ it('opens an OTM file through the fallback picker as a new model, and Save write
     name: 'example.yaml',
     source: { format: 'saerskriven-yaml', document: undefined },
   });
-  expect(result.current.report?.readOnly).toBe('otm');
+  expect(result.current.report?.readOnlyFormat).toBe('otm');
   act(() => {
     result.current.commands.save();
   });
@@ -67,7 +67,7 @@ it('opens a TM-BOM file through the picker without keeping it, and Save asks whe
     result.current.commands.open();
   });
   await waitFor(() => {
-    expect(result.current.report?.readOnly).toBe('tmbom');
+    expect(result.current.report?.readOnlyFormat).toBe('tmbom');
   });
   expect(bridge.writesBack()).toBe(false);
   act(() => {

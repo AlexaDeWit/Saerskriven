@@ -10,6 +10,7 @@ import {
   type RetainedSource,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
+import { formatNames } from '../format-names.js';
 import type { StudioMessageId } from '../messages/catalogues.js';
 import { Either } from 'effect';
 import {
@@ -31,12 +32,12 @@ type FormatFile = {
 /** The first extension is proposed for saving, and every listed extension identifies the format. */
 export const formatFiles = {
   'threat-dragon': {
-    label: 'Threat Dragon JSON',
+    label: formatNames['threat-dragon'],
     mediaType: 'application/json',
     extensions: ['.json'],
   },
   'saerskriven-yaml': {
-    label: 'Saerskriven YAML',
+    label: formatNames['saerskriven-yaml'],
     mediaType: 'application/yaml',
     extensions: ['.yaml', '.yml'],
   },
@@ -220,14 +221,15 @@ type LossOccasion = 'open' | 'save';
 
 /**
  * What one open or save lost that a person reads, and the model each line
- * names its subject from: the one opened or saved. `readOnly` is the format
- * of an opened file Saerskriven does not write, which opened as a new model.
+ * names its subject from: the one opened or saved. `readOnlyFormat` is the
+ * format of an opened file Saerskriven does not write, which opened as a new
+ * model.
  */
 export type LossReport = {
   readonly occasion: LossOccasion;
   readonly model: Model;
   readonly losses: readonly Loss[];
-  readonly readOnly?: ImportFormat;
+  readonly readOnlyFormat?: ImportFormat;
 };
 
 /** The message each occasion introduces its losses with. */
@@ -235,12 +237,6 @@ export const reportHeadlines = {
   open: 'reports.opened',
   save: 'reports.saved',
 } as const satisfies Record<LossOccasion, StudioMessageId>;
-
-/** The notice an open of each format Saerskriven does not write shows. */
-export const readOnlyNotices = {
-  otm: 'reports.opened-otm',
-  tmbom: 'reports.opened-tmbom',
-} as const satisfies Record<ImportFormat, StudioMessageId>;
 
 /**
  * A report's lines in the caller's language, one per loss. The caller
@@ -275,7 +271,7 @@ export function openReport(
         occasion: 'open',
         model: read.model,
         losses: lossesOf(read.divergences, () => false),
-        readOnly: read.format,
+        readOnlyFormat: read.format,
       };
 }
 

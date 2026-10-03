@@ -47,6 +47,7 @@ const failedFiles: readonly ChosenFile[] = [
   { ...chosenFile('large.yaml', ''), size: readLimits.maxTextBytes + 1 },
   unreadableFile('unreadable.yaml', 0),
   chosenFile('notes.txt', 'not a model'),
+  chosenFile('broken.otm', 'otmVersion: 0.2.0'),
 ];
 
 const session = (

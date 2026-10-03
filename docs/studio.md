@@ -76,9 +76,10 @@ it." where a save to the same file keeps them. Each line names a threat by its
 number and title, and anything else by the name the studio shows, and lines
 that read the same are shown once with their count. A report leaves out what
 loses nothing, such as a raised threat number mark, which the command line
-still prints. An OTM or TM-BOM report names the source fields that hold a
-value the model has no place for, and leaves out a default or a layout
-Saerskriven supplied where the file held none. Nothing of that file is kept for
+still prints. An OTM or TM-BOM report names what the reading converted and
+the source fields that hold a value the model has no place for. It leaves out
+a default or a layout Saerskriven supplied where the file held none, which
+`saer convert` and the MCP server still name. Nothing of that file is kept for
 a later save, so keep it where what the report names matters.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
@@ -88,15 +89,16 @@ file, so its next Save treats it as a new model rather than writing to either
 file.
 
 **Export** writes the diagram on screen as SVG or PNG, the register as
-Markdown, or the whole model as Typst or PDF. An export proposes the open file's name with the export's extension, or
-`Untitled`, and never changes which file Save writes to. When the model has
-several diagrams, the SVG and PNG names add the diagram's title, as
-`payments - Checkout.svg`: characters a file name cannot hold become `_`,
-runs of white space collapse, leading and trailing dots and spaces go, the
-title is cut to 80 characters, and an empty one reads as the untitled diagram.
-Diagrams with the same title propose the same name. An export that could not
-place a flow endpoint says so after it writes. A refused PDF or PNG export writes nothing
-and stands until dismissed or until a later export.
+Markdown, or the whole model as Typst or PDF. An export proposes the open
+file's name with the export's extension, or `Untitled`, and never changes
+which file Save writes to. When the model has several diagrams, the SVG and
+PNG names add the diagram's title, as `payments - Checkout.svg`: characters a
+file name cannot hold become `_`, runs of white space collapse, leading and
+trailing dots and spaces go, the title is cut to 80 characters, and an empty
+one reads as the untitled diagram. Diagrams with the same title propose the
+same name. An export that could not place a flow endpoint says so after it
+writes. A refused PDF or PNG export writes nothing and stands until dismissed
+or until a later export.
 
 The studio keeps the current session in the browser's local storage. A reload
 restores the model, whether it was saved, the file's name and format, and the

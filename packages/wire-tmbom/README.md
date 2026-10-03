@@ -11,4 +11,5 @@ input before validation, including those extension values.
 
 [Fixture provenance](../../test-data/tmbom/README.md) records the sources.
 The derived schema carries the upstream [MIT licence](LICENSE).
-[Import behaviour](../../docs/studio.md#otm-and-tm-bom) belongs to the mapping package.
+[Import behaviour](../../docs/studio.md#otm-and-tm-bom) belongs to the mapping
+package.
