@@ -70,7 +70,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'threat-attached-to-store-named': 'Hot {number} kopplades till {name}.',
   'threat-attached-to-text': 'Hot {number} kopplades till texten.',
   'threat-attached-to-text-named': 'Hot {number} kopplades till {name}.',
-  'threat-attached-to-flow': 'Hot {number} kopplades till flödet.',
+  'threat-attached-to-flow': 'Hot {number} kopplades till flödet {ends}.',
   'threat-attached-to-flow-named': 'Hot {number} kopplades till {name}.',
   'threat-attached-to-trust-boundary':
     'Hot {number} kopplades till förtroendegränsen.',
@@ -93,7 +93,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'threat-detached-from-text-named':
     'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
   'threat-detached-from-flow':
-    'Hot {number} kopplades bort från flödet. Det ligger kvar på sina övriga objekt.',
+    'Hot {number} kopplades bort från flödet {ends}. Det ligger kvar på sina övriga objekt.',
   'threat-detached-from-flow-named':
     'Hot {number} kopplades bort från {name}. Det ligger kvar på sina övriga objekt.',
   'threat-detached-from-trust-boundary':

@@ -17,4 +17,7 @@ export const registerSv = catalogue(registerMessages)('sv')({
   none: 'Inga',
   'none-recorded': 'Inget angivet.',
   'no-threats': 'Inga hot är införda i den här modellen.',
+  'flow-from-to': 'Flöde från {source} till {target}',
+  'flow-between': 'Flöde mellan {source} och {target}',
+  'free-point': 'en fri punkt',
 });

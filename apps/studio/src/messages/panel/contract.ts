@@ -4,6 +4,7 @@ import { plural, text } from '@saerskriven/i18n';
 export const panelMessages = {
   threats: text(),
   'threats-on': text({ element: 'text' }),
+  'unlabelled-flow': text({ ends: 'text' }),
   'close-threats': text(),
   'widen-pane': text(),
   'restore-pane-width': text(),

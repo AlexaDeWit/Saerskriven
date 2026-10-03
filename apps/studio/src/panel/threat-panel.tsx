@@ -2,7 +2,14 @@ import {
   ElementPropertiesEditor,
   type ElementPropertyDrafts,
 } from './element-properties.js';
-import type { Element, ElementId, Threat, ThreatId } from '@saerskriven/model';
+import {
+  elementsAcross,
+  elementsById,
+  type Element,
+  type ElementId,
+  type Threat,
+  type ThreatId,
+} from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
 import {
   useCallback,
@@ -75,6 +82,7 @@ export function ThreatPanel({
   const threats = useModelStore(useShallow(attachedThreats));
   const number = useModelStore(nextNumber);
   const registered = useModelStore((state) => state.present.threats);
+  const diagrams = useModelStore((state) => state.present.diagrams);
   const opened = element === undefined ? undefined : drafts.get(element.id);
   const [expanded, setExpanded] = useState<string>(opened?.threatId ?? '');
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
@@ -165,7 +173,7 @@ export function ThreatPanel({
     if (attached?.elements.includes(on.id) !== true) {
       return false;
     }
-    announce(attachSaid(attached, on));
+    announce(attachSaid(attached, on, presentElements()));
     return true;
   };
 
@@ -175,7 +183,7 @@ export function ThreatPanel({
       const detached = elementById(modelStore.getState(), elementId);
       dispatch(Action.DetachThreat({ threatId: threat.id, elementId }));
       const kept = threatIn(threat.id);
-      const said = detachSaid(threat, detached, kept);
+      const said = detachSaid(threat, detached, kept, presentElements());
       if (said !== undefined) {
         announce(said);
       }
@@ -225,7 +233,13 @@ export function ThreatPanel({
       heading={
         element === undefined
           ? t('panel.threats')
-          : t('panel.threats-on', { element: elementLabel(element, t) })
+          : t('panel.threats-on', {
+              element: elementLabel(
+                element,
+                elementsById(elementsAcross(diagrams)),
+                t,
+              ),
+            })
       }
       label={t('panel.threats')}
       onClose={onClose}
@@ -314,6 +328,10 @@ function threatIn(threatId: ThreatId): Threat | undefined {
   return modelStore
     .getState()
     .present.threats.find((threat) => threat.id === threatId);
+}
+
+function presentElements(): ReadonlyMap<ElementId, Element> {
+  return elementsById(elementsAcross(modelStore.getState().present.diagrams));
 }
 
 function focusIn(

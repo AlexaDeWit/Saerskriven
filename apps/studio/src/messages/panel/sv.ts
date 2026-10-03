@@ -4,6 +4,7 @@ import { panelMessages } from './contract.js';
 export const panelSv = catalogue(panelMessages)('sv')({
   threats: 'Hot',
   'threats-on': 'Hot på {element}',
+  'unlabelled-flow': 'Flöde {ends}',
   'close-threats': 'Stäng hoten',
   'widen-pane': 'Bredda panelen',
   'restore-pane-width': 'Återställ panelens bredd',

@@ -16,6 +16,8 @@ const numbered = { number: 'number' } as const;
 
 const numberedName = { number: 'number', name: 'text' } as const;
 
+const numberedEnds = { number: 'number', ends: 'text' } as const;
+
 /**
  * What the canvas says: its announcements, the clipboard's reports, and the
  * accessible text React Flow and the resize controls take from the studio.
@@ -71,7 +73,7 @@ export const canvasMessages = {
   'threat-attached-to-store-named': text(numberedName),
   'threat-attached-to-text': text(numbered),
   'threat-attached-to-text-named': text(numberedName),
-  'threat-attached-to-flow': text(numbered),
+  'threat-attached-to-flow': text(numberedEnds),
   'threat-attached-to-flow-named': text(numberedName),
   'threat-attached-to-trust-boundary': text(numbered),
   'threat-attached-to-trust-boundary-named': text(numberedName),
@@ -83,7 +85,7 @@ export const canvasMessages = {
   'threat-detached-from-store-named': text(numberedName),
   'threat-detached-from-text': text(numbered),
   'threat-detached-from-text-named': text(numberedName),
-  'threat-detached-from-flow': text(numbered),
+  'threat-detached-from-flow': text(numberedEnds),
   'threat-detached-from-flow-named': text(numberedName),
   'threat-detached-from-trust-boundary': text(numbered),
   'threat-detached-from-trust-boundary-named': text(numberedName),

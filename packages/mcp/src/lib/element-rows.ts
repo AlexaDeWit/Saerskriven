@@ -5,6 +5,9 @@ import {
   elementIdSchema,
   elementKindSchema,
   elementSchema,
+  elementsById,
+  flowEndName,
+  flowEnds,
   type Diagram,
   type Element,
   type FlowEndpoint,
@@ -16,6 +19,11 @@ import { z } from 'zod';
 const elementContextSchema = z.object({
   diagram: diagramIdSchema,
   threats: z.int().nonnegative(),
+  namedFromEnds: acceptedTextSchema
+    .optional()
+    .describe(
+      'For a flow left unlabelled, whose name is empty: the flow named from its ends, such as "Flow from Shopper to Web shop".',
+    ),
 });
 
 /** A concise identity, scope and threat count for an element. */
@@ -78,6 +86,7 @@ export function elementRow(
     name: element.name,
     outOfScope: element.outOfScope,
     threats: threatsOn(element, counts),
+    ...namedFromEnds(element, diagram),
   };
 }
 
@@ -90,6 +99,7 @@ export function elementDetail(
     ...element,
     diagram: diagram.id,
     threats: threatsOn(element, counts),
+    ...namedFromEnds(element, diagram),
   };
 }
 
@@ -99,7 +109,7 @@ export function renderElement(
 ): readonly string[] {
   return [
     escapedForTerminal(
-      `  ${row.id} (${row.kind}, diagram ${row.diagram}, threats ${String(row.threats)}${row.outOfScope ? ', out of scope' : ''}): ${row.name}`,
+      `  ${row.id} (${row.kind}, diagram ${row.diagram}, threats ${String(row.threats)}${row.outOfScope ? ', out of scope' : ''}): ${row.namedFromEnds ?? row.name}`,
     ),
     ...('description' in row
       ? detailLines(row).map((line) => `    ${escapedForTerminal(line)}`)
@@ -158,6 +168,26 @@ function geometryLines(row: ElementDetail): readonly string[] {
     ];
   }
   return [`box: ${renderBox(row.position, row.size)}`];
+}
+
+function namedFromEnds(
+  element: Element,
+  diagram: Diagram,
+): { readonly namedFromEnds?: string } {
+  if (element.kind !== 'flow' || element.name !== '') {
+    return {};
+  }
+  const { source, target, bidirectional } = flowEnds(
+    element,
+    elementsById(diagram.elements),
+  );
+  const from = flowEndName(source, 'a free point');
+  const to = flowEndName(target, 'a free point');
+  return {
+    namedFromEnds: bidirectional
+      ? `Flow between ${from} and ${to}`
+      : `Flow from ${from} to ${to}`,
+  };
 }
 
 function threatsOn(

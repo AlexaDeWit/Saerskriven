@@ -1,4 +1,4 @@
-import type { Element, ElementId } from '@saerskriven/model';
+import { elementsById, type Element, type ElementId } from '@saerskriven/model';
 import { useRef, useState } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
@@ -6,7 +6,7 @@ import { EnumField } from '../ui/enum-field.js';
 import { TextField, type RefusedDraft } from '../ui/text-field.js';
 import { distinctLabels } from './distinct-labels.js';
 import styles from './element-properties.module.css';
-import { elementLabel } from './threats.js';
+import { labelledElement } from './threats.js';
 
 const flags = ['not-recorded', 'yes', 'no'] as const;
 
@@ -108,16 +108,22 @@ export function TextProperty({
   );
 }
 
-/** Edits ordered relationship assertions using only valid targets, retaining duplicates until explicitly removed. */
+/**
+ * Edits ordered relationship assertions using only valid targets, retaining
+ * duplicates until explicitly removed. `elements` is the diagram's, which name
+ * a flow left unlabelled by its ends.
+ */
 export function RelationshipProperty({
   label,
   lowerLabel,
   value,
   choices,
+  elements,
   onCommit,
 }: Field<ElementId[] | undefined> & {
   readonly lowerLabel: string;
   readonly choices: readonly Element[];
+  readonly elements: readonly Element[];
 }) {
   const group = useRef<HTMLFieldSetElement>(null);
   const [chosen, setChosen] = useState<ElementId | undefined>();
@@ -125,12 +131,9 @@ export function RelationshipProperty({
   const options = choices.map((element) => element.id);
   const addition =
     chosen !== undefined && options.includes(chosen) ? chosen : options[0];
+  const known = elementsById(elements);
   const labelled = distinctLabels(
-    choices.map((element) => ({
-      id: element.id,
-      label: elementLabel(element, t),
-      unnamed: element.name === '',
-    })),
+    choices.map((element) => labelledElement(element, known, t)),
   );
   const labelOf = (id: ElementId) => labelled.get(id) ?? id;
 

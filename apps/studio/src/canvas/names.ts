@@ -11,6 +11,8 @@ import {
   flagsByElement,
   type Element,
   type ElementId,
+  type FlowEnd,
+  type FlowEnds,
   type Model,
 } from '@saerskriven/model';
 import type { Locale } from '@saerskriven/i18n';
@@ -71,6 +73,20 @@ export function kindLabel(
   t: StudioTranslator['t'],
 ): string {
   return name === '' ? t(articleKindMessages[kind]) : name;
+}
+
+/**
+ * Where a flow runs, "from A to B", or "between A and B" for a flow running
+ * both ways. Each end is called by its element's name, by its kind while it
+ * has none, or "a free point".
+ */
+export function flowEndsText(ends: FlowEnds, t: StudioTranslator['t']): string {
+  return endsText(
+    modelEndName(ends.source, t),
+    modelEndName(ends.target, t),
+    ends.bidirectional,
+    t,
+  );
 }
 
 /**
@@ -146,18 +162,30 @@ function edgeName(
   flags: readonly string[],
   t: StudioTranslator['t'],
 ): string {
-  const source = endName(edge.sourceElement, nodes, t);
-  const target = endName(edge.targetElement, nodes, t);
   return spoken([
     edge.name,
     t(kindMessages.flow),
-    t(edge.bidirectional ? 'tools.flow-between' : 'tools.flow-from-to', {
-      source,
-      target,
-    }),
+    endsText(
+      endName(edge.sourceElement, nodes, t),
+      endName(edge.targetElement, nodes, t),
+      edge.bidirectional,
+      t,
+    ),
     ...badgeWords(edge.badge, t),
     ...flags,
   ]);
+}
+
+function endsText(
+  source: string,
+  target: string,
+  bidirectional: boolean,
+  t: StudioTranslator['t'],
+): string {
+  return t(bidirectional ? 'tools.flow-between' : 'tools.flow-from-to', {
+    source,
+    target,
+  });
 }
 
 function endName(
@@ -169,12 +197,27 @@ function endName(
     return t('tools.free-point');
   }
   const node = nodes.get(element);
-  if (node === undefined) {
-    return element;
+  return node === undefined
+    ? element
+    : calledBy(node.name, elementKindOf[node.kind], t);
+}
+
+function modelEndName(end: FlowEnd, t: StudioTranslator['t']): string {
+  if (end.kind === 'free') {
+    return t('tools.free-point');
   }
-  return node.name === ''
-    ? t(kindMessages[elementKindOf[node.kind]])
-    : node.name;
+  if (end.kind === 'missing') {
+    return end.element;
+  }
+  return calledBy(end.element.name, end.element.kind, t);
+}
+
+function calledBy(
+  name: string,
+  kind: Element['kind'],
+  t: StudioTranslator['t'],
+): string {
+  return name === '' ? t(kindMessages[kind]) : name;
 }
 
 function badgeWords(

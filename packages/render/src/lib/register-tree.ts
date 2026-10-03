@@ -1,11 +1,15 @@
 import type { Locale } from '@saerskriven/i18n';
 import {
   elementsAcross,
+  elementsById,
+  flowEndName,
+  flowEnds,
   inNumberOrder,
   recordsLinkedTo,
   threatFlags,
   type Assumption,
   type Element,
+  type ElementId,
   type Mitigation,
   type Model,
   type Threat,
@@ -105,7 +109,7 @@ type Wording = {
 
 type SectionContext = Wording & {
   readonly model: Model;
-  readonly elements: ReadonlyMap<string, Element>;
+  readonly elements: ReadonlyMap<ElementId, Element>;
   readonly depth: Heading['depth'];
 };
 
@@ -145,7 +149,7 @@ export function registerDocument(
     messages: exportText(locale),
     terms: renderTerms(locale),
     model,
-    elements: elementsById(model),
+    elements: elementsById(elementsAcross(model.diagrams)),
     depth: boundedDepth(first + (options.title === false ? 0 : 1)),
   };
   return {
@@ -172,12 +176,6 @@ function registerTitle(model: Model, { messages }: Wording): string {
 
 function headingText(value: string): string {
   return value.replace(lineBreaks, ' ').trim();
-}
-
-function elementsById(model: Model): Map<string, Element> {
-  return new Map(
-    elementsAcross(model.diagrams).map((element) => [element.id, element]),
-  );
 }
 
 function overviewTable(
@@ -452,15 +450,23 @@ function isParent(node: Nodes): node is Parents {
 function elementNames(threat: Threat, context: SectionContext): string {
   return threat.elements.length === 0
     ? context.messages.t('register.none')
-    : threat.elements.map((id) => elementName(id, context.elements)).join(', ');
+    : threat.elements.map((id) => elementName(id, context)).join(', ');
 }
 
 function elementName(
-  id: string,
-  elements: ReadonlyMap<string, Element>,
+  id: ElementId,
+  { elements, messages }: SectionContext,
 ): string {
   const element = elements.get(id);
-  return element === undefined || element.name.length === 0 ? id : element.name;
+  if (element?.kind === 'flow' && element.name === '') {
+    const { source, target, bidirectional } = flowEnds(element, elements);
+    const free = messages.t('register.free-point');
+    return messages.t(
+      bidirectional ? 'register.flow-between' : 'register.flow-from-to',
+      { source: flowEndName(source, free), target: flowEndName(target, free) },
+    );
+  }
+  return element === undefined || element.name === '' ? id : element.name;
 }
 
 function heading(depth: Heading['depth'], value: string): Heading {

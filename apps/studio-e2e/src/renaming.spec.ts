@@ -4,15 +4,18 @@ import { registeredChords } from './chords.fixtures.js';
 import { dragOnto } from './canvas.fixtures.js';
 import {
   canvasSurface,
+  expandThreat,
   menuButton,
   nameField,
   nodeNamed,
   openPlaceholder,
   openTwoDiagrams,
+  panelControl,
   placeholder,
   runFromMenu,
   selectByKeyboard,
   selectNode,
+  threatPanel,
 } from './studio.fixtures.js';
 
 const drawnName = (element: Locator, run: string): Locator =>
@@ -179,6 +182,35 @@ test('a flow of a real model is renamed from the keyboard', async ({
   await expect(
     nodeNamed(page, /^read the product listings, flow/u),
   ).toHaveCount(1);
+});
+
+test('a flow left unlabelled draws no label, and the threat panel names it from its ends', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await selectByKeyboard(page, /^read the product listings, flow/u);
+
+  await page.keyboard.press('Enter');
+  await nameField(page, 'read the product listings').fill('');
+  await nameField(page, 'read the product listings').press('Enter');
+
+  const unlabelled = nodeNamed(page, /^flow, from Web shop to Catalogue/u);
+  await expect(unlabelled).toHaveCount(1);
+  await expect(drawnName(unlabelled, canvasClassNames.flowLabel)).toHaveCount(
+    0,
+  );
+  await expect(
+    threatPanel(page).getByRole('heading', {
+      name: 'Threats on Flow from Web shop to Catalogue',
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  await expandThreat(page, /Unpublished listings readable/u);
+
+  await expect(
+    panelControl(page, 'Detach Flow from Web shop to Catalogue'),
+  ).toBeVisible();
 });
 
 test('Enter reopens a selected Note for prose editing', async ({ page }) => {

@@ -1,5 +1,6 @@
 import {
   inNumberOrder,
+  renameElement,
   type BoundaryShape,
   type Element,
   type Model,
@@ -11,6 +12,7 @@ import {
   type SaerskrivenYamlV2Document,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
 import {
+  elementId,
   parsedFixture,
   validModel,
   validModelFixture,
@@ -245,6 +247,31 @@ describe('a Saerskriven YAML write of an assumption that applies to the model', 
     expect(
       Either.getOrThrow(readSaerskrivenYaml(result.output)).model.assumptions,
     ).toEqual(model(threats).assumptions);
+  });
+});
+
+describe('a Saerskriven YAML write of a flow left unlabelled', () => {
+  const unlabelled = Either.getOrThrow(
+    renameElement(validModel, elementId('element-order-flow'), ''),
+  );
+  const result = writeSaerskrivenYaml(unlabelled);
+
+  it('writes an empty name that the v2 wire schema of v0.7.0 reads', () => {
+    const document = saerskrivenYamlV2WireSchema.parse(
+      parseDocument(result.output),
+    );
+    expect(
+      document.diagrams
+        .flatMap((diagram) => diagram.elements)
+        .find((element) => element.id === 'element-order-flow')?.name,
+    ).toBe('');
+  });
+
+  it('reads back unlabelled, reporting nothing', () => {
+    expect(result.divergences).toEqual([]);
+    expect(Either.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
+      unlabelled,
+    );
   });
 });
 

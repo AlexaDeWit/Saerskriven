@@ -6,6 +6,7 @@ import {
   invalidRelationships,
   locatedDiagram,
   withDiagram,
+  withStoredName,
 } from './diagram-edits.js';
 import type { DiagramId } from './ids.js';
 import type { Diagram } from './model.js';
@@ -43,8 +44,9 @@ export type RemoveDiagramFailure = Extract<
 
 /**
  * Appends a diagram with a valid title, new element IDs, element names that
- * are more than white space, flow ends `reconnectFlow` would accept, and
- * valid local boundary references.
+ * are more than white space on every kind but a flow, flow ends
+ * `reconnectFlow` would accept, and valid local boundary references. A flow
+ * named with white space alone is stored unlabelled, as `''`.
  */
 export function addDiagram(
   model: Model,
@@ -79,7 +81,13 @@ export function addDiagram(
       return Either.left(failure);
     }
   }
-  return Either.right({ ...model, diagrams: [...model.diagrams, diagram] });
+  return Either.right({
+    ...model,
+    diagrams: [
+      ...model.diagrams,
+      { ...diagram, elements: diagram.elements.map(withStoredName) },
+    ],
+  });
 }
 
 /** Retitles a diagram, rejecting empty titles and characters refused by the model. */

@@ -80,7 +80,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'threat-attached-to-text': 'Menace {number} rattachée au texte.',
   'threat-attached-to-text-named':
     'Menace {number} rattachée au texte « {name} ».',
-  'threat-attached-to-flow': 'Menace {number} rattachée au flux.',
+  'threat-attached-to-flow': 'Menace {number} rattachée au flux {ends}.',
   'threat-attached-to-flow-named':
     'Menace {number} rattachée au flux « {name} ».',
   'threat-attached-to-trust-boundary':
@@ -104,7 +104,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'threat-detached-from-text-named':
     'Menace {number} détachée du texte « {name} ». Elle reste sur ses autres éléments.',
   'threat-detached-from-flow':
-    'Menace {number} détachée du flux. Elle reste sur ses autres éléments.',
+    'Menace {number} détachée du flux {ends}. Elle reste sur ses autres éléments.',
   'threat-detached-from-flow-named':
     'Menace {number} détachée du flux « {name} ». Elle reste sur ses autres éléments.',
   'threat-detached-from-trust-boundary':

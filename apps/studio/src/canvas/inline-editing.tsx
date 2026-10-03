@@ -350,7 +350,6 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
               elementId={edge.id}
               label={nameFieldLabel(edge.name, 'flow')}
               onCommit={commitRename}
-              refuse={refusedName}
               textStyle={edge.label.name.textStyle}
               value={edge.name}
             />

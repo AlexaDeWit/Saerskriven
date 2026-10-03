@@ -1,4 +1,6 @@
 import {
+  elementsById,
+  flowEnds,
   generateThreatId,
   nextThreatNumber,
   threatSchema,
@@ -8,7 +10,7 @@ import {
   type Threat,
   type ThreatId,
 } from '@saerskriven/model';
-import { kindLabel } from '../canvas/names.js';
+import { flowEndsText, kindLabel } from '../canvas/names.js';
 import type { StudioTranslator } from '../messages/catalogues.js';
 import { severityMessages, statusMessages } from '../messages/enum-labels.js';
 import type { Said } from '../messages/said.js';
@@ -57,12 +59,42 @@ export function attachedThreats(state: State): readonly Threat[] {
       );
 }
 
-/** What the panel calls an element, as {@link kindLabel} words it. */
+/**
+ * What the panel calls an element: as {@link kindLabel} words it, and a flow
+ * left unlabelled by its ends, "Flow from A to B". `elements` holds the
+ * elements its ends attach to, keyed by id.
+ */
 export function elementLabel(
   element: Element,
+  elements: ReadonlyMap<ElementId, Element>,
   t: StudioTranslator['t'],
 ): string {
-  return kindLabel(element.name, element.kind, t);
+  return element.kind === 'flow' && element.name === ''
+    ? t('panel.unlabelled-flow', {
+        ends: flowEndsText(flowEnds(element, elements), t),
+      })
+    : kindLabel(element.name, element.kind, t);
+}
+
+/**
+ * An element as a list of choices offers it, under {@link elementLabel}. Only
+ * an element whose kind stands in for its missing name counts as unnamed, so
+ * a flow left unlabelled carries no id unless its ends repeat another's.
+ */
+export function labelledElement(
+  element: Element,
+  elements: ReadonlyMap<ElementId, Element>,
+  t: StudioTranslator['t'],
+): {
+  readonly id: ElementId;
+  readonly label: string;
+  readonly unnamed: boolean;
+} {
+  return {
+    id: element.id,
+    label: elementLabel(element, elements, t),
+    unnamed: element.name === '' && element.kind !== 'flow',
+  };
 }
 
 /**
@@ -106,38 +138,43 @@ export function attachableElements(
   t: StudioTranslator['t'],
 ): readonly Choice<ElementId>[] {
   return distinctTexts(
-    diagrams.flatMap((diagram) =>
-      diagram.elements
+    diagrams.flatMap((diagram) => {
+      const elements = elementsById(diagram.elements);
+      return diagram.elements
         .filter((element) => !threat.elements.includes(element.id))
         .map((element) => ({
-          ...labelled(element, t),
+          ...labelledElement(element, elements, t),
           detail: diagram.title,
-        })),
-    ),
+        }));
+    }),
   ).map(([{ id, detail }, text]) => ({ id, text: { ...text, detail } }));
 }
 
-/** What an attach says: the threat's number, and the element's kind with its name where it has one. */
-export function attachSaid(threat: Threat, on: Element): Said {
-  const { number } = threat;
-  const { name, kind } = on;
-  return (speak) =>
-    name === ''
-      ? speak(`canvas.threat-attached-to-${kind}`, { number })
-      : speak(`canvas.threat-attached-to-${kind}-named`, { number, name });
+/**
+ * What an attach says: the threat's number, and the element's kind with its
+ * name where it has one, or for a flow left unlabelled its ends, which
+ * `elements` holds.
+ */
+export function attachSaid(
+  threat: Threat,
+  on: Element,
+  elements: ReadonlyMap<ElementId, Element>,
+): Said {
+  return elementSaid('attached-to', threat.number, on, elements);
 }
 
 /**
  * What a detach says, read from the model it left behind: the removal where
  * the threat went with its last element, and the detachment where the threat
- * stays, naming the element's kind with its name where it has one. Nothing at
- * all where the detach did not land, which a refusal from a row the model has
- * moved on from looks like, so a refused edit is reported by its notice alone.
+ * stays, naming the element as {@link attachSaid} does. Nothing at all where
+ * the detach did not land, which a refusal from a row the model has moved on
+ * from looks like, so a refused edit is reported by its notice alone.
  */
 export function detachSaid(
   threat: Threat,
   detached: Element | undefined,
   kept: Threat | undefined,
+  elements: ReadonlyMap<ElementId, Element>,
 ): Said | undefined {
   const { number } = threat;
   if (kept === undefined) {
@@ -146,11 +183,7 @@ export function detachSaid(
   if (detached === undefined || kept.elements.includes(detached.id)) {
     return undefined;
   }
-  const { name, kind } = detached;
-  return (speak) =>
-    name === ''
-      ? speak(`canvas.threat-detached-from-${kind}`, { number })
-      : speak(`canvas.threat-detached-from-${kind}-named`, { number, name });
+  return elementSaid('detached-from', number, detached, elements);
 }
 
 /** The elements one threat names, in diagram order, under labels a person can tell apart. */
@@ -160,11 +193,12 @@ export function threatAttachments(
   t: StudioTranslator['t'],
 ): readonly { readonly id: ElementId; readonly label: string }[] {
   return distinctTexts(
-    diagrams.flatMap((diagram) =>
-      diagram.elements
+    diagrams.flatMap((diagram) => {
+      const elements = elementsById(diagram.elements);
+      return diagram.elements
         .filter((element) => threat.elements.includes(element.id))
-        .map((element) => labelled(element, t)),
-    ),
+        .map((element) => labelledElement(element, elements, t));
+    }),
   ).map(([{ id }, text]) => ({ id, label: optionName(text) }));
 }
 
@@ -209,19 +243,27 @@ export function threatAfterDeleting(
   return next?.id;
 }
 
-function labelled(
+function elementSaid(
+  change: 'attached-to' | 'detached-from',
+  number: number,
   element: Element,
-  t: StudioTranslator['t'],
-): {
-  readonly id: ElementId;
-  readonly label: string;
-  readonly unnamed: boolean;
-} {
-  return {
-    id: element.id,
-    label: elementLabel(element, t),
-    unnamed: element.name === '',
-  };
+  elements: ReadonlyMap<ElementId, Element>,
+): Said {
+  const { name } = element;
+  if (name !== '') {
+    return (speak) =>
+      speak(`canvas.threat-${change}-${element.kind}-named`, { number, name });
+  }
+  if (element.kind === 'flow') {
+    const ends = flowEnds(element, elements);
+    return (speak) =>
+      speak(`canvas.threat-${change}-flow`, {
+        number,
+        ends: flowEndsText(ends, speak),
+      });
+  }
+  const { kind } = element;
+  return (speak) => speak(`canvas.threat-${change}-${kind}`, { number });
 }
 
 function threatDetail(threat: Threat, t: StudioTranslator['t']): string {

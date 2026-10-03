@@ -1,11 +1,17 @@
 import { Either } from 'effect';
-import { parsedFixture } from '../fixtures.js';
+import { elementId, elementIn, flowIn, parsedFixture } from '../fixtures.js';
+import { reconnectFlow, setFlowDirection } from './flow-operations.js';
 import { validModelFixture } from './model.fixtures.js';
+import { modelOf } from './operations.fixtures.js';
 import type { Model } from './parse.js';
 import {
   chosenDiagram,
   DiagramChoiceFailure,
   diagramsNamed,
+  elementsAcross,
+  elementsById,
+  flowEndName,
+  flowEnds,
 } from './references.js';
 
 const model: Model = parsedFixture({
@@ -87,5 +93,72 @@ describe('chosenDiagram', () => {
         }),
       ),
     );
+  });
+});
+
+describe('flowEnds', () => {
+  const orderFlow = elementId('element-order-flow');
+  const endsIn = (held: Model) =>
+    flowEnds(
+      flowIn(held, orderFlow),
+      elementsById(elementsAcross(held.diagrams)),
+    );
+
+  it('gives the element an attached end is on and a free end as free', () => {
+    expect(endsIn(model)).toEqual({
+      source: {
+        kind: 'element',
+        element: elementIn(model, 'element-customer'),
+      },
+      target: { kind: 'free' },
+      bidirectional: false,
+    });
+  });
+
+  it('follows an end to the element it moves to, and the flow to running both ways', () => {
+    const moved = modelOf(
+      reconnectFlow(model, orderFlow, 'target', elementId('element-db')),
+    );
+    const both = modelOf(setFlowDirection(moved, orderFlow, true));
+    expect(endsIn(both)).toEqual({
+      source: {
+        kind: 'element',
+        element: elementIn(model, 'element-customer'),
+      },
+      target: { kind: 'element', element: elementIn(model, 'element-db') },
+      bidirectional: true,
+    });
+  });
+
+  it('gives the id of an attached element the lookup does not hold', () => {
+    expect(flowEnds(flowIn(model, orderFlow), new Map()).source).toEqual({
+      kind: 'missing',
+      element: elementId('element-customer'),
+    });
+  });
+});
+
+describe('flowEndName', () => {
+  const customer = elementIn(model, 'element-customer');
+
+  it.each([
+    [
+      'an element by its name',
+      { kind: 'element', element: customer },
+      'Customer',
+    ],
+    [
+      'an element with no name by its id',
+      { kind: 'element', element: { ...customer, name: '' } },
+      'element-customer',
+    ],
+    [
+      'an element the lookup lacked by its id',
+      { kind: 'missing', element: customer.id },
+      'element-customer',
+    ],
+    ['a free end by the word given', { kind: 'free' }, 'loose'],
+  ] as const)('calls %s', (_, end, called) => {
+    expect(flowEndName(end, 'loose')).toBe(called);
   });
 });

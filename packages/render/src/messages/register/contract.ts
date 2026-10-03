@@ -4,6 +4,8 @@ import { text } from '@saerskriven/i18n';
  * The register's headings, column and field names, and the lines it writes
  * in place of absent content. `field` joins a field's name to its value,
  * both as nodes, so each language places its own punctuation between them.
+ * `flow-from-to` and `flow-between` name a flow left unlabelled by its ends,
+ * and `free-point` is an end attached to nothing.
  */
 export const registerMessages = {
   untitled: text(),
@@ -21,4 +23,7 @@ export const registerMessages = {
   none: text(),
   'none-recorded': text(),
   'no-threats': text(),
+  'flow-from-to': text({ source: 'text', target: 'text' }),
+  'flow-between': text({ source: 'text', target: 'text' }),
+  'free-point': text(),
 } as const;
