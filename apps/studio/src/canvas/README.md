@@ -14,6 +14,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `nodes.ts`, `names.ts`                                                | The layout as React Flow's nodes and edges, and each one's accessible name                                                         |
 | `changes.ts`                                                          | What React Flow reports about a gesture, turned into store actions and dispatched                                                  |
 | `live-edges.ts`, `box-selection.ts`, `background-selection.ts`        | Hooks for a drag's flows, a selection box extended to flows, and a stationary background press                                     |
+| `group-drag.ts`                                                       | A drag of the selection from inside its bounds, where the press lands on empty canvas or an element it leaves out                  |
 | `tools.ts`, `elements.ts`, `placement.tsx`, `placement-preview.tsx`   | The active mode outside the model store, the elements a tool places, the pointer and Enter gestures, and the draft drawn meanwhile |
 | `edits.ts`                                                            | One function per edit a control asks for                                                                                           |
 | `pane-shield.ts`                                                      | Keeping a double-click's second press out of a pane its first press opened                                                         |

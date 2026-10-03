@@ -5,11 +5,12 @@ import { initialState } from '../store/state.js';
 import {
   actorElement,
   otherElement,
+  processElement,
   secondDiagram,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
-import { canvasModel } from './canvas.fixtures.js';
-import { currentLayout, emptyLayout } from './layout.js';
+import { canvasModel, noteElement } from './canvas.fixtures.js';
+import { currentLayout, emptyLayout, selectionBounds } from './layout.js';
 
 const start = initialState(canvasModel);
 
@@ -53,5 +54,17 @@ describe('currentLayout', () => {
 
   it('draws nothing for a model that holds no diagram', () => {
     expect(currentLayout(initialState(emptyModel))).toBe(emptyLayout);
+  });
+});
+
+describe('selectionBounds', () => {
+  it('spans the selected elements and leaves the others out', () => {
+    const layout = currentLayout(start);
+    const note = layout.nodes.find((node) => node.id === noteElement);
+    const bounds = selectionBounds(layout, [actorElement, processElement]);
+
+    expect(bounds.x).toBeLessThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeGreaterThanOrEqual(420);
+    expect(bounds.y + bounds.height).toBeLessThan(note?.position.y ?? 0);
   });
 });
