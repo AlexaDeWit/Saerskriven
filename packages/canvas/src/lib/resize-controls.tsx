@@ -1,5 +1,10 @@
 import { NodeResizeControl, ResizeControlVariant } from '@xyflow/react';
-import type { CSSProperties, KeyboardEvent, ReactElement } from 'react';
+import {
+  useRef,
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactElement,
+} from 'react';
 import { handleSides, type NodeBox } from './handles.js';
 import type { CanvasNode } from './layout.js';
 import { svgNumber } from './numbers.js';
@@ -24,9 +29,11 @@ export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
  * those {@link resizeControlsOf} leaves off a boundary curve. Each
  * holds a button named from `labels` that resizes by arrow key in
  * model-space steps. Both routes hand `onResizeEnd` the settled position and
- * size together, so a resize from the top or left is one edit. A boundary
- * curve's corner handles sit `resizeHandle.curveGap` outside its corners,
- * clear of a handle on a point there.
+ * size together, so a resize from the top or left is one edit. A pointer
+ * press that never resized the node does not reach `onResizeEnd`: React Flow
+ * ends it with the extent it measured, a fractional size rounded to whole
+ * pixels. A boundary curve's corner handles sit `resizeHandle.curveGap`
+ * outside its corners, clear of a handle on a point there.
  */
 export function ResizeControls({
   labels,
@@ -41,6 +48,7 @@ export function ResizeControls({
   readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
   readonly visible: boolean;
 }): ReactElement {
+  const resizedFrom = useRef(new Set<ResizeControlPosition>());
   const keyDown = (
     control: ResizeControlPosition,
     event: KeyboardEvent<HTMLButtonElement>,
@@ -66,8 +74,14 @@ export function ResizeControls({
           key={position}
           minHeight={minimumNodeExtent}
           minWidth={minimumNodeExtent}
-          onResize={onResize}
+          onResize={() => {
+            resizedFrom.current.add(position);
+            onResize?.();
+          }}
           onResizeEnd={(_, resized) => {
+            if (!resizedFrom.current.delete(position)) {
+              return;
+            }
             onResizeEnd?.(
               resizeBoxOnControlAxes(
                 { position: node.position, size: node.size },
