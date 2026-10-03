@@ -191,6 +191,10 @@
         {
           "env": "CI"
         },
+        // Adds the Firefox and WebKit projects to the Playwright config.
+        {
+          "env": "SAERSKRIVEN_E2E_OTHER_ENGINES"
+        },
         {
           "env": "PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS"
         },

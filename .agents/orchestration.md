@@ -37,6 +37,19 @@ Edit here when the process changes, in the same PR as the change.
 - Informational contexts: **codecov/patch**, reported against the 90% target
   in `codecov.yml` and not required.
 
+## Nightly browsers
+
+- [`nightly-browsers.yml`](../.github/workflows/nightly-browsers.yml) runs
+  the `chromium` project's specs in Firefox and in WebKit on `main` once a
+  night.
+- It is outside the gate: no pull request or push starts it.
+- Read a night in the run's `Browser suite (<engine>)` jobs and its
+  `playwright-report-<engine>` artifact, kept 14 days.
+- A red night opens one issue, or comments on it while it is open. A person
+  closes it. Its title: `Nightly browser run is red in Firefox or WebKit`.
+- Start one by hand with `gh workflow run nightly-browsers.yml`. With
+  `--ref <branch>` it runs that branch and reports to no issue.
+
 ## Work decomposition
 
 - Slices are GitHub issues. Milestones are the waves: M0, M0.5, M1, M2, M3,

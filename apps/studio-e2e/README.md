@@ -33,6 +33,18 @@ The projects run in order:
   own whatever the rest of the suite did. Other browser work must not compete
   with this measurement.
 
+`firefox` and `webkit` run what `chromium` runs, in the other two engines the
+studio supports. They exist only where `SAERSKRIVEN_E2E_OTHER_ENGINES` is set,
+so a plain run and a pull request leave them out:
+
+```sh
+SAERSKRIVEN_E2E_OTHER_ENGINES=1 pnpm nx e2e @saerskriven/studio-e2e -- \
+  --project=firefox --no-deps src/files.spec.ts
+```
+
+CI runs both on `main` once a night, outside the gate
+([Nightly browsers](../../.agents/orchestration.md#nightly-browsers)).
+
 That order is what a plain local run follows. CI splits the suite across two
 gating jobs that run beside each other, each passing `--no-deps` so a job runs
 the projects it names and no others. `Playwright smoke (n/4)` is a four-way
@@ -79,8 +91,10 @@ The browser suite does not check the browser-owned `beforeunload` prompt.
 The file-menu unit specs cover its registration. Dedicated boundary deletion
 coverage is absent. The canvas package owns detailed glyph and stylesheet
 checks. Automated accessibility checks do not replace manual screen-reader
-review. The configured browser projects use Chromium only, the phone one
-through a device preset rather than another engine.
+review. A pull request runs Chromium only, the phone project through a device
+preset rather than another engine, and Firefox and WebKit run nightly. The
+flake's WebKit opens no page outside NixOS, where it finds no EGL driver, so
+`--project=webkit` fails on such a host.
 
 Current interaction limitations live in
 [Using the studio](../../docs/studio.md#current-limitations).
