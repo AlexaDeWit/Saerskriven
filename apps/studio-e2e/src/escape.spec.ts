@@ -27,6 +27,27 @@ import {
 
 const warehouseFloor = /^Warehouse floor, trust boundary/u;
 
+const escapeTwiceFromCard = async (
+  page: Page,
+  command: Locator,
+  item: Locator,
+): Promise<void> => {
+  await command.focus();
+  await expect(page.getByRole('tooltip')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await expect(item).toHaveClass(/selected/u);
+  await expect(command).toBeFocused();
+
+  await page.keyboard.press('Escape');
+
+  await expect(command).toHaveCount(0);
+  await expect(item).not.toHaveClass(/selected/u);
+  await focusSettled(item);
+};
+
 const selected = (page: Page): Locator =>
   page.locator('.react-flow__node.selected, .react-flow__edge.selected');
 
@@ -197,7 +218,7 @@ test('Escape on a selected element resize control moves focus to the element', a
   await focusSettled(actor);
 });
 
-test('Escape on a bend or end handle, the route toolbar or a flow command moves focus to the selected flow', async ({
+test('Escape on a bend or end handle, the route toolbar or a flow card icon moves focus to the selected flow', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -211,7 +232,6 @@ test('Escape on a bend or end handle, the route toolbar or a flow command moves 
     page.getByRole('button', { name: 'Bend 1', exact: true }),
     page.getByRole('button', { name: 'Flow source end', exact: true }),
     page.getByRole('button', { name: 'Add bend', exact: true }),
-    page.getByRole('button', { name: 'Change flow source', exact: true }),
   ]) {
     await handle.focus();
 
@@ -222,28 +242,35 @@ test('Escape on a bend or end handle, the route toolbar or a flow command moves 
     await focusSettled(flow);
     await page.keyboard.press('Enter');
   }
+
+  await escapeTwiceFromCard(
+    page,
+    page.getByRole('button', { name: 'Change flow source', exact: true }),
+    flow,
+  );
 });
 
-test('Escape on a point handle or the shape switch of a selected curve moves focus to the trust boundary', async ({
+test('Escape on a point handle, or twice on the shape switch icon, of a selected curve moves focus to the trust boundary', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
   await page.keyboard.press(registeredChords['next-diagram'][0]);
   const boundary = await selectByKeyboard(page, warehouseFloor);
+  const point = page.getByRole('button', { name: 'Point 1', exact: true });
+  await point.focus();
 
-  for (const control of [
-    page.getByRole('button', { name: 'Point 1', exact: true }),
+  await page.keyboard.press('Escape');
+
+  await expect(point).toHaveCount(0);
+  await expect(boundary).not.toHaveClass(/selected/u);
+  await focusSettled(boundary);
+
+  await page.keyboard.press('Enter');
+  await escapeTwiceFromCard(
+    page,
     page.getByRole('button', { name: 'Switch boundary shape', exact: true }),
-  ]) {
-    await control.focus();
-
-    await page.keyboard.press('Escape');
-
-    await expect(control).toHaveCount(0);
-    await expect(boundary).not.toHaveClass(/selected/u);
-    await focusSettled(boundary);
-    await page.keyboard.press('Enter');
-  }
+    boundary,
+  );
 });
 
 test('Escape after a box selection moves focus to the canvas, or keeps it on the element that has it', async ({

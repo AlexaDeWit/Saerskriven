@@ -516,9 +516,10 @@ The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves
 focus to the canvas. Escape clears the selection and leaves focus on the
 element or flow that had it. From a resize control, a bend or end handle, a
-point handle, the route toolbar or the buttons beside the selection, it moves
-focus to the selected element or flow. Straight after a box selection, Escape
-moves focus to the canvas.
+point handle or the route toolbar, it moves focus to the selected element or
+flow, and so does the second Escape on an icon of the Reconnect flow or Trust
+boundary card, once the first has closed its tooltip. Straight after a box
+selection, Escape moves focus to the canvas.
 
 React Flow gives the canvas `role="application"`, which turns off a screen
 reader's browse mode there: Tab reaches every element, but the reader's own
