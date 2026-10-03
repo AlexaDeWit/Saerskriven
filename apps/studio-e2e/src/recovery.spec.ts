@@ -3,8 +3,10 @@ import { committedText } from '@saerskriven/model/fixtures';
 import { canvasContainer, canvasSettled } from './canvas.fixtures.js';
 import {
   featureCompleteFile,
+  menuItem,
   nameField,
   nodeNamed,
+  openMenu,
   openPlaceholder,
   placeholder,
   recoverySnapshot,
@@ -139,7 +141,7 @@ const undrawnSession = JSON.stringify({
   file: { _tag: 'NoFile' },
 });
 
-test('a stored session the studio cannot draw stops one start, and the next opens the placeholder and says so', async ({
+test('a stored session the studio cannot draw stops one start, and the next opens the placeholder, says so, and asks before New model clears it', async ({
   page,
 }) => {
   await withRecoverySnapshot(page, undrawnSession);
@@ -155,5 +157,15 @@ test('a stored session the studio cannot draw stops one start, and the next open
 
   await expect(nodeNamed(page, placeholder.actor)).toBeVisible();
   await expect(page.getByTestId('failure-notice')).not.toBeEmpty();
+  expect(await recoverySnapshot(page)).toBe(undrawnSession);
+
+  await openMenu(page);
+  await menuItem(page, 'New model').click();
+  await expect(
+    menuItem(page, 'Discard changes and create new model'),
+  ).toBeVisible();
+  await menuItem(page, 'Cancel').click();
+
+  await expect(page.getByRole('menu')).toHaveCount(0);
   expect(await recoverySnapshot(page)).toBe(undrawnSession);
 });

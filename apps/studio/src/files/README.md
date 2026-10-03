@@ -116,10 +116,14 @@ same dispatch. Each reads the store as it runs rather than closing over a
 render, which is what lets the commands be built once. The reducer is total
 and cannot refuse an open or a close over unsaved work, so the session asks
 first: it holds the question as `opening` or `closing`, the menu item becomes
-the confirmation, and answering, dismissing the menu or the model becoming
-clean clears it. The session owns the question so that a keyboard shortcut can
-open the menu on it. New model releases the native handle only after the
-recovery snapshot clears.
+the confirmation, and answering, dismissing the menu or the session no longer
+holding unsaved work clears it. Unsaved work is `holdsUnsavedWork`: unsaved
+changes, or a recovery snapshot that startup could not read or left
+unrestored, and that nothing has replaced since, which an open would overwrite
+and New model would clear. The menu button's name and dot and the file state
+line read `isDirty` alone, since a stored session is not an edit on screen. The
+session owns the question so that a keyboard shortcut can open the menu on it.
+New model releases the native handle only after the recovery snapshot clears.
 
 `choosing` is that shape a second time, for the format a save-as writes, asked
 only where the platform has no picker. Firefox and Safari are that browser, so
@@ -200,12 +204,11 @@ recovery hold it. What the read could not carry goes to the crossing report,
 and a refused link to the failure notice, worded from the failure's tag.
 
 The landing is published to every other tab, so the question comes first.
-While the session holds unsaved work (`holdsUnsavedWork`: unsaved changes, or
-a recovery snapshot that startup could not read or left unrestored, and that
-nothing has replaced since), the Share item turns into Discard changes and
-open the link, with Cancel under it, as Open asks. Answering, Cancel, a
-dismissed menu, the model becoming clean, and following another tab each
-settle it.
+While the session holds unsaved work, in the sense Open and New model ask on
+([the session and the menu](#the-session-and-the-menu)), the Share item turns
+into Discard changes and open the link, with Cancel under it, as Open asks.
+Answering, Cancel, a dismissed menu, the session no longer holding unsaved
+work, and following another tab each settle it.
 The fragment is removed with `history.replaceState` once the link lands, is
 refused, or the question is settled, keeping the path and the query, so a
 reload neither asks again nor loads the link over later edits. One fragment

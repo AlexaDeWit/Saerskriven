@@ -72,7 +72,8 @@ host provides.
 - `selectors.ts` derives what views show. `isDirty` is `present !== saved` by
   identity, so undoing back to the saved point clears it with no bookkeeping.
   `holdsUnsavedWork` adds a recovery snapshot that startup could not read or
-  left unrestored to that, for a shared link, whose landing would overwrite it.
+  left unrestored to that, for Open, New model and a shared link, each of which
+  would overwrite or clear it.
   `modelAsOpened` is the present model while both stacks are empty, which is
   how the canvas tells a model that arrived from one that was edited
   ([the canvas](../canvas/README.md#the-view)). `windowTitle` names the browser
