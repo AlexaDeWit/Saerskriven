@@ -6,7 +6,7 @@ import {
   type FocusEvent,
   type RefObject,
 } from 'react';
-import { markedWithin } from './marked.js';
+import { marked, markedWithin } from './marked.js';
 import styles from './threat-panel.module.css';
 
 /** Where a header sits in a scrolling body, measured from the top of the body's viewport. */
@@ -129,7 +129,7 @@ function openHeader(
 ): HTMLElement | undefined {
   return (
     list.current?.querySelector<HTMLElement>(
-      `[data-threat-item][data-state='open'] > .${styles.header}`,
+      `${marked.threatItem}[data-state='open'] > .${styles.header}`,
     ) ?? undefined
   );
 }
@@ -229,7 +229,7 @@ export function useThreatScroll(
           return;
         }
         tabbed.current = false;
-        const item = field.closest<HTMLElement>('[data-threat-item]');
+        const item = field.closest<HTMLElement>(marked.threatItem);
         const header = item?.querySelector<HTMLElement>(`.${styles.header}`);
         const scrolling = scrollingBody(list);
         if (

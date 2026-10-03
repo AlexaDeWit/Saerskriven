@@ -26,6 +26,7 @@ import { elementById } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
+import { marked } from './marked.js';
 import { historyFocusHandler } from './panel-focus.js';
 import { PickExisting } from './pick-existing.js';
 import type { RefusedField } from './refusals.js';
@@ -358,10 +359,9 @@ function useHistoryFocus(
     () =>
       historyFocusHandler(() => {
         const active = document.activeElement;
-        const item =
-          active?.closest<HTMLElement>('[data-threat-item]')?.dataset[
-            'threatItem'
-          ];
+        const item = active?.closest<HTMLElement>(marked.threatItem)?.dataset[
+          'threatItem'
+        ];
         const holder = listed(modelStore.getState()).find(
           ({ id }) => id === item,
         );

@@ -94,19 +94,20 @@ test('the keyboard links the last mitigation offered', async ({ page }) => {
 const suffixShownIn = async (holder: Locator): Promise<string> => {
   const suffix = holder.locator('[data-option-suffix]');
   await expect(suffix).toBeVisible();
-  const [outer, label, inner] = await Promise.all([
-    holder.boundingBox(),
-    holder.locator('[data-option-label]').boundingBox(),
-    suffix.boundingBox(),
-  ]);
-  expect(inner?.height).toBeGreaterThan(0);
-  expect(inner?.y).toBeGreaterThanOrEqual(
-    (label?.y ?? Infinity) + (label?.height ?? 0),
+  const [outer, label, inner] = await holder.evaluate((option) =>
+    [
+      option,
+      option.querySelector('[data-option-label]'),
+      option.querySelector('[data-option-suffix]'),
+    ].map((part) => {
+      const rect = part?.getBoundingClientRect();
+      return { y: rect?.y ?? Number.NaN, height: rect?.height ?? 0 };
+    }),
   );
-  expect(inner?.y).toBeGreaterThanOrEqual(outer?.y ?? Infinity);
-  expect((inner?.y ?? 0) + (inner?.height ?? 0)).toBeLessThanOrEqual(
-    (outer?.y ?? 0) + (outer?.height ?? 0),
-  );
+  expect(inner.height).toBeGreaterThan(0);
+  expect(inner.y).toBeGreaterThanOrEqual(label.y + label.height);
+  expect(inner.y).toBeGreaterThanOrEqual(outer.y);
+  expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height);
   return (await suffix.textContent()) ?? '';
 };
 
