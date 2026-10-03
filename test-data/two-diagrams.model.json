@@ -538,7 +538,7 @@
         "el-payment",
         "el-charge"
       ],
-      "appliesToModel": false
+      "appliesToModel": true
     },
     {
       "id": "th-order-denied",

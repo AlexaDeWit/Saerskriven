@@ -9,14 +9,19 @@ import type { RefusedDraft } from '../ui/text-field.js';
 type Held = {
   readonly said: Said | undefined;
   readonly sequence: number;
+  readonly drawn: boolean;
 };
 
 type Announcement = {
   readonly message: string;
   readonly sequence: number;
+  readonly drawn: boolean;
 };
 
-const nothingSaid: Held = { said: undefined, sequence: 0 };
+/** A way of saying an announcement: {@link announce} draws it, {@link announceUndrawn} does not. */
+export type Announcer = (said: Said) => void;
+
+const nothingSaid: Held = { said: undefined, sequence: 0, drawn: true };
 
 /** How many grapheme clusters of a record's first line an announcement quotes. */
 export const recordQuoteLength = 24;
@@ -37,8 +42,16 @@ onCanvasOrPanelChange(endAnnouncement);
  * it is shown. Its sequence moves, so repeated words announce again.
  */
 export function announce(said: Said): void {
-  current = { said, sequence: current.sequence + 1 };
-  announcementStore.notify();
+  hold(said, true);
+}
+
+/**
+ * Says `said` as {@link announce} does without drawing it: the status region
+ * holds the words as hidden text and no line appears. For a result the
+ * control with focus shows in place, which a screen reader may not read out.
+ */
+export function announceUndrawn(said: Said): void {
+  hold(said, false);
 }
 
 /** Says a refusal, unless its text is `heldText`, the draft already refused in that field. */
@@ -102,7 +115,7 @@ export function endAnnouncement(): void {
   announcementStore.notify();
 }
 
-/** What was last said, worded in the active language. */
+/** What was last said, worded in the active language, and whether the status line draws it. */
 export function currentAnnouncement(): Announcement {
   return worded(current, activeTranslator().t);
 }
@@ -114,9 +127,15 @@ export function useAnnouncement(): Announcement {
   return worded(held, t);
 }
 
+function hold(said: Said, drawn: boolean): void {
+  current = { said, sequence: current.sequence + 1, drawn };
+  announcementStore.notify();
+}
+
 function worded(held: Held, t: Speaker): Announcement {
   return {
     message: held.said === undefined ? '' : held.said(t),
     sequence: held.sequence,
+    drawn: held.drawn,
   };
 }

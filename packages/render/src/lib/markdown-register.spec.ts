@@ -463,6 +463,31 @@ describe('a threat section', () => {
     ).toContain('- **Elements**: None');
   });
 
+  it.each([
+    ['alone where it attaches to no element', [], ''],
+    ['ahead of its elements where it has both', ['el-a'], ', Gateway'],
+  ] as const)(
+    'names the whole model a threat applies to, %s, in its section and in the overview',
+    (_, elements, others) => {
+      const rendered = renderRegister(
+        modelFrom({
+          threats: [
+            threatOf({
+              number: 1,
+              elements: [...elements],
+              appliesToModel: true,
+            }),
+          ],
+          diagrams: [diagramOf('d0', [{ id: 'el-a', name: 'Gateway' }])],
+        }),
+        'en-CA',
+      );
+      const named = `${exportText('en-CA').t('register.whole-model')}${others}`;
+      expect(rendered).toContain(`- **Elements**: ${named}\n`);
+      expect(tableRowsOf(rendered)[1][2]).toBe(named);
+    },
+  );
+
   it('falls back to the element id where the element has no name', () => {
     const rendered = renderRegister(
       modelFrom({
@@ -1037,6 +1062,16 @@ describe.each(translatedLocales)('the register in %s', (locale) => {
     );
     expect(written).toContain(t('terms.model-assumptions'));
     expect(written).not.toContain('Assumptions that apply to the model');
+  });
+
+  it("names the whole model a threat applies to in the locale's words", () => {
+    expect(
+      twoDiagramsModel.threats.some(({ appliesToModel }) => appliesToModel),
+    ).toBe(true);
+    expect(written).toContain(t('register.whole-model'));
+    expect(written).not.toContain(
+      exportText('en-CA').t('register.whole-model'),
+    );
   });
 
   it("labels every badge in the locale's terms, under the same roles", () => {

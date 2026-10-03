@@ -6,6 +6,7 @@ import { actorElement, sampleModel } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   announce,
+  announceUndrawn,
   currentAnnouncement,
   quoted,
   resetAnnouncements,
@@ -25,10 +26,11 @@ describe('announce', () => {
     resetAnnouncements();
   });
 
-  it('holds what was last said', () => {
+  it('holds what was last said, to be drawn', () => {
     announce(said);
 
     expect(currentAnnouncement().message).toBe(message);
+    expect(currentAnnouncement().drawn).toBe(true);
   });
 
   it('counts every announcement, so the same words twice over are two of them', () => {
@@ -60,6 +62,35 @@ describe('announce', () => {
     dispatch(Action.Undo());
 
     expect(currentAnnouncement().message).toBe(message);
+  });
+});
+
+describe('announceUndrawn', () => {
+  const message = 'message';
+  const said = () => message;
+
+  beforeEach(() => {
+    resetAnnouncements();
+  });
+
+  it('holds what was said in place of a drawn announcement, counted as one more, and not to be drawn', () => {
+    announce(() => 'earlier');
+    const earlier = currentAnnouncement();
+
+    announceUndrawn(said);
+
+    expect(currentAnnouncement()).toEqual({
+      message,
+      sequence: earlier.sequence + 1,
+      drawn: false,
+    });
+  });
+
+  it('gives way to the next drawn announcement', () => {
+    announceUndrawn(said);
+    announce(said);
+
+    expect(currentAnnouncement().drawn).toBe(true);
   });
 });
 

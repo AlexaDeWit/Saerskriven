@@ -94,6 +94,35 @@ it('maps each assumption validity onto its status and keeps the description as p
   ).toBe(true);
 });
 
+it.each([
+  ['absent', undefined],
+  ['empty', []],
+] as const)(
+  'imports a threat whose components_affected is %s as applying to the model, and no threat that names a component',
+  (_, affected) => {
+    const document = tmbomFixture();
+    const [first, ...rest] = document.threats ?? [];
+    if (first === undefined) throw new Error('The fixture lacks a threat');
+    const { components_affected: _named, ...bare } = first;
+    document.threats = [
+      affected === undefined
+        ? bare
+        : { ...bare, components_affected: [...affected] },
+      ...rest,
+    ];
+    const read = imported(document);
+    expect(
+      read.model.threats.map(({ elements, appliesToModel }) => ({
+        attached: elements.length > 0,
+        appliesToModel,
+      })),
+    ).toEqual([
+      { attached: false, appliesToModel: true },
+      ...rest.map(() => ({ attached: true, appliesToModel: false })),
+    ]);
+  },
+);
+
 it('drops the Trigger line from a threat description when the event is empty, leaving no separator behind', () => {
   const document = tmbomFixture();
   const first = document.threats?.[0];

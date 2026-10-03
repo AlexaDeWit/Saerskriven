@@ -100,14 +100,17 @@
   user-select: none;
 }
 
-.announcement:empty {
+/* The announcement draws its box around a drawn message alone. One said
+   without being drawn leaves hidden text in the region, which then draws as
+   an empty one does: nothing. */
+.announcement:not(:has(.message)) {
   border: 0;
   padding: 0;
 }
 
 /* Each hanging report carries its own gap, so an empty one leaves no band of
    dead space over the diagram. */
-.announcement:not(:empty),
+.announcement:has(.message),
 .flowTrigger {
   margin-block-start: var(--saer-space-2);
 }

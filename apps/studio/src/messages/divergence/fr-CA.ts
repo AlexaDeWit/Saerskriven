@@ -41,6 +41,7 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   'threat-attachment-stray-trust-boundary-named':
     'son rattachement à la frontière de confiance « {name} »',
   'threat-attachment-stray-unknown': 'son rattachement à un élément absent',
+  'threat-model-link-dropped': 'son rattachement au modèle entier',
   'threat-category-unnamed': 'sa catégorie, personnalisée à la réouverture',
   'mitigation-records-merged': {
     one: 'sa {count} mesure, désormais une seule sans titre',
