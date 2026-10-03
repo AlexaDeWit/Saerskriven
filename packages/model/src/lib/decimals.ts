@@ -15,13 +15,14 @@ export type Decimals = z.infer<typeof decimalsSchema>;
 
 /**
  * How many decimals a number is written with, an exponent counted in, so
- * 1.5e-7 has eight and 1e21 has none. A number stored at that count is the
- * number itself.
+ * 1.5e-7 has eight and 1e21 has none, up to the hundred {@link decimalsSchema}
+ * allows. A number stored at that count is the number itself, unless it has
+ * more than a hundred decimals, as 5e-324 does.
  */
 export function decimalsOf(value: number): Decimals {
   const [mantissa, exponent = '0'] = String(value).split('e');
   const written = mantissa.split('.').at(1)?.length ?? 0;
-  return Math.max(0, written - Number(exponent));
+  return counted(written - Number(exponent));
 }
 
 /**
@@ -88,7 +89,10 @@ export function storedSize(size: Size, decimals: Decimals | undefined): Size {
 function storedExtent(extent: number, decimals: Decimals | undefined): number {
   return decimals === undefined
     ? extent
-    : Math.max(storedNumber(extent, decimals), 1 / 10 ** counted(decimals));
+    : Math.max(
+        storedNumber(extent, decimals),
+        Number(`1e-${String(counted(decimals))}`),
+      );
 }
 
 function counted(decimals: Decimals): number {

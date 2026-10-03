@@ -573,6 +573,26 @@ describe('moveElement', () => {
     });
   });
 
+  it('returns the same model for a move that would store every number as it is', () => {
+    const settled = modelOf(
+      moveElement(noisyModel, noisyProcess, { x: 5, y: -5 }, 1),
+    );
+    const attached = modelOf(addElement(validModel, mainDiagram, writeFlow));
+
+    expect(modelOf(moveElement(settled, noisyProcess, { x: 0, y: 0 }))).toBe(
+      settled,
+    );
+    expect(
+      modelOf(moveElement(settled, noisyProcess, { x: 1e-12, y: -0.04 }, 1)),
+    ).toBe(settled);
+    expect(
+      modelOf(moveElement(settled, noisyProcess, { x: 1e-12, y: 0 })),
+    ).not.toBe(settled);
+    expect(modelOf(moveElement(attached, writeFlow.id, { x: 5, y: 5 }))).toBe(
+      attached,
+    );
+  });
+
   it('leaves the size of what it moves, and every other element, as stored', () => {
     const next = modelOf(
       moveElement(noisyModel, noisyProcess, { x: 5, y: -5 }, 1),
@@ -711,6 +731,31 @@ describe('resizeElement', () => {
       });
     },
   );
+
+  it('returns the same model for a resize that would store the size the element has', () => {
+    const settled = modelOf(
+      resizeElement(noisyModel, noisyProcess, { width: 125.04, height: 60 }, 1),
+    );
+
+    expect(
+      modelOf(resizeElement(settled, noisyProcess, { width: 125, height: 60 })),
+    ).toBe(settled);
+    expect(
+      modelOf(
+        resizeElement(
+          settled,
+          noisyProcess,
+          { width: 125.04, height: 59.96 },
+          1,
+        ),
+      ),
+    ).toBe(settled);
+    expect(
+      modelOf(
+        resizeElement(settled, noisyProcess, { width: 125.04, height: 60 }),
+      ),
+    ).not.toBe(settled);
+  });
 
   it('refuses a flow and a curve trust boundary', () => {
     const size = { width: 10, height: 10 };

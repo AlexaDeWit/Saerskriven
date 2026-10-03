@@ -69,11 +69,13 @@ positions, bends, free ends and curve points it carries and not a size, a
 resize the size and not the position, and no element it was not asked about. A
 size a count would round to zero becomes the smallest size that count writes,
 0.1 at one decimal, so it stays positive. Handed no count, an operation stores
-what it computes, which is what a file, the CLI and the MCP server get. The
-model holds no count of its own: the caller names one. `fixedNumber` writes a
-number at a count of decimals, `storedNumber` rounds one and `decimalsOf`
-counts the decimals one is written with, which is the count that stores it
-unchanged. The canvas package's `svgNumber` writes through the first.
+what it computes, which is what a file, the CLI and the MCP server get. A
+geometry edit that would store every number as it already is returns the model
+it was given, at a count or at none. The model holds no count of its own: the
+caller names one. `fixedNumber` writes a number at a count of decimals,
+`storedNumber` rounds one and `decimalsOf` counts the decimals one is written
+with, which is the count that stores it unchanged. The canvas package's
+`svgNumber` writes through the first.
 
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no

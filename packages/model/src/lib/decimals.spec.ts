@@ -15,9 +15,15 @@ describe('decimalsOf', () => {
     [1e-7, 7],
     [1.5e-7, 8],
     [1.5e21, 0],
+    [1e-100, 100],
   ])('counts the decimals %d is written with as %d', (value, decimals) => {
     expect(decimalsOf(value)).toBe(decimals);
     expect(storedNumber(value, decimals)).toBe(value);
+  });
+
+  it('counts no more than the hundred decimals a count can name', () => {
+    expect(decimalsOf(1e-101)).toBe(100);
+    expect(decimalsOf(5e-324)).toBe(100);
   });
 });
 
@@ -114,10 +120,21 @@ describe('storedPoint, storedPoints and storedSize', () => {
     [3, { width: 120.123, height: 0.04 }],
     [1, { width: 120.1, height: 0.1 }],
     [0, { width: 120, height: 1 }],
+    [23, { width: 120.123456, height: 0.04 }],
   ])(
     'keeps a size at %d decimals above zero, at the smallest extent that count writes',
     (decimals, stored) => {
       expect(storedSize(size, decimals)).toEqual(stored);
+    },
+  );
+
+  it.each([23, 30, 100])(
+    'floors a size at %d decimals on the smallest extent that count writes, with no noise of its own',
+    (decimals) => {
+      const least = storedSize({ width: 1e-200, height: 1 }, decimals).width;
+
+      expect(least).toBe(Number(`1e-${String(decimals)}`));
+      expect(decimalsOf(least)).toBe(decimals);
     },
   );
 });

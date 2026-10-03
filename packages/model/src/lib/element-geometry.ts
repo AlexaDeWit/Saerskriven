@@ -6,6 +6,7 @@ import {
 } from './decimals.js';
 import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
 import type { Point, Size } from './geometry.js';
+import { sameItems } from './lists.js';
 
 const origin: Point = { x: 0, y: 0 };
 
@@ -91,9 +92,36 @@ export function resized(element: Element, size: Size): Element | undefined {
   return { ...element, size };
 }
 
+/**
+ * Whether two elements of one kind hold the same geometry, number for number:
+ * positions, sizes, free ends, bends and curve points.
+ */
+export function sameGeometry(left: Element, right: Element): boolean {
+  return sameItems(numbersOf(left), numbersOf(right));
+}
+
 /** Whether two canvas points coincide. */
 export function samePoint(left: Point, right: Point): boolean {
   return left.x === right.x && left.y === right.y;
+}
+
+function numbersOf(element: Element): number[] {
+  if (element.kind === 'flow') {
+    return [element.source, element.target]
+      .flatMap((end) => (end.kind === 'free' ? [end.position] : []))
+      .concat(element.waypoints)
+      .flatMap(({ x, y }) => [x, y]);
+  }
+  if (element.kind === 'trust-boundary') {
+    return element.shape.kind === 'box'
+      ? numbersOfBox(element.shape.position, element.shape.size)
+      : element.shape.waypoints.flatMap(({ x, y }) => [x, y]);
+  }
+  return numbersOfBox(element.position, element.size);
+}
+
+function numbersOfBox(position: Point, size: Size): number[] {
+  return [position.x, position.y, size.width, size.height];
 }
 
 function withPoints(element: Element, at: (point: Point) => Point): Element {

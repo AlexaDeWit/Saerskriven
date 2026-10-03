@@ -14,6 +14,7 @@ import { storedPoint, storedSize, type Decimals } from './decimals.js';
 import {
   anchorPoint,
   resized,
+  sameGeometry,
   storedElement,
   translatedElement,
 } from './element-geometry.js';
@@ -187,7 +188,8 @@ export function removeElement(
  * Translates positions, waypoints, and free endpoints. Attached endpoints keep
  * following their elements. Each point the move writes is stored at
  * `decimals`, so a move by a whole offset from 123.63636363636364 at one
- * decimal lands on a number of one decimal, and a size is left as stored.
+ * decimal lands on a number of one decimal, and a size is left as stored. A
+ * move that would store every number as it already is returns the same model.
  */
 export function moveElement(
   model: Model,
@@ -195,19 +197,19 @@ export function moveElement(
   offset: Point,
   decimals?: Decimals,
 ): Either.Either<Model, MoveElementFailure> {
-  return Either.map(locatedElement(model, elementId), (located) =>
-    withElement(
-      model,
-      located.diagramIndex,
-      translatedElement(located.element, offset, decimals),
-    ),
-  );
+  return Either.map(locatedElement(model, elementId), (located) => {
+    const moved = translatedElement(located.element, offset, decimals);
+    return sameGeometry(located.element, moved)
+      ? model
+      : withElement(model, located.diagramIndex, moved);
+  });
 }
 
 /**
  * Resizes an element that carries an extent. The caller supplies a
  * schema-valid size, which is stored at `decimals` and stays positive there
- * ({@link storedSize}). The position is left as stored.
+ * ({@link storedSize}). The position is left as stored. A resize that would
+ * store the size the element already has returns the same model.
  */
 export function resizeElement(
   model: Model,
@@ -219,9 +221,14 @@ export function resizeElement(
     locatedElement(model, elementId),
     (located): Either.Either<Model, ResizeElementFailure> => {
       const next = resized(located.element, storedSize(size, decimals));
-      return next
-        ? Either.right(withElement(model, located.diagramIndex, next))
-        : Either.left(OperationFailure.NotResizable({ elementId }));
+      if (next === undefined) {
+        return Either.left(OperationFailure.NotResizable({ elementId }));
+      }
+      return Either.right(
+        sameGeometry(located.element, next)
+          ? model
+          : withElement(model, located.diagramIndex, next),
+      );
     },
   );
 }
