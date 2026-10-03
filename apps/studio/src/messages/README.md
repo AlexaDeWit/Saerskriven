@@ -98,9 +98,10 @@ contenu 2_, _Innehållet objekt 2_) does, while the list's heading stays
 plural. Each language sets the number where its phrase takes it:
 `fields.item-of-crossing-flows` is _Flux 2 qui la franchit_.
 
-A name that gives a setting and its value writes the setting, a colon as the
-language writes one, and the value's own label, so no word is held twice:
-`menu.appearance-chosen` (_Appearance: Dark_, _Apparence : Sombre_,
+A name that gives a setting or a property and a value that has a label of its
+own writes the first, a colon as the language writes one, and that label.
+After the colon the label stands alone, so it keeps its capital and no word is
+held twice: `menu.appearance-chosen` (_Appearance: Dark_, _Apparence : Sombre_,
 _Utseende: Mörkt_), `menu.language-chosen` and `tools.highest-severity`.
 
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
