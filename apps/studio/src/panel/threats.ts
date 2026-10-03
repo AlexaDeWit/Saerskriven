@@ -18,7 +18,7 @@ import {
   severityMessages,
   statusMessages,
 } from '../messages/enum-labels.js';
-import type { Said } from '../messages/said.js';
+import { sentences, type Said } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import { selectedElement, selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
@@ -134,7 +134,8 @@ export function labelledElement(
  * The threats "Attach existing" offers one element: every threat the register
  * holds that does not already name it, the ones attached to no element first,
  * each under a label a person can tell apart and a line giving its number,
- * severity, status, and that it hangs off nothing where it does.
+ * severity, status, and that it applies to the model, or else that it hangs
+ * off nothing, where it does.
  */
 export function attachableThreats(
   registered: readonly Threat[],
@@ -199,9 +200,11 @@ export function attachSaid(
 /**
  * What a detach says, read from the model it left behind: the removal where
  * the threat went with its last element, and the detachment where the threat
- * stays, naming the element as {@link attachSaid} does. Nothing at all where
- * the detach did not land, which a refusal from a row the model has moved on
- * from looks like, so a refused edit is reported by its notice alone.
+ * stays, naming the element as {@link attachSaid} does and then what the
+ * threat stays on, its other elements or, on none, the whole model. Nothing
+ * at all where the detach did not land, which a refusal from a row the model
+ * has moved on from looks like, so a refused edit is reported by its notice
+ * alone.
  */
 export function detachSaid(
   threat: Threat,
@@ -211,12 +214,30 @@ export function detachSaid(
 ): Said | undefined {
   const { number } = threat;
   if (kept === undefined) {
-    return (speak) => speak('canvas.threat-detach-removed', { number });
+    return removedSaid(threat);
   }
   if (detached === undefined || kept.elements.includes(detached.id)) {
     return undefined;
   }
-  return elementSaid('detached-from', number, detached, elements);
+  const from = elementSaid('detached-from', number, detached, elements);
+  return (speak) =>
+    sentences(
+      from(speak),
+      kept.elements.length > 0
+        ? speak('canvas.threat-stays-on-elements')
+        : kept.appliesToModel
+          ? speak('canvas.threat-stays-on-model')
+          : '',
+    );
+}
+
+/**
+ * What the edit that took a threat's last reference says: that the threat
+ * went, and that undo restores it.
+ */
+export function removedSaid(threat: Pick<Threat, 'number'>): Said {
+  const { number } = threat;
+  return (speak) => speak('canvas.threat-detach-removed', { number });
 }
 
 /**
@@ -263,12 +284,13 @@ export function nextNumber(state: State): number {
 
 /**
  * The threat an add starts from: undecided, open, STRIDE spoofing, attached
- * to `elementId`. Its title is written in the active locale at creation and
- * is model content from then on.
+ * to `elementId`, or applying to the model where the add names no element.
+ * Its title is written in the active locale at creation and is model content
+ * from then on.
  */
 export function freshThreat(
   number: number,
-  elementId: ElementId,
+  elementId: ElementId | undefined,
   t: StudioTranslator['t'],
 ): Threat {
   return {
@@ -279,8 +301,8 @@ export function freshThreat(
     severity: 'undecided',
     status: 'open',
     description: '',
-    elements: [elementId],
-    appliesToModel: false,
+    elements: elementId === undefined ? [] : [elementId],
+    appliesToModel: elementId === undefined,
   };
 }
 
@@ -328,7 +350,9 @@ function threatDetail(threat: Threat, t: StudioTranslator['t']): string {
       severity: t(severityMessages[threat.severity]),
     }),
     t('panel.summary-status', { status: t(statusMessages[threat.status]) }),
-    threat.elements.length === 0 && t('panel.detail-no-elements'),
+    threat.appliesToModel
+      ? t('panel.detail-applies-to-model')
+      : threat.elements.length === 0 && t('panel.detail-no-elements'),
   ]
     .filter((part) => part !== false)
     .join(', ');

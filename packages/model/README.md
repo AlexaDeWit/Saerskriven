@@ -67,7 +67,9 @@ issued or kept by a paste, so a removed threat leaves a gap and
 `nextThreatNumber` never hands its number back. A paste is the one way a number
 returns: `insertFragment` lets a pasted threat keep a number no threat in the
 model holds, so cut then paste restores a threat under its own number, and it
-never leaves the last issued number below one it kept.
+never leaves the last issued number below one it kept. A threat that applies
+to the model survives the cut, so its paste issues no number at all, as the
+fragment rules below set out.
 
 `removeDiagram` refuses a diagram that still owns elements. A cascade would
 delete records the caller never named, which no other operation does, so a
@@ -85,13 +87,31 @@ returns the same model. Geometry edits do not change these facts.
 stays with `renameElement`, which refuses an empty one on every kind but a
 flow.
 
-A pasted fragment's mitigation or assumption is identical to a record the
-target model holds when it has the same kind, id and content: a mitigation's
-title, prose and status, or an assumption's prose and status.
-`appliesToModel` is not compared. A copied threat leaves its own
-`appliesToModel` behind, as a copied assumption does, since the link belongs
-to the model it was copied from: `selectionFragment` clears it and
-`insertFragment` adds every pasted threat without it.
+A copied threat or assumption leaves its `appliesToModel` behind, since the
+link belongs to the model it was copied from: `selectionFragment` clears it. A
+paste then links to what the target model already holds in place of copying
+it, wherever the copy is identical to a held record:
+
+- A mitigation or assumption is identical when the model holds one of the same
+  kind, id and content: a mitigation's title, prose and status, or an
+  assumption's prose and status. `appliesToModel` is not compared.
+  `insertFragment` adds the pasted threat links to the held record, which
+  keeps its own `appliesToModel`.
+- A threat is identical when the model holds one under the same id that
+  applies to the model and has the same number, title, category, description,
+  severity and status. Its elements and its model link are not compared, since
+  the copy carries its own element list and no link. `insertFragment` attaches
+  the pasted elements to the held threat and changes nothing else on it, so
+  the links a copied record holds to it are not pasted.
+
+Everything else is copied: a record as a clone, an assumption with no model
+link, and a threat as a new threat with no model link, a threat identical to a
+held one that does not apply to the model included. So cutting the last
+element of a threat that applies to the model and pasting it leaves one threat
+under its number, and copying one of its elements attaches the copy to the
+same threat. `fragmentRecordCounts` says how many of a fragment's records an
+insert links and how many it copies, and `fragmentHeldThreats` names the
+threats it attaches to in place of copying.
 
 ## Records, culling and flags
 

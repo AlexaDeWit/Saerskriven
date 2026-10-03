@@ -3,6 +3,7 @@ import { saerskrivenYamlCodec, withinTextLimit } from '@saerskriven/formats';
 import {
   elementIdsAcross,
   elementsAcross,
+  fragmentHeldThreats,
   fragmentRecordCounts,
   generateElementId,
   remapFragment,
@@ -87,9 +88,14 @@ export async function copySelected(cut = false): Promise<void> {
   }
 }
 
-/** Duplicates through the same copy rules without changing the system clipboard. */
+/**
+ * Duplicates through the same copy rules without changing the system
+ * clipboard. Its report counts no link of a threat the duplicate is attached
+ * to in place of copying it, since that threat keeps them all.
+ */
 export function duplicateSelected(): void {
-  const copy = selectedCopy(modelStore.getState());
+  const state = modelStore.getState();
+  const copy = selectedCopy(state, state.present);
   if (Either.isLeft(copy)) {
     announce(refusal(copy.left));
     return;
@@ -168,6 +174,7 @@ function insertCopy(fragment: Model, distance: number, said: Said): boolean {
     state.present,
     remapped.right,
   );
+  const attached = fragmentHeldThreats(state.present, remapped.right).length;
   dispatch(Action.InsertFragment({ diagramId, fragment: remapped.right }));
   if (modelStore.getState().present === state.present) {
     return false;
@@ -181,12 +188,19 @@ function insertCopy(fragment: Model, distance: number, said: Said): boolean {
     focusElement(first);
   }
   announce((t) =>
-    sentences(said(t), t('canvas.records-counts', { linked, cloned })),
+    sentences(
+      said(t),
+      attached > 0 ? t('canvas.threats-attached', { attached }) : '',
+      t('canvas.records-counts', { linked, cloned }),
+    ),
   );
   return true;
 }
 
-function selectedCopy(state: State): Either.Either<
+function selectedCopy(
+  state: State,
+  target?: Model,
+): Either.Either<
   {
     readonly fragment: Model;
     readonly text: string;
@@ -210,7 +224,14 @@ function selectedCopy(state: State): Either.Either<
         return Either.left(ClipboardFailure.TooLarge());
       }
       const copiedIds = elementIdsAcross(fragment.diagrams);
-      const excluded = externalLinkCount(state.present, fragment, copiedIds);
+      const held =
+        target === undefined ? [] : fragmentHeldThreats(target, fragment);
+      const excluded = externalLinkCount(
+        state.present,
+        fragment,
+        copiedIds,
+        new Set(held.map((threat) => threat.id)),
+      );
       return Either.right({
         fragment,
         text,
@@ -250,9 +271,10 @@ function externalLinkCount(
   present: Model,
   fragment: Model,
   copiedIds: ReadonlySet<string>,
+  held: ReadonlySet<string>,
 ): number {
   const copiedThreats = new Set<string>(
-    fragment.threats.map((threat) => threat.id),
+    fragment.threats.map((threat) => threat.id).filter((id) => !held.has(id)),
   );
   const uncopied = (
     records: readonly {
@@ -260,15 +282,23 @@ function externalLinkCount(
       readonly threats: readonly string[];
       readonly appliesToModel?: boolean;
     }[],
-    copies: readonly { readonly id: string }[],
+    copies: readonly {
+      readonly id: string;
+      readonly threats: readonly string[];
+    }[],
   ): number => {
-    const copied = new Set(copies.map((copy) => copy.id));
+    const copied = new Set(
+      copies
+        .filter((copy) => copy.threats.some((id) => copiedThreats.has(id)))
+        .map((copy) => copy.id),
+    );
     return records
       .filter((record) => copied.has(record.id))
       .reduce(
         (count, record) =>
           count +
-          record.threats.filter((id) => !copiedThreats.has(id)).length +
+          record.threats.filter((id) => !copiedThreats.has(id) && !held.has(id))
+            .length +
           (record.appliesToModel === true ? 1 : 0),
         0,
       );

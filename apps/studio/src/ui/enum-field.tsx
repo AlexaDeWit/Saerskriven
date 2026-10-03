@@ -1,4 +1,4 @@
-import { useCallback, useId, useState } from 'react';
+import { useCallback, useId, useState, type RefObject } from 'react';
 import { Select } from 'radix-ui';
 
 import { CappedList } from './capped-list.js';
@@ -102,6 +102,7 @@ type EnumFieldProps<Value extends string> = {
   readonly labelOf: (option: Value) => string | OptionText;
   readonly groupOf?: (option: Value) => string;
   readonly onCommit: (chosen: Value) => void;
+  readonly ref?: RefObject<HTMLButtonElement | null>;
 };
 
 /**
@@ -110,7 +111,8 @@ type EnumFieldProps<Value extends string> = {
  * no `value` the trigger shows `placeholder`. `labelOf` is required, so a
  * stored value is never drawn as its own label. The overlay stays in the
  * containing landmark and is placed within the box the field scrolls in,
- * with a cue at each edge its options run on past.
+ * with a cue at each edge its options run on past. `ref` is handed the
+ * trigger, for a caller that sends focus to the field.
  */
 export function EnumField<Value extends string>({
   label,
@@ -121,13 +123,20 @@ export function EnumField<Value extends string>({
   groupOf,
   labelOf,
   onCommit,
+  ref,
 }: EnumFieldProps<Value>) {
   const triggerId = useId();
   const [boundary, setBoundary] = useState<Element[]>([]);
-  const bound = useCallback((trigger: HTMLButtonElement | null) => {
-    const box = scrollBox(trigger);
-    setBoundary(box === null ? [] : [box]);
-  }, []);
+  const bound = useCallback(
+    (trigger: HTMLButtonElement | null) => {
+      const box = scrollBox(trigger);
+      setBoundary(box === null ? [] : [box]);
+      if (ref !== undefined) {
+        ref.current = trigger;
+      }
+    },
+    [ref],
+  );
   const item = (option: Value) => {
     const text = labelOf(option);
     return (

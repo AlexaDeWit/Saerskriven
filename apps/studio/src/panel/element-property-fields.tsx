@@ -1,5 +1,5 @@
 import { elementsById, type Element, type ElementId } from '@saerskriven/model';
-import { useRef, useState } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import { EnumField } from '../ui/enum-field.js';
 import { TextField, type RefusedDraft } from '../ui/text-field.js';
@@ -54,12 +54,18 @@ export function BooleanProperty({
   );
 }
 
-/** A flag the model always holds, so it offers Yes and No and nothing unknown. */
+/**
+ * A flag the model always holds, so it offers Yes and No and nothing unknown.
+ * `ref` is handed the control, for a caller that sends focus to it.
+ */
 export function RequiredBooleanProperty({
   label,
   value,
   onCommit,
-}: Field<boolean>) {
+  ref,
+}: Field<boolean> & {
+  readonly ref?: RefObject<HTMLButtonElement | null>;
+}) {
   const { t } = useTranslator();
 
   return (
@@ -71,6 +77,7 @@ export function RequiredBooleanProperty({
       onCommit={(choice) => {
         onCommit(choice === 'yes');
       }}
+      ref={ref}
     />
   );
 }

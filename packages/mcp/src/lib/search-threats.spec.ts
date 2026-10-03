@@ -7,6 +7,7 @@ import {
   featureCompleteWorkspace,
   refusalOf,
   treeHolding,
+  twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
 import { dataNotInstructions } from './preface.js';
 import { renderThreatSearch, searchThreats } from './search-threats.js';
@@ -82,6 +83,36 @@ describe('what saer_search_threats finds', () => {
       search({ severity: 'high', response_format: 'concise' }),
     );
     expect(rendered.join('\n')).toContain('category STRIDE/');
+  });
+});
+
+describe('a threat that applies to the model as a whole', () => {
+  const found = answerOf(
+    searchThreats(twoDiagramsWorkspace(), { response_format: 'concise' }),
+  );
+  const applying = found.threats.filter((row) => row.appliesToModel);
+
+  it('says so in its row, beside the elements it also attaches to, and every other row says it does not', () => {
+    expect(applying.map((row) => [row.number, row.elements.length])).toEqual([
+      [4, 2],
+    ]);
+    expect(
+      found.threats.every((row) => typeof row.appliesToModel === 'boolean'),
+    ).toBe(true);
+  });
+
+  it('says so in the text of its row and of no other', () => {
+    const said = renderThreatSearch(found).filter((line) =>
+      line.includes('applies to the model'),
+    );
+    const statusLines = renderThreatSearch(found).filter((line) =>
+      line.trimStart().startsWith('status '),
+    );
+
+    expect(said).toHaveLength(1);
+    expect(statusLines.indexOf(said[0] ?? '')).toBe(
+      found.threats.findIndex((row) => row.appliesToModel),
+    );
   });
 });
 

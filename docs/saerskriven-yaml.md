@@ -98,7 +98,11 @@ optional, and a threat that leaves it out does not apply to the model. The
 model holds the flag on every threat, and a write states it only on a threat
 that applies to the model, under the rule above for a key added after a
 version's first release. A `false` written by hand is therefore removed by the
-next save.
+next save. The studio sets a threat's flag under the threat's
+[attached elements](studio.md#attached-elements) and an assumption's on
+[the model panel](studio.md#the-model-panel). `saer_edit` sets either through
+the operations that link a [threat](mcp.md#threats) or an
+[assumption](mcp.md#mitigations-and-assumptions) to the model and unlink it.
 
 Everything else is breaking: a rename, a type change, a removal, or a new key
 whose absence means nothing. That takes a new `formatVersion`, and a new

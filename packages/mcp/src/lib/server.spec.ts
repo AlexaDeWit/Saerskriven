@@ -744,6 +744,38 @@ describe('a modern client of the server object, over what no era changes', () =>
         new Set(editOps),
       );
     });
+
+    it('refuses a replace_threat that leaves appliesToModel unstated, naming the field, and writes nothing', async () => {
+      const writable = editableTree();
+      const before = readFileSync(join(writable.root, modelFile));
+      const run = await session({ root: writable.root, era: 'modern' });
+      const result = await run.client.callTool({
+        name: 'saer_edit',
+        arguments: {
+          file: modelFile,
+          revision: revisionOf(before),
+          edits: [
+            {
+              op: 'replace_threat',
+              threat: {
+                id: 'threat-tamper-order',
+                title: 'Order tampering, retitled',
+                category: { methodology: 'STRIDE', category: 'tampering' },
+                severity: 'high',
+                status: 'open',
+                description: '',
+                elements: ['element-api'],
+              },
+            },
+          ],
+        },
+      });
+      await run.end();
+
+      expect(result.isError).toBe(true);
+      expect(textOf(result)).toContain('appliesToModel');
+      expect(readFileSync(join(writable.root, modelFile))).toEqual(before);
+    });
   });
 
   describe('saer_inspect against a Threat Dragon file', () => {

@@ -1,11 +1,12 @@
 import { readLimits, saerskrivenYamlCodec } from '@saerskriven/formats';
-import { emptyModel } from '@saerskriven/model';
+import { emptyModel, type Threat } from '@saerskriven/model';
 import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { waitFor } from '@testing-library/react';
 import { Either } from 'effect';
 import { recordingSurface } from '../commands/commands.fixtures.js';
 import { commandById, runCommand } from '../commands/registry.js';
 import { deferred } from '../files/files.fixtures.js';
+import { activeTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { FileLifecycle, initialState } from '../store/state.js';
 import {
@@ -110,6 +111,12 @@ function announcedCounts(): {
 } {
   const [linked, cloned] = numbersIn(currentAnnouncement().message).slice(-2);
   return { linked, cloned };
+}
+
+function heldFirstThreat(): Threat | undefined {
+  return modelStore
+    .getState()
+    .present.threats.find((threat) => threat.id === firstThreat);
 }
 
 async function announcedBy(run: () => Promise<void>): Promise<string> {
@@ -506,6 +513,51 @@ describe('pasteSelected', () => {
     expect(modelStore.getState().present).toBe(cut);
   });
 
+  it('attaches the pasted element to a threat that applies to the model in place of copying it, after a cut and after a copy, and says how many', async () => {
+    const { t } = activeTranslator();
+    recordingClipboard();
+    dispatch(Action.LinkThreatToModel({ threatId: firstThreat }));
+    const linked = modelStore.getState().present;
+
+    await copySelected(true);
+    expect(heldFirstThreat()?.elements).toEqual([]);
+    await pasteSelected();
+
+    const pasted = modelStore.getState().present;
+    expect(pasted.threats.map(({ id }) => id)).toEqual(
+      linked.threats.map(({ id }) => id),
+    );
+    expect(heldFirstThreat()).toMatchObject({
+      number: sampleThreat.number,
+      appliesToModel: true,
+      elements: [pasted.diagrams[0].elements.at(-1)?.id],
+    });
+    expect(currentAnnouncement().message).toContain(
+      t('canvas.threats-attached', { attached: 1 }),
+    );
+
+    await pasteSelected();
+
+    expect(modelStore.getState().present.threats).toHaveLength(
+      linked.threats.length,
+    );
+    expect(heldFirstThreat()?.elements).toHaveLength(2);
+    dispatch(Action.Undo());
+    expect(modelStore.getState().present).toBe(pasted);
+  });
+
+  it('says nothing of attached threats where a paste copies every threat', async () => {
+    const { t } = activeTranslator();
+    recordingClipboard();
+    await copySelected();
+    await pasteSelected();
+
+    expect(currentAnnouncement().message).not.toContain(
+      t('canvas.threats-attached', { attached: 0 }),
+    );
+    expect(numbersIn(currentAnnouncement().message)).toHaveLength(2);
+  });
+
   it('pastes a clone of a record culled after copying', async () => {
     recordingClipboard();
     openCanvas([actorElement], recordedModelWide);
@@ -546,6 +598,74 @@ describe('duplicateSelected', () => {
     expect(writeText).not.toHaveBeenCalled();
     dispatch(Action.Undo());
     expect(modelStore.getState().present).toBe(canvasModel);
+  });
+
+  it('counts no excluded link for a threat the duplicate is attached to, for its records, or for a record it shares with a copied threat, where a copy of the same selection counts each', async () => {
+    const { t } = activeTranslator();
+    recordingClipboard();
+    const model = parsedFixture({
+      ...sampleModel,
+      threats: [
+        {
+          ...sampleThreat,
+          elements: [actorElement, storeElement],
+          appliesToModel: true,
+        },
+        {
+          ...sampleThreat,
+          id: 'external-threat',
+          number: 2,
+          elements: [storeElement],
+        },
+        {
+          ...sampleThreat,
+          id: 'ordinary-threat',
+          number: 3,
+          elements: [actorElement],
+        },
+      ],
+      lastIssuedThreatNumber: 3,
+      mitigations: [
+        {
+          id: 'shared-mitigation',
+          title: 'Protection',
+          prose: 'Shared',
+          status: 'proposed',
+          threats: [firstThreat, 'external-threat'],
+        },
+        {
+          id: 'both-mitigation',
+          title: 'Review',
+          prose: 'On the held threat and the copied one',
+          status: 'proposed',
+          threats: [firstThreat, 'ordinary-threat'],
+        },
+      ],
+    });
+    modelStore.setState(
+      { ...initialState(model), selection: [actorElement] },
+      true,
+    );
+
+    expect(await announcedBy(() => copySelected())).toContain(
+      t('canvas.copy-counts', { elements: 1, threats: 2, excluded: 3 }),
+    );
+
+    duplicateSelected();
+
+    const duplicated = currentAnnouncement().message;
+    expect(duplicated).toContain(
+      t('canvas.copy-counts', { elements: 1, threats: 2, excluded: 0 }),
+    );
+    expect(duplicated).toContain(t('canvas.threats-attached', { attached: 1 }));
+    expect(modelStore.getState().present.threats[0]).toMatchObject({
+      appliesToModel: true,
+      elements: [
+        actorElement,
+        storeElement,
+        modelStore.getState().present.diagrams[0].elements.at(-1)?.id,
+      ],
+    });
   });
 
   it('duplicates a threat linked to the records its original links', () => {

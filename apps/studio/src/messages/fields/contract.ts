@@ -63,6 +63,7 @@ export const fieldMessages = {
   'choose-existing-element-first': text(),
   'detach-element': text({ element: 'text' }),
   'detach-unlabelled-flow': text({ ends: 'text' }),
+  'applies-to-whole-model': text(),
   'provides-authentication': text(),
   'handles-card-payments': text(),
   'handles-goods-or-services': text(),

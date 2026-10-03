@@ -184,41 +184,107 @@ describe('the details edits', () => {
   );
 });
 
+const applying = (model: typeof registerModel, edit: unknown) =>
+  Either.getOrThrow(applyEdits(model, [modelEditSchema.parse(edit)]));
+
 describe('a threat edit and the model link', () => {
   const spoofShopper = threatId('threat-spoof-shopper');
   const modelWide = Either.getOrThrow(
     linkThreatToModel(registerModel, spoofShopper),
   );
-  const held = modelWide.threats.find(({ id }) => id === spoofShopper);
+  const [plain] = registerModel.threats.filter(({ id }) => id === spoofShopper);
+  const [held] = modelWide.threats.filter(({ id }) => id === spoofShopper);
+  const { number: _issued, appliesToModel: _link, ...unstated } = held;
 
-  it('replace_threat keeps the link the model holds, so a replacement naming no element keeps the threat', () => {
-    const applied = Either.getOrThrow(
-      applyEdits(modelWide, [
-        modelEditSchema.parse({
-          op: 'replace_threat',
-          threat: { ...held, elements: [], appliesToModel: false },
-        }),
-      ]),
-    );
-    expect(applied.model.threats.find(({ id }) => id === spoofShopper)).toEqual(
-      { ...held, elements: [] },
-    );
+  const heldIn = (model: typeof registerModel) =>
+    model.threats.find(({ id }) => id === spoofShopper);
+
+  const added = (stated: object) =>
+    applying(registerModel, {
+      op: 'add_threat',
+      threat: { ...unstated, id: 'threat-added', elements: [], ...stated },
+    }).model.threats.at(-1);
+
+  it('replace_threat keeps the model link a replacement states, so one naming no element keeps the threat', () => {
+    const applied = applying(modelWide, {
+      op: 'replace_threat',
+      threat: { ...held, elements: [] },
+    });
+
+    expect(heldIn(applied.model)).toEqual({ ...held, elements: [] });
     expect(applied.culledThreats).toEqual([]);
   });
 
-  it('add_threat adds a threat that does not apply to the model, whatever the edit states', () => {
-    const applied = Either.getOrThrow(
-      applyEdits(registerModel, [
-        modelEditSchema.parse({
-          op: 'add_threat',
-          threat: { ...held, id: 'threat-added', appliesToModel: true },
-        }),
-      ]),
-    );
-    expect(applied.model.threats.at(-1)).toMatchObject({
-      id: 'threat-added',
-      appliesToModel: false,
+  it('replace_threat culls a threat whose replacement takes away its model link and names no element', () => {
+    const applied = applying(modelWide, {
+      op: 'replace_threat',
+      threat: { ...held, elements: [], appliesToModel: false },
     });
+
+    expect(heldIn(applied.model)).toBeUndefined();
+    expect(applied.culledThreats).toEqual([held]);
+  });
+
+  it('replace_threat is refused where it leaves the model link unstated', () => {
+    expect(
+      modelEditSchema.safeParse({ op: 'replace_threat', threat: unstated })
+        .success,
+    ).toBe(false);
+  });
+
+  it('add_threat adds a threat that applies to the model where the edit says so, and one that does not where it is left out', () => {
+    expect(added({ appliesToModel: true })).toMatchObject({
+      id: 'threat-added',
+      elements: [],
+      appliesToModel: true,
+    });
+    expect(added({})?.appliesToModel).toBe(false);
+  });
+
+  it('link_threat_to_model and unlink_threat_from_model set and clear the link, and keep the elements', () => {
+    const linked = applying(registerModel, {
+      op: 'link_threat_to_model',
+      threat: spoofShopper,
+    });
+    expect(heldIn(linked.model)).toEqual(held);
+
+    const unlinked = applying(linked.model, {
+      op: 'unlink_threat_from_model',
+      threat: spoofShopper,
+    });
+    expect(heldIn(unlinked.model)).toEqual(plain);
+    expect(unlinked.culledThreats).toEqual([]);
+  });
+
+  it('unlink_threat_from_model culls a threat that names no element, with the records left on no threat', () => {
+    const loose = applying(modelWide, {
+      op: 'replace_threat',
+      threat: { ...held, elements: [] },
+    }).model;
+    const onModelAlone = heldIn(loose);
+
+    const applied = applying(loose, {
+      op: 'unlink_threat_from_model',
+      threat: spoofShopper,
+    });
+
+    expect(heldIn(applied.model)).toBeUndefined();
+    expect(applied.culledThreats).toEqual([onModelAlone]);
+    expect(applied.culled).toEqual([
+      { kind: 'assumption', id: heldAssumption.id },
+    ]);
+  });
+
+  it('both refuse a threat the model does not hold', () => {
+    for (const op of ['link_threat_to_model', 'unlink_threat_from_model']) {
+      expect(
+        Either.isLeft(
+          applyEdits(registerModel, [
+            modelEditSchema.parse({ op, threat: 'threat-missing' }),
+          ]),
+        ),
+      ).toBe(true);
+    }
   });
 });
 

@@ -49,6 +49,9 @@ const nameOf = (): string => {
 const elementsLine = (): string | undefined =>
   trigger().querySelector('[data-on-elements]')?.textContent ?? undefined;
 
+const modelLine = (): string | undefined =>
+  trigger().querySelector('[data-on-model]')?.textContent ?? undefined;
+
 const raised = (): string[] =>
   [...trigger().querySelectorAll<HTMLElement>('[data-flag]')].map(
     (mark) => mark.dataset['flag'] ?? '',
@@ -119,6 +122,44 @@ describe('ThreatSummary', () => {
 
     expect(elementsLine()).toBe(t('panel.on-no-element'));
     expect(named(t('panel.on-no-element'))).not.toBeNull();
+    expect(modelLine()).toBeUndefined();
+  });
+
+  it('says a threat applies to the whole model in place of saying it is on no element, and ahead of the elements it is on', () => {
+    const { t } = activeTranslator();
+    const modelWide = { ...recordedThreat(firstThreat), appliesToModel: true };
+    showSummaryOn(undefined, { ...modelWide, elements: [] });
+
+    expect(named('Applies to the whole model')).not.toBeNull();
+    expect(elementsLine()).toBeUndefined();
+    cleanup();
+
+    showSummaryOn(undefined, {
+      ...modelWide,
+      elements: [actorElement, processElement],
+    });
+
+    expect(elementsLine()).toBe(
+      t('panel.on-elements', { list: ['Reader', 'Studio'] }),
+    );
+    expect(nameOf().indexOf(modelLine() ?? 'none')).toBeLessThan(
+      nameOf().indexOf(elementsLine() ?? 'none'),
+    );
+    expect(nameOf()).toContain(modelLine());
+  });
+
+  it('says a threat on an element also applies to the whole model, with the other elements it is on', () => {
+    const modelWide = { ...recordedThreat(firstThreat), appliesToModel: true };
+    showSummary(modelWide);
+
+    expect(named('Applies to the whole model')).not.toBeNull();
+    expect(elementsLine()).toBeUndefined();
+    cleanup();
+
+    showSummary({ ...modelWide, elements: [actorElement, storeElement] });
+
+    expect(modelLine()).toBeDefined();
+    expect(elementsLine()).toContain('Models');
   });
 
   it('marks an assumption that applies to the model only on the threats it links', () => {

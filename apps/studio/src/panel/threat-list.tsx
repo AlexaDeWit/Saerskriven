@@ -24,7 +24,12 @@ import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { elementById } from '../store/selectors.js';
 import type { State } from '../store/state.js';
-import { dispatch, modelStore, useModelStore } from '../store/store.js';
+import {
+  changedModel,
+  dispatch,
+  modelStore,
+  useModelStore,
+} from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
 import { refusedFieldSelector } from '../ui/text-field.js';
 import { marked, markedWithin } from './marked.js';
@@ -49,6 +54,7 @@ import {
   freshThreat,
   modelThreats,
   nextNumber,
+  removedSaid,
   threatAfterDeleting,
   threatCommitter,
 } from './threats.js';
@@ -88,15 +94,16 @@ export type ThreatListProps = {
 
 /**
  * The Threats tab of either panel. On an element, Add a threat and Attach
- * existing, then the threats naming the element. On the model, every threat
- * in the model and no add, since a threat is added on an element. One threat
- * is expanded at a time and each is edited in place. The list is in review
- * order as it mounts and holds that order while it stays mounted, so an edit
- * never moves the threat under the pointer and a threat added meanwhile joins
- * the end. A threat opened by any route lands with its header at the top of
- * the body, the routes into the model's list from outside it
+ * existing, then the threats naming the element. On the model, Add a threat,
+ * which adds one that applies to the model, then every threat in the model.
+ * One threat is expanded at a time and each is edited in place. The list is
+ * in review order as it mounts and holds that order while it stays mounted,
+ * so an edit never moves the threat under the pointer and a threat added
+ * meanwhile joins the end. A threat opened by any route lands with its header
+ * at the top of the body, the routes into the model's list from outside it
  * (`openInModelPanel`) included. A threat leaves the list when it leaves the
- * model, or on an element's list when it leaves the element.
+ * model, which a detach or a cleared model link that takes its last reference
+ * does, or on an element's list when it leaves the element.
  */
 export function ThreatList({
   element,
@@ -207,6 +214,21 @@ export function ThreatList({
       }
     };
 
+  const linkToModel =
+    (threat: Threat) =>
+    (applies: boolean): void => {
+      const threatId = threat.id;
+      const changed = changedModel(
+        applies
+          ? Action.LinkThreatToModel({ threatId })
+          : Action.UnlinkThreatFromModel({ threatId }),
+      );
+      if (changed && threatIn(threatId) === undefined) {
+        announce(removedSaid(threat));
+        leave(threatId);
+      }
+    };
+
   const refused =
     (threat: Threat) =>
     (refusal: RefusedField | undefined): void => {
@@ -242,13 +264,11 @@ export function ThreatList({
 
   return (
     <>
-      {element !== undefined && (
-        <AddThreat
-          addControl={home}
-          element={element}
-          list={{ held, attach, open }}
-        />
-      )}
+      <AddThreat
+        addControl={element === undefined ? undefined : home}
+        element={element}
+        list={{ held, attach, open }}
+      />
       {threats.length === 0 ? (
         <p className={styles.instruction}>
           {t(
@@ -288,6 +308,7 @@ export function ThreatList({
               }}
               onDetach={detach(threat)}
               onFocused={focused}
+              onModelLink={linkToModel(threat)}
               onRefusal={refused(threat)}
               on={on}
               threat={threat}
@@ -304,18 +325,15 @@ function AddThreat({
   list,
   addControl,
 }: {
-  readonly element: Element;
+  readonly element: Element | undefined;
   readonly list: ListControls;
-  readonly addControl: RefObject<HTMLButtonElement | null>;
+  readonly addControl: RefObject<HTMLButtonElement | null> | undefined;
 }) {
   const number = useModelStore(nextNumber);
-  const registered = useModelStore((state) => state.present.threats);
-  const translator = useTranslator();
-  const { t } = translator;
-  const attachable = attachableThreats(registered, element.id, translator);
+  const { t } = useTranslator();
 
   const add = (): void => {
-    const threat = freshThreat(number, element.id, t);
+    const threat = freshThreat(number, element?.id, t);
     dispatch(Action.AddThreat({ threat }));
     if (threatIn(threat.id) !== undefined) {
       list.open(threat.id, 'title');
@@ -332,21 +350,38 @@ function AddThreat({
       >
         {t('panel.add-threat')}
       </button>
-      {attachable.length > 0 && (
-        <PickExisting
-          actionLabel={t('fields.attach-existing-threat')}
-          actionText={t('panel.attach')}
-          choices={attachable}
-          fieldLabel={t('fields.existing-threat')}
-          onPick={(threatId) => {
-            if (list.attach(threatId, element) && list.held === undefined) {
-              list.open(threatId, 'disclosure');
-            }
-          }}
-          reason={t('fields.choose-existing-threat-first')}
-        />
+      {element !== undefined && (
+        <AttachExisting element={element} list={list} />
       )}
     </div>
+  );
+}
+
+function AttachExisting({
+  element,
+  list,
+}: {
+  readonly element: Element;
+  readonly list: ListControls;
+}) {
+  const registered = useModelStore((state) => state.present.threats);
+  const translator = useTranslator();
+  const { t } = translator;
+  const attachable = attachableThreats(registered, element.id, translator);
+
+  return attachable.length === 0 ? null : (
+    <PickExisting
+      actionLabel={t('fields.attach-existing-threat')}
+      actionText={t('panel.attach')}
+      choices={attachable}
+      fieldLabel={t('fields.existing-threat')}
+      onPick={(threatId) => {
+        if (list.attach(threatId, element) && list.held === undefined) {
+          list.open(threatId, 'disclosure');
+        }
+      }}
+      reason={t('fields.choose-existing-threat-first')}
+    />
   );
 }
 

@@ -47,5 +47,6 @@ export const panelMessages = {
   'register-number-short': text(),
   'register-elements': text(),
   'no-element': text(),
+  'whole-model': text(),
   'untitled-threat': text({ number: 'number' }),
 } as const;

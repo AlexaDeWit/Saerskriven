@@ -6,6 +6,7 @@ import {
   locatedDiagram,
   type UnknownElementFailure,
 } from './diagram-edits.js';
+import type { ThreatCategory } from './categories.js';
 import { translatedElement } from './element-geometry.js';
 import type { Element } from './elements.js';
 import type { Point } from './geometry.js';
@@ -14,8 +15,10 @@ import { linkMitigation } from './mitigation-operations.js';
 import type { Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
+import { withId } from './records.js';
 import { elementsAcross, elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
+import type { Threat } from './threats.js';
 
 /** The failures {@link selectionFragment} can produce. */
 export type SelectionFragmentFailure = Extract<
@@ -82,7 +85,9 @@ export function selectionFragment(
  * Remaps every ID under a fresh prefix and translates copied geometry. A
  * mitigation or assumption of which `target` holds an identical record keeps
  * its id, so {@link insertFragment} links to that record instead of cloning
- * it. Threat numbers stay as copied for {@link insertFragment} to settle.
+ * it. So does a threat identical to one `target` holds that applies to the
+ * model, which {@link insertFragment} attaches the pasted elements to.
+ * Threat numbers stay as copied for {@link insertFragment} to settle.
  */
 export function remapFragment(
   fragment: Model,
@@ -93,6 +98,10 @@ export function remapFragment(
   const renamed = (id: string) => prefix + ':' + id;
   const heldMitigation = identicalIn(target.mitigations, sameMitigation);
   const heldAssumption = identicalIn(target.assumptions, sameAssumption);
+  const held = new Set<string>(
+    fragmentHeldThreats(target, fragment).map(({ id }) => id),
+  );
+  const renamedThreat = (id: string) => (held.has(id) ? id : renamed(id));
   return checkedFragment({
     ...fragment,
     diagrams: fragment.diagrams.map((diagram) => ({
@@ -104,33 +113,36 @@ export function remapFragment(
     })),
     threats: fragment.threats.map((item) => ({
       ...item,
-      id: renamed(item.id),
+      id: renamedThreat(item.id),
       elements: item.elements.map(renamed),
     })),
     mitigations: fragment.mitigations.map((item) => ({
       ...item,
       id: heldMitigation(item) ? item.id : renamed(item.id),
-      threats: item.threats.map(renamed),
+      threats: item.threats.map(renamedThreat),
     })),
     assumptions: fragment.assumptions.map((item) => ({
       ...item,
       id: heldAssumption(item) ? item.id : renamed(item.id),
-      threats: item.threats.map(renamed),
+      threats: item.threats.map(renamedThreat),
     })),
   });
 }
 
 /**
- * Inserts one copied graph atomically. A pasted threat is added with no
+ * Inserts one copied graph atomically. A copied threat identical to one the
+ * model holds that applies to the model is not pasted: the held threat takes
+ * the pasted elements and changes in nothing else, so a link a copied record
+ * holds to it is left behind. Every other copied threat is pasted, with no
  * model link. It keeps its number when no threat in the model holds it, so a
- * cut then paste restores a threat's number. Every other pasted threat takes
- * a new number above the last issued and every kept one, so the last issued
- * number never ends below a pasted number. A copied record identical to one
- * the model holds adds its pasted threat links to that record, which keeps
- * its own `appliesToModel`. Every other copied record linked to a pasted
- * threat is added as a clone, an assumption with no model link. An element,
- * threat or record ID the model holds, other than an identical record's,
- * refuses the insertion.
+ * cut then paste restores a threat's number, and otherwise takes a new number
+ * above the last issued and every kept one, so the last issued number never
+ * ends below a pasted number. A copied record identical to one the model
+ * holds adds its pasted threat links to that record, which keeps its own
+ * `appliesToModel`. Every other copied record linked to a pasted threat is
+ * added as a clone, an assumption with no model link. An element, threat or
+ * record ID the model holds, other than an identical one's, refuses the
+ * insertion.
  */
 export function insertFragment(
   model: Model,
@@ -145,10 +157,10 @@ export function insertFragment(
   if (elements.length === 0) {
     return Either.right(model);
   }
-  const { mitigations, assumptions } = pastedRecords(model, fragment);
+  const { threats, mitigations, assumptions } = pastedRegister(model, fragment);
   const graph: Model = {
     ...model,
-    ...numberedThreats(model, fragment.threats),
+    ...numberedThreats(model, threats),
     diagrams: model.diagrams.map((diagram) =>
       diagram.id === diagramId
         ? { ...diagram, elements: [...diagram.elements, ...elements] }
@@ -180,17 +192,27 @@ export function fragmentRecordCounts(
   model: Model,
   fragment: Model,
 ): { readonly linked: number; readonly cloned: number } {
-  const { mitigations, assumptions } = pastedRecords(model, fragment);
+  const { mitigations, assumptions } = pastedRegister(model, fragment);
   return {
     linked: mitigations.linked.length + assumptions.linked.length,
     cloned: mitigations.cloned.length + assumptions.cloned.length,
   };
 }
 
+/**
+ * The threats of a fragment that `model` holds: each is identical to a
+ * threat of `model` that applies to the model, so {@link insertFragment}
+ * attaches the pasted elements to that threat in place of pasting this one.
+ */
+export function fragmentHeldThreats(model: Model, fragment: Model): Threat[] {
+  return fragment.threats.filter(heldModelThreat(model));
+}
+
 function numberedThreats(
   model: Model,
-  pasted: Model['threats'],
+  { linked, cloned: pasted }: Split<Threat>,
 ): Pick<Model, 'threats' | 'lastIssuedThreatNumber'> {
+  const attachments = new Map(linked.map(({ id, elements }) => [id, elements]));
   const claimed = new Set(model.threats.map(({ number }) => number));
   const renumbered: number[] = [];
   for (const [index, { number }] of pasted.entries()) {
@@ -209,7 +231,18 @@ function numberedThreats(
   );
   return {
     threats: [
-      ...model.threats,
+      ...model.threats.map((threat) => {
+        const elements = attachments.get(threat.id);
+        return elements === undefined
+          ? threat
+          : {
+              ...threat,
+              elements: elements.reduce<ElementId[]>(
+                (attached, id) => withId(attached, id),
+                threat.elements,
+              ),
+            };
+      }),
       ...pasted.map((threat, index) => ({
         ...threat,
         number: issued.get(index) ?? threat.number,
@@ -325,33 +358,36 @@ function renamedElement(element: Element, renamed: (id: string) => string) {
 
 type Split<Held> = { readonly linked: Held[]; readonly cloned: Held[] };
 
-function pastedRecords(
+function pastedRegister(
   model: Model,
   fragment: Model,
 ): {
+  readonly threats: Split<Threat>;
   readonly mitigations: Split<Mitigation>;
   readonly assumptions: Split<Assumption>;
 } {
+  const threats = split(fragment.threats, heldModelThreat(model));
+  const pasted = new Set(threats.cloned.map(({ id }) => id));
   return {
-    mitigations: splitRecords(
-      fragment.mitigations,
+    threats,
+    mitigations: split(
+      restrictedLinks(fragment.mitigations, pasted),
       identicalIn(model.mitigations, sameMitigation),
     ),
-    assumptions: splitRecords(
-      fragment.assumptions,
+    assumptions: split(
+      restrictedLinks(fragment.assumptions, pasted),
       identicalIn(model.assumptions, sameAssumption),
     ),
   };
 }
 
-function splitRecords<Held extends { readonly threats: readonly ThreatId[] }>(
+function split<Held>(
   copies: readonly Held[],
   identical: (copy: Held) => boolean,
 ): Split<Held> {
-  const pasted = copies.filter((copy) => copy.threats.length > 0);
   return {
-    linked: pasted.filter(identical),
-    cloned: pasted.filter((copy) => !identical(copy)),
+    linked: copies.filter(identical),
+    cloned: copies.filter((copy) => !identical(copy)),
   };
 }
 
@@ -366,6 +402,10 @@ function identicalIn<Held extends { readonly id: string }>(
   };
 }
 
+function heldModelThreat(model: Model): (copy: Threat) => boolean {
+  return identicalIn(model.threats, sameModelThreat);
+}
+
 function sameMitigation(held: Mitigation, copy: Mitigation): boolean {
   return (
     held.title === copy.title &&
@@ -376,6 +416,28 @@ function sameMitigation(held: Mitigation, copy: Mitigation): boolean {
 
 function sameAssumption(held: Assumption, copy: Assumption): boolean {
   return held.prose === copy.prose && held.status === copy.status;
+}
+
+function sameModelThreat(held: Threat, copy: Threat): boolean {
+  return (
+    held.appliesToModel &&
+    held.number === copy.number &&
+    held.title === copy.title &&
+    held.description === copy.description &&
+    held.severity === copy.severity &&
+    held.status === copy.status &&
+    sameCategory(held.category, copy.category)
+  );
+}
+
+function sameCategory(held: ThreatCategory, copy: ThreatCategory): boolean {
+  return (
+    held.methodology === copy.methodology &&
+    held.category === copy.category &&
+    (held.methodology !== 'custom' ||
+      copy.methodology !== 'custom' ||
+      held.methodologyName === copy.methodologyName)
+  );
 }
 
 function checkedFragment(
