@@ -9,6 +9,7 @@ import {
   type ReadResult,
   type WriteResult,
 } from './codec.js';
+import type { Divergence } from './divergence.js';
 import type { WireIssueDetail } from './import-issue-detail.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { threatDragonCodec } from './threat-dragon.js';
@@ -122,6 +123,24 @@ export function writeThrough(
       return unwritten(source);
   }
 }
+
+/**
+ * Whether writing a model back onto the document a read of `format` retained
+ * keeps `divergence`, which that read reported: a value the read `narrowed`
+ * where the format's codec {@link Codec.keepsNarrowed keeps one}, and never a
+ * key it left `undeclared`.
+ */
+export function keptByWriteBack(
+  format: FormatName,
+  divergence: Divergence,
+): boolean {
+  return divergence.reason === 'narrowed' && narrowedKept[format];
+}
+
+const narrowedKept = {
+  'threat-dragon': threatDragonCodec.keepsNarrowed,
+  'saerskriven-yaml': saerskrivenYamlCodec.keepsNarrowed,
+} as const satisfies Record<FormatName, boolean>;
 
 type DiscriminatorPath = readonly string[];
 

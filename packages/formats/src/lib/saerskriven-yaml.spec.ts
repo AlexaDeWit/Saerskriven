@@ -28,7 +28,9 @@ import {
   frozenV030Path,
   nativeFixtures,
   propertyTimeout,
+  readOrThrow,
   twoDiagramsYaml,
+  withThreatsInNumberOrder,
 } from './saerskriven-yaml.fixtures.js';
 import { threatStatusesToModel } from './saerskriven-yaml-vocabulary.js';
 import { unusedConstructs } from './wire-coverage.fixtures.js';
@@ -50,10 +52,6 @@ const documentedExample = description.slice(
   exampleStart,
   description.indexOf('```', exampleStart),
 );
-
-function withThreatsInNumberOrder(model: Model): Model {
-  return { ...model, threats: inNumberOrder(model.threats) };
-}
 
 function statusesOf(
   records: readonly {
@@ -84,10 +82,6 @@ function textRecordsIn(model: Model, text: string) {
   return model.mitigations
     .filter(({ id }) => !held.has(id))
     .map(({ prose, status, threats }) => ({ prose, status, threats }));
-}
-
-function readOrThrow(text: string) {
-  return Either.getOrThrow(saerskrivenYamlCodec.read(text));
 }
 
 function flowsOf(model: Model): readonly Flow[] {

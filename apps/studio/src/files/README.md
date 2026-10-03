@@ -84,6 +84,8 @@ read from merges onto it. Saving in any other format has nothing to merge onto,
 so the codec projects, which is where a loss report comes from. A read reports
 too: a wire schema drops every key it does not declare, and the retained
 document has lost them as well, so no later save can say what became of them.
+An open marks each loss `keptByWriteBack` says a save to the same file keeps,
+and each report names its subjects from the model it opened or saved.
 Both reports describe one crossing of the file boundary rather than the model,
 and each stands until a save starts, an open lands, or the file is closed. A
 refused open leaves the report alone, nothing having crossed.

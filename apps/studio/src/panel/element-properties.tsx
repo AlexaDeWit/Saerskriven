@@ -229,7 +229,7 @@ function PropertyFields({
           }}
         />
         <TextProperty
-          label={(speak) => speak('fields.privilege-level')}
+          fact="privilege-level"
           value={element.privilegeLevel}
           held={drafts.get('privilegeLevel')?.text}
           onRefused={refused('privilegeLevel')}
@@ -299,7 +299,7 @@ function PropertyFields({
           }}
         />
         <TextProperty
-          label={(speak) => speak('fields.protocol')}
+          fact="protocol"
           value={element.protocol}
           held={drafts.get('protocol')?.text}
           onRefused={refused('protocol')}
@@ -308,8 +308,7 @@ function PropertyFields({
           }}
         />
         <RelationshipProperty
-          label={t('fields.crossed-trust-boundaries')}
-          lowerLabel={t('fields.crossed-trust-boundaries-lower')}
+          relationship="crossed-trust-boundaries"
           value={element.trustBoundaryIds}
           choices={elements.filter(
             (candidate) => candidate.kind === 'trust-boundary',
@@ -325,8 +324,7 @@ function PropertyFields({
   return (
     <>
       <RelationshipProperty
-        label={t('fields.contained-elements')}
-        lowerLabel={t('fields.contained-elements-lower')}
+        relationship="contained-elements"
         value={element.containedElements}
         choices={elements.filter((candidate) => candidate.id !== element.id)}
         elements={elements}
@@ -335,8 +333,7 @@ function PropertyFields({
         }}
       />
       <RelationshipProperty
-        label={t('fields.crossing-flows')}
-        lowerLabel={t('fields.crossing-flows-lower')}
+        relationship="crossing-flows"
         value={element.crossingFlows}
         choices={elements.filter((candidate) => candidate.kind === 'flow')}
         elements={elements}

@@ -1,7 +1,6 @@
 import { elementsById, type Element, type ElementId } from '@saerskriven/model';
 import { useRef, useState } from 'react';
 import { useTranslator } from '../messages/locale.js';
-import type { Said } from '../messages/said.js';
 import { EnumField } from '../ui/enum-field.js';
 import { TextField, type RefusedDraft } from '../ui/text-field.js';
 import { distinctLabels } from './distinct-labels.js';
@@ -13,6 +12,13 @@ const flags = ['not-recorded', 'yes', 'no'] as const;
 const answers = ['yes', 'no'] as const;
 
 const recording = ['not-recorded', 'recorded'] as const;
+
+type TextFact = 'privilege-level' | 'protocol';
+
+type Relationship =
+  | 'crossed-trust-boundaries'
+  | 'contained-elements'
+  | 'crossing-flows';
 
 const flagMessages = {
   'not-recorded': 'enums.not-recorded',
@@ -71,13 +77,13 @@ export function RequiredBooleanProperty({
 
 /** An optional text fact retains explicit empty text and reports invalid drafts. */
 export function TextProperty({
-  label,
+  fact,
   value,
   onCommit,
   held,
   onRefused,
 }: Omit<Field<string | undefined>, 'label'> & {
-  readonly label: Said;
+  readonly fact: TextFact;
   readonly held?: string;
   readonly onRefused: (draft: RefusedDraft | undefined) => void;
 }) {
@@ -86,7 +92,7 @@ export function TextProperty({
   return (
     <div className={styles.group}>
       <EnumField
-        label={t('fields.recording-of', { label: label(t) })}
+        label={t(`fields.recording-of-${fact}`)}
         labelOf={(option) => t(flagMessages[option])}
         value={value === undefined ? 'not-recorded' : 'recorded'}
         options={recording}
@@ -97,7 +103,7 @@ export function TextProperty({
       />
       {value !== undefined && (
         <TextField
-          label={label}
+          label={(speak) => speak(`fields.${fact}`)}
           value={value}
           held={held}
           onCommit={onCommit}
@@ -114,14 +120,13 @@ export function TextProperty({
  * a flow left unlabelled by its ends.
  */
 export function RelationshipProperty({
-  label,
-  lowerLabel,
+  relationship,
   value,
   choices,
   elements,
   onCommit,
-}: Field<ElementId[] | undefined> & {
-  readonly lowerLabel: string;
+}: Omit<Field<ElementId[] | undefined>, 'label'> & {
+  readonly relationship: Relationship;
   readonly choices: readonly Element[];
   readonly elements: readonly Element[];
 }) {
@@ -136,12 +141,13 @@ export function RelationshipProperty({
     choices.map((element) => labelledElement(element, known, t)),
   );
   const labelOf = (id: ElementId) => labelled.get(id) ?? id;
+  const label = t(`fields.${relationship}`);
 
   return (
     <fieldset className={styles.relationship} ref={group}>
       <legend>{label}</legend>
       <EnumField
-        label={t('fields.recording-of', { label })}
+        label={t(`fields.recording-of-${relationship}`)}
         labelOf={(option) => t(flagMessages[option])}
         value={value === undefined ? 'not-recorded' : 'recorded'}
         options={recording}
@@ -176,23 +182,13 @@ export function RelationshipProperty({
                 type="button"
                 data-remove-relationship
                 aria-label={t('fields.remove-relationship', {
-                  label: lowerLabel,
+                  label: t(`fields.${relationship}-lower`),
                   number: index + 1,
                 })}
                 onClick={() => {
                   onCommit(value.filter((_, at) => at !== index));
                   requestAnimationFrame(() => {
-                    const buttons =
-                      group.current?.querySelectorAll<HTMLButtonElement>(
-                        '[data-remove-relationship]',
-                      );
-                    const target =
-                      buttons?.[index] ??
-                      buttons?.[index - 1] ??
-                      group.current?.querySelector<HTMLButtonElement>(
-                        '[data-add-relationship]',
-                      );
-                    target?.focus();
+                    focusAfterRemoval(group.current, index);
                   });
                 }}
               >
@@ -205,7 +201,7 @@ export function RelationshipProperty({
           ) : (
             <div className={styles.relationshipRow}>
               <EnumField
-                label={t('fields.add-to-relationship', { label: lowerLabel })}
+                label={t(`fields.add-to-${relationship}`)}
                 value={addition}
                 options={options}
                 labelOf={labelOf}
@@ -226,4 +222,18 @@ export function RelationshipProperty({
       )}
     </fieldset>
   );
+}
+
+function focusAfterRemoval(
+  group: HTMLFieldSetElement | null,
+  index: number,
+): void {
+  const buttons = group?.querySelectorAll<HTMLButtonElement>(
+    '[data-remove-relationship]',
+  );
+  const target =
+    buttons?.[index] ??
+    buttons?.[index - 1] ??
+    group?.querySelector<HTMLButtonElement>('[data-add-relationship]');
+  target?.focus();
 }

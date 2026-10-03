@@ -9,6 +9,7 @@ import {
 } from './canvas.fixtures.js';
 import {
   cardControlsClear,
+  chooseFile,
   chromeCard,
   closeMenu,
   diagramChoice,
@@ -28,7 +29,6 @@ import {
   openText,
   openTwoDiagrams,
   placeholder,
-  savedFromMenu,
   selectByKeyboard,
   threatPanel,
   twoDiagrams,
@@ -138,9 +138,7 @@ test(
     expect(drawn.x).toBeGreaterThanOrEqual(0);
     expect(drawn.x + drawn.width).toBeLessThanOrEqual(viewport?.width ?? 0);
 
-    await openMenu(page);
-    await menuItem(page, 'Save as').click();
-    await savedFromMenu(page, 'Save as Threat Dragon JSON');
+    await chooseFile(page, featureCompleteFile);
 
     const report = page.getByTestId('loss-report');
     await expect(report).not.toBeEmpty();

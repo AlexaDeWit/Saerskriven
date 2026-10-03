@@ -1,0 +1,12 @@
+/* The row under the pointer or keyboard cursor in a list or a menu, which
+   Radix marks with `data-highlighted` and gives DOM focus. The tint keeps the
+   row's inks, the solid accent being the mark of a state that is switched
+   on, and the ring is the app's focus ring drawn inside the row, so it does
+   not cover a neighbour. It is an outline, which forced colours keep when
+   they drop the tint. A component adds the class to its row: `composes` from
+   another file makes Vite warn about PostCSS on every start and build. */
+.row[data-highlighted] {
+  outline: var(--saer-focus-ring);
+  outline-offset: calc(-1 * var(--saer-focus-ring-offset));
+  background: var(--saer-colour-accent-tint);
+}

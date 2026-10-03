@@ -67,6 +67,17 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
     'what the source held on the actor cell of this id, which now draws a process',
   ],
   [
+    { code: 'cell-reshaped', parameters: { shape: 'store', kind: 'actor' } },
+    'what the source held on the store cell of this id, which now draws an actor',
+  ],
+  [
+    {
+      code: 'cell-reshaped',
+      parameters: { shape: 'actor', kind: 'trust-boundary' },
+    },
+    'what the source held on the actor cell of this id, which now draws a trust boundary',
+  ],
+  [
     { code: 'diagram-name-numbered', parameters: { number: 4 } },
     'the name, which the format numbers a diagram rather than naming one, written as 4',
   ],
@@ -80,6 +91,13 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
       parameters: { element: 'element-note', kind: 'text' },
     },
     'the attachment to the text "element-note", which the format nests a threat under an actor, a process, a store, or a flow alone',
+  ],
+  [
+    {
+      code: 'threat-attachment-stray',
+      parameters: { element: 'element-zone', kind: 'trust-boundary' },
+    },
+    'the attachment to the trust boundary "element-zone", which the format nests a threat under an actor, a process, a store, or a flow alone',
   ],
   [
     {

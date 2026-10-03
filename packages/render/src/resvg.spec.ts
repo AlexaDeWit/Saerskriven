@@ -1,4 +1,5 @@
 import { sha256Of } from '@saerskriven/model/fixtures';
+import { moduleWhoseEveryCall, trapping } from '@saerskriven/wasm/fixtures';
 import { Either } from 'effect';
 import {
   bundledFonts,
@@ -31,149 +32,37 @@ const refusalOf = (
 ): ResvgFailure | undefined =>
   Either.isLeft(outcome) ? outcome.left : undefined;
 
-const i32 = 0x7f;
-
-const functionType = 0x60;
-
-const i32Const = 0x41;
-
-const unreachable = 0x00;
-
-const endOfBody = 0x0b;
-
-const funcExport = 0x00;
-
-const memoryExport = 0x02;
-
-const typeSection = 1;
-
-const functionSection = 3;
-
-const memorySection = 5;
-
-const exportSection = 7;
-
-const codeSection = 10;
-
-const wasmHeader = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
-
-const answering = (value: number): readonly number[] => [i32Const, value];
-
-const trapping: readonly number[] = [unreachable];
-
-const named = (name: string): number[] => {
-  const bytes = [...new TextEncoder().encode(name)];
-  return [bytes.length, ...bytes];
-};
-
-const section = (id: number, body: number[]): number[] => [
-  id,
-  body.length,
-  ...body,
+const rasterizerCalls = [
+  'input',
+  'add_font',
+  'render',
+  'width',
+  'height',
+  'output',
+  'output_length',
 ];
-
-const code = (instructions: readonly number[]): number[] => [
-  instructions.length + 2,
-  0,
-  ...instructions,
-  endOfBody,
-];
-
-const moduleAnswering = (
-  alloc: readonly number[],
-  render: readonly number[],
-): Uint8Array =>
-  new Uint8Array([
-    ...wasmHeader,
-    ...section(typeSection, [
-      5,
-      functionType,
-      1,
-      i32,
-      1,
-      i32,
-      functionType,
-      2,
-      i32,
-      i32,
-      0,
-      functionType,
-      2,
-      i32,
-      i32,
-      1,
-      i32,
-      functionType,
-      3,
-      i32,
-      i32,
-      i32,
-      1,
-      i32,
-      functionType,
-      1,
-      i32,
-      0,
-    ]),
-    ...section(functionSection, [5, 0, 1, 2, 3, 4]),
-    ...section(memorySection, [1, 0, 1]),
-    ...section(exportSection, [
-      6,
-      ...named('memory'),
-      memoryExport,
-      0,
-      ...named('alloc'),
-      funcExport,
-      0,
-      ...named('dealloc'),
-      funcExport,
-      1,
-      ...named('add_font'),
-      funcExport,
-      2,
-      ...named('render'),
-      funcExport,
-      3,
-      ...named('release'),
-      funcExport,
-      4,
-    ]),
-    ...section(codeSection, [
-      5,
-      ...code(alloc),
-      ...code([]),
-      ...code(answering(1)),
-      ...code(render),
-      ...code([]),
-    ]),
-  ]);
 
 const stubbed = (
-  alloc: readonly number[],
-  render: readonly number[],
-): ResvgAssets => ({ wasm: moduleAnswering(alloc, render), fonts: [] });
+  body: readonly number[],
+  fonts: readonly Uint8Array[],
+): ResvgAssets => ({
+  wasm: moduleWhoseEveryCall(rasterizerCalls, body),
+  fonts,
+});
 
 describe('a module that will not do the work', () => {
   it('reports one that trapped, rather than throwing out of the call', async () => {
-    const outcome = await rasterizeSvg(
-      rectangle,
-      stubbed(answering(1), trapping),
-      200,
-    );
+    const outcome = await rasterizeSvg(rectangle, stubbed(trapping, []), 200);
     expect(refusalOf(outcome)?._tag).toBe('Unusable');
   });
 
-  it('reports one that reserved none of the memory asked for', async () => {
+  it('reports one that trapped taking a font', async () => {
     const outcome = await rasterizeSvg(
       rectangle,
-      stubbed(answering(0), answering(0)),
+      stubbed(trapping, [new Uint8Array([0])]),
       200,
     );
-    expect(refusalOf(outcome)).toEqual(
-      ResvgFailure.Unusable({
-        sentence: `the module reserved none of the ${new TextEncoder().encode(rectangle).length} bytes the document needs`,
-      }),
-    );
+    expect(refusalOf(outcome)?._tag).toBe('Unusable');
   });
 });
 

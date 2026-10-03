@@ -47,6 +47,9 @@
     },
     {
       "path": "./packages/i18n"
+    },
+    {
+      "path": "./packages/wasm"
     }
   ],
   "compilerOptions": {}

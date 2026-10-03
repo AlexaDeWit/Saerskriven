@@ -35,11 +35,18 @@ person typed reach a message as parameters and pass through unchanged.
 | `terms`      | Render's words for stored values, record-group headings and badge marks         |
 | `tools`      | The controls drawn over the canvas: zoom, placement, routes and endpoints       |
 
-`divergence/text.ts` maps each divergence code `@saerskriven/formats` records
-to its message, with the codec's parameters passed through. A divergence line
-takes other messages' text as parameters: the subject, the detail and the
-reason are each a complete phrase, and the `line` message owns their order
-and punctuation. The canvas does the same with a name: `canvas.quoted` sets a
+`divergence/text.ts` words each divergence `@saerskriven/formats` records
+that a studio report shows, and leaves out a code that loses nothing a person
+reads. A line names its subject as the studio shows it: a threat by number and
+title, a text or a trust boundary by its name, a mitigation by its title, and
+a record without a title by its kind and the threat it is on. An import's line
+names the record it made: the threat the divergence carries, or the mitigation
+copy on that threat, or else the first record `importedFrom` finds for the
+source record it names. A code about the model alone words its own subject
+from the file's data. The subject and what was lost are each a complete
+phrase, and the `line` message owns their order and punctuation, as
+`repeated` does for the count of lines that read the same and `kept` for the
+sentence saying a save back keeps it. The canvas does the same with a name: `canvas.quoted` sets a
 person's text in the reader's quotation marks, and an element without a name
 is called by its kind (`enums.the-actor` and the like), so an announcement
 takes either as one noun phrase.
@@ -59,6 +66,12 @@ any of them that starts with a vowel. A flow left unlabelled is named by its
 kind and those same ends, so `canvas.threat-attached-to-flow` takes the ends
 `tools.flow-from-to` or `tools.flow-between` words (_rattachée au flux depuis
 Shopper vers Web shop_).
+
+A field or relationship label is worded the same way. A message that puts
+_de_ or _à_ before one has a message per label, with the article that label
+takes, as `fields.recording-of-protocol` (_Consignation du protocole_) and
+`fields.add-to-crossing-flows` (_Ajouter aux flux qui la franchissent_) do,
+and the control picks the message by the label's key.
 
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`

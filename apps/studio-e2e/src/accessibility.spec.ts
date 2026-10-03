@@ -2,12 +2,14 @@ import { expect, test } from '@playwright/test';
 import { audit } from './accessibility.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
+  chooseFile,
   chooseInPanel,
   closeMenu,
   diagramChoice,
   diagramSwitcher,
   diagramTitleField,
   expandThreat,
+  featureCompleteFile,
   handleOn,
   menuButton,
   menuItem,
@@ -136,6 +138,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await audit(page, 'showing the menu asking which format a save-as writes');
 
   await savedFromMenu(page, 'Save as Threat Dragon JSON');
+  await chooseFile(page, featureCompleteFile);
   await expect(page.getByTestId('loss-report')).not.toBeEmpty();
 
   await audit(page, 'showing a loss report');

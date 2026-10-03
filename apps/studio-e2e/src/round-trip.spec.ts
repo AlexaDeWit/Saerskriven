@@ -94,9 +94,10 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
 
   await openMenu(page);
   await expect(menuButton(page)).not.toHaveAccessibleName(/unsaved changes/u);
-  await expect(page.getByTestId('loss-report')).toContainText(
-    String(addedNumber),
-  );
+  await expect(
+    page.getByTestId('loss-report'),
+    'raising the threat high-water mark loses nothing, so the save reports nothing',
+  ).toBeEmpty();
 
   expect(written.name).toBe('feature-complete.json');
   expect(after.format).toBe('threat-dragon');

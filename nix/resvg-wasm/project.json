@@ -2,10 +2,11 @@
   "name": "resvg-wasm",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   // The one place that runs `nix build .#resvg-wasm`. Nix keeps the
-  // compilation: default.nix beside this file is the derivation and flake.lock
-  // is the pin. What nx owns is the dependency edge, so a target that carries
-  // the module declares `dependsOn` on this build instead of its caller
-  // running the build first (issue #379).
+  // compilation: default.nix beside this file holds the module's facts,
+  // nix/wasm-module.nix is the derivation, and flake.lock is the pin. What nx
+  // owns is the dependency edge, so a target that carries the module declares
+  // `dependsOn` on this build instead of its caller running the build first
+  // (issue #379).
   //
   // The target lives here rather than in nx.json's targetDefaults, which key
   // on a target name or an executor and would reach every project's `build`
@@ -16,16 +17,20 @@
     "build": {
       "executor": "nx:run-commands",
       "cache": true,
-      // The module's bytes are a function of the flake pin and the
-      // derivation's own sources and nothing else. The default inputs would
-      // add the Node version and the locale, which no part of a Rust build
-      // reads, and a Node bump would then re-run this build and every target
-      // that depends on it. SAERSKRIVEN_RESVG_WASM is not an input either:
+      // The module's bytes are a function of the flake pin, the derivation's
+      // own sources, and the builder every module shares with the two scripts
+      // it runs, and nothing else. The default inputs would add the Node
+      // version and the locale, which no part of a Rust build reads, and a
+      // Node bump would then re-run this build and every target that depends
+      // on it. SAERSKRIVEN_RESVG_WASM is not an input either:
       // it is a fixed path the flake names, so its value says nothing about
       // the module, and the output below is what drives a consumer's hash.
       "inputs": [
         "{workspaceRoot}/flake.nix",
         "{workspaceRoot}/flake.lock",
+        "{workspaceRoot}/nix/wasm-module.nix",
+        "{workspaceRoot}/nix/unsafe-ban.sh",
+        "{workspaceRoot}/nix/wasm-surface.sh",
         "{projectRoot}/**/*"
       ],
       // The copy under lib/, not the out-link beside it. Nx stores and

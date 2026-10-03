@@ -13,6 +13,7 @@ import type { StoreSync, SyncedState } from '../store/sync.js';
 import {
   foreignSource,
   nativeSource,
+  recordedModel,
   sampleModel,
 } from '../store/store.fixtures.js';
 import type { RenderExports } from './export-commands.js';
@@ -1043,6 +1044,7 @@ describe('useFileSession', () => {
   });
 
   it('holds what the last crossing cost until it is put away', async () => {
+    modelStore.setState(initialState(recordedModel), true);
     const result = session(specBridge({ chooses: 'model.json' }));
 
     act(() => {

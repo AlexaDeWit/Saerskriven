@@ -3,10 +3,10 @@ import { reportMessages } from './contract.js';
 
 export const reportsEnCA = catalogue(reportMessages)('en-CA')({
   region: 'File reports',
-  opened: 'Opening the file dropped what it holds and Saerskriven does not:',
+  opened: 'Not shown in the studio:',
   imported:
     'Import created a native model with these conversions and omissions:',
-  saved: 'The last save did not carry everything the model holds:',
+  saved: 'Not kept by this save:',
   'conversion-details': {
     one: '{count} conversion detail',
     other: '{count} conversion details',
