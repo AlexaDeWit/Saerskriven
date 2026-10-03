@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Model } from '@saerskriven/model';
 import { registeredChords } from './chords.fixtures.js';
-import { dragBy, viewportZoom } from './canvas.fixtures.js';
+import { dragBy, pointHandles, viewportZoom } from './canvas.fixtures.js';
 import {
   openTwoDiagrams,
   savedModel,
@@ -14,9 +14,6 @@ const warehouseFloor = /^Warehouse floor, trust boundary/u;
 
 const point = (page: Page, number: number) =>
   page.getByRole('button', { name: `Point ${String(number)}`, exact: true });
-
-const pointHandles = (page: Page) =>
-  page.getByRole('button', { name: /^Point \d+$/u });
 
 const shapeNamed = (model: Model, name: string) =>
   model.diagrams

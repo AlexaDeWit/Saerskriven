@@ -16,6 +16,16 @@
       "import": "./src/lib/tokens.ts",
       "default": "./src/lib/tokens.ts"
     },
+    "./fixtures": {
+      "types": "./src/fixtures.ts",
+      "import": "./src/fixtures.ts",
+      "default": "./src/fixtures.ts"
+    },
+    "./test-setup": {
+      "types": "./src/test-setup.ts",
+      "import": "./src/test-setup.ts",
+      "default": "./src/test-setup.ts"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {

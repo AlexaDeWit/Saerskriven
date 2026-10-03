@@ -7,6 +7,7 @@ import {
   lineHeight,
   lineHeightRatio,
   nodeTextPlacement,
+  sameNodeBox,
   wrappedTextStyles,
   type CanvasFlowEdge,
   type CanvasFlowNode,
@@ -22,6 +23,7 @@ import {
 } from '@xyflow/react';
 import {
   useCallback,
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -54,6 +56,7 @@ import {
   resizeNode,
   stopInlineEditing,
 } from './edits.js';
+import { NodeFold } from './live-edges.js';
 import { itemMoved } from './move-message.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
@@ -259,6 +262,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { t } = useTranslator();
   const marks = useBadgeMarks();
   const [resizing, setResizing] = useState(false);
+  const fold = useContext(NodeFold);
   const editor = useModelStore(
     useCallback(
       (state: State) =>
@@ -284,8 +288,12 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         }}
         onResizeEnd={(box) => {
           setResizing(false);
-          resizeNode(node, box);
-          itemMoved();
+          if (sameNodeBox(node, box)) {
+            fold();
+          } else {
+            resizeNode(node, box);
+            itemMoved();
+          }
         }}
         resizeLabels={resizeLabels(node, t)}
         resizing={resizing}

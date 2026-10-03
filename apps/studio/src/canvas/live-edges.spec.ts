@@ -1,10 +1,11 @@
 import {
   layoutAtReactFlowNodes,
   layoutDiagram,
+  type CanvasEdge,
   type CanvasFlowEdge,
   type FlowLabelPlacement,
 } from '@saerskriven/canvas';
-import type { Point } from '@saerskriven/model';
+import type { Point, Size } from '@saerskriven/model';
 import {
   boxAt,
   elementId,
@@ -27,7 +28,11 @@ const { t } = activeTranslator();
 
 const drifter = elementId('el-drifter');
 const drifterSize = { width: 120, height: 80 };
+const source = elementId('el-source');
+const target = elementId('el-target');
 const endSize = { width: 120, height: 60 };
+const grown = { width: 200, height: endSize.height };
+const measured = { width: endSize.width + 1, height: endSize.height };
 const overlap = 5;
 
 const model = modelWith({
@@ -63,10 +68,25 @@ const dragTo = (at: Point, dragging = true): NodeChange<DiagramNode>[] => [
   { id: drifter, type: 'position', position: at, dragging },
 ];
 
+const sized = (
+  size: Size,
+  resizing: boolean,
+  id = source,
+): NodeChange<DiagramNode>[] => [
+  {
+    id,
+    type: 'dimensions',
+    dimensions: size,
+    resizing,
+    setAttributes: resizing,
+  },
+];
+
+const flowsOf = (edges: readonly CanvasFlowEdge[]): CanvasEdge[] =>
+  edges.flatMap((edge) => (edge.data === undefined ? [] : [edge.data.edge]));
+
 const labelsOf = (edges: readonly CanvasFlowEdge[]): FlowLabelPlacement[] =>
-  edges.flatMap((edge) =>
-    edge.data === undefined ? [] : [edge.data.edge.label],
-  );
+  flowsOf(edges).map((edge) => edge.label);
 
 beforeEach(() => {
   openCanvas(moving, model);
@@ -122,5 +142,118 @@ describe('useLiveEdges', () => {
     expect(labelsOf(result.current.edges)).toEqual(
       dropped.edges.map((edge) => edge.label),
     );
+  });
+
+  it('lays the flows out at the resized extent once a resize ends', () => {
+    const resized = layoutAtReactFlowNodes(
+      layout,
+      graph.nodes.map((node) =>
+        node.id === source ? { ...node, measured: grown } : node,
+      ),
+      [source],
+    );
+    expect(
+      resized.edges,
+      'the resize moves the end of the flow on the resized element',
+    ).not.toEqual(layout.edges);
+
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true));
+    });
+    act(() => {
+      result.current.onNodesChange(sized(grown, false));
+    });
+
+    expect(flowsOf(result.current.edges)).toEqual(resized.edges);
+  });
+
+  it('keeps every flow where it was when React Flow ends a resize it never began', () => {
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(measured, false));
+    });
+
+    expect(flowsOf(result.current.edges)).toEqual(layout.edges);
+  });
+
+  it('keeps every flow where it was when React Flow ends a resize of one node while another is resizing', () => {
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true, target));
+    });
+    const during = flowsOf(result.current.edges);
+    act(() => {
+      result.current.onNodesChange(sized(measured, false));
+    });
+
+    expect(flowsOf(result.current.edges)).toEqual(during);
+  });
+
+  it('keeps a resize under way through React Flow measuring its node', () => {
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true));
+    });
+    const during = flowsOf(result.current.edges);
+    act(() => {
+      result.current.onNodesChange([
+        { id: source, type: 'dimensions', dimensions: grown },
+      ]);
+    });
+
+    expect(flowsOf(result.current.edges)).toEqual(during);
+  });
+
+  it('folds a resized node back onto the model and drops the layout of its gesture when asked to', () => {
+    const { result } = renderHook(() =>
+      useLiveEdges(layout, graph, moving, elements, positions),
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true));
+    });
+    expect(result.current.nodes.find((node) => node.id === source)?.width).toBe(
+      grown.width,
+    );
+    act(() => {
+      result.current.fold();
+      result.current.onNodesChange(sized(grown, false));
+    });
+
+    expect(result.current.nodes.find((node) => node.id === source)?.width).toBe(
+      endSize.width,
+    );
+    expect(flowsOf(result.current.edges)).toEqual(layout.edges);
+  });
+
+  it('forgets a resize that never ended once the nodes fold back, so a later end re-lays nothing', () => {
+    const { result, rerender } = renderHook(
+      (drawn) => useLiveEdges(layout, drawn, moving, elements, positions),
+      { initialProps: graph },
+    );
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(grown, true));
+    });
+    rerender(diagramGraph(layout, model, [], t));
+    act(() => {
+      result.current.rebase();
+      result.current.onNodesChange(sized(measured, false));
+    });
+
+    expect(flowsOf(result.current.edges)).toEqual(layout.edges);
   });
 });

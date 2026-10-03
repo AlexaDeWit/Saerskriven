@@ -77,7 +77,12 @@ export const studioConfig = (options: StudioConfigOptions = {}) =>
       buildAssets(),
       socialCardAsset(),
     ],
-    setupFiles: ['./src/test-setup.ts'],
+    // jsdom implements no ResizeObserver, and specs here fail without one:
+    // the canvas package's setup module stubs one that observes nothing. The
+    // studio's own then stubs the Element methods jsdom leaves undefined,
+    // pointer capture and scrollIntoView, each with the smallest shape that
+    // can be called.
+    setupFiles: ['@saerskriven/canvas/test-setup', './src/test-setup.ts'],
     siteUrl,
     socialImage,
     ...options,

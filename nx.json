@@ -20,6 +20,9 @@
       "{workspaceRoot}/workspace-version.mts",
       { "json": "{workspaceRoot}/package.json", "fields": ["version"] }
     ],
+    // A project's own test setup module, which `production` leaves out. A
+    // project that loads another project's names this input for that project.
+    "testSetup": ["{projectRoot}/src/test-setup.[jt]s"],
     "testFixtures": [
       "{workspaceRoot}/test-data/**/*",
       "{workspaceRoot}/threat-modelling/**/*"

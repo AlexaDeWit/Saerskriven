@@ -8,7 +8,7 @@ import {
 } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
 import { applyNodeChanges, type NodeChange } from '@xyflow/react';
-import { useRef, useState } from 'react';
+import { createContext, useCallback, useRef, useState } from 'react';
 import { applyChanges, gestureSelection } from './changes.js';
 import {
   canvasEdgesById,
@@ -18,13 +18,29 @@ import {
   type DiagramNode,
 } from './nodes.js';
 
+const unfolded: DiagramNode[] = [];
+
+const nothingToFold = (): void => undefined;
+
+/**
+ * Folds the nodes the canvas above draws back onto the model's own, as
+ * {@link useLiveEdges} hands it out. A node body calls it when its resize ends
+ * with nothing to record: the model does not move then, so nothing else puts
+ * the node back where the model has it.
+ */
+export const NodeFold = createContext(nothingToFold);
+
 /**
  * The nodes React Flow draws and the flows laid out against them while a drag
  * or resize is in flight. On each change a flow whose block no longer follows
  * its segment is placed again, clear of the blocks every other flow keeps
- * where it was, and every block is placed afresh once the gesture ends. The
- * nodes fold back onto the model's own as soon as the model moves. `rebase`
- * takes the settled layout's flows as the base for the next gesture.
+ * where it was, and every block is placed afresh once the gesture ends. A
+ * resize ends only on a node that is resizing on screen: an end reported for
+ * any other node leaves the flows as they are. The nodes fold back onto the
+ * model's own as soon as the model or the selection moves, which forgets a
+ * resize that never got its end, and on the next render after `fold` is
+ * called. `rebase` takes the settled layout's flows as the base for the next
+ * gesture.
  */
 export function useLiveEdges(
   layout: CanvasLayout,
@@ -37,6 +53,9 @@ export function useLiveEdges(
   const [folded, setFolded] = useState<DiagramNode[]>(graph.nodes);
   const [exactEdges, setExactEdges] = useState<CanvasFlowEdge[] | undefined>();
   const edgeBases = useRef<ReadonlyMap<string, CanvasEdge>>(new Map());
+  const fold = useCallback((): void => {
+    setFolded(unfolded);
+  }, []);
 
   if (folded !== graph.nodes) {
     setFolded(graph.nodes);
@@ -50,6 +69,7 @@ export function useLiveEdges(
     rebase: (): void => {
       edgeBases.current = canvasEdgesById(layout);
     },
+    fold,
     onNodesChange: (changes: NodeChange<DiagramNode>[]): void => {
       const next = applyNodeChanges(changes, onScreen);
       setOnScreen(next);
@@ -61,7 +81,11 @@ export function useLiveEdges(
       const finished = changes.some(
         (change) =>
           (change.type === 'position' && change.dragging === false) ||
-          (change.type === 'dimensions' && change.resizing === false),
+          (change.type === 'dimensions' &&
+            change.resizing === false &&
+            onScreen.some(
+              (node) => node.id === change.id && node.resizing === true,
+            )),
       );
       if (active || finished) {
         const live = layoutAtReactFlowNodes(

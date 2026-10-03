@@ -52,7 +52,7 @@ import { FlowBendControls } from './flow-bend-controls.js';
 import { FocusPan } from './focus-pan.js';
 import { useGroupDrag } from './group-drag.js';
 import { selectToolOnItem } from './item-focus.js';
-import { useLiveEdges } from './live-edges.js';
+import { NodeFold, useLiveEdges } from './live-edges.js';
 import {
   KeyboardMoveMessage,
   preMoveMessage,
@@ -327,7 +327,7 @@ export function DiagramCanvas({
     [onEditText],
   );
 
-  return (
+  const canvas = (
     <div
       className={styles.canvas}
       data-active-tool={mode.active}
@@ -439,4 +439,5 @@ export function DiagramCanvas({
       <ThreatOverlay onCover={setPanelCover} />
     </div>
   );
+  return <NodeFold.Provider value={liveEdges.fold}>{canvas}</NodeFold.Provider>;
 }
