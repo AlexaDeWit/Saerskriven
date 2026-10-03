@@ -85,10 +85,11 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   says which count: three for a pointer gesture and one for a keyboard gesture
   (`gestureDecimals`), three for a command that works geometry out
   (`commandDecimals`: align, distribute, duplicate, paste, Add point, Switch
-  boundary shape, and the flow ends a removal frees), and for a typed form the
-  most decimals any of its fields is written with (`typedDecimals`), which
-  stores each as typed. The gesture commits are `applyChanges` for a move,
-  where `node-drag.ts` tells React Flow's drag from its arrow-key move and
+  boundary shape, and the flow ends a removal frees), and for Position and size
+  the most decimals any of its fields is written with, from three to six
+  (`typedDecimals`), which stores a typed number of six decimals or fewer as
+  typed. The gesture commits are `applyChanges` for a move, where
+  `node-drag.ts` tells React Flow's drag from its arrow-key move and
   `group-drag.ts` is a pointer's, `resizeNode` for a resize, whose control says
   which it was, `placeElement` and `placeBoundaryCurve` for a placement, and an
   element draft's `commit` for a bend, a flow end and a curve point. A point

@@ -18,8 +18,8 @@ import styles from './selection-controls.module.css';
 
 /**
  * The position and size form over the selected nodes, committing one move or
- * resize on Apply, stored at the most decimals any of its fields is written
- * with, so each number is stored as typed.
+ * resize on Apply, stored at the count {@link typedDecimals} gives its
+ * fields, so a number of six decimals or fewer is stored as typed.
  */
 export function GeometryEditor({
   state,

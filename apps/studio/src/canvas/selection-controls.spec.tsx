@@ -95,17 +95,73 @@ describe('SelectionControls', () => {
       runCommand(commandById('edit-geometry'), recordingSurface().surface);
     });
     fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
-      target: { value: '10.123456' },
+      target: { value: '10.1234' },
     });
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), {
-      target: { value: '120.9876543' },
+      target: { value: '120.987654' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
 
     expect(laidOutNode(processElement)).toMatchObject({
-      position: { x: 10.123456, y: 0 },
-      size: { width: 120.9876543, height: 60 },
+      position: { x: 10.1234, y: 0 },
+      size: { width: 120.987654, height: 60 },
     });
+  });
+
+  it('stores at most six decimals, so a long number in one field does not spoil the one typed in another', () => {
+    dispatch(
+      Action.MoveElement({
+        elementId: actorElement,
+        offset: { x: 3742.089, y: 80.1234567890123 },
+        decimals: undefined,
+      }),
+    );
+    expect(laidOutNode(actorElement).position).toEqual({
+      x: 3742.089,
+      y: 80.1234567890123,
+    });
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('edit-geometry'), recordingSurface().surface);
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
+      target: { value: '530.189' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
+
+    expect(laidOutNode(actorElement)).toMatchObject({
+      position: { x: 530.189, y: 80.123457 },
+      size: { width: 120, height: 60 },
+    });
+  });
+
+  it('keeps at least three decimals on every element a typed group position moves', () => {
+    openCanvas([actorElement, processElement]);
+    for (const [elementId, offset] of [
+      [actorElement, { x: 10.5, y: 20 }],
+      [processElement, { x: 0.456, y: 80.75 }],
+    ] as const) {
+      dispatch(Action.MoveElement({ elementId, offset, decimals: 3 }));
+    }
+    expect(laidOutNode(processElement).position).toEqual({
+      x: 300.456,
+      y: 80.75,
+    });
+    render(<SelectionControls />);
+    act(() => {
+      runCommand(commandById('edit-geometry'), recordingSurface().surface);
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
+      target: { value: '100' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
+
+    expect(laidOutNode(actorElement).position).toEqual({ x: 100, y: 20 });
+    expect(laidOutNode(processElement).position).toEqual({
+      x: 389.956,
+      y: 80.75,
+    });
+    expect(modelStore.getState().past).toHaveLength(3);
   });
 
   it('lands a multi-selection on the typed position, though its offset from the stored one is not exact', () => {
