@@ -77,6 +77,8 @@ export const studioConfig = (options: StudioConfigOptions = {}) =>
       buildAssets(),
       socialCardAsset(),
     ],
+    // Stubs the Element methods jsdom leaves undefined, pointer capture and
+    // scrollIntoView, each with the smallest shape that can be called.
     setupFiles: ['./src/test-setup.ts'],
     siteUrl,
     socialImage,

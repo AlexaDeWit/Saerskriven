@@ -1,11 +1,5 @@
 import { elementIn } from '@saerskriven/model/fixtures';
-import {
-  act,
-  createEvent,
-  fireEvent,
-  render,
-  screen,
-} from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { currentAnnouncement } from './announcements.js';
@@ -15,6 +9,7 @@ import {
   canvasModel,
   curvedCanvasModel,
   dragHandle,
+  mouseOn,
   openCanvas,
   pointerOn,
   requestFlow,
@@ -28,16 +23,6 @@ const press = (key: string, shiftKey = false): void => {
 
 const point = (number: number) =>
   screen.getByRole('button', { name: `Point ${String(number)}` });
-
-const mouseOn = (
-  target: Element | Window,
-  type: 'mouseDown' | 'mouseMove' | 'mouseUp',
-  clientX: number,
-): void => {
-  const event = createEvent[type](target, { clientX, clientY: 100 });
-  Object.defineProperty(event, 'view', { value: window });
-  fireEvent(target, event);
-};
 
 const clickSuppressionLifted = (): Promise<void> =>
   new Promise((resolve) => {
@@ -107,11 +92,11 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     }).parentElement;
     assert.isNotNull(control);
 
-    mouseOn(control, 'mouseDown', 100);
-    mouseOn(window, 'mouseMove', 160);
+    mouseOn(control, 'mousedown', 100);
+    mouseOn(window, 'mousemove', 160);
     expect(pointCount()).toBe(0);
     expect(midpointCount()).toBe(0);
-    mouseOn(window, 'mouseUp', 160);
+    mouseOn(window, 'mouseup', 160);
 
     expect(pointCount()).toBe(boundaryCurve.length);
     expect(midpointCount()).toBe(boundaryCurve.length - 1);

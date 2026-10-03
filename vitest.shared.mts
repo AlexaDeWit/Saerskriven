@@ -25,8 +25,10 @@ export const cacheDir = (projectRoot: string): string =>
 const everySpec =
   '{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}';
 
-// The browser APIs jsdom leaves out that every jsdom project's specs reach.
-const jsdomSetup = join(workspaceRoot, 'vitest.jsdom-setup.mts');
+// jsdom implements no ResizeObserver, and this module stubs one that observes
+// nothing, so no spec sees a resize. It sits in the canvas package, the lower
+// of the jsdom projects, so that project's typecheck and lint cover it.
+const jsdomSetup = join(workspaceRoot, 'packages/canvas/src/test-setup.ts');
 
 export const sharedTest = (
   projectRoot: string,
@@ -46,7 +48,7 @@ export const sharedTest = (
   globals: true,
   environment,
   include,
-  // A jsdom project loads the root setup first. The rest are paths relative
+  // A jsdom project loads the shared setup first. The rest are paths relative
   // to the project root, for the browser APIs that project's own specs reach.
   setupFiles:
     environment === 'jsdom' ? [jsdomSetup, ...setupFiles] : setupFiles,
