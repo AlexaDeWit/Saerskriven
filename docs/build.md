@@ -13,10 +13,10 @@ dependency and carries the version from the root manifest.
 
 The `compile` target runs [`scripts/package-cli.sh`](../scripts/package-cli.sh),
 which uses `deno compile` and can cross-compile every target from one Linux
-machine. It runs the host executable four times: once for its version, once
-to validate `test-data/saerskriven/two-diagrams.yaml`, and once each to render
-that model to PDF and to PNG. Deno is a packaging tool only. Node stays the
-development and test runtime.
+machine. It runs the host executable five times: once for its version, once
+to validate `test-data/saerskriven/two-diagrams.yaml`, once each to render
+that model to PDF and to PNG, and once to write it as a share link. Deno is a
+packaging tool only. Node stays the development and test runtime.
 
 The `test-compiled` target puts the CLI's scenario table through that
 executable. It hashes the `compile` output, and Nx stores and restores
@@ -29,12 +29,14 @@ Anything not inlined into the bundle by esbuild, and not passed to
 `deno compile --include <path>` in the packaging script, does not exist for a
 user who has only the executable. The code reaches an included file at run
 time through `import.meta.dirname`. `apps/cli/dist/assets` is that directory,
-and it holds three kinds of file.
+and it holds four kinds of file.
 
 - **The Typst WebAssembly module**, copied out of the node_modules of
   `@saerskriven/render`, the package that declares the compiler, and pinned by
   the catalog and the lockfile.
 - **The rasterizer module**, described [below](#the-svg-rasterizer).
+- **The brotli module**, described [below](#the-brotli-module), which
+  `saer share` and the MCP server's `saer_share_link` compress a link with.
 - **Five Liberation faces and their licence**, copied out of the store path
   `SAERSKRIVEN_FONTS_DIR` names. Both dev shells export it from the pinned
   nixpkgs' `liberation_ttf`, so the fonts' provenance is the `nixpkgs` revision
@@ -52,7 +54,9 @@ missing one of the five pinned faces, so a build outside the flake shell names
 the missing variable. The packaging script's PDF render is the second: an
 executable compiled without the Typst module, or with no `.ttf` beside it,
 writes no PDF (`apps/cli/src/pdf.ts` refuses a fontless install rather than
-typesetting a document with no text), so the `%PDF-` test fails.
+typesetting a document with no text), so the `%PDF-` test fails. Its PNG
+render and its share link stop an executable compiled without the rasterizer
+or the brotli module the same way.
 
 ## The WebAssembly modules
 
@@ -168,7 +172,8 @@ path.
 `brotliWasmAsset` on the `@saerskriven/formats/build-assets` subpath locates
 it. The studio's build resolves `virtual:saerskriven-brotli-wasm?url` to the
 module as a hashed asset, so a page can fetch it only when it needs it. The CLI
-does not carry it.
+build copies the module into `apps/cli/dist/assets`, as it copies the
+rasterizer, and both refuse a build that has no module.
 
 ## The runtime inside an executable
 
@@ -195,9 +200,9 @@ replace that:
   purpose, and fails unless the two are byte for byte the same, so a dropped
   stamp shows up on a pull request.
 - **The inputs are printed.** The script's last lines are the bundle's
-  SHA-256, then each staged font's and their licence's, then the `SHA256SUMS`
-  it wrote for the executables, so a nixpkgs bump that redraws a glyph shows in
-  a run's log.
+  SHA-256, then each staged font's, their licence's, the rasterizer's and the
+  brotli module's, then the `SHA256SUMS` it wrote for the executables, so a
+  nixpkgs bump that redraws a glyph shows in a run's log.
 
 One host property reaches the output: deno's metadata records
 `vfs_case_sensitivity`, its probe of the filesystem it compiled on, which every

@@ -13,7 +13,11 @@ import {
 } from '@saerskriven/model';
 import { flowEndsText, kindLabel } from '../canvas/names.js';
 import type { StudioTranslator } from '../messages/catalogues.js';
-import { severityMessages, statusMessages } from '../messages/enum-labels.js';
+import {
+  headingKindMessages,
+  severityMessages,
+  statusMessages,
+} from '../messages/enum-labels.js';
 import type { Said } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import { selectedElement, selectedElementRecord } from '../store/selectors.js';
@@ -89,6 +93,20 @@ export function elementLabel(
   return ends === undefined
     ? kindLabel(element.name, element.kind, t)
     : t('panel.unlabelled-flow', { ends });
+}
+
+/**
+ * What heads an element's panel: {@link elementLabel}, and for an element
+ * without a name its kind worded to open a line, "The actor".
+ */
+export function elementHeading(
+  element: Element,
+  elements: ReadonlyMap<ElementId, Element>,
+  t: StudioTranslator['t'],
+): string {
+  return element.kind !== 'flow' && element.name === ''
+    ? t(headingKindMessages[element.kind])
+    : elementLabel(element, elements, t);
 }
 
 /**

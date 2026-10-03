@@ -33,7 +33,7 @@ export const placeholder = {
   records: /^Records, flow/u,
 } as const;
 
-/** Elements of the two-diagram model's storefront diagram by accessible name, and threats on them by title. */
+/** Elements of the two-diagram model's storefront diagram by accessible name, and threats by title: those on them, and `refundAbuse` on no element. */
 export const storefront = {
   shopper: /^Shopper, actor/u,
   webShop: /^Web shop, process/u,
@@ -43,6 +43,7 @@ export const storefront = {
   takeover: /Account takeover/u,
   basketPrice: /Basket price changed/u,
   orderDenied: /Shopper denies placing an order/u,
+  refundAbuse: /Refund policy abused/u,
 } as const;
 
 /** What the two-diagram model's diagrams are called, and an element drawn on each. */
@@ -108,6 +109,17 @@ export const openTwoDiagrams = async (page: Page): Promise<void> => {
   await openModelDocument(
     page,
     JSON.parse(committedText('two-diagrams.model.json')),
+  );
+};
+
+/**
+ * Opens the studio on `test-data/every-glyph.model.json` through
+ * {@link openModelDocument}.
+ */
+export const openEveryGlyph = async (page: Page): Promise<void> => {
+  await openModelDocument(
+    page,
+    JSON.parse(committedText('every-glyph.model.json')),
   );
 };
 

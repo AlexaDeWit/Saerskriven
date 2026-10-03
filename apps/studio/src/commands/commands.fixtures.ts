@@ -1,6 +1,6 @@
 import { act, screen } from '@testing-library/react';
 import { activeTranslator } from '../messages/locale.js';
-import { commandById, type CommandId } from './registry.js';
+import { commandById, runCommand, type CommandId } from './registry.js';
 import { hostPlatform, shortcutLabelText, shortcutText } from './shortcuts.js';
 import type { CommandSurface } from './surface.js';
 
@@ -40,6 +40,13 @@ export function recordingSurface(): RecordingSurface {
       },
     },
   };
+}
+
+/** Runs `command` from the registry on a {@link recordingSurface}, inside `act`. */
+export function runRegistered(command: CommandId): void {
+  act(() => {
+    runCommand(commandById(command), recordingSurface().surface);
+  });
 }
 
 type OpenedTooltip = {

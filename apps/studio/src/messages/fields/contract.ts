@@ -38,6 +38,7 @@ export const fieldMessages = {
   'name-of-trust-boundary': text(),
   'name-of-trust-boundary-named': text(named),
   'record-name': text({ kind: 'text', number: 'number' }),
+  'record-toggle': text({ name: 'text', headline: 'text' }),
   'mitigation-title-field': text(numbered),
   'mitigation-prose-field': text(numbered),
   'mitigation-status-field': text(numbered),

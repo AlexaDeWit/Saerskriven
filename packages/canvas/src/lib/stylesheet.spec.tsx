@@ -11,7 +11,7 @@ import {
   themedCanvasStylesheet,
   wrappedTextStyles,
 } from './stylesheet.js';
-import { outOfScopeOutline, paletteProperty } from './tokens.js';
+import { outOfScopeOutline, paletteProperty, strokeWidths } from './tokens.js';
 
 const declared = new Set<string>(Object.values(canvasClassNames));
 
@@ -24,22 +24,36 @@ const classesStyledBy = (styles: string): Set<string> =>
 
 const selected = classesStyledBy(sheet);
 
+const everyGlyphMarkup = renderToStaticMarkup(
+  <DiagramGlyphs
+    marks={specMarks}
+    layout={layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel)}
+  />,
+);
+
 const emitted = new Set<string>(
-  (
-    renderToStaticMarkup(
-      <DiagramGlyphs
-        marks={specMarks}
-        layout={layoutDiagram(everyGlyphModel.diagrams[0], everyGlyphModel)}
-      />,
-    ).match(/class="[^"]*"/gu) ?? []
-  ).flatMap((attribute) => attribute.slice(7, -1).split(' ')),
+  (everyGlyphMarkup.match(/class="[^"]*"/gu) ?? []).flatMap((attribute) =>
+    attribute.slice(7, -1).split(' '),
+  ),
 );
 
 const toneRule = (styles: string, className: string): string | undefined =>
   styles.split('\n').find((line) => line.startsWith(`.${className} { fill:`));
 
-const dashOf = (rule: string | undefined): string | undefined =>
-  /stroke-dasharray: (?<dash>[^;]+);/u.exec(rule ?? '')?.groups?.dash;
+const dashOf = (rule: string | undefined): number[] | undefined =>
+  /stroke-dasharray: (?<dash>[^;]+);/u
+    .exec(rule ?? '')
+    ?.groups?.dash.split(' ')
+    .map(Number);
+
+const selectorsOf = (rule: string | undefined): string[] =>
+  (rule ?? '')
+    .split('{')[0]
+    .split(',')
+    .map((selector) => selector.trim());
+
+const classesNamedBy = (selector: string): number =>
+  selector.split('.').length - 1;
 
 const toned = (theme: RenderTheme): [string, string][] => [
   ...severitySchema.options.map((severity): [string, string] => [
@@ -135,6 +149,7 @@ describe('an out-of-scope element', () => {
   const outOfScope = `.${canvasClassNames.outOfScope} `;
   const rules = themedRules.filter((rule) => rule.startsWith(outOfScope));
   const outline = ruleStarting(`${outOfScope}.${canvasClassNames.shape} {`);
+  const boundary = ruleStarting(`.${canvasClassNames.boundaryBox},`);
 
   it('is faded by neither sheet, so each ink is drawn at the ratio the palette measures for it', () => {
     expect(
@@ -158,17 +173,42 @@ describe('an out-of-scope element', () => {
     ).toContain(`fill: ${paletteProperty(outOfScopeOutline)};`);
   });
 
-  it("dashes its outline, which in scope is solid, in a dash apart from a trust boundary's", () => {
-    const dash = dashOf(outline);
-    const boundaryDash = dashOf(
-      ruleStarting(`.${canvasClassNames.boundaryBox},`),
-    );
+  it("dots its outline with round caps, where an outline in scope is solid and a trust boundary's is dashed", () => {
+    const [dot, gap] = dashOf(outline) ?? [];
+    const [boundaryDash] = dashOf(boundary) ?? [];
     expect(
       dashOf(ruleStarting(`.${canvasClassNames.shape} {`)),
     ).toBeUndefined();
-    expect(dash).toBeDefined();
-    expect(boundaryDash).toBeDefined();
-    expect(dash).not.toBe(boundaryDash);
+    expect(dot).toBe(0);
+    expect(gap).toBeGreaterThan(strokeWidths.store);
+    expect(outline).toContain('stroke-linecap: round;');
+    expect(boundaryDash).toBeGreaterThan(0);
+  });
+
+  it("dots every out-of-scope outline over the dash a trust boundary has in scope, a boundary's own, a note's frame and a flow's line among them", () => {
+    const [dotted] = selectorsOf(outline);
+    const shapeIn = `class="${canvasClassNames.shape} `;
+    const outlinesDrawnOutOfScope = everyGlyphMarkup
+      .split(`<g class="${canvasClassNames.element}`)
+      .filter((group) => group.startsWith(` ${canvasClassNames.outOfScope}"`))
+      .flatMap((group) => group.split(shapeIn).slice(1))
+      .map((shape) => shape.split('"')[0]);
+
+    expect(themedRules.filter((rule) => dashOf(rule) !== undefined)).toEqual([
+      boundary,
+      outline,
+    ]);
+    expect(Math.max(...selectorsOf(boundary).map(classesNamedBy))).toBeLessThan(
+      classesNamedBy(dotted),
+    );
+    expect(new Set(outlinesDrawnOutOfScope)).toEqual(
+      new Set([
+        canvasClassNames.store,
+        canvasClassNames.boundaryBox,
+        canvasClassNames.noteFrame,
+        canvasClassNames.flow,
+      ]),
+    );
   });
 });
 

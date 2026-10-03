@@ -38,8 +38,23 @@
       "boundaries": {},
       "lint": {},
       "test": {
+        "dependsOn": [
+          {
+            "projects": [
+              "brotli-wasm"
+            ],
+            "target": "build"
+          }
+        ],
         "inputs": [
           "...",
+          {
+            "dependentTasksOutputFiles": "dist/brotli-wasm/lib/**/*",
+            "transitive": false
+          },
+          {
+            "env": "SAERSKRIVEN_BROTLI_WASM"
+          },
           {
             "env": "SAERSKRIVEN_RESVG_WASM"
           },

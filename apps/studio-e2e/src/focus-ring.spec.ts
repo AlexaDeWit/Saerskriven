@@ -1,12 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
-import { committedText } from '@saerskriven/model/fixtures';
 import { canvasSettled, focusRingShown } from './canvas.fixtures.js';
 import {
   beforeCanvas,
   closeThreats,
   nodeNamed,
-  openModelDocument,
+  openEveryGlyph,
   selectByKeyboard,
   tabTo,
 } from './studio.fixtures.js';
@@ -42,11 +41,8 @@ const schemes = [
   ['dark', darkPalette],
 ] as const;
 
-const openEveryGlyph = async (page: Page): Promise<void> => {
-  await openModelDocument(
-    page,
-    JSON.parse(committedText('every-glyph.model.json')),
-  );
+const openAtFullZoom = async (page: Page): Promise<void> => {
+  await openEveryGlyph(page);
   await page.getByRole('button', { name: 'Reset zoom to 100%' }).click();
   await canvasSettled(page);
 };
@@ -82,7 +78,7 @@ for (const [scheme, palette] of schemes) {
     page,
   }) => {
     await page.emulateMedia({ colorScheme: scheme });
-    await openEveryGlyph(page);
+    await openAtFullZoom(page);
 
     await expectRingOnItems(page, rgbColour(palette.actionPrimary));
   });
@@ -92,7 +88,7 @@ for (const [scheme, palette] of schemes) {
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme });
-      await openEveryGlyph(page);
+      await openAtFullZoom(page);
       const node = await selectByKeyboard(page, name);
       await closeThreats(page);
       await expect(node).toBeFocused();
@@ -117,7 +113,7 @@ test('the focus ring on every kind of canvas item survives forced colours', asyn
   page,
 }) => {
   await page.emulateMedia({ forcedColors: 'active' });
-  await openEveryGlyph(page);
+  await openAtFullZoom(page);
 
   await expectRingOnItems(page, undefined);
 });

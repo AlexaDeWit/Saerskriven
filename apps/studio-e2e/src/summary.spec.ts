@@ -7,6 +7,7 @@ import {
   openTwoDiagrams,
   panelControl,
   panelField,
+  selectByKeyboard,
   selectNode,
   storefront,
   threatPanel,
@@ -53,6 +54,15 @@ const namesItsParts = async (summary: Locator): Promise<void> => {
     .toBe(true);
 };
 
+const drawnLabels = (field: Locator): Promise<readonly string[]> =>
+  field
+    .locator('[data-option-label]')
+    .evaluateAll((labels) =>
+      labels.map((label) =>
+        label instanceof HTMLElement ? label.innerText : '',
+      ),
+    );
+
 const raiseBothFlags = async (page: Page): Promise<void> => {
   await expandThreat(page, storefront.orderDenied);
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
@@ -75,13 +85,47 @@ test('the record groups of an expanded threat count what is added, linked and un
   await panelControl(page, 'Link existing mitigation').click();
   await expect(recordGroup(page, 'Mitigations', 3)).toBeVisible();
   await threatPanel(page)
-    .getByRole('button', { name: serverPricing, expanded: false })
+    .getByRole('button', {
+      name: /^Mitigation 3, The server prices the basket/u,
+      expanded: false,
+    })
     .click();
   await panelControl(page, 'Unlink mitigation 3').click();
   await expect(recordGroup(page, 'Mitigations', 2)).toBeVisible();
 
   const summary = await collapse(page, storefront.orderDenied);
   await expect(summary).not.toHaveAccessibleName(/Mitigations|Assumptions/u);
+});
+
+test('a status reads in its field and its options as the summary draws it, and a custom category as its author typed it', async ({
+  page,
+}) => {
+  await openTwoDiagrams(page);
+  await selectNode(page, storefront.catalogue);
+  const summary = threatSummary(page, /Unpublished listings readable/u);
+  await expandThreat(page, /Unpublished listings readable/u);
+  const status = panelField(page, 'combobox', 'Status');
+  const accepted = await summary
+    .locator('[data-status="accepted-risk"] > span[aria-hidden="true"]')
+    .innerText();
+
+  await expect.poll(() => drawnLabels(status)).toEqual([accepted]);
+  await status.click();
+  const listbox = page.getByRole('listbox');
+  await expect(listbox).toBeVisible();
+  const written = await listbox
+    .locator('[data-option-label]')
+    .allTextContents();
+  expect(written).toContain(accepted);
+  expect(await drawnLabels(listbox)).toEqual(written);
+  await page.keyboard.press('Escape');
+  await expect(listbox).toHaveCount(0);
+
+  await selectByKeyboard(page, /^card network callback, flow/u);
+  await expandThreat(page, /Forged payment callback/u);
+  await expect
+    .poll(() => drawnLabels(panelField(page, 'combobox', 'Category')))
+    .toEqual(['Callback integrity']);
 });
 
 test('an open status is the one drawn as a filled pill', async ({ page }) => {

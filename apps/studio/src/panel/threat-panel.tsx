@@ -1,16 +1,20 @@
-import {
-  ElementPropertiesEditor,
-  type ElementPropertyDrafts,
-} from './element-properties.js';
 import { elementsAcross, elementsById } from '@saerskriven/model';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
+import {
+  ElementPropertiesEditor,
+  type ElementPropertyDrafts,
+} from './element-properties.js';
 import { PanelFrame } from './panel-frame.js';
 import { PanelTabContent, type PanelTab } from './panel-tabs.js';
 import { ThreatList, type HeldDrafts } from './threat-list.js';
 import styles from './threat-panel.module.css';
-import { attachedThreats, elementLabel, type PanelSubject } from './threats.js';
+import {
+  attachedThreats,
+  elementHeading,
+  type PanelSubject,
+} from './threats.js';
 
 /** The selected subject, retained drafts, focus, and pane controls. */
 export type ThreatPanelProps = {
@@ -84,7 +88,11 @@ export function ThreatPanel({
   return (
     <PanelFrame
       {...frame}
-      heading={elementLabel(element, elementsById(elementsAcross(diagrams)), t)}
+      heading={elementHeading(
+        element,
+        elementsById(elementsAcross(diagrams)),
+        t,
+      )}
       tabs={{ tab, onTab: setTab, threatCount }}
     >
       <PanelTabContent tab={tab} value="threats">

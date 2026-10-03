@@ -17,6 +17,7 @@ export { dataNotInstructions } from './lib/preface.js';
 export { renderDiagramResultSchema };
 export { searchElementsResultSchema } from './lib/search-elements.js';
 export { searchThreatsResultSchema } from './lib/search-threats.js';
+export { shareLinkResultSchema } from './lib/share-link.js';
 export {
   referencingYaml,
   smallYaml,
@@ -30,7 +31,7 @@ export const pngMagic = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 /**
  * The tools a release registers, in registration order: the reads, the
- * queries, the drawing, then the writes.
+ * queries, the drawing, the share link, then the writes.
  */
 export const registeredTools: readonly string[] = [
   'saer_inspect',
@@ -42,6 +43,7 @@ export const registeredTools: readonly string[] = [
   'saer_search_records',
   'saer_get_threat',
   'saer_render_diagram',
+  'saer_share_link',
   'saer_edit',
   'saer_create',
   'saer_import',
@@ -108,6 +110,28 @@ export type ResultProse = {
   readonly links: readonly string[];
   readonly unread: readonly string[];
 };
+
+/**
+ * The link a `saer_share_link` result carries: the last line of its last
+ * block, or empty text where that block is not text.
+ */
+export function shareLinkOf(result: CallToolResult): string {
+  const block = result.content.at(-1);
+  return block?.type === 'text' ? (block.text.split('\n').at(-1) ?? '') : '';
+}
+
+/**
+ * How many times `text` occurs in everything a tool result carries, its
+ * content blocks and its structured content, serialized as a client receives
+ * them.
+ */
+export function occurrencesIn(result: CallToolResult, text: string): number {
+  const serialized = JSON.stringify({
+    content: result.content,
+    structuredContent: result.structuredContent,
+  });
+  return serialized.split(text).length - 1;
+}
 
 /**
  * Every string a tool result would put in front of a model. A block type the

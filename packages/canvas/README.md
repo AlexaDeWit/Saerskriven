@@ -98,8 +98,12 @@ studio injects `themedCanvasStylesheet`, the same sheet with every colour
 read from a custom property. `wrappedTextStyles` pairs each run of text with
 its class and font size, and `severityToneClass` names each severity's tone.
 Nothing in the sheet is faded, so every ink is drawn at the ratio
-`tokens.spec.ts` measures for it, and an out-of-scope element is marked by the
-dash on its outline.
+`tokens.spec.ts` measures for it. An out-of-scope element is marked by round
+dots on its outline, where an outline in scope is solid and a trust boundary's
+is dashed. A note has no outline, so while it is out of scope its glyph draws
+a dotted frame `noteFrameOffset` outside its box, clear of the selection frame
+and focus ring the studio draws inside the box. `drawnBounds` holds the frame,
+and a flow's block is held clear of it.
 [`render-theme.ts`](src/lib/render-theme.ts): `renderThemeSchema` and
 `defaultRenderTheme` are the theme headless output is drawn with, and
 `badgeTextColour` resolves a badge's lettering under it.

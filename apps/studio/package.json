@@ -23,7 +23,6 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@saerskriven/wasm": "workspace:*",
     "@testing-library/dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
