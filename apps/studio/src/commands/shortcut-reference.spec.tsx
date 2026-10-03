@@ -130,6 +130,27 @@ describe('ShortcutReference', () => {
     },
   );
 
+  it.each(platforms)(
+    'writes the selection cards’ Shift chords as %s writes them',
+    (platform) => {
+      render(
+        <ShortcutReference onClose={() => undefined} platform={platform} />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+      const shifted = platform === 'apple' ? '⇧' : 'Shift+';
+      for (const [id, key] of [
+        ['edit-geometry', 'P'],
+        ['reconnect-source', 'S'],
+        ['reconnect-target', 'T'],
+        ['toggle-flow-direction', 'D'],
+        ['reverse-flow', 'R'],
+        ['toggle-boundary-shape', 'B'],
+      ]) {
+        expect(keysIn(commandRow(id))).toEqual([`${shifted}${key}`]);
+      }
+    },
+  );
+
   it('focuses its heading and closes from Escape inside the panel', () => {
     const close = vi.fn<() => void>();
     render(<ShortcutReference onClose={close} />);

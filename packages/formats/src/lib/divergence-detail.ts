@@ -1,4 +1,9 @@
-import { carrying, coded, elementKindSchema } from '@saerskriven/model';
+import {
+  carrying,
+  coded,
+  type Element,
+  elementKindSchema,
+} from '@saerskriven/model';
 import { z } from 'zod';
 
 /**
@@ -137,13 +142,13 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
     case 'scope-marking-dropped':
       return 'the out-of-scope marking, which the format records on the elements a threat attaches to alone';
     case 'cell-reshaped':
-      return `what the source held on the ${detail.parameters.shape} cell of this id, which now draws a ${detail.parameters.kind}`;
+      return `what the source held on the ${detail.parameters.shape} cell of this id, which now draws ${kindNouns[detail.parameters.kind].article} ${kindNouns[detail.parameters.kind].noun}`;
     case 'diagram-name-numbered':
       return `the name, which the format numbers a diagram rather than naming one, written as ${detail.parameters.number}`;
     case 'cell-discarded':
       return `the ${detail.parameters.shape} cell the source document held`;
     case 'threat-attachment-stray':
-      return `the attachment to the ${detail.parameters.kind ?? 'unknown'} "${detail.parameters.element}", which the format nests a threat under an actor, a process, a store, or a flow alone`;
+      return `the attachment to the ${detail.parameters.kind === undefined ? 'unknown' : kindNouns[detail.parameters.kind].noun} "${detail.parameters.element}", which the format nests a threat under an actor, a process, a store, or a flow alone`;
     case 'threat-unplaceable':
       return 'the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under';
     case 'threat-split-across-elements':
@@ -212,6 +217,18 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
       return unworded(detail);
   }
 }
+
+const kindNouns: Record<
+  Element['kind'],
+  { readonly article: 'a' | 'an'; readonly noun: string }
+> = {
+  actor: { article: 'an', noun: 'actor' },
+  process: { article: 'a', noun: 'process' },
+  store: { article: 'a', noun: 'store' },
+  flow: { article: 'a', noun: 'flow' },
+  'trust-boundary': { article: 'a', noun: 'trust boundary' },
+  text: { article: 'a', noun: 'text' },
+};
 
 function unworded(_detail: never): string {
   return '';

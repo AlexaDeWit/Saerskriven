@@ -6,6 +6,7 @@ import {
   type Model,
 } from '@saerskriven/model';
 import { committedDiagrams, committedModel } from '@saerskriven/model/fixtures';
+import { builtModule, stop, unbuilt } from '@saerskriven/wasm/fixtures';
 import { readFileSync } from 'node:fs';
 import {
   resvgVariable,
@@ -119,22 +120,11 @@ export function diagramOf(entry: GoldenDocument): Diagram {
   return entry.model.diagrams[entry.diagram];
 }
 
-const stop = (sentence: string): never => {
-  throw new Error(sentence);
-};
-
-/**
- * Whether the rasterizer module has not been built. No dev shell builds it,
- * so a suite that rasterizes skips where it is absent.
- */
-export const resvgUnbuilt =
-  process.env[resvgVariable] === undefined || process.env[resvgVariable] === '';
-
-let resvgModule: Uint8Array | undefined;
+/** Whether a suite that rasterizes skips, as `unbuilt` decides. */
+export const resvgUnbuilt = unbuilt(resvgVariable);
 
 /** The flake-built rasterizer module, read once per suite. */
-export const resvgWasm = (): Uint8Array =>
-  (resvgModule ??= new Uint8Array(readFileSync(resvgWasmAsset(stop))));
+export const resvgWasm = builtModule(resvgWasmAsset);
 
 /** The bytes of each font, in the order given. */
 export const fontBytes = (

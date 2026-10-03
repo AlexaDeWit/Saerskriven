@@ -1,3 +1,7 @@
+import { act, screen } from '@testing-library/react';
+import { activeTranslator } from '../messages/locale.js';
+import { commandById, type CommandId } from './registry.js';
+import { hostPlatform, shortcutLabelText, shortcutText } from './shortcuts.js';
 import type { CommandSurface } from './surface.js';
 
 type RecordingSurface = {
@@ -36,3 +40,39 @@ export function recordingSurface(): RecordingSurface {
     },
   };
 }
+
+type OpenedTooltip = {
+  readonly tooltip: HTMLElement;
+  readonly label: string;
+  readonly chord: string;
+};
+
+/**
+ * Focuses the button named by `command`'s registry label and returns the
+ * tooltip that opens, with the label and the chord the registry spells for
+ * this host.
+ */
+export async function tooltipOnFocus(
+  command: CommandId,
+): Promise<OpenedTooltip> {
+  const { t } = activeTranslator();
+  const entry = commandById(command);
+  const label = shortcutLabelText(entry.label, t);
+  act(() => {
+    screen.getByRole('button', { name: label }).focus();
+  });
+  return {
+    tooltip: await screen.findByRole('tooltip'),
+    label,
+    chord: shortcutText(entry.shortcuts, hostPlatform, t).chord,
+  };
+}
+
+/** What a control draws: its visible text, and whether its glyph is hidden from assistive technology. */
+export const drawnAs = (control: HTMLElement) => ({
+  text: control.textContent,
+  glyph: control.querySelector('svg')?.getAttribute('aria-hidden'),
+});
+
+/** {@link drawnAs} for a control drawn as a glyph alone, its name carried by its label. */
+export const iconOnly = { text: '', glyph: 'true' };

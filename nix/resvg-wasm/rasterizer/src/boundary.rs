@@ -1,0 +1,67 @@
+//! The module's two buffers and the last raster's size, which only this crate
+//! allocates, sizes and frees. The caller writes its bytes at the address
+//! `input` answers and copies the answer from the address and length `output`
+//! and `output_length` answer, so no address the caller holds is ever read
+//! here.
+
+use std::cell::{Cell, RefCell};
+
+use crate::raster;
+
+const RENDERED: u32 = 0;
+const REFUSED: u32 = 1;
+
+thread_local! {
+    static INPUT: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
+    static OUTPUT: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
+    static SIZE: Cell<(u32, u32)> = const { Cell::new((0, 0)) };
+}
+
+/// Sizes the input buffer to `length` zeroed bytes and answers its address,
+/// for the caller to write the bytes into.
+pub fn input(length: usize) -> *mut u8 {
+    INPUT.with_borrow_mut(|held| {
+        held.clear();
+        held.resize(length, 0);
+        held.as_mut_ptr()
+    })
+}
+
+/// Takes the input buffer as a font the next `render` may typeset with, and
+/// answers the number of faces it held.
+pub fn add_font() -> usize {
+    raster::offered(INPUT.take())
+}
+
+/// Rasterizes the SVG in the input buffer into the output buffer, and answers
+/// 0 where the output holds a PNG or 1 where it holds the sentence naming what
+/// was refused.
+pub fn render(long_edge: u32) -> u32 {
+    let (status, size, bytes) = match INPUT.with_borrow(|svg| raster::rasterize(svg, long_edge)) {
+        Ok(raster) => (RENDERED, (raster.width, raster.height), raster.png),
+        Err(refusal) => (REFUSED, (0, 0), refusal.into_bytes()),
+    };
+    SIZE.set(size);
+    OUTPUT.set(bytes);
+    status
+}
+
+/// The last PNG's width in pixels, 0 after a refusal.
+pub fn width() -> u32 {
+    SIZE.get().0
+}
+
+/// The last PNG's height in pixels, 0 after a refusal.
+pub fn height() -> u32 {
+    SIZE.get().1
+}
+
+/// The output buffer's address.
+pub fn output() -> *const u8 {
+    OUTPUT.with_borrow(|held| held.as_ptr())
+}
+
+/// The output buffer's length.
+pub fn output_length() -> usize {
+    OUTPUT.with_borrow(Vec::len)
+}

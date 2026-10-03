@@ -67,6 +67,12 @@ kind and those same ends, so `canvas.threat-attached-to-flow` takes the ends
 `tools.flow-from-to` or `tools.flow-between` words (_rattachée au flux depuis
 Shopper vers Web shop_).
 
+A field or relationship label is worded the same way. A message that puts
+_de_ or _à_ before one has a message per label, with the article that label
+takes, as `fields.recording-of-protocol` (_Consignation du protocole_) and
+`fields.add-to-crossing-flows` (_Ajouter aux flux qui la franchissent_) do,
+and the control picks the message by the label's key.
+
 `issues/text.ts` maps each parse issue code `@saerskriven/model` reports to
 its message, and `imports/text.ts` each import code `@saerskriven/formats`
 adds beside them. `parseIssueLine` places either at its path. OTM and TM-BOM

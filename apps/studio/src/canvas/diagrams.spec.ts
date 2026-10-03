@@ -17,6 +17,7 @@ import {
   resetDiagramRenaming,
   showDiagram,
   stepDiagram,
+  switchDiagram,
   useDiagramRenaming,
   endRenamingDiagram,
 } from './diagrams.js';
@@ -47,6 +48,25 @@ describe('showDiagram', () => {
   });
 });
 
+describe('switchDiagram', () => {
+  it('puts the diagram on screen and leaves the status line empty', () => {
+    expect(switchDiagram(secondDiagram)?.id).toBe(secondDiagram);
+    expect(shown()).toBe(secondDiagram);
+    expect(currentAnnouncement().message).toBe('');
+  });
+
+  it('reports no change for the diagram already on screen', () => {
+    expect(switchDiagram(mainDiagram)).toBeUndefined();
+  });
+
+  it('ends the line a step drew', () => {
+    stepDiagram('next');
+    expect(currentAnnouncement().message).not.toBe('');
+    switchDiagram(mainDiagram);
+    expect(currentAnnouncement().message).toBe('');
+  });
+});
+
 describe('stepDiagram', () => {
   it('steps along the list and wraps at either end', () => {
     expect(stepDiagram('next')).toBe(true);
@@ -61,6 +81,11 @@ describe('stepDiagram', () => {
     modelStore.setState(initialState(sampleModel), true);
     expect(stepDiagram('next')).toBe(false);
     expect(shown()).toBe(mainDiagram);
+  });
+
+  it('says which diagram it showed in the status line', () => {
+    stepDiagram('next');
+    expect(currentAnnouncement().message).toContain('Second');
   });
 
   it('is what the two registered commands run', () => {

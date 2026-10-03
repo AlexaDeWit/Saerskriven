@@ -8,10 +8,11 @@ license = "Apache-2.0"
 [lib]
 crate-type = ["cdylib"]
 
-# default-features = false drops usvg's system-fonts and memmap-fonts, which
-# are the only paths in this dependency tree that would read a file.
 [dependencies]
-resvg = { version = "0.48.1", default-features = false, features = ["text"] }
+saerskriven-resvg-rasterizer = { path = "rasterizer" }
+
+[workspace]
+members = ["rasterizer"]
 
 [profile.release]
 opt-level = "s"

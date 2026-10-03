@@ -30,6 +30,7 @@ import {
   RegisteredMenuCommand,
 } from './menu-items.js';
 import type { FileSession } from './file-commands.js';
+import cursor from '../ui/cursor-row.module.css';
 import styles from './menu.module.css';
 import { AppearanceMenu, LanguageMenu } from './settings-menu.js';
 import { Submenu, SubmenuEdge } from './submenu.js';
@@ -76,7 +77,7 @@ function ProjectLink({
   readonly children: ReactNode;
 }) {
   return (
-    <DropdownMenu.Item asChild className={styles.item}>
+    <DropdownMenu.Item asChild className={`${styles.item} ${cursor.row}`}>
       <a href={href} rel="noopener noreferrer" target="_blank">
         <span>{children}</span>
         <ExternalLinkIcon aria-hidden="true" className={styles.externalLink} />

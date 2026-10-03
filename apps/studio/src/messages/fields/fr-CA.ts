@@ -73,8 +73,16 @@ export const fieldsFrCA = catalogue(fieldMessages)('fr-CA')({
   'contained-elements-lower': 'éléments contenus',
   'crossing-flows': 'Flux qui la franchissent',
   'crossing-flows-lower': 'flux qui la franchissent',
-  'recording-of': 'Consignation de {label}',
+  'recording-of-privilege-level': 'Consignation du niveau de privilège',
+  'recording-of-protocol': 'Consignation du protocole',
+  'recording-of-crossed-trust-boundaries':
+    'Consignation des frontières de confiance franchies',
+  'recording-of-contained-elements': 'Consignation des éléments contenus',
+  'recording-of-crossing-flows': 'Consignation des flux qui la franchissent',
   'relationship-item': '{label} {number}',
   'remove-relationship': 'Retirer {label} {number}',
-  'add-to-relationship': 'Ajouter à {label}',
+  'add-to-crossed-trust-boundaries':
+    'Ajouter aux frontières de confiance franchies',
+  'add-to-contained-elements': 'Ajouter aux éléments contenus',
+  'add-to-crossing-flows': 'Ajouter aux flux qui la franchissent',
 });

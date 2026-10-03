@@ -1,7 +1,9 @@
 import type { Point } from '@saerskriven/model';
+import { segmentsOfPolyline } from './geometry.js';
 import {
   arrowheadPath,
   controlPolygon,
+  curveMidpoints,
   polylinePath,
   sampledCurve,
   smoothPath,
@@ -11,6 +13,12 @@ import {
 
 const lowestOf = (points: readonly Point[]): number =>
   Math.min(...points.map((point) => point.y));
+
+const lengthOf = (points: readonly Point[]): number =>
+  segmentsOfPolyline(points).reduce(
+    (sum, { from, to }) => sum + Math.hypot(to.x - from.x, to.y - from.y),
+    0,
+  );
 
 describe('translate', () => {
   it('writes the point as an SVG transform', () => {
@@ -158,5 +166,46 @@ describe('sampledCurve', () => {
   it('gives back the points where there is nothing to smooth', () => {
     expect(sampledCurve([{ x: 5, y: 5 }])).toEqual([{ x: 5, y: 5 }]);
     expect(sampledCurve([])).toEqual([]);
+  });
+});
+
+describe('curveMidpoints', () => {
+  it('finds the point halfway along each segment by length, not by parameter', () => {
+    const arch = [
+      { x: 0, y: 330 },
+      { x: 420, y: 400 },
+      { x: 860, y: 330 },
+    ];
+    const [first, second] = curveMidpoints(arch);
+    expect(first?.point.x).toBeCloseTo(208.6, 1);
+    expect(first?.point.y).toBeCloseTo(374.6, 1);
+    expect(second?.point.x).toBeCloseTo(641.3, 1);
+    expect(second?.point.y).toBeCloseTo(374.1, 1);
+    expect(
+      (first?.segmentLength ?? 0) + (second?.segmentLength ?? 0),
+    ).toBeCloseTo(lengthOf(sampledCurve(arch)));
+  });
+
+  it('halves the chord of a curve through two points, as long as the chord', () => {
+    const [only] = curveMidpoints([
+      { x: 0, y: 0 },
+      { x: 60, y: 30 },
+    ]);
+    expect(only?.point.x).toBeCloseTo(30);
+    expect(only?.point.y).toBeCloseTo(15);
+    expect(only?.segmentLength).toBeCloseTo(Math.hypot(60, 30));
+  });
+
+  it('gives a segment of no length its point and a length of zero', () => {
+    expect(
+      curveMidpoints([
+        { x: 5, y: 5 },
+        { x: 5, y: 5 },
+      ]),
+    ).toEqual([{ point: { x: 5, y: 5 }, segmentLength: 0 }]);
+  });
+
+  it('finds no segment where there is nothing to smooth', () => {
+    expect(curveMidpoints([{ x: 5, y: 5 }])).toEqual([]);
   });
 });

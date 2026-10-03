@@ -337,12 +337,17 @@ for (const [tool, named, shape, shapeCount] of previewedBoxTools) {
       expect(bounds).not.toBeNull();
       expectInside(bounds ?? committed, committed);
     }
-    const focus = await node.evaluate((element) => ({
-      boxShadow: getComputedStyle(element).boxShadow,
-      outline: getComputedStyle(element).outlineStyle,
-    }));
-    expect(focus.boxShadow).not.toBe('none');
-    expect(focus.outline).toBe('none');
+    const ring = await node.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        style: style.outlineStyle,
+        reach:
+          Number.parseFloat(style.outlineOffset) +
+          Number.parseFloat(style.outlineWidth),
+      };
+    });
+    expect(ring.style).toBe('solid');
+    expect(ring.reach).toBeLessThanOrEqual(0);
   });
 }
 
