@@ -123,9 +123,9 @@ export const darkPalette = {
 } as const satisfies Palette;
 
 /**
- * The role an out-of-scope element's dashed outline is drawn in, and a flow's
- * dashed line and its arrowhead. Being a mark rather than text, it is held to
- * the ratio a mark needs.
+ * The role an out-of-scope element's dotted outline is drawn in, and a note's
+ * dotted frame, a flow's dotted line and its arrowhead. Being a mark rather
+ * than text, it is held to the ratio a mark needs.
  */
 export const outOfScopeOutline = 'textSecondary' satisfies keyof Palette;
 
@@ -171,6 +171,13 @@ const cueWidths = {
   flowHover: 3,
   flowSelection: 4,
 } as const;
+
+/**
+ * How far outside a note's box its out-of-scope frame is drawn, in user
+ * units. The studio draws its selection frame and focus ring inside the box,
+ * so the frame shows beside both.
+ */
+export const noteFrameOffset = 3;
 
 /**
  * A square resize handle in the interactive canvas, in pixels at full zoom:

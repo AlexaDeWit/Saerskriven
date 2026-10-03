@@ -40,6 +40,19 @@
           }
         },
         {
+          "kind": "trust-boundary",
+          "id": "el-partner-zone",
+          "name": "Partner network",
+          "description": "",
+          "outOfScope": true,
+          "reasonOutOfScope": "Reviewed by the partner.",
+          "shape": {
+            "kind": "box",
+            "position": { "x": 300, "y": 430 },
+            "size": { "width": 240, "height": 80 }
+          }
+        },
+        {
           "kind": "actor",
           "id": "el-client",
           "name": "Customer\nbrowser",
@@ -81,6 +94,17 @@
           "text": "Orders are kept for seven years."
         },
         {
+          "kind": "text",
+          "id": "el-scope-note",
+          "name": "Scope note",
+          "description": "",
+          "outOfScope": true,
+          "reasonOutOfScope": "Kept by the provider.",
+          "position": { "x": 43, "y": 433 },
+          "size": { "width": 194, "height": 74 },
+          "text": "Backups are the provider's to review."
+        },
+        {
           "kind": "flow",
           "id": "el-request",
           "name": "Submit order",
@@ -97,8 +121,8 @@
           "id": "el-write",
           "name": "Store order",
           "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "outOfScope": true,
+          "reasonOutOfScope": "Carried on the provider's network.",
           "source": { "kind": "attached", "element": "el-api" },
           "target": { "kind": "attached", "element": "el-db" },
           "waypoints": [],

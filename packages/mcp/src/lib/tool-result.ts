@@ -29,8 +29,8 @@ export type WithBlocks<Answer> = {
 
 /**
  * {@link toolResult} for a result carrying content blocks after its text,
- * such as an image. The blocks travel beside the answer, so their bytes stay
- * out of `structuredContent`.
+ * such as an image or a share link. The blocks travel beside the answer, so
+ * what they hold stays out of `structuredContent`.
  */
 export function attachedToolResult<Answer extends Record<string, unknown>>(
   outcome: Either.Either<WithBlocks<Answer>, readonly string[]>,

@@ -111,6 +111,17 @@ export const openTwoDiagrams = async (page: Page): Promise<void> => {
   );
 };
 
+/**
+ * Opens the studio on `test-data/every-glyph.model.json` through
+ * {@link openModelDocument}.
+ */
+export const openEveryGlyph = async (page: Page): Promise<void> => {
+  await openModelDocument(
+    page,
+    JSON.parse(committedText('every-glyph.model.json')),
+  );
+};
+
 /** Opens the studio on the model it carries until a file can be opened. */
 export const openPlaceholder = async (page: Page): Promise<void> => {
   await page.goto('/');

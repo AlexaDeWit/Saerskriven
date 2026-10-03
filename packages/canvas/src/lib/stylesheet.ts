@@ -29,6 +29,7 @@ export const canvasClassNames = {
   process: 'saer-diagram-process',
   store: 'saer-diagram-store',
   note: 'saer-diagram-note',
+  noteFrame: 'saer-diagram-note-frame',
   boundaryBox: 'saer-diagram-boundary-box',
   boundaryCurve: 'saer-diagram-boundary-curve',
   label: 'saer-diagram-label',
@@ -122,6 +123,9 @@ const sheetFrom = (
   stroke-width: ${boundaryStrokeWidth};
   stroke-dasharray: 8 6;
 }
+.${canvasClassNames.noteFrame} {
+  fill: none;
+}
 .${wrappedTextStyles.label.className} {
   fill: ${colour('textPrimary')};
   font-size: ${wrappedTextStyles.label.fontSize}px;
@@ -154,7 +158,8 @@ const sheetFrom = (
 }
 .${canvasClassNames.outOfScope} .${canvasClassNames.shape} {
   stroke: ${colour(outOfScopeOutline)};
-  stroke-dasharray: 6 4;
+  stroke-dasharray: 0 5;
+  stroke-linecap: round;
 }
 .${canvasClassNames.outOfScope} .${canvasClassNames.flowArrow} {
   fill: ${colour(outOfScopeOutline)};

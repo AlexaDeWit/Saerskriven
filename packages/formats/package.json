@@ -21,6 +21,11 @@
       "import": "./src/build-assets.ts",
       "default": "./src/build-assets.ts"
     },
+    "./fixtures": {
+      "types": "./src/fixtures.ts",
+      "import": "./src/fixtures.ts",
+      "default": "./src/fixtures.ts"
+    },
     "./share-link": {
       "types": "./src/share-link.ts",
       "import": "./src/share-link.ts",

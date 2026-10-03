@@ -15,6 +15,7 @@ import {
   text,
   titleOf,
 } from './runners.fixtures.js';
+import { modelIn, modelOf } from './share.fixtures.js';
 import { cliVersion } from './version.js';
 
 type Scenario = {
@@ -30,6 +31,8 @@ const directory = scratchDirectory('main');
 const fullDevice = '/dev/full';
 
 const twoDiagrams = 'test-data/saerskriven/two-diagrams.yaml';
+
+const linkPrefix = 'https://saerskriven.com/#share=1.';
 
 const scenarios: readonly Scenario[] = [
   {
@@ -145,6 +148,20 @@ for (const runner of runners) {
         expect(streamed.code).toEqual(0);
         expect(sha256Of(streamed.out)).toEqual(
           sha256Of(renderGolden('two-diagrams-storefront.snapshot.png')),
+        );
+      });
+
+      it('prints a share link on one line, which reads back as the model of the file', async () => {
+        const shared = text(runner, ['share', twoDiagrams]);
+        const [link] = shared.out.split('\n');
+        expect({ code: shared.code, err: shared.err }).toEqual({
+          code: 0,
+          err: '',
+        });
+        expect(shared.out.split('\n')).toEqual([link, '']);
+        expect(link?.slice(0, linkPrefix.length)).toEqual(linkPrefix);
+        expect(await modelIn(link ?? '')).toEqual(
+          modelOf(readFileSync(join(repositoryRoot, twoDiagrams), 'utf8')),
         );
       });
 

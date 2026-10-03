@@ -1,6 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { darkPalette, lightPalette, rgbColour } from '@saerskriven/canvas';
-import { committedText } from '@saerskriven/model/fixtures';
 import {
   boxesOverlap,
   canvasContainer,
@@ -19,7 +18,7 @@ import {
   beforeCanvas,
   closeThreats,
   nodeNamed,
-  openModelDocument,
+  openEveryGlyph,
   selectByKeyboard,
   selectNode,
   tabTo,
@@ -74,16 +73,8 @@ const scrolledAcross = -100;
 
 const panRunsOut = 1000;
 
-const openEveryGlyphFitted = async (page: Page): Promise<void> => {
-  await openModelDocument(
-    page,
-    JSON.parse(committedText('every-glyph.model.json')),
-  );
-  await canvasSettled(page);
-};
-
-const openEveryGlyph = async (page: Page): Promise<void> => {
-  await openEveryGlyphFitted(page);
+const openAtFullZoom = async (page: Page): Promise<void> => {
+  await openEveryGlyph(page);
   await page.getByRole('button', { name: 'Reset zoom to 100%' }).click();
   await canvasSettled(page);
 };
@@ -186,7 +177,7 @@ const viewRecorded = (page: Page): Promise<ViewLog> =>
   );
 
 const selectActorByPointer = async (page: Page): Promise<Locator> => {
-  await openEveryGlyphFitted(page);
+  await openEveryGlyph(page);
   const selected = await selectNode(page, actor);
   await expect(threatPanel(page)).toBeVisible();
   await canvasSettled(page);
@@ -224,7 +215,7 @@ for (const [scheme, palette] of schemes) {
     page,
   }) => {
     await page.emulateMedia({ colorScheme: scheme });
-    await openEveryGlyph(page);
+    await openAtFullZoom(page);
 
     await expectRingOnItems(page, rgbColour(palette.actionPrimary));
   });
@@ -234,7 +225,7 @@ for (const [scheme, palette] of schemes) {
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme });
-      await openEveryGlyph(page);
+      await openAtFullZoom(page);
       const node = await selectByKeyboard(page, name);
       await closeThreats(page);
       await expect(node).toBeFocused();
@@ -259,7 +250,7 @@ test('the focus ring on every kind of canvas item survives forced colours', asyn
   page,
 }) => {
   await page.emulateMedia({ forcedColors: 'active' });
-  await openEveryGlyph(page);
+  await openAtFullZoom(page);
 
   await expectRingOnItems(page, undefined);
 });
@@ -267,7 +258,7 @@ test('the focus ring on every kind of canvas item survives forced colours', asyn
 test('every resize control on a trust boundary shows its ring clear of the open panes at the default fit', async ({
   page,
 }) => {
-  await openEveryGlyphFitted(page);
+  await openEveryGlyph(page);
   const node = await selectByKeyboard(page, boundaryBox);
   await expect(node).toBeFocused();
   const zoom = await viewportZoom(page);
@@ -288,7 +279,7 @@ test('every resize control on a trust boundary shows its ring clear of the open 
 test('a resize control wholly under the Trust boundary card pans clear of it and shows its ring', async ({
   page,
 }) => {
-  await openEveryGlyphFitted(page);
+  await openEveryGlyph(page);
   const node = await selectByKeyboard(page, boundaryBox);
   await closeThreats(page);
   await expect(node).toBeFocused();
@@ -414,7 +405,7 @@ test('a pointer press on a flow the threat panel partly covers leaves the view w
 test('closing the threat panel over the focused element returns focus to it and leaves the view where it is', async ({
   page,
 }) => {
-  await openEveryGlyphFitted(page);
+  await openEveryGlyph(page);
   const node = await selectByKeyboard(page, store);
   expect(await underAPane(page, node)).toBe(true);
   const before = await viewportTransform(page);

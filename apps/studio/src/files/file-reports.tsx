@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { formatNames } from '../format-names.js';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
@@ -7,7 +8,7 @@ import { LiveRegion } from '../ui/live-region.js';
 import { describeExportNotice } from './export-notice.js';
 import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
-import { reportHeadlines, reportLines } from './session.js';
+import { reportSections } from './session.js';
 import { describeShareNotice } from './share-notice.js';
 
 /**
@@ -15,7 +16,8 @@ import { describeShareNotice } from './share-notice.js';
  * and the share report, which hang under the chrome card. Each is empty until
  * something is refused, costs the model a key, opens as a new model, or is
  * shared, and each is worded on render, so a change of language rewords a
- * standing report.
+ * standing report. The crossing report draws one heading for each part of it
+ * that has a line.
  */
 export function FileReports({ session }: { readonly session: FileSession }) {
   const { t } = useTranslator();
@@ -52,24 +54,16 @@ export function FileReports({ session }: { readonly session: FileSession }) {
                 })}
               </p>
             )}
-            {report.losses.length > 0 && (
-              <>
-                <p className={styles.headline}>
-                  {t(reportHeadlines[report.occasion])}
-                </p>
-                <DetailLines
-                  className={styles.lines}
-                  lines={reportLines(t, report)}
-                />
-              </>
-            )}
-            <button
-              className={styles.dismiss}
+            {reportSections(t, report).map(({ heading, lines }) => (
+              <Fragment key={heading}>
+                <p className={styles.headline}>{t(heading)}</p>
+                <DetailLines className={styles.lines} lines={lines} />
+              </Fragment>
+            ))}
+            <Dismiss
+              label={t('reports.dismiss-report')}
               onClick={dismissReport}
-              type="button"
-            >
-              {t('reports.dismiss-report')}
-            </button>
+            />
           </>
         )}
         {exported !== undefined && (
@@ -78,29 +72,37 @@ export function FileReports({ session }: { readonly session: FileSession }) {
             {exported.details.length > 0 && (
               <DetailLines className={styles.lines} lines={exported.details} />
             )}
-            <button
-              className={styles.dismiss}
+            <Dismiss
+              label={t('reports.dismiss-export')}
               onClick={dismissExportNotice}
-              type="button"
-            >
-              {t('reports.dismiss-export')}
-            </button>
+            />
           </div>
         )}
         {shared !== undefined && (
           <div data-testid="share-report">
             <p className={styles.headline}>{shared.headline}</p>
             <DetailLines className={styles.lines} lines={shared.details} />
-            <button
-              className={styles.dismiss}
+            <Dismiss
+              label={t('reports.dismiss-share')}
               onClick={dismissShareNotice}
-              type="button"
-            >
-              {t('reports.dismiss-share')}
-            </button>
+            />
           </div>
         )}
       </LiveRegion>
     </>
+  );
+}
+
+function Dismiss({
+  label,
+  onClick,
+}: {
+  readonly label: string;
+  readonly onClick: () => void;
+}) {
+  return (
+    <button className={styles.dismiss} onClick={onClick} type="button">
+      {label}
+    </button>
   );
 }

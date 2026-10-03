@@ -1,5 +1,6 @@
+import { brotliWasmFile } from '@saerskriven/formats/build-assets';
 import { referencingYaml, smallYaml } from '@saerskriven/mcp/fixtures';
-import { testDataPath } from '@saerskriven/model/fixtures';
+import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
 import { typstFontFiles } from '@saerskriven/render/build-assets';
 import {
   mkdirSync,
@@ -109,19 +110,27 @@ export function scratchDirectory(prefix: string): string {
   return directory;
 }
 
+/**
+ * Where the build target writes the modules and fonts the bundle reads beside
+ * it, which the test target depends on.
+ */
+export const builtAssets = join(repositoryRoot, 'apps/cli/dist/assets');
+
 /** A committed render golden under `test-data/render`, as bytes. */
 export const renderGolden = (name: string): Buffer =>
   readFileSync(testDataPath('render', name));
 
 /**
- * An asset directory a rasterizer reads without drawing: a stand-in module
- * and one stand-in face per name, each face's bytes spelling `face:<name>`.
+ * An asset directory a server reads without running anything in it: a
+ * stand-in rasterizer and brotli module, and one stand-in face per name, each
+ * face's bytes spelling `face:<name>`.
  */
 export function fakeAssets(
   directory: string,
   faces: readonly string[] = typstFontFiles,
 ): string {
   writeFileSync(join(directory, resvgWasmFile), 'module');
+  writeFileSync(join(directory, brotliWasmFile), 'module');
   for (const name of faces) {
     writeFileSync(join(directory, name), `face:${name}`);
   }

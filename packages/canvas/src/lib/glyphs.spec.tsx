@@ -1,8 +1,12 @@
+import type { Point } from '@saerskriven/model';
 import { elementId } from '@saerskriven/model/fixtures';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { badgeExtent, type ThreatBadge } from './badges.js';
 import { edgeNamed, nodeNamed, specMarks } from './canvas.fixtures.js';
+import { flowLabelPlacements } from './flow-labels.js';
+import { segmentMeetsBox, type Box } from './geometry.js';
 import {
   boxElementStrokeInsets,
   BoxElementGlyph,
@@ -16,17 +20,16 @@ import {
   canvasClassNames,
   wrappedTextStyles,
 } from './stylesheet.js';
-import { badgeExtent, type ThreatBadge } from './badges.js';
-import type { Point } from '@saerskriven/model';
-import { segmentMeetsBox, type Box } from './geometry.js';
-import { flowLabelPlacements } from './flow-labels.js';
+import { noteFrameOffset, strokeWidths } from './tokens.js';
 import { looseLabelWidth, textExtent } from './typography.js';
-import { strokeWidths } from './tokens.js';
 
-const glyphOf = (value: string): string =>
-  renderToStaticMarkup(
-    <ElementGlyph marks={specMarks} node={nodeNamed(value)} />,
-  );
+const drawn = (node: CanvasNode): string =>
+  renderToStaticMarkup(<ElementGlyph marks={specMarks} node={node} />);
+
+const glyphOf = (value: string): string => drawn(nodeNamed(value));
+
+const flowOf = (value: string): string =>
+  renderToStaticMarkup(<FlowGlyph marks={specMarks} edge={edgeNamed(value)} />);
 
 const packageSource = join(import.meta.dirname, '..');
 
@@ -110,6 +113,17 @@ describe('ElementGlyph, taking its extent from the model', () => {
     expect(markup).not.toContain(canvasClassNames.shape);
   });
 
+  it('frames a note outside its box while it is out of scope, and not once it is in scope', () => {
+    const note = nodeNamed('el-scope-note');
+    expect(drawn(note)).toContain(
+      `<rect class="${canvasClassNames.shape} ${canvasClassNames.noteFrame}" ` +
+        `x="${-noteFrameOffset}" y="${-noteFrameOffset}" ` +
+        `width="${note.size.width + noteFrameOffset * 2}" ` +
+        `height="${note.size.height + noteFrameOffset * 2}"`,
+    );
+    expect(drawn({ ...note, outOfScope: false })).not.toContain('<rect');
+  });
+
   it('draws a box boundary as a rectangle of the shape width and height', () => {
     const node = nodeNamed('el-zone');
     expect(glyphOf('el-zone')).toContain(
@@ -149,12 +163,8 @@ describe('ElementGlyph, taking its extent from the model', () => {
   });
 
   it('follows the model when a size changes', () => {
-    const widened: CanvasNode = {
-      ...nodeNamed('el-client'),
-      size: { width: 999, height: 111 },
-    };
     expect(
-      renderToStaticMarkup(<ElementGlyph marks={specMarks} node={widened} />),
+      drawn({ ...nodeNamed('el-client'), size: { width: 999, height: 111 } }),
     ).toContain('width="999" height="111"');
   });
 });
@@ -174,27 +184,17 @@ describe('PlacedElementGlyph', () => {
 
 describe('FlowGlyph', () => {
   it('runs straight segments from source through waypoints to target', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
-      ),
-    ).toContain('d="M 200 100 L 240 100 L 280 120"');
+    expect(flowOf('el-request')).toContain('d="M 200 100 L 240 100 L 280 120"');
   });
 
   it('marks the target with an arrowhead', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
-      ),
-    ).toContain(`class="${canvasClassNames.flowArrow}"`);
+    expect(flowOf('el-request')).toContain(
+      `class="${canvasClassNames.flowArrow}"`,
+    );
   });
 
   it('names the flow near the midpoint of its longest segment', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-probe')} />,
-      ),
-    ).toContain('Nightly backup probe');
+    expect(flowOf('el-probe')).toContain('Nightly backup probe');
   });
 
   it('leaves the name out while a field stands in for it', () => {
@@ -209,17 +209,16 @@ describe('FlowGlyph', () => {
     expect(markup).not.toContain('Nightly backup probe');
   });
 
+  it('marks an out-of-scope flow and no other', () => {
+    expect(flowOf('el-write')).toContain(
+      `<g class="${canvasClassNames.element} ${canvasClassNames.outOfScope}">`,
+    );
+    expect(flowOf('el-request')).not.toContain(canvasClassNames.outOfScope);
+  });
+
   it('badges a flow the open threats name', () => {
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-request')} />,
-      ),
-    ).toContain(canvasClassNames.badge);
-    expect(
-      renderToStaticMarkup(
-        <FlowGlyph marks={specMarks} edge={edgeNamed('el-write')} />,
-      ),
-    ).not.toContain(canvasClassNames.badge);
+    expect(flowOf('el-request')).toContain(canvasClassNames.badge);
+    expect(flowOf('el-write')).not.toContain(canvasClassNames.badge);
   });
 });
 

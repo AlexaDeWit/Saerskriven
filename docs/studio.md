@@ -71,18 +71,24 @@ through, so a download counts as saved even where the browser's own download
 dialog was cancelled. Saving in another format than the file was read as is
 where most of a save's report, **Not kept by this save**, comes from, since
 only the file's own format keeps what Saerskriven does not model. Opening a
-file reports too, under **Not shown in the studio**: keys the format's schema
-does not declare, and values the studio holds less exactly than the file,
-such as a Threat Dragon Elevation of Privilege card, with "Saving back keeps
-it." where a save to the same file keeps them. Each line names a threat by its
-number and title, and anything else by the name the studio shows, and lines
-that read the same are shown once with their count. A report leaves out what
-loses nothing, such as a raised threat number mark, which the command line
-still prints. An OTM or TM-BOM report names what the reading converted and
-the source fields that hold a value the model has no place for. It leaves out
-a default or a layout Saerskriven supplied where the file held none, which
-`saer convert` and the MCP server still name. Nothing of that file is kept for
-a later save, so keep it where what the report names matters.
+file reports too, under two headings, each shown only when it has a line.
+**Converted on opening** comes first and lists what the model holds in another
+form or place than the file had it, so it can still be found in the studio: an
+OTM threat status read as open and kept in the threat's description, OTM
+components read as processes, or a Threat Dragon category no Threat Dragon
+language names, read as a custom category. **Not shown in the studio** lists
+what the model has no place for or holds less exactly than the file: keys the
+format's schema does not declare, the source fields of an OTM or TM-BOM file
+the model has no place for, and values such as a Threat Dragon Elevation of
+Privilege card. A line under that heading ends "Saving back keeps it." where a
+save to the same file keeps the value. Each line names a threat by its number and title, and
+anything else by the name the studio shows, and lines that read the same are
+shown once with their count. A report leaves out what loses nothing, such as a
+raised threat number mark, which the command line still prints. An OTM or
+TM-BOM report also leaves out a default or a layout Saerskriven supplied where
+the file held none, which `saer convert` and the MCP server still name. Nothing
+of that file is kept for a later save, so keep it where what the report names
+matters.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
@@ -598,11 +604,13 @@ correct or clear it, and survives closing the panel and selecting something
 else.
 
 On the canvas and in exported drawings, an element out of scope has its
-outline dashed and drawn in the muted ink. A flow out of scope has its line
-dashed and drawn in the muted ink, and its arrowhead filled with it. Names and
-badges are drawn as they are in scope. The dash is not a colour, so it survives
-forced colours. A Note, which has no outline, is not marked, and a trust
-boundary, already dashed, is marked by a shorter dash alone.
+outline dotted and drawn in the muted ink. A solid outline is in scope, a
+dashed one is a trust boundary, and a dotted one is out of scope: a trust
+boundary out of scope is dotted in place of its dashes. A flow out of scope
+has its line dotted and drawn in the muted ink, and its arrowhead filled with
+it. A Note, which has no outline, takes a dotted frame just outside its box
+while it is out of scope. Names and badges are drawn as they are in scope. The
+dots are a pattern, not a colour, so they survive forced colours.
 
 ### Security properties
 

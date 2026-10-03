@@ -59,6 +59,23 @@
   stroke-width: var(--saer-cue-flow-selection);
 }
 
+/* An out-of-scope flow is dotted, and a dot is as wide as the stroke, so the
+   gap grows with the cue weight: 2.5 is the canvas sheet's pitch of 5 over its
+   outline weight of 2. Hover is written first for the reason above. */
+.canvas
+  :global(
+    .react-flow__edge:hover .saer-diagram-out-of-scope .saer-diagram-shape
+  ) {
+  stroke-dasharray: 0 calc(var(--saer-cue-flow-hover) * 2.5);
+}
+
+.canvas
+  :global(
+    .react-flow__edge.selected .saer-diagram-out-of-scope .saer-diagram-shape
+  ) {
+  stroke-dasharray: 0 calc(var(--saer-cue-flow-selection) * 2.5);
+}
+
 /* A boundary takes the pointer on its outline, name and resize control. */
 .canvas
   :global(.react-flow__node-boundary-box .saer-diagram-boundary-hit-target),

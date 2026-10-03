@@ -1,7 +1,10 @@
+import { hostedStudioUrl } from '@saerskriven/formats/share-link';
 import { Either } from 'effect';
 import { recordingClipboard } from './canvas/canvas.fixtures.js';
 import { deferred } from './files/files.fixtures.js';
 import { writeClipboard } from './system-clipboard.js';
+
+const shared = `${hostedStudioUrl}#share=1.G2QA`;
 
 const itemClipboard = () => {
   const items: ClipboardItem[] = [];
@@ -55,11 +58,9 @@ describe('the system clipboard', () => {
     const written = writeClipboard(link.promise);
 
     expect(clipboard.write).toHaveBeenCalledTimes(1);
-    link.resolve('https://saerskriven.com/#share=1.G2QA');
+    link.resolve(shared);
     expect(await written).toEqual(Either.right(undefined));
-    expect(await clipboard.text()).toBe(
-      'https://saerskriven.com/#share=1.G2QA',
-    );
+    expect(await clipboard.text()).toBe(shared);
   });
 
   it('writes a promised text once it is ready, where the browser holds no ClipboardItem', async () => {

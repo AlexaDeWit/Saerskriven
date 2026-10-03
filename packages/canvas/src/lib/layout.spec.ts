@@ -8,6 +8,7 @@ import {
   modelWith,
 } from '@saerskriven/model/fixtures';
 import { badgeExtent } from './badges.js';
+import { drawnBounds } from './bounds.js';
 import {
   edgeNamed,
   everyGlyphLayout,
@@ -20,6 +21,7 @@ import {
 import { handlePositions } from './handles.js';
 import type { CanvasNode, CanvasNodeKind } from './layout.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
+import { noteFrameOffset } from './tokens.js';
 
 const boxKinds = {
   actor: true,
@@ -162,7 +164,19 @@ describe('layoutDiagram', () => {
       x: 0,
       y: -13,
       width: 653,
-      height: 423,
+      height: 523,
+    });
+  });
+
+  it("reaches past an out-of-scope note's box for the frame drawn around it", () => {
+    const note = nodeNamed('el-scope-note');
+    const inScope = drawnBounds([{ ...note, outOfScope: false }], []);
+    expect(inScope).toEqual({ ...note.position, ...note.size });
+    expect(drawnBounds([note], [])).toEqual({
+      x: inScope.x - noteFrameOffset,
+      y: inScope.y - noteFrameOffset,
+      width: inScope.width + noteFrameOffset * 2,
+      height: inScope.height + noteFrameOffset * 2,
     });
   });
 

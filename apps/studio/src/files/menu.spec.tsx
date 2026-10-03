@@ -1,3 +1,4 @@
+import { brotliUnbuilt } from '@saerskriven/formats/fixtures';
 import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { PdfFailure } from '@saerskriven/render/pdf';
@@ -33,7 +34,6 @@ import type { RenderExports } from './export-commands.js';
 import { useFileSession } from './file-commands.js';
 import {
   brokenThreatDragonText,
-  brotliUnbuilt,
   chosenFile,
   edit,
   fragmentOf,
@@ -93,6 +93,13 @@ const shown = async (user: User): Promise<string> => {
 const reportEntries = (): readonly Element[] => [
   ...screen.getByTestId('loss-report').querySelectorAll('li'),
 ];
+
+const reportLists = (): readonly Element[] => [
+  ...screen.getByTestId('loss-report').querySelectorAll('ul'),
+];
+
+const reportHeadings = (): readonly (string | null | undefined)[] =>
+  reportLists().map((list) => list.previousElementSibling?.textContent);
 
 function Menu({
   bridge,
@@ -652,6 +659,7 @@ describe('opening', () => {
       .getState()
       .present.threats.find(({ id }) => id === 'threat-card');
     const t = inLocale('en-CA');
+    expect(reportHeadings()).toEqual([t('reports.opened')]);
     expect(entries).toHaveLength(3);
     expect(entries[0]).toContain('unknownRoot');
     expect(entries[1]).toContain('detail.unknownDetail');
@@ -694,6 +702,39 @@ describe('opening', () => {
       });
       expect(nameOf(modelStore.getState().file)).toBe('example.yaml');
       expect(isDirty(modelStore.getState())).toBe(true);
+    },
+  );
+
+  it.each([
+    {
+      path: 'otm/example.json',
+      conversion: 'divergence.otm-components-as-processes',
+    },
+    {
+      path: 'tmbom/example.json',
+      conversion: 'divergence.tmbom-flow-fields-as-prose',
+    },
+  ] as const)(
+    'lists what $path converted under a heading of its own, ahead of what the studio does not show',
+    async ({ path, conversion }) => {
+      const user = userEvent.setup();
+      mounted(specBridge({ offers: vendoredFile(path) }));
+
+      await choose(user, 'Open');
+
+      await waitFor(() => {
+        expect(reportEntries().length > 0).toBe(true);
+      });
+      const t = inLocale('en-CA');
+      const [converted, notShown] = reportLists();
+      expect(reportHeadings()).toEqual([
+        t('reports.converted'),
+        t('reports.opened'),
+      ]);
+      expect(
+        [...converted.querySelectorAll('li')].map((entry) => entry.textContent),
+      ).toContain(t(conversion));
+      expect(notShown.textContent).not.toContain(t(conversion));
     },
   );
 
