@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom';
 import { focusCanvas } from '../canvas/edits.js';
 import { externalStore } from '../ui/external-store.js';
 import { handlerSlot } from '../ui/handler-slot.js';
@@ -36,11 +37,13 @@ export function openThreatRegister(): void {
 /**
  * Closes the register and moves focus into the model panel where it shows,
  * and otherwise back to where it was when the register opened, or to the
- * canvas where that is gone.
+ * canvas where that is gone. The close is committed before focus moves,
+ * since what the register covered is inert or hidden until it has gone, and
+ * so it is called from an event handler alone.
  */
 export function closeThreatRegister(): void {
   const returning = opener;
-  leaveThreatRegister();
+  flushSync(leaveThreatRegister);
   if (focusModelPanel()) {
     return;
   }

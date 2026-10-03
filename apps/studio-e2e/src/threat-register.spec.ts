@@ -163,6 +163,24 @@ test("a flow's card under the register is off the Tab path, and Change flow sour
     .toBe(true);
 });
 
+test('Escape hands focus back to the card control under the register that R was pressed from', async ({
+  page,
+}) => {
+  await openFallback(page);
+  await selectByKeyboard(page, placeholder.records);
+  const reverse = page
+    .getByRole('region', { name: 'Reconnect flow' })
+    .getByRole('button', { name: 'Reverse flow', exact: true });
+  await reverse.focus();
+
+  await pressR(page);
+  await expect(register(page)).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await expect(register(page)).toHaveCount(0);
+  await expect(reverse).toBeFocused();
+});
+
 test('R typed into a field stays in the field', async ({ page }) => {
   await openTwoDiagrams(page);
   await runFromMenu(page, 'Model');
@@ -203,5 +221,35 @@ test(
     await close.click();
 
     await expect(register(page)).toHaveCount(0);
+  },
+);
+
+test(
+  'the model panel under a register as wide as the window is off the Tab path until the register closes',
+  { tag: '@phone-only' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    await pressR(page);
+    await chooser(page, 'Refund policy abused').click();
+    const covered = page.getByRole('region', {
+      name: 'Model',
+      exact: true,
+      includeHidden: true,
+    });
+    await expect(covered).toHaveCount(1);
+    await expect(covered).toBeHidden();
+    const inModelPanel = (): Promise<boolean> =>
+      covered.evaluate((section) => section.contains(document.activeElement));
+
+    await rows(page).last().getByRole('button').last().focus();
+    await page.keyboard.press('Tab');
+
+    expect(await inModelPanel()).toBe(false);
+
+    await chooser(page, 'Refund policy abused').focus();
+    await page.keyboard.press('Escape');
+    await expect(register(page)).toHaveCount(0);
+    await expect(covered).toBeVisible();
+    expect(await inModelPanel()).toBe(true);
   },
 );

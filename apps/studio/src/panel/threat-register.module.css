@@ -25,10 +25,16 @@
 
 /* A window too narrow for the minimum beside the default panel cover
    (472px, 24rem and three gutters) gives the register its whole width, so no
-   sliver of the panel shows beside it. */
+   sliver of the panel shows beside it. The panes it then covers are hidden
+   while it is open, which takes them off the Tab path and out of the
+   accessibility tree, and they show again as it closes. */
 @media (max-width: 55rem) {
   .register {
     min-inline-size: calc(100% - var(--saer-space-3) * 2);
+  }
+
+  :root:has(.register) [data-pane]:not(.register) {
+    visibility: hidden;
   }
 }
 
@@ -146,6 +152,12 @@
 
 .row[data-chosen] > :first-child::before {
   border-inline-start: var(--saer-focus-ring);
+}
+
+/* Each later cell's piece of the ring reaches one pixel back under the cell
+   before it, which it paints over, so no hairline opens at a join. */
+.row[data-chosen] > :not(:first-child)::before {
+  inset-inline-start: -1px;
 }
 
 .row[data-chosen] > :last-child::before {

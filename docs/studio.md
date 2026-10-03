@@ -488,8 +488,8 @@ of every threat in the model over the canvas, left of the panel, with focus on
 its first row. It has the panel's top and height, and keeps room for the
 panel while none is open, so the panel opens beside it. Where the window
 leaves too little room beside the panel, as on a phone, the register takes
-the window's width and covers the panel, and the table scrolls sideways
-inside it. R while the register is open moves focus back into it, to the row
+the window's width and hides the panel under it until it closes, and the
+table scrolls sideways inside it. R while the register is open moves focus back into it, to the row
 last chosen.
 
 Each row gives a threat's number, title, elements, severity and status. The
@@ -573,7 +573,9 @@ Enter on a focused element selects it, and a second Enter edits its name.
 ## Accessibility
 
 Tab reaches the card, then the diagram's flows and elements, every flow before
-every element, then the threat register while it is open, then the panel.
+every element, then the threat register while it is open, then the panel. Where
+the register covers the panel, in a window under 55rem, Tab skips the panel
+until the register closes.
 
 Every element and flow is a tab stop whose accessible name comes from the
 model: its name, its kind, what its badge says, and each flag its threats
