@@ -450,32 +450,9 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   );
 
   await page.keyboard.press('Tab');
-  await expect(panelField(page, 'combobox', 'Severity')).toBeFocused();
-  await chooseByKeyboard(page, 'ArrowUp');
-  await expect(panelField(page, 'combobox', 'Severity')).toContainText(
-    'Critical',
-  );
-
-  await page.keyboard.press('Tab');
-  await expect(panelField(page, 'combobox', 'Status')).toBeFocused();
-
-  await page.keyboard.press('Tab');
   const description = panelField(page, 'textbox', 'Description');
   await expect(description).toBeFocused();
   await page.keyboard.type('The queue accepts a job nobody enqueued.');
-
-  for (const [group, role, control] of [
-    ['Attached elements', 'button', 'Detach Label printer'],
-    ['Attached elements', 'combobox', 'Existing element'],
-    ['Attached elements', 'button', 'Attach existing element'],
-  ] as const) {
-    await page.keyboard.press('Tab');
-    await expect(
-      threatPanel(page)
-        .getByRole('group', { name: group })
-        .getByRole(role, { name: control, exact: true }),
-    ).toBeFocused();
-  }
 
   const mitigations = threatPanel(page).getByRole('group', {
     name: 'Mitigations',
@@ -503,14 +480,35 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   );
 
   for (const [group, role, control] of [
-    ['Mitigations', 'combobox', 'Mitigation 1 status'],
-    ['Mitigations', 'button', 'Unlink mitigation 1'],
     ['Mitigations', 'button', 'Add mitigation'],
     ['Mitigations', 'combobox', 'Existing mitigation'],
     ['Mitigations', 'button', 'Link existing mitigation'],
     ['Assumptions', 'button', 'Add assumption'],
     ['Assumptions', 'combobox', 'Existing assumption'],
     ['Assumptions', 'button', 'Link existing assumption'],
+  ] as const) {
+    await page.keyboard.press('Tab');
+    await expect(
+      threatPanel(page)
+        .getByRole('group', { name: group })
+        .getByRole(role, { name: control, exact: true }),
+    ).toBeFocused();
+  }
+
+  await page.keyboard.press('Tab');
+  await expect(panelField(page, 'combobox', 'Severity')).toBeFocused();
+  await chooseByKeyboard(page, 'ArrowUp');
+  await expect(panelField(page, 'combobox', 'Severity')).toContainText(
+    'Critical',
+  );
+
+  await page.keyboard.press('Tab');
+  await expect(panelField(page, 'combobox', 'Status')).toBeFocused();
+
+  for (const [group, role, control] of [
+    ['Attached elements', 'button', 'Detach Label printer'],
+    ['Attached elements', 'combobox', 'Existing element'],
+    ['Attached elements', 'button', 'Attach existing element'],
   ] as const) {
     await page.keyboard.press('Tab');
     await expect(
@@ -531,6 +529,10 @@ test('every field of a threat is reachable and editable from the keyboard, add a
     /1 open threat, highest severity Critical/u,
   );
 
+  await runFromMenu(page, 'Undo');
+  await expect(panelField(page, 'combobox', 'Severity')).toContainText(
+    'Undecided',
+  );
   await runFromMenu(page, 'Undo');
   await expect(recordTitle).toHaveCount(0);
   await expect(description).toHaveValue(
@@ -656,7 +658,10 @@ test('keyboard width changes preserve the viewport and persist across selection 
   expect(await viewportTransform(page)).toBe(beforeRestore);
 });
 
-test('prose grows to a bound, keeps manual resizing, and commits once through pane controls', async ({
+const scrollsInside = (field: Locator): Promise<boolean> =>
+  field.evaluate((node) => node.scrollHeight > node.clientHeight + 1);
+
+test('prose starts at two lines and grows with its text without scrolling inside, keeps manual resizing, and commits once through pane controls', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -675,15 +680,17 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
   const lineHeight = await description.evaluate((node) =>
     Number.parseFloat(getComputedStyle(node).lineHeight),
   );
-  expect(initial.height).toBeGreaterThanOrEqual(lineHeight * 8);
+  expect(initial.height).toBeGreaterThanOrEqual(lineHeight * 2);
+  expect(initial.height).toBeLessThan(lineHeight * 4);
   const prose = Array.from(
     { length: 80 },
     (_, index) => `Line ${String(index)} of a long threat description.`,
   ).join('\n');
   await description.fill(prose);
   const grown = await edgesOf(description);
-  expect(grown.height).toBeGreaterThan(initial.height);
-  expect(grown.height).toBeLessThanOrEqual(lineHeight * 25);
+  expect(grown.height).toBeGreaterThan(lineHeight * 80);
+  expect(await scrollsInside(description)).toBe(false);
+  expect(await scrollsInside(paneBody(page))).toBe(true);
   await panel.getByRole('button', { name: 'Widen pane' }).click();
   await expect(description).toHaveValue(prose);
   await panel
@@ -691,11 +698,12 @@ test('prose grows to a bound, keeps manual resizing, and commits once through pa
     .click();
   const recordInitial = await edgesOf(recordProse);
   expect(recordInitial.height).toBeGreaterThanOrEqual(lineHeight * 2);
-  expect(recordInitial.height).toBeLessThan(initial.height);
-  await recordProse.fill(prose.split('\n').slice(0, 6).join('\n'));
+  expect(recordInitial.height).toBeLessThan(lineHeight * 4);
+  await recordProse.fill(prose.split('\n').slice(0, 30).join('\n'));
   const recordGrown = await edgesOf(recordProse);
-  expect(recordGrown.height).toBeGreaterThan(recordInitial.height);
-  expect(recordGrown.height).toBeLessThanOrEqual(lineHeight * 25);
+  expect(recordGrown.height).toBeGreaterThan(lineHeight * 30);
+  expect(await scrollsInside(recordProse)).toBe(false);
+  await recordProse.fill(prose.split('\n').slice(0, 6).join('\n'));
   const heading = await edgesOf(panel.getByRole('heading', { level: 2 }));
   await recordProse.scrollIntoViewIfNeeded();
   expect((await edgesOf(panel.getByRole('heading', { level: 2 }))).top).toBe(

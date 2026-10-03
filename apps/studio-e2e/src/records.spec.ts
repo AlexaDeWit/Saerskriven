@@ -86,7 +86,7 @@ test(
   },
 );
 
-test('Tab out of a new record reaches its status, and undoing the record keeps focus in its group', async ({
+test('Tab out of a new record keeps it and reaches Add, and undoing the record from its status keeps focus in its group', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -97,8 +97,9 @@ test('Tab out of a new record reaches its status, and undoing the record keeps f
   await page.keyboard.type('Callers rotate their tokens.');
   await page.keyboard.press('Tab');
 
+  await expect(panelControl(page, 'Add assumption')).toBeFocused();
   const status = panelField(page, 'combobox', 'Assumption 1 status');
-  await expect(status).toBeFocused();
+  await status.focus();
 
   await page.keyboard.press(registeredChords.undo[0]);
 
@@ -181,12 +182,6 @@ test('leaving the empty row leaves no record and nothing to undo', async ({
   await add.click();
   const prose = panelField(page, 'textbox', 'Assumption 1');
   await expect(prose).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(
-    panelField(page, 'combobox', 'Assumption 1 status'),
-  ).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(panelControl(page, 'Discard assumption 1')).toBeFocused();
   await page.keyboard.press('Tab');
 
   await expect(add).toBeFocused();
@@ -356,7 +351,7 @@ test(
 );
 
 test(
-  'an unlink scrolls the pane only as far as the next Unlink needs to be seen',
+  "an unlink at the pane's lower edge puts the next record's Unlink in its place, scrolling nothing",
   { tag: '@phone' },
   async ({ page }) => {
     await openTwoDiagrams(page);
@@ -382,10 +377,9 @@ test(
     );
     await expect(unlink).toBeFocused();
     await expect(unlink).toBeInViewport({ ratio: 1 });
-    expect(await scrolledAbove(add)).toBeGreaterThan(scrolled);
-    const revealed = await screenBoxOf(unlink);
+    expect(await scrolledAbove(add)).toBe(scrolled);
     expect(
-      Math.abs(revealed.y + revealed.height - (pressed.y + pressed.height)),
+      Math.abs((await screenBoxOf(unlink)).y - pressed.y),
     ).toBeLessThanOrEqual(1);
   },
 );

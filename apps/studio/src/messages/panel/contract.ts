@@ -29,7 +29,6 @@ export const panelMessages = {
   discard: text(),
   unlink: text(),
   attach: text(),
-  detach: text(),
   'also-applies-to-model': text(),
   'also-on-threats': plural('count', { list: 'list' }),
   'more-threats': text({ count: 'number' }),

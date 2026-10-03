@@ -36,6 +36,10 @@ const linkFirstOffered = async (noun: string): Promise<void> => {
   await user.click(button(`Link existing ${noun}`));
 };
 
+const precedes = (first: Node, second: Node): boolean =>
+  (first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING) !==
+  0;
+
 const assumptionRows = (): readonly (string | undefined)[] =>
   screen
     .queryAllByRole('textbox', { name: /^Assumption \d+$/u })
@@ -69,7 +73,7 @@ describe(
       showThreatEditor({ threat: recordedThreat(secondThreat) });
 
       await user.click(button('Add mitigation'));
-      for (const _ of ['description', 'status', 'discard', 'add']) {
+      for (const _ of ['description', 'add']) {
         await user.tab();
       }
       expect(document.activeElement).toBe(button('Add mitigation'));
@@ -349,6 +353,25 @@ describe(
       expect(
         screen.getByRole('group', { name: 'Mitigations 0' }),
       ).toBeDefined();
+    });
+
+    it('puts a record status and Unlink in its name row, above fields that show no label of their own', () => {
+      showThreatEditor({ threat: recordedThreat(firstThreat) });
+      const record = screen.getByRole('group', { name: 'Mitigation 1' });
+      const status = within(record).getByRole('combobox', {
+        name: 'Mitigation 1 status',
+      });
+      const unlink = within(record).getByRole('button', {
+        name: 'Unlink mitigation 1',
+      });
+      const title = within(record).getByRole('textbox', {
+        name: 'Mitigation 1 title',
+      });
+
+      expect(precedes(status, unlink)).toBe(true);
+      expect(precedes(unlink, title)).toBe(true);
+      expect(record.querySelector('label')).toBeNull();
+      expect(title.getAttribute('placeholder')).toBe('Title');
     });
 
     it('names each record card as a group holding its controls, and keeps their names', () => {

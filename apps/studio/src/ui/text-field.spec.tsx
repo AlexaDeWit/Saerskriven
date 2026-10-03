@@ -207,6 +207,40 @@ describe('TextField', () => {
   });
 });
 
+describe('a field drawn without its label', () => {
+  it('keeps its accessible name and shows its placeholder while it is empty', () => {
+    render(
+      <>
+        <TextField
+          label={() => 'Mitigation 1 title'}
+          onCommit={noop}
+          onRefused={noop}
+          placeholder="Title"
+          shownLabel=""
+          value=""
+        />
+        <ProseField
+          compact
+          label={() => 'Mitigation 1 description'}
+          onCommit={noop}
+          onRefused={noop}
+          placeholder="Description"
+          shownLabel=""
+          value=""
+        />
+      </>,
+    );
+
+    expect(textbox('Mitigation 1 title').getAttribute('placeholder')).toBe(
+      'Title',
+    );
+    expect(
+      textbox('Mitigation 1 description').getAttribute('placeholder'),
+    ).toBe('Description');
+    expect(screen.queryByText('Title')).toBeNull();
+  });
+});
+
 describe('ProseField', () => {
   it('sets its height from its text only where CSS cannot size it to its content', () => {
     vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(120);

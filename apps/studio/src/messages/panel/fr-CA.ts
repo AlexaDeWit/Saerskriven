@@ -40,7 +40,6 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   discard: 'Abandonner',
   unlink: 'Délier',
   attach: 'Rattacher',
-  detach: 'Détacher',
   'also-applies-to-model': 'S’applique aussi au modèle.',
   'also-on-threats': {
     one: 'Aussi sur la menace {list}.',

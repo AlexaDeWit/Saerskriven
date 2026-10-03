@@ -10,6 +10,7 @@ import styles from './threat-panel.module.css';
 import { assumptionKind, mitigationKind, threatTarget } from './records.js';
 import { draftIn, useRefusals, type RefusedField } from './refusals.js';
 import { AttachmentGroup } from './threat-attachments.js';
+import { FlagMarks } from './threat-marks.js';
 import { RecordGroup } from './threat-records.js';
 import { ThreatSummary } from './threat-summary.js';
 
@@ -31,7 +32,12 @@ export type ThreatEditorProps = {
   readonly onFocused: () => void;
 };
 
-/** An expandable threat with one commit per field. */
+/**
+ * An expandable threat with one commit per field. Its fields run from what
+ * the threat is to what is done about it: title, category and description,
+ * the mitigations and assumptions, then severity and status, judged from
+ * the records above them, with any raised flag beside status.
+ */
 export function ThreatEditor({
   threat,
   on,
@@ -96,21 +102,8 @@ export function ThreatEditor({
           }}
           value={threat.category}
         />
-        <div className={styles.assessment}>
-          <SeverityField
-            onCommit={(severity) => {
-              onCommit({ severity });
-            }}
-            value={threat.severity}
-          />
-          <StatusField
-            onCommit={(status) => {
-              onCommit({ status });
-            }}
-            value={threat.status}
-          />
-        </div>
         <ProseField
+          compact
           held={draftIn(held, 'Description')}
           label={(speak) => speak('fields.description')}
           onChange={onChange}
@@ -119,11 +112,6 @@ export function ThreatEditor({
           }}
           onRefused={refused('Description')}
           value={threat.description}
-        />
-        <AttachmentGroup
-          onAttach={onAttach}
-          onDetach={onDetach}
-          threat={threat}
         />
         <RecordGroup
           held={held}
@@ -140,6 +128,30 @@ export function ThreatEditor({
           onRefused={note}
           refusals={refusals}
           target={threatTarget(assumptionKind, threat.id)}
+        />
+        <div className={styles.assessment}>
+          <SeverityField
+            onCommit={(severity) => {
+              onCommit({ severity });
+            }}
+            value={threat.severity}
+          />
+          <div className={styles.statusColumn} data-status-column="">
+            <StatusField
+              onCommit={(status) => {
+                onCommit({ status });
+              }}
+              value={threat.status}
+            />
+            <span className={styles.flags}>
+              <FlagMarks threat={threat} />
+            </span>
+          </div>
+        </div>
+        <AttachmentGroup
+          onAttach={onAttach}
+          onDetach={onDetach}
+          threat={threat}
         />
         {spread > 1 && (
           <p className={styles.spread} id={spreadId}>

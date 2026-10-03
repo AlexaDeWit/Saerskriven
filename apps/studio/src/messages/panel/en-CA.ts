@@ -37,7 +37,6 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
   discard: 'Discard',
   unlink: 'Unlink',
   attach: 'Attach',
-  detach: 'Detach',
   'also-applies-to-model': 'Also applies to the model.',
   'also-on-threats': {
     one: 'Also on threat {list}.',

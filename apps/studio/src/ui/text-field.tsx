@@ -119,6 +119,7 @@ function refusedWith(label: Said, shown: Said): TextRefusal {
 type TextFieldProps = {
   readonly label: Said;
   readonly shownLabel?: string;
+  readonly placeholder?: string;
   readonly value: string;
   readonly held?: string;
   readonly onChange?: () => void;
@@ -178,12 +179,14 @@ function controlProps(
 /**
  * Commits a single line on blur or Enter, as one undo step. `label` words the
  * accessible name and names the field in a refusal, and `shownLabel` replaces
- * the drawn label, an empty one drawing none. `held` opens the field on a
- * refused draft instead of `value`.
+ * the drawn label, an empty one drawing none. `placeholder` shows while the
+ * field is empty. `held` opens the field on a refused draft instead of
+ * `value`.
  */
 export function TextField({
   label,
   shownLabel,
+  placeholder,
   value,
   held,
   onChange,
@@ -225,6 +228,7 @@ export function TextField({
             commit();
           }
         }}
+        placeholder={placeholder}
         ref={ref}
         type="text"
         value={text}
@@ -239,12 +243,14 @@ type ProseFieldProps = Omit<TextFieldProps, 'ref'> & {
 
 /**
  * Edits Markdown source and commits on blur, taking {@link TextField}'s
- * labels. The textarea starts at eight lines, or two when `compact`, grows
- * with its content to a bound and scrolls past it.
+ * labels and placeholder. The textarea starts at eight lines, grows with its
+ * content to a bound and scrolls past it. A `compact` one starts at two lines
+ * and grows with its content without a bound, so it never scrolls on its own.
  */
 export function ProseField({
   label,
   shownLabel,
+  placeholder,
   value,
   held,
   compact = false,
@@ -288,6 +294,7 @@ export function ProseField({
           onChange?.();
           change(event.target.value);
         }}
+        placeholder={placeholder}
         ref={field}
         rows={compact ? 2 : 8}
         value={text}

@@ -159,7 +159,7 @@ type NumberedThreat = Pick<Threat, 'id' | 'number'>;
  * What one record group's records are linked to: a threat, or for
  * assumptions the model. `elsewhere` says which other threats hold a record.
  * `inThreat` is true for a group in an expanded threat, whose heading counts
- * its records.
+ * its records and whose records are sections rather than the model's cards.
  */
 export type RecordTarget<Held extends ThreatRecord> = {
   readonly heading:

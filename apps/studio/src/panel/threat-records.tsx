@@ -63,10 +63,11 @@ type FocusRequest =
 const rowSelector = '[data-record-row]';
 
 /**
- * The records of one kind linked to one target, a threat or the model, under
- * a heading that counts them on a threat. Add opens an empty row that becomes a record on
- * its first commit and goes when left empty. A row that returns while the
- * group is mounted takes its old slot back.
+ * The records of one kind linked to one target, a threat or the model. Add
+ * opens an empty row that becomes a record on its first commit and goes when
+ * left empty. A row that returns while the group is mounted takes its old
+ * slot back. On a threat the heading counts the records and each is a
+ * section with its status in its name row, where the model's are cards.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,
@@ -236,6 +237,7 @@ export function RecordGroup<Held extends ThreatRecord>({
             held={held}
             key={record.id}
             kind={kind}
+            layout={target.inThreat ? 'section' : 'card'}
             name={t('fields.record-name', {
               kind: t(kind.title),
               number: index + 1,
@@ -329,6 +331,7 @@ export function RecordGroup<Held extends ThreatRecord>({
 type RecordRowProps<Held extends ThreatRecord> = {
   readonly kind: RecordKind<Held>;
   readonly record: Held;
+  readonly layout: 'section' | 'card';
   readonly elsewhere: string | undefined;
   readonly name: string;
   readonly position: number;
@@ -348,6 +351,7 @@ type RecordRowProps<Held extends ThreatRecord> = {
 function RecordRow<Held extends ThreatRecord>({
   kind,
   record,
+  layout,
   elsewhere,
   name,
   position,
@@ -367,15 +371,17 @@ function RecordRow<Held extends ThreatRecord>({
     heldField?.recordId === record.id && heldField.part === part
       ? held?.text
       : undefined;
-  const shownLabel = (part: RecordPart): string =>
+  const partName = (part: RecordPart): string | undefined =>
     kind.parts.length === 1
-      ? ''
+      ? undefined
       : t(part === 'title' ? 'fields.title' : 'fields.description');
+  const card = layout === 'card';
   const fieldProps = (part: RecordPart) => ({
     held: heldIn(part),
     label: (speak: Speaker): string =>
       speak(kind.partField(part), { number: position }),
-    shownLabel: shownLabel(part),
+    shownLabel: card ? (partName(part) ?? '') : '',
+    placeholder: card ? undefined : partName(part),
     onChange,
     onCommit: onCommit(part),
     onRefused: (refusal: RefusedDraft | undefined) => {
@@ -388,6 +394,67 @@ function RecordRow<Held extends ThreatRecord>({
     },
     value: textOf(record, part),
   });
+  const state = (
+    <div className={styles.recordState}>
+      <EnumField
+        label={t(kind.statusField, { number: position })}
+        labelOf={(status) => t(kind.statusMessage(status))}
+        onCommit={onStatus}
+        options={kind.statuses}
+        shownLabel=""
+        value={record.status}
+      />
+      <button
+        aria-describedby={elsewhere === undefined ? undefined : sharedId}
+        aria-label={t(
+          draft ? 'fields.discard-record' : 'fields.unlink-record',
+          { kind: t(kind.nounMessage), number: position },
+        )}
+        className={styles.unlink}
+        data-unlink-record={draft ? undefined : true}
+        onClick={onRemove}
+        onMouseDown={
+          draft
+            ? (event) => {
+                event.preventDefault();
+              }
+            : undefined
+        }
+        type="button"
+      >
+        {t(draft ? 'panel.discard' : 'panel.unlink')}
+      </button>
+    </div>
+  );
+  const shared = elsewhere !== undefined && (
+    <p className={styles.shared} id={sharedId}>
+      {elsewhere}
+    </p>
+  );
+  const fields = kind.parts.map((part) =>
+    part === 'title' ? (
+      <TextField key={part} {...fieldProps(part)} />
+    ) : (
+      <ProseField compact key={part} {...fieldProps(part)} />
+    ),
+  );
+
+  if (card) {
+    return (
+      <div
+        className={styles.recordCard}
+        data-record-row={record.id}
+        onBlur={draft ? onBlur : undefined}
+      >
+        <fieldset className={styles.recordFields}>
+          <legend>{name}</legend>
+          {fields}
+          {state}
+          {shared}
+        </fieldset>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -395,50 +462,13 @@ function RecordRow<Held extends ThreatRecord>({
       data-record-row={record.id}
       onBlur={draft ? onBlur : undefined}
     >
-      <fieldset className={styles.recordFields}>
-        <legend className={styles.recordName}>{name}</legend>
-        {kind.parts.map((part) =>
-          part === 'title' ? (
-            <TextField key={part} {...fieldProps(part)} />
-          ) : (
-            <ProseField compact key={part} {...fieldProps(part)} />
-          ),
-        )}
-        <div className={styles.recordState}>
-          <EnumField
-            label={t(kind.statusField, { number: position })}
-            labelOf={(status) => t(kind.statusMessage(status))}
-            onCommit={onStatus}
-            options={kind.statuses}
-            shownLabel=""
-            value={record.status}
-          />
-          <button
-            aria-describedby={elsewhere === undefined ? undefined : sharedId}
-            aria-label={t(
-              draft ? 'fields.discard-record' : 'fields.unlink-record',
-              { kind: t(kind.nounMessage), number: position },
-            )}
-            className={styles.unlink}
-            data-unlink-record={draft ? undefined : true}
-            onClick={onRemove}
-            onMouseDown={
-              draft
-                ? (event) => {
-                    event.preventDefault();
-                  }
-                : undefined
-            }
-            type="button"
-          >
-            {t(draft ? 'panel.discard' : 'panel.unlink')}
-          </button>
+      <fieldset aria-label={name} className={styles.recordFields}>
+        <div className={styles.recordHead}>
+          <span className={styles.recordName}>{name}</span>
+          {state}
         </div>
-        {elsewhere !== undefined && (
-          <p className={styles.shared} id={sharedId}>
-            {elsewhere}
-          </p>
-        )}
+        {shared}
+        {fields}
       </fieldset>
     </div>
   );

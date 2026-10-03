@@ -30,7 +30,13 @@
 
 .compact {
   min-block-size: 2lh;
-  max-block-size: 10lh;
+  max-block-size: none;
+}
+
+.input::placeholder,
+.prose::placeholder {
+  color: var(--saer-colour-text-muted);
+  opacity: 1;
 }
 
 .input:focus-visible,

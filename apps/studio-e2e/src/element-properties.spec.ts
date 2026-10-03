@@ -209,6 +209,18 @@ test('edits the description and scope of a process and a note through undo, save
   await selectByKeyboard(page, storefront.webShop);
   await showDetails(page);
   await expect(description).toHaveValue('Takes orders from the browser.');
+  await description.fill(
+    Array.from(
+      { length: 40 },
+      (_, index) => `Line ${String(index)} of the web shop's description.`,
+    ).join('\n'),
+  );
+  expect(
+    await description.evaluate(
+      (node) => node.scrollHeight <= node.clientHeight + 1,
+    ),
+    'the description grows to fit its text rather than scrolling inside',
+  ).toBe(true);
   await expect(reason).toHaveValue('Run by the payment provider.');
 });
 

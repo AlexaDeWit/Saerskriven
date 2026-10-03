@@ -267,26 +267,66 @@
   gap: var(--saer-space-3);
 }
 
+.statusColumn,
+.flags {
+  display: flex;
+  min-inline-size: 0;
+  gap: var(--saer-space-1);
+}
+
+.statusColumn {
+  flex-direction: column;
+}
+
+.flags {
+  flex-wrap: wrap;
+  font-size: var(--saer-font-size);
+}
+
+.flags:empty {
+  display: none;
+}
+
 .attachments {
   display: flex;
-  flex-direction: column;
-  gap: var(--saer-space-1);
+  flex-wrap: wrap;
+  gap: var(--saer-space-1) var(--saer-space-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .attachment {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--saer-space-2);
+  gap: var(--saer-space-1);
+  min-inline-size: 0;
 }
 
 .attachmentName {
   min-inline-size: 0;
   overflow-wrap: anywhere;
+}
+
+.detach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: var(--saer-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--saer-radius);
+  background: none;
+  color: var(--saer-colour-text-muted);
+}
+
+.detach:hover {
+  color: var(--saer-colour-text);
+}
+
+.detach:focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
 }
 
 .spread {
@@ -312,13 +352,6 @@
   gap: var(--saer-space-2);
 }
 
-.record {
-  padding: var(--saer-space-2) var(--saer-space-3);
-  border: 1px solid var(--saer-colour-border);
-  border-radius: var(--saer-radius);
-  background: var(--saer-colour-surface-raised);
-}
-
 .recordFields {
   display: flex;
   flex-direction: column;
@@ -329,9 +362,27 @@
   border: 0;
 }
 
+.recordCard {
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+}
+
+.record + .record {
+  padding-block-start: var(--saer-space-2);
+  border-block-start: 1px solid var(--saer-colour-border);
+}
+
+.recordHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--saer-space-2);
+}
+
 .recordName {
-  margin-block-end: var(--saer-space-2);
-  padding: 0;
   font-weight: 600;
 }
 
@@ -438,15 +489,12 @@
   border-top: 1px solid var(--saer-colour-border);
 }
 
-/* At phone width the panel, the threat item and each record card would each
-   take a full inset from the room the fields have, so the inner two narrow. */
+/* At phone width the panel, the threat item and a model record card would
+   each take a full inset from the room the fields have, so all three narrow. */
 @media (max-width: 30rem) {
   .body,
-  .content {
-    padding-inline: var(--saer-space-2);
-  }
-
-  .record {
+  .content,
+  .recordCard {
     padding-inline: var(--saer-space-2);
   }
 }
