@@ -211,7 +211,7 @@ losses.
 
 Threats preserve their declared component attachments and event descriptions.
 A threat that declares no affected component applies to the whole model.
-They are read as open, with undecided severity and an unspecified category.
+Threats are read as open, with undecided severity and an unspecified category.
 Separate risk records and threat personas are reported as omissions.
 Controls become mitigations linked to the threats they name. Active controls
 become implemented mitigations. Suggested controls become proposed

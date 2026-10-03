@@ -40,8 +40,9 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
  * `diagramTop` marks, follow `planThreats` and `numberDiagrams`, and a mark
  * this write moves is reported as `overridden`. Issuing a number is not a
  * divergence. What the format cannot hold is reported as `unrepresentable`:
- * an assumption, a threat on a trust boundary or a note, a note's name, an
- * out-of-scope boundary or note, and a diagram's name. A diagram, cell or
+ * an assumption, a threat on a trust boundary or a note, the model link of a
+ * threat, a note's name, an out-of-scope boundary or note, and a diagram's
+ * name. A diagram, cell or
  * threat the source held and the model no longer does is reported as
  * `discarded-by-edit`. Mitigation texts follow `mitigationDivergences`.
  */

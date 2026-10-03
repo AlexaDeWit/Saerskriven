@@ -624,6 +624,12 @@ const spoofedPatient = t('divergence.subject-threat', {
   title: 'Spoofed patient',
 });
 
+const lineAbout = (number: number, title: string, detail: string): string =>
+  t('divergence.line', {
+    subject: t('divergence.subject-threat', { number, title }),
+    detail,
+  });
+
 const unmapped = (threat: string): Divergence =>
   fromSource({
     code: 'otm-threat-status-unmapped',
@@ -656,13 +662,7 @@ describe('the record an import made from the source record a line names', () => 
     expect(
       linesOf([unmapped(spoofedTwo), unmapped(spoofedOne)], imported),
     ).toEqual([
-      t('divergence.line', {
-        subject: t('divergence.subject-threat', {
-          number: 2,
-          title: 'Spoofed patient',
-        }),
-        detail,
-      }),
+      lineAbout(2, 'Spoofed patient', detail),
       t('divergence.line', { subject: spoofedPatient, detail }),
     ]);
   });
@@ -777,15 +777,11 @@ describe('the lines a real OTM import reports', () => {
 
     expect(number).toBe(2);
     expect(lines).toContain(
-      t('divergence.line', {
-        subject: t('divergence.subject-threat', {
-          number,
-          title: 'Spoofed patient',
-        }),
-        detail: t('divergence.otm-threat-status-unmapped', {
-          status: 'under-review',
-        }),
-      }),
+      lineAbout(
+        number,
+        'Spoofed patient',
+        t('divergence.otm-threat-status-unmapped', { status: 'under-review' }),
+      ),
     );
   });
 
@@ -808,12 +804,6 @@ describe('the lines a real OTM import reports', () => {
     );
   });
 });
-
-const lineAbout = (number: number, title: string, detail: string): string =>
-  t('divergence.line', {
-    subject: t('divergence.subject-threat', { number, title }),
-    detail,
-  });
 
 describe('the lines a Threat Dragon save reports for threats that apply to the model', () => {
   const marked = modelWith({

@@ -153,7 +153,7 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
     case 'threat-unplaceable':
       return 'the threat itself, which the format holds nowhere but under a cell and this one names none it can nest under';
     case 'threat-model-link-dropped':
-      return 'the link to the whole model, which the format holds a threat nowhere but under a cell, so this one is written under the cells it names alone';
+      return 'the link to the whole model, which the format has nowhere to hold, so the threat is written under the cells it names alone';
     case 'threat-split-across-elements':
       return `the one record, written once under each of the ${detail.parameters.count} elements it names`;
     case 'threat-category-unnamed':
