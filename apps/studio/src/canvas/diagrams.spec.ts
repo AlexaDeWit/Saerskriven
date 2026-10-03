@@ -1,8 +1,9 @@
+import { act, renderHook } from '@testing-library/react';
 import { diagramId } from '@saerskriven/model/fixtures';
 import { recordingSurface } from '../commands/commands.fixtures.js';
 import { commandById, runCommand } from '../commands/registry.js';
 import { activeDiagramId } from '../store/selectors.js';
-import { initialState } from '../store/state.js';
+import { initialState, untitledDiagram } from '../store/state.js';
 import {
   mainDiagram,
   sampleModel,
@@ -10,19 +11,22 @@ import {
   twoDiagramModel,
 } from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
-import { currentAnnouncement, resetAnnouncements } from './announcements.js';
+import {
+  announceUndrawn,
+  currentAnnouncement,
+  resetAnnouncements,
+} from './announcements.js';
 import {
   createDiagram,
+  endRenamingDiagram,
   renameActiveDiagram,
   resetDiagramRenaming,
+  retitleActiveDiagram,
   showDiagram,
   stepDiagram,
   switchDiagram,
   useDiagramRenaming,
-  endRenamingDiagram,
 } from './diagrams.js';
-import { renderHook, act } from '@testing-library/react';
-import { untitledDiagram } from '../store/state.js';
 
 const shown = (): string | undefined => activeDiagramId(modelStore.getState());
 
@@ -86,6 +90,29 @@ describe('stepDiagram', () => {
   it('says which diagram it showed in the status line', () => {
     stepDiagram('next');
     expect(currentAnnouncement().message).toContain('Second');
+    expect(currentAnnouncement().drawn).toBe(true);
+  });
+
+  it('says it without drawing it through announceUndrawn, in place of a drawn line', () => {
+    stepDiagram('next');
+    stepDiagram('next', announceUndrawn);
+
+    expect(shown()).toBe(mainDiagram);
+    expect(currentAnnouncement().message).toContain('Main');
+    expect(currentAnnouncement().drawn).toBe(false);
+  });
+
+  it('says a step between two diagrams of one title as a new announcement in the same words', () => {
+    stepDiagram('next');
+    retitleActiveDiagram('Main');
+    stepDiagram('next', announceUndrawn);
+    const first = currentAnnouncement();
+
+    stepDiagram('next', announceUndrawn);
+
+    expect(shown()).toBe(secondDiagram);
+    expect(currentAnnouncement().message).toBe(first.message);
+    expect(currentAnnouncement().sequence).toBe(first.sequence + 1);
   });
 
   it('is what the two registered commands run', () => {
@@ -122,6 +149,29 @@ describe('createDiagram', () => {
   });
 });
 
+describe('retitleActiveDiagram', () => {
+  it('retitles the diagram on screen as one undo step and leaves the status line empty', () => {
+    expect(retitleActiveDiagram('Renamed')?.id).toBe(mainDiagram);
+    const state = modelStore.getState();
+    expect(state.present.diagrams[0].title).toBe('Renamed');
+    expect(state.past).toHaveLength(1);
+    expect(currentAnnouncement().message).toBe('');
+  });
+
+  it('reports no change for an unchanged or refused title', () => {
+    expect(retitleActiveDiagram('Main')).toBeUndefined();
+    expect(retitleActiveDiagram('')).toBeUndefined();
+    expect(modelStore.getState().past).toEqual([]);
+  });
+
+  it('ends the line a step drew', () => {
+    stepDiagram('next');
+    expect(currentAnnouncement().message).not.toBe('');
+    retitleActiveDiagram('Renamed');
+    expect(currentAnnouncement().message).toBe('');
+  });
+});
+
 describe('renameActiveDiagram', () => {
   it('retitles the diagram on screen as one undo step and says so', () => {
     expect(renameActiveDiagram('Renamed')).toBe(true);
@@ -135,6 +185,7 @@ describe('renameActiveDiagram', () => {
     expect(renameActiveDiagram('Main')).toBe(false);
     expect(renameActiveDiagram('')).toBe(false);
     expect(modelStore.getState().past).toEqual([]);
+    expect(currentAnnouncement().message).toBe('');
   });
 
   it('is what the registered rename command opens and the new-diagram command runs', () => {

@@ -35,6 +35,20 @@ describe('boxOfPoints', () => {
   it('gives no box for no points', () => {
     expect(boxOfPoints([])).toBeUndefined();
   });
+
+  it('holds a run of a million points', () => {
+    const points = Array.from({ length: 1_000_000 }, (_, index) => ({
+      x: index,
+      y: 0 - index,
+    }));
+
+    expect(boxOfPoints(points)).toEqual({
+      minX: 0,
+      minY: -999_999,
+      maxX: 999_999,
+      maxY: 0,
+    });
+  });
 });
 
 describe('segmentsOfPolyline', () => {

@@ -8,6 +8,7 @@ export const registerSv = catalogue(registerMessages)('sv')({
   number: 'Nummer',
   title: 'Titel',
   elements: 'Objekt',
+  'whole-model': 'Hela modellen',
   category: 'Kategori',
   severity: 'Allvarlighetsgrad',
   status: 'Status',

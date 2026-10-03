@@ -22,6 +22,7 @@ import {
   recoveryStorageKey,
   RecoveryProblem,
   RecoveryStorageFailure,
+  storedRestoreMark,
 } from './recovery-storage.js';
 
 const opened = (source: RetainedSource = foreignSource): FileLifecycle =>
@@ -378,5 +379,42 @@ describe('a snapshot with more invalid entries than zod 4.6.2 gathers on V8', ()
     expect(loadStored(flooded)).toEqual(
       rejectedAs(RecoveryProblem.EarlierRelease({ writer: undefined })),
     );
+  });
+});
+
+const refuse = (): never => {
+  throw new Error('storage disabled');
+};
+
+describe('the restore mark', () => {
+  it('is raised and lowered in the storage it is kept in, where the next start reads it', () => {
+    const memory = memoryStorage();
+    const mark = storedRestoreMark(() => memory.backend);
+
+    expect(mark.raised()).toBe(false);
+    mark.raise();
+    mark.raise();
+    expect(storedRestoreMark(() => memory.backend).raised()).toBe(true);
+    mark.lower();
+    mark.lower();
+    expect(storedRestoreMark(() => memory.backend).raised()).toBe(false);
+    expect(memory.values.size).toBe(0);
+  });
+
+  it('reads as lowered and skips a write where storage throws', () => {
+    for (const mark of [
+      storedRestoreMark(refuse),
+      storedRestoreMark(() => ({
+        getItem: refuse,
+        setItem: refuse,
+        removeItem: refuse,
+      })),
+    ]) {
+      expect(mark.raised()).toBe(false);
+      expect(() => {
+        mark.raise();
+        mark.lower();
+      }).not.toThrow();
+    }
   });
 });

@@ -18,8 +18,11 @@ by a timer.
 A status line under the card says what an action did wherever the control
 that has focus does not already show it, such as a deletion, a refusal, a
 paste or an Undo. It ends at the next action that changes the canvas or the
-panel. A diagram chosen in the switcher draws no line, since focus returns to
-the switcher, which names it. PageDown and PageUp do draw it.
+panel. A diagram chosen in the switcher, or renamed there with Enter, draws no
+line, since focus returns to the switcher, which names it. PageDown and PageUp
+pressed with focus on the switcher draw none either, and a screen reader is
+still told the diagram. Pressed anywhere else they draw the line, and so does
+a rename ended by leaving the field.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
 persists across reloads. **Language** beside it selects English (Canada),
@@ -70,7 +73,11 @@ own format where the item stood. The page cannot tell whether a download went
 through, so a download counts as saved even where the browser's own download
 dialog was cancelled. Saving in another format than the file was read as is
 where most of a save's report, **Not kept by this save**, comes from, since
-only the file's own format keeps what Saerskriven does not model. Opening a
+only the file's own format keeps what Saerskriven does not model. A Threat
+Dragon file holds a threat only under an actor, a process, a store or a flow:
+a threat that applies to the whole model is saved under those it is on, with
+its attachment to the whole model reported as not kept, and a threat on none of
+them is reported whole and not saved. Opening a
 file reports too, under two headings, each shown only when it has a line.
 **Converted on opening** comes first and lists what the model holds in another
 form or place than the file had it, so it can still be found in the studio: an
@@ -92,9 +99,11 @@ matters.
 
 **Open** and **New model** ask before replacing unsaved work: the item turns
 into Discard changes and open, or Discard changes and create new model, and a
-second press confirms. A failed open keeps the current model but lets go of its
-file, so its next Save treats it as a new model rather than writing to either
-file.
+second press confirms. A stored session the studio could not read at startup,
+or left in storage undrawn as described below, counts as unsaved work until the
+studio next stores one, since either command would replace it. A failed open
+keeps the current model but lets go of its file, so its next Save treats it as
+a new model rather than writing to either file.
 
 **Export** writes the diagram on screen as SVG or PNG, the register as
 Markdown, or the whole model as Typst or PDF. An export proposes the open
@@ -122,13 +131,13 @@ dismissed or until a later Share.
 Opening a link, in a new tab or pasted into the address bar of an open one,
 loads the model it holds as an unsaved model named after its title. Over
 unsaved work, the menu opens with Share as link turned into Discard changes and
-open the link, focused, and Cancel under it, as Open asks. A session whose
-stored recovery snapshot could not be read counts as unsaved work until the
-studio next writes one, since loading the link would replace it. Either answer,
-or closing the menu, takes the link out of the address, so a reload neither
-asks again nor loads it over later edits. A link that was cut off, is too long,
-holds no model, or was written by a later release opens nothing, and the notice
-says which.
+open the link, focused, and Cancel under it, as Open asks. A stored session
+that was not read or not drawn counts as unsaved work here as it does for
+Open, since loading the link would replace it. Either answer, or closing the
+menu, takes the link out of the address, so a reload neither asks again nor
+loads it over later edits. A link that was cut off, is too long, holds no
+model, or was written by a later release opens nothing, and the notice says
+which.
 
 The studio keeps the current session in the browser's local storage. A reload
 restores the model, whether it was saved, the file's name and format, and the
@@ -136,6 +145,12 @@ diagram on screen, without the undo history, the selection or an open field.
 The browser's file handle does not survive, so the next Save asks where to
 write, or downloads a copy where the browser cannot ask.
 While unsaved work has not reached that storage, closing the tab asks first.
+
+If a tab's last start did not finish drawing the stored session, its next
+start leaves that session in storage and opens the Untitled model a new
+session starts on, under a notice saying so. A reload after that tries the
+stored session again. Until then the first edit replaces the stored session
+without asking, while Open, New model and a shared link ask first.
 
 Every studio tab in one browser profile shows the same model. An edit, an undo,
 an open or a save in one tab reaches the others, while each tab keeps its own
@@ -170,7 +185,8 @@ identity.
 
 Each threat occurrence becomes a separate threat with its own status and
 mitigations. This preserves different treatments on different components.
-Threat definitions without occurrences become threats on no element. Known
+Threat definitions without occurrences become threats on no element, which
+are not read as applying to the whole model. Known
 threat statuses map to the corresponding core treatment. Unknown statuses
 remain in the description and are read as open. Each mitigation an occurrence
 names becomes a record linked to that occurrence's threat. Mitigations marked
@@ -205,7 +221,8 @@ inferred. Shared data identity and other data-set properties are reported as
 losses.
 
 Threats preserve their declared component attachments and event descriptions.
-They are read as open, with undecided severity and an unspecified category.
+A threat that declares no affected component applies to the whole model.
+Threats are read as open, with undecided severity and an unspecified category.
 Separate risk records and threat personas are reported as omissions.
 Controls become mitigations linked to the threats they name. Active controls
 become implemented mitigations. Suggested controls become proposed

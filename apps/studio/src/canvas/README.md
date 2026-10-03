@@ -158,6 +158,13 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   clusters) or `recordQuoteLength` (24). While a pane or a selection editor is
   open the announcement stops at two lines on screen, and the accessible names
   stay whole.
+- **An announcement can be said without being drawn.** `announceUndrawn` puts
+  the words in the status region as hidden text, so a screen reader is told
+  and no line appears. It is for a result the focused control shows in place,
+  with no focus move to make a screen reader read it: a diagram stepped with
+  PageDown or PageUp while the switcher has focus, where the switcher's button
+  takes the chord itself. The region stays the page's one status region, and
+  the sequence key replaces the hidden text as it does a drawn line.
 - **The status lives outside the model store**, since it does not belong in the
   undo stacks. The empty host stays mounted, a sequence key makes repeated
   words arrive as separate messages, and the store defines when a message ends

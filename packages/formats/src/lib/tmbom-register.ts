@@ -12,9 +12,10 @@ import {
 import { tmbomNodeId } from './tmbom-graph.js';
 
 /**
- * The TM-BOM threats, controls and assumptions as native records. A control
- * naming no threat becomes a line of the model description, and every
- * assumption applies to the model, so no record lacks a reference.
+ * The TM-BOM threats, controls and assumptions as native records. A threat
+ * naming no affected component applies to the model, a control naming no
+ * threat becomes a line of the model description, and every assumption
+ * applies to the model, so no record lacks a reference.
  */
 export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
   const sourceThreats = document.threats ?? [];
@@ -54,7 +55,8 @@ function tmbomThreats(
       'components_affected',
       'event',
     ]);
-    for (const id of threat.components_affected ?? []) {
+    const affected = threat.components_affected ?? [];
+    for (const id of affected) {
       if (!componentIndex.has(id)) {
         context.problem(['threats', index, 'components_affected'], {
           code: 'unknown-source-reference',
@@ -77,16 +79,16 @@ function tmbomThreats(
         methodologyName: 'TM-BOM',
         category: 'Unspecified',
       },
-      elements: (threat.components_affected ?? []).map((id) =>
-        tmbomNodeId('process', id, context),
-      ),
-      appliesToModel: false,
+      elements: affected.map((id) => tmbomNodeId('process', id, context)),
+      appliesToModel: affected.length === 0,
     };
   });
 }
 
+type Control = NonNullable<TmbomDocument['controls']>[number];
+
 function tmbomControls(
-  controls: NonNullable<TmbomDocument['controls']>,
+  controls: readonly Control[],
   context: ImportContext,
   threatIndex: ReadonlyMap<string, unknown>,
 ) {
@@ -116,27 +118,7 @@ function tmbomControls(
         ? ('implemented' as const)
         : ('proposed' as const);
     if (control.threats.length === 0) {
-      descriptionLines.push(
-        unlinkedMitigationLine(
-          context,
-          {
-            code: 'tmbom-control-unlinked',
-            parameters: { name: control.symbolic_name },
-          },
-          [
-            ...(control.title === ''
-              ? ['Mitigation']
-              : ['Mitigation: ', control.title]),
-            ' (',
-            status,
-            ', source status ',
-            control.status,
-            ...(control.description === ''
-              ? [').']
-              : ['). ', control.description]),
-          ],
-        ),
-      );
+      descriptionLines.push(unlinkedControlLine(control, status, context));
       continue;
     }
     if (control.status !== 'active' && control.status !== 'suggested') {
@@ -157,6 +139,30 @@ function tmbomControls(
     });
   }
   return { mitigations, descriptionLines };
+}
+
+function unlinkedControlLine(
+  control: Control,
+  status: MitigationInput['status'],
+  context: ImportContext,
+): string {
+  return unlinkedMitigationLine(
+    context,
+    {
+      code: 'tmbom-control-unlinked',
+      parameters: { name: control.symbolic_name },
+    },
+    [
+      ...(control.title === ''
+        ? ['Mitigation']
+        : ['Mitigation: ', control.title]),
+      ' (',
+      status,
+      ', source status ',
+      control.status,
+      ...(control.description === '' ? [').'] : ['). ', control.description]),
+    ],
+  );
 }
 
 function tmbomAssumptions(

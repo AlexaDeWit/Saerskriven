@@ -317,6 +317,30 @@ describe("a threat's flags", () => {
   });
 });
 
+describe('a threat that applies to the model', () => {
+  it.each([
+    ['alone where it attaches to no element', [], ''],
+    ['ahead of its elements where it has both', ['el-gone'], ', el-gone'],
+  ] as const)(
+    'names the whole model, %s, in the overview and in its section',
+    (_, elements, others) => {
+      const source = sourceOf(
+        modelFrom({
+          threats: [
+            threatOf({
+              number: 1,
+              elements: [...elements],
+              appliesToModel: true,
+            }),
+          ],
+        }),
+      );
+      const named = `#"${exportText('en-CA').t('register.whole-model')}${others}"`;
+      expect(source.split(named).length - 1).toBe(2);
+    },
+  );
+});
+
 describe('the assumptions that apply to the model', () => {
   it('sit in one section after the overview table and before the first threat, with their badges in model order', () => {
     const source = sourceOf(

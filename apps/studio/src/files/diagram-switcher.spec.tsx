@@ -5,7 +5,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { emptyModel } from '@saerskriven/model';
 import {
   CommandSurfaceProvider,
@@ -15,10 +15,11 @@ import {
   currentAnnouncement,
   resetAnnouncements,
 } from '../canvas/announcements.js';
-import { resetDiagramRenaming } from '../canvas/diagrams.js';
+import { resetDiagramRenaming, stepDiagram } from '../canvas/diagrams.js';
 import { activeDiagramId } from '../store/selectors.js';
 import { initialState, untitledDiagram } from '../store/state.js';
 import {
+  mainDiagram,
   sampleModel,
   secondDiagram,
   twoDiagramModel,
@@ -31,9 +32,13 @@ const mounted = (): void => {
   render(
     <CommandSurfaceProvider surface={unmountedSurface}>
       <DiagramSwitcher />
+      <button type="button">Elsewhere</button>
     </CommandSurfaceProvider>,
   );
 };
+
+const elsewhere = (): HTMLElement =>
+  screen.getByRole('button', { name: 'Elsewhere' });
 
 const switcher = (name: string | RegExp): HTMLElement =>
   screen.getByRole('button', { name });
@@ -43,6 +48,17 @@ const choice = (name: string): HTMLElement =>
 
 const item = (name: string): HTMLElement =>
   screen.getByRole('menuitem', { name });
+
+const titleField = (): HTMLElement =>
+  screen.getByRole('textbox', { name: 'Diagram title' });
+
+const openTitle = async (user: UserEvent): Promise<HTMLElement> => {
+  await user.click(switcher('Diagram: Main'));
+  await user.click(
+    await screen.findByRole('menuitem', { name: 'Rename diagram' }),
+  );
+  return titleField();
+};
 
 afterEach(() => {
   resetDiagramRenaming();
@@ -92,6 +108,105 @@ describe('the diagram switcher', () => {
     });
   });
 
+  it('draws no status line for a title committed with Enter and returns focus to the button naming it', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(twoDiagramModel), true);
+    mounted();
+    act(() => {
+      stepDiagram('next');
+      stepDiagram('previous');
+    });
+    expect(currentAnnouncement().message).not.toBe('');
+
+    await openTitle(user);
+    await user.keyboard('Core{Enter}');
+
+    expect(modelStore.getState().present.diagrams[0].title).toBe('Core');
+    expect(currentAnnouncement().message).toBe('');
+    expect(document.activeElement).toBe(switcher('Diagram: Core'));
+  });
+
+  it('says a step made with focus on its button without drawing it, in place of a drawn line', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(twoDiagramModel), true);
+    mounted();
+    act(() => {
+      stepDiagram('next');
+      stepDiagram('previous');
+      switcher('Diagram: Main').focus();
+    });
+    expect(currentAnnouncement().drawn).toBe(true);
+
+    await user.keyboard('{PageDown}');
+
+    expect(activeDiagramId(modelStore.getState())).toBe(secondDiagram);
+    expect(currentAnnouncement().message).toContain('Second');
+    expect(currentAnnouncement().drawn).toBe(false);
+    expect(document.activeElement).toBe(switcher('Diagram: Second'));
+
+    await user.keyboard('{PageUp}');
+
+    expect(activeDiagramId(modelStore.getState())).toBe(mainDiagram);
+    expect(currentAnnouncement().message).toContain('Main');
+    expect(currentAnnouncement().drawn).toBe(false);
+  });
+
+  it('leaves a step made with focus elsewhere to the drawn line', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(twoDiagramModel), true);
+    mounted();
+    act(() => {
+      elsewhere().focus();
+    });
+
+    await user.keyboard('{PageDown}');
+
+    expect(activeDiagramId(modelStore.getState())).toBe(secondDiagram);
+    expect(currentAnnouncement().message).toContain('Second');
+    expect(currentAnnouncement().drawn).toBe(true);
+  });
+
+  it('leaves the step keys on its button to the browser in a model of one diagram', () => {
+    modelStore.setState(initialState(sampleModel), true);
+    mounted();
+
+    expect(
+      fireEvent.keyDown(switcher('Diagram: Main'), { key: 'PageDown' }),
+    ).toBe(true);
+    expect(currentAnnouncement().message).toBe('');
+  });
+
+  it.each(['shiftKey', 'ctrlKey', 'altKey'] as const)(
+    'takes no step for a step key pressed on its button with %s',
+    (modifier) => {
+      modelStore.setState(initialState(twoDiagramModel), true);
+      mounted();
+
+      expect(
+        fireEvent.keyDown(switcher('Diagram: Main'), {
+          key: 'PageDown',
+          [modifier]: true,
+        }),
+      ).toBe(true);
+      expect(activeDiagramId(modelStore.getState())).toBe(mainDiagram);
+      expect(currentAnnouncement().message).toBe('');
+    },
+  );
+
+  it('says a title committed by leaving the field in the status line', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(initialState(sampleModel), true);
+    mounted();
+
+    await openTitle(user);
+    await user.keyboard('Core');
+    await user.tab();
+
+    expect(currentAnnouncement().message).toContain('Core');
+    expect(currentAnnouncement().drawn).toBe(true);
+    expect(document.activeElement).not.toBe(switcher('Diagram: Core'));
+  });
+
   it('offers only a new diagram while the model holds none', async () => {
     const user = userEvent.setup();
     modelStore.setState(initialState(emptyModel), true);
@@ -108,9 +223,7 @@ describe('the diagram switcher', () => {
     await user.click(item('New diagram'));
 
     expect(modelStore.getState().present.diagrams).toHaveLength(1);
-    expect(
-      screen.getByRole('textbox', { name: 'Diagram title' }),
-    ).toBeDefined();
+    expect(titleField()).toBeDefined();
   });
 
   it('adds a diagram, opens its title selected, and commits the title on Enter', async () => {
@@ -123,7 +236,7 @@ describe('the diagram switcher', () => {
       await screen.findByRole('menuitem', { name: 'New diagram' }),
     );
 
-    const field = screen.getByRole('textbox', { name: 'Diagram title' });
+    const field = titleField();
     expect(document.activeElement).toBe(field);
     expect(field).toHaveProperty('value', untitledDiagram);
     await user.keyboard('Request forgery{Enter}');
@@ -143,11 +256,7 @@ describe('the diagram switcher', () => {
     modelStore.setState(initialState(sampleModel), true);
     mounted();
 
-    await user.click(switcher('Diagram: Main'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
-    );
-    const field = screen.getByRole('textbox', { name: 'Diagram title' });
+    const field = await openTitle(user);
     await user.clear(field);
     await user.keyboard('{Enter}');
     expect(field.getAttribute('aria-invalid')).toBe('true');
@@ -163,13 +272,10 @@ describe('the diagram switcher', () => {
     expect(modelStore.getState().present.diagrams[0].title).toBe('Main');
     expect(document.activeElement).toBe(switcher('Diagram: Main'));
 
-    await user.click(switcher('Diagram: Main'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
-    );
+    const reopened = await openTitle(user);
     await user.keyboard('Core');
     act(() => {
-      screen.getByRole('textbox', { name: 'Diagram title' }).blur();
+      reopened.blur();
     });
     expect(modelStore.getState().present.diagrams[0].title).toBe('Core');
     expect(modelStore.getState().past).toHaveLength(1);
@@ -180,11 +286,7 @@ describe('the diagram switcher', () => {
     modelStore.setState(initialState(sampleModel), true);
     mounted();
 
-    await user.click(switcher('Diagram: Main'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
-    );
-    const field = screen.getByRole('textbox', { name: 'Diagram title' });
+    const field = await openTitle(user);
     await user.clear(field);
     act(() => {
       field.blur();
@@ -198,45 +300,29 @@ describe('the diagram switcher', () => {
   it('leaves focus where a click put it when the field closes by blur', async () => {
     const user = userEvent.setup();
     modelStore.setState(initialState(sampleModel), true);
-    render(
-      <CommandSurfaceProvider surface={unmountedSurface}>
-        <DiagramSwitcher />
-        <button type="button">Elsewhere</button>
-      </CommandSurfaceProvider>,
-    );
+    mounted();
 
-    await user.click(switcher('Diagram: Main'));
-    await user.click(
-      await screen.findByRole('menuitem', { name: 'Rename diagram' }),
-    );
+    await openTitle(user);
     await user.keyboard('Clicked away');
-    await user.click(screen.getByRole('button', { name: 'Elsewhere' }));
+    await user.click(elsewhere());
 
     expect(modelStore.getState().present.diagrams[0].title).toBe(
       'Clicked away',
     );
-    expect(document.activeElement).toBe(
-      screen.getByRole('button', { name: 'Elsewhere' }),
-    );
+    expect(document.activeElement).toBe(elsewhere());
   });
 
   it('leaves focus on a control that took it before the closed switcher returned focus to its button', async () => {
     const user = userEvent.setup();
     modelStore.setState(initialState(sampleModel), true);
-    render(
-      <CommandSurfaceProvider surface={unmountedSurface}>
-        <DiagramSwitcher />
-        <button type="button">Elsewhere</button>
-      </CommandSurfaceProvider>,
-    );
-    const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+    mounted();
     await user.click(switcher('Diagram: Main'));
     const menu = await screen.findByRole('menu');
 
     fireEvent.keyDown(menu, { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull();
     act(() => {
-      elsewhere.focus();
+      elsewhere().focus();
     });
     await act(async () => {
       await new Promise((settled) => {
@@ -244,7 +330,7 @@ describe('the diagram switcher', () => {
       });
     });
 
-    expect(document.activeElement).toBe(elsewhere);
+    expect(document.activeElement).toBe(elsewhere());
   });
 
   it('hands focus back to its button when Escape closes it', async () => {
@@ -270,9 +356,7 @@ describe('the diagram switcher', () => {
     await user.click(
       await screen.findByRole('menuitem', { name: 'New diagram' }),
     );
-    expect(
-      screen.getByRole('textbox', { name: 'Diagram title' }),
-    ).toBeDefined();
+    expect(titleField()).toBeDefined();
 
     act(() => {
       dispatch(Action.Undo());

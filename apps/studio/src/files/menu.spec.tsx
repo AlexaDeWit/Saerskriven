@@ -37,12 +37,16 @@ import {
   chosenFile,
   edit,
   fragmentOf,
+  heldInRecovery,
   paste,
   sampleNativeText,
   specBridge,
   type SpecBridge,
   specLinks,
   specRenders,
+  startUnread,
+  storedSession,
+  unreadSessions,
   vendoredFile,
 } from './files.fixtures.js';
 import { chooseLanguage } from '../messages/locale.js';
@@ -1091,6 +1095,78 @@ describe('closing', () => {
     expect(item('New model')).toBeDefined();
   });
 });
+
+describe.each(unreadSessions)(
+  'over a stored session %s, with nothing edited',
+  (_how, problem) => {
+    it('asks before Open, keeps the session stored on Cancel, and opens once confirmed', async () => {
+      const user = userEvent.setup();
+      startUnread(problem);
+      const posted = vi.spyOn(BroadcastChannel.prototype, 'postMessage');
+      mounted(
+        specBridge({ offers: chosenFile('model.yaml', sampleNativeText) }),
+      );
+
+      await choose(user, 'Open');
+
+      expect(item('Discard changes and open')).toBeDefined();
+      expect(modelStore.getState().file._tag).toBe('NoFile');
+
+      await user.click(item('Cancel'));
+
+      expect(heldInRecovery()).toBe(storedSession);
+      expect(posted).not.toHaveBeenCalled();
+
+      await choose(user, 'Open');
+      await user.click(item('Discard changes and open'));
+
+      await waitFor(() => {
+        expect(nameOf(modelStore.getState().file)).toBe('model.yaml');
+      });
+      expect(heldInRecovery()).not.toBe(storedSession);
+    });
+
+    it('asks before New model, keeps the session stored on Cancel, and clears it once confirmed', async () => {
+      const user = userEvent.setup();
+      startUnread(problem);
+      const posted = vi.spyOn(BroadcastChannel.prototype, 'postMessage');
+      mounted(specBridge());
+
+      await choose(user, 'New model');
+
+      expect(item('Discard changes and create new model')).toBeDefined();
+
+      await user.click(item('Cancel'));
+
+      expect(heldInRecovery()).toBe(storedSession);
+      expect(posted).not.toHaveBeenCalled();
+
+      await choose(user, 'New model');
+      await user.click(item('Discard changes and create new model'));
+
+      expect(heldInRecovery()).toBeNull();
+      expect(modelStore.getState().recoveryUnread).toBe(false);
+    });
+
+    it('opens the menu on the question when a chord asks, and marks no unsaved changes on the button', async () => {
+      const user = userEvent.setup();
+      startUnread(problem);
+      mounted(specBridge());
+
+      expect(burger().getAttribute('aria-label')).toBe('Menu');
+
+      await user.keyboard('{Control>}O{/Control}');
+
+      expect(
+        await screen.findByRole('menuitem', {
+          name: 'Discard changes and open',
+        }),
+      ).toBeDefined();
+      expect(burger().getAttribute('aria-label')).toBe('Menu');
+      expect(state()).toContain('no unsaved changes');
+    });
+  },
+);
 
 describe.skipIf(brotliUnbuilt)('a shared link', () => {
   afterEach(() => {

@@ -1,3 +1,58 @@
+## 0.8.0 (2026-10-03)
+
+### 🚀 Features
+
+- let a flow be left unlabelled, named from its ends ([#638](https://github.com/AlexaDeWit/Saerskriven/pull/638), [#629](https://github.com/AlexaDeWit/Saerskriven/issues/629))
+- **canvas:** draw a process as the ellipse filling its box ([#634](https://github.com/AlexaDeWit/Saerskriven/pull/634))
+- **canvas:** draw a flow's badge and name as one block on its line ([#652](https://github.com/AlexaDeWit/Saerskriven/pull/652))
+- **cli,mcp:** generate a share link to the hosted studio ([#672](https://github.com/AlexaDeWit/Saerskriven/pull/672))
+- **formats:** encode a model as a share link and read one back ([#657](https://github.com/AlexaDeWit/Saerskriven/pull/657))
+- **formats,render:** carry a threat that applies to the whole model through the other formats and the outputs ([#710](https://github.com/AlexaDeWit/Saerskriven/pull/710))
+- **model,formats:** a threat can apply to the whole model ([#704](https://github.com/AlexaDeWit/Saerskriven/pull/704))
+- **studio:** reverse a flow, reshape a boundary, and free one end of a flow ([#600](https://github.com/AlexaDeWit/Saerskriven/pull/600))
+- **studio:** a drawn flow keeps the sides it was drawn between ([#621](https://github.com/AlexaDeWit/Saerskriven/pull/621))
+- **studio:** drag a selection from anywhere inside its bounds ([#628](https://github.com/AlexaDeWit/Saerskriven/pull/628))
+- **studio:** scale a trust boundary curve with the resize controls ([#641](https://github.com/AlexaDeWit/Saerskriven/pull/641))
+- **studio:** add a point to a trust boundary curve ([#649](https://github.com/AlexaDeWit/Saerskriven/pull/649))
+- **studio:** draw the flow card's commands as icons named in a tooltip ([#658](https://github.com/AlexaDeWit/Saerskriven/pull/658))
+- **studio:** lean open and save reports that name threats as the studio shows them ([#655](https://github.com/AlexaDeWit/Saerskriven/pull/655), [#645](https://github.com/AlexaDeWit/Saerskriven/issues/645), [#591](https://github.com/AlexaDeWit/Saerskriven/issues/591))
+- **studio:** one Open for every format, and Import leaves the menu ([#664](https://github.com/AlexaDeWit/Saerskriven/pull/664), [#645](https://github.com/AlexaDeWit/Saerskriven/issues/645), [#591](https://github.com/AlexaDeWit/Saerskriven/issues/591))
+- **studio:** rework the threat panel so a threat review reads quickly ([#665](https://github.com/AlexaDeWit/Saerskriven/pull/665), [#639](https://github.com/AlexaDeWit/Saerskriven/issues/639))
+- **studio:** step a selected element's badge out past its corner ([#668](https://github.com/AlexaDeWit/Saerskriven/pull/668), [#648](https://github.com/AlexaDeWit/Saerskriven/issues/648))
+- **studio:** share a model as a link, and open a shared link ([#669](https://github.com/AlexaDeWit/Saerskriven/pull/669))
+- **studio:** list every threat on a Threats tab of the model panel ([#670](https://github.com/AlexaDeWit/Saerskriven/pull/670), [#639](https://github.com/AlexaDeWit/Saerskriven/issues/639))
+- **studio:** a register of every threat in the model, as a table over the canvas ([#671](https://github.com/AlexaDeWit/Saerskriven/pull/671), [#639](https://github.com/AlexaDeWit/Saerskriven/issues/639))
+
+### 🩹 Fixes
+
+- **canvas:** keep an out-of-scope element's name readable ([#667](https://github.com/AlexaDeWit/Saerskriven/pull/667))
+- **canvas:** mark out of scope with a dotted outline, and frame an out-of-scope note ([#689](https://github.com/AlexaDeWit/Saerskriven/pull/689))
+- **formats:** word element kinds as English nouns in the divergence text ([#659](https://github.com/AlexaDeWit/Saerskriven/pull/659))
+- **studio:** keep the rename field inside the chrome card ([#607](https://github.com/AlexaDeWit/Saerskriven/pull/607))
+- **studio:** ask through the save picker when Save holds no file ([#608](https://github.com/AlexaDeWit/Saerskriven/pull/608))
+- **studio:** zoom on scroll while Control is held on macOS ([#620](https://github.com/AlexaDeWit/Saerskriven/pull/620))
+- **studio:** name SVG and PNG exports after the open diagram ([#630](https://github.com/AlexaDeWit/Saerskriven/pull/630))
+- **studio:** leave out the Showing line after a switch from the diagram switcher ([#656](https://github.com/AlexaDeWit/Saerskriven/pull/656))
+- **studio:** show where a list field scrolls and draw its cursor row as a tint with a ring ([#653](https://github.com/AlexaDeWit/Saerskriven/pull/653), [#617](https://github.com/AlexaDeWit/Saerskriven/issues/617), [#647](https://github.com/AlexaDeWit/Saerskriven/issues/647))
+- **studio:** give French field messages the article each label needs ([#661](https://github.com/AlexaDeWit/Saerskriven/pull/661))
+- **studio:** show the focus ring on every canvas item and resize control ([#662](https://github.com/AlexaDeWit/Saerskriven/pull/662), [#614](https://github.com/AlexaDeWit/Saerskriven/issues/614))
+- **studio:** keep every chord off the keys the system and browsers reserve ([#663](https://github.com/AlexaDeWit/Saerskriven/pull/663), [#597](https://github.com/AlexaDeWit/Saerskriven/issues/597))
+- **studio:** Escape cancels a drag and keeps focus on the canvas item ([#654](https://github.com/AlexaDeWit/Saerskriven/pull/654))
+- **studio:** announce where a keyboard move put the element ([#666](https://github.com/AlexaDeWit/Saerskriven/pull/666))
+- **studio:** move Fit selection to Shift+F, off a chord Windows keeps ([#676](https://github.com/AlexaDeWit/Saerskriven/pull/676))
+- **studio:** choosing a threat register row closes the register where it hides the panel ([#695](https://github.com/AlexaDeWit/Saerskriven/pull/695))
+- **studio:** list what an opened file converted under its own heading ([#694](https://github.com/AlexaDeWit/Saerskriven/pull/694))
+- **studio:** correct enum case, a record toggle's name and an unnamed element's heading ([#701](https://github.com/AlexaDeWit/Saerskriven/pull/701))
+- **studio:** show the refused text when a narrow threat register refuses a choice ([#702](https://github.com/AlexaDeWit/Saerskriven/pull/702))
+- **studio:** cap the Start a flow chooser to the window and show its scroll cues ([#703](https://github.com/AlexaDeWit/Saerskriven/pull/703))
+- **studio:** word the French and Swedish names composed from a verb and a label as phrases ([#706](https://github.com/AlexaDeWit/Saerskriven/pull/706))
+- **studio:** post no status line that repeats the title the diagram switcher shows ([#709](https://github.com/AlexaDeWit/Saerskriven/pull/709))
+- **studio,canvas:** recover from a stored session the studio cannot draw ([#707](https://github.com/AlexaDeWit/Saerskriven/pull/707))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.7.0 (2026-09-27)
 
 ### 🚀 Features

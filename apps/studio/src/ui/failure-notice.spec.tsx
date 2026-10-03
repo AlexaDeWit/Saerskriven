@@ -458,6 +458,38 @@ describe.each(locales)('a failure a %s reader is shown', (locale) => {
       ).details[0],
     ).toContain('0.1.4');
   });
+
+  it('words a session whose last restore never finished drawing in a sentence of its own', () => {
+    const { t: speak } = activeTranslator();
+    const unfinished = describeFailure(
+      speak,
+      StudioFailure.StoredRecoveryRejected({
+        problem: RecoveryProblem.RestoreUnfinished(),
+      }),
+    );
+
+    expect(unfinished.details).toEqual([
+      speak('notice.snapshot-restore-unfinished'),
+    ]);
+    expect(unfinished.details).not.toEqual(
+      describeFailure(speak, studioFailures.StoredRecoveryRejected).details,
+    );
+  });
+
+  it('heads a session left unrestored with a line of its own, apart from a rejected snapshot', () => {
+    const { t: speak } = activeTranslator();
+    const { headline } = describeFailure(
+      speak,
+      StudioFailure.StoredRecoveryRejected({
+        problem: RecoveryProblem.RestoreUnfinished(),
+      }),
+    );
+
+    expect(headline).toBe(speak('notice.recovery-not-restored'));
+    expect(headline).not.toBe(
+      describeFailure(speak, studioFailures.StoredRecoveryRejected).headline,
+    );
+  });
 });
 
 describe('FailureNotice', () => {

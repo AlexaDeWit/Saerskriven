@@ -511,13 +511,14 @@ it.each(['asset', 'threat', 'mitigation'] as const)(
   },
 );
 
-it('retains OTM threat definitions that have no occurrences', () => {
+it('retains an OTM threat definition no occurrence names on no element, without making it apply to the model', () => {
   const document = otmFixture();
   for (const component of document.components ?? []) component.threats = [];
   for (const flow of document.dataflows ?? []) flow.threats = [];
   const read = Either.getOrThrow(importModel(JSON.stringify(document)));
   expect(read.model.threats).toHaveLength(1);
   expect(read.model.threats[0].elements).toEqual([]);
+  expect(read.model.threats[0].appliesToModel).toBe(false);
   expect(read.model.threats[0].status).toBe('open');
 });
 
@@ -590,6 +591,7 @@ const registerOf = (model: Model) => {
       threat.title,
       threat.status,
       named(threat.elements),
+      threat.appliesToModel,
     ]),
     mitigations: model.mitigations.map((mitigation) => [
       mitigation.title,
@@ -643,19 +645,24 @@ describe('the feature-complete OTM document', () => {
     ).toEqual([true, false]);
   });
 
-  it('makes one threat of each occurrence, in the status its state maps to', () => {
+  it('makes one threat of each occurrence, in the status its state maps to, and none that applies to the model', () => {
     expect(registerOf(read.model).threats).toEqual([
-      ['Spoofed patient', 'open', ['Patient app']],
-      ['Spoofed patient', 'open', ['Patient app']],
-      ['Altered fee', 'open', ['Booking service']],
-      ['Leaked reason', 'mitigated', ['Booking service']],
-      ['Bulk booking', 'accepted-risk', ['Booking service']],
-      ['Denied booking', 'accepted-risk', ['Booking service']],
-      ['Settings changed by the service', 'transferred', ['Appointments']],
-      ['Backup copied off the host', 'avoided', ['Appointments']],
-      ['Replayed booking', 'eliminated', ['Book appointment']],
-      ['Form read in transit', 'not-applicable', ['Book appointment']],
-      ['Model left unreviewed', 'open', []],
+      ['Spoofed patient', 'open', ['Patient app'], false],
+      ['Spoofed patient', 'open', ['Patient app'], false],
+      ['Altered fee', 'open', ['Booking service'], false],
+      ['Leaked reason', 'mitigated', ['Booking service'], false],
+      ['Bulk booking', 'accepted-risk', ['Booking service'], false],
+      ['Denied booking', 'accepted-risk', ['Booking service'], false],
+      [
+        'Settings changed by the service',
+        'transferred',
+        ['Appointments'],
+        false,
+      ],
+      ['Backup copied off the host', 'avoided', ['Appointments'], false],
+      ['Replayed booking', 'eliminated', ['Book appointment'], false],
+      ['Form read in transit', 'not-applicable', ['Book appointment'], false],
+      ['Model left unreviewed', 'open', [], false],
     ]);
     expect(read.model.lastIssuedThreatNumber).toBe(11);
   });
@@ -786,11 +793,11 @@ describe('the feature-complete TM-BOM document', () => {
     ]);
   });
 
-  it('imports threats open and undecided, live controls as mitigations, and every assumption as applying to the model', () => {
+  it('imports threats open and undecided, the one naming no component as applying to the model, live controls as mitigations, and every assumption as applying to the model', () => {
     expect(registerOf(read.model)).toMatchObject({
       threats: [
-        ['Spoofed patient', 'open', ['Booking service']],
-        ['Altered fee', 'open', []],
+        ['Spoofed patient', 'open', ['Booking service'], false],
+        ['Altered fee', 'open', [], true],
       ],
       mitigations: [
         ['Control assumed', 'proposed', ['Spoofed patient']],
