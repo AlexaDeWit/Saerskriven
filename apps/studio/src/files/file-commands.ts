@@ -38,7 +38,6 @@ import {
   saveTarget,
   saveTypes,
   savedBy,
-  type ReadIntent,
   type LossReport,
   type SaveTarget,
 } from './session.js';
@@ -54,9 +53,6 @@ export type FileSession = {
   readonly commands: FileCommands;
   readonly report: LossReport | undefined;
   readonly opening: boolean;
-  readonly importing: boolean;
-  readonly confirmImport: () => void;
-  readonly cancelImport: () => void;
   readonly closing: boolean;
   readonly choosing: boolean;
   readonly asksFormat: boolean;
@@ -86,8 +82,6 @@ export function useFileSession(
 ): FileSession {
   const [report, setReport] = useState<LossReport | undefined>(undefined);
   const [opening, setOpening] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const pickerIntent = useRef<ReadIntent>('open');
   const [closing, setClosing] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const picker = useRef<HTMLInputElement | null>(null);
@@ -105,7 +99,6 @@ export function useFileSession(
         bridge.release();
         setReport(undefined);
         setOpening(false);
-        setImporting(false);
         setClosing(false);
         setChoosing(false);
       }),
@@ -120,44 +113,32 @@ export function useFileSession(
     }
   }, [bridge]);
 
-  const applyOpen = useCallback(
-    (result: FileResult<OpenOutcome>, intent: ReadIntent): void => {
-      const action = openedBy(result.outcome, untitledFileStem(), intent);
-      if (action === undefined) {
-        result.settle('unchanged');
-        return;
-      }
-      const imported = Action.$is('Imported')(action);
-      const opened = Action.$is('Opened')(action);
-      const disposition =
-        intent === 'import' ? (imported ? false : 'unchanged') : opened;
-      if (!result.settle(disposition)) {
-        return;
-      }
-      dispatch(action);
-      if (Action.$is('Opened')(action) || Action.$is('Imported')(action)) {
-        setReport(openReport(action));
-      }
-    },
-    [],
-  );
+  const applyOpen = useCallback((result: FileResult<OpenOutcome>): void => {
+    const action = openedBy(result.outcome, untitledFileStem());
+    if (action === undefined) {
+      result.settle('unchanged');
+      return;
+    }
+    if (!result.settle(Action.$is('Opened')(action))) {
+      return;
+    }
+    dispatch(action);
+    if (Action.$is('Opened')(action) || Action.$is('Imported')(action)) {
+      setReport(openReport(action));
+    }
+  }, []);
 
-  const openFile = useCallback(
-    async (intent: ReadIntent = 'open'): Promise<void> => {
-      setOpening(false);
-      setImporting(false);
-      const result = await bridge.open(readLimits.maxTextBytes);
-      if (OpenOutcome.$is('NoPicker')(result.outcome)) {
-        if (result.settle('unchanged')) {
-          pickerIntent.current = intent;
-          picker.current?.click();
-        }
-        return;
+  const openFile = useCallback(async (): Promise<void> => {
+    setOpening(false);
+    const result = await bridge.open(readLimits.maxTextBytes);
+    if (OpenOutcome.$is('NoPicker')(result.outcome)) {
+      if (result.settle('unchanged')) {
+        picker.current?.click();
       }
-      applyOpen(result, intent);
-    },
-    [applyOpen, bridge],
-  );
+      return;
+    }
+    applyOpen(result);
+  }, [applyOpen, bridge]);
 
   const land = useCallback(
     (result: FileResult<SaveOutcome>, planned: PlannedSave): void => {
@@ -231,13 +212,6 @@ export function useFileSession(
         }
         void openFile();
       },
-      import: () => {
-        if (isDirty(modelStore.getState())) {
-          setImporting(true);
-          return;
-        }
-        void openFile('import');
-      },
       save: () => {
         if (bridge.asksWhere() && !bridge.writesBack()) {
           void askWhere();
@@ -280,11 +254,7 @@ export function useFileSession(
   const receive = useCallback(
     async (chosen: ChosenFile | undefined): Promise<void> => {
       if (chosen !== undefined) {
-        const intent = pickerIntent.current;
-        applyOpen(
-          await bridge.received(chosen, readLimits.maxTextBytes),
-          intent,
-        );
+        applyOpen(await bridge.received(chosen, readLimits.maxTextBytes));
       }
     },
     [applyOpen, bridge],
@@ -296,10 +266,6 @@ export function useFileSession(
 
   const cancelOpen = useCallback((): void => {
     setOpening(false);
-  }, []);
-
-  const cancelImport = useCallback((): void => {
-    setImporting(false);
   }, []);
 
   const cancelClose = useCallback((): void => {
@@ -315,11 +281,6 @@ export function useFileSession(
       commands,
       report,
       opening,
-      importing,
-      confirmImport: () => {
-        void openFile('import');
-      },
-      cancelImport,
       closing,
       choosing,
       asksFormat: !bridge.asksWhere(),
@@ -343,8 +304,6 @@ export function useFileSession(
       cancelChoice,
       cancelClose,
       cancelOpen,
-      cancelImport,
-      importing,
       chooseFormat,
       choosing,
       closeFile,

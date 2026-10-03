@@ -121,8 +121,10 @@
 
 /* A threat badge draws over the selection frame and the side lines, and under
    every control's hit area: a side line forms no stacking context, so its
-   button stacks above the badge while its border stays beneath it. The canvas
-   package keeps the corner handles clear of the badge. */
+   button stacks above the badge while its border stays beneath it. While its
+   element is selected the canvas package steps the badge out past the corner
+   handle. A selected boundary box's badge rides in the viewport portal, where
+   this lifts it above the nodes around it. */
 .canvas :global(.saer-diagram-badge-layer) {
   z-index: 1;
 }
@@ -171,12 +173,17 @@
   translate: 0 0;
 }
 
+/* Scaled up at low zoom, a right-hand corner handle grows inward from the
+   right side, so it never reaches the badge stepped out past the top-right
+   corner or the marks stacked under it. */
 .canvas :global(.react-flow__resize-control.handle.top.right) {
   translate: -100% 0;
+  transform-origin: 100% 50%;
 }
 
 .canvas :global(.react-flow__resize-control.handle.bottom.right) {
   translate: -100% -100%;
+  transform-origin: 100% 50%;
 }
 
 .canvas :global(.react-flow__resize-control.handle.bottom.left) {

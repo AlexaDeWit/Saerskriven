@@ -15,6 +15,8 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `changes.ts`                                                          | What React Flow reports about a gesture, turned into store actions and dispatched                                                  |
 | `live-edges.ts`, `box-selection.ts`, `background-selection.ts`        | Hooks for a drag's flows, a selection box extended to flows, and a stationary background press                                     |
 | `group-drag.ts`                                                       | A drag of the selection from inside its bounds, where the press lands on empty canvas or an element it leaves out                  |
+| `node-drag.ts`                                                        | React Flow's own drag of nodes, put back when the selection changes under it or the window loses focus                             |
+| `item-focus.ts`                                                       | The Select tool's keys on a drawn element, flow or a control of the selection, answered so that focus lands on the element         |
 | `tools.ts`, `elements.ts`, `placement.tsx`, `placement-preview.tsx`   | The active mode outside the model store, the elements a tool places, the pointer and Enter gestures, and the draft drawn meanwhile |
 | `edits.ts`                                                            | One function per edit a control asks for                                                                                           |
 | `pane-shield.ts`                                                      | Keeping a double-click's second press out of a pane its first press opened                                                         |
@@ -72,7 +74,8 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   a resize one `ResizeElement`, or one `SetBoundaryShape` with a trust boundary
   curve's points scaled to the new box. During a drag each flow reads its endpoint
   nodes, and the collision search for names and badges runs when the pointer
-  pauses and once more on pointer-up.
+  pauses and once more on pointer-up. A drag that Escape or a blurred window
+  puts back never reaches the store.
 - **Settle against the store's selection, not a render's.** React Flow reports
   a click that moves the selection between a node and a flow as two
   synchronous calls with no render between them.
@@ -93,6 +96,15 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
 - **Delete and Backspace are bound twice**, by the command registry for the
   page and by the canvas for itself. A press the canvas answered is marked
   handled, so one press is one removal ([the commands](../commands/README.md)).
+- **The Select tool's keys on a canvas item or a control of the selection
+  are answered by the canvas.** React Flow blurs a node or flow it unselects
+  on Escape, and the controls of the selection go with it: resize controls,
+  bend, end and point handles, the route toolbar, the sections marked
+  `data-selection-commands`, and the frame React Flow draws around a box
+  selection. So `item-focus.ts` moves focus to the element, or from the frame
+  to the canvas, runs the command itself and stops the press there, short of
+  React Flow and the page binding. A handle gesture's own Escape runs first
+  and stops the press.
 - **Which element has its name open is store state**, so the rename command
   reaches it with nothing of the canvas mounted above it
   ([the store](../store/README.md)). A name the model already holds dispatches
@@ -147,12 +159,17 @@ Select rests on the arrow over the pane and nodes, a flow keeps its link
 pointer and a connection handle its crosshair. Place uses a crosshair and Hand
 uses `grab`, then `grabbing`. The side lines take the pointer away from the
 round connection handle at each midpoint. A threat badge draws over the
-selection frame and the side lines and under every control's hit area. The
-top-right resize handle keeps clear of the badge at every zoom, and on an
-element too narrow for that it stops beside the top-left handle and can meet
-the badge ([the canvas package](../../../../packages/canvas/README.md)). A
-trust boundary curve's corner handles sit outside its corners instead, clear of
-the badge and of the handle on a point there.
+selection frame and the side lines and under every control's hit area. While
+its element is selected, the badge steps out past the top-right corner
+([the canvas package](../../../../packages/canvas/README.md)), and the selected
+node's z-index of 1 draws it above its neighbours. A selected boundary box
+stays at -1, so its badge draws in React Flow's viewport portal, where the
+badge layer's z-index lifts it above the nodes around it. Scaled up at low
+zoom, the two right-hand corner handles grow inward from the right side, so
+neither reaches the stepped-out badge. `selectionBounds` measures a selection
+with each badge where it is drawn, for Fit selection and the group drag's
+bounds. A trust boundary curve's corner handles sit outside its corners
+instead, clear of the badge on its corner and of the handle on a point there.
 
 Focus is the app's ring (`--saer-focus-ring`) and selection the frame and
 weights above, drawn apart so they stack: an element's ring sits just inside

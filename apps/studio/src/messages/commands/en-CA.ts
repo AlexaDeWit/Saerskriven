@@ -3,7 +3,6 @@ import { commandMessages } from './contract.js';
 
 export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'label-open': 'Open',
-  'label-import': 'Import',
   'label-save': 'Save',
   'label-save-as': 'Save as',
   'label-export-diagram': 'Diagram as SVG',
@@ -62,7 +61,6 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'when-selection-outside-fields-and-overlays':
     'With a canvas selection, outside text fields and open overlays',
   'when-outside-text-fields': 'Outside text fields',
-  'when-import': 'Convert an OTM or TM-BOM file into a new native model',
   'when-anywhere': 'Anywhere in the studio',
   'when-file-menu': 'From the File menu',
   'when-view-menu': 'From the View menu',

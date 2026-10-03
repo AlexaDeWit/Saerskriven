@@ -15,7 +15,6 @@ const nothing = (): void => undefined;
 export const unmountedSurface: CommandSurface = {
   files: {
     open: nothing,
-    import: nothing,
     save: nothing,
     saveAs: nothing,
     exportDiagram: nothing,

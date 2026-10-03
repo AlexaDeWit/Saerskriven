@@ -80,6 +80,28 @@ describe('ShortcutReference', () => {
     ]);
   });
 
+  it('lists one Open among the file commands, and no Import', () => {
+    render(<ShortcutReference onClose={() => undefined} platform="other" />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: activeTranslator().t('commands.group-file'),
+      }),
+    );
+
+    expect(idsOf('data-command-id')).toEqual([
+      'open',
+      'save',
+      'save-as',
+      'export-diagram',
+      'export-register',
+      'export-typst',
+      'export-pdf',
+      'export-png',
+      'close-file',
+    ]);
+  });
+
   it.each(platforms)(
     'compacts complete arrow groups and retains %s alternatives',
     (platform) => {
