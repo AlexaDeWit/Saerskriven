@@ -453,9 +453,9 @@ outside one, and none works while focus is inside an open menu or list.
 | Select all                             | Mod+A                                        | Keyboard only       |
 | Delete selection                       | Delete or Backspace                          | Keyboard only       |
 | Rename selection                       | F2, or Enter with one selected               | Menu                |
-| Position and size                      | Mod+Shift+P                                  | Keyboard only       |
-| Change flow source, Change flow target | Mod+Shift+1, Mod+Shift+2                     | Reconnect flow card |
-| Toggle bidirectional flow              | Mod+Shift+3                                  | Reconnect flow card |
+| Position and size                      | Shift+P                                      | Keyboard only       |
+| Change flow source, Change flow target | Shift+S, Shift+T                             | Reconnect flow card |
+| Toggle bidirectional flow              | Shift+D                                      | Reconnect flow card |
 | Reverse flow                           | Shift+R                                      | Reconnect flow card |
 | Switch boundary shape                  | Shift+B                                      | Trust boundary card |
 | Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange       |

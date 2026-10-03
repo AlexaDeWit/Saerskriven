@@ -8,6 +8,8 @@ import {
   platformOf,
   mod,
   modShift,
+  reservedChords,
+  shortcutsOn,
   spellChord,
   spellShortcuts,
   type Chord,
@@ -41,6 +43,16 @@ describe('platformOf', () => {
     expect(platformOf({ platform: 'Linux x86_64' })).toBe('other');
     expect(platformOf({ platform: 'Win32' })).toBe('other');
     expect(platformOf({})).toBe('other');
+  });
+});
+
+describe('reservedChords', () => {
+  it('holds the macOS screenshot keys', () => {
+    expect(
+      shortcutsOn(Object.values(reservedChords).flat(), 'apple').map((chord) =>
+        spellChord(chord, 'apple', t),
+      ),
+    ).toEqual(expect.arrayContaining(['⇧⌘3', '⇧⌘4', '⇧⌘5']));
   });
 });
 

@@ -82,7 +82,7 @@ test('a flow becomes bidirectional by its command, draws two arrowheads, and sav
   const flow = await selectByKeyboard(page, placeholder.records);
   const arrows = flow.locator(`path.${canvasClassNames.flowArrow}`);
   await expect(arrows).toHaveCount(1);
-  await page.keyboard.press('ControlOrMeta+Shift+3');
+  await page.keyboard.press(registeredChords['toggle-flow-direction'][0]);
   await expect(arrows).toHaveCount(2);
   await expect(flow).toHaveAccessibleName(/between Actor and Store/u);
   await page.keyboard.press('ControlOrMeta+z');
