@@ -9,6 +9,7 @@ import type {
 } from '@saerskriven/canvas';
 import {
   flagsByElement,
+  isEmptyName,
   type Element,
   type ElementId,
   type FlowEnd,
@@ -72,7 +73,7 @@ export function kindLabel(
   kind: Element['kind'],
   t: StudioTranslator['t'],
 ): string {
-  return name === '' ? t(articleKindMessages[kind]) : name;
+  return isEmptyName(name) ? t(articleKindMessages[kind]) : name;
 }
 
 /**
@@ -98,7 +99,7 @@ export function nameFieldLabel(
   kind: Exclude<Element['kind'], 'text'>,
 ): Said {
   return (speak) =>
-    name === ''
+    isEmptyName(name)
       ? speak(`fields.name-of-${kind}`)
       : speak(`fields.name-of-${kind}-named`, { name });
 }
@@ -217,7 +218,7 @@ function calledBy(
   kind: Element['kind'],
   t: StudioTranslator['t'],
 ): string {
-  return name === '' ? t(kindMessages[kind]) : name;
+  return isEmptyName(name) ? t(kindMessages[kind]) : name;
 }
 
 function badgeWords(
@@ -238,5 +239,5 @@ function badgeWords(
 }
 
 function spoken(parts: readonly string[]): string {
-  return parts.filter((part) => part !== '').join(', ');
+  return parts.filter((part) => !isEmptyName(part)).join(', ');
 }

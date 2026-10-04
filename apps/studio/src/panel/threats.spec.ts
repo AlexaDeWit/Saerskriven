@@ -243,6 +243,12 @@ describe('elementHeading', () => {
     },
   );
 
+  it('heads an element a file holds under white space alone by its kind, as one called nothing', () => {
+    expect(
+      elementHeading(newProcess('process-spaced', '   '), sampleElements, t),
+    ).toBe(t(headingKindMessages.process));
+  });
+
   it('heads a flow left unlabelled by its ends', () => {
     expect(
       elementHeading(

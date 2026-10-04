@@ -2,6 +2,7 @@ import {
   elementsById,
   flowEnds,
   generateThreatId,
+  isEmptyName,
   nextThreatNumber,
   threatSchema,
   unlabelledFlow,
@@ -104,7 +105,7 @@ export function elementHeading(
   elements: ReadonlyMap<ElementId, Element>,
   t: StudioTranslator['t'],
 ): string {
-  return element.kind !== 'flow' && element.name === ''
+  return element.kind !== 'flow' && isEmptyName(element.name)
     ? t(headingKindMessages[element.kind])
     : elementLabel(element, elements, t);
 }
@@ -126,7 +127,7 @@ export function labelledElement(
   return {
     id: element.id,
     label: elementLabel(element, elements, t),
-    unnamed: element.name === '' && unlabelledFlow(element) === undefined,
+    unnamed: isEmptyName(element.name) && unlabelledFlow(element) === undefined,
   };
 }
 
@@ -327,7 +328,7 @@ function elementSaid(
   elements: ReadonlyMap<ElementId, Element>,
 ): Said {
   const { name } = element;
-  if (name !== '' && unlabelledFlow(element) === undefined) {
+  if (!isEmptyName(name)) {
     return (speak) =>
       speak(`canvas.threat-${change}-${element.kind}-named`, { number, name });
   }

@@ -1,4 +1,5 @@
 import {
+  isEmptyName,
   pointSchema,
   sides,
   type ElementId,
@@ -129,7 +130,7 @@ export function EndpointEditor({
             <option value={freePoint}>{t('tools.free-position')}</option>
             {options.map((node) => (
               <option key={node.id} value={node.id}>
-                {node.name || node.id}
+                {isEmptyName(node.name) ? node.id : node.name}
               </option>
             ))}
           </select>

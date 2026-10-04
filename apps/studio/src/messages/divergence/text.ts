@@ -10,6 +10,7 @@ import {
   elementsAcross,
   elementsById,
   inNumberOrder,
+  isEmptyName,
   mitigationStatusSchema,
   threatIdSchema,
   type Assumption,
@@ -331,7 +332,7 @@ function elementSubject(
   t: Speaker,
   element: Extract<Element, { readonly kind: 'text' | 'trust-boundary' }>,
 ): string {
-  return element.name === ''
+  return isEmptyName(element.name)
     ? t(`divergence.subject-${element.kind}`)
     : t(`divergence.subject-${element.kind}-named`, { name: element.name });
 }
@@ -504,7 +505,7 @@ function strayAttachment(
   }
   const id = elementIdSchema.safeParse(element);
   const name = id.success ? (held.elements.get(id.data)?.name ?? '') : '';
-  return name === ''
+  return isEmptyName(name)
     ? t(`divergence.threat-attachment-stray-${kind}`)
     : t(`divergence.threat-attachment-stray-${kind}-named`, { name });
 }

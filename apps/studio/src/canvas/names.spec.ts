@@ -120,15 +120,21 @@ describe('accessibleNames', () => {
     ).toContain(`from ${actorElement} to ${processElement}`);
   });
 
-  it('names an unnamed element by its kind, so a flow end still reads', () => {
-    const unnamed = {
-      ...layout,
-      nodes: layout.nodes.map((node) => ({ ...node, name: '' })),
-    };
-    const spoken = accessibleNames(unnamed, canvasModel, t);
-    expect(spoken.get(processElement)).toBe('process');
-    expect(spoken.get(requestFlow)).toContain('from actor to process');
-  });
+  it.each([
+    ['no name', ''],
+    ['a name of white space alone', '   '],
+  ])(
+    'names an element with %s by its kind, so a flow end still reads',
+    (_, name) => {
+      const unnamed = {
+        ...layout,
+        nodes: layout.nodes.map((node) => ({ ...node, name })),
+      };
+      const spoken = accessibleNames(unnamed, canvasModel, t);
+      expect(spoken.get(processElement)).toBe('process');
+      expect(spoken.get(requestFlow)).toContain('from actor to process');
+    },
+  );
 
   it('names every element the layout draws', () => {
     expect(names.size).toBe(layout.nodes.length + layout.edges.length);
