@@ -209,7 +209,7 @@ test('a flow left unlabelled draws no label, and the threat panel names it from 
   await expandThreat(page, /Unpublished listings readable/u);
 
   await expect(
-    panelControl(page, 'Detach Flow from Web shop to Catalogue'),
+    panelControl(page, 'Detach the flow from Web shop to Catalogue'),
   ).toBeVisible();
 });
 
