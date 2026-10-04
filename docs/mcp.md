@@ -71,8 +71,9 @@ carries the element id, its diagram, its kind, its name, whether it is out of
 scope (`outOfScope`), and how many threats reference it. A flow left
 unlabelled keeps its stored `name` and adds `namedFromEnds`, which names it from
 its ends: `Flow from Shopper to Web shop`, `Flow between Shopper and Web shop`
-for a flow that runs both ways, and `a free point` for an end attached to
-nothing. Its text line shows that name. Every element row carries it the same
+for a flow that runs both ways, `a free point` for an end attached to nothing,
+and the element's id for an end whose name is empty or white space alone. Its
+text line shows that name. Every element row carries it the same
 way: the rows of `saer_coverage`, the elements `saer_get_threat` lists, and the
 element the `stride_pass` prompt lays out. The second takes
 `status`, `severity`, `category`, `diagram`, `element` and `query` and carries
