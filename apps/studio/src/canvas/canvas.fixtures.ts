@@ -284,9 +284,9 @@ export function pointerOn(
 }
 
 /**
- * Resolves once the click React Flow's resize gesture swallows after its
- * release is let through again, so a spec that ends on a mouse resize awaits
- * it rather than leave the next spec's first click swallowed.
+ * Resolves once the click React Flow's mouse gesture swallows after its
+ * release is let through again, so a spec that ends on a mouse resize or drag
+ * awaits it rather than leave the next spec's first click swallowed.
  */
 export const clickSuppressionLifted = (): Promise<void> =>
   new Promise((resolve) => {

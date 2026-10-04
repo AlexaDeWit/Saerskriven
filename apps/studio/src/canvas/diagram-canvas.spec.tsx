@@ -4,7 +4,12 @@ import {
   flowEndNodeId,
   minimumNodeExtent,
 } from '@saerskriven/canvas';
-import { finger, mouseEvent, touchEvent } from '@saerskriven/canvas/fixtures';
+import {
+  finger,
+  mouseEvent,
+  touchEvent,
+  ViewKeepingMouseEvent,
+} from '@saerskriven/canvas/fixtures';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
 import { decimalsOf } from '@saerskriven/model';
@@ -691,6 +696,34 @@ describe('DiagramCanvas', () => {
 
     expect([readerGlyphWidth(), reader().style.width]).toEqual(settled);
     expect(modelStore.getState().past).toHaveLength(0);
+  });
+
+  describe('a press on an element held when the window loses focus', () => {
+    beforeEach(() => {
+      vi.stubGlobal('MouseEvent', ViewKeepingMouseEvent);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('is let go before the drag starts, so the element follows no later pointer move and the next release records nothing', async () => {
+      render(<DiagramCanvas />);
+      const before = readerBox();
+      const drawnAt = reader().style.transform;
+
+      fireEvent(reader(), mouseEvent('mousedown', 100));
+      fireEvent(window, new Event('blur'));
+      fireEvent(window, mouseEvent('mousemove', 130));
+      fireEvent(window, mouseEvent('mousemove', 160));
+      const followed = reader().style.transform;
+      fireEvent(window, mouseEvent('mouseup', 160));
+      await clickSuppressionLifted();
+
+      expect(followed).toBe(drawnAt);
+      expect(readerBox()).toEqual(before);
+      expect(modelStore.getState().past).toHaveLength(0);
+    });
   });
 
   it('clears a selected flow when the pointer lands on nothing', () => {
