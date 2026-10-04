@@ -26,11 +26,7 @@ export const canvasContainer = (page: Page): Locator =>
 export const elementNodes = (page: Page): Locator =>
   page.locator('.react-flow__nodes').getByRole('group');
 
-/**
- * Where React Flow has the canvas, read off the transform it writes. Zoom and
- * fit are the viewport moving with nothing in the model changing, so the
- * transform is the only thing that says they happened.
- */
+/** Reads the viewport transform, which records zoom and pan without a model edit. */
 export const viewportTransform = async (page: Page): Promise<string> =>
   (await page.locator('.react-flow__viewport').getAttribute('style')) ?? '';
 
@@ -73,12 +69,7 @@ const rounded = (point: Point): Point => ({
 const numberIn = (style: string, pattern: RegExp): number =>
   Number(pattern.exec(style)?.[1] ?? Number.NaN);
 
-/**
- * The box React Flow is drawing a node in, read off the style attribute it
- * places and sizes the node with. It is the live one: a drag frame reaches a
- * node's style long before it reaches the store, so this is where an element
- * is during a gesture.
- */
+/** Reads live model-space bounds from the node style before drag frames reach the store. */
 export const boxOf = async (node: Locator): Promise<Box> => {
   const style = (await node.getAttribute('style')) ?? '';
   return {
@@ -143,12 +134,7 @@ export const reachesAt = (target: Locator, at: Point): Promise<boolean> =>
     at,
   );
 
-/**
- * Where to click `target`, from its top left corner, at a point nothing else
- * covers. A click aimed at a covered centre has Playwright scroll the element
- * into reach, and React Flow puts its wrapper's scroll back a frame later, so
- * such a click lands only by winning that race.
- */
+/** Finds an uncovered click position relative to the target. Avoids the race between Playwright scrolling and React Flow resetting scroll. */
 export const clearPositionOn = async (target: Locator): Promise<Point> => {
   const position = await target.evaluate((node) => {
     const box = node.getBoundingClientRect();
@@ -184,17 +170,7 @@ export const onScreen = async (target: Locator): Promise<void> => {
 
 const ringReach = 16;
 
-/**
- * The share of `target`'s outline along which a focus ring is on screen once
- * `focus` has moved keyboard focus there and the view has come to rest, which
- * is where a pan to the target leaves it. Two screenshots are read in CSS
- * pixels, one with focus on `target` and one after it has gone to `away`: at
- * each pixel along each side of `target`, whether a pixel up to 16 pixels
- * across that side, short of its middle, differs between them. Anything drawn
- * over the ring leaves its pixels as they were, and so does a part of it off
- * the viewport. The view is held to stay where it rested from the first
- * screenshot to the second. Focus is left on `away`.
- */
+/** Measures the visible fraction of a focus ring by comparing screenshots in CSS pixels. Holds the viewport fixed and leaves focus on `away`. */
 export const focusRingShown = async (
   target: Locator,
   away: Locator,
@@ -345,13 +321,7 @@ const drawnBoxOf = (shapes: Locator, stroked: boolean): Promise<Box> =>
     return { x: left, y: top, width: right - left, height: bottom - top };
   }, stroked);
 
-/**
- * The screen-space box of SVG shape geometry, its stroke left out, read from
- * `getBBox` through `getScreenCTM`. A client rect and Playwright's
- * `boundingBox` are no measure of it across engines: Firefox's cover the
- * stroke, with a mitre allowance on a path, in layout units of a sixtieth of
- * a pixel, and Chromium's client rect leaves the stroke out.
- */
+/** Measures SVG geometry without stroke in screen coordinates. Client bounds include stroke in Firefox and exclude it in Chromium. */
 export const geometryBoxOf = (shapes: Locator): Promise<Box> =>
   drawnBoxOf(shapes, false);
 
@@ -372,11 +342,7 @@ export const handlesOf = (box: Box): Point[] =>
 export const lineOf = (page: Page, name: RegExp): Locator =>
   page.getByRole('group', { name }).locator(`path.${canvasClassNames.flow}`);
 
-/**
- * The whole pixel nearest the screen point halfway along a drawn flow. A
- * pointer sent to a fraction of a pixel stays there in Chromium and is cut to
- * the whole pixel in Firefox.
- */
+/** Finds the flow midpoint in whole screen pixels, avoiding Firefox's truncation of fractional pointer positions. */
 export const halfwayAlong = (line: Locator): Promise<Point> =>
   line.evaluate<Point, SVGPathElement>((path) => {
     const along = path.getPointAtLength(path.getTotalLength() / 2);
@@ -406,10 +372,7 @@ export const endsOn = (drawn: string, handles: readonly Point[]): Point[] =>
     ),
   );
 
-/**
- * Presses the pointer on the centre of a target and answers where it landed,
- * leaving the button down so the caller can move and read before the drop.
- */
+/** Presses at the target centre and leaves the mouse button down for the caller. */
 export const pressOn = async (page: Page, target: Locator): Promise<Point> => {
   const at = await centreOf(target);
   await page.mouse.move(at.x, at.y);
@@ -493,11 +456,7 @@ const clearOf = (boxes: readonly (Box | null)[], at: Point): boolean =>
       at.y > box.y + box.height + clearBy,
   );
 
-/**
- * Finds a whole-pixel point clear of drawn elements, connection snap distance
- * and the lower chrome area. A press asked for at y 67.5 lands there in
- * Chromium and at 67 in Firefox.
- */
+/** Finds a whole-pixel point clear of elements, connection snapping and lower chrome. Whole pixels avoid Firefox's truncation of pointer positions. */
 export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
   const canvas = await screenBoxOf(canvasContainer(page), 'the canvas');
   const room = { width: canvas.width, height: canvas.height * chromeFree };
@@ -533,14 +492,7 @@ const touchPoint = (at: Point, id = 1) => ({
   id,
 });
 
-/**
- * Enables touch input on a Chromium debugging session, and skips the calling
- * test in every other engine, which has no route for a finger that stays down
- * and moves. Playwright's `touchscreen` taps and no more, and needs a
- * `hasTouch` context: Firefox has no touch events without one, and with one
- * it delivers a mouse click with no pointer events, which a touch spec selects
- * and opens the menu with.
- */
+/** Enables Chromium CDP touch input and skips other engines because Playwright's touchscreen only taps. Firefox needs `hasTouch` for touch events, but that context omits the mouse pointer events these specs use. */
 export const touchSession = async (page: Page): Promise<CDPSession> => {
   test.skip(
     page.context().browser()?.browserType().name() !== 'chromium',
@@ -554,10 +506,7 @@ export const touchSession = async (page: Page): Promise<CDPSession> => {
   return session;
 };
 
-/**
- * Puts one finger down at a screen point and moves it to another, leaving it
- * down so the caller can act before the lift.
- */
+/** Moves one finger between screen points and leaves it down as id 1. */
 export const touchDown = async (
   session: CDPSession,
   from: Point,
@@ -592,14 +541,7 @@ export const touchUp = withNoFingerLeft('touchEnd');
 /** Cancels every finger still down, which the page sees as `touchcancel`. */
 export const touchCancel = withNoFingerLeft('touchCancel');
 
-/**
- * Sends one touch event about the fingers named, each under its own id, so a
- * second finger can press or move while the first is down, and stay down while
- * it lifts. In Chromium a `touchStart` that names a finger already down beside
- * a new one presses the new one alone, and a `touchEnd` lifts the fingers it
- * names and leaves the others down. The finger {@link touchDown} leaves down
- * is id 1.
- */
+/** Sends touch events by finger id. Chromium starts only new ids, ends only named ids and leaves other fingers down. */
 export const touchFingers = async (
   session: CDPSession,
   type: 'touchStart' | 'touchMove' | 'touchEnd',

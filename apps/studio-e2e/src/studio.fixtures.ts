@@ -31,10 +31,7 @@ export const refusedYaml = ['formatVersion: 1', 'diagrams: none'].join('\n');
 export const recoverySnapshot = (page: Page): Promise<string | null> =>
   page.evaluate((key) => localStorage.getItem(key), recoveryStorageKey);
 
-/**
- * Stores `snapshot` as the recovery snapshot before every start of the studio
- * in `page`, as an earlier session would have left it.
- */
+/** Seeds recovery storage before each studio load, as an earlier session would. */
 export const withRecoverySnapshot = async (
   page: Page,
   snapshot: string,
@@ -121,11 +118,7 @@ export const openModelDocument = async (
   await landed(page);
 };
 
-/**
- * Opens the studio on `test-data/two-diagrams.model.json` through
- * {@link openModelDocument}, with its first diagram, `Taking an order`, on
- * screen.
- */
+/** Opens the committed two-diagram model with its first diagram selected. */
 export const openTwoDiagrams = async (page: Page): Promise<void> => {
   await openModelDocument(
     page,
@@ -133,10 +126,7 @@ export const openTwoDiagrams = async (page: Page): Promise<void> => {
   );
 };
 
-/**
- * Opens the studio on `test-data/every-glyph.model.json` through
- * {@link openModelDocument}.
- */
+/** Opens the committed model containing every glyph. */
 export const openEveryGlyph = async (page: Page): Promise<void> => {
   await openModelDocument(
     page,
@@ -175,12 +165,7 @@ const clipboardPermissions: Readonly<Record<string, readonly string[]>> = {
   webkit: ['clipboard-read'],
 };
 
-/**
- * Grants the clipboard permissions the engine's Playwright driver has a name
- * for: a grant under a name it lacks throws. Chromium refuses a clipboard
- * read or write that has no grant. Firefox has neither name, and reads and
- * writes without one.
- */
+/** Grants only clipboard permission names supported by the Playwright driver. Firefox accepts neither name and uses the clipboard without a grant. */
 export const allowClipboard = async (
   context: BrowserContext,
 ): Promise<void> => {
@@ -198,10 +183,7 @@ export const openFile = async (
   await chooseFile(page, path);
 };
 
-/**
- * Hands the fallback picker text under a name, for a file the repository does
- * not hold: a refusal to word, or a model a spec has just written.
- */
+/** Supplies an uncommitted document through the fallback file input. */
 export const openText = async (
   page: Page,
   name: string,
@@ -325,32 +307,19 @@ export const downloaded = async (
   };
 };
 
-/**
- * Saves from the menu through the download path, and reads back what was
- * written. The download path needs a page without the save picker, as
- * `openFallback` and `withoutPickers` leave it.
- */
+/** Reads a menu save download. Requires the save picker removed by {@link openFallback} or {@link withoutPickers}. */
 export const savedFile = async (page: Page): Promise<Downloaded> => {
   await openMenu(page);
   return downloaded(page, () => menuItem(page, 'Save').click());
 };
 
-/**
- * Presses `chord` and reads back the file the studio wrote through it. The
- * download path needs a page without the save picker, as `openFallback` and
- * `withoutPickers` leave it.
- */
+/** Reads a keyboard save download. Requires the save picker removed by {@link openFallback} or {@link withoutPickers}. */
 export const savedByKey = async (
   page: Page,
   chord: string,
 ): Promise<Downloaded> => downloaded(page, () => page.keyboard.press(chord));
 
-/**
- * Answers the format question the menu asks where the browser has no save
- * picker, and reads back the file that went out. The question stands in the
- * menu whether a chord or an item put it there, so this waits for the item
- * rather than for the menu.
- */
+/** Reads the fallback format-choice download. Waits for the item because the menu can already be open after a keyboard save. */
 export const savedFromMenu = async (
   page: Page,
   item: string,
@@ -464,10 +433,7 @@ export const cardControlsClear = async (page: Page): Promise<void> => {
 /** The Hand tool is the last persistent control before the canvas in the tab order. */
 export const beforeCanvas = (page: Page): Locator => toolButton(page, 'Hand');
 
-/**
- * Selects an element tool and clicks a clear point on the canvas. The placed
- * element is returned with its placeholder name open in the in-place field.
- */
+/** Places an element at a clear canvas point with its placeholder name open for editing. */
 export const placeByClick = async (
   page: Page,
   tool: 'Actor' | 'Process' | 'Store' | 'Trust boundary',
@@ -512,11 +478,7 @@ export const tabTo = async (
   await expect(target).toBeFocused();
 };
 
-/**
- * Presses Tab, and once more where focus stopped on a scrolling region that
- * is no control. Firefox gives every scrolling region a Tab stop, and
- * Chromium only one that holds no control.
- */
+/** Skips an extra Tab stop on a scrolling region that is not a control. Firefox includes scrollers containing controls in the tab order. */
 export const tabToNextControl = async (page: Page): Promise<void> => {
   await page.keyboard.press('Tab');
   const onScroller = await page.evaluate(() => {
@@ -579,10 +541,7 @@ export const panelField = (
 export const panelControl = (page: Page, name: string): Locator =>
   threatPanel(page).getByRole('button', { name, exact: true });
 
-/**
- * The row of the panel's record whose toggle is named `toggle`: the group
- * with no name of its own that holds that toggle.
- */
+/** Finds the unnamed record group containing the named toggle. */
 export const recordRow = (page: Page, toggle: string): Locator =>
   threatPanel(page)
     .getByRole('group', { name: /^$/u })
