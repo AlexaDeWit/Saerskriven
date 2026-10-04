@@ -13,7 +13,8 @@
   min-inline-size: 0;
   margin: 0;
   padding: 0;
-  padding-inline-end: var(--saer-space-1);
+  /* The separator belongs inside the end gutter. */
+  padding-inline-end: calc(var(--saer-space-1) - 1px);
   border: 0;
   border-inline-end: 1px solid var(--saer-colour-border);
 }
