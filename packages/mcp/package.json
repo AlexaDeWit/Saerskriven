@@ -39,8 +39,10 @@
       "lint": {},
       "test": {
         "dependsOn": [
+          "...",
           {
             "projects": [
+              "resvg-wasm",
               "brotli-wasm"
             ],
             "target": "build"
@@ -48,6 +50,10 @@
         ],
         "inputs": [
           "...",
+          {
+            "dependentTasksOutputFiles": "dist/resvg-wasm/lib/**/*",
+            "transitive": false
+          },
           {
             "dependentTasksOutputFiles": "dist/brotli-wasm/lib/**/*",
             "transitive": false

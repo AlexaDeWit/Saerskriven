@@ -178,10 +178,10 @@ that consumes another task's output declares both `dependsOn` and a
 before it runs it, the CLI's `test` hashes the whole build output rather than
 only its JavaScript, because the fonts and modules beside the bundle decide
 what a render writes, the `resvg-wasm` build stores the rasterizer module
-that the CLI's build, the studio's build and test, and `@saerskriven/render`'s
-test each hash, and the `brotli-wasm` build stores the brotli module that the
-CLI's build, the studio's build and test, and the tests of
-`@saerskriven/formats` and `@saerskriven/mcp` each hash.
+that the CLI's build, the studio's build and test, and the tests of
+`@saerskriven/render` and `@saerskriven/mcp` each hash, and the `brotli-wasm`
+build stores the brotli module that the CLI's build, the studio's build and
+test, and the tests of `@saerskriven/formats` and `@saerskriven/mcp` each hash.
 
 A leaf target that extends a `targetDefaults` or plugin-inferred array opens it
 with the spread token `"..."`. Without it the leaf array replaces the default,
