@@ -154,6 +154,11 @@ describe('flowEndName', () => {
       'element-customer',
     ],
     [
+      'an element named with white space alone by its id',
+      { kind: 'element', element: { ...customer, name: ' \t' } },
+      'element-customer',
+    ],
+    [
       'an element the lookup lacked by its id',
       { kind: 'missing', element: customer.id },
       'element-customer',

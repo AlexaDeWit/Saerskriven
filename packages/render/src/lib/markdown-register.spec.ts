@@ -488,16 +488,19 @@ describe('a threat section', () => {
     },
   );
 
-  it('falls back to the element id where the element has no name', () => {
-    const rendered = renderRegister(
-      modelFrom({
-        threats: [threatOf({ number: 1, elements: ['el-a'] })],
-        diagrams: [diagramOf('d0', [{ id: 'el-a', name: '' }])],
-      }),
-      'en-CA',
-    );
-    expect(rendered).toContain('- **Elements**: el-a');
-  });
+  it.each(['', ' \t'])(
+    'falls back to the element id where the element is named %j',
+    (name) => {
+      const rendered = renderRegister(
+        modelFrom({
+          threats: [threatOf({ number: 1, elements: ['el-a'] })],
+          diagrams: [diagramOf('d0', [{ id: 'el-a', name }])],
+        }),
+        'en-CA',
+      );
+      expect(rendered).toContain('- **Elements**: el-a');
+    },
+  );
 
   it.each([
     [
