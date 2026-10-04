@@ -227,7 +227,7 @@ describe('remapFragment and insertFragment', () => {
 
       expect(remapped.diagrams[0].elements[0]).toMatchObject({
         position,
-        size: { width: 120.123456, height: 0.04 },
+        size: { width: 120.123456, height: 60.04 },
       });
     },
   );

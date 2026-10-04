@@ -193,6 +193,17 @@ describe('a Saerskriven YAML read', () => {
     expect(issuePathsOf(overridden)).toEqual([['metadata', 'title']]);
   });
 
+  it('refuses a coordinate past 1,000,000 and a width under 1, each pathed into the model', () => {
+    const outside = oneThreatYamlV1
+      .replace('          x: 0', '          x: 1000001')
+      .replace('          width: 10', '          width: 0.5');
+    expect(failureOf(outside)?._tag).toBe('InvalidModel');
+    expect(issuePathsOf(outside)).toEqual([
+      ['diagrams', 0, 'elements', 0, 'position', 'x'],
+      ['diagrams', 0, 'elements', 0, 'size', 'width'],
+    ]);
+  });
+
   it('reads a valid file with nothing to report', () => {
     expect(readingOf(minimalYamlV1)?.divergences).toEqual([]);
   });

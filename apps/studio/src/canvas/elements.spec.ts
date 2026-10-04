@@ -1,5 +1,5 @@
 import { layoutDiagram, minimumNodeExtent } from '@saerskriven/canvas';
-import { addElement } from '@saerskriven/model';
+import { addElement, sizeSchema } from '@saerskriven/model';
 import { Either } from 'effect';
 import { canvasModel } from './canvas.fixtures.js';
 import {
@@ -57,12 +57,21 @@ describe('placement geometry', () => {
     },
   );
 
-  it('keeps a long, thin drag as its pointer rectangle', () => {
+  it('places a long, thin drag at the least height the model holds', () => {
     expect(draggedPlacement('store', { x: 0, y: 0 }, { x: 50, y: 0 })).toEqual({
-      position: { x: 0, y: 0.25 },
-      size: { width: 50, height: 0.5 },
+      position: { x: 0, y: 0 },
+      size: { width: 50, height: 1 },
     });
   });
+
+  it.each(['actor', 'process', 'store', 'boundary-box', 'note'] as const)(
+    'the %s tool places a drag across no distance at a size the model reads',
+    (kind) => {
+      const { size } = draggedPlacement(kind, { x: 7, y: 7 }, { x: 7, y: 7 });
+
+      expect(sizeSchema.safeParse(size).success).toBe(true);
+    },
+  );
 
   it('treats movement below four screen pixels as a click', () => {
     expect(
@@ -76,10 +85,10 @@ describe('placement geometry', () => {
     ).toEqual({ position: { x: 101, y: 81 }, size: { width: 2, height: 2 } });
   });
 
-  it('fits the stroke inside a small outer extent', () => {
-    expect(draggedPlacement('actor', { x: 0, y: 0 }, { x: 1, y: 1 })).toEqual({
-      position: { x: 0.25, y: 0.25 },
-      size: { width: 0.5, height: 0.5 },
+  it('fits the stroke inside a small outer extent, down to the least size the model holds', () => {
+    expect(draggedPlacement('actor', { x: 0, y: 0 }, { x: 3, y: 1 })).toEqual({
+      position: { x: 0.25, y: 0 },
+      size: { width: 2.5, height: 1 },
     });
   });
 });

@@ -12,6 +12,14 @@ const position = { x: 'number', y: 'number' } as const;
 
 const writtenPosition = { x: 'text', y: 'text' } as const;
 
+const coordinateRange = { low: 'number', high: 'number' } as const;
+
+const geometryRange = {
+  low: 'number',
+  high: 'number',
+  least: 'number',
+} as const;
+
 const element = { element: 'text' } as const;
 
 const numbered = { number: 'number' } as const;
@@ -33,7 +41,7 @@ export const canvasMessages = {
   'diagram-renamed': text({ title: 'text' }),
   'selection-cleared': text(),
   'geometry-updated': text(),
-  'geometry-invalid': text(),
+  'geometry-invalid': text(geometryRange),
   arranged: plural('count'),
   'source-changed': text(),
   'target-changed': text(),
@@ -64,7 +72,7 @@ export const canvasMessages = {
   'source-moved': text(flow),
   'target-moved': text(flow),
   'free-end-kept': text(),
-  'position-invalid': text(),
+  'position-invalid': text(coordinateRange),
   'undo-done': text(),
   'redo-done': text(),
   'threat-deleted': text(numbered),

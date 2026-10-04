@@ -43,6 +43,22 @@ being the caller's to assemble.
 A boundary that renders a model escapes or replaces what its output format
 forbids instead of resting on this rule.
 
+## Geometry
+
+Every coordinate and size the model holds lies inside `geometryLimits`, both
+ends included: a coordinate from -1,000,000 to 1,000,000, and a width or a
+height from 1 to 1,000,000. `pointSchema` and `sizeSchema` carry the bound, so
+`parseModel` refuses a number outside it with a path to the field, and a
+caller validating a typed or passed number with either schema refuses the same
+ones. Nothing is clamped.
+
+`selectionFragment`, `remapFragment` and `insertFragment` pass what they
+produce through `parseModel`, so a paste offset that would carry an element
+past the bound is refused. The other geometry operations store the numbers a
+caller hands them and what they compute from those, unchecked: a caller hands
+them numbers inside the bound, and a move from a position at the edge of it
+can still store one past it, which the next read refuses.
+
 ## Operations
 
 Operations are pure functions returning new models: graph edits (add, remove,
@@ -66,19 +82,19 @@ it rounds the numbers it writes to that many decimals, the nearest such number
 with no negative zero, so a move by an offset from 123.63636363636364 lands on
 128.6 at one decimal. It rounds what it writes and nothing else: a move the
 positions, bends, free ends and curve points it carries and not a size, a
-resize the size and not the position, and no element it was not asked about. A
-size a count would round to zero becomes the smallest size that count writes,
-0.1 at one decimal, so it stays positive. Handed no count, an operation stores
-what it computes, which is what a file, the CLI and the MCP server get. A
-geometry edit that would store every number as it already is returns the model
-it was given, at a count or at none. `setFlowWaypoints`, `setFlowEndPosition`
-and `setBoundaryShape` return it too for geometry given as it is stored, so
-they keep a stored number the count would round, where `moveElement` by a zero
-offset and `resizeElement` to the size held round it. The model holds no count
-of its own: the caller names one. `fixedNumber` writes a number at a count of
-decimals, `storedNumber` rounds one and `decimalsOf` counts the decimals one
-is written with, which is the count that stores it unchanged. The canvas
-package's `svgNumber` writes through the first.
+resize the size and not the position, and no element it was not asked about.
+Rounding keeps a number inside [the bound](#geometry), whose ends are whole.
+Handed no count, an operation stores what it computes, which is what a file,
+the CLI and the MCP server get. A geometry edit that would store every number
+as it already is returns the model it was given, at a count or at none.
+`setFlowWaypoints`, `setFlowEndPosition` and `setBoundaryShape` return it too
+for geometry given as it is stored, so they keep a stored number the count
+would round, where `moveElement` by a zero offset and `resizeElement` to the
+size held round it. The model holds no count of its own: the caller names one.
+`fixedNumber` writes a number at a count of decimals, `storedNumber` rounds
+one and `decimalsOf` counts the decimals one is written with, which is the
+count that stores it unchanged. The canvas package's `svgNumber` writes
+through the first.
 
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no

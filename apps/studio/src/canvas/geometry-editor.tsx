@@ -1,6 +1,7 @@
 import { resizableAxes } from '@saerskriven/canvas';
 import {
   decimalsOf,
+  geometryLimits,
   pointSchema,
   sizeSchema,
   storedNumber,
@@ -68,7 +69,7 @@ export function GeometryEditor({
     });
     if (!at.success || (single !== undefined && !extent.success)) {
       setRefused(true);
-      announce((speak) => speak('canvas.geometry-invalid'));
+      announce((speak) => speak('canvas.geometry-invalid', geometryRange));
       return;
     }
     if (single !== undefined && extent.success) {
@@ -124,7 +125,7 @@ export function GeometryEditor({
             }}
           />
         ))}
-      {refused && <p>{t('canvas.geometry-invalid')}</p>}
+      {refused && <p>{t('canvas.geometry-invalid', geometryRange)}</p>}
       <div className={styles.actions}>
         <button type="submit">{t('tools.apply-geometry')}</button>
         <button onClick={close} type="button">
@@ -134,6 +135,18 @@ export function GeometryEditor({
     </form>
   );
 }
+
+/** The range a typed coordinate lies in, as a form's refusal states it. */
+export const coordinateRange = {
+  low: -geometryLimits.bound,
+  high: geometryLimits.bound,
+} as const;
+
+const geometryRange = {
+  low: coordinateRange.low,
+  high: coordinateRange.high,
+  least: geometryLimits.leastExtent,
+} as const;
 
 /** A typed number, where an empty field is no number at all. */
 export function numeric(value: string): number {

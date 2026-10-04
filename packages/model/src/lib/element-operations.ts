@@ -207,9 +207,9 @@ export function moveElement(
 
 /**
  * Resizes an element that carries an extent. The caller supplies a
- * schema-valid size, which is stored at `decimals` and stays positive there
- * ({@link storedSize}). The position is left as stored. A resize that would
- * store the size the element already has returns the same model.
+ * schema-valid size, which is stored at `decimals` and is schema-valid there
+ * too. The position is left as stored. A resize that would store the size the
+ * element already has returns the same model.
  */
 export function resizeElement(
   model: Model,

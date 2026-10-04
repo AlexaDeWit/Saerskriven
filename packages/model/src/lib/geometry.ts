@@ -1,24 +1,51 @@
 import { z } from 'zod';
 
 /**
- * A location on the diagram canvas, in canvas units. Coordinates may be
- * negative: the origin is a reference point, not an edge.
+ * The bounds of canvas geometry, in canvas units, both ends included. A
+ * coordinate lies from `-bound` to `bound`, and a width or a height from
+ * `leastExtent` to `bound`. The bound is about 3,800 columns of
+ * {@link autoPlacement}'s grid, past any diagram a person draws, so a number
+ * outside it is refused and never clamped. Inside it a layout that multiplies
+ * two lengths at the most stays far inside what a double holds.
+ */
+export const geometryLimits = Object.freeze({
+  /** The furthest a coordinate lies from the origin on either axis, and the greatest width or height. */
+  bound: 1_000_000,
+  /** The least width or height, under the ten units the studio resizes down to, so a small element a file states still reads. */
+  leastExtent: 1,
+});
+
+const coordinateSchema = z
+  .number()
+  .min(-geometryLimits.bound)
+  .max(geometryLimits.bound);
+
+const extentSchema = z
+  .number()
+  .min(geometryLimits.leastExtent)
+  .max(geometryLimits.bound);
+
+/**
+ * A location on the diagram canvas, in canvas units, each coordinate inside
+ * {@link geometryLimits}. Coordinates may be negative: the origin is a
+ * reference point, not an edge.
  */
 export const pointSchema = z.object({
-  x: z.number(),
-  y: z.number(),
+  x: coordinateSchema,
+  y: coordinateSchema,
 });
 
 /** Canvas location. */
 export type Point = z.infer<typeof pointSchema>;
 
 /**
- * Extent of an element on the canvas, in canvas units. Width and height are
- * strictly positive: a zero-extent element cannot be drawn or picked.
+ * Extent of an element on the canvas, in canvas units, each of width and
+ * height inside {@link geometryLimits}: an element of no extent cannot be
+ * drawn or picked.
  */
 export const sizeSchema = z.object({
-  width: z.number().positive(),
-  height: z.number().positive(),
+  width: extentSchema,
+  height: extentSchema,
 });
 
 /** Canvas extent. */

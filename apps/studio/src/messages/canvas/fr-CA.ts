@@ -11,7 +11,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'selection-cleared': 'Sélection effacée.',
   'geometry-updated': 'Position et taille mises à jour.',
   'geometry-invalid':
-    'Saisissez des coordonnées finies et des dimensions positives.',
+    'Saisissez des coordonnées de {low} à {high} et des dimensions de {least} à {high}.',
   arranged: {
     one: '{count} nœud disposé. Les coudes des flux et les extrémités libres restent en place.',
     many: '{count} de nœuds disposés. Les coudes des flux et les extrémités libres restent en place.',
@@ -64,7 +64,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'source-moved': 'Source déplacée : {flow}.',
   'target-moved': 'Destination déplacée : {flow}.',
   'free-end-kept': 'Une extrémité de flux libre reste où elle est.',
-  'position-invalid': 'Entrez des coordonnées finies.',
+  'position-invalid': 'Entrez des coordonnées de {low} à {high}.',
   'undo-done': 'Annulation effectuée.',
   'redo-done': 'Rétablissement effectué.',
   'threat-deleted': 'Menace {number} supprimée.',

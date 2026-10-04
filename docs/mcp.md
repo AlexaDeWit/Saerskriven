@@ -298,6 +298,11 @@ else the canvas origin.
 
 #### Geometry
 
+Every `x` and `y` an edit passes, an `offset` included, is from -1,000,000 to
+1,000,000, and every `width` and `height` from 1 to 1,000,000
+([the format's bound](saerskriven-yaml.md#geometry)). An edit passing a number
+outside that is refused.
+
 `move_element` translates an element by `offset`, relative to where it is: the
 position of an actor, process, store, text note or box boundary, every point
 of a curve boundary, or a flow's bends and free ends. An attached flow end

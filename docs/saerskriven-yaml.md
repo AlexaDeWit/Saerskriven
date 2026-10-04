@@ -180,6 +180,27 @@ What a read does refuse, it refuses with a path: into the file where the
 schema is what said no, and into the model where a rule no schema states did,
 such as a threat referring to an element no diagram holds.
 
+## Geometry
+
+Every number that places or sizes something is in canvas units and has a
+bound, both ends included:
+
+- A coordinate, an `x` or a `y`, is from -1,000,000 to 1,000,000. That covers
+  a `position`, a free flow end, and each of a flow's or a curve boundary's
+  `waypoints`.
+- A `width` or a `height` is from 1 to 1,000,000.
+
+A read refuses a file holding a number outside its bound, with the path of
+that number in the model. Nothing is clamped. An earlier release held any
+finite coordinate and any size above zero, so a file it wrote with a number
+outside the bound no longer opens.
+
+The bound is the model's (`geometryLimits` in `@saerskriven/model`), which
+every format reads through, so a Threat Dragon or an OTM file is held to it
+too. [Position and size](studio.md#moving-resizing-and-arranging) in the
+studio and [the geometry edits](mcp.md#geometry) of `saer_edit` refuse the
+same numbers.
+
 ## Security facts
 
 These optional fields use the same names in native YAML, the internal model,

@@ -186,6 +186,26 @@ it.each(['duplicate', 'dangling'] as const)(
   },
 );
 
+it('refuses an OTM component placed past 1,000,000, pathed into the model', () => {
+  const document = otmFixture();
+  const placed = document.components?.[0]?.representations?.[0];
+  if (placed?.position == null) {
+    throw new Error('The fixture places its first component');
+  }
+  placed.position.x = 1_000_001;
+
+  const result = importModel(JSON.stringify(document));
+
+  expect(result).toMatchObject({
+    _tag: 'Left',
+    left: { _tag: 'InvalidModel' },
+  });
+  expect(
+    Either.isLeft(result) &&
+      readFailureIssues(result.left).map(({ path }) => path.slice(-2)),
+  ).toEqual([['position', 'x']]);
+});
+
 it('refuses unknown TM-BOM endpoint types and dangling threat targets', () => {
   const document = tmbomFixture();
   document.data_flows[0].source.type = 'unsupported';

@@ -49,11 +49,11 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
       - `position`: object
-        - `x`: number
-        - `y`: number
+        - `x`: number, -1000000 or more, 1000000 or less
+        - `y`: number, -1000000 or more, 1000000 or less
       - `size`: object
-        - `width`: number, greater than 0
-        - `height`: number, greater than 0
+        - `width`: number, 1 or more, 1000000 or less
+        - `height`: number, 1 or more, 1000000 or less
       - `providesAuthentication`: optional, boolean
     - when `kind` is `process`
       - `id`: ElementId (text, at least 2 characters)
@@ -62,11 +62,11 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
       - `position`: object
-        - `x`: number
-        - `y`: number
+        - `x`: number, -1000000 or more, 1000000 or less
+        - `y`: number, -1000000 or more, 1000000 or less
       - `size`: object
-        - `width`: number, greater than 0
-        - `height`: number, greater than 0
+        - `width`: number, 1 or more, 1000000 or less
+        - `height`: number, 1 or more, 1000000 or less
       - `handlesCardPayment`: optional, boolean
       - `handlesGoodsOrServices`: optional, boolean
       - `isWebApplication`: optional, boolean
@@ -78,11 +78,11 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
       - `position`: object
-        - `x`: number
-        - `y`: number
+        - `x`: number, -1000000 or more, 1000000 or less
+        - `y`: number, -1000000 or more, 1000000 or less
       - `size`: object
-        - `width`: number, greater than 0
-        - `height`: number, greater than 0
+        - `width`: number, 1 or more, 1000000 or less
+        - `height`: number, 1 or more, 1000000 or less
       - `isALog`: optional, boolean
       - `isEncrypted`: optional, boolean
       - `isSigned`: optional, boolean
@@ -104,19 +104,19 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
           - `side`: optional, one of `top`, `right`, `bottom`, `left`
         - when `kind` is `free`
           - `position`: object
-            - `x`: number
-            - `y`: number
+            - `x`: number, -1000000 or more, 1000000 or less
+            - `y`: number, -1000000 or more, 1000000 or less
       - `target`: one of 2, told apart by `kind`
         - when `kind` is `attached`
           - `element`: ElementId (text, at least 2 characters)
           - `side`: optional, one of `top`, `right`, `bottom`, `left`
         - when `kind` is `free`
           - `position`: object
-            - `x`: number
-            - `y`: number
+            - `x`: number, -1000000 or more, 1000000 or less
+            - `y`: number, -1000000 or more, 1000000 or less
       - `waypoints`: list of object
-        - `x`: number
-        - `y`: number
+        - `x`: number, -1000000 or more, 1000000 or less
+        - `y`: number, -1000000 or more, 1000000 or less
       - `bidirectional`: boolean
     - when `kind` is `trust-boundary`
       - `id`: ElementId (text, at least 2 characters)
@@ -129,15 +129,15 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `shape`: one of 2, told apart by `kind`
         - when `kind` is `box`
           - `position`: object
-            - `x`: number
-            - `y`: number
+            - `x`: number, -1000000 or more, 1000000 or less
+            - `y`: number, -1000000 or more, 1000000 or less
           - `size`: object
-            - `width`: number, greater than 0
-            - `height`: number, greater than 0
+            - `width`: number, 1 or more, 1000000 or less
+            - `height`: number, 1 or more, 1000000 or less
         - when `kind` is `curve`
           - `waypoints`: list of at least 2 object
-            - `x`: number
-            - `y`: number
+            - `x`: number, -1000000 or more, 1000000 or less
+            - `y`: number, -1000000 or more, 1000000 or less
     - when `kind` is `text`
       - `id`: ElementId (text, at least 2 characters)
       - `name`: text
@@ -145,11 +145,11 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
       - `position`: object
-        - `x`: number
-        - `y`: number
+        - `x`: number, -1000000 or more, 1000000 or less
+        - `y`: number, -1000000 or more, 1000000 or less
       - `size`: object
-        - `width`: number, greater than 0
-        - `height`: number, greater than 0
+        - `width`: number, 1 or more, 1000000 or less
+        - `height`: number, 1 or more, 1000000 or less
       - `text`: text
 - `threats`: list of object
   - `id`: ThreatId (text, at least 2 characters)

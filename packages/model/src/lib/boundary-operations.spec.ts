@@ -107,11 +107,11 @@ describe('setBoundaryShape', () => {
     },
   );
 
-  it('stores the shape it is given at the decimals named, a box above zero, and as given where none is', () => {
+  it('stores the shape it is given at the decimals named, and as given where none is', () => {
     const flat = {
       kind: 'box',
       position: { x: 10.123456, y: -20.98765 },
-      size: { width: 400.5558, height: 0.04 },
+      size: { width: 400.5558, height: 60.04 },
     } satisfies BoundaryShape;
     const points = {
       kind: 'curve',
@@ -125,7 +125,7 @@ describe('setBoundaryShape', () => {
     expect(shaped(noisyCurve, flat, 1)).toMatchObject({
       shape: {
         position: { x: 10.1, y: -21 },
-        size: { width: 400.6, height: 0.1 },
+        size: { width: 400.6, height: 60 },
       },
     });
     expect(shaped(noisyBox, points, 3)).toMatchObject({
@@ -193,7 +193,7 @@ describe('setBoundaryShape', () => {
       input: validModel,
       run: (model) => setBoundaryShape(model, billingZone, box),
     },
-    'setBoundaryShape at one decimal to a box whose height rounds to zero': {
+    'setBoundaryShape at one decimal to a box': {
       input: noisyModel,
       run: (model) =>
         setBoundaryShape(
@@ -202,7 +202,7 @@ describe('setBoundaryShape', () => {
           {
             kind: 'box',
             position: { x: 10.123456, y: -20.98765 },
-            size: { width: 400.5558, height: 0.04 },
+            size: { width: 400.5558, height: 60.04 },
           },
           1,
         ),

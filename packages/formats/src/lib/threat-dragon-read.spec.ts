@@ -398,6 +398,36 @@ describe('a Threat Dragon read that stops', () => {
     );
   });
 
+  it('refuses a cell placed past 1,000,000, pathed into the model', () => {
+    const failure = failureOf(
+      JSON.stringify({
+        ...minimalFixture,
+        detail: {
+          diagrams: [
+            {
+              id: 0,
+              title: 'One',
+              diagramType: 'STRIDE',
+              cells: [
+                {
+                  id: 'actor-1',
+                  shape: 'actor',
+                  position: { x: 0, y: -1_000_001 },
+                  size: { width: 100, height: 60 },
+                  data: { type: 'tm.Actor', name: 'Operator' },
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+    expect(failure._tag).toBe('InvalidModel');
+    expect(readFailureIssues(failure).map(({ path }) => path)).toEqual([
+      ['diagrams', 0, 'elements', 0, 'position', 'y'],
+    ]);
+  });
+
   it('returns a failure rather than throwing on a text nested past any stack', () => {
     expect(
       Either.isLeft(readThreatDragon(`${'['.repeat(3000)}${']'.repeat(3000)}`)),

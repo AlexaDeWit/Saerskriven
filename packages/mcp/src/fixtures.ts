@@ -19,6 +19,7 @@ export { searchElementsResultSchema } from './lib/search-elements.js';
 export { searchThreatsResultSchema } from './lib/search-threats.js';
 export { shareLinkResultSchema } from './lib/share-link.js';
 export {
+  pastBoundYaml,
   referencingYaml,
   smallYaml,
   unclaimedFile,

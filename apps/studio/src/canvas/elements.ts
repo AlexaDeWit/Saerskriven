@@ -10,6 +10,7 @@ import {
 import {
   attachedEndpoint,
   generateElementId,
+  geometryLimits,
   type BoundaryShape,
   type Element,
   type ElementId,
@@ -91,7 +92,10 @@ export function centredPlacement(kind: ElementTool, centre: Point): NodeBox {
   };
 }
 
-/** An element sized between opposite corners. */
+/**
+ * An element sized between opposite corners, its stroke inside them. A drag
+ * too thin for that still places a width and a height the model holds.
+ */
 export function draggedPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
@@ -280,8 +284,14 @@ function insideStroke(kind: BoxElementKind, outer: NodeBox): NodeBox {
           bottom: halfStroke,
           left: halfStroke,
         };
-  const width = outer.size.width - inset.left - inset.right;
-  const height = outer.size.height - inset.top - inset.bottom;
+  const width = Math.max(
+    outer.size.width - inset.left - inset.right,
+    geometryLimits.leastExtent,
+  );
+  const height = Math.max(
+    outer.size.height - inset.top - inset.bottom,
+    geometryLimits.leastExtent,
+  );
   return {
     position: {
       x: outer.position.x + (outer.size.width - width) / 2,

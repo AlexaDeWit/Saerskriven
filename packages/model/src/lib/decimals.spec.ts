@@ -102,7 +102,7 @@ describe('storedNumber', () => {
 
 describe('storedPoint, storedPoints and storedSize', () => {
   const point = { x: 123.63636363636364, y: -0.04 };
-  const size = { width: 120.123456, height: 0.04 };
+  const size = { width: 120.123456, height: 60.04 };
 
   it('store a copy, rounded where a count is named and as given where none is', () => {
     expect(storedPoint(point, 1)).toEqual({ x: 123.6, y: 0 });
@@ -117,20 +117,23 @@ describe('storedPoint, storedPoints and storedSize', () => {
   });
 
   it.each([
-    [3, { width: 120.123, height: 0.04 }],
-    [1, { width: 120.1, height: 0.1 }],
-    [0, { width: 120, height: 1 }],
-  ])(
-    'keeps a size at %d decimals above zero, at the smallest extent that count writes',
-    (decimals, stored) => {
-      expect(storedSize(size, decimals)).toEqual(stored);
-    },
-  );
+    [3, { width: 120.123, height: 60.04 }],
+    [1, { width: 120.1, height: 60 }],
+    [0, { width: 120, height: 60 }],
+  ])('stores a size at %d decimals', (decimals, stored) => {
+    expect(storedSize(size, decimals)).toEqual(stored);
+  });
 
-  it('floors a size at 30 decimals on the smallest extent that count writes, with no noise of its own', () => {
-    const least = storedSize({ width: 1e-200, height: 1 }, 30).width;
-
-    expect(least).toBe(1e-30);
-    expect(decimalsOf(least)).toBe(30);
+  it('stores a coordinate and an extent at an end of the bound as it is, at any count', () => {
+    for (const decimals of [0, 1, 3, 6]) {
+      expect(storedPoint({ x: -1_000_000, y: 1_000_000 }, decimals)).toEqual({
+        x: -1_000_000,
+        y: 1_000_000,
+      });
+      expect(storedSize({ width: 1, height: 1_000_000 }, decimals)).toEqual({
+        width: 1,
+        height: 1_000_000,
+      });
+    }
   });
 });

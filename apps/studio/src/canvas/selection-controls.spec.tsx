@@ -297,11 +297,36 @@ describe('SelectionControls', () => {
     fireEvent.change(width, { target: { value: '-2' } });
     fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
     expect(modelStore.getState().present).toBe(canvasModel);
-    expect(currentAnnouncement().message).toContain('positive');
+    expect(currentAnnouncement().message).toContain('1,000,000');
     width.focus();
     fireEvent.keyDown(width, { key: 'Escape' });
     expect(screen.queryByRole('region')).toBeNull();
     expect(modelStore.getState().past).toEqual([]);
+  });
+
+  it('refuses a typed coordinate past 1,000,000 and a width under 1, and stores both at the ends of the bound', () => {
+    opened('edit-geometry');
+    const x = screen.getByRole('spinbutton', { name: 'X' });
+    const width = screen.getByRole('spinbutton', { name: 'Width' });
+    const apply = screen.getByRole('button', { name: 'Apply geometry' });
+
+    fireEvent.change(x, { target: { value: '1000000.5' } });
+    fireEvent.click(apply);
+    expect(modelStore.getState().present).toBe(canvasModel);
+
+    fireEvent.change(x, { target: { value: '-1000000' } });
+    fireEvent.change(width, { target: { value: '0.5' } });
+    fireEvent.click(apply);
+    expect(modelStore.getState().present).toBe(canvasModel);
+    expect(
+      screen.getByRole('region', { name: 'Position and size' }),
+    ).toBeDefined();
+
+    fireEvent.change(width, { target: { value: '1' } });
+    fireEvent.click(apply);
+    expect(
+      elementIn(modelStore.getState().present, actorElement),
+    ).toMatchObject({ position: { x: -1_000_000 }, size: { width: 1 } });
   });
 
   it('moves a multi-selection by one offset and invalidates a draft on tool changes', () => {
@@ -467,6 +492,27 @@ describe('SelectionControls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
     expect(modelStore.getState().present).toBe(canvasModel);
     expect(screen.getByRole('region', { name: 'Flow endpoint' })).toBeDefined();
+  });
+
+  it('refuses a free endpoint typed past 1,000,000, and stores one at the bound', () => {
+    openCanvas([requestFlow]);
+    opened('reconnect-source');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
+      target: { value: '' },
+    });
+    const y = screen.getByRole('spinbutton', { name: 'Y' });
+    const apply = screen.getByRole('button', { name: 'Apply endpoint' });
+
+    fireEvent.change(y, { target: { value: '1000001' } });
+    fireEvent.click(apply);
+    expect(modelStore.getState().present).toBe(canvasModel);
+    expect(screen.getByRole('region', { name: 'Flow endpoint' })).toBeDefined();
+
+    fireEvent.change(y, { target: { value: '1000000' } });
+    fireEvent.click(apply);
+    expect(flowOf()).toMatchObject({
+      source: { kind: 'free', position: { y: 1_000_000 } },
+    });
   });
 });
 

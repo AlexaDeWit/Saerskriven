@@ -47,7 +47,9 @@ export function fixedNumber(value: number, decimals: Decimals): string {
  * `value` as a geometry operation stores it. Where the caller names a count,
  * that is the nearest number of `decimals` decimals or fewer, which reads
  * back without the noise of the arithmetic that made `value` and is never
- * negative zero. Where the caller names none, it is `value` itself.
+ * negative zero. Where the caller names none, it is `value` itself. Every
+ * count writes a whole number as it is, and both ends of `geometryLimits` are
+ * whole, so a coordinate or an extent inside them is stored inside them.
  */
 export function storedNumber(
   value: number,
@@ -75,26 +77,12 @@ export function storedPoints(
   return points.map((point) => storedPoint(point, decimals));
 }
 
-/**
- * A copy of `size` with each extent as {@link storedNumber} stores it. An
- * extent that a count would round to zero becomes the smallest one that count
- * can write, 0.1 at one decimal and 1 at none, so a stored size stays
- * positive.
- */
+/** A copy of `size` with each extent as {@link storedNumber} stores it. */
 export function storedSize(size: Size, decimals: Decimals | undefined): Size {
   return {
-    width: storedExtent(size.width, decimals),
-    height: storedExtent(size.height, decimals),
+    width: storedNumber(size.width, decimals),
+    height: storedNumber(size.height, decimals),
   };
-}
-
-function storedExtent(extent: number, decimals: Decimals | undefined): number {
-  return decimals === undefined
-    ? extent
-    : Math.max(
-        storedNumber(extent, decimals),
-        Number(`1e-${String(counted(decimals))}`),
-      );
 }
 
 function counted(decimals: Decimals): number {

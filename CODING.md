@@ -29,8 +29,11 @@ server that throws. The functions they call still return `Either`.
 
 One other function throws on purpose. `svgNumber` in
 `packages/canvas/src/lib/numbers.ts` raises a `RangeError` for a number that
-is not finite, which no schema admits and only arithmetic produces. A render
-cannot hand React a failure as a value, so the throw ends at each app's
+is not finite, which no schema admits and only arithmetic produces. The
+model's `geometryLimits` bound every coordinate and size a read admits, so the
+layout makes no such number from a model that was read, and the guard is for
+a number made during a live gesture in the studio, which no read validates. A
+render cannot hand React a failure as a value, so the throw ends at each app's
 outermost boundary: the studio's error boundary, `runCli`, and the MCP SDK's
 dispatch around the server's handlers, which answers with an error result.
 
