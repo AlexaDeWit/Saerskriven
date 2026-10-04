@@ -43,8 +43,11 @@ const dragThreshold = 3;
  * pointer passes the drag threshold, commits on release, and cancels on a
  * release back where it started. A pointer or a release that arrives after
  * `context` changed is ignored. `drop` abandons a drag in flight, and
- * `endedDrag` answers once whether the next click closes a drag, released or
- * dropped, rather than pressing the handle.
+ * `closedBy` answers once whether a click closes a drag, released or dropped,
+ * rather than pressing the handle. A click the keyboard sent closes none, and
+ * leaves the answer for the pointer's click. `forget` withdraws the answer,
+ * for a caller that takes that click itself or sees a later press, which
+ * shows the click is not coming.
  */
 export function useHandleDrag<Held>(
   context: unknown,
@@ -122,7 +125,13 @@ export function useHandleDrag<Held>(
       }
       gesture.current = undefined;
     },
-    endedDrag: (): boolean => {
+    forget: (): void => {
+      dragged.current = false;
+    },
+    closedBy: (click: Pick<MouseEvent, 'detail'>): boolean => {
+      if (click.detail === 0) {
+        return false;
+      }
       const ended = dragged.current;
       dragged.current = false;
       return ended;

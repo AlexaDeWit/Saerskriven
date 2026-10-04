@@ -185,7 +185,7 @@ export function CurvePointControls({
             key={index}
             onClick={(event) => {
               event.stopPropagation();
-              drag.endedDrag();
+              drag.forget();
             }}
             onPointerCancel={() => {
               cancel(true);
@@ -208,7 +208,7 @@ export function CurvePointControls({
           key={index}
           onClick={(event) => {
             event.stopPropagation();
-            if (event.detail === 0 || !drag.endedDrag()) {
+            if (!drag.closedBy(event)) {
               setOpen({ context: points.context, index });
             }
           }}
