@@ -342,3 +342,7 @@ untitled mitigation's prose has the same shape: a heading becomes a PDF outline
 entry, a PDF string rather than glyphs, so a spec reads it back without a font
 or a content stream. It is committed rather than built in a spec so a reviewer
 can read it.
+
+`render/two-diagrams.mermaid.snapshot.md` is the opt-in Markdown export of
+`two-diagrams.model.json`. The renderer produces it, and the CLI and browser
+export tests read it alongside the register-only golden.

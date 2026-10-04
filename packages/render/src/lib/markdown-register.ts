@@ -8,6 +8,7 @@ import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
 import type { RegisterBadge } from './register-badges.js';
+import { markdownWithDiagrams } from './markdown-diagrams.js';
 import type { MarkdownOptions } from './register-options.js';
 import {
   registerClassNames,
@@ -25,7 +26,10 @@ export function renderRegister(
   locale: Locale,
   options: MarkdownOptions = {},
 ): string {
-  const tree = registerDocument(model, locale, options);
+  const tree =
+    options.includeDiagrams === true
+      ? markdownWithDiagrams(model, locale, options)
+      : registerDocument(model, locale, options);
   return markdown.stringify(
     options.styled === true ? styledTree(tree, options) : tree,
   );

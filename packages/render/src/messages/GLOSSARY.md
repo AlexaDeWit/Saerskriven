@@ -397,3 +397,12 @@ liaison`, `Identifiabilité`, `Détectabilité`, `Inconscience`) follow the
 
 Microsoft's French and Swedish pages cited here are marked as machine
 translated. They are cited for the words in circulation, never alone.
+
+## Markdown diagram labels
+
+| English               | fr-CA                     | sv                   | Sources                                                                            |
+| --------------------- | ------------------------- | -------------------- | ---------------------------------------------------------------------------------- |
+| free endpoint         | extrémité libre           | fri ändpunkt         | Unconfirmed as a term of art, ordinary diagram wording.                            |
+| reference placeholder | référence de remplacement | referensplatshållare | Unconfirmed as a term of art, names a substitute for an unsupported flow endpoint. |
+
+Mermaid export uses the existing translations for trust boundary and out of scope.

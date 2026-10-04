@@ -201,7 +201,9 @@ exactly, which is what a read dropped or held less exactly than the file
 stated it.
 
 `render` writes a projection. `--format md` writes the whole threat
-register. `--format svg` draws one diagram, which `--diagram <id or title>`
+register. Add `--include-diagrams` to place Mermaid diagrams before it
+([details](docs/render-themes.md#mermaid-diagrams-in-markdown)).
+`--format svg` draws one diagram, which `--diagram <id or title>`
 chooses where the model holds more than one, and which a model of one does
 not have to name. `--format png` draws that same diagram as a picture,
 1568 pixels on its longer edge, for a reader that takes an image and not an

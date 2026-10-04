@@ -41,6 +41,7 @@
       "{workspaceRoot}/test-data/render/two-diagrams-*.snapshot.svg",
       "{workspaceRoot}/test-data/render/two-diagrams-*.snapshot.png",
       "{workspaceRoot}/test-data/render/two-diagrams.register.snapshot.md",
+      "{workspaceRoot}/test-data/render/two-diagrams.mermaid.snapshot.md",
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.pdf.sha256"
     ],
     "studioTestFixtures": [
@@ -59,6 +60,7 @@
       "{workspaceRoot}/test-data/render/two-diagrams-storefront.snapshot.svg",
       "{workspaceRoot}/test-data/render/two-diagrams-storefront.snapshot.png",
       "{workspaceRoot}/test-data/render/two-diagrams.register.snapshot.md",
+      "{workspaceRoot}/test-data/render/two-diagrams.mermaid.snapshot.md",
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.typ",
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.pdf.sha256"
     ],

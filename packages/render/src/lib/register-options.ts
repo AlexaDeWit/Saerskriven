@@ -19,9 +19,11 @@ export const registerOptionsSchema = z.object({
     .optional(),
 });
 
-const markdownOptionsSchema = registerOptionsSchema.extend({
+/** Options for Markdown appearance and optional Mermaid diagrams. */
+export const markdownOptionsSchema = registerOptionsSchema.extend({
   theme: renderThemeSchema.optional(),
   styled: z.boolean().optional(),
+  includeDiagrams: z.boolean().optional(),
   stylesheet: z.boolean().optional(),
 });
 
@@ -30,7 +32,6 @@ export type RegisterOptions = z.infer<typeof registerOptionsSchema>;
 
 /**
  * The Markdown register's options: the heading controls, and for styled
- * output the theme and whether the scoped stylesheet is written. None of them
- * changes what the register says.
+ * output the theme and stylesheet. Diagrams are opt-in Mermaid projections.
  */
 export type MarkdownOptions = z.infer<typeof markdownOptionsSchema>;

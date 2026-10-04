@@ -23,4 +23,5 @@ export const menuSv = catalogue(menuMessages)('sv')({
   diagram: 'Diagram',
   'no-diagram': 'Inget diagram',
   'diagram-named': 'Diagram: {title}',
+  'include-diagrams': 'Inkludera diagram i Markdown',
 });

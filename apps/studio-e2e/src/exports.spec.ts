@@ -4,6 +4,9 @@ import { canvasSettled } from './canvas.fixtures.js';
 import { exportGolden } from './exports.fixtures.js';
 import {
   exportedFile,
+  downloaded,
+  openMenu,
+  menuItem,
   openFile,
   openFallback,
   openText,
@@ -64,4 +67,35 @@ test('names the open diagram, cleaned for a file name, when the model has severa
 
   expect(drawing.name).toBe('two-diagrams - Orders_ A_B_.svg');
   expect(picture.name).toBe('two-diagrams - Orders_ A_B_.png');
+});
+
+test('opts into Mermaid Markdown and returns to register-only output', async ({
+  page,
+}) => {
+  await openFile(page, twoDiagramsFile);
+  await openMenu(page);
+  await menuItem(page, 'Export').hover();
+  const include = page.getByRole('menuitemcheckbox', {
+    name: 'Include diagrams in Markdown',
+  });
+  await expect(include).not.toBeChecked();
+  await include.focus();
+  await page.keyboard.press('Space');
+  await expect(include).toBeChecked();
+  const combined = await downloaded(page, () =>
+    menuItem(page, 'Register as Markdown').click(),
+  );
+  expect(combined.bytes).toEqual(
+    exportGolden('two-diagrams.mermaid.snapshot.md'),
+  );
+  await openMenu(page);
+  await menuItem(page, 'Export').hover();
+  await expect(include).toBeChecked();
+  await include.click();
+  const register = await downloaded(page, () =>
+    menuItem(page, 'Register as Markdown').click(),
+  );
+  expect(register.bytes).toEqual(
+    exportGolden('two-diagrams.register.snapshot.md'),
+  );
 });

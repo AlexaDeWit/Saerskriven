@@ -1,6 +1,7 @@
 export { renderRegister } from './lib/markdown-register.js';
 export {
   registerOptionsSchema,
+  markdownOptionsSchema,
   type MarkdownOptions,
 } from './lib/register-options.js';
 export { registerStylesheet } from './lib/register-stylesheet.js';

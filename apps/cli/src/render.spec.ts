@@ -15,6 +15,7 @@ import {
   scratchDirectory,
 } from './cli.fixtures.js';
 import { compileTimeout, outlineTitles, pageCount } from './pdf.fixtures.js';
+import { runCli } from './cli.js';
 import { render, type RenderOptions } from './render.js';
 
 const directory = scratchDirectory('render');
@@ -50,6 +51,42 @@ const written = async (
 };
 
 describe('render', () => {
+  it('includes Mermaid diagrams in Markdown files and stdout only when requested', async () => {
+    const expected = golden('two-diagrams.mermaid.snapshot.md');
+    const run = await written('with-diagrams.md', twoDiagrams, {
+      format: 'md',
+      includeDiagrams: true,
+    });
+    expect(run.outcome).toEqual({ code: 0, out: '', err: '' });
+    expect(run.text()).toBe(expected);
+    await expect(
+      runCli([
+        'render',
+        twoDiagrams,
+        '--format',
+        'md',
+        '--include-diagrams',
+        '--out',
+        '-',
+      ]),
+    ).resolves.toEqual({ code: 0, out: expected, err: '' });
+  });
+
+  it('reports the Markdown-only flag on SVG and still refuses diagram selection for Markdown', async () => {
+    const svg = await render(
+      twoDiagrams,
+      options({ ...storefront, includeDiagrams: true }),
+    );
+    expect(svg.code).toBe(0);
+    expect(svg.err).toContain('Markdown embedding options do not apply');
+    const md = await render(
+      twoDiagrams,
+      options({ format: 'md', ...storefront, includeDiagrams: true }),
+    );
+    expect(md.code).toBe(2);
+    expect(md.out).toBe('');
+  });
+
   it('writes the register of the two-diagram model as the golden file', async () => {
     const run = await written('two-diagrams.register.md', twoDiagrams, {
       format: 'md',

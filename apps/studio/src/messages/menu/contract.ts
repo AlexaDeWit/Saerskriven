@@ -15,6 +15,7 @@ export const menuMessages = {
   'file-state-clean': text({ name: 'text', format: 'text' }),
   arrange: text(),
   export: text(),
+  'include-diagrams': text(),
   appearance: text(),
   'appearance-chosen': text({ mode: 'text' }),
   'language-chosen': text({ language: 'text' }),

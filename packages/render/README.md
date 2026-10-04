@@ -36,7 +36,11 @@ mdast tree, and states what the register promises: stable threat anchors,
 records on their threats, the model's assumptions in one section, prose kept
 as Markdown under `deepestProse`, and no label left blank.
 [`markdown-register.ts`](src/lib/markdown-register.ts):
-`renderRegister(model, locale, options)` serializes that tree, and
+`renderRegister(model, locale, options)` serializes that tree. With
+`includeDiagrams: true`, it adds Mermaid diagrams and structural notes before
+the register. [Markdown diagram exports](../../docs/render-themes.md#mermaid-diagrams-in-markdown)
+describes the approximation rules.
+
 [`typst-document.ts`](src/lib/typst-document.ts): `renderTypst(model, locale,
 theme)` walks it into Typst, so what a PDF says and what a Markdown file says
 cannot drift.

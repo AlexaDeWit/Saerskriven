@@ -23,4 +23,5 @@ export const menuFrCA = catalogue(menuMessages)('fr-CA')({
   diagram: 'Diagramme',
   'no-diagram': 'Aucun diagramme',
   'diagram-named': 'Diagramme : {title}',
+  'include-diagrams': 'Inclure les diagrammes dans le Markdown',
 });

@@ -21,4 +21,13 @@ export const registerSv = catalogue(registerMessages)('sv')({
   'flow-from-to': 'Flöde från {source} till {target}',
   'flow-between': 'Flöde mellan {source} och {target}',
   'free-point': 'en fri punkt',
+  diagrams: 'Diagram',
+  'diagram-empty': 'Det här diagrammet saknar element.',
+  'diagram-free-endpoint': 'Fri ändpunkt',
+  'diagram-note': 'Anteckning',
+  'diagram-reference': 'Referens: {label}',
+  'diagram-out-of-scope': '{label} (utanför omfattningen)',
+  'diagram-omitted-boundaries': 'Förtroendegränser som inte visas: {names}.',
+  'diagram-substituted-references':
+    'Anslutningar till dessa element använder referensplatshållare: {names}.',
 });

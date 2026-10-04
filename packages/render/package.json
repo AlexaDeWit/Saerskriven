@@ -54,7 +54,8 @@
     "@types/jsdom": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "jsdom": "catalog:"
+    "jsdom": "catalog:",
+    "mermaid": "catalog:"
   },
   "nx": {
     "tags": [
