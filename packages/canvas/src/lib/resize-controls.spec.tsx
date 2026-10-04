@@ -384,12 +384,15 @@ describe('ResizeControls', () => {
     ]);
   });
 
-  it('hands one resize end to an arrow key on the axis of its control, and none to a key off it', () => {
+  it('claims an arrow key on the axis of its control and hands it one resize end, and none to a key off it', () => {
+    const onAxis = keyDown('ArrowRight');
+
     act(() => {
       control('right').dispatchEvent(keyDown('ArrowUp'));
-      control('right').dispatchEvent(keyDown('ArrowRight'));
+      control('right').dispatchEvent(onAxis);
     });
 
+    expect(onAxis.defaultPrevented).toBe(true);
     expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
       {
         position: client.position,
