@@ -16,7 +16,7 @@ import {
 import { currentAnnouncement } from './announcements.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { currentLayout } from './layout.js';
-import { followItemMoves } from './move-message.js';
+import { followKeyboardMoves, type KeyboardMove } from './keyboard-moves.js';
 import {
   actorElement,
   mainDiagram,
@@ -351,21 +351,66 @@ describe('DiagramCanvas, what a route gesture stores', () => {
 });
 
 describe('DiagramCanvas, what the view is told of', () => {
-  it('hears of each arrow nudge of a focused bend, and of no other key on it', () => {
+  it('hears of each arrow nudge of a focused bend as what holds focus, and of no other key on it', () => {
     render(<DiagramCanvas />);
     add();
     press('Enter');
     press('Enter');
-    const told = vi.fn<() => void>();
-    const release = followItemMoves(told);
+    const told = vi.fn<(moved: KeyboardMove) => void>();
+    const release = followKeyboardMoves(told);
     bend().focus();
 
     press('ArrowUp', true);
     press('ArrowLeft');
-    expect(told).toHaveBeenCalledTimes(2);
+    expect(told.mock.calls).toEqual([['focused'], ['focused']]);
 
     press('Backspace');
     expect(told).toHaveBeenCalledTimes(2);
+    release();
+  });
+
+  it('hears of each arrow nudge of a bend being placed as that bend, from Add bend and from Move bend, and of no other key while placing', () => {
+    render(<DiagramCanvas />);
+    const told = vi.fn<(moved: KeyboardMove) => void>();
+    const release = followKeyboardMoves(told);
+
+    add();
+    press('Enter');
+    press('ArrowDown');
+    press('ArrowRight', true);
+    press('Enter');
+    expect(told.mock.calls).toEqual([[{ placedBend: 0 }], [{ placedBend: 0 }]]);
+
+    add();
+    press('ArrowRight');
+    press('Enter');
+    press('ArrowDown');
+    press('Escape');
+    expect(told.mock.calls.slice(2)).toEqual([[{ placedBend: 1 }]]);
+
+    fireEvent.click(bend());
+    fireEvent.click(screen.getByRole('button', { name: 'Move bend' }));
+    press('ArrowUp');
+    expect(told.mock.calls.slice(3)).toEqual([[{ placedBend: 0 }]]);
+    release();
+  });
+
+  it('hears nothing of a bend placed by a click, nor of one moved by a drag of its handle', () => {
+    render(<DiagramCanvas />);
+    const told = vi.fn<(moved: KeyboardMove) => void>();
+    const release = followKeyboardMoves(told);
+
+    add();
+    press('Enter');
+    const pane = document.querySelector('.react-flow__pane') ?? document.body;
+    fireEvent.pointerDown(pane);
+    fireEvent.click(pane, { clientX: 251, clientY: 101 });
+    expect(points()).toHaveLength(1);
+
+    dragHandle(bend(), { x: 240, y: 80 });
+    expect(points()).toEqual([{ x: 240, y: 80 }]);
+
+    expect(told).not.toHaveBeenCalled();
     release();
   });
 
@@ -373,7 +418,7 @@ describe('DiagramCanvas, what the view is told of', () => {
     openCanvas([probeFlow]);
     render(<DiagramCanvas />);
     const told = vi.fn<() => void>();
-    const release = followItemMoves(told);
+    const release = followKeyboardMoves(told);
     targetEnd().focus();
 
     press('ArrowLeft');

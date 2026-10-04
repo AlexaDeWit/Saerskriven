@@ -11,7 +11,7 @@ import type { StudioTranslator } from '../messages/catalogues.js';
 import { useTranslator } from '../messages/locale.js';
 import type { State } from '../store/state.js';
 import { modelStore } from '../store/store.js';
-import { handlerSlot } from '../ui/handler-slot.js';
+import { keyboardMoved } from './keyboard-moves.js';
 import { currentLayout, selectionPosition } from './layout.js';
 
 /** Hands on a keydown that has already passed React Flow's own key handlers. */
@@ -19,27 +19,6 @@ export type KeyboardMoveReport = (event: KeyboardEvent) => void;
 
 /** The frame React Flow draws around a box selection, which takes focus and the arrow keys that move the group. */
 export const selectionFrameSelector = '.react-flow__nodesselection-rect';
-
-const follower = handlerSlot<() => void>();
-
-/**
- * Lends the handler `itemMoved` calls, and answers the function that takes it
- * back.
- */
-export function followItemMoves(moved: () => void): () => void {
-  return follower.register(moved);
-}
-
-/**
- * Tells the handler lent through `followItemMoves` that something on the
- * canvas has just been moved or resized where it holds focus: the selection
- * by an arrow key, a bend, a free flow end or a curve point by one, or an
- * element by a resize. A resize ends the same way by key and by pointer, so
- * it is the handler that tells a key press from a pointer.
- */
-export function itemMoved(): void {
-  follower.current()?.();
-}
 
 /**
  * A coordinate as Position and size shows it: the stored number, neither
@@ -88,7 +67,7 @@ export const preMoveMessage = (): string => '';
 /**
  * Writes React Flow's live region after an arrow key within a node, or on the
  * rectangle React Flow draws around a box selection, has moved the
- * selection, and tells the handler lent through `followItemMoves`. The
+ * selection, and tells the view's follower through `keyboardMoved`. The
  * canvas wrapper hands `ref` each keydown once React Flow's handler has run,
  * so the store already holds the move. Mounted inside `ReactFlow`, where its
  * store is in reach.
@@ -107,7 +86,7 @@ export function KeyboardMoveMessage({
       if (!event.defaultPrevented || !movedBySelectionKey(event)) {
         return;
       }
-      itemMoved();
+      keyboardMoved();
       const message = movedSelectionMessage(modelStore.getState(), translator);
       if (message !== undefined) {
         said.current = freshLiveText(said.current, message);

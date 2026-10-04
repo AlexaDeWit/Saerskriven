@@ -56,8 +56,8 @@ import {
   resizeNode,
   stopInlineEditing,
 } from './edits.js';
+import { keyboardMoved } from './keyboard-moves.js';
 import { NodeFold } from './live-edges.js';
-import { itemMoved } from './move-message.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
 import { gestureDecimals } from './stored-decimals.js';
@@ -293,7 +293,9 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
             fold();
           } else {
             resizeNode(node, box, gestureDecimals[input]);
-            itemMoved();
+            if (input === 'keyboard') {
+              keyboardMoved();
+            }
           }
         }}
         resizeLabels={resizeLabels(node, t)}

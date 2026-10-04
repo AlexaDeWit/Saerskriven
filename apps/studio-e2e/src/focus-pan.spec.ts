@@ -5,7 +5,9 @@ import {
   canvasContainer,
   canvasSettled,
   centreOf,
+  drawnBy,
   focusRingShown,
+  lineOf,
   screenBoxOf,
   viewportTransform,
   viewportZoom,
@@ -377,6 +379,73 @@ test('an arrow key that moves a bend, a free flow end and a curve point past the
   }
 });
 
+test('an arrow key that moves a bend being placed past the border is followed, from Add bend and from Move bend, with focus on the route toolbar', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  const flow = await selectByKeyboard(page, firstFlow);
+  const toolbar = page.getByRole('group', { name: 'Flow route', exact: true });
+  const bends = page.locator('[data-bend-index]');
+  const placed = page.getByRole('button', { name: 'Bend 1', exact: true });
+  const stored = await bends.count();
+
+  await test.step('Add bend, set with Enter', async () => {
+    await page.keyboard.press('+');
+    await page.keyboard.press('Enter');
+    await expect(bends).toHaveCount(stored + 1);
+
+    await followedPast(page, placed, 'top');
+
+    await expect(toolbar).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(flow).toBeFocused();
+    await expect(bends).toHaveCount(stored + 1);
+    expect(await insideTheViewport(page, placed)).toBe(true);
+  });
+
+  await test.step('Move bend, put back with Escape', async () => {
+    await page.getByRole('button', { name: 'Fit to view' }).click();
+    await canvasSettled(page);
+    const line = lineOf(page, firstFlow);
+    const set = await drawnBy(line);
+    await placed.click();
+    await page.getByRole('button', { name: 'Move bend', exact: true }).click();
+    await expect(toolbar).toBeFocused();
+
+    await followedPast(page, placed, 'right');
+
+    await expect(toolbar).toBeFocused();
+    await expect.poll(() => drawnBy(line)).not.toBe(set);
+    await page.keyboard.press('Escape');
+    await expect(flow).toBeFocused();
+    await expect(line).toHaveAttribute('d', set);
+  });
+});
+
+test('a bend placed by a click at the border leaves the view where it is, though an arrow key moved it first', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  const flow = await selectByKeyboard(page, firstFlow);
+  const placed = page.getByRole('button', { name: 'Bend 1', exact: true });
+  await page.keyboard.press('+');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await canvasSettled(page);
+  const viewport = await viewportBox(page);
+  const before = await viewportTransform(page);
+
+  await page.mouse.click(
+    viewport.x + 2,
+    viewport.y + (viewport.height * 2) / 3,
+  );
+
+  await expect(flow).toBeFocused();
+  await canvasSettled(page);
+  expect(await insideTheViewport(page, placed)).toBe(false);
+  expect(await viewportTransform(page)).toBe(before);
+});
+
 test('Tab onto a bend handle outside the viewport brings it just inside', async ({
   page,
 }) => {
@@ -467,6 +536,35 @@ test('a pointer resize that carries the control to the border leaves the view wh
   const before = await viewportTransform(page);
 
   await dragBorderward(page, control, () => page.keyboard.press('Shift'));
+
+  await canvasSettled(page);
+  expect(await viewportTransform(page)).toBe(before);
+  expect(await insideTheViewport(page, control)).toBe(false);
+});
+
+test('a pointer resize that a second mouse button ends at the border leaves the view where it is, though a key is pressed during the drag', async ({
+  page,
+}) => {
+  await openEveryGlyph(page);
+  const item = await selectByKeyboard(page, actor);
+  const control = item.getByRole('button', {
+    name: 'Resize Customer\nbrowser from right',
+    exact: true,
+  });
+  const before = await viewportTransform(page);
+  const pressedAt = await centreOf(control);
+
+  await dragBorderward(page, control, async () => {
+    await page.keyboard.press('Shift');
+    await page.mouse.down({ button: 'right' });
+    await page.mouse.up({ button: 'right' });
+    const ended = (await screenBoxOf(item)).width;
+    await page.mouse.move(pressedAt.x, pressedAt.y, { steps: 4 });
+    expect(
+      (await screenBoxOf(item)).width,
+      'the second button ended it',
+    ).toBeCloseTo(ended, 1);
+  });
 
   await canvasSettled(page);
   expect(await viewportTransform(page)).toBe(before);

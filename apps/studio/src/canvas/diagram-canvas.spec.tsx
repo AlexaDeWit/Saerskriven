@@ -42,7 +42,7 @@ import {
 } from './canvas.fixtures.js';
 import { resetThreatRegister } from '../panel/threat-register-state.js';
 import { DiagramCanvas } from './diagram-canvas.js';
-import { followItemMoves } from './move-message.js';
+import { followKeyboardMoves } from './keyboard-moves.js';
 import { placementClickDistance } from './elements.js';
 import { selectTool } from './tools.js';
 import { currentLayout } from './layout.js';
@@ -574,11 +574,31 @@ describe('DiagramCanvas', () => {
     openCanvas([actorElement]);
     render(<DiagramCanvas />);
     const told = vi.fn<() => void>();
-    const release = followItemMoves(told);
+    const release = followKeyboardMoves(told);
 
     fireEvent.keyDown(resizeControl('right'), { key: 'ArrowRight' });
 
     expect(told).toHaveBeenCalledOnce();
+    release();
+  });
+
+  it('tells the view nothing of a resize by pointer that is stored, a key pressed during it or not', async () => {
+    openCanvas([actorElement]);
+    render(<DiagramCanvas />);
+    const told = vi.fn<() => void>();
+    const release = followKeyboardMoves(told);
+    const control = resizeControl('right').parentElement ?? document.body;
+    const before = readerBox();
+
+    fireEvent(control, mouseEvent('mousedown', 100));
+    fireEvent(window, mouseEvent('mousemove', 160));
+    fireEvent.keyDown(window, { key: 'Shift' });
+    fireEvent(window, mouseEvent('mouseup', 160));
+    await clickSuppressionLifted();
+
+    expect(readerBox()).not.toEqual(before);
+    expect(modelStore.getState().past).toHaveLength(1);
+    expect(told).not.toHaveBeenCalled();
     release();
   });
 
@@ -625,7 +645,7 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
     const settled = readerGlyphWidth();
     const told = vi.fn<() => void>();
-    const release = followItemMoves(told);
+    const release = followKeyboardMoves(told);
 
     touchResizeReader();
     expect(readerGlyphWidth()).not.toBe(settled);
@@ -651,7 +671,7 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
     const settled = [readerGlyphWidth(), reader().style.width];
     const told = vi.fn<() => void>();
-    const release = followItemMoves(told);
+    const release = followKeyboardMoves(told);
 
     touchResizeReader();
     expect(reader().style.width).not.toBe(settled[1]);

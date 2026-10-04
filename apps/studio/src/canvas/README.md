@@ -34,7 +34,8 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `stored-decimals.ts`                                                  | How many decimals a gesture, a command and a typed form each store                                                                 |
 | `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
 | `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
-| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection, and how the view's follower is told of a move        |
+| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection                                                       |
+| `keyboard-moves.ts`                                                   | How the view's follower is told that a key press moved or resized something, and what                                              |
 | `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them            |
 | `focus-pan.tsx`                                                       | The shortest pan that brings the focused item's ring into the viewport, asked for by Tab focus and by an arrow-key move or resize  |
 | `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                 |
@@ -247,18 +248,22 @@ then named would pan. A `focusin` on React Flow's container counts while the
 keyboard is in charge and its target is an element, a flow, a resize control,
 or a bend, flow end or curve point handle that matches `:focus-visible`. Focus
 the browser hands back when the window regains it is not a move.
-`onKeyboardMove` lends the handler that `itemMoved` in `move-message.tsx`
+`onKeyboardMove` lends the handler that `keyboardMoved` in `keyboard-moves.ts`
 calls, the one way the follow is told: by `KeyboardMoveMessage` once an arrow
 key has moved the selection, by the arrow nudge of a bend, a free flow end and
-a curve point, and by a resize as it ends. So the follow needs no Tab first and
-knows nothing of how the move is stored. A resize ends the same way by key and
-by pointer, so the handler counts only while the last input was a key press,
-which also tells it whether the key is held. It measures whatever holds focus
-then: the element, the resize control, the handle, or the frame React Flow
-draws around a box selection, whose box is the whole group's. That frame is no
-tab stop, so only the move path takes it. A bend placed from the route toolbar
-moves while the toolbar holds focus, so it is not followed. Both paths measure
-on the next frame, when what the key press changed is drawn.
+a curve point, by a resize as it ends where its control says the keyboard made
+it, and by the arrow nudge of a bend being placed. So the follow needs no Tab
+first and knows nothing of how the move is stored. The caller is what knows the
+input, and a pointer path never calls: a resize ends the same way by key and by
+pointer, so the resize end reads its `GestureInput`. The handler infers nothing
+from the window's events. It listens for `keydown` alone, to know whether the
+key is held. It measures whatever holds focus then: the element, the resize
+control, the handle, or the frame React Flow draws around a box selection,
+whose box is the whole group's. That frame is no tab stop, so only the move
+path takes it. A bend being placed is the one exception: the route toolbar
+holds focus, so the call names the bend by its place among the flow's bends and
+the handler measures that handle, which draws no ring. Both paths measure on
+the next frame, when what the key press changed is drawn.
 
 `offsetIntoView` works in screen pixels, from the item's box with its outline's
 reach and the container's box: no move for a ring wholly inside, otherwise on

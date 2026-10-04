@@ -9,12 +9,13 @@ import {
   focusPanDuration,
   offsetIntoView,
   onKeyboardFocus,
+  onKeyboardMove,
   ringMargin,
   viewPanner,
   type PannedView,
 } from './focus-pan.js';
+import { keyboardMoved } from './keyboard-moves.js';
 import {
-  itemMoved,
   KeyboardMoveMessage,
   selectionFrameSelector,
   type KeyboardMoveReport,
@@ -482,6 +483,86 @@ describe('onKeyboardFocus', () => {
   });
 });
 
+describe('onKeyboardMove', () => {
+  const moved = vi.fn<(target: Element, held: boolean) => void>();
+  let surface: HTMLElement;
+  let stop: () => void;
+
+  const bendHandle = (index: number): HTMLElement => {
+    const handle = drawn('button', '', surface);
+    handle.setAttribute('data-bend-index', String(index));
+    return handle;
+  };
+
+  beforeEach(() => {
+    moved.mockClear();
+    surface = document.createElement('div');
+    document.body.replaceChildren(surface);
+    stop = onKeyboardMove(surface, moved);
+  });
+
+  afterEach(() => {
+    stop();
+  });
+
+  it('answers what holds focus for a move it is told of, and nothing where focus is on no canvas item or outside the surface', async () => {
+    const node = drawn('div', 'react-flow__node', surface);
+    const toolbar = drawn('fieldset', '', surface);
+    const outside = drawn('div', 'react-flow__node', document.body);
+
+    for (const focused of [node, toolbar, outside]) {
+      focused.focus();
+      keyboardMoved();
+      await nextFrame();
+    }
+
+    expect(moved.mock.calls).toEqual([[node, false]]);
+  });
+
+  it('answers the bend being placed, by its place among the bends, while the route toolbar holds focus', async () => {
+    const toolbar = drawn('fieldset', '', surface);
+    const bends = [bendHandle(0), bendHandle(1)];
+    toolbar.focus();
+
+    keyboardMoved({ placedBend: 1 });
+    await nextFrame();
+
+    expect(moved.mock.calls).toEqual([[bends[1], false]]);
+  });
+
+  it('says the key is held for a move told of after a repeat of it, and not after a single press', async () => {
+    const toolbar = drawn('fieldset', '', surface);
+    const bend = bendHandle(0);
+    toolbar.focus();
+
+    for (const repeat of [false, true, false]) {
+      press('ArrowUp', { repeat });
+      keyboardMoved({ placedBend: 0 });
+      await nextFrame();
+    }
+
+    expect(moved.mock.calls).toEqual([
+      [bend, false],
+      [bend, true],
+      [bend, false],
+    ]);
+  });
+
+  it.each(['pointerdown', 'pointerup', 'pointercancel'])(
+    'answers a move it is told of after a %s on the window, since its caller is what knows a key press made it',
+    async (heard) => {
+      const node = drawn('div', 'react-flow__node', surface);
+      node.focus();
+
+      window.dispatchEvent(new Event(heard));
+      keyboardMoved();
+      await nextFrame();
+
+      expect(moved.mock.calls).toEqual([[node, false]]);
+    },
+  );
+});
+
 const drawnAt = (element: Element | null, at: Box): void => {
   if (element !== null) {
     vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
@@ -578,6 +659,7 @@ const mounted = async (
   drawnAt(store ?? null, at);
   drawnAt(container.querySelector('[data-testid="pane"]'), viewport);
   return {
+    surface: container.querySelector('.react-flow') ?? document.body,
     store: store ?? document.body,
     note: note ?? document.body,
     frame: () =>
@@ -695,28 +777,35 @@ describe('FocusPan', () => {
     });
   });
 
-  it('follows what a key press moved or resized where it is told of it, and nothing told of after a pointer press, release or cancel', async () => {
+  it('follows what holds focus where it is told a key press moved or resized it', async () => {
     const canvas = await mounted(window1280, box(1250, 300, 100, 50));
     canvas.store.focus();
 
-    for (const pointer of ['pointerdown', 'pointerup', 'pointercancel']) {
-      press('Enter');
-      window.dispatchEvent(new Event(pointer));
-      itemMoved();
-      await nextFrame();
-      expect({ pointer, view: canvas.view() }).toEqual({
-        pointer,
-        view: { x: 0, y: 0 },
-      });
-    }
-
     press('ArrowRight');
-    itemMoved();
+    keyboardMoved();
     await nextFrame();
+
     expect(canvas.view()).toEqual({
       x: 1280 - ringMargin - (1350 + 4),
       y: 0,
     });
+  });
+
+  it('follows the bend being placed where it is told of one, measured at its own box while the route toolbar holds focus', async () => {
+    const canvas = await mounted(window1280, box(100, 100, 100, 50));
+    const toolbar = drawn('fieldset', '', canvas.surface);
+    const placed = drawn('button', '', canvas.surface);
+    placed.setAttribute('data-bend-index', '1');
+    placed.style.outlineStyle = 'none';
+    drawnAt(placed, box(600, -40, 28, 28));
+    toolbar.focus();
+
+    press('ArrowUp');
+    keyboardMoved({ placedBend: 1 });
+    await nextFrame();
+
+    expect(canvas.view()).toEqual({ x: 0, y: 40 + ringMargin });
+    expect(document.activeElement).toBe(toolbar);
   });
 
   it('leaves the view alone for an arrow-key move that ends inside the viewport', async () => {
