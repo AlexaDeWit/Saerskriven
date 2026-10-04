@@ -3,8 +3,8 @@ import {
   escapedForTerminal,
   renderDivergences,
 } from '@saerskriven/formats';
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import {
-  hostedStudioUrl,
   renderShareLinkWriteFailure,
   shareLinkLimit,
   writeShareLink,
