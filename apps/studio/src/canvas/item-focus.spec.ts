@@ -2,10 +2,10 @@ import type { ElementId } from '@saerskriven/model';
 import { act, render, screen } from '@testing-library/react';
 import { createElement, type FunctionComponent } from 'react';
 import { unmountedSurface } from '../commands/binding.js';
-import { actorElement } from '../store/store.fixtures.js';
+import { actorElement, processElement } from '../store/store.fixtures.js';
 import { modelStore } from '../store/store.js';
 import { boundaryElement, openCanvas, requestFlow } from './canvas.fixtures.js';
-import { selectToolOnItem } from './item-focus.js';
+import { commandOnItem } from './item-focus.js';
 import { currentLayout } from './layout.js';
 import { elementIds } from './nodes.js';
 import {
@@ -56,9 +56,17 @@ const besideSelection = [
 canvas.append(node, flow, boundary, selectionFrame);
 document.body.append(canvas);
 
-const press = (key: string, on: HTMLElement) => {
+const press = (
+  key: string,
+  on: HTMLElement,
+  modifiers: KeyboardEventInit = {},
+) => {
   on.focus();
-  const nativeEvent = new KeyboardEvent('keydown', { key, bubbles: true });
+  const nativeEvent = new KeyboardEvent('keydown', {
+    key,
+    bubbles: true,
+    ...modifiers,
+  });
   on.dispatchEvent(nativeEvent);
   return {
     nativeEvent,
@@ -72,7 +80,7 @@ const answered = (key: string, on: HTMLElement) => {
   const event = press(key, on);
   return {
     event,
-    ran: selectToolOnItem(
+    ran: commandOnItem(
       event,
       elementIds(currentLayout(modelStore.getState())),
       unmountedSurface,
@@ -84,7 +92,7 @@ beforeEach(() => {
   openCanvas([actorElement]);
 });
 
-describe('selectToolOnItem', () => {
+describe('commandOnItem', () => {
   it('runs the Select tool from a drawn element, keeping focus there and the press from React Flow', () => {
     const { event, ran } = answered('Escape', node);
 
@@ -164,5 +172,33 @@ describe('selectToolOnItem', () => {
     for (const { event } of presses) {
       expect(event.stopPropagation).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe('modifier commands on a selection frame', () => {
+  it('aligns before the frame handles the arrow and keeps its focus', () => {
+    openCanvas([actorElement, processElement]);
+    const before = modelStore.getState().present;
+    const event = press('ArrowLeft', frameRect, {
+      ctrlKey: true,
+      shiftKey: true,
+    });
+
+    expect(
+      commandOnItem(
+        event,
+        elementIds(currentLayout(modelStore.getState())),
+        unmountedSurface,
+      ),
+    ).toBe(true);
+    expect(
+      currentLayout(modelStore.getState())
+        .nodes.filter(({ id }) => [actorElement, processElement].includes(id))
+        .map(({ position }) => position.x),
+    ).toEqual([0, 0]);
+    expect(modelStore.getState().past).toEqual([before]);
+    expect(document.activeElement).toBe(frameRect);
+    expect(event.preventDefault).toHaveBeenCalledOnce();
+    expect(event.stopPropagation).toHaveBeenCalledOnce();
   });
 });
