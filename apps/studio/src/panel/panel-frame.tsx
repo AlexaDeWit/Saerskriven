@@ -1,6 +1,6 @@
 import { ArrowRightIcon, Cross1Icon, WidthIcon } from '@radix-ui/react-icons';
 import { Tooltip } from 'radix-ui';
-import { useId, useRef, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { closingOn } from '../commands/binding.js';
 import {
   describeContextualShortcuts,
@@ -51,9 +51,20 @@ export function PanelFrame({
   children,
 }: PanelFrameProps) {
   const panel = useRef<HTMLElement>(null);
+  const headingNode = useRef<HTMLHeadingElement>(null);
+  const [headingOverflows, setHeadingOverflows] = useState(false);
   const keyboardDescriptionId = useId();
   const bodyId = useId();
   const { t } = useTranslator();
+
+  useMeasured(
+    headingNode,
+    (node) => {
+      setHeadingOverflows(node.scrollHeight > node.clientHeight);
+    },
+    () => {},
+    { observeContent: true },
+  );
 
   useMeasured(
     panel,
@@ -131,7 +142,13 @@ export function PanelFrame({
             </Tooltip.Content>
           </Tooltip.Root>
         </Tooltip.Provider>
-        <h2 className={styles.heading}>{heading}</h2>
+        <h2
+          className={styles.heading}
+          ref={headingNode}
+          tabIndex={headingOverflows ? 0 : -1}
+        >
+          {heading}
+        </h2>
         <button
           aria-label={closeLabel}
           className={styles.close}

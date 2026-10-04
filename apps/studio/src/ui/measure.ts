@@ -2,19 +2,19 @@ import { useEffectEvent, useLayoutEffect, type RefObject } from 'react';
 
 type MeasureOptions = {
   readonly alsoParent?: boolean;
+  readonly observeContent?: boolean;
 };
 
 /**
- * Reads an element in a layout effect and on every resize, and calls `clear`
- * once it goes. `alsoParent` observes the parent too and reads nothing
- * without one. The effect does not restart when a callback changes identity,
- * and each call reaches the latest callback.
+ * `alsoParent` requires and observes the parent. `observeContent` also reads
+ * text changes that leave the box size unchanged. Calls reach the latest
+ * callbacks without restarting for callback identity changes.
  */
 export function useMeasured<T extends Element>(
   target: RefObject<T | null>,
   read: (node: T, parent: Element | null) => void,
   clear: () => void,
-  { alsoParent = false }: MeasureOptions = {},
+  { alsoParent = false, observeContent = false }: MeasureOptions = {},
 ): void {
   const onRead = useEffectEvent(read);
   const onClear = useEffectEvent(clear);
@@ -34,9 +34,18 @@ export function useMeasured<T extends Element>(
     if (alsoParent && parent !== null) {
       observer.observe(parent);
     }
+    const contentObserver = observeContent
+      ? new MutationObserver(measure)
+      : null;
+    contentObserver?.observe(node, {
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
     return () => {
       observer.disconnect();
+      contentObserver?.disconnect();
       onClear();
     };
-  }, [alsoParent, target]);
+  }, [alsoParent, observeContent, target]);
 }

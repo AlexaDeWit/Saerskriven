@@ -52,6 +52,14 @@
   },
   "overrides": [
     {
+      // The owner approved this h2 exception in #756: a wrapper changes which
+      // element takes focus, and the scrolling heading must keep its role.
+      "files": ["apps/studio/src/panel/panel-frame.tsx"],
+      "rules": {
+        "jsx-a11y/no-noninteractive-tabindex": ["error", { "tags": ["h2"] }]
+      }
+    },
+    {
       // Test helpers reach production code without a type or boundary error:
       // a fixtures subpath resolves like any entry point, and an import pulls
       // a fixtures module in even where a lib tsconfig excludes it. Only a

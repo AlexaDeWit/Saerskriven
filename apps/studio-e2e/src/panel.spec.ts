@@ -936,6 +936,92 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   await expect(nodeNamed(page, storefront.shopper)).toBeFocused();
 });
 
+test('the pane heading joins the Tab path only while its name overflows', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openPlaceholder(page);
+  await selectByKeyboard(page, placeholder.actor);
+  await expandPane(page);
+  const panel = threatPanel(page);
+  const heading = panel.getByRole('heading', { level: 2 });
+  const widen = panel.getByRole('button', { name: 'Widen pane' });
+  const close = panel.getByRole('button', { name: 'Close threats' });
+  const narrow = await edgesOf(heading);
+  expect(await scrollsInside(heading)).toBe(false);
+
+  await page.evaluate(() => document.fonts.ready);
+  const longName = await heading.evaluate((node) => {
+    const text = node.firstChild;
+    if (text === null) {
+      return '';
+    }
+    const glyph = document.createRange();
+    glyph.setStart(text, 0);
+    glyph.setEnd(text, 1);
+    return 'A'.repeat(
+      Math.ceil((node.clientWidth * 3.5) / glyph.getBoundingClientRect().width),
+    );
+  });
+  expect(longName).not.toBe('');
+
+  await widen.focus();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+
+  await nodeNamed(page, placeholder.actor).focus();
+  await page.keyboard.press('Enter');
+  await nameField(page, 'Actor').fill(longName);
+  await nameField(page, 'Actor').press('Enter');
+  await expect.poll(() => scrollsInside(heading)).toBe(true);
+  await widen.focus();
+  await page.keyboard.press('Tab');
+  await expect(heading).toBeFocused();
+  expect(await heading.evaluate((node) => node.matches(':focus-visible'))).toBe(
+    true,
+  );
+  expect(
+    await heading.evaluate((node) => getComputedStyle(node).outlineStyle),
+  ).toBe('solid');
+  await page.keyboard.press('ArrowDown');
+  await expect
+    .poll(async () => heading.evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(0);
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(heading).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(widen).toBeFocused();
+
+  await widen.click();
+  const restore = panel.getByRole('button', { name: 'Restore pane width' });
+  await expect
+    .poll(async () => (await edgesOf(heading)).width)
+    .toBeGreaterThan(narrow.width);
+  await expect.poll(() => scrollsInside(heading)).toBe(false);
+  await expect(heading).toHaveAttribute('tabindex', '-1');
+  await restore.focus();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await restore.click();
+  await expect
+    .poll(async () => (await edgesOf(heading)).width)
+    .toBe(narrow.width);
+  await expect.poll(() => scrollsInside(heading)).toBe(true);
+  await expect(heading).toHaveAttribute('tabindex', '0');
+
+  await nodeNamed(page, /^A+, actor/u).focus();
+  await page.keyboard.press('Enter');
+  await nameField(page, longName).fill('Actor');
+  await nameField(page, longName).press('Enter');
+  await expect.poll(() => scrollsInside(heading)).toBe(false);
+  await expect(heading).toHaveAttribute('tabindex', '-1');
+  await widen.focus();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+});
+
 test('a long element name leaves the pane heading and editor reachable', async ({
   page,
 }) => {
