@@ -95,6 +95,9 @@ const listedRows = (): readonly (string | undefined)[] =>
 const modelSummary = (title: RegExp): HTMLElement =>
   within(modelPanel()).getByRole('button', { name: title });
 
+const absentSummary = (title: RegExp): HTMLElement | null =>
+  within(modelPanel()).queryByRole('button', { name: title });
+
 const hideModelPanel = (): void => {
   act(() => {
     dispatch(Action.HideModelPanel());
@@ -302,9 +305,7 @@ describe(
       await user.click(chooser(mitigatedThreat));
 
       expect(threatsTab().getAttribute('aria-selected')).toBe('true');
-      expect(
-        modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
-      ).toBe('false');
+      expect(absentSummary(/A substituted dependency/u)).toBeNull();
       await waitFor(() => {
         expect(landed().at(-1)).toBe(200);
       });
@@ -317,6 +318,46 @@ describe(
         'true',
       );
       expect(chooser(looseThreat).getAttribute('aria-current')).toBeNull();
+    });
+
+    it.each([false, true])(
+      'opens model Details from the register with %s hidden panes, without changing the model',
+      async (hidden) => {
+        const user = userEvent.setup();
+        if (hidden) {
+          hidePanesUnderTheRegister();
+        }
+        showStudio();
+        const before = modelStore.getState().present;
+        openRegister();
+
+        await user.click(
+          within(register()).getByRole('button', { name: 'Details' }),
+        );
+
+        expect(registerShown()).toBeNull();
+        expect(detailsTab().getAttribute('aria-selected')).toBe('true');
+        expect(document.activeElement).toBe(
+          within(modelPanel()).getByRole('textbox', { name: 'Title' }),
+        );
+        expect(modelStore.getState().present).toBe(before);
+      },
+    );
+
+    it('keeps a refused threat draft through Details opened from the register', async () => {
+      const user = userEvent.setup();
+      await showStudioHoldingARefusedDraft(user);
+
+      await user.click(
+        within(register()).getByRole('button', { name: 'Details' }),
+      );
+      await user.click(threatsTab());
+
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      expect(
+        modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
+      ).toBe('true');
+      expect(listedThreats(modelPanel())).toEqual([looseThreat]);
     });
 
     it('selects an element on another diagram from its name, closing the register', async () => {
@@ -474,11 +515,7 @@ describe(
       expect(
         modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
       ).toBe('true');
-      expect(
-        modelSummary(/A model file is read past its bounds/u).getAttribute(
-          'aria-expanded',
-        ),
-      ).toBe('false');
+      expect(absentSummary(/A model file is read past its bounds/u)).toBeNull();
       expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
       expect(currentAnnouncement().message).toBe('');
     });
@@ -493,11 +530,7 @@ describe(
       expect(
         modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
       ).toBe('true');
-      expect(
-        modelSummary(/A model file is read past its bounds/u).getAttribute(
-          'aria-expanded',
-        ),
-      ).toBe('false');
+      expect(absentSummary(/A model file is read past its bounds/u)).toBeNull();
       expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
       expect(currentAnnouncement().message).toBe('');
 
@@ -569,11 +602,7 @@ describe(
       expect(registerShown()).toBeNull();
       expect(document.activeElement).toBe(refusedDescription());
       expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
-      expect(
-        modelSummary(/A model file is read past its bounds/u).getAttribute(
-          'aria-expanded',
-        ),
-      ).toBe('false');
+      expect(absentSummary(/A model file is read past its bounds/u)).toBeNull();
       expect(currentAnnouncement().message).toBe('');
 
       openRegister();
@@ -670,12 +699,10 @@ describe(
         );
       });
       await showStudioHoldingARefusedDraft(user);
-      modelSummary(/An added threat/u).focus();
+      threatsTab().focus();
       runRegistered('undo');
       runRegistered('redo');
-      expect(
-        modelSummary(/An added threat/u).getAttribute('aria-expanded'),
-      ).toBe('false');
+      expect(absentSummary(/An added threat/u)).toBeNull();
       openRegister();
 
       await user.click(chooser(mitigatedThreat));

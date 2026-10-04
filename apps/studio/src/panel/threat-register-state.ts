@@ -1,12 +1,15 @@
 import type { ThreatId } from '@saerskriven/model';
 import { flushSync } from 'react-dom';
 import { focusCanvas } from '../canvas/edits.js';
+import { Action } from '../store/actions.js';
+import { dispatch } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
 import { handlerSlot } from '../ui/handler-slot.js';
 import {
   focusModelPanel,
   hiddenInModelPanel,
   openInModelPanel,
+  showModelDetails,
   showModelThreats,
   type ListFocus,
 } from './panel-focus.js';
@@ -23,10 +26,7 @@ const registerFocus = handlerSlot<() => void>();
 
 const registerStore = externalStore(() => open);
 
-/**
- * Opens the threat register with focus in it, or moves focus back into it
- * where it is already open.
- */
+/** Reopening the register moves focus into it without replacing its opener. */
 export function openThreatRegister(): void {
   if (open) {
     registerFocus.current()?.();
@@ -43,15 +43,7 @@ export function openThreatRegister(): void {
   moveTo(true);
 }
 
-/**
- * Opens the threat of a row chosen in the register on the model panel, whose
- * list calls `opened` once it has. Where the register hides that panel under
- * it, the register then closes. On an opened threat it closes as
- * {@link closeThreatRegister} closes it, and carries the choice to its next
- * opening. On a threat the list refused it carries nothing, and focus lands
- * on the field holding the refused text. The panel is committed before it is
- * read, so this is called from an event handler alone.
- */
+/** Commits a row choice before reading the editor, closing a covering register onto the opened threat or refused field. */
 export function chooseInThreatRegister(
   threatId: ThreatId,
   opened: () => void,
@@ -69,23 +61,25 @@ export function chooseInThreatRegister(
   }
 }
 
-/**
- * The threat whose row the register marks as it opens: the one a choice
- * closed it on, until it has opened and closed another way.
- */
+/** A choice carried across a covering register's automatic close. */
 export function carriedChoice(): ThreatId | undefined {
   return carried;
 }
 
-/**
- * Closes the register and moves focus into the model panel where it shows,
- * and otherwise back to where it was when the register opened, or to the
- * canvas where that is gone. The close is committed before focus moves,
- * since what the register covered is inert or hidden until it has gone, and
- * so it is called from an event handler alone.
- */
+/** Commits the close before restoring focus to the editor, opener or canvas. */
 export function closeThreatRegister(): void {
   closeOnto('summary');
+}
+
+/** Opens model metadata from the register and focuses its title after the register closes. */
+export function detailsFromThreatRegister(): void {
+  flushSync(() => {
+    dispatch(Action.ShowModelPanel());
+  });
+  flushSync(() => {
+    showModelDetails();
+  });
+  closeOnto('details');
 }
 
 /** Closes the register where it is open, and leaves focus to the caller. */
@@ -99,11 +93,7 @@ export function leaveThreatRegister(): void {
   moveTo(false);
 }
 
-/**
- * Registers what moves focus into the mounted register, and returns the
- * removal. Where {@link openThreatRegister} opened the register now
- * mounting, focus moves there at once.
- */
+/** A newly mounted register takes a pending focus request before this returns its removal. */
 export function registerFocusHandler(handler: () => void): () => void {
   const release = registerFocus.register(handler);
   if (focusRequested) {
@@ -118,10 +108,7 @@ export function useThreatRegisterOpen(): boolean {
   return registerStore.use();
 }
 
-/**
- * Closes the register and forgets its opener and the choice it carries, which
- * is how a spec starts from rest.
- */
+/** Clears both the open register and any carried row choice. */
 export function resetThreatRegister(): void {
   leaveThreatRegister();
   carried = undefined;

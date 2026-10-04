@@ -1,10 +1,6 @@
-/* The chrome floats over the diagram rather than taking width from it, so it
-   is a band across the top of the canvas that lets a pointer through
-   everywhere except on the card and on what hangs below it. React Flow gives
-   the canvas a stacking context of its own at z-index 0, so the band stacks
-   above it. The band is as wide as the widest thing it holds, capped at the
-   viewport less its gutters, rather than shrink-to-fit: shrink-to-fit against
-   a 50% start offset would leave the tools row half the canvas to wrap in. */
+/* React Flow gives the canvas its own stacking context. Chrome lets pointer
+   input through outside its controls. Shrink-to-fit at 50% would wrap the
+   tools row into half the canvas width. */
 .chrome {
   position: absolute;
   z-index: 2;
@@ -19,9 +15,11 @@
   pointer-events: none;
 }
 
-/* Row two sets the width: its natural size is the card's, and row one is laid
-   out inside that. A viewport narrower than the card takes the card down with
-   it. */
+.chrome:has([role='menu']) {
+  z-index: 4;
+}
+
+/* The tools row sets the width, capped by the viewport. */
 .card {
   display: flex;
   flex-direction: column;
@@ -33,9 +31,7 @@
   pointer-events: auto;
 }
 
-/* What hangs under the card: wider than the card where there is room, the
-   card's width on a phone. No gap here, each report carrying its own, so an
-   empty one adds nothing between the card and the diagram. */
+/* Reports carry their own gaps so an empty region adds no space. */
 .below,
 .reports {
   display: flex;
