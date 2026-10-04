@@ -191,6 +191,36 @@ export const allowClipboard = async (
   await context.grantPermissions([...(clipboardPermissions[engine] ?? [])]);
 };
 
+/** Uses native text paste to observe WebKit's system clipboard because this Linux driver refuses programmatic reads. */
+export const readClipboardText = async (page: Page): Promise<string> => {
+  if (page.context().browser()?.browserType().name() !== 'webkit') {
+    return page.evaluate(() => navigator.clipboard.readText());
+  }
+  const focused = await page.evaluateHandle(() => document.activeElement);
+  await page.evaluate(() => {
+    const field = document.createElement('textarea');
+    field.dataset.clipboardRead = '';
+    document.body.append(field);
+  });
+  const clipboard = page.locator('textarea[data-clipboard-read]');
+  try {
+    await clipboard.focus();
+    await page.keyboard.press('ControlOrMeta+v');
+    await expect(clipboard).not.toHaveValue('');
+    return await clipboard.inputValue();
+  } finally {
+    await clipboard.evaluate((field) => {
+      field.remove();
+    });
+    await focused.evaluate((element) => {
+      if (element instanceof HTMLElement) {
+        element.focus();
+      }
+    });
+    await focused.dispose();
+  }
+};
+
 /** Opens a file under `test-data` through the fallback picker and waits for its canvas. */
 export const openFile = async (
   page: Page,
