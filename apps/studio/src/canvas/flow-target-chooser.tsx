@@ -1,3 +1,4 @@
+import { isEmptyName } from '@saerskriven/model';
 import { Select } from 'radix-ui';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
@@ -61,5 +62,5 @@ export function FlowTargetChooser() {
 }
 
 function shownName(id: string, name: string): string {
-  return name === '' ? id : name;
+  return isEmptyName(name) ? id : name;
 }

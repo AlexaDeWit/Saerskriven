@@ -50,6 +50,14 @@ const model = modelWith({
       { x: 0, y: 0 },
       { x: 90, y: 90 },
     ]),
+    curveBoundary(
+      'spaced',
+      [
+        { x: 0, y: 0 },
+        { x: 90, y: 90 },
+      ],
+      '   ',
+    ),
   ],
   threats: [
     threatOf({ number: 9, title: confirmed, elements: ['archive'] }),
@@ -350,6 +358,11 @@ describe('the subject a line names', () => {
     [
       'an unnamed element by its kind',
       { kind: 'element', id: elementId('zone') },
+      t('divergence.subject-trust-boundary'),
+    ],
+    [
+      'an element a file holds under white space alone by its kind',
+      { kind: 'element', id: elementId('spaced') },
       t('divergence.subject-trust-boundary'),
     ],
     [

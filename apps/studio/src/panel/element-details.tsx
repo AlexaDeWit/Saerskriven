@@ -1,4 +1,8 @@
-import type { Element, ElementDetailsChange } from '@saerskriven/model';
+import {
+  isEmptyName,
+  type Element,
+  type ElementDetailsChange,
+} from '@saerskriven/model';
 import { resetAnnouncements } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
@@ -20,7 +24,7 @@ export function showsReason(element: Element): boolean {
 export function descriptionLabel(element: Element): Said {
   const { name, kind } = element;
   return (speak) =>
-    name === ''
+    isEmptyName(name)
       ? speak(`fields.description-of-${kind}`)
       : speak(`fields.description-of-${kind}-named`, { name });
 }
