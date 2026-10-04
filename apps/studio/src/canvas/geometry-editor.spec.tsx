@@ -8,6 +8,11 @@ import { GeometryEditor } from './geometry-editor.js';
 
 describe.each([
   [
+    'en-CA',
+    ['Decrease X', 'Increase X', 'Decrease Y', 'Increase Y'],
+    ['Decrease width', 'Increase width', 'Decrease height', 'Increase height'],
+  ],
+  [
     'fr-CA',
     ['Diminuer X', 'Augmenter X', 'Diminuer Y', 'Augmenter Y'],
     [

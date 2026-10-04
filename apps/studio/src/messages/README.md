@@ -83,8 +83,8 @@ and the control picks the message by the label's key.
 A verb or an adjective beside a label takes a message per label too. A label
 standing alone opens with a capital and carries no article, and a phrase needs
 the noun's article, its definite form or an adjective that agrees with it:
-`tools.decrease-width` (_Diminuer la largeur_, _Minska bredden_),
-`fields.unlink-assumption` (_Délier l’hypothèse 1_),
+`tools.decrease-width` (_Decrease width_, _Diminuer la largeur_, _Minska
+bredden_), `fields.unlink-assumption` (_Délier l’hypothèse 1_),
 `fields.existing-assumption` (_Hypothèse existante_, _Befintligt antagande_)
 and `fields.remove-from-crossed-trust-boundaries` (_Retirer la frontière de
 confiance franchie 1_), which names the one item the control removes. A
