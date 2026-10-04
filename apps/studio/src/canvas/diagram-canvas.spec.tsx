@@ -734,6 +734,39 @@ describe('DiagramCanvas', () => {
       vi.unstubAllGlobals();
     });
 
+    it('preserves a fresh resize on another control when an old joined touch moves and releases', async () => {
+      openCanvas([actorElement]);
+      render(<DiagramCanvas />);
+      const stored = modelStore.getState();
+      const announcement = currentAnnouncement();
+      const drawnAt = readerDrawing();
+      const oldControl = resizeControl('right');
+
+      fireEvent(oldControl, mouseEvent('mousedown', 100));
+      fireEvent(window, mouseEvent('mousemove', 140));
+      fireEvent(oldControl, touchEvent('touchstart', finger(1, 140)));
+      fireEvent(window, new Event('blur'));
+      expect(readerDrawing()).toEqual(drawnAt);
+      await clickSuppressionLifted();
+
+      fireEvent(resizeControl('left'), mouseEvent('mousedown', 100));
+      fireEvent(window, mouseEvent('mousemove', 60));
+      const fresh = readerDrawing();
+      expect(fresh).not.toEqual(drawnAt);
+      fireEvent(oldControl, touchEvent('touchmove', finger(1, 180)));
+      fireEvent(oldControl, touchEvent('touchend', finger(1, 180)));
+
+      expect(readerDrawing()).toEqual(fresh);
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
+      expect(currentAnnouncement()).toEqual(announcement);
+      fireEvent(window, mouseEvent('mouseup', 60));
+      await clickSuppressionLifted();
+
+      expect(readerDrawing()).toEqual(fresh);
+      expect(modelStore.getState().past).toHaveLength(1);
+    });
+
     it.each(['right', 'left', 'top left corner'])(
       'cancels every input of a mouse resize from %s that touches join before blur',
       async (from) => {
@@ -743,16 +776,14 @@ describe('DiagramCanvas', () => {
         const announcement = currentAnnouncement();
         const before = readerBox();
         const drawnAt = readerDrawing();
+        const oldControl = resizeControl(from);
 
-        fireEvent(resizeControl(from), mouseEvent('mousedown', 100));
+        fireEvent(oldControl, mouseEvent('mousedown', 100));
         fireEvent(window, mouseEvent('mousemove', 140));
         expect(readerDrawing()).not.toEqual(drawnAt);
+        fireEvent(oldControl, touchEvent('touchstart', finger(1, 140)));
         fireEvent(
-          resizeControl(from),
-          touchEvent('touchstart', finger(1, 140)),
-        );
-        fireEvent(
-          resizeControl(from),
+          oldControl,
           touchEvent('touchstart', finger(2, 140), [
             finger(1, 140),
             finger(2, 140),
@@ -762,7 +793,7 @@ describe('DiagramCanvas', () => {
 
         expect(readerDrawing()).toEqual(drawnAt);
         fireEvent(
-          resizeControl(from),
+          oldControl,
           touchEvent('touchmove', finger(1, 180), [
             finger(1, 180),
             finger(2, 140),
@@ -782,11 +813,11 @@ describe('DiagramCanvas', () => {
         const freshResize = readerDrawing();
         expect(freshResize).not.toEqual(drawnAt);
         fireEvent(
-          resizeControl(from),
+          oldControl,
           touchEvent('touchend', finger(1, 180), [finger(2, 140)]),
         );
-        fireEvent(resizeControl(from), touchEvent('touchmove', finger(2, 200)));
-        fireEvent(resizeControl(from), touchEvent('touchend', finger(2, 200)));
+        fireEvent(oldControl, touchEvent('touchmove', finger(2, 200)));
+        fireEvent(oldControl, touchEvent('touchend', finger(2, 200)));
 
         expect(readerDrawing()).toEqual(freshResize);
         expect(modelStore.getState().present).toBe(stored.present);

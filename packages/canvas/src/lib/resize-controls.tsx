@@ -74,11 +74,13 @@ type Press = {
 };
 
 type NodePress = {
+  readonly generation: () => number;
   readonly refuses: (
     position: ResizeControlPosition,
     gestures: readonly Gesture[],
   ) => boolean;
   readonly pressed: () => boolean;
+  readonly releaseCancelled: (gestures: readonly Gesture[]) => boolean;
   readonly initial: () => Pick<Press, 'subject' | 'measured'> | undefined;
   readonly start: (
     position: ResizeControlPosition,
@@ -119,6 +121,8 @@ type NodePress = {
  * a held mouse press and its joined touches with its starting box instead.
  * Later moves and releases from those inputs change nothing. A mouse press
  * outlives its control until release or blur.
+ * Blur renews the controls' callbacks to retire their d3 gestures. Cancelled
+ * touch releases prevent the browser's compatibility mouse events.
  *
  * A lost release without blur leaves the press held. Its only pointer pressing
  * again restores the box and starts anew, from the extent still on screen.
@@ -136,12 +140,13 @@ export function ResizeControls({
   readonly labels: ResizeLabels;
   readonly visible: boolean;
 }): ReactElement {
-  const press = useNodePress({ node, onResize, onResizeEnd });
+  const { press, generation } = useNodePress({ node, onResize, onResizeEnd });
   return (
     <>
       {resizeControlsOf(node).map((position) => (
         <ResizeControl
           key={position}
+          generation={generation}
           label={labels[position]}
           node={node}
           onResizeEnd={onResizeEnd}
@@ -154,16 +159,19 @@ export function ResizeControls({
   );
 }
 
-function useNodePress(subject: ResizeSubject): NodePress {
+function useNodePress(subject: ResizeSubject) {
   const subscribeCancellation = useContext(ResizeMouseCancellation);
   const rendered = useRef({ subject, subscribeCancellation });
   const press = useRef<Press>(undefined);
   const unsubscribeCancellation = useRef<(() => void) | undefined>(undefined);
+  const [generation, setGeneration] = useState(0);
   useLayoutEffect(() => {
     rendered.current = { subject, subscribeCancellation };
   });
 
   const [nodePress] = useState((): NodePress => {
+    let activeGeneration = 0;
+    const cancelledTouches = new Set<Gesture>();
     const settle = (settled: Settled): void => {
       const held = press.current;
       if (held === undefined || held.gestures.size > 0) {
@@ -181,13 +189,22 @@ function useNodePress(subject: ResizeSubject): NodePress {
       }
     };
     return {
+      generation: () => activeGeneration,
       refuses: (position, gestures) =>
         press.current !== undefined &&
         press.current.position !== position &&
         !gestures.some((gesture) => press.current?.gestures.has(gesture)),
       pressed: () => press.current !== undefined,
       initial: () => press.current,
+      releaseCancelled: (gestures) => {
+        let cancelled = false;
+        for (const gesture of gestures) {
+          cancelled = cancelledTouches.delete(gesture) || cancelled;
+        }
+        return cancelled;
+      },
       start: (position, gesture, measured) => {
+        cancelledTouches.delete(gesture);
         if (press.current?.gestures.delete(gesture) === true) {
           settle(ownBox);
         }
@@ -210,8 +227,11 @@ function useNodePress(subject: ResizeSubject): NodePress {
               rendered.current.subscribeCancellation(() => {
                 if (press.current !== undefined) {
                   press.current.cancelled = true;
+                  dropTouches(press.current.gestures, cancelledTouches);
                   press.current.gestures.clear();
                   settle(ownBox);
+                  activeGeneration += 1;
+                  setGeneration(activeGeneration);
                 }
               });
           }
@@ -244,10 +264,11 @@ function useNodePress(subject: ResizeSubject): NodePress {
       },
     };
   });
-  return nodePress;
+  return { press: nodePress, generation };
 }
 
 function ResizeControl({
+  generation,
   label,
   node,
   onResizeEnd,
@@ -255,6 +276,7 @@ function ResizeControl({
   press,
   visible,
 }: Pick<ResizeSubject, 'node' | 'onResizeEnd'> & {
+  readonly generation: number;
   readonly label: string;
   readonly position: ResizeControlPosition;
   readonly press: NodePress;
@@ -266,9 +288,11 @@ function ResizeControl({
   const measurement = initial?.measured ?? internal?.measured;
   const start = useCallback<OnResizeStart>(
     (event, extent) => {
-      press.start(position, event.identifier, extent);
+      if (generation === press.generation()) {
+        press.start(position, event.identifier, extent);
+      }
     },
-    [position, press],
+    [generation, position, press],
   );
   const holds = useCallback<ShouldResize>(
     (event): boolean => press.holds(position, event.identifier),
@@ -303,6 +327,11 @@ function ResizeControl({
       event.stopPropagation();
     }
   };
+  const release = (event: TouchEvent): void => {
+    if (press.releaseCancelled(pressing(event)) && event.cancelable) {
+      event.preventDefault();
+    }
+  };
   const keyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
     if (!isResizeKey(event.key)) {
       return;
@@ -323,6 +352,8 @@ function ResizeControl({
   return (
     <span
       onMouseDownCapture={refuse}
+      onTouchCancelCapture={release}
+      onTouchEndCapture={release}
       onTouchStartCapture={refuse}
       style={wholeControl}
     >
@@ -378,9 +409,10 @@ function cancels({ sourceEvent }: ResizeDragEvent): boolean {
   return source instanceof Event && source.type === 'touchcancel';
 }
 
-function dropTouches(gestures: Set<Gesture>): void {
+function dropTouches(gestures: Set<Gesture>, discarded?: Set<Gesture>): void {
   for (const gesture of gestures) {
     if (gesture !== 'mouse') {
+      discarded?.add(gesture);
       gestures.delete(gesture);
     }
   }
