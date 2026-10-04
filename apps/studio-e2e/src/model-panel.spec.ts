@@ -627,10 +627,16 @@ test(
     await expect(said).toContainText('Every caller');
     expect((await said.textContent())?.length ?? 0).toBeLessThan(160);
 
-    const widen = modelControl(page, 'Widen pane');
-    await onScreen(widen);
-    await widen.click();
-    await expect(modelControl(page, 'Restore pane width')).toBeVisible();
+    const collapse = modelControl(page, 'Collapse pane');
+    if (await collapse.isVisible()) {
+      await collapse.click();
+      await modelControl(page, 'Expand pane').click();
+    } else {
+      const widen = modelControl(page, 'Widen pane');
+      await onScreen(widen);
+      await widen.click();
+      await expect(modelControl(page, 'Restore pane width')).toBeVisible();
+    }
     await expect(said).not.toBeEmpty();
 
     const close = modelControl(page, 'Close model panel');

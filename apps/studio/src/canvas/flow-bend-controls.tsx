@@ -1,13 +1,8 @@
 import { polylinePath } from '@saerskriven/canvas';
 import { sides } from '@saerskriven/model';
-import {
-  Panel,
-  useReactFlow,
-  useViewport,
-  ViewportPortal,
-} from '@xyflow/react';
+import { useReactFlow, useViewport, ViewportPortal } from '@xyflow/react';
 import { useRef } from 'react';
-import { CommandButton } from '../commands/command-button.js';
+import { FlowRouteToolbar } from './flow-route-toolbar.js';
 import { beginEditingText } from './edits.js';
 import { applySelection } from './changes.js';
 import { elementIds } from './nodes.js';
@@ -24,7 +19,13 @@ import styles from './handles.module.css';
 const flowEnds: readonly FlowEnd[] = ['source', 'target'];
 
 /** Line hit targets, bend and end handles, and contextual route controls. */
-export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
+export function FlowBendControls({
+  bends,
+  panelCover,
+}: {
+  readonly bends: FlowBends;
+  readonly panelCover: number;
+}) {
   const view = useReactFlow();
   const { zoom } = useViewport();
   const edge = bends.layout.edges.find((value) => value.id === bends.flow?.id);
@@ -231,28 +232,16 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
           />
         )}
       </ViewportPortal>
-      <Panel position="bottom-center">
-        <fieldset
-          aria-label={t('tools.flow-route')}
-          className={`${styles.toolbar} nodrag nopan`}
-          data-bend-toolbar
-          ref={toolbar}
-          tabIndex={-1}
-        >
-          <CommandButton command="add-bend" />
-          <span>{help}</span>
-          {mode !== undefined && mode.kind !== 'actions' && (
-            <button
-              onClick={() => {
-                interaction.cancel();
-              }}
-              type="button"
-            >
-              {t('tools.cancel')}
-            </button>
-          )}
-        </fieldset>
-      </Panel>
+      <FlowRouteToolbar
+        edge={edge}
+        panelCover={panelCover}
+        toolbar={toolbar}
+        help={help}
+        placing={mode !== undefined && mode.kind !== 'actions'}
+        cancel={() => {
+          interaction.cancel();
+        }}
+      />
     </>
   );
 }

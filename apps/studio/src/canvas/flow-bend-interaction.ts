@@ -75,6 +75,7 @@ export function useFlowBendInteraction(
 
   const drag = useHandleDrag<Held>(bends.context, {
     preview: (held, span) => {
+      setMode(undefined);
       const target = draggedTarget(bends, held, span);
       if (target === undefined) {
         bends.cancel();
@@ -244,7 +245,9 @@ export function useFlowBendInteraction(
       if (mode?.kind !== 'place' || !(event.target instanceof Element)) {
         return;
       }
-      if (event.target.closest(controlSelector) !== null) {
+      if (
+        event.target.closest(`${controlSelector}, ${handleSelector}`) !== null
+      ) {
         return;
       }
       if (event.target.closest('.react-flow') !== null) {
@@ -271,13 +274,13 @@ export function useFlowBendInteraction(
   }, []);
 
   const down = (event: HandlePointer, held: Held): void => {
-    if (
-      mode?.kind !== 'place' &&
-      mode?.kind !== 'choose' &&
-      drag.down(event, held)
-    ) {
-      setMode(undefined);
-    }
+    const target =
+      mode?.kind === 'place' &&
+      held.kind === 'move' &&
+      held.index === mode.target.index
+        ? mode.target
+        : held;
+    drag.down(event, target);
   };
   return {
     mode,

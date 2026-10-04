@@ -13,6 +13,10 @@
   background: var(--saer-colour-surface-raised);
   color: var(--saer-colour-text);
 }
+.inlineEndpoints {
+  display: flex;
+  gap: var(--saer-space-1);
+}
 .endpoints {
   display: flex;
   gap: var(--saer-space-1);

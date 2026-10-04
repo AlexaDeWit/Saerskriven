@@ -1,6 +1,6 @@
 import { ArrowRightIcon, Cross1Icon, WidthIcon } from '@radix-ui/react-icons';
 import { Tooltip } from 'radix-ui';
-import { useId, useRef, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { closingOn } from '../commands/binding.js';
 import {
   describeContextualShortcuts,
@@ -19,6 +19,8 @@ type PanelFrameProps = {
   readonly closeLabel: string;
   readonly closeShortcut: ContextualShortcutId;
   readonly testId?: string;
+  readonly focusing?: boolean;
+  readonly initiallyCollapsed?: boolean;
   readonly wide: boolean;
   readonly onToggleWidth: () => void;
   readonly onClose: () => void;
@@ -32,19 +34,15 @@ const widthLabel = (
 ): 'panel.restore-pane-width' | 'panel.widen-pane' =>
   wide ? 'panel.restore-pane-width' : 'panel.widen-pane';
 
-/**
- * The pane the panel location draws, whichever subject it shows: the width
- * control, the heading and the close control, then the tab list where `tabs`
- * is given, above a scrolling body. It reports how much of the canvas it
- * covers, and closes on its Escape unless an open listbox inside it is
- * handling the press.
- */
+/** A scrolling pane with a collapsible drawer at phone widths. */
 export function PanelFrame({
   label,
   heading,
   closeLabel,
   closeShortcut,
   testId,
+  focusing = false,
+  initiallyCollapsed = false,
   wide,
   onToggleWidth,
   onClose,
@@ -54,6 +52,11 @@ export function PanelFrame({
 }: PanelFrameProps) {
   const panel = useRef<HTMLElement>(null);
   const keyboardDescriptionId = useId();
+  const bodyId = useId();
+  const [mobileOpen, setMobileOpen] = useState(!initiallyCollapsed);
+  if (focusing && !mobileOpen) {
+    setMobileOpen(true);
+  }
   const { t } = useTranslator();
 
   useMeasured(
@@ -78,12 +81,26 @@ export function PanelFrame({
       data-pane=""
       data-testid={testId}
       data-wide={wide}
+      data-mobile-open={mobileOpen}
       ref={panel}
       onKeyDownCapture={closingOn(closeShortcut, onClose)}
     >
       <VisuallyHidden id={keyboardDescriptionId}>
         {describeContextualShortcuts([closeShortcut], hostPlatform, t)}
       </VisuallyHidden>
+      <button
+        aria-label={t(mobileOpen ? 'panel.collapse-pane' : 'panel.expand-pane')}
+        aria-expanded={mobileOpen}
+        aria-controls={bodyId}
+        className={styles.drawerToggle}
+        onClick={() => {
+          setMobileOpen((value) => !value);
+        }}
+        type="button"
+      >
+        <ArrowRightIcon aria-hidden="true" />
+        {!mobileOpen && label}
+      </button>
       <header className={styles.panelHeader}>
         <Tooltip.Provider>
           <Tooltip.Root>
@@ -123,7 +140,9 @@ export function PanelFrame({
           threatsTab={tabs.threatsTab}
         />
       )}
-      <div className={styles.body}>{children}</div>
+      <div className={styles.body} id={bodyId}>
+        {children}
+      </div>
     </section>
   );
 

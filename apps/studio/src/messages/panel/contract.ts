@@ -8,6 +8,8 @@ export const panelMessages = {
   'close-threats': text(),
   'close-model': text(),
   'widen-pane': text(),
+  'expand-pane': text(),
+  'collapse-pane': text(),
   'restore-pane-width': text(),
   'several-selected': plural('count'),
   'add-threat': text(),

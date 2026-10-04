@@ -25,12 +25,14 @@ describe('CanvasAnnouncement', () => {
     render(<CanvasAnnouncement />);
   });
 
-  it('draws an announcement as a line of the status region', () => {
+  it('announces activity without drawing a status line', () => {
     act(() => {
       announce(said);
     });
 
-    expect(drawnLine()?.textContent).toBe(said());
+    expect(region().textContent).toBe(said());
+    expect(isInaccessible(within(region()).getByText(said()))).toBe(false);
+    expect(drawnLine()).toBeNull();
   });
 
   it('holds an undrawn announcement as text a screen reader is given, with no line', () => {

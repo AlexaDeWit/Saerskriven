@@ -58,8 +58,8 @@ severity tones are the diagram's own, and the threat summary uses the same
 tone classes as the canvas. `--saer-chrome-block-size` and
 `--saer-chrome-reports-block-size` are placeholders the chrome card
 (`../app/chrome.tsx`) overwrites with the measured heights of the card and the
-notices under it, and `--saer-pane-block-start` adds those to the fixed
-`--saer-announcement-slot`.
+notices under it. `--saer-pane-block-start` adds those heights and the gutters.
+Activity announcements remain available to screen readers without taking space.
 
 A control never suppresses the focus indicator and never invents its own: it
 applies the focus tokens in `:focus-visible`, swapping the ring's colour only

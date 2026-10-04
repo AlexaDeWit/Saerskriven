@@ -35,7 +35,9 @@ model panel is shown, so the panel is the only place a threat is added from. It
 is held clear of the zoom cluster rather than drawn over it, and opening it
 resizes nothing: the fit commands use the coverage the pane reports ([the
 canvas](../canvas/README.md#the-view)). Its default width comes from
-`panelCover` in the canvas tokens, projected as `--saer-panel-cover`.
+`panelCover` in the canvas tokens, projected as `--saer-panel-cover`. At phone
+widths, a selection starts as a collapsed side drawer. Its controls expand and
+collapse it without unmounting the fields, so drafts remain in place.
 
 ## What it holds
 

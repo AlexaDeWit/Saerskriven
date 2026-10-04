@@ -91,13 +91,17 @@ export function SelectionControls() {
 }
 
 /** Endpoint and direction commands available beside a selected flow. */
-export function FlowEndpointCommands() {
+export function FlowEndpointCommands({
+  inline = false,
+}: {
+  readonly inline?: boolean;
+}) {
   const { t } = useTranslator();
   const selected = useSelectedElement();
   return selected?.kind === 'flow' ? (
     <section
       aria-label={t('tools.reconnect-flow')}
-      className={styles.endpoints}
+      className={inline ? styles.inlineEndpoints : styles.endpoints}
       data-pane=""
       data-selection-commands=""
     >

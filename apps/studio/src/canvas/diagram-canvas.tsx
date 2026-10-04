@@ -76,7 +76,6 @@ import { ZoomCluster } from './zoom-cluster.js';
 import {
   BoundaryShapeCommands,
   SelectionControls,
-  FlowEndpointCommands,
 } from './selection-controls.js';
 import { useSnap } from './snap.js';
 import { useBackgroundSelection } from './background-selection.js';
@@ -423,7 +422,7 @@ export function DiagramCanvas({
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <PlacementPreview preview={placement.preview} />
-        <FlowBendControls bends={bends} />
+        <FlowBendControls bends={bends} panelCover={panelCover} />
         <CurvePointControls points={points} />
         <FitOnOpen />
         <FocusPan />
@@ -432,7 +431,6 @@ export function DiagramCanvas({
       </ReactFlow>
       <div className={styles.cards} inert={registerOpen}>
         <SelectionControls />
-        <FlowEndpointCommands />
         <BoundaryShapeCommands />
       </div>
       <ThreatRegister cover={panelCover} />

@@ -64,6 +64,8 @@ export function ThreatPanel({
   }, [focusing, onFocused]);
 
   const frame = {
+    focusing,
+    initiallyCollapsed: true,
     closeLabel: t('panel.close-threats'),
     closeShortcut: 'close-threat-panel',
     label: t('panel.threats'),

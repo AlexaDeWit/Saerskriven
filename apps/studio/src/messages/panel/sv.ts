@@ -8,6 +8,8 @@ export const panelSv = catalogue(panelMessages)('sv')({
   'close-threats': 'Stäng hoten',
   'close-model': 'Stäng modellpanelen',
   'widen-pane': 'Bredda panelen',
+  'expand-pane': 'Visa panelen',
+  'collapse-pane': 'Fäll ihop panelen',
   'restore-pane-width': 'Återställ panelens bredd',
   'several-selected': {
     one: '{count} objekt är markerat. Markera ett av dem för att föra in ett hot på det.',

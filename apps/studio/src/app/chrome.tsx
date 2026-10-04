@@ -11,14 +11,7 @@ const cardHeight = '--saer-chrome-block-size';
 
 const reportsHeight = '--saer-chrome-reports-block-size';
 
-/**
- * The chrome card, with the menu and diagram control on row one and the
- * toolbox on row two, and under it the file reports, the flow chooser and the
- * canvas announcement. The measured heights of the card and of the reports
- * go to the document root as `--saer-chrome-block-size` and
- * `--saer-chrome-reports-block-size`. The announcement is not measured, since
- * an open pane reserves a fixed slot for it.
- */
+/** Measures the chrome and file reports for the panes below them. */
 export function StudioChrome({
   colourMode,
   onColourModeChange,
