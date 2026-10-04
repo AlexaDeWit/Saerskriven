@@ -18,15 +18,18 @@ const elements = new Map([['edge-request', requestFlow]]);
 
 const twiceAsLarge = { a: 2, b: 0, c: 0, d: 2, e: 100, f: 50 };
 
-const drawnAt = (geometry: {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}): void => {
+const drawnAt = (
+  geometry: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  },
+  toScreen: typeof twiceAsLarge | null = twiceAsLarge,
+): void => {
   Object.defineProperties(flow, {
     getBBox: { configurable: true, value: () => geometry },
-    getScreenCTM: { configurable: true, value: () => twiceAsLarge },
+    getScreenCTM: { configurable: true, value: () => toScreen },
   });
 };
 
@@ -70,6 +73,14 @@ describe('useBoxSelection', () => {
 
   it('leaves out a flow whose geometry crosses the box', () => {
     boxed([110, 80], [190, 110]);
+
+    expect(modelStore.getState().selection).toEqual([actorElement]);
+  });
+
+  it('leaves out a flow the browser draws nowhere', () => {
+    drawnAt({ x: 10, y: 20, width: 40, height: 5 }, null);
+
+    boxed([110, 80], [210, 110]);
 
     expect(modelStore.getState().selection).toEqual([actorElement]);
   });

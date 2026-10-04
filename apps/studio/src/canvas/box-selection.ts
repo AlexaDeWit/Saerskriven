@@ -30,11 +30,8 @@ type BoxPress = Pick<
 type BoxRelease = Pick<MouseEvent, 'clientX' | 'clientY'>;
 
 /**
- * React Flow's selection box extended to flows. The edge selections React
- * Flow reports while a box is drawn are dropped, and a finished box adds the
- * flows it wholly contains, as drawn, to the selection. A flow is measured by
- * its geometry and not by its client rect, which in Firefox takes in the
- * stroke of the invisible hit path.
+ * Adds wholly contained flows after a box selection. Geometry excludes the
+ * invisible hit path that Firefox includes in a flow's client rect.
  */
 export function useBoxSelection(
   surface: RefObject<HTMLDivElement | null>,
@@ -108,24 +105,23 @@ function containedFlows(
     right: Math.max(from.x, to.x),
     bottom: Math.max(from.y, to.y),
   };
-  return [...root.querySelectorAll('.react-flow__edge')].flatMap((flow) => {
-    const drawn = geometryOf(flow);
-    const id = elements.get(flow.getAttribute('data-id') ?? '');
-    return id !== undefined &&
-      drawn !== undefined &&
-      drawn.left >= bounds.left &&
-      drawn.top >= bounds.top &&
-      drawn.right <= bounds.right &&
-      drawn.bottom <= bounds.bottom
-      ? [id]
-      : [];
-  });
+  return [...root.querySelectorAll('.react-flow__edge')]
+    .filter((flow) => flow instanceof SVGGraphicsElement)
+    .flatMap((flow) => {
+      const drawn = geometryOf(flow);
+      const id = elements.get(flow.getAttribute('data-id') ?? '');
+      return id !== undefined &&
+        drawn !== undefined &&
+        drawn.left >= bounds.left &&
+        drawn.top >= bounds.top &&
+        drawn.right <= bounds.right &&
+        drawn.bottom <= bounds.bottom
+        ? [id]
+        : [];
+    });
 }
 
-function geometryOf(flow: Element): ScreenBox | undefined {
-  if (!(flow instanceof SVGGraphicsElement)) {
-    return undefined;
-  }
+function geometryOf(flow: SVGGraphicsElement): ScreenBox | undefined {
   const toScreen = flow.getScreenCTM();
   if (toScreen === null) {
     return undefined;
