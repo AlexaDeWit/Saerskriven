@@ -184,3 +184,38 @@ Code reaches the same controls through `@saerskriven/render`, whose
 theme file with the bounded `parseYaml` from `@saerskriven/formats` before
 `readThemeOverrides`, and applies `withBundledFonts` before PDF and PNG
 rendering, and a caller doing the same gets the same diagnostics.
+
+## Mermaid diagrams in Markdown
+
+Markdown exports contain only the threat register by default. To include every
+diagram before the register:
+
+```sh
+saer render model.yaml --format md --include-diagrams --out model.md
+```
+
+In the studio's Export menu, select **Include diagrams in Markdown** before
+choosing **Register as Markdown**. The choice lasts until the page reloads.
+It does not change the model or its saved file.
+
+Each diagram becomes a fenced Mermaid flowchart. The reader must support
+Mermaid to display it as a drawing. Ordinary Markdown readers show its source.
+Heading controls and styled Markdown also apply to the combined document.
+The host's Mermaid renderer controls diagram appearance, independently of the
+register's stylesheet and render theme.
+
+The drawing approximates the diagram. Mermaid chooses the layout, shapes,
+and routes. Canvas positions, bends, attachment sides, colours and threat
+badges are not preserved. Notes and out-of-scope labels remain visible, and
+the register carries the threat details. Unattached flow ends appear as
+separate free endpoints.
+
+Trust boundaries become groups only where their declared containment forms
+an acyclic hierarchy with one parent per element. The export does not infer
+containment from drawn positions. Brief notes name boundaries that cannot be
+shown and connections represented by reference placeholders. Cosmetic
+differences do not generate notes.
+
+Omit `--include-diagrams` to keep the existing register output, including when
+your documentation uses separately exported PNG or SVG diagrams. This option
+does not select an individual diagram or change PDF and Typst exports.

@@ -177,6 +177,10 @@ function renderCommand(program: Command, state: ParseState): void {
       '--theme <path>',
       'partial YAML appearance overrides, read best effort',
     )
+    .option(
+      '--include-diagrams',
+      'include Mermaid diagrams before the Markdown register',
+    )
     .option('--styled', 'HTML-enriched Markdown with semantic badge classes')
     .option(
       '--no-stylesheet',

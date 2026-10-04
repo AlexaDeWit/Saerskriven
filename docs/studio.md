@@ -101,7 +101,9 @@ keeps the current model but lets go of its file, so its next Save treats it as
 a new model rather than writing to either file.
 
 **Export** writes the diagram on screen as SVG or PNG, the register as
-Markdown, or the whole model as Typst or PDF. An export proposes the open
+Markdown, or the whole model as Typst or PDF. **Include diagrams in Markdown**
+adds Mermaid drawings before the register, as described in
+[Markdown diagram exports](render-themes.md#mermaid-diagrams-in-markdown). An export proposes the open
 file's name with the export's extension, or `Untitled`, and never changes
 which file Save writes to. When the model has several diagrams, the SVG and
 PNG names add the diagram's title, as `payments - Checkout.svg`: characters a

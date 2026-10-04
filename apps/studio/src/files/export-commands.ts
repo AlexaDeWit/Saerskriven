@@ -113,7 +113,10 @@ export function useExportCommands(
   readonly commands: ExportCommands;
   readonly notice: ExportNotice | undefined;
   readonly dismissNotice: () => void;
+  readonly includeDiagrams: boolean;
+  readonly setIncludeDiagrams: (include: boolean) => void;
 } {
+  const [includeDiagrams, setIncludeDiagrams] = useState(false);
   const [notice, setNotice] = useState<ExportNotice | undefined>(undefined);
 
   const place = useCallback(
@@ -193,7 +196,7 @@ export function useExportCommands(
         void place(
           state.file,
           exportFiles.markdown,
-          renderRegister(state.present, activeLocale()),
+          renderRegister(state.present, activeLocale(), { includeDiagrams }),
         );
       },
       typst: () => {
@@ -217,7 +220,7 @@ export function useExportCommands(
         );
       },
     }),
-    [place, produce, renders],
+    [place, produce, renders, includeDiagrams],
   );
 
   const dismissNotice = useCallback((): void => {
@@ -235,8 +238,14 @@ export function useExportCommands(
   );
 
   return useMemo(
-    () => ({ commands, notice, dismissNotice }),
-    [commands, dismissNotice, notice],
+    () => ({
+      commands,
+      notice,
+      dismissNotice,
+      includeDiagrams,
+      setIncludeDiagrams,
+    }),
+    [commands, dismissNotice, notice, includeDiagrams],
   );
 }
 

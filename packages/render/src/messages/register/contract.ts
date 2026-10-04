@@ -28,4 +28,12 @@ export const registerMessages = {
   'flow-from-to': text({ source: 'text', target: 'text' }),
   'flow-between': text({ source: 'text', target: 'text' }),
   'free-point': text(),
+  diagrams: text(),
+  'diagram-empty': text(),
+  'diagram-free-endpoint': text(),
+  'diagram-note': text(),
+  'diagram-reference': text({ label: 'text' }),
+  'diagram-out-of-scope': text({ label: 'text' }),
+  'diagram-omitted-boundaries': text({ names: 'text' }),
+  'diagram-substituted-references': text({ names: 'text' }),
 } as const;

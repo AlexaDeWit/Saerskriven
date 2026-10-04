@@ -15,6 +15,7 @@ import {
 import {
   renderRegister,
   registerOptionsSchema,
+  markdownOptionsSchema,
   renderSvg,
   renderTypst,
   renderUnplacedWarning,
@@ -40,6 +41,7 @@ import { commandTheme, themeWarnings } from './theme.js';
 export const renderOptionsSchema = registerOptionsSchema.extend({
   theme: z.string().optional(),
   styled: z.boolean().optional(),
+  includeDiagrams: markdownOptionsSchema.shape.includeDiagrams,
   stylesheet: z.boolean().optional(),
   headingLevel: z.coerce
     .number()
@@ -147,7 +149,8 @@ function markdownOptionDiagnostics(
     (options.title === false ||
       options.headingLevel !== undefined ||
       options.styled === true ||
-      options.stylesheet === false)
+      options.stylesheet === false ||
+      options.includeDiagrams === true)
       ? [
           {
             key: '',
@@ -203,6 +206,7 @@ function document(
             title: options.title,
             headingLevel: options.headingLevel,
             styled: options.styled,
+            includeDiagrams: options.includeDiagrams,
             stylesheet: options.stylesheet,
             theme,
           }),

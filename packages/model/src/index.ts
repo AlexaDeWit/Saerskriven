@@ -103,3 +103,4 @@ export {
   threatsOnDiagrams,
 } from './lib/coverage.js';
 export * from './lib/fragment.js';
+export { reversed } from './lib/lists.js';

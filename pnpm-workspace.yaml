@@ -46,6 +46,7 @@ overrides:
 minimumReleaseAge: 10080
 
 catalog:
+  mermaid: 11.12.0
   # axe-core driven through Playwright: the runtime half of the studio's
   # accessibility gate, catching contrast, focus order and computed roles
   # that static analysis cannot see.

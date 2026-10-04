@@ -25,8 +25,8 @@ import type {
   List,
   ListItem,
   Nodes,
-  Paragraph,
   Parents,
+  Paragraph,
   PhrasingContent,
   Root,
   RootContent,
@@ -40,6 +40,13 @@ import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
 import { exportText, type ExportText } from '../messages/catalogues.js';
+import {
+  boundedDepth,
+  heading,
+  headingText,
+  paragraph,
+  text,
+} from './markdown-nodes.js';
 import type { RegisterBadge } from './register-badges.js';
 import type { RegisterOptions } from './register-options.js';
 import {
@@ -73,10 +80,6 @@ declare module 'mdast' {
 export const deepestProse = 16;
 
 const prose = unified().use(remarkParse).use(remarkGfm);
-
-const headingDepths = [1, 2, 3, 4, 5, 6] as const;
-
-const lineBreaks = /\s*[\r\n]+\s*/gu;
 
 const overviewColumns = [
   'register.number',
@@ -116,31 +119,11 @@ type SectionContext = Wording & {
 };
 
 /**
- * The register as an mdast tree, the one definition both register writers
- * serialize: the title, an overview table of every threat, a section of the
- * assumptions that apply to the model where there are any, then one section
- * per threat in number order.
- *
- * Each threat heading follows an empty anchor named `threat-<number>`, which
- * the overview number links to, so a title edit keeps the target. GitHub's
- * Markdown API prefixes the anchor's name with `user-content-` and leaves the
- * link as written, and neither reaches the Typst output. A section
- * lists the threat's fields and flags, its prose, then its mitigations and
- * assumptions in model order, each led by its status. A record linked to
- * several threats appears under each, and a record linked to none appears
- * nowhere unless it is an assumption that applies to the model. A threat that
- * applies to the model names the whole model ahead of its elements, in the
- * overview and in its section.
- *
- * Prose is parsed as Markdown and spliced in as nodes, its headings demoted
- * below the section's and its raw HTML kept as written. Prose nested past
- * {@link deepestProse}, counting a record's two enclosing levels, is one
- * paragraph of the author's text. Line breaks in a heading collapse to
- * spaces. Headings, field names, enum labels and the lines standing for
- * absent content are `locale`'s, and every enum has a label in each locale.
- * An absent value reads as `none` or `none-recorded` in the register
- * catalogue, and a model with no threats says so in place of the overview
- * table.
+ * The register tree shared by Markdown and Typst. Threat anchors use stable
+ * numbers. Records follow their threats, with model assumptions in one section.
+ * Author prose keeps Markdown and raw HTML, with headings demoted below their
+ * section. Prose beyond `deepestProse` becomes plain text. Locale controls
+ * framing and stored-value labels, never author text or anchor identities.
  */
 export function registerDocument(
   model: Model,
@@ -176,10 +159,6 @@ function registerTitle(model: Model, { messages }: Wording): string {
   return title.length === 0
     ? messages.t('register.untitled')
     : messages.t('register.titled', { title });
-}
-
-function headingText(value: string): string {
-  return value.replace(lineBreaks, ' ').trim();
 }
 
 function overviewTable(
@@ -478,22 +457,6 @@ function elementName(
     );
   }
   return element === undefined || isEmptyName(element.name) ? id : element.name;
-}
-
-function heading(depth: Heading['depth'], value: string): Heading {
-  return { type: 'heading', depth, children: [text(value)] };
-}
-
-function paragraph(value: string): Paragraph {
-  return { type: 'paragraph', children: [text(value)] };
-}
-
-function text(value: string): Text {
-  return { type: 'text', value };
-}
-
-function boundedDepth(depth: number): Heading['depth'] {
-  return headingDepths[Math.min(6, Math.max(1, depth)) - 1];
 }
 
 function badgeText(badge: RegisterBadge, { terms }: Wording): Text {

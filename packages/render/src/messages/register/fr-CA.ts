@@ -21,4 +21,14 @@ export const registerFrCA = catalogue(registerMessages)('fr-CA')({
   'flow-from-to': 'Flux depuis {source} vers {target}',
   'flow-between': 'Flux entre {source} et {target}',
   'free-point': 'un point libre',
+  diagrams: 'Diagrammes',
+  'diagram-empty': 'Ce diagramme ne contient aucun élément.',
+  'diagram-free-endpoint': 'Extrémité libre',
+  'diagram-note': 'Note',
+  'diagram-reference': 'Référence : {label}',
+  'diagram-out-of-scope': '{label} (hors périmètre)',
+  'diagram-omitted-boundaries':
+    'Frontières de confiance non représentées : {names}.',
+  'diagram-substituted-references':
+    'Les connexions à ces éléments utilisent des références de remplacement : {names}.',
 });
