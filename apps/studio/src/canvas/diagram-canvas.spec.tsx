@@ -100,6 +100,13 @@ const resizeControl = (from: string): HTMLElement =>
 const readerGlyphWidth = (): string | null | undefined =>
   reader().querySelector('svg')?.getAttribute('width');
 
+const readerDrawing = () => [
+  readerGlyphWidth(),
+  reader().style.width,
+  reader().style.height,
+  reader().style.transform,
+];
+
 const touchResizeReader = (): void => {
   fireEvent(resizeControl('right'), touchEvent('touchstart', finger(1, 100)));
   fireEvent(resizeControl('right'), touchEvent('touchmove', finger(1, 160)));
@@ -728,6 +735,72 @@ describe('DiagramCanvas', () => {
     });
 
     it.each(['right', 'left', 'top left corner'])(
+      'cancels every input of a mouse resize from %s that touches join before blur',
+      async (from) => {
+        openCanvas([actorElement]);
+        render(<DiagramCanvas />);
+        const stored = modelStore.getState();
+        const announcement = currentAnnouncement();
+        const before = readerBox();
+        const drawnAt = readerDrawing();
+
+        fireEvent(resizeControl(from), mouseEvent('mousedown', 100));
+        fireEvent(window, mouseEvent('mousemove', 140));
+        expect(readerDrawing()).not.toEqual(drawnAt);
+        fireEvent(
+          resizeControl(from),
+          touchEvent('touchstart', finger(1, 140)),
+        );
+        fireEvent(
+          resizeControl(from),
+          touchEvent('touchstart', finger(2, 140), [
+            finger(1, 140),
+            finger(2, 140),
+          ]),
+        );
+        fireEvent(window, new Event('blur'));
+
+        expect(readerDrawing()).toEqual(drawnAt);
+        fireEvent(
+          resizeControl(from),
+          touchEvent('touchmove', finger(1, 180), [
+            finger(1, 180),
+            finger(2, 140),
+          ]),
+        );
+        expect(readerDrawing()).toEqual(drawnAt);
+        await clickSuppressionLifted();
+        stillPressReader();
+
+        expect(readerBox()).toEqual(before);
+        expect(modelStore.getState().present).toBe(stored.present);
+        expect(modelStore.getState().past).toBe(stored.past);
+        expect(currentAnnouncement()).toEqual(announcement);
+
+        fireEvent(resizeControl(from), mouseEvent('mousedown', 100));
+        fireEvent(window, mouseEvent('mousemove', 60));
+        const freshResize = readerDrawing();
+        expect(freshResize).not.toEqual(drawnAt);
+        fireEvent(
+          resizeControl(from),
+          touchEvent('touchend', finger(1, 180), [finger(2, 140)]),
+        );
+        fireEvent(resizeControl(from), touchEvent('touchmove', finger(2, 200)));
+        fireEvent(resizeControl(from), touchEvent('touchend', finger(2, 200)));
+
+        expect(readerDrawing()).toEqual(freshResize);
+        expect(modelStore.getState().present).toBe(stored.present);
+        expect(modelStore.getState().past).toBe(stored.past);
+        fireEvent(window, mouseEvent('mouseup', 60));
+        await clickSuppressionLifted();
+
+        expect(readerDrawing()).toEqual(freshResize);
+        expect(readerBox()).not.toEqual(before);
+        expect(modelStore.getState().past).toHaveLength(1);
+      },
+    );
+
+    it.each(['right', 'left', 'top left corner'])(
       'cancels a resize from %s, restores its starting geometry and records no later move or click',
       async (from) => {
         openCanvas([actorElement]);
@@ -735,29 +808,23 @@ describe('DiagramCanvas', () => {
         const stored = modelStore.getState();
         const announcement = currentAnnouncement();
         const before = readerBox();
-        const drawn = () => [
-          readerGlyphWidth(),
-          reader().style.width,
-          reader().style.height,
-          reader().style.transform,
-        ];
-        const drawnAt = drawn();
+        const drawnAt = readerDrawing();
 
         fireEvent(resizeControl(from), mouseEvent('mousedown', 100));
         fireEvent(window, mouseEvent('mousemove', 140));
-        expect(drawn()).not.toEqual(drawnAt);
+        expect(readerDrawing()).not.toEqual(drawnAt);
 
         fireEvent(window, new Event('blur'));
-        expect(drawn()).toEqual(drawnAt);
+        expect(readerDrawing()).toEqual(drawnAt);
         fireEvent(window, mouseEvent('mousemove', 160));
         fireEvent(window, mouseEvent('mousemove', 180));
-        expect(drawn()).toEqual(drawnAt);
+        expect(readerDrawing()).toEqual(drawnAt);
         fireEvent(window, mouseEvent('mouseup', 180));
         await clickSuppressionLifted();
         fireEvent.click(reader());
         stillPressReader();
 
-        expect(drawn()).toEqual(drawnAt);
+        expect(readerDrawing()).toEqual(drawnAt);
         expect(readerBox()).toEqual(before);
         expect(modelStore.getState().present).toBe(stored.present);
         expect(modelStore.getState().past).toBe(stored.past);

@@ -6,6 +6,7 @@ import {
   type OnResizeEnd,
   type OnResizeStart,
   type ResizeDragEvent,
+  type ShouldResize,
 } from '@xyflow/react';
 import {
   createContext,
@@ -84,7 +85,10 @@ type NodePress = {
     gesture: Gesture,
     measured: NodeBox['size'],
   ) => void;
-  readonly holds: (position: ResizeControlPosition) => boolean;
+  readonly holds: (
+    position: ResizeControlPosition,
+    gesture: Gesture,
+  ) => boolean;
   readonly resize: (
     position: ResizeControlPosition,
     extent: NodeBox['size'],
@@ -112,7 +116,8 @@ type NodePress = {
  * arrow keys wait. The last release ends the resize. Touch cancellation or
  * control unmount without a mouse restores its starting box. The mounting
  * canvas signals window blur through {@link ResizeMouseCancellation}, ending
- * a held mouse press with its starting box instead. A mouse press
+ * a held mouse press and its joined touches with its starting box instead.
+ * Later moves and releases from those inputs change nothing. A mouse press
  * outlives its control until release or blur.
  *
  * A lost release without blur leaves the press held. Its only pointer pressing
@@ -205,12 +210,16 @@ function useNodePress(subject: ResizeSubject): NodePress {
               rendered.current.subscribeCancellation(() => {
                 if (press.current !== undefined) {
                   press.current.cancelled = true;
+                  press.current.gestures.clear();
+                  settle(ownBox);
                 }
               });
           }
         }
       },
-      holds: (position) => press.current?.position === position,
+      holds: (position, gesture) =>
+        press.current?.position === position &&
+        press.current.gestures.has(gesture),
       resize: (position, extent) => {
         if (press.current?.position === position) {
           press.current.resized = true;
@@ -219,8 +228,10 @@ function useNodePress(subject: ResizeSubject): NodePress {
         }
       },
       end: (position, gesture, cancelled, settled) => {
-        if (press.current?.position === position) {
-          press.current.gestures.delete(gesture);
+        if (
+          press.current?.position === position &&
+          press.current.gestures.delete(gesture)
+        ) {
           press.current.cancelled ||= cancelled;
           settle(settled);
         }
@@ -259,8 +270,8 @@ function ResizeControl({
     },
     [position, press],
   );
-  const holds = useCallback(
-    (): boolean => press.holds(position),
+  const holds = useCallback<ShouldResize>(
+    (event): boolean => press.holds(position, event.identifier),
     [position, press],
   );
   const resize = useCallback<OnResize>(
