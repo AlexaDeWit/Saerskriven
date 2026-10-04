@@ -1,17 +1,14 @@
 import { z } from 'zod';
 
 /**
- * The bounds of canvas geometry, in canvas units, both ends included. A
- * coordinate lies from `-bound` to `bound`, and a width or a height from
- * `leastExtent` to `bound`. The bound is about 3,800 columns of
- * {@link autoPlacement}'s grid, past any diagram a person draws, so a number
- * outside it is refused and never clamped. Inside it a layout that multiplies
- * two lengths at the most stays far inside what a double holds.
+ * Inclusive bounds in canvas units: coordinates from `-bound` to `bound`,
+ * widths and heights from `leastExtent` to `bound`. Schemas refuse values
+ * outside these ranges without clamping.
  */
 export const geometryLimits = Object.freeze({
-  /** The furthest a coordinate lies from the origin on either axis, and the greatest width or height. */
+  /** Maximum coordinate magnitude, width and height. */
   bound: 1_000_000,
-  /** The least width or height, under the ten units the studio resizes down to, so a small element a file states still reads. */
+  /** Minimum width and height, below the studio's resize floor. */
   leastExtent: 1,
 });
 
@@ -26,9 +23,8 @@ const extentSchema = z
   .max(geometryLimits.bound);
 
 /**
- * A location on the diagram canvas, in canvas units, each coordinate inside
- * {@link geometryLimits}. Coordinates may be negative: the origin is a
- * reference point, not an edge.
+ * Canvas location within {@link geometryLimits}. The origin is a reference
+ * point, so coordinates may be negative.
  */
 export const pointSchema = z.object({
   x: coordinateSchema,
@@ -39,9 +35,7 @@ export const pointSchema = z.object({
 export type Point = z.infer<typeof pointSchema>;
 
 /**
- * Extent of an element on the canvas, in canvas units, each of width and
- * height inside {@link geometryLimits}: an element of no extent cannot be
- * drawn or picked.
+ * Canvas width and height within {@link geometryLimits}.
  */
 export const sizeSchema = z.object({
   width: extentSchema,

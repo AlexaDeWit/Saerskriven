@@ -4,9 +4,8 @@ import type { Point, Size } from './geometry.js';
 const mostDecimals = 100;
 
 /**
- * How many decimals a geometry operation stores of each number it writes: a
- * whole count from 0 to 100, the range `toFixed` takes. An operation handed
- * no count stores what it computes.
+ * Decimal count accepted by `toFixed`. An omitted count leaves computed
+ * values unchanged.
  */
 export const decimalsSchema = z.number().int().min(0).max(mostDecimals);
 
@@ -14,10 +13,8 @@ export const decimalsSchema = z.number().int().min(0).max(mostDecimals);
 export type Decimals = z.infer<typeof decimalsSchema>;
 
 /**
- * How many decimals a number is written with, an exponent counted in, so
- * 1.5e-7 has eight and 1e21 has none, up to the hundred {@link decimalsSchema}
- * allows. A number stored at that count is the number itself, unless it has
- * more than a hundred decimals, as 5e-324 does.
+ * Decimal count in a number's written mantissa and exponent, capped at the
+ * hundred {@link decimalsSchema} allows.
  */
 export function decimalsOf(value: number): Decimals {
   const [mantissa, exponent = '0'] = String(value).split('e');
@@ -26,14 +23,10 @@ export function decimalsOf(value: number): Decimals {
 }
 
 /**
- * One number written at `decimals` decimals or fewer: fixed precision, no
- * locale, no exponent at any magnitude, no trailing zero and no negative zero.
- * The model's coordinates are bare numbers and `toFixed` turns exponential
- * from 1e21 up, so a magnitude that far out has its digits written out
- * instead. A count outside {@link decimalsSchema} is held to its range, so no
- * count throws. A number that is not finite is written as `Infinity`,
- * `-Infinity` or `NaN`, which {@link storedNumber} reads back as the number
- * itself, so a caller that must have a plain number refuses one first.
+ * Writes at most `decimals` places without locale, exponent, trailing zeros
+ * or negative zero. The count is clamped to {@link decimalsSchema}.
+ * Non-finite values produce `Infinity`, `-Infinity` or `NaN`, so callers
+ * requiring finite output must validate first.
  */
 export function fixedNumber(value: number, decimals: Decimals): string {
   const fixed = value.toFixed(counted(decimals));
@@ -44,12 +37,9 @@ export function fixedNumber(value: number, decimals: Decimals): string {
 }
 
 /**
- * `value` as a geometry operation stores it. Where the caller names a count,
- * that is the nearest number of `decimals` decimals or fewer, which reads
- * back without the noise of the arithmetic that made `value` and is never
- * negative zero. Where the caller names none, it is `value` itself. Every
- * count writes a whole number as it is, and both ends of `geometryLimits` are
- * whole, so a coordinate or an extent inside them is stored inside them.
+ * Rounds to `decimals` places without negative zero, or returns `value` when
+ * the count is omitted. Rounding preserves whole numbers, so values within
+ * the integer bounds of `geometryLimits` stay within them.
  */
 export function storedNumber(
   value: number,
