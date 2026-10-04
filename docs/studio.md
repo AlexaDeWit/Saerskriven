@@ -307,11 +307,14 @@ was, with no undo step. Escape also clears the selection, as it does anywhere.
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
 side fixed. Focus a control and press an arrow key to move that edge five
-units, or twenty with Shift. An element is at least ten units wide and high. An
-arrow key the focused control cannot use changes nothing: Up or Down on the
+units, or twenty with Shift. The resize controls stop shrinking at ten units.
+An element made smaller in Position and size or in a file keeps its size
+until it is grown. An arrow key the focused control cannot use changes
+nothing: Up or Down on the
 left or right line, Left or Right on the top or bottom line, or a key that
-would shrink a width or height already at ten units. On a trust boundary curve
-the same controls scale its points ([Trust boundaries](#trust-boundaries)).
+would shrink a width or height already at ten units or less. On a trust
+boundary curve the same controls scale its points
+([Trust boundaries](#trust-boundaries)).
 
 While an element with a threat badge is selected, the badge steps out past its
 top-right corner, so the handle there stays on the corner, and it draws above

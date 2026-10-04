@@ -30,6 +30,32 @@ const narrowest: CanvasNode = {
   size: { ...store.size, width: minimumNodeExtent },
 };
 
+const small: CanvasNode = {
+  ...nodeNamed('el-api'),
+  size: { width: 4, height: 4 },
+};
+
+const roundedUp: CanvasNode = {
+  ...nodeNamed('el-note'),
+  size: { width: 4.6, height: 4.6 },
+};
+
+const roundedDown: CanvasNode = {
+  ...nodeNamed('el-scope-note'),
+  size: { width: 4.4, height: 4.4 },
+};
+
+const tiny: CanvasNode = {
+  ...nodeNamed('el-zone'),
+  size: { width: 0.4, height: 0.4 },
+};
+
+const smallNodes = [small, roundedUp, roundedDown, tiny];
+
+const smallControls = smallNodes.flatMap((node) =>
+  (['right', 'left'] as const).map((position) => ({ node, position })),
+);
+
 const pressed: NodeBox = { position: client.position, size: client.size };
 
 const drift = 50;
@@ -75,16 +101,29 @@ function Host({ data }: NodeProps<HostNode>): ReactElement {
 
 const nodeTypes = { host: Host };
 
-const nodes = [client, narrowest].map((node): HostNode => ({
+const nodes = [client, narrowest, ...smallNodes].map((node): HostNode => ({
   id: node.id,
   type: 'host',
   position: node.position,
   selected: true,
   data: { node },
+  ...(smallNodes.includes(node)
+    ? {
+        measured: {
+          width: Math.round(node.size.width),
+          height: Math.round(node.size.height),
+        },
+      }
+    : {}),
 }));
 
-const keyDown = (key: string): KeyboardEvent =>
-  new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+const keyDown = (key: string, shiftKey = false): KeyboardEvent =>
+  new KeyboardEvent('keydown', {
+    key,
+    shiftKey,
+    bubbles: true,
+    cancelable: true,
+  });
 
 const control = (
   position: ResizeControlPosition,
@@ -166,6 +205,57 @@ describe('ResizeControls', () => {
     expect(resizeEnd).not.toHaveBeenCalled();
   });
 
+  it.each(smallControls)(
+    'leaves width $node.size.width unchanged when dragged inward from the $position',
+    ({ node, position }) => {
+      const end = position === 'right' ? 60 : 140;
+      mouse(control(position, node), 'mousedown', 100);
+      mouse(window, 'mousemove', end);
+      mouse(window, 'mouseup', end);
+
+      expect(resize).not.toHaveBeenCalled();
+      expect(resizeEnd).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(smallControls)(
+    'grows width $node.size.width from its model size when dragged from the $position',
+    ({ node, position }) => {
+      const end = position === 'right' ? 140 : 60;
+      mouse(control(position, node), 'mousedown', 100);
+      mouse(window, 'mousemove', end);
+      mouse(window, 'mouseup', end);
+
+      expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+        {
+          position: {
+            x: node.position.x + (position === 'left' ? -40 : 0),
+            y: node.position.y,
+          },
+          size: { width: node.size.width + 40, height: node.size.height },
+        },
+        false,
+      );
+    },
+  );
+
+  it.each([false, true])(
+    'adds the key step to an extent below ten with Shift %s',
+    (shiftKey) => {
+      act(() => {
+        control('right', small).dispatchEvent(keyDown('ArrowRight', shiftKey));
+      });
+
+      expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+        {
+          position: small.position,
+          size: { width: shiftKey ? 24 : 9, height: 4 },
+        },
+        false,
+      );
+    },
+  );
+
   it('hands one resize end to a press that resized, and none to the still press after it', () => {
     mouse(control('right'), 'mousedown', 100);
     mouse(control('right'), 'mousemove', 140);
@@ -178,6 +268,20 @@ describe('ResizeControls', () => {
     mouse(control('right'), 'mouseup', 100);
 
     expect(resizeEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies the pointer delta before React Flow measures the node', () => {
+    mouse(control('right'), 'mousedown', 100);
+    mouse(window, 'mousemove', 140);
+    mouse(window, 'mouseup', 140);
+
+    expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+      {
+        position: client.position,
+        size: { ...client.size, width: client.size.width + 40 },
+      },
+      false,
+    );
   });
 
   it('hands a touch resize one end through a render that gives it new callbacks, and none to the still touch after it', () => {
@@ -266,8 +370,13 @@ describe('ResizeControls', () => {
 
     touch(control('right'), 'touchend', finger(1, 140));
 
-    expect(resizeEnd).toHaveBeenCalledTimes(1);
-    expect(endedBoxes()).not.toContainEqual(pressed);
+    expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+      {
+        position: client.position,
+        size: { ...client.size, width: client.size.width + 40 },
+      },
+      false,
+    );
   });
 
   it('resizes nothing from an arrow key while a pointer holds the press, and resizes from one once it is over', () => {
@@ -407,6 +516,11 @@ describe('ResizeControls', () => {
     {
       named: 'that would shrink its node under the minimum size',
       of: narrowest,
+      key: 'ArrowLeft',
+    },
+    {
+      named: 'that would shrink an extent already below ten',
+      of: small,
       key: 'ArrowLeft',
     },
   ])(
