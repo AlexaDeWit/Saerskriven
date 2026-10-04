@@ -53,6 +53,7 @@ import {
   commitNote,
   commitRename,
   endInlineEditing,
+  focusElement,
   resizeNode,
   stopInlineEditing,
 } from './edits.js';
@@ -80,13 +81,10 @@ type InlineFieldProps = {
   readonly refuse?: (label: Said, text: string) => TextRefusal | undefined;
 };
 
-/** The height of a one-line name field, which a placed element must reach in both dimensions for its name to open in place. */
+/** A one-line name opens in place only when its box fits a field in both dimensions. */
 export const nameFieldExtent = lineHeight(wrappedTextStyles.label.fontSize);
 
-/**
- * The canvas node types, each drawing its inline name or Note field in place
- * of its text while the store's inline editor names it.
- */
+/** The store's inline editor replaces the corresponding node text. */
 export const editingNodeTypes = {
   actor: EditingNodeBody,
   process: EditingNodeBody,
@@ -352,7 +350,16 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
 
   return (
     <>
-      <CanvasEdgeBody {...props} marks={marks} textVisible={!editing} />
+      <CanvasEdgeBody
+        {...props}
+        marks={marks}
+        onBlockFocus={() => {
+          if (edge !== undefined) {
+            focusElement(edge.id);
+          }
+        }}
+        textVisible={!editing}
+      />
       {editing && edge !== undefined && (
         <EdgeLabelRenderer>
           <div

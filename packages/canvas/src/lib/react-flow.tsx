@@ -12,7 +12,12 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import { useId, useState, type ReactElement } from 'react';
+import {
+  useId,
+  useState,
+  type FocusEventHandler,
+  type ReactElement,
+} from 'react';
 import {
   badgeAnchor,
   badgeStepsOut,
@@ -169,12 +174,16 @@ export function CanvasNodeBody({
   );
 }
 
-/** Follows live endpoints and raises the name block while its line stays in the edge layer. */
+/**
+ * Follows live endpoints and raises the name block while its line stays in the edge layer.
+ * The mounting canvas redirects native focus through `onBlockFocus`.
+ */
 export function CanvasEdgeBody({
   data,
   id,
   interactionWidth,
   marks,
+  onBlockFocus,
   selected,
   selectable,
   source,
@@ -182,6 +191,7 @@ export function CanvasEdgeBody({
   textVisible = true,
 }: EdgeProps<CanvasFlowEdge> & {
   readonly marks: BadgeMarks;
+  readonly onBlockFocus?: FocusEventHandler<SVGSVGElement>;
   readonly textVisible?: boolean;
 }): ReactElement | null {
   const [blockHovered, setBlockHovered] = useState(false);
@@ -239,6 +249,7 @@ export function CanvasEdgeBody({
         interactionWidth={interactionWidth ?? interactionWidths.flow}
         marks={marks}
         onHover={setBlockHovered}
+        onFocus={onBlockFocus}
         path={path}
         selectable={selectable}
         textVisible={textVisible}
@@ -384,6 +395,7 @@ function FlowBlockLayer({
   interactionWidth,
   marks,
   onHover,
+  onFocus,
   path,
   selectable,
   textVisible,
@@ -393,6 +405,7 @@ function FlowBlockLayer({
   readonly interactionWidth: number;
   readonly marks: BadgeMarks;
   readonly onHover: (hovered: boolean) => void;
+  readonly onFocus: FocusEventHandler<SVGSVGElement> | undefined;
   readonly path: string;
   readonly selectable: boolean | undefined;
   readonly textVisible: boolean;
@@ -402,8 +415,6 @@ function FlowBlockLayer({
   if (backing === undefined) {
     return null;
   }
-  const width = svgNumber(backing.maxX - backing.minX);
-  const height = svgNumber(backing.maxY - backing.minY);
   return (
     <ViewportPortal>
       <svg
@@ -411,11 +422,12 @@ function FlowBlockLayer({
         className={`${canvasInteractionClassNames.flowBlockLayer} nopan`}
         data-id={id}
         data-testid={`rf__flow-block-${id}`}
-        width={width}
-        height={height}
-        viewBox={`${svgNumber(backing.minX)} ${svgNumber(backing.minY)} ${width} ${height}`}
+        width={1}
+        height={1}
         overflow="visible"
         pointerEvents="none"
+        onFocus={onFocus}
+        tabIndex={-1}
         onMouseEnter={() => {
           onHover(true);
         }}
@@ -424,8 +436,8 @@ function FlowBlockLayer({
         }}
         style={{
           position: 'absolute',
-          left: backing.minX,
-          top: backing.minY,
+          left: 0,
+          top: 0,
           cursor: selectable ? 'pointer' : undefined,
         }}
       >
@@ -436,8 +448,9 @@ function FlowBlockLayer({
           <g clipPath={`url(#${clipId})`}>
             <BaseEdge
               path={path}
-              interactionWidth={interactionWidth}
+              interactionWidth={0}
               strokeOpacity={0}
+              style={{ strokeWidth: Math.max(1, interactionWidth) }}
             />
           </g>
           <g className={canvasClassNames.element}>

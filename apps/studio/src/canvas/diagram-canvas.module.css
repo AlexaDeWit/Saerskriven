@@ -136,7 +136,7 @@
 }
 
 .canvas :global(.react-flow__edgelabel-renderer) {
-  z-index: 3;
+  z-index: 4;
 }
 
 /* A threat badge draws over the selection frame and the side lines, and under
@@ -252,11 +252,7 @@
   outline-offset: var(--saer-focus-ring-offset);
 }
 
-/* A resize control's ring paints at the control's level and its node's, so
-   the control holding keyboard focus comes above its node's other controls,
-   and its node above the other items and the handles on a curve's points,
-   under the menu a handle opens. React Flow sets each node's z-index inline,
-   hence the !important. */
+/* A focused resize control rises above point handles. Override React Flow's inline node index. */
 .canvas :global(.react-flow__resize-control:has(> button:focus-visible)) {
   z-index: 4;
 }
@@ -265,7 +261,7 @@
   :global(
     .react-flow__node:has(.react-flow__resize-control > button:focus-visible)
   ) {
-  z-index: 2 !important;
+  z-index: 4 !important;
 }
 
 /* The handles a flow attaches to are drawn on the element under the pointer

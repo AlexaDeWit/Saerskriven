@@ -188,12 +188,13 @@ flow.
 React Flow z-index values are set by hand: a boundary at -1, a regular node at
 0 and a selected regular node at 1, so selection keeps a regular node visible
 without raising a boundary above what it encloses. A node whose resize control
-holds keyboard focus rises to 2 while it does, above every other item and the
-handles on a curve's points, and that control above the node's other controls,
+holds keyboard focus rises above the point handles while it does, and that
+control above the node's other controls,
 so nothing on the canvas covers the control's ring. A boundary's interior passes
 pointer events through, and its name, resize control and an invisible stroke
 around its outline stay selectable. Its disabled connection handles cannot take
-an outline drag.
+an outline drag. Flow name blocks draw above the nodes, with segment targets
+and point handles above the blocks. The flow lines stay below the nodes.
 
 Select rests on the arrow over the pane and nodes, a flow keeps its link
 pointer and a connection handle its crosshair. Place uses a crosshair and Hand

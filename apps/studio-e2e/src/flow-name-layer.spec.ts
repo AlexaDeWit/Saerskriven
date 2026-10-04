@@ -6,8 +6,23 @@ import {
   modelWith,
   threatOf,
 } from '@saerskriven/model/fixtures';
-import { centreOf, reachesAt, screenBoxOf } from './canvas.fixtures.js';
-import { nameField, nodeNamed, openModelDocument } from './studio.fixtures.js';
+import {
+  centreOf,
+  canvasSettled,
+  clickSvgText,
+  drawnBy,
+  halfwayAlong,
+  lineOf,
+  reachesAt,
+  screenBoxOf,
+  turnsOf,
+} from './canvas.fixtures.js';
+import {
+  nameField,
+  nodeNamed,
+  openModelDocument,
+  selectByKeyboard,
+} from './studio.fixtures.js';
 
 const flow = {
   ...flowBetween(
@@ -37,7 +52,16 @@ for (const covered of [false, true]) {
                   'Cover',
                 ),
               ]
-            : []),
+            : [
+                boxAt(
+                  'el-focus',
+                  0,
+                  0,
+                  'actor',
+                  { width: 120, height: 80 },
+                  'Focus actor',
+                ),
+              ]),
           flow,
         ],
         threats: [threatOf({ number: 1, elements: ['el-flow'] })],
@@ -63,10 +87,13 @@ for (const covered of [false, true]) {
       await expect.poll(() => reachesAt(cover, beside)).toBe(true);
       await page.mouse.click(beside.x, beside.y);
       await expect(cover).toHaveClass(/\bselected\b/u);
+    } else {
+      await nodeNamed(page, /^Focus actor, actor/u).focus();
     }
 
-    await page.mouse.click(at.x, at.y);
+    await clickSvgText(name);
     await expect(drawnFlow).toHaveClass(/\bselected\b/u);
+    await expect(drawnFlow).toBeFocused();
     const badgeAt = await centreOf(badge);
     await page.mouse.click(badgeAt.x, badgeAt.y);
     await expect(drawnFlow).toHaveClass(/\bselected\b/u);
@@ -77,3 +104,68 @@ for (const covered of [false, true]) {
     await expect(badge).toHaveCount(1);
   });
 }
+
+test('a selected segment takes a press over its name block and previews a bend', async ({
+  page,
+}) => {
+  await openModelDocument(page, modelWith({ elements: [flow] }));
+  await selectByKeyboard(page, /^Visible flow, flow/u);
+  const line = lineOf(page, /^Visible flow, flow/u);
+  const at = await halfwayAlong(line);
+  const original = await drawnBy(line);
+  const segment = page.locator('[data-bend-segment="0"]');
+  await expect.poll(() => reachesAt(segment, at)).toBe(true);
+  await page.mouse.move(at.x, at.y);
+  await page.mouse.down();
+  await page.mouse.move(at.x, at.y + 30, { steps: 4 });
+  await expect(page.locator('[data-bend-index]')).toHaveCount(1);
+  expect(turnsOf(await drawnBy(line))).toHaveLength(3);
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(line).toHaveAttribute('d', original);
+});
+
+test('a bend handle keeps its hit area where the name block covers it', async ({
+  page,
+}) => {
+  await openModelDocument(
+    page,
+    modelWith({
+      elements: [
+        boxAt('el-cover', 0, 0, 'actor', { width: 800, height: 800 }, 'Cover'),
+        {
+          ...flow,
+          name: 'orders.checkout.request.authorisation.result',
+          waypoints: [{ x: 400, y: 400 }],
+        },
+      ],
+    }),
+  );
+  await selectByKeyboard(
+    page,
+    /^orders\.checkout\.request\.authorisation\.result, flow/u,
+  );
+  for (let step = 0; step < 4; step += 1) {
+    await page.getByRole('button', { name: 'Zoom out', exact: true }).click();
+  }
+  await canvasSettled(page);
+  const handle = page.getByRole('button', { name: 'Bend 1', exact: true });
+  const hitArea = await screenBoxOf(handle);
+  const backing = await screenBoxOf(
+    page.locator(`.${canvasClassNames.flowBacking}`),
+  );
+  const left = Math.max(hitArea.x, backing.x);
+  const right = Math.min(hitArea.x + hitArea.width, backing.x + backing.width);
+  const top = Math.max(hitArea.y, backing.y);
+  const bottom = Math.min(
+    hitArea.y + hitArea.height,
+    backing.y + backing.height,
+  );
+  expect(right).toBeGreaterThan(left);
+  expect(bottom).toBeGreaterThan(top);
+  const at = {
+    x: (left + right) / 2,
+    y: top + Math.min(1, (bottom - top) / 2),
+  };
+  await expect.poll(() => reachesAt(handle, at)).toBe(true);
+});
