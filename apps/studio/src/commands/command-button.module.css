@@ -1,18 +1,3 @@
-/* The icon control's tooltip, which is Radix's rather than the `title` the
-   worded control carries: an icon says nothing on its own, and `title` is
-   shown on hover alone. It is not portalled, so it sits inside whichever
-   landmark holds the control. */
-.tooltip {
-  display: flex;
-  gap: var(--saer-space-2);
-  padding: var(--saer-space-1) var(--saer-space-2);
-  border: 1px solid var(--saer-colour-border);
-  border-radius: var(--saer-radius);
-  background: var(--saer-colour-surface-raised);
-  color: var(--saer-colour-text);
-  white-space: nowrap;
-}
-
 .chord {
   color: var(--saer-colour-text-muted);
 }

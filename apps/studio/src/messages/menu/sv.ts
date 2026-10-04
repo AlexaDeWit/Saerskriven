@@ -23,5 +23,7 @@ export const menuSv = catalogue(menuMessages)('sv')({
   diagram: 'Diagram',
   'no-diagram': 'Inget diagram',
   'diagram-named': 'Diagram: {title}',
-  'include-diagrams': 'Inkludera diagram i Markdown',
+  'markdown-register-description': 'Exportera hotregistret utan diagram.',
+  'markdown-complete-description':
+    'Exportera alla diagram som Mermaid, följt av hotregistret.',
 });

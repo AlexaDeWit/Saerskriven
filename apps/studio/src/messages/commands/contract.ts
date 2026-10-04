@@ -11,6 +11,7 @@ export const commandMessages = {
   'label-save-as': text(),
   'label-export-diagram': text(),
   'label-export-register': text(),
+  'label-export-markdown-complete': text(),
   'label-export-typst': text(),
   'label-export-pdf': text(),
   'label-export-png': text(),

@@ -1,5 +1,6 @@
 import { DropdownMenu } from 'radix-ui';
 import { Fragment, type ReactNode, type Ref } from 'react';
+import { ControlTooltip } from '../ui/control-tooltip.js';
 import { useCommandSurface } from '../commands/binding.js';
 import {
   commandById,
@@ -32,6 +33,7 @@ export const panelPlacement = {
 type MenuItemProps = {
   readonly shortcut?: ShortcutText;
   readonly children: ReactNode;
+  readonly description?: string;
   readonly disabled?: boolean;
   readonly keepOpen?: boolean;
   readonly itemRef?: Ref<HTMLDivElement>;
@@ -61,13 +63,14 @@ function Alternatives({ shortcut }: { readonly shortcut: ShortcutText }) {
  */
 export function MenuItem({
   shortcut,
+  description,
   children,
   disabled,
   keepOpen,
   itemRef,
   onChoose,
 }: MenuItemProps) {
-  return (
+  const item = (
     <DropdownMenu.Item
       aria-keyshortcuts={shortcut?.keyShortcuts}
       className={`${styles.item} ${cursor.row}`}
@@ -84,18 +87,35 @@ export function MenuItem({
       {shortcut !== undefined && <Alternatives shortcut={shortcut} />}
     </DropdownMenu.Item>
   );
+  return description === undefined ? (
+    item
+  ) : (
+    <ControlTooltip content={description} side="right">
+      {item}
+    </ControlTooltip>
+  );
 }
 
 type MenuCommandProps = {
   readonly command: CommandId;
   readonly children?: ReactNode;
+  readonly description?: string;
   readonly disabled?: boolean;
 };
 
 /** A registered command as a menu item, run through the mounted surface. */
-export function MenuCommand({ command, children, disabled }: MenuCommandProps) {
+export function MenuCommand({
+  command,
+  children,
+  disabled,
+  description,
+}: MenuCommandProps) {
   return (
-    <RegisteredMenuCommand disabled={disabled} entry={commandById(command)}>
+    <RegisteredMenuCommand
+      disabled={disabled}
+      description={description}
+      entry={commandById(command)}
+    >
       {children}
     </RegisteredMenuCommand>
   );
@@ -110,6 +130,7 @@ type MenuQuestion = {
 type RegisteredMenuCommandProps = {
   readonly entry: Command;
   readonly children?: ReactNode;
+  readonly description?: string;
   readonly disabled?: boolean;
   readonly keepOpen?: boolean;
   readonly onChoose?: () => void;
@@ -125,6 +146,7 @@ type RegisteredMenuCommandProps = {
 export function RegisteredMenuCommand({
   entry,
   children,
+  description,
   disabled,
   keepOpen,
   onChoose,
@@ -148,6 +170,7 @@ export function RegisteredMenuCommand({
   return (
     <MenuItem
       disabled={disabled}
+      description={description}
       keepOpen={keepOpen}
       onChoose={
         onChoose ??

@@ -84,8 +84,6 @@ export type FileSession = {
   readonly closing: boolean;
   readonly choosing: boolean;
   readonly asksFormat: boolean;
-  readonly includeDiagrams: boolean;
-  readonly setIncludeDiagrams: (include: boolean) => void;
   readonly exportNotice: ExportNotice | undefined;
   readonly shareNotice: ShareNotice | undefined;
   readonly linking: boolean;
@@ -284,6 +282,9 @@ export function useFileSession(
       exportRegister: () => {
         exportCommands.register();
       },
+      exportCompleteMarkdown: () => {
+        exportCommands.register(true);
+      },
       exportTypst: () => {
         exportCommands.typst();
       },
@@ -339,8 +340,6 @@ export function useFileSession(
       choosing,
       asksFormat: !bridge.asksWhere(),
       exportNotice: exporter.notice,
-      includeDiagrams: exporter.includeDiagrams,
-      setIncludeDiagrams: exporter.setIncludeDiagrams,
       shareNotice: link.notice,
       linking: link.asking,
       confirmLink: link.confirm,

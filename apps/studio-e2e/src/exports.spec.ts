@@ -35,7 +35,7 @@ test('exports the diagram, picture, register and Typst source the CLI writes, by
   });
 
   await test.step('the register', async () => {
-    const output = await exportedFile(page, 'Register as Markdown');
+    const output = await exportedFile(page, 'Threats as Markdown');
     expect.soft(output.name).toBe('two-diagrams.md');
     expect
       .soft(output.bytes)
@@ -69,32 +69,34 @@ test('names the open diagram, cleaned for a file name, when the model has severa
   expect(picture.name).toBe('two-diagrams - Orders_ A_B_.png');
 });
 
-test('opts into Mermaid Markdown and returns to register-only output', async ({
+test('exports complete Markdown by keyboard and register-only Markdown independently', async ({
   page,
 }) => {
   await openFile(page, twoDiagramsFile);
   await openMenu(page);
   await menuItem(page, 'Export').hover();
-  const include = page.getByRole('menuitemcheckbox', {
-    name: 'Include diagrams in Markdown',
-  });
-  await expect(include).not.toBeChecked();
-  await include.focus();
-  await page.keyboard.press('Space');
-  await expect(include).toBeChecked();
-  const combined = await downloaded(page, () =>
-    menuItem(page, 'Register as Markdown').click(),
+  await expect(page.getByRole('menuitemcheckbox')).toHaveCount(0);
+  await menuItem(page, 'Model as Markdown').focus();
+  await expect(page.getByRole('tooltip')).toContainText(
+    'every diagram as Mermaid',
   );
+  const bubble = page.getByRole('tooltip').locator('..');
+  const visibleFraction = await bubble.evaluate(
+    (element) =>
+      new Promise<number>((resolve) => {
+        const observer = new IntersectionObserver(([entry]) => {
+          resolve(entry.intersectionRatio);
+          observer.disconnect();
+        });
+        observer.observe(element);
+      }),
+  );
+  expect(visibleFraction).toBeGreaterThan(0.99);
+  const combined = await downloaded(page, () => page.keyboard.press('Enter'));
   expect(combined.bytes).toEqual(
     exportGolden('two-diagrams.mermaid.snapshot.md'),
   );
-  await openMenu(page);
-  await menuItem(page, 'Export').hover();
-  await expect(include).toBeChecked();
-  await include.click();
-  const register = await downloaded(page, () =>
-    menuItem(page, 'Register as Markdown').click(),
-  );
+  const register = await exportedFile(page, 'Threats as Markdown');
   expect(register.bytes).toEqual(
     exportGolden('two-diagrams.register.snapshot.md'),
   );

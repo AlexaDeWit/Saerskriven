@@ -19,6 +19,7 @@ export const unmountedSurface: CommandSurface = {
     saveAs: nothing,
     exportDiagram: nothing,
     exportRegister: nothing,
+    exportCompleteMarkdown: nothing,
     exportTypst: nothing,
     exportPdf: nothing,
     exportPng: nothing,

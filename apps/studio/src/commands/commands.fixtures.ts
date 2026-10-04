@@ -24,6 +24,7 @@ export function recordingSurface(): RecordingSurface {
         saveAs: note('saveAs'),
         exportDiagram: note('exportDiagram'),
         exportRegister: note('exportRegister'),
+        exportCompleteMarkdown: note('exportCompleteMarkdown'),
         exportTypst: note('exportTypst'),
         exportPdf: note('exportPdf'),
         exportPng: note('exportPng'),

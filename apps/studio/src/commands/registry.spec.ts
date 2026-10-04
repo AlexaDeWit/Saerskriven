@@ -81,6 +81,7 @@ describe('the command registry', () => {
     ).toEqual([
       'export-diagram',
       'export-register',
+      'export-markdown-complete',
       'export-typst',
       'export-pdf',
       'export-png',
@@ -256,6 +257,7 @@ describe('runCommand', () => {
       'save-as',
       'export-diagram',
       'export-register',
+      'export-markdown-complete',
       'export-typst',
       'export-pdf',
       'export-png',
@@ -275,6 +277,7 @@ describe('runCommand', () => {
       'saveAs',
       'exportDiagram',
       'exportRegister',
+      'exportCompleteMarkdown',
       'exportTypst',
       'exportPdf',
       'exportPng',

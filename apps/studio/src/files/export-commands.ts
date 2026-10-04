@@ -79,7 +79,7 @@ const exportFiles = {
 
 type ExportCommands = {
   diagram(): void;
-  register(): void;
+  register(includeDiagrams?: boolean): void;
   typst(): void;
   pdf(): void;
   png(): void;
@@ -113,10 +113,7 @@ export function useExportCommands(
   readonly commands: ExportCommands;
   readonly notice: ExportNotice | undefined;
   readonly dismissNotice: () => void;
-  readonly includeDiagrams: boolean;
-  readonly setIncludeDiagrams: (include: boolean) => void;
 } {
-  const [includeDiagrams, setIncludeDiagrams] = useState(false);
   const [notice, setNotice] = useState<ExportNotice | undefined>(undefined);
 
   const place = useCallback(
@@ -191,7 +188,7 @@ export function useExportCommands(
           fileTitleOf(state, diagram),
         );
       },
-      register: () => {
+      register: (includeDiagrams = false) => {
         const state = modelStore.getState();
         void place(
           state.file,
@@ -220,7 +217,7 @@ export function useExportCommands(
         );
       },
     }),
-    [place, produce, renders, includeDiagrams],
+    [place, produce, renders],
   );
 
   const dismissNotice = useCallback((): void => {
@@ -242,10 +239,8 @@ export function useExportCommands(
       commands,
       notice,
       dismissNotice,
-      includeDiagrams,
-      setIncludeDiagrams,
     }),
-    [commands, dismissNotice, notice, includeDiagrams],
+    [commands, dismissNotice, notice],
   );
 }
 

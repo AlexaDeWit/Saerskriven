@@ -32,6 +32,7 @@ export const registeredChords = {
   'save-as': ['ControlOrMeta+Shift+s'],
   'export-diagram': [],
   'export-register': [],
+  'export-markdown-complete': [],
   'export-typst': [],
   'export-pdf': [],
   'export-png': [],
