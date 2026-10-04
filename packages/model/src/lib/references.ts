@@ -91,8 +91,8 @@ export function flowEnds(
 
 /**
  * What a reader calls one end of a flow: the name of the element it attaches
- * to, the element's id where it has no name or the lookup lacked it, or
- * `free`, the caller's word for a free point.
+ * to, the element's id where {@link isEmptyName} finds no name or the lookup
+ * lacked it, or `free`, the caller's word for a free point.
  */
 export function flowEndName(end: FlowEnd, free: string): string {
   if (end.kind === 'free') {
@@ -101,7 +101,7 @@ export function flowEndName(end: FlowEnd, free: string): string {
   if (end.kind === 'missing') {
     return end.element;
   }
-  return end.element.name === '' ? end.element.id : end.element.name;
+  return isEmptyName(end.element.name) ? end.element.id : end.element.name;
 }
 
 /**
