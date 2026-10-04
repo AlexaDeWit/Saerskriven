@@ -30,6 +30,11 @@ const narrowest: CanvasNode = {
   size: { ...store.size, width: minimumNodeExtent },
 };
 
+const small: CanvasNode = {
+  ...nodeNamed('el-api'),
+  size: { width: 4, height: 4 },
+};
+
 const pressed: NodeBox = { position: client.position, size: client.size };
 
 const drift = 50;
@@ -75,16 +80,22 @@ function Host({ data }: NodeProps<HostNode>): ReactElement {
 
 const nodeTypes = { host: Host };
 
-const nodes = [client, narrowest].map((node): HostNode => ({
+const nodes = [client, narrowest, small].map((node): HostNode => ({
   id: node.id,
   type: 'host',
   position: node.position,
   selected: true,
   data: { node },
+  ...(node === small ? { measured: node.size } : {}),
 }));
 
-const keyDown = (key: string): KeyboardEvent =>
-  new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+const keyDown = (key: string, shiftKey = false): KeyboardEvent =>
+  new KeyboardEvent('keydown', {
+    key,
+    shiftKey,
+    bubbles: true,
+    cancelable: true,
+  });
 
 const control = (
   position: ResizeControlPosition,
@@ -165,6 +176,57 @@ describe('ResizeControls', () => {
 
     expect(resizeEnd).not.toHaveBeenCalled();
   });
+
+  it.each(['right', 'left'] as const)(
+    'leaves a width below ten unchanged when dragged inward from the %s',
+    (position) => {
+      const end = position === 'right' ? 60 : 140;
+      mouse(control(position, small), 'mousedown', 100);
+      mouse(window, 'mousemove', end);
+      mouse(window, 'mouseup', end);
+
+      expect(resize).not.toHaveBeenCalled();
+      expect(resizeEnd).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['right', 'left'] as const)(
+    'grows a width below ten from its current size when dragged from the %s',
+    (position) => {
+      const end = position === 'right' ? 140 : 60;
+      mouse(control(position, small), 'mousedown', 100);
+      mouse(window, 'mousemove', end);
+      mouse(window, 'mouseup', end);
+
+      expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+        {
+          position: {
+            x: small.position.x + (position === 'left' ? -40 : 0),
+            y: small.position.y,
+          },
+          size: { width: 44, height: 4 },
+        },
+        false,
+      );
+    },
+  );
+
+  it.each([false, true])(
+    'adds the key step to an extent below ten with Shift %s',
+    (shiftKey) => {
+      act(() => {
+        control('right', small).dispatchEvent(keyDown('ArrowRight', shiftKey));
+      });
+
+      expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+        {
+          position: small.position,
+          size: { width: shiftKey ? 24 : 9, height: 4 },
+        },
+        false,
+      );
+    },
+  );
 
   it('hands one resize end to a press that resized, and none to the still press after it', () => {
     mouse(control('right'), 'mousedown', 100);
@@ -407,6 +469,11 @@ describe('ResizeControls', () => {
     {
       named: 'that would shrink its node under the minimum size',
       of: narrowest,
+      key: 'ArrowLeft',
+    },
+    {
+      named: 'that would shrink an extent already below ten',
+      of: small,
       key: 'ArrowLeft',
     },
   ])(

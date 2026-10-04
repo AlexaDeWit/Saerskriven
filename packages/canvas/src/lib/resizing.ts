@@ -5,7 +5,6 @@ import { sameNodeBox, type NodeBox } from './handles.js';
 import type { CanvasNode } from './layout.js';
 import { boundaryStrokeWidth } from './stylesheet.js';
 
-/** Positions of the four side controls and four corner controls. */
 export const resizeControlPositions = [
   'top',
   'right',
@@ -17,22 +16,22 @@ export const resizeControlPositions = [
   'bottom-left',
 ] as const;
 
-/** One position from which a node can be resized. */
 export type ResizeControlPosition = (typeof resizeControlPositions)[number];
 
-/** The minimum model-space width and height of a resized node. */
+/** The extent at which resize controls stop shrinking a larger node. */
 export const minimumNodeExtent = 10;
 
-/** The model-space distance of one keyboard resize. */
 export const keyboardResizeStep = 5;
 
-/** The model-space distance of one shifted keyboard resize. */
 export const shiftedKeyboardResizeStep = 20;
 
-/** What a gesture on the canvas is made with: a pointer, which is a mouse, a pen or a touch, or the keyboard. */
+/** The resize floor, preserving an extent already below {@link minimumNodeExtent}. */
+export const minimumResizeExtent = (current: number): number =>
+  Math.min(current, minimumNodeExtent);
+
+/** Pointer input includes mouse, pen and touch. */
 export type GestureInput = 'pointer' | 'keyboard';
 
-/** The keys that move an active resize control. */
 export const resizeKeys = [
   'ArrowUp',
   'ArrowRight',
@@ -42,7 +41,6 @@ export const resizeKeys = [
 
 type ResizeKey = (typeof resizeKeys)[number];
 
-/** Whether `key` is one of the arrow keys in `resizeKeys`. */
 export const isResizeKey = (key: string): key is ResizeKey =>
   resizeKeys.some((candidate) => candidate === key);
 
@@ -90,7 +88,7 @@ export function resizeBoxOnControlAxes(
   return resized;
 }
 
-/** Which axes a resize of `node` can stretch: both, but on a boundary curve only those its points span. */
+/** Boundary curves stretch only axes their points span. */
 export function resizableAxes(node: CanvasNode): {
   readonly width: boolean;
   readonly height: boolean;
@@ -102,7 +100,7 @@ export function resizableAxes(node: CanvasNode): {
   return { width: span.width > 0, height: span.height > 0 };
 }
 
-/** The controls that resize `node`: every position, less those that would stretch an axis {@link resizableAxes} leaves out. */
+/** Omits controls that stretch an axis {@link resizableAxes} leaves out. */
 export function resizeControlsOf(
   node: CanvasNode,
 ): readonly ResizeControlPosition[] {
@@ -114,7 +112,7 @@ export function resizeControlsOf(
   );
 }
 
-/** `node` drawn at `size`, a boundary curve's points scaled with it in the node's own coordinates. */
+/** Scales a boundary curve's local points with its size. */
 export function nodeAtSize(node: CanvasNode, size: Size): CanvasNode {
   return node.kind === 'boundary-curve'
     ? {
@@ -129,12 +127,9 @@ export function nodeAtSize(node: CanvasNode, size: Size): CanvasNode {
 }
 
 /**
- * Boundary curve points scaled so the curve laid out from them fills `box`,
- * whose sides the layout places one boundary stroke outside the points. Each
- * point keeps its place across the points' span, and a side that `box` leaves
- * in place keeps its points' exact coordinates. An axis shrinks to
- * `minimumNodeExtent` and no further, or not at all where it already spans
- * less, and an axis the points do not span only moves.
+ * Scales points into `box`, allowing for the boundary stroke and
+ * {@link minimumResizeExtent}. Keeps coordinates exact on a fixed side.
+ * An axis the points do not span only moves.
  */
 export function scaledCurvePoints(
   points: readonly Point[],
@@ -170,8 +165,7 @@ function scaledAxis(
   if (keepsStart && keepsEnd) {
     return (value) => value;
   }
-  const extent =
-    Math.max(boxExtent, Math.min(current, minimumNodeExtent)) - margin * 2;
+  const extent = Math.max(boxExtent, minimumResizeExtent(current)) - margin * 2;
   const factor = span === 0 ? 1 : extent / span;
   if (keepsStart) {
     return (value) => low + (value - low) * factor;
@@ -226,13 +220,19 @@ function resizeHorizontal(
   requested: number,
 ): NodeBox {
   if (edge === 'left') {
-    const moved = Math.min(requested, box.size.width - minimumNodeExtent);
+    const moved = Math.min(
+      requested,
+      box.size.width - minimumResizeExtent(box.size.width),
+    );
     return {
       position: { ...box.position, x: box.position.x + moved },
       size: { ...box.size, width: box.size.width - moved },
     };
   }
-  const moved = Math.max(requested, minimumNodeExtent - box.size.width);
+  const moved = Math.max(
+    requested,
+    minimumResizeExtent(box.size.width) - box.size.width,
+  );
   return {
     position: box.position,
     size: { ...box.size, width: box.size.width + moved },
@@ -245,13 +245,19 @@ function resizeVertical(
   requested: number,
 ): NodeBox {
   if (edge === 'top') {
-    const moved = Math.min(requested, box.size.height - minimumNodeExtent);
+    const moved = Math.min(
+      requested,
+      box.size.height - minimumResizeExtent(box.size.height),
+    );
     return {
       position: { ...box.position, y: box.position.y + moved },
       size: { ...box.size, height: box.size.height - moved },
     };
   }
-  const moved = Math.max(requested, minimumNodeExtent - box.size.height);
+  const moved = Math.max(
+    requested,
+    minimumResizeExtent(box.size.height) - box.size.height,
+  );
   return {
     position: box.position,
     size: { ...box.size, height: box.size.height + moved },

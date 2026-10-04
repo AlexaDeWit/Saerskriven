@@ -93,6 +93,29 @@ describe('resizeBoxByKey', () => {
     expect(resizeBoxByKey(box, 'top', 'ArrowLeft')).toBeUndefined();
     expect(resizeBoxByKey(box, 'left', 'Enter')).toBeUndefined();
   });
+
+  it.each([
+    ['left', 'ArrowRight', 'ArrowLeft'],
+    ['right', 'ArrowLeft', 'ArrowRight'],
+    ['top', 'ArrowDown', 'ArrowUp'],
+    ['bottom', 'ArrowUp', 'ArrowDown'],
+  ] as const)(
+    'preserves an extent below ten when shrinking from the %s and grows by its step',
+    (control, shrink, grow) => {
+      const small = { position: box.position, size: { width: 4, height: 4 } };
+      expect(resizeBoxByKey(small, control, shrink)).toBeUndefined();
+      const width = control === 'left' || control === 'right';
+      for (const step of [5, 20]) {
+        expect(resizeBoxByKey(small, control, grow, step)).toEqual({
+          position: {
+            x: box.position.x - (control === 'left' ? step : 0),
+            y: box.position.y - (control === 'top' ? step : 0),
+          },
+          size: { width: width ? 4 + step : 4, height: width ? 4 : 4 + step },
+        });
+      }
+    },
+  );
 });
 
 describe('resizeBoxOnControlAxes', () => {

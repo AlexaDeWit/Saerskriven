@@ -23,7 +23,7 @@ import { svgNumber } from './numbers.js';
 import {
   isResizeKey,
   keyboardResizeStep,
-  minimumNodeExtent,
+  minimumResizeExtent,
   resizeBoxByKey,
   resizeBoxOnControlAxes,
   resizeControlsOf,
@@ -277,8 +277,8 @@ function ResizeControl({
       style={wholeControl}
     >
       <NodeResizeControl
-        minHeight={minimumNodeExtent}
-        minWidth={minimumNodeExtent}
+        minHeight={minimumResizeExtent(node.size.height)}
+        minWidth={minimumResizeExtent(node.size.width)}
         onResize={resize}
         onResizeEnd={end}
         onResizeStart={start}
