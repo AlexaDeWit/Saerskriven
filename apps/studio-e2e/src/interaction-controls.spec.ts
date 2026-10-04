@@ -11,6 +11,7 @@ import {
   touchSession,
 } from './canvas.fixtures.js';
 import {
+  allowClipboard,
   editAnnouncement,
   featureCompleteFile,
   menuItem,
@@ -123,7 +124,7 @@ test('clipboard commands preserve graph references and leave text fields their o
   page,
   context,
 }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await allowClipboard(context);
   await openFallback(page);
   await selectByKeyboard(page, placeholder.records);
   await page.keyboard.press('ControlOrMeta+c');

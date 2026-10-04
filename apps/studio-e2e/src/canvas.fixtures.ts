@@ -1,5 +1,6 @@
 import {
   expect,
+  test,
   type CDPSession,
   type Locator,
   type Page,
@@ -142,6 +143,37 @@ export const reachesAt = (target: Locator, at: Point): Promise<boolean> =>
     at,
   );
 
+/**
+ * Where to click `target`, from its top left corner, at a point nothing else
+ * covers. A click aimed at a covered centre has Playwright scroll the element
+ * into reach, and React Flow puts its wrapper's scroll back a frame later, so
+ * such a click lands only by winning that race.
+ */
+export const clearPositionOn = async (target: Locator): Promise<Point> => {
+  const position = await target.evaluate((node) => {
+    const box = node.getBoundingClientRect();
+    const steps = 8;
+    const offsets = Array.from(
+      { length: steps - 1 },
+      (unused, step) => step + 1,
+    );
+    return offsets
+      .flatMap((row) =>
+        offsets.map((column) => ({
+          x: Math.round((box.width * column) / steps),
+          y: Math.round((box.height * row) / steps),
+        })),
+      )
+      .find((at) =>
+        node.contains(
+          document.elementFromPoint(box.left + at.x, box.top + at.y),
+        ),
+      );
+  });
+  expect(position, 'the element is covered all over').toBeDefined();
+  return position ?? { x: 0, y: 0 };
+};
+
 /** Scrolls a control into view and fails where it is off screen or something else covers its centre. */
 export const onScreen = async (target: Locator): Promise<void> => {
   await target.scrollIntoViewIfNeeded();
@@ -267,18 +299,24 @@ export const scrolledAbove = (target: Locator): Promise<number> =>
     return scrolled;
   });
 
-/** The screen-space box of SVG shape ink, including its stroke. */
-export const inkBoxOf = async (shapes: Locator): Promise<Box> =>
-  shapes.evaluateAll((elements) => {
+const drawnBoxOf = (shapes: Locator, stroked: boolean): Promise<Box> =>
+  shapes.evaluateAll((elements, withStroke) => {
     const boxes = elements.map((element) => {
       if (!(element instanceof SVGGraphicsElement)) {
         throw new Error('The locator found a non-SVG shape.');
       }
-      const drawn = element.getBoundingClientRect();
-      const stroke = Number.parseFloat(getComputedStyle(element).strokeWidth);
-      const matrix = element.getScreenCTM();
-      const scaleX = Math.hypot(matrix?.a ?? 1, matrix?.b ?? 0);
-      const scaleY = Math.hypot(matrix?.c ?? 0, matrix?.d ?? 1);
+      const geometry = element.getBBox();
+      const matrix = element.getScreenCTM() ?? new DOMMatrix();
+      const corners = [geometry.x, geometry.x + geometry.width].flatMap((x) =>
+        [geometry.y, geometry.y + geometry.height].map((y) =>
+          new DOMPoint(x, y).matrixTransform(matrix),
+        ),
+      );
+      const stroke = withStroke
+        ? Number.parseFloat(getComputedStyle(element).strokeWidth)
+        : 0;
+      const scaleX = Math.hypot(matrix.a, matrix.b);
+      const scaleY = Math.hypot(matrix.c, matrix.d);
       const horizontalLine =
         element instanceof SVGLineElement &&
         element.x1.baseVal.value !== element.x2.baseVal.value;
@@ -294,10 +332,10 @@ export const inkBoxOf = async (shapes: Locator): Promise<Box> =>
           ? (stroke * scaleY) / 2
           : 0;
       return {
-        left: drawn.left - padX,
-        top: drawn.top - padY,
-        right: drawn.right + padX,
-        bottom: drawn.bottom + padY,
+        left: Math.min(...corners.map((corner) => corner.x)) - padX,
+        top: Math.min(...corners.map((corner) => corner.y)) - padY,
+        right: Math.max(...corners.map((corner) => corner.x)) + padX,
+        bottom: Math.max(...corners.map((corner) => corner.y)) + padY,
       };
     });
     const left = Math.min(...boxes.map((box) => box.left));
@@ -305,7 +343,21 @@ export const inkBoxOf = async (shapes: Locator): Promise<Box> =>
     const right = Math.max(...boxes.map((box) => box.right));
     const bottom = Math.max(...boxes.map((box) => box.bottom));
     return { x: left, y: top, width: right - left, height: bottom - top };
-  });
+  }, stroked);
+
+/**
+ * The screen-space box of SVG shape geometry, its stroke left out, read from
+ * `getBBox` through `getScreenCTM`. A client rect and Playwright's
+ * `boundingBox` are no measure of it across engines: Firefox's cover the
+ * stroke, with a mitre allowance on a path, in layout units of a sixtieth of
+ * a pixel, and Chromium's client rect leaves the stroke out.
+ */
+export const geometryBoxOf = (shapes: Locator): Promise<Box> =>
+  drawnBoxOf(shapes, false);
+
+/** The screen-space box of SVG shape ink: its geometry and half its stroke on each stroked side. */
+export const inkBoxOf = (shapes: Locator): Promise<Box> =>
+  drawnBoxOf(shapes, true);
 
 /** Where a flow attached to that box ends: one of the four side midpoints. */
 export const handlesOf = (box: Box): Point[] =>
@@ -320,14 +372,18 @@ export const handlesOf = (box: Box): Point[] =>
 export const lineOf = (page: Page, name: RegExp): Locator =>
   page.getByRole('group', { name }).locator(`path.${canvasClassNames.flow}`);
 
-/** The screen point halfway along a drawn flow. */
+/**
+ * The whole pixel nearest the screen point halfway along a drawn flow. A
+ * pointer sent to a fraction of a pixel stays there in Chromium and is cut to
+ * the whole pixel in Firefox.
+ */
 export const halfwayAlong = (line: Locator): Promise<Point> =>
   line.evaluate<Point, SVGPathElement>((path) => {
     const along = path.getPointAtLength(path.getTotalLength() / 2);
     const point = new DOMPoint(along.x, along.y).matrixTransform(
       path.getScreenCTM() ?? new DOMMatrix(),
     );
-    return { x: point.x, y: point.y };
+    return { x: Math.round(point.x), y: Math.round(point.y) };
   });
 
 /** The path a line is drawn along, as the `d` attribute carries it. */
@@ -437,7 +493,11 @@ const clearOf = (boxes: readonly (Box | null)[], at: Point): boolean =>
       at.y > box.y + box.height + clearBy,
   );
 
-/** Finds a point clear of drawn elements, connection snap distance and the lower chrome area. */
+/**
+ * Finds a whole-pixel point clear of drawn elements, connection snap distance
+ * and the lower chrome area. A press asked for at y 67.5 lands there in
+ * Chromium and at 67 in Firefox.
+ */
 export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
   const canvas = await screenBoxOf(canvasContainer(page), 'the canvas');
   const room = { width: canvas.width, height: canvas.height * chromeFree };
@@ -447,8 +507,8 @@ export const emptyCanvasPoint = async (page: Page): Promise<Point> => {
   const candidates = grid
     .flatMap((column) =>
       grid.map((row) => ({
-        x: canvas.x + (room.width * column) / steps,
-        y: canvas.y + (room.height * row) / steps,
+        x: Math.round(canvas.x + (room.width * column) / steps),
+        y: Math.round(canvas.y + (room.height * row) / steps),
       })),
     )
     .filter((at) => clearOf(drawn, at));
@@ -473,8 +533,19 @@ const touchPoint = (at: Point, id = 1) => ({
   id,
 });
 
-/** Enables touch input on a Chromium debugging session. */
+/**
+ * Enables touch input on a Chromium debugging session, and skips the calling
+ * test in every other engine, which has no route for a finger that stays down
+ * and moves. Playwright's `touchscreen` taps and no more, and needs a
+ * `hasTouch` context: Firefox has no touch events without one, and with one
+ * it delivers a mouse click with no pointer events, which a touch spec selects
+ * and opens the menu with.
+ */
 export const touchSession = async (page: Page): Promise<CDPSession> => {
+  test.skip(
+    page.context().browser()?.browserType().name() !== 'chromium',
+    'Playwright holds a finger down and moves it only through a Chromium DevTools session',
+  );
   const session = await page.context().newCDPSession(page);
   await session.send('Emulation.setTouchEmulationEnabled', {
     enabled: true,

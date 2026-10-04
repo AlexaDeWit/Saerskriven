@@ -69,11 +69,13 @@ const sideCases = [
   ['left', { x: -40, y: 0 }, 'width'],
 ] as const;
 
+const pastMinimumInsideViewport = 300;
+
 const shrinkingCases = [
-  ['top', { x: 0, y: 400 }, 'height'],
-  ['right', { x: -400, y: 0 }, 'width'],
-  ['bottom', { x: 0, y: -400 }, 'height'],
-  ['left', { x: 400, y: 0 }, 'width'],
+  ['top', { x: 0, y: pastMinimumInsideViewport }, 'height'],
+  ['right', { x: -pastMinimumInsideViewport, y: 0 }, 'width'],
+  ['bottom', { x: 0, y: -pastMinimumInsideViewport }, 'height'],
+  ['left', { x: pastMinimumInsideViewport, y: 0 }, 'width'],
 ] as const;
 
 const sideControl = (node: Locator, side: string, of = 'Actor'): Locator =>

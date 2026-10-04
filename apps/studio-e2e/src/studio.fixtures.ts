@@ -1,4 +1,9 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import {
+  expect,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import { readAnyFormat, type DetectedRead } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
 import { committedText, testDataPath } from '@saerskriven/model/fixtures';
@@ -163,6 +168,24 @@ export const chooseFile = async (page: Page, path: string): Promise<void> => {
   await page.getByTestId('file-input').setInputFiles(testDataPath(path));
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
   await canvasSettled(page);
+};
+
+const clipboardPermissions: Readonly<Record<string, readonly string[]>> = {
+  chromium: ['clipboard-read', 'clipboard-write'],
+  webkit: ['clipboard-read'],
+};
+
+/**
+ * Grants the clipboard permissions the engine's Playwright driver has a name
+ * for: a grant under a name it lacks throws. Chromium refuses a clipboard
+ * read or write that has no grant. Firefox has neither name, and reads and
+ * writes without one.
+ */
+export const allowClipboard = async (
+  context: BrowserContext,
+): Promise<void> => {
+  const engine = context.browser()?.browserType().name() ?? '';
+  await context.grantPermissions([...(clipboardPermissions[engine] ?? [])]);
 };
 
 /** Opens a file under `test-data` through the fallback picker and waits for its canvas. */
@@ -487,6 +510,33 @@ export const tabTo = async (
     await page.keyboard.press('Tab');
   }
   await expect(target).toBeFocused();
+};
+
+/**
+ * Presses Tab, and once more where focus stopped on a scrolling region that
+ * is no control. Firefox gives every scrolling region a Tab stop, and
+ * Chromium only one that holds no control.
+ */
+export const tabToNextControl = async (page: Page): Promise<void> => {
+  await page.keyboard.press('Tab');
+  const onScroller = await page.evaluate(() => {
+    const focused = document.activeElement;
+    if (
+      focused === null ||
+      focused.matches(
+        'a[href], button, input, select, textarea, summary, [tabindex], [contenteditable]',
+      )
+    ) {
+      return false;
+    }
+    const { overflowX, overflowY } = getComputedStyle(focused);
+    return [overflowX, overflowY].some(
+      (overflow) => overflow === 'auto' || overflow === 'scroll',
+    );
+  });
+  if (onScroller) {
+    await page.keyboard.press('Tab');
+  }
 };
 
 /** Selects an element by focusing it and pressing Enter, then waits for the canvas to settle. */

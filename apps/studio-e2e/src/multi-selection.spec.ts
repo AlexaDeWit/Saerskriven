@@ -3,9 +3,11 @@ import {
   boxOf,
   boxSelect,
   canvasSettled,
+  clearPositionOn,
   dragBy,
   drawnBy,
   elementNodes,
+  geometryBoxOf,
   lineOf,
   screenBoxOf,
   turnsOf,
@@ -99,11 +101,17 @@ test('Shift-click and Shift+Enter extend and trim the selection', async ({
   const flow = nodeNamed(page, placeholder.records);
 
   await actor.click();
-  await store.click({ modifiers: ['Shift'] });
+  await store.click({
+    modifiers: ['Shift'],
+    position: await clearPositionOn(store),
+  });
   await expect(actor).toHaveClass(/selected/u);
   await expect(store).toHaveClass(/selected/u);
 
-  await store.click({ modifiers: ['Shift'] });
+  await store.click({
+    modifiers: ['Shift'],
+    position: await clearPositionOn(store),
+  });
   await expect(store).not.toHaveClass(/selected/u);
 
   await store.focus();
@@ -189,10 +197,9 @@ test('a selected free flow moves by the group offset and undo restores it', asyn
   await expect(callback).toHaveClass(/selected/u);
   await canvasSettled(page);
   const gatewayBefore = await gateway.boundingBox();
-  const lineBefore = await line.boundingBox();
+  const lineBefore = await geometryBoxOf(line);
   const drawnBefore = await drawnBy(line);
   expect(gatewayBefore).not.toBeNull();
-  expect(lineBefore).not.toBeNull();
 
   const gatewayModel = await boxOf(gateway);
 
@@ -202,15 +209,14 @@ test('a selected free flow moves by the group offset and undo restores it', asyn
     .poll(async () => (await boxOf(gateway)).x)
     .not.toBe(gatewayModel.x);
   const gatewayAfter = await gateway.boundingBox();
-  const lineAfter = await line.boundingBox();
+  const lineAfter = await geometryBoxOf(line);
   expect(gatewayAfter).not.toBeNull();
-  expect(lineAfter).not.toBeNull();
-  expect((lineAfter?.width ?? 0) - (lineBefore?.width ?? 0)).toBeCloseTo(0);
-  expect((lineAfter?.height ?? 0) - (lineBefore?.height ?? 0)).toBeCloseTo(0);
-  expect((lineAfter?.x ?? 0) - (lineBefore?.x ?? 0)).toBeCloseTo(
+  expect(lineAfter.width - lineBefore.width).toBeCloseTo(0);
+  expect(lineAfter.height - lineBefore.height).toBeCloseTo(0);
+  expect(lineAfter.x - lineBefore.x).toBeCloseTo(
     (gatewayAfter?.x ?? 0) - (gatewayBefore?.x ?? 0),
   );
-  expect((lineAfter?.y ?? 0) - (lineBefore?.y ?? 0)).toBeCloseTo(
+  expect(lineAfter.y - lineBefore.y).toBeCloseTo(
     (gatewayAfter?.y ?? 0) - (gatewayBefore?.y ?? 0),
   );
 
