@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { commandChord } from './chords.fixtures.js';
 import { audit } from './accessibility.fixtures.js';
 import {
   boxesOverlap,
@@ -171,9 +172,9 @@ test(
     const centre = await centreOf(bend);
     await touchDrag(session, centre, { x: centre.x + 25, y: centre.y - 25 });
     await expect(line).not.toHaveAttribute('d', inserted);
-    await page.keyboard.press('ControlOrMeta+z');
+    await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
     await expect(line).toHaveAttribute('d', inserted);
-    await page.keyboard.press('ControlOrMeta+z');
+    await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
     await expect(line).toHaveAttribute('d', original);
     await toolbar.getByRole('button', { name: 'Add bend', exact: true }).tap();
     await canvasSettled(page);
@@ -183,14 +184,14 @@ test(
       y: chosenAt.y - 65,
     });
     expect(turnsOf(await drawnBy(line))).toHaveLength(3);
-    await page.keyboard.press('ControlOrMeta+z');
+    await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
     await expect(line).toHaveAttribute('d', original);
     await toolbar.getByRole('button', { name: 'Add bend', exact: true }).tap();
     await page.keyboard.press('Enter');
     const start = await centreOf(bend);
     await touchDrag(session, start, { x: start.x - 20, y: start.y - 60 });
     expect(turnsOf(await drawnBy(line))).toHaveLength(3);
-    await page.keyboard.press('ControlOrMeta+z');
+    await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
     await expect(line).toHaveAttribute('d', original);
   },
 );

@@ -239,9 +239,9 @@ itself: a key press that `armsFocusPan` answers, Tab with Shift, Alt or
 neither, puts the keyboard in charge until the next `pointerdown`, both heard
 in the capture phase on the window. Alt is there for Safari, where Option+Tab
 is the chord that reaches every item, and no browser spec runs it.
-`:focus-visible` is not that test, because Chromium and Safari keep it for a
-script focus after any earlier key press, so an element placed by pointer and
-then named would pan. A `focusin` on React Flow's container counts while the
+`:focus-visible` is not that test. Chromium keeps it for a script focus
+after an earlier key press, including an element placed by pointer and then
+named. This Playwright WebKit build clears it once a pointer press came first. A `focusin` on React Flow's container counts while the
 keyboard is in charge and its target is an element, a flow, a resize control,
 or a bend, flow end or curve point handle that matches `:focus-visible`. Focus
 the browser hands back when the window regains it is not a move.

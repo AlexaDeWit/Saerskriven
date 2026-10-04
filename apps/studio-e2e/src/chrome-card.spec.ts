@@ -8,6 +8,7 @@ import {
   scrolledAbove,
 } from './canvas.fixtures.js';
 import {
+  downloadName,
   cardControlsClear,
   chooseFile,
   chromeCard,
@@ -337,7 +338,9 @@ test('a pointer heading down and left from Export into its submenu reaches an ex
   const output = await downloaded(page, () =>
     page.mouse.click(target.x, target.y),
   );
-  expect(output.name).toBe('two-diagrams - Taking an order.svg');
+  expect(output.name).toBe(
+    downloadName(page, 'two-diagrams - Taking an order.svg'),
+  );
 });
 
 const openInShortViewport = async (page: Page): Promise<Box> => {
@@ -448,6 +451,8 @@ test.describe('at a device pixel ratio of 2', () => {
     await expect(page.getByRole('menu', { name: 'Export' })).toBeVisible();
 
     const output = await downloaded(page, () => page.mouse.click(start.x, end));
-    expect(output.name).toBe('two-diagrams - Taking an order.svg');
+    expect(output.name).toBe(
+      downloadName(page, 'two-diagrams - Taking an order.svg'),
+    );
   });
 });

@@ -12,7 +12,7 @@ import {
   screenBoxOf,
   viewportTransform,
 } from './canvas.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   canvasSurface,
   focusSettled,
@@ -71,7 +71,7 @@ test('Escape mid-drag puts a multi-selection back, records nothing, and clears t
   const actor = nodeNamed(page, placeholder.actor);
   const store = nodeNamed(page, placeholder.store);
   const flow = lineOf(page, placeholder.records);
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
   await expect(selected(page)).toHaveCount(3);
   const actorBefore = await boxOf(actor);
   const storeBefore = await boxOf(store);
@@ -140,7 +140,7 @@ test('a drag a blurred window put back stays ended through an arrow key, a point
   await openPlaceholder(page);
   const actor = nodeNamed(page, placeholder.actor);
   const store = nodeNamed(page, placeholder.store);
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
   const actorBefore = await boxOf(actor);
   const storeBefore = await boxOf(store);
   const pane = await emptyCanvasPoint(page);

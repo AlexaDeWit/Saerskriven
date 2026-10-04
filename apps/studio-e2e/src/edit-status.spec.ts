@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   editAnnouncement,
   nameField,
@@ -27,7 +27,7 @@ test('edit status follows focus and lasts until the next edit', async ({
 
   await expect(editAnnouncement(page)).toBeEmpty();
 
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
 
   await expect(nodeNamed(page, /^New actor, actor/u)).toHaveCount(0);
   await expect(editAnnouncement(page)).not.toBeEmpty();

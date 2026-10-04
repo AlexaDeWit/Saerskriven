@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { testDataPath } from '@saerskriven/model/fixtures';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import { canvasSettled, elementNodes } from './canvas.fixtures.js';
 import {
   expectFileShown,
@@ -136,7 +136,9 @@ test('closing asks in the menu before it drops work that is in no file', async (
   await expect(menuButton(page)).toBeFocused();
   await expect(elementNodes(page)).toHaveCount(8);
 
-  await page.keyboard.press(registeredChords['close-file'][0]);
+  await page.keyboard.press(
+    await commandChord(page, registeredChords['close-file'][0]),
+  );
   await expect(discard).toBeVisible();
   await discard.click();
 
@@ -155,7 +157,7 @@ test('opening asks from its chord and discards on the second step', async ({
   await expect(elementNodes(page)).toHaveCount(8);
   await focusSettled(added);
 
-  await page.keyboard.press(registeredChords.open[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.open[0]));
   const discard = menuItem(page, 'Discard changes and open');
   await expect(discard).toBeFocused();
 

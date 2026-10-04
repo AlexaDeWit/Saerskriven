@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Model, Point } from '@saerskriven/model';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   boxOf,
   centreOf,
@@ -46,7 +46,7 @@ const expectNear = (actual: Point | undefined, expected: Point): void => {
 };
 
 const undoneToSettled = async (page: Page): Promise<void> => {
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
   expect(curveIn(await savedModel(page)).points).toEqual(settledPoints);
 };
 
