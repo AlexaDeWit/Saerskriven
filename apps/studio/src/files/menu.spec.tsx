@@ -371,7 +371,7 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     expect(item('Save').getAttribute('aria-keyshortcuts')).toBe('Control+S');
-    expect(item('Model').getAttribute('aria-keyshortcuts')).toBe('M');
+    expect(item('Threat register').getAttribute('aria-keyshortcuts')).toBe('R');
 
     await user.hover(item('Export'));
     expect(

@@ -489,10 +489,11 @@ describe(
       showPanel();
       await user.click(summary(/A reader edits/u));
       await typeRefusedProse(user);
+      await user.click(threatsTab());
+      expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
       act(() => {
         openInModelPanel({ threatId: secondThreat, opened: noop });
       });
-      threatsTab().focus();
       runRegistered('redo');
       expect(present().threats).toHaveLength(1);
       expect(document.activeElement).toBe(threatsTab());
