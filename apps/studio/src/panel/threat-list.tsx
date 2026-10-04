@@ -119,9 +119,7 @@ export function ThreatList({
   const opened = drafts.get(on);
   const [arrival] = useState(() => {
     const asked = element === undefined ? arrivingThreat() : undefined;
-    return opened === undefined || opened.threatId === asked?.threatId
-      ? asked
-      : undefined;
+    return heldOnAnother(opened, asked?.threatId) ? undefined : asked;
   });
   const [expanded, setExpanded] = useState<string>(
     opened?.threatId ?? arrival?.threatId ?? '',
@@ -151,11 +149,14 @@ export function ThreatList({
 
   const restore = useCallback(
     (threatId: ThreatId) => {
+      if (heldOnAnother(held, threatId)) {
+        return;
+      }
       setExpanded(threatId);
       scroll.land(threatId);
       setFocus({ kind: 'title', threatId });
     },
-    [scroll],
+    [held, scroll],
   );
 
   useHistoryFocus(home, listed, restore);
@@ -248,7 +249,7 @@ export function ThreatList({
     };
 
   const expand = (value: string): void => {
-    if (held !== undefined && value !== held.threatId) {
+    if (heldOnAnother(held, value)) {
       return;
     }
     if (value !== expanded) {
@@ -376,7 +377,10 @@ function AttachExisting({
       choices={attachable}
       fieldLabel={t('fields.existing-threat')}
       onPick={(threatId) => {
-        if (list.attach(threatId, element) && list.held === undefined) {
+        if (
+          list.attach(threatId, element) &&
+          !heldOnAnother(list.held, threatId)
+        ) {
           list.open(threatId, 'disclosure');
         }
       }}
@@ -410,6 +414,13 @@ function focusIn(
   threat: Threat,
 ): EditorFocus | undefined {
   return focus?.threatId === threat.id ? focus.kind : undefined;
+}
+
+function heldOnAnother(
+  held: HeldDraft | undefined,
+  threatId: string | undefined,
+): boolean {
+  return held !== undefined && held.threatId !== threatId;
 }
 
 type RequestedThreats = {
@@ -456,11 +467,9 @@ function useRequestedThreats({
     if (!listsModel) {
       return undefined;
     }
-    const refuses = (threatId: ThreatId): boolean =>
-      held !== undefined && held.threatId !== threatId;
     return modelListHandler({
       open: ({ threatId, opened }) => {
-        if (refuses(threatId)) {
+        if (heldOnAnother(held, threatId)) {
           return;
         }
         onRequested?.();
@@ -497,7 +506,7 @@ function useRequestedThreats({
           return undefined;
         }
         if (
-          refuses(threatId) &&
+          heldOnAnother(held, threatId) &&
           drawn.querySelector(refusedFieldSelector) !== null
         ) {
           return 'refused';
