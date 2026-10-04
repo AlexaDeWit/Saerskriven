@@ -8,6 +8,8 @@ export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   'close-threats': 'Fermer les menaces',
   'close-model': 'Fermer le volet du modèle',
   'widen-pane': 'Élargir le volet',
+  'expand-pane': 'Déployer le volet',
+  'collapse-pane': 'Replier le volet',
   'restore-pane-width': 'Rétablir la largeur du volet',
   'several-selected': {
     one: '{count} élément sélectionné. Sélectionnez-en un seul pour y consigner une menace.',

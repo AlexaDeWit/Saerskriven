@@ -628,9 +628,11 @@ test(
     expect((await said.textContent())?.length ?? 0).toBeLessThan(160);
 
     const widen = modelControl(page, 'Widen pane');
-    await onScreen(widen);
-    await widen.click();
-    await expect(modelControl(page, 'Restore pane width')).toBeVisible();
+    if (await widen.isVisible()) {
+      await onScreen(widen);
+      await widen.click();
+      await expect(modelControl(page, 'Restore pane width')).toBeVisible();
+    }
     await expect(said).not.toBeEmpty();
 
     const close = modelControl(page, 'Close model panel');

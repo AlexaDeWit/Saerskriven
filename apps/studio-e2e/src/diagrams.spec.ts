@@ -142,7 +142,7 @@ test('a step with focus on the switcher says the diagram in the status region an
 
   await page.keyboard.press(registeredChords['next-diagram'][0]);
   await expect(status).toContainText(secondTitle);
-  await expect.poll(() => drawnLineHeight(page)).toBeGreaterThan(0);
+  await expect.poll(() => drawnLineHeight(page)).toBe(0);
 
   await tabTo(page, switcher, menuButton(page));
   await page.keyboard.press(registeredChords['next-diagram'][0]);
@@ -278,7 +278,7 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
   await expect(diagramSwitcher(page)).not.toBeFocused();
 });
 
-test('a title committed with Enter draws no status line, and one committed by leaving the field draws it', async ({
+test('a title committed with Enter returns focus to its name, and leaving the field announces it without drawing a line', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
@@ -308,7 +308,7 @@ test('a title committed with Enter draws no status line, and one committed by le
   );
   await expect(diagramSwitcher(page)).not.toBeFocused();
   await expect(editAnnouncement(page)).toContainText('Tabbed away');
-  await expect.poll(() => drawnLineHeight(page)).toBeGreaterThan(0);
+  await expect.poll(() => drawnLineHeight(page)).toBe(0);
 });
 
 test('an edit lands on the diagram on screen, the saved file holds it there, and a reload comes back to that diagram', async ({

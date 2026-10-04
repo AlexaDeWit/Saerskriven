@@ -235,7 +235,7 @@ test('Delete removes a multi-selection with one cascade announcement', async ({
   await expect(said).not.toBeEmpty();
   await expect(said).toHaveText(/\b3\b/u);
   await expect(said).toHaveText(/\b1\b/u);
-  await expect(said.locator('p')).toHaveCount(1);
+  await expect(said.locator('span')).toHaveCount(1);
 });
 
 test('a drag from empty space inside a selected boundary moves the group by one offset and undo restores it', async ({

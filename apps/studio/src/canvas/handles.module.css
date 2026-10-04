@@ -112,3 +112,41 @@
   color: var(--saer-colour-text);
   font: inherit;
 }
+
+.routePanel {
+  inset: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.routeToolbar {
+  position: absolute;
+  width: max-content;
+  max-width: calc(100% - 16px);
+  padding: var(--saer-space-1);
+  gap: var(--saer-space-1);
+  flex-wrap: wrap;
+}
+
+.routeToolbar button {
+  border: 0;
+}
+
+@media (pointer: coarse) {
+  .handle[data-bend-index],
+  .handle[data-flow-end] {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .routeToolbar button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+@media (max-width: 40rem) {
+  :global(:root:has([data-mobile-open='true'])) .routePanel {
+    visibility: hidden;
+  }
+}

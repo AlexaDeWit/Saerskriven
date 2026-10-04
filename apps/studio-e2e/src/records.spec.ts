@@ -23,6 +23,7 @@ import {
   scrollPaneTo,
   selectByKeyboard,
   selectNode,
+  expandPane,
   storefront,
   threatPanel,
   threatSummary,
@@ -63,6 +64,7 @@ test(
     await page.keyboard.press(registeredChords['next-diagram'][0]);
     await canvasSettled(page);
     await selectNode(page, twoDiagrams.second.drawn);
+    await expandPane(page);
     const picker = threatSummary(page, /Picker overrides a dispatch hold/u);
     await expandThreat(page, /Picker overrides a dispatch hold/u);
     await expect(picker.locator('[data-on-elements]')).toContainText('Picker');
@@ -92,6 +94,7 @@ test('a folded record with a long headline leaves its status whole, as tall as a
 }) => {
   await openTwoDiagrams(page);
   await selectNode(page, storefront.webShop);
+  await expandPane(page);
   await expandThreat(page, storefront.basketPrice);
 
   const statuses = [1, 2].map((number) =>
@@ -137,6 +140,7 @@ test(
   async ({ page }) => {
     await openTwoDiagrams(page);
     await selectNode(page, storefront.ledger);
+    await expandPane(page);
     await expandThreat(page, storefront.orderDenied);
     const threatStatus = panelField(page, 'combobox', 'Status');
     const before = await threatStatus.textContent();
@@ -219,6 +223,7 @@ test('Shift+Tab from Existing reaches Add after a new row became a record', asyn
   await page.keyboard.press('Tab');
 
   await selectByKeyboard(page, storefront.webShop);
+  await expandPane(page);
   await expandThreat(page, storefront.basketPrice);
   await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Price the basket on the server');
@@ -283,6 +288,7 @@ test('a linked record names the other threats that hold it by number, and unlink
   expect(await mitigationOffered(page, bound)).toBe(false);
 
   await selectByKeyboard(page, storefront.webShop);
+  await expandPane(page);
   await expandThreat(page, storefront.basketPrice);
   expect(await mitigationOffered(page, bound)).toBe(true);
   await chooseInPanel(page, 'Existing mitigation', bound);
@@ -307,6 +313,7 @@ test('a linked record names the other threats that hold it by number, and unlink
   expect(await mitigationOffered(page, bound)).toBe(true);
 
   await selectByKeyboard(page, storefront.shopper);
+  await expandPane(page);
   await expandThreat(page, storefront.takeover);
   await openRecord(page, `Mitigation 2, ${bound}`);
   const kept = panelField(page, 'textbox', 'Mitigation 2 title');
@@ -341,10 +348,16 @@ test(
     await expect(said).toContainText('The shop signs every');
     expect((await said.textContent())?.length ?? 0).toBeLessThan(160);
 
-    const widen = panelControl(page, 'Widen pane');
-    await onScreen(widen);
-    await widen.click();
-    await expect(panelControl(page, 'Restore pane width')).toBeVisible();
+    const collapse = panelControl(page, 'Collapse pane');
+    if (await collapse.isVisible()) {
+      await collapse.click();
+      await panelControl(page, 'Expand pane').click();
+    } else {
+      const widen = panelControl(page, 'Widen pane');
+      await onScreen(widen);
+      await widen.click();
+      await expect(panelControl(page, 'Restore pane width')).toBeVisible();
+    }
     await expect(said).not.toBeEmpty();
 
     const close = panelControl(page, 'Close threats');
@@ -406,6 +419,10 @@ test(
   { tag: '@phone' },
   async ({ page }) => {
     await openShopperTakeover(page);
+    await panelField(page, 'textbox', 'Description').fill(
+      'A detail of the threat.\n'.repeat(20),
+    );
+    await page.keyboard.press('Tab');
     await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
     await addRecord(
       page,
@@ -435,6 +452,10 @@ test(
   { tag: '@phone' },
   async ({ page }) => {
     await openShopperTakeover(page);
+    await panelField(page, 'textbox', 'Description').fill(
+      'A detail of the threat.\n'.repeat(20),
+    );
+    await page.keyboard.press('Tab');
     await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
     await addRecord(
       page,
@@ -470,6 +491,7 @@ test('a record arriving from another tab above the rows in view leaves those row
   await openTwoDiagrams(page);
   await openTwoDiagrams(other);
   await selectNode(page, storefront.shopper);
+  await expandPane(page);
   await expandThreat(page, storefront.takeover);
   await addRecord(page, 'assumption', 'Callers rotate their tokens.');
   await addRecord(page, 'assumption', 'The edge strips unknown headers.');
@@ -489,12 +511,14 @@ test('a record arriving from another tab above the rows in view leaves those row
 });
 
 test(
-  'a message longer than two lines stops above the open pane at phone width',
+  'a long refusal stays available to screen readers without taking space above the phone pane',
   { tag: '@phone-only' },
   async ({ page }) => {
     await openTwoDiagrams(page);
     await selectByKeyboard(page, storefront.catalogue);
+    await expandPane(page);
     await expect(threatPanel(page)).toBeVisible();
+    await nodeNamed(page, storefront.catalogue).focus();
 
     await page.keyboard.press('Enter');
     await page.keyboard.press('End');
@@ -503,9 +527,7 @@ test(
     const said = editAnnouncement(page);
     await expect(said).toContainText('Catalogue');
 
-    const message = await screenBoxOf(said);
-    const pane = await screenBoxOf(threatPanel(page));
-    expect(message.y + message.height).toBeLessThanOrEqual(pane.y);
+    expect((await said.boundingBox())?.height).toBe(0);
     await onScreen(panelControl(page, 'Close threats'));
   },
 );
@@ -520,6 +542,7 @@ test('a record edit in one tab reaches another, which keeps its own selection', 
   const catalogue = await selectNode(other, storefront.catalogue);
 
   await selectNode(page, storefront.shopper);
+  await expandPane(page);
   await expandThreat(page, storefront.takeover);
   await panelControl(page, 'Add mitigation').click();
   await page.keyboard.type('Strip caller tokens at the edge');

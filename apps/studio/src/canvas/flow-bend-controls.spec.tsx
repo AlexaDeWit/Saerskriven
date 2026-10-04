@@ -94,6 +94,80 @@ beforeEach(() => {
   openCanvas([requestFlow]);
 });
 
+describe('DiagramCanvas, dragging while adding a bend', () => {
+  it('pulls a segment after Add bend without first placing it by click', () => {
+    render(<DiagramCanvas />);
+    add();
+    const segment =
+      document.querySelector('[data-bend-segment="0"]') ?? document.body;
+    pointerOn(segment, 'pointerdown', 200, 30);
+    pointerOn(segment, 'pointermove', 240, 80);
+    pointerOn(segment, 'pointerup', 240, 80);
+    expect(points()).toHaveLength(1);
+    act(() => {
+      dispatch(Action.Undo());
+    });
+    expect(points()).toHaveLength(0);
+  });
+
+  it('moves a settled bend after an insertion preview without adding a second bend', () => {
+    bent();
+    render(<DiagramCanvas />);
+    add();
+    press('Enter');
+    dragHandle(screen.getByRole('button', { name: 'Bend 2' }), {
+      x: 30,
+      y: 60,
+    });
+    expect(points()).toEqual([{ x: 30, y: 60 }]);
+    act(() => {
+      dispatch(Action.Undo());
+    });
+    expect(points()).toEqual([{ x: 210, y: 30 }]);
+  });
+
+  it('inserts in the settled segment when a preview precedes that segment', () => {
+    dispatch(
+      Action.SetFlowWaypoints({
+        elementId: requestFlow,
+        waypoints: [
+          { x: 210, y: 30 },
+          { x: 260, y: 60 },
+        ],
+        decimals: undefined,
+      }),
+    );
+    render(<DiagramCanvas />);
+    add();
+    press('Enter');
+    const segment =
+      document.querySelector('[data-bend-segment="2"]') ?? document.body;
+    const { x, y, zoom } = viewportTransform();
+    pointerOn(segment, 'pointerdown', x + 220 * zoom, y + 40 * zoom);
+    pointerOn(segment, 'pointermove', x + 240 * zoom, y + 80 * zoom);
+    pointerOn(segment, 'pointerup', x + 240 * zoom, y + 80 * zoom);
+    expect(points()).toEqual([
+      { x: 210, y: 30 },
+      { x: 240, y: 80 },
+      { x: 260, y: 60 },
+    ]);
+  });
+
+  it('drags the insertion preview as one bend and one undo step', () => {
+    render(<DiagramCanvas />);
+    add();
+    press('Enter');
+    const before = points()?.[0];
+    dragHandle(bend(), { x: 30, y: 60 });
+    expect(points()).toHaveLength(1);
+    expect(points()?.[0]).not.toEqual(before);
+    act(() => {
+      dispatch(Action.Undo());
+    });
+    expect(points()).toHaveLength(0);
+  });
+});
+
 describe('DiagramCanvas, adding a bend to a flow', () => {
   it('keeps insertion keys and clicks separate from typing and unrelated controls', () => {
     render(<DiagramCanvas />);

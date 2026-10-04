@@ -8,6 +8,8 @@ export const panelEnCA = catalogue(panelMessages)('en-CA')({
   'close-threats': 'Close threats',
   'close-model': 'Close model panel',
   'widen-pane': 'Widen pane',
+  'expand-pane': 'Expand pane',
+  'collapse-pane': 'Collapse pane',
   'restore-pane-width': 'Restore pane width',
   'several-selected': {
     one: '{count} element selected. Select one of them to record a threat against it.',

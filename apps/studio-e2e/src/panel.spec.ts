@@ -38,6 +38,7 @@ import {
   scrollPaneTo,
   selectByKeyboard,
   selectNode,
+  expandPane,
   storefront,
   threatPanel,
   threatSummary,
@@ -102,6 +103,7 @@ const atPaneTop = async (page: Page, target: Locator): Promise<boolean> =>
 const belowLongTakeover = async (page: Page): Promise<Locator> => {
   await openModelDocument(page, shopperWithLongThreats());
   await selectNode(page, storefront.shopper);
+  await expandPane(page);
   await expandThreat(page, storefront.takeover);
   const below = threatSummary(page, replayed);
   await expect(below).toHaveAttribute('aria-expanded', 'false');
@@ -185,6 +187,7 @@ test(
   async ({ page }) => {
     await openModelDocument(page, shopperWithLongThreats());
     await selectNode(page, storefront.shopper);
+    await expandPane(page);
     const lower = threatSummary(page, /Shopper threat 5/u);
 
     await pressedPartlyClipped(page, lower, 'bottom');
@@ -310,6 +313,7 @@ test('the panel opens on the element selected and goes when the selection does',
   await expect(threatPanel(page)).toHaveCount(0);
 
   const actor = await selectNode(page, placeholder.actor);
+  await expandPane(page);
 
   await expect(
     threatPanel(page).getByRole('heading', { name: 'Actor', exact: true }),
@@ -330,6 +334,7 @@ test('T hands the panel the keyboard, and the two Escapes give it back and clear
 }) => {
   await openPlaceholder(page);
   const actor = await selectByKeyboard(page, placeholder.actor);
+  await expandPane(page);
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
   await expect(actor).toBeFocused();
 
@@ -351,6 +356,7 @@ test('undoing a threat just added from the keyboard hands focus to Add a threat,
 }) => {
   await openPlaceholder(page);
   await selectByKeyboard(page, placeholder.actor);
+  await expandPane(page);
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
   await page.keyboard.press(registeredChords['focus-threats'][0]);
   await expect(add).toBeFocused();
@@ -379,6 +385,7 @@ test('an element the panel would cover stays where it was drawn', async ({
   const before = await viewportTransform(page);
 
   await selectByKeyboard(page, placeholder.store);
+  await expandPane(page);
 
   const panel = await edgesOf(threatPanel(page));
   expect(
@@ -395,6 +402,7 @@ test('a node just inside the panel edge stays where it is when selected', async 
   await openPlaceholder(page);
   const actor = nodeNamed(page, placeholder.actor);
   await selectNode(page, placeholder.actor);
+  await expandPane(page);
   const panel = await edgesOf(threatPanel(page));
   await page.keyboard.press('Escape');
   await expect(threatPanel(page)).toHaveCount(0);
@@ -409,6 +417,7 @@ test('a node just inside the panel edge stays where it is when selected', async 
 
   const before = await viewportTransform(page);
   await selectNode(page, placeholder.actor);
+  await expandPane(page);
 
   expect(await viewportTransform(page)).toBe(before);
   expect((await edgesOf(actor)).right).toBeGreaterThan(panel.left);
@@ -419,6 +428,7 @@ test('a draft the model refused comes back when its element is selected again, o
 }) => {
   await openPlaceholder(page);
   const actor = await selectNode(page, placeholder.actor);
+  await expandPane(page);
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   await titleField(page).fill(`Soft${softHyphen}hyphen`);
   await titleField(page).press('Enter');
@@ -426,8 +436,10 @@ test('a draft the model refused comes back when its element is selected again, o
 
   await test.step('selected again', async () => {
     await selectByKeyboard(page, placeholder.store);
+    await expandPane(page);
     await expect(titleField(page)).toHaveCount(0);
     await selectByKeyboard(page, placeholder.actor);
+    await expandPane(page);
 
     await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
     await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
@@ -452,6 +464,7 @@ test('a threat added in the panel reaches the canvas as a badge, and its severit
 }) => {
   await openTwoDiagrams(page);
   const webShop = await selectNode(page, storefront.webShop);
+  await expandPane(page);
   await expect(
     page.getByRole('heading', { name: 'Web shop', exact: true }),
   ).toBeVisible();
@@ -484,6 +497,7 @@ test('a status chosen in the panel takes the threat out of the count the canvas 
 }) => {
   await openTwoDiagrams(page);
   const shopper = await selectNode(page, storefront.shopper);
+  await expandPane(page);
   await expect(shopper).toHaveAccessibleName(
     /1 open threat, highest severity: High/u,
   );
@@ -499,6 +513,7 @@ test('a threat deleted in the panel leaves the canvas, and undo puts it back', a
 }) => {
   await openTwoDiagrams(page);
   const shopper = await selectNode(page, storefront.shopper);
+  await expandPane(page);
   await expect(shopper).toHaveAccessibleName(/1 open threat/u);
 
   await threatSummary(page, storefront.takeover).click();
@@ -523,6 +538,7 @@ test('every field of a threat is reachable and editable from the keyboard, add a
   await page.keyboard.press(registeredChords['next-diagram'][0]);
   await canvasSettled(page);
   const printer = await selectNode(page, /^Label printer, process/u);
+  await expandPane(page);
   const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
 
   await add.focus();
@@ -663,6 +679,7 @@ test('collapsed summaries expose severity and status without an empty content st
 }) => {
   await openPlaceholder(page);
   await selectNode(page, placeholder.actor);
+  await expandPane(page);
   const panel = threatPanel(page);
   await panel.getByRole('button', { name: 'Add a threat' }).click();
   const summary = threatSummary(page, /New threat/u);
@@ -712,6 +729,7 @@ test('keyboard width changes preserve the viewport and persist across selection 
   await page.setViewportSize({ width: 1440, height: 900 });
   await openPlaceholder(page);
   const actor = await selectByKeyboard(page, placeholder.actor);
+  await expandPane(page);
   const panel = threatPanel(page);
   const normal = await edgesOf(panel);
   expect(normal.width).toBeGreaterThan(346);
@@ -731,6 +749,7 @@ test('keyboard width changes preserve the viewport and persist across selection 
   );
   const viewportBeforeSelection = await viewportTransform(page);
   await selectByKeyboard(page, placeholder.store);
+  await expandPane(page);
   expect((await edgesOf(panel)).width).toBe(wide.width);
   expect(await viewportTransform(page)).toBe(viewportBeforeSelection);
   expect(await edgesOf(nodeNamed(page, placeholder.store))).toEqual(
@@ -758,6 +777,7 @@ test('prose starts at two lines and grows with its text without scrolling inside
 }) => {
   await openPlaceholder(page);
   await selectNode(page, placeholder.actor);
+  await expandPane(page);
   const panel = threatPanel(page);
   await panel.getByRole('button', { name: 'Add a threat' }).click();
   const description = panel.getByRole('textbox', {
@@ -838,6 +858,7 @@ test('long titles and fields remain usable in a narrow viewport', async ({
 }) => {
   await openTwoDiagrams(page);
   await selectByKeyboard(page, storefront.shopper);
+  await expandPane(page);
   const panel = threatPanel(page);
   await threatSummary(page, storefront.takeover).click();
   const severityField = panelField(page, 'combobox', 'Severity');
@@ -848,7 +869,9 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   await titleField(page).fill('A long threat title '.repeat(15));
   await titleField(page).press('Enter');
   await page.setViewportSize({ width: 360, height: 640 });
-  await panel.getByRole('button', { name: 'Widen pane' }).click();
+  await expect(
+    panel.getByRole('button', { name: 'Collapse pane' }),
+  ).toBeVisible();
   const bounds = await edgesOf(panel);
   expect(bounds.left).toBeGreaterThanOrEqual(0);
   expect(bounds.right).toBeLessThanOrEqual(360);
@@ -884,6 +907,7 @@ test('a long element name leaves the pane heading and editor reachable', async (
 }) => {
   await openPlaceholder(page);
   await selectByKeyboard(page, placeholder.actor);
+  await expandPane(page);
   await page.keyboard.press('Enter');
   const name = nameField(page, 'Actor');
   await name.fill('A long system component name '.repeat(30));
@@ -891,7 +915,8 @@ test('a long element name leaves the pane heading and editor reachable', async (
   await page.setViewportSize({ width: 360, height: 640 });
   const panel = threatPanel(page);
   const heading = panel.getByRole('heading', { level: 2 });
-  await panel.getByRole('button', { name: 'Widen pane' }).focus();
+  await expandPane(page);
+  await panel.getByRole('button', { name: 'Collapse pane' }).focus();
   await page.keyboard.press('Tab');
   await expect(heading).toBeFocused();
   await page.keyboard.press('ArrowDown');
@@ -899,8 +924,9 @@ test('a long element name leaves the pane heading and editor reachable', async (
     .poll(async () => heading.evaluate((node) => node.scrollTop))
     .toBeGreaterThan(0);
   await page.keyboard.press('Shift+Tab');
-  await expect(panel.getByRole('button', { name: 'Widen pane' })).toBeFocused();
-  await page.keyboard.press('Enter');
+  await expect(
+    panel.getByRole('button', { name: 'Collapse pane' }),
+  ).toBeFocused();
   await panel.getByRole('button', { name: 'Add a threat' }).click();
   await expect(titleField(page)).toBeFocused();
   await titleField(page).fill('A threat under a long element name');

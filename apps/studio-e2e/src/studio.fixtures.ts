@@ -508,11 +508,26 @@ export const selectByKeyboard = async (
 export const threatPanel = (page: Page): Locator =>
   page.getByRole('region', { name: 'Threats' });
 
+/** Opens a collapsed mobile pane before interacting with its fields. */
+export const expandPane = async (
+  page: Page,
+  panel: Locator = threatPanel(page),
+): Promise<void> => {
+  const expand = panel.getByRole('button', {
+    name: 'Expand pane',
+    exact: true,
+  });
+  if (await expand.isVisible()) {
+    await expand.click();
+  }
+};
+
 /** Shows a panel's Details tab, the threat panel's unless another is named, which holds its subject's own fields. */
 export const showDetails = async (
   page: Page,
   panel: Locator = threatPanel(page),
 ): Promise<void> => {
+  await expandPane(page, panel);
   const details = panel.getByRole('tab', { name: 'Details' });
   await details.click();
   await expect(details).toHaveAttribute('aria-selected', 'true');
@@ -578,6 +593,7 @@ export const expandThreat = async (
   page: Page,
   title: RegExp,
 ): Promise<void> => {
+  await expandPane(page);
   const summary = threatSummary(page, title);
   await summary.click();
   await expect(summary).toHaveAttribute('aria-expanded', 'true');

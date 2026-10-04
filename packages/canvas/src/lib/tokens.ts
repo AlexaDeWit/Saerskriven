@@ -250,8 +250,6 @@ export const panelCover = 472;
 
 const chromeCard = '5rem';
 
-const announcementSlot = 'calc(var(--saer-space-2) * 3 + 2px + 2lh)';
-
 const scrollCue = '1.5rem';
 
 const colourProperties = {
@@ -307,8 +305,6 @@ const colourBlock = (palette: Palette, indent: string): string => {
  * stroke read alike.
  * `--saer-chrome-block-size` is a placeholder the studio's chrome card
  * overwrites with its measured height, since its tool row can wrap.
- * `--saer-announcement-slot` holds two lines of the canvas announcement with
- * its gap, border and padding, its `lh` resolving on the pane that reads it.
  * `--saer-scroll-cue-size` is the strip a listbox lays over an edge its
  * options run on past, and the scroll padding that keeps the keyboard's
  * option clear of it.
@@ -332,10 +328,9 @@ ${colourBlock(lightPalette, '  ')}
   --saer-panel-cover: ${String(panelCover)}px;
   --saer-chrome-block-size: ${chromeCard};
   --saer-chrome-reports-block-size: 0px;
-  --saer-announcement-slot: ${announcementSlot};
   --saer-pane-block-start: calc(
     var(--saer-space-3) * 2 + var(--saer-chrome-block-size) +
-      var(--saer-chrome-reports-block-size) + var(--saer-announcement-slot)
+      var(--saer-chrome-reports-block-size)
   );
 
   --saer-focus-ring-width: ${focusRing.width};

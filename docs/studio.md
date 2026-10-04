@@ -15,14 +15,9 @@ link, what a save or an open could not keep, and the link Share copied. Each
 stands until you dismiss it or the state it describes resolves. None is removed
 by a timer.
 
-A status line under the card says what an action did wherever the control
-that has focus does not already show it, such as a deletion, a refusal, a
-paste or an Undo. It ends at the next action that changes the canvas or the
-panel. A diagram chosen in the switcher, or renamed there with Enter, draws no
-line, since focus returns to the switcher, which names it. PageDown and PageUp
-pressed with focus on the switcher draw none either, and a screen reader is
-still told the diagram. Pressed anywhere else they draw the line, and so does
-a rename ended by leaving the field.
+Screen readers announce canvas activity through a hidden status region on
+all layouts. These announcements take no space over the drawing. File and
+link notices remain visible until dismissed or resolved.
 
 **Appearance** in the menu selects System, Light or Dark, and the choice
 persists across reloads. **Language** beside it selects English (Canada),
@@ -372,11 +367,13 @@ flow, and Escape cancels. A flow started this way follows the route at both
 ends.
 
 Select one flow to edit its route. While one flow is selected with the Select
-tool and no name or note is open for editing, the **Flow route** toolbar at the
-bottom centre of the canvas holds Add bend and says what the current gesture
-expects.
+tool and no name or note is open for editing, the **Flow route** icon toolbar
+sits near the flow, inside the available canvas. It holds Add bend and the
+flow direction and endpoint commands. Tooltips name the icons, and screen
+readers announce placement instructions.
 
-- Drag any segment to make a bend, and drag a bend to move it. Click a bend for
+- Drag any segment to make a bend, with a mouse or touch. Add bend is optional.
+  Its segment and preview also accept dragging. Drag a bend to move it. Click a bend for
   Remove bend or Move bend, which takes a destination click.
 - **Add bend** highlights a segment. Left and Right choose the segment, Enter
   starts a bend at its midpoint, the arrow keys move it five units or twenty
@@ -397,8 +394,7 @@ expects.
   is and says so: select the flow itself to delete it.
 
 While one flow is selected with the Select tool and no name or note is open for
-editing, the **Reconnect flow** card pinned at the top left, under the chrome
-card, holds one row of icons: **Change flow source** (a dot at the start of an
+editing, the **Reconnect flow** group in the route toolbar holds these icons: **Change flow source** (a dot at the start of an
 arrow), **Change flow target** (an arrow ending on a dot), **Toggle
 bidirectional flow** (a two-headed arrow, drawn pressed while the flow runs
 both ways) and **Reverse flow** (two opposed arrows). A tooltip names each
@@ -548,7 +544,10 @@ which holds its description, scope and security properties. Every selection
 opens on Threats, and the arrow keys move between the tabs. With several
 selected the panel says how many and offers no fields. Focus threats shows the
 Threats tab and moves focus to "Add a threat". Selecting alone never moves focus
-into the panel. **Widen pane** widens it and **Restore pane width** returns it
+into the panel. On phones, selection leaves a collapsed drawer at the right
+edge, directly below the toolbar and any file notices. **Expand pane** opens
+it and **Collapse pane** returns it to the edge, preserving draft text.
+Focus threats also expands the drawer. On wider screens, **Widen pane** widens it and **Restore pane width** returns it
 to normal, for the rest of the session. The panel covers the diagram rather than
 shrinking it, so pan to reach what it covers.
 
