@@ -1,6 +1,6 @@
 import type { ElementId } from '@saerskriven/model';
 import type { KeyboardEvent } from 'react';
-import { commandForKey } from '../commands/binding.js';
+import { commandForKey, keyboardOwner } from '../commands/binding.js';
 import { runCommand } from '../commands/registry.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import type { CommandSurface } from '../commands/surface.js';
@@ -13,16 +13,8 @@ const selectionFrameSelector = '.react-flow__nodesselection';
 const besideSelectionSelector =
   '[data-bend-index], [data-flow-end], [data-bend-toolbar], [data-curve-point], [data-selection-commands]';
 
-/**
- * Runs the Select tool's command for a key pressed on a drawn element or
- * flow, on a control inside one, on a handle or command beside the selected
- * element, or on the frame React Flow draws around the nodes a box selected,
- * and answers whether it did. Focus moves first to that element, or from the
- * frame to the canvas, so a control the cleared selection unmounts does not
- * drop it. The press stops at the canvas, short of React Flow, which blurs a
- * node or flow that Escape unselects.
- */
-export function selectToolOnItem(
+/** Runs item commands before their controls handle keys. Select restores focus before clearing the selection. */
+export function commandOnItem(
   event: Pick<
     KeyboardEvent,
     'nativeEvent' | 'preventDefault' | 'stopPropagation' | 'target'
@@ -32,12 +24,20 @@ export function selectToolOnItem(
 ): boolean {
   const command = commandForKey(event.nativeEvent, hostPlatform);
   const keepFocus = focusKeeper(event.target, elements);
-  if (command?.id !== 'select-tool' || keepFocus === undefined) {
+  if (
+    command === undefined ||
+    keepFocus === undefined ||
+    (command.id !== 'select-tool' &&
+      ((!event.nativeEvent.ctrlKey && !event.nativeEvent.metaKey) ||
+        keyboardOwner(event.target) !== 'page'))
+  ) {
     return false;
   }
   event.preventDefault();
   event.stopPropagation();
-  keepFocus();
+  if (command.id === 'select-tool') {
+    keepFocus();
+  }
   runCommand(command, surface);
   return true;
 }

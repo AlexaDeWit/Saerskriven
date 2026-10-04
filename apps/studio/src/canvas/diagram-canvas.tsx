@@ -51,7 +51,7 @@ import { useFlowBends } from './flow-bends.js';
 import { FlowBendControls } from './flow-bend-controls.js';
 import { FocusPan } from './focus-pan.js';
 import { useGroupDrag } from './group-drag.js';
-import { selectToolOnItem } from './item-focus.js';
+import { commandOnItem } from './item-focus.js';
 import { NodeFold, useLiveEdges } from './live-edges.js';
 import {
   KeyboardMoveMessage,
@@ -235,7 +235,7 @@ export function DiagramCanvas({
   };
 
   const onKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (selectToolOnItem(event, elements, commandSurface)) {
+    if (commandOnItem(event, elements, commandSurface)) {
       return;
     }
     const selects = pressesContextualShortcut(

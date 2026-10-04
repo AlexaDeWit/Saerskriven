@@ -16,7 +16,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `live-edges.ts`, `box-selection.ts`, `background-selection.ts`                                  | Hooks for a drag's flows, a selection box extended to flows, and a stationary background press                                                             |
 | `group-drag.ts`                                                                                 | A drag of the selection from inside its bounds, where the press lands on empty canvas or an element it leaves out                                          |
 | `node-drag.ts`                                                                                  | React Flow's own drag of nodes, put back on a selection change or a window blur, which also lets go of a held press                                        |
-| `item-focus.ts`                                                                                 | The Select tool's keys on a drawn element, flow or a control of the selection, answered so that focus lands on the element                                 |
+| `item-focus.ts`                                                                                 | Registered modifier commands on canvas items and the Select tool's focus restoration                                                                       |
 | `tools.ts`, `elements.ts`, `placement.tsx`, `placement-preview.tsx`                             | The active mode outside the model store, the elements a tool places, the pointer and Enter gestures, and the draft drawn meanwhile                         |
 | `edits.ts`                                                                                      | One function per edit a control asks for                                                                                                                   |
 | `pane-shield.ts`                                                                                | Keeping a double-click's second press out of a pane its first press opened                                                                                 |
@@ -127,6 +127,10 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
 - **Delete and Backspace are bound twice**, by the command registry for the
   page and by the canvas for itself. A press the canvas answered is marked
   handled, so one press is one removal ([the commands](../commands/README.md)).
+- **Registered Ctrl or Cmd commands on canvas items run during capture.**
+  `item-focus.ts` uses the page binding's command lookup before React Flow or
+  resize controls handle the press. Text fields and overlays retain their
+  keyboard ownership. Unknown chords pass through.
 - **The Select tool's keys on a canvas item or a control of the selection
   are answered by the canvas.** React Flow blurs a node or flow it unselects
   on Escape, and the controls of the selection go with it: resize controls,
