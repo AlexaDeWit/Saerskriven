@@ -15,10 +15,26 @@ import type { Tool } from './tools.js';
 
 type ScreenPoint = { readonly x: number; readonly y: number };
 
+type ScreenBox = {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+};
+
+type BoxPress = Pick<
+  PointerEvent<HTMLDivElement>,
+  'pointerType' | 'button' | 'target' | 'clientX' | 'clientY'
+>;
+
+type BoxRelease = Pick<MouseEvent, 'clientX' | 'clientY'>;
+
 /**
  * React Flow's selection box extended to flows. The edge selections React
  * Flow reports while a box is drawn are dropped, and a finished box adds the
- * flows it wholly contains, as drawn, to the selection.
+ * flows it wholly contains, as drawn, to the selection. A flow is measured by
+ * its geometry and not by its client rect, which in Firefox takes in the
+ * stroke of the invisible hit path.
  */
 export function useBoxSelection(
   surface: RefObject<HTMLDivElement | null>,
@@ -28,7 +44,7 @@ export function useBoxSelection(
   const start = useRef<ScreenPoint | undefined>(undefined);
 
   return {
-    pointerDown: (event: PointerEvent<HTMLDivElement>, tool: Tool): void => {
+    pointerDown: (event: BoxPress, tool: Tool): void => {
       if (
         tool === 'select' &&
         event.pointerType !== 'touch' &&
@@ -46,7 +62,7 @@ export function useBoxSelection(
     onSelectionStart: (): void => {
       selecting.current = true;
     },
-    onSelectionEnd: (event: MouseEvent): void => {
+    onSelectionEnd: (event: BoxRelease): void => {
       selecting.current = false;
       const from = start.current;
       start.current = undefined;
@@ -86,16 +102,17 @@ function containedFlows(
   if (root === null) {
     return [];
   }
-  const bounds = {
+  const bounds: ScreenBox = {
     left: Math.min(from.x, to.x),
     top: Math.min(from.y, to.y),
     right: Math.max(from.x, to.x),
     bottom: Math.max(from.y, to.y),
   };
   return [...root.querySelectorAll('.react-flow__edge')].flatMap((flow) => {
-    const drawn = flow.getBoundingClientRect();
+    const drawn = geometryOf(flow);
     const id = elements.get(flow.getAttribute('data-id') ?? '');
     return id !== undefined &&
+      drawn !== undefined &&
       drawn.left >= bounds.left &&
       drawn.top >= bounds.top &&
       drawn.right <= bounds.right &&
@@ -103,4 +120,29 @@ function containedFlows(
       ? [id]
       : [];
   });
+}
+
+function geometryOf(flow: Element): ScreenBox | undefined {
+  if (!(flow instanceof SVGGraphicsElement)) {
+    return undefined;
+  }
+  const toScreen = flow.getScreenCTM();
+  if (toScreen === null) {
+    return undefined;
+  }
+  const box = flow.getBBox();
+  const corners = [box.x, box.x + box.width].flatMap((x) =>
+    [box.y, box.y + box.height].map((y) => ({
+      x: toScreen.a * x + toScreen.c * y + toScreen.e,
+      y: toScreen.b * x + toScreen.d * y + toScreen.f,
+    })),
+  );
+  const across = corners.map((corner) => corner.x);
+  const down = corners.map((corner) => corner.y);
+  return {
+    left: Math.min(...across),
+    top: Math.min(...down),
+    right: Math.max(...across),
+    bottom: Math.max(...down),
+  };
 }
