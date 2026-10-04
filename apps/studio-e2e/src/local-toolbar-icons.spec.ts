@@ -1,4 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import {
+  contrastRatio,
+  darkPalette,
+  lightPalette,
+  rgbColour,
+} from '@saerskriven/canvas';
 import { audit } from './accessibility.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
@@ -90,6 +96,22 @@ for (const scheme of ['light', 'dark'] as const) {
       expect(colours.text).not.toBe(colours.background);
       if (side === 'left') {
         await iconTooltip(page, choice);
+        const palette = scheme === 'light' ? lightPalette : darkPalette;
+        expect(
+          await choice.evaluate((control) => control.matches(':hover')),
+        ).toBe(true);
+        await expect(choice).toHaveCSS(
+          'background-color',
+          rgbColour(palette.actionPrimary),
+        );
+        await expect(choice).toHaveCSS('color', rgbColour(palette.actionText));
+        await expect(choice).toHaveCSS(
+          'outline-color',
+          rgbColour(palette.actionText),
+        );
+        expect(
+          contrastRatio(palette.actionPrimary, palette.actionText),
+        ).toBeGreaterThanOrEqual(3);
         await info.attach(`connection-icons-${scheme}`, {
           body: await page.screenshot(),
           contentType: 'image/png',
@@ -258,6 +280,7 @@ test('local icon names and tooltips follow the chosen language', async ({
   const flow = page.locator('.react-flow__edge').first();
   await flow.focus();
   await flow.press('Enter');
+  await canvasSettled(page);
   const end = page.getByRole('button', {
     name: 'Extrémité source du flux',
     exact: true,
@@ -271,5 +294,39 @@ test('local icon names and tooltips follow the chosen language', async ({
     const control = actions.getByRole('button', { name, exact: true });
     expect(await reachesAt(control, await centreOf(control))).toBe(true);
     await iconTooltip(page, control);
+  }
+});
+
+test('French local actions remain reachable beside the pane on a narrow desktop', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 800, height: 720 });
+  await page.addInitScript((key) => {
+    localStorage.setItem(key, 'fr-CA');
+  }, languageStorageKey);
+  await openFallback(page);
+  await page.evaluate(() => document.fonts.ready);
+  const flow = page.locator('.react-flow__edge').first();
+  await flow.focus();
+  await flow.press('Enter');
+  await canvasSettled(page);
+  const end = page.getByRole('button', {
+    name: 'Extrémité source du flux',
+    exact: true,
+  });
+  await end.focus();
+  await end.press('Enter');
+  const actions = page.getByRole('group', {
+    name: 'Actions de l’extrémité du flux',
+  });
+  const bounds = await screenBoxOf(actions);
+  const pane = await screenBoxOf(page.getByTestId('threat-panel'));
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(pane.x);
+  for (const control of await actions.getByRole('button').all()) {
+    const reached = await reachesAt(control, await centreOf(control));
+    expect(reached, (await control.getAttribute('aria-label')) ?? '').toBe(
+      true,
+    );
   }
 });

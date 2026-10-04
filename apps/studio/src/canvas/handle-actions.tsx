@@ -66,6 +66,7 @@ export function HandleActions({
       ref={root}
       style={{
         ...besideHandle(point, zoom),
+        maxWidth: `min(28rem, 60vw, ${String(Math.max(available.width - 16, 0))}px)`,
         left: `clamp(${String((8 - x) / zoom - 20)}px, ${String(point.x)}px, ${String((available.width - size.width - 8 - x) / zoom - 20)}px)`,
         top: `clamp(calc((var(--saer-pane-block-start) + ${String(size.height + 64 + 20 * zoom - y)}px) / ${String(zoom)}), ${String(point.y)}px, ${String((available.height - 8 + 20 * zoom - y) / zoom)}px)`,
       }}

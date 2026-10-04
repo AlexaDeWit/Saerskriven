@@ -37,7 +37,7 @@
   color: var(--saer-colour-text);
 }
 
-.control:hover:not(:disabled) {
+.control:hover:where(:not(:disabled)) {
   background: var(--saer-colour-surface);
 }
 

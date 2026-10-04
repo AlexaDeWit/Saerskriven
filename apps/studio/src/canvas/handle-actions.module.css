@@ -1,8 +1,11 @@
 .actions {
+  box-sizing: border-box;
   position: absolute;
   z-index: 2;
   transform-origin: top left;
   flex-wrap: wrap;
+  /* Leave room for the focused control's tooltip between wrapped rows. */
+  row-gap: calc(1lh + var(--saer-space-2) + 8px);
 }
 
 .actions .text {
