@@ -38,6 +38,7 @@ import {
   historyFocusHandler,
   modelListHandler,
   settleArrivingThreat,
+  type ListFocus,
   type ThreatRequest,
 } from './panel-focus.js';
 import { PickExisting } from './pick-existing.js';
@@ -74,6 +75,7 @@ type ListControls = {
   readonly held: HeldDraft | undefined;
   readonly attach: (threatId: ThreatId, on: Element) => boolean;
   readonly open: (threatId: ThreatId, focus: EditorFocus) => void;
+  readonly focus: (on: ListFocus) => void;
 };
 
 /**
@@ -96,14 +98,16 @@ export type ThreatListProps = {
  * The Threats tab of either panel. On an element, Add a threat and Attach
  * existing, then the threats naming the element. On the model, Add a threat,
  * which adds one that applies to the model, then every threat in the model.
- * One threat is expanded at a time and each is edited in place. The list is
- * in review order as it mounts and holds that order while it stays mounted,
- * so an edit never moves the threat under the pointer and a threat added
- * meanwhile joins the end. A threat opened by any route lands with its header
- * at the top of the body, the routes into the model's list from outside it
- * (`openInModelPanel`) included. A threat leaves the list when it leaves the
- * model, which a detach or a cleared model link that takes its last reference
- * does, or on an element's list when it leaves the element.
+ * One threat is expanded at a time and each is edited in place. While one
+ * holds a refused draft no other opens, and Add a threat adds nothing and
+ * moves focus to the field holding the draft. The list is in review order as
+ * it mounts and holds that order while it stays mounted, so an edit never
+ * moves the threat under the pointer and a threat added meanwhile joins the
+ * end. A threat opened by any route lands with its header at the top of the
+ * body, the routes into the model's list from outside it (`openInModelPanel`)
+ * included. A threat leaves the list when it leaves the model, which a detach
+ * or a cleared model link that takes its last reference does, or on an
+ * element's list when it leaves the element.
  */
 export function ThreatList({
   element,
@@ -159,6 +163,30 @@ export function ThreatList({
     [held, scroll],
   );
 
+  const focusOn = useCallback(
+    (where: ListFocus) => {
+      const target =
+        (where === 'refusal'
+          ? list.current?.querySelector<HTMLElement>(refusedFieldSelector)
+          : undefined) ??
+        markedWithin(
+          list.current,
+          'threatItem',
+          expanded,
+        )?.querySelector<HTMLElement>(`.${styles.disclosure}`);
+      if (
+        target !== undefined &&
+        target !== null &&
+        target.closest('[hidden]') === null
+      ) {
+        target.focus();
+      } else {
+        home.current?.focus();
+      }
+    },
+    [expanded, home],
+  );
+
   useHistoryFocus(home, listed, restore);
 
   useRequestedThreats({
@@ -167,16 +195,15 @@ export function ThreatList({
     held,
     expanded,
     list,
-    home,
     scroll,
     show: setExpanded,
+    focus: focusOn,
     onRequested,
   });
 
   const open = (threatId: ThreatId, kind: EditorFocus): void => {
     setExpanded(threatId);
     scroll.land(threatId);
-    setDraft(undefined);
     setFocus({ kind, threatId });
   };
 
@@ -268,7 +295,7 @@ export function ThreatList({
       <AddThreat
         addControl={element === undefined ? undefined : home}
         element={element}
-        list={{ held, attach, open }}
+        list={{ held, attach, open, focus: focusOn }}
       />
       {threats.length === 0 ? (
         <p className={styles.instruction}>
@@ -335,6 +362,10 @@ function AddThreat({
 
   const add = (): void => {
     const threat = freshThreat(number, element?.id, t);
+    if (heldOnAnother(list.held, threat.id)) {
+      list.focus('refusal');
+      return;
+    }
     dispatch(Action.AddThreat({ threat }));
     if (threatIn(threat.id) !== undefined) {
       list.open(threat.id, 'title');
@@ -429,9 +460,9 @@ type RequestedThreats = {
   readonly held: HeldDraft | undefined;
   readonly expanded: string;
   readonly list: RefObject<HTMLElement | null>;
-  readonly home: RefObject<HTMLElement | null>;
   readonly scroll: ThreatScroll;
   readonly show: (threatId: ThreatId) => void;
+  readonly focus: (on: ListFocus) => void;
   readonly onRequested: (() => void) | undefined;
 };
 
@@ -441,9 +472,9 @@ function useRequestedThreats({
   held,
   expanded,
   list,
-  home,
   scroll,
   show,
+  focus,
   onRequested,
 }: RequestedThreats): void {
   const answered = useRef(false);
@@ -480,26 +511,7 @@ function useRequestedThreats({
       showTab: () => {
         onRequested?.();
       },
-      focus: (on) => {
-        const target =
-          (on === 'refusal'
-            ? list.current?.querySelector<HTMLElement>(refusedFieldSelector)
-            : undefined) ??
-          markedWithin(
-            list.current,
-            'threatItem',
-            expanded,
-          )?.querySelector<HTMLElement>(`.${styles.disclosure}`);
-        if (
-          target !== undefined &&
-          target !== null &&
-          target.closest('[hidden]') === null
-        ) {
-          target.focus();
-        } else {
-          home.current?.focus();
-        }
-      },
+      focus,
       hidden: (threatId) => {
         const drawn = list.current;
         if (drawn === null || getComputedStyle(drawn).visibility !== 'hidden') {
@@ -514,7 +526,7 @@ function useRequestedThreats({
         return threatId === expanded ? 'opened' : undefined;
       },
     });
-  }, [expanded, held, home, list, listsModel, onRequested, scroll, show]);
+  }, [expanded, focus, held, list, listsModel, onRequested, scroll, show]);
 }
 
 function useHistoryFocus(

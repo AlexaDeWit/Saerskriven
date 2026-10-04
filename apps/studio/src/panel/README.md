@@ -275,7 +275,12 @@ refusal with the field named, so a refusal that lands after focus has left is
 not silent. The threat holding a refused draft stays expanded until the text is
 corrected or cleared: Radix unmounts a collapsed item's fields, so a collapse
 would take the draft with it, and the panel refuses the collapse rather than
-the draft.
+the draft. Every request to open another threat is turned away while it does,
+by one rule (`heldOnAnother` in `threat-list.tsx`): a summary press, Attach
+existing, a threat register row, an undo or a redo that brings a threat back,
+and Add a threat. Add a threat adds nothing and moves focus to the field
+holding the refused text, in an element's list and in the model's, through the
+focus move the register's close uses.
 
 The refusal is the panel's only view state that another view can settle, so
 it is dropped from both ends. The field reports every change to it, the text
@@ -286,7 +291,9 @@ report from a child that is still rendering. The panel also drops it whenever
 nothing on screen holds it, which is what the threat leaving the element does.
 Which field holds a refusal is kept in the item rather than the panel, so a
 second field committing with no refusal does not report the first field's
-draft away.
+draft away. It is state of the item's expanded content (`useRefusals`), which
+unmounts with the fields, so no note of a refusal outlives the field that
+showed it.
 
 A commit always comes before a collapse: reaching the control that collapses
 an item, by pointer or by Tab, takes focus out of the field, which is the
@@ -310,13 +317,15 @@ holds the scroll position.
 ## Saying what happened
 
 An added threat opens expanded with focus in its title, and the focused field
-reports it, so the studio adds no status message. A deleted threat hands focus
-to the next threat, the previous threat, or the add control. That focus does
-not report the deletion, so the shared status does. A refusal uses the shared
-status too, while its inline error stays beside the field. The next action
-that changes canvas or panel state clears the status but not the inline error
-or its draft. An unlink names the record by its title or first line, quoted
-and bounded as the [canvas announcement](../canvas/README.md) quotes.
+reports it, so the studio adds no status message. An add turned away for a
+refused draft adds none either: focus lands in the field holding the draft,
+which reports the refusal. A deleted threat hands focus to the next threat,
+the previous threat, or the add control. That focus does not report the
+deletion, so the shared status does. A refusal uses the shared status too,
+while its inline error stays beside the field. The next action that changes
+canvas or panel state clears the status but not the inline error or its draft.
+An unlink names the record by its title or first line, quoted and bounded as
+the [canvas announcement](../canvas/README.md) quotes.
 
 The panel sits after the canvas in the DOM, so Tab reaches it after every
 element and flow. It is a region rather than a dialog: it takes no focus of its

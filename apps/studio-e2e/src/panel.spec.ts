@@ -447,6 +447,40 @@ test('a draft the model refused comes back when its element is selected again, o
   });
 });
 
+test('Add a threat adds nothing while a threat holds refused text, and moves focus to that text, by pointer and from the keyboard', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  const actor = await selectNode(page, placeholder.actor);
+  const add = threatPanel(page).getByRole('button', { name: 'Add a threat' });
+  const threatsTab = threatPanel(page).getByRole('tab', {
+    name: /^Threats \d+$/u,
+  });
+  await add.click();
+  await titleField(page).fill(`Soft${softHyphen}hyphen`);
+  const counted = (await threatsTab.textContent()) ?? '';
+
+  await add.click();
+
+  await expect(titleField(page)).toBeFocused();
+  await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
+  await expect(titleField(page)).toHaveAttribute('aria-invalid', 'true');
+  await expect(threatsTab).toHaveText(counted);
+
+  await test.step('from the keyboard, where Focus threats lands on Add a threat', async () => {
+    await titleField(page).press(registeredChords['select-tool'][1]);
+    await expect(actor).toBeFocused();
+    await page.keyboard.press(registeredChords['focus-threats'][0]);
+    await expect(add).toBeFocused();
+
+    await page.keyboard.press('Enter');
+
+    await expect(titleField(page)).toBeFocused();
+    await expect(titleField(page)).toHaveValue(`Soft${softHyphen}hyphen`);
+    await expect(threatsTab).toHaveText(counted);
+  });
+});
+
 test('a threat added in the panel reaches the canvas as a badge, and its severity colours it', async ({
   page,
 }) => {

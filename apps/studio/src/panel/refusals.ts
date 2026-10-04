@@ -27,7 +27,9 @@ export function draftIn(
 /**
  * The refusals one editor's text fields hold. Every note reports to
  * `onRefusal` the first refusal still held, Title then Description ahead of a
- * record's, which is the draft the panel keeps once the editor is gone.
+ * record's, which is the draft the panel keeps once the editor is gone. The
+ * notes are state of the component that calls this, which is the one that
+ * mounts those fields, so none outlives the fields it is about.
  */
 export function useRefusals(
   onRefusal: (refused: RefusedField | undefined) => void,

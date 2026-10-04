@@ -74,6 +74,20 @@ const showPanel = (
 const titleField = (): HTMLElement =>
   screen.getByRole('textbox', { name: 'Title' });
 
+const readerThreat = (): HTMLElement =>
+  screen.getByRole('button', { name: /A reader edits/u });
+
+const refusedProse = `Pasted${softHyphen}prose`;
+
+const refusedDraft = (): HTMLElement => screen.getByDisplayValue(refusedProse);
+
+const typeRefusedProse = async (
+  user: ReturnType<typeof userEvent.setup>,
+): Promise<void> => {
+  await user.click(textbox('Description'));
+  await user.keyboard(refusedProse);
+};
+
 const severityOf = (): string =>
   screen.getByRole('combobox', { name: 'Severity' }).textContent ?? '';
 
@@ -150,7 +164,7 @@ describe(
       shareThreat();
       showPanel(actorElement);
       act(() => {
-        screen.getByRole('button', { name: /A reader edits/u }).click();
+        readerThreat().click();
       });
       const attachments = screen.getByRole('group', {
         name: 'Attached elements',
@@ -209,7 +223,7 @@ describe(
     it('attaches an element from the threat editor, as one undo step', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       await chooseFrom('Existing element', 'Studio');
       await user.click(button('Attach existing element'));
@@ -232,7 +246,7 @@ describe(
       const user = userEvent.setup();
       shareThreat();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       await user.click(button('Detach Studio'));
 
@@ -244,7 +258,7 @@ describe(
       const user = userEvent.setup();
       shareThreat();
       showPanel(processElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       await user.click(button('Detach Reader'));
 
@@ -258,7 +272,7 @@ describe(
       const user = userEvent.setup();
       shareThreat();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       await user.click(button('Detach Reader'));
 
@@ -270,7 +284,7 @@ describe(
     it('removes the threat when the detach takes its last element, and one undo brings it back', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       await user.click(button('Detach Reader'));
 
@@ -290,9 +304,7 @@ describe(
       showPanel(actorElement);
 
       expect(screen.getByRole('heading', { name: 'Reader' })).toBeDefined();
-      expect(
-        screen.getByRole('button', { name: /A reader edits/u }),
-      ).toBeDefined();
+      expect(readerThreat()).toBeDefined();
     });
 
     it('opens on a Threats tab carrying the threat count, beside a Details tab', () => {
@@ -344,7 +356,7 @@ describe(
     it('keeps an open threat open through a visit to Details', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       await user.click(detailsTab());
       await user.click(threatsTab());
@@ -491,9 +503,7 @@ describe(
       await user.click(screen.getByRole('button', { name: 'Delete threat 2' }));
 
       expect(threatsInStore()).toBe(1);
-      expect(document.activeElement).toBe(
-        screen.getByRole('button', { name: /A reader edits/u }),
-      );
+      expect(document.activeElement).toBe(readerThreat());
       expect(numbersIn(currentAnnouncement().message)).toEqual([2]);
     });
 
@@ -528,7 +538,7 @@ describe(
       const user = userEvent.setup();
       showPanel(actorElement);
       await addThreat(user);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
       const kept = titleField();
       await user.click(kept);
 
@@ -593,7 +603,7 @@ describe(
     it('commits a severity change as one undoable step', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       await user.click(screen.getByRole('combobox', { name: 'Severity' }));
       await user.click(screen.getByRole('option', { name: 'Critical' }));
@@ -609,36 +619,28 @@ describe(
     it('keeps a refused draft on screen where the threat would collapse, and says so', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
-      await user.click(screen.getByRole('textbox', { name: 'Description' }));
-      await user.keyboard(`Pasted${softHyphen}prose`);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await typeRefusedProse(user);
+      await user.click(readerThreat());
 
-      expect(
-        screen.getByDisplayValue(`Pasted${softHyphen}prose`),
-      ).toBeDefined();
+      expect(refusedDraft()).toBeDefined();
       expect(describedNumbers(textbox('Description'))).toEqual([7]);
       expect(currentAnnouncement().message.trim()).not.toBe('');
       expect(modelStore.getState().present.threats[0].description).toBe('');
 
-      await user.click(screen.getByRole('textbox', { name: 'Description' }));
+      await user.click(textbox('Description'));
       await user.keyboard('x');
 
       expect(currentAnnouncement().message).toBe('');
-      expect(
-        screen
-          .getByRole('textbox', { name: 'Description' })
-          .getAttribute('aria-invalid'),
-      ).toBe('true');
+      expect(textbox('Description').getAttribute('aria-invalid')).toBe('true');
     });
 
     it('keeps a refused draft on screen where a threat the register already holds is attached, and leaves that threat collapsed', async () => {
       const user = userEvent.setup();
       showPanel(processElement);
       await addThreat(user);
-      await user.click(screen.getByRole('textbox', { name: 'Description' }));
-      await user.keyboard(`Pasted${softHyphen}prose`);
+      await typeRefusedProse(user);
 
       await chooseFrom('Existing threat', sampleThreat.title);
       await user.click(button('Attach existing threat'));
@@ -647,25 +649,16 @@ describe(
         actorElement,
         processElement,
       ]);
-      expect(
-        screen
-          .getByRole('button', { name: /A reader edits/u })
-          .getAttribute('aria-expanded'),
-      ).toBe('false');
-      expect(
-        screen
-          .getByDisplayValue(`Pasted${softHyphen}prose`)
-          .getAttribute('aria-invalid'),
-      ).toBe('true');
+      expect(readerThreat().getAttribute('aria-expanded')).toBe('false');
+      expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
     });
 
     it('keeps a refused draft on screen where a redo brings another threat back, with focus left on the add control', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
       await addThreat(user);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
-      await user.click(screen.getByRole('textbox', { name: 'Description' }));
-      await user.keyboard(`Pasted${softHyphen}prose`);
+      await user.click(readerThreat());
+      await typeRefusedProse(user);
       await user.click(screen.getByRole('button', { name: /New threat/u }));
       runRegistered('undo');
       expect(threatsInStore()).toBe(1);
@@ -679,28 +672,52 @@ describe(
           .getByRole('button', { name: /New threat/u })
           .getAttribute('aria-expanded'),
       ).toBe('false');
-      expect(
-        screen
-          .getByDisplayValue(`Pasted${softHyphen}prose`)
-          .getAttribute('aria-invalid'),
-      ).toBe('true');
+      expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
       expect(document.activeElement).toBe(addControl());
+    });
+
+    it('adds nothing while another threat holds a refused draft, moves focus to the field holding it and says nothing more, and adds again once the text is cleared', async () => {
+      const user = userEvent.setup();
+      const drafts = new Map<ElementId, HeldDraft>();
+      showPanel(actorElement, { drafts });
+      await user.click(readerThreat());
+      await typeRefusedProse(user);
+      await user.tab();
+      resetAnnouncements();
+      const before = present();
+
+      await addThreat(user);
+
+      expect(present()).toBe(before);
+      expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(refusedDraft());
+      expect(drafts.get(actorElement)).toMatchObject({
+        threatId: firstThreat,
+        text: refusedProse,
+      });
+      expect(currentAnnouncement().message).toBe('');
+
+      await user.clear(refusedDraft());
+      await addThreat(user);
+
+      expect(threatsInStore()).toBe(2);
+      expect(readerThreat().getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(titleField());
     });
 
     it('hands a refused draft to the map it was given, keyed by the threat it was typed on', async () => {
       const user = userEvent.setup();
       const drafts = new Map<ElementId, HeldDraft>();
       showPanel(actorElement, { drafts });
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
-      await user.click(screen.getByRole('textbox', { name: 'Description' }));
-      await user.keyboard(`Pasted${softHyphen}prose`);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await typeRefusedProse(user);
+      await user.click(readerThreat());
 
       expect(drafts.get(actorElement)).toMatchObject({
         threatId: firstThreat,
         field: 'Description',
-        text: `Pasted${softHyphen}prose`,
+        text: refusedProse,
       });
       expect(
         drafts.get(actorElement)?.said(activeTranslator().t).trim(),
@@ -714,30 +731,28 @@ describe(
           {
             threatId: firstThreat,
             field: 'Description',
-            text: `Pasted${softHyphen}prose`,
+            text: refusedProse,
             said: () => 'A refusal',
           },
         ],
       ]);
       showPanel(actorElement, { drafts });
 
-      expect(
-        screen.getByDisplayValue(`Pasted${softHyphen}prose`),
-      ).toBeDefined();
+      expect(refusedDraft()).toBeDefined();
       expect(currentAnnouncement().message).toBe('');
     });
 
     it('drops a refusal an undo settled, and lets the threat collapse again', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
-      await user.click(screen.getByRole('textbox', { name: 'Description' }));
+      await user.click(readerThreat());
+      await user.click(textbox('Description'));
       await user.keyboard('Prose the model takes');
       await user.tab();
 
-      await user.click(screen.getByRole('textbox', { name: 'Description' }));
+      await user.click(textbox('Description'));
       await user.keyboard(softHyphen);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
       expect(currentAnnouncement().message.trim()).not.toBe('');
 
       act(() => {
@@ -746,7 +761,7 @@ describe(
 
       expect(currentAnnouncement().message).toBe('');
 
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       expect(screen.queryByRole('textbox', { name: 'Description' })).toBeNull();
     });
@@ -754,14 +769,13 @@ describe(
     it('lets the threat collapse once the refused text is corrected', async () => {
       const user = userEvent.setup();
       showPanel(actorElement);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
-      await user.click(screen.getByRole('textbox', { name: 'Description' }));
-      await user.keyboard(`Pasted${softHyphen}prose`);
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
+      await typeRefusedProse(user);
+      await user.click(readerThreat());
 
-      await user.clear(screen.getByRole('textbox', { name: 'Description' }));
+      await user.clear(textbox('Description'));
       await user.keyboard('Pasted prose');
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       expect(screen.queryByRole('textbox', { name: 'Description' })).toBeNull();
       expect(modelStore.getState().present.threats[0].description).toBe(
@@ -804,7 +818,7 @@ describe(
       const user = userEvent.setup();
       const onClose = vi.fn<() => void>();
       showPanel(actorElement, { onClose });
-      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(readerThreat());
 
       await user.click(screen.getByRole('combobox', { name: 'Severity' }));
       await user.keyboard('{Escape}');

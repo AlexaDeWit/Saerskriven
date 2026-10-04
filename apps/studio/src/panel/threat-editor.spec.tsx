@@ -179,6 +179,23 @@ describe(
       expect(onRefusal).toHaveBeenLastCalledWith(refusedDescription);
     });
 
+    it('keeps no note of a refusal once its field is gone, so a refusal corrected after the threat was collapsed and expanded reports nothing held', async () => {
+      const user = userEvent.setup();
+      const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+      showThreatEditor({ onRefusal });
+      await typeInto('Description', `Pasted${softHyphen}prose`);
+      await user.click(disclosure());
+      expect(screen.queryByRole('textbox', { name: 'Description' })).toBeNull();
+      await user.click(disclosure());
+
+      await typeInto('Title', softHyphen);
+      expect(onRefusal.mock.lastCall?.[0]).toMatchObject({ field: 'Title' });
+      await user.clear(textbox('Title'));
+      await user.tab();
+
+      expect(onRefusal).toHaveBeenLastCalledWith(undefined);
+    });
+
     it('opens the field a held draft was typed in on that draft, refusal and all', () => {
       showThreatEditor({
         held: {
