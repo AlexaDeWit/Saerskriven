@@ -1,3 +1,28 @@
+## 0.8.2 (2026-10-04)
+
+### 🚀 Features
+
+- **model:** bound coordinates and sizes so a file that cannot be drawn fails to read ([#770](https://github.com/AlexaDeWit/Saerskriven/pull/770))
+
+### 🩹 Fixes
+
+- print an element named with only spaces by its id in the exports ([#753](https://github.com/AlexaDeWit/Saerskriven/pull/753))
+- **canvas:** change nothing on an arrow key a resize control cannot use ([#749](https://github.com/AlexaDeWit/Saerskriven/pull/749))
+- **studio:** word the English Detach name for an unnamed flow as a phrase ([#747](https://github.com/AlexaDeWit/Saerskriven/pull/747))
+- **studio:** word the four English stepper names as phrases ([#740](https://github.com/AlexaDeWit/Saerskriven/pull/740))
+- **studio:** open a flow handle's actions on Enter or Space after a dropped drag ([#750](https://github.com/AlexaDeWit/Saerskriven/pull/750))
+- **studio:** let go of a press on an element when the window loses focus before a drag starts ([#751](https://github.com/AlexaDeWit/Saerskriven/pull/751))
+- **studio:** treat a title of only spaces as an empty title ([#757](https://github.com/AlexaDeWit/Saerskriven/pull/757))
+- **studio:** follow a bend being placed by arrow key, and never a pointer resize ([#752](https://github.com/AlexaDeWit/Saerskriven/pull/752))
+- **studio:** keep mobile drawing controls compact and usable ([#775](https://github.com/AlexaDeWit/Saerskriven/pull/775))
+- **studio:** select a flow a selection box contains in Firefox ([#771](https://github.com/AlexaDeWit/Saerskriven/pull/771))
+- **studio:** refuse Add a threat while another threat holds refused text ([#766](https://github.com/AlexaDeWit/Saerskriven/pull/766))
+- **studio,formats:** write the canonical address in a studio build outside the Pages job ([#748](https://github.com/AlexaDeWit/Saerskriven/pull/748))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.8.1 (2026-10-04)
 
 ### 🚀 Features
