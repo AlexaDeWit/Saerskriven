@@ -666,15 +666,18 @@ the rows you are reading keep their place.
 
 ### The model panel
 
-**Model**, in the menu or M, shows the model panel in the threat panel's place,
-headed by the model's title, on two tabs: **Threats**, which carries the
-model's threat count, and **Details**. It opens on Threats with focus on that
-tab, and clears the selection. Whether it is shown belongs to each browser tab.
-Selecting anything brings the threat panel back. Escape, Close model panel, or
-running the command again closes it and moves focus to the canvas.
+A row in the Register opens one focused threat in the panel, including a
+threat on no element. **Details** in the Register opens the model's metadata
+there and focuses its title. Both clear the selection. The panel has two tabs:
+**Threats**, which carries the model's total threat count, and **Details**.
+M opens the panel on Threats with focus on that tab. Whether it is shown
+belongs to each browser tab. Selecting an element brings its contextual
+threat panel back. Escape, Close model panel, or M closes the model panel and
+moves focus to the canvas.
 
-Threats lists every threat in the model, a threat on no element included, in
-the order above and with the same summaries. A threat that applies to the
+Threats shows one chosen threat with the same summary and editor as an
+element's panel. M without a choice starts on the first threat in review order.
+Choose another threat from the Register. A threat that applies to the
 whole model reads "Applies to the whole model", each summary names every
 element its threat is on, and a threat on neither reads "On no element".
 **Add a threat** creates a threat that applies to the whole model and names no
@@ -745,9 +748,9 @@ leads its elements with "The whole model", and a threat on neither reads "No
 element".
 There is no filter or search.
 
-Choosing a row by its title opens that threat on the model panel's Threats
-tab, landed at the top as if it were opened there, and shows the model panel
-where something else was in its place. The register stays open with the row
+The Register is the global threat index. Choosing a row by its title opens
+that threat alone on the panel's Threats tab, landed at the top, and shows
+the editor where something else was in its place. The register stays open with the row
 marked and focus on its title, and the status line says which threat opened.
 A threat holding refused text in the model panel stays open there, and
 another row chosen meanwhile is not marked.
@@ -805,7 +808,7 @@ outside one, and none works while focus is inside an open menu or list.
 | Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange       |
 | Align centres, Align middles           | Mod+Shift+H, Mod+Shift+V                     | Menu, Arrange       |
 | Distribute horizontally, vertically    | Mod+Shift+D, Mod+Shift+B                     | Menu, Arrange       |
-| Model                                  | M                                            | Menu                |
+| Model                                  | M                                            | Register Details    |
 | Threat register                        | R                                            | Menu                |
 | Focus threats                          | T                                            | Keyboard only       |
 | Start a flow                           | F                                            | Keyboard only       |

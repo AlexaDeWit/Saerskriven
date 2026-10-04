@@ -6,6 +6,10 @@ import {
   diagramSwitcher,
   editAnnouncement,
   nodeNamed,
+  modelPanel,
+  openModelPanel,
+  openMenu,
+  menuItem,
   openFallback,
   openTwoDiagrams,
   placeholder,
@@ -30,9 +34,6 @@ const row = (page: Page, title: string): Locator =>
 
 const chooser = (page: Page, title: string): Locator =>
   register(page).getByRole('button', { name: title, exact: true });
-
-const modelPanel = (page: Page): Locator =>
-  page.getByRole('region', { name: 'Model', exact: true });
 
 const modelSummary = (page: Page, title: RegExp): Locator =>
   modelPanel(page).getByRole('button', { name: title });
@@ -91,6 +92,7 @@ test('R opens the register left of the panel, a chosen row opens its threat land
 
   const opened = modelSummary(page, storefront.orderDenied);
   await expect(opened).toHaveAttribute('aria-expanded', 'true');
+  await expect(modelPanel(page).locator('[data-threat-item]')).toHaveCount(1);
   await expect(modelThreatsTab(page)).toHaveAttribute('aria-selected', 'true');
   await expect.poll(() => atModelPaneTop(page, opened)).toBe(true);
   await expect(register(page)).toBeVisible();
@@ -189,7 +191,7 @@ test('Escape hands focus back to the card control under the register that R was 
 
 test('R typed into a field stays in the field', async ({ page }) => {
   await openTwoDiagrams(page);
-  await runFromMenu(page, 'Model');
+  await openModelPanel(page);
   await showDetails(page, modelPanel(page));
   const title = modelPanel(page).getByRole('textbox', {
     name: 'Title',
@@ -277,10 +279,7 @@ test(
     await expect(held).toHaveValue(`Draft${softHyphen}text`);
     await expect(held).toHaveAttribute('aria-invalid', 'true');
     await onScreen(held);
-    await expect(modelSummary(page, storefront.refundAbuse)).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
+    await expect(modelSummary(page, storefront.refundAbuse)).toHaveCount(0);
 
     await test.step('no row is marked as the register opens again, and a row refused from the Details tab shows Threats', async () => {
       await showDetails(page, modelPanel(page));
@@ -320,7 +319,7 @@ test(
   { tag: '@phone-only' },
   async ({ page }) => {
     await openTwoDiagrams(page);
-    await runFromMenu(page, 'Model');
+    await openModelPanel(page);
     await pressR(page);
     const covered = page.getByRole('region', {
       name: 'Model',
@@ -342,5 +341,63 @@ test(
     await expect(register(page)).toHaveCount(0);
     await expect(covered).toBeVisible();
     expect(await inModelPanel()).toBe(true);
+  },
+);
+
+test(
+  'Register Details opens model metadata with focus on its title',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    await pressR(page);
+
+    await register(page)
+      .getByRole('button', { name: 'Details', exact: true })
+      .click();
+
+    await expect(register(page)).toHaveCount(0);
+    const title = modelPanel(page).getByRole('textbox', {
+      name: 'Title',
+      exact: true,
+    });
+    await expect(title).toBeFocused();
+    await expect(title).toHaveValue('Two diagrams');
+    await title.fill('Register model details');
+    await title.press('Tab');
+    await runFromMenu(page, 'Undo');
+    await expect(title).toHaveValue('Two diagrams');
+  },
+);
+
+test(
+  'the explicitly opened menu takes pointer input above the register and editor',
+  { tag: '@phone' },
+  async ({ page }) => {
+    await openTwoDiagrams(page);
+    await pressR(page);
+    await openMenu(page);
+    await expect(menuItem(page, 'Model')).toHaveCount(0);
+    const item = menuItem(page, 'Threat register');
+    await expect(item).toBeVisible();
+    await onScreen(item);
+    await item.click();
+    await expect(register(page)).toBeVisible();
+
+    await chooser(page, refund).click();
+    if (await register(page).isVisible()) {
+      await page.keyboard.press('Escape');
+    }
+    const widen = modelPanel(page).getByRole('button', {
+      name: 'Widen pane',
+      exact: true,
+    });
+    if (await widen.isVisible()) {
+      await widen.click();
+    }
+    await openMenu(page);
+    await onScreen(item);
+    await item.click();
+    await expect(register(page)).toBeVisible();
+    await expect(rows(page)).toHaveCount(10);
   },
 );

@@ -29,14 +29,7 @@ type ModelPanelProps = HeldMetadata & {
   readonly onCover?: (cover: number) => void;
 };
 
-/**
- * The panel for the model, headed by its title: every threat in the model on
- * a Threats tab, which it opens on, and the model's own fields on Details,
- * where Title and Description each commit one `SetModelMetadata` naming that
- * field alone. The Threats tab takes focus where the M command opened the
- * panel, and shows again for a threat asked for from outside the panel, and
- * for the refused text a threat register choice closes onto.
- */
+/** Edits one chosen threat and the model's metadata, retaining both tabs while either shows. */
 export function ModelPanel({
   held,
   onHeld,
@@ -52,6 +45,9 @@ export function ModelPanel({
   const threatsTab = useRef<HTMLButtonElement>(null);
   const showThreats = useCallback(() => {
     setTab('threats');
+  }, []);
+  const showDetails = useCallback(() => {
+    setTab('details');
   }, []);
   const { t } = useTranslator();
 
@@ -78,6 +74,7 @@ export function ModelPanel({
           drafts={drafts}
           element={undefined}
           home={threatsTab}
+          onDetails={showDetails}
           onRequested={showThreats}
         />
       </PanelTabContent>

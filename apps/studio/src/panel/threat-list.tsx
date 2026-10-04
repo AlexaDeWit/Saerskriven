@@ -65,10 +65,7 @@ type PanelFocus = { readonly kind: EditorFocus; readonly threatId: ThreatId };
 /** A refused draft retained by the overlay for one threat list. */
 export type HeldDraft = RefusedField & { readonly threatId: ThreatId };
 
-/**
- * The refused drafts the overlay retains, one per threat list: an element's
- * under its id, and the model's under `undefined`.
- */
+/** Retained refusals use an element's id or `undefined` for the global editor. */
 export type HeldDrafts = Map<ElementId | undefined, HeldDraft>;
 
 type ListControls = {
@@ -78,20 +75,17 @@ type ListControls = {
   readonly focus: (on: ListFocus) => void;
 };
 
-/**
- * An element's list, or the model's when `element` is undefined.
- * `home` takes focus when no threat remains. The model list calls
- * `onRequested` before an external request opens a threat or focuses a refusal.
- */
+/** `home` receives focus after the last threat leaves, and requests reveal the editor's tab. */
 export type ThreatListProps = {
   readonly element: Element | undefined;
   readonly drafts: HeldDrafts;
   readonly home: RefObject<HTMLButtonElement | null>;
   readonly onRequested?: () => void;
+  readonly onDetails?: () => void;
 };
 
 /**
- * Edits an element's threats or every threat in the model.
+ * Edits an element's threats or one chosen threat from the register.
  * A refused draft blocks switching threats and adding, which focuses its field.
  * Review order stays fixed while mounted, with new threats at the end.
  */
@@ -100,6 +94,7 @@ export function ThreatList({
   drafts,
   home,
   onRequested,
+  onDetails,
 }: ThreatListProps) {
   const on = element?.id;
   const listed = element === undefined ? modelThreats : attachedThreats;
@@ -114,6 +109,15 @@ export function ThreatList({
   const [expanded, setExpanded] = useState<string>(
     opened?.threatId ?? arrival?.threatId ?? '',
   );
+  const [chosen, setChosen] = useState<ThreatId | undefined>(
+    opened?.threatId ?? arrival?.threatId ?? shown[0]?.id,
+  );
+  const show = useCallback((threatId: ThreatId | '') => {
+    setExpanded(threatId);
+    if (threatId !== '') {
+      setChosen(threatId);
+    }
+  }, []);
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const list = useRef<HTMLDivElement>(null);
@@ -142,15 +146,22 @@ export function ThreatList({
       if (heldOnAnother(held, threatId)) {
         return;
       }
-      setExpanded(threatId);
+      show(threatId);
       scroll.land(threatId);
       setFocus({ kind: 'title', threatId });
     },
-    [held, scroll],
+    [held, scroll, show],
   );
 
   const focusOn = useCallback(
     (where: ListFocus) => {
+      if (where === 'details') {
+        home.current
+          ?.closest('[data-pane]')
+          ?.querySelector<HTMLElement>('[role="tabpanel"]:not([hidden]) input')
+          ?.focus();
+        return;
+      }
       const target =
         (where === 'refusal'
           ? list.current?.querySelector<HTMLElement>(refusedFieldSelector)
@@ -182,13 +193,14 @@ export function ThreatList({
     expanded,
     list,
     scroll,
-    show: setExpanded,
+    show,
     focus: focusOn,
     onRequested,
+    onDetails,
   });
 
   const open = (threatId: ThreatId, kind: EditorFocus): void => {
-    setExpanded(threatId);
+    show(threatId);
     scroll.land(threatId);
     setFocus({ kind, threatId });
   };
@@ -196,6 +208,10 @@ export function ThreatList({
   const leave = (threatId: ThreatId): void => {
     const next = threatAfterDeleting(shown, threatId);
     setDraft(undefined);
+    if (element === undefined) {
+      setExpanded('');
+      setChosen(next);
+    }
     if (next === undefined) {
       home.current?.focus();
     } else {
@@ -273,7 +289,7 @@ export function ThreatList({
         scroll.land(value);
       }
     }
-    setExpanded(value);
+    show(threats.find((threat) => threat.id === value)?.id ?? '');
   };
 
   return (
@@ -304,7 +320,10 @@ export function ThreatList({
           type="single"
           value={expanded}
         >
-          {shown.map((threat) => (
+          {(element === undefined
+            ? shown.filter((threat) => threat.id === chosen)
+            : shown
+          ).map((threat) => (
             <ThreatEditor
               focus={focusIn(focus, threat)}
               held={held?.threatId === threat.id ? held : undefined}
@@ -450,6 +469,7 @@ type RequestedThreats = {
   readonly show: (threatId: ThreatId) => void;
   readonly focus: (on: ListFocus) => void;
   readonly onRequested: (() => void) | undefined;
+  readonly onDetails: (() => void) | undefined;
 };
 
 function useRequestedThreats({
@@ -462,6 +482,7 @@ function useRequestedThreats({
   show,
   focus,
   onRequested,
+  onDetails,
 }: RequestedThreats): void {
   const answered = useRef(false);
 
@@ -497,6 +518,9 @@ function useRequestedThreats({
       showTab: () => {
         onRequested?.();
       },
+      showDetails: () => {
+        onDetails?.();
+      },
       focus,
       hidden: (threatId) => {
         const drawn = list.current;
@@ -509,7 +533,17 @@ function useRequestedThreats({
         return threatId === expanded ? 'opened' : undefined;
       },
     });
-  }, [expanded, focus, held, list, listsModel, onRequested, scroll, show]);
+  }, [
+    expanded,
+    focus,
+    held,
+    list,
+    listsModel,
+    onDetails,
+    onRequested,
+    scroll,
+    show,
+  ]);
 }
 
 function useHistoryFocus(

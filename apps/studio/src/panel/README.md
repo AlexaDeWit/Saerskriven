@@ -3,8 +3,8 @@
 The threats of whatever is selected, edited where they are read. The canvas
 selects, the panel follows, and an edit leaves as a store action, so the
 badges on the diagram and the panel are two views of one model with nothing
-synchronizing them. The same location shows the model: every threat it holds,
-and its own fields. What a person can do with it is in
+synchronizing them. The same location edits one threat chosen from the Register and the model's
+own fields. What a person can do with it is in
 [Using the studio](../../../../docs/studio.md#the-threat-panel).
 
 ## Modules
@@ -14,14 +14,14 @@ and its own fields. What a person can do with it is in
 | `threat-overlay.tsx`                                               | The mount: which panel to draw, the drafts and pane width it retains across both, and the keyboard                                                     |
 | `panel-frame.tsx`, `panel-tabs.tsx`                                | The pane either panel draws: width control, heading, close control, Escape, the coverage it reports, and the Threats and Details tabs                  |
 | `threat-panel.tsx`                                                 | The panel for a selection                                                                                                                              |
-| `threat-list.tsx`                                                  | The Threats tab either panel draws: add, and on an element attach, then the threat list, and where focus goes after each change                        |
+| `threat-list.tsx`                                                  | The Threats tab each panel draws: add, and on an element attach, then the threat list, and where focus goes after each change                          |
 | `threat-editor.tsx`, `threat-scroll.ts`                            | One expanded threat, and where an opened threat and a field Tab reaches land in the scrolling body                                                     |
 | `threat-summary.tsx`, `threat-marks.tsx`                           | A collapsed threat's summary, which is also its accordion trigger's accessible name, and its severity, status and flag marks                           |
 | `threat-records.tsx`, `record-row.tsx`, `records.ts`               | One record group, one record folded or open, and what differs between the two record kinds and the two targets (`RecordTarget`: a threat or the model) |
 | `shown-order.ts`                                                   | Holding the order a list mounted in, which the threat list and each record group keep while they are open                                              |
 | `threat-attachments.tsx`                                           | What one threat is on: its model link and the elements it names, with the controls that change them                                                    |
 | `pick-existing.tsx`                                                | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
-| `model-panel.tsx`                                                  | The panel for the model: every threat on Threats, and its title, description and assumptions on Details                                                |
+| `model-panel.tsx`                                                  | The focused threat editor, and the model's title, description and assumptions on Details                                                               |
 | `threat-register.tsx`, `threat-register-state.ts`                  | The threat register over the canvas, and whether it is open, the R command that opens it, a choice that closes it, and where focus goes as it closes   |
 | `element-properties.tsx`, `element-property-fields.tsx`            | The element's own fields on Details: its details, then its security properties, and their field kinds                                                  |
 | `element-details.tsx`                                              | An element's description, out-of-scope flag and reason, for every kind, a note included                                                                |
@@ -44,7 +44,8 @@ collapse it without unmounting the fields, so drafts remain in place.
 The panel holds no copy of model state. `panelSubject` returns one element, a
 count of several, the model while the model panel is shown, or nothing. The
 threat list reads `attachedThreats`, the threats of a single selection, on an
-element's panel and `modelThreats`, every threat, on the model's. A flow is an
+element's panel. The model editor reads `modelThreats` for history and refusal
+handling but draws only its chosen threat. A flow is an
 element here because it carries threats. The panel's own state is which tab
 shows, which threat is expanded, the order the list mounted in, which records
 are open, where focus is being sent, and the draft a field holds after a
@@ -105,7 +106,8 @@ window too narrow for both, it covers the panel too, and hides every pane under
 it. A close is committed (`flushSync`) before focus moves, since a control the
 register covered takes no focus until the register has gone.
 
-A chosen row reaches the model panel's list through `openInModelPanel` in
+Details opens the model's metadata and closes the Register before focusing
+the title. A chosen row reaches the focused editor through `openInModelPanel` in
 `panel-focus.ts`. Where the model panel shows, its list opens the threat at
 once. Where it does not, the request is left for the list to take as it
 mounts, and the list opens on that threat. Either way the list calls back once
@@ -238,7 +240,7 @@ The model culls a threat on the edit that takes its last reference, an element
 or the model link. The list owns those dispatches because any of them can take
 the threat off the list: a detach off the element whose panel it is, and a
 detach or a cleared model link that takes the last reference off the model,
-which leaves the group unmounted with nowhere to put focus. The model's list
+which leaves the group unmounted with nowhere to put focus. The focused editor
 keeps a threat a detach leaves on another element, or on the model alone, and
 the threat's summary follows. The group asks only for the next row when it
 survives, and for its model link control where no row is left.
@@ -254,7 +256,7 @@ A removal through the model link control moves focus at once, as a detach
 does. The listbox ends an Enter press with the choice (`CappedList`), so the
 threat that takes focus is not opened by it.
 
-The model's list has an Add a threat of its own, which adds a threat that
+The model editor has an Add a threat of its own, which adds a threat that
 applies to the model and names no element.
 
 ## The commit rule
