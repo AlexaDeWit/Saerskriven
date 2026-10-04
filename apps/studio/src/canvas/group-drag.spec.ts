@@ -1,4 +1,8 @@
-import { drawnBounds, selectedBadgeAnchor } from '@saerskriven/canvas';
+import {
+  drawnBounds,
+  selectedBadgeAnchor,
+  type GestureInput,
+} from '@saerskriven/canvas';
 import { badgeRadius } from '@saerskriven/canvas/tokens';
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange } from '@xyflow/react';
@@ -61,7 +65,8 @@ const pressAt = (
   });
 
 const renderGroupDrag = (zoom = 1) => {
-  const moveNodes = vi.fn<(changes: NodeChange<DiagramNode>[]) => void>();
+  const moveNodes =
+    vi.fn<(changes: NodeChange<DiagramNode>[], input: GestureInput) => void>();
   const view = {
     current: { screenToFlowPosition: (at: Point) => at, getZoom: () => zoom },
   };
@@ -137,10 +142,12 @@ describe('useGroupDrag', () => {
     expect(moveNodes).toHaveBeenNthCalledWith(
       1,
       movedTo(group, { x: 30, y: 20 }, true),
+      'pointer',
     );
     expect(moveNodes).toHaveBeenNthCalledWith(
       2,
       movedTo(group, { x: 40, y: 30 }, false),
+      'pointer',
     );
   });
 
@@ -157,6 +164,7 @@ describe('useGroupDrag', () => {
 
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo([boundaryElement], { x: 10, y: 0 }, false),
+      'pointer',
     );
   });
 
@@ -278,6 +286,7 @@ describe('useGroupDrag', () => {
     expect(moveNodes).toHaveBeenCalledTimes(2);
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(group, { x: 0, y: 0 }, false),
+      'pointer',
     );
   });
 
@@ -294,6 +303,7 @@ describe('useGroupDrag', () => {
     expect(moveNodes).toHaveBeenCalledTimes(2);
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(group, { x: 0, y: 0 }, false),
+      'pointer',
     );
   });
 
@@ -308,6 +318,7 @@ describe('useGroupDrag', () => {
     expect(moveNodes).toHaveBeenCalledTimes(2);
     expect(moveNodes).toHaveBeenLastCalledWith(
       movedTo(group, { x: 0, y: 0 }, false),
+      'pointer',
     );
   });
 
@@ -321,6 +332,7 @@ describe('useGroupDrag', () => {
 
       expect(moveNodes).toHaveBeenLastCalledWith(
         movedTo(group, { x: 20, y: -5 }, true),
+        'pointer',
       );
     } finally {
       toggleSnap();

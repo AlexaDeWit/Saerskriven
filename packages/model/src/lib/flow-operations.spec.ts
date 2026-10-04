@@ -23,6 +23,8 @@ import {
   flowInput,
   mainDiagram,
   modelOf,
+  noisyFlow,
+  noisyModel,
   note,
   operationContract,
   withNote,
@@ -60,6 +62,69 @@ describe('setFlowWaypoints', () => {
         .waypoints,
     ).toEqual([]);
   });
+  it.each([
+    [
+      undefined,
+      [
+        { x: 250.123456, y: 99.98765 },
+        { x: 300.55555, y: 150.44444 },
+      ],
+    ],
+    [
+      3,
+      [
+        { x: 250.123, y: 99.988 },
+        { x: 300.556, y: 150.444 },
+      ],
+    ],
+    [
+      1,
+      [
+        { x: 250.1, y: 100 },
+        { x: 300.6, y: 150.4 },
+      ],
+    ],
+  ])(
+    'stores every bend of the route at %s decimals, and leaves the free end as stored',
+    (decimals, waypoints) => {
+      const next = modelOf(
+        setFlowWaypoints(
+          noisyModel,
+          noisyFlow,
+          [
+            { x: 250.123456, y: 99.98765 },
+            { x: 300.55555, y: 150.44444 },
+          ],
+          decimals,
+        ),
+      );
+
+      expect(flowIn(next, noisyFlow).waypoints).toEqual(waypoints);
+      expect(flowIn(next, noisyFlow).target).toBe(
+        flowIn(noisyModel, noisyFlow).target,
+      );
+    },
+  );
+
+  it('keeps the model for the route the flow has, as given or as the decimals named would store it', () => {
+    const held = flowIn(noisyModel, noisyFlow).waypoints;
+    const rounded = modelOf(
+      setFlowWaypoints(noisyModel, noisyFlow, [{ x: 250.14, y: 99.96 }], 1),
+    );
+
+    expect(modelOf(setFlowWaypoints(noisyModel, noisyFlow, held, 1))).toBe(
+      noisyModel,
+    );
+    expect(flowIn(rounded, noisyFlow).waypoints).toEqual([
+      { x: 250.1, y: 100 },
+    ]);
+    expect(
+      modelOf(
+        setFlowWaypoints(rounded, noisyFlow, [{ x: 250.13, y: 100.04 }], 1),
+      ),
+    ).toBe(rounded);
+  });
+
   it('refuses missing elements and other element kinds', () => {
     expect(errorOf(setFlowWaypoints(before, elementId('missing'), []))).toEqual(
       OperationFailure.UnknownElement({ elementId: elementId('missing') }),
@@ -200,6 +265,56 @@ describe('setFlowEndPosition', () => {
       kind: 'free',
       position: { x: 10, y: 20 },
     });
+  });
+
+  it.each([
+    [undefined, { x: 510.55555, y: 190.4444 }],
+    [3, { x: 510.556, y: 190.444 }],
+    [1, { x: 510.6, y: 190.4 }],
+  ])(
+    'stores the position of a free end at %s decimals, and leaves the bends as stored',
+    (decimals, position) => {
+      const next = modelOf(
+        setFlowEndPosition(
+          noisyModel,
+          noisyFlow,
+          'target',
+          { x: 510.55555, y: 190.4444 },
+          decimals,
+        ),
+      );
+
+      expect(flowIn(next, noisyFlow).target).toEqual({
+        kind: 'free',
+        position,
+      });
+      expect(flowIn(next, noisyFlow).waypoints).toBe(
+        flowIn(noisyModel, noisyFlow).waypoints,
+      );
+    },
+  );
+
+  it('keeps the model for an end already free there, as given or as the decimals named would store it', () => {
+    const rounded = modelOf(
+      setFlowEndPosition(noisyModel, noisyFlow, 'target', { x: 9.96, y: 5 }, 1),
+    );
+
+    expect(
+      modelOf(
+        setFlowEndPosition(
+          noisyModel,
+          noisyFlow,
+          'target',
+          { x: 500.55555, y: 200.4444 },
+          1,
+        ),
+      ),
+    ).toBe(noisyModel);
+    expect(
+      modelOf(
+        setFlowEndPosition(rounded, noisyFlow, 'target', { x: 10.04, y: 5 }, 1),
+      ),
+    ).toBe(rounded);
   });
 
   it('frees a pinned end, leaving no side behind', () => {
@@ -408,6 +523,16 @@ describe('flow operations', () => {
       input: validModel,
       run: (model) =>
         setFlowEndPosition(model, orderFlow, 'source', { x: 10, y: 20 }),
+    },
+    'setFlowEndPosition at one decimal': {
+      input: noisyModel,
+      run: (model) =>
+        setFlowEndPosition(model, noisyFlow, 'target', { x: 9.96, y: 5 }, 1),
+    },
+    'setFlowWaypoints at one decimal': {
+      input: noisyModel,
+      run: (model) =>
+        setFlowWaypoints(model, noisyFlow, [{ x: 250.14, y: 99.96 }], 1),
     },
   });
 });

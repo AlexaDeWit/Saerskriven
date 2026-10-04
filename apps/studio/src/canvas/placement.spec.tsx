@@ -1,11 +1,11 @@
 import type { CanvasFlowEdge, CanvasLayout } from '@saerskriven/canvas';
 import type { Point } from '@saerskriven/model';
 import type { ReactFlowInstance } from '@xyflow/react';
-import { act, renderHook } from '@testing-library/react';
+import { act, fireEvent, renderHook } from '@testing-library/react';
 import type { RefObject } from 'react';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
-import { canvasModel, primaryPointer } from './canvas.fixtures.js';
+import { canvasModel, lastPlaced, primaryPointer } from './canvas.fixtures.js';
 import { currentLayout } from './layout.js';
 import type { DiagramNode } from './nodes.js';
 import { usePlacement, type PlacementControls } from './placement.js';
@@ -89,14 +89,50 @@ describe('box placement gestures', () => {
     });
 
     expect(result.current.preview).toBeUndefined();
-    expect(
-      modelStore.getState().present.diagrams[0].elements.at(-1),
-    ).toMatchObject({
+    expect(lastPlaced()).toMatchObject({
       kind: 'actor',
       position: shown?.position,
       size: shown?.size,
     });
     expect(modelStore.getState().past).toHaveLength(1);
+  });
+
+  it('stores a pointer placement at three decimals and an Enter placement at one', () => {
+    const { result } = renderPlacement({ pan: { x: 100, y: 80 }, zoom: 1.1 });
+
+    act(() => {
+      result.current.pointerDown(primaryPointer({ x: 134, y: 101 }, onPane));
+    });
+    act(() => {
+      result.current.pointerUp(primaryPointer({ x: 134, y: 101 }, onPane));
+    });
+    expect(lastPlaced()).toMatchObject({
+      kind: 'actor',
+      position: { x: -29.091, y: -10.909 },
+    });
+
+    act(() => {
+      selectTool('process');
+    });
+    fireEvent.keyDown(document.body, { key: 'Enter' });
+    expect(lastPlaced()).toMatchObject({
+      kind: 'process',
+      position: { x: -150.9, y: -102.7 },
+    });
+
+    act(() => {
+      selectTool('boundary-curve');
+    });
+    fireEvent.keyDown(document.body, { key: 'Enter' });
+    expect(lastPlaced()).toMatchObject({
+      shape: {
+        waypoints: [
+          { x: -210.9, y: -32.7 },
+          { x: -90.9, y: -112.7 },
+          { x: 29.1, y: -32.7 },
+        ],
+      },
+    });
   });
 
   it('drops a cancelled gesture without an element or undo step', () => {

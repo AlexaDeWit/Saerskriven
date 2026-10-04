@@ -10,7 +10,14 @@ import {
   withStoredName,
   type UnknownElementFailure,
 } from './diagram-edits.js';
-import { anchorPoint, resized, translatedElement } from './element-geometry.js';
+import { storedPoint, storedSize, type Decimals } from './decimals.js';
+import {
+  anchorPoint,
+  resized,
+  sameGeometry,
+  storedElement,
+  translatedElement,
+} from './element-geometry.js';
 import {
   elementPropertiesSchema,
   type ElementProperties,
@@ -91,12 +98,14 @@ export type SetElementPropertiesFailure = Extract<
  * Requires an existing diagram, a new ID, a name that is more than white
  * space on every kind but a flow, flow ends `reconnectFlow` would accept, and
  * valid local boundary references. A flow named with white space alone is
- * stored unlabelled, as `''`.
+ * stored unlabelled, as `''`. The element's whole geometry is stored at
+ * `decimals`, and as given where no count is named.
  */
 export function addElement(
   model: Model,
   diagramId: DiagramId,
   element: Element,
+  decimals?: Decimals,
 ): Either.Either<Model, AddElementFailure> {
   return Either.flatMap(
     diagramIndexOf(model, diagramId),
@@ -120,7 +129,10 @@ export function addElement(
       return Either.right(
         withDiagram(model, diagramIndex, (held) => ({
           ...held,
-          elements: [...held.elements, withStoredName(element)],
+          elements: [
+            ...held.elements,
+            withStoredName(storedElement(element, decimals)),
+          ],
         })),
       );
     },
@@ -132,16 +144,17 @@ export function addElement(
  * element was the last reference of goes with it, carrying the cascade
  * {@link removeThreat} does, and one that applies to the model stays.
  * Attached flows keep their identity and acquire free endpoints at the
- * removed element's anchor.
+ * removed element's anchor, stored at `decimals`.
  */
 export function removeElement(
   model: Model,
   elementId: ElementId,
+  decimals?: Decimals,
 ): Either.Either<Model, RemoveElementFailure> {
   return Either.map(locatedElement(model, elementId), (located) => {
     const freed: FlowEndpoint = {
       kind: 'free',
-      position: anchorPoint(located.element),
+      position: storedPoint(anchorPoint(located.element), decimals),
     };
     const detached = (endpoint: FlowEndpoint): FlowEndpoint =>
       endpoint.kind === 'attached' && endpoint.element === elementId
@@ -171,34 +184,51 @@ export function removeElement(
   });
 }
 
-/** Translates positions, waypoints, and free endpoints. Attached endpoints keep following their elements. */
+/**
+ * Translates positions, waypoints, and free endpoints. Attached endpoints keep
+ * following their elements. Each point the move writes is stored at
+ * `decimals`, so a move by a whole offset from 123.63636363636364 at one
+ * decimal lands on a number of one decimal, and a size is left as stored. A
+ * move that would store every number as it already is returns the same model.
+ */
 export function moveElement(
   model: Model,
   elementId: ElementId,
   offset: Point,
+  decimals?: Decimals,
 ): Either.Either<Model, MoveElementFailure> {
-  return Either.map(locatedElement(model, elementId), (located) =>
-    withElement(
-      model,
-      located.diagramIndex,
-      translatedElement(located.element, offset),
-    ),
-  );
+  return Either.map(locatedElement(model, elementId), (located) => {
+    const moved = translatedElement(located.element, offset, decimals);
+    return sameGeometry(located.element, moved)
+      ? model
+      : withElement(model, located.diagramIndex, moved);
+  });
 }
 
-/** Resizes an element that carries an extent. The caller supplies a schema-valid size. */
+/**
+ * Resizes an element that carries an extent. The caller supplies a
+ * schema-valid size, which is stored at `decimals` and stays positive there
+ * ({@link storedSize}). The position is left as stored. A resize that would
+ * store the size the element already has returns the same model.
+ */
 export function resizeElement(
   model: Model,
   elementId: ElementId,
   size: Size,
+  decimals?: Decimals,
 ): Either.Either<Model, ResizeElementFailure> {
   return Either.flatMap(
     locatedElement(model, elementId),
     (located): Either.Either<Model, ResizeElementFailure> => {
-      const next = resized(located.element, size);
-      return next
-        ? Either.right(withElement(model, located.diagramIndex, next))
-        : Either.left(OperationFailure.NotResizable({ elementId }));
+      const next = resized(located.element, storedSize(size, decimals));
+      if (next === undefined) {
+        return Either.left(OperationFailure.NotResizable({ elementId }));
+      }
+      return Either.right(
+        sameGeometry(located.element, next)
+          ? model
+          : withElement(model, located.diagramIndex, next),
+      );
     },
   );
 }

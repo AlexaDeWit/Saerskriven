@@ -2,11 +2,13 @@ import {
   sameNodeBox,
   scaledCurvePoints,
   type CanvasNode,
+  type GestureInput,
   type NodeBox,
 } from '@saerskriven/canvas';
 import {
   elementsAcross,
   threatHasReference,
+  type Decimals,
   type Element,
   type ElementId,
   type Model,
@@ -34,6 +36,7 @@ import {
 import { sentences, type Speaker } from '../messages/said.js';
 import { currentLayout } from './layout.js';
 import { elementIds } from './nodes.js';
+import { commandDecimals, gestureDecimals } from './stored-decimals.js';
 
 type RemovalCascade = {
   readonly flows: number;
@@ -41,29 +44,31 @@ type RemovalCascade = {
   readonly threats: number;
 };
 
-/** Places and selects one element, then opens its inline editor when asked. */
-export function placeElement(element: Element, openNameField = true): boolean {
-  const state = modelStore.getState();
-  const diagramId = activeDiagramId(state);
-  if (diagramId === undefined) {
-    return false;
-  }
+/**
+ * Places and selects one element, stored at the decimals a gesture made with
+ * `input` keeps, then opens its inline editor when asked.
+ */
+export function placeElement(
+  element: Element,
+  input: GestureInput,
+  openNameField = true,
+): boolean {
   return placed(
-    Action.AddElement({ diagramId, element }),
-    element.id,
+    element,
+    input,
     element.kind === 'text' ? 'note' : openNameField ? 'name' : undefined,
   );
 }
 
-/** Places a trust-boundary curve through its committed waypoints. */
-export function placeBoundaryCurve(waypoints: readonly Point[]): boolean {
-  const state = modelStore.getState();
-  const diagramId = activeDiagramId(state);
-  if (diagramId === undefined || waypoints.length < 2) {
-    return false;
-  }
-  const element = freshBoundaryCurve(waypoints);
-  return placed(Action.AddElement({ diagramId, element }), element.id, 'name');
+/** Places a trust-boundary curve through its committed waypoints, stored at the decimals a gesture made with `input` keeps. */
+export function placeBoundaryCurve(
+  waypoints: readonly Point[],
+  input: GestureInput,
+): boolean {
+  return (
+    waypoints.length >= 2 &&
+    placed(freshBoundaryCurve(waypoints), input, 'name')
+  );
 }
 
 /** Draws a flow between two connectable elements, pinned to the sides given. */
@@ -79,7 +84,10 @@ export function connectElements(
     return;
   }
   const flow = freshFlow(source, target, sides);
-  added(Action.AddElement({ diagramId, element: flow }), flow.id);
+  added(
+    Action.AddElement({ diagramId, element: flow, decimals: undefined }),
+    flow.id,
+  );
 }
 
 /** Makes the selected flow bidirectional, or one-way again, as one undo step. */
@@ -121,7 +129,13 @@ export function toggleBoundaryShape(): void {
   }
   const shape = switchedShape(boundary.shape);
   if (
-    changedModel(Action.SetBoundaryShape({ elementId: boundary.id, shape }))
+    changedModel(
+      Action.SetBoundaryShape({
+        elementId: boundary.id,
+        shape,
+        decimals: commandDecimals,
+      }),
+    )
   ) {
     announce((t) =>
       t(
@@ -146,8 +160,11 @@ export function removeSelected(): boolean {
   const cascade = removalCascade(state.present, selection);
   const action =
     selection.length === 1 && one !== undefined
-      ? Action.RemoveElement({ elementId: one })
-      : Action.RemoveElements({ elementIds: selection });
+      ? Action.RemoveElement({ elementId: one, decimals: commandDecimals })
+      : Action.RemoveElements({
+          elementIds: selection,
+          decimals: commandDecimals,
+        });
   if (!changedModel(action)) {
     return false;
   }
@@ -257,10 +274,15 @@ export function commitNote(elementId: ElementId, text: string): void {
 }
 
 /**
- * Applies a node's new position and size as one undo step: a resize, or for a
- * trust boundary curve its points scaled to the new box.
+ * Applies a node's new position and size as one undo step, each stored at
+ * `decimals`: a resize, or for a trust boundary curve its points scaled to
+ * the new box.
  */
-export function resizeNode(node: CanvasNode, box: NodeBox): void {
+export function resizeNode(
+  node: CanvasNode,
+  box: NodeBox,
+  decimals: Decimals,
+): void {
   if (sameNodeBox(node, box)) {
     return;
   }
@@ -273,6 +295,7 @@ export function resizeNode(node: CanvasNode, box: NodeBox): void {
             kind: 'curve',
             waypoints: scaledCurvePoints(element.shape.waypoints, box),
           },
+          decimals,
         })
       : Action.ResizeElement({
           elementId: node.id,
@@ -281,6 +304,7 @@ export function resizeNode(node: CanvasNode, box: NodeBox): void {
             y: box.position.y - node.position.y,
           },
           size: box.size,
+          decimals,
         }),
   );
 }
@@ -389,13 +413,24 @@ function added(action: Action, elementId: ElementId): void {
 }
 
 function placed(
-  action: Action,
-  elementId: ElementId,
+  element: Element,
+  input: GestureInput,
   editor: 'name' | 'note' | undefined,
 ): boolean {
-  if (!changedModel(action)) {
+  const diagramId = activeDiagramId(modelStore.getState());
+  if (
+    diagramId === undefined ||
+    !changedModel(
+      Action.AddElement({
+        diagramId,
+        element,
+        decimals: gestureDecimals[input],
+      }),
+    )
+  ) {
     return false;
   }
+  const elementId = element.id;
   dispatch(Action.Select({ elementIds: [elementId] }));
   if (editor !== undefined) {
     dispatch(Action.InlineEditing({ editor: { kind: editor, elementId } }));

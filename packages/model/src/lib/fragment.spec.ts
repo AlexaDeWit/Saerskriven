@@ -27,6 +27,11 @@ import {
   selectionFragment,
 } from './fragment.js';
 import { unlinkMitigation } from './mitigation-operations.js';
+import {
+  noisyDiagram,
+  noisyModel,
+  noisyProcess,
+} from './operations.fixtures.js';
 import { parseModel, type Model } from './parse.js';
 import { removeThreat, replaceThreat } from './threat-operations.js';
 import type { Threat } from './threats.js';
@@ -204,6 +209,28 @@ describe('remapFragment and insertFragment', () => {
       position: { x: 60, y: 150 },
     });
   });
+
+  it.each([
+    [undefined, { x: 123.63636363636364 + 24, y: 5.1 + 24 }],
+    [3, { x: 147.636, y: 29.1 }],
+    [1, { x: 147.6, y: 29.1 }],
+  ])(
+    'stores the geometry it offsets at %s decimals, and leaves a copied size as it was',
+    (decimals, position) => {
+      const copied = Either.getOrThrow(
+        selectionFragment(noisyModel, noisyDiagram, [noisyProcess]),
+      );
+
+      const remapped = Either.getOrThrow(
+        remapFragment(copied, 'copy', { x: 24, y: 24 }, noisyModel, decimals),
+      );
+
+      expect(remapped.diagrams[0].elements[0]).toMatchObject({
+        position,
+        size: { width: 120.123456, height: 0.04 },
+      });
+    },
+  );
 
   it('issues a new number past the last issued to each pasted threat whose number the model holds', () => {
     const { fragment, inserted } = whole();

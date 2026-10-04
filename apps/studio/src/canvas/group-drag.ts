@@ -3,6 +3,7 @@ import {
   type CanvasFlowEdge,
   type CanvasLayout,
   type CanvasNode,
+  type GestureInput,
 } from '@saerskriven/canvas';
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange, ReactFlowInstance } from '@xyflow/react';
@@ -90,9 +91,9 @@ export function passesToSelection(
  * selection's and stops it, so React Flow neither starts a selection box nor
  * drags the element under the pointer, and `mouseDown` stops the mouse event
  * that follows it. Past the click distance each move hands `moveNodes` the
- * position changes React Flow's own drag reports, with the first selected
- * node on the grid while snapping is on, and the release settles them and
- * focuses the canvas. A shorter press leaves its click to the canvas.
+ * position changes React Flow's own drag reports, as a pointer's, with the
+ * first selected node on the grid while snapping is on, and the release
+ * settles them and focuses the canvas. A shorter press leaves its click to the canvas.
  * `cancel` puts a drag back, as a blurred window and a selection that changes
  * during the press do.
  */
@@ -101,14 +102,14 @@ export function useGroupDrag(
   layout: CanvasLayout,
   selection: readonly ElementId[],
   elements: ReadonlyMap<string, ElementId>,
-  moveNodes: (changes: NodeChange<DiagramNode>[]) => void,
+  moveNodes: (changes: NodeChange<DiagramNode>[], input: GestureInput) => void,
 ) {
   const press = useRef<Press | undefined>(undefined);
 
   const settle = (current: Press, offset: Point): void => {
     press.current = undefined;
     if (current.dragging) {
-      moveNodes(positionChanges(current.nodes, offset, false));
+      moveNodes(positionChanges(current.nodes, offset, false), 'pointer');
     }
   };
 
@@ -221,7 +222,10 @@ export function useGroupDrag(
         event.currentTarget.setPointerCapture(event.pointerId);
         press.current = { ...current, dragging: true };
       }
-      moveNodes(positionChanges(current.nodes, offsetAt(current, event), true));
+      moveNodes(
+        positionChanges(current.nodes, offsetAt(current, event), true),
+        'pointer',
+      );
     },
     up(event: GroupDragPointer): void {
       const current = ongoing(event);

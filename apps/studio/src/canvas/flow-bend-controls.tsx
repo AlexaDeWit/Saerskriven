@@ -9,8 +9,8 @@ import {
 import { useRef } from 'react';
 import { CommandButton } from '../commands/command-button.js';
 import { beginEditingText } from './edits.js';
-import { applyChanges } from './changes.js';
-import { elementIds, nodesById } from './nodes.js';
+import { applySelection } from './changes.js';
+import { elementIds } from './nodes.js';
 import {
   useFlowBendInteraction,
   type FlowEnd,
@@ -69,10 +69,9 @@ export function FlowBendControls({ bends }: { readonly bends: FlowBends }) {
                   mode?.kind !== 'choose' &&
                   mode?.kind !== 'place'
                 ) {
-                  applyChanges(
+                  applySelection(
                     [{ type: 'select', id: edge.id, selected: false }],
                     elementIds(bends.layout),
-                    nodesById(bends.layout),
                   );
                 }
               }}

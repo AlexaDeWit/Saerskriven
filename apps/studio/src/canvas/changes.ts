@@ -1,6 +1,11 @@
-import type { CanvasFlowEdge, CanvasNode } from '@saerskriven/canvas';
+import type {
+  CanvasFlowEdge,
+  CanvasNode,
+  GestureInput,
+} from '@saerskriven/canvas';
 import {
   sideSchema,
+  type Decimals,
   type ElementId,
   type Point,
   type Side,
@@ -12,23 +17,40 @@ import { selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { connectElements } from './edits.js';
 import type { DiagramNode } from './nodes.js';
+import { gestureDecimals } from './stored-decimals.js';
 
 /** One thing React Flow reports about a node or a flow it draws. */
 export type DiagramChange =
   | NodeChange<DiagramNode>
   | EdgeChange<CanvasFlowEdge>;
 
-/** Turns what React Flow reports about a gesture into store actions and dispatches them. */
+/**
+ * Turns what React Flow reports about a gesture on its nodes into store
+ * actions and dispatches them, a move storing the decimals a gesture made
+ * with `input` keeps.
+ */
 export function applyChanges(
   changes: readonly DiagramChange[],
   elements: ReadonlyMap<string, ElementId>,
   nodes: ReadonlyMap<string, CanvasNode>,
+  input: GestureInput,
 ): void {
   const selection = selectedElements(modelStore.getState());
   for (const action of [
     ...selectionActions(changes, elements, selection),
-    ...moveActions(changes, nodes, selection),
+    ...moveActions(changes, nodes, selection, gestureDecimals[input]),
   ]) {
+    dispatch(action);
+  }
+}
+
+/** Dispatches the selection React Flow reports about its flows, which it never moves. */
+export function applySelection(
+  changes: readonly DiagramChange[],
+  elements: ReadonlyMap<string, ElementId>,
+): void {
+  const selection = selectedElements(modelStore.getState());
+  for (const action of selectionActions(changes, elements, selection)) {
     dispatch(action);
   }
 }
@@ -64,11 +86,15 @@ export function selectionActions(
     : [Action.Select({ elementIds: next })];
 }
 
-/** The moves the reported changes ask for, as offsets from where the model has each element. */
+/**
+ * The moves the reported changes ask for, as offsets from where the model has
+ * each element, each to be stored at `decimals`.
+ */
 export function moveActions(
   changes: readonly DiagramChange[],
   nodes: ReadonlyMap<string, CanvasNode>,
   selection: readonly ElementId[],
+  decimals: Decimals | undefined,
 ): Action[] {
   const resizing = new Set(
     changes.flatMap((change) =>
@@ -106,8 +132,8 @@ export function moveActions(
     ? selection
     : [first.elementId];
   return elementIds.length === 1
-    ? [Action.MoveElement(first)]
-    : [Action.MoveElements({ elementIds, offset: first.offset })];
+    ? [Action.MoveElement({ ...first, decimals })]
+    : [Action.MoveElements({ elementIds, offset: first.offset, decimals })];
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { CanvasFlowEdge, CanvasNode } from '@saerskriven/canvas';
+import type { CanvasFlowEdge } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
 import type { EdgeChange } from '@xyflow/react';
 import {
@@ -10,7 +10,7 @@ import {
 import { Action } from '../store/actions.js';
 import { selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { applyChanges } from './changes.js';
+import { applySelection } from './changes.js';
 import type { Tool } from './tools.js';
 
 type ScreenPoint = { readonly x: number; readonly y: number };
@@ -23,7 +23,6 @@ type ScreenPoint = { readonly x: number; readonly y: number };
 export function useBoxSelection(
   surface: RefObject<HTMLDivElement | null>,
   elements: ReadonlyMap<string, ElementId>,
-  positions: ReadonlyMap<string, CanvasNode>,
 ) {
   const selecting = useRef(false);
   const start = useRef<ScreenPoint | undefined>(undefined);
@@ -73,7 +72,7 @@ export function useBoxSelection(
             (change) => change.type !== 'select' || !change.selected,
           )
         : changes;
-      applyChanges(accepted, elements, positions);
+      applySelection(accepted, elements);
     },
   };
 }

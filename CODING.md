@@ -27,6 +27,13 @@ in `packages/mcp/src/lib/server.ts` turn the failure they are handed into the
 protocol error the SDK contract requires, and they are the only place in the
 server that throws. The functions they call still return `Either`.
 
+One other function throws on purpose. `svgNumber` in
+`packages/canvas/src/lib/numbers.ts` raises a `RangeError` for a number that
+is not finite, which no schema admits and only arithmetic produces. A render
+cannot hand React a failure as a value, so the throw ends at each app's
+outermost boundary: the studio's error boundary, `runCli`, and the MCP SDK's
+dispatch around the server's handlers, which answers with an error result.
+
 An operation with no value to return is typed `Either<void, E>`, never a
 bare `void`. Narrowing such a parameter to `void` is not the simplification
 it looks like: TypeScript accepts a function returning anything where a

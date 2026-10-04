@@ -6,6 +6,7 @@ import {
 import { finger, mouseEvent, touchEvent } from '@saerskriven/canvas/fixtures';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
+import { decimalsOf } from '@saerskriven/model';
 import { elementIn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
@@ -28,9 +29,11 @@ import {
   boundaryCurve,
   boundaryElement,
   canvasModel,
+  clickSuppressionLifted,
   curvedCanvasModel,
   flaggedCanvasModel,
   laidOutNode,
+  lastPlaced,
   noteElement,
   openCanvas,
   probeFlow,
@@ -41,6 +44,7 @@ import { resetThreatRegister } from '../panel/threat-register-state.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { followItemMoves } from './move-message.js';
 import { placementClickDistance } from './elements.js';
+import { selectTool } from './tools.js';
 import { currentLayout } from './layout.js';
 import {
   actorElement,
@@ -98,6 +102,11 @@ const touchResizeReader = (): void => {
 const stillPressReader = (): void => {
   fireEvent(resizeControl('right'), mouseEvent('mousedown', 100));
   fireEvent(window, mouseEvent('mouseup', 100));
+};
+
+const cancelledTouchResizeReader = (): void => {
+  touchResizeReader();
+  fireEvent(resizeControl('right'), touchEvent('touchcancel', finger(1, 160)));
 };
 
 const press = {
@@ -386,6 +395,7 @@ describe('DiagramCanvas', () => {
       Action.MoveElement({
         elementId: actorElement,
         offset: { x: 28.5, y: 12.25 },
+        decimals: undefined,
       }),
     );
     render(<DiagramCanvas />);
@@ -403,7 +413,7 @@ describe('DiagramCanvas', () => {
         t('canvas.node-moved', writtenAsPositionAndSize(readerBox().position)),
       );
     }
-    expect(readerBox().position).toEqual({ x: 48.5, y: -2.75 });
+    expect(readerBox().position).toEqual({ x: 48.5, y: -2.7 });
   });
 
   it('says where Position and size places a group moved from an element off its corner', () => {
@@ -489,6 +499,77 @@ describe('DiagramCanvas', () => {
     },
   );
 
+  it('stores the position and size a keyboard resize leaves at one decimal', () => {
+    openCanvas([actorElement]);
+    dispatch(
+      Action.ResizeElement({
+        elementId: actorElement,
+        offset: { x: 28.123456, y: 0 },
+        size: { width: 120.123456, height: 60.98765 },
+        decimals: undefined,
+      }),
+    );
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(resizeControl('right'), { key: 'ArrowRight' });
+
+    expect(readerBox()).toEqual({
+      position: { x: 28.1, y: 0 },
+      size: { width: 125.1, height: 61 },
+    });
+  });
+
+  it('stores the position a pointer resize leaves at three decimals', async () => {
+    openCanvas([actorElement]);
+    dispatch(
+      Action.MoveElement({
+        elementId: actorElement,
+        offset: { x: 28.123456, y: 0 },
+        decimals: undefined,
+      }),
+    );
+    render(<DiagramCanvas />);
+    const control = resizeControl('left').parentElement ?? document.body;
+
+    fireEvent(control, mouseEvent('mousedown', 100));
+    fireEvent(window, mouseEvent('mousemove', 60));
+    fireEvent(window, mouseEvent('mouseup', 60));
+    await clickSuppressionLifted();
+
+    const { x } = readerBox().position;
+    expect(x).toBeLessThan(28);
+    expect(decimalsOf(x)).toBe(3);
+    expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it.each([
+    { named: 'a still press on a resize control', gesture: stillPressReader },
+    {
+      named: 'a touch resize that is cancelled',
+      gesture: cancelledTouchResizeReader,
+    },
+  ])(
+    'stores nothing for $named, so a position and size of more than three decimals stay as stored',
+    ({ gesture }) => {
+      openCanvas([actorElement]);
+      dispatch(
+        Action.ResizeElement({
+          elementId: actorElement,
+          offset: { x: 28.123456, y: 0 },
+          size: { width: 120.123456, height: 60.98765 },
+          decimals: undefined,
+        }),
+      );
+      const stored = modelStore.getState();
+      render(<DiagramCanvas />);
+
+      gesture();
+
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
+    },
+  );
+
   it('tells the view of a resize by keyboard, so the view can follow the control', () => {
     openCanvas([actorElement]);
     render(<DiagramCanvas />);
@@ -518,8 +599,7 @@ describe('DiagramCanvas', () => {
     expect(points.map((point) => point.x)).toEqual(
       boundaryCurve.map((point) => point.x),
     );
-    expect([points[0]?.y, points[2]?.y]).toEqual([80, 80]);
-    expect(points[1]?.y).toBeCloseTo(-40);
+    expect(points.map((point) => point.y)).toEqual([80, -40, 80]);
     expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
   });
 
@@ -641,19 +721,58 @@ describe('DiagramCanvas', () => {
       fireEvent.pointerMove(pane, { ...press, ...moved });
       fireEvent.pointerUp(pane, { ...press, ...moved });
 
-      group.forEach((id, index) => {
-        const { position } = laidOutNode(id);
-        expect(position.x - before[index].x).toBeCloseTo(30);
-        expect(position.y - before[index].y).toBeCloseTo(10);
+      expect(group.map((id) => laidOutNode(id).position)).toEqual(
+        before.map((at) => ({ x: at.x + 30, y: at.y + 10 })),
+      );
+      expect(probeFreeEnd()).toEqual({
+        x: (freeBefore?.x ?? 0) + 30,
+        y: (freeBefore?.y ?? 0) + 10,
       });
-      expect((probeFreeEnd()?.x ?? 0) - (freeBefore?.x ?? 0)).toBeCloseTo(30);
-      expect((probeFreeEnd()?.y ?? 0) - (freeBefore?.y ?? 0)).toBeCloseTo(10);
       expect(modelStore.getState().past).toHaveLength(1);
       act(() => {
         dispatch(Action.Undo());
       });
       expect(group.map((id) => laidOutNode(id).position)).toEqual(before);
       expect(probeFreeEnd()).toEqual(freeBefore);
+    });
+  });
+
+  describe('the trust boundary curve tool', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    });
+
+    it('stores the points it is clicked through at three decimals', () => {
+      render(<DiagramCanvas />);
+      act(() => {
+        vi.advanceTimersByTime(1);
+        selectTool('boundary-curve');
+      });
+      const pane = document.querySelector('.react-flow__pane') ?? document.body;
+      const clicks = [
+        { clientX: 251.37, clientY: 101.73 },
+        { clientX: 333.3, clientY: 207.7 },
+      ];
+      const view = viewportTransform();
+
+      for (const click of clicks) {
+        fireEvent.click(pane, { ...click, detail: 1 });
+      }
+      fireEvent.click(pane, { ...clicks[1], detail: 2 });
+
+      expect(lastPlaced()).toMatchObject({
+        shape: {
+          waypoints: clicks.map(({ clientX, clientY }) => ({
+            x: Number(((clientX - view.x) / view.zoom).toFixed(3)),
+            y: Number(((clientY - view.y) / view.zoom).toFixed(3)),
+          })),
+        },
+      });
     });
   });
 

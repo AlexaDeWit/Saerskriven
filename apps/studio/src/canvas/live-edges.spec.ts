@@ -119,7 +119,7 @@ describe('useLiveEdges', () => {
       useLiveEdges(layout, graph, moving, elements, positions),
     );
     act(() => {
-      result.current.onNodesChange(dragTo(at));
+      result.current.onNodesChange(dragTo(at), 'pointer');
     });
     act(() => {
       vi.advanceTimersByTime(300);
@@ -133,10 +133,10 @@ describe('useLiveEdges', () => {
       useLiveEdges(layout, graph, moving, elements, positions),
     );
     act(() => {
-      result.current.onNodesChange(dragTo(at));
+      result.current.onNodesChange(dragTo(at), 'pointer');
     });
     act(() => {
-      result.current.onNodesChange(dragTo(at, false));
+      result.current.onNodesChange(dragTo(at, false), 'pointer');
     });
 
     expect(labelsOf(result.current.edges)).toEqual(
@@ -162,10 +162,10 @@ describe('useLiveEdges', () => {
     );
     act(() => {
       result.current.rebase();
-      result.current.onNodesChange(sized(grown, true));
+      result.current.onNodesChange(sized(grown, true), 'pointer');
     });
     act(() => {
-      result.current.onNodesChange(sized(grown, false));
+      result.current.onNodesChange(sized(grown, false), 'pointer');
     });
 
     expect(flowsOf(result.current.edges)).toEqual(resized.edges);
@@ -177,7 +177,7 @@ describe('useLiveEdges', () => {
     );
     act(() => {
       result.current.rebase();
-      result.current.onNodesChange(sized(measured, false));
+      result.current.onNodesChange(sized(measured, false), 'pointer');
     });
 
     expect(flowsOf(result.current.edges)).toEqual(layout.edges);
@@ -189,11 +189,11 @@ describe('useLiveEdges', () => {
     );
     act(() => {
       result.current.rebase();
-      result.current.onNodesChange(sized(grown, true, target));
+      result.current.onNodesChange(sized(grown, true, target), 'pointer');
     });
     const during = flowsOf(result.current.edges);
     act(() => {
-      result.current.onNodesChange(sized(measured, false));
+      result.current.onNodesChange(sized(measured, false), 'pointer');
     });
 
     expect(flowsOf(result.current.edges)).toEqual(during);
@@ -205,13 +205,14 @@ describe('useLiveEdges', () => {
     );
     act(() => {
       result.current.rebase();
-      result.current.onNodesChange(sized(grown, true));
+      result.current.onNodesChange(sized(grown, true), 'pointer');
     });
     const during = flowsOf(result.current.edges);
     act(() => {
-      result.current.onNodesChange([
-        { id: source, type: 'dimensions', dimensions: grown },
-      ]);
+      result.current.onNodesChange(
+        [{ id: source, type: 'dimensions', dimensions: grown }],
+        'pointer',
+      );
     });
 
     expect(flowsOf(result.current.edges)).toEqual(during);
@@ -223,14 +224,14 @@ describe('useLiveEdges', () => {
     );
     act(() => {
       result.current.rebase();
-      result.current.onNodesChange(sized(grown, true));
+      result.current.onNodesChange(sized(grown, true), 'pointer');
     });
     expect(result.current.nodes.find((node) => node.id === source)?.width).toBe(
       grown.width,
     );
     act(() => {
       result.current.fold();
-      result.current.onNodesChange(sized(grown, false));
+      result.current.onNodesChange(sized(grown, false), 'pointer');
     });
 
     expect(result.current.nodes.find((node) => node.id === source)?.width).toBe(
@@ -246,12 +247,12 @@ describe('useLiveEdges', () => {
     );
     act(() => {
       result.current.rebase();
-      result.current.onNodesChange(sized(grown, true));
+      result.current.onNodesChange(sized(grown, true), 'pointer');
     });
     rerender(diagramGraph(layout, model, [], t));
     act(() => {
       result.current.rebase();
-      result.current.onNodesChange(sized(measured, false));
+      result.current.onNodesChange(sized(measured, false), 'pointer');
     });
 
     expect(flowsOf(result.current.edges)).toEqual(layout.edges);

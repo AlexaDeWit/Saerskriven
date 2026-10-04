@@ -71,6 +71,7 @@ export {
   resizeKeys,
   scaledCurvePoints,
   shiftedKeyboardResizeStep,
+  type GestureInput,
   type ResizeControlPosition,
 } from './lib/resizing.js';
 export { DiagramGlyphs } from './lib/scene.js';

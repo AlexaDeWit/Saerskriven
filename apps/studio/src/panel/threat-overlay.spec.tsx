@@ -129,6 +129,7 @@ describe('ThreatOverlay', () => {
         Action.MoveElement({
           elementId: actorElement,
           offset: { x: 20, y: 0 },
+          decimals: undefined,
         }),
       );
     });

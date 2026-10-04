@@ -91,6 +91,16 @@ describe('layoutDiagram', () => {
     ]);
   });
 
+  it('works a curve boundary box out at the decimals its points are written with', () => {
+    const node = curveNode([
+      { x: 65.1, y: 0.3 },
+      { x: 100.3, y: 0.1 },
+    ]);
+
+    expect(node.position).toEqual({ x: 63.1, y: -1.9 });
+    expect(node.size).toEqual({ width: 39.2, height: 4.2 });
+  });
+
   it('carries a text element its own prose', () => {
     const node = nodeNamed('el-note');
     expect(node.kind === 'text' && node.text).toBe(

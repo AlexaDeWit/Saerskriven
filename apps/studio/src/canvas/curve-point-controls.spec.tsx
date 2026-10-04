@@ -8,6 +8,7 @@ import {
   boundaryCurve,
   boundaryElement,
   canvasModel,
+  clickSuppressionLifted,
   curvedCanvasModel,
   dragHandle,
   openCanvas,
@@ -24,11 +25,6 @@ const press = (key: string, shiftKey = false): void => {
 
 const point = (number: number) =>
   screen.getByRole('button', { name: `Point ${String(number)}` });
-
-const clickSuppressionLifted = (): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
 
 const pointCount = () =>
   screen.queryAllByRole('button', { name: /^Point \d+$/u }).length;
@@ -60,6 +56,7 @@ const reshaped = (
       Action.SetBoundaryShape({
         elementId: boundaryElement,
         shape: { kind: 'curve', waypoints: [...waypoints] },
+        decimals: undefined,
       }),
     );
   });
@@ -307,23 +304,46 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
     expect(pointCount()).toBe(boundaryCurve.length);
   });
 
-  it('adds a point halfway to the next through Add point, focusing the new one for the arrow keys', () => {
+  it('adds a point halfway to the next through Add point, stored at three decimals, focusing the new one for the arrow keys', () => {
     render(<DiagramCanvas />);
     fireEvent.click(point(1));
     fireEvent.click(screen.getByRole('button', { name: 'Add point' }));
-    expect(tenths(waypoints())).toEqual([
+    expect(waypoints()).toEqual([
       boundaryCurve[0],
-      { x: 85.2, y: 18.1 },
+      { x: 85.212, y: 18.129 },
       boundaryCurve[1],
       boundaryCurve[2],
     ]);
     expect(screen.queryByRole('group', { name: 'Point actions' })).toBeNull();
     expect(document.activeElement).toBe(point(2));
     expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
-    const added = waypoints()[1];
     press('ArrowDown');
-    expect(waypoints()[1]).toEqual({ x: added?.x, y: (added?.y ?? 0) + 5 });
+    expect(waypoints()[1]).toEqual({ x: 85.2, y: 23.1 });
     expect(modelStore.getState().past).toHaveLength(2);
+  });
+
+  it('stores the curve at one decimal once an arrow key moves a point, and at three once a drag does', () => {
+    reshaped([
+      { x: -20.123456, y: 80.98765 },
+      { x: 200.4444, y: -20.5558 },
+      boundaryCurve[2],
+    ]);
+    render(<DiagramCanvas />);
+
+    point(2).focus();
+    press('ArrowRight');
+    expect(waypoints()).toEqual([
+      { x: -20.1, y: 81 },
+      { x: 205.4, y: -20.6 },
+      boundaryCurve[2],
+    ]);
+
+    dragHandle(point(1), { x: -40.12345, y: 100.6789 });
+    expect(waypoints()).toEqual([
+      { x: -40.123, y: 100.679 },
+      { x: 205.4, y: -20.6 },
+      boundaryCurve[2],
+    ]);
   });
 
   it('adds a point before the last one through the Add point of the last', () => {

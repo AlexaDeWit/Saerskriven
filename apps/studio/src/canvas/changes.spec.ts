@@ -5,6 +5,7 @@ import {
   toReactFlowNodes,
 } from '@saerskriven/canvas';
 import type { ElementId, Flow } from '@saerskriven/model';
+import { elementIn } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import {
   canvasModel,
@@ -16,6 +17,7 @@ import { modelStore } from '../store/store.js';
 import {
   applyChanges,
   applyConnection,
+  applySelection,
   sideOfHandle,
   betweenTwoElements,
   gestureSelection,
@@ -111,20 +113,29 @@ describe('selectionActions', () => {
 describe('moveActions', () => {
   it('moves an element by the offset from where the model has it', () => {
     expect(
-      moveActions([moving(actorElement, { x: 40, y: 25 }, false)], nodes, []),
+      moveActions(
+        [moving(actorElement, { x: 40, y: 25 }, false)],
+        nodes,
+        [],
+        undefined,
+      ),
     ).toEqual([
       Action.MoveElement({
         elementId: actorElement,
         offset: { x: 40, y: 25 },
+        decimals: undefined,
       }),
     ]);
   });
 
   it('leaves a gesture still in flight to the canvas', () => {
     expect(
-      moveActions([moving(actorElement, { x: 40, y: 25 }, true)], nodes, [
-        actorElement,
-      ]),
+      moveActions(
+        [moving(actorElement, { x: 40, y: 25 }, true)],
+        nodes,
+        [actorElement],
+        undefined,
+      ),
     ).toEqual([]);
   });
 
@@ -137,35 +148,46 @@ describe('moveActions', () => {
         ],
         nodes,
         [actorElement],
+        undefined,
       ),
     ).toEqual([]);
   });
 
   it('asks for nothing where the element ended up where it started', () => {
     expect(
-      moveActions([moving(actorElement, { x: 0, y: 0 }, false)], nodes, [
-        actorElement,
-      ]),
+      moveActions(
+        [moving(actorElement, { x: 0, y: 0 }, false)],
+        nodes,
+        [actorElement],
+        undefined,
+      ),
     ).toEqual([]);
   });
 
   it('moves nothing for an id that names no drawn node', () => {
     expect(
-      moveActions([moving(anchor, { x: 9, y: 9 }, false)], nodes, []),
+      moveActions(
+        [moving(anchor, { x: 9, y: 9 }, false)],
+        nodes,
+        [],
+        undefined,
+      ),
     ).toEqual([]);
   });
 
   it('moves a multi-selection through one plural action', () => {
     expect(
-      moveActions([moving(actorElement, { x: 40, y: 25 }, false)], nodes, [
-        actorElement,
-        processElement,
-        requestFlow,
-      ]),
+      moveActions(
+        [moving(actorElement, { x: 40, y: 25 }, false)],
+        nodes,
+        [actorElement, processElement, requestFlow],
+        undefined,
+      ),
     ).toEqual([
       Action.MoveElements({
         elementIds: [actorElement, processElement, requestFlow],
         offset: { x: 40, y: 25 },
+        decimals: undefined,
       }),
     ]);
   });
@@ -325,7 +347,7 @@ describe('applyChanges', () => {
   it('selects the element a click chose', () => {
     openCanvas();
 
-    applyChanges([selecting(actorElement, true)], elements, nodes);
+    applyChanges([selecting(actorElement, true)], elements, nodes, 'pointer');
 
     expect(selectionHeld()).toEqual([actorElement]);
   });
@@ -333,8 +355,8 @@ describe('applyChanges', () => {
   it('moves the selection from an element to a flow, deselection last', () => {
     openCanvas([actorElement]);
 
-    applyChanges([selecting(requestFlow, true)], elements, nodes);
-    applyChanges([selecting(actorElement, false)], elements, nodes);
+    applySelection([selecting(requestFlow, true)], elements);
+    applyChanges([selecting(actorElement, false)], elements, nodes, 'pointer');
 
     expect(selectionHeld()).toEqual([requestFlow]);
   });
@@ -342,8 +364,8 @@ describe('applyChanges', () => {
   it('moves the selection from a flow to an element, deselection last', () => {
     openCanvas([requestFlow]);
 
-    applyChanges([selecting(actorElement, true)], elements, nodes);
-    applyChanges([selecting(requestFlow, false)], elements, nodes);
+    applyChanges([selecting(actorElement, true)], elements, nodes, 'pointer');
+    applySelection([selecting(requestFlow, false)], elements);
 
     expect(selectionHeld()).toEqual([actorElement]);
   });
@@ -351,7 +373,7 @@ describe('applyChanges', () => {
   it('clears the selection where nothing was chosen in its place', () => {
     openCanvas([actorElement]);
 
-    applyChanges([selecting(actorElement, false)], elements, nodes);
+    applyChanges([selecting(actorElement, false)], elements, nodes, 'pointer');
 
     expect(selectionHeld()).toEqual([]);
   });
@@ -363,15 +385,34 @@ describe('applyChanges', () => {
       [moving(actorElement, { x: 40, y: 25 }, false)],
       elements,
       nodes,
+      'pointer',
     );
 
     expect(modelStore.getState().past).toHaveLength(1);
     expect(
-      modelStore
-        .getState()
-        .present.diagrams[0].elements.find(
-          (element) => element.id === actorElement,
-        ),
+      elementIn(modelStore.getState().present, actorElement),
     ).toMatchObject({ position: { x: 40, y: 25 } });
   });
+
+  it.each([
+    ['pointer', { x: 40.123, y: 25.988 }],
+    ['keyboard', { x: 40.1, y: 26 }],
+  ] as const)(
+    'stores a move made with the %s at the decimals that input keeps, as one undo step',
+    (input, position) => {
+      openCanvas();
+
+      applyChanges(
+        [moving(actorElement, { x: 40.123456, y: 25.98765 }, false)],
+        elements,
+        nodes,
+        input,
+      );
+
+      expect(modelStore.getState().past).toEqual([canvasModel]);
+      expect(
+        elementIn(modelStore.getState().present, actorElement),
+      ).toMatchObject({ position });
+    },
+  );
 });

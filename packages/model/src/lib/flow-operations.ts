@@ -5,6 +5,7 @@ import {
   withElement,
   type Located,
 } from './diagram-edits.js';
+import { storedPoint, storedPoints, type Decimals } from './decimals.js';
 import { samePoint } from './element-geometry.js';
 import type { Flow, FlowEndpoint } from './elements.js';
 import type { Point, Side } from './geometry.js';
@@ -25,19 +26,25 @@ export type ReconnectFlowFailure = Extract<
   { _tag: 'UnknownElement' | 'NotFlowElement' | 'InvalidFlowEndpoint' }
 >;
 
-/** Replaces a flow's ordered bends, preserving the model for an unchanged route. */
+/**
+ * Replaces a flow's ordered bends, each stored at `decimals`, preserving the
+ * model for a route the flow already has, as given or as it would be stored.
+ */
 export function setFlowWaypoints(
   model: Model,
   elementId: ElementId,
   waypoints: readonly Point[],
+  decimals?: Decimals,
 ): Either.Either<Model, FlowEditFailure> {
   return Either.map(locatedFlow(model, elementId), (located) => {
     const flow = located.element;
-    return sameItems(flow.waypoints, waypoints, samePoint)
+    const stored = storedPoints(waypoints, decimals);
+    return sameItems(flow.waypoints, waypoints, samePoint) ||
+      sameItems(flow.waypoints, stored, samePoint)
       ? model
       : withElement(model, located.diagramIndex, {
           ...flow,
-          waypoints: waypoints.map((point) => ({ ...point })),
+          waypoints: stored,
         });
   });
 }
@@ -83,7 +90,8 @@ export function reconnectFlow(
 
 /**
  * Frees one end of a flow at a canvas position, or moves an end already free,
- * preserving the model for an end already free there. The other end may be
+ * storing the position at `decimals` and preserving the model for an end
+ * already free there, as given or as it would be stored. The other end may be
  * free too, as `addElement` accepts.
  */
 export function setFlowEndPosition(
@@ -91,14 +99,17 @@ export function setFlowEndPosition(
   elementId: ElementId,
   side: 'source' | 'target',
   position: Point,
+  decimals?: Decimals,
 ): Either.Either<Model, FlowEditFailure> {
   return Either.map(locatedFlow(model, elementId), (located) => {
     const held = located.element[side];
-    return held.kind === 'free' && samePoint(held.position, position)
+    const stored = storedPoint(position, decimals);
+    return held.kind === 'free' &&
+      (samePoint(held.position, position) || samePoint(held.position, stored))
       ? model
       : withElement(model, located.diagramIndex, {
           ...located.element,
-          [side]: { kind: 'free', position: { ...position } },
+          [side]: { kind: 'free', position: stored },
         });
   });
 }

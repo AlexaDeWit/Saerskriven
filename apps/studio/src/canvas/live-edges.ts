@@ -5,6 +5,7 @@ import {
   type CanvasFlowEdge,
   type CanvasLayout,
   type CanvasNode,
+  type GestureInput,
 } from '@saerskriven/canvas';
 import type { ElementId } from '@saerskriven/model';
 import { applyNodeChanges, type NodeChange } from '@xyflow/react';
@@ -40,7 +41,8 @@ export const NodeFold = createContext(nothingToFold);
  * model's own as soon as the model or the selection moves, which forgets a
  * resize that never got its end, and on the next render after `fold` is
  * called. `rebase` takes the settled layout's flows as the base for the next
- * gesture.
+ * gesture, and `onNodesChange` is told what made the gesture its changes
+ * report.
  */
 export function useLiveEdges(
   layout: CanvasLayout,
@@ -70,7 +72,10 @@ export function useLiveEdges(
       edgeBases.current = canvasEdgesById(layout);
     },
     fold,
-    onNodesChange: (changes: NodeChange<DiagramNode>[]): void => {
+    onNodesChange: (
+      changes: NodeChange<DiagramNode>[],
+      input: GestureInput,
+    ): void => {
       const next = applyNodeChanges(changes, onScreen);
       setOnScreen(next);
       const active = changes.some(
@@ -107,7 +112,7 @@ export function useLiveEdges(
           edgeBases.current = canvasEdgesById(live);
         }
       }
-      applyChanges(changes, elements, positions);
+      applyChanges(changes, elements, positions, input);
     },
   };
 }

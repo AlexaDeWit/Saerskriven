@@ -29,6 +29,9 @@ export const keyboardResizeStep = 5;
 /** The model-space distance of one shifted keyboard resize. */
 export const shiftedKeyboardResizeStep = 20;
 
+/** What a gesture on the canvas is made with: a pointer, which is a mouse, a pen or a touch, or the keyboard. */
+export type GestureInput = 'pointer' | 'keyboard';
+
 /** The keys that move an active resize control. */
 export const resizeKeys = [
   'ArrowUp',

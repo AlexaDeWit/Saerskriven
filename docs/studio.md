@@ -298,8 +298,10 @@ is. A flow does not move on its own, but a moved group carries its bends and
 free ends along. After each arrow key a screen reader hears where Position and
 size now places the selection, in the figures it shows, and the view follows
 what the key moves out of the viewport: the focused element, or a box selection
-as a whole ([Accessibility](#accessibility)). Pressing Escape, or leaving the
-browser window, before the release puts every dragged element back where it
+as a whole ([Accessibility](#accessibility)). An arrow key stores a position to
+one decimal, and a drag to three
+([what a gesture stores](#what-a-gesture-stores)). Pressing Escape, or leaving
+the browser window, before the release puts every dragged element back where it
 was, with no undo step. Escape also clears the selection, as it does anywhere.
 
 A selected element carries a line on each side and a handle at each corner.
@@ -322,6 +324,36 @@ bounds of the selected elements, and **Distribute** keeps the first and last
 elements in place and evens the gaps. Flows follow their attached ends, and
 bends and free ends stay put. **Snap to grid**, off at first, snaps dragging
 and arrow-key moves to the visible grid. Typed coordinates are not snapped.
+
+### What a gesture stores
+
+A gesture rounds the numbers it writes as it stores them: to three decimals
+when it is made with a pointer (a mouse, a pen or a touch), and to one decimal
+when it is made with the keyboard. That covers a move, a resize, a placed
+element, a bend, a free end and a point of a trust boundary curve, and the
+bends, free ends and curve points a moved group carries.
+
+- A move rounds the position, both coordinates, and leaves the size as stored.
+  A resize rounds the position and the size. A bend or a curve point rounds
+  every bend of that flow or point of that curve.
+- A command that works geometry out stores three decimals, however it is
+  invoked: Align, Distribute, Duplicate, Paste, Add point, Switch boundary
+  shape, and the flow ends a deleted element leaves free.
+- A number typed into Position and size or the flow end editor is stored as
+  typed, up to six decimals.
+- Applying either form stores each number it shows at six decimals at the
+  most.
+- A position typed for a group stores each element it moves at the decimals
+  typed, and never fewer than three. Position and size stores the points of a
+  trust boundary curve the same way.
+- The Decrease and Increase buttons keep the decimals the field has.
+- Where a flow end was attached, the flow end editor starts from its anchor
+  written at three decimals.
+- A number that came from a file stays as it is until an edit writes it.
+- With Snap to grid on, a snapped position is a grid multiple, which the
+  rounding leaves as it is.
+- In a group moved by arrow key, each element lands on one decimal of its own,
+  so two of them can shift against each other by under a tenth of a unit.
 
 ## Flows
 

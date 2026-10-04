@@ -28,6 +28,7 @@ import {
   resizeControlsOf,
   resizeKeys,
   shiftedKeyboardResizeStep,
+  type GestureInput,
   type ResizeControlPosition,
 } from './resizing.js';
 import { resizeHandle } from './tokens.js';
@@ -38,7 +39,9 @@ export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
 type ResizeSubject = {
   readonly node: CanvasNode;
   readonly onResize: (() => void) | undefined;
-  readonly onResizeEnd: ((box: NodeBox) => void) | undefined;
+  readonly onResizeEnd:
+    | ((box: NodeBox, input: GestureInput) => void)
+    | undefined;
 };
 
 type Gesture = ResizeDragEvent['identifier'];
@@ -77,12 +80,13 @@ type NodePress = {
  * those {@link resizeControlsOf} leaves off a boundary curve. Each
  * holds a button named from `labels` that resizes by arrow key in
  * model-space steps. Both routes hand `onResizeEnd` the settled position and
- * size together, so a resize from the top or left is one edit. A pointer
- * press that never resized the node does not reach `onResizeEnd`: React Flow
- * ends it with the extent it measured, a fractional size rounded to whole
- * pixels. `onResize` and `onResizeEnd` may be new functions on every render:
- * a pointer resize calls those of the render its press began on, and settles
- * against that render's `node`.
+ * size together, so a resize from the top or left is one edit, and which of
+ * the two the resize came by: `pointer` for a mouse or a touch, `keyboard`
+ * for an arrow key. A pointer press that never resized the node does not
+ * reach `onResizeEnd`: React Flow ends it with the extent it measured, a
+ * fractional size rounded to whole pixels. `onResize` and `onResizeEnd` may
+ * be new functions on every render: a pointer resize calls those of the
+ * render its press began on, and settles against that render's `node`.
  *
  * One control holds the node's press at a time. Another finger on that
  * control joins the press. Until the press is over, another pointer's press
@@ -146,7 +150,7 @@ function useNodePress(subject: ResizeSubject): NodePress {
       press.current = undefined;
       if (held.resized) {
         const box = held.cancelled ? ownBox : settled;
-        held.subject.onResizeEnd?.(box(held.subject.node));
+        held.subject.onResizeEnd?.(box(held.subject.node), 'pointer');
       }
     };
     return {
@@ -256,7 +260,7 @@ function ResizeControl({
     event.preventDefault();
     event.stopPropagation();
     if (!press.pressed()) {
-      onResizeEnd(box);
+      onResizeEnd(box, 'keyboard');
     }
   };
 

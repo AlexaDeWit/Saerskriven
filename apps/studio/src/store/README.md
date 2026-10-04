@@ -47,8 +47,10 @@ host provides.
   atomically, before history records the result. `AddDiagram` appends a
   diagram and shows it, the one edit that moves the view as well as the model.
   The other tags cover history, the diagram on screen, selection, inline
-  editing, files and failures. `DismissFailure` puts `lastFailure` away and
-  touches nothing else. `Saved` names a file as `Opened` does, because a first
+  editing, files and failures. An edit that writes geometry carries
+  `decimals`, the count of decimals its model operation stores at
+  ([Stored decimals](#stored-decimals)). `DismissFailure` puts `lastFailure`
+  away and touches nothing else. `Saved` names a file as `Opened` does, because a first
   save is a save-as, and folding both into `file` keeps "this model lives in
   this file" one fact. `Closed` returns to the state the studio booted in,
   placeholder model and all, so nothing of the file that was open survives for
@@ -107,6 +109,19 @@ the model lives in and what a save merges onto, and it stays out of the stacks
 with the rest of the file: an undo moves the model, never the file. The type
 comes from `@saerskriven/formats`, where it is declared beside the detected-read
 union it mirrors, so a document cannot be filed under the wrong format.
+
+## Stored decimals
+
+An edit that writes geometry carries `decimals`, and its arm hands the count
+to the model operation it calls, which rounds what it writes
+([the model](../../../../packages/model/README.md#operations)). The actions
+are `AddElement`, `MoveElement`, `MoveElements`, `ArrangeElements`,
+`ResizeElement`, `RemoveElement`, `RemoveElements`, `SetFlowWaypoints`,
+`SetFlowEndPosition` and `SetBoundaryShape`. The field is required, so an edit
+that means the operation to store what it computes says `undefined`, and one
+that forgot does not compile. The store holds no count of its own and rounds
+nothing itself. Which count an edit names is the canvas's to say
+([the canvas](../canvas/README.md#rules-for-changes)).
 
 ## Recovery
 

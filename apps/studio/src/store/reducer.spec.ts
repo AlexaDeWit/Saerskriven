@@ -5,6 +5,7 @@ import {
   OperationFailure,
   type DiagramId,
   type ElementDetailsChange,
+  type ElementId,
 } from '@saerskriven/model';
 import {
   assumptionId,
@@ -78,6 +79,7 @@ const boundaryStart = initialState(
           size: { width: 360, height: 100 },
         },
       },
+      decimals: undefined,
     }),
   ).present,
 );
@@ -128,6 +130,7 @@ const applied: ActionsByTag<ModelActionTag> = {
   }),
   ArrangeElements: Action.ArrangeElements({
     moves: [{ elementId: processElement, offset: { x: 10, y: 20 } }],
+    decimals: 3,
   }),
   ReconnectFlow: Action.ReconnectFlow({
     elementId: elementId('placeholder-flow'),
@@ -135,22 +138,29 @@ const applied: ActionsByTag<ModelActionTag> = {
     endpointId: elementId('extra-actor'),
   }),
   AddElement: addedProcess,
-  RemoveElement: Action.RemoveElement({ elementId: processElement }),
+  RemoveElement: Action.RemoveElement({
+    elementId: processElement,
+    decimals: 3,
+  }),
   RemoveElements: Action.RemoveElements({
     elementIds: [actorElement, processElement],
+    decimals: 3,
   }),
   MoveElement: Action.MoveElement({
     elementId: processElement,
     offset: { x: 10, y: -5 },
+    decimals: 1,
   }),
   MoveElements: Action.MoveElements({
     elementIds: [actorElement, processElement],
     offset: { x: 10, y: -5 },
+    decimals: 1,
   }),
   ResizeElement: Action.ResizeElement({
     elementId: processElement,
     offset: { x: -10, y: -5 },
     size: { width: 200, height: 90 },
+    decimals: 1,
   }),
   RenameElement: Action.RenameElement({
     elementId: processElement,
@@ -163,6 +173,7 @@ const applied: ActionsByTag<ModelActionTag> = {
   SetFlowWaypoints: Action.SetFlowWaypoints({
     elementId: elementId('placeholder-flow'),
     waypoints: [{ x: 200, y: 100 }],
+    decimals: 1,
   }),
   SetFlowDirection: Action.SetFlowDirection({
     elementId: elementId('placeholder-flow'),
@@ -172,6 +183,7 @@ const applied: ActionsByTag<ModelActionTag> = {
     elementId: elementId('placeholder-flow'),
     side: 'target',
     position: { x: 400, y: 200 },
+    decimals: 3,
   }),
   ReverseFlow: Action.ReverseFlow({ elementId: elementId('placeholder-flow') }),
   SetBoundaryShape: Action.SetBoundaryShape({
@@ -184,6 +196,7 @@ const applied: ActionsByTag<ModelActionTag> = {
         { x: 340, y: 80 },
       ],
     },
+    decimals: 3,
   }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-added'), number: 2 },
@@ -284,6 +297,7 @@ const refused: ActionsByTag<ModelActionTag> = {
       { elementId: processElement, offset: { x: 10, y: 20 } },
       { elementId: elementId('missing'), offset: { x: 10, y: 20 } },
     ],
+    decimals: undefined,
   }),
   ReconnectFlow: Action.ReconnectFlow({
     elementId: processElement,
@@ -293,25 +307,31 @@ const refused: ActionsByTag<ModelActionTag> = {
   AddElement: Action.AddElement({
     diagramId: diagramId('diagram-missing'),
     element: newProcess('process-refused', 'Refused'),
+    decimals: undefined,
   }),
   RemoveElement: Action.RemoveElement({
     elementId: elementId('element-missing'),
+    decimals: undefined,
   }),
   RemoveElements: Action.RemoveElements({
     elementIds: [processElement, elementId('element-missing')],
+    decimals: undefined,
   }),
   MoveElement: Action.MoveElement({
     elementId: elementId('element-missing'),
     offset: { x: 1, y: 1 },
+    decimals: undefined,
   }),
   MoveElements: Action.MoveElements({
     elementIds: [processElement, elementId('element-missing')],
     offset: { x: 1, y: 1 },
+    decimals: undefined,
   }),
   ResizeElement: Action.ResizeElement({
     elementId: elementId('element-missing'),
     offset: { x: 0, y: 0 },
     size: { width: 10, height: 10 },
+    decimals: undefined,
   }),
   RenameElement: Action.RenameElement({
     elementId: processElement,
@@ -324,6 +344,7 @@ const refused: ActionsByTag<ModelActionTag> = {
   SetFlowWaypoints: Action.SetFlowWaypoints({
     elementId: processElement,
     waypoints: [],
+    decimals: undefined,
   }),
   SetFlowDirection: Action.SetFlowDirection({
     elementId: processElement,
@@ -333,6 +354,7 @@ const refused: ActionsByTag<ModelActionTag> = {
     elementId: processElement,
     side: 'source',
     position: { x: 0, y: 0 },
+    decimals: undefined,
   }),
   ReverseFlow: Action.ReverseFlow({ elementId: processElement }),
   SetBoundaryShape: Action.SetBoundaryShape({
@@ -342,6 +364,7 @@ const refused: ActionsByTag<ModelActionTag> = {
       position: { x: 0, y: 0 },
       size: { width: 10, height: 10 },
     },
+    decimals: undefined,
   }),
   AddThreat: Action.AddThreat({
     threat: { ...sampleThreat, id: threatId('threat-reused'), number: 1 },
@@ -501,6 +524,7 @@ function stateFor(action: Action): State {
         Action.AddElement({
           diagramId: placeholderModel.diagrams[0].id,
           element: newProcess('extra-actor', 'Extra actor'),
+          decimals: undefined,
         }),
       ).present,
     );
@@ -573,6 +597,151 @@ describe('an operation the model refuses', () => {
     const stuck = reduce(start, refused.AddElement);
     expect(reduce(stuck, applied.AddElement).lastFailure).toBeUndefined();
   });
+});
+
+describe('an edit that names its decimals', () => {
+  const flow = elementId('placeholder-flow');
+  const placed = initialState(placeholderModel);
+  const cases: readonly (readonly [State, Action, ElementId, object])[] = [
+    [
+      start,
+      Action.MoveElement({
+        elementId: processElement,
+        offset: { x: 0.123456, y: 0.04 },
+        decimals: 1,
+      }),
+      processElement,
+      { position: { x: 200.1, y: 0 } },
+    ],
+    [
+      start,
+      Action.MoveElements({
+        elementIds: [actorElement, processElement],
+        offset: { x: 0.123456, y: 0.04 },
+        decimals: 3,
+      }),
+      processElement,
+      { position: { x: 200.123, y: 0.04 } },
+    ],
+    [
+      start,
+      Action.ArrangeElements({
+        moves: [
+          { elementId: processElement, offset: { x: 0.123456, y: 0.04 } },
+        ],
+        decimals: 1,
+      }),
+      processElement,
+      { position: { x: 200.1, y: 0 } },
+    ],
+    [
+      start,
+      Action.ResizeElement({
+        elementId: processElement,
+        offset: { x: 0.123456, y: 0 },
+        size: { width: 200.5558, height: 90.4444 },
+        decimals: 1,
+      }),
+      processElement,
+      { position: { x: 200.1, y: 0 }, size: { width: 200.6, height: 90.4 } },
+    ],
+    [
+      start,
+      Action.AddElement({
+        diagramId: mainDiagram,
+        element: newProcess('process-noisy', 'Noisy', {
+          x: 0.123456,
+          y: 200.98765,
+        }),
+        decimals: 1,
+      }),
+      elementId('process-noisy'),
+      { position: { x: 0.1, y: 201 } },
+    ],
+    [
+      placed,
+      Action.SetFlowWaypoints({
+        elementId: flow,
+        waypoints: [{ x: 200.123456, y: 100.98765 }],
+        decimals: 1,
+      }),
+      flow,
+      { waypoints: [{ x: 200.1, y: 101 }] },
+    ],
+    [
+      placed,
+      Action.SetFlowEndPosition({
+        elementId: flow,
+        side: 'target',
+        position: { x: 400.123456, y: 200.98765 },
+        decimals: 3,
+      }),
+      flow,
+      { target: { position: { x: 400.123, y: 200.988 } } },
+    ],
+    [
+      boundaryStart,
+      Action.SetBoundaryShape({
+        elementId: boundaryElement,
+        shape: {
+          kind: 'curve',
+          waypoints: [
+            { x: -20.123456, y: 80 },
+            { x: 160, y: -20.98765 },
+          ],
+        },
+        decimals: 1,
+      }),
+      boundaryElement,
+      {
+        shape: {
+          waypoints: [
+            { x: -20.1, y: 80 },
+            { x: 160, y: -21 },
+          ],
+        },
+      },
+    ],
+  ];
+
+  it.each(cases)(
+    'hands the count to the operation, which stores what it writes at it (%#)',
+    (state, action, id, stored) => {
+      expect(elementById(reduce(state, action), id)).toMatchObject(stored);
+    },
+  );
+
+  const actor = elementId('placeholder-actor');
+  const beside = elementId('process-beside');
+  const noisyActor = [
+    Action.AddElement({
+      diagramId: placeholderModel.diagrams[0].id,
+      element: newProcess(beside, 'Beside'),
+      decimals: undefined,
+    }),
+    Action.ResizeElement({
+      elementId: actor,
+      offset: { x: 0.123456, y: 0 },
+      size: { width: 100.5558, height: 50.4444 },
+      decimals: undefined,
+    }),
+  ].reduce(reduce, placed);
+
+  it.each([
+    Action.RemoveElement({ elementId: actor, decimals: 1 }),
+    Action.RemoveElements({ elementIds: [beside, actor], decimals: 1 }),
+  ])(
+    '$_tag frees the flow end it detaches at the count it names',
+    (removal) => {
+      expect(elementById(noisyActor, actor)).toMatchObject({
+        position: { x: 40.123456, y: 40 },
+      });
+
+      expect(elementById(reduce(noisyActor, removal), flow)).toMatchObject({
+        source: { kind: 'free', position: { x: 90.4, y: 65.2 } },
+      });
+    },
+  );
 });
 
 describe('the flow end, direction and boundary shape edits', () => {
