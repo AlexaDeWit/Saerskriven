@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "//": [
-    "build extends the Vite plugin's inferred inputs and dependsOn with the spread token (CODING.md, Build targets), then adds the environment inputs below.",
     "The studio emits external fonts, Pages metadata, and a browser-rendered card, so changes to their paths must invalidate the cached build.",
     "test names the canvas project's testSetup input because the studio's specs load that setup module and the production input, which ^production hashes, leaves it out."
   ],
@@ -91,6 +90,7 @@
       "lint": {},
       "serve": {
         "dependsOn": [
+          "...",
           {
             "projects": [
               "resvg-wasm",
@@ -102,6 +102,7 @@
       },
       "test": {
         "dependsOn": [
+          "...",
           {
             "projects": [
               "resvg-wasm",

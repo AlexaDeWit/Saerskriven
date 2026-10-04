@@ -65,6 +65,7 @@
       "lint": {},
       "test": {
         "dependsOn": [
+          "...",
           {
             "projects": [
               "resvg-wasm"
