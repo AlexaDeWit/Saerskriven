@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { createRef } from 'react';
 import { useMeasured } from './measure.js';
 
@@ -141,6 +141,31 @@ describe('useMeasured', () => {
 
     expect(reads).toBe(0);
     expect(watcher.watched).toEqual([]);
+  });
+
+  it('reads changed content even when the element does not resize', async () => {
+    const { node } = mounted();
+    const ref = createRef<HTMLElement>();
+    ref.current = node;
+    const readings: string[] = [];
+
+    node.textContent = 'First name';
+    renderHook(() => {
+      useMeasured(
+        ref,
+        (measured) => {
+          readings.push(measured.textContent ?? '');
+        },
+        () => {},
+        { observeContent: true },
+      );
+    });
+
+    node.textContent = 'Changed name';
+
+    await waitFor(() => {
+      expect(readings).toEqual(['First name', 'Changed name']);
+    });
   });
 
   it('reads nothing where there is no element to read', () => {

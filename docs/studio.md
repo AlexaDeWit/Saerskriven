@@ -555,6 +555,9 @@ Focus threats also expands the drawer. On wider screens, **Widen pane** widens i
 to normal, for the rest of the session. The panel covers the diagram rather than
 shrinking it, so pan to reach what it covers.
 
+A heading shows up to three lines of a name. If the name overflows, Tab
+reaches the heading and the arrow keys scroll the rest into view.
+
 Close threats, or Escape, closes the panel and returns focus to the element,
 which stays selected. A second Escape clears the selection. The panel stays
 closed for that element until the selection moves or Focus threats runs again.

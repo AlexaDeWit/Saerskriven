@@ -936,6 +936,65 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   await expect(nodeNamed(page, storefront.shopper)).toBeFocused();
 });
 
+test('the pane heading joins the Tab path only while its name overflows', async ({
+  page,
+}) => {
+  await openPlaceholder(page);
+  await selectByKeyboard(page, placeholder.actor);
+  await expandPane(page);
+  const panel = threatPanel(page);
+  const heading = panel.getByRole('heading', { level: 2 });
+  const widen = panel.getByRole('button', { name: 'Widen pane' });
+  const close = panel.getByRole('button', { name: 'Close threats' });
+
+  await widen.focus();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+
+  await nodeNamed(page, placeholder.actor).focus();
+  await page.keyboard.press('Enter');
+  const longName = 'A component with a descriptive name '.repeat(5).trim();
+  await nameField(page, 'Actor').fill(longName);
+  await nameField(page, 'Actor').press('Enter');
+  await widen.focus();
+  await page.keyboard.press('Tab');
+  await expect(heading).toBeFocused();
+  expect(await heading.evaluate((node) => node.matches(':focus-visible'))).toBe(
+    true,
+  );
+  expect(
+    await heading.evaluate((node) => getComputedStyle(node).outlineStyle),
+  ).toBe('solid');
+  await page.keyboard.press('ArrowDown');
+  await expect
+    .poll(async () => heading.evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(0);
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(heading).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(widen).toBeFocused();
+
+  await widen.click();
+  const restore = panel.getByRole('button', { name: 'Restore pane width' });
+  await expect(heading).toHaveAttribute('tabindex', '-1');
+  await restore.focus();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await restore.click();
+  await expect(heading).toHaveAttribute('tabindex', '0');
+
+  await nodeNamed(page, /^A component with a descriptive name/u).focus();
+  await page.keyboard.press('Enter');
+  await nameField(page, longName).fill('Actor');
+  await nameField(page, longName).press('Enter');
+  await expect(heading).toHaveAttribute('tabindex', '-1');
+  await widen.focus();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+});
+
 test('a long element name leaves the pane heading and editor reachable', async ({
   page,
 }) => {
