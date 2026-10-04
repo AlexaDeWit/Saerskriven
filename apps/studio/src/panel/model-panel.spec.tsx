@@ -474,6 +474,35 @@ describe(
       expect(textbox('Description').getAttribute('aria-invalid')).toBe('true');
     });
 
+    it('keeps a refused draft on screen where an undo brings another threat back, with focus left on the Threats tab', async () => {
+      const user = userEvent.setup();
+      act(() => {
+        dispatch(Action.RemoveThreat({ threatId: secondThreat }));
+        dispatch(Action.Undo());
+      });
+      showPanel();
+      await user.click(summary(/A reader edits/u));
+      await user.click(textbox('Description'));
+      await user.keyboard(`Pasted${softHyphen}prose`);
+      await user.click(summary(/A reader sees/u));
+      runHistory('redo');
+      expect(present().threats).toHaveLength(1);
+      expect(document.activeElement).toBe(threatsTab());
+
+      runHistory('undo');
+
+      expect(present().threats).toHaveLength(2);
+      expect(summary(/A reader sees/u).getAttribute('aria-expanded')).toBe(
+        'false',
+      );
+      expect(
+        screen
+          .getByDisplayValue(`Pasted${softHyphen}prose`)
+          .getAttribute('aria-invalid'),
+      ).toBe('true');
+      expect(document.activeElement).toBe(threatsTab());
+    });
+
     it('holds Title, Description and the assumptions group on Details, in that Tab order', async () => {
       const user = userEvent.setup();
       showPanel();

@@ -640,6 +640,60 @@ describe(
       ).toBe('true');
     });
 
+    it('keeps a refused draft on screen where a threat the register already holds is attached, and leaves that threat folded', async () => {
+      const user = userEvent.setup();
+      showPanel(processElement);
+      await addThreat(user);
+      await user.click(screen.getByRole('textbox', { name: 'Description' }));
+      await user.keyboard(`Pasted${softHyphen}prose`);
+
+      await chooseFrom('Existing threat', sampleThreat.title);
+      await user.click(button('Attach existing threat'));
+
+      expect(present().threats[0].elements).toEqual([
+        actorElement,
+        processElement,
+      ]);
+      expect(
+        screen
+          .getByRole('button', { name: /A reader edits/u })
+          .getAttribute('aria-expanded'),
+      ).toBe('false');
+      expect(
+        screen
+          .getByDisplayValue(`Pasted${softHyphen}prose`)
+          .getAttribute('aria-invalid'),
+      ).toBe('true');
+    });
+
+    it('keeps a refused draft on screen where a redo brings another threat back, with focus left on the add control', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+      await addThreat(user);
+      await user.click(screen.getByRole('button', { name: /A reader edits/u }));
+      await user.click(screen.getByRole('textbox', { name: 'Description' }));
+      await user.keyboard(`Pasted${softHyphen}prose`);
+      await user.click(screen.getByRole('button', { name: /New threat/u }));
+      runHistory('undo');
+      expect(threatsInStore()).toBe(1);
+      expect(document.activeElement).toBe(addControl());
+
+      runHistory('redo');
+
+      expect(threatsInStore()).toBe(2);
+      expect(
+        screen
+          .getByRole('button', { name: /New threat/u })
+          .getAttribute('aria-expanded'),
+      ).toBe('false');
+      expect(
+        screen
+          .getByDisplayValue(`Pasted${softHyphen}prose`)
+          .getAttribute('aria-invalid'),
+      ).toBe('true');
+      expect(document.activeElement).toBe(addControl());
+    });
+
     it('hands a refused draft to the map it was given, keyed by the threat it was typed on', async () => {
       const user = userEvent.setup();
       const drafts = new Map<ElementId, HeldDraft>();
