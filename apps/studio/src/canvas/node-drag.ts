@@ -7,7 +7,6 @@ import { selectedElements } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { positionChanges, unmoved } from './changes.js';
-import { useHeldMouse } from './held-mouse.js';
 import type { DiagramNode } from './nodes.js';
 
 const draggedSelector = '.react-flow__node.draggable';
@@ -18,13 +17,7 @@ type Drag = {
   readonly cancelled: boolean;
 };
 
-/**
- * Selection changes and window blur restore a drag to the model's positions
- * and suppress its remaining position changes. Auto-pan stops until release.
- * Blur also releases a mouse press before React Flow starts dragging.
- * Changes outside a drag are keyboard moves. After a drag React Flow never
- * ended, the first keyboard move settles it and uses pointer precision.
- */
+/** Cancelled drags restore model positions and suppress later position changes until release. */
 export function useNodeDrag(
   positions: ReadonlyMap<string, CanvasNode>,
   moveNodes: (changes: NodeChange<DiagramNode>[], input: GestureInput) => void,
@@ -60,12 +53,14 @@ export function useNodeDrag(
       cancel();
     }
   });
-  useHeldMouse(startsGesture, cancel, () => drag.current !== undefined);
   useEffect(() => {
     return modelStore.subscribe(reselected);
   }, []);
 
   return {
+    startsGesture,
+    cancel,
+    active: () => drag.current !== undefined,
     autoPan: !heldBack,
     onNodeDragStart: (
       _event: unknown,

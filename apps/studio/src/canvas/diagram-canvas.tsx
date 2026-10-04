@@ -67,6 +67,7 @@ import {
 } from './nodes.js';
 import { editingEdgeTypes, editingNodeTypes } from './inline-editing.js';
 import { useNodeDrag } from './node-drag.js';
+import { useHeldMouse } from './held-mouse.js';
 import { useResizeCancellation } from './resize-cancellation.js';
 import { usePaneShield } from './pane-shield.js';
 import { PlacementPreview } from './placement-preview.js';
@@ -194,6 +195,19 @@ export function DiagramCanvas({
   const liveEdges = useLiveEdges(layout, graph, selection, elements, positions);
   const paneShield = usePaneShield(elements);
   const nodeDrag = useNodeDrag(positions, liveEdges.onNodesChange);
+  useHeldMouse(
+    (event) =>
+      nodeDrag.startsGesture(event) ||
+      resizeCancellation.startsGesture(event) ||
+      (event.target instanceof Element &&
+        surface.current?.contains(event.target) === true &&
+        (event.button === 1 || (event.button === 0 && mode.active === 'hand'))),
+    () => {
+      nodeDrag.cancel();
+      resizeCancellation.cancel();
+    },
+    nodeDrag.active,
+  );
   const commandSurface = useCommandSurface();
   const groupDrag = useGroupDrag(
     view,
@@ -441,7 +455,7 @@ export function DiagramCanvas({
     </div>
   );
   return (
-    <ResizeMouseCancellation value={resizeCancellation}>
+    <ResizeMouseCancellation value={resizeCancellation.subscribe}>
       <NodeFold.Provider value={liveEdges.fold}>{canvas}</NodeFold.Provider>
     </ResizeMouseCancellation>
   );

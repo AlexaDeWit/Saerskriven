@@ -6,22 +6,23 @@ export function useHeldMouse(
   cancel: () => void,
   active: () => boolean = () => false,
 ): void {
-  const pressed = useRef(false);
+  const pressed = useRef<number | undefined>(undefined);
   const press = useEffectEvent((event: MouseEvent): void => {
     if (startsGesture(event)) {
-      pressed.current = true;
+      pressed.current = event.button;
     }
   });
   const blurred = useEffectEvent((): void => {
-    if (!pressed.current && !active()) {
+    const button = pressed.current;
+    if (button === undefined && !active()) {
       return;
     }
     cancel();
-    window.dispatchEvent(new MouseEvent('mouseup', { view: window }));
+    window.dispatchEvent(new MouseEvent('mouseup', { button, view: window }));
   });
   useEffect(() => {
     const release = (): void => {
-      pressed.current = false;
+      pressed.current = undefined;
     };
     window.addEventListener('mousedown', press, true);
     window.addEventListener('mouseup', release, true);
