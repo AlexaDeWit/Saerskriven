@@ -5,6 +5,17 @@ recorded on the elements they attach to. It runs in the browser and keeps no
 server-side state. How it is built is in the READMEs under
 [`apps/studio/src`](../apps/studio/src/canvas/README.md).
 
+The studio supports current Chrome, Firefox and Safari. The built site's
+Content Security Policy requires Chrome 97, Firefox 102 or Safari 16 for
+WebAssembly, according to the
+[browser compatibility data](https://github.com/mdn/browser-compat-data/blob/main/http/headers/Content-Security-Policy.json).
+These are policy requirements, not whole-app compatibility guarantees for
+those older browsers. The policy permits same-origin scripts and assets,
+the hashed startup scripts, WebAssembly compilation and inline styles.
+It blocks other script sources, JavaScript evaluation, workers, objects
+and form submissions. It applies to the built studio, not the development
+server or exported documents.
+
 ## The window
 
 The canvas fills the window. One card centred at the top holds the menu
