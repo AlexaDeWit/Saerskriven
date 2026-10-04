@@ -9,10 +9,12 @@ import { createRoot, type Root } from 'react-dom/client';
 import { finger, mouseEvent, touchEvent, type Finger } from '../fixtures.js';
 import { nodeNamed, specResizeLabels } from './canvas.fixtures.js';
 import type { NodeBox } from './handles.js';
+import type { CanvasNode } from './layout.js';
 import type { CanvasNodeData } from './react-flow.js';
 import { ResizeControls } from './resize-controls.js';
 import {
   keyboardResizeStep,
+  minimumNodeExtent,
   type GestureInput,
   type ResizeControlPosition,
 } from './resizing.js';
@@ -20,6 +22,13 @@ import {
 type HostNode = Node<CanvasNodeData, 'host'>;
 
 const client = nodeNamed('el-client');
+
+const store = nodeNamed('el-db');
+
+const narrowest: CanvasNode = {
+  ...store,
+  size: { ...store.size, width: minimumNodeExtent },
+};
 
 const pressed: NodeBox = { position: client.position, size: client.size };
 
@@ -32,6 +41,8 @@ const resizeEnd = vi.fn<(box: NodeBox, fromResizingRender: boolean) => void>();
 const endedBy = vi.fn<(input: GestureInput) => void>();
 
 const nodesChange = vi.fn<(changes: NodeChange<HostNode>[]) => void>();
+
+const canvasKeyDown = vi.fn<() => void>();
 
 function Host({ data }: NodeProps<HostNode>): ReactElement {
   const [node, setNode] = useState(data.node);
@@ -64,22 +75,24 @@ function Host({ data }: NodeProps<HostNode>): ReactElement {
 
 const nodeTypes = { host: Host };
 
-const nodes: HostNode[] = [
-  {
-    id: client.id,
-    type: 'host',
-    position: client.position,
-    data: { node: client },
-  },
-];
+const nodes = [client, narrowest].map((node): HostNode => ({
+  id: node.id,
+  type: 'host',
+  position: node.position,
+  selected: true,
+  data: { node },
+}));
 
 const keyDown = (key: string): KeyboardEvent =>
   new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
 
-const control = (position: ResizeControlPosition): HTMLButtonElement => {
+const control = (
+  position: ResizeControlPosition,
+  of = client,
+): HTMLButtonElement => {
   const found = [...document.querySelectorAll('button')].find(
     (button) =>
-      button.getAttribute('aria-label') === specResizeLabels(client)[position],
+      button.getAttribute('aria-label') === specResizeLabels(of)[position],
   );
   assert.isDefined(found);
   return found;
@@ -130,6 +143,7 @@ describe('ResizeControls', () => {
         <ReactFlow
           nodes={nodes}
           nodeTypes={nodeTypes}
+          onKeyDown={canvasKeyDown}
           onNodesChange={nodesChange}
         />,
       );
@@ -384,4 +398,41 @@ describe('ResizeControls', () => {
       false,
     );
   });
+
+  it.each([
+    { named: 'off the axis of its control', of: client, key: 'ArrowUp' },
+    {
+      named: 'that would shrink its node under the minimum size',
+      of: narrowest,
+      key: 'ArrowLeft',
+    },
+  ])(
+    'claims an arrow key $named, so nothing resizes and React Flow moves no node',
+    ({ of, key }) => {
+      const reported = nodesChange.mock.calls.length;
+      const event = keyDown(key);
+
+      act(() => {
+        control('right', of).dispatchEvent(event);
+      });
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(resizeEnd).not.toHaveBeenCalled();
+      expect(nodesChange).toHaveBeenCalledTimes(reported);
+    },
+  );
+
+  it.each(['Tab', 'Escape', 'Enter', 'Delete'])(
+    'leaves %s, which is no arrow key, to its default and to the canvas around its controls',
+    (key) => {
+      const event = keyDown(key);
+
+      act(() => {
+        control('right').dispatchEvent(event);
+      });
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(canvasKeyDown).toHaveBeenCalledOnce();
+    },
+  );
 });
