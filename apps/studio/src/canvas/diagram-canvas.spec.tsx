@@ -42,6 +42,7 @@ import {
   lastPlaced,
   noteElement,
   openCanvas,
+  observeNodeMeasurements,
   probeFlow,
   requestFlow,
   viewportTransform,
@@ -726,17 +727,27 @@ describe('DiagramCanvas', () => {
   });
 
   describe('a mouse press held when the window loses focus', () => {
+    let measurements: ReturnType<typeof observeNodeMeasurements>;
+
+    const renderMeasuredCanvas = (): void => {
+      render(<DiagramCanvas />);
+      measurements.publish();
+    };
+
     beforeEach(() => {
       vi.stubGlobal('MouseEvent', ViewKeepingMouseEvent);
+      measurements = observeNodeMeasurements();
     });
 
     afterEach(() => {
+      measurements.stop();
+      vi.restoreAllMocks();
       vi.unstubAllGlobals();
     });
 
     it('preserves a fresh resize on another control when an old joined touch moves and releases', async () => {
       openCanvas([actorElement]);
-      render(<DiagramCanvas />);
+      renderMeasuredCanvas();
       const stored = modelStore.getState();
       const announcement = currentAnnouncement();
       const drawnAt = readerDrawing();
@@ -771,7 +782,7 @@ describe('DiagramCanvas', () => {
       'cancels every input of a mouse resize from %s that touches join before blur',
       async (from) => {
         openCanvas([actorElement]);
-        render(<DiagramCanvas />);
+        renderMeasuredCanvas();
         const stored = modelStore.getState();
         const announcement = currentAnnouncement();
         const before = readerBox();
@@ -835,7 +846,7 @@ describe('DiagramCanvas', () => {
       'cancels a resize from %s, restores its starting geometry and records no later move or click',
       async (from) => {
         openCanvas([actorElement]);
-        render(<DiagramCanvas />);
+        renderMeasuredCanvas();
         const stored = modelStore.getState();
         const announcement = currentAnnouncement();
         const before = readerBox();
@@ -865,7 +876,7 @@ describe('DiagramCanvas', () => {
 
     it('releases a resize press before it moves, so later pointer movement and a still press store nothing', async () => {
       openCanvas([actorElement]);
-      render(<DiagramCanvas />);
+      renderMeasuredCanvas();
       const stored = modelStore.getState();
       const drawnAt = [readerGlyphWidth(), reader().style.width];
 
@@ -883,7 +894,7 @@ describe('DiagramCanvas', () => {
 
     it('cancels a held mouse resize after deselection unmounts its control', async () => {
       openCanvas([actorElement]);
-      render(<DiagramCanvas />);
+      renderMeasuredCanvas();
       const stored = modelStore.getState();
       const drawnAt = [readerGlyphWidth(), reader().style.width];
 
@@ -903,7 +914,7 @@ describe('DiagramCanvas', () => {
     });
 
     it('is let go before the drag starts, so the element follows no later pointer move and the next release records nothing', async () => {
-      render(<DiagramCanvas />);
+      renderMeasuredCanvas();
       const before = readerBox();
       const drawnAt = reader().style.transform;
 

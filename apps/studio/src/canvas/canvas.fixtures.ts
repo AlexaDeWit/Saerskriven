@@ -1,5 +1,5 @@
 import type { CanvasNode } from '@saerskriven/canvas';
-import { fireEvent } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
 import {
   assumptionId,
@@ -345,3 +345,109 @@ export const recordingClipboard = () => {
   });
   return { ...api, text: () => text };
 };
+
+/** Supplies rounded CSS dimensions in jsdom and refreshes node measurements after style changes. */
+export function observeNodeMeasurements() {
+  vi.stubGlobal(
+    'DOMMatrixReadOnly',
+    class {
+      readonly m22 = viewportTransform().zoom;
+    },
+  );
+  for (const [offset, dimension] of [
+    ['offsetWidth', 'width'],
+    ['offsetHeight', 'height'],
+  ] as const) {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      offset,
+    );
+    vi.spyOn(HTMLElement.prototype, offset, 'get').mockImplementation(function (
+      this: HTMLElement,
+    ): number {
+      if (this.classList.contains('react-flow__node')) {
+        return Math.round(Number.parseFloat(this.style[dimension]) || 0);
+      }
+      const original: unknown = descriptor?.get?.call(this);
+      return typeof original === 'number' ? original : 0;
+    });
+  }
+  const observers = new Set<MeasuredObserver>();
+  class MeasuredObserver implements ResizeObserver {
+    readonly targets = new Set<HTMLElement>();
+    readonly callback: ResizeObserverCallback;
+    readonly styleChanges = new MutationObserver(() => {
+      act(() => {
+        this.measure();
+      });
+    });
+
+    constructor(callback: ResizeObserverCallback) {
+      this.callback = callback;
+      observers.add(this);
+    }
+
+    observe(target: Element): void {
+      if (
+        target instanceof HTMLElement &&
+        target.classList.contains('react-flow__node')
+      ) {
+        this.targets.add(target);
+        this.styleChanges.observe(target, {
+          attributes: true,
+          attributeFilter: ['style'],
+        });
+        this.measure();
+      }
+    }
+
+    unobserve(target: Element): void {
+      if (target instanceof HTMLElement) {
+        this.targets.delete(target);
+      }
+    }
+
+    disconnect(): void {
+      this.styleChanges.disconnect();
+      this.targets.clear();
+      observers.delete(this);
+    }
+
+    measure(): void {
+      if (this.targets.size === 0) {
+        return;
+      }
+      this.callback(
+        [...this.targets].map((target) => {
+          const size = {
+            inlineSize: target.offsetWidth,
+            blockSize: target.offsetHeight,
+          };
+          return {
+            target,
+            contentRect: new DOMRect(0, 0, size.inlineSize, size.blockSize),
+            borderBoxSize: [size],
+            contentBoxSize: [size],
+            devicePixelContentBoxSize: [size],
+          };
+        }),
+        this,
+      );
+    }
+  }
+  vi.stubGlobal('ResizeObserver', MeasuredObserver);
+  return {
+    publish: (): void => {
+      act(() => {
+        for (const observer of observers) {
+          observer.measure();
+        }
+      });
+    },
+    stop: (): void => {
+      for (const observer of observers) {
+        observer.disconnect();
+      }
+    },
+  };
+}
