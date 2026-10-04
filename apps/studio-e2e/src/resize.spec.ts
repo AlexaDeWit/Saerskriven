@@ -31,7 +31,6 @@ import {
   placeholder,
   runFromMenu,
   selectByKeyboard,
-  closeThreats,
   selectNode,
   toolButton,
   undoOffered,
@@ -336,7 +335,6 @@ test('a second finger on the border of a corner handle leaves the resize under t
   const session = await touchSession(page);
   await openModelDocument(page, perimeterModel);
   const curve = await selectByKeyboard(page, perimeter.drawn);
-  await closeThreats(page);
   await expect(pointHandles(page)).toHaveCount(perimeter.points.length);
   const right = sideControl(curve, 'right', perimeter.name);
   await onScreen(right);

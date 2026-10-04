@@ -133,7 +133,8 @@
 }
 
 @media (pointer: coarse) {
-  .handle {
+  .handle[data-bend-index],
+  .handle[data-flow-end] {
     width: 2.75rem;
     height: 2.75rem;
   }
