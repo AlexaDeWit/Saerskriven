@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DropdownMenu } from 'radix-ui';
 import type { ReactNode } from 'react';
-import { chooseLanguage } from '../messages/locale.js';
+import { withLanguage } from '../messages/locale.fixtures.js';
 import type { ColourMode } from '../theme-preference.js';
 import { AppearanceMenu, LanguageMenu } from './settings-menu.js';
 
@@ -25,17 +25,14 @@ const openSubmenu = async (user: User, name: RegExp): Promise<void> => {
 const choice = (name: string): HTMLElement =>
   screen.getByRole('menuitemradio', { name });
 
-afterEach(() => {
-  chooseLanguage('en-CA');
-  globalThis.localStorage.clear();
-});
-
 describe('the language submenu', () => {
+  withLanguage('en-CA');
+
   it('lists exactly the three supported locales, each in its own language', async () => {
     const user = userEvent.setup();
     openPanel(<LanguageMenu />);
 
-    await openSubmenu(user, /^Language /u);
+    await openSubmenu(user, /^Language: /u);
 
     expect(screen.getAllByRole('menuitemradio')).toHaveLength(3);
     expect(choice('English (Canada)')).toBeDefined();
@@ -49,10 +46,10 @@ describe('the language submenu', () => {
   it('marks the chosen language and translates its own words', async () => {
     const user = userEvent.setup();
     openPanel(<LanguageMenu />);
-    await openSubmenu(user, /^Language /u);
+    await openSubmenu(user, /^Language: /u);
 
     await user.click(choice('Svenska'));
-    await openSubmenu(user, /^Språk /u);
+    await openSubmenu(user, /^Språk: /u);
 
     expect(choice('Svenska').getAttribute('aria-checked')).toBe('true');
     expect(choice('Français (Canada)')).toBeDefined();
@@ -65,9 +62,29 @@ describe('the appearance submenu', () => {
     const chosen = vi.fn<(mode: ColourMode) => void>();
     openPanel(<AppearanceMenu mode="system" onChange={chosen} />);
 
-    await openSubmenu(user, /^Appearance /u);
+    await openSubmenu(user, /^Appearance: /u);
     await user.click(choice('Dark'));
 
     expect(chosen).toHaveBeenCalledWith('dark');
+  });
+});
+
+describe.each([
+  ['en-CA', 'Appearance: Dark', 'Language: English (Canada)'],
+  ['fr-CA', 'Apparence : Sombre', 'Langue : Français (Canada)'],
+  ['sv', 'Utseende: Mörkt', 'Språk: Svenska'],
+] as const)('the settings rows in %s', (locale, appearance, language) => {
+  withLanguage(locale);
+
+  it('names each row by its setting, a colon and the label of the option chosen', () => {
+    openPanel(
+      <>
+        <AppearanceMenu mode="dark" />
+        <LanguageMenu />
+      </>,
+    );
+
+    expect(screen.getByRole('menuitem', { name: appearance })).toBeDefined();
+    expect(screen.getByRole('menuitem', { name: language })).toBeDefined();
   });
 });

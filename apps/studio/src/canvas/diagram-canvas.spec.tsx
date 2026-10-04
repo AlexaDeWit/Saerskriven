@@ -143,7 +143,7 @@ describe('DiagramCanvas', () => {
     );
     expect(
       screen.getAllByRole('group', {
-        name: 'Reader, actor, 1 open threat, highest severity Medium',
+        name: 'Reader, actor, 1 open threat, highest severity: Medium',
       }),
     ).toHaveLength(1);
     expect(
@@ -169,7 +169,9 @@ describe('DiagramCanvas', () => {
 
       expect(readerMark()).toBe(terms.marks.severity.high);
       expect(readerInAnyLocale().getAttribute('aria-label')).toContain(
-        terms.severity('high'),
+        activeTranslator().t('tools.highest-severity', {
+          severity: terms.severity('high'),
+        }),
       );
     }
     expect(

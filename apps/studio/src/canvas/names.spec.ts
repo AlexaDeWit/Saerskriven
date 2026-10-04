@@ -35,11 +35,20 @@ describe('accessibleNames', () => {
     expect(names.get(processElement)).toBe('Studio, process');
   });
 
-  it('says what an element badge shows, which no glyph says to a reader', () => {
-    expect(names.get(actorElement)).toBe(
-      'Reader, actor, 1 open threat, highest severity Medium',
-    );
-  });
+  it.each([
+    ['en-CA', 'Reader, actor, 1 open threat, highest severity: Medium'],
+    ['fr-CA', 'Reader, acteur, 1 menace ouverte, gravité maximale : Moyenne'],
+    ['sv', 'Reader, aktör, 1 öppet hot, högsta allvarlighetsgrad: Medel'],
+  ] as const)(
+    'says in %s what an element badge shows, which no glyph says to a reader',
+    (locale, name) => {
+      expect(
+        accessibleNames(layout, canvasModel, inLocale(locale)).get(
+          actorElement,
+        ),
+      ).toBe(name);
+    },
+  );
 
   it('says an undecided badge is unassessed rather than naming a severity', () => {
     expect(names.get(requestFlow)).toContain('severity not assessed');
@@ -55,7 +64,7 @@ describe('accessibleNames', () => {
       'threat-tampering': { invalidated: true },
     });
     expect(namedIn(model, actorElement)).toBe(
-      'Reader, actor, 1 open threat, highest severity Medium, Rests on an invalidated assumption',
+      'Reader, actor, 1 open threat, highest severity: Medium, Rests on an invalidated assumption',
     );
   });
 
@@ -66,7 +75,7 @@ describe('accessibleNames', () => {
       'threat-tampering': { elements: [requestFlow], invalidated: true },
     });
     expect(namedIn(model, requestFlow)).toBe(
-      'Opens a model, flow, from Reader to Studio, 2 open threats, highest severity Medium, Mitigated without implemented work, Rests on an invalidated assumption',
+      'Opens a model, flow, from Reader to Studio, 2 open threats, highest severity: Medium, Mitigated without implemented work, Rests on an invalidated assumption',
     );
   });
 
