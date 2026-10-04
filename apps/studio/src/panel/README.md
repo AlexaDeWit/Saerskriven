@@ -119,11 +119,11 @@ own close. On an opened threat focus lands as it does on Escape, and the
 choice is carried to the register's next opening, which marks that row. On a
 refused one the commit that closes the register shows the Threats tab, focus
 lands on the field holding the refused text, found by its `aria-invalid`
-(`focusModelPanel('refusal')`), and nothing is carried. The list answers a
-refusal only while such a field is drawn, so the register never closes onto a
-threat with no field to land on. Where both panes show the list answers
-nothing, and a refused choice opens and closes nothing. Any other close
-forgets the carried choice.
+(`focusModelPanel('refusal')`), and nothing is carried. The threat holding a
+draft is the expanded one and draws the field the draft is in, so that field
+is there to land on. Where both panes show the list answers nothing, and a
+refused choice opens and closes nothing. Any other close forgets the carried
+choice.
 
 The register keeps the order it opened in for the reason the list does, and
 with the same `useShownOrder`. The table's columns follow the exported

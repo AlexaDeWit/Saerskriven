@@ -517,10 +517,7 @@ function useRequestedThreats({
         if (drawn === null || getComputedStyle(drawn).visibility !== 'hidden') {
           return undefined;
         }
-        if (
-          heldOnAnother(held, threatId) &&
-          drawn.querySelector(refusedFieldSelector) !== null
-        ) {
+        if (heldOnAnother(held, threatId)) {
           return 'refused';
         }
         return threatId === expanded ? 'opened' : undefined;
