@@ -279,8 +279,10 @@ describe('the element lists of a threat', () => {
         ({ detach }) => detach,
       ),
     ).toEqual([
-      french('fields.detach-unlabelled-flow', {
-        ends: fromReaderToStudio(french),
+      french('fields.detach-element', {
+        element: french('panel.unlabelled-flow-phrase', {
+          ends: fromReaderToStudio(french),
+        }),
       }),
     ]);
   });

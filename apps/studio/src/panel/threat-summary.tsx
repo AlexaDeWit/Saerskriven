@@ -6,17 +6,9 @@ import { categoryLabel } from '../ui/category-field.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { FlagMarks, SeverityChip, StatusMark } from './threat-marks.js';
 import styles from './threat-panel.module.css';
-import { threatAttachments } from './threats.js';
+import { threatSummaryElements } from './threats.js';
 
-/**
- * A collapsed threat's summary, which is also its accordion trigger's
- * accessible name, in drawn order. Its number and title, then its severity,
- * status, category and a mark per raised flag, then what it is on: that it
- * applies to the whole model, where it does, and its elements. On an
- * element's panel (`on`) those are the others it names, where it names any,
- * and on the model's every one, or that it is on none where it does not
- * apply to the model either.
- */
+/** The accordion trigger names every element on the model panel and only other elements on an element panel. */
 export function ThreatSummary({
   threat,
   on,
@@ -27,7 +19,7 @@ export function ThreatSummary({
   const diagrams = useModelStore((state) => state.present.diagrams);
   const { t } = useTranslator();
   const category = categoryLabel(threat.category, t);
-  const named = threatAttachments(diagrams, threat, t)
+  const named = threatSummaryElements(diagrams, threat, t)
     .filter(({ id }) => id !== on)
     .map(({ label }) => label);
   const elements = elementsLine(on, named, threat.appliesToModel, t);

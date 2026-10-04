@@ -157,7 +157,8 @@ model says so on a line of its own, on either list, and the elements line
 follows it. On an element's panel that line names the threat's other elements
 and is left out where there are none, since the panel's heading already names
 the one shown. On the model's list, which shows no element, it names every
-element the threat is on. A threat on no element that does not apply to the
+element the threat is on. An unlabelled flow reads as a noun phrase in this
+line, while its labels elsewhere stay stand-alone. A threat on no element that does not apply to the
 model either says it is on none there, so a threat on nothing reads as one.
 
 The list sorts with `inReviewOrder` from `../ui/review-order.ts`, which also
