@@ -9,7 +9,7 @@ import {
 import { useEffect } from 'react';
 import { drawnSelector } from './edits.js';
 import { followKeyboardMoves, type KeyboardMove } from './keyboard-moves.js';
-import { selectionFrameSelector } from './move-message.js';
+import { selectionRectangleSelector } from './selection-frame.js';
 
 /** How long the pan takes, in milliseconds, so the eye can follow the view moving. */
 export const focusPanDuration = 500;
@@ -17,32 +17,20 @@ export const focusPanDuration = 500;
 /** How far inside the viewport's border the pan leaves a ring, in screen pixels, so the whole ring is drawn clear of the edge. */
 export const ringMargin = 4;
 
-/** What the pan reads the view from and moves it through. */
 export type PannedView = Pick<ReactFlowInstance, 'getViewport' | 'setViewport'>;
 
 const handleSelector = '[data-bend-index], [data-flow-end], [data-curve-point]';
 
 const ringedSelector = `${drawnSelector}, .react-flow__resize-control > button, ${handleSelector}`;
 
-const movedSelector = `${ringedSelector}, ${selectionFrameSelector}`;
+const movedSelector = `${ringedSelector}, ${selectionRectangleSelector}`;
 
-/**
- * Whether a key press puts the keyboard in charge of where focus goes, which
- * it stays until the next pointer press: Tab, with Shift or without, and with
- * Alt, the chord that reaches every item in Safari.
- */
+/** Tab, including Shift or Alt, arms focus panning until the next pointer press. */
 export function armsFocusPan(event: KeyboardEvent): boolean {
   return event.key === 'Tab' && !event.ctrlKey && !event.metaKey;
 }
 
-/**
- * The shortest move that brings a ring into the viewport, the canvas's own
- * box on screen, where any of it lies outside: on each axis the ring ends
- * `ringMargin` inside the border it had crossed. Nothing for a ring wholly
- * inside, whatever is drawn over it there. A ring too long for the viewport
- * on an axis moves the least that fills the viewport with it, its nearer end
- * at the border, and not at all once it spans the viewport.
- */
+/** Finds the least pan that clears a ring past the viewport border. Oversized rings fill the viewport. */
 export function offsetIntoView(ring: Box, viewport: Box): Point | undefined {
   const offset = {
     x: shiftInto(ring.minX, ring.maxX, viewport.minX, viewport.maxX),
@@ -51,14 +39,7 @@ export function offsetIntoView(ring: Box, viewport: Box): Point | undefined {
   return offset.x === 0 && offset.y === 0 ? undefined : offset;
 }
 
-/**
- * Answers the pan for one canvas: handed an offset, it moves `view` by it
- * from where the view is at that moment, at the same zoom, over
- * `focusPanDuration`, or at once where `instant` says so or the call asks
- * for it, as the follow of a held arrow key does to keep up. No offset stops
- * a pan still on its way, so the view rests where the newest item was
- * measured. A pan is on its way until `view` answers that it arrived.
- */
+/** Preserves zoom and replaces an active pan. Reduced motion and held keys move at once. */
 export function viewPanner(
   view: PannedView,
   instant: () => boolean,
@@ -87,18 +68,7 @@ export function viewPanner(
   };
 }
 
-/**
- * Calls `landed` with each drawn element, flow, resize control, or bend,
- * flow end or curve point handle inside `surface` that focus moves to
- * showing its ring while the keyboard is in charge: from a key press
- * `armsFocusPan` answers until the next pointer press. `:focus-visible` alone
- * is no keyboard test, since Chromium and Safari keep it for a script focus
- * that follows any earlier key press, as a flow drawn by pointer is focused.
- * The call waits for the next frame, when what the key press changed is
- * drawn, and is dropped if focus has moved on by then. Focus the browser
- * hands back to the item that held it when the window lost focus is no move,
- * until a key arms again. Answers the function that stops listening.
- */
+/** Follows visible keyboard focus on the next frame. Ignores focus restored after a window blur and returns a stop function. */
 export function onKeyboardFocus(
   surface: HTMLElement,
   landed: (target: Element) => void,
@@ -149,17 +119,7 @@ export function onKeyboardFocus(
   };
 }
 
-/**
- * Calls `moved` with what a key press moved or resized inside `surface`, each
- * time `keyboardMoved` says one did, with no Tab press needed first: whatever
- * holds focus (the drawn element, the resize control, a bend, flow end or
- * curve point handle, or the frame around a box selection, whose box is the
- * whole group's), or the bend being placed, which is measured itself while
- * the route toolbar holds focus. It tells no key press from a pointer: the
- * caller does. The call comes on the next frame, when the move is drawn, and
- * says whether the last key press was a repeat. Answers the function that
- * stops listening.
- */
+/** Measures keyboard moves on the next frame, using the focused item or a placed bend. Returns a stop function. */
 export function onKeyboardMove(
   surface: HTMLElement,
   moved: (target: Element, held: boolean) => void,
@@ -187,14 +147,7 @@ export function onKeyboardMove(
   };
 }
 
-/**
- * Pans the canvas the least that brings the focused item's ring into the
- * viewport, where Tab puts focus on an item outside it or an arrow key moves
- * or resizes the focused item, or the box selection, out of it, and the
- * least that brings in a bend an arrow key moves out of it while it is being
- * placed. What lies over the canvas plays no part. Mounted inside
- * `ReactFlow`, where its store is in reach.
- */
+/** Follows keyboard focus, moves, and resizes inside a React Flow provider. Overlays do not reduce the viewport. */
 export function FocusPan(): null {
   const flow = useReactFlow();
   const surface = useStore((state) => state.domNode);

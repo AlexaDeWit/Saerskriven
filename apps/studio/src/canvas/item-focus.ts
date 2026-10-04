@@ -7,8 +7,7 @@ import type { CommandSurface } from '../commands/surface.js';
 import { selectedElement } from '../store/selectors.js';
 import { modelStore } from '../store/store.js';
 import { drawnElement, focusCanvas, focusElement } from './edits.js';
-
-const selectionFrameSelector = '.react-flow__nodesselection';
+import { selectionWrapperSelector } from './selection-frame.js';
 
 const besideSelectionSelector =
   '[data-bend-index], [data-flow-end], [data-bend-toolbar], [data-curve-point], [data-selection-commands]';
@@ -55,7 +54,7 @@ function focusKeeper(
   if (!(target instanceof Element)) {
     return undefined;
   }
-  if (target.closest(selectionFrameSelector) !== null) {
+  if (target.closest(selectionWrapperSelector) !== null) {
     return focusCanvas;
   }
   const selected = selectedElement(modelStore.getState());

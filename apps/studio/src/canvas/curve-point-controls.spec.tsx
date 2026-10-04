@@ -11,6 +11,7 @@ import {
   clickSuppressionLifted,
   curvedCanvasModel,
   dragHandle,
+  hold,
   openCanvas,
   pointerOn,
   requestFlow,
@@ -230,8 +231,7 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
   it('drops a drag in flight on Escape, leaving the model as it was', () => {
     render(<DiagramCanvas />);
     const handle = point(1);
-    pointerOn(handle, 'pointerdown', 0, 0);
-    pointerOn(handle, 'pointermove', 0, 60);
+    hold(handle);
     expect(Number.parseFloat(point(1).style.top)).toBeGreaterThan(
       boundaryCurve[0].y,
     );
@@ -247,8 +247,7 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
   it('pulls a new point out of a dragged midpoint handle on release alone, as one undo step', () => {
     render(<DiagramCanvas />);
     const pulling = midpoint(0);
-    pointerOn(pulling, 'pointerdown', 0, 0);
-    pointerOn(pulling, 'pointermove', 0, 60);
+    hold(pulling);
     expect(pointCount()).toBe(boundaryCurve.length + 1);
     expect(midpointCount()).toBe(1);
     expect(pulling.isConnected).toBe(true);
@@ -292,8 +291,7 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
   it('drops a midpoint drag on Escape, leaving the model as it was', () => {
     render(<DiagramCanvas />);
     const pulling = midpoint(0);
-    pointerOn(pulling, 'pointerdown', 0, 0);
-    pointerOn(pulling, 'pointermove', 0, 60);
+    hold(pulling);
     expect(pointCount()).toBe(boundaryCurve.length + 1);
     document.querySelector<HTMLElement>('.react-flow')?.focus();
     expect(document.activeElement?.classList.contains('react-flow')).toBe(true);
