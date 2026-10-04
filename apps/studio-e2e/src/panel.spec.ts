@@ -869,7 +869,9 @@ test('long titles and fields remain usable in a narrow viewport', async ({
   await titleField(page).fill('A long threat title '.repeat(15));
   await titleField(page).press('Enter');
   await page.setViewportSize({ width: 360, height: 640 });
-  await panel.getByRole('button', { name: 'Widen pane' }).click();
+  await expect(
+    panel.getByRole('button', { name: 'Collapse pane' }),
+  ).toBeVisible();
   const bounds = await edgesOf(panel);
   expect(bounds.left).toBeGreaterThanOrEqual(0);
   expect(bounds.right).toBeLessThanOrEqual(360);
@@ -913,7 +915,8 @@ test('a long element name leaves the pane heading and editor reachable', async (
   await page.setViewportSize({ width: 360, height: 640 });
   const panel = threatPanel(page);
   const heading = panel.getByRole('heading', { level: 2 });
-  await panel.getByRole('button', { name: 'Widen pane' }).focus();
+  await expandPane(page);
+  await panel.getByRole('button', { name: 'Collapse pane' }).focus();
   await page.keyboard.press('Tab');
   await expect(heading).toBeFocused();
   await page.keyboard.press('ArrowDown');
@@ -921,8 +924,9 @@ test('a long element name leaves the pane heading and editor reachable', async (
     .poll(async () => heading.evaluate((node) => node.scrollTop))
     .toBeGreaterThan(0);
   await page.keyboard.press('Shift+Tab');
-  await expect(panel.getByRole('button', { name: 'Widen pane' })).toBeFocused();
-  await page.keyboard.press('Enter');
+  await expect(
+    panel.getByRole('button', { name: 'Collapse pane' }),
+  ).toBeFocused();
   await panel.getByRole('button', { name: 'Add a threat' }).click();
   await expect(titleField(page)).toBeFocused();
   await titleField(page).fill('A threat under a long element name');

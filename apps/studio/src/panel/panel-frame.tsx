@@ -1,6 +1,6 @@
 import { ArrowRightIcon, Cross1Icon, WidthIcon } from '@radix-ui/react-icons';
 import { Tooltip } from 'radix-ui';
-import { useId, useRef, useState, type ReactNode } from 'react';
+import { useId, useRef, type ReactNode } from 'react';
 import { closingOn } from '../commands/binding.js';
 import {
   describeContextualShortcuts,
@@ -19,8 +19,8 @@ type PanelFrameProps = {
   readonly closeLabel: string;
   readonly closeShortcut: ContextualShortcutId;
   readonly testId?: string;
-  readonly focusing?: boolean;
-  readonly initiallyCollapsed?: boolean;
+  readonly collapsed?: boolean;
+  readonly onToggleCollapsed?: () => void;
   readonly wide: boolean;
   readonly onToggleWidth: () => void;
   readonly onClose: () => void;
@@ -41,8 +41,8 @@ export function PanelFrame({
   closeLabel,
   closeShortcut,
   testId,
-  focusing = false,
-  initiallyCollapsed = false,
+  collapsed,
+  onToggleCollapsed,
   wide,
   onToggleWidth,
   onClose,
@@ -53,10 +53,6 @@ export function PanelFrame({
   const panel = useRef<HTMLElement>(null);
   const keyboardDescriptionId = useId();
   const bodyId = useId();
-  const [mobileOpen, setMobileOpen] = useState(!initiallyCollapsed);
-  if (focusing && !mobileOpen) {
-    setMobileOpen(true);
-  }
   const { t } = useTranslator();
 
   useMeasured(
@@ -81,26 +77,37 @@ export function PanelFrame({
       data-pane=""
       data-testid={testId}
       data-wide={wide}
-      data-mobile-open={mobileOpen}
+      data-mobile-open={collapsed === undefined ? undefined : !collapsed}
       ref={panel}
       onKeyDownCapture={closingOn(closeShortcut, onClose)}
+      onFocusCapture={(event) => {
+        if (
+          collapsed &&
+          event.target.closest('[data-drawer-toggle]') === null
+        ) {
+          onToggleCollapsed?.();
+        }
+      }}
     >
       <VisuallyHidden id={keyboardDescriptionId}>
         {describeContextualShortcuts([closeShortcut], hostPlatform, t)}
       </VisuallyHidden>
-      <button
-        aria-label={t(mobileOpen ? 'panel.collapse-pane' : 'panel.expand-pane')}
-        aria-expanded={mobileOpen}
-        aria-controls={bodyId}
-        className={styles.drawerToggle}
-        onClick={() => {
-          setMobileOpen((value) => !value);
-        }}
-        type="button"
-      >
-        <ArrowRightIcon aria-hidden="true" />
-        {!mobileOpen && label}
-      </button>
+      {collapsed !== undefined && (
+        <button
+          data-drawer-toggle
+          aria-label={t(
+            !collapsed ? 'panel.collapse-pane' : 'panel.expand-pane',
+          )}
+          aria-expanded={!collapsed}
+          aria-controls={bodyId}
+          className={styles.drawerToggle}
+          onClick={onToggleCollapsed}
+          type="button"
+        >
+          <ArrowRightIcon aria-hidden="true" />
+          {collapsed && label}
+        </button>
+      )}
       <header className={styles.panelHeader}>
         <Tooltip.Provider>
           <Tooltip.Root>

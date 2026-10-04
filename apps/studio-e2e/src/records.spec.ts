@@ -419,6 +419,10 @@ test(
   { tag: '@phone' },
   async ({ page }) => {
     await openShopperTakeover(page);
+    await panelField(page, 'textbox', 'Description').fill(
+      'A detail of the threat.\n'.repeat(20),
+    );
+    await page.keyboard.press('Tab');
     await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
     await addRecord(
       page,
@@ -448,6 +452,10 @@ test(
   { tag: '@phone' },
   async ({ page }) => {
     await openShopperTakeover(page);
+    await panelField(page, 'textbox', 'Description').fill(
+      'A detail of the threat.\n'.repeat(20),
+    );
+    await page.keyboard.press('Tab');
     await addRecord(page, 'mitigation', 'Strip caller tokens at the edge');
     await addRecord(
       page,
@@ -503,13 +511,14 @@ test('a record arriving from another tab above the rows in view leaves those row
 });
 
 test(
-  'a message longer than two lines stops above the open pane at phone width',
+  'a long refusal stays available to screen readers without taking space above the phone pane',
   { tag: '@phone-only' },
   async ({ page }) => {
     await openTwoDiagrams(page);
     await selectByKeyboard(page, storefront.catalogue);
     await expandPane(page);
     await expect(threatPanel(page)).toBeVisible();
+    await nodeNamed(page, storefront.catalogue).focus();
 
     await page.keyboard.press('Enter');
     await page.keyboard.press('End');
@@ -518,9 +527,7 @@ test(
     const said = editAnnouncement(page);
     await expect(said).toContainText('Catalogue');
 
-    const message = await screenBoxOf(said);
-    const pane = await screenBoxOf(threatPanel(page));
-    expect(message.y + message.height).toBeLessThanOrEqual(pane.y);
+    expect((await said.boundingBox())?.height).toBe(0);
     await onScreen(panelControl(page, 'Close threats'));
   },
 );

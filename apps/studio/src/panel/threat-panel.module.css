@@ -615,6 +615,7 @@
     display: none;
   }
 
+  .panel:not([data-mobile-open]),
   .panel[data-mobile-open='true'],
   .panel[data-mobile-open='true'][data-wide='true'] {
     inline-size: calc(100% - var(--saer-space-2) * 2);

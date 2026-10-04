@@ -1,9 +1,10 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
 import type { CanvasEdge } from '@saerskriven/canvas';
-import { Panel, useViewport } from '@xyflow/react';
+import { Panel, useStore, useViewport } from '@xyflow/react';
 import { useId, useState, type RefObject } from 'react';
 import { IconCommandButton } from '../commands/command-button.js';
 import { useTranslator } from '../messages/locale.js';
+import { useThreatRegisterOpen } from '../panel/threat-register-state.js';
 import { useMeasured } from '../ui/measure.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { FlowEndpointCommands } from './selection-controls.js';
@@ -28,6 +29,8 @@ export function FlowRouteToolbar({
   readonly cancel: () => void;
 }) {
   const { x, y, zoom } = useViewport();
+  const canvasHeight = useStore((state) => state.height);
+  const registerOpen = useThreatRegisterOpen();
   const { t } = useTranslator();
   const description = useId();
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -47,6 +50,14 @@ export function FlowRouteToolbar({
     x: x + ((edge.source.x + edge.target.x) / 2) * zoom,
     y: y + ((edge.source.y + edge.target.y) / 2) * zoom,
   };
+  const routeY = [edge.source, ...edge.waypoints, edge.target].map(
+    (point) => y + point.y * zoom,
+  );
+  const below = Math.max(...routeY) + 28;
+  const top =
+    below + size.height + 64 <= canvasHeight
+      ? below
+      : Math.min(...routeY) - size.height - 28;
   return (
     <Panel
       position="top-left"
@@ -58,11 +69,12 @@ export function FlowRouteToolbar({
         aria-describedby={description}
         className={`${styles.toolbar} ${styles.routeToolbar} nodrag nopan`}
         data-bend-toolbar
+        inert={registerOpen}
         ref={toolbar}
         tabIndex={-1}
         style={{
           left: `clamp(8px, ${String(centre.x - size.width / 2)}px, calc(100% - ${String(size.width + 8)}px))`,
-          top: `clamp(var(--saer-pane-block-start), ${String(centre.y + 28)}px, calc(100% - ${String(size.height + 64)}px))`,
+          top: `clamp(var(--saer-pane-block-start), ${String(top)}px, calc(100% - ${String(size.height + 64)}px))`,
         }}
       >
         <IconCommandButton

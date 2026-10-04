@@ -274,12 +274,17 @@ export function useFlowBendInteraction(
   }, []);
 
   const down = (event: HandlePointer, held: Held): void => {
-    const target =
-      mode?.kind === 'place' &&
-      held.kind === 'move' &&
-      held.index === mode.target.index
-        ? mode.target
-        : held;
+    let target = held;
+    if (mode?.kind === 'place' && held.kind !== 'end') {
+      if (held.kind === 'move' && held.index === mode.target.index) {
+        target = mode.target;
+      } else if (
+        mode.target.kind === 'insert' &&
+        held.index > mode.target.index
+      ) {
+        target = { ...held, index: held.index - 1 };
+      }
+    }
     drag.down(event, target);
   };
   return {

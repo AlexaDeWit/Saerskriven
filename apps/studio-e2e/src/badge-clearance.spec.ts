@@ -18,6 +18,7 @@ import {
   runFromMenu,
   selectNode,
   threatPanel,
+  expandPane,
 } from './studio.fixtures.js';
 
 const cases = [
@@ -61,6 +62,7 @@ const selectClear = async (
 ): Promise<Locator> => {
   await open(page);
   const node = await selectNode(page, name);
+  await expandPane(page);
   await threatPanel(page)
     .getByRole('button', { name: 'Close threats', exact: true })
     .click();

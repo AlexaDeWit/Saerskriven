@@ -36,6 +36,8 @@ export function FlowBendControls({
     return null;
   }
   const { mode } = interaction;
+  const inserted =
+    bends.draft?.kind === 'insert' ? bends.draft.index : Infinity;
   const pinned = (end: FlowEnd) =>
     end === 'source' ? edge.sourcePin : edge.targetPin;
   const points = [edge.source, ...edge.waypoints, edge.target];
@@ -63,7 +65,13 @@ export function FlowBendControls({
                   ? 'true'
                   : undefined
               }
-              key={index}
+              key={
+                index === inserted + 1
+                  ? 'preview'
+                  : index > inserted + 1
+                    ? index - 1
+                    : index
+              }
               onClick={(event) => {
                 if (
                   event.shiftKey &&
@@ -108,7 +116,13 @@ export function FlowBendControls({
             aria-label={t('tools.bend-numbered', { number: index + 1 })}
             className={`${styles.handle} nodrag nopan`}
             data-bend-index={index}
-            key={index}
+            key={
+              index === inserted
+                ? 'preview'
+                : index > inserted
+                  ? index - 1
+                  : index
+            }
             onClick={(event) => {
               event.stopPropagation();
               interaction.actions(index);

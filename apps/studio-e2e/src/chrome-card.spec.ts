@@ -31,6 +31,7 @@ import {
   placeholder,
   selectByKeyboard,
   threatPanel,
+  expandPane,
   twoDiagrams,
   twoDiagramsFile,
 } from './studio.fixtures.js';
@@ -153,6 +154,7 @@ test(
   async ({ page }) => {
     await openFallback(page);
     await selectByKeyboard(page, placeholder.actor);
+    await expandPane(page);
     await expect(threatPanel(page)).toBeVisible();
 
     await openText(page, 'notes.txt', 'no threat model here');

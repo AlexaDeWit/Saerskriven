@@ -231,7 +231,6 @@ test('Escape on a bend or end handle, the route toolbar or a flow card icon move
   for (const handle of [
     page.getByRole('button', { name: 'Bend 1', exact: true }),
     page.getByRole('button', { name: 'Flow source end', exact: true }),
-    page.getByRole('button', { name: 'Add bend', exact: true }),
   ]) {
     await handle.focus();
 
@@ -242,6 +241,13 @@ test('Escape on a bend or end handle, the route toolbar or a flow card icon move
     await focusSettled(flow);
     await page.keyboard.press('Enter');
   }
+
+  await escapeTwiceFromCard(
+    page,
+    page.getByRole('button', { name: 'Add bend', exact: true }),
+    flow,
+  );
+  await page.keyboard.press('Enter');
 
   await escapeTwiceFromCard(
     page,

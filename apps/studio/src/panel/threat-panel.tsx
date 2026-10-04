@@ -48,6 +48,10 @@ export function ThreatPanel({
   const threatCount = useModelStore((state) => attachedThreats(state).length);
   const diagrams = useModelStore((state) => state.present.diagrams);
   const [tab, setTab] = useState<PanelTab>('threats');
+  const [collapsed, setCollapsed] = useState(true);
+  if (focusing && collapsed) {
+    setCollapsed(false);
+  }
   const addControl = useRef<HTMLButtonElement>(null);
   const { t } = useTranslator();
 
@@ -64,8 +68,10 @@ export function ThreatPanel({
   }, [focusing, onFocused]);
 
   const frame = {
-    focusing,
-    initiallyCollapsed: true,
+    collapsed,
+    onToggleCollapsed: () => {
+      setCollapsed((value) => !value);
+    },
     closeLabel: t('panel.close-threats'),
     closeShortcut: 'close-threat-panel',
     label: t('panel.threats'),
