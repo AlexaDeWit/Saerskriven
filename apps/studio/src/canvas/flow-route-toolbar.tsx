@@ -1,5 +1,5 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
-import type { CanvasEdge } from '@saerskriven/canvas';
+import { boxOfPoints, type CanvasEdge } from '@saerskriven/canvas';
 import { Panel, useStore, useViewport } from '@xyflow/react';
 import { useId, useState, type RefObject } from 'react';
 import { IconCommandButton } from '../commands/command-button.js';
@@ -46,18 +46,13 @@ export function FlowRouteToolbar({
     },
     () => {},
   );
-  const centre = {
-    x: x + ((edge.source.x + edge.target.x) / 2) * zoom,
-    y: y + ((edge.source.y + edge.target.y) / 2) * zoom,
-  };
-  const routeY = [edge.source, ...edge.waypoints, edge.target].map(
-    (point) => y + point.y * zoom,
-  );
-  const below = Math.max(...routeY) + 28;
+  const centreX = x + ((edge.source.x + edge.target.x) / 2) * zoom;
+  const route = boxOfPoints([edge.source, ...edge.waypoints, edge.target]);
+  const below = y + (route?.maxY ?? edge.source.y) * zoom + 28;
   const top =
     below + size.height + 64 <= canvasHeight
       ? below
-      : Math.min(...routeY) - size.height - 28;
+      : y + (route?.minY ?? edge.source.y) * zoom - size.height - 28;
   return (
     <Panel
       position="top-left"
@@ -73,7 +68,7 @@ export function FlowRouteToolbar({
         ref={toolbar}
         tabIndex={-1}
         style={{
-          left: `clamp(8px, ${String(centre.x - size.width / 2)}px, calc(100% - ${String(size.width + 8)}px))`,
+          left: `clamp(8px, ${String(centreX - size.width / 2)}px, calc(100% - ${String(size.width + 8)}px))`,
           top: `clamp(var(--saer-pane-block-start), ${String(top)}px, calc(100% - ${String(size.height + 64)}px))`,
         }}
       >
