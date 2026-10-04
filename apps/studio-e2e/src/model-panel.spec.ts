@@ -16,6 +16,7 @@ import {
   openTwoDiagrams,
   panelControl,
   panelField,
+  requiresClipboardApiRead,
   runFromMenu,
   selectByKeyboard,
   selectNode,
@@ -272,6 +273,7 @@ test('cutting an element of a threat that applies to the whole model and pasting
   context,
   page,
 }) => {
+  requiresClipboardApiRead(context);
   await allowClipboard(context);
   await openTwoDiagrams(page);
   await selectByKeyboard(page, paymentGateway);

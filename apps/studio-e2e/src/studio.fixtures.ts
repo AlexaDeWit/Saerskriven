@@ -1,5 +1,6 @@
 import {
   expect,
+  test,
   type BrowserContext,
   type Locator,
   type Page,
@@ -191,7 +192,22 @@ export const allowClipboard = async (
   await context.grantPermissions([...(clipboardPermissions[engine] ?? [])]);
 };
 
-/** Uses native text paste to observe WebKit's system clipboard because this Linux driver refuses programmatic reads. */
+/** Skips successful API-read integrations in Playwright 1.59.1's Linux WebKit 26.4 driver. Native paste remains available. */
+export const requiresClipboardApiRead = (context: BrowserContext): void => {
+  const browser = context.browser();
+  test.skip(
+    process.platform === 'linux' &&
+      browser?.browserType().name() === 'webkit' &&
+      browser.version() === '26.4' &&
+      test.info().config.version === '1.59.1',
+    'Playwright 1.59.1 WebKit 26.4 on Linux returns NotAllowedError from clipboard.readText even with trusted activation and an explicit clipboard-read grant. Native text paste works. Desktop Safari is unverified. See #754 and PR #785.',
+  );
+};
+
+/**
+ * Uses native text paste because this Linux WebKit driver refuses programmatic
+ * clipboard reads. The temporary field blurs the focused control.
+ */
 export const readClipboardText = async (page: Page): Promise<string> => {
   if (page.context().browser()?.browserType().name() !== 'webkit') {
     return page.evaluate(() => navigator.clipboard.readText());
