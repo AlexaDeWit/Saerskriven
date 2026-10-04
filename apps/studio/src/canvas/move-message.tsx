@@ -13,17 +13,12 @@ import type { State } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { keyboardMoved } from './keyboard-moves.js';
 import { currentLayout, selectionPosition } from './layout.js';
+import { selectionRectangleSelector } from './selection-frame.js';
 
 /** Hands on a keydown that has already passed React Flow's own key handlers. */
 export type KeyboardMoveReport = (event: KeyboardEvent) => void;
 
-/** The frame React Flow draws around a box selection, which takes focus and the arrow keys that move the group. */
-export const selectionFrameSelector = '.react-flow__nodesselection-rect';
-
-/**
- * A coordinate as Position and size shows it: the stored number, neither
- * rounded nor grouped, written with the locale's decimal sign.
- */
+/** Uses the locale decimal sign without rounding or grouping, as Position and size does. */
 export function coordinateText(locale: Locale, value: number): string {
   return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 20,
@@ -31,10 +26,7 @@ export function coordinateText(locale: Locale, value: number): string {
   }).format(value);
 }
 
-/**
- * What the canvas says once an arrow key has moved the selection: where
- * Position and size now places it. Nothing while no element is selected.
- */
+/** Reports the stored selection position, or nothing when no element is selected. */
 export function movedSelectionMessage(
   state: Pick<State, 'present' | 'activeDiagram' | 'selection'>,
   { locale, t }: StudioTranslator,
@@ -48,30 +40,15 @@ export function movedSelectionMessage(
       });
 }
 
-/**
- * The text that makes the live region speak `message` even where it repeats
- * `said`, the text last written there: a repeat gains a trailing no-break
- * space, and the repeat after that loses it again.
- */
+/** Alternates a trailing no-break space so the live region speaks repeated messages. */
 export function freshLiveText(said: string, message: string): string {
   return message === said ? `${message}\u00a0` : message;
 }
 
-/**
- * React Flow's own move message, left blank: React Flow writes it from the
- * position before the move, truncated, and `KeyboardMoveMessage` writes the
- * message once the move has landed.
- */
+/** Suppresses React Flow's move message, which uses the position before the move. */
 export const preMoveMessage = (): string => '';
 
-/**
- * Writes React Flow's live region after an arrow key within a node, or on the
- * rectangle React Flow draws around a box selection, has moved the
- * selection, and tells the view's follower through `keyboardMoved`. The
- * canvas wrapper hands `ref` each keydown once React Flow's handler has run,
- * so the store already holds the move. Mounted inside `ReactFlow`, where its
- * store is in reach.
- */
+/** Reports after React Flow handles the keydown and the store holds the move. Requires a React Flow provider. */
 export function KeyboardMoveMessage({
   ref,
 }: {
@@ -102,7 +79,7 @@ function movedBySelectionKey(event: KeyboardEvent): boolean {
   return (
     isResizeKey(event.key) &&
     event.target instanceof Element &&
-    event.target.closest(`.react-flow__node, ${selectionFrameSelector}`) !==
+    event.target.closest(`.react-flow__node, ${selectionRectangleSelector}`) !==
       null
   );
 }

@@ -1,6 +1,6 @@
 import type { Box } from '@saerskriven/canvas';
 import type { Point } from '@saerskriven/model';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { ReactFlow, useStoreApi, type Viewport } from '@xyflow/react';
 import { StrictMode, useEffect, useRef } from 'react';
 import {
@@ -17,9 +17,9 @@ import {
 import { keyboardMoved } from './keyboard-moves.js';
 import {
   KeyboardMoveMessage,
-  selectionFrameSelector,
   type KeyboardMoveReport,
 } from './move-message.js';
+import { selectionRectangleSelector } from './selection-frame.js';
 
 const box = (
   minX: number,
@@ -665,7 +665,7 @@ const mounted = async (
     frame: () =>
       waitFor(() => {
         const found = container.querySelector<HTMLElement>(
-          selectionFrameSelector,
+          selectionRectangleSelector,
         );
         expect(found).not.toBeNull();
         return found ?? document.body;
@@ -684,8 +684,10 @@ const tabOnto = async (node: HTMLElement): Promise<void> => {
 };
 
 const arrowOn = async (node: HTMLElement, init = {}): Promise<void> => {
-  fireEvent.keyDown(node, { key: 'ArrowRight', ...init });
-  await nextFrame();
+  await act(async () => {
+    fireEvent.keyDown(node, { key: 'ArrowRight', ...init });
+    await nextFrame();
+  });
 };
 
 describe('FocusPan', () => {
