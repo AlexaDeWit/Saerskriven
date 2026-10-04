@@ -270,6 +270,20 @@ describe('ResizeControls', () => {
     expect(resizeEnd).toHaveBeenCalledTimes(1);
   });
 
+  it('applies the pointer delta before React Flow measures the node', () => {
+    mouse(control('right'), 'mousedown', 100);
+    mouse(window, 'mousemove', 140);
+    mouse(window, 'mouseup', 140);
+
+    expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+      {
+        position: client.position,
+        size: { ...client.size, width: client.size.width + 40 },
+      },
+      false,
+    );
+  });
+
   it('hands a touch resize one end through a render that gives it new callbacks, and none to the still touch after it', () => {
     touchResize('right', [20, 40]);
 
@@ -356,8 +370,13 @@ describe('ResizeControls', () => {
 
     touch(control('right'), 'touchend', finger(1, 140));
 
-    expect(resizeEnd).toHaveBeenCalledTimes(1);
-    expect(endedBoxes()).not.toContainEqual(pressed);
+    expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
+      {
+        position: client.position,
+        size: { ...client.size, width: client.size.width + 40 },
+      },
+      false,
+    );
   });
 
   it('resizes nothing from an arrow key while a pointer holds the press, and resizes from one once it is over', () => {

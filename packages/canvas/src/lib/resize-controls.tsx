@@ -1,6 +1,8 @@
 import {
   NodeResizeControl,
   ResizeControlVariant,
+  useInternalNode,
+  type OnResize,
   type OnResizeEnd,
   type OnResizeStart,
   type ResizeDragEvent,
@@ -23,7 +25,7 @@ import { svgNumber } from './numbers.js';
 import {
   isResizeKey,
   keyboardResizeStep,
-  minimumResizeExtent,
+  minimumMeasuredResizeExtent,
   resizeBoxByKey,
   resizeBoxFromMeasurement,
   resizeControlsOf,
@@ -47,12 +49,18 @@ type ResizeSubject = {
 
 type Gesture = ResizeDragEvent['identifier'];
 
-type Settled = (pressed: CanvasNode) => NodeBox;
+type Settled = (
+  pressed: CanvasNode,
+  measured: NodeBox['size'],
+  resized: NodeBox['size'],
+) => NodeBox;
 
 type Press = {
   readonly position: ResizeControlPosition;
   readonly subject: ResizeSubject;
+  readonly measured: NodeBox['size'];
   readonly gestures: Set<Gesture>;
+  extent: NodeBox['size'];
   resized: boolean;
   cancelled: boolean;
 };
@@ -63,9 +71,17 @@ type NodePress = {
     gestures: readonly Gesture[],
   ) => boolean;
   readonly pressed: () => boolean;
-  readonly start: (position: ResizeControlPosition, gesture: Gesture) => void;
+  readonly initial: () => Pick<Press, 'subject' | 'measured'> | undefined;
+  readonly start: (
+    position: ResizeControlPosition,
+    gesture: Gesture,
+    measured: NodeBox['size'],
+  ) => void;
   readonly holds: (position: ResizeControlPosition) => boolean;
-  readonly resize: (position: ResizeControlPosition) => void;
+  readonly resize: (
+    position: ResizeControlPosition,
+    extent: NodeBox['size'],
+  ) => void;
   readonly end: (
     position: ResizeControlPosition,
     gesture: Gesture,
@@ -156,7 +172,10 @@ function useNodePress(subject: ResizeSubject): NodePress {
       press.current = undefined;
       if (held.resized) {
         const box = held.cancelled ? ownBox : settled;
-        held.subject.onResizeEnd?.(box(held.subject.node), 'pointer');
+        held.subject.onResizeEnd?.(
+          box(held.subject.node, held.measured, held.extent),
+          'pointer',
+        );
       }
     };
     return {
@@ -165,13 +184,16 @@ function useNodePress(subject: ResizeSubject): NodePress {
         press.current.position !== position &&
         !gestures.some((gesture) => press.current?.gestures.has(gesture)),
       pressed: () => press.current !== undefined,
-      start: (position, gesture) => {
+      initial: () => press.current,
+      start: (position, gesture, measured) => {
         if (press.current?.gestures.delete(gesture) === true) {
           settle(ownBox);
         }
         press.current ??= {
           position,
           subject: rendered.current,
+          measured,
+          extent: measured,
           gestures: new Set(),
           resized: false,
           cancelled: false,
@@ -181,9 +203,10 @@ function useNodePress(subject: ResizeSubject): NodePress {
         }
       },
       holds: (position) => press.current?.position === position,
-      resize: (position) => {
+      resize: (position, extent) => {
         if (press.current?.position === position) {
           press.current.resized = true;
+          press.current.extent = extent;
           press.current.subject.onResize?.();
         }
       },
@@ -218,9 +241,13 @@ function ResizeControl({
   readonly press: NodePress;
   readonly visible: boolean;
 }): ReactElement {
+  const internal = useInternalNode(node.id);
+  const initial = press.initial();
+  const size = initial?.subject.node.size ?? node.size;
+  const measurement = initial?.measured ?? internal?.measured;
   const start = useCallback<OnResizeStart>(
-    (event) => {
-      press.start(position, event.identifier);
+    (event, extent) => {
+      press.start(position, event.identifier, extent);
     },
     [position, press],
   );
@@ -228,21 +255,20 @@ function ResizeControl({
     (): boolean => press.holds(position),
     [position, press],
   );
-  const resize = useCallback((): void => {
-    press.resize(position);
-  }, [position, press]);
+  const resize = useCallback<OnResize>(
+    (_, extent): void => {
+      press.resize(position, extent);
+    },
+    [position, press],
+  );
   const end = useCallback<OnResizeEnd>(
-    (event, extent) => {
-      press.end(position, event.identifier, cancels(event), (pressed) =>
-        resizeBoxFromMeasurement(
-          pressed,
-          position,
-          {
-            width: Math.round(pressed.size.width),
-            height: Math.round(pressed.size.height),
-          },
-          extent,
-        ),
+    (event) => {
+      press.end(
+        position,
+        event.identifier,
+        cancels(event),
+        (pressed, measured, extent) =>
+          resizeBoxFromMeasurement(pressed, position, measured, extent),
       );
     },
     [position, press],
@@ -282,8 +308,14 @@ function ResizeControl({
       style={wholeControl}
     >
       <NodeResizeControl
-        minHeight={Math.round(minimumResizeExtent(node.size.height))}
-        minWidth={Math.round(minimumResizeExtent(node.size.width))}
+        minHeight={minimumMeasuredResizeExtent(
+          size.height,
+          measurement?.height ?? 0,
+        )}
+        minWidth={minimumMeasuredResizeExtent(
+          size.width,
+          measurement?.width ?? 0,
+        )}
         onResize={resize}
         onResizeEnd={end}
         onResizeStart={start}

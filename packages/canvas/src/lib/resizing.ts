@@ -29,6 +29,12 @@ export const shiftedKeyboardResizeStep = 20;
 export const minimumResizeExtent = (current: number): number =>
   Math.min(current, minimumNodeExtent);
 
+/** Translates the model resize floor into measured coordinates, bounded at zero before measurement. */
+export const minimumMeasuredResizeExtent = (
+  current: number,
+  measured: number,
+): number => Math.max(0, measured - (current - minimumResizeExtent(current)));
+
 /** Pointer input includes mouse, pen and touch. */
 export type GestureInput = 'pointer' | 'keyboard';
 
