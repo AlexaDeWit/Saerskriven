@@ -160,7 +160,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'key-when-destination-list-open': 'The flow destination list is open',
   'key-when-destination-focus': 'A destination has focus in the open list',
   'key-when-single-line-editor': 'A single-line canvas editor has focus',
-  'key-when-note-editor': 'A Note editor has focus',
+  'key-when-note-editor': 'A note editor has focus',
   'key-when-canvas-text-editor': 'A canvas text editor has focus',
   'key-when-inside-threat-panel':
     'Focus is inside the threat panel and no listbox is open',
