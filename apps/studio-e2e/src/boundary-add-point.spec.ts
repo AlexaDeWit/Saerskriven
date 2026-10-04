@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Model, Point } from '@saerskriven/model';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   centreOf,
   dragBy,
@@ -39,7 +39,7 @@ const curveIn = (model: Model): readonly Point[] => {
 };
 
 const undoneToSettled = async (page: Page): Promise<void> => {
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
   await expect(pointHandles(page)).toHaveCount(settledPoints.length);
   expect(curveIn(await savedModel(page))).toEqual(settledPoints);
 };

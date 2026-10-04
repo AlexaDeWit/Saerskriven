@@ -4,6 +4,7 @@ import {
   canvasInteractionClassNames,
 } from '@saerskriven/canvas';
 import {
+  clickSvgText,
   canvasSettled,
   centreOf,
   dragBy,
@@ -106,7 +107,7 @@ test('a flow under a selected trust boundary takes a line or label click', async
 
   await page.mouse.click(onOutline.x, onOutline.y);
   await canvasSettled(page);
-  await flow.locator(`.${canvasClassNames.flowLabel}`).click();
+  await clickSvgText(flow.locator(`.${canvasClassNames.flowLabel}`));
   await expect(flow).toHaveClass(/selected/u);
   await expect(boundary).not.toHaveClass(/selected/u);
 });
@@ -115,7 +116,7 @@ test('a trust boundary selects from its drawn name', async ({ page }) => {
   await openTwoDiagrams(page);
   const boundary = nodeNamed(page, storefront.shopNetwork);
 
-  await boundary.locator(`.${canvasClassNames.label}`).click();
+  await clickSvgText(boundary.locator(`.${canvasClassNames.label}`));
 
   await expect(boundary).toHaveClass(/selected/u);
 });

@@ -1,4 +1,24 @@
-/** Every chord the studio registers, as Playwright presses them. */
+import type { Page } from '@playwright/test';
+
+/** The command modifier the studio detects from the page, independent of Playwright's host. */
+export const commandKey = (page: Page): Promise<'Meta' | 'Control'> =>
+  page.evaluate(() => {
+    const hints = navigator as Navigator & {
+      readonly userAgentData?: { readonly platform?: string };
+    };
+    const platform = hints.userAgentData?.platform ?? navigator.platform;
+    return /mac|iphone|ipad|ipod/iu.test(`${platform} ${navigator.userAgent}`)
+      ? 'Meta'
+      : 'Control';
+  });
+
+/** Resolves the command modifier against the page rather than the driver's operating system. */
+export const commandChord = async (
+  page: Page,
+  chord: string,
+): Promise<string> => chord.replace('ControlOrMeta', await commandKey(page));
+
+/** Studio chords with a page-resolved command modifier. Pass them through {@link commandChord} before pressing. */
 export const registeredChords = {
   copy: ['ControlOrMeta+c'],
   cut: ['ControlOrMeta+x'],

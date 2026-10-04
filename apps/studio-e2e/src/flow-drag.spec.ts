@@ -1,6 +1,8 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
+import { commandChord } from './chords.fixtures.js';
 import {
+  screenBoxOf,
   boxOf,
   canvasSettled,
   drawnBy,
@@ -63,9 +65,9 @@ test('a flow follows the element it attaches to through a drag, at either end', 
   );
   const settled = await Promise.all(attached.map(drawnBy));
   const untouched = await drawnBy(detached);
-  const labelSettled = await badgedLabel.boundingBox();
+  const labelSettled = await screenBoxOf(badgedLabel);
   const badgeSettled = await badgedBadge.boundingBox();
-  const outwardLabelSettled = await outwardLabel.boundingBox();
+  const outwardLabelSettled = await screenBoxOf(outwardLabel);
   const placed = await placeOf(dragged);
 
   const at = await pressOn(page, dragged);
@@ -74,9 +76,9 @@ test('a flow follows the element it attaches to through a drag, at either end', 
 
   const handles = handlesOf(await boxOf(dragged));
   const inFlight = await Promise.all(attached.map(drawnBy));
-  const labelInFlight = await badgedLabel.boundingBox();
+  const labelInFlight = await screenBoxOf(badgedLabel);
   const badgeInFlight = await badgedBadge.boundingBox();
-  const outwardLabelInFlight = await outwardLabel.boundingBox();
+  const outwardLabelInFlight = await screenBoxOf(outwardLabel);
   for (const [index, drawn] of inFlight.entries()) {
     expect(drawn, 'the flow was redrawn during the drag').not.toBe(
       settled[index],
@@ -99,9 +101,9 @@ test('a flow follows the element it attaches to through a drag, at either end', 
   for (const [index, line] of attached.entries()) {
     await expect(line).toHaveAttribute('d', inFlight[index]);
   }
-  expectHeld(await badgedLabel.boundingBox(), labelInFlight);
+  expectHeld(await screenBoxOf(badgedLabel), labelInFlight);
   expectHeld(await badgedBadge.boundingBox(), badgeInFlight);
-  expectHeld(await outwardLabel.boundingBox(), outwardLabelInFlight);
+  expectHeld(await screenBoxOf(outwardLabel), outwardLabelInFlight);
 });
 
 test('a group drag carries an attached flow, its label and its badge before pointer-up', async ({
@@ -117,7 +119,7 @@ test('a group drag carries an attached flow, its label and its badge before poin
     `.${canvasClassNames.badge}`,
   );
 
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
 
   const sourceBefore = await boxOf(source);
   const targetBefore = await boxOf(target);
@@ -165,12 +167,12 @@ test('a group drag carries an attached flow, its label and its badge before poin
     }
   }
   const lineLive = await line.boundingBox();
-  const labelLive = await label.boundingBox();
+  const labelLive = await screenBoxOf(label);
   const badgeLive = await badge.boundingBox();
 
   await page.mouse.up();
   expect(await line.boundingBox()).toEqual(lineLive);
-  expect(await label.boundingBox()).toEqual(labelLive);
+  expect(await screenBoxOf(label)).toEqual(labelLive);
   expect(await badge.boundingBox()).toEqual(badgeLive);
 });
 
@@ -185,11 +187,11 @@ test('a quick release keeps the last live label placement', async ({
 
   const at = await pressOn(page, dragged);
   await page.mouse.move(at.x + 70, at.y + 55, { steps: 8 });
-  const live = await label.boundingBox();
+  const live = await screenBoxOf(label);
   expect(live).not.toBeNull();
   await page.mouse.up();
 
-  expect(await label.boundingBox()).toEqual(live);
+  expect(await screenBoxOf(label)).toEqual(live);
 });
 
 test('a one-endpoint move settles its attached label before release', async ({
@@ -203,11 +205,11 @@ test('a one-endpoint move settles its attached label before release', async ({
 
   const at = await pressOn(page, store);
   await page.mouse.move(at.x + 20, at.y);
-  const live = await label.boundingBox();
+  const live = await screenBoxOf(label);
   expect(live).not.toBeNull();
   await page.mouse.up();
 
-  expect(await label.boundingBox()).toEqual(live);
+  expect(await screenBoxOf(label)).toEqual(live);
 });
 
 test('a quick release keeps the live placement of a label beside an opposite flow', async ({
@@ -253,7 +255,7 @@ test('a group drag keeps a badge beside an opposite flow where the drag left it'
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
   const badge = nodeNamed(page, badged).locator(`.${canvasClassNames.badge}`);
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
   const placed = await placeOf(dragged);
 
   const at = await pressOn(page, dragged);

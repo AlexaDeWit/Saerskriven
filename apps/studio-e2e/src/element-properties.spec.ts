@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { commandChord } from './chords.fixtures.js';
 import { audit } from './accessibility.fixtures.js';
 import { canvasSettled } from './canvas.fixtures.js';
 import {
@@ -53,9 +54,9 @@ test('edits every element kind and preserves security facts through save, undo, 
   await privilege.fill('operator');
   await privilege.press('Enter');
   await chooseInPanel(page, 'Privilege level recording', 'Not recorded');
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(privilege).toHaveValue('operator');
-  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+z'));
   await expect(privilege).toHaveCount(0);
   await chooseInPanel(page, 'Privilege level recording', 'Recorded');
   await expect(privilege).toHaveValue('');
@@ -176,7 +177,7 @@ test('edits the description and scope of a process and a note through undo, save
   await reason.press('Tab');
   await chooseInPanel(page, 'Out of scope', 'No');
   await expect(reason).toHaveValue('Run by the payment provider.');
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(flag).toContainText('Yes');
 
   await selectByKeyboard(page, /^Card note, text/u);
@@ -321,14 +322,14 @@ test('deletion and copying update declared relationships through the editor', as
     exact: true,
   });
   await expect(contained).toHaveCount(0);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(contained).toContainText('Catalogue');
-  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+z'));
   await expect(contained).toHaveCount(0);
 
   const boundary = page.locator('.react-flow__node[data-id="el-shop-network"]');
   await boundary.focus();
-  await page.keyboard.press('ControlOrMeta+d');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+d'));
   const copied = (await savedModel(page)).diagrams[0].elements;
   const boundaries = copied.filter(
     (element) =>

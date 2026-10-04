@@ -88,16 +88,11 @@ export function viewPanner(
 }
 
 /**
- * Calls `landed` with each drawn element, flow, resize control, or bend,
- * flow end or curve point handle inside `surface` that focus moves to
- * showing its ring while the keyboard is in charge: from a key press
- * `armsFocusPan` answers until the next pointer press. `:focus-visible` alone
- * is no keyboard test, since Chromium and Safari keep it for a script focus
- * that follows any earlier key press, as a flow drawn by pointer is focused.
- * The call waits for the next frame, when what the key press changed is
- * drawn, and is dropped if focus has moved on by then. Focus the browser
- * hands back to the item that held it when the window lost focus is no move,
- * until a key arms again. Answers the function that stops listening.
+ * Reports drawn items focused while a key press controls the input modality.
+ * Chromium keeps `:focus-visible` after pointer-first script focus, while
+ * this Playwright WebKit build clears it. The next pointer press disarms pan.
+ * Calls wait one frame and ignore focus that moves on or returns from another
+ * window. Returns the function that stops listening.
  */
 export function onKeyboardFocus(
   surface: HTMLElement,

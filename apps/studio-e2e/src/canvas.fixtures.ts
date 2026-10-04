@@ -38,17 +38,33 @@ export const pointHandles = (page: Page): Locator =>
 export const viewportZoom = async (page: Page): Promise<number> =>
   Number(/scale\(([\d.]+)\)/u.exec(await viewportTransform(page))?.[1]);
 
-/** Waits for consecutive matching viewport transforms before a canvas gesture. */
+/** Waits for three matching animation frames so slow browser frames cannot appear at rest between polls. */
 export const canvasSettled = async (page: Page): Promise<void> => {
-  let before = '';
-  await expect
-    .poll(async () => {
-      const now = await viewportTransform(page);
-      const settled = now !== '' && now === before;
-      before = now;
-      return settled;
-    })
-    .toBe(true);
+  await page.waitForFunction(
+    () => {
+      const viewport = document.querySelector('.react-flow__viewport');
+      if (viewport === null) {
+        return false;
+      }
+      return new Promise<boolean>((resolve) => {
+        let before = '';
+        let matching = 0;
+        const read = () => {
+          const now = viewport.getAttribute('style') ?? '';
+          matching = now !== '' && now === before ? matching + 1 : 0;
+          before = now;
+          if (matching >= 3) {
+            resolve(true);
+          } else {
+            requestAnimationFrame(read);
+          }
+        };
+        requestAnimationFrame(read);
+      });
+    },
+    undefined,
+    { polling: 'raf' },
+  );
 };
 
 /** Whether two boxes share any area. Boxes that only touch do not. */
@@ -86,12 +102,20 @@ export const placeOf = async (node: Locator): Promise<string> => {
   return /translate\([^)]*\)/u.exec(style)?.[0] ?? style;
 };
 
-/** Where a control is drawn on screen, held to be drawn at all. */
+/** SVG text uses the page rect because the WebKit driver misplaces its box. Other controls must have a driver box. */
 export const screenBoxOf = async (
   target: Locator,
   called?: string,
 ): Promise<Box> => {
-  const box = await target.boundingBox();
+  const svgText = await target.evaluate(
+    (node) => node instanceof SVGTextElement,
+  );
+  const box = svgText
+    ? await target.evaluate((node) => {
+        const { x, y, width, height } = node.getBoundingClientRect();
+        return { x, y, width, height };
+      })
+    : await target.boundingBox();
   expect(
     box,
     called === undefined ? undefined : `${called} is on the page`,
@@ -125,6 +149,18 @@ export const edgesOf = async (
 export const centreOf = async (target: Locator): Promise<Point> => {
   const box = await screenBoxOf(target);
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+};
+
+/** Clicks an SVG label at its page-side centre instead of the misplaced WebKit driver box. */
+export const clickSvgText = async (
+  target: Locator,
+  clickCount = 1,
+): Promise<void> => {
+  await expect(target).toBeVisible();
+  await canvasSettled(target.page());
+  const at = await centreOf(target);
+  expect(await reachesAt(target, at), 'the SVG text is covered').toBe(true);
+  await target.page().mouse.click(at.x, at.y, { clickCount });
 };
 
 /** Whether the topmost element at a screen point is `target` or inside it. */

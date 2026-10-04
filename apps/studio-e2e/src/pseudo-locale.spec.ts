@@ -78,9 +78,8 @@ const exceptions: readonly {
   readonly state?: string;
 }[] = [
   {
-    text: /^(?:F\d{1,2}|[A-Z\d?=+-])$/u,
-    reason:
-      'a character or function key is written as its key cap prints it, in every language',
+    text: /^(?:[⇧⌘]*(?:F\d{1,2}|[A-Z\d?=+-])|[⇧⌘]+)$/u,
+    reason: 'a key cap or Apple modifier symbol is the same in every language',
   },
   {
     text: /^(?:English \(Canada\)|Français \(Canada\)|Svenska)$/u,

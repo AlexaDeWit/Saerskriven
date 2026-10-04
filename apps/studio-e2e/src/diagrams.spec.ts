@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   canvasContainer,
   canvasSettled,
@@ -175,7 +175,7 @@ test('switching clears the selection and adds no history, so undo has nothing to
 
   await page.keyboard.press(registeredChords['next-diagram'][0]);
   await expect(nodeNamed(page, onSecond)).toHaveCount(1);
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
 
   await expect(nodeNamed(page, onSecond)).toHaveCount(1);
   await openMenu(page);
@@ -235,7 +235,7 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
 
   await openSwitcher(page);
   await menuItem(page, 'Rename diagram').click();
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('Control+a');
   await page.keyboard.press('Backspace');
   await page.keyboard.press('Enter');
   await expect(diagramTitleField(page)).toHaveAttribute('aria-invalid', 'true');
@@ -260,7 +260,7 @@ test('a diagram is renamed in place, Escape keeps the old title, and undo takes 
   );
   await page.keyboard.press('Escape');
 
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
   await expect(diagramSwitcher(page)).toHaveAccessibleName(
     `Diagram: ${firstTitle}`,
   );

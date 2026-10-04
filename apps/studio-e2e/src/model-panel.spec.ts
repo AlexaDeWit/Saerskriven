@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import { onScreen, screenBoxOf } from './canvas.fixtures.js';
 import {
   allowClipboard,
@@ -276,9 +276,9 @@ test('cutting an element of a threat that applies to the whole model and pasting
   await openTwoDiagrams(page);
   await selectByKeyboard(page, paymentGateway);
 
-  await page.keyboard.press('ControlOrMeta+x');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+x'));
   await expect(nodeNamed(page, paymentGateway)).toHaveCount(0);
-  await page.keyboard.press('ControlOrMeta+v');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+v'));
 
   await expect(nodeNamed(page, paymentGateway)).toHaveCount(1);
   await expect(threatSummary(page, cardData)).toHaveAccessibleName(/^4 /u);

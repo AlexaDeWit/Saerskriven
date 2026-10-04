@@ -30,7 +30,7 @@ import {
   twoDiagrams,
   undoOffered,
 } from './studio.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 
 const describedNumbers = (control: Locator): Promise<readonly number[]> =>
   control.evaluate((element) =>
@@ -192,7 +192,7 @@ test('Tab out of a new record keeps it and reaches Add, and undoing the record f
   const status = panelField(page, 'combobox', 'Assumption 1 status');
   await status.focus();
 
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
 
   await expect(status).toHaveCount(0);
   await expect(panelControl(page, 'Add assumption')).toBeFocused();

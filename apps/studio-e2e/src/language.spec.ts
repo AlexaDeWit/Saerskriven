@@ -1,7 +1,11 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { Locale } from '@saerskriven/i18n';
 import { audit } from './accessibility.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import {
+  commandChord,
+  commandKey,
+  registeredChords,
+} from './chords.fixtures.js';
 import {
   arrowTo,
   closeMenu,
@@ -137,9 +141,11 @@ for (const { locale, browser, prefill } of passes) {
       const renamed = nodeNamed(page, /^Kafé Ödmjuk Ångström à Québec, /u);
       await expect(renamed).toHaveCount(1);
       await renamed.focus();
-      await page.keyboard.press('ControlOrMeta+z');
+      await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
       await expect(nodeNamed(page, storefront.webShop)).toHaveCount(1);
-      await page.keyboard.press('ControlOrMeta+Shift+z');
+      await page.keyboard.press(
+        await commandChord(page, 'ControlOrMeta+Shift+z'),
+      );
       await expect(renamed).toHaveCount(1);
       const announced = await editAnnouncement(page).textContent();
       expect(announced).not.toBe('');
@@ -254,7 +260,7 @@ for (const [locale, reader] of Object.entries(keyReaders)) {
     }
     await expect(
       reference.locator('[data-command-id="save-as"] kbd'),
-    ).toHaveText([reader.saveAs]);
+    ).toHaveText([(await commandKey(page)) === 'Meta' ? '⇧⌘S' : reader.saveAs]);
     await expect(
       reference.locator('[data-command-id="delete"] kbd'),
     ).toHaveText(reader.removal);

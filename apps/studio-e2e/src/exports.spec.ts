@@ -3,6 +3,7 @@ import { committedText, sha256Of } from '@saerskriven/model/fixtures';
 import { canvasSettled } from './canvas.fixtures.js';
 import { exportGolden } from './exports.fixtures.js';
 import {
+  downloadName,
   exportedFile,
   openFile,
   openFallback,
@@ -17,7 +18,9 @@ test('exports the diagram, picture, register and Typst source the CLI writes, by
 
   await test.step('the drawing', async () => {
     const output = await exportedFile(page, 'Diagram as SVG');
-    expect.soft(output.name).toBe('two-diagrams - Taking an order.svg');
+    expect
+      .soft(output.name)
+      .toBe(downloadName(page, 'two-diagrams - Taking an order.svg'));
     expect
       .soft(output.bytes)
       .toEqual(exportGolden('two-diagrams-storefront.snapshot.svg'));
@@ -25,7 +28,9 @@ test('exports the diagram, picture, register and Typst source the CLI writes, by
 
   await test.step('the picture', async () => {
     const output = await exportedFile(page, 'Diagram as PNG');
-    expect.soft(output.name).toBe('two-diagrams - Taking an order.png');
+    expect
+      .soft(output.name)
+      .toBe(downloadName(page, 'two-diagrams - Taking an order.png'));
     expect
       .soft(sha256Of(output.bytes))
       .toBe(sha256Of(exportGolden('two-diagrams-storefront.snapshot.png')));
@@ -62,6 +67,10 @@ test('names the open diagram, cleaned for a file name, when the model has severa
   const drawing = await exportedFile(page, 'Diagram as SVG');
   const picture = await exportedFile(page, 'Diagram as PNG');
 
-  expect(drawing.name).toBe('two-diagrams - Orders_ A_B_.svg');
-  expect(picture.name).toBe('two-diagrams - Orders_ A_B_.png');
+  expect(drawing.name).toBe(
+    downloadName(page, 'two-diagrams - Orders_ A_B_.svg'),
+  );
+  expect(picture.name).toBe(
+    downloadName(page, 'two-diagrams - Orders_ A_B_.png'),
+  );
 });

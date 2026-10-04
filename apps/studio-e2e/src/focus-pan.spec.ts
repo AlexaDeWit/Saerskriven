@@ -595,6 +595,7 @@ test('a pointer press on an element that lies partly outside the viewport leaves
 
 test('an element placed by pointer across the border and named with Enter leaves the view where it is, though Tab was pressed before', async ({
   page,
+  browserName,
 }) => {
   await openEveryGlyph(page);
   await canvasSettled(page);
@@ -612,7 +613,11 @@ test('an element placed by pointer across the border and named with Enter leaves
 
   const placed = nodeNamed(page, /^New actor, actor/u);
   await expect(placed).toBeFocused();
-  await expect(placed).toHaveCSS('outline-style', 'solid');
+  await expect(placed).toHaveCSS(
+    'outline-style',
+    browserName === 'webkit' ? 'none' : 'solid',
+  );
+  await expect(placed).toHaveClass(/selected/u);
   expect(await insideTheViewport(page, placed)).toBe(false);
   await canvasSettled(page);
   expect(await viewportTransform(page)).toBe(before);

@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { decimalsOf, type Model } from '@saerskriven/model';
 import { boxSelect, canvasSettled, dragBy } from './canvas.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   nodeNamed,
   openFallback,
@@ -114,9 +114,9 @@ test('a drag stores three decimals at most and the arrow key after it one, said 
     y: Number(shown.y),
   });
 
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
   expect(actorPosition(await savedModel(page))).toEqual(dragged);
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
   expect(actorPosition(await savedModel(page))).toEqual(typed);
 });
 

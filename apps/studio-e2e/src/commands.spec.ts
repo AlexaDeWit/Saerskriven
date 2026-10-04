@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { testDataPath } from '@saerskriven/model/fixtures';
 import { audit } from './accessibility.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import {
+  commandChord,
+  commandKey,
+  registeredChords,
+} from './chords.fixtures.js';
 import {
   canvasSettled,
   elementNodes,
@@ -37,17 +41,20 @@ test('undo and redo move the history from the keyboard, on either redo chord', a
   await page.keyboard.press('Enter');
   await expect(added).toHaveCount(1);
 
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
   await expect(added).toHaveCount(0);
 
-  await page.keyboard.press(registeredChords.redo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.redo[0]));
   await expect(added).toHaveCount(1);
 
-  await page.keyboard.press(registeredChords.undo[0]);
-  await expect(added).toHaveCount(0);
-
-  await page.keyboard.press(registeredChords.redo[1]);
-  await expect(added).toHaveCount(1);
+  if ((await commandKey(page)) === 'Control') {
+    await page.keyboard.press(
+      await commandChord(page, registeredChords.undo[0]),
+    );
+    await expect(added).toHaveCount(0);
+    await page.keyboard.press(registeredChords.redo[1]);
+    await expect(added).toHaveCount(1);
+  }
 });
 
 test('delete removes the selection from outside the canvas, on either key', async ({
@@ -74,14 +81,20 @@ test('zooming and fitting move the viewport and nothing else', async ({
   await openTwoDiagrams(page);
   const fitted = await viewportTransform(page);
 
-  await page.keyboard.press(registeredChords['zoom-in'][0]);
+  await page.keyboard.press(
+    await commandChord(page, registeredChords['zoom-in'][0]),
+  );
   await expect.poll(async () => viewportTransform(page)).not.toBe(fitted);
   const closer = await viewportTransform(page);
 
-  await page.keyboard.press(registeredChords['zoom-out'][0]);
+  await page.keyboard.press(
+    await commandChord(page, registeredChords['zoom-out'][0]),
+  );
   await expect.poll(async () => viewportTransform(page)).not.toBe(closer);
 
-  await page.keyboard.press(registeredChords['fit-to-view'][0]);
+  await page.keyboard.press(
+    await commandChord(page, registeredChords['fit-to-view'][0]),
+  );
   await expect.poll(async () => viewportTransform(page)).toBe(fitted);
 
   await expect(elementNodes(page)).toHaveCount(7);
@@ -92,12 +105,17 @@ test('saving is one chord, and saving as asks the format the browser cannot', as
 }) => {
   await openFallback(page);
 
-  const native = await savedByKey(page, registeredChords.save[0]);
+  const native = await savedByKey(
+    page,
+    await commandChord(page, registeredChords.save[0]),
+  );
 
   expect(native.name).toBe('threat-model.yaml');
   expect(native.text).toContain('formatVersion');
 
-  await page.keyboard.press(registeredChords['save-as'][0]);
+  await page.keyboard.press(
+    await commandChord(page, registeredChords['save-as'][0]),
+  );
 
   const elsewhere = await savedFromMenu(page, 'Save as Threat Dragon JSON');
 
@@ -112,7 +130,7 @@ test('opening is one chord, through the picker the browser offers', async ({
 
   const chooser = page.waitForEvent('filechooser');
   await expect(page.getByTestId('file-input')).toHaveCount(1);
-  await page.keyboard.press(registeredChords.open[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.open[0]));
   await (await chooser).setFiles(testDataPath(twoDiagramsFile));
 
   await expect(page.getByTestId('failure-notice')).toBeEmpty();
@@ -130,7 +148,7 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
   const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
   await expect(title).toBeFocused();
 
-  await page.keyboard.press(registeredChords['select-all'][0]);
+  await page.keyboard.press('Control+a');
   await page.keyboard.type('actor');
   await page.keyboard.press(registeredChords['shortcut-reference'][0]);
   await expect(title).toHaveValue('actor?');
@@ -146,11 +164,14 @@ test('a shortcut waits while a name is being typed, and saving and undo do not',
   await expect(title).toHaveValue('actor?');
   await expect(elementNodes(page)).toHaveCount(2);
 
-  const written = await savedByKey(page, registeredChords.save[0]);
+  const written = await savedByKey(
+    page,
+    await commandChord(page, registeredChords.save[0]),
+  );
   expect(written.name).toBe('threat-model.yaml');
 
   await title.focus();
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
 
   await expectFileShown(page, 'threat-model.yaml', 'Saerskriven YAML');
   await expect(menuButton(page)).toHaveAccessibleName(/unsaved changes/u);
@@ -174,11 +195,11 @@ test('every control says which key runs it: beside a menu item, and as a note be
   await expect(menuItem(page, 'Save')).toBeVisible();
   await expect(menuItem(page, 'Save')).toHaveAttribute(
     'aria-keyshortcuts',
-    'Control+S',
+    `${await commandKey(page)}+S`,
   );
   await expect(menuItem(page, 'Undo')).toHaveAttribute(
     'aria-keyshortcuts',
-    'Control+Z',
+    `${await commandKey(page)}+Z`,
   );
 });
 
@@ -221,7 +242,9 @@ test('the complete shortcut reference opens by menu or key and returns focus', a
   await page.keyboard.press('Enter');
   await expect(fileCategory).toHaveAttribute('aria-expanded', 'true');
   await expect(
-    reference.locator('[data-command-id="save"]').getByText('Ctrl+S'),
+    reference
+      .locator('[data-command-id="save"]')
+      .getByText((await commandKey(page)) === 'Meta' ? '⌘S' : 'Ctrl+S'),
   ).toBeVisible();
   await reference
     .getByRole('button', { name: 'Canvas navigation', exact: true })
@@ -292,7 +315,15 @@ test('shortcut alternatives stack without squeezing the action label', async ({
       '[data-contextual-id="choose-bend-segment"]',
     ]) {
       const keys = reference.locator(selector).locator('kbd');
-      await expect(keys).toHaveCount(2);
+      await expect(keys).toHaveCount(
+        selector === '[data-command-id="redo"]' &&
+          (await commandKey(page)) === 'Meta'
+          ? 1
+          : 2,
+      );
+      if ((await keys.count()) === 1) {
+        continue;
+      }
       const first = await keys.nth(0).boundingBox();
       const second = await keys.nth(1).boundingBox();
       expect(first).not.toBeNull();
