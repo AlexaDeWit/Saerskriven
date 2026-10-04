@@ -151,12 +151,15 @@ export function attachableThreats(
     ...offered.filter((threat) => threat.elements.length > 0),
   ];
   return distinctTexts(
-    detachedFirst.map((threat) => ({
-      id: threat.id,
-      label: threat.title,
-      unnamed: threat.title === '',
-      threat,
-    })),
+    detachedFirst.map((threat) => {
+      const unnamed = isEmptyName(threat.title);
+      return {
+        id: threat.id,
+        label: unnamed ? '' : threat.title,
+        unnamed,
+        threat,
+      };
+    }),
   ).map(([{ threat }, text]) => ({
     id: threat.id,
     text: { ...text, detail: threatDetail(threat, t) },

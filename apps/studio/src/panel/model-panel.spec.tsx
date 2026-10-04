@@ -156,11 +156,14 @@ describe(
       expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
     });
 
-    it('heads itself Untitled while the model has no title', () => {
+    it.each([
+      ['no title', ''],
+      ['a title of only spaces', '   '],
+    ])('heads itself Untitled while the model has %s', (_, title) => {
       modelStore.setState(
         initialState({
           ...recordedModel,
-          metadata: { ...recordedModel.metadata, title: '' },
+          metadata: { ...recordedModel.metadata, title },
         }),
         true,
       );

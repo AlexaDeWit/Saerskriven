@@ -281,11 +281,12 @@ describe('the register document', () => {
     });
   });
 
-  it('titles itself bare where the model carries no title', () => {
+  it.each([
+    ['no title', ''],
+    ['a title of only spaces', '   '],
+  ])('titles itself bare where the model carries %s', (_, title) => {
     expect(
-      headingsOf(
-        renderRegister(modelFrom({ threats: [], title: '' }), 'en-CA'),
-      )[0],
+      headingsOf(renderRegister(modelFrom({ threats: [], title }), 'en-CA'))[0],
     ).toEqual({
       depth: 1,
       text: 'Threat register',

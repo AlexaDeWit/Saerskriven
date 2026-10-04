@@ -554,6 +554,22 @@ describe('attachableThreats', () => {
       t('panel.detail-applies-to-model'),
     );
   });
+
+  it.each([
+    ['no title', ''],
+    ['a title of only spaces', '   '],
+  ])('offers a threat with %s under its id alone', (_, title) => {
+    const [{ text }] = attachableThreats(
+      [{ ...sampleThreat, title }],
+      processElement,
+      activeTranslator(),
+    );
+
+    expect(text).toMatchObject({
+      label: '',
+      suffix: `(${sampleThreat.id})`,
+    });
+  });
 });
 
 describe('threatAfterDeleting', () => {

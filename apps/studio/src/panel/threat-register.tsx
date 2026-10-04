@@ -1,5 +1,5 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
-import type { ElementId, Threat } from '@saerskriven/model';
+import { isEmptyName, type ElementId, type Threat } from '@saerskriven/model';
 import { Fragment, memo, useEffect, useId, useRef, useState } from 'react';
 import { announce } from '../canvas/announcements.js';
 import { revealElement } from '../canvas/diagrams.js';
@@ -206,7 +206,7 @@ function RegisterRow({
           }}
           type="button"
         >
-          {threat.title === '' ? (
+          {isEmptyName(threat.title) ? (
             <span className={styles.untitled}>
               {t('panel.untitled-threat', { number: threat.number })}
             </span>

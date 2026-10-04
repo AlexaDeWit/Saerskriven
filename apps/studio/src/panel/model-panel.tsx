@@ -1,4 +1,4 @@
-import type { ModelMetadataChange } from '@saerskriven/model';
+import { isEmptyName, type ModelMetadataChange } from '@saerskriven/model';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   announceRefusal,
@@ -65,7 +65,7 @@ export function ModelPanel({
     <PanelFrame
       closeLabel={t('panel.close-model')}
       closeShortcut="close-model-panel"
-      heading={title === '' ? t('defaults.untitled-model') : title}
+      heading={isEmptyName(title) ? t('defaults.untitled-model') : title}
       label={t('commands.label-model-panel')}
       onClose={onClose}
       onCover={onCover}

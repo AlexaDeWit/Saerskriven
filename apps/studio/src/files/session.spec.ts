@@ -297,6 +297,7 @@ describe('naming', () => {
     ['..hidden. .', 'hidden'],
     ['Översikt Schéma', 'Översikt Schéma'],
     ['', 'Namnlöst'],
+    ['   ', 'Namnlöst'],
     ['  . ', 'Namnlöst'],
   ])('cleans the title %j to %j', (title, expected) => {
     expect(fileTitle(title, 'Namnlöst')).toBe(expected);
