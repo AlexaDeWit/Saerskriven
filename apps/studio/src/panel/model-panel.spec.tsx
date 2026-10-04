@@ -1,4 +1,4 @@
-import type { Model, Threat } from '@saerskriven/model';
+import type { Model, Threat, ThreatId } from '@saerskriven/model';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -22,6 +22,7 @@ import { dispatch, modelStore } from '../store/store.js';
 import { runRegistered } from '../commands/commands.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
 import { ModelPanel } from './model-panel.js';
+import { openInModelPanel } from './panel-focus.js';
 import {
   chooseFrom,
   editorTimeout,
@@ -49,12 +50,18 @@ const showPanel = ({
   onHeld = noop,
   onClose = noop,
   drafts = new Map(),
+  threatId: chosenThreat,
 }: {
   readonly held?: RefusedField;
   readonly onHeld?: (draft: RefusedField | undefined) => void;
   readonly onClose?: () => void;
   readonly drafts?: HeldDrafts;
+  readonly threatId?: ThreatId;
 } = {}): void => {
+  modelStore.setState({ modelPanel: true });
+  if (chosenThreat !== undefined) {
+    openInModelPanel({ threatId: chosenThreat, opened: noop });
+  }
   render(
     <ModelPanel
       drafts={drafts}
@@ -183,16 +190,11 @@ describe(
       ).toBeDefined();
     });
 
-    it('lists every threat in the model in review order, whatever element it is on', () => {
+    it('shows one threat while the register owns the global list', () => {
       withLooseThreat();
       showPanel();
 
-      expect(listed()).toEqual([
-        looseThreat,
-        firstThreat,
-        secondThreat,
-        mitigatedThreat,
-      ]);
+      expect(listed()).toEqual([looseThreat]);
     });
 
     it('names the elements each threat is on, and says where one is on none', () => {
@@ -205,6 +207,9 @@ describe(
           t('panel.on-no-element'),
         ),
       ).toBe(true);
+      act(() => {
+        openInModelPanel({ threatId: firstThreat, opened: noop });
+      });
       expect(
         summary(/A reader edits/u).textContent?.includes(
           t('panel.on-elements', { list: ['Reader'] }),
@@ -256,7 +261,7 @@ describe(
         elements: [],
         appliesToModel: true,
       });
-      expect(listed()).toEqual([firstThreat, secondThreat]);
+      expect(listed()).toEqual([firstThreat]);
       expect(currentAnnouncement().message).toContain(
         t('canvas.threat-stays-on-model'),
       );
@@ -320,7 +325,7 @@ describe(
       await chooseFrom(wholeModel, t('enums.no'));
 
       expect(present().threats[0]).toEqual(recordedModel.threats[0]);
-      expect(listed()).toEqual([firstThreat, secondThreat]);
+      expect(listed()).toEqual([firstThreat]);
       expect(currentAnnouncement().message).toBe('');
     });
 
@@ -441,8 +446,7 @@ describe(
           }),
         );
       });
-      showPanel();
-      await user.click(summary(/New threat/u));
+      showPanel({ threatId: present().threats.at(-1)?.id });
       await user.click(textbox('Title'));
 
       runRegistered('undo');
@@ -476,7 +480,7 @@ describe(
       expect(textbox('Description').getAttribute('aria-invalid')).toBe('true');
     });
 
-    it('keeps a refused draft on screen where an undo brings another threat back, with focus left on the Threats tab', async () => {
+    it('keeps a refused draft on screen where undo restores another threat', async () => {
       const user = userEvent.setup();
       act(() => {
         dispatch(Action.RemoveThreat({ threatId: secondThreat }));
@@ -485,7 +489,11 @@ describe(
       showPanel();
       await user.click(summary(/A reader edits/u));
       await typeRefusedProse(user);
-      await user.click(summary(/A reader sees/u));
+      await user.click(threatsTab());
+      expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
+      act(() => {
+        openInModelPanel({ threatId: secondThreat, opened: noop });
+      });
       runRegistered('redo');
       expect(present().threats).toHaveLength(1);
       expect(document.activeElement).toBe(threatsTab());
@@ -493,9 +501,9 @@ describe(
       runRegistered('undo');
 
       expect(present().threats).toHaveLength(2);
-      expect(summary(/A reader sees/u).getAttribute('aria-expanded')).toBe(
-        'false',
-      );
+      expect(
+        screen.queryByRole('button', { name: /A reader sees/u }),
+      ).toBeNull();
       expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
       expect(document.activeElement).toBe(threatsTab());
     });

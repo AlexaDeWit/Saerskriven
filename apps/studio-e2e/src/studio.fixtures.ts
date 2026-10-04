@@ -325,6 +325,36 @@ export const runFromMenu = async (page: Page, name: string): Promise<void> => {
   await expect(page.getByRole('menu')).toHaveCount(0);
 };
 
+/** The panel shared by a focused global threat and model metadata. */
+export const modelPanel = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Model', exact: true });
+
+/** Opens one threat through the Register, or the model controls through its Details action. */
+export const openModelPanel = async (
+  page: Page,
+  threat?: string | RegExp,
+): Promise<void> => {
+  await runFromMenu(page, 'Threat register');
+  const register = page.getByRole('region', {
+    name: 'Threat register',
+    exact: true,
+  });
+  if (threat === undefined) {
+    await register
+      .getByRole('button', { name: 'Details', exact: true })
+      .click();
+    await modelPanel(page)
+      .getByRole('tab', { name: /^Threats \d+$/u })
+      .click();
+  } else {
+    await register.getByRole('button', { name: threat, exact: true }).click();
+    if (await register.isVisible()) {
+      await page.keyboard.press('Escape');
+    }
+  }
+  await expect(modelPanel(page)).toBeVisible();
+};
+
 /** Whether the menu offers Undo, read by opening the menu and putting it away again. */
 export const undoOffered = async (
   page: Page,

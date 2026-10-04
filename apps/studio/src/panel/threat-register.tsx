@@ -17,6 +17,7 @@ import {
   carriedChoice,
   chooseInThreatRegister,
   closeThreatRegister,
+  detailsFromThreatRegister,
   leaveThreatRegister,
   registerFocusHandler,
   useThreatRegisterOpen,
@@ -24,20 +25,7 @@ import {
 import styles from './threat-register.module.css';
 import { threatAttachments } from './threats.js';
 
-/**
- * The threat register while it is open, over the canvas area left of the
- * panel: every threat in the model as a table of number, title, elements,
- * severity and status, in review order as it opens and held while it stays
- * open, as the model panel's list is. A threat that applies to the model
- * leads its elements with the whole model. Choosing a row opens its threat
- * on the model panel and marks the row, leaving focus there, or where the
- * register hides that panel under it, closes the register onto the threat
- * and marks the row as the register next opens. An element's name closes the
- * register and selects the element. `cover` is how much of the canvas the
- * panel covers, the default panel width standing in while no panel is open,
- * so a first choice opens the model panel without moving the register.
- * Canvas-only parent renders do not rerender it.
- */
+/** The global threat index, with rows opening individual editors and links selecting diagram elements. */
 export const ThreatRegister = memo(function ThreatRegister({
   cover,
 }: {
@@ -107,6 +95,13 @@ function Register({ cover }: { readonly cover: number }) {
           {t('commands.label-threat-register')}{' '}
           <span className={styles.count}>{threats.length}</span>
         </h2>
+        <button
+          className={styles.details}
+          onClick={detailsFromThreatRegister}
+          type="button"
+        >
+          {t('panel.details')}
+        </button>
         <button
           aria-label={t('panel.close-register')}
           className={styles.close}

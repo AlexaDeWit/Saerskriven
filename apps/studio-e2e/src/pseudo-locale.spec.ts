@@ -250,12 +250,21 @@ test('the pseudo-locale shows no app text outside the catalogues', async ({
   await page.keyboard.press('Escape');
 
   await menuButton(page).click();
-  await menuItem(page, pseudoText('Model')).click();
+  await menuItem(page, pseudoText('Threat register')).click();
+  const register = page.getByRole('region', {
+    name: pseudoText('Threat register'),
+    exact: true,
+  });
+  await expect(register).toBeVisible();
+  await register
+    .getByRole('button', { name: pseudoText('Details'), exact: true })
+    .click();
   const model = page.getByRole('region', {
     name: pseudoText('Model'),
     exact: true,
   });
   await expect(model).toBeVisible();
+  await model.getByRole('tab', { name: pseudoText('Threats') }).click();
   await scanned(page, 'on the model panel Threats tab', found);
   await model
     .getByRole('tab', { name: pseudoText('Details'), exact: true })
