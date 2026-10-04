@@ -9,8 +9,7 @@ import { modelStore } from '../store/store.js';
 import { positionChanges, unmoved } from './changes.js';
 import type { DiagramNode } from './nodes.js';
 
-const draggedSelector =
-  '.react-flow__node.draggable, .react-flow__nodesselection-rect';
+const draggedSelector = '.react-flow__node.draggable';
 
 type Drag = {
   readonly selection: readonly ElementId[];
@@ -34,8 +33,8 @@ type Drag = {
  * mouse release it waits for, since the real one may land outside the
  * window. That gesture starts at the press, before React Flow starts the
  * drag, so a blur also lets go of a press still held on a node React Flow may
- * drag or on the frame it draws around a box selection. A press on a control
- * inside a node drags no node, and a blur leaves it alone.
+ * drag. A press on a control inside a node drags no node, and a blur leaves
+ * it alone.
  *
  * A change React Flow reports outside a drag passes as the keyboard's: only
  * an arrow key moves a node then. React Flow reports an arrow-key move and a

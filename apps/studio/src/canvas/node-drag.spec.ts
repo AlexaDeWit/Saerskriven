@@ -24,10 +24,7 @@ node.append(control);
 const fixedNode = document.createElement('div');
 fixedNode.className = 'react-flow__node';
 
-const frame = document.createElement('div');
-frame.className = 'react-flow__nodesselection-rect';
-
-document.body.append(node, fixedNode, frame);
+document.body.append(node, fixedNode);
 
 const renderNodeDrag = () => {
   const moveNodes =
@@ -174,24 +171,18 @@ describe('useNodeDrag', () => {
     expect(released.mock.calls[0]?.[0].view).toBe(window);
   });
 
-  it.each([
-    { named: 'a node React Flow may drag', target: node },
-    { named: 'the frame around a box selection', target: frame },
-  ])(
-    'lets go of a press on $named when the window loses focus before the drag starts, once, and moves nothing',
-    ({ target }) => {
-      const { moveNodes } = renderNodeDrag();
-      const released = releasesHeard();
+  it('lets go of a press on a node React Flow may drag when the window loses focus before the drag starts, once, and moves nothing', () => {
+    const { moveNodes } = renderNodeDrag();
+    const released = releasesHeard();
 
-      press(target);
-      blur();
-      blur();
+    press(node);
+    blur();
+    blur();
 
-      expect(released).toHaveBeenCalledOnce();
-      expect(released.mock.calls[0]?.[0].view).toBe(window);
-      expect(moveNodes).not.toHaveBeenCalled();
-    },
-  );
+    expect(released).toHaveBeenCalledOnce();
+    expect(released.mock.calls[0]?.[0].view).toBe(window);
+    expect(moveNodes).not.toHaveBeenCalled();
+  });
 
   it.each([
     {

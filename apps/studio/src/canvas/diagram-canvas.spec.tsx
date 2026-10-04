@@ -687,14 +687,17 @@ describe('DiagramCanvas', () => {
     it('is let go before the drag starts, so the element follows no later pointer move and the next release records nothing', async () => {
       render(<DiagramCanvas />);
       const before = readerBox();
+      const drawnAt = reader().style.transform;
 
       fireEvent(reader(), mouseEvent('mousedown', 100));
       fireEvent(window, new Event('blur'));
       fireEvent(window, mouseEvent('mousemove', 130));
       fireEvent(window, mouseEvent('mousemove', 160));
+      const followed = reader().style.transform;
       fireEvent(window, mouseEvent('mouseup', 160));
       await clickSuppressionLifted();
 
+      expect(followed).toBe(drawnAt);
       expect(readerBox()).toEqual(before);
       expect(modelStore.getState().past).toHaveLength(0);
     });
