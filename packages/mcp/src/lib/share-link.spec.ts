@@ -1,7 +1,7 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { brotliUnbuilt, brotliWasm } from '@saerskriven/formats/fixtures';
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import {
-  hostedStudioUrl,
   readShareLink,
   renderShareLinkWriteFailure,
   shareLinkLimit,

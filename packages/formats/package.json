@@ -26,6 +26,11 @@
       "import": "./src/fixtures.ts",
       "default": "./src/fixtures.ts"
     },
+    "./hosted-studio": {
+      "types": "./src/hosted-studio.ts",
+      "import": "./src/hosted-studio.ts",
+      "default": "./src/hosted-studio.ts"
+    },
     "./share-link": {
       "types": "./src/share-link.ts",
       "import": "./src/share-link.ts",

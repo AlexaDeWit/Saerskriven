@@ -37,7 +37,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { readAnyFormat } from '@saerskriven/formats';
-import { hostedStudioUrl } from '@saerskriven/formats/share-link';
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import { Either } from 'effect';
 import { join } from 'node:path';
 import {

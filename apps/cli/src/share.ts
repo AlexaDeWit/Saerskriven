@@ -1,7 +1,7 @@
 import type { DetectedRead } from '@saerskriven/formats';
 import { brotliWasmFile } from '@saerskriven/formats/build-assets';
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import {
-  hostedStudioUrl,
   renderShareLinkWriteFailure,
   writeShareLink,
 } from '@saerskriven/formats/share-link';
