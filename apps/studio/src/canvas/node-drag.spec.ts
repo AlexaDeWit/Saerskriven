@@ -2,7 +2,7 @@ import type { GestureInput } from '@saerskriven/canvas';
 import { ViewKeepingMouseEvent } from '@saerskriven/canvas/fixtures';
 import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange } from '@xyflow/react';
-import { act, renderHook } from '@testing-library/react';
+import { act, fireEvent, renderHook } from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { actorElement, processElement } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -13,6 +13,21 @@ import { nodesById, type DiagramNode } from './nodes.js';
 import { selectTool } from './tools.js';
 
 const pair = [actorElement, processElement];
+
+const node = document.createElement('div');
+node.className = 'react-flow__node draggable';
+
+const control = document.createElement('button');
+control.className = 'nodrag';
+node.append(control);
+
+const fixedNode = document.createElement('div');
+fixedNode.className = 'react-flow__node';
+
+const frame = document.createElement('div');
+frame.className = 'react-flow__nodesselection-rect';
+
+document.body.append(node, fixedNode, frame);
 
 const renderNodeDrag = () => {
   const moveNodes =
@@ -73,6 +88,19 @@ const blur = (): void => {
   });
 };
 
+const press = (target: Element, button = 0): void => {
+  fireEvent.mouseDown(target, { button });
+};
+
+const releasesHeard = () => {
+  const released = vi.fn<(event: MouseEvent) => void>();
+  window.addEventListener('mouseup', released);
+  onTestFinished(() => {
+    window.removeEventListener('mouseup', released);
+  });
+  return released;
+};
+
 beforeAll(() => {
   vi.stubGlobal('MouseEvent', ViewKeepingMouseEvent);
 });
@@ -129,15 +157,13 @@ describe('useNodeDrag', () => {
 
   it('puts a drag back when the window loses focus, and releases the mouse gesture React Flow holds', () => {
     const { start, report, moveNodes } = renderNodeDrag();
-    const released = vi.fn<(event: MouseEvent) => void>();
-    window.addEventListener('mouseup', released);
+    const released = releasesHeard();
 
     blur();
     start(pair);
     report(movedTo(pair, { x: 20, y: 10 }, true));
     blur();
     report(movedTo(pair, { x: 20, y: 10 }, false));
-    window.removeEventListener('mouseup', released);
 
     expect(moveNodes).toHaveBeenCalledTimes(2);
     expect(moveNodes).toHaveBeenLastCalledWith(
@@ -147,6 +173,64 @@ describe('useNodeDrag', () => {
     expect(released).toHaveBeenCalledOnce();
     expect(released.mock.calls[0]?.[0].view).toBe(window);
   });
+
+  it.each([
+    { named: 'a node React Flow may drag', target: node },
+    { named: 'the frame around a box selection', target: frame },
+  ])(
+    'lets go of a press on $named when the window loses focus before the drag starts, once, and moves nothing',
+    ({ target }) => {
+      const { moveNodes } = renderNodeDrag();
+      const released = releasesHeard();
+
+      press(target);
+      blur();
+      blur();
+
+      expect(released).toHaveBeenCalledOnce();
+      expect(released.mock.calls[0]?.[0].view).toBe(window);
+      expect(moveNodes).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    {
+      named: 'on a control inside a node',
+      gesture: () => {
+        press(control);
+      },
+    },
+    {
+      named: 'on a node React Flow may not drag',
+      gesture: () => {
+        press(fixedNode);
+      },
+    },
+    {
+      named: 'with another button',
+      gesture: () => {
+        press(node, 2);
+      },
+    },
+    {
+      named: 'already let go',
+      gesture: () => {
+        press(node);
+        fireEvent.mouseUp(node);
+      },
+    },
+  ])(
+    'sends no release when the window loses focus after a press $named',
+    ({ gesture }) => {
+      renderNodeDrag();
+
+      gesture();
+      const released = releasesHeard();
+      blur();
+
+      expect(released).not.toHaveBeenCalled();
+    },
+  );
 
   it('puts a drag back where the model has its nodes now, when the model moved under it', () => {
     const { start, report, rerender, moveNodes } = renderNodeDrag();
