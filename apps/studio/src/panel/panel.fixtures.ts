@@ -1,25 +1,18 @@
 import type { Threat } from '@saerskriven/model';
+import { softHyphen } from '@saerskriven/model/fixtures';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createElement } from 'react';
 import { Accordion } from 'radix-ui';
 import { recordedModel, sampleThreat } from '../store/store.fixtures.js';
-import { noop } from '../ui/ui.fixtures.js';
+import { noop, textbox } from '../ui/ui.fixtures.js';
 import { marked } from './marked.js';
 import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
 
 /**
- * How long a spec that drives the panel's editors is given, past the root
- * `vitest.shared.mts` sets. The threat editor's own suite renders three text
- * fields, three Radix listboxes and the accordion around them into jsdom, and
- * the panel's suite renders the panel around all of that. Both drive it
- * through `userEvent`, which commits and rerenders at every step. Three runs
- * on a host at load average 37 to 55 put the worst at 9.1 s against the 10 s
- * root, and which test tops out moves between runs, so the bound is the
- * suite's rather than one test's. The model panel, threat records,
- * element properties and element details suites drive their fields and
- * listboxes the same way. At load average near 2.5 the element properties
- * suite's worst takes 0.65 s against the editor and panel suites' 0.35 s.
+ * Panel editor timeout above the 10 s root ceiling in `vitest.shared.mts`.
+ * Under host load average 37 to 55, userEvent-driven specs took up to 9.1 s.
+ * The slowest test varied, so the timeout applies to each editor suite.
  */
 export const editorTimeout = 30_000;
 
@@ -33,10 +26,23 @@ export const chooseFrom = async (
   await user.click(screen.getByRole('option', { name: option }));
 };
 
+/** Text containing a character the model refuses. */
+export const refusedProse: string = `Pasted${softHyphen}prose`;
+
+/** Finds the field that retains the refused prose. */
+export const refusedDraft = (): HTMLElement =>
+  screen.getByDisplayValue(refusedProse);
+
+/** Types refused prose into Description without committing it. */
+export const typeRefusedProse = async (
+  user: ReturnType<typeof userEvent.setup>,
+): Promise<void> => {
+  await user.click(textbox('Description'));
+  await user.keyboard(refusedProse);
+};
+
 /**
- * The ids of the threats listed under `root`, in the order the list shows
- * them: a panel's threat items, or the threat register's rows where `marker`
- * names them.
+ * Lists threat ids in display order, using panel items or register rows.
  */
 export const listedThreats = (
   root: HTMLElement,
@@ -47,10 +53,7 @@ export const listedThreats = (
   );
 
 /**
- * The row of the record holding the control `named`: the group with no name
- * of its own around it. The control is the row's toggle unless `role` says
- * otherwise, as for a new row, which draws no toggle and is found by its
- * first field.
+ * Finds a record's unnamed group by its toggle or a new row's first field.
  */
 export const recordRow = (
   named: string,
@@ -63,8 +66,7 @@ export const recordRow = (
 };
 
 /**
- * A threat {@link recordedModel} holds, the first where it holds no such id,
- * with its status replaced where one is given.
+ * Finds a recorded threat, falling back to the first, with an optional status.
  */
 export const recordedThreat = (
   id: Threat['id'],
@@ -77,9 +79,7 @@ export const recordedThreat = (
 };
 
 /**
- * Renders the threat editor inside the accordion it lives in, open unless
- * `expanded` is false. Every prop defaults to the sample threat and handlers
- * that do nothing.
+ * Renders the sample threat in its accordion, open by default, with inert handlers.
  */
 export const showThreatEditor = (
   overrides: Partial<ThreatEditorProps> = {},

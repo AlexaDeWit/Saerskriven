@@ -1,6 +1,6 @@
 import type { ElementId, Threat } from '@saerskriven/model';
 import { Accordion } from 'radix-ui';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, type RefObject } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import { CategoryField } from '../ui/category-field.js';
 import { SeverityField } from '../ui/severity-field.js';
@@ -17,7 +17,7 @@ import { ThreatSummary } from './threat-summary.js';
 /** Focus after adding or deleting a threat. */
 export type EditorFocus = 'title' | 'disclosure';
 
-/** A threat, the element whose panel shows it, and callbacks for its edits, its attachments, its model link and its refused drafts. */
+/** The threat, panel element and callbacks for edits and refused drafts. */
 export type ThreatEditorProps = {
   readonly threat: Threat;
   readonly on: ElementId | undefined;
@@ -34,31 +34,18 @@ export type ThreatEditorProps = {
 };
 
 /**
- * An expandable threat with one commit per field. Its fields run from what
- * the threat is to what is done about it: title, category and description,
- * the mitigations and assumptions, then severity and status, judged from
- * the records above them, with any raised flag beside status.
+ * An expandable threat with one commit per field.
+ * Refusal notes unmount with the fields when the threat collapses.
  */
 export function ThreatEditor({
   threat,
   on,
   focus,
-  held,
-  onChange,
-  onCommit,
-  onRefusal,
-  onAttach,
-  onDetach,
-  onModelLink,
-  onDelete,
   onFocused,
+  ...fields
 }: ThreatEditorProps) {
   const titleField = useRef<HTMLInputElement>(null);
   const disclosure = useRef<HTMLButtonElement>(null);
-  const spreadId = useId();
-  const { t } = useTranslator();
-  const { refusals, note, refused } = useRefusals(onRefusal);
-  const spread = threat.elements.length;
 
   useEffect(() => {
     if (focus === 'title') {
@@ -87,89 +74,115 @@ export function ThreatEditor({
         </Accordion.Trigger>
       </Accordion.Header>
       <Accordion.Content className={styles.content}>
-        <TextField
-          held={draftIn(held, 'Title')}
-          label={(speak) => speak('fields.title')}
-          onChange={onChange}
-          onCommit={(title) => {
-            onCommit({ title });
-          }}
-          onRefused={refused('Title')}
-          ref={titleField}
-          value={threat.title}
-        />
-        <CategoryField
-          onCommit={(category) => {
-            onCommit({ category });
-          }}
-          value={threat.category}
-        />
-        <ProseField
-          compact
-          held={draftIn(held, 'Description')}
-          label={(speak) => speak('fields.description')}
-          onChange={onChange}
-          onCommit={(description) => {
-            onCommit({ description });
-          }}
-          onRefused={refused('Description')}
-          value={threat.description}
-        />
-        <RecordGroup
-          held={held}
-          kind={mitigationKind}
-          onChange={onChange}
-          onRefused={note}
-          refusals={refusals}
-          target={threatTarget(mitigationKind, threat.id)}
-        />
-        <RecordGroup
-          held={held}
-          kind={assumptionKind}
-          onChange={onChange}
-          onRefused={note}
-          refusals={refusals}
-          target={threatTarget(assumptionKind, threat.id)}
-        />
-        <div className={styles.assessment}>
-          <SeverityField
-            onCommit={(severity) => {
-              onCommit({ severity });
-            }}
-            value={threat.severity}
-          />
-          <div className={styles.statusColumn} data-status-column="">
-            <StatusField
-              onCommit={(status) => {
-                onCommit({ status });
-              }}
-              value={threat.status}
-            />
-            <span className={styles.flags}>
-              <FlagMarks threat={threat} />
-            </span>
-          </div>
-        </div>
-        <AttachmentGroup
-          onAttach={onAttach}
-          onDetach={onDetach}
-          onModelLink={onModelLink}
-          threat={threat}
-        />
-        {spread > 1 && (
-          <p className={styles.spread} id={spreadId}>
-            {t('panel.threat-spread', { count: spread })}
-          </p>
-        )}
-        <button
-          aria-describedby={spread > 1 ? spreadId : undefined}
-          className={styles.delete}
-          onClick={onDelete}
-          type="button"
-        >
-          {t('panel.delete-threat', { number: threat.number })}
-        </button>
+        <ThreatFields {...fields} threat={threat} titleField={titleField} />
       </Accordion.Content>
     </Accordion.Item>
+  );
+}
+
+function ThreatFields({
+  threat,
+  held,
+  titleField,
+  onChange,
+  onCommit,
+  onRefusal,
+  onAttach,
+  onDetach,
+  onModelLink,
+  onDelete,
+}: Omit<ThreatEditorProps, 'on' | 'focus' | 'onFocused'> & {
+  readonly titleField: RefObject<HTMLInputElement | null>;
+}) {
+  const spreadId = useId();
+  const { t } = useTranslator();
+  const { refusals, note, refused } = useRefusals(onRefusal);
+  const spread = threat.elements.length;
+
+  return (
+    <>
+      <TextField
+        held={draftIn(held, 'Title')}
+        label={(speak) => speak('fields.title')}
+        onChange={onChange}
+        onCommit={(title) => {
+          onCommit({ title });
+        }}
+        onRefused={refused('Title')}
+        ref={titleField}
+        value={threat.title}
+      />
+      <CategoryField
+        onCommit={(category) => {
+          onCommit({ category });
+        }}
+        value={threat.category}
+      />
+      <ProseField
+        compact
+        held={draftIn(held, 'Description')}
+        label={(speak) => speak('fields.description')}
+        onChange={onChange}
+        onCommit={(description) => {
+          onCommit({ description });
+        }}
+        onRefused={refused('Description')}
+        value={threat.description}
+      />
+      <RecordGroup
+        held={held}
+        kind={mitigationKind}
+        onChange={onChange}
+        onRefused={note}
+        refusals={refusals}
+        target={threatTarget(mitigationKind, threat.id)}
+      />
+      <RecordGroup
+        held={held}
+        kind={assumptionKind}
+        onChange={onChange}
+        onRefused={note}
+        refusals={refusals}
+        target={threatTarget(assumptionKind, threat.id)}
+      />
+      <div className={styles.assessment}>
+        <SeverityField
+          onCommit={(severity) => {
+            onCommit({ severity });
+          }}
+          value={threat.severity}
+        />
+        <div className={styles.statusColumn} data-status-column="">
+          <StatusField
+            onCommit={(status) => {
+              onCommit({ status });
+            }}
+            value={threat.status}
+          />
+          <span className={styles.flags}>
+            <FlagMarks threat={threat} />
+          </span>
+        </div>
+      </div>
+      <AttachmentGroup
+        onAttach={onAttach}
+        onDetach={onDetach}
+        onModelLink={onModelLink}
+        threat={threat}
+      />
+      {spread > 1 && (
+        <p className={styles.spread} id={spreadId}>
+          {t('panel.threat-spread', { count: spread })}
+        </p>
+      )}
+      <button
+        aria-describedby={spread > 1 ? spreadId : undefined}
+        className={styles.delete}
+        onClick={onDelete}
+        type="button"
+      >
+        {t('panel.delete-threat', { number: threat.number })}
+      </button>
+    </>
   );
 }

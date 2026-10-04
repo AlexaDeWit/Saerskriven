@@ -56,12 +56,9 @@ type FocusRequest =
     };
 
 /**
- * The records of one kind linked to one target, a threat or the model, under
- * a heading that counts them. Add opens an empty row that becomes a record on
- * its first commit and goes when left empty, and a new record is marked and
- * announced as added once it is kept. Every record starts folded, and one
- * opened stays open while the group is mounted. A row that returns while the
- * group is mounted takes its old slot back.
+ * Edits records of one kind linked to a threat or the model.
+ * A new row's first commit moves its refusal notes to the kept record.
+ * Open rows stay open while mounted. Returning rows regain their old slots.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,
@@ -110,6 +107,11 @@ export function RecordGroup<Held extends ThreatRecord>({
   );
   const isOpen = (record: Held): boolean =>
     isDraft(record) || opened.has(record.id);
+  const notesOf = (recordId: string) =>
+    [...refusals].flatMap(([name, refusal]) => {
+      const field = recordFieldIn(name, kind.noun);
+      return field?.recordId === recordId ? [{ field, refusal }] : [];
+    });
   const stale = [...refusals.keys(), held?.field ?? '']
     .filter((field) => isRecordField(field, kind.noun))
     .find(
@@ -171,6 +173,15 @@ export function RecordGroup<Held extends ThreatRecord>({
         setDraft(undefined);
         setOpened((current) => withId(current, next.id));
         setAdded((current) => withId(current, next.id));
+        onRefused(
+          notesOf(next.id).flatMap(({ field, refusal }) => [
+            [recordFieldName(field), undefined] as const,
+            [
+              recordFieldName({ ...field, pending: false }),
+              { said: refusal.said, text: refusal.text },
+            ] as const,
+          ]),
+        );
         const { addedSaid } = kind;
         announce((speak) => speak(addedSaid, { number: position }));
       }
@@ -277,11 +288,9 @@ export function RecordGroup<Held extends ThreatRecord>({
               if (isDraft(record)) {
                 setDraft({ ...record, status });
                 onRefused(
-                  [...refusals].flatMap(([field, refusal]) =>
-                    isRecordField(field, kind.noun) &&
-                    recordFieldIn(field, kind.noun)?.recordId === record.id
-                      ? [[field, { ...refusal, status }] as const]
-                      : [],
+                  notesOf(record.id).map(
+                    ({ field, refusal }) =>
+                      [recordFieldName(field), { ...refusal, status }] as const,
                   ),
                 );
               } else {

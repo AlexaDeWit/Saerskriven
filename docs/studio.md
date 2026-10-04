@@ -586,10 +586,11 @@ Status, then the attached elements and Delete. A field commits when you leave
 it, and the title also on Enter. A description starts at two lines and grows
 with its text, so the panel is the one thing that scrolls. Text the model
 cannot hold stays in the field with the refused character named, and the threat
-stays expanded until you correct or clear it. That draft survives closing the
-panel and selecting something else, until the file changes. Deleting a threat
-removes it from the model, and so from every element it names, which the item
-says beside its delete control.
+stays expanded until you correct or clear it. Until then no other threat opens,
+and Add a threat adds nothing and moves focus to the field holding the refused
+text. That draft survives closing the panel and selecting something else, until
+the file changes. Deleting a threat removes it from the model, and so from every
+element it names, which the item says beside its delete control.
 
 ### Attached elements
 
@@ -658,11 +659,12 @@ whole model reads "Applies to the whole model", each summary names every
 element its threat is on, and a threat on neither reads "On no element".
 **Add a threat** creates a threat that applies to the whole model and names no
 element, opened with focus in its title. There is no Attach existing threat
-here. A threat opens and is edited as on an element's panel. A detach that
-leaves the threat on another element, or on the whole model, keeps it in the
-list, and the change that leaves it on nothing removes it, as on an element's
-panel. Focus then moves to the threat that takes its place, or to the Threats
-tab.
+here. A threat opens and is edited as on an element's panel. Text the model
+cannot hold keeps its threat expanded here too, and Add a threat then adds
+nothing and moves focus to the field holding that text. A detach that leaves
+the threat on another element, or on the whole model, keeps it in the list, and
+the change that leaves it on nothing removes it, as on an element's panel. Focus
+then moves to the threat that takes its place, or to the Threats tab.
 
 Details holds the model's Title and Description, then the assumptions that
 apply to the whole model. The assumptions group works as a threat's does, bound

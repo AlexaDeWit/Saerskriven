@@ -22,7 +22,14 @@ import { dispatch, modelStore } from '../store/store.js';
 import { runRegistered } from '../commands/commands.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
 import { ModelPanel } from './model-panel.js';
-import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
+import {
+  chooseFrom,
+  editorTimeout,
+  listedThreats,
+  refusedDraft,
+  refusedProse,
+  typeRefusedProse,
+} from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 import type { HeldDrafts } from './threat-list.js';
 import { freshThreat } from './threats.js';
@@ -35,7 +42,7 @@ import {
   textbox,
   threatsTab,
 } from '../ui/ui.fixtures.js';
-import { softHyphen, threatId } from '@saerskriven/model/fixtures';
+import { threatId } from '@saerskriven/model/fixtures';
 
 const showPanel = ({
   held,
@@ -455,14 +462,13 @@ describe(
       showPanel({ drafts });
       await user.click(summary(/A reader edits/u));
 
-      await user.click(textbox('Description'));
-      await user.keyboard(`Pasted${softHyphen}prose`);
+      await typeRefusedProse(user);
       await user.click(summary(/A reader edits/u));
 
       expect(drafts.get(undefined)).toMatchObject({
         threatId: firstThreat,
         field: 'Description',
-        text: `Pasted${softHyphen}prose`,
+        text: refusedProse,
       });
       cleanup();
       showPanel({ drafts });
@@ -478,8 +484,7 @@ describe(
       });
       showPanel();
       await user.click(summary(/A reader edits/u));
-      await user.click(textbox('Description'));
-      await user.keyboard(`Pasted${softHyphen}prose`);
+      await typeRefusedProse(user);
       await user.click(summary(/A reader sees/u));
       runRegistered('redo');
       expect(present().threats).toHaveLength(1);
@@ -491,12 +496,27 @@ describe(
       expect(summary(/A reader sees/u).getAttribute('aria-expanded')).toBe(
         'false',
       );
-      expect(
-        screen
-          .getByDisplayValue(`Pasted${softHyphen}prose`)
-          .getAttribute('aria-invalid'),
-      ).toBe('true');
+      expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
       expect(document.activeElement).toBe(threatsTab());
+    });
+
+    it('adds nothing while another threat holds a refused draft, on a press that leaves the field holding it, and moves focus back to that field', async () => {
+      const user = userEvent.setup();
+      const drafts: HeldDrafts = new Map();
+      showPanel({ drafts });
+      await user.click(summary(/A reader edits/u));
+      await typeRefusedProse(user);
+      const before = present();
+
+      await user.click(button('Add a threat'));
+
+      expect(present()).toBe(before);
+      expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(refusedDraft());
+      expect(drafts.get(undefined)).toMatchObject({
+        threatId: firstThreat,
+        text: refusedProse,
+      });
     });
 
     it('holds Title, Description and the assumptions group on Details, in that Tab order', async () => {
@@ -688,14 +708,13 @@ describe(
       showPanel({ onHeld });
       await showDetails(user);
 
-      await user.click(textbox('Description'));
-      await user.keyboard(`Pasted${softHyphen}prose`);
+      await typeRefusedProse(user);
       await user.tab();
 
       const held = onHeld.mock.lastCall?.[0];
       expect(held).toMatchObject({
         field: 'Description',
-        text: `${recordedModel.metadata.description}Pasted${softHyphen}prose`,
+        text: `${recordedModel.metadata.description}${refusedProse}`,
       });
       expect(present()).toBe(recordedModel);
       cleanup();
