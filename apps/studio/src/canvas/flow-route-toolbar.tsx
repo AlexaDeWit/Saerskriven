@@ -6,6 +6,7 @@ import { IconCommandButton } from '../commands/command-button.js';
 import { useTranslator } from '../messages/locale.js';
 import { useThreatRegisterOpen } from '../panel/threat-register-state.js';
 import { useMeasured } from '../ui/measure.js';
+import { ControlTooltip } from '../ui/control-tooltip.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { FlowEndpointCommands } from './selection-controls.js';
 import { strokeGlyph } from './stroke-glyph.js';
@@ -82,15 +83,16 @@ export function FlowRouteToolbar({
         <FlowEndpointCommands inline />
         <VisuallyHidden id={description}>{help}</VisuallyHidden>
         {placing && (
-          <button
-            aria-label={t('tools.cancel')}
-            title={t('tools.cancel')}
-            className={toolbox.control}
-            onClick={cancel}
-            type="button"
-          >
-            <Cross1Icon aria-hidden="true" />
-          </button>
+          <ControlTooltip content={t('tools.cancel')}>
+            <button
+              aria-label={t('tools.cancel')}
+              className={toolbox.control}
+              onClick={cancel}
+              type="button"
+            >
+              <Cross1Icon aria-hidden="true" />
+            </button>
+          </ControlTooltip>
         )}
       </fieldset>
     </Panel>

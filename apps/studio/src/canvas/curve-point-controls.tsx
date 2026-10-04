@@ -1,3 +1,4 @@
+import { PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { useStore, useViewport, ViewportPortal } from '@xyflow/react';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { keyboardOwner } from '../commands/binding.js';
@@ -10,7 +11,7 @@ import {
   type CurvePoints,
 } from './curve-points.js';
 import { focusElement } from './edits.js';
-import { besideHandle, HandleActions, onHandle } from './handle-actions.js';
+import { HandleActions, onHandle } from './handle-actions.js';
 import {
   draggedPoint,
   nudgedPoint,
@@ -27,15 +28,7 @@ type OpenActions = {
   readonly index: number;
 };
 
-/**
- * A handle on each point of the selected trust boundary curve, a midpoint
- * handle halfway along each segment long enough to show one, which a drag
- * pulls a new point out of, and the actions of the point clicked. The
- * handles stand aside while React Flow drags or resizes the curve, whose
- * points they would otherwise leave behind, and the midpoint handles while a
- * point is dragged, except that a midpoint drag keeps its own handle mounted,
- * unseen, so the pointer it captured is not lost.
- */
+/** Keeps a dragged midpoint mounted to retain pointer capture. */
 export function CurvePointControls({
   points,
 }: {
@@ -241,12 +234,14 @@ export function CurvePointControls({
           actions={[
             {
               label: t('tools.remove-curve-point'),
+              icon: <TrashIcon aria-hidden="true" />,
               run: () => {
                 remove(chosen);
               },
             },
             {
               label: t('tools.add-curve-point'),
+              icon: <PlusIcon aria-hidden="true" />,
               run: () => {
                 add(chosen);
               },
@@ -257,7 +252,7 @@ export function CurvePointControls({
             setOpen(undefined);
             handBack();
           }}
-          style={besideHandle(beside, zoom)}
+          point={beside}
         />
       )}
     </ViewportPortal>

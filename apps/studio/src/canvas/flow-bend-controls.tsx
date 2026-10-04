@@ -1,3 +1,4 @@
+import { MoveIcon, TrashIcon } from '@radix-ui/react-icons';
 import { polylinePath } from '@saerskriven/canvas';
 import { sides } from '@saerskriven/model';
 import { useReactFlow, useViewport, ViewportPortal } from '@xyflow/react';
@@ -6,19 +7,19 @@ import { FlowRouteToolbar } from './flow-route-toolbar.js';
 import { beginEditingText } from './edits.js';
 import { applySelection } from './changes.js';
 import { elementIds } from './nodes.js';
+import { connectionGlyph } from './connection-glyph.js';
 import {
   useFlowBendInteraction,
   type FlowEnd,
 } from './flow-bend-interaction.js';
 import type { FlowBends } from './flow-bends.js';
-import { besideHandle, HandleActions, onHandle } from './handle-actions.js';
+import { HandleActions, onHandle } from './handle-actions.js';
 import { sideMessages } from '../messages/enum-labels.js';
 import { useTranslator } from '../messages/locale.js';
 import styles from './handles.module.css';
 
 const flowEnds: readonly FlowEnd[] = ['source', 'target'];
 
-/** Line hit targets, bend and end handles, and contextual route controls. */
 export function FlowBendControls({
   bends,
   panelCover,
@@ -201,6 +202,7 @@ export function FlowBendControls({
               },
               ...sides.map((side) => ({
                 label: t(sideMessages[side]),
+                icon: connectionGlyph(side),
                 pressed: pinned(mode.end) === side,
                 run: () => {
                   interaction.pinEnd(mode.end, side);
@@ -208,13 +210,11 @@ export function FlowBendControls({
               })),
             ]}
             label={t('tools.flow-end-actions')}
+            panelCover={panelCover}
             onClose={() => {
               interaction.cancel();
             }}
-            style={besideHandle(
-              mode.end === 'source' ? edge.source : edge.target,
-              zoom,
-            )}
+            point={mode.end === 'source' ? edge.source : edge.target}
           />
         )}
         {actionable !== undefined && mode?.kind === 'actions' && (
@@ -222,12 +222,14 @@ export function FlowBendControls({
             actions={[
               {
                 label: t('tools.remove-bend'),
+                icon: <TrashIcon aria-hidden="true" />,
                 run: () => {
                   interaction.remove(mode.index);
                 },
               },
               {
                 label: t('tools.move-bend'),
+                icon: <MoveIcon aria-hidden="true" />,
                 run: () => {
                   interaction.place({
                     kind: 'move',
@@ -239,10 +241,11 @@ export function FlowBendControls({
               },
             ]}
             label={t('tools.bend-actions')}
+            panelCover={panelCover}
             onClose={() => {
               interaction.cancel();
             }}
-            style={besideHandle(actionable, zoom)}
+            point={actionable}
           />
         )}
       </ViewportPortal>
