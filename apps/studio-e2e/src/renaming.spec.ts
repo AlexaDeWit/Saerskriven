@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
 import { commandChord, registeredChords } from './chords.fixtures.js';
-import { clickSvgText, dragOnto } from './canvas.fixtures.js';
+import { clickSvgText, dragOnto, flowBlockOf } from './canvas.fixtures.js';
 import {
   canvasSurface,
   expandThreat,
@@ -148,17 +148,22 @@ test('a flow is renamed by double-clicking the label it draws', async ({
   await drawFlow(page);
 
   const flow = nodeNamed(page, /^New flow, flow/u);
-  await clickSvgText(drawnName(flow, canvasClassNames.flowLabel), 2);
+  await clickSvgText(
+    drawnName(await flowBlockOf(flow), canvasClassNames.flowLabel),
+    2,
+  );
   await expect(nameField(page, 'New flow')).toBeFocused();
-  await expect(drawnName(flow, canvasClassNames.flowLabel)).toHaveCount(0);
+  await expect(
+    drawnName(await flowBlockOf(flow), canvasClassNames.flowLabel),
+  ).toHaveCount(0);
   await nameField(page, 'New flow').fill('Opens');
   await nameField(page, 'New flow').press('Enter');
 
   const renamed = nodeNamed(page, /^Opens, flow/u);
   await expect(renamed).toHaveCount(1);
-  await expect(drawnName(renamed, canvasClassNames.flowLabel)).toHaveText(
-    'Opens',
-  );
+  await expect(
+    drawnName(await flowBlockOf(renamed), canvasClassNames.flowLabel),
+  ).toHaveText('Opens');
 });
 
 test('a flow of a real model is renamed from the keyboard', async ({
@@ -173,9 +178,9 @@ test('a flow of a real model is renamed from the keyboard', async ({
 
   const renamed = nodeNamed(page, /^Listings, flow/u);
   await expect(renamed).toHaveCount(1);
-  await expect(drawnName(renamed, canvasClassNames.flowLabel)).toHaveText(
-    'Listings',
-  );
+  await expect(
+    drawnName(await flowBlockOf(renamed), canvasClassNames.flowLabel),
+  ).toHaveText('Listings');
 
   await runFromMenu(page, 'Undo');
 
@@ -196,9 +201,9 @@ test('a flow left unlabelled draws no label, and the threat panel names it from 
 
   const unlabelled = nodeNamed(page, /^flow, from Web shop to Catalogue/u);
   await expect(unlabelled).toHaveCount(1);
-  await expect(drawnName(unlabelled, canvasClassNames.flowLabel)).toHaveCount(
-    0,
-  );
+  await expect(
+    drawnName(await flowBlockOf(unlabelled), canvasClassNames.flowLabel),
+  ).toHaveCount(0);
   await expect(
     threatPanel(page).getByRole('heading', {
       name: 'Flow from Web shop to Catalogue',

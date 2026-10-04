@@ -7,6 +7,7 @@ import {
   canvasSettled,
   drawnBy,
   endsOn,
+  flowBlockOf,
   geometryBoxOf,
   handlesOf,
   lineOf,
@@ -58,9 +59,10 @@ test('a flow follows the element it attaches to through a drag, at either end', 
   const attached = [lineOf(page, outward), lineOf(page, inward)];
   const detached = lineOf(page, elsewhere);
   const badgedFlow = nodeNamed(page, badged);
-  const badgedLabel = badgedFlow.locator(`.${canvasClassNames.flowLabel}`);
-  const badgedBadge = badgedFlow.locator(`.${canvasClassNames.badge}`);
-  const outwardLabel = nodeNamed(page, outward).locator(
+  const badgedBlock = await flowBlockOf(badgedFlow);
+  const badgedLabel = badgedBlock.locator(`.${canvasClassNames.flowLabel}`);
+  const badgedBadge = badgedBlock.locator(`.${canvasClassNames.badge}`);
+  const outwardLabel = (await flowBlockOf(nodeNamed(page, outward))).locator(
     `.${canvasClassNames.flowLabel}`,
   );
   const settled = await Promise.all(attached.map(drawnBy));
@@ -114,8 +116,10 @@ test('a group drag carries an attached flow, its label and its badge before poin
   const target = nodeNamed(page, storefront.catalogue);
   const flow = nodeNamed(page, outward);
   const line = lineOf(page, outward);
-  const label = flow.locator(`.${canvasClassNames.flowLabel}`);
-  const badge = nodeNamed(page, elsewhere).locator(
+  const label = (await flowBlockOf(flow)).locator(
+    `.${canvasClassNames.flowLabel}`,
+  );
+  const badge = (await flowBlockOf(nodeNamed(page, elsewhere))).locator(
     `.${canvasClassNames.badge}`,
   );
 
@@ -181,7 +185,7 @@ test('a quick release keeps the last live label placement', async ({
 }) => {
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
-  const label = nodeNamed(page, outward).locator(
+  const label = (await flowBlockOf(nodeNamed(page, outward))).locator(
     `.${canvasClassNames.flowLabel}`,
   );
 
@@ -199,7 +203,7 @@ test('a one-endpoint move settles its attached label before release', async ({
 }) => {
   await openTwoDiagrams(page);
   const store = nodeNamed(page, storefront.catalogue);
-  const label = nodeNamed(page, /^read the product listings, flow/u).locator(
+  const label = (await flowBlockOf(nodeNamed(page, outward))).locator(
     `.${canvasClassNames.flowLabel}`,
   );
 
@@ -217,7 +221,7 @@ test('a quick release keeps the live placement of a label beside an opposite flo
 }) => {
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
-  const label = nodeNamed(page, inward).locator(
+  const label = (await flowBlockOf(nodeNamed(page, inward))).locator(
     `.${canvasClassNames.flowLabel}`,
   );
 
@@ -235,7 +239,7 @@ test('a release after a pause keeps the live placement of a label beside an oppo
 }) => {
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
-  const label = nodeNamed(page, inward).locator(
+  const label = (await flowBlockOf(nodeNamed(page, inward))).locator(
     `.${canvasClassNames.flowLabel}`,
   );
 
@@ -254,7 +258,9 @@ test('a group drag keeps a badge beside an opposite flow where the drag left it'
 }) => {
   await openTwoDiagrams(page);
   const dragged = nodeNamed(page, storefront.webShop);
-  const badge = nodeNamed(page, badged).locator(`.${canvasClassNames.badge}`);
+  const badge = (await flowBlockOf(nodeNamed(page, badged))).locator(
+    `.${canvasClassNames.badge}`,
+  );
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
   const placed = await placeOf(dragged);
 

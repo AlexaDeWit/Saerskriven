@@ -1,4 +1,5 @@
 import {
+  canvasInteractionClassNames,
   sameNodeBox,
   scaledCurvePoints,
   type CanvasNode,
@@ -309,8 +310,8 @@ export function resizeNode(
   );
 }
 
-/** The elements and flows React Flow draws, each one a tab stop. */
-export const drawnSelector = '.react-flow__node, .react-flow__edge';
+/** Resolves both layers of a flow to the same model element. */
+export const drawnSelector = `.react-flow__node, .react-flow__edge, .${canvasInteractionClassNames.flowBlockLayer}`;
 
 const focusAttempts = 3;
 

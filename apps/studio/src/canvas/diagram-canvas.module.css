@@ -6,25 +6,13 @@
   background: var(--saer-colour-canvas);
   overflow: hidden;
 
-  /* React Flow reads each of its own colours from a property here before
-     falling back to a `-default` it declares on `.react-flow` itself, so a
-     token handed over on this container reaches the part and the `-default`
-     pair is left alone: setting those here would sit above the declaration
-     that shadows them. The grid, and the two colours a connection handle is
-     drawn in, are the parts the studio owns rather than the component. */
+  /* Set React Flow's overrides here, since its root shadows the defaults. */
   --xy-background-pattern-color: var(--saer-colour-grid);
   --xy-handle-background-color: var(--saer-colour-accent);
   --xy-handle-border-color: var(--saer-colour-badge-ground);
 }
 
-/* React Flow names its own parts with global classes, so the studio reaches
-   them through :global() from the container rather than by hanging a class of
-   its own on every node and every flow. */
-
-/* The focus ring is the app's own token, on the element the browser put focus
-   on. An outline, unlike a shadow, paints over the element's drawing. It sits
-   just inside the selection frame below, so an element both focused and
-   selected shows both. */
+/* The focus ring sits inside the selection frame so both remain visible. */
 .canvas :global(.react-flow__nodes .react-flow__node):focus-visible {
   outline: var(--saer-focus-ring);
   outline-offset: calc(
@@ -48,10 +36,12 @@
   pointer-events: none;
 }
 
-/* Hover is written before selected because the two selectors count the same,
-   so source order is what keeps a selected flow under the pointer at the
-   heavier weight. */
-.canvas :global(.react-flow__edge:hover .saer-diagram-shape) {
+/* Selection must outweigh hover, including hover on the raised block. */
+.canvas :global(.react-flow__edge:hover .saer-diagram-shape),
+.canvas
+  :global(
+    .react-flow__edge:has([data-flow-block-hovered]) .saer-diagram-shape
+  ) {
   stroke-width: var(--saer-cue-flow-hover);
 }
 
@@ -59,12 +49,16 @@
   stroke-width: var(--saer-cue-flow-selection);
 }
 
-/* An out-of-scope flow is dotted, and a dot is as wide as the stroke, so the
-   gap grows with the cue weight: 2.5 is the canvas sheet's pitch of 5 over its
-   outline weight of 2. Hover is written first for the reason above. */
+/* Preserve the dotted pitch-to-weight ratio, 5 over 2, through both cues. */
 .canvas
   :global(
     .react-flow__edge:hover .saer-diagram-out-of-scope .saer-diagram-shape
+  ),
+.canvas
+  :global(
+    .react-flow__edge:has([data-flow-block-hovered])
+      .saer-diagram-out-of-scope
+      .saer-diagram-shape
   ) {
   stroke-dasharray: 0 calc(var(--saer-cue-flow-hover) * 2.5);
 }
@@ -109,17 +103,17 @@
   cursor: grabbing;
 }
 
-/* Written after the rules above because the selectors count the same and the
-   tool has to win, and set on React Flow's own parts rather than on this
-   container, which the floating chrome would inherit a cursor from. */
+/* Tool cursors override item cursors without changing the floating chrome. */
 .canvas[data-tool='place'] :global(.react-flow__pane),
 .canvas[data-tool='place'] :global(.react-flow__node),
+.canvas[data-tool='place'] :global(.saer-diagram-flow-block-layer),
 .canvas[data-tool='place'] :global(.react-flow__edge) {
   cursor: crosshair;
 }
 
 .canvas[data-tool='hand'] :global(.react-flow__pane),
 .canvas[data-tool='hand'] :global(.react-flow__node),
+.canvas[data-tool='hand'] :global(.saer-diagram-flow-block-layer),
 .canvas[data-tool='hand'] :global(.react-flow__edge) {
   cursor: grab;
 }
@@ -132,8 +126,17 @@
 /* Hand owns a drag wherever it begins, including over a drawn element. */
 .canvas[data-tool='hand'] :global(.react-flow__node),
 .canvas[data-tool='hand'] :global(.react-flow__edge),
+.canvas[data-tool='hand'] :global(.saer-diagram-flow-block-layer g),
 .canvas[data-tool='hand'] :global(.saer-diagram-badge-layer g) {
   pointer-events: none;
+}
+
+.canvas :global(.saer-diagram-flow-block-layer) {
+  z-index: 2;
+}
+
+.canvas :global(.react-flow__edgelabel-renderer) {
+  z-index: 3;
 }
 
 /* A threat badge draws over the selection frame and the side lines, and under
