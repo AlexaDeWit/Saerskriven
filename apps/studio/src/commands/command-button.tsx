@@ -1,6 +1,6 @@
-import { Tooltip } from 'radix-ui';
 import { useId, type MouseEventHandler, type ReactNode } from 'react';
 import { useTranslator } from '../messages/locale.js';
+import { ControlTooltip } from '../ui/control-tooltip.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { useCommandSurface } from './binding.js';
 import {
@@ -16,10 +16,6 @@ import {
   type ShortcutText,
 } from './shortcuts.js';
 import styles from './command-button.module.css';
-
-const tooltipDelay = 200;
-
-const tooltipOffset = 6;
 
 type CommandButtonProps = {
   readonly command: CommandId;
@@ -93,9 +89,16 @@ export function IconCommandButton({
   const { label, chord, keyShortcuts, press } = usePressed(command);
 
   return (
-    <Tooltip.Provider delayDuration={tooltipDelay} disableHoverableContent>
-      <Tooltip.Root>
-        <Tooltip.Trigger
+    <>
+      <ControlTooltip
+        side={side}
+        content={
+          <>
+            {label} <span className={styles.chord}>{chord}</span>
+          </>
+        }
+      >
+        <button
           {...(description === undefined
             ? {}
             : { 'aria-describedby': descriptionId })}
@@ -109,21 +112,14 @@ export function IconCommandButton({
           type="button"
         >
           {children}
-        </Tooltip.Trigger>
-        <Tooltip.Content
-          className={styles.tooltip}
-          side={side}
-          sideOffset={tooltipOffset}
-        >
-          {label} <span className={styles.chord}>{chord}</span>
-        </Tooltip.Content>
-        {description !== undefined && (
-          <VisuallyHidden id={descriptionId}>
-            {t('commands.icon-description', { description, chord })}
-          </VisuallyHidden>
-        )}
-      </Tooltip.Root>
-    </Tooltip.Provider>
+        </button>
+      </ControlTooltip>
+      {description !== undefined && (
+        <VisuallyHidden id={descriptionId}>
+          {t('commands.icon-description', { description, chord })}
+        </VisuallyHidden>
+      )}
+    </>
   );
 }
 

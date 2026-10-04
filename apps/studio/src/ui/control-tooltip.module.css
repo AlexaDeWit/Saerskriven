@@ -1,0 +1,11 @@
+.tooltip {
+  display: flex;
+  gap: var(--saer-space-2);
+  padding: var(--saer-space-1) var(--saer-space-2);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
+  max-width: min(24rem, calc(100vw - 2 * var(--saer-space-4)));
+  white-space: normal;
+}

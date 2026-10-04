@@ -179,6 +179,13 @@ export const commandTable = {
     when: 'commands.when-file-menu',
     operation: 'exportRegister',
   }),
+  'export-markdown-complete': fileCommand({
+    id: 'export-markdown-complete',
+    label: 'commands.label-export-markdown-complete',
+    shortcuts: [],
+    when: 'commands.when-file-menu',
+    operation: 'exportCompleteMarkdown',
+  }),
   'export-typst': fileCommand({
     id: 'export-typst',
     label: 'commands.label-export-typst',

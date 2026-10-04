@@ -95,6 +95,7 @@ describe('ShortcutReference', () => {
       'save-as',
       'export-diagram',
       'export-register',
+      'export-markdown-complete',
       'export-typst',
       'export-pdf',
       'export-png',

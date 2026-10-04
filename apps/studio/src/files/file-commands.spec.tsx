@@ -655,16 +655,18 @@ describe('useFileSession', () => {
     act(() => {
       result.current.commands.exportDiagram();
       result.current.commands.exportRegister();
+      result.current.commands.exportCompleteMarkdown();
       result.current.commands.exportTypst();
       result.current.commands.exportPdf();
       result.current.commands.exportPng();
     });
 
     await waitFor(() => {
-      expect(bridge.writes).toHaveLength(5);
+      expect(bridge.writes).toHaveLength(6);
     });
     expect(bridge.writes.map((write) => write.name)).toEqual([
       'Untitled.svg',
+      'Untitled.md',
       'Untitled.md',
       'Untitled.typ',
       'Untitled.pdf',

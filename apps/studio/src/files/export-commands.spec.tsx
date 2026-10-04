@@ -144,18 +144,13 @@ describe('the studio exports', () => {
     ]);
   });
 
-  it('keeps diagram inclusion in the session without editing the model', async () => {
+  it('chooses complete or register-only content for each download without editing the model', async () => {
     modelStore.setState(initialState(sampleModel), true);
     const bridge = specBridge();
-    const hook = renderHook(() => useExportCommands(bridge, specRenders()));
+    const result = session(bridge);
     const before = modelStore.getState();
-    expect(hook.result.current.includeDiagrams).toBe(false);
     act(() => {
-      hook.result.current.setIncludeDiagrams(true);
-    });
-    expect(modelStore.getState()).toBe(before);
-    act(() => {
-      hook.result.current.commands.register();
+      result.current.commands.register(true);
     });
     await waitFor(() => {
       expect(bridge.writes).toHaveLength(1);
@@ -164,21 +159,13 @@ describe('the studio exports', () => {
       renderRegister(sampleModel, 'en-CA', { includeDiagrams: true }),
     );
     act(() => {
-      modelStore.setState(initialState(recordedModel), true);
-    });
-    expect(hook.result.current.includeDiagrams).toBe(true);
-    act(() => {
-      hook.result.current.setIncludeDiagrams(false);
-    });
-    act(() => {
-      hook.result.current.commands.register();
+      result.current.commands.register();
     });
     await waitFor(() => {
       expect(bridge.writes).toHaveLength(2);
     });
-    expect(bridge.writes[1].text).toBe(renderRegister(recordedModel, 'en-CA'));
-    hook.unmount();
-    expect(session(specBridge()).current.includeDiagrams).toBe(false);
+    expect(bridge.writes[1].text).toBe(renderRegister(sampleModel, 'en-CA'));
+    expect(modelStore.getState()).toBe(before);
   });
 
   it('names an untitled export and its file type in the language active when it runs, and frames it in that language', async () => {

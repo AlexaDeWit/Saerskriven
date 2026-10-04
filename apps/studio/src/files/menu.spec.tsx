@@ -49,7 +49,7 @@ import {
   unreadSessions,
   vendoredFile,
 } from './files.fixtures.js';
-import { chooseLanguage } from '../messages/locale.js';
+import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { toggleModelPanel } from '../panel/panel-focus.js';
 import { ThreatOverlay } from '../panel/threat-overlay.js';
@@ -288,7 +288,8 @@ describe('what the menu offers', () => {
     ).toContain('Diagram as SVG');
     for (const name of [
       'Diagram as PNG',
-      'Register as Markdown',
+      'Threats as Markdown',
+      'Model as Markdown',
       'Model as Typst',
       'Model as PDF',
     ]) {
@@ -364,6 +365,28 @@ describe('what the menu offers', () => {
     expect(screen.queryByTestId('export-report')).toBeNull();
   });
 
+  it('explains each Markdown export on hover and keyboard focus', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    await openExportMenu(user);
+    expect(screen.queryByRole('menuitemcheckbox')).toBeNull();
+    const threats = item('Threats as Markdown');
+    await user.hover(threats);
+    expect((await screen.findByRole('tooltip')).textContent).toBe(
+      activeTranslator().t('menu.markdown-register-description'),
+    );
+    await user.unhover(threats);
+    await waitFor(() => {
+      expect(screen.queryByRole('tooltip')).toBeNull();
+    });
+    act(() => {
+      item('Model as Markdown').focus();
+    });
+    expect((await screen.findByRole('tooltip')).textContent).toBe(
+      activeTranslator().t('menu.markdown-complete-description'),
+    );
+  });
+
   it('keeps the shortcut out of an item name, and names the binding as ARIA asks', async () => {
     const user = userEvent.setup();
     mounted(specBridge());
@@ -376,7 +399,7 @@ describe('what the menu offers', () => {
     await user.hover(item('Export'));
     expect(
       (
-        await screen.findByRole('menuitem', { name: 'Register as Markdown' })
+        await screen.findByRole('menuitem', { name: 'Threats as Markdown' })
       ).getAttribute('aria-keyshortcuts'),
     ).toBeNull();
   });

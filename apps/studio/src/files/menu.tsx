@@ -342,7 +342,7 @@ function FileMenu({
               })}
             </MenuItem>
           ))}
-      <ExportMenu session={session} />
+      <ExportMenu />
       <UnsavedChangesCommand
         asking={askingLink}
         asksFirst={false}
@@ -419,7 +419,7 @@ function ViewMenu() {
   );
 }
 
-function ExportMenu({ session }: { readonly session: FileSession }) {
+function ExportMenu() {
   const { t } = useTranslator();
   const nothing = useModelStore((state) => state.present.diagrams.length === 0);
 
@@ -427,20 +427,14 @@ function ExportMenu({ session }: { readonly session: FileSession }) {
     <Submenu trigger={<span>{t('menu.export')}</span>}>
       <MenuCommand command="export-diagram" disabled={nothing} />
       <MenuCommand command="export-png" disabled={nothing} />
-      <DropdownMenu.CheckboxItem
-        className={`${styles.item} ${cursor.row}`}
-        checked={session.includeDiagrams}
-        onCheckedChange={session.setIncludeDiagrams}
-        onSelect={(event) => {
-          event.preventDefault();
-        }}
-      >
-        <span>{t('menu.include-diagrams')}</span>
-        <DropdownMenu.ItemIndicator aria-hidden="true">
-          ✓
-        </DropdownMenu.ItemIndicator>
-      </DropdownMenu.CheckboxItem>
-      <MenuCommand command="export-register" />
+      <MenuCommand
+        command="export-register"
+        description={t('menu.markdown-register-description')}
+      />
+      <MenuCommand
+        command="export-markdown-complete"
+        description={t('menu.markdown-complete-description')}
+      />
       <MenuCommand command="export-typst" />
       <MenuCommand command="export-pdf" />
     </Submenu>

@@ -19,6 +19,7 @@ stylesheet.
 | `text-field.tsx`, `grow-to-content.ts`                         | `TextField` and `ProseField` with their draft state, and textarea growth                                |
 | `live-region.tsx`, `failure-notice.tsx`, `detail-lines.tsx`    | Announcements, the refusal notice, and notice lines as a list, folded under a summary when one is given |
 | `error-boundary.tsx`                                           | The last stop for a throw                                                                               |
+| `control-tooltip.tsx`                                          | Pointer and keyboard tooltips shared by icon controls and export menu items                             |
 | `visually-hidden.tsx`                                          | Text for assistive technology that is not drawn                                                         |
 | `external-store.ts`                                            | The subscription helper every module-level store in the studio shares                                   |
 | `handler-slot.ts`                                              | The slot a module keeps for the one handler a mounted component lends it                                |

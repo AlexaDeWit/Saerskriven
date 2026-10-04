@@ -5,6 +5,7 @@ export type FileCommands = {
   saveAs(): void;
   exportDiagram(): void;
   exportRegister(): void;
+  exportCompleteMarkdown(): void;
   exportTypst(): void;
   exportPdf(): void;
   exportPng(): void;

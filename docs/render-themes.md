@@ -194,9 +194,9 @@ diagram before the register:
 saer render model.yaml --format md --include-diagrams --out model.md
 ```
 
-In the studio's Export menu, select **Include diagrams in Markdown** before
-choosing **Register as Markdown**. The choice lasts until the page reloads.
-It does not change the model or its saved file.
+In the studio's Export menu, choose **Model as Markdown** for diagrams and
+the register, or **Threats as Markdown** for the register alone. Each command
+chooses the content of its download. Neither changes the model or its saved file.
 
 Each diagram becomes a fenced Mermaid flowchart. The reader must support
 Mermaid to display it as a drawing. Ordinary Markdown readers show its source.

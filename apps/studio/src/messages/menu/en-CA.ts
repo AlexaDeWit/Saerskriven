@@ -23,5 +23,8 @@ export const menuEnCA = catalogue(menuMessages)('en-CA')({
   diagram: 'Diagram',
   'no-diagram': 'No diagram',
   'diagram-named': 'Diagram: {title}',
-  'include-diagrams': 'Include diagrams in Markdown',
+  'markdown-register-description':
+    'Export the threat register without diagrams.',
+  'markdown-complete-description':
+    'Export every diagram as Mermaid, followed by the threat register.',
 });
