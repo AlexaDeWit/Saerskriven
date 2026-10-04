@@ -293,7 +293,9 @@ Which field holds a refusal is kept in the item rather than the panel, so a
 second field committing with no refusal does not report the first field's
 draft away. It is state of the item's expanded content (`useRefusals`), which
 unmounts with the fields, so no note of a refusal outlives the field that
-showed it.
+showed it. A refusal in a new record row is noted under the row until a commit
+keeps the record, and under the record from then on, so the correction that
+follows settles it.
 
 A commit always comes before a collapse: reaching the control that collapses
 an item, by pointer or by Tab, takes focus out of the field, which is the

@@ -783,6 +783,23 @@ describe(
       );
     });
 
+    it('lets the threat collapse once refused text typed in a new record row is corrected in place, which keeps the record', async () => {
+      const user = userEvent.setup();
+      showPanel(actorElement);
+      await user.click(readerThreat());
+      await user.click(button('Add assumption'));
+      await user.keyboard(`Assumed${softHyphen}prose`);
+      await user.tab();
+      expect(textbox('Assumption 1').getAttribute('aria-invalid')).toBe('true');
+
+      await user.clear(textbox('Assumption 1'));
+      await user.keyboard('Assumed prose');
+      await user.click(readerThreat());
+
+      expect(present().assumptions).toHaveLength(1);
+      expect(readerThreat().getAttribute('aria-expanded')).toBe('false');
+    });
+
     it('shows Threats again when focus is asked for while Details shows', async () => {
       const user = userEvent.setup();
       const props = panelProps({

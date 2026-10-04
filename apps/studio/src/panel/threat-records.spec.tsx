@@ -597,6 +597,49 @@ describe(
       },
     );
 
+    it('settles a refused draft typed in a new row once it is corrected, where another field kept the row meanwhile and its record was announced', async () => {
+      const user = userEvent.setup();
+      const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+      showThreatEditor({ threat: recordedThreat(secondThreat), onRefusal });
+      await user.click(button('Add mitigation'));
+      await user.keyboard(`Pasted${softHyphen}title`);
+      await user.tab();
+      await user.keyboard('Prose the model takes');
+      await user.tab();
+      expect(present().mitigations).toHaveLength(2);
+      expect(numbersIn(currentAnnouncement().message)).toEqual([1]);
+      expect(onRefusal.mock.lastCall?.[0]?.text).toBe(
+        `Pasted${softHyphen}title`,
+      );
+
+      await user.clear(textbox('Mitigation 1 title'));
+      await user.tab();
+
+      expect(onRefusal).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it('opens the kept record on a refused draft typed in its empty row, where the threat is opened again', async () => {
+      const user = userEvent.setup();
+      const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
+      showThreatEditor({ threat: recordedThreat(secondThreat), onRefusal });
+      await user.click(button('Add mitigation'));
+      await user.keyboard(`Pasted${softHyphen}title`);
+      await user.tab();
+      await user.keyboard('Prose the model takes');
+      await user.tab();
+      const held = onRefusal.mock.lastCall?.[0];
+
+      cleanup();
+      showThreatEditor({ threat: recordedThreat(secondThreat), held });
+
+      expect(screen.getByDisplayValue(`Pasted${softHyphen}title`)).toBe(
+        textbox('Mitigation 1 title'),
+      );
+      expect(textbox('Mitigation 1 title').getAttribute('aria-invalid')).toBe(
+        'true',
+      );
+    });
+
     it('drops a refusal whose row another edit took away', async () => {
       const user = userEvent.setup();
       const onRefusal = vi.fn<(refused: RefusedField | undefined) => void>();
