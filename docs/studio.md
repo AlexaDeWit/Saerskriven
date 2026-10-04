@@ -838,7 +838,9 @@ What is followed is whatever holds focus. A box selection is followed as a
 whole, by the frame around it. With several elements picked one at a time with
 Shift, only the focused one is followed, and the others can leave the viewport.
 The one exception is a bend being placed: the Flow route toolbar holds focus
-then, and the view follows the bend, to just inside the border.
+then, and the view follows the bend, to just inside the border. Escape puts the
+bend back where it was, and the view stays where the follow took it (focus
+returning to the flow moves it only while Tab still steers).
 
 The pan takes about half a second. It is a single step where the system asks
 for reduced motion, and for each repeat of a held arrow key. It keeps the zoom

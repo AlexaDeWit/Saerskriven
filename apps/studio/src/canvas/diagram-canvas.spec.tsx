@@ -476,7 +476,7 @@ describe('DiagramCanvas', () => {
       const stored = modelStore.getState();
       render(<DiagramCanvas />);
       const told = vi.fn<() => void>();
-      const release = followItemMoves(told);
+      const release = followKeyboardMoves(told);
 
       fireEvent.keyDown(resizeControl(from), { key });
 
@@ -605,7 +605,7 @@ describe('DiagramCanvas', () => {
     release();
   });
 
-  it('tells the view nothing of a resize by pointer that is stored, a key pressed during it or not', async () => {
+  it('tells the view nothing of a resize by pointer that is stored, though a key is pressed during it', async () => {
     openCanvas([actorElement]);
     render(<DiagramCanvas />);
     const told = vi.fn<() => void>();
