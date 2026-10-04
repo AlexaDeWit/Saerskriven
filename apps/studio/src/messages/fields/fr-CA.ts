@@ -61,7 +61,6 @@ export const fieldsFrCA = catalogue(fieldMessages)('fr-CA')({
   'attach-existing-element': 'Rattacher un élément existant',
   'choose-existing-element-first': 'Choisissez d’abord un élément existant.',
   'detach-element': 'Détacher {element}',
-  'detach-unlabelled-flow': 'Détacher le flux {ends}',
   'applies-to-whole-model': 'S’applique au modèle entier',
   'provides-authentication': 'Fournit l’authentification',
   'handles-card-payments': 'Traite des paiements par carte',

@@ -3,6 +3,7 @@ import { plural, text } from '@saerskriven/i18n';
 /** The threat panel, the model panel, the record groups, and the threat register. */
 export const panelMessages = {
   threats: text(),
+  'unlabelled-flow-phrase': text({ ends: 'text' }),
   'unlabelled-flow': text({ ends: 'text' }),
   details: text(),
   'close-threats': text(),

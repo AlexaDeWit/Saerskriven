@@ -242,12 +242,29 @@ export function removedSaid(threat: Pick<Threat, 'number'>): Said {
   return (speak) => speak('canvas.threat-detach-removed', { number });
 }
 
-/**
- * The elements one threat names, in diagram order, under labels a person can
- * tell apart, each with the accessible name of its Detach control. A flow
- * left unlabelled is detached under its own message, which each language
- * words around the flow's ends.
- */
+function attachedElements(
+  diagrams: readonly Diagram[],
+  threat: Threat,
+  t: StudioTranslator['t'],
+) {
+  return diagrams.flatMap((diagram) => {
+    const elements = elementsById(diagram.elements);
+    return diagram.elements
+      .filter((element) => threat.elements.includes(element.id))
+      .map((element) => {
+        const ends = unlabelledFlowEnds(element, elements, t);
+        return {
+          ...labelledElement(element, elements, t),
+          flowPhrase:
+            ends === undefined
+              ? undefined
+              : t('panel.unlabelled-flow-phrase', { ends }),
+        };
+      });
+  });
+}
+
+/** Flow labels stay stand-alone here, while Detach uses the shared flow phrase. */
 export function threatAttachments(
   diagrams: readonly Diagram[],
   threat: Threat,
@@ -257,26 +274,32 @@ export function threatAttachments(
   readonly label: string;
   readonly detach: string;
 }[] {
-  return distinctTexts(
-    diagrams.flatMap((diagram) => {
-      const elements = elementsById(diagram.elements);
-      return diagram.elements
-        .filter((element) => threat.elements.includes(element.id))
-        .map((element) => ({
-          ...labelledElement(element, elements, t),
-          ends: unlabelledFlowEnds(element, elements, t),
-        }));
+  return distinctTexts(attachedElements(diagrams, threat, t)).map(
+    ([{ id, label, flowPhrase }, text]) => ({
+      id,
+      label: optionName(text),
+      detach: t('fields.detach-element', {
+        element:
+          flowPhrase === undefined || text.label !== label
+            ? optionName(text)
+            : optionName({ label: flowPhrase, suffix: text.suffix }),
+      }),
     }),
-  ).map(([{ id, label, ends }, text]) => ({
-    id,
-    label: optionName(text),
-    detach:
-      ends === undefined || text.label !== label
-        ? t('fields.detach-element', { element: optionName(text) })
-        : t('fields.detach-unlabelled-flow', {
-            ends: optionName({ label: ends, suffix: text.suffix }),
-          }),
-  }));
+  );
+}
+
+/** Summary names use noun phrases and distinguish collisions across those phrases. */
+export function threatSummaryElements(
+  diagrams: readonly Diagram[],
+  threat: Threat,
+  t: StudioTranslator['t'],
+): readonly { readonly id: ElementId; readonly label: string }[] {
+  return distinctTexts(
+    attachedElements(diagrams, threat, t).map((element) => ({
+      ...element,
+      label: element.flowPhrase ?? element.label,
+    })),
+  ).map(([{ id }, text]) => ({ id, label: optionName(text) }));
 }
 
 /** The number the next threat added here takes, which the model issues. */

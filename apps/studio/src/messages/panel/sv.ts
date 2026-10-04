@@ -3,6 +3,7 @@ import { panelMessages } from './contract.js';
 
 export const panelSv = catalogue(panelMessages)('sv')({
   threats: 'Hot',
+  'unlabelled-flow-phrase': 'flödet {ends}',
   'unlabelled-flow': 'Flöde {ends}',
   details: 'Detaljer',
   'close-threats': 'Stäng hoten',

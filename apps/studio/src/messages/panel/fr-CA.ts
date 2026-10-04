@@ -3,6 +3,7 @@ import { panelMessages } from './contract.js';
 
 export const panelFrCA = catalogue(panelMessages)('fr-CA')({
   threats: 'Menaces',
+  'unlabelled-flow-phrase': 'le flux {ends}',
   'unlabelled-flow': 'Flux {ends}',
   details: 'Détails',
   'close-threats': 'Fermer les menaces',
