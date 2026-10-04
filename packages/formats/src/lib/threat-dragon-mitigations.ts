@@ -1,4 +1,5 @@
 import {
+  isEmptyName,
   recordsLinkedTo,
   type Mitigation,
   type Model,
@@ -8,24 +9,16 @@ import type { Divergence } from './divergence.js';
 import { inferredMitigationStatus } from './mitigation-text.js';
 
 /**
- * The one mitigation text Threat Dragon holds for `threat`: each mitigation
- * linked to it in register order, separated by a blank line. A mitigation
- * writes its title as a line above its prose, and an empty title or an empty
- * prose is left out.
+ * Linked records in register order, separated by a blank line. A title
+ * precedes its prose on a line of its own. Only exact empty strings are omitted.
  */
 export function mitigationText(threat: Threat, model: Model): string {
   return textParts(threat, model).join('\n\n');
 }
 
 /**
- * What writing the mitigation text of every threat in `written` costs, none
- * of it for an unedited read written back. A text that merges several
- * records, or carries a title, reads back as one untitled record and is
- * `narrowed` once per threat. Once per threat, a mitigation with neither
- * title nor prose writes nothing and one whose status differs from what a
- * read infers loses that status, each `unrepresentable`. A mitigation that
- * writes something into several threats' texts is `split`, and one written
- * into none is `unrepresentable`.
+ * Losses from flattening records into threat text: merged titles or records,
+ * empty records, changed statuses, and records split or left unlinked.
  */
 export function mitigationDivergences(
   model: Model,
@@ -130,7 +123,9 @@ function spread(mitigation: Mitigation, threats: number): Divergence[] {
           detail: {
             code: 'mitigation-unlinked',
             parameters: {
-              name: mitigation.title === '' ? mitigation.id : mitigation.title,
+              name: isEmptyName(mitigation.title)
+                ? mitigation.id
+                : mitigation.title,
             },
           },
           reason: 'unrepresentable',

@@ -108,6 +108,34 @@ describe('flattening the records of a threat into its one text', () => {
     ]);
   });
 
+  it('keeps a title of only spaces in the written text and through a read and write back', () => {
+    const model = withRecords([
+      record('mitigation-spaces', ['threat-open'], {
+        title: '   ',
+        prose: '',
+        status: 'verified',
+      }),
+    ]);
+    const written = writeThreatDragon(model, read.source);
+    const reread = Either.getOrThrow(readThreatDragon(written.output));
+    expect(
+      allThreats(reread.source).find(({ id }) => id === 'threat-open')
+        ?.mitigation,
+    ).toBe('   ');
+    expect(
+      reread.model.mitigations.find(({ threats }) =>
+        threats.some((id) => id === 'threat-open'),
+      )?.prose,
+    ).toBe('   ');
+    expect(written.divergences.map(({ detail }) => detail.code)).toEqual([
+      'mitigation-title-merged',
+      'mitigation-status-dropped',
+    ]);
+    const rewritten = writeThreatDragon(reread.model, reread.source);
+    expect(JSON.parse(rewritten.output)).toEqual(JSON.parse(written.output));
+    expect(rewritten.divergences).toEqual([]);
+  });
+
   it('reports a record with no title and no text once for each threat, and nothing else of it', () => {
     const written = writtenOnto(
       withRecords([
@@ -202,6 +230,29 @@ describe('a mitigation status the text of a threat cannot hold', () => {
 });
 
 describe('a mitigation linked to no threat the file holds', () => {
+  it.each(['', '   '])(
+    'names an unlinked mitigation with title %j by its id',
+    (title) => {
+      const model = withRecords([
+        record('mitigation-untitled', ['threat-open'], { title }),
+      ]);
+      const written = writtenOnto({
+        ...model,
+        mitigations: [{ ...model.mitigations[0], threats: [] }],
+      });
+      expect(written.divergences).toEqual([
+        {
+          subject: { kind: 'mitigation', id: 'mitigation-untitled' },
+          detail: {
+            code: 'mitigation-unlinked',
+            parameters: { name: 'mitigation-untitled' },
+          },
+          reason: 'unrepresentable',
+        },
+      ]);
+    },
+  );
+
   it('is reported as having no place in the format', () => {
     const model = withRecords([record('mitigation-kept', ['threat-open'])]);
     const unlinked = {

@@ -1,7 +1,8 @@
-import type {
-  AssumptionInput,
-  MitigationInput,
-  ThreatInput,
+import {
+  isEmptyName,
+  type AssumptionInput,
+  type MitigationInput,
+  type ThreatInput,
 } from '@saerskriven/model';
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
 import {
@@ -12,10 +13,8 @@ import {
 import { tmbomNodeId } from './tmbom-graph.js';
 
 /**
- * The TM-BOM threats, controls and assumptions as native records. A threat
- * naming no affected component applies to the model, a control naming no
- * threat becomes a line of the model description, and every assumption
- * applies to the model, so no record lacks a reference.
+ * Threats without affected components and all assumptions apply to the model.
+ * Controls without threats become description lines rather than records.
  */
 export function tmbomRegister(document: TmbomDocument, context: ImportContext) {
   const sourceThreats = document.threats ?? [];
@@ -153,7 +152,7 @@ function unlinkedControlLine(
       parameters: { name: control.symbolic_name },
     },
     [
-      ...(control.title === ''
+      ...(isEmptyName(control.title)
         ? ['Mitigation']
         : ['Mitigation: ', control.title]),
       ' (',

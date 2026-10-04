@@ -242,27 +242,30 @@ it('ends an unlinked control line with an empty description after its status, wi
   );
 });
 
-it('opens an unlinked control line with the bare word Mitigation when the title is empty, with no colon beside it', () => {
-  const baseline = tmbomFixture();
-  baseline.controls = [];
-  const document = tmbomFixture();
-  document.controls = [
-    control(document, {
-      symbolic_name: 'unlinked-control',
-      title: '',
-      description: 'Work on no threat.',
-      status: 'active',
-      threats: [],
-    }),
-  ];
-  const read = imported(document);
-  const before = paragraphs(imported(baseline).model.metadata.description);
-  const after = paragraphs(read.model.metadata.description);
-  expect(after).toHaveLength(before.length + 1);
-  expect(after.at(-1)).toBe(
-    'Mitigation (implemented, source status active). Work on no threat.',
-  );
-});
+it.each(['', '   '])(
+  'labels an unlinked control with title %j as Mitigation',
+  (title) => {
+    const baseline = tmbomFixture();
+    baseline.controls = [];
+    const document = tmbomFixture();
+    document.controls = [
+      control(document, {
+        symbolic_name: 'unlinked-control',
+        title,
+        description: 'Work on no threat.',
+        status: 'active',
+        threats: [],
+      }),
+    ];
+    const read = imported(document);
+    const before = paragraphs(imported(baseline).model.metadata.description);
+    const after = paragraphs(read.model.metadata.description);
+    expect(after).toHaveLength(before.length + 1);
+    expect(after.at(-1)).toBe(
+      'Mitigation (implemented, source status active). Work on no threat.',
+    );
+  },
+);
 
 it.each(['retired', 'wont_do'] as const)(
   'reports a %s control naming no threat as an omission and writes no description line',
