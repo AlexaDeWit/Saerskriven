@@ -35,6 +35,27 @@ const small: CanvasNode = {
   size: { width: 4, height: 4 },
 };
 
+const roundedUp: CanvasNode = {
+  ...nodeNamed('el-note'),
+  size: { width: 4.6, height: 4.6 },
+};
+
+const roundedDown: CanvasNode = {
+  ...nodeNamed('el-scope-note'),
+  size: { width: 4.4, height: 4.4 },
+};
+
+const tiny: CanvasNode = {
+  ...nodeNamed('el-zone'),
+  size: { width: 0.4, height: 0.4 },
+};
+
+const smallNodes = [small, roundedUp, roundedDown, tiny];
+
+const smallControls = smallNodes.flatMap((node) =>
+  (['right', 'left'] as const).map((position) => ({ node, position })),
+);
+
 const pressed: NodeBox = { position: client.position, size: client.size };
 
 const drift = 50;
@@ -80,13 +101,20 @@ function Host({ data }: NodeProps<HostNode>): ReactElement {
 
 const nodeTypes = { host: Host };
 
-const nodes = [client, narrowest, small].map((node): HostNode => ({
+const nodes = [client, narrowest, ...smallNodes].map((node): HostNode => ({
   id: node.id,
   type: 'host',
   position: node.position,
   selected: true,
   data: { node },
-  ...(node === small ? { measured: node.size } : {}),
+  ...(smallNodes.includes(node)
+    ? {
+        measured: {
+          width: Math.round(node.size.width),
+          height: Math.round(node.size.height),
+        },
+      }
+    : {}),
 }));
 
 const keyDown = (key: string, shiftKey = false): KeyboardEvent =>
@@ -177,11 +205,11 @@ describe('ResizeControls', () => {
     expect(resizeEnd).not.toHaveBeenCalled();
   });
 
-  it.each(['right', 'left'] as const)(
-    'leaves a width below ten unchanged when dragged inward from the %s',
-    (position) => {
+  it.each(smallControls)(
+    'leaves width $node.size.width unchanged when dragged inward from the $position',
+    ({ node, position }) => {
       const end = position === 'right' ? 60 : 140;
-      mouse(control(position, small), 'mousedown', 100);
+      mouse(control(position, node), 'mousedown', 100);
       mouse(window, 'mousemove', end);
       mouse(window, 'mouseup', end);
 
@@ -190,21 +218,21 @@ describe('ResizeControls', () => {
     },
   );
 
-  it.each(['right', 'left'] as const)(
-    'grows a width below ten from its current size when dragged from the %s',
-    (position) => {
+  it.each(smallControls)(
+    'grows width $node.size.width from its model size when dragged from the $position',
+    ({ node, position }) => {
       const end = position === 'right' ? 140 : 60;
-      mouse(control(position, small), 'mousedown', 100);
+      mouse(control(position, node), 'mousedown', 100);
       mouse(window, 'mousemove', end);
       mouse(window, 'mouseup', end);
 
       expect(resizeEnd).toHaveBeenCalledExactlyOnceWith(
         {
           position: {
-            x: small.position.x + (position === 'left' ? -40 : 0),
-            y: small.position.y,
+            x: node.position.x + (position === 'left' ? -40 : 0),
+            y: node.position.y,
           },
-          size: { width: 44, height: 4 },
+          size: { width: node.size.width + 40, height: node.size.height },
         },
         false,
       );

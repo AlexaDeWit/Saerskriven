@@ -25,7 +25,7 @@ import {
   keyboardResizeStep,
   minimumResizeExtent,
   resizeBoxByKey,
-  resizeBoxOnControlAxes,
+  resizeBoxFromMeasurement,
   resizeControlsOf,
   resizeKeys,
   shiftedKeyboardResizeStep,
@@ -234,10 +234,15 @@ function ResizeControl({
   const end = useCallback<OnResizeEnd>(
     (event, extent) => {
       press.end(position, event.identifier, cancels(event), (pressed) =>
-        resizeBoxOnControlAxes(pressed, position, {
-          position: { x: extent.x, y: extent.y },
-          size: { width: extent.width, height: extent.height },
-        }),
+        resizeBoxFromMeasurement(
+          pressed,
+          position,
+          {
+            width: Math.round(pressed.size.width),
+            height: Math.round(pressed.size.height),
+          },
+          extent,
+        ),
       );
     },
     [position, press],
@@ -277,8 +282,8 @@ function ResizeControl({
       style={wholeControl}
     >
       <NodeResizeControl
-        minHeight={minimumResizeExtent(node.size.height)}
-        minWidth={minimumResizeExtent(node.size.width)}
+        minHeight={Math.round(minimumResizeExtent(node.size.height))}
+        minWidth={Math.round(minimumResizeExtent(node.size.width))}
         onResize={resize}
         onResizeEnd={end}
         onResizeStart={start}

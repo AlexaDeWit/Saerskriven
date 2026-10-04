@@ -88,6 +88,34 @@ export function resizeBoxOnControlAxes(
   return resized;
 }
 
+/** Applies measured resize deltas to the model box, preserving its fractional extents. */
+export function resizeBoxFromMeasurement(
+  box: NodeBox,
+  control: ResizeControlPosition,
+  measured: Size,
+  resized: Size,
+): NodeBox {
+  const horizontal = horizontalEdge(control);
+  const vertical = verticalEdge(control);
+  const widthChange = resized.width - measured.width;
+  const heightChange = resized.height - measured.height;
+  const across =
+    horizontal === undefined
+      ? box
+      : resizeHorizontal(
+          box,
+          horizontal,
+          horizontal === 'left' ? -widthChange : widthChange,
+        );
+  return vertical === undefined
+    ? across
+    : resizeVertical(
+        across,
+        vertical,
+        vertical === 'top' ? -heightChange : heightChange,
+      );
+}
+
 /** Boundary curves stretch only axes their points span. */
 export function resizableAxes(node: CanvasNode): {
   readonly width: boolean;
