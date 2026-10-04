@@ -238,6 +238,9 @@ describe('recordLabel', () => {
     expect(recordLabel({ ...mitigation, title: '', prose: 'One\nTwo' })).toBe(
       'One',
     );
+    expect(
+      recordLabel({ ...mitigation, title: '   ', prose: 'One\nTwo' }),
+    ).toBe('One');
     expect(recordLabel({ ...mitigation, title: '', prose: '' })).toBe(
       mitigation.id,
     );

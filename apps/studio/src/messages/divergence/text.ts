@@ -338,13 +338,13 @@ function elementSubject(
 }
 
 function threatSubject(t: Speaker, { number, title }: Threat): string {
-  return title === ''
+  return isEmptyName(title)
     ? t('divergence.subject-threat-untitled', { number })
     : t('divergence.subject-threat', { number, title });
 }
 
 function threatPhrase(t: Speaker, { number, title }: Threat): string {
-  return title === ''
+  return isEmptyName(title)
     ? t('divergence.threat-untitled', { number })
     : t('divergence.threat', { number, title });
 }
@@ -357,7 +357,7 @@ function mitigationSubject(
 ): string {
   const named = threatNamedBy(detail);
   const threat = threatHolding(mitigation, held, named);
-  if (mitigation.title !== '') {
+  if (!isEmptyName(mitigation.title)) {
     return threat !== undefined && threat.id === named
       ? t('divergence.subject-mitigation-titled-on', {
           title: mitigation.title,

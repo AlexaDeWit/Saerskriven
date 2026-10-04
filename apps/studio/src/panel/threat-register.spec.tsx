@@ -437,7 +437,10 @@ describe(
       expect(cells[4].textContent).toBe(t(statusMessages.open));
     });
 
-    it('names the row of a threat with no title by its number', () => {
+    it.each([
+      ['no title', ''],
+      ['a title of only spaces', '   '],
+    ])('names the row of a threat with %s by its number', (_, title) => {
       modelStore.setState(
         initialState({
           ...registerModel,
@@ -447,7 +450,7 @@ describe(
               ...base,
               id: threatId('threat-untitled'),
               number: 4,
-              title: '',
+              title,
             },
           ],
           lastIssuedThreatNumber: 4,

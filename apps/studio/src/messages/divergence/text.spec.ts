@@ -62,11 +62,13 @@ const model = modelWith({
   threats: [
     threatOf({ number: 9, title: confirmed, elements: ['archive'] }),
     threatOf({ number: 4, title: '', elements: ['archive'] }),
+    threatOf({ number: 6, title: '   ', elements: ['archive'] }),
   ],
   mitigations: [
     mitigationOf({ id: 'titled', title: 'Rate limit', threats: ['threat-9'] }),
     mitigationOf({ id: 'untitled', threats: ['threat-9', 'threat-4'] }),
     mitigationOf({ id: 'unlinked', threats: [] }),
+    mitigationOf({ id: 'spaced', title: '   ', threats: ['threat-6'] }),
     mitigationOf({
       id: 'shared',
       title: 'Read-only share links',
@@ -351,6 +353,11 @@ describe('the subject a line names', () => {
       t('divergence.subject-threat-untitled', { number: 4 }),
     ],
     [
+      'a threat titled with only spaces by its number',
+      { kind: 'threat', id: threatId('threat-6') },
+      t('divergence.subject-threat-untitled', { number: 6 }),
+    ],
+    [
       'a named element by its kind and name',
       { kind: 'element', id: elementId('note') },
       t('divergence.subject-text-named', { name: 'Reminder' }),
@@ -381,6 +388,13 @@ describe('the subject a line names', () => {
       'an untitled mitigation on no threat by its kind',
       { kind: 'mitigation', id: mitigationId('unlinked') },
       t('divergence.subject-mitigation-untitled'),
+    ],
+    [
+      'a mitigation titled with only spaces by the threat it is on, titled so too',
+      { kind: 'mitigation', id: mitigationId('spaced') },
+      t('divergence.subject-mitigation-on', {
+        threat: t('divergence.threat-untitled', { number: 6 }),
+      }),
     ],
     [
       'an assumption by the lowest-numbered threat it is on',
