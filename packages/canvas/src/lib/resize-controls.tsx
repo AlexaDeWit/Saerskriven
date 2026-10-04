@@ -21,6 +21,7 @@ import { handleSides, type NodeBox } from './handles.js';
 import type { CanvasNode } from './layout.js';
 import { svgNumber } from './numbers.js';
 import {
+  isResizeKey,
   keyboardResizeStep,
   minimumNodeExtent,
   resizeBoxByKey,
@@ -87,6 +88,11 @@ type NodePress = {
  * fractional size rounded to whole pixels. `onResize` and `onResizeEnd` may
  * be new functions on every render: a pointer resize calls those of the
  * render its press began on, and settles against that render's `node`.
+ *
+ * The button claims every arrow key pressed on it. One it cannot use, off its
+ * control's axis or shrinking an extent already at `minimumNodeExtent`,
+ * resizes nothing and never reaches React Flow, which moves the selected nodes
+ * on an arrow key. Any other key is left alone.
  *
  * One control holds the node's press at a time. Another finger on that
  * control joins the press. Until the press is over, another pointer's press
@@ -248,19 +254,19 @@ function ResizeControl({
     }
   };
   const keyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
+    if (!isResizeKey(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
     const box = resizeBoxByKey(
       node,
       position,
       event.key,
       event.shiftKey ? shiftedKeyboardResizeStep : keyboardResizeStep,
     );
-    if (box === undefined || onResizeEnd === undefined) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    if (!press.pressed()) {
-      onResizeEnd(box, 'keyboard');
+    if (box !== undefined && !press.pressed()) {
+      onResizeEnd?.(box, 'keyboard');
     }
   };
 
