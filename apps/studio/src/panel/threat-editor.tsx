@@ -17,7 +17,7 @@ import { ThreatSummary } from './threat-summary.js';
 /** Focus after adding or deleting a threat. */
 export type EditorFocus = 'title' | 'disclosure';
 
-/** A threat, the element whose panel shows it, and callbacks for its edits, its attachments, its model link and its refused drafts. */
+/** The threat, panel element and callbacks for edits and refused drafts. */
 export type ThreatEditorProps = {
   readonly threat: Threat;
   readonly on: ElementId | undefined;
@@ -34,12 +34,8 @@ export type ThreatEditorProps = {
 };
 
 /**
- * An expandable threat with one commit per field. Its fields run from what
- * the threat is to what is done about it: title, category and description,
- * the mitigations and assumptions, then severity and status, judged from
- * the records above them, with any raised flag beside status. Which fields
- * hold a refusal is state of the expanded content, so it unmounts with the
- * fields as the threat collapses.
+ * An expandable threat with one commit per field.
+ * Refusal notes unmount with the fields when the threat collapses.
  */
 export function ThreatEditor({
   threat,

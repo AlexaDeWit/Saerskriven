@@ -56,14 +56,9 @@ type FocusRequest =
     };
 
 /**
- * The records of one kind linked to one target, a threat or the model, under
- * a heading that counts them. Add opens an empty row that becomes a record on
- * its first commit and goes when left empty, and a new record is marked and
- * announced as added once it is kept. A refusal noted under the empty row is
- * noted under the record from that commit on, so the field's next report
- * settles it. Every record starts folded, and one opened stays open while the
- * group is mounted. A row that returns while the group is mounted takes its
- * old slot back.
+ * Edits records of one kind linked to a threat or the model.
+ * A new row's first commit moves its refusal notes to the kept record.
+ * Open rows stay open while mounted. Returning rows regain their old slots.
  */
 export function RecordGroup<Held extends ThreatRecord>({
   kind,

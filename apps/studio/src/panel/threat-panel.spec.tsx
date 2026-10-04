@@ -26,7 +26,14 @@ import {
   undoable,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
+import {
+  chooseFrom,
+  editorTimeout,
+  listedThreats,
+  refusedDraft,
+  refusedProse,
+  typeRefusedProse,
+} from './panel.fixtures.js';
 import type { HeldDraft } from './threat-list.js';
 import { ThreatPanel, type ThreatPanelProps } from './threat-panel.js';
 import {
@@ -76,17 +83,6 @@ const titleField = (): HTMLElement =>
 
 const readerThreat = (): HTMLElement =>
   screen.getByRole('button', { name: /A reader edits/u });
-
-const refusedProse = `Pasted${softHyphen}prose`;
-
-const refusedDraft = (): HTMLElement => screen.getByDisplayValue(refusedProse);
-
-const typeRefusedProse = async (
-  user: ReturnType<typeof userEvent.setup>,
-): Promise<void> => {
-  await user.click(textbox('Description'));
-  await user.keyboard(refusedProse);
-};
 
 const severityOf = (): string =>
   screen.getByRole('combobox', { name: 'Severity' }).textContent ?? '';

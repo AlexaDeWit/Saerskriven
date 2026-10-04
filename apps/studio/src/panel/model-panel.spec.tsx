@@ -22,7 +22,14 @@ import { dispatch, modelStore } from '../store/store.js';
 import { runRegistered } from '../commands/commands.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
 import { ModelPanel } from './model-panel.js';
-import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
+import {
+  chooseFrom,
+  editorTimeout,
+  listedThreats,
+  refusedDraft,
+  refusedProse,
+  typeRefusedProse,
+} from './panel.fixtures.js';
 import type { RefusedField } from './refusals.js';
 import type { HeldDrafts } from './threat-list.js';
 import { freshThreat } from './threats.js';
@@ -35,7 +42,7 @@ import {
   textbox,
   threatsTab,
 } from '../ui/ui.fixtures.js';
-import { softHyphen, threatId } from '@saerskriven/model/fixtures';
+import { threatId } from '@saerskriven/model/fixtures';
 
 const showPanel = ({
   held,
@@ -92,17 +99,6 @@ const openAssumption = async (
 
 const summary = (title: RegExp): HTMLElement =>
   screen.getByRole('button', { name: title });
-
-const refusedProse = `Pasted${softHyphen}prose`;
-
-const refusedDraft = (): HTMLElement => screen.getByDisplayValue(refusedProse);
-
-const typeRefusedProse = async (
-  user: ReturnType<typeof userEvent.setup>,
-): Promise<void> => {
-  await user.click(textbox('Description'));
-  await user.keyboard(refusedProse);
-};
 
 const listed = (): readonly (string | undefined)[] =>
   listedThreats(screen.getByRole('region', { name: 'Model' }));

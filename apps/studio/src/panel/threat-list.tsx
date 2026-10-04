@@ -79,13 +79,9 @@ type ListControls = {
 };
 
 /**
- * The element whose threats are listed, or `undefined` for every threat in
- * the model, the drafts the overlay retains, and the control focus goes to
- * where no threat is left to take it: Add a threat on an element, which the
- * list draws on that ref, and the Threats tab on the model. The model's list
- * calls `onRequested` before it opens a threat asked for from outside it, and
- * before focus lands on the refused text a threat register choice closes
- * onto.
+ * An element's list, or the model's when `element` is undefined.
+ * `home` takes focus when no threat remains. The model list calls
+ * `onRequested` before an external request opens a threat or focuses a refusal.
  */
 export type ThreatListProps = {
   readonly element: Element | undefined;
@@ -95,19 +91,9 @@ export type ThreatListProps = {
 };
 
 /**
- * The Threats tab of either panel. On an element, Add a threat and Attach
- * existing, then the threats naming the element. On the model, Add a threat,
- * which adds one that applies to the model, then every threat in the model.
- * One threat is expanded at a time and each is edited in place. While one
- * holds a refused draft no other opens, and Add a threat adds nothing and
- * moves focus to the field holding the draft. The list is in review order as
- * it mounts and holds that order while it stays mounted, so an edit never
- * moves the threat under the pointer and a threat added meanwhile joins the
- * end. A threat opened by any route lands with its header at the top of the
- * body, the routes into the model's list from outside it (`openInModelPanel`)
- * included. A threat leaves the list when it leaves the model, which a detach
- * or a cleared model link that takes its last reference does, or on an
- * element's list when it leaves the element.
+ * Edits an element's threats or every threat in the model.
+ * A refused draft blocks switching threats and adding, which focuses its field.
+ * Review order stays fixed while mounted, with new threats at the end.
  */
 export function ThreatList({
   element,
