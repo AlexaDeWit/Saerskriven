@@ -23,6 +23,8 @@ import {
   openText,
   placeholder,
   readBack,
+  readClipboardText,
+  requiresClipboardApiRead,
   savedFile,
   savedModel,
   selectByKeyboard,
@@ -122,10 +124,11 @@ test('Tab keeps selection and a click inside an empty boundary clears it', async
   await expect(boundary).not.toHaveClass(/selected/u);
 });
 
-test('clipboard commands preserve graph references and leave text fields their own keys', async ({
+test('clipboard commands preserve graph references', async ({
   page,
   context,
 }) => {
+  requiresClipboardApiRead(context);
   await allowClipboard(context);
   await openFallback(page);
   await selectByKeyboard(page, placeholder.records);
@@ -141,16 +144,30 @@ test('clipboard commands preserve graph references and leave text fields their o
   expect(new Set(copied.threats.map((threat) => threat.id)).size).toBe(2);
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(page.locator('.react-flow__node')).toHaveCount(2);
+});
+
+test('text fields keep their native clipboard keys', async ({
+  page,
+  context,
+}) => {
+  await allowClipboard(context);
+  await openFallback(page);
+  await selectByKeyboard(page, placeholder.records);
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+c'));
+  await expect(editAnnouncement(page)).not.toBeEmpty();
+  expect(await readClipboardText(page)).toContain(
+    '# Saerskriven selection v1\n',
+  );
   await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('Enter');
   const name = page.getByRole('textbox', { name: /^Name of/u });
   await name.fill('Text copy');
   await name.selectText();
-  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+c'));
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-    'Text copy',
-  );
-  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+v'));
+  await page.keyboard.press('ControlOrMeta+c');
+  await name.fill('');
+  await page.keyboard.press('ControlOrMeta+v');
+  await expect(name).toHaveValue('Text copy');
+  expect(await readClipboardText(page)).toBe('Text copy');
   await expect(page.locator('.react-flow__node')).toHaveCount(2);
   await page.keyboard.press('Escape');
 });
