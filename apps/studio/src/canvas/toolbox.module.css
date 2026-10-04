@@ -1,14 +1,26 @@
-/* Row two of the chrome card, and the row whose natural width the card takes.
-   It wraps rather than overflowing where the viewport is narrower than one
-   line of buttons. The card draws the border and the ground; the rule here is
-   the one between the two rows. */
 .row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: var(--saer-space-1);
   padding: var(--saer-space-1);
   border-block-start: 1px solid var(--saer-colour-border);
+}
+
+.selectionActions {
+  display: flex;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  padding-inline-end: var(--saer-space-1);
+  border: 0;
+  border-inline-end: 1px solid var(--saer-colour-border);
+}
+
+.selectionActions .control {
+  min-inline-size: 2.75rem;
+  min-block-size: 2.75rem;
 }
 
 .control {
@@ -24,8 +36,12 @@
   color: var(--saer-colour-text);
 }
 
-.control:hover {
+.control:hover:not(:disabled) {
   background: var(--saer-colour-surface);
+}
+
+.control:disabled {
+  color: var(--saer-colour-text-muted);
 }
 
 .control[aria-pressed='true'] {
@@ -33,10 +49,6 @@
   color: var(--saer-colour-accent-text);
 }
 
-/* The chrome card, and the selection card that borrows these controls, draw
-   the border an outset ring would be drawn over, so the control ring is inset.
-   The flow chooser hangs under the card with a border of its own and keeps the
-   outset one. */
 .control:focus-visible {
   outline: var(--saer-focus-ring);
   outline-offset: calc(-1 * var(--saer-focus-ring-offset));
@@ -51,9 +63,7 @@
   outline-color: var(--saer-colour-accent-text);
 }
 
-/* Forced colours replace the accent ground with the button face, which would
-   leave a pressed control looking like the rest, so it takes the system's
-   highlight pair instead. */
+/* Forced colours need the system highlight to distinguish the selected tool. */
 @media (forced-colors: active) {
   .control[aria-pressed='true'] {
     forced-color-adjust: none;

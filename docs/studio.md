@@ -516,6 +516,10 @@ Threat Dragon file's extra keys, are not copied, and the status line says so.
 
 ## Deleting and undoing
 
+Select an element or flow, then tap the trash control beside the drawing tools
+to delete the selection. The control stays available while the threat pane is
+collapsed or expanded. Undo restores the selection's elements and their threats.
+
 Delete or Backspace removes the selection from anywhere in the studio outside a
 form field (a text box or a drop-down list). A flow attached to a removed
 element loses that end and keeps the other, and a threat loses the link. A
@@ -780,7 +784,7 @@ outside one, and none works while focus is inside an open menu or list.
 | Redo                                   | Mod+Shift+Z, or Control+Y off macOS          | Menu                |
 | Copy, Cut, Paste, Duplicate            | Mod+C, Mod+X, Mod+V, Mod+D                   | Keyboard only       |
 | Select all                             | Mod+A                                        | Keyboard only       |
-| Delete selection                       | Delete or Backspace                          | Keyboard only       |
+| Delete selection                       | Delete or Backspace                          | Trash control       |
 | Rename selection                       | F2, or Enter with one selected               | Menu                |
 | Position and size                      | Shift+P                                      | Keyboard only       |
 | Change flow source, Change flow target | Shift+S, Shift+T                             | Reconnect flow card |
