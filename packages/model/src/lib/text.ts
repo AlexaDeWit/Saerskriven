@@ -34,8 +34,7 @@ export const acceptedTextSchema = z
   .refine(acceptsEveryCharacter, { params: refusedCharacterDetail });
 
 /**
- * Whether `text` is a name with nothing in it. A name of only spaces, tabs or
- * line breaks counts: the schema accepts it, and a reader sees no name.
+ * Whether a name or a title contains only spaces, tabs or line breaks, or is empty.
  */
 export function isEmptyName(text: string): boolean {
   return text.trim() === '';

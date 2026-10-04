@@ -14,6 +14,7 @@ import {
 } from '@saerskriven/model';
 import { flowEndsText, kindLabel } from '../canvas/names.js';
 import type { StudioTranslator } from '../messages/catalogues.js';
+import { diagramTitle } from '../messages/diagram-title.js';
 import {
   headingKindMessages,
   severityMessages,
@@ -166,10 +167,7 @@ export function attachableThreats(
   }));
 }
 
-/**
- * The elements "Attach existing" offers one threat: every element across the
- * diagrams that the threat does not already name, under the diagram drawing it.
- */
+/** Offers unattached elements with the title of the diagram that draws each one. */
 export function attachableElements(
   diagrams: readonly Diagram[],
   threat: Threat,
@@ -182,7 +180,7 @@ export function attachableElements(
         .filter((element) => !threat.elements.includes(element.id))
         .map((element) => ({
           ...labelledElement(element, elements, t),
-          detail: diagram.title,
+          detail: diagramTitle(diagram.title, t),
         }));
     }),
   ).map(([{ id, detail }, text]) => ({ id, text: { ...text, detail } }));

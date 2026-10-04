@@ -235,6 +235,8 @@ states. Topic links are reported as omissions.
 ## Diagrams
 
 The switcher names the diagram on screen and lists every diagram of the model.
+A title that is empty or contains only spaces displays and announces as
+Untitled diagram in the chosen language. The stored title stays unchanged.
 **New diagram** adds an empty one and opens its title for naming. **Rename
 diagram** turns the name into a field: Enter or leaving it commits and Escape
 cancels. PageDown and PageUp step to the next and previous diagram while the

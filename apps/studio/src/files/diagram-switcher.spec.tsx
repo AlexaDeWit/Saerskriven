@@ -7,6 +7,11 @@ import {
 } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { emptyModel } from '@saerskriven/model';
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import { locales } from '@saerskriven/i18n';
+import { Either } from 'effect';
+import { chooseLanguage } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import {
   CommandSurfaceProvider,
   unmountedSurface,
@@ -63,6 +68,49 @@ const openTitle = async (user: UserEvent): Promise<HTMLElement> => {
 afterEach(() => {
   resetDiagramRenaming();
   resetAnnouncements();
+  act(() => {
+    chooseLanguage('en-CA');
+  });
+});
+
+describe.each(locales)('blank diagram titles in %s', (locale) => {
+  it.each(['', '   '])(
+    'names the button and radio item for title %j without changing the saved title',
+    async (title) => {
+      const user = userEvent.setup();
+      const t = inLocale(locale);
+      chooseLanguage(locale);
+      const model = {
+        ...twoDiagramModel,
+        diagrams: twoDiagramModel.diagrams.map((diagram, index) =>
+          index === 0 ? { ...diagram, title } : diagram,
+        ),
+      };
+      const original = saerskrivenYamlCodec.write(model).output;
+      const opened = Either.getOrThrow(saerskrivenYamlCodec.read(original));
+      modelStore.setState(initialState(opened.model), true);
+      mounted();
+
+      const fallback = t('defaults.untitled-diagram');
+      const name = t('menu.diagram-named', { title: fallback });
+      expect(switcher(name).textContent).toBe(fallback);
+      await user.click(switcher(name));
+      await screen.findByRole('menu');
+      expect(choice(fallback).getAttribute('aria-checked')).toBe('true');
+      await user.click(choice('Second'));
+      await user.click(switcher(t('menu.diagram-named', { title: 'Second' })));
+      await user.click(choice(fallback));
+
+      expect(switcher(name).textContent).toBe(fallback);
+      const state = modelStore.getState();
+      expect(state.present).toBe(opened.model);
+      expect(state.present.diagrams[0].title).toBe(title);
+      expect(state.past).toEqual([]);
+      expect(
+        saerskrivenYamlCodec.write(state.present, opened.source).output,
+      ).toBe(original);
+    },
+  );
 });
 
 describe('the diagram switcher', () => {

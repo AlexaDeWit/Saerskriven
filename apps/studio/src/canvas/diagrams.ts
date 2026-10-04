@@ -7,6 +7,7 @@ import {
 import { Action } from '../store/actions.js';
 import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { activeTranslator } from '../messages/locale.js';
+import { diagramTitle } from '../messages/diagram-title.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { externalStore } from '../ui/external-store.js';
 import {
@@ -18,11 +19,7 @@ import {
 } from './announcements.js';
 import { focusElement } from './edits.js';
 
-/**
- * Puts the diagram `diagramId` on screen without saying so, and ends any
- * status line still showing. It returns the diagram now on screen, or
- * `undefined` where nothing changed.
- */
+/** Ends the status line and returns the newly shown diagram, or undefined if unchanged. */
 export function switchDiagram(diagramId: DiagramId): Diagram | undefined {
   const before = activeDiagramId(modelStore.getState());
   dispatch(Action.SelectDiagram({ diagramId }));
@@ -34,11 +31,7 @@ export function switchDiagram(diagramId: DiagramId): Diagram | undefined {
   return shown;
 }
 
-/**
- * Puts the diagram `diagramId` names on screen and says so, where it was not
- * already. `announcer` says it: the status line draws it unless a caller
- * hands in `announceUndrawn`.
- */
+/** Announces a changed diagram through the status line unless given `announceUndrawn`. */
 export function showDiagram(
   diagramId: DiagramId,
   announcer: Announcer = announce,
@@ -152,10 +145,7 @@ export function endRenamingDiagram(): void {
   setRenaming(undefined);
 }
 
-/**
- * The diagram whose title the switcher's field is open on. It names the
- * diagram, so a field is not left open over another diagram put on screen.
- */
+/** Identifies the diagram being edited so the field closes when another diagram appears. */
 export function useDiagramRenaming(): DiagramId | undefined {
   return renamingStore.use();
 }
@@ -173,8 +163,11 @@ function say(
   diagram: Pick<Diagram, 'title'>,
   announcer: Announcer = announce,
 ): void {
-  const title = excerpt(diagram.title, nameQuoteLength);
-  announcer((t) => t(message, { title }));
+  announcer((t) =>
+    t(message, {
+      title: excerpt(diagramTitle(diagram.title, t), nameQuoteLength),
+    }),
+  );
 }
 
 function setRenaming(next: DiagramId | undefined): void {
