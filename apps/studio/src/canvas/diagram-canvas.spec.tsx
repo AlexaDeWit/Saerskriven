@@ -20,6 +20,7 @@ import {
   type ContextualShortcutId,
 } from '../commands/contextual-shortcuts.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
+import { CommandSurfaceProvider } from '../commands/binding.js';
 import { commandById, runCommand } from '../commands/registry.js';
 import {
   hostPlatform,
@@ -51,7 +52,7 @@ import { resetThreatRegister } from '../panel/threat-register-state.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { followKeyboardMoves } from './keyboard-moves.js';
 import { placementClickDistance } from './elements.js';
-import { selectTool } from './tools.js';
+import { currentTool, selectTool } from './tools.js';
 import { currentLayout } from './layout.js';
 import {
   actorElement,
@@ -744,6 +745,65 @@ describe('DiagramCanvas', () => {
       vi.restoreAllMocks();
       vi.unstubAllGlobals();
     });
+
+    it.each([
+      { tool: 'hand', button: 0, moved: true },
+      { tool: 'temporary hand', button: 0, moved: true },
+      { tool: 'middle button', button: 1, moved: true },
+      { tool: 'hand', button: 0, moved: false },
+      { tool: 'temporary hand', button: 0, moved: false },
+      { tool: 'middle button', button: 1, moved: false },
+    ])(
+      'ends a $tool pan on blur with its current view (moved: $moved)',
+      async ({ tool, button, moved }) => {
+        render(
+          <CommandSurfaceProvider surface={recordingSurface().surface}>
+            <DiagramCanvas />
+          </CommandSurfaceProvider>,
+        );
+        measurements.publish();
+        if (tool === 'hand') {
+          act(() => {
+            selectTool('hand');
+          });
+        } else if (tool === 'temporary hand') {
+          fireEvent.keyDown(document, { key: ' ' });
+        }
+        const pane = document.querySelector('.react-flow__pane');
+        expect(pane).not.toBeNull();
+        const stored = modelStore.getState();
+        const before = viewportTransform();
+        fireEvent(
+          pane ?? document.body,
+          new ViewKeepingMouseEvent('mousedown', {
+            button,
+            bubbles: true,
+            cancelable: true,
+            clientX: 100,
+            clientY: 100,
+            view: window,
+          }),
+        );
+        if (moved) {
+          fireEvent(window, mouseEvent('mousemove', 140));
+        }
+        const atBlur = viewportTransform();
+        expect(atBlur.x - before.x).toBe(moved ? 40 : 0);
+        fireEvent(window, new Event('blur'));
+        expect(viewportTransform()).toEqual(atBlur);
+        expect(currentTool().active).toBe(tool === 'hand' ? 'hand' : 'select');
+        fireEvent(window, mouseEvent('mousemove', 160));
+        fireEvent(window, mouseEvent('mousemove', 180));
+        expect(viewportTransform()).toEqual(atBlur);
+        fireEvent(window, mouseEvent('mouseup', 180));
+        await clickSuppressionLifted();
+
+        expect(viewportTransform()).toEqual(atBlur);
+        expect(modelStore.getState().present).toBe(stored.present);
+        expect(modelStore.getState().past).toBe(stored.past);
+        expect(modelStore.getState().future).toBe(stored.future);
+      },
+    );
 
     it('preserves a fresh resize on another control when an old joined touch moves and releases', async () => {
       openCanvas([actorElement]);

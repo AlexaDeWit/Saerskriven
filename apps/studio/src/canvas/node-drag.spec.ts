@@ -9,6 +9,7 @@ import { dispatch, modelStore } from '../store/store.js';
 import { laidOutNode, openCanvas } from './canvas.fixtures.js';
 import { currentLayout } from './layout.js';
 import { useNodeDrag } from './node-drag.js';
+import { useHeldMouse } from './held-mouse.js';
 import { nodesById, type DiagramNode } from './nodes.js';
 import { selectTool } from './tools.js';
 
@@ -29,9 +30,14 @@ document.body.append(node, fixedNode);
 const renderNodeDrag = () => {
   const moveNodes =
     vi.fn<(changes: NodeChange<DiagramNode>[], input: GestureInput) => void>();
-  const { result, rerender } = renderHook(() =>
-    useNodeDrag(nodesById(currentLayout(modelStore.getState())), moveNodes),
-  );
+  const { result, rerender } = renderHook(() => {
+    const drag = useNodeDrag(
+      nodesById(currentLayout(modelStore.getState())),
+      moveNodes,
+    );
+    useHeldMouse(drag.startsGesture, drag.cancel, drag.active);
+    return drag;
+  });
   return {
     start: (ids: readonly ElementId[]) => {
       act(() => {

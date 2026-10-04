@@ -267,7 +267,7 @@ Trust boundary curve, Note and Hand. A tooltip names each tool's shortcuts.
   not offered.
 
 Hand, or H, pans with the pointer, and holding Space pans for as long as it is
-held.
+held. Switching away from the window ends a held pan and keeps the current view.
 
 ## Selecting
 
