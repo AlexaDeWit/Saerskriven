@@ -15,6 +15,7 @@ import { hostPlatform } from '../commands/shortcuts.js';
 import { activeDiagram } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { useTranslator } from '../messages/locale.js';
+import { diagramTitle } from '../messages/diagram-title.js';
 import { refusedName, useTextDraft } from '../ui/text-field.js';
 import { useCloseFocus } from '../ui/close-focus.js';
 import styles from './menu.module.css';
@@ -22,14 +23,8 @@ import { MenuCommand, panelPlacement } from './menu-items.js';
 import { RadioChoices } from './radio-choices.js';
 
 /**
- * The title of the diagram on screen, opening a list of diagrams to switch
- * to with New diagram and Rename diagram. The title field closes when the
- * diagram on screen changes under it. Enter and Escape return focus to the
- * button, and a blur commits and leaves focus where it went. A choice and a
- * title committed with Enter draw no status line, since the button that
- * takes focus names the diagram, and a title committed by a blur draws one.
- * The button takes the two diagram step chords itself, so a step made with
- * focus on it is said without being drawn.
+ * Enter and Escape return focus to the button. A blur commits without moving
+ * focus. Diagram steps on the button announce without drawing a status line.
  */
 export function DiagramSwitcher() {
   const diagrams = useModelStore((state) => state.present.diagrams);
@@ -70,18 +65,20 @@ export function DiagramSwitcher() {
       />
     );
   }
+  const title =
+    active === undefined ? t('menu.no-diagram') : diagramTitle(active.title, t);
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger
         aria-label={t('menu.diagram-named', {
-          title: active?.title ?? t('menu.no-diagram'),
+          title,
         })}
         className={styles.switcher}
         data-testid="diagram-switcher"
         onKeyDown={stepUndrawn}
         ref={trigger}
       >
-        {active?.title ?? t('menu.no-diagram')}
+        {title}
       </DropdownMenu.Trigger>
       <DropdownMenu.Content
         {...closeFocus}
@@ -94,7 +91,7 @@ export function DiagramSwitcher() {
             <RadioChoices
               choices={diagrams.map((diagram) => ({
                 value: diagram.id,
-                label: diagram.title,
+                label: diagramTitle(diagram.title, t),
               }))}
               label={t('menu.diagram')}
               onChoose={switchDiagram}

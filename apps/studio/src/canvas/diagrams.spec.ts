@@ -1,5 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { diagramId } from '@saerskriven/model/fixtures';
+import { locales } from '@saerskriven/i18n';
+import { chooseLanguage } from '../messages/locale.js';
+import { inLocale } from '../messages/messages.fixtures.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
 import { commandById, runCommand } from '../commands/registry.js';
 import { activeDiagramId } from '../store/selectors.js';
@@ -34,6 +37,42 @@ beforeEach(() => {
   modelStore.setState(initialState(twoDiagramModel), true);
   resetAnnouncements();
   resetDiagramRenaming();
+});
+
+afterEach(() => {
+  chooseLanguage('en-CA');
+});
+
+describe.each(locales)('diagram announcements in %s', (locale) => {
+  it.each(['', '   '])(
+    'speaks the fallback for title %j on switching',
+    (title) => {
+      chooseLanguage(locale);
+      const model = {
+        ...twoDiagramModel,
+        diagrams: twoDiagramModel.diagrams.map((diagram, index) =>
+          index === 1 ? { ...diagram, title } : diagram,
+        ),
+      };
+      modelStore.setState(initialState(model), true);
+
+      expect(showDiagram(secondDiagram)).toBe(true);
+
+      expect(currentAnnouncement().message).toContain(
+        inLocale(locale)('defaults.untitled-diagram'),
+      );
+      expect(modelStore.getState().present).toBe(model);
+      expect(modelStore.getState().present.diagrams[1].title).toBe(title);
+    },
+  );
+
+  it('speaks the generated title on adding a diagram', () => {
+    chooseLanguage(locale);
+    expect(createDiagram()).toBe(true);
+    expect(currentAnnouncement().message).toContain(
+      inLocale(locale)('defaults.untitled-diagram'),
+    );
+  });
 });
 
 describe('showDiagram', () => {

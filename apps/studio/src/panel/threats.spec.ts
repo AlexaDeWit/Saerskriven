@@ -626,3 +626,28 @@ describe('threatCommitter', () => {
     );
   });
 });
+
+describe.each(locales)(
+  'diagram details of offered elements in %s',
+  (locale) => {
+    it.each(['', '   '])('shows the fallback for title %j', (title) => {
+      const diagrams = sampleModel.diagrams.map((diagram) => ({
+        ...diagram,
+        title,
+      }));
+      const choices = attachableElements(
+        diagrams,
+        sampleThreat,
+        inLocale(locale),
+      );
+
+      expect(choices.length).toBeGreaterThan(0);
+      expect(choices.map(({ text }) => text.detail)).toEqual(
+        choices.map(() => inLocale(locale)('defaults.untitled-diagram')),
+      );
+      expect(diagrams.map((diagram) => diagram.title)).toEqual(
+        diagrams.map(() => title),
+      );
+    });
+  },
+);
