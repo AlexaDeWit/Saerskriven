@@ -15,12 +15,56 @@ import {
 } from './canvas.fixtures.js';
 import {
   editAnnouncement,
+  menuButton,
+  menuItem,
   nodeNamed,
   openPlaceholder,
   placeholder,
   selectByKeyboard,
   threatPanel,
 } from './studio.fixtures.js';
+
+test(
+  'touch selection exposes deletion with the drawer collapsed or expanded, and Undo restores the element',
+  { tag: '@phone-only' },
+  async ({ page }) => {
+    await openPlaceholder(page);
+    const remove = page.getByRole('button', {
+      name: 'Delete selection',
+      exact: true,
+    });
+    await expect(remove).toBeDisabled();
+
+    for (const expanded of [false, true]) {
+      const actor = nodeNamed(page, placeholder.actor);
+      await canvasSettled(page);
+      await actor.tap();
+      await expect(actor).toHaveClass(/selected/u);
+      const panel = threatPanel(page);
+      const expand = panel.getByRole('button', {
+        name: 'Expand pane',
+        exact: true,
+      });
+      await expect(expand).toHaveAttribute('aria-expanded', 'false');
+      if (expanded) {
+        await expand.tap();
+      }
+      const bounds = await screenBoxOf(remove);
+      expect(bounds.width).toBeGreaterThanOrEqual(44);
+      expect(bounds.height).toBeGreaterThanOrEqual(44);
+      expect(boxesOverlap(bounds, await screenBoxOf(panel))).toBe(false);
+
+      await remove.tap();
+
+      await expect(actor).toHaveCount(0);
+      await expect(remove).toBeDisabled();
+      await expect(editAnnouncement(page)).not.toBeEmpty();
+      await menuButton(page).tap();
+      await menuItem(page, 'Undo').tap();
+      await expect(actor).toHaveCount(1);
+    }
+  },
+);
 
 test(
   'activity stays available to screen readers without covering the canvas',

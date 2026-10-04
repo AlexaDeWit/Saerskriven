@@ -1,8 +1,9 @@
-import { CursorArrowIcon, HandIcon } from '@radix-ui/react-icons';
+import { CursorArrowIcon, HandIcon, TrashIcon } from '@radix-ui/react-icons';
 import type { ReactNode } from 'react';
 import { IconCommandButton } from '../commands/command-button.js';
 import { toolCommands } from '../commands/registry.js';
 import { useTranslator } from '../messages/locale.js';
+import { useModelStore } from '../store/store.js';
 import { strokeGlyph } from './stroke-glyph.js';
 import { isElementTool, lockTool, tools, useTool, type Tool } from './tools.js';
 import styles from './toolbox.module.css';
@@ -18,9 +19,9 @@ const glyphs: Record<Tool, ReactNode> = {
   hand: <HandIcon aria-hidden="true" className={styles.icon} />,
 };
 
-/** The tool modes, as row two of the shell's chrome card. */
 export function Toolbox() {
   const mode = useTool();
+  const nothing = useModelStore((state) => state.selection.length === 0);
   const { t } = useTranslator();
 
   return (
@@ -29,6 +30,19 @@ export function Toolbox() {
       className={styles.row}
       data-testid="toolbox"
     >
+      <fieldset
+        aria-label={t('commands.group-edit')}
+        className={styles.selectionActions}
+      >
+        <IconCommandButton
+          className={styles.control}
+          command="delete"
+          disabled={nothing}
+          side="bottom"
+        >
+          <TrashIcon aria-hidden="true" className={styles.icon} />
+        </IconCommandButton>
+      </fieldset>
       {tools.map((tool) => (
         <IconCommandButton
           className={styles.control}
