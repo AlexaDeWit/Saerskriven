@@ -19,8 +19,7 @@ import {
   undoable,
 } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
-import { recordingSurface } from '../commands/commands.fixtures.js';
-import { commandById, runCommand } from '../commands/registry.js';
+import { runRegistered } from '../commands/commands.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
 import { ModelPanel } from './model-panel.js';
 import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
@@ -59,12 +58,6 @@ const showPanel = ({
       wide={false}
     />,
   );
-};
-
-const runHistory = (id: 'undo' | 'redo'): void => {
-  act(() => {
-    runCommand(commandById(id), recordingSurface().surface);
-  });
 };
 
 const undo = (): void => {
@@ -442,12 +435,12 @@ describe(
       await user.click(summary(/New threat/u));
       await user.click(textbox('Title'));
 
-      runHistory('undo');
+      runRegistered('undo');
 
       expect(present().threats).toHaveLength(2);
       expect(document.activeElement).toBe(threatsTab());
 
-      runHistory('redo');
+      runRegistered('redo');
 
       expect(present().threats).toHaveLength(3);
       expect(document.activeElement).toBe(textbox('Title'));
@@ -485,11 +478,11 @@ describe(
       await user.click(textbox('Description'));
       await user.keyboard(`Pasted${softHyphen}prose`);
       await user.click(summary(/A reader sees/u));
-      runHistory('redo');
+      runRegistered('redo');
       expect(present().threats).toHaveLength(1);
       expect(document.activeElement).toBe(threatsTab());
 
-      runHistory('undo');
+      runRegistered('undo');
 
       expect(present().threats).toHaveLength(2);
       expect(summary(/A reader sees/u).getAttribute('aria-expanded')).toBe(

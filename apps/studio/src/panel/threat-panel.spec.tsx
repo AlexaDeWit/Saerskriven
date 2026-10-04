@@ -12,8 +12,7 @@ import {
   currentAnnouncement,
   resetAnnouncements,
 } from '../canvas/announcements.js';
-import { recordingSurface } from '../commands/commands.fixtures.js';
-import { commandById, runCommand } from '../commands/registry.js';
+import { runRegistered } from '../commands/commands.fixtures.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
@@ -80,12 +79,6 @@ const severityOf = (): string =>
 
 const threatsInStore = (): number =>
   modelStore.getState().present.threats.length;
-
-const runHistory = (id: 'undo' | 'redo'): void => {
-  act(() => {
-    runCommand(commandById(id), recordingSurface().surface);
-  });
-};
 
 const shareThreat = (): void => {
   dispatch(
@@ -520,12 +513,12 @@ describe(
       showPanel(processElement);
       await addThreat(user);
 
-      runHistory('undo');
+      runRegistered('undo');
 
       expect(threatsInStore()).toBe(1);
       expect(document.activeElement).toBe(addControl());
 
-      runHistory('redo');
+      runRegistered('redo');
 
       expect(threatsInStore()).toBe(2);
       expect(document.activeElement).toBe(titleField());
@@ -539,12 +532,12 @@ describe(
       const kept = titleField();
       await user.click(kept);
 
-      runHistory('undo');
+      runRegistered('undo');
 
       expect(threatsInStore()).toBe(1);
       expect(document.activeElement).toBe(kept);
 
-      runHistory('redo');
+      runRegistered('redo');
 
       expect(threatsInStore()).toBe(2);
       expect(document.activeElement).toBe(kept);
@@ -560,18 +553,18 @@ describe(
         canvas.focus();
       });
 
-      runHistory('undo');
+      runRegistered('undo');
       expect(document.activeElement).toBe(canvas);
-      runHistory('redo');
+      runRegistered('redo');
       expect(document.activeElement).toBe(canvas);
 
       await user.click(titleField());
-      runHistory('undo');
+      runRegistered('undo');
       expect(document.activeElement).toBe(addControl());
       act(() => {
         canvas.focus();
       });
-      runHistory('redo');
+      runRegistered('redo');
 
       expect(threatsInStore()).toBe(2);
       expect(document.activeElement).toBe(canvas);
@@ -583,15 +576,15 @@ describe(
       const canvas = screen.getByRole('button', { name: 'Canvas' });
       showPanel(processElement);
       await addThreat(user);
-      runHistory('undo');
+      runRegistered('undo');
       act(() => {
         canvas.focus();
       });
-      runHistory('redo');
+      runRegistered('redo');
       await user.click(screen.getByRole('button', { name: 'Delete threat 2' }));
       expect(document.activeElement).toBe(addControl());
 
-      runHistory('undo');
+      runRegistered('undo');
 
       expect(threatsInStore()).toBe(2);
       expect(document.activeElement).toBe(addControl());
@@ -640,7 +633,7 @@ describe(
       ).toBe('true');
     });
 
-    it('keeps a refused draft on screen where a threat the register already holds is attached, and leaves that threat folded', async () => {
+    it('keeps a refused draft on screen where a threat the register already holds is attached, and leaves that threat collapsed', async () => {
       const user = userEvent.setup();
       showPanel(processElement);
       await addThreat(user);
@@ -674,11 +667,11 @@ describe(
       await user.click(screen.getByRole('textbox', { name: 'Description' }));
       await user.keyboard(`Pasted${softHyphen}prose`);
       await user.click(screen.getByRole('button', { name: /New threat/u }));
-      runHistory('undo');
+      runRegistered('undo');
       expect(threatsInStore()).toBe(1);
       expect(document.activeElement).toBe(addControl());
 
-      runHistory('redo');
+      runRegistered('redo');
 
       expect(threatsInStore()).toBe(2);
       expect(

@@ -651,7 +651,7 @@ describe(
       expect(document.activeElement).toBe(description);
     });
 
-    it('closes onto the refused text a redo left in view, where the redo brought another threat back to the hidden model panel', async () => {
+    it("closes onto the refused text after a redo brought another threat back to the model's list", async () => {
       const user = userEvent.setup();
       hidePanesUnderTheRegister();
       act(() => {

@@ -57,7 +57,7 @@ element and the Threats tab on the model, where M lands, so the model's own
 Add a threat is not its home. M focuses the model's. An undo that takes away
 the threat holding focus sends focus home, a redo there sends it back to the
 restored title, and anywhere else focus stays where it is. A threat restored
-while another holds a refused draft stays folded, with focus left home. A
+while another holds a refused draft stays collapsed, with focus left home. A
 deleted threat's focus goes home too where no threat is left to take it.
 
 The pane claims the first Escape, closing and returning focus to the element,
