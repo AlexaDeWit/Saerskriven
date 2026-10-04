@@ -246,8 +246,8 @@ The card's second row holds Select, Actor, Process, Store, Trust boundary,
 Trust boundary curve, Note and Hand. A tooltip names each tool's shortcuts.
 
 - A click with an element tool places its default size under the pointer, and
-  a drag draws the box between opposite corners. A drag under four screen
-  pixels places the default.
+  a drag draws the box between opposite corners, at least one unit wide and
+  high. A drag under four screen pixels places the default.
 - A process draws an ellipse filling its box, a circle when the box is square.
   Its name wraps to the width of the rectangle inside the ellipse, so a wider
   process takes more of its name on each line.
@@ -316,7 +316,11 @@ corner, and an export always draws it there.
 
 Position and size opens an editor for exact coordinates and dimensions, and
 Apply commits the whole form as one edit. Cancel or Escape leaves the model
-alone. **Align** (left, centres, right, top, middles, bottom) uses the outer
+alone. It and the flow end editor take a coordinate from -1,000,000 to
+1,000,000 and a width or a height from 1 to 1,000,000, and refuse a number
+outside that.
+
+**Align** (left, centres, right, top, middles, bottom) uses the outer
 bounds of the selected elements, and **Distribute** keeps the first and last
 elements in place and evens the gaps. Flows follow their attached ends, and
 bends and free ends stay put. **Snap to grid**, off at first, snaps dragging

@@ -253,6 +253,62 @@ describe('parseModel', () => {
         parameters: { id: 'threat-ghost' },
       },
     },
+    {
+      named: 'a position past 1,000,000',
+      mutate: (draft) => {
+        const [actor] = draft.diagrams[0].elements;
+        if (actor.kind === 'actor') {
+          actor.position.x = 1_000_000.5;
+        }
+      },
+      path: ['diagrams', 0, 'elements', 0, 'position', 'x'],
+      detail: {
+        code: 'too-big',
+        parameters: { bound: 1_000_000, kind: 'number', inclusive: true },
+      },
+    },
+    {
+      named: 'a curve point below -1,000,000',
+      mutate: (draft) => {
+        const curve = draft.diagrams[0].elements[5];
+        if (curve.kind === 'trust-boundary' && curve.shape.kind === 'curve') {
+          curve.shape.waypoints[1].y = -1_000_001;
+        }
+      },
+      path: ['diagrams', 0, 'elements', 5, 'shape', 'waypoints', 1, 'y'],
+      detail: {
+        code: 'too-small',
+        parameters: { bound: -1_000_000, kind: 'number', inclusive: true },
+      },
+    },
+    {
+      named: 'a width under 1',
+      mutate: (draft) => {
+        const process = draft.diagrams[0].elements[1];
+        if (process.kind === 'process') {
+          process.size.width = 0.5;
+        }
+      },
+      path: ['diagrams', 0, 'elements', 1, 'size', 'width'],
+      detail: {
+        code: 'too-small',
+        parameters: { bound: 1, kind: 'number', inclusive: true },
+      },
+    },
+    {
+      named: 'a height past 1,000,000',
+      mutate: (draft) => {
+        const box = draft.diagrams[0].elements[4];
+        if (box.kind === 'trust-boundary' && box.shape.kind === 'box') {
+          box.shape.size.height = 1_000_001;
+        }
+      },
+      path: ['diagrams', 0, 'elements', 4, 'shape', 'size', 'height'],
+      detail: {
+        code: 'too-big',
+        parameters: { bound: 1_000_000, kind: 'number', inclusive: true },
+      },
+    },
   ])('rejects $named', ({ mutate, path, detail }) => {
     expect(issuesOf(seededModel(mutate))).toContainEqual({ path, detail });
   });

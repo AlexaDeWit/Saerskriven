@@ -10,7 +10,8 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'diagram-renamed': 'Renamed the diagram to “{title}”.',
   'selection-cleared': 'Selection cleared.',
   'geometry-updated': 'Position and size updated.',
-  'geometry-invalid': 'Enter finite coordinates and positive dimensions.',
+  'geometry-invalid':
+    'Enter coordinates from {low} to {high} and dimensions from {least} to {high}.',
   arranged: {
     one: 'Arranged {count} node. Flow bends and free endpoints stayed in place.',
     other:
@@ -57,7 +58,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'source-moved': 'Moved the source of {flow}.',
   'target-moved': 'Moved the target of {flow}.',
   'free-end-kept': 'A free flow end stays where it is.',
-  'position-invalid': 'Enter finite coordinates.',
+  'position-invalid': 'Enter coordinates from {low} to {high}.',
   'undo-done': 'Undo completed.',
   'redo-done': 'Redo completed.',
   'threat-deleted': 'Threat {number} deleted.',

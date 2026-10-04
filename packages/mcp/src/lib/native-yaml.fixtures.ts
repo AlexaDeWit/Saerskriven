@@ -70,6 +70,15 @@ lastIssuedThreatNumber: 1
 export const smallYaml = `${heading}diagrams: []
 ${oneThreat}`;
 
+/**
+ * A native file whose one process stands a unit past the model's bound on
+ * coordinates, so the document is valid and the model it maps to is not.
+ */
+export const pastBoundYaml = referencingYaml('element-1').replace(
+  'x: 0',
+  'x: 1000001',
+);
+
 /** A YAML text no registered codec claims. */
 export const unclaimedYaml = 'hello: world\n';
 

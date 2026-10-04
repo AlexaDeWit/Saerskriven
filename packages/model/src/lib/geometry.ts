@@ -1,24 +1,45 @@
 import { z } from 'zod';
 
 /**
- * A location on the diagram canvas, in canvas units. Coordinates may be
- * negative: the origin is a reference point, not an edge.
+ * Inclusive bounds in canvas units: coordinates from `-bound` to `bound`,
+ * widths and heights from `leastExtent` to `bound`. Schemas refuse values
+ * outside these ranges without clamping.
+ */
+export const geometryLimits = Object.freeze({
+  /** Maximum coordinate magnitude, width and height. */
+  bound: 1_000_000,
+  /** Minimum width and height, below the studio's resize floor. */
+  leastExtent: 1,
+});
+
+const coordinateSchema = z
+  .number()
+  .min(-geometryLimits.bound)
+  .max(geometryLimits.bound);
+
+const extentSchema = z
+  .number()
+  .min(geometryLimits.leastExtent)
+  .max(geometryLimits.bound);
+
+/**
+ * Canvas location within {@link geometryLimits}. The origin is a reference
+ * point, so coordinates may be negative.
  */
 export const pointSchema = z.object({
-  x: z.number(),
-  y: z.number(),
+  x: coordinateSchema,
+  y: coordinateSchema,
 });
 
 /** Canvas location. */
 export type Point = z.infer<typeof pointSchema>;
 
 /**
- * Extent of an element on the canvas, in canvas units. Width and height are
- * strictly positive: a zero-extent element cannot be drawn or picked.
+ * Canvas width and height within {@link geometryLimits}.
  */
 export const sizeSchema = z.object({
-  width: z.number().positive(),
-  height: z.number().positive(),
+  width: extentSchema,
+  height: extentSchema,
 });
 
 /** Canvas extent. */

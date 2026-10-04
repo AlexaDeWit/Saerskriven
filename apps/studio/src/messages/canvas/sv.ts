@@ -10,7 +10,8 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'diagram-renamed': 'Bytte namn på diagrammet till ”{title}”.',
   'selection-cleared': 'Markeringen rensades.',
   'geometry-updated': 'Position och storlek uppdaterades.',
-  'geometry-invalid': 'Ange ändliga koordinater och positiva mått.',
+  'geometry-invalid':
+    'Ange koordinater från {low} till {high} och mått från {least} till {high}.',
   arranged: {
     one: 'Ordnade {count} nod. Flödenas knäckpunkter och fria ändar ligger kvar.',
     other:
@@ -59,7 +60,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'source-moved': 'Flyttade källänden på {flow}.',
   'target-moved': 'Flyttade måländen på {flow}.',
   'free-end-kept': 'En fri flödesände ligger kvar där den är.',
-  'position-invalid': 'Ange ändliga koordinater.',
+  'position-invalid': 'Ange koordinater från {low} till {high}.',
   'undo-done': 'Ångrade.',
   'redo-done': 'Gjorde om.',
   'threat-deleted': 'Hot {number} togs bort.',

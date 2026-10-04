@@ -12,6 +12,7 @@ import {
   recoverySnapshot,
   runFromMenu,
   savedFile,
+  withFailingFirstDraw,
   withRecoverySnapshot,
 } from './studio.fixtures.js';
 
@@ -98,12 +99,12 @@ test('two tabs follow each other, so the one in view is the one that is right', 
   await expect(nodeNamed(page, placeholder.store)).toHaveCount(1);
 });
 
-const undrawnSession = JSON.stringify({
+const storedSession = JSON.stringify({
   version: 2,
   document: {
     formatVersion: 2,
     metadata: {
-      title: 'Undrawn',
+      title: 'Stored',
       owner: '',
       description: '',
       contributors: [],
@@ -123,8 +124,8 @@ const undrawnSession = JSON.stringify({
             shape: {
               kind: 'curve',
               waypoints: [
-                { x: -1e308, y: 0 },
-                { x: 1e308, y: 0 },
+                { x: -200, y: 0 },
+                { x: 200, y: 0 },
               ],
             },
           },
@@ -141,10 +142,11 @@ const undrawnSession = JSON.stringify({
   file: { _tag: 'NoFile' },
 });
 
-test('a stored session the studio cannot draw stops one start, and the next opens the placeholder, says so, and asks before New model clears it', async ({
+test('a start that cannot draw its stored session stops, the next opens the placeholder, says so, and asks before New model clears it, and the one after draws the session', async ({
   page,
 }) => {
-  await withRecoverySnapshot(page, undrawnSession);
+  await withRecoverySnapshot(page, storedSession);
+  await withFailingFirstDraw(page);
 
   await page.goto('/');
   await expect(
@@ -157,7 +159,7 @@ test('a stored session the studio cannot draw stops one start, and the next open
 
   await expect(nodeNamed(page, placeholder.actor)).toBeVisible();
   await expect(page.getByTestId('failure-notice')).not.toBeEmpty();
-  expect(await recoverySnapshot(page)).toBe(undrawnSession);
+  expect(await recoverySnapshot(page)).toBe(storedSession);
 
   await openMenu(page);
   await menuItem(page, 'New model').click();
@@ -167,5 +169,9 @@ test('a stored session the studio cannot draw stops one start, and the next open
   await menuItem(page, 'Cancel').click();
 
   await expect(page.getByRole('menu')).toHaveCount(0);
-  expect(await recoverySnapshot(page)).toBe(undrawnSession);
+  expect(await recoverySnapshot(page)).toBe(storedSession);
+
+  await page.reload();
+  await expect(nodeNamed(page, /^Perimeter, trust boundary/u)).toBeVisible();
+  await expect(nodeNamed(page, placeholder.actor)).toHaveCount(0);
 });

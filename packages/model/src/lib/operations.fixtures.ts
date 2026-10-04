@@ -116,7 +116,7 @@ export const note = elementSchema.parse(noteInput);
 /** The valid model with {@link note} added to its diagram. */
 export const withNote = modelOf(addElement(validModel, mainDiagram, note));
 
-/** The process of {@link noisyModel}, whose height rounds to zero at one decimal. */
+/** The process of {@link noisyModel}. */
 export const noisyProcess = elementId('noisy-process');
 
 /** The store of {@link noisyModel}, which its flow starts on. */
@@ -143,7 +143,7 @@ export const noisyModel: Model = modelWith({
   elements: [
     boxAt(noisyProcess, 123.63636363636364, 5.1, 'process', {
       width: 120.123456,
-      height: 0.04,
+      height: 60.04,
     }),
     boxAt(noisyStore, 300.0004, 0.04, 'store'),
     {

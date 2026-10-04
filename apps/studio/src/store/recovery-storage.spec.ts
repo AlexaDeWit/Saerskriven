@@ -284,6 +284,24 @@ describe('local recovery storage', () => {
       RecoveryProblem.Unsupported(),
     ],
     [
+      'a session holding a coordinate past 1,000,000',
+      JSON.stringify({
+        ...current,
+        document: {
+          ...current.document,
+          diagrams: current.document.diagrams.map((diagram) => ({
+            ...diagram,
+            elements: diagram.elements.map((element) =>
+              'position' in element
+                ? { ...element, position: { x: 1_000_001, y: 0 } }
+                : element,
+            ),
+          })),
+        },
+      }),
+      RecoveryProblem.Unsupported(),
+    ],
+    [
       'an invalid document',
       JSON.stringify({ ...current, document: {} }),
       RecoveryProblem.Unsupported(),

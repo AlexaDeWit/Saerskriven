@@ -1,4 +1,5 @@
 import {
+  geometryLimits,
   inNumberOrder,
   parseModel,
   threatFlags,
@@ -52,6 +53,8 @@ const documentedExample = description.slice(
   exampleStart,
   description.indexOf('```', exampleStart),
 );
+
+const asWritten = (value: number): string => value.toLocaleString('en-CA');
 
 function statusesOf(
   records: readonly {
@@ -114,6 +117,17 @@ describe('the Saerskriven YAML codec', () => {
     expect(reading.divergences).toEqual([]);
     expect(saerskrivenYamlCodec.write(reading.model).output).toBe(
       documentedExample,
+    );
+  });
+
+  it('is described with the bound on coordinates and sizes the model holds', () => {
+    const bound = asWritten(geometryLimits.bound);
+
+    expect(description).toContain(
+      `from ${asWritten(-geometryLimits.bound)} to ${bound}`,
+    );
+    expect(description).toContain(
+      `from ${asWritten(geometryLimits.leastExtent)} to ${bound}`,
     );
   });
 });

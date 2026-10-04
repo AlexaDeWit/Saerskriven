@@ -10,6 +10,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  pastBoundYaml,
   referencingYaml,
   smallYaml,
   unclaimedFile,
@@ -30,6 +31,9 @@ const invalidYaml = smallYaml.replace(
   'severity: high',
   'severity: catastrophic',
 );
+
+/** The name a tree gives {@link pastBoundYaml}. */
+export const pastBoundFile = 'past-bound.yaml';
 
 /**
  * The feature-complete Threat Dragon file, which draws two diagrams and whose
@@ -73,13 +77,15 @@ export function rootWorkspace(): ModelWorkspace {
 }
 
 /**
- * A disposable root holding the two files a read has to refuse: one no codec
- * claims, and one the native codec claims and refuses.
+ * A disposable root holding the files a read has to refuse: one no codec
+ * claims, one the native codec claims and refuses, and one the model refuses
+ * for its geometry.
  */
 export function unreadableTree(): ModelWorkspace {
   const root = mkdtempSync(join(tmpdir(), 'saerskriven-mcp-read-'));
   writeFileSync(join(root, unclaimedFile), unclaimedYaml);
   writeFileSync(join(root, invalidFile), invalidYaml);
+  writeFileSync(join(root, pastBoundFile), pastBoundYaml);
   return Either.getOrThrow(openWorkspace({ root }));
 }
 

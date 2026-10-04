@@ -16,6 +16,8 @@ const developmentModelKey = 'saerskrivenDevelopmentModel';
 
 const recoveryStorageKey = 'saerskriven:studio:recovery';
 
+const firstStartKey = 'saerskrivenRecoveryTestFirstStart';
+
 /** The local storage key the studio keeps the chosen language under. */
 export const languageStorageKey = 'saerskrivenLanguage';
 
@@ -40,6 +42,22 @@ export const withRecoverySnapshot = async (
     },
     { key: recoveryStorageKey, stored: snapshot },
   );
+};
+
+/**
+ * Makes the first start of the studio in `page` fail to draw, whatever it
+ * holds: until one start has run in the tab, `ResizeObserver`, which the
+ * canvas mounts with, is no constructor, so the mount throws. Every later
+ * start in the tab draws.
+ */
+export const withFailingFirstDraw = async (page: Page): Promise<void> => {
+  await page.addInitScript((key) => {
+    if (sessionStorage.getItem(key) !== null) {
+      return;
+    }
+    sessionStorage.setItem(key, 'started');
+    Object.defineProperty(globalThis, 'ResizeObserver', { value: null });
+  }, firstStartKey);
 };
 
 /** What the placeholder model draws, by the names assistive technology has for them. */

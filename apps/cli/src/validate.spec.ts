@@ -1,4 +1,4 @@
-import { unclaimedYaml } from '@saerskriven/mcp/fixtures';
+import { pastBoundYaml, unclaimedYaml } from '@saerskriven/mcp/fixtures';
 import { testDataPath } from '@saerskriven/model/fixtures';
 import {
   brokenDocumentYaml,
@@ -79,6 +79,16 @@ describe('validate', () => {
       err:
         'The file is a valid document, and the model it maps to is not:\n' +
         'threats.0.elements.0: names unknown element id "element-2"\n',
+    });
+  });
+
+  it('refuses a coordinate past 1,000,000 as a file it read, naming the field and the bound', () => {
+    expect(validated('past-bound.yaml', pastBoundYaml)).toEqual({
+      code: 1,
+      out: '',
+      err:
+        'The file is a valid document, and the model it maps to is not:\n' +
+        'diagrams.0.elements.0.position.x: expected at most 1000000\n',
     });
   });
 

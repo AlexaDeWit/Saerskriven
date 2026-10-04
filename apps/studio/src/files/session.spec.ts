@@ -128,6 +128,30 @@ describe('openedBy', () => {
     });
   });
 
+  it('reports a file holding a coordinate past 1,000,000 as a model refused, naming the field and the bound', () => {
+    const action = openedBy(
+      OpenOutcome.Chosen({
+        name: 'far.yaml',
+        text: sampleNativeText.replace('x: 200', 'x: 1000001'),
+      }),
+      untitledFile,
+    );
+
+    expect(action).toMatchObject({
+      _tag: 'ReadFailed',
+      name: 'far.yaml',
+      failure: {
+        _tag: 'InvalidModel',
+        issues: [
+          {
+            path: ['diagrams', 0, 'elements', 1, 'position', 'x'],
+            detail: { code: 'too-big', parameters: { bound: 1_000_000 } },
+          },
+        ],
+      },
+    });
+  });
+
   it('reports a file past the bound as the codecs report one', () => {
     expect(openedBy(openOutcomes.TooLarge, untitledFile)).toEqual(
       Action.ReadFailed({

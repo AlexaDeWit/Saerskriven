@@ -4,6 +4,7 @@ import {
   featureCompleteFile,
   featureCompleteWorkspace,
   invalidFile,
+  pastBoundFile,
   refusalOf,
   rootWorkspace,
   unreadableTree,
@@ -45,6 +46,13 @@ describe('what saer_validate reports', () => {
   it('refuses a claimed file with the path of the issue inside it', () => {
     const refused = refusalOf(validate(unreadable, { file: invalidFile }));
     expect(refused.join('\n')).toContain('threats.0.severity');
+  });
+
+  it('refuses a file holding a coordinate past 1,000,000, naming the field and the bound', () => {
+    const refused = refusalOf(validate(unreadable, { file: pastBoundFile }));
+    expect(refused).toContain(
+      'diagrams.0.elements.0.position.x: expected at most 1000000',
+    );
   });
 
   it('refuses a call naming no file where the server carries no default', () => {

@@ -776,6 +776,38 @@ describe('a modern client of the server object, over what no era changes', () =>
       expect(textOf(result)).toContain('appliesToModel');
       expect(readFileSync(join(writable.root, modelFile))).toEqual(before);
     });
+
+    it('refuses a resize to a width past 1,000,000 and a free end placed past it, naming each field, and writes nothing', async () => {
+      const writable = editableTree();
+      const before = readFileSync(join(writable.root, modelFile));
+      const run = await session({ root: writable.root, era: 'modern' });
+      const result = await run.client.callTool({
+        name: 'saer_edit',
+        arguments: {
+          file: modelFile,
+          revision: revisionOf(before),
+          edits: [
+            {
+              op: 'resize_element',
+              element: 'element-api',
+              size: { width: 1_000_001, height: 120 },
+            },
+            {
+              op: 'set_flow_end_position',
+              element: 'element-order-flow',
+              side: 'source',
+              position: { x: 60, y: -1_000_001 },
+            },
+          ],
+        },
+      });
+      await run.end();
+
+      expect(result.isError).toBe(true);
+      expect(textOf(result)).toContain('edits.0.size.width');
+      expect(textOf(result)).toContain('edits.1.position.y');
+      expect(readFileSync(join(writable.root, modelFile))).toEqual(before);
+    });
   });
 
   describe('saer_inspect against a Threat Dragon file', () => {

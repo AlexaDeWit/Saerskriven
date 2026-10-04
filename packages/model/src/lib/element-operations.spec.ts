@@ -235,7 +235,7 @@ describe('addElement', () => {
     }
     expect(added(noisyProcess, 1)).toMatchObject({
       position: { x: 123.6, y: 5.1 },
-      size: { width: 120.1, height: 0.1 },
+      size: { width: 120.1, height: 60 },
     });
     expect(added(noisyFlow, 1)).toMatchObject({
       source: { kind: 'attached', element: noisyStore },
@@ -599,7 +599,7 @@ describe('moveElement', () => {
     );
 
     expect(elementIn(next, noisyProcess)).toMatchObject({
-      size: { width: 120.123456, height: 0.04 },
+      size: { width: 120.123456, height: 60.04 },
     });
     for (const id of [noisyStore, noisyFlow, noisyBox, noisyCurve]) {
       expect(elementIn(next, id)).toBe(elementIn(noisyModel, id));
@@ -709,18 +709,18 @@ describe('resizeElement', () => {
   });
 
   it.each([
-    [undefined, { width: 125.123456, height: 0.04 }],
-    [3, { width: 125.123, height: 0.04 }],
-    [1, { width: 125.1, height: 0.1 }],
-    [0, { width: 125, height: 1 }],
+    [undefined, { width: 125.123456, height: 60.04 }],
+    [3, { width: 125.123, height: 60.04 }],
+    [1, { width: 125.1, height: 60 }],
+    [0, { width: 125, height: 60 }],
   ])(
-    'stores a size at %s decimals, above zero, and leaves the position as stored',
+    'stores a size at %s decimals and leaves the position as stored',
     (decimals, size) => {
       const next = modelOf(
         resizeElement(
           noisyModel,
           noisyProcess,
-          { width: 125.123456, height: 0.04 },
+          { width: 125.123456, height: 60.04 },
           decimals,
         ),
       );
@@ -1059,10 +1059,10 @@ describe('element operations', () => {
       input: noisyModel,
       run: (model) => moveElement(model, noisyFlow, { x: 5, y: 20 }, 1),
     },
-    'resizeElement at one decimal to a height that rounds to zero': {
+    'resizeElement at one decimal': {
       input: noisyModel,
       run: (model) =>
-        resizeElement(model, noisyProcess, { width: 125.04, height: 0.04 }, 1),
+        resizeElement(model, noisyProcess, { width: 125.04, height: 60.04 }, 1),
     },
     renameElement: {
       input: validModel,

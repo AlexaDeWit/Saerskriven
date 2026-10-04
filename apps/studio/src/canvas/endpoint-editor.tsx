@@ -14,7 +14,7 @@ import { changedModel } from '../store/store.js';
 import { announce } from './announcements.js';
 import { flowEnds } from './elements.js';
 import { freeEndSaid } from './flow-bends.js';
-import { NumberField, numeric } from './geometry-editor.js';
+import { coordinateRange, NumberField, numeric } from './geometry-editor.js';
 import { currentLayout } from './layout.js';
 import { sideMessages } from '../messages/enum-labels.js';
 import { commandDecimals, mostTypedDecimals } from './stored-decimals.js';
@@ -81,7 +81,7 @@ export function EndpointEditor({
       });
       if (!at.success) {
         setRefused(true);
-        announce((speak) => speak('canvas.position-invalid'));
+        announce((speak) => speak('canvas.position-invalid', coordinateRange));
         return;
       }
       const moved = changedModel(
@@ -176,7 +176,9 @@ export function EndpointEditor({
             }}
           />
         ))}
-      {refused && target === freePoint && <p>{t('canvas.position-invalid')}</p>}
+      {refused && target === freePoint && (
+        <p>{t('canvas.position-invalid', coordinateRange)}</p>
+      )}
       <div className={styles.actions}>
         <button
           disabled={flow === undefined || target === undefined}
