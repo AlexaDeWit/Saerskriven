@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { canvasSettled, elementNodes } from './canvas.fixtures.js';
 import {
+  allowClipboard,
   expectFileShown,
   menuButton,
   menuItem,
@@ -36,7 +37,7 @@ test('shares a model as a link that opens in a new page, unsaved', async ({
   context,
   page,
 }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await allowClipboard(context);
   const fetched = moduleFetches(page);
   await openFile(page, twoDiagramsFile);
   expect(fetched).toEqual([]);
@@ -67,7 +68,7 @@ test('a link opened in a second tab over unsaved work asks rather than losing th
   context,
   page,
 }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await allowClipboard(context);
   await openFile(page, twoDiagramsFile);
   const link = await shared(page);
   await nodeNamed(page, storefront.webShop).dblclick();

@@ -4,6 +4,7 @@ import {
   boxSelect,
   canvasContainer,
   canvasSettled,
+  clearPositionOn,
   drawnBy,
   emptyCanvasPoint,
   lineOf,
@@ -174,7 +175,7 @@ test('a press that crosses the drag threshold and moves nothing leaves the next 
   await page.mouse.move(at.x + 2, at.y, { steps: 1 });
   await page.mouse.up();
 
-  await store.click();
+  await store.click({ position: await clearPositionOn(store) });
   await expect(store).toHaveClass(/selected/u);
   await page.keyboard.press('ArrowRight');
 

@@ -3,6 +3,7 @@ import { canvasClassNames } from '@saerskriven/canvas';
 import {
   canvasContainer,
   dragBy,
+  geometryBoxOf,
   halfwayAlong,
   lineOf,
   screenBoxOf,
@@ -63,10 +64,7 @@ const dotSpacingOf = async (line: Locator): Promise<number> => {
 };
 
 const processOutlineBox = (node: Locator): Promise<Box> =>
-  node.locator(`.${canvasClassNames.process}`).evaluate((shape) => {
-    const { x, y, width, height } = shape.getBoundingClientRect();
-    return { x, y, width, height };
-  });
+  geometryBoxOf(node.locator(`.${canvasClassNames.process}`));
 
 const expectSpanned = (outline: Box, frame: Box): void => {
   expect(outline.x).toBeCloseTo(frame.x, 0);

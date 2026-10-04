@@ -298,6 +298,7 @@ const clipped = (region: Locator): Promise<readonly string[]> =>
       .filter(
         (element) =>
           element.checkVisibility() &&
+          getComputedStyle(element).display !== 'inline' &&
           element.scrollWidth > element.clientWidth + 1 &&
           getComputedStyle(element).overflowX !== 'auto' &&
           getComputedStyle(element).overflowX !== 'scroll',

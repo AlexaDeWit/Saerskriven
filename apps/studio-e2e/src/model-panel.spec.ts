@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { registeredChords } from './chords.fixtures.js';
 import { onScreen, screenBoxOf } from './canvas.fixtures.js';
 import {
+  allowClipboard,
   canvasSurface,
   chooseByKeyboard,
   chooseInPanel,
@@ -20,6 +21,7 @@ import {
   selectNode,
   showDetails,
   storefront,
+  tabToNextControl,
   threatPanel,
   threatSummary,
   undoOffered,
@@ -146,7 +148,7 @@ test('M opens the model panel on Threats, listing every threat with one on no el
     /Applies to the whole model On /u,
   );
 
-  await page.keyboard.press('Tab');
+  await tabToNextControl(page);
   await expect(modelControl(page, 'Add a threat')).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(modelThreat(page, storefront.takeover)).toBeFocused();
@@ -270,7 +272,7 @@ test('cutting an element of a threat that applies to the whole model and pasting
   context,
   page,
 }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await allowClipboard(context);
   await openTwoDiagrams(page);
   await selectByKeyboard(page, paymentGateway);
 

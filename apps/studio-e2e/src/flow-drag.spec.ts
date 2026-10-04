@@ -5,6 +5,7 @@ import {
   canvasSettled,
   drawnBy,
   endsOn,
+  geometryBoxOf,
   handlesOf,
   lineOf,
   placeOf,
@@ -121,12 +122,9 @@ test('a group drag carries an attached flow, its label and its badge before poin
   const sourceBefore = await boxOf(source);
   const targetBefore = await boxOf(target);
   const sourceScreenBefore = await source.boundingBox();
-  const lineBefore = await line.boundingBox();
-  const labelBefore = await label.boundingBox();
-  const badgeBefore = await badge.boundingBox();
-  expect(lineBefore).not.toBeNull();
-  expect(labelBefore).not.toBeNull();
-  expect(badgeBefore).not.toBeNull();
+  const lineBefore = await geometryBoxOf(line);
+  const labelBefore = await geometryBoxOf(label);
+  const badgeBefore = await geometryBoxOf(badge);
   expect(sourceScreenBefore).not.toBeNull();
 
   const at = await pressOn(page, source);
@@ -160,9 +158,7 @@ test('a group drag carries an attached flow, its label and its badge before poin
     for (const axis of ['x', 'y'] as const) {
       await expect
         .poll(
-          async () =>
-            ((await current.boundingBox())?.[axis] ?? Number.NaN) -
-            (before?.[axis] ?? Number.NaN),
+          async () => (await geometryBoxOf(current))[axis] - before[axis],
           `${part} ${axis} translation`,
         )
         .toBeCloseTo(screenOffset[axis]);
