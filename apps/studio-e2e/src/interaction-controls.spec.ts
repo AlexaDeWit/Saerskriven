@@ -165,7 +165,7 @@ test('geometry fields support movement and resizing, cancellation, and one undo 
   await audit(page, 'showing the geometry fields');
   await panel.getByRole('button', { name: 'Increase X', exact: true }).click();
   await panel
-    .getByRole('button', { name: 'Increase Width', exact: true })
+    .getByRole('button', { name: 'Increase width', exact: true })
     .click();
   await panel.getByRole('button', { name: 'Apply geometry' }).click();
   await expect(actor).toBeFocused();
@@ -299,7 +299,7 @@ for (const { fixture, duplicated, retargeted } of [
       .getByRole('button', { name: 'Increase X', exact: true })
       .click();
     await geometry
-      .getByRole('button', { name: 'Increase Width', exact: true })
+      .getByRole('button', { name: 'Increase width', exact: true })
       .click();
     await geometry.getByRole('button', { name: 'Apply geometry' }).click();
     await selectByKeyboard(page, retargeted);
