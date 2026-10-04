@@ -17,7 +17,7 @@ import {
   viewportTransform,
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
-import { followItemMoves } from './move-message.js';
+import { followKeyboardMoves } from './keyboard-moves.js';
 
 const press = (key: string, shiftKey = false): void => {
   fireEvent.keyDown(document.activeElement ?? document.body, { key, shiftKey });
@@ -154,7 +154,7 @@ describe('DiagramCanvas, the points of a trust boundary curve', () => {
   it('tells the view of each arrow nudge of a focused point, and of no other key on it', () => {
     render(<DiagramCanvas />);
     const told = vi.fn<() => void>();
-    const release = followItemMoves(told);
+    const release = followKeyboardMoves(told);
     point(2).focus();
 
     press('ArrowUp');

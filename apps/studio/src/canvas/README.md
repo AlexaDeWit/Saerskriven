@@ -7,37 +7,38 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 
 ## Modules
 
-| Module                                                                | What it holds                                                                                                                      |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `diagram-canvas.tsx`                                                  | The React Flow mount, its handlers, and the injected `themedCanvasStylesheet`                                                      |
-| `layout.ts`                                                           | The laid-out diagram on screen, kept against the model and diagram it came from                                                    |
-| `nodes.ts`, `names.ts`                                                | The layout as React Flow's nodes and edges, and each one's accessible name                                                         |
-| `changes.ts`                                                          | What React Flow reports about a gesture, turned into store actions and dispatched                                                  |
-| `live-edges.ts`, `box-selection.ts`, `background-selection.ts`        | Hooks for a drag's flows, a selection box extended to flows, and a stationary background press                                     |
-| `group-drag.ts`                                                       | A drag of the selection from inside its bounds, where the press lands on empty canvas or an element it leaves out                  |
-| `node-drag.ts`                                                        | React Flow's own drag of nodes, put back on a selection change or a window blur, which also lets go of a held press                |
-| `item-focus.ts`                                                       | The Select tool's keys on a drawn element, flow or a control of the selection, answered so that focus lands on the element         |
-| `tools.ts`, `elements.ts`, `placement.tsx`, `placement-preview.tsx`   | The active mode outside the model store, the elements a tool places, the pointer and Enter gestures, and the draft drawn meanwhile |
-| `edits.ts`                                                            | One function per edit a control asks for                                                                                           |
-| `pane-shield.ts`                                                      | Keeping a double-click's second press out of a pane its first press opened                                                         |
-| `connecting.ts`, `flow-target-chooser.tsx`                            | The flow a start-flow command holds until a target is chosen, and the listbox that chooses it                                      |
-| `inline-editing.tsx`                                                  | The inline name and Note editors, and the node and edge bodies that mount them                                                     |
-| `selection-controls.tsx`, `selection-control.ts`                      | The controls over a selection, and the event a command opens one of them through                                                   |
-| `geometry-editor.tsx`, `endpoint-editor.tsx`                          | The Position and size form, and the flow end form                                                                                  |
-| `element-draft.ts`                                                    | The preview of an edit to the selected element, and its commit as one dispatch                                                     |
-| `handle-drag.ts`, `handle-actions.tsx`, `handles.module.css`          | A handle's pointer drag and arrow-key step, the actions a clicked handle opens, and their styles                                   |
-| `waypoints.ts`                                                        | A point inserted into or moved along a flow's bends or a curve's points                                                            |
-| `flow-bends.ts`, `flow-bend-interaction.ts`, `flow-bend-controls.tsx` | A flow's bend and end previews and model edits, their pointer and keyboard gestures, and their controls                            |
-| `curve-points.ts`, `curve-point-controls.tsx`                         | A trust boundary curve's point previews and model edits, which midpoints it shows, and the handles and actions that make them      |
-| `bend-insertion.ts`                                                   | The event connecting the Add bend command to the mounted bend controls                                                             |
-| `clipboard.ts`, `arrangement.ts`, `snap.ts`                           | Copy, cut, paste and duplicate, align and distribute, and the snap setting                                                         |
-| `stored-decimals.ts`                                                  | How many decimals a gesture, a command and a typed form each store                                                                 |
-| `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                            |
-| `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                |
-| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection, and how the view's follower is told of a move        |
-| `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them            |
-| `focus-pan.tsx`                                                       | The shortest pan that brings the focused item's ring into the viewport, asked for by Tab focus and by an arrow-key move or resize  |
-| `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                 |
+| Module                                                                | What it holds                                                                                                                                              |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `diagram-canvas.tsx`                                                  | The React Flow mount, its handlers, and the injected `themedCanvasStylesheet`                                                                              |
+| `layout.ts`                                                           | The laid-out diagram on screen, kept against the model and diagram it came from                                                                            |
+| `nodes.ts`, `names.ts`                                                | The layout as React Flow's nodes and edges, and each one's accessible name                                                                                 |
+| `changes.ts`                                                          | What React Flow reports about a gesture, turned into store actions and dispatched                                                                          |
+| `live-edges.ts`, `box-selection.ts`, `background-selection.ts`        | Hooks for a drag's flows, a selection box extended to flows, and a stationary background press                                                             |
+| `group-drag.ts`                                                       | A drag of the selection from inside its bounds, where the press lands on empty canvas or an element it leaves out                                          |
+| `node-drag.ts`                                                        | React Flow's own drag of nodes, put back on a selection change or a window blur, which also lets go of a held press                                        |
+| `item-focus.ts`                                                       | The Select tool's keys on a drawn element, flow or a control of the selection, answered so that focus lands on the element                                 |
+| `tools.ts`, `elements.ts`, `placement.tsx`, `placement-preview.tsx`   | The active mode outside the model store, the elements a tool places, the pointer and Enter gestures, and the draft drawn meanwhile                         |
+| `edits.ts`                                                            | One function per edit a control asks for                                                                                                                   |
+| `pane-shield.ts`                                                      | Keeping a double-click's second press out of a pane its first press opened                                                                                 |
+| `connecting.ts`, `flow-target-chooser.tsx`                            | The flow a start-flow command holds until a target is chosen, and the listbox that chooses it                                                              |
+| `inline-editing.tsx`                                                  | The inline name and Note editors, and the node and edge bodies that mount them                                                                             |
+| `selection-controls.tsx`, `selection-control.ts`                      | The controls over a selection, and the event a command opens one of them through                                                                           |
+| `geometry-editor.tsx`, `endpoint-editor.tsx`                          | The Position and size form, and the flow end form                                                                                                          |
+| `element-draft.ts`                                                    | The preview of an edit to the selected element, and its commit as one dispatch                                                                             |
+| `handle-drag.ts`, `handle-actions.tsx`, `handles.module.css`          | A handle's pointer drag and arrow-key step, the actions a clicked handle opens, and their styles                                                           |
+| `waypoints.ts`                                                        | A point inserted into or moved along a flow's bends or a curve's points                                                                                    |
+| `flow-bends.ts`, `flow-bend-interaction.ts`, `flow-bend-controls.tsx` | A flow's bend and end previews and model edits, their pointer and keyboard gestures, and their controls                                                    |
+| `curve-points.ts`, `curve-point-controls.tsx`                         | A trust boundary curve's point previews and model edits, which midpoints it shows, and the handles and actions that make them                              |
+| `bend-insertion.ts`                                                   | The event connecting the Add bend command to the mounted bend controls                                                                                     |
+| `clipboard.ts`, `arrangement.ts`, `snap.ts`                           | Copy, cut, paste and duplicate, align and distribute, and the snap setting                                                                                 |
+| `stored-decimals.ts`                                                  | How many decimals a gesture, a command and a typed form each store                                                                                         |
+| `diagrams.ts`                                                         | Switching, adding and renaming diagrams                                                                                                                    |
+| `announcements.ts`, `canvas-announcement.tsx`                         | What an edit said, and the status host that says it                                                                                                        |
+| `move-message.tsx`                                                    | What React Flow's live region says once an arrow key has moved the selection                                                                               |
+| `keyboard-moves.ts`                                                   | How the view's follower is told that a key press moved or resized something, and what                                                                      |
+| `viewport.ts`, `view-commands.tsx`                                    | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them                                    |
+| `focus-pan.tsx`                                                       | The shortest pan that brings the focused item's ring, or a bend being placed, into the viewport, asked for by Tab focus and by an arrow-key move or resize |
+| `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                 | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                                         |
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
 (`../app/chrome.tsx`), and hangs `canvas-announcement.tsx` and
@@ -247,18 +248,22 @@ then named would pan. A `focusin` on React Flow's container counts while the
 keyboard is in charge and its target is an element, a flow, a resize control,
 or a bend, flow end or curve point handle that matches `:focus-visible`. Focus
 the browser hands back when the window regains it is not a move.
-`onKeyboardMove` lends the handler that `itemMoved` in `move-message.tsx`
+`onKeyboardMove` lends the handler that `keyboardMoved` in `keyboard-moves.ts`
 calls, the one way the follow is told: by `KeyboardMoveMessage` once an arrow
 key has moved the selection, by the arrow nudge of a bend, a free flow end and
-a curve point, and by a resize as it ends. So the follow needs no Tab first and
-knows nothing of how the move is stored. A resize ends the same way by key and
-by pointer, so the handler counts only while the last input was a key press,
-which also tells it whether the key is held. It measures whatever holds focus
-then: the element, the resize control, the handle, or the frame React Flow
-draws around a box selection, whose box is the whole group's. That frame is no
-tab stop, so only the move path takes it. A bend placed from the route toolbar
-moves while the toolbar holds focus, so it is not followed. Both paths measure
-on the next frame, when what the key press changed is drawn.
+a curve point, by a resize as it ends where its control says the keyboard made
+it, and by the arrow nudge of a bend being placed. So the follow needs no Tab
+first and knows nothing of how the move is stored. The caller is what knows the
+input, and a pointer path never calls: a resize ends the same way by key and by
+pointer, so the resize end reads its `GestureInput`. The handler infers nothing
+from the window's events. It listens for `keydown` alone, to know whether the
+key is held. It measures whatever holds focus then: the element, the resize
+control, the handle, or the frame React Flow draws around a box selection,
+whose box is the whole group's. That frame is no tab stop, so only the move
+path takes it. A bend being placed is the one exception: the route toolbar
+holds focus, so the call names the bend by its place among the flow's bends and
+the handler measures that handle, which draws no ring. Both paths measure on
+the next frame, when what the key press changed is drawn.
 
 `offsetIntoView` works in screen pixels, from the item's box with its outline's
 reach and the container's box: no move for a ring wholly inside, otherwise on

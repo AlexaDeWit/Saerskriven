@@ -832,10 +832,15 @@ to the border it had crossed, when:
 - An arrow key moves the selection out of the viewport. No Tab is needed.
 - An arrow key on a resize control carries that control out of the viewport.
 - An arrow key moves a focused bend, free flow end or curve point out of it.
+- An arrow key moves a bend being placed out of it, from Add bend or Move bend.
 
 What is followed is whatever holds focus. A box selection is followed as a
 whole, by the frame around it. With several elements picked one at a time with
 Shift, only the focused one is followed, and the others can leave the viewport.
+The one exception is a bend being placed: the Flow route toolbar holds focus
+then, and the view follows the bend, to just inside the border. Escape puts the
+bend back where it was, and the view stays where the follow took it (focus
+returning to the flow moves it only while Tab still steers).
 
 The pan takes about half a second. It is a single step where the system asks
 for reduced motion, and for each repeat of a held arrow key. It keeps the zoom
@@ -843,8 +848,7 @@ and never centres the item. Scrolling, dragging or zooming while it runs takes
 the view over. For an item larger than the viewport, the view moves the least
 that fills the viewport with the item, its nearer edge at the border.
 
-No pointer action is followed. Nor is a bend being placed from the route
-toolbar with the arrow keys, since focus is on the toolbar then.
+No pointer action is followed.
 
 The Position and size and flow end editors return focus to the selected
 element when they close. Deleting the focused element from the canvas moves

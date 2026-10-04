@@ -8,7 +8,8 @@ import {
 } from '@xyflow/react';
 import { useEffect } from 'react';
 import { drawnSelector } from './edits.js';
-import { followItemMoves, selectionFrameSelector } from './move-message.js';
+import { followKeyboardMoves, type KeyboardMove } from './keyboard-moves.js';
+import { selectionFrameSelector } from './move-message.js';
 
 /** How long the pan takes, in milliseconds, so the eye can follow the view moving. */
 export const focusPanDuration = 500;
@@ -149,55 +150,39 @@ export function onKeyboardFocus(
 }
 
 /**
- * Calls `moved` with what holds focus inside `surface` once a key press has
- * moved or resized it: the drawn element, the resize control whose edge the
- * key moved, a bend, flow end or curve point handle, or the frame React Flow
- * draws around a box selection, whose box is the whole group's. `itemMoved`
- * says when, whatever stores the move, and no Tab press has to come first.
- * It counts only while the last input was a key press, so a pointer resize,
- * which ends as a keyboard one does, never calls. The call comes on the next
- * frame, when the move is drawn, and says whether the key is being held
- * down. Answers the function that stops listening.
+ * Calls `moved` with what a key press moved or resized inside `surface`, each
+ * time `keyboardMoved` says one did, with no Tab press needed first: whatever
+ * holds focus (the drawn element, the resize control, a bend, flow end or
+ * curve point handle, or the frame around a box selection, whose box is the
+ * whole group's), or the bend being placed, which is measured itself while
+ * the route toolbar holds focus. It tells no key press from a pointer: the
+ * caller does. The call comes on the next frame, when the move is drawn, and
+ * says whether the last key press was a repeat. Answers the function that
+ * stops listening.
  */
 export function onKeyboardMove(
   surface: HTMLElement,
   moved: (target: Element, held: boolean) => void,
 ): () => void {
-  let keyHeld: boolean | undefined;
+  let keyHeld = false;
   let settling = 0;
   const keyed = (event: KeyboardEvent): void => {
     keyHeld = event.repeat;
   };
-  const pointed = (): void => {
-    keyHeld = undefined;
-  };
-  const release = followItemMoves(() => {
+  const release = followKeyboardMoves((item) => {
     const held = keyHeld;
-    if (held === undefined) {
-      return;
-    }
     cancelAnimationFrame(settling);
     settling = requestAnimationFrame(() => {
-      const target = document.activeElement;
-      if (
-        target !== null &&
-        surface.contains(target) &&
-        target.matches(movedSelector)
-      ) {
+      const target = movedItem(surface, item);
+      if (target !== null) {
         moved(target, held);
       }
     });
   });
   window.addEventListener('keydown', keyed, true);
-  window.addEventListener('pointerdown', pointed, true);
-  window.addEventListener('pointerup', pointed, true);
-  window.addEventListener('pointercancel', pointed, true);
   return () => {
     cancelAnimationFrame(settling);
     window.removeEventListener('keydown', keyed, true);
-    window.removeEventListener('pointerdown', pointed, true);
-    window.removeEventListener('pointerup', pointed, true);
-    window.removeEventListener('pointercancel', pointed, true);
     release();
   };
 }
@@ -205,9 +190,10 @@ export function onKeyboardMove(
 /**
  * Pans the canvas the least that brings the focused item's ring into the
  * viewport, where Tab puts focus on an item outside it or an arrow key moves
- * or resizes the focused item, or the box selection, out of it. What lies
- * over the canvas plays no part. Mounted inside `ReactFlow`, where its store
- * is in reach.
+ * or resizes the focused item, or the box selection, out of it, and the
+ * least that brings in a bend an arrow key moves out of it while it is being
+ * placed. What lies over the canvas plays no part. Mounted inside
+ * `ReactFlow`, where its store is in reach.
  */
 export function FocusPan(): null {
   const flow = useReactFlow();
@@ -250,6 +236,20 @@ function shiftInto(
     return from > near ? near - from : to < far ? far - to : 0;
   }
   return from < low ? near - from : far - to;
+}
+
+function movedItem(surface: HTMLElement, moved: KeyboardMove): Element | null {
+  if (moved !== 'focused') {
+    return surface.querySelector(
+      `[data-bend-index="${String(moved.placedBend)}"]`,
+    );
+  }
+  const focused = document.activeElement;
+  return focused !== null &&
+    surface.contains(focused) &&
+    focused.matches(movedSelector)
+    ? focused
+    : null;
 }
 
 function prefersReducedMotion(): boolean {
