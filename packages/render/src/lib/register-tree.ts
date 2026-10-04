@@ -5,6 +5,7 @@ import {
   flowEndName,
   flowEnds,
   inNumberOrder,
+  isEmptyName,
   recordsLinkedTo,
   threatFlags,
   unlabelledFlow,
@@ -476,7 +477,7 @@ function elementName(
       { source: flowEndName(source, free), target: flowEndName(target, free) },
     );
   }
-  return element === undefined || element.name === '' ? id : element.name;
+  return element === undefined || isEmptyName(element.name) ? id : element.name;
 }
 
 function heading(depth: Heading['depth'], value: string): Heading {

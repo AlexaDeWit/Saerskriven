@@ -4,7 +4,7 @@ import {
   type CallToolResult,
 } from '@modelcontextprotocol/server';
 import { brotliUnbuilt } from '@saerskriven/formats/fixtures';
-import { hostedStudioUrl } from '@saerskriven/formats/share-link';
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';

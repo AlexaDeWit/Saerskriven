@@ -18,14 +18,6 @@ import { saerskrivenYamlCodec } from './lib/saerskriven-yaml.js';
 export const shareLinkLimit = 1_048_576;
 
 /**
- * The hosted studio's canonical address, the base the CLI and the MCP server
- * write every share link on. The scheme is `https` and nothing else: a link
- * opened over plain HTTP would run unauthenticated script with the whole
- * model in its fragment.
- */
-export const hostedStudioUrl = 'https://saerskriven.com/';
-
-/**
  * Why no link was written, or why a fragment read as no model. A read can
  * also fail with the native codec's own {@link ReadFailure}, carried as the
  * codec returned it.

@@ -2,6 +2,7 @@ import {
   canvasClassNames,
   canvasInteractionClassNames,
   flowEndNodeId,
+  minimumNodeExtent,
 } from '@saerskriven/canvas';
 import { finger, mouseEvent, touchEvent } from '@saerskriven/canvas/fixtures';
 import { locales } from '@saerskriven/i18n';
@@ -453,17 +454,39 @@ describe('DiagramCanvas', () => {
     expect(flowLiveMessage()).toBe('');
   });
 
-  it('says where the element went when an arrow key off a resize control axis moves it instead', () => {
-    openCanvas([actorElement]);
-    render(<DiagramCanvas />);
+  it.each([
+    ['off its axis', 'top', 'ArrowLeft'],
+    [
+      'that would shrink the element under its minimum size',
+      'right',
+      'ArrowLeft',
+    ],
+  ] as const)(
+    'moves, resizes and says nothing, and records no undo step, for an arrow key on a resize control %s',
+    (_, from, key) => {
+      openCanvas([actorElement]);
+      dispatch(
+        Action.ResizeElement({
+          elementId: actorElement,
+          offset: { x: 0, y: 0 },
+          size: { ...readerBox().size, width: minimumNodeExtent },
+          decimals: undefined,
+        }),
+      );
+      const stored = modelStore.getState();
+      render(<DiagramCanvas />);
+      const told = vi.fn<() => void>();
+      const release = followItemMoves(told);
 
-    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowLeft' });
+      fireEvent.keyDown(resizeControl(from), { key });
 
-    expect(readerBox().position).toEqual({ x: -5, y: 0 });
-    expect(flowLiveMessage()).toBe(
-      t('canvas.node-moved', writtenAsPositionAndSize(readerBox().position)),
-    );
-  });
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
+      expect(flowLiveMessage()).toBe('');
+      expect(told).not.toHaveBeenCalled();
+      release();
+    },
+  );
 
   it.each([
     [

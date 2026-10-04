@@ -49,6 +49,9 @@ type Held = WaypointTarget | HeldEnd;
 
 const controlSelector = 'button, input, textarea, [data-bend-toolbar]';
 
+const handleSelector =
+  '[data-bend-index], [data-bend-segment], [data-flow-end]';
+
 const sideOfArrow: ReadonlyMap<string, Side> = new Map([
   ['ArrowUp', 'top'],
   ['ArrowRight', 'right'],
@@ -189,17 +192,14 @@ export function useFlowBendInteraction(
     event.stopPropagation();
   });
   const clicked = useEffectEvent((event: globalThis.MouseEvent): void => {
-    if (drag.endedDrag()) {
-      if (
-        event.target instanceof Element &&
-        event.target.closest(
-          '[data-bend-index], [data-bend-segment], [data-flow-end]',
-        ) !== null
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
+    if (
+      drag.closedBy(event) &&
+      event.target instanceof Element &&
+      event.target.closest(handleSelector) !== null
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
     }
     if (
       mode === undefined ||
@@ -240,6 +240,7 @@ export function useFlowBendInteraction(
   });
   const pointerStarted = useEffectEvent(
     (event: globalThis.PointerEvent): void => {
+      drag.forget();
       if (mode?.kind !== 'place' || !(event.target instanceof Element)) {
         return;
       }

@@ -651,7 +651,7 @@ describe(
       expect(document.activeElement).toBe(description);
     });
 
-    it('stays open over a hidden model panel that refuses the chosen row while no field shows the refused text, as after a redo opens another threat', async () => {
+    it("closes onto the refused text after a redo brought another threat back to the model's list", async () => {
       const user = userEvent.setup();
       hidePanesUnderTheRegister();
       act(() => {
@@ -672,17 +672,13 @@ describe(
       runRegistered('redo');
       expect(
         modelSummary(/An added threat/u).getAttribute('aria-expanded'),
-      ).toBe('true');
-      expect(
-        within(modelPanel()).queryByDisplayValue(`Pasted${softHyphen}prose`),
-      ).toBeNull();
+      ).toBe('false');
       openRegister();
 
       await user.click(chooser(mitigatedThreat));
 
-      expect(register()).toBeDefined();
-      expect(document.activeElement).toBe(chooser(mitigatedThreat));
-      expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
+      expect(registerShown()).toBeNull();
+      expect(document.activeElement).toBe(refusedDescription());
     });
 
     it('closes on the row of the threat holding the refused text as on any other, with focus on its summary and the row marked as it opens again', async () => {

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import { repositoryRoot, sha256Of } from '@saerskriven/model/fixtures';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -15,7 +16,7 @@ import {
 
 const compilerDownloadAndTypesetTimeout = 60_000;
 
-const socialImage = 'https://alexadewit.github.io/Saerskriven/social-card.png';
+const socialImage = `${hostedStudioUrl}social-card.png`;
 const socialImageAlt =
   'Saerskriven: Draw the system. Record the threats. An example threat model connects a maintainer, studio, and model file.';
 

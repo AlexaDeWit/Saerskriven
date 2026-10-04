@@ -1,4 +1,4 @@
-import { hostedStudioUrl } from '@saerskriven/formats/share-link';
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import { Either } from 'effect';
 import { recordingClipboard } from './canvas/canvas.fixtures.js';
 import { deferred } from './files/files.fixtures.js';

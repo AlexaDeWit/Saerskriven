@@ -268,7 +268,7 @@ describe('the element lists of a threat', () => {
       {
         id: requestFlow,
         label: 'Flow from Reader to Studio',
-        detach: 'Detach Flow from Reader to Studio',
+        detach: 'Detach the flow from Reader to Studio',
       },
     ]);
   });
@@ -339,8 +339,8 @@ describe('the element lists of a threat', () => {
         t,
       ).map(({ detach }) => detach),
     ).toEqual([
-      `Detach Flow from Reader to Studio (${requestFlow})`,
-      `Detach Flow from Reader to Studio (${probeFlow})`,
+      `Detach the flow from Reader to Studio (${requestFlow})`,
+      `Detach the flow from Reader to Studio (${probeFlow})`,
     ]);
   });
 });

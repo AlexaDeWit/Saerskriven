@@ -1,3 +1,26 @@
+## 0.8.1 (2026-10-04)
+
+### 🚀 Features
+
+- **studio,mcp:** apply a threat to the whole model from the studio and saer_edit ([#736](https://github.com/AlexaDeWit/Saerskriven/pull/736))
+
+### 🩹 Fixes
+
+- **canvas:** ignore still resize presses and finish touch resizes ([#698](https://github.com/AlexaDeWit/Saerskriven/pull/698))
+- **formats:** report OTM assets as converted only where one became a description ([#723](https://github.com/AlexaDeWit/Saerskriven/pull/723))
+- **studio:** name a relationship row and its removal in the singular ([#720](https://github.com/AlexaDeWit/Saerskriven/pull/720))
+- **studio:** say a record row's name once, on its toggle ([#719](https://github.com/AlexaDeWit/Saerskriven/pull/719))
+- **studio:** pan a canvas item into view when Tab or an arrow-key move leaves it outside the viewport ([#727](https://github.com/AlexaDeWit/Saerskriven/pull/727))
+- **studio:** announce a report's headings for every file opened in a row ([#724](https://github.com/AlexaDeWit/Saerskriven/pull/724))
+- **studio:** drop the group name from a new record row ([#732](https://github.com/AlexaDeWit/Saerskriven/pull/732))
+- **studio:** say a setting and its value with a colon in the appearance, severity and language names ([#735](https://github.com/AlexaDeWit/Saerskriven/pull/735))
+- **studio:** call an element named with only spaces by its kind ([#737](https://github.com/AlexaDeWit/Saerskriven/pull/737))
+- **studio:** store one decimal from a keyboard move and three from a pointer gesture ([#734](https://github.com/AlexaDeWit/Saerskriven/pull/734))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.8.0 (2026-10-03)
 
 ### 🚀 Features

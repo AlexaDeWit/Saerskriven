@@ -1,6 +1,6 @@
 {
   "name": "@saerskriven/formats",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
@@ -25,6 +25,11 @@
       "types": "./src/fixtures.ts",
       "import": "./src/fixtures.ts",
       "default": "./src/fixtures.ts"
+    },
+    "./hosted-studio": {
+      "types": "./src/hosted-studio.ts",
+      "import": "./src/hosted-studio.ts",
+      "default": "./src/hosted-studio.ts"
     },
     "./share-link": {
       "types": "./src/share-link.ts",

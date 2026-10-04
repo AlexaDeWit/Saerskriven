@@ -1,3 +1,4 @@
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import { versionDefine, workspaceVersion } from '../../workspace-version.mts';
 import { reactApp } from '../../vite.shared.mts';
 import {
@@ -7,8 +8,7 @@ import {
 import { socialCardAsset, socialImage } from './social-card.mjs';
 import { buildAssets } from './build-assets.mjs';
 
-const siteUrl =
-  process.env['PAGES_SITE_URL'] ?? 'https://alexadewit.github.io/Saerskriven';
+const siteUrl = process.env['PAGES_SITE_URL'] ?? hostedStudioUrl;
 const pagesBasePath = process.env['PAGES_BASE_PATH'];
 const base =
   pagesBasePath === undefined

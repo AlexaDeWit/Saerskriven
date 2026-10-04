@@ -7,6 +7,7 @@ import { Either, Option } from 'effect';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { brotliUnbuilt, brotliWasm } from './fixtures.js';
+import { hostedStudioUrl } from './hosted-studio.js';
 import type { ReadFailure } from './lib/codec.js';
 import { adversarialText, vendoredTexts } from './lib/corpus.fixtures.js';
 import { exceededReadLimit, readLimits } from './lib/read-limits.js';
@@ -21,7 +22,6 @@ import {
 import { saerskrivenYamlCodec } from './lib/saerskriven-yaml.js';
 import { threatDragonReading } from './lib/threat-dragon.fixtures.js';
 import {
-  hostedStudioUrl,
   isShareLinkFragment,
   readShareLink,
   renderShareLinkWriteFailure,
@@ -91,12 +91,6 @@ const holding = (bytes: Uint8Array): string =>
 
 const incompressible = (bytes: number): Model =>
   incompressibleModel(featureComplete, bytes);
-
-describe('the hosted studio', () => {
-  it('is the canonical address, over https', () => {
-    expect(hostedStudioUrl).toBe('https://saerskriven.com/');
-  });
-});
 
 describe('why a write produced no link', () => {
   it('gives the length and the limit of a link past it, and says to send the file', () => {

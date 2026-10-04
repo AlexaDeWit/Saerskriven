@@ -1,6 +1,7 @@
 import type { ElementId } from '@saerskriven/model';
 import { elementIn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
@@ -53,6 +54,41 @@ const source = () => endOf(requestFlow, 'source');
 const target = (id: ElementId) => endOf(id, 'target');
 
 const extra = { x: 300, y: 120 };
+
+const bent = (): void => {
+  dispatch(
+    Action.SetFlowWaypoints({
+      elementId: requestFlow,
+      waypoints: [{ x: 210, y: 30 }],
+      decimals: undefined,
+    }),
+  );
+};
+
+const hold = (handle: HTMLElement): void => {
+  pointerOn(handle, 'pointerdown', 0, 0);
+  pointerOn(handle, 'pointermove', 0, 60);
+};
+
+const dropByEscape = (handle: HTMLElement): void => {
+  handle.focus();
+  press('Escape');
+};
+
+const dropByPointerCancel = (handle: HTMLElement): void => {
+  pointerOn(handle, 'pointercancel', 0, 60);
+};
+
+const drops = [
+  { by: 'Escape', drop: dropByEscape },
+  {
+    by: 'a window blur',
+    drop: (): void => {
+      fireEvent.blur(window);
+    },
+  },
+  { by: 'a pointer cancel', drop: dropByPointerCancel },
+];
 
 beforeEach(() => {
   openCanvas([requestFlow]);
@@ -265,6 +301,71 @@ describe('DiagramCanvas, a bend on a flow', () => {
     fireEvent.click(bend());
     fireEvent.click(screen.getByRole('button', { name: 'Remove bend' }));
     expect(points()).toEqual([]);
+  });
+});
+
+describe.each(drops)(
+  'DiagramCanvas, a flow handle after a drag that $by dropped',
+  ({ drop }) => {
+    it('opens the actions of the bend on Enter', async () => {
+      const user = userEvent.setup();
+      bent();
+      render(<DiagramCanvas />);
+      hold(bend());
+      drop(bend());
+
+      bend().focus();
+      await user.keyboard('{Enter}');
+
+      expect(
+        screen.getByRole('group', { name: 'Bend actions' }),
+      ).not.toBeNull();
+    });
+
+    it('opens the actions of the end on Space', async () => {
+      const user = userEvent.setup();
+      render(<DiagramCanvas />);
+      hold(sourceEnd());
+      drop(sourceEnd());
+
+      sourceEnd().focus();
+      await user.keyboard(' ');
+
+      expect(
+        screen.getByRole('group', { name: 'Flow end actions' }),
+      ).not.toBeNull();
+    });
+  },
+);
+
+describe('DiagramCanvas, a pointer click after a drag of a flow handle', () => {
+  it('opens no actions where it ends the drag, released or dropped by Escape', () => {
+    bent();
+    render(<DiagramCanvas />);
+    dragHandle(bend(), { x: 240, y: 80 });
+    fireEvent.click(bend(), { detail: 1 });
+    expect(screen.queryByRole('group', { name: 'Bend actions' })).toBeNull();
+
+    hold(sourceEnd());
+    dropByEscape(sourceEnd());
+    pointerOn(sourceEnd(), 'pointerup', 0, 60);
+    fireEvent.click(sourceEnd(), { detail: 1 });
+    expect(
+      screen.queryByRole('group', { name: 'Flow end actions' }),
+    ).toBeNull();
+  });
+
+  it('deselects the flow by a Shift-click on its line that a later press begins, after a dropped drag', () => {
+    render(<DiagramCanvas />);
+    hold(sourceEnd());
+    dropByPointerCancel(sourceEnd());
+    const segment =
+      document.querySelector('[data-bend-segment="0"]') ?? document.body;
+
+    fireEvent.pointerDown(segment, { shiftKey: true });
+    fireEvent.click(segment, { shiftKey: true, detail: 1 });
+
+    expect(modelStore.getState().selection).toEqual([]);
   });
 });
 
@@ -485,11 +586,10 @@ describe('DiagramCanvas, the ends of a flow', () => {
   it('frees a flow end released on empty canvas, inside a trust boundary too, at the drop point, as one undo step', () => {
     render(<DiagramCanvas />);
     const handle = sourceEnd();
-    pointerOn(handle, 'pointerdown', 0, 0);
-    pointerOn(handle, 'pointermove', 0, 60);
+    hold(handle);
     expect(Number.parseFloat(sourceEnd().style.top)).toBeGreaterThan(60);
     expect(modelStore.getState().past).toEqual([]);
-    pointerOn(handle, 'pointercancel', 0, 60);
+    dropByPointerCancel(handle);
     dragHandle(sourceEnd(), { x: 200, y: 70 });
     const freed = source();
     expect(freed?.kind).toBe('free');

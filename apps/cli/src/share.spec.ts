@@ -1,8 +1,6 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
-import {
-  hostedStudioUrl,
-  shareLinkLimit,
-} from '@saerskriven/formats/share-link';
+import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
+import { shareLinkLimit } from '@saerskriven/formats/share-link';
 import { unclaimedYaml } from '@saerskriven/mcp/fixtures';
 import {
   committedText,

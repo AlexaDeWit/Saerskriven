@@ -110,15 +110,21 @@ skip without it, `brotliUnbuilt`.
 `@saerskriven/formats/share-link` subpath ([`share-link.ts`](src/share-link.ts)),
 write a model as a share link and read one back through `saerskrivenYamlCodec`.
 `isShareLinkFragment` tells a share link's fragment from any other, and
-`shareLinkLimit` is the most characters a link holds. `hostedStudioUrl` is the
-hosted studio's address, always `https`, which the CLI and the MCP server write
-their links on. A refusal is a `ShareLinkFailure`, of which a write ends in the
-three `ShareLinkWriteFailure` names, or on a read the codec's own
-`ReadFailure`. `renderShareLinkWriteFailure` words a refused write in English,
+`shareLinkLimit` is the most characters a link holds. A refusal is a
+`ShareLinkFailure`, of which a write ends in the three `ShareLinkWriteFailure`
+names, or on a read the codec's own `ReadFailure`.
+`renderShareLinkWriteFailure` words a refused write in English,
 and the CLI and the MCP server print that text, so it is an interface. The
 subpath keeps the brotli module out of the main entry.
 [The Saerskriven YAML format](../../docs/saerskriven-yaml.md#share-links) sets
 out the link format and its compatibility contract.
+
+`hostedStudioUrl`, on the `@saerskriven/formats/hosted-studio` subpath
+([`hosted-studio.ts`](src/hosted-studio.ts)), is the hosted studio's address,
+always `https`. The CLI and the MCP server write their links on it, and a
+studio build takes it as its site URL when `PAGES_SITE_URL` is unset. The
+module imports nothing, so the studio's Vite configuration can load it in plain
+Node.
 
 ## Fixtures
 
