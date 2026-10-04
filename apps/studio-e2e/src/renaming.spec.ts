@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
-import { registeredChords } from './chords.fixtures.js';
-import { dragOnto } from './canvas.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
+import { clickSvgText, dragOnto } from './canvas.fixtures.js';
 import {
   canvasSurface,
   expandThreat,
@@ -148,7 +148,7 @@ test('a flow is renamed by double-clicking the label it draws', async ({
   await drawFlow(page);
 
   const flow = nodeNamed(page, /^New flow, flow/u);
-  await drawnName(flow, canvasClassNames.flowLabel).dblclick();
+  await clickSvgText(drawnName(flow, canvasClassNames.flowLabel), 2);
   await expect(nameField(page, 'New flow')).toBeFocused();
   await expect(drawnName(flow, canvasClassNames.flowLabel)).toHaveCount(0);
   await nameField(page, 'New flow').fill('Opens');
@@ -221,7 +221,7 @@ test('Enter reopens a selected Note for prose editing', async ({ page }) => {
 
   const editor = page.getByRole('textbox', { name: 'Note text' });
   await editor.fill('Review the trust boundary.');
-  await editor.press('ControlOrMeta+Enter');
+  await editor.press(await commandChord(page, 'ControlOrMeta+Enter'));
   await expect(nodeNamed(page, /^Note, text/u)).toBeFocused();
 
   await page.keyboard.press('Enter');

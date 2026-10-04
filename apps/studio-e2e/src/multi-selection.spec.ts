@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { commandChord } from './chords.fixtures.js';
 import {
   boxOf,
   boxSelect,
@@ -119,7 +120,7 @@ test('Shift-click and Shift+Enter extend and trim the selection', async ({
   await expect(actor).toHaveClass(/selected/u);
   await expect(store).toHaveClass(/selected/u);
 
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
   await expect(elementNodes(page)).toHaveCount(2);
   await expect(page.locator('.react-flow__node.selected')).toHaveCount(2);
   await expect(page.locator('.react-flow__edge.selected')).toHaveCount(1);
@@ -146,7 +147,7 @@ test('a plain click or Enter reduces a group to that element', async ({
     threatPanel(page).getByRole('heading', { name: 'Actor', exact: true }),
   ).toBeVisible();
 
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
   const flow = nodeNamed(page, placeholder.records);
   await flow.focus();
   await page.keyboard.press('Enter');
@@ -163,7 +164,7 @@ test('dragging a multi-selection moves it by one offset and undo restores it', a
   await openPlaceholder(page);
   const [actor, store] = placeholderNodes(page);
   const flow = lineOf(page, placeholder.records);
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
   const actorBefore = await boxOf(actor);
   const storeBefore = await boxOf(store);
   const flowBefore = await drawnBy(flow);

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Model } from '@saerskriven/model';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import { dragBy, pointHandles, viewportZoom } from './canvas.fixtures.js';
 import {
   openTwoDiagrams,
@@ -47,7 +47,7 @@ test('a trust boundary curve moves a point by arrow key and by dragging, and rem
   expect(waypoints[0]?.x).toBeCloseTo(0);
   expect(waypoints[0]?.y).toBeCloseTo(330 + 40 / zoom, 0);
   expect(waypoints[1]).toEqual({ x: 400, y: 395 });
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(pointHandles(page)).toHaveCount(3);
 });
 
@@ -83,6 +83,6 @@ test('a trust boundary switches between a box and a curve by its chord and its c
       size: { width: 560, height: 520 },
     },
   });
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(pointHandles(page)).toHaveCount(3);
 });

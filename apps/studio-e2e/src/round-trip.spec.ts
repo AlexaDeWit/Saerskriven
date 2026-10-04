@@ -61,7 +61,7 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
   await threatPanel(page).getByRole('button', { name: 'Add a threat' }).click();
   const title = threatPanel(page).getByRole('textbox', { name: 'Title' });
   await expect(title).toBeFocused();
-  await title.press('ControlOrMeta+a');
+  await title.press('Control+a');
   await page.keyboard.type(addedTitle);
   await title.press('Enter');
   await chooseInPanel(page, 'Severity', 'Critical');

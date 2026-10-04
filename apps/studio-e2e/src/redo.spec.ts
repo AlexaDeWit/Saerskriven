@@ -36,7 +36,7 @@ test('redo puts back an edit undone on the canvas and one undone in the panel', 
     exact: true,
   });
   await title.click();
-  await page.keyboard.press('ControlOrMeta+a');
+  await page.keyboard.press('Control+a');
   await page.keyboard.type(retitled);
   await title.press('Enter');
   await expect(

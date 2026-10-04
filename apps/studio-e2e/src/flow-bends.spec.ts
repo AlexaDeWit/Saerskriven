@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { committedText } from '@saerskriven/model/fixtures';
+import { commandChord } from './chords.fixtures.js';
 import { audit } from './accessibility.fixtures.js';
 import {
   canvasSettled,
@@ -55,7 +56,7 @@ test('clicking a preview bend confirms its insertion', async ({ page }) => {
   await expect(
     page.getByRole('button', { name: 'Remove bend', exact: true }),
   ).toHaveCount(0);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(page.locator('[data-bend-index]')).toHaveCount(0);
 });
 
@@ -87,9 +88,9 @@ test('keyboard insertion chooses a segment, previews, cancels, and commits one u
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   const oneBend = await drawnBy(line);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(line).toHaveAttribute('d', original);
-  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+z'));
   await expect(line).toHaveAttribute('d', oneBend);
   await page.keyboard.press('+');
   await page.keyboard.press('ArrowRight');
@@ -122,7 +123,7 @@ test('pulling the line and its bends previews after zoom and pan, with cancellat
 }) => {
   await openPlaceholder(page);
   await selectByKeyboard(page, placeholder.records);
-  await page.keyboard.press('ControlOrMeta+-');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+-'));
   await canvasSettled(page);
   await page.mouse.move(550, 240);
   await page.mouse.wheel(65, 40);
@@ -165,9 +166,9 @@ test('pulling the line and its bends previews after zoom and pan, with cancellat
   await page.mouse.up();
   await expect(line).toHaveAttribute('d', moved);
   await expect(page.locator('[data-bend-index]')).toHaveCount(1);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(line).toHaveAttribute('d', preview);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(line).toHaveAttribute('d', original);
 });
 

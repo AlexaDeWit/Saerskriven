@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { gridSpacing } from '@saerskriven/canvas';
 import { audit } from './accessibility.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   boxOf,
   canvasSettled,
@@ -40,7 +40,9 @@ for (const mode of ['select', 'hand', 'space'] as const) {
       await test.step(selection, async () => {
         await page.keyboard.press(registeredChords['select-tool'][0]);
         if (selection === 'several') {
-          await page.keyboard.press('ControlOrMeta+a');
+          await page.keyboard.press(
+            await commandChord(page, 'ControlOrMeta+a'),
+          );
         } else {
           await selectByKeyboard(
             page,
@@ -127,9 +129,9 @@ test('clipboard commands preserve graph references and leave text fields their o
   await allowClipboard(context);
   await openFallback(page);
   await selectByKeyboard(page, placeholder.records);
-  await page.keyboard.press('ControlOrMeta+c');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+c'));
   await expect(editAnnouncement(page)).not.toBeEmpty();
-  await page.keyboard.press('ControlOrMeta+v');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+v'));
   await expect(page.locator('.react-flow__node')).toHaveCount(4);
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
   const copied = await savedModel(page);
@@ -137,18 +139,18 @@ test('clipboard commands preserve graph references and leave text fields their o
     new Set(copied.diagrams[0].elements.map((element) => element.id)).size,
   ).toBe(6);
   expect(new Set(copied.threats.map((threat) => threat.id)).size).toBe(2);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(page.locator('.react-flow__node')).toHaveCount(2);
   await selectByKeyboard(page, placeholder.actor);
   await page.keyboard.press('Enter');
   const name = page.getByRole('textbox', { name: /^Name of/u });
   await name.fill('Text copy');
   await name.selectText();
-  await page.keyboard.press('ControlOrMeta+c');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+c'));
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
     'Text copy',
   );
-  await page.keyboard.press('ControlOrMeta+v');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+v'));
   await expect(page.locator('.react-flow__node')).toHaveCount(2);
   await page.keyboard.press('Escape');
 });
@@ -175,7 +177,7 @@ test('geometry fields support movement and resizing, cancellation, and one undo 
     position: { x: 41, y: 40 },
     size: { width: 101, height: 50 },
   });
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   const undone = await savedModel(page);
   expect(undone.diagrams[0].elements[0]).toMatchObject({
     position: { x: 40, y: 40 },
@@ -208,7 +210,7 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
 }) => {
   await openFallback(page);
   await selectByKeyboard(page, placeholder.actor);
-  await page.keyboard.press('ControlOrMeta+d');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+d'));
   await expect(page.locator('.react-flow__node')).toHaveCount(3);
   await selectByKeyboard(page, placeholder.records);
   await page.keyboard.press(registeredChords['reconnect-source'][0]);
@@ -236,7 +238,7 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
       flow.source.kind === 'attached' &&
       flow.source.element !== 'placeholder-actor',
   ).toBe(true);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   const before = await savedModel(page);
   expect(
     before.diagrams[0].elements.find((element) => element.kind === 'flow'),
@@ -249,15 +251,17 @@ test('arrangement and view controls use the registry without view edits entering
   page,
 }) => {
   await openFallback(page);
-  await page.keyboard.press('ControlOrMeta+a');
-  await page.keyboard.press('ControlOrMeta+Shift+ArrowLeft');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
+  await page.keyboard.press(
+    await commandChord(page, 'ControlOrMeta+Shift+ArrowLeft'),
+  );
   const arranged = await savedModel(page);
   expect(
     arranged.diagrams[0].elements
       .filter((element) => 'position' in element)
       .map((element) => ('position' in element ? element.position.x : 0)),
   ).toEqual([40, 40]);
-  await page.keyboard.press('ControlOrMeta+1');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+1'));
   await expect(
     page.getByRole('button', { name: 'Reset zoom to 100%' }),
   ).toHaveText('100%');
@@ -265,12 +269,12 @@ test('arrangement and view controls use the registry without view edits entering
   await expect(
     page.getByRole('button', { name: /^Menu/u }),
   ).toHaveAccessibleName('Menu');
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   const undone = await savedModel(page);
   expect(undone.diagrams[0].elements[1]).toMatchObject({
     position: { x: 280 },
   });
-  await page.keyboard.press('ControlOrMeta+Shift+g');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+g'));
   await openMenu(page);
   await expect(menuItem(page, 'Snap to grid: on')).toBeVisible();
 });
@@ -292,7 +296,7 @@ for (const { fixture, duplicated, retargeted } of [
   }) => {
     await openFile(page, fixture);
     await selectByKeyboard(page, duplicated);
-    await page.keyboard.press('ControlOrMeta+d');
+    await page.keyboard.press(await commandChord(page, 'ControlOrMeta+d'));
     await expect(editAnnouncement(page)).not.toBeEmpty();
     await page.keyboard.press(registeredChords['edit-geometry'][0]);
     const geometry = page.getByRole('region', { name: 'Position and size' });
@@ -309,8 +313,10 @@ for (const { fixture, duplicated, retargeted } of [
     const target = endpoint.getByRole('combobox', { name: 'Target' });
     await target.selectOption({ index: 0 });
     await endpoint.getByRole('button', { name: 'Apply endpoint' }).click();
-    await page.keyboard.press('ControlOrMeta+a');
-    await page.keyboard.press('ControlOrMeta+Shift+ArrowUp');
+    await page.keyboard.press(await commandChord(page, 'ControlOrMeta+a'));
+    await page.keyboard.press(
+      await commandChord(page, 'ControlOrMeta+Shift+ArrowUp'),
+    );
     const written = await savedFile(page);
     const before = readBack(written.text).model;
     await openText(page, written.name, written.text);
@@ -325,10 +331,10 @@ test('snapping is optional and preserves manual placement when disabled', async 
 }) => {
   await openPlaceholder(page);
   const actor = await selectByKeyboard(page, placeholder.actor);
-  await page.keyboard.press('ControlOrMeta+Shift+g');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+g'));
   await dragBy(page, actor, 37);
   await expect.poll(async () => (await boxOf(actor)).x % gridSpacing).toBe(0);
-  await page.keyboard.press('ControlOrMeta+Shift+g');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+g'));
   await dragBy(page, actor, 37);
   await expect
     .poll(async () => (await boxOf(actor)).x % gridSpacing)
@@ -372,7 +378,9 @@ for (const command of ['fit-selection', 'fit-to-view'] as const) {
     const panel = page.getByTestId('threat-panel');
     await panel.getByRole('button', { name: 'Widen pane' }).click();
     await canvasSettled(page);
-    await page.keyboard.press(registeredChords[command][0]);
+    await page.keyboard.press(
+      await commandChord(page, registeredChords[command][0]),
+    );
     await canvasSettled(page);
     const node = await actor.boundingBox();
     const pane = await panel.boundingBox();

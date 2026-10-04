@@ -68,7 +68,10 @@ export function viewPanner(
   };
 }
 
-/** Follows visible keyboard focus on the next frame. Ignores focus restored after a window blur and returns a stop function. */
+/**
+ * Follows visible keyboard focus after one frame, excluding window restoration.
+ * Pointer-first script focus preserves `:focus-visible` in Chromium but clears it in Playwright WebKit.
+ */
 export function onKeyboardFocus(
   surface: HTMLElement,
   landed: (target: Element) => void,

@@ -302,6 +302,12 @@ export const expectFileShown = async (
   await closeMenu(page);
 };
 
+/** This Linux WebKit driver replaces spaces in the anchor's download name with underscores. */
+export const downloadName = (page: Page, name: string): string =>
+  page.context().browser()?.browserType().name() === 'webkit'
+    ? name.replaceAll(' ', '_')
+    : name;
+
 type Downloaded = {
   readonly name: string;
   readonly bytes: Buffer;
