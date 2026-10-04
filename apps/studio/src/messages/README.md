@@ -81,9 +81,10 @@ takes, as `fields.recording-of-protocol` (_Consignation du protocole_) and
 and the control picks the message by the label's key.
 
 A verb or an adjective beside a label takes a message per label too. A label
-standing alone opens with a capital and carries no article, and a phrase needs
-the noun's article, its definite form or an adjective that agrees with it:
-`tools.decrease-width` (_Decrease width_, _Diminuer la largeur_, _Minska
+standing alone opens with a capital and carries no article, and a phrase
+writes the noun in lower case after its verb and needs the noun's article,
+its definite form or an adjective that agrees with it where the language has
+one: `tools.decrease-width` (_Decrease width_, _Diminuer la largeur_, _Minska
 bredden_), `fields.unlink-assumption` (_Délier l’hypothèse 1_),
 `fields.existing-assumption` (_Hypothèse existante_, _Befintligt antagande_)
 and `fields.remove-from-crossed-trust-boundaries` (_Retirer la frontière de
