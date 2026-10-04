@@ -718,13 +718,90 @@ describe('DiagramCanvas', () => {
     expect(modelStore.getState().past).toHaveLength(0);
   });
 
-  describe('a press on an element held when the window loses focus', () => {
+  describe('a mouse press held when the window loses focus', () => {
     beforeEach(() => {
       vi.stubGlobal('MouseEvent', ViewKeepingMouseEvent);
     });
 
     afterEach(() => {
       vi.unstubAllGlobals();
+    });
+
+    it.each(['right', 'left', 'top left corner'])(
+      'cancels a resize from %s, restores its starting geometry and records no later move or click',
+      async (from) => {
+        openCanvas([actorElement]);
+        render(<DiagramCanvas />);
+        const stored = modelStore.getState();
+        const announcement = currentAnnouncement();
+        const before = readerBox();
+        const drawn = () => [
+          readerGlyphWidth(),
+          reader().style.width,
+          reader().style.height,
+          reader().style.transform,
+        ];
+        const drawnAt = drawn();
+
+        fireEvent(resizeControl(from), mouseEvent('mousedown', 100));
+        fireEvent(window, mouseEvent('mousemove', 140));
+        expect(drawn()).not.toEqual(drawnAt);
+
+        fireEvent(window, new Event('blur'));
+        expect(drawn()).toEqual(drawnAt);
+        fireEvent(window, mouseEvent('mousemove', 160));
+        fireEvent(window, mouseEvent('mousemove', 180));
+        expect(drawn()).toEqual(drawnAt);
+        fireEvent(window, mouseEvent('mouseup', 180));
+        await clickSuppressionLifted();
+        fireEvent.click(reader());
+        stillPressReader();
+
+        expect(drawn()).toEqual(drawnAt);
+        expect(readerBox()).toEqual(before);
+        expect(modelStore.getState().present).toBe(stored.present);
+        expect(modelStore.getState().past).toBe(stored.past);
+        expect(currentAnnouncement()).toEqual(announcement);
+      },
+    );
+
+    it('releases a resize press before it moves, so later pointer movement and a still press store nothing', async () => {
+      openCanvas([actorElement]);
+      render(<DiagramCanvas />);
+      const stored = modelStore.getState();
+      const drawnAt = [readerGlyphWidth(), reader().style.width];
+
+      fireEvent(resizeControl('right'), mouseEvent('mousedown', 100));
+      fireEvent(window, new Event('blur'));
+      fireEvent(window, mouseEvent('mousemove', 160));
+      fireEvent(window, mouseEvent('mouseup', 160));
+      await clickSuppressionLifted();
+      stillPressReader();
+
+      expect([readerGlyphWidth(), reader().style.width]).toEqual(drawnAt);
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
+    });
+
+    it('cancels a held mouse resize after deselection unmounts its control', async () => {
+      openCanvas([actorElement]);
+      render(<DiagramCanvas />);
+      const stored = modelStore.getState();
+      const drawnAt = [readerGlyphWidth(), reader().style.width];
+
+      fireEvent(resizeControl('right'), mouseEvent('mousedown', 100));
+      fireEvent(window, mouseEvent('mousemove', 140));
+      act(() => {
+        dispatch(Action.Select({ elementIds: [] }));
+      });
+      fireEvent(window, new Event('blur'));
+      fireEvent(window, mouseEvent('mousemove', 180));
+      fireEvent(window, mouseEvent('mouseup', 180));
+      await clickSuppressionLifted();
+
+      expect([readerGlyphWidth(), reader().style.width]).toEqual(drawnAt);
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
     });
 
     it('is let go before the drag starts, so the element follows no later pointer move and the next release records nothing', async () => {

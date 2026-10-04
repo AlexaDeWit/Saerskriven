@@ -1,5 +1,6 @@
 import {
   gridSpacing,
+  ResizeMouseCancellation,
   themedCanvasStylesheet,
   type CanvasFlowEdge,
 } from '@saerskriven/canvas';
@@ -66,6 +67,7 @@ import {
 } from './nodes.js';
 import { editingEdgeTypes, editingNodeTypes } from './inline-editing.js';
 import { useNodeDrag } from './node-drag.js';
+import { useResizeCancellation } from './resize-cancellation.js';
 import { usePaneShield } from './pane-shield.js';
 import { PlacementPreview } from './placement-preview.js';
 import { usePlacement } from './placement.js';
@@ -178,6 +180,7 @@ export function DiagramCanvas({
   const elements = useMemo(() => elementIds(layout), [layout]);
   const positions = useMemo(() => nodesById(layout), [layout]);
   const surface = useRef<HTMLDivElement>(null);
+  const resizeCancellation = useResizeCancellation(surface);
   const boxSelection = useBoxSelection(surface, elements);
   const view = useRef<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>(
     null,
@@ -437,5 +440,9 @@ export function DiagramCanvas({
       <ThreatOverlay onCover={setPanelCover} />
     </div>
   );
-  return <NodeFold.Provider value={liveEdges.fold}>{canvas}</NodeFold.Provider>;
+  return (
+    <ResizeMouseCancellation value={resizeCancellation}>
+      <NodeFold.Provider value={liveEdges.fold}>{canvas}</NodeFold.Provider>
+    </ResizeMouseCancellation>
+  );
 }

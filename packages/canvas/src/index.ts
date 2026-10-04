@@ -61,7 +61,10 @@ export {
   renderThemeSchema,
   type RenderTheme,
 } from './lib/render-theme.js';
-export { type ResizeLabels } from './lib/resize-controls.js';
+export {
+  ResizeMouseCancellation,
+  type ResizeLabels,
+} from './lib/resize-controls.js';
 export {
   isResizeKey,
   keyboardResizeStep,

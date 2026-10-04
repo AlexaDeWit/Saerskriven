@@ -7,6 +7,7 @@ import { selectedElements } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { positionChanges, unmoved } from './changes.js';
+import { useHeldMouse } from './held-mouse.js';
 import type { DiagramNode } from './nodes.js';
 
 const draggedSelector = '.react-flow__node.draggable';
@@ -18,37 +19,17 @@ type Drag = {
 };
 
 /**
- * React Flow's own drag of nodes, from its `onNodeDragStart` to its
- * `onNodeDragStop`, which follows every drag it started and did not abort,
- * or, for an aborted one, to the settled position change React Flow sends
- * instead. The next drag start replaces a drag React Flow never ended.
- *
- * Its changes pass to `moveNodes` as a pointer's until the selection changes
- * under it, as Escape does, or the window loses focus. The drag is then put
- * back where the model has its nodes now, and nothing more of it reaches
- * `moveNodes`, its release included, so it records no move. `autoPan` stays
- * off until that release.
- *
- * A blurred window also ends React Flow's mouse gesture with the window
- * mouse release it waits for, since the real one may land outside the
- * window. That gesture starts at the press, before React Flow starts the
- * drag, so a blur also lets go of a press still held on a node React Flow may
- * drag. A press on a control inside a node drags no node, and a blur leaves
- * it alone.
- *
- * A change React Flow reports outside a drag passes as the keyboard's: only
- * an arrow key moves a node then. React Flow reports an arrow-key move and a
- * drag's release as the same change, so that is an inference: after a drag
- * React Flow never ended, the first arrow-key move passes as a pointer's and
- * is stored at three decimals where one was due. That change settles the
- * drag, so the moves after it pass as the keyboard's.
+ * Selection changes and window blur restore a drag to the model's positions
+ * and suppress its remaining position changes. Auto-pan stops until release.
+ * Blur also releases a mouse press before React Flow starts dragging.
+ * Changes outside a drag are keyboard moves. After a drag React Flow never
+ * ended, the first keyboard move settles it and uses pointer precision.
  */
 export function useNodeDrag(
   positions: ReadonlyMap<string, CanvasNode>,
   moveNodes: (changes: NodeChange<DiagramNode>[], input: GestureInput) => void,
 ) {
   const drag = useRef<Drag | undefined>(undefined);
-  const pressed = useRef(false);
   const [heldBack, setHeldBack] = useState(false);
 
   const forget = (): void => {
@@ -79,32 +60,9 @@ export function useNodeDrag(
       cancel();
     }
   });
-  const blurred = useEffectEvent((): void => {
-    if (drag.current === undefined && !pressed.current) {
-      return;
-    }
-    cancel();
-    window.dispatchEvent(new MouseEvent('mouseup', { view: window }));
-  });
+  useHeldMouse(startsGesture, cancel, () => drag.current !== undefined);
   useEffect(() => {
-    const press = (event: MouseEvent): void => {
-      if (startsGesture(event)) {
-        pressed.current = true;
-      }
-    };
-    const release = (): void => {
-      pressed.current = false;
-    };
-    const unsubscribe = modelStore.subscribe(reselected);
-    window.addEventListener('mousedown', press, true);
-    window.addEventListener('mouseup', release, true);
-    window.addEventListener('blur', blurred);
-    return () => {
-      unsubscribe();
-      window.removeEventListener('mousedown', press, true);
-      window.removeEventListener('mouseup', release, true);
-      window.removeEventListener('blur', blurred);
-    };
+    return modelStore.subscribe(reselected);
   }, []);
 
   return {

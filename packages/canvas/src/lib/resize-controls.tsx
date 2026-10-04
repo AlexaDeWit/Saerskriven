@@ -8,7 +8,9 @@ import {
   type ResizeDragEvent,
 } from '@xyflow/react';
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -38,6 +40,11 @@ import { resizeHandle } from './tokens.js';
 
 /** The accessible name of each resize control, which the mounting canvas words. */
 export type ResizeLabels = Readonly<Record<ResizeControlPosition, string>>;
+
+/** The mounting canvas subscribes cancellation callbacks and calls them before releasing a blurred mouse gesture. */
+export const ResizeMouseCancellation = createContext<
+  (cancel: () => void) => () => void
+>(() => () => undefined);
 
 type ResizeSubject = {
   readonly node: CanvasNode;
@@ -92,38 +99,24 @@ type NodePress = {
 };
 
 /**
- * The resize controls of a selected node: a line control on each side, which
- * resizes one axis, and a handle at each corner, which resizes both, less
- * those {@link resizeControlsOf} leaves off a boundary curve. Each
- * holds a button named from `labels` that resizes by arrow key in
- * model-space steps. Both routes hand `onResizeEnd` the settled position and
- * size together, so a resize from the top or left is one edit, and which of
- * the two the resize came by: `pointer` for a mouse or a touch, `keyboard`
- * for an arrow key. A pointer press that never resized the node does not
- * reach `onResizeEnd`: React Flow ends it with the extent it measured, a
- * fractional size rounded to whole pixels. `onResize` and `onResizeEnd` may
- * be new functions on every render: a pointer resize calls those of the
- * render its press began on, and settles against that render's `node`.
+ * Controls from {@link resizeControlsOf} resize side axes or both corner
+ * axes. `onResizeEnd` receives position, size and input together. Pointer
+ * resizes use the node and callbacks from the render their press began on.
+ * A press with no resize sends no end, since React Flow's measured extent
+ * rounds fractional sizes to whole pixels.
  *
- * The button claims every arrow key pressed on it. One it cannot use, off its
- * control's axis or shrinking an extent already at `minimumNodeExtent`,
- * resizes nothing and never reaches React Flow, which moves the selected nodes
- * on an arrow key. Any other key is left alone.
+ * Buttons claim all arrow keys, including those off their axes or blocked by
+ * `minimumNodeExtent`, so React Flow cannot move the selection with them.
  *
- * One control holds the node's press at a time. Another finger on that
- * control joins the press. Until the press is over, another pointer's press
- * anywhere on another control starts nothing, and an arrow key on any control
- * resizes nothing. A resize ends when the last finger or the mouse of its
- * press lifts, with the box it finished on. It ends put back instead, with the
- * box the node had when pressed, when a touch of its press was cancelled or
- * when its control unmounts with no mouse down on it. A mouse press outlives
- * its control and ends on its release.
+ * One control holds the press. Fingers on it join, while other controls and
+ * arrow keys wait. The last release ends the resize. Touch cancellation or
+ * control unmount without a mouse restores its starting box. The mounting
+ * canvas signals window blur through {@link ResizeMouseCancellation}, ending
+ * a held mouse press with its starting box instead. A mouse press
+ * outlives its control until release or blur.
  *
- * A release that never comes leaves the press held: another pointer on its
- * control joins it, resizes the node on screen and gets no end. Its only
- * pointer pressing a control again ends it put back and starts a new press,
- * and a drag of that press resizes from the extent the node then has on
- * screen, not from the box it was put back to.
+ * A lost release without blur leaves the press held. Its only pointer pressing
+ * again restores the box and starts anew, from the extent still on screen.
  *
  * A boundary curve's corner handles sit `resizeHandle.curveGap` outside its
  * corners, clear of a handle on a point there.
@@ -157,10 +150,12 @@ export function ResizeControls({
 }
 
 function useNodePress(subject: ResizeSubject): NodePress {
-  const rendered = useRef(subject);
+  const subscribeCancellation = useContext(ResizeMouseCancellation);
+  const rendered = useRef({ subject, subscribeCancellation });
   const press = useRef<Press>(undefined);
+  const unsubscribeCancellation = useRef<(() => void) | undefined>(undefined);
   useLayoutEffect(() => {
-    rendered.current = subject;
+    rendered.current = { subject, subscribeCancellation };
   });
 
   const [nodePress] = useState((): NodePress => {
@@ -170,6 +165,8 @@ function useNodePress(subject: ResizeSubject): NodePress {
         return;
       }
       press.current = undefined;
+      unsubscribeCancellation.current?.();
+      unsubscribeCancellation.current = undefined;
       if (held.resized) {
         const box = held.cancelled ? ownBox : settled;
         held.subject.onResizeEnd?.(
@@ -191,7 +188,7 @@ function useNodePress(subject: ResizeSubject): NodePress {
         }
         press.current ??= {
           position,
-          subject: rendered.current,
+          subject: rendered.current.subject,
           measured,
           extent: measured,
           gestures: new Set(),
@@ -200,6 +197,17 @@ function useNodePress(subject: ResizeSubject): NodePress {
         };
         if (press.current.position === position) {
           press.current.gestures.add(gesture);
+          if (
+            gesture === 'mouse' &&
+            unsubscribeCancellation.current === undefined
+          ) {
+            unsubscribeCancellation.current =
+              rendered.current.subscribeCancellation(() => {
+                if (press.current !== undefined) {
+                  press.current.cancelled = true;
+                }
+              });
+          }
         }
       },
       holds: (position) => press.current?.position === position,
