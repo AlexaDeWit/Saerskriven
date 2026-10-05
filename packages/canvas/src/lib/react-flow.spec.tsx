@@ -1,6 +1,8 @@
-import { elementId } from '@saerskriven/model/fixtures';
+import { elementId, flowBetween, modelWith } from '@saerskriven/model/fixtures';
 import {
   Position,
+  ConnectionMode,
+  ReactFlow,
   ReactFlowProvider,
   useStoreApi,
   type EdgeProps,
@@ -16,6 +18,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { selectedBadgeAnchor } from './badges.js';
 import {
   everyGlyphLayout,
+  layoutOf,
   nodeNamed,
   specMarks,
   specResizeLabels,
@@ -586,6 +589,27 @@ describe('CanvasFreeEndBody', () => {
     );
     expect(markup).toContain('react-flow__handle');
     expect(markup).not.toContain('<svg');
+    const container = document.createElement('div');
+    container.innerHTML = markup;
+    const handle = container.querySelector<HTMLElement>('.react-flow__handle');
+    const declared = freeEndNodes(everyGlyphLayout)[0].handles?.[0];
+    expect(declared).toEqual({
+      type: 'source',
+      position: Position.Top,
+      x: 0,
+      y: 0,
+      width: 1,
+      height: 1,
+    });
+    expect(handle?.style.left).toBe(`${String(declared?.x)}px`);
+    expect(handle?.style.top).toBe(`${String(declared?.y)}px`);
+    expect(handle?.style.width).toBe(`${String(declared?.width)}px`);
+    expect(handle?.style.height).toBe(`${String(declared?.height)}px`);
+    expect(handle?.style.minWidth).toBe(handle?.style.width);
+    expect(handle?.style.minHeight).toBe(handle?.style.height);
+    expect(handle?.style.borderWidth).toBe('0px');
+    expect(handle?.style.transform).toBe('none');
+    expect(handle?.style.visibility).toBe('hidden');
   });
 });
 
@@ -667,6 +691,52 @@ describe('layoutAtReactFlowNodes', () => {
 });
 
 describe('freeEndNodes', () => {
+  it('draws a free-ended flow through the live adapter before browser measurement', () => {
+    const layout = layoutOf(
+      modelWith({
+        elements: [
+          flowBetween(
+            { kind: 'free', position: { x: 20, y: 30 } },
+            { kind: 'free', position: { x: 380, y: 70 } },
+            [],
+          ),
+        ],
+      }),
+    );
+    const container = document.body.appendChild(document.createElement('div'));
+    const root = createRoot(container);
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    try {
+      act(() => {
+        root.render(
+          <ReactFlow
+            nodes={freeEndNodes(layout)}
+            edges={toReactFlowEdges(layout)}
+            nodeTypes={{ [freeEndNodeKind]: CanvasFreeEndBody }}
+            edgeTypes={{
+              flow(props) {
+                return <CanvasEdgeBody {...props} marks={specMarks} />;
+              },
+            }}
+            connectionMode={ConnectionMode.Loose}
+            width={800}
+            height={600}
+          />,
+        );
+      });
+      const line = container.querySelector(
+        `[data-testid="rf__edge-el-flow"] path.${canvasClassNames.flow}`,
+      );
+      expect(line).not.toBeNull();
+    } finally {
+      act(() => {
+        root.unmount();
+      });
+      container.remove();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('anchors every free end and nothing else', () => {
     const free = everyGlyphLayout.edges.flatMap((edge) => [
       ...(edge.sourceElement === undefined ? ['source'] : []),
@@ -683,5 +753,11 @@ describe('freeEndNodes', () => {
     expect(anchor.selectable).toBe(false);
     expect(anchor.draggable).toBe(false);
     expect(anchor.focusable).toBe(false);
+    expect(anchor.connectable).toBe(false);
+    expect(anchor.deletable).toBe(false);
+    expect(anchor.domAttributes).toEqual({
+      'aria-hidden': true,
+      'aria-roledescription': undefined,
+    });
   });
 });
