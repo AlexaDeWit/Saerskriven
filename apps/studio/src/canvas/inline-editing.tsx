@@ -60,6 +60,7 @@ import {
 import { keyboardMoved } from './keyboard-moves.js';
 import { NodeFold } from './live-edges.js';
 import { useFlowBlockPortal } from './flow-block-layer.js';
+import { useResizeLayerPosition } from './resize-layer-position.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
 import { gestureDecimals } from './stored-decimals.js';
@@ -260,18 +261,7 @@ function InlineField({
 function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
   const drawing = useRef<SVGSVGElement>(null);
-  useLayoutEffect(() => {
-    const frame = drawing.current?.parentElement;
-    frame?.style.setProperty(
-      '--saer-node-x',
-      `${String(props.positionAbsoluteX)}px`,
-    );
-    frame?.style.setProperty(
-      '--saer-node-y',
-      `${String(props.positionAbsoluteY)}px`,
-    );
-    frame?.style.setProperty('--saer-node-z', String(props.zIndex));
-  }, [props.positionAbsoluteX, props.positionAbsoluteY, props.zIndex]);
+  useResizeLayerPosition(drawing, props);
   const { t } = useTranslator();
   const marks = useBadgeMarks();
   const [resizing, setResizing] = useState(false);
