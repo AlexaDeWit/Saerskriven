@@ -2,6 +2,7 @@ import {
   canvasClassNames,
   canvasInteractionClassNames,
   svgNumber,
+  type Box,
 } from '@saerskriven/canvas';
 import { useStore } from '@xyflow/react';
 import { useEffect } from 'react';
@@ -67,8 +68,10 @@ export function FlowFocusPaint(): null {
   return null;
 }
 
-/** Native SVG outlines include stroke even where a client rectangle omits it. */
-export function paintFlowFocusRing(target: SVGGElement): void {
+/** Returns the painted outer extent in screen pixels, including stroke absent from the native client rectangle. */
+export function paintFlowFocusRing(
+  target: SVGGraphicsElement,
+): Box | undefined {
   const ink = target.querySelector(
     `.${canvasInteractionClassNames.flowFocusInk}`,
   );
@@ -82,11 +85,11 @@ export function paintFlowFocusRing(target: SVGGElement): void {
     inner === undefined ||
     style.outlineStyle !== 'solid'
   ) {
-    return;
+    return undefined;
   }
   const toScreen = target.getScreenCTM();
   if (toScreen === null) {
-    return;
+    return undefined;
   }
   const fromScreen = toScreen.inverse();
   const box = target.getBoundingClientRect();
@@ -124,4 +127,14 @@ export function paintFlowFocusRing(target: SVGGElement): void {
     paint.setAttribute('width', svgNumber(width + padding * 2));
     paint.setAttribute('height', svgNumber(height + padding * 2));
   }
+  const left = Number(filter.getAttribute('x'));
+  const top = Number(filter.getAttribute('y'));
+  const rightEdge = left + Number(filter.getAttribute('width'));
+  const bottomEdge = top + Number(filter.getAttribute('height'));
+  return {
+    minX: toScreen.a * left + toScreen.c * top + toScreen.e,
+    minY: toScreen.b * left + toScreen.d * top + toScreen.f,
+    maxX: toScreen.a * rightEdge + toScreen.c * bottomEdge + toScreen.e,
+    maxY: toScreen.b * rightEdge + toScreen.d * bottomEdge + toScreen.f,
+  };
 }

@@ -15,6 +15,12 @@ const surface = () => {
     getBoundingClientRect: { value: () => box },
     getScreenCTM: {
       value: () => ({
+        a: 2,
+        b: 0,
+        c: 0,
+        d: 2,
+        e: 42,
+        f: 18,
         inverse: () => ({ a: 0.5, b: 0, c: 0, d: 0.5, e: -21, f: -9 }),
       }),
     },
@@ -40,7 +46,12 @@ describe('painted flow focus geometry', () => {
 
   it('keeps the native outline frame through zoom and pan', () => {
     const { target, filter, inner } = surface();
-    paintFlowFocusRing(target);
+    expect(paintFlowFocusRing(target)).toEqual({
+      minX: 434,
+      minY: 210,
+      maxX: 610,
+      maxY: 326,
+    });
     expect(frame(filter)).toEqual(['196', '96', '88', '58']);
     expect(frame(inner)).toEqual(['198', '98', '84', '54']);
   });
@@ -49,7 +60,12 @@ describe('painted flow focus geometry', () => {
     const { target, filter, inner, move } = surface();
     paintFlowFocusRing(target);
     move();
-    paintFlowFocusRing(target);
+    expect(paintFlowFocusRing(target)).toEqual({
+      minX: 454,
+      minY: 220,
+      maxX: 650,
+      maxY: 356,
+    });
     expect(frame(filter)).toEqual(['206', '101', '98', '68']);
     expect(frame(inner)).toEqual(['208', '103', '94', '64']);
   });
@@ -65,7 +81,12 @@ describe('painted flow focus geometry', () => {
       value: () => ({ x: 200, y: 100, width: 80, height: 20 }),
     });
     target.appendChild(path);
-    paintFlowFocusRing(target);
+    expect(paintFlowFocusRing(target)).toEqual({
+      minX: 426,
+      minY: 202,
+      maxX: 618,
+      maxY: 326,
+    });
     expect(frame(filter)).toEqual(['192', '92', '96', '62']);
     expect(frame(inner)).toEqual(['194', '94', '92', '58']);
   });
@@ -73,7 +94,7 @@ describe('painted flow focus geometry', () => {
   it('leaves a flow with no outline untouched', () => {
     const { target, filter, inner } = surface();
     target.style.outlineStyle = 'none';
-    paintFlowFocusRing(target);
+    expect(paintFlowFocusRing(target)).toBeUndefined();
     expect(frame(filter)).toEqual([null, null, null, null]);
     expect(frame(inner)).toEqual([null, null, null, null]);
   });
