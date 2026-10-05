@@ -59,6 +59,7 @@ import {
 } from './edits.js';
 import { keyboardMoved } from './keyboard-moves.js';
 import { NodeFold } from './live-edges.js';
+import { useFlowBlockPortal } from './flow-block-layer.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
 import { gestureDecimals } from './stored-decimals.js';
@@ -338,6 +339,13 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
 function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
   const edge = props.data?.edge;
+  const id = edge?.id;
+  const renderBlock = useFlowBlockPortal();
+  const focus = useCallback(() => {
+    if (id !== undefined) {
+      focusElement(id);
+    }
+  }, [id]);
   const marks = useBadgeMarks();
   const editing = useModelStore(
     useCallback(
@@ -353,11 +361,8 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
       <CanvasEdgeBody
         {...props}
         marks={marks}
-        onBlockFocus={() => {
-          if (edge !== undefined) {
-            focusElement(edge.id);
-          }
-        }}
+        onBlockFocus={focus}
+        renderBlock={renderBlock}
         textVisible={!editing}
       />
       {editing && edge !== undefined && (

@@ -56,6 +56,7 @@ export const canvasInteractionClassNames = {
   badgeLayer: 'saer-diagram-badge-layer',
   boundaryHitTarget: 'saer-diagram-boundary-hit-target',
   flowBlockLayer: 'saer-diagram-flow-block-layer',
+  flowBlockSurface: 'saer-diagram-flow-block-surface',
 } as const satisfies Record<string, DiagramClassName>;
 
 /** Which run of text a primitive is drawing. */

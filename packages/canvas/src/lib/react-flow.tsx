@@ -26,10 +26,10 @@ import {
   type BadgeMarks,
 } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
-import { shiftedBy } from './geometry.js';
+import { shiftedBy, type Box } from './geometry.js';
 import {
   ElementGlyph,
-  FlowBlockGlyph,
+  flowBlockGlyph,
   FlowGlyph,
   rectOfBox,
 } from './glyphs.js';
@@ -184,6 +184,7 @@ export function CanvasEdgeBody({
   interactionWidth,
   marks,
   onBlockFocus,
+  renderBlock = defaultBlockPortal,
   selected,
   selectable,
   source,
@@ -191,10 +192,12 @@ export function CanvasEdgeBody({
   textVisible = true,
 }: EdgeProps<CanvasFlowEdge> & {
   readonly marks: BadgeMarks;
-  readonly onBlockFocus?: FocusEventHandler<SVGSVGElement>;
+  readonly onBlockFocus?: FocusEventHandler<SVGElement>;
+  readonly renderBlock?: (block: ReactElement) => ReactElement | null;
   readonly textVisible?: boolean;
 }): ReactElement | null {
   const [blockHovered, setBlockHovered] = useState(false);
+  const clipId = useId();
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   const groupMovement = useStore((state) => {
@@ -243,17 +246,23 @@ export function CanvasEdgeBody({
             })}
         <FlowGlyph blockVisible={false} edge={edge} marks={marks} />
       </g>
-      <FlowBlockLayer
-        edge={edge}
-        id={id}
-        interactionWidth={interactionWidth ?? interactionWidths.flow}
-        marks={marks}
-        onHover={setBlockHovered}
-        onFocus={onBlockFocus}
-        path={path}
-        selectable={selectable}
-        textVisible={textVisible}
-      />
+      {backing === undefined
+        ? null
+        : renderBlock(
+            flowBlockLayer({
+              backing,
+              clipId,
+              edge,
+              id,
+              interactionWidth: interactionWidth ?? interactionWidths.flow,
+              marks,
+              onHover: setBlockHovered,
+              onFocus: onBlockFocus,
+              path,
+              selectable,
+              textVisible,
+            }),
+          )}
     </>
   );
 }
@@ -389,7 +398,9 @@ const handlePlacement = {
   left: Position.Left,
 } as const satisfies Record<HandleSide, Position>;
 
-function FlowBlockLayer({
+function flowBlockLayer({
+  backing,
+  clipId,
   edge,
   id,
   interactionWidth,
@@ -400,67 +411,66 @@ function FlowBlockLayer({
   selectable,
   textVisible,
 }: {
+  readonly backing: Box;
+  readonly clipId: string;
   readonly edge: CanvasEdge;
   readonly id: string;
   readonly interactionWidth: number;
   readonly marks: BadgeMarks;
   readonly onHover: (hovered: boolean) => void;
-  readonly onFocus: FocusEventHandler<SVGSVGElement> | undefined;
+  readonly onFocus: FocusEventHandler<SVGElement> | undefined;
   readonly path: string;
   readonly selectable: boolean | undefined;
   readonly textVisible: boolean;
-}): ReactElement | null {
-  const clipId = useId();
-  const backing = edge.label.backing;
-  if (backing === undefined) {
-    return null;
-  }
+}): ReactElement {
+  return (
+    <g
+      aria-hidden="true"
+      className={`${canvasInteractionClassNames.flowBlockLayer} ${canvasClassNames.element} nopan`}
+      data-id={id}
+      data-testid={`rf__flow-block-${id}`}
+      pointerEvents={selectable === false ? 'none' : 'visibleStroke'}
+      onFocus={onFocus}
+      tabIndex={-1}
+      onMouseEnter={() => {
+        onHover(true);
+      }}
+      onMouseLeave={() => {
+        onHover(false);
+      }}
+      style={{
+        cursor: selectable ? 'pointer' : undefined,
+      }}
+    >
+      <defs>
+        <clipPath id={clipId}>{rectOfBox(undefined, backing)}</clipPath>
+      </defs>
+      <g clipPath={`url(#${clipId})`}>
+        <BaseEdge
+          path={path}
+          interactionWidth={0}
+          strokeOpacity={0}
+          style={{ strokeWidth: Math.max(1, interactionWidth) }}
+        />
+      </g>
+      {flowBlockGlyph({ edge, marks, textVisible })}
+    </g>
+  );
+}
+
+function defaultBlockPortal(block: ReactElement): ReactElement {
   return (
     <ViewportPortal>
       <svg
         aria-hidden="true"
-        className={`${canvasInteractionClassNames.flowBlockLayer} nopan`}
-        data-id={id}
-        data-testid={`rf__flow-block-${id}`}
+        className={canvasInteractionClassNames.flowBlockSurface}
         width={1}
         height={1}
         overflow="visible"
         pointerEvents="none"
-        onFocus={onFocus}
-        tabIndex={-1}
-        onMouseEnter={() => {
-          onHover(true);
-        }}
-        onMouseLeave={() => {
-          onHover(false);
-        }}
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          cursor: selectable ? 'pointer' : undefined,
-        }}
+        style={{ position: 'absolute', left: 0, top: 0 }}
       >
-        <defs>
-          <clipPath id={clipId}>{rectOfBox(undefined, backing)}</clipPath>
-        </defs>
-        <g pointerEvents={selectable === false ? 'none' : 'visibleStroke'}>
-          <g clipPath={`url(#${clipId})`}>
-            <BaseEdge
-              path={path}
-              interactionWidth={0}
-              strokeOpacity={0}
-              style={{ strokeWidth: Math.max(1, interactionWidth) }}
-            />
-          </g>
-          <g className={canvasClassNames.element}>
-            <FlowBlockGlyph
-              edge={edge}
-              marks={marks}
-              textVisible={textVisible}
-            />
-          </g>
-        </g>
+        {block}
       </svg>
     </ViewportPortal>
   );

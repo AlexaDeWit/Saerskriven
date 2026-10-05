@@ -42,7 +42,7 @@ import {
   type CanvasEdgeData,
 } from './react-flow.js';
 
-const blockFocused = vi.fn<(event: ReactFocusEvent<SVGSVGElement>) => void>();
+const blockFocused = vi.fn<(event: ReactFocusEvent<SVGElement>) => void>();
 
 const nodeProps = (node: CanvasNode) => ({
   id: node.id,
@@ -416,7 +416,7 @@ describe('CanvasEdgeBody', () => {
     const data = toReactFlowEdges(everyGlyphLayout)[0].data;
     edgeMarkup(data, [], false, true, (container) => {
       blockFocused.mockClear();
-      const block = container.querySelector<SVGSVGElement>(
+      const block = container.querySelector<SVGElement>(
         `.${canvasInteractionClassNames.flowBlockLayer}`,
       );
       act(() => {

@@ -126,12 +126,13 @@
 /* Hand owns a drag wherever it begins, including over a drawn element. */
 .canvas[data-tool='hand'] :global(.react-flow__node),
 .canvas[data-tool='hand'] :global(.react-flow__edge),
+.canvas[data-tool='hand'] :global(.saer-diagram-flow-block-layer),
 .canvas[data-tool='hand'] :global(.saer-diagram-flow-block-layer g),
 .canvas[data-tool='hand'] :global(.saer-diagram-badge-layer g) {
   pointer-events: none;
 }
 
-.canvas :global(.saer-diagram-flow-block-layer) {
+.canvas :global(.saer-diagram-flow-block-surface) {
   z-index: 2;
 }
 

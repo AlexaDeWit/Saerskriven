@@ -193,7 +193,7 @@ control above the node's other controls,
 so nothing on the canvas covers the control's ring. A boundary's interior passes
 pointer events through, and its name, resize control and an invisible stroke
 around its outline stay selectable. Its disabled connection handles cannot take
-an outline drag. Flow name blocks draw above the nodes, with segment targets
+an outline drag. Flow name blocks share one viewport SVG above the nodes, with segment targets
 and point handles above the blocks. The flow lines stay below the nodes.
 
 Select rests on the arrow over the pane and nodes, a flow keeps its link

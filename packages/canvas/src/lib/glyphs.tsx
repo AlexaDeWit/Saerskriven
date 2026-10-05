@@ -137,15 +137,13 @@ export function FlowGlyph({
           d={arrowheadPath(edge.source, points[1])}
         />
       ) : null}
-      {blockVisible ? (
-        <FlowBlockGlyph edge={edge} marks={marks} textVisible={textVisible} />
-      ) : null}
+      {blockVisible ? flowBlockGlyph({ edge, marks, textVisible }) : null}
     </g>
   );
 }
 
 /** The backing, badge and name share one layout in the studio and exports. */
-export function FlowBlockGlyph({
+export function flowBlockGlyph({
   edge,
   marks,
   textVisible = true,

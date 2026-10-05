@@ -50,6 +50,7 @@ import { CurvePointControls } from './curve-point-controls.js';
 import { useCurvePoints } from './curve-points.js';
 import { useFlowBends } from './flow-bends.js';
 import { FlowBendControls } from './flow-bend-controls.js';
+import { FlowBlockSurface, FlowBlockTarget } from './flow-block-layer.js';
 import { FocusPan } from './focus-pan.js';
 import { useGroupDrag } from './group-drag.js';
 import { commandOnItem } from './item-focus.js';
@@ -182,6 +183,7 @@ export function DiagramCanvas({
   const positions = useMemo(() => nodesById(layout), [layout]);
   const surface = useRef<HTMLDivElement>(null);
   const resizeCancellation = useResizeCancellation(surface);
+  const [blockSurface, setBlockSurface] = useState<SVGSVGElement | null>(null);
   const boxSelection = useBoxSelection(surface, elements);
   const view = useRef<ReactFlowInstance<DiagramNode, CanvasFlowEdge> | null>(
     null,
@@ -439,6 +441,7 @@ export function DiagramCanvas({
       >
         <Background gap={gridSpacing} variant={BackgroundVariant.Lines} />
         <PlacementPreview preview={placement.preview} />
+        <FlowBlockSurface onReady={setBlockSurface} />
         <FlowBendControls bends={bends} panelCover={panelCover} />
         <CurvePointControls points={points} />
         <FitOnOpen />
@@ -456,7 +459,9 @@ export function DiagramCanvas({
   );
   return (
     <ResizeMouseCancellation value={resizeCancellation.subscribe}>
-      <NodeFold.Provider value={liveEdges.fold}>{canvas}</NodeFold.Provider>
+      <NodeFold.Provider value={liveEdges.fold}>
+        <FlowBlockTarget value={blockSurface}>{canvas}</FlowBlockTarget>
+      </NodeFold.Provider>
     </ResizeMouseCancellation>
   );
 }
