@@ -1,11 +1,4 @@
-/* The field stands where the canvas package draws the text it edits, and
-   the glyph draws none of its own while it is open. Its box is the text's
-   own: the frame is an outline, so no border or padding moves the text off
-   the drawn placement, and a name field grows to the lines it wraps to, up
-   to the room its element's box leaves it, past which it scrolls. Over
-   a node the coordinates are the node's own, over a flow the diagram's, in
-   React Flow's edge label layer, which passes pointer events through, so the
-   field takes them back. */
+/* An outline frames the field without moving it from the glyph text. */
 .overText,
 .overNote {
   position: absolute;
@@ -39,10 +32,7 @@
   text-align: start;
 }
 
-/* The refusal reads as text rather than as a colour alone, as the panel's
-   fields do: forced colours drop the shadow, and the sentence below the
-   field is there either way. It is a shadow rather than the outline so the
-   focus ring, which a refused field keeps, does not replace it. */
+/* A refusal shadow leaves the focus outline available. */
 .field[aria-invalid='true'] {
   box-shadow: 0 0 0 2px var(--saer-colour-text);
 }
@@ -65,4 +55,16 @@
   background: var(--saer-colour-surface);
   color: var(--saer-colour-text);
   white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+  .field,
+  .refusal {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .field:focus-visible {
+    outline-color: Highlight;
+  }
 }

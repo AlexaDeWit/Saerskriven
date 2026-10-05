@@ -151,3 +151,17 @@
     visibility: hidden;
   }
 }
+
+@media (forced-colors: active) {
+  .segment[data-chosen='true'] {
+    stroke: Highlight;
+    stroke-opacity: 1;
+  }
+
+  .handle:focus-visible,
+  .toolbar:focus-visible,
+  .toolbar button:focus-visible,
+  .actions button:focus-visible {
+    outline-color: Highlight;
+  }
+}

@@ -25,3 +25,11 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+@media (forced-colors: active) {
+  .curve path,
+  .curve circle {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+}

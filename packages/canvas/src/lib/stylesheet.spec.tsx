@@ -138,6 +138,62 @@ describe('themedCanvasStylesheet', () => {
     expect(classesStyledBy(themedCanvasStylesheet)).toEqual(selected);
     expect(themedCanvasStylesheet).not.toMatch(/#[0-9A-Fa-f]{3,8}/u);
   });
+
+  it('uses system paint only in the studio forced-colours suffix', () => {
+    const [base, forced] = themedCanvasStylesheet.split(
+      '@media (forced-colors: active) {',
+    );
+    expect(base.trim()).not.toMatch(/Canvas|Highlight/u);
+    expect(sheet).not.toContain('forced-colors');
+    const rules = (forced ?? '').split('}').map((rule) => rule.trim());
+    const ruleFor = (name: string) =>
+      rules.find((rule) => selectorsOf(rule).includes(name));
+
+    expect(ruleFor(`.${canvasClassNames.shape}`)).toContain(
+      'fill: Canvas;\n    stroke: CanvasText;',
+    );
+    for (const name of [
+      canvasClassNames.store,
+      canvasClassNames.boundaryBox,
+      canvasClassNames.boundaryCurve,
+      canvasClassNames.noteFrame,
+      canvasClassNames.flow,
+    ]) {
+      expect(ruleFor(`.${name}`)).toContain('fill: none;');
+    }
+    for (const name of [
+      canvasClassNames.label,
+      canvasClassNames.note,
+      canvasClassNames.flowLabel,
+      canvasClassNames.flowArrow,
+      canvasClassNames.badgeCount,
+      canvasClassNames.badgeMark,
+    ]) {
+      expect(ruleFor(`.${name}`)).toContain('fill: CanvasText;');
+    }
+    expect(ruleFor(`.${canvasClassNames.flowBacking}`)).toContain(
+      'fill: Canvas;',
+    );
+    expect(
+      ruleFor(`.${canvasClassNames.outOfScope} .${canvasClassNames.shape}`),
+    ).toContain('stroke: CanvasText;');
+    expect(
+      ruleFor(`.${canvasClassNames.outOfScope} .${canvasClassNames.flowArrow}`),
+    ).toContain('fill: CanvasText;');
+    expect(ruleFor(`.${canvasClassNames.badge}`)).toContain(
+      'stroke: CanvasText;\n    stroke-width: 1.5;',
+    );
+    for (const tone of [
+      ...Object.values(severityToneClass),
+      canvasClassNames.toneFlag,
+    ]) {
+      expect(ruleFor(`.${canvasClassNames.badge} .${tone}`)).toContain(
+        'fill: Canvas;',
+      );
+      expect(ruleFor(`.${tone}`)).toBeUndefined();
+    }
+    expect(forced).not.toMatch(/stroke-dasharray|opacity|forced-color-adjust/u);
+  });
 });
 
 describe('an out-of-scope element', () => {
