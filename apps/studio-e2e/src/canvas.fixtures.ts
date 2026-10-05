@@ -41,10 +41,13 @@ export const pointHandles = (page: Page): Locator =>
 export const viewportZoom = async (page: Page): Promise<number> =>
   Number(/scale\(([\d.]+)\)/u.exec(await viewportTransform(page))?.[1]);
 
-/** Waits for three matching animation frames so slow browser frames cannot appear at rest between polls. */
-export const canvasSettled = async (page: Page): Promise<void> => {
+/** Waits for three matching frames of the viewport and any named preview. */
+export const canvasSettled = async (
+  page: Page,
+  previewSelector?: string,
+): Promise<void> => {
   await page.waitForFunction(
-    () => {
+    (selector) => {
       const viewport = document.querySelector('.react-flow__viewport');
       if (viewport === null) {
         return false;
@@ -53,7 +56,19 @@ export const canvasSettled = async (page: Page): Promise<void> => {
         let before = '';
         let matching = 0;
         const read = () => {
-          const now = viewport.getAttribute('style') ?? '';
+          const preview =
+            selector === undefined ? null : document.querySelector(selector);
+          const style = viewport.getAttribute('style') ?? '';
+          const box =
+            preview instanceof SVGGraphicsElement ? preview.getBBox() : null;
+          const now =
+            style === '' || (selector !== undefined && preview === null)
+              ? ''
+              : JSON.stringify([
+                  style,
+                  preview?.getAttribute('style') ?? null,
+                  box === null ? null : [box.x, box.y, box.width, box.height],
+                ]);
           matching = now !== '' && now === before ? matching + 1 : 0;
           before = now;
           if (matching >= 3) {
@@ -65,7 +80,7 @@ export const canvasSettled = async (page: Page): Promise<void> => {
         requestAnimationFrame(read);
       });
     },
-    undefined,
+    previewSelector,
     { polling: 'raf' },
   );
 };
