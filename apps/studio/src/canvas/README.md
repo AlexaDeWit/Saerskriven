@@ -187,10 +187,10 @@ flow.
 
 React Flow z-index values are set by hand: a boundary at -1, a regular node at
 0 and a selected regular node at 1, so selection keeps a regular node visible
-without raising a boundary above what it encloses. A node whose resize control
-holds keyboard focus rises above the point handles while it does, and that
-control above the node's other controls,
-so nothing on the canvas covers the control's ring. A boundary's interior passes
+without raising a boundary above what it encloses. A resize control with
+keyboard focus rises above the point handles while its node drawing keeps its
+index. Live position offsets replace the node transform during that focus,
+so the control escapes the node's stacking context. A boundary's interior passes
 pointer events through, and its name, resize control and an invisible stroke
 around its outline stay selectable. Its disabled connection handles cannot take
 an outline drag. Flow name blocks share one viewport SVG above the nodes, with segment targets

@@ -259,6 +259,19 @@ function InlineField({
 
 function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
+  const drawing = useRef<SVGSVGElement>(null);
+  useLayoutEffect(() => {
+    const frame = drawing.current?.parentElement;
+    frame?.style.setProperty(
+      '--saer-node-x',
+      `${String(props.positionAbsoluteX)}px`,
+    );
+    frame?.style.setProperty(
+      '--saer-node-y',
+      `${String(props.positionAbsoluteY)}px`,
+    );
+    frame?.style.setProperty('--saer-node-z', String(props.zIndex));
+  }, [props.positionAbsoluteX, props.positionAbsoluteY, props.zIndex]);
   const { t } = useTranslator();
   const marks = useBadgeMarks();
   const [resizing, setResizing] = useState(false);
@@ -282,6 +295,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
       <CanvasNodeBody
         {...props}
         controlsVisible={!editing}
+        drawingRef={drawing}
         marks={marks}
         onResize={() => {
           setResizing(true);

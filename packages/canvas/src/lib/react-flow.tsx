@@ -17,6 +17,7 @@ import {
   useState,
   type FocusEventHandler,
   type ReactElement,
+  type Ref,
 } from 'react';
 import {
   badgeAnchor,
@@ -92,6 +93,7 @@ export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
 export function CanvasNodeBody({
   controlsVisible = true,
   data,
+  drawingRef,
   height,
   isConnectable,
   marks,
@@ -106,6 +108,7 @@ export function CanvasNodeBody({
   width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
+  readonly drawingRef?: Ref<SVGSVGElement>;
   readonly marks: BadgeMarks;
   readonly resizeLabels: ResizeLabels;
   readonly onResize?: () => void;
@@ -136,6 +139,7 @@ export function CanvasNodeBody({
   return (
     <>
       <svg
+        ref={drawingRef}
         width={svgNumber(shownSize.width)}
         height={svgNumber(shownSize.height)}
         style={{ display: 'block' }}

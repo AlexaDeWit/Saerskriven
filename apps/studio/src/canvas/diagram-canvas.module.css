@@ -253,7 +253,7 @@
   outline-offset: var(--saer-focus-ring-offset);
 }
 
-/* A focused resize control rises above point handles. Override React Flow's inline node index. */
+/* Focused controls escape the node's stacking context while its drawing keeps its index. */
 .canvas :global(.react-flow__resize-control:has(> button:focus-visible)) {
   z-index: 4;
 }
@@ -262,7 +262,28 @@
   :global(
     .react-flow__node:has(.react-flow__resize-control > button:focus-visible)
   ) {
-  z-index: 4 !important;
+  left: var(--saer-node-x);
+  top: var(--saer-node-y);
+  transform: none !important;
+  z-index: auto !important;
+}
+
+.canvas
+  :global(
+    .react-flow__node:has(.react-flow__resize-control > button:focus-visible)
+      > svg:first-child
+  ) {
+  position: relative;
+  z-index: var(--saer-node-z);
+}
+
+.canvas
+  :global(
+    .react-flow__node:has(
+        .react-flow__resize-control > button:focus-visible
+      )::after
+  ) {
+  z-index: var(--saer-node-z);
 }
 
 /* The handles a flow attaches to are drawn on the element under the pointer

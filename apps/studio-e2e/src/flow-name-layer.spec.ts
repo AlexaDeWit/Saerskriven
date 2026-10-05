@@ -105,6 +105,57 @@ for (const covered of [false, true]) {
   });
 }
 
+test('a flow name and badge stay above a filled element during keyboard resize focus', async ({
+  page,
+}) => {
+  await openModelDocument(
+    page,
+    modelWith({
+      elements: [
+        boxAt('el-cover', 0, 0, 'actor', { width: 800, height: 800 }, 'Cover'),
+        flow,
+      ],
+      threats: [threatOf({ number: 1, elements: ['el-flow'] })],
+    }),
+  );
+  const cover = nodeNamed(page, /^Cover, actor/u);
+  const name = page.locator(`.${canvasClassNames.flowLabel}`);
+  const badge = page.locator(`.${canvasClassNames.badge}`);
+  await selectByKeyboard(page, /^Cover, actor/u);
+  await page.keyboard.press('Tab');
+  const control = cover.getByRole('button', {
+    name: 'Resize Cover from top',
+    exact: true,
+  });
+  await expect(control).toBeFocused();
+  expect(
+    await control.evaluate((button) => button.matches(':focus-visible')),
+  ).toBe(true);
+  await expect
+    .poll(async () => reachesAt(control, await centreOf(control)))
+    .toBe(true);
+  await expect
+    .poll(async () => reachesAt(name, await centreOf(name)))
+    .toBe(true);
+  await expect
+    .poll(async () => reachesAt(badge, await centreOf(badge)))
+    .toBe(true);
+  const before = await screenBoxOf(cover);
+  await page.keyboard.press('ArrowDown');
+  await expect(control).toBeFocused();
+  await expect
+    .poll(async () => (await screenBoxOf(cover)).y)
+    .toBeGreaterThan(before.y);
+  await expect
+    .poll(async () => reachesAt(name, await centreOf(name)))
+    .toBe(true);
+  await expect
+    .poll(async () => reachesAt(badge, await centreOf(badge)))
+    .toBe(true);
+  await clickSvgText(name);
+  await expect(nodeNamed(page, /^Visible flow, flow/u)).toBeFocused();
+});
+
 test('a selected segment takes a press over its name block and previews a bend', async ({
   page,
 }) => {
