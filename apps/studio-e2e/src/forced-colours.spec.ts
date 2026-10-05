@@ -15,6 +15,7 @@ import {
   screenBoxOf,
   screenshotPixels,
   type Point,
+  type Box,
 } from './canvas.fixtures.js';
 import {
   beforeCanvas,
@@ -56,9 +57,10 @@ const paintedPixels = async (
   png: Buffer,
   colour: string,
   tolerance = 40,
+  mask?: readonly boolean[],
 ): Promise<number> =>
   page.evaluate(
-    ({ pixels, ink, background, tolerance: allowed }) => {
+    ({ pixels, ink, background, tolerance: allowed, mask: included }) => {
       const components = (ink.match(/[\d.]+/gu) ?? []).map(Number);
       const ground = (background.match(/\d+/gu) ?? []).map(Number);
       const alpha = components[3] ?? 1;
@@ -69,6 +71,9 @@ const paintedPixels = async (
         );
       let matching = 0;
       for (let at = 0; at < pixels.data.length; at += 4) {
+        if (included !== undefined && !included[at / 4]) {
+          continue;
+        }
         if (
           channels.every(
             (channel, index) =>
@@ -85,36 +90,74 @@ const paintedPixels = async (
       ink: colour,
       background: (await systemColours(page)).Canvas,
       tolerance,
+      mask,
     },
+  );
+
+const arrowMask = (target: Locator, clip: Box): Promise<readonly boolean[]> =>
+  target.evaluate(
+    (arrow, { crop, flowClass }) => {
+      if (!(arrow instanceof SVGGeometryElement)) {
+        return [];
+      }
+      const toArrow = (arrow.getScreenCTM() ?? new DOMMatrix()).inverse();
+      const line = arrow.parentElement?.querySelector(`path.${flowClass}`);
+      const toLine =
+        line instanceof SVGGeometryElement
+          ? (line.getScreenCTM() ?? new DOMMatrix()).inverse()
+          : undefined;
+      return Array.from({ length: crop.width * crop.height }, (_, pixel) => {
+        const point = new DOMPoint(
+          crop.x + (pixel % crop.width) + 0.5,
+          crop.y + Math.floor(pixel / crop.width) + 0.5,
+        );
+        const inside = [-1, 0, 1].every((dx) =>
+          [-1, 0, 1].every((dy) =>
+            arrow.isPointInFill(
+              new DOMPoint(point.x + dx, point.y + dy).matrixTransform(toArrow),
+            ),
+          ),
+        );
+        return (
+          inside &&
+          !(
+            line instanceof SVGGeometryElement &&
+            toLine !== undefined &&
+            line.isPointInStroke(point.matrixTransform(toLine))
+          )
+        );
+      });
+    },
+    { crop: clip, flowClass: canvasClassNames.flow },
   );
 
 const expectPaint = async (
   target: Locator,
   colour: string,
   interior = false,
+  arrowFill = false,
 ): Promise<void> => {
   const box = await screenBoxOf(target);
   const page = target.page();
   const viewport = page.viewportSize() ?? { width: 1280, height: 720 };
   const x = Math.max(0, Math.floor(box.x + (interior ? box.width / 4 : -2)));
   const y = Math.max(0, Math.floor(box.y + (interior ? box.height / 4 : -2)));
-  const png = await page.screenshot({
-    clip: {
-      x,
-      y,
-      width: Math.min(
-        viewport.width - x,
-        Math.ceil(interior ? box.width / 2 : box.width + 4),
-      ),
-      height: Math.min(
-        viewport.height - y,
-        Math.ceil(interior ? box.height / 2 : box.height + 4),
-      ),
-    },
-    scale: 'css',
-  });
+  const clip = {
+    x,
+    y,
+    width: Math.min(
+      viewport.width - x,
+      Math.ceil(interior ? box.width / 2 : box.width + 4),
+    ),
+    height: Math.min(
+      viewport.height - y,
+      Math.ceil(interior ? box.height / 2 : box.height + 4),
+    ),
+  };
+  const mask = arrowFill ? await arrowMask(target, clip) : undefined;
+  const png = await page.screenshot({ clip, scale: 'css' });
   expect(
-    await paintedPixels(page, png, colour, interior ? 0 : 40),
+    await paintedPixels(page, png, colour, interior ? 0 : 40, mask),
   ).toBeGreaterThan(2);
 };
 
@@ -170,12 +213,14 @@ for (const scheme of ['light', 'dark'] as const) {
       );
       const flow = nodeNamed(page, flowName);
       const arrow = flow.locator(`.${canvasClassNames.flowArrow}`).first();
-      await expectPaint(arrow, colours.CanvasText);
+      await expectPaint(arrow, colours.CanvasText, false, true);
       await expectPaint(
         nodeNamed(page, /^Store order, flow/u)
           .locator(`.${canvasClassNames.flowArrow}`)
           .first(),
         colours.CanvasText,
+        false,
+        true,
       );
       await expectPaint(
         (await flowBlockOf(flow)).locator(`.${canvasClassNames.flowBacking}`),
@@ -211,19 +256,17 @@ for (const scheme of ['light', 'dark'] as const) {
               index % 4 !== 3 &&
               Math.abs(channel - (rested.data[index] ?? 0)) > 48,
           ).length;
-          test
-            .info()
-            .annotations.push({
-              type: 'Appearance paint',
-              description: `${mode}: ${String(changed)} changed colour channels of ${String(painted.data.length)}`,
-            });
+          test.info().annotations.push({
+            type: 'Appearance paint',
+            description: `${mode}: ${String(changed)} changed colour channels of ${String(painted.data.length)}`,
+          });
           expect(changed / painted.data.length).toBeLessThan(0.01);
         }
       }
       await selectByKeyboard(page, flowName);
       await closeThreats(page);
       await beforeCanvas(page).focus();
-      await expectPaint(arrow, colours.Highlight);
+      await expectPaint(arrow, colours.Highlight, false, true);
       const line = flow.locator(`path.${canvasClassNames.flow}`);
       const at = await line.evaluate<Point, SVGPathElement>((path) => {
         const point = path.getPointAtLength(path.getTotalLength() * 0.2);
