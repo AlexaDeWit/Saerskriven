@@ -624,6 +624,12 @@ mitigations:
       - th-renderer-fs
       - th-ipc
       - th-path
+  - id: mit-studio-csp
+    title: The built studio limits executable content and network destinations
+    prose: The built index.html opens its head with a Content Security Policy. It permits same-origin scripts and fetches, WebAssembly compilation, and the startup scripts whose SHA-256 the build computes from the final HTML. Other script sources, JavaScript evaluation, workers, objects and form submissions are blocked. React renders model strings as text, and the current studio has no DOM sink that interprets them as HTML or JavaScript. The policy adds defence against a future injection regression. It still trusts same-origin scripts and permits inline styles, so it does not contain hostile code already shipped in a trusted bundle. It applies to the hosted web studio, not a development server, a future Electron shell or an exported document.
+    status: implemented
+    threats:
+      - th-studio-script
   - id: mit-agent-writes-through-the-core
     title: An agent edit goes through the core
     prose: Every edit `saer_edit` applies is one of the model operations of `@saerskriven/model`, record links, unlinks and status changes included, dispatched by `applyEdits` in `packages/mcp/src/lib/edits.ts` onto a model the parse produced. An operation that does not hold comes back as a typed `OperationFailure` naming the edit it stopped at, the batch is all or nothing, and nothing reaches the disk until every edit has held. A lossy write carries the codec's divergences into the tool result. `edit.spec.ts` pins that a refused edit, a stale revision, a file no codec claims and a batch past the read bound each leave the file byte for byte as it was.
@@ -1110,4 +1116,15 @@ threats:
     elements:
       - el-write
       - el-mcp
-lastIssuedThreatNumber: 27
+  - id: th-studio-script
+    number: 28
+    title: Foreign text executes script in the web studio
+    category:
+      methodology: STRIDE
+      category: tampering
+    severity: high
+    status: mitigated
+    description: A future regression that interprets a model string as HTML or JavaScript gives the file author script execution in the studio tab. The current studio renders model strings as text and has no such DOM sink, so this is a conditional injection risk rather than an observed vulnerability. The built site's Content Security Policy adds a second control, with the same-origin trust and inline-style limits its mitigation names.
+    elements:
+      - el-renderer
+lastIssuedThreatNumber: 28

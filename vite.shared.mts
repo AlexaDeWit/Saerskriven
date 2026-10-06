@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
-// Leaf configs pass options here so the shared build owns deviations.
 import { defineConfig, type Plugin, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
+import { createHash } from 'node:crypto';
 import { cacheDir, sharedTest } from './vitest.shared.mts';
 
 type SocialImage = {
@@ -30,9 +30,49 @@ const metadataTag = (attrs: Record<string, string>) => ({
   injectTo: 'head' as const,
 });
 
-// GitHub Pages reports a custom domain as http until HTTPS is enforced, and a
-// search engine then treats the served https page as an alternate of an http
-// canonical. The published site is always https.
+const contentSecurityPolicy = (): Plugin => ({
+  name: 'content-security-policy',
+  apply: 'build',
+  transformIndexHtml: {
+    order: 'post',
+    handler: (html) => {
+      const hashes = [
+        ...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gu),
+      ]
+        .filter(([, attributes]) => !/\bsrc\s*=/u.test(attributes ?? ''))
+        .map(
+          ([, , body]) =>
+            `'sha256-${createHash('sha256')
+              .update(body ?? '')
+              .digest('base64')}'`,
+        );
+      const policy = [
+        "default-src 'none'",
+        ["script-src 'self' 'wasm-unsafe-eval'", ...hashes].join(' '),
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self'",
+        "font-src 'none'",
+        "connect-src 'self'",
+        "worker-src 'none'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'none'",
+        "manifest-src 'none'",
+      ].join('; ');
+      return [
+        {
+          ...metadataTag({
+            'http-equiv': 'Content-Security-Policy',
+            content: policy,
+          }),
+          injectTo: 'head-prepend',
+        },
+      ];
+    },
+  },
+});
+
+// GitHub Pages reports http before HTTPS enforcement. Canonical URLs stay https.
 const httpsSiteUrl = (siteUrl: string): string => {
   const url = new URL(siteUrl);
   url.protocol = 'https:';
@@ -149,6 +189,7 @@ export const reactApp = (
       react(),
       ...plugins,
       ...(siteUrl === undefined ? [] : [siteFiles(siteUrl, socialImage)]),
+      contentSecurityPolicy(),
     ],
     server: { port, host: 'localhost' },
     preview: { port, host: 'localhost' },
