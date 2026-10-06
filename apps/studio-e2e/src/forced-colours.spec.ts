@@ -169,6 +169,18 @@ const expectPaint = async (
   ).toBeGreaterThan(2);
 };
 
+const expectCanvasGround = async (
+  page: Page,
+  colour: string,
+): Promise<void> => {
+  const at = await emptyCanvasPoint(page);
+  const paint = await page.screenshot({
+    clip: { x: at.x - 4, y: at.y - 4, width: 8, height: 8 },
+    scale: 'css',
+  });
+  expect(await paintedPixels(page, paint, colour, 0)).toBe(64);
+};
+
 const capture = async (
   page: Page,
   name: string,
@@ -235,6 +247,18 @@ for (const scheme of ['light', 'dark'] as const) {
         { interior: true },
       );
       await capture(page, `rest-${scheme}-${appearance}`);
+      await expectCanvasGround(page, colours.Canvas);
+      for (const shape of [
+        canvasClassNames.store,
+        canvasClassNames.boundaryBox,
+        canvasClassNames.boundaryCurve,
+        canvasClassNames.noteFrame,
+        canvasClassNames.flow,
+      ]) {
+        const drawing = canvasContainer(page).locator(`.${shape}`).first();
+        await expect(drawing).toHaveCSS('fill', 'none');
+        await expectPaint(drawing, colours.CanvasText);
+      }
       if (appearance === 'system') {
         const drawing = actor.locator('svg').first();
         const rested = await screenshotPixels(
@@ -250,6 +274,8 @@ for (const scheme of ['light', 'dark'] as const) {
             .getByRole('menuitemradio', { name: mode, exact: true })
             .click();
           await beforeCanvas(page).focus();
+          await capture(page, `appearance-${scheme}-${mode}`, false);
+          await expectCanvasGround(page, colours.Canvas);
           const painted = await screenshotPixels(
             page,
             await drawing.screenshot({ scale: 'css' }),
