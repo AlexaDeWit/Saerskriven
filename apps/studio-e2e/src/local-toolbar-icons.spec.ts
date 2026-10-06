@@ -6,7 +6,7 @@ import {
   rgbColour,
 } from '@saerskriven/canvas';
 import { audit } from './accessibility.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   canvasSettled,
   centreOf,
@@ -134,7 +134,9 @@ for (const scheme of ['light', 'dark'] as const) {
       await close.press('Enter');
       await expect(actions).toHaveCount(0);
       await expect(flow).toBeFocused();
-      await page.keyboard.press(registeredChords.undo[0]);
+      await page.keyboard.press(
+        await commandChord(page, registeredChords.undo[0]),
+      );
       expect(await savedModel(page)).toEqual(before);
     }
     await end.focus();
@@ -145,7 +147,9 @@ for (const scheme of ['light', 'dark'] as const) {
       .getByRole('button', { name: 'Follow the route', exact: true })
       .press('Enter');
     expect(await savedModel(page)).toEqual(before);
-    await page.keyboard.press(registeredChords.undo[0]);
+    await page.keyboard.press(
+      await commandChord(page, registeredChords.undo[0]),
+    );
     expect((await savedModel(page)).diagrams[0].elements).toContainEqual(
       expect.objectContaining({
         source: {
@@ -216,7 +220,9 @@ for (const scheme of ['light', 'dark'] as const) {
     await remove.press('Enter');
     await expect(bend).toHaveCount(0);
     await expect(flow).toBeFocused();
-    await page.keyboard.press(registeredChords.undo[0]);
+    await page.keyboard.press(
+      await commandChord(page, registeredChords.undo[0]),
+    );
     expect(await savedModel(page)).toEqual(before);
   });
 
@@ -226,7 +232,9 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await page.addInitScript(withoutPickers);
     await openTwoDiagrams(page);
-    await page.keyboard.press(registeredChords['next-diagram'][0]);
+    await page.keyboard.press(
+      await commandChord(page, registeredChords['next-diagram'][0]),
+    );
     const boundary = await selectByKeyboard(
       page,
       /^Warehouse floor, trust boundary/u,
@@ -257,14 +265,18 @@ for (const scheme of ['light', 'dark'] as const) {
     await point.press('Enter');
     await add.press('Enter');
     await expect(pointHandles(page)).toHaveCount(4);
-    await page.keyboard.press(registeredChords.undo[0]);
+    await page.keyboard.press(
+      await commandChord(page, registeredChords.undo[0]),
+    );
     await expect(pointHandles(page)).toHaveCount(3);
     expect(await savedModel(page)).toEqual(before);
     await point.focus();
     await point.press('Enter');
     await remove.press('Enter');
     await expect(pointHandles(page)).toHaveCount(2);
-    await page.keyboard.press(registeredChords.undo[0]);
+    await page.keyboard.press(
+      await commandChord(page, registeredChords.undo[0]),
+    );
     expect(await savedModel(page)).toEqual(before);
   });
 }
