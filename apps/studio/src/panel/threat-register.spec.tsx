@@ -69,6 +69,33 @@ const registerModel: Model = {
 
 const reviewed = [looseThreat, firstThreat, mitigatedThreat];
 
+const modelOnlyThreat = threatId('threat-model-only');
+
+const mixedModel: Model = {
+  ...registerModel,
+  threats: [
+    ...registerModel.threats.map((threat) =>
+      threat.id === mitigatedThreat
+        ? {
+            ...threat,
+            appliesToModel: true,
+            elements: [...base.elements, storeElement],
+          }
+        : threat,
+    ),
+    {
+      ...base,
+      id: modelOnlyThreat,
+      number: 4,
+      title: 'A model-wide trust assumption fails',
+      severity: 'critical',
+      elements: [],
+      appliesToModel: true,
+    },
+  ],
+  lastIssuedThreatNumber: 4,
+};
+
 const register = (): HTMLElement =>
   screen.getByRole('region', { name: 'Threat register' });
 
@@ -185,6 +212,142 @@ describe(
 
     afterEach(() => {
       vi.restoreAllMocks();
+    });
+
+    it('keeps Model, element and Register collections distinct, and opens excluded threats for editing', async () => {
+      const user = userEvent.setup();
+      modelStore.setState(initialState(mixedModel), true);
+      showStudio();
+      runRegistered('model-panel');
+
+      expect(listedThreats(modelPanel())).toEqual([
+        modelOnlyThreat,
+        mitigatedThreat,
+      ]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+      expect(document.activeElement).toBe(threatsTab());
+
+      act(() => {
+        dispatch(Action.Select({ elementIds: base.elements }));
+      });
+      expect(
+        listedThreats(screen.getByRole('region', { name: 'Threats' })),
+      ).toEqual([firstThreat, mitigatedThreat]);
+      openRegister();
+      expect(listedRows()).toEqual([modelOnlyThreat, ...reviewed]);
+
+      for (const selectedThreat of [firstThreat, looseThreat]) {
+        await user.click(chooser(selectedThreat));
+        expect(listedThreats(modelPanel())).toEqual([selectedThreat]);
+        const before = modelStore.getState().present;
+        const title = within(modelPanel()).getByRole('textbox', {
+          name: 'Title',
+        });
+        await user.click(title);
+        await user.keyboard('{End} edited');
+        await user.click(screen.getByRole('button', { name: 'Opener' }));
+        expect(
+          modelStore
+            .getState()
+            .present.threats.find(({ id }) => id === selectedThreat)?.title,
+        ).toBe(
+          `${before.threats.find(({ id }) => id === selectedThreat)?.title} edited`,
+        );
+        runRegistered('undo');
+        expect(modelStore.getState().present).toBe(before);
+      }
+
+      await user.click(
+        screen.getByRole('button', { name: 'Close threat register' }),
+      );
+      runRegistered('model-panel');
+      runRegistered('model-panel');
+      expect(listedThreats(modelPanel())).toEqual([
+        modelOnlyThreat,
+        mitigatedThreat,
+      ]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+    });
+
+    it('holds an expanded editor and its refusal across leaving Model scope, reopening, and undo', async () => {
+      const user = userEvent.setup();
+      modelStore.setState(initialState(mixedModel), true);
+      showStudio();
+      runRegistered('model-panel');
+      await user.click(modelSummary(/A model file is read past its bounds/u));
+      const description = within(modelPanel()).getByRole('textbox', {
+        name: 'Description',
+      });
+      await user.click(description);
+      await user.keyboard(`Pasted${softHyphen}prose`);
+      await user.click(screen.getByRole('button', { name: 'Opener' }));
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+
+      act(() => {
+        dispatch(Action.UnlinkThreatFromModel({ threatId: mitigatedThreat }));
+        dispatch(
+          Action.DetachThreat({
+            threatId: mitigatedThreat,
+            elementId: storeElement,
+          }),
+        );
+      });
+      expect(listedThreats(modelPanel())).toEqual([
+        modelOnlyThreat,
+        mitigatedThreat,
+      ]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([1]);
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      runRegistered('model-panel');
+      runRegistered('model-panel');
+      expect(listedThreats(modelPanel())).toEqual([mitigatedThreat]);
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      openRegister();
+      await user.click(chooser(looseThreat));
+      expect(listedThreats(modelPanel())).toEqual([mitigatedThreat]);
+      await user.click(
+        screen.getByRole('button', { name: 'Close threat register' }),
+      );
+      await user.click(
+        within(modelPanel()).getByRole('button', { name: 'Add a threat' }),
+      );
+      expect(document.activeElement).toBe(refusedDescription());
+      expect(modelStore.getState().present.threats).toHaveLength(4);
+      runRegistered('undo');
+      runRegistered('undo');
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(refusedDescription());
+    });
+
+    it('keeps a focused excluded threat in history, returning focus after undo and redo', async () => {
+      const user = userEvent.setup();
+      showStudio();
+      const threat = {
+        ...registerModel.threats[1],
+        id: modelOnlyThreat,
+        number: 4,
+      };
+      act(() => {
+        dispatch(Action.AddThreat({ threat }));
+      });
+      openRegister();
+      await user.click(chooser(modelOnlyThreat));
+      await user.click(
+        screen.getByRole('button', { name: 'Close threat register' }),
+      );
+      await user.click(
+        within(modelPanel()).getByRole('textbox', { name: 'Title' }),
+      );
+      expect(numbersIn(threatsTab().textContent)).toEqual([0]);
+      runRegistered('undo');
+      expect(listedThreats(modelPanel())).toEqual([]);
+      expect(document.activeElement).toBe(threatsTab());
+      runRegistered('redo');
+      expect(listedThreats(modelPanel())).toEqual([modelOnlyThreat]);
+      expect(document.activeElement).toBe(
+        within(modelPanel()).getByRole('textbox', { name: 'Title' }),
+      );
     });
 
     it('opens on R with focus on its first row, opening no panel and leaving the model alone', () => {

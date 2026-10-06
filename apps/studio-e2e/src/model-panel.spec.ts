@@ -151,13 +151,13 @@ test("detaching a threat's last element from the model's list removes the threat
     .click();
 
   await expect(callback).toHaveCount(0);
-  await expect(threatsTab(page)).toHaveText(/9/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
   await expect(editAnnouncement(page)).toContainText('7');
 
   await runFromMenu(page, 'Undo');
   await openModelPanel(page, forgedCallback);
   await expect(callback).toBeVisible();
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
 });
 
 test('Add a threat on the model panel adds a threat that applies to the whole model, opened on its title, and one undo takes it back', async ({
@@ -169,7 +169,7 @@ test('Add a threat on the model panel adds a threat that applies to the whole mo
   await modelControl(page, 'Add a threat').click();
 
   await expect(modelField(page, 'textbox', 'Title')).toBeFocused();
-  await expect(threatsTab(page)).toHaveText(/11/u);
+  await expect(threatsTab(page)).toHaveText(/2/u);
   await expect(
     modelPanel(page).getByRole('button', { name: /^12 /u, expanded: true }),
   ).toHaveAccessibleName(/Applies to the whole model$/u);
@@ -179,7 +179,7 @@ test('Add a threat on the model panel adds a threat that applies to the whole mo
   ).toHaveCount(0);
 
   await runFromMenu(page, 'Undo');
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
   expect(await undoOffered(page)).toBe(false);
 });
 
@@ -201,22 +201,22 @@ test('a threat applied to the whole model stays when its last element is detache
     .click();
 
   await expect(callback).toHaveAccessibleName(/Applies to the whole model$/u);
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/2/u);
   await expect(wholeModel(page)).toBeFocused();
   await expect(editAnnouncement(page)).toContainText('7');
 
   await chooseByKeyboard(page, 'ArrowDown');
   await expect(callback).toHaveCount(0);
-  await expect(threatsTab(page)).toHaveText(/9/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
   await expect(editAnnouncement(page)).toContainText('7');
-  const next = modelThreat(page, /Unpublished listings readable/u);
+  const next = modelThreat(page, cardData);
   await expect(next).toBeFocused();
   await expect(next).toHaveAttribute('aria-expanded', 'false');
 
   await runFromMenu(page, 'Undo');
   await openModelPanel(page, forgedCallback);
   await expect(callback).toHaveAccessibleName(/Applies to the whole model$/u);
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/2/u);
 });
 
 test('a threat applied to the whole model in one tab reads so in another, and an undo there takes it back in both', async ({
@@ -256,7 +256,7 @@ test('cutting an element of a threat that applies to the whole model and pasting
   await expect(nodeNamed(page, paymentGateway)).toHaveCount(1);
   await expect(threatSummary(page, cardData)).toHaveAccessibleName(/^4 /u);
   await openModelPanel(page, cardData);
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
   await expect(modelThreat(page, cardData)).toHaveCount(1);
   await expect(modelThreat(page, cardData)).toHaveAccessibleName(
     /Applies to the whole model On /u,

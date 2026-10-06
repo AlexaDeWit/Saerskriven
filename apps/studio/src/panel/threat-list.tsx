@@ -55,6 +55,7 @@ import {
   freshThreat,
   modelThreats,
   nextNumber,
+  registeredThreats,
   removedSaid,
   threatAfterDeleting,
   threatCommitter,
@@ -84,11 +85,7 @@ export type ThreatListProps = {
   readonly onDetails?: () => void;
 };
 
-/**
- * Edits an element's threats or one chosen threat from the register.
- * A refused draft blocks switching threats and adding, which focuses its field.
- * Review order stays fixed while mounted, with new threats at the end.
- */
+/** Edits contextual threats or a Register choice while retaining refused drafts. */
 export function ThreatList({
   element,
   drafts,
@@ -97,10 +94,12 @@ export function ThreatList({
   onDetails,
 }: ThreatListProps) {
   const on = element?.id;
-  const listed = element === undefined ? modelThreats : attachedThreats;
+  const listed = element === undefined ? registeredThreats : attachedThreats;
+  const contextual = element === undefined ? modelThreats : attachedThreats;
   const threats = useModelStore(useShallow(listed));
+  const context = useModelStore(useShallow(contextual));
   const { t } = useTranslator();
-  const shown = useShownOrder(inReviewOrder(threats));
+  const shown = useShownOrder(inReviewOrder(context));
   const opened = drafts.get(on);
   const [arrival] = useState(() => {
     const asked = element === undefined ? arrivingThreat() : undefined;
@@ -110,14 +109,30 @@ export function ThreatList({
     opened?.threatId ?? arrival?.threatId ?? '',
   );
   const [chosen, setChosen] = useState<ThreatId | undefined>(
-    opened?.threatId ?? arrival?.threatId ?? shown[0]?.id,
+    arrival?.threatId ??
+      (opened !== undefined && !context.some(({ id }) => id === opened.threatId)
+        ? opened.threatId
+        : undefined),
   );
   const show = useCallback((threatId: ThreatId | '') => {
     setExpanded(threatId);
     if (threatId !== '') {
-      setChosen(threatId);
+      setChosen((previous) => (previous === undefined ? undefined : threatId));
     }
   }, []);
+  const choose = useCallback((threatId: ThreatId) => {
+    setChosen(threatId);
+    setExpanded(threatId);
+  }, []);
+  const editing = threats.find(({ id }) => id === expanded);
+  const drawn =
+    element !== undefined
+      ? shown
+      : chosen !== undefined
+        ? threats.filter((threat) => threat.id === chosen)
+        : editing !== undefined && !context.some(({ id }) => id === editing.id)
+          ? [...shown, editing]
+          : shown;
   const [focus, setFocus] = useState<PanelFocus | undefined>(undefined);
   const [draft, setDraft] = useState<HeldDraft | undefined>(opened);
   const list = useRef<HTMLDivElement>(null);
@@ -193,7 +208,7 @@ export function ThreatList({
     expanded,
     list,
     scroll,
-    show,
+    show: choose,
     focus: focusOn,
     onRequested,
     onDetails,
@@ -206,7 +221,9 @@ export function ThreatList({
   };
 
   const leave = (threatId: ThreatId): void => {
-    const next = threatAfterDeleting(shown, threatId);
+    const next =
+      threatAfterDeleting(shown, threatId) ??
+      shown.find(({ id }) => id !== threatId)?.id;
     setDraft(undefined);
     if (element === undefined) {
       setExpanded('');
@@ -299,7 +316,7 @@ export function ThreatList({
         element={element}
         list={{ held, attach, open, focus: focusOn }}
       />
-      {threats.length === 0 ? (
+      {drawn.length === 0 ? (
         <p className={styles.instruction}>
           {t(
             element === undefined
@@ -320,10 +337,7 @@ export function ThreatList({
           type="single"
           value={expanded}
         >
-          {(element === undefined
-            ? shown.filter((threat) => threat.id === chosen)
-            : shown
-          ).map((threat) => (
+          {drawn.map((threat) => (
             <ThreatEditor
               focus={focusIn(focus, threat)}
               held={held?.threatId === threat.id ? held : undefined}

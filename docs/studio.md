@@ -680,16 +680,20 @@ the rows you are reading keep their place.
 A row in the Register opens one focused threat in the panel, including a
 threat on no element. **Details** in the Register opens the model's metadata
 there and focuses its title. Both clear the selection. The panel has two tabs:
-**Threats**, which carries the model's total threat count, and **Details**.
+**Threats**, which counts threats explicitly linked to the whole model, and **Details**.
 M opens the panel on Threats with focus on that tab. Whether it is shown
 belongs to each browser tab. Selecting an element brings its contextual
 threat panel back. Escape, Close model panel, or M closes the model panel and
 moves focus to the canvas.
 
-Threats shows one chosen threat with the same summary and editor as an
-element's panel. M without a choice starts on the first threat in review order.
-Choose another threat from the Register. A threat that applies to the
-whole model reads "Applies to the whole model", each summary names every
+M shows all model-wide threats with the same summaries and editors as an
+element's panel. Register opens one chosen threat in that panel.
+Threats also attached to elements count when they apply to the whole model.
+An unattached threat without that model link remains in Register.
+Choose any threat from the Register, including one outside the model context.
+An expanded editor remains open when its scope or attachments change.
+Reopening M restores the model context, except for a retained refused draft.
+A threat that applies to the whole model reads "Applies to the whole model", each summary names every
 element its threat is on, and a threat on neither reads "On no element".
 **Add a threat** creates a threat that applies to the whole model and names no
 element, opened with focus in its title. There is no Attach existing threat

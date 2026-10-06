@@ -15,6 +15,7 @@ import { assumptionKind, modelTarget } from './records.js';
 import { draftIn, useRefusals, type RefusedField } from './refusals.js';
 import { ThreatList, type HeldDrafts } from './threat-list.js';
 import { RecordGroup } from './threat-records.js';
+import { modelThreats } from './threats.js';
 
 type HeldMetadata = {
   readonly held: RefusedField | undefined;
@@ -29,7 +30,7 @@ type ModelPanelProps = HeldMetadata & {
   readonly onCover?: (cover: number) => void;
 };
 
-/** Edits one chosen threat and the model's metadata, retaining both tabs while either shows. */
+/** Edits model-scoped threats or a Register choice, beside the model's metadata. */
 export function ModelPanel({
   held,
   onHeld,
@@ -40,7 +41,7 @@ export function ModelPanel({
   onCover,
 }: ModelPanelProps) {
   const title = useModelStore((state) => state.present.metadata.title);
-  const threatCount = useModelStore((state) => state.present.threats.length);
+  const threatCount = useModelStore((state) => modelThreats(state).length);
   const [tab, setTab] = useState<PanelTab>('threats');
   const threatsTab = useRef<HTMLButtonElement>(null);
   const showThreats = useCallback(() => {

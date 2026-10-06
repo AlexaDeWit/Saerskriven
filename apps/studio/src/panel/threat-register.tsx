@@ -23,7 +23,7 @@ import {
   useThreatRegisterOpen,
 } from './threat-register-state.js';
 import styles from './threat-register.module.css';
-import { threatAttachments } from './threats.js';
+import { registeredThreats, threatAttachments } from './threats.js';
 
 /** The global threat index, with rows opening individual editors and links selecting diagram elements. */
 export const ThreatRegister = memo(function ThreatRegister({
@@ -36,7 +36,7 @@ export const ThreatRegister = memo(function ThreatRegister({
 });
 
 function Register({ cover }: { readonly cover: number }) {
-  const threats = useModelStore((state) => state.present.threats);
+  const threats = useModelStore(registeredThreats);
   const shown = useShownOrder(inReviewOrder(threats));
   const [chosen, setChosen] = useState(carriedChoice);
   const body = useRef<HTMLDivElement>(null);

@@ -21,11 +21,11 @@ own fields. What a person can do with it is in
 | `shown-order.ts`                                                   | Holding the order a list mounted in, which the threat list and each record group keep while they are open                                              |
 | `threat-attachments.tsx`                                           | What one threat is on: its model link and the elements it names, with the controls that change them                                                    |
 | `pick-existing.tsx`                                                | The listbox and control that "Link existing" and "Attach existing" share                                                                               |
-| `model-panel.tsx`                                                  | The focused threat editor, and the model's title, description and assumptions on Details                                                               |
+| `model-panel.tsx`                                                  | Model-scoped threats or a focused Register choice, and the model's title, description and assumptions on Details                                       |
 | `threat-register.tsx`, `threat-register-state.ts`                  | The threat register over the canvas, and whether it is open, the R command that opens it, a choice that closes it, and where focus goes as it closes   |
 | `element-properties.tsx`, `element-property-fields.tsx`            | The element's own fields on Details: its details, then its security properties, and their field kinds                                                  |
 | `element-details.tsx`                                              | An element's description, out-of-scope flag and reason, for every kind, a note included                                                                |
-| `threats.ts`                                                       | `panelSubject`, `attachedThreats` and `modelThreats`, the selectors the panel binds to, and what each picker offers                                    |
+| `threats.ts`                                                       | `panelSubject`, `attachedThreats`, `modelThreats` and `registeredThreats`, the selectors the panel binds to, and what each picker offers               |
 | `refusals.ts`, `distinct-labels.ts`, `panel-focus.ts`, `marked.ts` | Refused drafts, option labels a person can tell apart, the focus channel, and finding a record row, threat item or register row by its id              |
 
 The panel is mounted from `../canvas/diagram-canvas.tsx`, inside the canvas
@@ -44,8 +44,9 @@ collapse it without unmounting the fields, so drafts remain in place.
 The panel holds no copy of model state. `panelSubject` returns one element, a
 count of several, the model while the model panel is shown, or nothing. The
 threat list reads `attachedThreats`, the threats of a single selection, on an
-element's panel. The model editor reads `modelThreats` for history and refusal
-handling but draws only its chosen threat. A flow is an
+element's panel. The model editor uses `modelThreats` for its ordinary collection and count,
+which include only explicit model links. It reads `registeredThreats` for history,
+refusals and any chosen editor, including a Register choice outside that scope. A flow is an
 element here because it carries threats. The panel's own state is which tab
 shows, which threat is expanded, the order the list mounted in, which records
 are open, where focus is being sent, and the draft a field holds after a
@@ -70,10 +71,11 @@ element rather than the panel: it stays closed while it is the selection,
 whatever is then moved, resized or undone on it. The model panel, which clears
 the selection as it opens, closes outright and hands focus to the canvas.
 
-Refused drafts are held per list in the overlay, which outlives the panel: an
+Refused drafts are held per editor context in the overlay, which outlives the panel: an
 element's under its id and the model's under no element (`HeldDrafts`). A draft
 goes when its text is settled, by a correction or an edit landing under it,
-when the threat it named leaves the list, or when the file changes. A model
+when the threat leaves its element context or is deleted, or when the file
+changes. A model editor retains the draft when the threat's scope changes. A model
 arriving with the same ids is a different sitting and starts on what the model
 says. The file is identified by its name, the state carrying nothing else that
 tells two sittings apart, so a save under another name starts the drafts afresh

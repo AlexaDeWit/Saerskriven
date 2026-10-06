@@ -66,9 +66,14 @@ export function attachedThreats(state: State): readonly Threat[] {
       );
 }
 
-/** Every threat in the model, in register order, whatever it names. */
-export function modelThreats(state: State): readonly Threat[] {
+/** Every threat, including those outside the current context. */
+export function registeredThreats(state: State): readonly Threat[] {
   return state.present.threats;
+}
+
+/** Threats explicitly linked to the model, including those also naming elements. */
+export function modelThreats(state: State): readonly Threat[] {
+  return registeredThreats(state).filter((threat) => threat.appliesToModel);
 }
 
 function unlabelledFlowEnds(
