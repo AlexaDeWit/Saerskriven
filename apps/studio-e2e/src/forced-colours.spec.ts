@@ -38,7 +38,7 @@ const flowName = /^Submit order, flow/u;
 const systemColours = (page: Page) =>
   page.evaluate(() => {
     const probe = document.createElement('span');
-    probe.style.forcedColorAdjust = 'none';
+    probe.style.colorScheme = 'light dark';
     document.body.append(probe);
     const read = (name: 'Canvas' | 'CanvasText' | 'Highlight'): string => {
       probe.style.color = name;
