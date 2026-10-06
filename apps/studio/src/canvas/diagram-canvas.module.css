@@ -335,6 +335,7 @@
 @media (forced-colors: active) {
   .canvas {
     color-scheme: light dark;
+    background: Canvas;
   }
 
   .canvas :global(.react-flow__background) {
