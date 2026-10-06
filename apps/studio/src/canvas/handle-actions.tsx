@@ -38,6 +38,7 @@ export function HandleActions({
 }) {
   const root = useRef<HTMLFieldSetElement>(null);
   const first = useRef<HTMLButtonElement>(null);
+  const autoFocusing = useRef(false);
   const { x, y, zoom } = useViewport();
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
@@ -57,7 +58,9 @@ export function HandleActions({
     () => {},
   );
   useEffect(() => {
+    autoFocusing.current = true;
     first.current?.focus();
+    autoFocusing.current = false;
   }, []);
   return (
     <fieldset
@@ -66,7 +69,7 @@ export function HandleActions({
       ref={root}
       style={{
         ...besideHandle(point, zoom),
-        maxWidth: `min(28rem, 60vw, ${String(Math.max(available.width - 16, 0))}px)`,
+        maxWidth: `min(28rem, ${String(Math.max(available.width - 16, 0))}px)`,
         left: `clamp(${String((8 - x) / zoom - 20)}px, ${String(point.x)}px, ${String((available.width - size.width - 8 - x) / zoom - 20)}px)`,
         top: `clamp(calc((var(--saer-pane-block-start) + ${String(size.height + 64 + 20 * zoom - y)}px) / ${String(zoom)}), ${String(point.y)}px, ${String((available.height - 8 + 20 * zoom - y) / zoom)}px)`,
       }}
@@ -78,6 +81,11 @@ export function HandleActions({
             aria-pressed={action.pressed}
             className={`${toolbox.control} ${action.icon === undefined ? local.text : ''}`}
             onClick={action.run}
+            onFocus={(event) => {
+              if (autoFocusing.current && action.icon === undefined) {
+                event.preventDefault();
+              }
+            }}
             ref={index === 0 ? first : undefined}
             type="button"
           >

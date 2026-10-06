@@ -47,7 +47,7 @@ export const toolMessages = {
   'flow-target-end': text(),
   'remove-bend': text(),
   'move-bend': text(),
-  'follow-route': text(),
+  'auto-anchor': text(),
   'bend-handle-help': text(),
   'flow-end-handle-help': text(),
   'free-end-handle-help': text(),
