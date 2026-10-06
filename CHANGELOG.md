@@ -1,3 +1,30 @@
+## 0.8.3 (2026-10-06)
+
+### 🚀 Features
+
+- **render:** include optional Mermaid diagrams in Markdown ([#788](https://github.com/AlexaDeWit/Saerskriven/pull/788))
+- **studio:** show local canvas actions as icons ([#803](https://github.com/AlexaDeWit/Saerskriven/pull/803))
+- **studio:** consolidate threat access and add a CSP ([#785](https://github.com/AlexaDeWit/Saerskriven/pull/785))
+
+### 🩹 Fixes
+
+- **canvas:** preserve extents below the resize floor ([#789](https://github.com/AlexaDeWit/Saerskriven/pull/789))
+- **canvas:** cancel held gestures on blur and clarify selectors ([#781](https://github.com/AlexaDeWit/Saerskriven/pull/781))
+- **formats:** name whitespace-only mitigation titles as untitled ([#778](https://github.com/AlexaDeWit/Saerskriven/pull/778))
+- **studio:** lowercase note editor shortcut condition ([#777](https://github.com/AlexaDeWit/Saerskriven/pull/777))
+- **studio:** display untitled diagram fallbacks ([#786](https://github.com/AlexaDeWit/Saerskriven/pull/786))
+- **studio:** name unlabelled flows as phrases in threat summaries ([#784](https://github.com/AlexaDeWit/Saerskriven/pull/784))
+- **studio:** align with canvas items focused ([#790](https://github.com/AlexaDeWit/Saerskriven/pull/790))
+- **studio:** clarify Markdown exports and patch Mermaid ([#794](https://github.com/AlexaDeWit/Saerskriven/pull/794))
+- **studio:** expose touch deletion beside drawing tools ([#797](https://github.com/AlexaDeWit/Saerskriven/pull/797))
+- **studio:** focus overflowing panel headings for keyboard scrolling ([#795](https://github.com/AlexaDeWit/Saerskriven/pull/795))
+- **studio:** draw flow names above elements ([#796](https://github.com/AlexaDeWit/Saerskriven/pull/796))
+- **studio:** paint keyboard focus on flows in Safari ([#804](https://github.com/AlexaDeWit/Saerskriven/pull/804))
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.8.2 (2026-10-04)
 
 ### 🚀 Features
