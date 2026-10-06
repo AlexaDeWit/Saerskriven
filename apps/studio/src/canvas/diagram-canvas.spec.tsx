@@ -20,6 +20,7 @@ import {
   type ContextualShortcutId,
 } from '../commands/contextual-shortcuts.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
+import { CommandSurfaceProvider } from '../commands/binding.js';
 import { commandById, runCommand } from '../commands/registry.js';
 import {
   hostPlatform,
@@ -42,6 +43,7 @@ import {
   lastPlaced,
   noteElement,
   openCanvas,
+  observeNodeMeasurements,
   probeFlow,
   requestFlow,
   viewportTransform,
@@ -50,7 +52,7 @@ import { resetThreatRegister } from '../panel/threat-register-state.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { followKeyboardMoves } from './keyboard-moves.js';
 import { placementClickDistance } from './elements.js';
-import { selectTool } from './tools.js';
+import { currentTool, selectTool } from './tools.js';
 import { currentLayout } from './layout.js';
 import {
   actorElement,
@@ -99,6 +101,13 @@ const resizeControl = (from: string): HTMLElement =>
 
 const readerGlyphWidth = (): string | null | undefined =>
   reader().querySelector('svg')?.getAttribute('width');
+
+const readerDrawing = () => [
+  readerGlyphWidth(),
+  reader().style.width,
+  reader().style.height,
+  reader().style.transform,
+];
 
 const touchResizeReader = (): void => {
   fireEvent(resizeControl('right'), touchEvent('touchstart', finger(1, 100)));
@@ -718,17 +727,254 @@ describe('DiagramCanvas', () => {
     expect(modelStore.getState().past).toHaveLength(0);
   });
 
-  describe('a press on an element held when the window loses focus', () => {
+  describe('a mouse press held when the window loses focus', () => {
+    let measurements: ReturnType<typeof observeNodeMeasurements>;
+
+    const renderMeasuredCanvas = (): void => {
+      render(<DiagramCanvas />);
+      measurements.publish();
+    };
+
     beforeEach(() => {
       vi.stubGlobal('MouseEvent', ViewKeepingMouseEvent);
+      measurements = observeNodeMeasurements();
     });
 
     afterEach(() => {
+      measurements.stop();
+      vi.restoreAllMocks();
       vi.unstubAllGlobals();
     });
 
+    it.each([
+      { tool: 'hand', button: 0, moved: true },
+      { tool: 'temporary hand', button: 0, moved: true },
+      { tool: 'middle button', button: 1, moved: true },
+      { tool: 'hand', button: 0, moved: false },
+      { tool: 'temporary hand', button: 0, moved: false },
+      { tool: 'middle button', button: 1, moved: false },
+    ])(
+      'ends a $tool pan on blur with its current view (moved: $moved)',
+      async ({ tool, button, moved }) => {
+        render(
+          <CommandSurfaceProvider surface={recordingSurface().surface}>
+            <DiagramCanvas />
+          </CommandSurfaceProvider>,
+        );
+        measurements.publish();
+        if (tool === 'hand') {
+          act(() => {
+            selectTool('hand');
+          });
+        } else if (tool === 'temporary hand') {
+          fireEvent.keyDown(document, { key: ' ' });
+        }
+        const pane = document.querySelector('.react-flow__pane');
+        expect(pane).not.toBeNull();
+        const stored = modelStore.getState();
+        const before = viewportTransform();
+        fireEvent(
+          pane ?? document.body,
+          new ViewKeepingMouseEvent('mousedown', {
+            button,
+            bubbles: true,
+            cancelable: true,
+            clientX: 100,
+            clientY: 100,
+            view: window,
+          }),
+        );
+        if (moved) {
+          fireEvent(window, mouseEvent('mousemove', 140));
+        }
+        const atBlur = viewportTransform();
+        expect(atBlur.x - before.x).toBe(moved ? 40 : 0);
+        fireEvent(window, new Event('blur'));
+        expect(viewportTransform()).toEqual(atBlur);
+        expect(currentTool().active).toBe(tool === 'hand' ? 'hand' : 'select');
+        fireEvent(window, mouseEvent('mousemove', 160));
+        fireEvent(window, mouseEvent('mousemove', 180));
+        expect(viewportTransform()).toEqual(atBlur);
+        fireEvent(window, mouseEvent('mouseup', 180));
+        await clickSuppressionLifted();
+
+        expect(viewportTransform()).toEqual(atBlur);
+        expect(modelStore.getState().present).toBe(stored.present);
+        expect(modelStore.getState().past).toBe(stored.past);
+        expect(modelStore.getState().future).toBe(stored.future);
+      },
+    );
+
+    it('preserves a fresh resize on another control when an old joined touch moves and releases', async () => {
+      openCanvas([actorElement]);
+      renderMeasuredCanvas();
+      const stored = modelStore.getState();
+      const announcement = currentAnnouncement();
+      const drawnAt = readerDrawing();
+      const oldControl = resizeControl('right');
+
+      fireEvent(oldControl, mouseEvent('mousedown', 100));
+      fireEvent(window, mouseEvent('mousemove', 140));
+      fireEvent(oldControl, touchEvent('touchstart', finger(1, 140)));
+      fireEvent(window, new Event('blur'));
+      expect(readerDrawing()).toEqual(drawnAt);
+      await clickSuppressionLifted();
+
+      fireEvent(resizeControl('left'), mouseEvent('mousedown', 100));
+      fireEvent(window, mouseEvent('mousemove', 60));
+      const fresh = readerDrawing();
+      expect(fresh).not.toEqual(drawnAt);
+      fireEvent(oldControl, touchEvent('touchmove', finger(1, 180)));
+      fireEvent(oldControl, touchEvent('touchend', finger(1, 180)));
+
+      expect(readerDrawing()).toEqual(fresh);
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
+      expect(currentAnnouncement()).toEqual(announcement);
+      fireEvent(window, mouseEvent('mouseup', 60));
+      await clickSuppressionLifted();
+
+      expect(readerDrawing()).toEqual(fresh);
+      expect(modelStore.getState().past).toHaveLength(1);
+    });
+
+    it.each(['right', 'left', 'top left corner'])(
+      'cancels every input of a mouse resize from %s that touches join before blur',
+      async (from) => {
+        openCanvas([actorElement]);
+        renderMeasuredCanvas();
+        const stored = modelStore.getState();
+        const announcement = currentAnnouncement();
+        const before = readerBox();
+        const drawnAt = readerDrawing();
+        const oldControl = resizeControl(from);
+
+        fireEvent(oldControl, mouseEvent('mousedown', 100));
+        fireEvent(window, mouseEvent('mousemove', 140));
+        expect(readerDrawing()).not.toEqual(drawnAt);
+        fireEvent(oldControl, touchEvent('touchstart', finger(1, 140)));
+        fireEvent(
+          oldControl,
+          touchEvent('touchstart', finger(2, 140), [
+            finger(1, 140),
+            finger(2, 140),
+          ]),
+        );
+        fireEvent(window, new Event('blur'));
+
+        expect(readerDrawing()).toEqual(drawnAt);
+        fireEvent(
+          oldControl,
+          touchEvent('touchmove', finger(1, 180), [
+            finger(1, 180),
+            finger(2, 140),
+          ]),
+        );
+        expect(readerDrawing()).toEqual(drawnAt);
+        await clickSuppressionLifted();
+        stillPressReader();
+
+        expect(readerBox()).toEqual(before);
+        expect(modelStore.getState().present).toBe(stored.present);
+        expect(modelStore.getState().past).toBe(stored.past);
+        expect(currentAnnouncement()).toEqual(announcement);
+
+        fireEvent(resizeControl(from), mouseEvent('mousedown', 100));
+        fireEvent(window, mouseEvent('mousemove', 60));
+        const freshResize = readerDrawing();
+        expect(freshResize).not.toEqual(drawnAt);
+        fireEvent(
+          oldControl,
+          touchEvent('touchend', finger(1, 180), [finger(2, 140)]),
+        );
+        fireEvent(oldControl, touchEvent('touchmove', finger(2, 200)));
+        fireEvent(oldControl, touchEvent('touchend', finger(2, 200)));
+
+        expect(readerDrawing()).toEqual(freshResize);
+        expect(modelStore.getState().present).toBe(stored.present);
+        expect(modelStore.getState().past).toBe(stored.past);
+        fireEvent(window, mouseEvent('mouseup', 60));
+        await clickSuppressionLifted();
+
+        expect(readerDrawing()).toEqual(freshResize);
+        expect(readerBox()).not.toEqual(before);
+        expect(modelStore.getState().past).toHaveLength(1);
+      },
+    );
+
+    it.each(['right', 'left', 'top left corner'])(
+      'cancels a resize from %s, restores its starting geometry and records no later move or click',
+      async (from) => {
+        openCanvas([actorElement]);
+        renderMeasuredCanvas();
+        const stored = modelStore.getState();
+        const announcement = currentAnnouncement();
+        const before = readerBox();
+        const drawnAt = readerDrawing();
+
+        fireEvent(resizeControl(from), mouseEvent('mousedown', 100));
+        fireEvent(window, mouseEvent('mousemove', 140));
+        expect(readerDrawing()).not.toEqual(drawnAt);
+
+        fireEvent(window, new Event('blur'));
+        expect(readerDrawing()).toEqual(drawnAt);
+        fireEvent(window, mouseEvent('mousemove', 160));
+        fireEvent(window, mouseEvent('mousemove', 180));
+        expect(readerDrawing()).toEqual(drawnAt);
+        fireEvent(window, mouseEvent('mouseup', 180));
+        await clickSuppressionLifted();
+        fireEvent.click(reader());
+        stillPressReader();
+
+        expect(readerDrawing()).toEqual(drawnAt);
+        expect(readerBox()).toEqual(before);
+        expect(modelStore.getState().present).toBe(stored.present);
+        expect(modelStore.getState().past).toBe(stored.past);
+        expect(currentAnnouncement()).toEqual(announcement);
+      },
+    );
+
+    it('releases a resize press before it moves, so later pointer movement and a still press store nothing', async () => {
+      openCanvas([actorElement]);
+      renderMeasuredCanvas();
+      const stored = modelStore.getState();
+      const drawnAt = [readerGlyphWidth(), reader().style.width];
+
+      fireEvent(resizeControl('right'), mouseEvent('mousedown', 100));
+      fireEvent(window, new Event('blur'));
+      fireEvent(window, mouseEvent('mousemove', 160));
+      fireEvent(window, mouseEvent('mouseup', 160));
+      await clickSuppressionLifted();
+      stillPressReader();
+
+      expect([readerGlyphWidth(), reader().style.width]).toEqual(drawnAt);
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
+    });
+
+    it('cancels a held mouse resize after deselection unmounts its control', async () => {
+      openCanvas([actorElement]);
+      renderMeasuredCanvas();
+      const stored = modelStore.getState();
+      const drawnAt = [readerGlyphWidth(), reader().style.width];
+
+      fireEvent(resizeControl('right'), mouseEvent('mousedown', 100));
+      fireEvent(window, mouseEvent('mousemove', 140));
+      act(() => {
+        dispatch(Action.Select({ elementIds: [] }));
+      });
+      fireEvent(window, new Event('blur'));
+      fireEvent(window, mouseEvent('mousemove', 180));
+      fireEvent(window, mouseEvent('mouseup', 180));
+      await clickSuppressionLifted();
+
+      expect([readerGlyphWidth(), reader().style.width]).toEqual(drawnAt);
+      expect(modelStore.getState().present).toBe(stored.present);
+      expect(modelStore.getState().past).toBe(stored.past);
+    });
+
     it('is let go before the drag starts, so the element follows no later pointer move and the next release records nothing', async () => {
-      render(<DiagramCanvas />);
+      renderMeasuredCanvas();
       const before = readerBox();
       const drawnAt = reader().style.transform;
 

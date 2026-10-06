@@ -6,6 +6,7 @@ import { Action } from '../store/actions.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   dragHandle,
+  hold,
   laidOutNode,
   noteElement,
   openCanvas,
@@ -63,11 +64,6 @@ const bent = (): void => {
       decimals: undefined,
     }),
   );
-};
-
-const hold = (handle: HTMLElement): void => {
-  pointerOn(handle, 'pointerdown', 0, 0);
-  pointerOn(handle, 'pointermove', 0, 60);
 };
 
 const dropByEscape = (handle: HTMLElement): void => {

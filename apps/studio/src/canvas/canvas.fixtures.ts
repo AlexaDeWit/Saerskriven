@@ -1,5 +1,5 @@
 import type { CanvasNode } from '@saerskriven/canvas';
-import { fireEvent } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
 import {
   assumptionId,
@@ -144,11 +144,7 @@ const document = {
   assumptions: [],
 };
 
-/**
- * The model the canvas specs draw: two elements inside a trust boundary, a
- * note, a flow between the two, a flow with a free end, one assessed threat on
- * an element and two undecided threats on a flow.
- */
+/** Two nodes, a boundary, a note, two flows, and three threats for mounted canvas specs. */
 export const canvasModel: Model = parsedFixture(document);
 
 /** The three points {@link curvedCanvasModel} draws its trust boundary through. */
@@ -177,10 +173,7 @@ type ThreatRework = {
   readonly invalidated?: boolean;
 };
 
-/**
- * {@link canvasModel} with threats changed by id: a status, the elements named,
- * and whether an invalidated assumption links the threat.
- */
+/** Changes threat flags by id and adds invalidated assumptions where requested. */
 export const flaggedCanvasModel = (
   byThreat: Readonly<Record<string, ThreatRework>>,
 ): Model => {
@@ -207,11 +200,7 @@ export const flaggedCanvasModel = (
   };
 };
 
-/**
- * Opens {@link canvasModel}, or the model given, with the selection given, and
- * resets the announcements, the tool and the flow chooser a previous spec may
- * have left behind.
- */
+/** Resets the store, announcements, tools, and flow chooser between specs. */
 export const openCanvas = (
   selection: readonly ElementId[] = [],
   model: Model = canvasModel,
@@ -222,10 +211,7 @@ export const openCanvas = (
   resetConnecting();
 };
 
-/**
- * The node the store's current layout draws for an element, failing the test
- * where the layout draws none.
- */
+/** Fails the spec if the current layout has no node for the element. */
 export const laidOutNode = (id: ElementId): CanvasNode => {
   const node = currentLayout(modelStore.getState()).nodes.find(
     (candidate) => candidate.id === id,
@@ -238,11 +224,7 @@ export const laidOutNode = (id: ElementId): CanvasNode => {
 export const lastPlaced = () =>
   modelStore.getState().present.diagrams[0].elements.at(-1);
 
-/**
- * A primary pointer event at a screen point, as a canvas hook reads one. The
- * spec names the targets its hook reads, and another pointer where it needs
- * one.
- */
+/** Starts a primary pointer at a screen point with the supplied targets. */
 export const primaryPointer = <
   Targets extends {
     readonly pointerId?: number;
@@ -283,11 +265,7 @@ export function pointerOn(
   fireEvent(element, event);
 }
 
-/**
- * Resolves once the click React Flow's mouse gesture swallows after its
- * release is let through again, so a spec that ends on a mouse resize or drag
- * awaits it rather than leave the next spec's first click swallowed.
- */
+/** Waits for React Flow to release click suppression after a mouse gesture. */
 export const clickSuppressionLifted = (): Promise<void> =>
   new Promise((resolve) => {
     setTimeout(resolve, 0);
@@ -304,11 +282,7 @@ export function viewportTransform(): Point & { readonly zoom: number } {
   return { x: Number(x), y: Number(y), zoom };
 }
 
-/**
- * Drags a canvas handle from where it is drawn so that the point it stands
- * for lands on `to`, in model units at the viewport's zoom, and releases it
- * there, or cancels the pointer there while `release` is false.
- */
+/** Drags in model units at the current zoom. A false `release` cancels the pointer. */
 export function dragHandle(
   handle: HTMLElement,
   to: Point,
@@ -325,11 +299,13 @@ export function dragHandle(
   pointerOn(handle, release ? 'pointerup' : 'pointercancel', at.x, at.y);
 }
 
-/**
- * Replaces `navigator.clipboard` with one that holds its text in memory,
- * starting from `existing clipboard`, and returns its spied methods and a
- * reader for what it holds.
- */
+/** Leaves a handle's pointer drag active after moving 60 screen pixels down. */
+export function hold(handle: HTMLElement): void {
+  pointerOn(handle, 'pointerdown', 0, 0);
+  pointerOn(handle, 'pointermove', 0, 60);
+}
+
+/** Records clipboard writes in memory, starting with `existing clipboard`. */
 export const recordingClipboard = () => {
   let text = 'existing clipboard';
   const api = {
@@ -345,3 +321,109 @@ export const recordingClipboard = () => {
   });
   return { ...api, text: () => text };
 };
+
+/** Supplies rounded CSS dimensions in jsdom and refreshes node measurements after style changes. */
+export function observeNodeMeasurements() {
+  vi.stubGlobal(
+    'DOMMatrixReadOnly',
+    class {
+      readonly m22 = viewportTransform().zoom;
+    },
+  );
+  for (const [offset, dimension] of [
+    ['offsetWidth', 'width'],
+    ['offsetHeight', 'height'],
+  ] as const) {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      offset,
+    );
+    vi.spyOn(HTMLElement.prototype, offset, 'get').mockImplementation(function (
+      this: HTMLElement,
+    ): number {
+      if (this.classList.contains('react-flow__node')) {
+        return Math.round(Number.parseFloat(this.style[dimension]) || 0);
+      }
+      const original: unknown = descriptor?.get?.call(this);
+      return typeof original === 'number' ? original : 0;
+    });
+  }
+  const observers = new Set<MeasuredObserver>();
+  class MeasuredObserver implements ResizeObserver {
+    readonly targets = new Set<HTMLElement>();
+    readonly callback: ResizeObserverCallback;
+    readonly styleChanges = new MutationObserver(() => {
+      act(() => {
+        this.measure();
+      });
+    });
+
+    constructor(callback: ResizeObserverCallback) {
+      this.callback = callback;
+      observers.add(this);
+    }
+
+    observe(target: Element): void {
+      if (
+        target instanceof HTMLElement &&
+        target.classList.contains('react-flow__node')
+      ) {
+        this.targets.add(target);
+        this.styleChanges.observe(target, {
+          attributes: true,
+          attributeFilter: ['style'],
+        });
+        this.measure();
+      }
+    }
+
+    unobserve(target: Element): void {
+      if (target instanceof HTMLElement) {
+        this.targets.delete(target);
+      }
+    }
+
+    disconnect(): void {
+      this.styleChanges.disconnect();
+      this.targets.clear();
+      observers.delete(this);
+    }
+
+    measure(): void {
+      if (this.targets.size === 0) {
+        return;
+      }
+      this.callback(
+        [...this.targets].map((target) => {
+          const size = {
+            inlineSize: target.offsetWidth,
+            blockSize: target.offsetHeight,
+          };
+          return {
+            target,
+            contentRect: new DOMRect(0, 0, size.inlineSize, size.blockSize),
+            borderBoxSize: [size],
+            contentBoxSize: [size],
+            devicePixelContentBoxSize: [size],
+          };
+        }),
+        this,
+      );
+    }
+  }
+  vi.stubGlobal('ResizeObserver', MeasuredObserver);
+  return {
+    publish: (): void => {
+      act(() => {
+        for (const observer of observers) {
+          observer.measure();
+        }
+      });
+    },
+    stop: (): void => {
+      for (const observer of observers) {
+        observer.disconnect();
+      }
+    },
+  };
+}
