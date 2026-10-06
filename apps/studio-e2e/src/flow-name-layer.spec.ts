@@ -121,6 +121,8 @@ test('a flow name and badge stay above a filled element during keyboard resize f
   const cover = nodeNamed(page, /^Cover, actor/u);
   const name = page.locator(`.${canvasClassNames.flowLabel}`);
   const badge = page.locator(`.${canvasClassNames.badge}`);
+  await page.getByRole('button', { name: 'Zoom out', exact: true }).click();
+  await canvasSettled(page);
   await selectByKeyboard(page, /^Cover, actor/u);
   await page.keyboard.press('Tab');
   const control = cover.getByRole('button', {
