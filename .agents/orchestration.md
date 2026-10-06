@@ -45,11 +45,17 @@ Edit here when the process changes, in the same PR as the change.
 - It is outside the gate: no pull request or push starts it.
 - Its legs run in `nix develop .#nightly`: the CI shell plus Mesa, the EGL
   driver WebKit needs off NixOS.
-- Read a night in the run's `Browser suite (<engine>)` jobs and its
-  `playwright-report-<engine>` artifact, kept 14 days.
+- Each engine runs in two shards, with one Playwright worker per runner and
+  zero retries. Playwright partitions the existing tests across the shards.
+  Test deadlines and within-test concurrency stay unchanged.
+- Read a night in the run's `Browser suite (<engine>, <shard>/2)` jobs and its
+  `playwright-report-<engine>` artifact, kept 14 days. Each engine's merge job
+  requires one blob from each shard and writes the HTML and JSON reports,
+  including on test failure. Missing blobs or reports fail the job.
 - A red night opens one issue, or comments on it while it is open. A successful
-  run on `main` closes it with the run URL and tested commit after both browser
-  jobs and their reports pass. Its title: `Nightly browser run is red in Firefox or WebKit`.
+  run on `main` closes it with the run URL and tested commit after all browser
+  shards, both report merges and both report downloads succeed, with valid
+  green JSON reports. Its title: `Nightly browser run is red in Firefox or WebKit`.
 - Start one by hand with `gh workflow run nightly-browsers.yml`. With
   `--ref <branch>` it runs that branch and reports to no issue.
 
