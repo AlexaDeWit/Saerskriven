@@ -8,7 +8,7 @@ import { refuseStudioBuild } from './build-assets.mjs';
 
 /** The social image metadata and emitted asset name. */
 export const socialImage = {
-  alt: 'Saerskriven: Draw the system. Record the threats. An example threat model connects a maintainer, studio, and model file.',
+  alt: 'Saerskriven. Threat Modelling for Developers. Open source. Browser editor. CLI with MCP support. Work with your AI agent. Keep the model with your code. An example threat model connects a maintainer, studio, and model file.',
   height: 630,
   path: 'social-card.png',
   width: 1200,

@@ -4,7 +4,7 @@ import { shellMessages } from './contract.js';
 export const shellFrCA = catalogue(shellMessages)('fr-CA')({
   language: 'Langue',
   'landing-title':
-    'Saerskriven : studio de modélisation des menaces à code source ouvert',
+    'Saerskriven : modélisation des menaces pour les développeurs',
   'development-version': '{version} (développement)',
   stopped: 'Saerskriven s’est arrêté',
   'stopped-explanation':

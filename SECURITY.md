@@ -1,7 +1,6 @@
 # Security policy
 
-How to report a vulnerability in Saerskriven, a threat modelling studio. I take
-security reports seriously and handle them with priority.
+How to report a vulnerability in Saerskriven.
 
 ## Reporting a vulnerability
 
