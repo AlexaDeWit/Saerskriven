@@ -20,6 +20,7 @@
 - **studio:** focus overflowing panel headings for keyboard scrolling ([#795](https://github.com/AlexaDeWit/Saerskriven/pull/795))
 - **studio:** draw flow names above elements ([#796](https://github.com/AlexaDeWit/Saerskriven/pull/796))
 - **studio:** paint keyboard focus on flows in Safari ([#804](https://github.com/AlexaDeWit/Saerskriven/pull/804))
+- **studio:** follow system contrast colours on the canvas ([#805](https://github.com/AlexaDeWit/Saerskriven/pull/805))
 
 ### ❤️ Thank You
 
